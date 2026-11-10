@@ -6,6 +6,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const FellPose := preload("res://src/flora/fell_pose.gd")
+const Cover := preload("res://src/shared/cover.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
@@ -132,10 +133,19 @@ func _init() -> void:
 	check(logs.size() == int(6.0 / 2.44), "log count equals what cutting gives: %d" % logs.size())
 	check(felled(w, 4).size() == 1, "the stump stays")
 
-	# Hand-cutting also gives sticks and leaves (branch blows), and the root ball at the end: the split gives them too, on the ground (the first-hour guide and the lean-to need them).
+	# The crown (Dave 10 Nov 2026): its sticks and leaves lie all over the circle it landed on, the canopy's size (Cover.crown_radius), by the tree's height;
+	# the split gives no branch row besides (no second lot). The root ball lies at the trunk.
+	var circle: Array = tree.get("crown", [])
+	var scatter: Dictionary = w._drops.get("trunk", {}).get("crown_scatter", {})
+	var want_r: float = maxf(Cover.crown_radius(5.0, 17.0, 6.0), float(scatter.get("min_radius_m", 1.5)))
+	check(circle.size() == 3 and absf(float(circle[2]) - want_r) < 0.001, "the trunk carries its crown circle, the canopy's size (%s, radius %.2f)" % [str(circle), want_r])
+	var centre: Vector3 = base + along * (6.0 * 0.75 * cos(float(tree.get("pitch", 0.0))))
+	check(circle.size() == 3 and Vector2(float(circle[0]) - centre.x, float(circle[1]) - centre.z).length() < 0.01, "centred on the middle of the upper half as it lies")
 	var sticks: int = 0
 	var leaves: int = 0
 	var roots: int = 0
+	var heaps: int = 0
+	var inside: bool = true
 
 	for k in w._items:
 		var row: Dictionary = w._items[k]
@@ -143,18 +153,23 @@ func _init() -> void:
 		if row.has("tree") or row.has("struct"):
 			continue
 
+		var litter: bool = int(row["number"]) == w.table.number_of("stick") or int(row["number"]) == w.table.number_of("leaves")
 		sticks += int(row["count"]) if int(row["number"]) == w.table.number_of("stick") else 0
 		leaves += int(row["count"]) if int(row["number"]) == w.table.number_of("leaves") else 0
 		roots += int(row["count"]) if int(row["number"]) == w.table.number_of("tree_roots") else 0
 
-	var branch: Array = w._drops.get("trunk", {}).get("branch", [])
-	var blows: int = int(w._drops.get("trunk", {}).get("branch_blows", 3))
-	check(sticks >= blows * int(branch[0][1]) and sticks <= blows * int(branch[0][2]), "sticks of the branch blows lie beside the trunk: %d" % sticks)
-	var per_m: Array = w._drops.get("trunk", {}).get("crown_leaves", {}).get("per_m", [0, 0])
-	var lo: int = blows * maxi(roundi(float(per_m[0]) * 6.0 / float(blows)), 1)
-	var hi: int = blows * maxi(roundi(float(per_m[1]) * 6.0 / float(blows)), 1)
-	check(leaves >= lo and leaves <= hi, "the 6 m beech's crown gives leaves by its size, %d to %d: %d beside the trunk" % [lo, hi, leaves])
+		if litter and circle.size() == 3:
+			heaps += 1
+			inside = inside and Vector2(row["pos"].x - float(circle[0]), row["pos"].z - float(circle[1])).length() <= float(circle[2]) + 0.01
+
+	var stick_m: Array = scatter.get("sticks_per_m", [0, 0])
+	var leaf_m: Array = scatter.get("leaves_per_m", [0, 0])
+	check(sticks >= roundi(float(stick_m[0]) * 6.0) and sticks <= roundi(float(stick_m[1]) * 6.0), "the 6 m beech's crown drops sticks by its size: %d" % sticks)
+	check(leaves >= roundi(float(leaf_m[0]) * 6.0) and leaves <= roundi(float(leaf_m[1]) * 6.0), "and leaves by its size: %d" % leaves)
+	check(inside and heaps >= 2, "all over the crown circle, in %d little heaps (close ones join), none outside it" % heaps)
 	_check_crown_leaves(w)
+	_check_crown_litter(w)
+	_check_batch_pickup(w)
 	check(roots >= 1, "the root ball lies there too")
 	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == 0, "none of it went into the pack")
 
@@ -339,25 +354,92 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# Leaves by crown size (Dave 10 Nov 2026, "everyone should be giving me hundreds"): drops.json trunk.crown_leaves.per_m a metre of tree over the branch
-# blows; a bare broadleaf gives none in winter; the conifers in crown_leaves.fixed keep the branch row.
+# Hand cutting (a trunk that did not break up by itself): leaves by crown size, drops.json trunk.crown_leaves.per_m a metre of tree over the branch blows;
+# a bare broadleaf in winter and the conifers in crown_leaves.fixed give sticks only (Dave 10 Nov 2026).
 func _check_crown_leaves(w) -> void:
 	var cfg: Dictionary = w._drops.get("trunk", {})
 	var blows: int = int(cfg.get("branch_blows", 3))
 	var per_m: Array = cfg.get("crown_leaves", {}).get("per_m", [0, 0])
 	var big: Array = w._branch_rows({"species": "oak", "length": 25.0}, cfg, Vector3.ZERO)
 	var leaf_row: Array = big.filter(func(r): return str(r[0]) == "leaves")
-	check(leaf_row.size() == 1 and blows * int(leaf_row[0][1]) >= 180 and blows * int(leaf_row[0][2]) <= 320, "a 25 m oak gives low hundreds of leaves (%s a blow, %d blows)" % [str(leaf_row), blows])
+	check(leaf_row.size() == 1 and blows * int(leaf_row[0][1]) >= 120 and blows * int(leaf_row[0][2]) <= 220, "a 25 m oak cut by hand gives over a hundred leaves (%s a blow, %d blows)" % [str(leaf_row), blows])
 	check(big.any(func(r): return str(r[0]) == "stick"), "the sticks stay")
 	var small: Array = w._branch_rows({"species": "oak", "length": 6.0}, cfg, Vector3.ZERO).filter(func(r): return str(r[0]) == "leaves")
 	check(small.size() == 1 and int(small[0][2]) < int(leaf_row[0][1]), "a small tree gives fewer")
 	check(is_equal_approx(float(per_m[0]) * 25.0, float(blows * int(leaf_row[0][1]))) or absf(float(per_m[0]) * 25.0 - float(blows * int(leaf_row[0][1]))) <= float(blows), "in proportion to its length")
 	var fixed: Array = w._branch_rows({"species": "spruce", "length": 25.0}, cfg, Vector3.ZERO)
-	check(fixed == cfg.get("branch", []), "a conifer keeps the branch row")
+	check(not fixed.any(func(r): return str(r[0]) == "leaves") and fixed.any(func(r): return str(r[0]) == "stick"), "a conifer gives sticks only")
 	var keep: Callable = w.season_now
 	w.season_now = func() -> String: return "winter"
 	var bare: Array = w._branch_rows({"species": "oak", "length": 25.0}, cfg, Vector3.ZERO)
 	check(not bare.any(func(r): return str(r[0]) == "leaves") and bare.any(func(r): return str(r[0]) == "stick"), "a bare oak in winter gives no leaves, the sticks still")
-	check(w._branch_rows({"species": "spruce", "length": 25.0}, cfg, Vector3.ZERO) == cfg.get("branch", []), "a spruce in winter keeps its leaves")
+	check(w._branch_rows({"species": "spruce", "length": 25.0}, cfg, Vector3.ZERO) == fixed, "a spruce in winter gives the same, sticks only")
 	check(w._branch_rows({"species": "wild_apple", "length": 8.0}, cfg, Vector3.ZERO).any(func(r): return str(r[0]) == "leaves"), "an apple is not on the bare list")
 	w.season_now = keep
+
+
+# The crown's litter (Dave 10 Nov 2026: "drop like 30 sticks and a hundred leaves all over the forest floor in that circle"): a 15 m oak about 30 sticks
+# and 100 leaves, all inside its circle, more for a bigger tree; a conifer and a bare winter oak sticks only; a trunk without a crown circle (saved
+# before) none, so it keeps the branch rows.
+func _check_crown_litter(w) -> void:
+	var cfg: Dictionary = w._drops.get("trunk", {})
+	var mid: Array = w._crown_litter(41, {"species": "oak", "length": 15.0, "crown": [100.0, 100.0, 6.0]}, cfg, Vector3(100.0, 10.0, 100.0))
+	var totals: Dictionary = _litter_totals(w, mid)
+	check(totals["stick"] >= 24 and totals["stick"] <= 36 and totals["leaves"] >= 80 and totals["leaves"] <= 120, "a 15 m oak: about 30 sticks and 100 leaves (%s)" % str(totals))
+	check(mid.all(func(r): return Vector2(r[2].x - 100.0, r[2].z - 100.0).length() <= 6.0 + 0.001), "every heap inside the circle")
+	check(mid.size() == int(cfg["crown_scatter"]["spots"]["stick"]) + int(cfg["crown_scatter"]["spots"]["leaves"]), "spread over the spots of each (%d heaps)" % mid.size())
+	check(mid.all(func(r): return is_equal_approx(r[2].y, 10.1)), "lying on the ground where they land")
+	var big: Dictionary = _litter_totals(w, w._crown_litter(41, {"species": "oak", "length": 25.0, "crown": [0.0, 0.0, 9.0]}, cfg, Vector3.ZERO))
+	check(big["leaves"] > totals["leaves"] and big["stick"] > totals["stick"], "a 25 m oak more (%s)" % str(big))
+	var pine: Dictionary = _litter_totals(w, w._crown_litter(41, {"species": "spruce", "length": 30.0, "crown": [0.0, 0.0, 3.0]}, cfg, Vector3.ZERO))
+	check(pine["stick"] > 0 and pine["leaves"] == 0, "a spruce drops sticks only (%s)" % str(pine))
+	var keep: Callable = w.season_now
+	w.season_now = func() -> String: return "winter"
+	var bare: Dictionary = _litter_totals(w, w._crown_litter(41, {"species": "oak", "length": 15.0, "crown": [0.0, 0.0, 6.0]}, cfg, Vector3.ZERO))
+	check(bare["stick"] > 0 and bare["leaves"] == 0, "a bare oak in winter sticks only (%s)" % str(bare))
+	w.season_now = keep
+	check(w._crown_litter(41, {"species": "oak", "length": 15.0}, cfg, Vector3.ZERO).is_empty(), "a trunk without a crown circle drops no litter (it keeps the branch rows)")
+
+
+func _litter_totals(w, rows: Array) -> Dictionary:
+	var totals: Dictionary = {"stick": 0, "leaves": 0}
+
+	for row in rows:
+		var key: String = w.table.id_of(int(row[0]))
+		totals[key] = int(totals.get(key, 0)) + int(row[1])
+
+	return totals
+
+
+# Sticks and leaves come up in batches (data/items/pickup_batch.json, Dave 10 Nov 2026): one E on a small heap of sticks gathers up to 10 from the heaps
+# around it, leaves 20; what is over stays on the ground. A heap out of gather_m is left alone.
+func _check_batch_pickup(w) -> void:
+	var stick: int = w.table.number_of("stick")
+	var leaf: int = w.table.number_of("leaves")
+	var at: Vector3 = Vector3(300.0, 10.0, 300.0)
+	w.report_position(1, at)
+	var inv = w.inventory_of(1)
+	var had_sticks: int = inv.count_of(stick)
+	var had_leaves: int = inv.count_of(leaf)
+
+	for k in range(4):
+		w._items[800000 + k] = {"number": stick, "count": 4, "pos": at + Vector3(0.6 * float(k), 0.0, 0.0), "left": 1.0e9}
+		w._items[800010 + k] = {"number": leaf, "count": 8, "pos": at + Vector3(0.0, 0.0, 0.6 * float(k)), "left": 1.0e9}
+
+	w._items[800020] = {"number": stick, "count": 4, "pos": at + Vector3(-9.0, 0.0, 0.0), "left": 1.0e9}
+	w.action(1, Net.ACT_PICKUP, 800000, 0, 0, Vector3.ZERO)
+	check(inv.count_of(stick) - had_sticks == 10, "one E takes a batch of 10 sticks from the heaps around (%d)" % (inv.count_of(stick) - had_sticks))
+	var left: int = 0
+
+	for k in range(4):
+		left += int(w._items.get(800000 + k, {}).get("count", 0))
+
+	check(left == 6 and int(w._items[800020]["count"]) == 4, "the rest stays on the ground, the far heap untouched (%d left)" % left)
+	w.action(1, Net.ACT_PICKUP, 800010, 0, 0, Vector3.ZERO)
+	check(inv.count_of(leaf) - had_leaves == 20, "leaves 20 a batch (%d)" % (inv.count_of(leaf) - had_leaves))
+
+	for k in range(4):
+		w._items.erase(800000 + k)
+		w._items.erase(800010 + k)
+
+	w._items.erase(800020)

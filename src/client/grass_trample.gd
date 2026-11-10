@@ -52,13 +52,20 @@ static func now_s() -> float:
 
 
 func stamp(position: Vector3) -> void:
+	stamp_circle(position, RADIUS_M)
+	_move_window(int(floor(position.x)), int(floor(position.z)))
+
+
+# The grass within `radius` of `position` lies down, as under a foot (a felled crown landing flattens its whole canopy circle, Dave 10 Nov 2026).
+func stamp_circle(position: Vector3, radius: float) -> void:
+	var r: float = clampf(radius, 0.1, 32.0)
 	var now: int = int(now_s())
 	var lo: int = now & 255
 	var hi: int = (now >> 8) & 255
-	var x0: int = int(floor(position.x - RADIUS_M))
-	var x1: int = int(floor(position.x + RADIUS_M))
-	var z0: int = int(floor(position.z - RADIUS_M))
-	var z1: int = int(floor(position.z + RADIUS_M))
+	var x0: int = int(floor(position.x - r))
+	var x1: int = int(floor(position.x + r))
+	var z0: int = int(floor(position.z - r))
+	var z1: int = int(floor(position.z + r))
 
 	for z in range(z0, z1 + 1):
 		for x in range(x0, x1 + 1):
@@ -66,7 +73,7 @@ func stamp(position: Vector3) -> void:
 			var dx: float = float(x) + 0.5 - position.x
 			var dz: float = float(z) + 0.5 - position.z
 
-			if dx * dx + dz * dz > RADIUS_M * RADIUS_M:
+			if dx * dx + dz * dz > r * r:
 				continue
 
 			var o: int = (posmod(z, SIZE) * SIZE + posmod(x, SIZE)) * 3
@@ -75,7 +82,6 @@ func stamp(position: Vector3) -> void:
 			_data[o + 2] = 255
 
 	_dirty = true
-	_move_window(int(floor(position.x)), int(floor(position.z)))
 
 
 # Clears the column and the row on the far side of the wrap whenever the player enters a new metre.

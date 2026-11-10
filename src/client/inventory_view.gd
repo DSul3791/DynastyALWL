@@ -102,6 +102,7 @@ var _stock_sign: int = 0                # the pack as it was when the stock was 
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
+var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
@@ -551,19 +552,21 @@ func cursor_kind() -> String:
 #  2. the cursor is on something else with an E action (block, fire, bench, chest, door, tree, plant): that action and nothing else is picked up;
 #  3. the cursor is on nothing specific: the nearby pick-up and gather may run.
 # Held E calls this each step. True when the cursor is on something (the caller must not sweep the ground); the held action itself repeats here, at the server's pace.
+# Dave 10 Nov 2026: a pickable item the reticle is on that is too heavy (or was refused) does not hold the sweep up: held E goes on to the nearest
+# thing around that can be taken. After the reticle's own item has come up, held E waits reticle_pause_s before it does.
 func hold_e_step() -> bool:
 	var found: Dictionary = current_interaction()
-
-	if not bool(found.get("aimed", false)):
-		return false
-
 	var now: int = Time.get_ticks_msec()
+	var kind: String = str(found.get("kind", ""))
 
-	if str(found.get("kind", "")) in ["pickup", "plant"] and now >= _hold_next_msec:   # not a block: holding E on a chopping block picks it up
-		_hold_next_msec = now + 300
-		found["tap"].call()
+	if bool(found.get("aimed", false)) and not (kind == "pickup" and not liftable(int(found.get("id", 0)))):
+		if kind in ["pickup", "plant"] and now >= _hold_next_msec:   # not a block: holding E on a chopping block picks it up
+			_hold_next_msec = now + batch_every_ms()
+			found["tap"].call()
 
-	return true
+		return true
+
+	return _reticle_took_msec >= 0 and now - _reticle_took_msec < reticle_pause_ms()   # the pause after the reticle's item, then the sweep
 
 
 var _hold_next_msec: int = 0
@@ -579,8 +582,18 @@ func _register_builtin_interactables() -> void:
 var view_direction: Callable = Callable()   # () -> where the camera looks; unset (tests) counts everything as in view
 const VIEW_COS := 0.35                       # about 70 degrees either side of the view direction
 const VIEW_ALWAYS_M := 0.8                   # and anything this close, whatever way you face
-var _sweep_blocked: bool = false
 var _sweep_asked: Dictionary = {}            # world id -> msec a held-E pick was asked for
+# Dave 10 Nov 2026: held E takes what the reticle is on first; when that is too heavy (or will not fit) it goes on to the next nearest thing that can be
+# taken, and says "too heavy" only when nothing in reach can be. After the reticle's item, it waits reticle_pause_s (data/items/pickup_batch.json) first.
+const PICKUP_BATCH_PATH := "res://data/items/pickup_batch.json"
+var _batch_cfg: Dictionary = {}
+var _sweep_refused: Dictionary = {}          # world id -> true: the server refused it this hold (too heavy, no room): skipped until E is let go
+var _sweep_heavy: int = 0                    # the nearest loose item the last sweep step skipped as too heavy, 0 none
+var _sweep_said: bool = false                # the "too heavy" line was shown this hold
+var _last_pick: int = 0                      # the world id E last asked for (a refusal is put down to it)
+var _reticle_took_msec: int = -1             # when held E last took the item the reticle is on, -1 not this hold
+var _pending_heavy: int = 0                  # E went down on a too heavy item: "too heavy" waits for the hold (something else may come up), said on release if nothing did
+var _hold_took: bool = false                 # this press of E has taken something (an item, a plant, a branch)
 
 
 func in_view(point: Vector3) -> bool:
@@ -607,6 +620,17 @@ func _probe_pickup() -> Dictionary:
 		clear_prompt()
 		pick_stamp = Time.get_ticks_msec()
 
+		if not liftable(id):   # too heavy: no "too heavy" yet, held E may find something lighter around (Dave 10 Nov 2026)
+			_pending_heavy = id
+			_sweep_heavy = id
+			return
+
+		_last_pick = id
+		_hold_took = true
+
+		if _world.has(id) and aimed_at(_world[id]["pos"]):
+			_reticle_took_msec = pick_stamp   # the reticle's own item: held E waits reticle_pause_s before it goes on to what lies around
+
 		if gather_event.is_valid():
 			gather_event.call()
 
@@ -629,37 +653,112 @@ func aimed_at(point: Vector3) -> bool:
 	return forward.length() < 0.01 or to.normalized().dot(forward.normalized()) >= Interact.aim_cos()
 
 
-# Held E (harvest.gd steps this): the nearest loose item within 2 m, wherever you look, one at a time. 0 when none, when
-# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.3 s.
+# Held E (harvest.gd steps this): the nearest loose item within 2 m that can be taken, wherever you look, one at a time. 0 when none, or for an
+# item already asked for in the last batch_every_s. Too heavy ones (can_lift) and ones the server refused this hold are passed over; the nearest
+# too heavy one is kept in _sweep_heavy so sweep_nothing can say why nothing came up.
 func sweep_target(radius: float) -> Array:
-	if _sweep_blocked:
-		return [0, 99.0]
-
 	var here: Vector3 = _player_position.call()
 	var now: int = Time.get_ticks_msec()
 	var best: Array = [0, radius + 1.0]
+	var heavy: Array = [0, radius + 1.0]
 
 	for id in _world:
-		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 300:
+		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < batch_every_ms():
 			continue
 
 		var d: float = here.distance_to(_world[id]["pos"])
 
-		if d <= radius and d < float(best[1]):
+		if d > radius:
+			continue
+
+		if not liftable(id):
+			if d < float(heavy[1]):
+				heavy = [id, d]
+		elif d < float(best[1]):
 			best = [id, d]
 
+	_sweep_heavy = int(heavy[0])
 	return best
 
 
 func sweep_pick(id: int) -> void:
 	_sweep_asked[id] = Time.get_ticks_msec()
 	pick_stamp = _sweep_asked[id]
+	_last_pick = id
+	_hold_took = true
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 
+# Held E found nothing at all in reach to take (harvest.gd, after the loose items, plants and branches): when something was passed over as too heavy,
+# say so once this hold, as the server would (Dave 10 Nov 2026: "too heavy" only when nothing in reach can be taken).
+func sweep_nothing() -> void:
+	if _sweep_said or _hold_took or _sweep_heavy == 0 or not _world.has(_sweep_heavy):
+		return
+
+	_say_too_heavy(_sweep_heavy)
+
+
+func _say_too_heavy(id: int) -> void:
+	_sweep_said = true
+	var number: int = int(_world[id]["number"]) if _world.has(id) else 0
+	_on_notice("Put your log down first (Q)." if _is_shoulder(number) and shoulder_id != "" else "Too heavy to carry any more")
+	refuse_cue("full_pack")
+
+
+# A plant or branch picked by held E (harvest.gd): something came up this press.
+func note_hold_took() -> void:
+	_hold_took = true
+
+
+# E is up (harvest.gd calls this every frame then): a tap on a too heavy item that nothing else answered says so now.
 func sweep_reset() -> void:
-	_sweep_blocked = false
+	if _pending_heavy != 0 and not _sweep_said and not _hold_took:
+		_say_too_heavy(_pending_heavy)
+
+	_pending_heavy = 0
+	_hold_took = false
 	_sweep_asked.clear()
+	_sweep_refused.clear()
+	_sweep_heavy = 0
+	_sweep_said = false
+	_reticle_took_msec = -1
+
+
+# Whether the loose ground item `id` can be taken now, as the server will judge it: within the carry limit (data/items/weights.json, CarryRules) and,
+# for a large log, with nothing on the shoulder already. Not one the server refused this hold. Without a carry config (tests) everything can.
+func liftable(id: int) -> bool:
+	if not _world.has(id) or int(_world[id]["state"]) != 0 or _sweep_refused.has(id):
+		return false
+
+	var number: int = int(_world[id]["number"])
+
+	if _is_shoulder(number) and shoulder_id != "":
+		return false
+
+	if _carry_cfg.is_empty() or inventory == null:
+		return true
+
+	return CarryRules.fit_count(table.id_of(number), 1, carried_kg(), carry_body_kg(), _carry_cfg) > 0
+
+
+func _is_shoulder(number: int) -> bool:
+	return number > 0 and str(table.entry(table.id_of(number)).get("carry", "")) == "shoulder"
+
+
+func pickup_batch_cfg() -> Dictionary:
+	if _batch_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PICKUP_BATCH_PATH)) if FileAccess.file_exists(PICKUP_BATCH_PATH) else null
+		_batch_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"batch_every_s": 0.3, "reticle_pause_s": 2.0}
+
+	return _batch_cfg
+
+
+func batch_every_ms() -> int:
+	return int(float(pickup_batch_cfg().get("batch_every_s", 0.3)) * 1000.0)
+
+
+func reticle_pause_ms() -> int:
+	return int(float(pickup_batch_cfg().get("reticle_pause_s", 2.0)) * 1000.0)
 
 
 # The refusal cue (a missing tool and the like), the same one the server's reject event plays.
@@ -1386,6 +1485,12 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 		var tween: Tween = pivot.create_tween()
 		# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
 		tween.tween_property(pivot, "rotation:x", rest, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		var circle: Array = extra.get("crown", [])
+
+		if circle.size() >= 3:   # the crown lands: the grass under the whole canopy circle lies flat
+			tween.tween_callback(func():
+				if crown_landed.is_valid():
+					crown_landed.call(Vector3(float(circle[0]), 0.0, float(circle[1])), float(circle[2])))
 
 	var body: StaticBody3D = StaticBody3D.new()
 	body.collision_layer = 0
@@ -4350,7 +4455,8 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 func _on_reject(reason: int) -> void:
 	auto_pickup.note_refused(_player_position.call(), hash(inventory.counts))
-	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
+	if reason == 2 and _last_pick != 0:
+		_sweep_refused[_last_pick] = true   # too heavy or no room: held E passes it over and goes on to the next nearest (Dave 10 Nov 2026)
 	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
 
