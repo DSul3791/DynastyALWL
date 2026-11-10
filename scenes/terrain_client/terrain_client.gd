@@ -34,7 +34,7 @@ extends Node
 #                     uses 120 while its own server starts)
 #
 # Controls (see CONTROLS.md): mouse look, W A S D, Space and Ctrl, walk WASD,
-# jog double-tap W, run Shift+W, G or F fly or walk, Esc opens the options menu.
+# run Shift+W, G or F fly or walk, Esc opens the options menu.
 
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
@@ -196,23 +196,22 @@ const STAGE_VERTICAL := 0.25         # and this share of it up and down
 const STAGE_LODS := 1                # after a stop high up only this many detail levels are built until the ground under the player has a collider
 const STAGE_STEP_MIN_MSEC := 600
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
-# Natural speeds (Dave 2026-10-21, Tyler Report 13): walk, jog and run in m/s. The ONE place to tune them; the server
-# reads effort from data/items/exertion.json effort_by_speed, so change those anchors to the same numbers.
+# Natural speeds in m/s (Dave 2026-10-21, Tyler Report 13; Dave 10 Nov 2026: no jog, "normal is walking at the original jogging speed and
+# shift is still running"): two gaits, walk and run. The ONE place to tune them; the server reads effort from data/items/exertion.json
+# effort_by_speed, so change those anchors to the same numbers.
 const SPACE_WAKE_S := 1.0               # hold Space this long to wake from sleep early
-const WALK_SPEED := 1.4
+const WALK_SPEED := 3.2               # the old jog speed (the old walk was 1.4)
 const FAST := 3.0                     # flying: Shift multiplier
-const JOG_SPEED := 3.2
 const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run animation and stride rate stay at the old 6 m/s cadence: STEP_M[2] and avatar_driver RUN_CLIP_PACE
-# Walking camera (all tuning is here; each list is [walk, jog, run]). A footfall
+# Walking camera (all tuning is here; each list is [walk, run], the walk taking the old jog's numbers). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [0.75, 1.2, 3.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds; the run stride was 2.0 m at 6 m/s, now 3.0 m at 9 m/s, same cadence)
-const BOB_M := [0.040, 0.052, 0.064]     # how far the camera dips at a footfall
-const SWAY_M := [0.012, 0.016, 0.020]    # sideways shift at a footfall
-const SWAY_DEG := [0.10, 0.13, 0.16]     # roll toward the stepping side at a footfall
-const DOUBLE_TAP_MSEC := 300          # second W press within this starts jogging
+const STEP_M := [1.2, 3.0]               # metres per step: about 2.7 and 3.0 steps a second at the natural speeds (the run stride was 2.0 m at 6 m/s, now 3.0 m at 9 m/s, same cadence)
+const BOB_M := [0.052, 0.064]            # how far the camera dips at a footfall
+const SWAY_M := [0.016, 0.020]           # sideways shift at a footfall
+const SWAY_DEG := [0.13, 0.16]           # roll toward the stepping side at a footfall
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
 
@@ -252,9 +251,7 @@ var _was_lying: bool = false
 var shot_lock: bool = false              # true while the shot runner takes pictures: mouse look is ignored so the pose it sets stays
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
-var jogging: bool = false             # double-tapped W; ends when W is released
 var running: bool = false             # Shift held with W
-var _last_w_msec: int = -1000
 var _bob_phase: float = 0.0           # walking head bob
 var _bob_amount: float = 0.0
 var waiting_for_ground: bool = false
@@ -2580,8 +2577,9 @@ func _warmth_cfg() -> Dictionary:
 	return _warmth_cfg_cache
 
 
+# The footstep and ice tier (sound_stage, gear_sounds, ice_feel: 0 walk, 1 the middle step a jump push-off uses, 2 run).
 func _gait() -> int:
-	return 2 if running else (1 if jogging else 0)
+	return 2 if running else 0
 
 
 # The walking velocity on ice: wading through skim or film is slower; on a sheet the top speed drops and the velocity eases toward the input
@@ -3432,7 +3430,7 @@ var _previous_run_note_until_msec: int = 0
 var _ground_line: String = ""
 var _ground_line_msec: int = 0
 # Esc > Controls: every hotkey on one screen (CONTROLS.md has the full rules; keep this in step with it).
-const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
+const HELP_TEXT := """Move: W A S D   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
 Ctrl+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+L or Esc to lower it)
@@ -3938,7 +3936,7 @@ func _update_view(delta: float) -> void:
 		view_cam.rotation = Vector3.ZERO   # the drawn camera only ever sits on the eye, looking the way the eye looks
 		view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
 
-		# Speed feel: the view widens a little at a jog and more at a run, and eases back when you stop (the usual first-person trick; the field of view was never touched before).
+		# Speed feel: the view widens a little toward a run, and eases back when you stop (the usual first-person trick; the field of view was never touched before).
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 		var want_extra: float = clampf((pace - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), 0.0, 1.0) * FOV_RUN_EXTRA if body.is_on_floor() and not swimming else 0.0
 		_fov_extra = lerpf(_fov_extra, want_extra, clampf(delta * 4.0, 0.0, 1.0))
@@ -4278,13 +4276,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_admin_rabbit()
 		elif KeyBindings.matches(event, "admin_spyglass"):
 			_toggle_spyglass()
-		elif KeyBindings.matches(event, "move_forward"):
-			var now: int = Time.get_ticks_msec()
-
-			if now - _last_w_msec <= DOUBLE_TAP_MSEC:
-				jogging = true
-
-			_last_w_msec = now
 		elif KeyBindings.matches(event, "photo"):
 			_toggle_photo()
 		elif KeyBindings.matches(event, "auto_pickup") and items != null:
@@ -4654,27 +4645,19 @@ func _move_player(delta: float) -> void:
 	var forward: bool = KeyBindings.held("move_forward")
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
 
-	# Gaits (CONTROLS.md): walk is plain WASD, jog is a double-tap of W, run is
-	# Shift with W. Letting go of W ends both.
-	if not forward:
-		jogging = false
-
+	# Gaits (CONTROLS.md): walk is plain WASD, run is Shift with W.
 	running = forward and KeyBindings.held("run") and strain_cap == 0.0
-
-	if strain_cap != 0.0:
-		jogging = false
-	var pace: float = RUN_SPEED if running else (JOG_SPEED if jogging else WALK_SPEED)
+	var pace: float = RUN_SPEED if running else WALK_SPEED
 
 	if not flying and stance.stance != StanceScript.STAND:
 		running = false
-		jogging = false
 		pace = WALK_SPEED * float(StanceScript.SPEED[stance.stance])
 
 	if items != null and not flying:
 		pace *= items.speed_factor() * items.over_pace_factor()
 
 		if stance.stance == StanceScript.STAND:
-			pace *= items.path_pace_factor(body.global_position, "run" if running else ("jog" if jogging else "walk"))
+			pace *= items.path_pace_factor(body.global_position, "run" if running else "walk")
 
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
@@ -4833,7 +4816,7 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 	return true
 
 
-# Walking, jogging or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
+# Walking or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
 # The step height is data/movement.json step_up_m. Anything higher is a wall and move_and_slide slides along it.
 func _step_up(motion: Vector3) -> void:
 	_step_lift += StepUpScript.try(body, motion, float(_movement.get("step_up_m", 0.5)))
@@ -4995,12 +4978,13 @@ func _update_bob(delta: float) -> void:
 	var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 	var moving: bool = body.is_on_floor() and pace > 1.0
 	_bob_amount = move_toward(_bob_amount, 1.0 if moving else 0.0, delta * 6.0)
-	var gait: int = 2 if running else (1 if jogging else 0)
+	var stride: int = 1 if running else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG
+	var gait: int = _gait()                  # the footstep tier
 
 	if moving:
 		# One full turn of the phase is one step (a footfall at 0, then at TAU).
 		var before: float = _bob_phase
-		_bob_phase = fposmod(_bob_phase + delta * pace / (float(STEP_M[gait]) * _ice_step_scale()) * TAU, 2.0 * TAU)
+		_bob_phase = fposmod(_bob_phase + delta * pace / (float(STEP_M[stride]) * _ice_step_scale()) * TAU, 2.0 * TAU)
 
 		if floor(before / TAU) != floor(_bob_phase / TAU):
 			sound.footstep(body, gait, 0.0, "left" if _bob_phase < TAU else "right")
@@ -5010,9 +4994,9 @@ func _update_bob(delta: float) -> void:
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
 	var careful: float = _ice_bob_scale()   # a flatter, careful walk on bare ice
-	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity * careful
-	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity * careful
-	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity * careful
+	camera.position.y = stance.eye_y - float(BOB_M[stride]) * dip * _bob_amount * feel.intensity * careful
+	camera.position.x = -float(SWAY_M[stride]) * side * _bob_amount * feel.intensity * careful
+	camera.rotation.z = deg_to_rad(float(SWAY_DEG[stride])) * side * _bob_amount * feel.intensity * careful
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
@@ -6303,7 +6287,7 @@ func _process(delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
-	# No movement-state label (flying, running, jogging): the player knows. Only status notices show here.
+	# No movement-state label (flying, running): the player knows. Only status notices show here.
 	var mode: String = ""
 
 	if inspecting:

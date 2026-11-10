@@ -30,6 +30,7 @@ var _plans_path: String = BuildingPlans.PATH
 
 const MENU_FONT := 26       # the hoe's mode window is the same size (PR 161): one menu look for every tool (40 on the old 2880x1620 canvas)
 const DETAIL_FONT := 20
+const MENU_WIDTH := 0.75        # the panel is always this share of the screen width and its text wraps inside (Dave 10 Nov 2026: the Repair line ran off both edges)
 const MENU_MAX_HEIGHT := 0.75   # the menu never takes more than this share of the screen height (Dave 5 Nov 2026); a longer list scrolls past the highlight
 const LINE_FACTOR := 1.5        # a menu line is about this many font sizes tall with its spacing (measured on the PC 5 Nov: 22 rows took 1258 px at 40 pt, 1.43 each; 1.5 leaves room for the panel padding)
 
@@ -61,6 +62,10 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 		_hud = hud_layer
 		_panel = PanelContainer.new()
 		_panel.set_anchors_preset(Control.PRESET_CENTER)
+		_panel.anchor_left = 0.5 - MENU_WIDTH * 0.5   # fixed width: the middle MENU_WIDTH of the screen, whatever the text
+		_panel.anchor_right = 0.5 + MENU_WIDTH * 0.5
+		_panel.offset_left = 0.0
+		_panel.offset_right = 0.0
 		_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 		_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -69,11 +74,13 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_label = Label.new()
 		_label.add_theme_font_size_override("font_size", MENU_FONT)
+		_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # the title line wraps inside the panel
 		_label.add_theme_constant_override("outline_size", 3)
 		_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 		_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_detail = Label.new()
 		_detail.add_theme_font_size_override("font_size", DETAIL_FONT)
+		_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # the long Repair text wraps inside the panel
 		_detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		column.add_child(_label)
 		column.add_child(_detail)
@@ -375,3 +382,9 @@ func refresh(hammer_tier: int) -> void:
 
 	if _detail != null and is_open:
 		_detail.text = detail_text(hammer_tier)
+
+	if _panel != null and is_open:
+		_panel.offset_top = 0.0      # the height follows the wrapped text again (it grows both ways from the middle)
+		_panel.offset_bottom = 0.0
+		_panel.offset_left = 0.0     # the width stays the anchors' MENU_WIDTH
+		_panel.offset_right = 0.0

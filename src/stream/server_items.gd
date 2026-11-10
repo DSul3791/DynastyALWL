@@ -9427,7 +9427,7 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
 func _effort_at_speed(speed: float) -> float:
-	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [9.0, 1.0]])
+	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [3.2, 0.5], [9.0, 1.0]])
 
 	if speed <= float(anchors[0][0]):
 		return float(anchors[0][1])
@@ -9449,7 +9449,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var dt: float = float(now - int(last[1])) / 1000.0
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		_speed3[peer] = lerpf(float(_speed3.get(peer, 0.0)), Vector3(position.x - last[0].x, position.y - last[0].y, position.z - last[0].z).length() / dt, clampf(dt * 2.0, 0.0, 1.0))
-		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.5, jogging 0.75, running 1 (data)
+		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.5, running 1 (data)
 
 		if _on_path(peer, position):
 			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
@@ -14102,7 +14102,7 @@ func fitness_of(peer: int) -> int:
 
 
 # Fitness trains slowly like a skill (Dave 2 Nov 2026, fitness.json "train"): any physical effort adds to the character's training,
-# walking, jogging, running and tool work alike (effort_of: speed, tool work, load). Effort under min_effort (standing, strolling)
+# walking, running and tool work alike (effort_of: speed, tool work, load). Effort under min_effort (standing, strolling)
 # earns nothing; from there the share rises in a straight line to 1 at full effort (running; hard tool work a little above), and one
 # point takes seconds_per_point of full-effort time. Time under min_effort takes training back, a point per decay_s_per_point,
 # never below the creation value. The whole-number change is sent to the client.

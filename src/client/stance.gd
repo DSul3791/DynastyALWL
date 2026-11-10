@@ -14,7 +14,7 @@ enum { STAND, CROUCH, SIT, LIE }
 const NAMES := ["standing", "crouching", "sitting", "lying down"]
 const EYE_Y := [0.7, 0.2, -0.05, -0.55]          # camera height above the body's centre
 const SHAPE_HEIGHT := [1.8, 1.2, 1.0, 0.7]       # collision capsule height (feet stay on the ground)
-const SPEED := [1.0, 0.45, 0.0, 0.0]             # share of walking pace
+const SPEED := [1.0, 0.2, 0.0, 0.0]              # share of walking pace (crouching 0.64 m/s, as it was before the walk went to 3.2)
 const EYE_RATE := 5.0                            # per second, how fast the eye height follows
 const SEAT_EYE_Y := 0.23                         # sitting ON a seat (E on a chair): eyes about 1.13 m up, the chair clip's head at 1.22 m
 

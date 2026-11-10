@@ -15,7 +15,7 @@ const CONTEXT_PACK := "inventory screen"
 
 # id, label, group, context, default key, ctrl, shift, polled (held keys and inventory-screen keys take a plain key only: Shift changes what some of them do)
 const ACTIONS := [
-	["move_forward", "Walk forward (double-tap: jog, with Run: run)", "Movement", CONTEXT_WORLD, KEY_W, false, false, true],
+	["move_forward", "Walk forward (with Run: run)", "Movement", CONTEXT_WORLD, KEY_W, false, false, true],
 	["move_back", "Walk back", "Movement", CONTEXT_WORLD, KEY_S, false, false, true],
 	["move_left", "Step left", "Movement", CONTEXT_WORLD, KEY_A, false, false, true],
 	["move_right", "Step right", "Movement", CONTEXT_WORLD, KEY_D, false, false, true],
