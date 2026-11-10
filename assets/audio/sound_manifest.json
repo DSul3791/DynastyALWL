@@ -1017,14 +1017,6 @@
    "priority": 2
   },
   {
-   "name": "heartbeat",
-   "state": "generated",
-   "variants": 3,
-   "used_in": "breath_sounds.gd: the player's own heartbeat when exerted (lub-dub)",
-   "to_supply": "3 heartbeat lub-dubs, 0.4 s, no room tone",
-   "priority": 3
-  },
-  {
    "name": "tree_creak",
    "state": "generated",
    "variants": 3,

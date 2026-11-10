@@ -141,6 +141,7 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
+const HeartPulseScript := preload("res://src/client/heart_pulse.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const StepUpScript := preload("res://src/client/step_up.gd")
@@ -478,6 +479,7 @@ var items                             # InventoryView: inventory panel (I), pick
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the left of the screen
 var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (keys hold items: inventory step 4)
+var heart_pulse                       # HeartPulse: the line of light over the hotbar that pulses with the heartbeat (heartbeat_design.md)
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
@@ -1501,6 +1503,9 @@ func _welcome_body(info: Dictionary) -> void:
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
 	items.hotbar_strip = hotbar_strip
+	heart_pulse = HeartPulseScript.new()
+	heart_pulse.setup(sound.breath, layer)
+	items.heart_pulse = heart_pulse
 	pickup_feed = PickupFeedScript.new()
 	pickup_feed.setup(items, layer)
 

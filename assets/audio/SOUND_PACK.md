@@ -127,7 +127,6 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hawk_screech` | generated | 3 | ambient_life.gd: highland, by day | 2 to 3 hawk screeches |
 | 3 | `heal_bandage` | generated | 2 | item_sounds.gd eat(): a bandage applied | 2 recordings of wrapping a cloth bandage, 1 s |
 | 3 | `heal_poultice` | generated | 2 | item_sounds.gd eat(): a poultice applied (Items eat_event, confirmed by the server) | 2 recordings of pressing a wet leaf pack onto skin, 0.8 s |
-| 3 | `heartbeat` | generated | 3 | breath_sounds.gd: the player's own heartbeat when exerted (lub-dub) | 3 heartbeat lub-dubs, 0.4 s, no room tone |
 | 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |

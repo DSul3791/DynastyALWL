@@ -1,0 +1,24 @@
+{
+	"_note": "The player's heartbeat (Dave 9 Nov 2026, docs/design/heartbeat_design.md): the Daggorath pulse, always heard. bpm is a straight line of the server's strain: rest_bpm at strain 0, faint_bpm at exertion.json faint_at, peak_bpm at the most over-exerted; the server's own rate (sleep, faint, waking) wins while it sends one. The volume goes in a straight line from rest_db at rest_bpm to peak_db at peak_bpm. The bar above the hotbar spreads to max_half_px each way on a beat in rise_s and eases back to min_half_px by the next; its colour is the last zone whose from_bpm the rate has reached.",
+	"sound": "res://assets/audio/heartbeat/Daggorath_Style_Heartbeat_Pulse.wav",
+	"rest_bpm": 55.0,
+	"faint_bpm": 175.0,
+	"peak_bpm": 200.0,
+	"ease_bpm_per_s": 40.0,
+	"rest_db": -30.0,
+	"peak_db": -8.0,
+	"bar": {
+		"centre": [960.0, 940.0],
+		"min_half_px": 3.0,
+		"max_half_px": 80.0,
+		"rise_s": 0.09,
+		"thickness_px": 3.0,
+		"glow_px": 9.0,
+		"zones": [
+			[0.0, "#4cff6a"],
+			[100.0, "#ffd93a"],
+			[140.0, "#ff8c1a"],
+			[160.0, "#ff2a1a"]
+		]
+	}
+}

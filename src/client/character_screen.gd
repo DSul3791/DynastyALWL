@@ -5,7 +5,7 @@ extends RefCounted
 # The only other bars in the game are in the inventory. The heart beats at the real rate the heartbeat sound uses.
 
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
-const HEART_REST_BPM := 60.0
+const HEART_REST_BPM := 55.0
 const BODY_PX := 30
 const TITLE_PX := 40
 const CarryRules := preload("res://src/shared/carry_rules.gd")

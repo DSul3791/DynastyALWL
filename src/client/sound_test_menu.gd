@@ -101,7 +101,7 @@ func add_buttons(settings: VBoxContainer) -> void:      # `settings` is the list
 	_menu_button(settings, "Sound test: exertion", func():
 		_exertion_at = (_exertion_at + 1) % 7
 		var levels: Array = [0.0, 0.35, 0.6, 0.9, 1.0, 1.6]
-		var notes: Array = ["Rested: silent", "Light exertion: soft slow breaths", "Hard exertion: clear quick breaths, heartbeat starts", "Severe exertion: gasps and a strong heartbeat", "Exhausted: fastest gasps (then it follows your running again)", "Over-exerted: racing heart, great chest heaves", "Faint demo, 27 s: over-exertion, forced slow-down, faint (world fades, only the heart, gone in 3 s), waking with the heart racing"]
+		var notes: Array = ["Rested: a soft slow heartbeat, 55 bpm", "Light exertion: the heart a little quicker", "Hard exertion: a quicker, louder heart", "Severe exertion: a strong fast heartbeat", "Exhausted: the heart over-exerted, near 140 (then it follows your running again)", "Over-exerted: a racing, loud heart", "Faint demo, 27 s: over-exertion, forced slow-down, faint (world fades, only the heart, gone in 3 s), waking with the heart racing"]
 
 		if _exertion_at == 6:
 			sound.breath.demo()

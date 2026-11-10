@@ -485,3 +485,6 @@ Dave: the heart should speed up smoothly with how far exertion goes past the bla
 ## Drinking at the water (fix, 2026-10-21)
 
 E at the water's edge sent the drink but nothing played. `inventory_view.gd` `_on_vitals`: when thirst rises within `DRINK_WINDOW_MSEC` (3 s) of `drink()`, it calls `eat_event("drink")` (the `drink_gulp` swallows). The server accepts a mouthful every `drink_pace_ms`, so a held E gulps at that pace; a refused drink or full stomach is silent. Check: `cooking` scenario (drink check line).
+
+## Heartbeat: the Daggorath pulse (Dave 9 Nov 2026)
+The heartbeat is `assets/audio/heartbeat/Daggorath_Style_Heartbeat_Pulse.wav`, played whole at pitch 1 every 60 / bpm seconds by `breath_sounds.gd`. It is always heard: 55 bpm at rest, up to 175 at the faint and 200 at the peak, louder in proportion to the rate (`data/sound/heartbeat.json`). The pulse bar over the hotbar (`src/client/heart_pulse.gd`) keeps time with it. The generated `heartbeat_N` lub-dubs are retired (proposed_removals). Design: docs/design/heartbeat_design.md.
