@@ -11917,7 +11917,7 @@ func _plant_food_at_fire(peer: int, inv) -> bool:
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(int(number))
 
-		if not (str(r.get("station", "")) in ["campfire_pot", "clay_hearth"]) or not (str(r.get("category", "")) in ["Fire and cooking", "Food and drink"]):
+		if not (str(r.get("station", "")) in ["campfire_pot", "clay_hearth"]) or not (str(r.get("category", "")) in ["Food and drink"]):
 			continue
 
 		for need in r["needs"]:

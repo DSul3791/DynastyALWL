@@ -91,10 +91,10 @@ const GEAR_GHOST := {
 	"hands": "glove", "back": "pack", "right": "hand_axe", "left": "shield",
 }
 
-# The 10 recipe categories of recipes.json, plus All, in tab order, with their glyphs.
+# The 10 recipe categories of recipes.json, plus All, in tab order, with their glyphs. One food tab, the soup bowl (Dave 10 Nov 2026: Fire and cooking was the same thing).
 const TAB_GLYPH := {
-	"All": "all", "Tools": "axe", "Weapons": "spear", "Shelter and building": "house", "Workshops and stations": "anvil",
-	"Fire and cooking": "fire", "Food and drink": "bowl", "Medicine": "leaf", "Clothing": "shirt",
+	"All": "all", "Tools": "axe", "Weapons": "spear", "Armour": "helmet", "Shelter and building": "house", "Workshops and stations": "anvil",
+	"Food and drink": "bowl", "Medicine": "leaf", "Clothing": "shirt",
 	"Containers and furniture": "chest", "Materials": "planks",
 }
 
