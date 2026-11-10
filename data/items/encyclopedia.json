@@ -1,5 +1,5 @@
 {
-	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status: planned` (not obtainable in the game yet) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
+	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status: planned` (not obtainable in the game yet) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. `chapters` are player-facing reading pages (ore: Morgan, 10 Nov 2026, from Sonny's ground_resources.md); a section about something not in the game yet stays out until it is. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
 	"items": {
 		"acorns": {
 			"name": "Acorns",
@@ -10819,6 +10819,62 @@
 			],
 			"obtainable_now": false,
 			"status": "planned"
+		}
+	},
+	"chapters": {
+		"ore": {
+			"title": "Ore and where to find it",
+			"text": "Metal does not lie about waiting to be picked up. You find it in the rock, and you need a pick to get it out. This chapter says where to look, how to break it free, and what each ore is for.",
+			"sections": [
+				{
+					"title": "Outcrops",
+					"text": "Look for boulders on steep, rocky ground. Most are plain stone. Some are outcrops: boulders that sit on top of a buried ore body, and when you break one the pieces may carry ore. They look no different from the others, so walk the rocky ground near where ore is known to lie and break every boulder you find. One good outcrop gives you plenty."
+				},
+				{
+					"title": "Stone - Pickaxe",
+					"text": "The first pick. It breaks boulders and gives you ore from tin and copper outcrops. Harder ores need a better pick. A pick is also the right tool for rock and ore; a spade is for soil."
+				},
+				{
+					"title": "Tin",
+					"text": "Soft, silvery ore. Tin on its own is not much use, but a little of it turns copper into bronze. Tin lies close to where you start, on the steep ground of the hills near your first camp."
+				},
+				{
+					"title": "Copper",
+					"text": "Red-brown ore that smelts at a stone forge. A little farther out than tin, on the same kind of rocky slopes. Copper melts into ingots, and with tin it makes bronze."
+				},
+				{
+					"title": "Bronze",
+					"text": "Copper and tin, smelted together in a Stone - Forge. Bronze makes the first real metal tools and weapons, and any metal hammer, bronze included, lets you build at every tier."
+				},
+				{
+					"title": "Iron",
+					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and you smelt it in a Brick - Forge (or slowly in a Clay bloomery). Iron is not found on the land near your first camp, and the deposits we know of lie out of easy reach, so expect to travel or to find another way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+				},
+				{
+					"title": "Coal and charcoal",
+					"text": "Coal lies a long way from the first camp, so you will not wait for it. Make charcoal from firewood at a campfire or a kiln instead; it burns hot and clean and fuels the forge just as well."
+				},
+				{
+					"title": "Salt",
+					"text": "Salt is rare in rock around here. The easy way to get it is boiling sea water in a campfire pot."
+				},
+				{
+					"title": "Limestone",
+					"text": "Pale rock found as boulders on pale hillsides. Break it with any pick. Burnt in a kiln it becomes lime powder, which is the start of concrete."
+				},
+				{
+					"title": "Flint",
+					"text": "Hard, sharp stone. A pick sometimes knocks a flake from any boulder, and you can find it at water edges. Good for knife edges and fire."
+				},
+				{
+					"title": "Clay and sand",
+					"text": "Dig clay with a spade from clay soil and under the lowland loam. Sand is dug from beaches and river sand. Together with stone and lime powder, sand makes concrete."
+				},
+				{
+					"title": "Caves",
+					"text": "Caves are cool, dark and quiet, and cave boulders can be outcrops too. Bring a torch. Wet ground and rockfall are real dangers, so watch your head."
+				}
+			]
 		}
 	}
 }
