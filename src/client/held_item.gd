@@ -1592,7 +1592,7 @@ func _say_why_not() -> void:
 
 
 func _update_blueprint() -> void:
-	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != "place") and _hammer_tier() <= 0:
+	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _hammer_tier() <= 0:
 		blueprints.clear()   # the hammer is put away: the pick and the list go with it
 		_plan_queue.clear()
 

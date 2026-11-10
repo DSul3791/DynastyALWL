@@ -10,7 +10,8 @@ const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BuildingPlans := preload("res://src/client/building_plans.gd")
 
-var mode: String = "place"               # "place" (blueprints and saved plans), "save" (left click saves the building you aim at) or "repair" (left click repairs the piece you aim at)
+const DEFAULT_MODE := "repair"           # Dave 10 Nov 2026: a hammer first taken in hand (and after a game start) is on Repair, the first line of its list
+var mode: String = DEFAULT_MODE          # "place" (blueprints and saved plans), "save" (left click saves the building you aim at) or "repair" (left click repairs the piece you aim at)
 var plan_picked: int = -1                # index of the saved plan chosen, -1 for none (picked then holds the plan's anchor blueprint)
 var plans = BuildingPlans.new()
 
@@ -314,7 +315,7 @@ func delete_highlighted(hammer_tier: int) -> String:
 func clear() -> void:
 	picked = 0
 	plan_picked = -1
-	mode = "place"
+	mode = DEFAULT_MODE
 	set_open(false)
 
 

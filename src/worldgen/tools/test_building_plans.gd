@@ -83,7 +83,7 @@ func _init() -> void:
 	again.move(false, 1)      # wraps to the last row: the plan
 	check(again.delete_highlighted(1) == "Plan 1" and again.plans.plans.is_empty(), "Delete on a plan removes it")
 	again.clear()
-	check(again.mode == "place", "putting the hammer away clears saving")
+	check(again.mode == "repair", "putting the hammer away clears saving: the hammer is back on Repair")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("test_building_plans: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
