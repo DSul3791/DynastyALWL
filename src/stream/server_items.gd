@@ -3977,7 +3977,7 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 		_reject(peer, 2)
 		return
 
-	var gather: float = float(_batch_cfg.get("gather_m", 2.5))
+	var gather_m: float = float(_batch_cfg.get("gather_m", 2.5))
 	var reach: float = Interact.server_reach_m()
 	var heaps: Array = [[0.0, id]]
 
@@ -3992,7 +3992,7 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 
 		var flat: float = Vector2(other["pos"].x - it["pos"].x, other["pos"].z - it["pos"].z).length()
 
-		if flat <= gather and _peer_pos[peer].distance_to(other["pos"]) <= reach:
+		if flat <= gather_m and _peer_pos[peer].distance_to(other["pos"]) <= reach:
 			heaps.append([flat, other_id])
 
 	heaps.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
@@ -4003,11 +4003,11 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 		if wanted <= 0:
 			break
 
-		var take: int = mini(int(_items[heap[1]]["count"]), wanted)
-		var over: int = inv.add(number, take, 0)
-		_take_from(int(heap[1]), take - over)
-		taken += take - over
-		wanted -= take - over
+		var share: int = mini(int(_items[heap[1]]["count"]), wanted)
+		var over: int = inv.add(number, share, 0)
+		_take_from(int(heap[1]), share - over)
+		taken += share - over
+		wanted -= share - over
 
 		if over > 0:
 			break   # the pack is full
