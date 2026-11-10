@@ -167,11 +167,11 @@ func _init() -> void:
 	check(sticks >= roundi(float(stick_m[0]) * 6.0) and sticks <= roundi(float(stick_m[1]) * 6.0), "the 6 m beech's crown drops sticks by its size: %d" % sticks)
 	check(leaves >= roundi(float(leaf_m[0]) * 6.0) and leaves <= roundi(float(leaf_m[1]) * 6.0), "and leaves by its size: %d" % leaves)
 	check(inside and heaps >= 2, "all over the crown circle, in %d little heaps (close ones join), none outside it" % heaps)
+	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == 0, "none of it went into the pack")
 	_check_crown_leaves(w)
 	_check_crown_litter(w)
 	_check_batch_pickup(w)
 	check(roots >= 1, "the root ball lies there too")
-	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == 0, "none of it went into the pack")
 
 	for k in logs:
 		var off: Vector3 = w._items[k]["pos"] - base

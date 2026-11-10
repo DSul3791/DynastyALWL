@@ -5718,7 +5718,7 @@ func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> A
 				var ground: float = float(ground_height.call(x, z))
 				y = ground + 0.1 if not is_nan(ground) else y
 
-			rows.append([number, total / heaps + (1 if k < total % heaps else 0), Vector3(x, y, z)])
+			rows.append([number, floori(float(total) / float(heaps)) + (1 if k < total % heaps else 0), Vector3(x, y, z)])
 
 	return rows
 
