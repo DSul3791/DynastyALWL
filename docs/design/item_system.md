@@ -189,7 +189,7 @@ Everything sewn needs **Bone - Needle** (kept tool, section 3). Slots (Sonny C2)
 | Back and waist | Hide - Backpack (RENAME), Leather - Backpack (NEW), Leather - Belt (NEW, waist slot, fastened with **Toggle**, NEW, 1 Bone → 2), quiver (section 4) |
 | Jewellery | Silver - Ring, Gold - Ring (NEW-F, with their ore items), Bone - Necklace, **Claw - Necklace** (NEW-F; Claw is live, dropped by 14 species and has no use; replaces Amber, which is placed nowhere) |
 
-**Hide - Sack and Wicker - Basket are small placed storage** (early-tier chests, 6 slots; ruled). Hide - Pouch parked. Iron - Shears parked until a domestic sheep exists.
+**Hide - Sack and Basket are small placed storage** (early-tier chests, 6 slots; ruled). Hide - Pouch parked. Iron - Shears parked until a domestic sheep exists.
 
 **Fur supply (C4):** only fox, wolf, bear and black bear drop Fur. Add Fur to beaver, otter, mink, pine marten, lynx, seal and reindeer in `carcass.json` (Steve/Jamie), or six fur garments rest on four species.
 
@@ -207,7 +207,7 @@ Furniture B3, lights B4, garden B5 and water B6 rows are **not** repeated here. 
 | Canopy bed | RENAME (Canopy bed; one version, the top bed) | as live |
 | Bedroll | NEW | 3 Hide, 2 Twine, needle. Portable sleep: in the pack, open and dry, sleep quality 0.85 instead of 0.6 and a 0.05 warmth bonus; rain still stops sleep (code plan s5). |
 | Hide - Rug, Wool - Rug | HAVE / FUTURE | as live |
-| Antler - Mount | RENAME | as live. Tusk - Mount NEW now (Tusk is live, item 347). **Skull - Mount dropped.** |
+| Antler - Mount | RENAME | as live. Tusk mount NEW now (Tusk is live, item 347). **Skull - Mount dropped.** |
 | Weapon rack, Armour stand | NEW | 6 and 8 Planks, 2 Twine |
 | Tool rack | HAVE | as live (it is the workbench add-on) |
 | Flower pot | RENAME (absorbs Garden pot) | 2 Clay, 1 Soil |
@@ -283,7 +283,7 @@ Merged or skipped: Jeweller's bench (jewellery at the forge), Mining bag, Trunk,
 | Wooden - Barrel, Wooden - Crate | per buildables B3 | one piece type; the Rain barrel is the B3 Wooden - Barrel |
 | Clay jug | HAVE (plain) | 2 L |
 | Clay - Pot, Copper - Pot | RENAME (Clay pot) / NEW-F | 3 L; the pot takes a tier word because it comes in two materials |
-| Hide - Sack, Wicker - Basket | NEW | small placed storage, 6 slots (early chests); Hide - Sack 2 Hide, 1 Twine, needle; Basket 8 Stick, 4 Twine |
+| Hide - Sack, Basket | NEW | small placed storage, 6 slots (early chests); Hide - Sack 2 Hide, 1 Twine, needle; Basket 8 Stick, 4 Twine |
 | Wooden bowl | HAVE (plain) | 0.3 L |
 | Mug | NEW | 2 Clay; `capacity_ml` 400 |
 | Cup, Plate, Spoon | NEW | 1 Wooden block each |
@@ -337,7 +337,7 @@ Knife, saw, needle, axe, pick and hammer groups so a kept tool of any tier works
 - **Food:** keep ours. Add drinks: Mead, Ale, Cider (apples are everywhere), Wine (future). Hops future crop; mustard future; pepper skipped. Meat skewer and Sausage (campfire pot; Gut) NEW. Oat porridge future. Cheese is live now and moves to the press later.
 - **Medicine:** add Herb antidote. Pills skipped. Bandage, poultice, salve, splint stay.
 - **Transport (separate design doc):** Log - Raft, Wooden - Rowboat, Wooden - Sailboat, Wooden - Cart, Leather - Saddle as NEW-F placeholders. Snowshoes now: item id `wooden_snowshoes`, display name **Snowshoes** (single material, no tier word), worn in the feet slot with `snow_walk: true`; needs Steve's snow-walking rule first (code plan s7).
-- **Farming:** Chicken coop, **Fodder trough** (named so no one takes it for the B6a water troughs), Thatch - Scarecrow (buildables B5; the plan's name wins), Bonemeal (second fertiliser beside Compost; 2 Bone at the hand mill). Irrigation per the buildables plan.
+- **Farming:** Chicken coop, **Fodder trough** (named so no one takes it for the B6a water troughs), Scarecrow (buildables B5; the plan's name wins), Bonemeal (second fertiliser beside Compost; 2 Bone at the hand mill). Irrigation per the buildables plan.
 - **Water items against Sonny's rules and Steve's #912 (D3):** the bucket holds 8 L, so the well draw fills the held container (B6a's "E draws 10 L" becomes the container size). Plot store 100 L at 1% per litre: an 8 L bucket adds 8%. Glass bottle and Clay mug need `capacity_ml`. Filling a container at a trough, tap or cistern takes the network's quality tag. The water wheel and sawmill need moving water: a paddle over a river cell of the 8 m levels at least 0.3 m deep with at least 0.3 m/s (final numbers when scheduled).
 - **Hot stone (D2):** a 1 kg stone at about 80 C down to 35 C holds about 36 kJ. Against the body at 10 to 20 W that is 30 to 60 minutes. Proposal: a small warmth bonus fading to nothing over 1 game hour (75 to 150 real seconds), after 10 game minutes heating at a fire. Name **Hot stone** (plain). Dave's numbers.
 - **Trade:** coins stay. Gift trinkets arrive with jewellery.

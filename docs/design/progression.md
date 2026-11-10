@@ -28,7 +28,7 @@ Morgan, 10 Nov 2026. Docs only. A two-page walk through the whole item and build
 **New stations:** Log - Workbench (level 2), Tanning rack (hide → leather), Drying rack (jerky, dried fruit, herbs), Kiln (bricks at 2 Clay → 6, charcoal 2 Firewood → 2).
 **You make:** Leather set (Cap, Jerkin, Trousers, Boots, Gloves, Backpack), Fur and Wool clothes where the animals live, Sling, Longbow.
 **You build:** the Log tier (Foundation, Wall, Doorway, Window, Ceiling, Roof), Log - Trough, Log - Shelf, Clay - Pot at the campfire, Preserving jar, Smoker.
-**Farming begins:** Tilled bed, Bucket (8 L), Wicker - Fish trap, Thatch - Scarecrow, Compost.
+**Farming begins:** Tilled bed, Bucket (8 L), Wicker - Fish trap, Scarecrow, Compost.
 **What you now want:** metal.
 
 ## Gate 4. Bronze
@@ -43,7 +43,7 @@ Morgan, 10 Nov 2026. Docs only. A two-page walk through the whole item and build
 ## Gate 5. Iron
 
 **New station:** Brick - Forge (level 2; 20 Brick, 10 Stone, 4 Clay mortar) smelts iron and works nails, hinges, rivets.
-**You make:** Iron tools, weapons and mail (Axe, Pickaxe, Hammer, Scythe, Saw, Chisel, Spear, Sword, Dagger, Battle axe, Shield, Bolt, Helm, Greaves, Mail shirt, Gauntlets), Iron - Chest, Needle, Jaw trap, iron doorways, Iron - Hand pump, Iron - Pipe, Iron - Tap, Iron - Deep-well pump (force pump, up to 10 m), Iron - Lantern.
+**You make:** Iron tools, weapons and mail (Axe, Pickaxe, Hammer, Scythe, Saw, Chisel, Spear, Sword, Dagger, Battle axe, Shield, Bolt, Helm, Greaves, Mail shirt, Gauntlets), Iron - Chest, Needle, Jaw trap, iron doorways, Iron - Hand pump, Iron - Pipe, Tap, Deep-well pump (force pump, up to 10 m), Iron - Lantern.
 **You build:** metal fences and gates, Stone - Raised cistern for gravity water, lamp posts, Iron - Brazier.
 **What you now want:** the best steel, the best armour.
 

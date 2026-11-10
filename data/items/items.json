@@ -7298,7 +7298,7 @@
 			"log_bench_kit": {
 				"number": 628,
 				"retired": true,
-				"name": "Log - Bench",
+				"name": "Log bench",
 				"description": "A split log on two stumps. Seats two or three.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7319,7 +7319,7 @@
 			"log_table_kit": {
 				"number": 630,
 				"retired": true,
-				"name": "Log - Table",
+				"name": "Log table",
 				"description": "A table with a hand-hewn log top.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7817,7 +7817,7 @@
 			"iron_wall_lantern_kit": {
 				"number": 674,
 				"retired": true,
-				"name": "Iron - Wall lantern",
+				"name": "Wall lantern",
 				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7827,7 +7827,7 @@
 			},
 			"iron_wall_lantern": {
 				"number": 675,
-				"name": "Iron - Wall lantern",
+				"name": "Wall lantern",
 				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 				"kind": "structure",
 				"stack": 1,
@@ -7880,7 +7880,7 @@
 			"iron_torch_stand_kit": {
 				"number": 680,
 				"retired": true,
-				"name": "Iron - Torch stand",
+				"name": "Torch stand",
 				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7890,7 +7890,7 @@
 			},
 			"iron_torch_stand": {
 				"number": 681,
-				"name": "Iron - Torch stand",
+				"name": "Torch stand",
 				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 				"kind": "structure",
 				"stack": 1,
@@ -8174,7 +8174,7 @@
 			"thatch_scarecrow_kit": {
 				"number": 708,
 				"retired": true,
-				"name": "Thatch - Scarecrow",
+				"name": "Scarecrow",
 				"description": "A straw figure on a pole to watch over the plots.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8184,7 +8184,7 @@
 			},
 			"thatch_scarecrow": {
 				"number": 709,
-				"name": "Thatch - Scarecrow",
+				"name": "Scarecrow",
 				"description": "A straw figure on a pole to watch over the plots.",
 				"kind": "structure",
 				"stack": 1,
@@ -8279,7 +8279,7 @@
 			"log_trough_kit": {
 				"number": 718,
 				"retired": true,
-				"name": "Log - Trough",
+				"name": "Log trough",
 				"description": "A hollowed log that holds sixty litres. Animals drink from it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8603,7 +8603,7 @@
 			"iron_tap_kit": {
 				"number": 749,
 				"retired": true,
-				"name": "Iron - Tap",
+				"name": "Tap",
 				"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8613,7 +8613,7 @@
 			},
 			"iron_tap": {
 				"number": 750,
-				"name": "Iron - Tap",
+				"name": "Tap",
 				"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 				"kind": "structure",
 				"stack": 1,
@@ -8624,7 +8624,7 @@
 			"iron_deep_well_pump_kit": {
 				"number": 751,
 				"retired": true,
-				"name": "Iron - Deep-well pump",
+				"name": "Deep-well pump",
 				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8634,7 +8634,7 @@
 			},
 			"iron_deep_well_pump": {
 				"number": 752,
-				"name": "Iron - Deep-well pump",
+				"name": "Deep-well pump",
 				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 				"kind": "structure",
 				"stack": 1,
@@ -9012,7 +9012,7 @@
 			"wicker_basket_kit": {
 				"number": 784,
 				"retired": true,
-				"name": "Wicker - Basket",
+				"name": "Basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9022,7 +9022,7 @@
 			},
 			"wicker_basket": {
 				"number": 785,
-				"name": "Wicker - Basket",
+				"name": "Basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "structure",
 				"stack": 1,
@@ -9096,7 +9096,7 @@
 			"tusk_mount_kit": {
 				"number": 792,
 				"retired": true,
-				"name": "Tusk - Mount",
+				"name": "Tusk mount",
 				"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9106,7 +9106,7 @@
 			},
 			"tusk_mount": {
 				"number": 793,
-				"name": "Tusk - Mount",
+				"name": "Tusk mount",
 				"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
 				"kind": "structure",
 				"stack": 1,
@@ -9780,7 +9780,7 @@
 			"log_shelf_kit": {
 				"number": 847,
 				"retired": true,
-				"name": "Log - Shelf",
+				"name": "Log shelf",
 				"description": "Split logs lashed between two log uprights. A first shelf to set against a wall.",
 				"kind": "placeable",
 				"stack": 1,

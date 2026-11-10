@@ -1587,7 +1587,7 @@
 			"used_for": [
 				"Used in Thatch - Bed",
 				"Used in Tinder",
-				"Used in Thatch - Scarecrow",
+				"Used in Scarecrow",
 				"Used in Crude - Doorway",
 				"Used in Crude - Foundation",
 				"Used in Crude - Roof",
@@ -1982,11 +1982,11 @@
 				"Used in Iron - Hammer",
 				"Used in Steel - Hammer",
 				"Used in Thatch - Garden plot",
-				"Used in Thatch - Scarecrow",
+				"Used in Scarecrow",
 				"Used in Wooden - Arrow (fibre)",
 				"Used in Drying rack",
 				"Used in Sign",
-				"Used in Wicker - Basket",
+				"Used in Basket",
 				"Used in Bronze - Chisel",
 				"Used in Iron - Chisel",
 				"Used in Steel - Chisel",
@@ -2091,7 +2091,7 @@
 				"Used in Wooden - Lamp post",
 				"Used in Wooden - Lantern",
 				"Used in Thatch - Garden plot",
-				"Used in Thatch - Scarecrow",
+				"Used in Scarecrow",
 				"Used in Wooden - Garden plot",
 				"Used in Wooden - Channel",
 				"Used in Wooden - Channel corner",
@@ -2105,9 +2105,9 @@
 				"Used in Tanning rack",
 				"Used in Armour stand",
 				"Used in Hide - Sack",
-				"Used in Tusk - Mount",
+				"Used in Tusk mount",
 				"Used in Weapon rack",
-				"Used in Wicker - Basket",
+				"Used in Basket",
 				"Used in Bedroll",
 				"Used in Sling",
 				"Used in Snowshoes",
@@ -2440,7 +2440,7 @@
 				"Used in Wooden - Trough",
 				"Used in Armour stand",
 				"Used in Sign",
-				"Used in Tusk - Mount",
+				"Used in Tusk mount",
 				"Used in Weapon rack",
 				"Used in Iron - Chest",
 				"Used in Barrel",
@@ -2534,13 +2534,13 @@
 				"Used in Iron - Hanging lantern",
 				"Used in Iron - Lamp post",
 				"Used in Iron - Lantern",
-				"Used in Iron - Torch stand",
-				"Used in Iron - Wall lantern",
+				"Used in Torch stand",
+				"Used in Wall lantern",
 				"Used in Iron - Hand pump",
-				"Used in Iron - Deep-well pump",
+				"Used in Deep-well pump",
 				"Used in Iron - Pipe",
 				"Used in Iron - Pipe elbow",
-				"Used in Iron - Tap",
+				"Used in Tap",
 				"Used in Iron - Chisel",
 				"Used in Anvil",
 				"Used in Iron - Chest",
@@ -2730,7 +2730,7 @@
 				"Used in Iron - Chair",
 				"Used in Iron - Hand pump",
 				"Used in Wooden - Hand pump",
-				"Used in Iron - Deep-well pump",
+				"Used in Deep-well pump",
 				"Used in Hide - Sack",
 				"Used in Bedroll",
 				"Used in Sling"
@@ -4252,7 +4252,7 @@
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
 				"Used in Wooden - Hand pump",
-				"Used in Iron - Deep-well pump",
+				"Used in Deep-well pump",
 				"Used in Iron - Chest",
 				"Used in Barrel",
 				"Used in Crate",
@@ -4335,8 +4335,8 @@
 				"Used in Iron - Doorway",
 				"Used in Steel - Doorway",
 				"Used in Iron - Hand pump",
-				"Used in Iron - Deep-well pump",
-				"Used in Iron - Tap",
+				"Used in Deep-well pump",
+				"Used in Tap",
 				"Used in Iron - Chest",
 				"Used in Cupboard",
 				"Used in Engineered - Doorway",
@@ -5569,7 +5569,7 @@
 			],
 			"used_for": [
 				"Sold to traders (worth 20 copper)",
-				"Used in Tusk - Mount"
+				"Used in Tusk mount"
 			],
 			"obtainable_now": true
 		},
@@ -6314,7 +6314,7 @@
 			"used_for": [
 				"Used in Soap",
 				"Used in Tallow candle",
-				"Used in Iron - Torch stand",
+				"Used in Torch stand",
 				"Used in Torch pillar",
 				"Used in Torch post"
 			],
@@ -8225,7 +8225,7 @@
 			"obtainable_now": false
 		},
 		"log_bench_kit": {
-			"name": "Log - Bench",
+			"name": "Log bench",
 			"kind": "placeable",
 			"description": "A split log on two stumps. Seats two or three.",
 			"how_to_get": [
@@ -8243,7 +8243,7 @@
 			"obtainable_now": false
 		},
 		"log_table_kit": {
-			"name": "Log - Table",
+			"name": "Log table",
 			"kind": "placeable",
 			"description": "A table with a hand-hewn log top.",
 			"how_to_get": [
@@ -8576,7 +8576,7 @@
 			"used_for": [
 				"Used in Iron - Hanging lantern",
 				"Used in Iron - Lantern",
-				"Used in Iron - Wall lantern",
+				"Used in Wall lantern",
 				"Used in Wooden - Hanging lantern",
 				"Used in Wooden - Lantern",
 				"Used in Cold frame"
@@ -8595,7 +8595,7 @@
 			"used_for": [
 				"Used in Iron - Hanging lantern",
 				"Used in Iron - Lantern",
-				"Used in Iron - Wall lantern"
+				"Used in Wall lantern"
 			],
 			"obtainable_now": true
 		},
@@ -8685,7 +8685,7 @@
 			"obtainable_now": false
 		},
 		"iron_wall_lantern_kit": {
-			"name": "Iron - Wall lantern",
+			"name": "Wall lantern",
 			"kind": "placeable",
 			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 			"how_to_get": [
@@ -8695,7 +8695,7 @@
 			"obtainable_now": false
 		},
 		"iron_wall_lantern": {
-			"name": "Iron - Wall lantern",
+			"name": "Wall lantern",
 			"kind": "structure",
 			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 			"how_to_get": [],
@@ -8739,7 +8739,7 @@
 			"obtainable_now": false
 		},
 		"iron_torch_stand_kit": {
-			"name": "Iron - Torch stand",
+			"name": "Torch stand",
 			"kind": "placeable",
 			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 			"how_to_get": [
@@ -8749,7 +8749,7 @@
 			"obtainable_now": false
 		},
 		"iron_torch_stand": {
-			"name": "Iron - Torch stand",
+			"name": "Torch stand",
 			"kind": "structure",
 			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 			"how_to_get": [],
@@ -8991,7 +8991,7 @@
 			"obtainable_now": false
 		},
 		"thatch_scarecrow_kit": {
-			"name": "Thatch - Scarecrow",
+			"name": "Scarecrow",
 			"kind": "placeable",
 			"description": "A straw figure on a pole to watch over the plots.",
 			"how_to_get": [
@@ -9001,7 +9001,7 @@
 			"obtainable_now": true
 		},
 		"thatch_scarecrow": {
-			"name": "Thatch - Scarecrow",
+			"name": "Scarecrow",
 			"kind": "structure",
 			"description": "A straw figure on a pole to watch over the plots.",
 			"how_to_get": [],
@@ -9081,7 +9081,7 @@
 			"obtainable_now": false
 		},
 		"log_trough_kit": {
-			"name": "Log - Trough",
+			"name": "Log trough",
 			"kind": "placeable",
 			"description": "A hollowed log that holds sixty litres. Animals drink from it.",
 			"how_to_get": [
@@ -9365,7 +9365,7 @@
 			"obtainable_now": false
 		},
 		"iron_tap_kit": {
-			"name": "Iron - Tap",
+			"name": "Tap",
 			"kind": "placeable",
 			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 			"how_to_get": [
@@ -9375,7 +9375,7 @@
 			"obtainable_now": false
 		},
 		"iron_tap": {
-			"name": "Iron - Tap",
+			"name": "Tap",
 			"kind": "structure",
 			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 			"how_to_get": [],
@@ -9383,7 +9383,7 @@
 			"obtainable_now": false
 		},
 		"iron_deep_well_pump_kit": {
-			"name": "Iron - Deep-well pump",
+			"name": "Deep-well pump",
 			"kind": "placeable",
 			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 			"how_to_get": [
@@ -9393,7 +9393,7 @@
 			"obtainable_now": false
 		},
 		"iron_deep_well_pump": {
-			"name": "Iron - Deep-well pump",
+			"name": "Deep-well pump",
 			"kind": "structure",
 			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 			"how_to_get": [],
@@ -9742,7 +9742,7 @@
 			"obtainable_now": false
 		},
 		"wicker_basket_kit": {
-			"name": "Wicker - Basket",
+			"name": "Basket",
 			"kind": "placeable",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [
@@ -9752,7 +9752,7 @@
 			"obtainable_now": true
 		},
 		"wicker_basket": {
-			"name": "Wicker - Basket",
+			"name": "Basket",
 			"kind": "structure",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [],
@@ -9814,7 +9814,7 @@
 			"obtainable_now": false
 		},
 		"tusk_mount_kit": {
-			"name": "Tusk - Mount",
+			"name": "Tusk mount",
 			"kind": "placeable",
 			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
 			"how_to_get": [
@@ -9824,7 +9824,7 @@
 			"obtainable_now": true
 		},
 		"tusk_mount": {
-			"name": "Tusk - Mount",
+			"name": "Tusk mount",
 			"kind": "structure",
 			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
 			"how_to_get": [],
@@ -10333,7 +10333,7 @@
 			"obtainable_now": true
 		},
 		"log_shelf_kit": {
-			"name": "Log - Shelf",
+			"name": "Log shelf",
 			"kind": "placeable",
 			"description": "Split logs lashed between two log uprights. A first shelf to set against a wall.",
 			"how_to_get": [
