@@ -5223,9 +5223,9 @@ func _say_tool_missing(peer: int, inv, tool_class: String) -> void:
 	if found < 0:
 		_say(peer, "You need a %s for that." % tool_class)
 	elif _is_broken(inv.numbers[found], inv.wear[found]):
-		_say(peer, "Your %s is worn out. Repair it (R in the inventory) with %s." % [table.name_of(inv.numbers[found]).to_lower(), _repair_text(table.entry(table.id_of(inv.numbers[found])).get("repair", []))])
+		_say(peer, "Your %s is worn out. Repair it (R in the inventory) with %s." % [table.sentence_name(inv.numbers[found]), _repair_text(table.entry(table.id_of(inv.numbers[found])).get("repair", []))])
 	else:
-		_say(peer, "Put your %s on the hotbar: select it in the inventory and press E." % table.name_of(inv.numbers[found]).to_lower())
+		_say(peer, "Put your %s on the hotbar: select it in the inventory and press E." % table.sentence_name(inv.numbers[found]))
 
 
 # Worn out: durability is the number of uses a tool lasts (items.json); items without it never wear.
@@ -5259,7 +5259,7 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	_dirty = true
 
 	if _is_broken(inv.numbers[slot], inv.wear[slot]):
-		_say(peer, "Your %s broke. Repair it with new materials." % table.name_of(inv.numbers[slot]).to_lower())
+		_say(peer, "Your %s broke. Repair it with new materials." % table.sentence_name(inv.numbers[slot]))
 
 	_send_changes(peer, inv, before)
 
@@ -5304,7 +5304,7 @@ func _repair_text(costs: Array) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 
 	for cost in costs:
-		parts.append("%d %s" % [int(cost[1]), table.name_of(table.number_of(str(cost[0]))).to_lower()])
+		parts.append("%d %s" % [int(cost[1]), table.sentence_name(table.number_of(str(cost[0])))])
 
 	return ", ".join(parts)
 
@@ -6669,7 +6669,7 @@ func _sick_due_tick(peer: int, v: Dictionary, game_s: float) -> void:
 		var item_id: String = str(due[2])
 		var days: int = maxi(int(round(float(due[3]) / 86400.0)), 1)
 		var when: String = "yesterday" if days == 1 else "%d days ago" % days
-		var food: String = table.name_of(table.number_of(item_id)).to_lower() if table != null else item_id
+		var food: String = table.sentence_name(table.number_of(item_id)) if table != null else item_id
 		_say(peer, str(_sick_cfg.get("infection", {}).get("say_onset", "Your stomach turns. It was the %s %s.")) % [food, when])
 		_learn_food(peer, item_id, "harm")
 		make_sick(peer, float(due[1]), false)   # the onset line above says it
@@ -7025,7 +7025,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 			if site_ok:
 				continue   # a blueprint site is set down anyway; the materials are deposited later (Dave 5 Nov 2026)
 
-			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
+			_say(peer, "Not enough %s (%d needed)." % [table.in_sentence(str(table.entry(str(need[0])).get("name", need[0]))), int(need[1])])
 			return false
 
 	return true
@@ -7385,7 +7385,7 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 			have += box[1].count_of(number)
 
 		if have < int(need[1]):
-			short.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+			short.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
 
 	if not short.is_empty():
 		_say(peer, "Repairing the %s (%d percent) needs %s." % [piece_name, int(round(cond * 100.0)), ", ".join(short)])
@@ -7564,7 +7564,7 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 
 	for need in _site_needs(site):
 		if int(need[1]) > 0:
-			missing.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+			missing.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
 
 	if moved == 0:
 		_say(peer, "You have none of what it needs: %s." % ", ".join(missing))
@@ -7669,7 +7669,7 @@ func _gather_site(peer: int, inv, id: int) -> void:
 
 
 func _item_name_lower(item_id: String) -> String:
-	return str(table.entry(item_id).get("name", item_id)).to_lower()
+	return table.in_sentence(str(table.entry(item_id).get("name", item_id)))
 
 
 # Every material is in: the site becomes the real piece.
@@ -11084,7 +11084,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 			if left > 0:
 				drop_in_world(table.number_of(species), left, _peer_pos[peer])
 
-			caught.append(table.name_of(table.number_of(species)).to_lower())
+			caught.append(table.sentence_name(table.number_of(species)))
 
 	_wear_slot(peer, inv, slot, "net")
 	_dirty = true
@@ -11159,7 +11159,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 
 		practice(peer, "fish")
 		_goal_event(peer, "fish_caught")
-		_say(peer, str(cfg.get("say_hit", "")) % table.name_of(table.number_of(species)).to_lower())
+		_say(peer, str(cfg.get("say_hit", "")) % table.sentence_name(table.number_of(species)))
 		_dirty = true
 	else:
 		_say(peer, str(cfg.get("say_miss", "")))
@@ -11276,7 +11276,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
-	var landed: String = "You land a %s." % table.name_of(table.number_of(species)).to_lower()
+	var landed: String = "You land a %s." % table.sentence_name(table.number_of(species))
 
 	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):
 		landed += " " + str(_fishing_data().get("say_still", "The water is still."))
@@ -11329,11 +11329,11 @@ func _fish_tick() -> void:
 func _station_name(station: String) -> String:
 	for kind in _structures:
 		if str(_structures[kind].get("station", "")) == station:
-			return table.name_of(table.number_of(str(_structures[kind].get("item", "")))).to_lower()
+			return table.sentence_name(table.number_of(str(_structures[kind].get("item", ""))))
 
 	for kind in _structures:
 		if _structures[kind].get("also", {}).has(station):
-			return table.name_of(table.number_of(str(_structures[kind].get("item", "")))).to_lower()
+			return table.sentence_name(table.number_of(str(_structures[kind].get("item", ""))))
 
 	return station.replace("_", " ")
 
@@ -11671,7 +11671,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
 
 	if not sow_seasons.has(_season()):
-		_say(peer, "Wrong season to sow %s" % str(def.get("name", crop_id)).to_lower())
+		_say(peer, "Wrong season to sow %s" % table.in_sentence(str(def.get("name", crop_id))))
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
@@ -11810,7 +11810,7 @@ func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
 	var left: float = float(it["struct"].get("fuel_left", 0.0)) if bool(it["struct"].get("lit", false)) else 0.0
 
 	if fuel <= 0 or not inv.has(fuel, 1):
-		_say(peer, "You need %s to light that." % table.name_of(fuel).to_lower() if fuel > 0 else "It cannot be lit.")
+		_say(peer, "You need %s to light that." % table.sentence_name(fuel) if fuel > 0 else "It cannot be lit.")
 		return
 
 	if left + burn > burn * 2.0:
@@ -12941,7 +12941,7 @@ func _try_learn(peer: int, inv, recipe: Dictionary) -> bool:
 
 	learned[str(int(recipe["number"]))] = true
 	_dirty = true
-	_say(peer, "You work out how to make %s" % str(recipe.get("name", "that")).to_lower())
+	_say(peer, "You work out how to make %s" % table.in_sentence(str(recipe.get("name", "that"))))
 	return true
 
 
@@ -13604,7 +13604,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	for made in plan["made"]:   # the made parts must fit in the pack and under the carry limit
 		if _fit(peer, inv, int(made[0]), int(made[1])) < int(made[1]):
-			_say(peer, "You cannot carry that many %s" % table.name_of(int(made[0])).to_lower())
+			_say(peer, "You cannot carry that many %s" % table.sentence_name(int(made[0])))
 			return 0
 
 	var chain: int = 1
