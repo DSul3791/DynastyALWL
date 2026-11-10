@@ -2307,7 +2307,7 @@ static func _fence_posts(root: Node3D, kind: String, height: float, radius: floa
 
 
 # The fill between the posts, `w` m wide centred on x = 0, `height` high: the same for a fence and for a gate leaf (a gate adds its frame).
-static func _fence_fill(root: Node3D, kind: String, w: float, height: float, gate: bool) -> void:
+static func _fence_fill(root: Node3D, kind: String, w: float, height: float, leaf: bool) -> void:
 	match kind:
 		"thatch":
 			for k in 3:
@@ -2315,7 +2315,7 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, gat
 			for k in 7:
 				var y: float = 0.15 + 0.12 * float(k)
 				_box(root, Vector3(w, 0.05, 0.04), Vector3(0.0, y, 0.025 * (1.0 if k % 2 == 0 else -1.0)), _log)            # woven rods, in and out
-			if gate:
+			if leaf:
 				for y in [0.1, height - 0.08]:
 					_box(root, Vector3(w, 0.05, 0.06), Vector3(0.0, y, 0.0), _log)
 		"wood":
@@ -2326,15 +2326,15 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, gat
 				var x: float = -w * 0.5 + 0.075 + (w - 0.15) * float(k) / float(maxi(pickets - 1, 1))
 				_box(root, Vector3(0.08, height - 0.12, 0.025), Vector3(x, (height - 0.12) * 0.5 + 0.02, 0.0), _planks)
 				_box_rot(root, Vector3(0.057, 0.057, 0.025), Vector3(x, height - 0.1, 0.0), Vector3(0.0, 0.0, PI * 0.25), _planks)   # the pointed top
-			if gate:
+			if leaf:
 				var brace: float = atan2(height - 0.55, w - 0.1)
 				_box_rot(root, Vector3(sqrt(pow(w - 0.1, 2.0) + pow(height - 0.55, 2.0)), 0.07, 0.04), Vector3(0.0, height * 0.5 - 0.01, 0.04), Vector3(0.0, 0.0, brace), _frame)   # the Z brace
 		"log":
-			var rails: Array = [0.45, 0.9] if not gate else [0.2, 0.55, 0.9]
+			var rails: Array = [0.45, 0.9] if not leaf else [0.2, 0.55, 0.9]
 			for y in rails:
-				_box(root, Vector3(w + (0.0 if gate else 0.12), 0.14, 0.1), Vector3(0.0, y, 0.0), _log)                       # split rails, into the posts
+				_box(root, Vector3(w + (0.0 if leaf else 0.12), 0.14, 0.1), Vector3(0.0, y, 0.0), _log)                       # split rails, into the posts
 				_box(root, Vector3(w, 0.02, 0.08), Vector3(0.0, y + 0.07, 0.0), _planks)
-			if gate:
+			if leaf:
 				for x in [-w * 0.5 + 0.06, w * 0.5 - 0.06]:
 					_box(root, Vector3(0.1, 0.95, 0.1), Vector3(x, 0.55, 0.0), _log)
 				_box_rot(root, Vector3(sqrt(pow(w - 0.12, 2.0) + 0.49), 0.1, 0.08), Vector3(0.0, 0.55, 0.06), Vector3(0.0, 0.0, atan2(0.7, w - 0.12)), _log)
@@ -2350,11 +2350,11 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, gat
 				_cyl(root, 0.13, top, Vector3(x, top * 0.5, 0.0), _log, 7)
 				_cyl(root, 0.13, 0.3, Vector3(x, top + 0.15, 0.0), _log, 7, 0.0)                                                # sharpened
 			for y in [0.6, 1.9]:
-				_box(root, Vector3(w + (0.0 if gate else 0.2), 0.12, 0.06), Vector3(0.0, y, -0.17), _frame)                   # rails on the inside
-			if gate:
+				_box(root, Vector3(w + (0.0 if leaf else 0.2), 0.12, 0.06), Vector3(0.0, y, -0.17), _frame)                   # rails on the inside
+			if leaf:
 				_box_rot(root, Vector3(sqrt(pow(w - 0.2, 2.0) + 1.69), 0.12, 0.06), Vector3(0.0, 1.25, -0.17), Vector3(0.0, 0.0, atan2(1.3, w - 0.2)), _frame)
 		"stone":
-			if not gate:
+			if not leaf:
 				_box(root, Vector3(w + 0.1, 0.6, 0.4), Vector3(0.0, 0.3, 0.0), _stone)                                         # the batter, wide at the foot
 				_box(root, Vector3(w + 0.1, 0.24, 0.32), Vector3(0.0, 0.72, 0.0), _stone)
 				var copes: int = int(floor(w / 0.17))
@@ -2362,14 +2362,14 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, gat
 					var x: float = -w * 0.5 + 0.085 + (w - 0.17) * float(k) / float(maxi(copes - 1, 1))
 					_box_rot(root, Vector3(0.12, 0.16, 0.36), Vector3(x, height - 0.09, 0.0), Vector3(0.0, 0.0, 0.08 * float((k * 5) % 3 - 1)), _stone if k % 2 == 0 else _flag)
 		"brick":
-			if not gate:
+			if not leaf:
 				_box(root, Vector3(w + 0.1, 0.16, 0.3), Vector3(0.0, 0.08, 0.0), _flag)                                        # the stone plinth
 				_box(root, Vector3(w + 0.1, height - 0.26, 0.22), Vector3(0.0, 0.16 + (height - 0.26) * 0.5, 0.0), _bricks)
 				_box(root, Vector3(w + 0.1, 0.1, 0.28), Vector3(0.0, height - 0.05, 0.0), _mortar)                             # coping
 		_:
-			if not gate:
+			if not leaf:
 				_box(root, Vector3(w + 0.06, 0.25, 0.1), Vector3(0.0, 0.125, 0.0), _brick)                                     # the brick plinth
-			var base: float = 0.05 if gate else 0.25
+			var base: float = 0.05 if leaf else 0.25
 			for y in [base + 0.12, height - 0.15]:
 				_box(root, Vector3(w, 0.03, 0.03), Vector3(0.0, y, 0.0), _iron_mat())
 			var bars: int = int(floor(w / 0.12))
@@ -2378,7 +2378,7 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, gat
 				_box(root, Vector3(0.018, height - base - 0.08, 0.018), Vector3(x, base + (height - base - 0.08) * 0.5, 0.0), _iron_mat())
 				_box_rot(root, Vector3(0.03, 0.03, 0.018), Vector3(x, height - 0.07, 0.0), Vector3(0.0, 0.0, PI * 0.25), _iron_mat())   # spear tips
 
-	if kind in ["stone", "brick"] and gate:   # a timber gate between the piers: boards, two rails and a brace
+	if kind in ["stone", "brick"] and leaf:   # a timber leaf between the piers: boards, two rails and a brace
 		var boards: int = int(floor(w / 0.16))
 		for k in boards:
 			_box(root, Vector3(0.15, height - 0.2, 0.04), Vector3(-w * 0.5 + 0.08 + (w - 0.16) * float(k) / float(maxi(boards - 1, 1)), (height - 0.2) * 0.5 + 0.05, 0.0), _planks)
