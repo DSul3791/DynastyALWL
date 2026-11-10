@@ -37,6 +37,13 @@ func _put(kind: String, pos: Vector3) -> void:
 	items._next_id += 1
 
 
+# A stand-in recipe row with every field the recipe table gives a real one (the craft code reads keeps and the rest directly).
+func _recipe(row: Dictionary) -> Dictionary:
+	var full: Dictionary = {"category": "", "needs": [], "keeps": [], "identify": [], "craft_s": 3.0, "known": false, "locked": false, "station": "", "station_level": 1, "wears_tool": ""}
+	full.merge(row, true)
+	return full
+
+
 func _queue(number: int) -> void:
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, Vector3.ZERO)
@@ -80,10 +87,11 @@ func _init() -> void:
 		if str(items.recipes.recipe(int(n)).get("id", "")) == "smelt_iron":
 			forge_smelt = items.recipes.recipe(int(n))
 
+	check(table.number_of("cut_stone_block") > 0 and table.number_of("fuel") > 0, "the stand-ins' items exist (cut_stone_block, the fuel group)")
 	check(not forge_smelt.is_empty() and str(forge_smelt.get("station", "")) == "forge", "the forge's iron smelt is the yardstick")
-	var bloom: Dictionary = {"number": 99961, "id": "test_bloomery_iron", "name": "Iron ingot", "category": "Materials",
+	var bloom: Dictionary = _recipe({"number": 99961, "id": "test_bloomery_iron", "name": "Iron ingot", "category": "Materials",
 		"needs": [[table.number_of("iron_ore"), 5], [table.number_of("fuel"), 3]], "gives": [table.number_of("iron_ingot"), 1],
-		"craft_s": 3.0 * float(forge_smelt.get("craft_s", 45.0)), "known": true, "station": "test_bloomery"}
+		"craft_s": 3.0 * float(forge_smelt.get("craft_s", 45.0)), "known": true, "station": "test_bloomery"})
 	items.recipes._by_number[99961] = bloom
 
 	# At the stone forge the bloomery's recipe is refused, and nothing is taken.
@@ -107,25 +115,25 @@ func _init() -> void:
 	var keep_group: PackedInt32Array = PackedInt32Array([bronze, table.number_of("iron_hammer"), table.number_of("steel_hammer")])
 	var had_group: Variant = table._groups.get(bronze)
 	table._groups[bronze] = keep_group
-	var carve: Dictionary = {"number": 99962, "id": "test_carved_block", "name": "Carved block", "category": "Materials",
-		"needs": [[table.number_of("stone"), 2]], "keeps": [[bronze, 1]], "gives": [table.number_of("stone_block"), 2],
-		"craft_s": 2.0, "known": true, "station": "test_stonecutter"}
+	var carve: Dictionary = _recipe({"number": 99962, "id": "test_carved_block", "name": "Carved block", "category": "Materials",
+		"needs": [[table.number_of("stone"), 2]], "keeps": [[bronze, 1]], "gives": [table.number_of("cut_stone_block"), 2],
+		"craft_s": 2.0, "known": true, "station": "test_stonecutter"})
 	items.recipes._by_number[99962] = carve
 	items.report_position(1, BENCH_AT + Vector3(1.0, 0.0, 0.0))
 	pack.add(table.number_of("stone"), 4)
 	pack.add(table.number_of("stone_hammer"), 1)
-	var blocks_before: int = count("stone_block")
+	var blocks_before: int = count("cut_stone_block")
 	_queue(99962)
 	_tick(10)
-	check(count("stone_block") == blocks_before and count("stone") == 4, "with only a stone tool the bench refuses: the kept tool is bronze or better")
+	check(count("cut_stone_block") == blocks_before and count("stone") == 4, "with only a stone tool the bench refuses: the kept tool is bronze or better")
 	pack.add(table.number_of("iron_hammer"), 1)
 	_queue(99962)
 	_tick(10)
-	check(count("stone_block") == blocks_before + 2 and count("stone") == 2 and count("iron_hammer") == 1, "with an iron one it carves, and the tool is kept")
+	check(count("cut_stone_block") == blocks_before + 2 and count("stone") == 2 and count("iron_hammer") == 1, "with an iron one it carves, and the tool is kept")
 	items.report_position(1, BLOOMERY_AT + Vector3(1.0, 0.0, 0.0))
 	_queue(99962)
 	_tick(10)
-	check(count("stone_block") == blocks_before + 2, "away from the bench it is not made")
+	check(count("cut_stone_block") == blocks_before + 2, "away from the bench it is not made")
 
 	items.recipes._by_number.erase(99961)
 	items.recipes._by_number.erase(99962)
