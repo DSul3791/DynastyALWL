@@ -9840,8 +9840,7 @@
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],
-				"value": 2,
-				"future": true
+				"value": 2
 			},
 			"lime_powder": {
 				"number": 857,

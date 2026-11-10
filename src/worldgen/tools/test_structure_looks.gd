@@ -15,7 +15,7 @@ const GOLDEN := {
 	"workbench": "workbench",
 	"tool_rack": "tool_rack",
 	"vice": "vice",
-	"log_workbench": "log_workbench",
+	"log_workbench": "carpenters_bench",
 	"saw_mill": "saw_mill",
 	"woodworking_table": "woodworking_table",
 	"stone_forge": "stone_forge",
