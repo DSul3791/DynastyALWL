@@ -3,7 +3,7 @@
 
 At the 1366 x 768 floor a recipe-list icon is 23 screen px and a hotbar icon 43 (docs/ui/item_icons.md), and the bake's spears,
 arrows and stick shrink to hairlines there while its spades, grain seeds and pies come out as one picture each. These are painted
-to the same rig as tools/paint_structure_icons.py, with three rules for small sizes:
+to the same rig as tools/paint_structure_icons.py, with three rules for small sizes (the bone needle, 10 Nov 2026, the same way):
   - thin things are drawn thick, on the diagonal, with an oversized head: the head is what tells them apart;
   - each item in a set has its own colour that survives at 23 px (spade blades wood, stone, iron, steel; each grain its own plant);
   - a set shares one layout, so the family still reads as one (every grain is a seed pile with its plant behind it).
@@ -184,6 +184,19 @@ def stick():
     faces += rod((0.2, 0.05, 0), (0.75, 0.5, 0.05), 0.085, (150, 112, 72), end=WOOD_END, taper=0.6, seed=6)
     faces += leaf((0.98, 0.7, 0.05), (1.0, 0.4, 0.6), 0.6, 0.34, LEAF)
     faces += leaf((0.78, 0.78, -0.08), (0.2, 1.0, 0.5), 0.55, 0.3, shade(LEAF, 0.9))
+    return faces
+
+
+def sewing_needle():
+    """Bone - Needle: a thick bone needle on the diagonal, its eye a split butt you can see through, a loop of sinew thread through it."""
+    faces = rod((-0.55, 0, 0), (0.85, 0, 0), 0.19, BONE, seed=21)
+    faces += rod((0.85, 0, 0), (1.6, 0, 0), 0.19, BONE, end=BONE, taper=0.08, seed=22)        # the point
+    for side in (-1.0, 1.0):                                                                 # the eye: two prongs either side of a slot
+        faces += rod((-0.5, 0.13 * side, 0), (-1.25, 0.13 * side, 0), 0.075, shade(BONE, 0.94), sides=6, seed=23)
+    faces += rod((-1.25, -0.2, 0), (-1.25, 0.2, 0), 0.08, BONE, sides=6, seed=24)            # the eye's end
+    loop = [(-0.9 - 0.32 * math.sin(t), 0.42 * (1.0 - math.cos(t)), 0.14 * math.sin(t)) for t in np.linspace(0.0, 2.0 * math.pi, 11)]
+    for k in range(len(loop) - 1):                                                           # the thread, out of the eye and back
+        faces += rod(loop[k], loop[k + 1], 0.06, (150, 104, 62), sides=5, seed=30 + k)
     return faces
 
 
@@ -582,6 +595,7 @@ def _pieces():
         "stone_arrow": (lambda: arrows("stone", ((176, 150, 120), FEATHER_BAND)), DIAGONAL),
         "fibre_arrow": (lambda: arrows("wood", (FIBRE, None)), DIAGONAL),
         "stick": (stick, DIAGONAL),
+        "sewing_needle": (sewing_needle, DIAGONAL),
         "wooden_spade": (lambda: spade("wood"), SPADE_VIEW),
         "stone_spade": (lambda: spade("stone"), SPADE_VIEW),
         "iron_spade": (lambda: spade("iron"), SPADE_VIEW),
