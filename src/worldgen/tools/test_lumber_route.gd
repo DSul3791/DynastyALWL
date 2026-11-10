@@ -2,7 +2,7 @@ extends SceneTree
 
 # Wood without iron (guide finding F-05, FLINT_ORE_SPEC.md; Tyler 31 Oct 2026): the route a player can really walk from bare hands to lumber and planks:
 # stone wedge (2 stones, 1 stick, by hand) -> workbench kit (20 sticks, 6 twine, 4 stones, by hand) -> place the workbench -> a log at the workbench with the wedge in the pack
-# gives 2 lumber ("Rough planks", recipe lumber_wedge); and 1 log at the workbench gives rough planks (recipe rough_plank). Before the ingredient groups (F-16) the log
+# gives 2 lumber ("Hand-split planks", recipe lumber_wedge); rough planks are retired (recipe audit, 10 Nov 2026), so the workbench makes none. Before the ingredient groups (F-16) the log
 # step could never be filled. The wedge is kept (not used up). Without the workbench near, nothing is made; without the wedge, no lumber from the wedge recipe.
 #   godot --headless --path . --script res://src/worldgen/tools/test_lumber_route.gd
 
@@ -77,10 +77,10 @@ func _init() -> void:
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 2 and count("log_oak") == 2 and count("stone_wedge") == 1, "at the workbench, a log and the wedge give 2 lumber; the wedge is kept (%d lumber, %d logs left)" % [count("lumber"), count("log_oak")])
 	craft("rough_plank", 1)
-	check(count("rough_plank") == 4 and count("log_oak") == 1, "at the workbench, a log gives 4 rough planks (%d)" % count("rough_plank"))
+	check(count("rough_plank") == 0 and count("log_oak") == 2, "rough planks are retired: the workbench makes none, the log is kept (%d)" % count("rough_plank"))
 	items.inventory_of(1).remove(items.table.number_of("stone_wedge"), 1)
 	craft("lumber_wedge", 1)
-	check(count("lumber") == 2 and count("log_oak") == 1, "without the wedge the wedge recipe makes nothing")
+	check(count("lumber") == 2 and count("log_oak") == 2, "without the wedge the wedge recipe makes nothing")
 	print("lumber route: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

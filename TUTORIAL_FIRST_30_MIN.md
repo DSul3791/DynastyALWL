@@ -11,7 +11,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 - **Sunrise is at minute 52 (05:00)**, and minute 60 is 08:00 again.
 - So the fire (about minute 15-20) and the lean-to and bed (minutes 18-26) land just before the first dark. That is the right order, and it leaves about 6 minutes of slack.
 - A world that has already run resumes its saved clock, so a play-test on Dave's world may start at any hour.
-- **For the first dark:** a **Basic torch** costs 1 stick and 2 fibre, needs no station, and is known from the start. Held in the off hand it lights 9 m (items.json light_m), more than a stick fire's 3.5 m. It has no burn time or durability in data, so it never goes out. It gives light only, no warmth: only fires warm. The dusk hint (18:00, minute 25) already says this: "Night is dark. Craft a Basic torch: a stick and 2 fibre."
+- **For the first dark:** a **Torch** costs 1 stick, 1 fibre and 1 pitch (resin, pine tar or animal fat; recipe audit 10 Nov 2026), needs no station, and is known from the start. Held in the off hand it lights 9 m (items.json light_m), more than a stick fire's 3.5 m. It has no burn time or durability in data, so it never goes out. It gives light only, no warmth: only fires warm. The dusk hint (18:00, minute 25) already says this: "Night is dark. Craft a Torch: a stick, a fibre and pitch (resin or animal fat)."
 
 ## Fix status that changes this script (2026-10-31; `PLAYTHROUGH_STATUS.md` has the live table)
 

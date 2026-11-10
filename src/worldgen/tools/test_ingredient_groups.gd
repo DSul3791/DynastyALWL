@@ -2,8 +2,8 @@ extends SceneTree
 
 # Ingredient groups (guide finding F-16, Tyler 31 Oct 2026): a recipe that asks for the plain id `log` (log workbench, rough plank, lumber ...) is
 # filled by any log_<species> the pack holds; `wooden_block` by a hard or a soft block; `firewood` by hard or soft. Before, nothing mapped log_oak to log, so
-# no player could make any of them. Checks the rule on the pack, then through the real server craft queue (a chopping block from a large soft block, a bowl from soft
-# firewood, a hammer from a soft block), the partial-stack case, a group with nothing in the pack, and that the pack is unchanged when a craft is refused.
+# no player could make any of them. Checks the rule on the pack, then through the real server craft queue (a chopping block from a large soft block, a bowl from a soft
+# block, a hammer from a soft block), the partial-stack case, a group with nothing in the pack, and that the pack is unchanged when a craft is refused.
 #   godot --headless --path . --script res://src/worldgen/tools/test_ingredient_groups.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -59,6 +59,14 @@ func _init() -> void:
 	var blocks = InventoryScript.new(table)
 	blocks.add(soft, 2)
 	check(blocks.count_fill(plain) == 2 and blocks.count_of(plain) == 0 and blocks.remove_fill(plain, 1) and blocks.count_of(soft) == 1, "a soft block fills a wooden block")
+	# The food, fuel and pitch groups (recipe audit, 10 Nov 2026): any fish, herb, berry, nut or mushroom; charcoal or coal; resin, pine tar or animal fat.
+	var food = InventoryScript.new(table)
+	food.add(table.number_of("pike"), 1)
+	food.add(table.number_of("thyme"), 2)
+	food.add(table.number_of("coal"), 1)
+	food.add(table.number_of("animal_fat"), 1)
+	check(food.count_fill(table.number_of("fish")) == 1 and food.count_fill(table.number_of("herbs")) == 2, "a pike fills fish and thyme fills herbs")
+	check(food.count_fill(table.number_of("fuel")) == 1 and food.count_fill(table.number_of("pitch")) == 1, "coal fills fuel and animal fat fills pitch")
 
 	var dir: String = "user://test_ingredient_groups"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -81,9 +89,10 @@ func _init() -> void:
 	pack.add(items.table.number_of("wooden_block_soft_large"), 1)
 	queue_and_finish("chopping_block", 1)
 	check(count("chopping_block") == 1 and count("wooden_block_soft_large") == 0, "a chopping block from one large softwood block (Dave 10 Nov 2026: one large block)")
-	pack.add(items.table.number_of("firewood_soft"), 1)
+	pack.add(items.table.number_of("wooden_block_soft"), 1)
+	pack.add(items.table.number_of("stone_knife"), 1)
 	queue_and_finish("wooden_bowl", 1)
-	check(count("wooden_bowl") == 1 and count("firewood_soft") == 0, "a wooden bowl from soft firewood")
+	check(count("wooden_bowl") == 1 and count("wooden_block_soft") == 0 and count("stone_knife") == 1, "a wooden bowl carved from a soft block, the stone knife kept (recipe audit 10 Nov 2026)")
 	pack.add(items.table.number_of("wooden_block_soft"), 1)
 	pack.add(items.table.number_of("stick"), 1)
 	pack.add(items.table.number_of("twine"), 1)

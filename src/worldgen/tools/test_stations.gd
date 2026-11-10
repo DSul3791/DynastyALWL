@@ -121,8 +121,8 @@ func _init() -> void:
 		if str(tiers.recipes.recipe(number)["id"]) == "steel_pickaxe":
 			steel = number
 
-	check(int(tiers.recipes.recipe(steel).get("station_level", 1)) == 2, "steel needs the better forge")
-	check(tiers.station_near(1, "forge", 2), "the masonry forge forges steel")
+	check(int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel needs forge level 3 (the metal sets the level: bronze 1, iron 2, steel 3; recipe audit 10 Nov 2026)")
+	check(tiers.station_near(1, "forge", 3), "a level 3 forge forges steel")
 
 	print("station tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
