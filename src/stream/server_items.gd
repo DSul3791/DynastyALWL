@@ -42,6 +42,7 @@ const DROP_REACH_M := 6.0                # a drop lands at most this far from wh
 const SYNC_EVERY_S := 1.0
 const SAVE_EVERY_S := 30.0
 const DROPS_PATH := "res://data/items/drops.json"
+const PICKUP_BATCH_PATH := "res://data/items/pickup_batch.json"   # sticks and leaves come up in batches (Dave 10 Nov 2026)
 const REGROW_GAME_S := 3.0 * 86400.0     # a picked plant bears again after 3 game days
 const SCATTER_RADIUS_M := 96.0           # loose stones and sticks are laid out this far around players
 const SCATTER_DROP_M := 250.0            # and taken away again beyond this (picked-up ones stay gone)
@@ -208,6 +209,7 @@ var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
+var _batch_cfg: Dictionary = {}       # data/items/pickup_batch.json
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
@@ -464,6 +466,8 @@ func setup(item_table, store_dir: String) -> void:
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	var batch_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PICKUP_BATCH_PATH)) if FileAccess.file_exists(PICKUP_BATCH_PATH) else null
+	_batch_cfg = batch_parsed if typeof(batch_parsed) == TYPE_DICTIONARY else {}
 	var wood_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/wood_species.json"))
 	_wood_species = wood_parsed if typeof(wood_parsed) == TYPE_DICTIONARY else {}
 	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
@@ -3961,6 +3965,12 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 
 		return
 
+	var batch: int = int((_batch_cfg.get("batch", {}) as Dictionary).get(table.id_of(int(it["number"])), 0))
+
+	if batch > 0 and int(it.get("wear", 0)) == 0:
+		_pickup_batch(peer, inv, id, batch)
+		return
+
 	# A pile gives a handful (or the count the client asks for), anything smaller is taken whole.
 	var want: int = int(it["count"])
 
@@ -3976,8 +3986,19 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		return
 
 	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0))) + (want - fits)
+	_take_from(id, int(it["count"]) - left)
 
-	if left == 0:
+
+# `n` of the ground item `id` were picked up: it holds fewer, or is gone with its last (a natural scatter one stays gone).
+func _take_from(id: int, n: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or n <= 0:
+		return
+
+	var left: int = int(it["count"]) - n
+
+	if left <= 0:
 		if it.has("scatter"):
 			_taken[it["scatter"]] = true
 
@@ -3987,6 +4008,60 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 
 		if left >= PILE_MIN:
 			it["left"] = PILE_LIFETIME_S
+
+	_dirty = true
+
+
+# Sticks and leaves come up in batches (Dave 10 Nov 2026: "when you pick up the sticks and leaves by holding down the E key it picks them up in batches
+# of 10 or 20"): one E takes up to `batch` of the item, from the heap picked and then the nearest heaps of the same item within gather_m of it (and in
+# reach), as much as the carry limit and the pack allow. Refused (reason 2) only when none at all could be taken.
+func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
+	var it: Dictionary = _items[id]
+	var number: int = int(it["number"])
+	var fits: int = _fit(peer, inv, number, mini(batch, table.COUNT_MAX))
+
+	if fits == 0:
+		_say(peer, "Too heavy to carry any more")
+		_reject(peer, 2)
+		return
+
+	var gather_m: float = float(_batch_cfg.get("gather_m", 2.5))
+	var reach: float = Interact.server_reach_m()
+	var heaps: Array = [[0.0, id]]
+
+	for other_id in _items:
+		var other: Dictionary = _items[other_id]
+
+		if other_id == id or int(other.get("number", 0)) != number or int(other.get("wear", 0)) != 0:
+			continue
+
+		if other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree") or other.has("boulder"):
+			continue
+
+		var flat: float = Vector2(other["pos"].x - it["pos"].x, other["pos"].z - it["pos"].z).length()
+
+		if flat <= gather_m and _peer_pos[peer].distance_to(other["pos"]) <= reach:
+			heaps.append([flat, other_id])
+
+	heaps.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	var wanted: int = fits
+	var taken: int = 0
+
+	for heap in heaps:
+		if wanted <= 0:
+			break
+
+		var share: int = mini(int(_items[heap[1]]["count"]), wanted)
+		var over: int = inv.add(number, share, 0)
+		_take_from(int(heap[1]), share - over)
+		taken += share - over
+		wanted -= share - over
+
+		if over > 0:
+			break   # the pack is full
+
+	if taken == 0:
+		_reject(peer, 2)
 
 
 func _sync_world_items() -> void:
@@ -5015,6 +5090,24 @@ func _felled_radius(info: Dictionary) -> float:
 	return maxf(FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false))), 0.1)
 
 
+# The circle a felled tree's crown lands on (Dave 10 Nov 2026), as [x, z, radius]: the canopy's own size (Cover.crown_radius of its species and height),
+# centred on the middle of the crown's part of the trunk (drops.json trunk.crown_scatter.crown_from) as it lies.
+func _crown_circle(spot: Vector3, info: Dictionary, yaw: float, pitch: float) -> Array:
+	var cfg: Dictionary = (_drops.get("trunk", {}) as Dictionary).get("crown_scatter", {})
+	var entry: Dictionary = _flora_by_name.get(str(info.get("name", "")), {})
+	var height: float = float(info["height"])
+	var span: Array = entry.get("height_m", [])
+	var ref_height: float = float(info.get("ref_height", 0.0))
+
+	if ref_height <= 0.0:
+		ref_height = 0.5 * (float(span[0]) + float(span[1])) if span.size() >= 2 else height
+
+	var radius: float = maxf(CoverScript.crown_radius(float(entry.get("crown_m", 3.0)), ref_height, height), float(cfg.get("min_radius_m", 1.5)))
+	var from: float = clampf(float(cfg.get("crown_from", 0.5)), 0.0, 1.0)
+	var along: float = height * (from + (1.0 - from) * 0.5) * cos(pitch)
+	return [spot.x + sin(yaw) * along, spot.z + cos(yaw) * along, radius]
+
+
 func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
@@ -5035,6 +5128,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	trunk["keywood"] = true   # every full-size tree is cut into logs (Dave 1 Nov): the client marks the next cut line on them. Only key woods have their own log item; the rest drop the plain Log
 	trunk["chunk"] = [chunk.x, chunk.y]
 	trunk["auto_split"] = true   # it breaks into its logs by itself once it has hit the ground (_auto_split)
+	trunk["crown"] = _crown_circle(spot, info, yaw, pitch)   # where its crown lands: the client flattens the grass there, the split litters it
 	var stump: Dictionary = base.duplicate()
 	stump["state"] = 4
 	stump["chunk"] = [chunk.x, chunk.y]
@@ -5313,7 +5407,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	tree["blows"] = blows + 1
 
 	if blows < int(cfg.get("branch_blows", 3)):
-		for row in cfg.get("branch", []):
+		for row in _branch_rows(tree, cfg, it["pos"]):
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
 		for row in cfg.get("small", []):
@@ -5524,9 +5618,10 @@ func split_trunk(id: int) -> bool:
 		if flat <= DROP_CROWD_M + length + radius + 1.0:
 			scope.append(other_id)
 
-	var extras: Array = _trunk_extras(id, tree, count, cfg)   # what hand-cutting gives besides the logs (sticks, leaves, bark, seeds, roots)
+	var litter: Array = _crown_litter(id, tree, cfg, it["pos"])   # the crown's sticks and leaves, all over the circle it landed on
+	var extras: Array = _trunk_extras(id, tree, count, cfg, litter.is_empty())   # what hand-cutting gives besides the logs (bark, seeds, roots; the branches when there is no crown litter)
 
-	if near + count + extras.size() > MAX_DROPPED_NEAR:
+	if near + count + extras.size() + litter.size() > MAX_DROPPED_NEAR:
 		_dirty = true
 		return false
 
@@ -5543,6 +5638,9 @@ func split_trunk(id: int) -> bool:
 	for extra in extras:
 		drop_in_world(int(extra[0]), int(extra[1]), heap, 0, SPLIT_LIFETIME_S)
 
+	for row in litter:
+		drop_in_world(int(row[0]), int(row[1]), row[2], 0, SPLIT_LIFETIME_S)
+
 	_drop_scoped = false
 	_drop_scope = []
 	_dirty = true
@@ -5556,9 +5654,11 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	rng.seed = hash(id) ^ 7919
 	var species: String = str(tree.get("species", ""))
 	var totals: Dictionary = {}
+	var litter: Array = _crown_litter(id, tree, cfg, it["pos"])
+	var branch: Array = _branch_rows(tree, cfg, it["pos"]) if litter.is_empty() else []
 
 	for blow in range(int(cfg.get("branch_blows", 3))):
-		for row in cfg.get("branch", []):
+		for row in branch:
 			var n: int = table.number_of(str(row[0]))
 			totals[n] = int(totals.get(n, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
 
@@ -5581,20 +5681,107 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	for row in rows:
 		drop_in_world(int(row[0]), int(row[1]), heap, 0, SPLIT_LIFETIME_S)
 
+	for row in litter:
+		drop_in_world(int(row[0]), int(row[1]), row[2], 0, SPLIT_LIFETIME_S)
+
 	_dirty = true
 	return true
 
 
+# What one branch blow of a felled trunk gives (drops.json trunk.branch) when it is cut by hand, with the leaves sized to the crown (Dave 10 Nov 2026: "everyone
+# should be giving me hundreds"): trunk.crown_leaves.per_m leaves per metre of tree, shared over the branch blows. A bare broadleaf in winter (Cover.DECIDUOUS,
+# the season where it lies) and the species in crown_leaves.fixed (the conifers) give sticks only.
+func _branch_rows(tree: Dictionary, cfg: Dictionary, at: Vector3) -> Array:
+	var branch: Array = cfg.get("branch", [])
+	var crown: Dictionary = cfg.get("crown_leaves", {})
+
+	if crown.is_empty():
+		return branch
+
+	var leafy: bool = _crown_leafy(tree, cfg, at)
+	var per_m: Array = crown.get("per_m", [8, 12])
+	var share: float = float(tree.get("orig_length", tree.get("length", 0.0))) / float(maxi(int(cfg.get("branch_blows", 3)), 1))
+	var rows: Array = []
+
+	for row in branch:
+		if str(row[0]) != "leaves":
+			rows.append(row)
+		elif leafy:
+			rows.append(["leaves", maxi(roundi(float(per_m[0]) * share), 1), maxi(roundi(float(per_m[1]) * share), 1)])
+
+	return rows
+
+
+# Whether a felled crown has leaves to give: not a conifer (crown_leaves.fixed) and not a broadleaf bare in winter where it lies.
+func _crown_leafy(tree: Dictionary, cfg: Dictionary, at: Vector3) -> bool:
+	var species: String = str(tree.get("species", ""))
+
+	if ((cfg.get("crown_leaves", {}) as Dictionary).get("fixed", []) as Array).has(species):
+		return false
+
+	return not (CoverScript.is_deciduous(species) and CoverScript.leafless_for(str(season_at.call(at)) if season_at.is_valid() else _season()))
+
+
+# A felled crown's sticks and leaves (Dave 10 Nov 2026: "drop like 30 sticks and a hundred leaves all over the forest floor in that circle"), as
+# [item number, count, Vector3] rows spread over the circle it landed on (tree.crown, see _crown_circle): trunk.crown_scatter sticks_per_m and
+# leaves_per_m per metre of tree, each over `spots` little heaps. Sticks only from a conifer or a bare winter broadleaf. Empty for a trunk without a
+# crown circle (saved before it): it keeps the branch rows. Rolled from the trunk's id; no player, so no luck (world drop).
+func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> Array:
+	var scatter: Dictionary = cfg.get("crown_scatter", {})
+	var circle: Array = tree.get("crown", [])
+
+	if scatter.is_empty() or circle.size() < 3:
+		return []
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ 104729
+	var length: float = float(tree.get("orig_length", tree.get("length", 0.0)))
+	var sticks: Array = scatter.get("sticks_per_m", [1.6, 2.4])
+	var leaves: Array = scatter.get("leaves_per_m", [5.5, 8.0])
+	var spots: Dictionary = scatter.get("spots", {})
+	var lots: Array = [["stick", roundi(rng.randf_range(float(sticks[0]), float(sticks[1])) * length)]]   # luck-exempt: world drop, no player
+
+	if _crown_leafy(tree, cfg, at):
+		lots.append(["leaves", roundi(rng.randf_range(float(leaves[0]), float(leaves[1])) * length)])   # luck-exempt: world drop, no player
+
+	var rows: Array = []
+
+	for lot in lots:
+		var total: int = int(lot[1])
+		var number: int = table.number_of(str(lot[0]))
+
+		if total <= 0 or number <= 0:
+			continue
+
+		var heaps: int = clampi(int(spots.get(str(lot[0]), 6)), 1, total)
+
+		for k in range(heaps):
+			var angle: float = rng.randf() * TAU   # luck-exempt: where it lands, no player
+			var far: float = sqrt(rng.randf()) * float(circle[2])   # luck-exempt: where it lands, no player
+			var x: float = float(circle[0]) + cos(angle) * far
+			var z: float = float(circle[1]) + sin(angle) * far
+			var y: float = at.y
+
+			if ground_height.is_valid():   # on the ground where it lands, not at the stump's height (a slope)
+				var ground: float = float(ground_height.call(x, z))
+				y = ground + 0.1 if not is_nan(ground) else y
+
+			rows.append([number, floori(float(total) / float(heaps)) + (1 if k < total % heaps else 0), Vector3(x, y, z)])
+
+	return rows
+
+
 # What cutting a trunk by hand gives besides the logs, as [item number, count] rows, for a trunk of `logs` whole logs (_process_trunk): the branch blows' sticks and leaves,
 # then per log the bark (or thatch) and seed rolls, and the root ball at the end. Rolled from the trunk's id like hand cutting; no player, so no luck (world drops).
-func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary) -> Array:
+func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_branches: bool = true) -> Array:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(id) ^ 7919
 	var species: String = str(tree.get("species", ""))
 	var totals: Dictionary = {}
+	var branch: Array = _branch_rows(tree, cfg, _items.get(id, {}).get("pos", Vector3.ZERO)) if with_branches else []
 
 	for blow in range(int(cfg.get("branch_blows", 3))):
-		for row in cfg.get("branch", []):
+		for row in branch:
 			var n: int = table.number_of(str(row[0]))
 			totals[n] = int(totals.get(n, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
 

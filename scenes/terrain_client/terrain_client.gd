@@ -1451,6 +1451,9 @@ func _welcome_body(info: Dictionary) -> void:
 	items.thought_event = func(line_id, kind): sound.inner.speak(line_id, kind)
 	items.heart_bpm = func(): return sound.breath.bpm_now
 	items.view_direction = func(): return -camera.global_transform.basis.z
+	items.crown_landed = func(centre: Vector3, radius: float):
+		if grass != null:
+			grass.flatten(centre, radius)
 	sound.trees.landed.connect(func(at: Vector3, size: float): feel.thud(at.distance_to(body.global_position), size))
 	sound.landing.hurt.connect(func(drop_m, severity):
 		if Time.get_ticks_msec() >= arrival_protect_until_msec:

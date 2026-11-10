@@ -503,6 +503,12 @@ func stamp(from_position: Vector3) -> void:
 		_trample.stamp(from_position)
 
 
+# A felled crown landed: the grass in its whole canopy circle lies down (Dave 10 Nov 2026), rising again like trodden grass.
+func flatten(centre: Vector3, radius: float) -> void:
+	if enabled and _trample != null:
+		_trample.stamp_circle(centre, radius)
+
+
 # The wind sways the grass with the same gusts the sound stage plays
 # (strength about 0 calm to 1.6 for a strong gust high up).
 # The per-season grass numbers of data/look/seasons.json, read once.

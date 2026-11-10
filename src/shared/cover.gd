@@ -59,6 +59,13 @@ static func at(pos: Vector3, index) -> float:
 # Fills an index chunk from an item list (FloraPlacer.chunk_items form: ids, positions,
 # heights). `info` is a Callable(species_id) -> Array [kind, crown_m, reference_height_m, deciduous (optional bool)]
 # (empty for unknown species).
+# The radius of a tree's crown circle (its drip line): the table's crown_m, grown with the tree's size. A felled tree's crown flattens and
+# litters a circle this size where it lands (server_items._fell_record).
+static func crown_radius(crown_m: float, reference_height_m: float, height_m: float) -> float:
+	var scale: float = clampf(height_m / maxf(reference_height_m, 0.1), SIZE_MIN, SIZE_MAX)
+	return minf(crown_m * 0.5 * scale * SHELTER_RADIUS, RADIUS_CAP)
+
+
 static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable) -> void:
 	var ids: PackedInt32Array = items["ids"]
 	var heights = items["heights"]
@@ -78,13 +85,12 @@ static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable)
 			continue
 
 		var height: float = float(heights[n])
-		var scale: float = clampf(height / maxf(float(row[2]), 0.1), SIZE_MIN, SIZE_MAX)
 		var p: Vector3 = positions[n]
 
 		if height < SHELTER_MIN_HEIGHT_M:
 			continue
 
-		trees.append([ids[n], p.x, p.z, minf(float(row[1]) * 0.5 * scale * SHELTER_RADIUS, RADIUS_CAP), p.y + height, row.size() > 3 and bool(row[3])])
+		trees.append([ids[n], p.x, p.z, crown_radius(float(row[1]), float(row[2]), height), p.y + height, row.size() > 3 and bool(row[3])])
 
 	index.set_chunk(chunk, trees)
 

@@ -88,7 +88,7 @@ func _init() -> void:
 
 	for _pass in range(12):   # the drops merged into heaps; a heap gives a handful at a time
 		for id in items._items.keys():
-			if not items._items[id].has("scatter"):
+			if items._items.has(id) and not items._items[id].has("scatter"):   # a batch pickup may already have taken a heap
 				items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	check(count("stone") >= 30 and count("stick") >= 40, "gathering fills the pack (%d stones, %d sticks)" % [count("stone"), count("stick")])

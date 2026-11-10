@@ -1,0 +1,7 @@
+{
+	"note": "Dave 10 Nov 2026: holding E picks up sticks and leaves in batches, 10 sticks or 20 leaves a go. batch: the most one E takes of these items, gathered from every heap of the same item within gather_m of the one picked (and in reach); other items keep their pile handful (items.json). batch_every_s: held E repeats this often on what the reticle is on. reticle_pause_s: once held E has taken what the reticle was on, it waits this long (E still held) before it goes on to the nearest things around (Dave 10 Nov 2026, a trial: 'lets try that and see if I like it').",
+	"batch": {"stick": 10, "leaves": 20},
+	"gather_m": 2.5,
+	"batch_every_s": 0.3,
+	"reticle_pause_s": 2.0
+}

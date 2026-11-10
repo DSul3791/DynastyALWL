@@ -106,6 +106,7 @@ func _init() -> void:
 	check(calls.is_empty(), "case 2 auto pickup: nothing is picked up beside the block (%s)" % str(calls))
 
 	# 3. The cursor is on nothing specific: the nearby gather may run, in tap, hold and auto pickup.
+	view.sweep_reset()   # E let go between the cases (case 1 took the cursor's item: held E would wait reticle_pause_s first)
 	facing[0] = Vector3(0.0, 0.0, 1.0)
 	calls.clear()
 	view.current_interaction()["tap"].call()
@@ -114,6 +115,40 @@ func _init() -> void:
 	calls.clear()
 	view._auto_pickup_tick(Time.get_ticks_msec() + 3000)
 	check(calls.size() == 1 and calls[0][0] == Net.ACT_PICKUP, "case 3 auto pickup: picks up what is around (%s)" % str(calls))
+
+	# Dave 10 Nov 2026: held E on an item it cannot take (too heavy, refused) goes on to the next nearest that it can, and "too heavy" is said only when
+	# nothing in reach could be taken. After the reticle's own item, held E waits reticle_pause_s (data/items/pickup_batch.json) before the sweep.
+	view.sweep_reset()
+	facing[0] = (Vector3(-0.6, 0.0, 0.5) - eye).normalized()   # the cursor on the 3 sticks (id 2)
+	view._last_pick = 2
+	view._on_reject(2)   # the server: too heavy
+	check(not view.liftable(2) and not view.hold_e_step(), "held E on a refused item does not hold the sweep up")
+	check(int(view.sweep_target(2.0)[0]) == 3, "the sweep goes on to the next nearest item it can take (%s)" % str(view.sweep_target(2.0)))
+	view.sweep_reset()
+	check(view.liftable(2), "letting E go forgets the refusal")
+	view._hold_next_msec = 0
+	calls.clear()
+	check(view.hold_e_step() and calls == [[Net.ACT_PICKUP, 2]], "held E takes the cursor's item first (%s)" % str(calls))
+	var took: Dictionary = view._world[2]
+	view._world.erase(2)   # it came up
+	facing[0] = Vector3(0.0, 0.0, 1.0)
+	check(view.hold_e_step(), "then a pause before the items around (reticle_pause_s %.1f)" % (float(view.reticle_pause_ms()) / 1000.0))
+	check(view.reticle_pause_ms() == 2000, "the pause is 2 s, from the json")
+	view._reticle_took_msec = Time.get_ticks_msec() - view.reticle_pause_ms() - 1
+	check(not view.hold_e_step(), "after the pause the sweep may run")
+	view._world[2] = took
+	view.sweep_reset()
+	# Nothing in reach can be taken: the line comes, once.
+	view._sweep_refused[2] = true
+	view._sweep_refused[3] = true
+	check(int(view.sweep_target(2.0)[0]) == 0 and view._sweep_heavy != 0, "nothing to take, a too heavy one noted")
+	view._prompt.text = ""
+	view.sweep_nothing()
+	check(view._prompt.text == "Too heavy to carry any more", "then it says too heavy (%s)" % view._prompt.text)
+	view._prompt.text = ""
+	view.sweep_nothing()
+	check(view._prompt.text == "", "once a hold")
+	view.sweep_reset()
 
 	# A tool action in progress (a swing) blocks auto pickup whatever the cursor is on.
 	view.auto_pickup_blocked = func(): return true

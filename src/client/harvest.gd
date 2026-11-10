@@ -99,6 +99,8 @@ func update(delta: float, e_down: bool) -> void:
 
 			if not branch.is_empty():
 				_pick_branch(branch)
+			else:
+				_items.sweep_nothing()   # nothing in reach could be taken: "too heavy" when something was passed over as too heavy
 
 
 # The nearest dead branch lying on the forest floor in reach (Dave 2026-10-22: loose sticks you can see are pickable); `view_only` keeps to those in view.
@@ -115,6 +117,7 @@ func _branch(radius: float, view_only: bool) -> Dictionary:
 
 
 func _pick_branch(branch: Dictionary) -> void:
+	_items.note_hold_took()
 	_net.inventory_action.rpc_id(1, Net.ACT_LITTER, 0, 0, 0, branch["pos"])
 	_client.grass.hide_branch(branch["cell"], int(branch["at"]))
 	_items.clear_prompt()
@@ -144,6 +147,7 @@ func tap() -> void:
 
 
 func _pick(c: Dictionary) -> void:
+	_items.note_hold_took()
 	_items.pick_stamp = Time.get_ticks_msec()
 	_net.cut_flora.rpc_id(1, c["chunk"], c["id"])
 	_client.sound.harvestfx.pick(_flora_by_id.get(int(c["id"]) >> 16, {}), c["pos"])

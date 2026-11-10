@@ -214,7 +214,8 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 60
+			"sell_lot": 60,
+			"pile": {"shape": "mound", "handful": 20, "color": [0.26, 0.4, 0.14], "rock": 0.4, "squash": 0.4, "tight": 0.5, "jitter": 0.3}
 		},
 		"roast_forage": {
 			"number": 15,
