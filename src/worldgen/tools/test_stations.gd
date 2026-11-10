@@ -127,7 +127,7 @@ func _init() -> void:
 
 	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel needs the brick forge at level 3 (bronze forge 1, iron brick forge 2, steel brick forge 3)")
 
-	# The Iron - Anvil beside the brick forge is the steel step: brick forge 2 plus one add-on kind is level 3. Beside a stone forge it adds nothing.
+	# The Anvil beside the brick forge is the steel step: brick forge 2 plus one add-on kind is level 3. Beside a stone forge it adds nothing.
 	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
 	check(not tiers.station_near(1, "brick_forge", 3), "no anvil yet: the brick forge is level 2")
 	var anvil: int = tiers.table.number_of("iron_anvil_kit")
