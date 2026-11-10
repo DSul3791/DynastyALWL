@@ -156,6 +156,19 @@ class _AnyType(type):
         return 0
 
 
+class Callable:
+    """Godot's Callable: an empty one (Callable()) is not valid; one made from a Python function calls it."""
+
+    def __init__(self, fn=None):
+        self._fn = fn
+
+    def is_valid(self):
+        return self._fn is not None
+
+    def call(self, *args):
+        return self._fn(*args)
+
+
 class Anything(metaclass=_AnyType):
     """Any other Godot object a builder makes (bodies, shapes, lights, timers): takes any attribute, any call, draws nothing."""
 
@@ -560,7 +573,7 @@ RUNTIME = {
     "_planks": _planks, "_frame": _frame, "_roof": _roof, "_earth": _earth, "_stone": _stone, "_tar": _tar, "_steel": _steel, "_log": _log,
     "_thatch": _thatch, "_clay": _clay, "_pot": _pot, "_blocks": _blocks, "_bricks": _bricks, "_logs": _logs, "_daub": _daub, "_brick": _brick,
     "_slate": _slate, "_tile": _tile, "_flag": _flag, "_mortar": _mortar, "_concrete": _concrete, "_it": lambda v: range(v) if isinstance(v, int) else v,
-    "skin": skin, "StandardMaterial3D": StandardMaterial3D, "RandomNumberGenerator": RandomNumberGenerator, "SurfaceTool": SurfaceTool,
+    "skin": skin, "StandardMaterial3D": StandardMaterial3D, "RandomNumberGenerator": RandomNumberGenerator, "SurfaceTool": SurfaceTool, "Callable": Callable,
 }
 OWN = {k for k in RUNTIME if k.startswith("_")} | {"skin", "prewarm", "finish_prewarm", "prewarm_done", "use_terrain_only_decals"}
 
