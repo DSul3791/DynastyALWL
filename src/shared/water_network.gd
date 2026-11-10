@@ -265,7 +265,9 @@ func _share(id: int, amount: float, take: Dictionary, arriving: Dictionary, inco
 		if r > 0.0:
 			room.append([r, d])
 
-	room.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	if room.size() > 1:
+		room.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+
 	var left: float = amount
 	var n: int = room.size()
 
