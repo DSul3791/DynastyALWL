@@ -2004,7 +2004,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": true
 		},
@@ -2050,7 +2051,10 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Wooden - Barrel",
-				"Used in Wooden - Shelf"
+				"Used in Wooden - Shelf",
+				"Used in Log - Stairs",
+				"Used in Wooden - Double doorway",
+				"Used in Wooden - Railing"
 			],
 			"obtainable_now": true
 		},
@@ -2330,7 +2334,10 @@
 				"Used in Stone - Workbench",
 				"Used in Wooden - Barrel",
 				"Used in Wooden - Cupboard",
-				"Used in Wooden - Shelf"
+				"Used in Wooden - Shelf",
+				"Used in Iron - Doorway",
+				"Used in Wooden - Double doorway",
+				"Used in Wooden - Railing"
 			],
 			"obtainable_now": true
 		},
@@ -2374,7 +2381,9 @@
 				"Used in Iron - Gate",
 				"Used in Iron - Bench",
 				"Used in Iron - Chair",
-				"Used in Iron - Table"
+				"Used in Iron - Table",
+				"Used in Iron - Doorway",
+				"Used in Iron - Railing"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2395,7 +2404,8 @@
 				"Used in Steel - Pickaxe",
 				"Used in Steel - Spade",
 				"Used in Steel - Striker",
-				"Used in Steel - Hammer"
+				"Used in Steel - Hammer",
+				"Used in Steel - Doorway"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3155,7 +3165,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3202,7 +3213,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3249,7 +3261,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3296,7 +3309,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3343,7 +3357,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3390,7 +3405,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3437,7 +3453,8 @@
 				"Used in Log - Pillar",
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
-				"Used in Log - Table"
+				"Used in Log - Table",
+				"Used in Log - Stairs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3810,7 +3827,8 @@
 				"Used in Brick - Fence",
 				"Used in Brick - Gate",
 				"Used in Brick - Pillar",
-				"Used in Brick - Roof corner"
+				"Used in Brick - Roof corner",
+				"Used in Brick - Stairs"
 			],
 			"obtainable_now": true
 		},
@@ -3836,7 +3854,9 @@
 				"Used in Stone - Pillar",
 				"Used in Stone - Bench",
 				"Used in Stone - Table",
-				"Used in Stone - Workbench"
+				"Used in Stone - Workbench",
+				"Used in Brick - Stairs",
+				"Used in Stone - Stairs"
 			],
 			"obtainable_now": true
 		},
@@ -3947,7 +3967,9 @@
 				"Used in Iron - Chair",
 				"Used in Iron - Table",
 				"Used in Wooden - Barrel",
-				"Used in Wooden - Cupboard"
+				"Used in Wooden - Cupboard",
+				"Used in Iron - Doorway",
+				"Used in Iron - Railing"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3966,7 +3988,8 @@
 				"Used in Stone - Pillar",
 				"Used in Stone - Bench",
 				"Used in Stone - Table",
-				"Used in Stone - Workbench"
+				"Used in Stone - Workbench",
+				"Used in Stone - Stairs"
 			],
 			"obtainable_now": true
 		},
@@ -4010,7 +4033,10 @@
 				"Used in Log - Palisade gate",
 				"Used in Stone - Gate",
 				"Used in Wooden - Gate",
-				"Used in Wooden - Cupboard"
+				"Used in Wooden - Cupboard",
+				"Used in Iron - Doorway",
+				"Used in Steel - Doorway",
+				"Used in Wooden - Double doorway"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -7986,6 +8012,150 @@
 			"name": "Wooden - Barrel",
 			"kind": "structure",
 			"description": "A hooped plank barrel. Holds 8 stacks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_stairs_kit": {
+			"name": "Log stairs",
+			"kind": "placeable",
+			"description": "A flight of hewn log steps up to the next ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_stairs": {
+			"name": "Log - Stairs",
+			"kind": "structure",
+			"description": "A flight of hewn log steps up to the next ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_stairs_kit": {
+			"name": "Stone stairs",
+			"kind": "placeable",
+			"description": "A flight of mortared stone steps up to the next ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Cobblestone, 4 Mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_stairs": {
+			"name": "Stone - Stairs",
+			"kind": "structure",
+			"description": "A flight of mortared stone steps up to the next ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_stairs_kit": {
+			"name": "Brick stairs",
+			"kind": "placeable",
+			"description": "A flight of brick steps up to the next ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Brick, 4 Mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_stairs": {
+			"name": "Brick - Stairs",
+			"kind": "structure",
+			"description": "A flight of brick steps up to the next ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_railing_kit": {
+			"name": "Wooden railing",
+			"kind": "placeable",
+			"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Planks, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_railing": {
+			"name": "Wooden - Railing",
+			"kind": "structure",
+			"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_railing_kit": {
+			"name": "Iron railing",
+			"kind": "placeable",
+			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot, 4 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_railing": {
+			"name": "Iron - Railing",
+			"kind": "structure",
+			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"double_doorway_kit": {
+			"name": "Wooden double doorway",
+			"kind": "placeable",
+			"description": "A plank wall four metres wide with a pair of doors.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Planks, 2 Twine, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"double_doorway": {
+			"name": "Wooden - Double doorway",
+			"kind": "structure",
+			"description": "A plank wall four metres wide with a pair of doors.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_doorway_kit": {
+			"name": "Iron doorway",
+			"kind": "placeable",
+			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Planks, 2 Iron ingot, 12 Nails, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_doorway": {
+			"name": "Iron - Doorway",
+			"kind": "structure",
+			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"steel_doorway_kit": {
+			"name": "Steel doorway",
+			"kind": "placeable",
+			"description": "A wall with a steel door, one metre wide and two high.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Steel ingot, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"steel_doorway": {
+			"name": "Steel - Doorway",
+			"kind": "structure",
+			"description": "A wall with a steel door, one metre wide and two high.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 650,
+	"next_number": 666,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -7510,6 +7510,174 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 133."
+			},
+			"log_stairs_kit": {
+				"number": 650,
+				"retired": true,
+				"name": "Log stairs",
+				"description": "A flight of hewn log steps up to the next ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 38
+			},
+			"log_stairs": {
+				"number": 651,
+				"name": "Log - Stairs",
+				"description": "A flight of hewn log steps up to the next ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 134."
+			},
+			"stone_stairs_kit": {
+				"number": 652,
+				"retired": true,
+				"name": "Stone stairs",
+				"description": "A flight of mortared stone steps up to the next ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 84
+			},
+			"stone_stairs": {
+				"number": 653,
+				"name": "Stone - Stairs",
+				"description": "A flight of mortared stone steps up to the next ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 135."
+			},
+			"brick_stairs_kit": {
+				"number": 654,
+				"retired": true,
+				"name": "Brick stairs",
+				"description": "A flight of brick steps up to the next ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 104
+			},
+			"brick_stairs": {
+				"number": 655,
+				"name": "Brick - Stairs",
+				"description": "A flight of brick steps up to the next ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 136."
+			},
+			"wooden_railing_kit": {
+				"number": 656,
+				"retired": true,
+				"name": "Wooden railing",
+				"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 19
+			},
+			"wooden_railing": {
+				"number": 657,
+				"name": "Wooden - Railing",
+				"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 137."
+			},
+			"iron_railing_kit": {
+				"number": 658,
+				"retired": true,
+				"name": "Iron railing",
+				"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 64
+			},
+			"iron_railing": {
+				"number": 659,
+				"name": "Iron - Railing",
+				"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 138."
+			},
+			"double_doorway_kit": {
+				"number": 660,
+				"retired": true,
+				"name": "Wooden double doorway",
+				"description": "A plank wall four metres wide with a pair of doors.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 58
+			},
+			"double_doorway": {
+				"number": 661,
+				"name": "Wooden - Double doorway",
+				"description": "A plank wall four metres wide with a pair of doors.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 139."
+			},
+			"iron_doorway_kit": {
+				"number": 662,
+				"retired": true,
+				"name": "Iron doorway",
+				"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 100
+			},
+			"iron_doorway": {
+				"number": 663,
+				"name": "Iron - Doorway",
+				"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 141."
+			},
+			"steel_doorway_kit": {
+				"number": 664,
+				"retired": true,
+				"name": "Steel doorway",
+				"description": "A wall with a steel door, one metre wide and two high.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 364
+			},
+			"steel_doorway": {
+				"number": 665,
+				"name": "Steel - Doorway",
+				"description": "A wall with a steel door, one metre wide and two high.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 143."
 			}
 	}
 }
