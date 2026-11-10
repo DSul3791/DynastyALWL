@@ -2888,6 +2888,7 @@
 			"name": "Nails",
 			"description": "Small iron nails. Fix boards in builds.",
 			"kind": "material",
+			"material": "iron",
 			"stack": 200,
 			"look_alikes": [],
 			"value": 1,
@@ -2925,6 +2926,7 @@
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
+			"material": "iron",
 			"stack": 40,
 			"look_alikes": [],
 			"value": 2
@@ -10244,6 +10246,7 @@
 				"name": "Bronze nails",
 				"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
 				"kind": "material",
+				"material": "bronze",
 				"stack": 200,
 				"look_alikes": [],
 				"value": 1,
@@ -10254,6 +10257,7 @@
 				"name": "Bronze hinges",
 				"description": "A pair of bronze hinges for a door, a gate or a lid.",
 				"kind": "material",
+				"material": "bronze",
 				"stack": 40,
 				"look_alikes": [],
 				"value": 2
