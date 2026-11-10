@@ -1068,7 +1068,7 @@ static func _dome(parent: Node3D, radius: float, at: Vector3, scale: Vector3, ma
 
 # A thatch doorway (Dave 24 Oct: the thatch wall with a gap), 2 m by 2.4 m, 0.25 m thick: straw courses either side of a one metre gap and over it, a timber frame round the gap,
 # and a door leaf of lashed sticks with twine bands and a rope pull.
-static func thatch_doorway() -> Node3D:
+static func thatch_doorway(open: bool = false) -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 
@@ -1093,14 +1093,27 @@ static func thatch_doorway() -> Node3D:
 
 	_box(root, Vector3(1.0, 0.1, 0.22), Vector3(0.0, 2.05, 0.0), _frame)            # the lintel
 
+	var leaf: Node3D = Node3D.new()   # open, the leaf stands swung back against the jamb like door()
+	root.add_child(leaf)
+
+	if open:
+		leaf.position = Vector3(0.47, 0.0, 0.5)
+		leaf.rotation = Vector3(0.0, -PI * 0.5, 0.0)
+
 	for k in 7:
-		_box(root, Vector3(0.06, 2.0, 0.05), Vector3(-0.42 + 0.14 * float(k), 1.0, 0.02), _log)   # the door's sticks
+		_box(leaf, Vector3(0.06, 2.0, 0.05), Vector3(-0.42 + 0.14 * float(k), 1.0, 0.02), _log)   # the door's sticks
 
 	for y in [0.4, 1.0, 1.6]:
-		_box(root, Vector3(0.96, 0.04, 0.06), Vector3(0.0, y, 0.05), _frame)      # lashed cross-rails
+		_box(leaf, Vector3(0.96, 0.04, 0.06), Vector3(0.0, y, 0.05), _frame)      # lashed cross-rails
 
-	_box(root, Vector3(0.04, 0.2, 0.05), Vector3(0.35, 1.0, 0.09), _thatch)       # the rope pull
-	_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
+	_box(leaf, Vector3(0.04, 0.2, 0.05), Vector3(0.35, 1.0, 0.09), _thatch)       # the rope pull
+
+	if open:
+		_gap_solids(root, 0.0, 2.0, 0.25)
+		_solid(root, Vector3(0.06, 2.0, 1.0), Vector3(0.47, 1.0, 0.5))
+	else:
+		_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
+
 	return root
 
 
@@ -1745,4 +1758,231 @@ static func antler_mount() -> Node3D:
 			var from: Vector3 = base.lerp(tip, 0.25 + 0.2 * float(k))
 			_rod(root, from, from + Vector3(side * 0.03, 0.15 - 0.02 * float(k), 0.03), 0.01, horn)
 
+	return root
+
+
+# --- Buildables B1a (buildables_plan.md, 10 Nov 2026): the missing foundations, doorways and windows of the live tiers. Same grid as the pieces they match:
+# foundations are the 4 m square, 2 m deep body of the stone foundation (top 0.3 m above the spot), doorways and windows are 2 m by 2.4 m wall pieces with a
+# one metre gap. Each tier keeps its own surfaces and joints (Kathleen's look vocabulary): log and thatch are lashed and crooked, stone has a timber lintel
+# and a stone sill, brick has a brick arch.
+
+# A round log lying along X (along_z false) or Z, `thick` across.
+static func _log_along(parent: Node3D, length: float, thick: float, at: Vector3, along_z: bool) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = _log_mesh(length, thick, false)
+	mesh.material_override = _log
+	mesh.rotation = Vector3(PI * 0.5, 0.0, 0.0) if along_z else Vector3(0.0, 0.0, PI * 0.5)
+	mesh.position = at
+	parent.add_child(mesh)
+
+
+# A log foundation: works like the stone foundation (the same body). Fitted stone footings from the ground up, round log sills along all four top edges
+# crossing at the corners, and a deck of split logs between them, flat faces up.
+static func log_foundation() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(4.0, 1.74, 4.0), Vector3(0.0, -0.83, 0.0), _stone)          # the stone footing, -1.7 to 0.04
+
+	for z in [-1.85, 1.85]:
+		_log_along(root, 4.0, 0.3, Vector3(0.0, 0.15, z), false)                 # sills along X
+
+	for x in [-1.85, 1.85]:
+		_log_along(root, 3.4, 0.28, Vector3(x, 0.14, 0.0), true)                 # and along Z, between them (the corner joint)
+
+	for k in 12:
+		var x: float = -1.54 + 0.28 * float(k)
+		_box(root, Vector3(0.26, 0.24, 3.4), Vector3(x, 0.15, 0.0), _log)          # split logs
+		_box(root, Vector3(0.22, 0.02, 3.36), Vector3(x, 0.28 + 0.004 * float(k % 3), 0.0), _planks)   # their flat split faces
+
+	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
+	return root
+
+
+# A brick foundation: the same body as the stone foundation, built as a brick plinth: brick sides, a stone base course wider by a hand at the ground line,
+# a stone coping round the top edge and brick paving inside it.
+static func brick_foundation() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0), _bricks)
+	_box(root, Vector3(4.08, 0.2, 4.08), Vector3(0.0, -0.1, 0.0), _flag)            # the base course at the ground line
+	_box(root, Vector3(4.04, 0.08, 4.04), Vector3(0.0, 0.27, 0.0), _mortar)         # coping round the top
+	_box(root, Vector3(3.7, 0.02, 3.7), Vector3(0.0, 0.305, 0.0), _brick)           # paving inside it
+	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
+	return root
+
+
+# The solid parts of a wall piece with a one metre gap from `low` to `high` (0 for a doorway): the two sides, the part over the gap and the part under it.
+static func _gap_solids(root: Node3D, low: float, high: float, thick: float) -> void:
+	for x in [-0.75, 0.75]:
+		_solid(root, Vector3(0.5, 2.4, thick), Vector3(x, 1.2, 0.0))
+
+	_solid(root, Vector3(1.0, 2.4 - high, thick), Vector3(0.0, (high + 2.4) * 0.5, 0.0))
+
+	if low > 0.0:
+		_solid(root, Vector3(1.0, low, thick), Vector3(0.0, low * 0.5, 0.0))
+
+
+# A plank door with two dark iron straps across it (the log, stone and brick doorways). Open it stands swung back against the jamb like door().
+static func _strap_door(root: Node3D, open: bool) -> void:
+	var leaf: Node3D = door(1.0, 1, "bar", false, open)
+	root.add_child(leaf)
+
+	if not open:
+		var iron: StandardMaterial3D = _tone_mat(Color(0.25, 0.25, 0.27))
+
+		for y in [0.45, 1.55]:
+			_box(root, Vector3(0.9, 0.07, 0.02), Vector3(-0.03, y, 0.045), iron)
+
+
+# A log wall piece with a one metre gap from `low` to `high` (0 and 2.1 for a doorway, 0.9 and 1.8 for a window: on the 0.3 m courses). The courses either
+# side stop at a squared jamb post, full logs run over the gap, and a window has a split-log sill.
+static func _log_gap(low: float, high: float) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 4243
+
+	for course in 8:
+		var y: float = 0.15 + 0.3 * float(course)
+		var odd: bool = course % 2 == 1
+		var trim: float = rng.randf_range(0.0, 0.03)
+
+		if y > low and y < high:
+			var side: float = (0.35 if odd else 0.5) - trim
+			for s in [-1.0, 1.0]:
+				_log_along(root, side, 0.3, Vector3(s * (0.5 + side * 0.5), y, 0.0), false)
+		else:
+			_log_along(root, (1.7 if odd else 2.0) - trim, 0.3, Vector3(0.0, y, 0.0), false)
+
+		if odd:
+			for x in [-0.93, 0.93]:
+				_box(root, Vector3(0.14, 0.12, 0.3), Vector3(x, y, 0.0), _frame)
+
+	for x in [-0.53, 0.53]:
+		_box(root, Vector3(0.08, high - low, 0.32), Vector3(x, (low + high) * 0.5, 0.0), _frame)    # the jambs
+
+	if low > 0.0:
+		_box(root, Vector3(1.12, 0.06, 0.36), Vector3(0.0, low + 0.03, 0.0), _log)                 # the sill
+
+	_gap_solids(root, low, high, 0.3)
+	return root
+
+
+static func log_doorway(open: bool = false) -> Node3D:
+	var root: Node3D = _log_gap(0.0, 2.1)
+	_box(root, Vector3(1.0, 0.1, 0.3), Vector3(0.0, 2.05, 0.0), _frame)     # a header board over the 2 m door, up to the course line
+	_solid(root, Vector3(1.0, 0.1, 0.3), Vector3(0.0, 2.05, 0.0))
+	_strap_door(root, open)
+	return root
+
+
+static func log_window() -> Node3D:
+	return _log_gap(0.9, 1.8)
+
+
+# A masonry (stone or brick) wall piece like masonry_wall with a one metre gap from `low` to `high`: the same corner blocks and coping. Stone: dressed jamb
+# blocks and a timber lintel over the gap, a projecting stone sill under a window. Brick: a brick arch of eleven wedged bricks over the gap, a brick sill.
+static func _masonry_gap(material: String, low: float, high: float) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var stone: bool = material == "stone"
+	var body: StandardMaterial3D = _stone if stone else _brick
+
+	for x in [-0.75, 0.75]:
+		_box(root, Vector3(0.5, 2.3, 0.25), Vector3(x, 1.15, 0.0), body)
+
+	_box(root, Vector3(1.0, 2.3 - high, 0.25), Vector3(0.0, (high + 2.3) * 0.5, 0.0), body)
+
+	if low > 0.0:
+		_box(root, Vector3(1.0, low, 0.25), Vector3(0.0, low * 0.5, 0.0), body)
+		_box(root, Vector3(1.16, 0.07, 0.33), Vector3(0.0, low + 0.035, 0.0), _flag if stone else _brick)   # the sill
+
+	for k in 6:   # corner blocks at each end, as masonry_wall
+		var long: bool = k % 2 == 0
+		for x in [-1.0, 1.0]:
+			_box(root, Vector3(0.3 if long else 0.2, 0.36, 0.29), Vector3(x * (0.85 if long else 0.9), 0.2 + 0.38 * float(k), 0.0), _mortar if stone else _brick)
+
+	if stone:
+		var rows: int = int(ceil((high - low) / 0.36))
+		for k in rows:   # dressed jamb blocks, alternately long and short into the wall
+			var y: float = low + 0.18 + 0.36 * float(k)
+			if y < high:
+				for s in [-1.0, 1.0]:
+					_box(root, Vector3(0.22 if k % 2 == 0 else 0.14, minf(0.34, high - y + 0.17), 0.28), Vector3(s * (0.5 + (0.11 if k % 2 == 0 else 0.07)), y, 0.0), _mortar)
+
+		_box(root, Vector3(1.4, 0.16, 0.27), Vector3(0.0, high + 0.08, 0.0), _frame)    # the timber lintel
+	else:
+		for k in 11:   # a flat segmental arch (0.18 m rise, radius 0.93 m) springing from the gap's top corners, its bricks' lower ends on the gap top
+			var a: float = lerpf(-0.633, 0.633, float(k) / 10.0)
+			var centre: Vector3 = Vector3(0.0, high + 0.11 - 0.93 * cos(0.633), 0.0)
+			var at: Vector3 = centre + Vector3(sin(a), cos(a), 0.0) * 0.93
+			_box_rot(root, Vector3(0.09, 0.22, 0.27), at, Vector3(0.0, 0.0, -a), _brick if k % 2 == 0 else _mortar)
+
+	_box(root, Vector3(2.04, 0.1, 0.33), Vector3(0.0, 2.35, 0.0), _flag if stone else _mortar)
+	_gap_solids(root, low, high, 0.3)
+	return root
+
+
+static func stone_doorway(open: bool = false) -> Node3D:
+	var root: Node3D = _masonry_gap("stone", 0.0, 2.0)
+	_strap_door(root, open)
+	return root
+
+
+static func brick_doorway(open: bool = false) -> Node3D:
+	var root: Node3D = _masonry_gap("brick", 0.0, 2.0)
+	_strap_door(root, open)
+	return root
+
+
+static func stone_window() -> Node3D:
+	return _masonry_gap("stone", 0.9, 1.7)
+
+
+static func brick_window() -> Node3D:
+	return _masonry_gap("brick", 0.9, 1.7)
+
+
+# A thatch window: the thatch wall with a one metre gap from 0.9 to 1.8 m (on the straw courses), a frame of lashed sticks round it (sill, lintel, jambs)
+# and the twine bands either side of it.
+static func thatch_window() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var low: float = 0.9
+	var high: float = 1.8
+
+	for x in [-0.95, 0.95]:
+		_box(root, Vector3(0.1, 2.4, 0.18), Vector3(x, 1.2, 0.0), _frame)
+
+	_box(root, Vector3(2.0, 0.1, 0.18), Vector3(0.0, 2.35, 0.0), _frame)
+
+	for k in 8:
+		var y: float = 0.15 + 0.3 * float(k)
+		var shift: float = 0.04 * float((k * 5) % 3 - 1)
+		var depth: float = 0.25 + 0.02 * float(k % 2)
+
+		if y > low and y < high:
+			for x in [-0.725, 0.725]:
+				_box(root, Vector3(0.45, 0.3, depth), Vector3(x + shift * 0.5, y, 0.0), _thatch)
+		else:
+			_box(root, Vector3(1.9, 0.3, depth), Vector3(shift, y, 0.0), _thatch)
+
+	for x in [-0.53, 0.53]:
+		_box(root, Vector3(0.06, high - low + 0.1, 0.2), Vector3(x, (low + high) * 0.5, 0.0), _log)   # stick jambs
+
+	for y in [low, high]:
+		_box(root, Vector3(1.16, 0.06, 0.22), Vector3(0.0, y, 0.0), _log)                            # sill and lintel sticks
+
+		for x in [-0.53, 0.53]:
+			_box(root, Vector3(0.09, 0.09, 0.24), Vector3(x, y, 0.0), _frame)                        # the lashing at each corner
+
+	_box(root, Vector3(1.96, 0.03, 0.27), Vector3(0.0, 0.6, 0.0), _frame)                            # twine band under the gap
+
+	for x in [-0.725, 0.725]:
+		_box(root, Vector3(0.5, 0.03, 0.27), Vector3(x, 1.5, 0.0), _frame)                           # and either side of it
+
+	for k in 5:
+		_box(root, Vector3(0.12, 0.2, 0.2), Vector3(-0.8 + 0.4 * float(k), 2.45, 0.0), _thatch)      # shaggy top edge
+
+	_gap_solids(root, low, high, 0.25)
 	return root

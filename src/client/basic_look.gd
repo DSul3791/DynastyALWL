@@ -99,7 +99,9 @@ const ART_OVERRIDES := {
 	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
 	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
 	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
-	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze", "forged"]},
+	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["forged"]},
+	"steel_hammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.0, "bits": ["forged"]},
 	"bronze_knife": {"shape": "knife", "color": "#b5803a", "size": 1.35, "bits": ["bronze"]},
 	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
 	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0},
@@ -2008,7 +2010,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"hammer":
 			# A hafted hammer (modelled on a real stone club hammer; a wooden mallet when bits has "wood"): a short ash haft with weathered grain, a heavy blunt head across
 			# the end with flat faces both sides (no edge), worn darker striking faces, and leather thong lashing either side of the head. Mesh axes: haft along x, head along z.
+			# Bronze, iron and steel (bits "forged", buildables plan B0, forge-made): a forged cross-peen head with a punched eye on the haft end, no lashing.
 			var mallet: bool = bits.has("wood")
+			var forged: bool = bits.has("forged")
 			var haft_wood: Color = Color(0.4, 0.27, 0.14)                                                            # wood brown, so the haft does not read dark grey in the hand
 			var thong: Color = Color(0.5, 0.38, 0.2)                                                                 # rope / hide colour
 			for k in range(9):
@@ -2019,6 +2023,19 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.05, 0.2, Vector3(0.2, 0.0, 0.0), Vector3(PI * 0.5, 0.0, 0.0), _tone(grain, 3, 0.1))
 				for end in [-0.09, 0.09]:
 					_cyl(parts, 0.053, 0.02, Vector3(0.2, 0.0, end), Vector3(PI * 0.5, 0.0, 0.0), thong.darkened(0.15))
+			elif forged:
+				_box_rot(parts, Vector3(0.042, 0.042, 0.075), Vector3(0.2, 0.0, 0.0375), Vector3.ZERO, color)          # the body round the eye, to the striking end
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.048, 0.048, 0.012), Vector3(0.2, 0.0, 0.081), Vector3.ZERO, color.lightened(0.18))   # the flared, worn-bright striking face
+				_metal(parts, 0.35, 0.85)
+				_box_rot(parts, Vector3(0.036, 0.04, 0.03), Vector3(0.2, 0.0, -0.015), Vector3.ZERO, color.darkened(0.08))     # the cheeks behind the eye
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.026, 0.04, 0.022), Vector3(0.2, 0.0, -0.041), Vector3.ZERO, color.darkened(0.08))     # the cross peen, stepping down
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.012, 0.04, 0.018), Vector3(0.2, 0.0, -0.061), Vector3.ZERO, color.darkened(0.12))     # to a blunt edge across the haft
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.012, 0.03, 0.006), Vector3(0.223, 0.0, 0.0), Vector3.ZERO, Color(0.2, 0.2, 0.22))    # the iron wedge in the haft's end
+				_metal(parts, 0.5, 0.7)
 			else:
 				color = color if bits.has("bronze") else _warm_stone(color)
 				dark = color.darkened(0.3)
@@ -2026,7 +2043,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box_rot(parts, Vector3(0.06, 0.05, 0.08), Vector3(0.205, 0.008, -0.01), Vector3(-0.2, -0.3, 0.12), _tone(color, 5, 0.12))   # a second, uneven face so the lump is not a clean block
 				_box_rot(parts, Vector3(0.05, 0.05, 0.035), Vector3(0.2, 0.0, 0.065), Vector3(0.0, 0.0, 0.15), dark)    # a worn, darker striking face
 				_box_rot(parts, Vector3(0.05, 0.05, 0.035), Vector3(0.2, 0.0, -0.065), Vector3(0.0, 0.0, -0.15), dark)
-			for k in range(4):                                                                                       # leather thong lashing either side of the head
+			for k in range(0 if forged else 4):                                                                      # leather thong lashing either side of the head
 				_cyl(parts, 0.03, 0.01, Vector3(0.135 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
 				_cyl(parts, 0.03, 0.01, Vector3(0.255 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
 		"hoe":
