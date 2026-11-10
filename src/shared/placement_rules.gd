@@ -23,6 +23,8 @@ const FENCE_KIND := "fence"          # structures.json piece_kind of a fence sec
 const FENCE_TURN_DEG := 45           # a fence turns in eighths of a circle; every other piece in quarters
 const FENCE_TURNS := [0, 45, -45, 90, -90]   # how a new section may leave a standing section's end: straight on, or turned 45 or 90 degrees
 const FENCE_TAKEN_M := 0.3           # a section already this close to a candidate's middle takes it
+const WALL_TOP_KIND := "wall_top"    # structures.json piece_kind of a wall top (the Fortified battlement, Dave 10 Nov 2026): it sits on a wall's top
+const WALL_HEIGHT_M := 2.4           # a wall's top above its spot unless its row has height_m (piece_look walls are 2.4 m)
 
 
 static func load_config() -> Dictionary:
@@ -70,6 +72,13 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 			return beside
 
 	var piece_kind: String = str(def.get("piece_kind", ""))
+
+	if piece_kind == WALL_TOP_KIND:
+		var crown: Array = wall_top_spot(cfg, spot, rows)
+
+		if not crown.is_empty():
+			return crown
+
 	var step: int = FENCE_TURN_DEG if piece_kind == FENCE_KIND else 90
 	var turned: int = posmod(int(round(float(yaw_deg) / float(step))) * step, 360)
 
@@ -183,11 +192,42 @@ static func anchor_top(base: Dictionary) -> float:
 
 
 static func _pillar_at(cfg: Dictionary, at: Vector3, rows: Array) -> bool:
+	return _kind_at(cfg, at, rows, PILLAR_KIND)
+
+
+# Whether a piece of `piece_kind` already stands within ANCHOR_TAKEN_M of `at` (one pillar to a point, one wall top to a wall).
+static func _kind_at(cfg: Dictionary, at: Vector3, rows: Array, piece_kind: String) -> bool:
 	for row in rows:
-		if (row["pos"] as Vector3).distance_to(at) < ANCHOR_TAKEN_M and str(structure_of_state(cfg, int(row["state"])).get("piece_kind", "")) == PILLAR_KIND:
+		if (row["pos"] as Vector3).distance_to(at) < ANCHOR_TAKEN_M and str(structure_of_state(cfg, int(row["state"])).get("piece_kind", "")) == piece_kind:
 			return true
 
 	return false
+
+
+# Pieces that take a point to themselves: a second one on the same point is refused ("close"), by the ghost and the server alike.
+static func one_to_a_point(piece_kind: String) -> bool:
+	return piece_kind == PILLAR_KIND or piece_kind == WALL_TOP_KIND
+
+
+# A wall top (Dave 10 Nov 2026: the battlement sits on top of a wall) goes on the top of the nearest wall (piece_kind "wall", any tier) whose middle is
+# within ANCHOR_REACH_M of the cursor across the ground, turned as that wall: [spot, yaw, true], or [] with no wall near.
+static func wall_top_spot(cfg: Dictionary, spot: Vector3, rows: Array) -> Array:
+	var best: Array = []
+	var best_d: float = ANCHOR_REACH_M
+
+	for row in rows:
+		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if str(base.get("piece_kind", "")) != "wall":
+			continue
+
+		var d: float = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).length()
+
+		if d < best_d:
+			best_d = d
+			best = [Vector3(row["pos"].x, row["pos"].y + float(base.get("height_m", WALL_HEIGHT_M)), row["pos"].z), posmod(int(round(float(row.get("yaw", 0.0)))), 360), true]
+
+	return best
 
 
 # Aiming at the middle of a foundation's top puts a new one on it: the same spot, one body (def "stack_m", 2 m) higher, up to STACK_MAX_LAYERS
@@ -454,8 +494,8 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
 
-	if str(def.get("piece_kind", "")) == PILLAR_KIND and _pillar_at(cfg, spot, rows):
-		return "close"   # one pillar to a point (the server says the same)
+	if one_to_a_point(str(def.get("piece_kind", ""))) and _kind_at(cfg, spot, rows, str(def.get("piece_kind", ""))):
+		return "close"   # one pillar to a point, one wall top to a wall (the server says the same)
 
 	if str(def.get("attach_to", "")) == "fire":
 		var over_fire: bool = false
