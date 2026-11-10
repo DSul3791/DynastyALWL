@@ -5,7 +5,7 @@ Data added this round: Tallow, Soap, Leather strap, Milk, Butter, Cheese (items 
 | Source | Raw drop | Process | Product | Used by |
 |---|---|---|---|---|
 | any large animal | hide | scrape (hide scraper, needs flint), tan (tannin bark + water, campfire pot) | Processed hide, Leather, Heavy leather, Fine leather | leather cap, jerkin, gambeson, armour, **Leather strap** (leather + stone knife, 2 straps) |
-| any animal | animal fat | render in a campfire pot (2 fat) | **Tallow** | Tallow candle (3 candles from 1 tallow + 1 fibre), **Soap** (2 tallow + potash) |
+| any animal | animal fat | render in a campfire pot (2 fat) | **Tallow** | Candle (3 from 1 tallow + 1 fibre), **Soap** (2 tallow + potash) |
 | any animal | bone | hand or tool | bone arrow, hide glue (with hide) | bows, joining |
 | deer, boar, bear, wolf | sinew | hand | sinew cord, fur clothes | clothing recipes |
 | birds | feather, down | hand | arrows, down for warm clothes | arrows, wool/fur tier clothing |

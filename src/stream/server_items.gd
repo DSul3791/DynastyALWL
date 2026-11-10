@@ -9,6 +9,7 @@ extends RefCounted
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
 const FlameRules := preload("res://src/shared/flame_rules.gd")
+const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
@@ -183,6 +184,7 @@ var water_source: Callable       # (position, reach in metres) -> Array of Drink
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
 var send_craft_stock: Callable  # (peer, numbers PackedInt32Array, counts PackedInt32Array): what a craft may use besides the pack (protocol 98)
+var send_wheel_share: Callable  # (peer, at, yaw degrees, percent, why): the answer to ACT_WHEEL_ASK (protocol 105, _wheel_ask)
 var send_step_to: Callable      # (peer, position, yaw radians): the server moved the player to a station to craft there (protocol 103, _step_to_station)
 var send_favourites: Callable   # (peer, flags PackedByteArray): one byte per pack slot, 1 for a favourite (protocol 99)
 var send_hotbar: Callable      # (peer, keys PackedInt32Array): the ten hotbar keys' item numbers (protocol 100)
@@ -1172,6 +1174,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		if not admin_ok.is_valid() or admin_ok.call(peer):
 			_showroom_seed(peer, a == 1, at)
 
+	elif kind == Net.ACT_WHEEL_ASK:
+		_wheel_ask(peer, a, b, at)
 	elif kind == Net.ACT_SPYGLASS:
 		if a == 2:
 			_look_spyglass_item(peer, inv, count, b)
@@ -1220,7 +1224,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
-var water_flow_runs: Callable           # set by the server: (a: Vector3, b: Vector3) -> bool, true when the 2 m span runs at least data/water_flow.json min_speed_m_s all along
+var water_wheel: Callable               # set by the server: (a: Vector3, b: Vector3) -> {"w": watts, "why": "" or dry/river/still/shallow, "along": bool}, a water wheel spanning a to b (WaterFlow.wheel)
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
@@ -3457,18 +3461,126 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 			_say(peer, "It needs a tall foundation (lifted %.1f m or more)." % lift_need)
 			return Vector3(spot.x, NAN, spot.z)
 
-	var water: Dictionary = def.get("needs_running_water", {})
+	if def.has("needs_running_water") and water_wheel.is_valid():
+		var wheel: Dictionary = _wheel_at(def, spot, yaw_deg)
+		var rules: Dictionary = _water_flow_rules()
+		var least: float = float(rules.get("min_power_w", 150.0))
+		var why: String = str(wheel.get("why", ""))
 
-	if not water.is_empty() and water_flow_runs.is_valid():
-		var turn: float = deg_to_rad(float(yaw_deg))
-		var from_local: Vector2 = Vector2(float(water["from"][0]), float(water["from"][1])).rotated(turn)
-		var to_local: Vector2 = Vector2(float(water["to"][0]), float(water["to"][1])).rotated(turn)
-
-		if not bool(water_flow_runs.call(Vector3(spot.x + from_local.x, spot.y, spot.z + from_local.y), Vector3(spot.x + to_local.x, spot.y, spot.z + to_local.y))):
-			_say(peer, "The wheel needs running water.")
+		if why != "" or float(wheel.get("w", 0.0)) < least:
+			_say(peer, WHEEL_SAYS.get(why, "") if why != "" else ("Turn the wheel across the current." if bool(wheel.get("along", false)) else "The wheel would give only %d W here; the saw needs %d W. Find faster or deeper water." % [int(round(float(wheel["w"]))), int(least)]))
 			return Vector3(spot.x, NAN, spot.z)
 
+		_say(peer, "The wheel would give %d %% (%d W)." % [int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), int(round(float(wheel["w"])))])
+
 	return spot
+
+
+# The sawmill ghost asks what its wheel would give where it stands (protocol 105): the same rule as placing (_station_site), answered with the
+# share in percent and why it would be refused ("along" turned along the current, "weak" under min_power_w).
+func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
+	var def: Dictionary = _structure_of_kit(table.id_of(kit_number))
+
+	if not def.has("needs_running_water") or not water_wheel.is_valid() or not send_wheel_share.is_valid():
+		return
+
+	var wheel: Dictionary = _wheel_at(def, at, yaw_deg)
+	var rules: Dictionary = _water_flow_rules()
+	var why: String = str(wheel.get("why", ""))
+
+	if why == "" and float(wheel.get("w", 0.0)) < float(rules.get("min_power_w", 150.0)):
+		why = "along" if bool(wheel.get("along", false)) else "weak"
+
+	send_wheel_share.call(peer, at, yaw_deg, 0 if why != "" else int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), why)
+
+
+const WHEEL_SAYS := {
+	"dry": "The wheel needs running water under all of it.",
+	"river": "The wheel must stand over a river.",
+	"still": "The water does not run here. The wheel needs a current.",
+	"shallow": "The water is too shallow for the wheel (0.4 m or more).",
+}
+
+
+# The water wheel of a station that needs running water (structures.json needs_running_water: its span's ends, offsets from the middle, turned
+# with the piece) standing at `spot` turned `yaw_deg`: WaterFlow.wheel's {"w", "why", "along"}.
+func _wheel_at(def: Dictionary, spot: Vector3, yaw_deg: float) -> Dictionary:
+	var water: Dictionary = def.get("needs_running_water", {})
+	var turn: float = deg_to_rad(yaw_deg)
+	var from_local: Vector2 = Vector2(float(water["from"][0]), float(water["from"][1])).rotated(turn)
+	var to_local: Vector2 = Vector2(float(water["to"][0]), float(water["to"][1])).rotated(turn)
+	return water_wheel.call(Vector3(spot.x + from_local.x, spot.y, spot.z + from_local.y), Vector3(spot.x + to_local.x, spot.y, spot.z + to_local.y))
+
+
+var _water_flow_cfg: Dictionary = {}
+var _wheel_stations: Dictionary = {}   # station name -> true when a structure serving it needs running water (the sawmill), filled on first ask
+
+
+func _wheel_station(station: String) -> bool:
+	if not _wheel_stations.has(station):
+		_wheel_stations[station] = false
+
+		for kind in _structures:
+			if str(_structures[kind].get("station", "")) == station and (_structures[kind] as Dictionary).has("needs_running_water"):
+				_wheel_stations[station] = true
+
+	return bool(_wheel_stations[station])
+
+
+func _water_flow_rules() -> Dictionary:
+	if _water_flow_cfg.is_empty():
+		_water_flow_cfg = WaterFlowScript.load_rules()
+
+	return _water_flow_cfg
+
+
+# How much slower a station recipe runs at a sawmill whose wheel gives less than full_power_w (Sonny section 10: craft time x full_power_w / P).
+# The wheel's watts are worked out once per placed sawmill and kept on it ("wheel_w"); 1.0 for every other station, or with no wheel callable.
+func _wheel_slow(peer: int, recipe: Dictionary) -> float:
+	var station: String = str(recipe.get("station", ""))
+
+	if station == "" or not water_wheel.is_valid() or not _wheel_station(station):
+		return 1.0
+
+	var id: int = serving_station(peer, station, int(recipe.get("station_level", 1)))
+
+	if id < 0:
+		return 1.0
+
+	var watts: float = _wheel_watts(_items[id])
+	return 1.0 if watts < 0.0 else 1.0 / WaterFlowScript.wheel_share(watts, _water_flow_rules())
+
+
+# A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
+# wheel (structures.json needs_running_water) or a blueprint site. The watts are worked out once per piece and kept on it ("wheel_w"). Sent on the
+# piece's world row ("wheel") so looking at a sawmill shows what its wheel gives.
+func wheel_percent(it: Dictionary) -> int:
+	var watts: float = _wheel_watts(it)
+	return -1 if watts < 0.0 else int(round(100.0 * WaterFlowScript.wheel_share(watts, _water_flow_rules())))
+
+
+# A placed wheel piece's watts, or -1 for a piece with no wheel. Kept on the piece ("wheel_w") only when the water answered (why ""): a mill first asked
+# before its tile's settled water is in memory (a saved mill sent at the join) reads "dry" and 0 W, and keeping that would saw at the floor share for
+# good (Sonny's review of #1009); it is asked again next time instead.
+func _wheel_watts(it: Dictionary) -> float:
+	if not it.has("struct") or it["struct"].has("site") or not water_wheel.is_valid():
+		return -1.0
+
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if not def.has("needs_running_water"):
+		return -1.0
+
+	if it["struct"].has("wheel_w"):
+		return float(it["struct"]["wheel_w"])
+
+	var wheel: Dictionary = _wheel_at(def, it["pos"], float(it["struct"].get("yaw", 0.0)))
+	var watts: float = float(wheel.get("w", 0.0))
+
+	if str(wheel.get("why", "")) == "":
+		it["struct"]["wheel_w"] = watts
+
+	return watts
 
 
 # The admin showroom (Dave 2026-10-23): the rows of data/items/showroom.json laid out east and south of the spawn point as REAL world items
@@ -4277,6 +4389,12 @@ func _sync_world_items() -> void:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") else {}))))])
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
+
+					if it.has("struct") and not it["struct"].has("site"):
+						var wheel: int = wheel_percent(it)
+
+						if wheel >= 0:
+							(added[added.size() - 1][5] as Dictionary)["wheel"] = wheel   # a sawmill: its water wheel's share, for the look-at line
 					known[id] = signature
 
 		for id in known.keys():
@@ -4804,11 +4922,21 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	part_usec = _cell_part("stones and sticks", part_usec)
 	_bank_ground_usec = 0
 	_bank_water_usec = 0
-	_lay_out_bank_stones(cell, cell_m, cfg, rng, kinds.size())
+	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
-	_lay_out_boulders(cell, cell_m, rng)
+	_lay_out_boulders(cell, cell_m)
 	_cell_part("boulders", part_usec)
+
+
+# A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
+# takes more or fewer draws as the flora cover reads 0 or 1 (cover_at reads 0 until a worker builds the flora chunk). So the bank stones and boulders after
+# them moved with the timing, and a boulder's key (its worked count, its outcrop ore) could land on another boulder after a restart. Bank stones and
+# boulders each draw from their own stream, seeded from the cell, the world seed and the part, so their places are fixed per world.
+func _layout_rng(cell: Vector2i, part: String) -> RandomNumberGenerator:
+	var stream: RandomNumberGenerator = RandomNumberGenerator.new()
+	stream.seed = hash([cell.x, cell.y, world_seed, part])
+	return stream
 
 
 # Notes a part of a scatter cell's layout in _cell_parts (for the slow-cell line); returns now, the next part's start.
@@ -4819,7 +4947,7 @@ func _cell_part(part: String, since_usec: int) -> int:
 
 
 # Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
-# cell like loose stones (same seeded rng, drawn last so the stones above do not move), only where the ground rises or at a
+# cell like loose stones, from the cell's own "boulders" stream (_layout_rng), only where the ground rises or at a
 # water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
 # with; the item's count is the stones left.
 func _boulder_stones(radius: float) -> int:
@@ -4829,15 +4957,18 @@ func _boulder_stones(radius: float) -> int:
 	return maxi(int(volume * float(cfg.get("density_kg_m3", 2600)) * float(cfg.get("yield", 0.5)) / stone_kg), 1)
 
 
-func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator) -> void:
+func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 	var cfg: Dictionary = _boulder_cfg
 
 	if cfg.is_empty():
 		return
 
+	var rng: RandomNumberGenerator = _layout_rng(cell, "boulders")
 	var laid: int = 0
 
-	for attempt in range(int(cfg.get("tries", 8))):
+	# Every try takes the same five draws whatever happens to it, and the boulder's key is its try, not its count: a try that the live water turns
+	# on or off (the bank chance) adds or drops that one boulder and moves no other boulder's key.
+	for attempt in range(mini(int(cfg.get("tries", 8)), 16)):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
@@ -4858,7 +4989,7 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator
 		if draw > chance:
 			continue
 
-		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | laid
+		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | attempt
 		laid += 1
 		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
 		var total: int = _boulder_stones(radius)
@@ -5042,7 +5173,13 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 			var left: int = mini(int(_boulder_left.get(key, total)), total)
 
 			if left > 0:
-				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": {"radius": radius, "yaw": float(hash(key) % 360), "total": total}}
+				var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": total}
+				var cave_ore: String = _boulder_ore(spot, key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
+
+				if cave_ore != "":
+					cave_row["ore"] = cave_ore
+
+				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
 				_next_id += 1
 
 			continue
@@ -5055,11 +5192,13 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 # Stones along the water's edge (Dave 2026-10-21: any rock put down is pickable, so Art's drawn pebbles and boulders became
 # real stones). A cell with water in or near it tries bank_tries spots; a dry spot within bank_reach_m of water takes a
 # stone with chance bank_chance, up to bank_max a cell. Item keys continue after the cell's own scatter (low four bits).
-func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: RandomNumberGenerator, used: int) -> void:
+func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, used: int) -> void:
 	var bank: Dictionary = cfg.get("bank", {})
 
 	if bank.is_empty() or not water_near.is_valid():
 		return
+
+	var rng: RandomNumberGenerator = _layout_rng(cell, "bank stones")   # its own stream: the sticks before it no longer move it
 
 	var centre: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
 
@@ -5102,7 +5241,7 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 		if _taken.has(key):
 			continue
 
-		var driftwood: bool = rng.randf() < float(bank.get("driftwood", 0.12))   # luck-exempt: seeded world layout
+		var driftwood: bool = float(hash([key, "driftwood"]) % 1000) < 1000.0 * float(bank.get("driftwood", 0.12))   # from the key, so every try takes three draws
 		var bank_number: String = "driftwood" if driftwood else "stone"
 
 		if not driftwood and float(bank.get("flint", 0.0)) > 0.0 and float(hash(key) % 1000) < 1000.0 * float(bank.get("flint", 0.0)):
@@ -7204,14 +7343,14 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 	if not bool(row.get("known", true)) or _structures.get(str(row["structure"]), {}).is_empty():
 		return false
 
-	var hammer: int = _tool_slot(inv, "hammer")
+	var hammer: int = _heaviest_hammer_slot(inv)
 
 	if hammer < 0:
 		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
 		return false
 
 	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
-		_say(peer, "This hammer is too light for that. A stone hammer or better.")
+		_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
 		return false
 
 	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"]), int(row.get("station_level", 1))):
@@ -7239,6 +7378,49 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 			return false
 
 	return true
+
+
+# The heaviest working hammer on the hotbar (-1 none): a stone hammer in key 1 does not hide the iron one in key 4 that the player holds
+# (the hammer panel lists rows by the hammer in hand).
+func _heaviest_hammer_slot(inv) -> int:
+	var best: int = -1
+
+	for slot in range(inv.SLOTS):
+		if not inv.on_hotbar(slot) or inv.numbers[slot] == 0 or _is_broken(inv.numbers[slot], inv.wear[slot]):
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+		if str(entry.get("tool_class", "")) == "hammer" and (best < 0 or int(entry.get("tier", 1)) > int(table.entry(table.id_of(inv.numbers[best])).get("tier", 1))):
+			best = slot
+
+	return best
+
+
+# The hammers heavy enough for a blueprint row's "hammer" tier, as said in a sentence, lightest first ("a stone hammer or better"; tier 3 is any
+# metal one: "a bronze, iron or steel hammer"). From items.json, so a new hammer is named without a code change.
+func _hammers_for(tier_needed: int) -> String:
+	var hammers: Array = []   # [tier, number, material] of every live hammer heavy enough
+
+	for id in table.ids():
+		var entry: Dictionary = table.entry(id)
+
+		if str(entry.get("tool_class", "")) == "hammer" and not bool(entry.get("retired", false)) and int(entry.get("tier", 1)) >= tier_needed:
+			hammers.append([int(entry.get("tier", 1)), int(entry.get("number", 0)), str(entry.get("material", id.trim_suffix("_hammer")))])
+
+	if hammers.is_empty():
+		return "a heavier hammer"
+
+	hammers.sort()
+	var lightest: int = int(hammers[0][0])
+	var words: Array = []
+
+	for row in hammers:
+		if int(row[0]) == lightest:
+			words.append(str(row[2]))
+
+	var listed: String = str(words[0]) if words.size() == 1 else ", ".join(words.slice(0, words.size() - 1)) + " or " + str(words[-1])
+	return "a %s hammer%s" % [listed, " or better" if int(hammers[-1][0]) > lightest else ""]
 
 
 # True when the craft stock cannot cover the blueprint's materials: the click then sets down a blueprint site.
@@ -8102,6 +8284,7 @@ func _use_struct(peer: int, inv, id: int) -> void:
 		if now_ms - int(_last_use.get(peer, -100000)) >= int(def.get("use_pace_ms", 400)) and _structures.has(str(def.get("toggle", ""))):
 			_last_use[peer] = now_ms
 			it["struct"]["kind"] = str(def["toggle"])
+			_grid_add(id, it)   # a shut door or gate ("blocks_walk") stops animals again; the open one is forgotten by the grid itself (its kind changed)
 			_dirty = true
 
 		return
@@ -14547,7 +14730,7 @@ func _craft_tick(spent: float) -> void:
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
-		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) / _pace_factor(peer, "craft"):
+		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) / _pace_factor(peer, "craft"):
 			continue
 
 		queue["elapsed"] = 0.0
@@ -14597,7 +14780,8 @@ func _sync_craft_queue(peer: int) -> void:
 	var left_ms: int = 0
 
 	if not entries.is_empty():
-		var craft_s: float = float(recipes.recipe(int(entries[0][0])).get("craft_s", 3.0))
+		var head_recipe: Dictionary = recipes.recipe(int(entries[0][0]))
+		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe)
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
 	send_craft_queue.call(peer, _pairs(entries), left_ms)
