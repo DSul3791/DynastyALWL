@@ -8012,7 +8012,7 @@
 		},
 		"bench_stone_block": {
 			"number": 368,
-			"name": "Stone block (bench)",
+			"name": "Stone block (stonecutter's bench)",
 			"category": "Materials",
 			"needs": [
 				[
