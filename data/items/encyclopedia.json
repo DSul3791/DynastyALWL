@@ -1573,7 +1573,8 @@
 				"Used in Tinder",
 				"Used in Thatch - Window",
 				"Used in Log - Roof corner",
-				"Used in Thatch - Roof corner"
+				"Used in Thatch - Roof corner",
+				"Used in Thatch - Scarecrow"
 			],
 			"obtainable_now": true
 		},
@@ -1950,7 +1951,10 @@
 				"Used in Thatch - Gate",
 				"Used in Thatch - Pillar",
 				"Used in Thatch - Roof corner",
-				"Used in Wooden - Roof corner"
+				"Used in Wooden - Roof corner",
+				"Used in Thatch - Garden plot",
+				"Used in Thatch - Scarecrow",
+				"Used in Wooden - Trellis"
 			],
 			"obtainable_now": true
 		},
@@ -2059,7 +2063,13 @@
 				"Used in Wooden - Hanging lantern",
 				"Used in Wooden - Lamp post",
 				"Used in Wooden - Lantern",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Thatch - Garden plot",
+				"Used in Thatch - Scarecrow",
+				"Used in Wooden - Cold frame",
+				"Used in Wooden - Compost bin",
+				"Used in Wooden - Garden plot",
+				"Used in Wooden - Trellis"
 			],
 			"obtainable_now": true
 		},
@@ -2345,7 +2355,11 @@
 				"Used in Wooden - Railing",
 				"Used in Wooden - Hanging lantern",
 				"Used in Wooden - Lamp post",
-				"Used in Wooden - Lantern"
+				"Used in Wooden - Lantern",
+				"Used in Wooden - Cold frame",
+				"Used in Wooden - Compost bin",
+				"Used in Wooden - Garden plot",
+				"Used in Wooden - Planter box"
 			],
 			"obtainable_now": true
 		},
@@ -2453,7 +2467,13 @@
 			"description": "A shovelful of dark earth, dug from the ground.",
 			"how_to_get": [],
 			"used_for": [
-				"Dug earth. Dig and fill the ground with it."
+				"Dug earth. Dig and fill the ground with it.",
+				"Used in Brick - Garden plot",
+				"Used in Stone - Garden plot",
+				"Used in Stone - Planter",
+				"Used in Thatch - Garden plot",
+				"Used in Wooden - Garden plot",
+				"Used in Wooden - Planter box"
 			],
 			"obtainable_now": false
 		},
@@ -3851,7 +3871,8 @@
 				"Used in Brick - Gate",
 				"Used in Brick - Pillar",
 				"Used in Brick - Roof corner",
-				"Used in Brick - Stairs"
+				"Used in Brick - Stairs",
+				"Used in Brick - Garden plot"
 			],
 			"obtainable_now": true
 		},
@@ -3882,7 +3903,10 @@
 				"Used in Stone - Stairs",
 				"Used in Stone - Brazier",
 				"Used in Stone - Lamp post",
-				"Used in Stone - Torch pillar"
+				"Used in Stone - Torch pillar",
+				"Used in Brick - Garden plot",
+				"Used in Stone - Garden plot",
+				"Used in Stone - Planter"
 			],
 			"obtainable_now": true
 		},
@@ -4018,7 +4042,9 @@
 				"Used in Stone - Stairs",
 				"Used in Stone - Brazier",
 				"Used in Stone - Lamp post",
-				"Used in Stone - Torch pillar"
+				"Used in Stone - Torch pillar",
+				"Used in Stone - Garden plot",
+				"Used in Stone - Planter"
 			],
 			"obtainable_now": true
 		},
@@ -8209,7 +8235,8 @@
 				"Used in Iron - Lantern",
 				"Used in Iron - Wall lantern",
 				"Used in Wooden - Hanging lantern",
-				"Used in Wooden - Lantern"
+				"Used in Wooden - Lantern",
+				"Used in Wooden - Cold frame"
 			],
 			"obtainable_now": true
 		},
@@ -8446,6 +8473,186 @@
 			"name": "Iron - Brazier",
 			"kind": "structure",
 			"description": "An iron fire bowl on legs. Burns logs for light.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_garden_plot_kit": {
+			"name": "Thatch garden plot",
+			"kind": "placeable",
+			"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Stick, 2 Twine, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_garden_plot": {
+			"name": "Thatch - Garden plot",
+			"kind": "structure",
+			"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_garden_plot_kit": {
+			"name": "Wooden garden plot",
+			"kind": "placeable",
+			"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Planks, 2 Twine, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_garden_plot": {
+			"name": "Wooden - Garden plot",
+			"kind": "structure",
+			"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_garden_plot_kit": {
+			"name": "Stone garden plot",
+			"kind": "placeable",
+			"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone, 2 Mortar, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_garden_plot": {
+			"name": "Stone - Garden plot",
+			"kind": "structure",
+			"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_garden_plot_kit": {
+			"name": "Brick garden plot",
+			"kind": "placeable",
+			"description": "A brick raised bed, two metres square. Holds its water best.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Brick, 2 Mortar, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_garden_plot": {
+			"name": "Brick - Garden plot",
+			"kind": "structure",
+			"description": "A brick raised bed, two metres square. Holds its water best.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_planter_box_kit": {
+			"name": "Wooden planter box",
+			"kind": "placeable",
+			"description": "A plank window box of soil for herbs and flowers.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Planks, 2 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_planter_box": {
+			"name": "Wooden - Planter box",
+			"kind": "structure",
+			"description": "A plank window box of soil for herbs and flowers.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_planter_kit": {
+			"name": "Stone planter",
+			"kind": "placeable",
+			"description": "A big stone pot of soil for a herb or a small shrub.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Cobblestone, 1 Mortar, 3 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_planter": {
+			"name": "Stone - Planter",
+			"kind": "structure",
+			"description": "A big stone pot of soil for a herb or a small shrub.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_trellis_kit": {
+			"name": "Wooden trellis",
+			"kind": "placeable",
+			"description": "A lattice of sticks to set beside a plot for climbing plants.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_trellis": {
+			"name": "Wooden - Trellis",
+			"kind": "structure",
+			"description": "A lattice of sticks to set beside a plot for climbing plants.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_compost_bin_kit": {
+			"name": "Wooden compost bin",
+			"kind": "placeable",
+			"description": "A slatted bin that rots plant waste down into compost.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Planks, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_compost_bin": {
+			"name": "Wooden - Compost bin",
+			"kind": "structure",
+			"description": "A slatted bin that rots plant waste down into compost.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_scarecrow_kit": {
+			"name": "Thatch scarecrow",
+			"kind": "placeable",
+			"description": "A straw figure on a pole to watch over the plots.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Stick, 10 Thatch, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_scarecrow": {
+			"name": "Thatch - Scarecrow",
+			"kind": "structure",
+			"description": "A straw figure on a pole to watch over the plots.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_cold_frame_kit": {
+			"name": "Wooden cold frame",
+			"kind": "placeable",
+			"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Planks, 1 Twine, 4 Horn pane"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_cold_frame": {
+			"name": "Wooden - Cold frame",
+			"kind": "structure",
+			"description": "A horn-paned box over a plot that keeps frost off seedlings.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false

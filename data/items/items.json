@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 692,
+	"next_number": 712,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -7953,6 +7953,216 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed light: row state 155."
+			},
+			"thatch_garden_plot_kit": {
+				"number": 692,
+				"retired": true,
+				"name": "Thatch garden plot",
+				"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 22
+			},
+			"thatch_garden_plot": {
+				"number": 693,
+				"name": "Thatch - Garden plot",
+				"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 156."
+			},
+			"wooden_garden_plot_kit": {
+				"number": 694,
+				"retired": true,
+				"name": "Wooden garden plot",
+				"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 76
+			},
+			"wooden_garden_plot": {
+				"number": 695,
+				"name": "Wooden - Garden plot",
+				"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 157."
+			},
+			"stone_garden_plot_kit": {
+				"number": 696,
+				"retired": true,
+				"name": "Stone garden plot",
+				"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 48
+			},
+			"stone_garden_plot": {
+				"number": 697,
+				"name": "Stone - Garden plot",
+				"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 158."
+			},
+			"brick_garden_plot_kit": {
+				"number": 698,
+				"retired": true,
+				"name": "Brick garden plot",
+				"description": "A brick raised bed, two metres square. Holds its water best.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 58
+			},
+			"brick_garden_plot": {
+				"number": 699,
+				"name": "Brick - Garden plot",
+				"description": "A brick raised bed, two metres square. Holds its water best.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 159."
+			},
+			"wooden_planter_box_kit": {
+				"number": 700,
+				"retired": true,
+				"name": "Wooden planter box",
+				"description": "A plank window box of soil for herbs and flowers.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"wooden_planter_box": {
+				"number": 701,
+				"name": "Wooden - Planter box",
+				"description": "A plank window box of soil for herbs and flowers.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 160."
+			},
+			"stone_planter_kit": {
+				"number": 702,
+				"retired": true,
+				"name": "Stone planter",
+				"description": "A big stone pot of soil for a herb or a small shrub.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"stone_planter": {
+				"number": 703,
+				"name": "Stone - Planter",
+				"description": "A big stone pot of soil for a herb or a small shrub.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 161."
+			},
+			"wooden_trellis_kit": {
+				"number": 704,
+				"retired": true,
+				"name": "Wooden trellis",
+				"description": "A lattice of sticks to set beside a plot for climbing plants.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 22
+			},
+			"wooden_trellis": {
+				"number": 705,
+				"name": "Wooden - Trellis",
+				"description": "A lattice of sticks to set beside a plot for climbing plants.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 162."
+			},
+			"wooden_compost_bin_kit": {
+				"number": 706,
+				"retired": true,
+				"name": "Wooden compost bin",
+				"description": "A slatted bin that rots plant waste down into compost.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 35
+			},
+			"wooden_compost_bin": {
+				"number": 707,
+				"name": "Wooden - Compost bin",
+				"description": "A slatted bin that rots plant waste down into compost.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 163."
+			},
+			"thatch_scarecrow_kit": {
+				"number": 708,
+				"retired": true,
+				"name": "Thatch scarecrow",
+				"description": "A straw figure on a pole to watch over the plots.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 32
+			},
+			"thatch_scarecrow": {
+				"number": 709,
+				"name": "Thatch - Scarecrow",
+				"description": "A straw figure on a pole to watch over the plots.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 164."
+			},
+			"wooden_cold_frame_kit": {
+				"number": 710,
+				"retired": true,
+				"name": "Wooden cold frame",
+				"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 43
+			},
+			"wooden_cold_frame": {
+				"number": 711,
+				"name": "Wooden - Cold frame",
+				"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 165."
 			}
 	}
 }
