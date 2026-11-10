@@ -2168,11 +2168,72 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	_wear_slot(peer, inv, slot, "strike")
 	var level: float = working_level(peer, "hunting")
 	var aim: Vector3 = BowAim.spread(direction, BowAim.spread_deg(_bow.cfg, level), LuckScript.low(_aim_rng.randf(), luck_of(peer), _luck_strength()), _aim_rng.randf())   # luck-exempt: the draws that luck nudges (how far out) and which way
-	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id),
+	var fire_cfg: Dictionary = _bow.cfg.get("fire_arrow", {})
+	var aflame: bool = bool(arrow.get("fire", false)) and not fire_cfg.is_empty() and _flame_near(_peer_pos[peer], float(fire_cfg.get("light_m", 3.0)))
+	var damage: float = _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id) * (float(fire_cfg.get("damage_mult", 1.5)) if aflame else 1.0)
+	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
 		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
 
 	if animal_alarm.is_valid():
-		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)))
+		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)) * (float(fire_cfg.get("alarm_mult", 2.0)) if aflame else 1.0))
+
+
+# A flame to light a fire arrow from (bow.json fire_arrow.light_m, Part C plan 6): a burning fire, a lit placed light or torch, or a
+# player bearing a burning torch, within `reach` of `at`.
+func _flame_near(at: Vector3, reach: float) -> bool:
+	for row in _lit_rows():
+		if (row[0] as Vector3).distance_to(at) <= reach:
+			return true
+
+	var now: int = Time.get_ticks_msec()
+
+	for peer in _torch_seen:
+		if now - int(_torch_seen[peer]) <= TORCH_REPORT_MS and _peer_pos.has(peer) and (_peer_pos[peer] as Vector3).distance_to(at) <= reach:
+			return true
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and bool(it["struct"].get("lit", false)) and (it["pos"] as Vector3).distance_to(at) <= reach:
+			return true
+
+	return false
+
+
+# A burning fire arrow comes down (Part C plan 6): a laid fire with wood on it, or an unlit placed light (a torch post), within
+# fire_arrow.ignite_m of where it fell catches. Open rain still beats it, as with a lit hand. No spread: nothing else burns.
+func _arrow_ignite(at: Vector3) -> String:
+	var reach: float = float(_bow.cfg.get("fire_arrow", {}).get("ignite_m", 0.6))
+	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if Vector2(it["pos"].x - at.x, it["pos"].z - at.z).length() > reach or absf(it["pos"].y - at.y) > 2.0:
+			continue
+
+		if it.has("fire"):
+			var fire: Dictionary = it["fire"]
+
+			if int(fire["state"]) in [9, FIRE_STATE_ASH] and float(fire.get("burn_left", 0.0)) > 0.0 and not (raining and not bool(fire.get("covered", false))):
+				fire["state"] = _fire_best_state(fire)
+				fire.erase("wet_s")
+				it["left"] = 1.0e9
+				_lit_valid = false
+				_dirty = true
+				return "fire"
+		elif it.has("struct") and not bool(it["struct"].get("lit", false)):
+			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+			var sheltered: bool = cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5
+
+			if str(def.get("use", "")) == "light" and def.has("fuel") and not (raining and bool(def.get("rain_douses", false)) and not sheltered):
+				it["struct"]["lit"] = true
+				it["struct"]["fuel_left"] = maxf(float(it["struct"].get("fuel_left", 0.0)), light_burn_s(def))
+				_lit_valid = false
+				_dirty = true
+				return "light"
+
+	return ""
 
 
 # Arrows in the air, in steps of step_s: the first animal on the segment is hurt, otherwise the ground (or water) or the range ends the flight.
@@ -2236,7 +2297,10 @@ func _arrow_fly(delta: float) -> void:
 			_arrows.erase(ar)
 			var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05
 
-			if stuck and fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), false, false)):
+			if bool(ar.get("fire", false)):   # a burning arrow is always burnt up; where it falls it may light a fire or a torch post
+				var lit_what: String = "" if wet else _arrow_ignite(at)
+				print("server items: fire arrow came down at x%d z%d after %.0f m (animal %s): burnt up%s" % [int(at.x), int(at.z), float(ar["flown"]), str(hit_animal_now), (", lit a " + lit_what) if lit_what != "" else ""])
+			elif stuck and fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), false, false)):
 				_stick_arrow(int(ar["number"]), at, (ar["vel"] as Vector3).normalized())
 				print("server items: arrow stuck in a tree at x%d z%d y%.1f after %.0f m" % [int(at.x), int(at.z), at.y, float(ar["flown"])])
 			elif stuck:

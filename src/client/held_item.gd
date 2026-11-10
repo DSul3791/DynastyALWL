@@ -1240,6 +1240,14 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	node.global_position = _camera.global_position + direction * 0.8
 	_flights.append({"node": node, "vel": v, "age": 0.0, "arrow": true})
 
+	if bool(_inv.table.entry(_inv.table.id_of(arrow)).get("fire", false)) and _inv._lit_fire_near(_camera.global_position, float(_bow_cfg.get("fire_arrow", {}).get("light_m", 3.0))):
+		var glow: OmniLight3D = OmniLight3D.new()   # a burning fire arrow (Part C plan 6): a stand-in orange glow until Kathleen's flame look
+		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_energy = 1.6
+		glow.omni_range = 2.0
+		glow.shadow_enabled = false
+		node.add_child(glow)
+
 	if _sound == null:
 		return
 

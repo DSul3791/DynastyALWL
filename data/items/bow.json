@@ -4,7 +4,8 @@
 		"stone_arrow",
 		"bone_arrow",
 		"wooden_arrow",
-		"fibre_arrow"
+		"fibre_arrow",
+		"fire_arrow"
 	],
 	"draw_min_ms": 300,
 	"draw_max_ms": 1200,
@@ -44,6 +45,13 @@
 	"hit_radius_m": 0.6,
 	"chest_m": 0.5,
 	"noise_m": 40.0,
+	"fire_arrow": {
+		"note": "Part C plan 6 (10 Nov 2026): an arrow with fire: true (the Fire arrow) is lit as it is loosed when a burning fire, a lit placed light or torch post, or a torch bearer is within light_m of the archer; otherwise it flies as a plain arrow. Lit, it does damage_mult on an animal, the shot's noise reaches alarm_mult as far, it lights a laid fire (wood on it) or an unlit torch post or other placed light within ignite_m of where it comes down (not in open rain, nor in water), and it is always burnt up. There is no fire spread: nothing else catches.",
+		"light_m": 3.0,
+		"damage_mult": 1.5,
+		"alarm_mult": 2.0,
+		"ignite_m": 0.6
+	},
 	"break_chance": {
 		"wood": 0.5,
 		"stone": 0.35,
