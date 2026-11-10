@@ -109,6 +109,34 @@ var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
+var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
+# Outcrop boulders (Kathleen, 10 Nov 2026; Dave could not tell an ore boulder from a plain one). The server sends a boulder's "ore" (boulders.json ore:
+# an ore body within reach, or the boulder's own limestone, chalk or marble); the client draws it in the same granite-and-moss shader with the stone tinted
+# toward the ore's rock and mineral streaks through it, and the streaks keep the moss off. Subtle on purpose: read from about 10 m, not a neon tell.
+# ore: [stone tint, tint share, streak colour, streak width (0..0.5 of the band), flat (0 steep veins, 1 flat seams), halo share, fleck share]
+const OUTCROP_LOOK := {
+	"copper": [Color(0.31, 0.34, 0.31), 0.35, Color(0.24, 0.46, 0.37), 0.1, 0.0, 0.45, 0.04],     # green malachite staining
+	"tin": [Color(0.44, 0.42, 0.39), 0.45, Color(0.13, 0.1, 0.08), 0.16, 0.0, 0.2, 0.08],         # dark cassiterite veins in a pale quartz host
+	"iron": [Color(0.36, 0.27, 0.21), 0.45, Color(0.4, 0.2, 0.09), 0.1, 0.0, 0.5, 0.03],           # rust
+	"coal": [Color(0.21, 0.21, 0.21), 0.45, Color(0.05, 0.05, 0.05), 0.2, 1.0, 0.15, 0.0],         # flat black seams
+	"salt": [Color(0.42, 0.4, 0.37), 0.4, Color(0.8, 0.78, 0.72), 0.16, 1.0, 0.2, 0.05],           # pale crusted beds
+	"limestone": [Color(0.58, 0.55, 0.47), 0.7, Color(0.66, 0.63, 0.56), 0.04, 0.6, 0.0, 0.05],     # pale cream bedding
+	"chalk": [Color(0.72, 0.71, 0.66), 0.75, Color(0.3, 0.3, 0.3), 0.03, 0.9, 0.0, 0.04],          # white, with dark flint bands
+	"marble": [Color(0.64, 0.64, 0.62), 0.7, Color(0.42, 0.43, 0.45), 0.05, 0.3, 0.1, 0.0],         # grey veining
+}
+const OUTCROP_GLSL := """	vec3 rock = mix(stone, ore_tint, tint_share) * (0.85 + 0.3 * mottle);
+	if (vein_amount > 0.0) {
+		vec3 lp = world_pos - NODE_POSITION_WORLD;
+		vec3 dir = normalize(mix(vec3(0.8, 0.45, 0.4), vec3(0.1, 1.0, 0.1), vein_flat));
+		float band = dot(lp, dir) * 2.5 + 0.9 * sin(lp.y * 4.1 + lp.x * 2.7) * (1.0 - vein_flat) + 0.5 * sin(lp.z * 6.3 + lp.x * 1.3);
+		float v = abs(sin(band * 3.14159));
+		float streak = (1.0 - smoothstep(vein_width, vein_width * 2.0, v)) * vein_amount;
+		float halo = (1.0 - smoothstep(vein_width * 2.0, 0.6, v)) * halo_share * (0.5 + 0.5 * mottle);
+		float fleck = step(1.0 - fleck_share, fract(sin(dot(floor(lp * 22.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453));
+		rock = mix(rock, vein_color, clamp(max(max(streak, halo), fleck * (1.0 - v)), 0.0, 1.0));
+		moss *= 1.0 - streak;
+	}
+	ALBEDO = mix(rock, moss_color * (0.8 + 0.4 * mottle), moss);"""
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 var _pack_view: Array = []             # the chest screen's pack side: button index -> real pack slot (a fire shows only what it takes, A to Z)
@@ -2639,7 +2667,15 @@ func _show_boulder(id: int, row: Array) -> void:
 		var shader: Shader = Shader.new()
 		shader.code = String(load("res://src/client/grass_view.gd").BOULDER_SHADER).replace("stone = INSTANCE_CUSTOM.rgb;", "stone = stone_color;").replace("mossy = INSTANCE_CUSTOM.a;", "mossy = mossiness;").replace("uniform vec3 moss_color", "uniform vec3 stone_color = vec3(0.30, 0.29, 0.27);
 uniform float mossiness = 0.65;
-uniform vec3 moss_color")
+uniform vec3 ore_tint = vec3(0.30, 0.29, 0.27);
+uniform float tint_share = 0.0;
+uniform vec3 vein_color = vec3(0.0);
+uniform float vein_amount = 0.0;
+uniform float vein_width = 0.1;
+uniform float vein_flat = 0.0;
+uniform float halo_share = 0.0;
+uniform float fleck_share = 0.0;
+uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle), moss_color * (0.8 + 0.4 * mottle), moss);", OUTCROP_GLSL)
 		_boulder_rock = ShaderMaterial.new()
 		_boulder_rock.shader = shader
 		_boulder_rock.set_shader_parameter("fade_start", 100000.0)
@@ -2651,7 +2687,7 @@ uniform vec3 moss_color")
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
 	lump.mesh = _boulder_mesh
-	lump.material_override = _boulder_rock
+	lump.material_override = _boulder_material(str(extra.get("ore", "")))
 	body.add_child(lump)
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
@@ -2659,6 +2695,29 @@ uniform vec3 moss_color")
 	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5))}
 	_boulders[id] = entry
 	_size_boulder(entry)
+
+
+# The boulder material for a row's "ore": the plain granite for "" (or an ore with no OUTCROP_LOOK), else that ore's own copy, made once.
+func _boulder_material(ore: String) -> ShaderMaterial:
+	if not OUTCROP_LOOK.has(ore):
+		return _boulder_rock
+
+	if not _outcrop_rock.has(ore):
+		var look: Array = OUTCROP_LOOK[ore]
+		var m: ShaderMaterial = _boulder_rock.duplicate() as ShaderMaterial
+		var tint: Color = look[0]
+		var vein: Color = look[2]
+		m.set_shader_parameter("ore_tint", Vector3(tint.r, tint.g, tint.b))
+		m.set_shader_parameter("tint_share", look[1])
+		m.set_shader_parameter("vein_color", Vector3(vein.r, vein.g, vein.b))
+		m.set_shader_parameter("vein_amount", 1.0)
+		m.set_shader_parameter("vein_width", look[3])
+		m.set_shader_parameter("vein_flat", look[4])
+		m.set_shader_parameter("halo_share", look[5])
+		m.set_shader_parameter("fleck_share", look[6])
+		_outcrop_rock[ore] = m
+
+	return _outcrop_rock[ore]
 
 
 # Scale to the radius still left (the cube root of the stones left), sunk a fifth into the ground like Art's scenery boulders.
