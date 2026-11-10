@@ -1001,13 +1001,14 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": true,
+			"known": false,
 			"keeps": [
 				[
 					"sewing_needle",
 					1
 				]
-			]
+			],
+			"retired": true
 		},
 		"sinew_cord": {
 			"number": 44,
