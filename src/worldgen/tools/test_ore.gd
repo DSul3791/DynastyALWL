@@ -114,7 +114,7 @@ func _init() -> void:
 	l._boulder_cfg["ore"]["boulder_share"] = 1.0
 	l._boulder_cfg["max_chance"] = 1.0
 	l._boulder_cfg["min_slope"] = 0.0
-	l.ore_near = func(pos, _reach): return "tin" if pos.x < 400.0 else ("unobtainium" if pos.x < 800.0 else "")
+	l.ore_near = func(pos, _reach, _names, _depth): return "tin" if pos.x < 400.0 else ("unobtainium" if pos.x < 800.0 else "")
 	var near_tin: int = 0
 	var far_ore: int = 0
 	var unknown: int = 0
