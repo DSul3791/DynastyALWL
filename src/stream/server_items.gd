@@ -12406,7 +12406,8 @@ func _dev_pending_tick(spent: float) -> void:
 # --- Testing only: place structures without a kit (for screenshots and rigs) -------------------------------------------------------------------------------------------
 # The server scene calls this for each `--dev-place=name@x,z,yaw[,lit]` argument (repeatable); nothing else calls it, so normal play never runs it. `name` is a structure
 # kind of structures.json (lean_to, rough_bed, fireplace, wall_torch, chandelier, chest, workbench ...), x and z world metres (the ground height is taken from the ground),
-# yaw degrees; the word `lit` lights a light or a fire, and `coals` or `ash` lays a campfire burnt down to glowing coals or warm ash. A fire name (`campfire`) lays a campfire. Returns the world id, 0 when the name or the ground is unknown.
+# yaw degrees; the word `lit` lights a light or a fire, `coals` or `ash` lays a campfire burnt down to glowing coals or warm ash, and `firewood` or `log` makes a lit campfire
+# medium or large (its wood; weak wood, a small fire, without). A fire name (`campfire`) lays a campfire. Returns the world id, 0 when the name or the ground is unknown.
 func dev_place(spec: String) -> int:
 	var parts: PackedStringArray = spec.split("@")
 
@@ -12440,7 +12441,12 @@ func dev_place(spec: String) -> int:
 		return _next_id - 1
 
 	if name == "campfire":
-		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": 1.0e9, "fire": {"state": 1 if lit else 9, "burn_left": 36000.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 36000.0}, "covered": false, "recheck": COVER_RECHECK_S}}
+		var wood_class: String = "log" if nums.has("log") else ("firewood" if nums.has("firewood") else "weak")   # the fire's size follows its wood (cooking.json fire_tiers)
+		var wood: Dictionary = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
+		wood[wood_class] = 36000.0
+		var lit_state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(wood_class, {}) as Dictionary).get("state", 1))
+		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": 1.0e9, "fire": {"state": lit_state if lit else 9, "burn_left": 36000.0, "wood": wood, "covered": false, "recheck": COVER_RECHECK_S}}
+		_lit_valid = false
 		_next_id += 1
 		_dirty = true
 		return _next_id - 1
