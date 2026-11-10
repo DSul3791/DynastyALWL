@@ -332,6 +332,35 @@ func make_placeholder(tile_coord: Vector2i, tile_size_m: float, depth_m: float) 
 
 # ---------------------------------------------------------------- sampling
 
+# The surface height of the nearest fresh water (a lake or river sample of the baked map, not the sea) within `reach` metres of `pos` across the
+# ground, or NAN when there is none (Sonny's water rules, section 3: a well or pump reaches down to the level of the nearest fresh water within 200 m,
+# an interim rule until the depth-to-table layer). Looked at once when a well or pump is placed or first worked.
+func fresh_water_y(pos: Vector3, reach: float) -> float:
+	if placeholder or water_class.size() != samples * samples:
+		return NAN
+
+	var steps: int = int(ceil(reach / spacing_m))
+	var ci: int = int(round((pos.x - x0) / spacing_m))
+	var cj: int = int(round((pos.z - z0) / spacing_m))
+	var best: float = INF
+	var surface: float = NAN
+
+	for j in range(maxi(cj - steps, 0), mini(cj + steps, samples - 1) + 1):
+		for i in range(maxi(ci - steps, 0), mini(ci + steps, samples - 1) + 1):
+			var k: int = j * samples + i
+
+			if water_class[k] < 2 or is_nan(water_surface[k]):
+				continue   # dry, or the sea (class 1)
+
+			var gap: float = Vector2(x0 + float(i) * spacing_m - pos.x, z0 + float(j) * spacing_m - pos.z).length()
+
+			if gap <= reach and gap < best:
+				best = gap
+				surface = water_surface[k]
+
+	return surface
+
+
 # Ground height at a world position inside the tile: smooth (Catmull-Rom) on dry land, and under water the same straight-line (bilinear)
 # shape the water is drawn and simulated with, blended by wet_at.
 # Dave 7 Nov 2026 (x 54358 z 68702, "the water runs under the dirt at the lip of the waterfall"; "from an LOD away I see the river,

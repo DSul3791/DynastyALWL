@@ -360,6 +360,7 @@ func _ready() -> void:
 				return str(ore.get("resource", ""))
 
 		return ""
+	items.fresh_water_y = func(pos, reach): return generator.get_tile(generator.tile_of(pos.x, pos.z)).fresh_water_y(pos, reach)   # wells and pumps (TileTerrainData.fresh_water_y)
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 

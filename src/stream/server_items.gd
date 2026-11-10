@@ -1286,7 +1286,7 @@ func tick(delta: float) -> void:
 		_auto_split()
 		_slow_mark("auto-split", t0)
 		_crops_tick()
-		_water_tick()
+		_water_tick(spent)
 		_slow_mark("crops-water", t0)
 		_lights_tick(spent)
 		_dev_pending_tick(spent)
@@ -7838,6 +7838,10 @@ func _use_struct(peer: int, inv, id: int) -> void:
 	if _peer_pos[peer].distance_to(it["pos"]) > float(def.get("use_reach_m", 3.0)):
 		return
 
+	if _water_kind.has(id) and _is_pumpable(_water.pieces[id]):   # a well or pump: E starts working it, E again stops
+		_toggle_pump(peer, id)
+		return
+
 	if str(def.get("use", "")) == "door":
 		# A door opens and shuts: the structure turns into its other kind (structures.json "toggle"), the row's state follows.
 		var now_ms: int = Time.get_ticks_msec()
@@ -11602,6 +11606,11 @@ func _water_refusal(def: Dictionary, spot: Vector3, yaw_deg: int) -> String:
 	if piece.is_empty():
 		return ""
 
+	var dry: String = _ground_water_refusal(piece, spot)
+
+	if dry != "":
+		return dry
+
 	if str(piece.get("role", "")) == "source":
 		var sources: int = 0
 
@@ -11653,6 +11662,8 @@ func _water_rebuild(tanks: Dictionary) -> void:
 	_water = WaterNetwork.new()
 	_water.still_after_s = 3.0 * GameClockScript.SECONDS_PER_DAY / GameClockScript.RATIO   # 3 game days (Sonny's rules)
 	_water_kind.clear()
+	_water_depth.clear()
+	_pumping.clear()
 	_water_tanks_saved = tanks.duplicate()
 	_water_at_s = -1.0
 
@@ -11683,8 +11694,9 @@ func _plot_litres_per_pct(kind: String) -> float:
 
 # Pieces whose structure is gone leave; then, when anything changed or the next event is due, the water that flowed into plots since the last solve
 # becomes moisture, each plot's room is set from its moisture, and the network is solved again.
-func _water_tick() -> void:
+func _water_tick(spent: float = 0.0) -> void:
 	if _water_kind.is_empty():
+		_pumping.clear()
 		return
 
 	for id in _water_kind.keys():
@@ -11693,13 +11705,20 @@ func _water_tick() -> void:
 		if it.is_empty() or not it.has("struct") or str(it["struct"]["kind"]) != str(_water_kind[id]) or it["struct"].has("site"):
 			_water.remove(id)
 			_water_kind.erase(id)
+			_water_depth.erase(id)
 			_water_dirty = true
 
+	_pump_tick(spent)
 	var now_s: float = _water_now_s()
 
 	if not _water_dirty and now_s < _water_next_s:
 		return
 
+	_water_resolve(now_s)
+
+
+# The water that flowed into plots since the last solve becomes moisture, each plot's room is set from its moisture, and the network is solved.
+func _water_resolve(now_s: float) -> void:
 	_water_dirty = false
 
 	for id in _water_kind:
@@ -11722,6 +11741,226 @@ func _water_tick() -> void:
 	_water.solve(now_s)
 	_water_at_s = now_s
 	_water_next_s = _water.next_event_s()
+
+
+# --- Wells and pumps (6b part 2; Sonny's water rules sections 1 to 3) ---
+# A source whose water block has "ground_water" (a well, a hand pump, a deep pump) lifts from the nearest fresh water within WELL_REACH_M: its depth
+# is its ground minus that water's surface, and it may not go where there is none or deeper than its max_depth_m. E on one starts working it and E
+# again stops: a pump ("pump": {cap_lps, watts}) gives WaterNetwork.pump_lpm, a windlass ("windlass": true) windlass_lpm with its bucket's draw_l,
+# while the worker stays within its use reach and is not worn out; the work is exertion (the block's effort, 0.7). A source with nothing linked below
+# it pours into the worker's containers instead (the first with room, hotbar first), and stops when they are full.
+const WELL_REACH_M := 200.0
+var fresh_water_y: Callable             # (position, reach m) -> surface height of the nearest lake or river within reach, NAN when none; set by the server scene (unset: the block's depth_m)
+var _pumping: Dictionary = {}           # peer -> item id of the well or pump they work
+var _water_depth: Dictionary = {}       # item id -> metres down to the water it lifts
+var _pour_carry: Dictionary = {}        # peer -> millilitres poured but not yet a whole one
+
+
+func _ground_water_depth(spot: Vector3, piece: Dictionary) -> float:
+	if not fresh_water_y.is_valid():
+		return float(piece.get("depth_m", 2.0))
+
+	var surface: float = float(fresh_water_y.call(spot, WELL_REACH_M))
+	return NAN if is_nan(surface) else maxf(spot.y - surface, 0.0)
+
+
+# Why a well or pump may not go here ("" when it may): no fresh water within 200 m, or the water deeper than it reaches.
+func _ground_water_refusal(piece: Dictionary, spot: Vector3) -> String:
+	if not bool(piece.get("ground_water", false)):
+		return ""
+
+	var depth: float = _ground_water_depth(spot, piece)
+
+	if is_nan(depth):
+		return "There is no fresh water within %d m to reach down to." % int(WELL_REACH_M)
+
+	if depth > float(piece.get("max_depth_m", 25.0)):
+		return "The water lies %d m down here, too deep for this." % int(round(depth))
+
+	return ""
+
+
+func _is_pumpable(piece: Dictionary) -> bool:
+	return str(piece.get("role", "")) == "source" and (piece.has("pump") or bool(piece.get("windlass", false)))
+
+
+# Litres a minute the worker gets out of a well or pump at its depth.
+func _pump_rate(id: int) -> float:
+	var piece: Dictionary = _water.pieces.get(id, {})
+
+	if not _water_depth.has(id):
+		_water_depth[id] = _ground_water_depth(_items[id]["pos"], piece)
+
+	var depth: float = float(_water_depth[id])
+
+	if is_nan(depth):
+		return 0.0
+
+	if piece.has("pump"):
+		var pump: Dictionary = piece["pump"]
+		return WaterNetwork.pump_lpm(float(pump.get("cap_lps", 0.8)), float(pump.get("watts", 40.0)), depth)
+
+	return WaterNetwork.windlass_lpm(depth, float(piece.get("draw_l", 8.0)))
+
+
+# E on a well or pump: start working it, or stop.
+func _toggle_pump(peer: int, id: int) -> void:
+	if int(_pumping.get(peer, 0)) == id:
+		_stop_pump(peer, "You stop.")
+		return
+
+	if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+		_say(peer, "You are too worn out to work it.")
+		return
+
+	_stop_pump(peer, "")
+
+	for other in _pumping:
+		if int(_pumping[other]) == id:
+			_say(peer, "Someone is working it already.")
+			return
+
+	var rate: float = _pump_rate(id)
+
+	if rate <= 0.0:
+		_say(peer, "It draws nothing.")
+		return
+
+	_pumping[peer] = id
+	_water.pieces[id]["rate_lpm"] = rate
+	_water_dirty = true
+	_say(peer, "You start working it (%d L a minute). Press E again to stop." % int(round(rate)))
+
+
+func _stop_pump(peer: int, say: String) -> void:
+	if not _pumping.has(peer):
+		return
+
+	var id: int = int(_pumping[peer])
+	_pumping.erase(peer)
+	_pour_carry.erase(peer)
+
+	if _water.pieces.has(id):
+		_water.pieces[id]["rate_lpm"] = 0.0
+		_water_dirty = true
+
+	if say != "":
+		_say(peer, say)
+
+
+# Each slow tick: a worker who walked off, wore out or lost the piece stops; the others work on (exertion), and a source with nothing below it fills
+# the worker's containers.
+func _pump_tick(spent: float) -> void:
+	for peer in _pumping.keys():
+		var id: int = int(_pumping[peer])
+
+		if not _peer_pos.has(peer) or not _water_kind.has(id):
+			_stop_pump(peer, "")
+			continue
+
+		var def: Dictionary = _structures.get(str(_water_kind[id]), {})
+
+		if _peer_pos[peer].distance_to(_items[id]["pos"]) > float(def.get("use_reach_m", 3.0)) + 0.5:
+			_stop_pump(peer, "You stop working it.")
+			continue
+
+		if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+			_stop_pump(peer, "You are too worn out to go on.")
+			continue
+
+		var piece: Dictionary = _water.pieces[id]
+		_work_until[peer] = Time.get_ticks_msec() + int(maxf(spent, SLOW_TICK_S) * 1000.0) + 500
+		_work_level[peer] = float(piece.get("effort", 0.7))
+
+		if _water.downstream(id).is_empty() and spent > 0.0:
+			_pour_into_containers(peer, float(piece.get("rate_lpm", 0.0)) * spent / 60.0 * 1000.0)
+
+
+func _pour_into_containers(peer: int, ml: float) -> void:
+	var inv = inventory_of(peer)
+
+	if inv == null:
+		_stop_pump(peer, "")
+		return
+
+	var carry: float = float(_pour_carry.get(peer, 0.0)) + ml
+	var whole: int = int(floor(carry))
+	_pour_carry[peer] = carry - float(whole)
+	var before: Array = _snapshot(inv)
+	var order: Array = []
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] != 0 and _container_cap(inv.numbers[slot]) > inv.wear[slot]:
+			if inv.on_hotbar(slot):
+				order.push_front(slot)
+			else:
+				order.append(slot)
+
+	if order.is_empty():
+		_stop_pump(peer, "You have nothing with room for water.")
+		return
+
+	for slot in order:
+		var poured: int = mini(whole, _container_cap(inv.numbers[slot]) - inv.wear[slot])
+		inv.wear[slot] += poured
+		whole -= poured
+
+		if whole <= 0:
+			break
+
+	_send_changes(peer, inv, before)
+	_dirty = true
+
+
+# The nearest tank (trough, barrel, cistern) holding water within `reach` of `pos`, or -1.
+func _tank_near(pos: Vector3, reach: float) -> int:
+	var best: int = -1
+	var best_m: float = reach
+	var now_s: float = _water_now_s()
+
+	for id in _water_kind:
+		if str(_water.pieces[id].get("role", "")) != "tank" or _water.litres(id, now_s) < 0.01:
+			continue
+
+		var gap: float = (_items[id]["pos"] as Vector3).distance_to(pos)
+
+		if gap <= best_m:
+			best_m = gap
+			best = id
+
+	return best
+
+
+# E to drink at a tank, or to fill the container in hand from it (ACT_DRINK): the water comes out of the tank.
+func _drink_from_tank(peer: int, slot: int, inv, tank: int, v: Dictionary, thirst: Dictionary, now: int) -> void:
+	var now_s: float = _water_now_s()
+	_water_resolve(now_s)   # the tank's litres are brought to now before any is taken
+	var held_ml: int = int(floor(_water.litres(tank, now_s) * 1000.0))
+
+	if _water.quality(tank) == "still":
+		_say(peer, "The water has stood a long time. It smells stale.")
+
+	if inv != null and slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0 and _container_cap(inv.numbers[slot]) > inv.wear[slot]:
+		var ml: int = mini(mini(int(thirst.get("fill_ml", 500)), _container_cap(inv.numbers[slot]) - inv.wear[slot]), held_ml)
+		var before: Array = _snapshot(inv)
+		inv.wear[slot] += ml
+		_send_changes(peer, inv, before)
+		_water.set_litres(tank, float(held_ml - ml) / 1000.0)
+	else:
+		var cap: float = float(thirst.get("cap_ml", 2400))
+
+		if float(v["wet"]) >= cap - 1.0:
+			_say(peer, "You have had enough water.")
+			return
+
+		var sip: int = mini(int(thirst.get("drink_ml", 300)), held_ml)
+		v["wet"] = minf(float(v["wet"]) + float(sip), cap)
+		_sync_vitals(peer, true)
+		_water.set_litres(tank, float(held_ml - sip) / 1000.0)
+
+	_last_drink[peer] = now
+	_water_dirty = true
+	_dirty = true
 
 
 # One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
@@ -14616,6 +14855,12 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_last_drink.get(peer, -100000)) < int(thirst.get("drink_pace_ms", 900)):
+		return
+
+	var tank: int = _tank_near(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
+
+	if tank >= 0:   # a trough, barrel or cistern of the water network within reach (6b part 2)
+		_drink_from_tank(peer, slot, inv, tank, v, thirst, now)
 		return
 
 	var shown: bool = water_near.is_valid() and bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0))))

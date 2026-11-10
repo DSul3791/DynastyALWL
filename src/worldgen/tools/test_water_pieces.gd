@@ -3,12 +3,16 @@ extends SceneTree
 # Water pieces on the server (buildables plan section 6, part 6b; Steve's design note, 10 Nov 2026): a structure with a structures.json "water" block
 # joins the water network when built, its ports turned with its yaw; water a channel brings to a garden plot becomes moisture (1 percent a litre on
 # a 2 x 2 plot) until the plot is full; a piece taken away leaves the network; a fifth source in a chunk and a piece closing a loop are refused;
-# tank litres are saved and come back. No water rows exist yet (Jamie's B6 batch), so test rows stand in.
+# tank litres are saved and come back; a well or pump needs fresh water within 200 m and no deeper than it reaches, E works it (exertion) and fills the
+# worker's containers when nothing is linked below it; E at a trough drinks or fills from it. No water rows exist yet (Jamie's B6 batch), so test rows stand in.
 #   godot --headless --path . --script res://src/worldgen/tools/test_water_pieces.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
+const Network := preload("res://src/shared/water_network.gd")
+const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 
 var failures: int = 0
 var items
@@ -41,6 +45,7 @@ func make(dir: String):
 	it._structures["test_channel"] = {"kit": "test_channel_kit", "item": "test_channel", "state": 9908, "piece": true, "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "water": {"role": "conduit", "inlet": [-1.0, 0.3, 0.0], "outlet": [1.0, 0.29, 0.0], "cap_lpm": 120.0, "closed": false}}
 	it._structures["test_level_channel"] = {"kit": "test_level_kit", "item": "test_level_channel", "state": 9909, "piece": true, "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "water": {"role": "conduit", "inlet": [-1.0, 0.3, 0.0], "outlet": [1.0, 0.3, 0.0], "cap_lpm": 120.0, "closed": false}}
 	it._structures["test_plot"] = {"kit": "test_plot_kit", "item": "test_plot", "state": 9910, "plot": true, "footprint_x": 2.0, "footprint_z": 2.0, "cap_per_chunk": 50, "water": {"role": "consumer", "inlet": [0.0, 0.2, 0.0]}}
+	it._structures["test_pump"] = {"kit": "test_pump_kit", "item": "test_pump", "state": 9912, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "use_reach_m": 3.0, "water": {"role": "source", "outlet": [0.0, 1.0, 0.0], "cap_lpm": 48.0, "ground_water": true, "max_depth_m": 7.0, "pump": {"cap_lps": 0.8, "watts": 40.0}, "effort": 0.7, "quality": "clean"}}
 	it._structures["test_trough"] = {"kit": "test_trough_kit", "item": "test_trough", "state": 9911, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "water": {"role": "tank", "inlet": [0.0, 0.4, 0.0], "litres_max": 100.0}}
 	return it
 
@@ -107,6 +112,54 @@ func _init() -> void:
 	items._water_rebuild(saved)
 	check(items._water_kind.has(trough) and is_equal_approx(items._water.litres(trough, 0.0), 40.0), "and come back with the trough at load")
 	check(is_equal_approx(items._water.still_after_s, 3.0 * 3600.0), "standing water goes still after 3 game days (3 real hours)")
+
+	# The baked map's nearest fresh water: a lake sample 141 m away counts, the sea does not, and none within 100 m is NAN.
+	var tile = TileDataScript.new()
+	tile.samples = 3
+	tile.spacing_m = 100.0
+	tile.water_class = PackedByteArray([0, 0, 0, 0, 2, 0, 0, 0, 1])
+	tile.water_surface = PackedFloat32Array([NAN, NAN, NAN, NAN, 5.0, NAN, NAN, NAN, -1.0])
+	check(is_equal_approx(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0), 5.0), "the lake 141 m away is the nearest fresh water (%.1f)" % tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0))
+	check(is_nan(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 100.0)), "none within 100 m")
+	check(is_nan(tile.fresh_water_y(Vector3(200.0, 20.0, 200.0), 50.0)), "the sea is not fresh water")
+
+	# Wells and pumps (6b part 2): they reach down to the nearest fresh water within 200 m, no deeper than their max_depth_m.
+	items.fresh_water_y = func(pos, _reach): return NAN if pos.x > 500.0 else (1.0 if pos.z > 400.0 else 6.0)
+	var pump_def: Dictionary = items._structures["test_pump"]
+	check(items._water_refusal(pump_def, Vector3(600.0, 10.0, 300.0), 0) == "There is no fresh water within 200 m to reach down to.", "a pump with no fresh water within 200 m is refused")
+	check(items._water_refusal(pump_def, Vector3(300.0, 10.0, 450.0), 0) == "The water lies 9 m down here, too deep for this.", "and one over water 9 m down, past its 7 m (%s)" % items._water_refusal(pump_def, Vector3(300.0, 10.0, 450.0), 0))
+	check(items._water_refusal(pump_def, Vector3(300.0, 10.0, 300.0), 0) == "", "4 m down it may go")
+	var pump: int = put("test_pump", Vector3(300.0, 10.0, 300.0), 0.0)
+
+	# E works it, the water pours into the worker's bucket (nothing is linked below it), and the work is exertion.
+	items.peer_connected_hello(1, "pumper000001")
+	items.report_position(1, Vector3(301.0, 10.0, 300.0))
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("bucket"), 0, 1, Vector3.ZERO)
+	var inv = items.inventory_of(1)
+	var bucket: int = inv.numbers.find(items.table.number_of("bucket"))
+	items._use_struct(1, inv, pump)
+	check(int(items._pumping.get(1, 0)) == pump and is_equal_approx(float(items._water.pieces[pump]["rate_lpm"]), Network.pump_lpm(0.8, 40.0, 4.0)), "E starts the pump at its rate over 4 m (%.1f L/min)" % float(items._water.pieces[pump].get("rate_lpm", 0.0)))
+	items._water_tick(10.0)
+	check(bucket >= 0 and int(inv.wear[bucket]) == 8000, "10 s at 48 L/min fill the 8 L bucket (%d ml)" % (int(inv.wear[bucket]) if bucket >= 0 else -1))
+	check(items.effort_of(1) >= 0.7, "pumping is work (%.2f)" % items.effort_of(1))
+	items._water_tick(1.0)
+	check(not items._pumping.has(1), "with nothing left to fill, the pump stops")
+	inv.wear[bucket] = 0
+	items._use_struct(1, inv, pump)
+	items._use_struct(1, inv, pump)
+	check(not items._pumping.has(1) and float(items._water.pieces[pump]["rate_lpm"]) == 0.0, "E again stops it")
+	items._use_struct(1, inv, pump)
+	items.report_position(1, Vector3(310.0, 10.0, 300.0))
+	items._water_tick(0.25)
+	check(not items._pumping.has(1), "walking away stops it")
+
+	# A trough: E drinks from it, or fills the container in hand, and the water comes out of the trough.
+	var water_trough: int = put("test_trough", Vector3(320.0, 10.0, 300.0), 0.0)
+	items._water.set_litres(water_trough, 50.0)
+	items.report_position(1, Vector3(320.5, 10.0, 300.0))
+	var fill_ml: int = int(items._vitals_cfg.get("thirst", {}).get("fill_ml", 500))
+	items._drink_water(1, bucket, inv)
+	check(int(inv.wear[bucket]) == fill_ml and absf(items._water.litres(water_trough, items._water_now_s()) - (50.0 - float(fill_ml) / 1000.0)) < 0.001, "E with a bucket at a trough fills %d ml from it (%.3f L left)" % [fill_ml, items._water.litres(water_trough, items._water_now_s())])
 
 	print("water pieces: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
