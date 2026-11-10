@@ -202,6 +202,14 @@
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "antler_mount_kit"
+		},
+		{
+			"id": "tusk_mount",
+			"class": "decor",
+			"points": 1,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "tusk_mount_kit"
 		}
 	],
 	"rested": {

@@ -12,7 +12,8 @@
 	"draw_share": 0.1,
 	"draw_species": ["rabbit", "fox"],
 	"draw_note": "MikeW 3 Nov: rabbits and foxes stay within a few metres of home, so almost none ever came within lure_m of a snare (0 of 4,800 looks in tools/snare_odds.gd). Now a look with nothing inside lure_m picks the nearest draw_species animal within draw_m and rolls the catch chance x draw_share; on success that animal moves its home to the snare and grazes there, so a later look can catch it. A snare on a worn run draws far more often (trail_factor).",
-	"species_weight": {"rabbit": 1.0, "fox": 0.4, "duck": 0.5},
+	"species_weight": {"rabbit": 1.0, "fox": 0.4},
+	"species_weight_note": "Part C plan 3 (10 Nov 2026): birds are caught by the bird trap, not the snare (item_system), so the duck is off the snare's list. A species with no carcass.json row is never caught (the catch would leave nothing).",
 	"duck_needs_water": true,
 	"trail_factor": [[0.0, 0.1], [0.1, 0.4], [0.3, 0.8], [0.6, 1.0]],
 	"bait_m": 1.0,
@@ -30,5 +31,20 @@
 	"gap_m": 8.0,
 	"say_cap": "You already have six snares out. The oldest one is taken back.",
 	"say_near": "A snare needs open ground, well away from buildings.",
-	"say_broke": "A snare broke on its catch."
+	"say_broke": "A snare broke on its catch.",
+	"kinds": {
+		"bird_trap_set": {
+			"note": "The Bird trap (Part C plan 3, 10 Nov 2026): the bird_trap kit is set like a snare (struct kind bird_trap_set), with these numbers laid over the snare's. It catches only ground birds (species_weight); one living within draw_m may wander over to it at the catch chance x draw_share. Birds keep to no runs, so the worn-trail factor is flat; they roost at night (night_mult under 1). Grain or other food within bait_m baits it. Its own cap of per_player.",
+			"item": "bird_trap",
+			"species_weight": {"pheasant": 1.0, "grouse": 1.0},
+			"draw_species": ["pheasant", "grouse"],
+			"draw_m": 60.0,
+			"trail_factor": [[0.0, 1.0]],
+			"night_mult": 0.3,
+			"test_species": "pheasant",
+			"say_cap": "You already have six bird traps out. The oldest one is taken back.",
+			"say_near": "A bird trap needs open ground, well away from buildings.",
+			"say_broke": "A bird trap broke on its catch."
+		}
+	}
 }

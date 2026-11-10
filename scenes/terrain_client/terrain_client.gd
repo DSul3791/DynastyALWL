@@ -82,6 +82,7 @@ const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
+const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -249,6 +250,7 @@ var _z_slept: bool = false             # the hold already asked for sleep
 const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
 var _was_lying: bool = false
 var shot_lock: bool = false              # true while the shot runner takes pictures: mouse look is ignored so the pose it sets stays
+var shot_sway: bool = false              # the shot runner's --shot-sway: the drawn bow's sway still turns the camera under shot_lock (the rig's pitch stays the base)
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var running: bool = false             # Shift held with W
@@ -3940,7 +3942,7 @@ func _update_view(delta: float) -> void:
 
 	# The drawn bow's sway turns the whole view, the aim with it (Dave 10 Nov 2026: "the whole screen should move like that but much less"):
 	# the eye camera goes back to the mouse's look each frame, then held_item turns it; the bow's cross stays in the middle.
-	if not photo.active and not shot_lock:
+	if not photo.active and (not shot_lock or shot_sway):
 		camera.rotation.x = pitch
 		camera.rotation.y = 0.0
 		var turn: Vector2 = held.bow_view_turn() if held != null else Vector2.ZERO
@@ -4642,6 +4644,23 @@ func _room_to_rise(target: int) -> bool:
 	return get_viewport().world_3d.direct_space_state.intersect_shape(query, 1).is_empty()
 
 
+var _snow_pace_at_msec: int = -100000
+var _snow_pace_now: float = 1.0
+
+
+# The snow pace under the feet (SnowWalk): the voxel material the footsteps read, looked at four times a second.
+func _snow_pace() -> float:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _snow_pace_at_msec < 250 or sound == null or items == null:
+		return _snow_pace_now
+
+	_snow_pace_at_msec = now
+	var soil: int = sound._ground_under(body.global_position - Vector3(0.0, sound.FEET_M, 0.0))
+	_snow_pace_now = SnowWalkScript.pace_mult(SnowWalkScript.soil_is_snow(soil), SnowWalkScript.shod(items.worn, items.table))
+	return _snow_pace_now
+
+
 func _move_player(delta: float) -> void:
 	if menu_open or (cavein_death != null and cavein_death.active) or (death_screen != null and death_screen.active):
 		body.velocity = Vector3.ZERO
@@ -4701,6 +4720,8 @@ func _move_player(delta: float) -> void:
 
 		if stance.stance == StanceScript.STAND:
 			pace *= items.path_pace_factor(body.global_position, "run" if running else "walk")
+
+		pace *= _snow_pace()   # snow and glacial ice are slow going, snowshoes ease it (snow_walk.json, Part C plan 7)
 
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)

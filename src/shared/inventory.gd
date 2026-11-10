@@ -334,7 +334,7 @@ func to_json_array() -> Array:
 
 func from_json_array(data: Array) -> void:
 	for i in mini(SLOTS, data.size()):
-		numbers[i] = int(data[i][0])
+		numbers[i] = table.current_number(int(data[i][0])) if table != null else int(data[i][0])   # a retired item loads as its replacement (renames.json)
 		counts[i] = clampi(int(data[i][1]), 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0
 		fav[i] = numbers[i] if data[i].size() > 3 and int(data[i][3]) == 1 else 0

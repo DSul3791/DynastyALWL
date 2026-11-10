@@ -34,7 +34,9 @@
 		"sources": {"enabled": true, "note": "Drinking water from the record (docs/design/drinking_water_design.md; Sonny springs_and_drinking_water.md). On since Dave's 8 Nov ruling (OVERNIGHT_DECISIONS row 26); off, today's drink anywhere near water. On, with the scene's water_source rows: springs run always (unless their drought flow is 0 in summer), brooks by regime (2 dry in summer unless it rained within rain_memory_h game hours; 3 only within flash_memory_h of rain), salt water (ocean, estuary) is refused, frozen water needs an ice hole. A brook below a spring stays open open_m x sqrt(L/s) x cold_x below it (Jamie #739), halved from breeze_wind, and asks for a hole past that only where the ice bears (_on_ice). No sickness: one kind of water (sickness.json, Dave 21 Oct).", "rain_memory_h": 24.0, "flash_memory_h": 6.0, "open_m": 440.0, "cold_x": [[-2.0, 1.8], [-5.0, 1.0], [-10.0, 0.6], [-15.0, 0.4]], "breeze_wind": 0.3, "breeze_x": 0.5, "say_salt": "Salt water. It would only make you thirstier.", "say_frozen": "The water is frozen. Break a hole in the ice first.", "say_dry": "The bed is dry."}
 	},
 	"drink": {
-		"by_id": {},
+		"by_id": {
+			"fruit_juice": 250
+		},
 		"by_suffix": {}
 	},
 	"eat_pace_ms": 800,
@@ -136,6 +138,9 @@
 			"honey_loaf": 620,
 			"roast_joint": 700,
 			"garlic_meat": 760,
+			"fruit_juice": 150,
+			"sausage": 760,
+			"meat_skewer": 720,
 			"chestnut_cakes": 600,
 			"fruit_leather": 520,
 			"smoked_fish": 700,
@@ -174,6 +179,9 @@
 		}
 	},
 	"medicines": {
+		"herb_antidote": {
+			"cure_h": 12
+		},
 		"medicine": {
 			"cure_h": 18
 		},

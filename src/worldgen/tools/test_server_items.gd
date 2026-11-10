@@ -788,6 +788,31 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(clay_n) >= 1, "a dig in clay brings up clay")
+	var salt_n: int = m.table.number_of("salt")
+	mat[0] = "salt_flat"
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(salt_n) >= 1, "a dig in a salt flat brings up salt, the same Salt as sea salt")
+	m.inventory_of(1).remove(salt_n, m.inventory_of(1).count_of(salt_n))
+	m.inventory_of(1).remove(sand_n, m.inventory_of(1).count_of(sand_n))
+
+	# digging.json finds: a worm by chance in moist living soil (a stand-in item here, at chance 1, until Jamie's Worm row lands).
+	check(str((m._dig_cfg.get("finds", [{}]) as Array)[0].get("item", "")) == "worm", "digging.json finds a worm in soil")
+	var keep_finds: Variant = m._dig_cfg.get("finds", [])
+	var find_n: int = m.table.number_of("rotten_food")
+	m._dig_cfg["finds"] = [{"item": "rotten_food", "chance": 1.0, "soils": ["loam"]}]
+	mat[0] = "loam"
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(find_n) == 1, "a find comes up with a loam dig")
+	mat[0] = "sand"
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(find_n) == 1, "but not in sand")
+	m.inventory_of(1).remove(find_n, 1)
+	m.inventory_of(1).remove(soil_n, m.inventory_of(1).count_of(soil_n))
+	m.inventory_of(1).remove(sand_n, m.inventory_of(1).count_of(sand_n))
+	m._dig_cfg["finds"] = keep_finds
 
 	# Filling with the spade (ACT_FILL, saved edits step 3): spends a shovelful, makes a fill, hands it back if refused.
 	var fills: Array = []
@@ -3127,6 +3152,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("stone"), 4)
 	bw.give(1, bw.table.number_of("twine"), 10)
 	bw.give(1, bw.table.number_of("hide"), 2)
+	bw.give(1, bw.table.number_of("sewing_needle"), 1)   # sewn things keep a Bone - Needle (item system, 10 Nov 2026); it stays for the hood below
 	bw._last_queue_act.clear()
 	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
 	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a workbench")
@@ -3150,7 +3176,7 @@ func _init() -> void:
 		bw._craft_tick(0.25)
 
 	check(str(bw.recipes.recipe(177)["id"]) == "snare" and bool(bw.recipes.recipe(177).get("known", false)) and bw.inventory_of(1).count_of(bw.table.number_of("snare")) == 1, "a snare by hand from 3 twine and 2 sticks")
-	for rid in ["hide_cloak", "hide_boots", "hide_hood", "hide_mittens", "hide_leggings", "backpack"]:
+	for rid in ["hide_cloak", "hide_boots", "hide_hood", "hide_mittens", "hide_trousers", "backpack"]:
 		check(bw_rec.has(rid) and bool(bw.recipes.recipe(int(bw_rec[rid]["number"])).get("known", false)) and str(bw.recipes.recipe(int(bw_rec[rid]["number"])).get("station", "")) == "" and not bool(bw.table.entry(rid).get("future", false)), "%s is live, known from the start and made by hand" % rid)
 
 	bw.give(1, bw.table.number_of("hide"), 1)

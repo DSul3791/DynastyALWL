@@ -32,13 +32,18 @@ func power(draw_ms: int) -> float:
 	return lerpf(float(cfg.get("min_power", 0.5)), 1.0, float(d - lo) / float(hi - lo))
 
 
-func speed(power_now: float) -> float:
-	return float(cfg.get("speed_max", 45.0)) * power_now
+# `bow_id`: the bow shot from (bow.json "bows": its speed, damage and range against the wooden bow; "" or no row = the wooden bow).
+func speed(power_now: float, bow_id: String = "") -> float:
+	return BowAim.bow_speed_max(cfg, bow_id) * power_now
 
 
-# The bow skill (0..100) multiplies it by aim.damage_mult (Dave 10 Nov 2026).
-func damage(arrow_damage: float, power_now: float, level: float) -> float:
-	return arrow_damage * power_now * BowAim.damage_mult(cfg, level)
+# The bow skill (0..100) multiplies it by aim.damage_mult (Dave 10 Nov 2026), and the bow by its damage_mult.
+func damage(arrow_damage: float, power_now: float, level: float, bow_id: String = "") -> float:
+	return arrow_damage * power_now * BowAim.damage_mult(cfg, level) * float(BowAim.bow_stats(cfg, bow_id)["damage_mult"])
+
+
+func range_m(bow_id: String = "") -> float:
+	return BowAim.bow_range_m(cfg, bow_id)
 
 
 # The chance the arrow does NOT survive its landing: by tip, worse when it hit an animal; in water it is lost water_loss of the time (the larger of the two).
@@ -54,12 +59,12 @@ func lost_chance(tip: String, hit_animal: bool, in_water: bool) -> float:
 	return base
 
 
-# The arrow the bow is loaded with (`loaded`, an ammo item the pack holds) or else the first ammo id of the data list that the pack holds: its slot, or -1.
-func ammo_slot(inv, table, loaded: int = 0) -> int:
-	if loaded != 0 and is_ammo(table.id_of(loaded)) and inv.has(loaded, 1):
+# The arrow the bow is loaded with (`loaded`, an ammo item the pack holds) or else the first ammo id of the bow's list that the pack holds: its slot, or -1.
+func ammo_slot(inv, table, loaded: int = 0, bow_id: String = "") -> int:
+	if loaded != 0 and is_ammo(table.id_of(loaded), bow_id) and inv.has(loaded, 1):
 		return inv.numbers.find(loaded)
 
-	for id in cfg.get("ammo", []):
+	for id in BowAim.ammo_for(cfg, bow_id):
 		var number: int = table.number_of(str(id))
 
 		if number != 0 and inv.has(number, 1):
@@ -68,5 +73,5 @@ func ammo_slot(inv, table, loaded: int = 0) -> int:
 	return -1
 
 
-func is_ammo(item_id: String) -> bool:
-	return (cfg.get("ammo", []) as Array).has(item_id)
+func is_ammo(item_id: String, bow_id: String = "") -> bool:
+	return BowAim.ammo_for(cfg, bow_id).has(item_id)

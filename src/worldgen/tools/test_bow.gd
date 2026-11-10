@@ -1,6 +1,7 @@
 extends SceneTree
 
 # Bow shooting (ACT_SHOOT, data/items/bow.json): draw power, ammo, pace, flight to a stub animal, the ground, retrievable and breaking arrows, water, forged draw time.
+# The Fire arrow (Part C plan 6, bow.json fire_arrow): lit from a flame within 3 m, more damage and noise, burnt up, lights a laid fire or torch post.
 # The aim (Dave 10 Nov 2026, BowAim, bow.json "aim"): steady time, wobble, the vital-zone pull, the server's spread and the damage by bow skill, the loaded arrow, fibre arrows.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bow.gd      Prints "Test done: N pass, N fail".
 
@@ -169,6 +170,7 @@ func _init() -> void:
 	aim_checks()
 	loaded_checks()
 	tree_checks()
+	fire_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -187,6 +189,13 @@ func aim_checks() -> void:
 	check(BowAim.damage_mult(cfg, 0.0) == 1.0 and BowAim.damage_mult(cfg, 100.0) > 1.0, "skill raises the damage, none leaves it as the arrow's")
 	var bow = BowScript.new()
 	check(bow.damage(8.0, 1.0, 100.0) > bow.damage(8.0, 1.0, 0.0), "the server's damage takes the skill multiplier")
+
+	# Each bow its own power and range (bow.json "bows"; Jamie #933): the longbow's arrow is faster, hits harder and flies further than the
+	# wooden bow's; a bow with no row shoots like the wooden bow.
+	check(is_equal_approx(bow.speed(1.0, "wooden_longbow"), 1.2 * bow.speed(1.0, "wooden_bow")) and is_equal_approx(bow.speed(1.0, "wooden_bow"), float(cfg["speed_max"])), "a longbow's arrow leaves 1.2 times as fast (%.0f m/s)" % bow.speed(1.0, "wooden_longbow"))
+	check(bow.damage(8.0, 1.0, 0.0, "wooden_longbow") > bow.damage(8.0, 1.0, 0.0, "wooden_bow") and is_equal_approx(bow.damage(8.0, 1.0, 0.0, "wooden_bow"), bow.damage(8.0, 1.0, 0.0)), "and hits harder")
+	check(bow.range_m("wooden_longbow") > bow.range_m("wooden_bow") and is_equal_approx(bow.range_m("no_such_bow"), float(cfg["range_m"])), "and flies further (%.0f m); a bow with no row is the wooden bow" % bow.range_m("wooden_longbow"))
+	check(is_equal_approx(BowAim.bow_speed_max(cfg, "wooden_longbow"), bow.speed(1.0, "wooden_longbow")), "the client's flight uses the same speed as the server's")
 
 	# The pull: none at no skill; with skill a zone near the aim draws it, a zone far off does not.
 	var eye: Vector3 = Vector3.ZERO
@@ -279,9 +288,116 @@ func tree_checks() -> void:
 
 	check(stuck_now == 2, "a second arrow beside the first is its own stuck arrow, not a pile (%d)" % stuck_now)
 
+	# A shot that does not stick (bow.json "bows" sticks false: the sling's stone) drops at the trunk's foot instead. The wooden bow stands in
+	# for the sling here, since the Sling and Sling stone items come with Jamie's Part C rows.
+	items._bow.cfg["bows"]["wooden_bow"]["sticks"] = false
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_arrow"), 0, 1, Vector3.ZERO)
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0))
+	fly(items, 2.0)
+	var at_foot: Array = []
+
+	for id in items._items:
+		if not items._items[id].has("tilt") and int(items._items[id].get("number", 0)) == items.table.number_of("stone_arrow"):
+			at_foot.append(items._items[id])
+
+	check(items._arrows.is_empty() and at_foot.size() == 1 and absf(float(at_foot[0]["pos"].y) - 10.0) < 0.3 and Vector2(at_foot[0]["pos"].x - trunk_foot.x, at_foot[0]["pos"].z - trunk_foot.z).length() < 0.6, "a shot that does not stick lies at the trunk's foot (%d)" % at_foot.size())
+	items._bow.cfg["bows"]["wooden_bow"].erase("sticks")
+
+	# The sling (item_system.md): drawn and loosed like a bow, its own ammo list, slower and shorter, never sticks, its own lines.
+	var sling_cfg: Dictionary = BowAim.load_config()
+	check(BowAim.shoots({"weapon_class": "sling"}) and BowAim.shoots({"weapon_class": "bow"}) and not BowAim.shoots({"weapon_class": "spear"}), "a sling shoots like a bow; a spear does not")
+	check(BowAim.ammo_for(sling_cfg, "sling") == ["sling_stone"] and BowAim.ammo_for(sling_cfg, "wooden_bow") == sling_cfg["ammo"] and BowAim.ammo_for(sling_cfg, "wooden_longbow") == sling_cfg["ammo"], "the sling throws sling stones; the bows take the arrow list")
+	check(not BowAim.sticks(sling_cfg, "sling") and BowAim.sticks(sling_cfg, "wooden_bow"), "a sling stone never sticks; an arrow does")
+	var sling_bow = BowScript.new()
+	check(not sling_bow.is_ammo("stone_arrow", "sling") and sling_bow.is_ammo("sling_stone", "sling") and sling_bow.is_ammo("stone_arrow", "wooden_bow"), "an arrow is no sling ammo")
+	check(absf(sling_bow.speed(1.0, "sling") - 31.5) < 0.01 and is_equal_approx(sling_bow.range_m("sling"), 60.0), "a sling stone leaves at about 32 m/s and reaches 60 m")
+	check(BowAim.say(sling_cfg, "sling", "say_no_ammo") == "You have no sling stones." and BowAim.say(sling_cfg, "wooden_bow", "say_no_ammo") == str(sling_cfg["say_no_ammo"]), "the sling says its own lines")
+	check(float(sling_cfg["break_chance"].get("stone_shot", 1.0)) <= 0.1, "a sling stone seldom breaks")
+
 	# The sway's turn of the view: turn_of undoes turned for small angles.
 	var fwd: Vector3 = Vector3(0.0, 0.0, -1.0)
 	var turn: Vector2 = BowAim.turn_of(BowAim.turned(fwd, Vector3.RIGHT, Vector3.UP, Vector2(0.8, -0.5)), fwd, Vector3.RIGHT, Vector3.UP)
 	check(absf(turn.x - 0.8) < 0.01 and absf(turn.y + 0.5) < 0.01, "the view turns by the sway it is given (%s)" % str(turn))
 	var cfg: Dictionary = BowAim.load_config()
 	check(float(cfg["aim"]["wobble_max_deg"]) <= 1.5, "the sway is much less than the 4 degrees the cross moved (%.1f)" % float(cfg["aim"]["wobble_max_deg"]))
+
+
+# The Fire arrow (Part C plan 6): Jamie's row is not in yet, so a stand-in copy of the stone arrow with "fire": true is used.
+func fire_checks() -> void:
+	var items = make("user://test_bow_fire")
+	var cfg: Dictionary = items._bow.cfg["fire_arrow"]
+	check(is_equal_approx(float(cfg["light_m"]), 3.0) and is_equal_approx(float(cfg["damage_mult"]), 1.5) and is_equal_approx(float(cfg["ignite_m"]), 0.6), "the fire arrow numbers are the plan's")
+	check((items._bow.cfg["ammo"] as Array).has("fire_arrow"), "a bow takes the fire arrow")
+
+	if not items.table.has_id("fire_arrow"):
+		var row: Dictionary = items.table.entry("stone_arrow").duplicate()
+		row["id"] = "fire_arrow"
+		row["number"] = 99993
+		row["name"] = "Fire arrow"
+		row["fire"] = true
+		items.table._by_id["fire_arrow"] = row
+		items.table._by_number[99993] = row
+
+	var fire_n: int = items.table.number_of("fire_arrow")
+	var bow_no: int = items.table.number_of("wooden_bow")
+	items.action(1, Net.ACT_ADMIN_GIVE, bow_no, 0, 1, Vector3.ZERO)
+	var slot: int = items.inventory_of(1).numbers.find(bow_no)
+	items.inventory_of(1).add(fire_n, 4)
+	var noise: float = float(items._bow.cfg["noise_m"])
+
+	# No flame near: it flies as a plain arrow.
+	deer_at = Vector3(0.0, 10.0, -20.0)
+	hits.clear()
+	alarms.clear()
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0), fire_n)
+	check(items._arrows.size() == 1 and not bool(items._arrows[0]["fire"]) and is_equal_approx(float(alarms[0][1]), noise), "with no flame near, a fire arrow flies unlit")
+	fly(items, 2.0)
+	var plain: float = float(hits[0]) if hits.size() > 0 else 0.0
+
+	# A burning fire 2 m away lights it: half again the damage, twice the noise, and it is burnt up.
+	var camp: int = items._next_id
+	items._next_id += 1
+	items._items[camp] = {"number": 1, "count": 1, "pos": Vector3(2.0, 10.0, 0.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 600.0, "covered": false}}
+	items._lit_valid = false
+	check(items._flame_near(Vector3(0.0, 10.0, 0.0), 3.0) and not items._flame_near(Vector3(0.0, 10.0, 10.0), 3.0), "a burning fire is a flame within 3 m, not 10 m off")
+	hits.clear()
+	alarms.clear()
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0), fire_n)
+	check(items._arrows.size() == 1 and bool(items._arrows[0]["fire"]) and is_equal_approx(float(alarms[0][1]), noise * 2.0), "by a fire it is lit, and heard twice as far")
+	fly(items, 2.0)
+	check(hits.size() == 1 and plain > 0.0 and absf(float(hits[0]) / plain - 1.5) < 0.05, "a lit arrow does half again the damage, within 0.05: the first hit trains the hunting skill a hair (%.1f against %.1f)" % [float(hits[0]) if hits.size() > 0 else 0.0, plain])
+	var lying: int = 0
+
+	for id in items._items:
+		lying += int(items._items[id].get("count", 1)) if int(items._items[id].get("number", 0)) == fire_n else 0
+
+	deer_at = Vector3(0.0, -500.0, 0.0)
+	shoot(items, slot, 1200, Vector3(0.0, 0.3, -1.0), fire_n)
+	fly(items, 8.0)
+	var after: int = 0
+
+	for id in items._items:
+		after += int(items._items[id].get("count", 1)) if int(items._items[id].get("number", 0)) == fire_n else 0
+
+	check(after == lying, "a lit arrow is always burnt up: none lies where it fell")
+	items._items.erase(camp)
+	items._lit_valid = false
+
+	# Where it comes down: a laid fire with wood, or an unlit torch post, within 0.6 m catches; one with no wood, or farther, does not.
+	var laid: int = items._next_id
+	items._items[laid] = {"number": 1, "count": 1, "pos": Vector3(50.0, 10.0, 0.0), "left": 1000.0, "fire": {"state": 9, "burn_left": 300.0, "covered": false}}
+	items._items[laid + 1] = {"number": 1, "count": 1, "pos": Vector3(50.0, 10.0, 3.0), "left": 1000.0, "fire": {"state": 9, "burn_left": 300.0, "covered": false}}
+	items._items[laid + 2] = {"number": 1, "count": 1, "pos": Vector3(60.0, 10.0, 0.0), "left": 1000.0, "fire": {"state": 9, "burn_left": 0.0, "covered": false}}
+	items._next_id += 3
+	check(items._arrow_ignite(Vector3(50.3, 10.0, 0.2)) == "fire" and ItemsScript.fire_is_lit(int(items._items[laid]["fire"]["state"])), "it lights a laid fire it falls beside")
+	check(not ItemsScript.fire_is_lit(int(items._items[laid + 1]["fire"]["state"])), "but not one 3 m away")
+	check(items._arrow_ignite(Vector3(60.0, 10.0, 0.0)) == "" and int(items._items[laid + 2]["fire"]["state"]) == 9, "a fire with no wood on it does not catch")
+	items._structures["test_torch_post"] = {"kit": "test_torch_post_kit", "item": "chandelier", "state": 9905, "use": "light", "lights": true, "fuel": "stick", "fuel_days": 0.5, "rain_douses": true, "gap_exempt": true, "cap_per_chunk": 12}
+	var post: int = items._next_id
+	items._next_id += 1
+	items._items[post] = {"number": items.table.number_of("chandelier"), "count": 1, "pos": Vector3(70.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "test_torch_post", "yaw": 0.0}}
+	items.rain_now = func(): return 1.0
+	check(items._arrow_ignite(Vector3(70.2, 10.0, 0.0)) == "" and not bool(items._items[post]["struct"].get("lit", false)), "in open rain a torch post does not catch")
+	items.rain_now = func(): return 0.0
+	check(items._arrow_ignite(Vector3(70.2, 10.0, 0.0)) == "light" and bool(items._items[post]["struct"]["lit"]) and float(items._items[post]["struct"]["fuel_left"]) > 0.0, "a dry torch post catches")
+	check(items._flame_near(Vector3(71.0, 10.0, 0.0), 3.0), "and is then a flame to light the next arrow from")

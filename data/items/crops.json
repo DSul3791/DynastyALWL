@@ -471,6 +471,37 @@
 			],
 			"tool_to_harvest": "hand",
 			"store": "eaten fresh; spoils in days"
+		},
+		"parsnip": {
+			"name": "Parsnip",
+			"seed": "parsnip_seeds",
+			"sow_season": "summer",
+			"grow_days": 10,
+			"water_per_day": 0.2,
+			"soil": "deep, loose, stone-free",
+			"yields": [
+				[
+					"parsnip",
+					2
+				]
+			],
+			"seeds_back": [
+				"parsnip_seeds",
+				[
+					1,
+					3
+				]
+			],
+			"seed_source": "wild parsnip (seed heads, late summer)",
+			"biomes": [
+				"temperate_grassland",
+				"mixed_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "root cellar or left in the ground: keeps through winter",
+			"sow_seasons": [
+				"spring"
+			]
 		}
 	}
 }

@@ -3357,6 +3357,672 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "thatch_fence_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "thatch_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wood_fence_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wood_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_fence_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_palisade_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_palisade_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_fence_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "brick_fence_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "brick_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_fence_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "thatch_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "brick_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "thatch_roof_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_roof_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_roof_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_roof_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "brick_roof_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_table_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_table_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_chair_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_table_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_workbench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_shelf_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_cupboard_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_barrel_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_stairs_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_stairs_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "brick_stairs_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_railing_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_railing_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "double_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "steel_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "horn_pane": {
+   "shape": "chunk",
+   "color": "#d8c79a",
+   "size": 0.6
+  },
+  "lamp_oil": {
+   "shape": "chunk",
+   "color": "#c9a24a",
+   "size": 0.7
+  },
+  "wooden_lantern": {
+   "shape": "chunk",
+   "color": "#9a7a45",
+   "size": 0.8
+  },
+  "iron_lantern": {
+   "shape": "chunk",
+   "color": "#7d8087",
+   "size": 0.8
+  },
+  "wooden_hanging_lantern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_hanging_lantern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_wall_lantern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_torch_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_torch_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_torch_stand_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_lamp_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_lamp_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_lamp_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_brazier_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_brazier_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "thatch_garden_plot_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_garden_plot_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_garden_plot_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "brick_garden_plot_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_planter_box_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_planter_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_trellis_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_compost_bin_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "thatch_scarecrow_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_cold_frame_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_well_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_hand_pump_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_hand_pump_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_trough_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_trough_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_channel_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_channel_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_channel_tee_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_sluice_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "clay_pipe": {
+   "shape": "chunk",
+   "color": "#b8703a",
+   "size": 0.8
+  },
+  "stone_trough_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_channel_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_channel_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_channel_tee_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "clay_pipe_run_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "clay_pipe_elbow_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "clay_pipe_tee_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_pipe_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_pipe_elbow_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_tap_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_deep_well_pump_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_cistern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_raised_cistern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "horn": {
+   "shape": "chunk",
+   "color": "#5a4a3a",
+   "size": 0.9
+  },
+  "gut": {
+   "shape": "coil",
+   "color": "#c8a088",
+   "size": 0.7
+  },
+  "toggle": {
+   "shape": "rod",
+   "color": "#d8ccb0",
+   "size": 0.3,
+   "bits": [
+    "pin"
+   ]
+  },
+  "hook": {
+   "shape": "rod",
+   "color": "#d8ccb0",
+   "size": 0.25,
+   "bits": [
+    "pin"
+   ]
+  },
+  "bone_club": {
+   "shape": "bone",
+   "color": "#d8ccb0",
+   "size": 1.6
+  },
+  "leather_quiver": {
+   "shape": "quiver",
+   "color": "#7a4a28",
+   "size": 1.0
+  },
+  "wooden_longbow": {
+   "shape": "bow",
+   "color": "#8a6a3a",
+   "size": 1.3
+  },
+  "leather_trousers": {
+   "shape": "cloth",
+   "color": "#7a4a28",
+   "size": 1.0
+  },
+  "leather_boots": {
+   "shape": "cloth",
+   "color": "#5a3a22",
+   "size": 0.8
+  },
+  "leather_gloves": {
+   "shape": "cloth",
+   "color": "#7a4a28",
+   "size": 0.6
+  },
+  "leather_backpack": {
+   "shape": "backpack",
+   "color": "#6a4024",
+   "size": 1.4
+  },
+  "straw_hat": {
+   "shape": "cloth",
+   "color": "#d8c070",
+   "size": 0.8
+  },
+  "worm": {
+   "shape": "coil",
+   "color": "#b07a6a",
+   "size": 0.3
+  },
+  "kiln_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "tanning_rack_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "drying_rack_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "smoker_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "oil_press_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "storage_jar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "hide_sack_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wicker_basket_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "weapon_rack_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "armour_stand_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "sign_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "tusk_mount_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "clay_bloomery_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stonecutters_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "bronze_chisel": {
+   "shape": "knife",
+   "color": "#b0803a",
+   "size": 1.0
+  },
+  "iron_chisel": {
+   "shape": "knife",
+   "color": "#8a8a90",
+   "size": 1.0
+  },
+  "steel_chisel": {
+   "shape": "knife",
+   "color": "#b8c0c8",
+   "size": 1.0
+  },
+  "carved_stone_block": {
+   "shape": "block",
+   "color": "#9a978f",
+   "size": 1.5
+  },
+  "carved_stone_shingle": {
+   "shape": "chunk",
+   "color": "#7a7d84",
+   "size": 0.7
+  },
+  "meat_skewer": {
+   "shape": "joint",
+   "color": "#7a4424",
+   "size": 0.8
+  },
+  "sausage": {
+   "shape": "joint",
+   "color": "#8a3a2a",
+   "size": 0.7
+  },
+  "fruit": {
+   "shape": "round_berries",
+   "color": "#b0502a",
+   "size": 1.0
+  },
+  "fruit_juice": {
+   "shape": "bottle",
+   "color": "#c06a2a",
+   "size": 0.8
+  },
+  "mortar_pestle": {
+   "shape": "chunk",
+   "color": "#8a8580",
+   "size": 0.9
+  },
+  "herb_antidote": {
+   "shape": "bottle",
+   "color": "#5a7a3a",
+   "size": 0.8
+  },
+  "bonemeal": {
+   "shape": "crumble",
+   "color": "#d8d0c0",
+   "size": 1.0
+  },
+  "parsnip": {
+   "shape": "chunk",
+   "color": "#e0d6a8",
+   "size": 1.0
+  },
+  "parsnip_seeds": {
+   "shape": "chunk",
+   "color": "#a89a70",
+   "size": 0.5
   }
 
  }
