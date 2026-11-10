@@ -44,7 +44,6 @@ var _stats: Dictionary = {"moved_m3": 0.0, "memory": 0, "loaded": 0}
 var _live = DigWindows.new()   # Sullivan water (7 Nov 2026): fine 2 m windows where players dig, so ditches and dams change the flow
 var _last_levels: PackedFloat32Array = PackedFloat32Array()   # the levels last built on the water thread (what a new dig window starts from)
 var _fine_pending: Dictionary = {}   # the newest fine sheet packets (dig_windows.fine_packets), taken once by take_fine
-var _players: PackedVector2Array = PackedVector2Array()   # player x, z, newest first (set_players): a 2 m region follows the first
 var _fine_built: int = 0          # 2 m water packet sets built (the log line for the PC check)
 var _fine_sent: bool = false      # the last fine packets named any region (so one more, empty, tells clients to drop them)
 var _live_rect: Rect2 = Rect2()   # world x, z the dig windows draw into, as of the last publish (clients must re-ask chunks there too)
@@ -150,13 +149,6 @@ func take_fine() -> Dictionary:
 	_fine_pending = {}
 	_mutex.unlock()
 	return packet
-
-
-# The players' x, z (the server, every 2 s): a 2 m water region follows the first while there is water near them (dig_windows.follow).
-func set_players(points: PackedVector2Array) -> void:
-	_mutex.lock()
-	_players = points
-	_mutex.unlock()
 
 
 # Where the dig windows draw (world x, z), so the server tells clients to re-ask those chunks as well as the 8 m window's. Empty when none.
@@ -340,10 +332,6 @@ func _run() -> void:
 			if si < 0 or sj < 0 or si >= samples or sj >= samples or levels_now.is_empty():
 				return NAN
 			return levels_now[sj * samples + si]
-		_mutex.lock()
-		var players: PackedVector2Array = _players
-		_mutex.unlock()
-		_live.follow(players, level_at)
 		_live.update(TICK_S, level_at)
 		ticks += 1
 		busy = _field.awake_blocks() > 0

@@ -1,5 +1,7 @@
 # 2 m water follows the players (Sullivan water, Sonny, 7 Nov 2026)
 
+**Removed on 10 Nov 2026** after Dave's playtest. It drained spring brooks, hid the 8 m water across its square, and stuck behind the player. Why, and what a repaired one needs: `docs/water/follow_region_repair.md`. The 2 m water now runs only where players dig. What follows is the design as it was.
+
 Design first. This builds on `docs/water/fine_drawing_2m.md`. The goal is that the river a player stands by runs and is drawn on the guide's 2 m grid, not only where they dig. That is what Dave asked for: the riverbed is a neat carved channel down the valley floor, and a 3 m channel needs 2 m cells.
 
 ## Cost (measured)
