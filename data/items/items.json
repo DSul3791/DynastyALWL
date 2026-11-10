@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 794,
+	"next_number": 803,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -9065,6 +9065,129 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 199."
+			},
+			"clay_bloomery_kit": {
+				"number": 794,
+				"retired": true,
+				"name": "Clay bloomery",
+				"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 46
+			},
+			"clay_bloomery": {
+				"number": 795,
+				"name": "Clay bloomery",
+				"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 200."
+			},
+			"stonecutters_bench_kit": {
+				"number": 796,
+				"retired": true,
+				"name": "Stonecutter's bench",
+				"description": "A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 76
+			},
+			"stonecutters_bench": {
+				"number": 797,
+				"name": "Stonecutter's bench",
+				"description": "A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 201."
+			},
+			"bronze_chisel": {
+				"number": 798,
+				"name": "Bronze - Chisel",
+				"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+				"kind": "tool",
+				"stack": 1,
+				"unstackable": true,
+				"future": true,
+				"material": "bronze",
+				"tool_class": "chisel",
+				"tier": 2,
+				"durability": 400,
+				"repair": [
+					[
+						"bronze_ingot",
+						1
+					]
+				],
+				"look_alikes": [],
+				"value": 40
+			},
+			"iron_chisel": {
+				"number": 799,
+				"name": "Iron - Chisel",
+				"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
+				"kind": "tool",
+				"stack": 1,
+				"unstackable": true,
+				"future": true,
+				"material": "iron",
+				"tool_class": "chisel",
+				"tier": 3,
+				"durability": 700,
+				"repair": [
+					[
+						"iron_ingot",
+						1
+					]
+				],
+				"look_alikes": [],
+				"value": 60
+			},
+			"steel_chisel": {
+				"number": 800,
+				"name": "Steel - Chisel",
+				"description": "A steel chisel. Cuts the hardest stone cleanly.",
+				"kind": "tool",
+				"stack": 1,
+				"unstackable": true,
+				"future": true,
+				"material": "steel",
+				"tool_class": "chisel",
+				"tier": 4,
+				"durability": 1200,
+				"repair": [
+					[
+						"steel_ingot",
+						1
+					]
+				],
+				"look_alikes": [],
+				"value": 80
+			},
+			"carved_stone_block": {
+				"number": 801,
+				"name": "Carved stone block",
+				"description": "A stone block dressed smooth and carved at the edges. For fine walls and doorways.",
+				"kind": "material",
+				"stack": 4,
+				"look_alikes": [],
+				"value": 30
+			},
+			"carved_stone_shingle": {
+				"number": 802,
+				"name": "Carved stone shingle",
+				"description": "A stone shingle cut thin and even, so a roof lies tight.",
+				"kind": "material",
+				"stack": 40,
+				"look_alikes": [],
+				"value": 3
 			}
 	}
 }

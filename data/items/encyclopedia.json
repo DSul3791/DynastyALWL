@@ -1924,7 +1924,9 @@
 				"Used in Brick - Foundation",
 				"Used in Log - Foundation",
 				"Used in Oil press",
-				"Used in Smoker"
+				"Used in Smoker",
+				"Used in Clay bloomery",
+				"Used in Stone block (bench)"
 			],
 			"obtainable_now": true
 		},
@@ -1962,7 +1964,10 @@
 				"Used in Wooden - Arrow (fibre)",
 				"Used in Drying rack",
 				"Used in Sign",
-				"Used in Wicker - Basket"
+				"Used in Wicker - Basket",
+				"Used in Bronze - Chisel",
+				"Used in Iron - Chisel",
+				"Used in Steel - Chisel"
 			],
 			"obtainable_now": true
 		},
@@ -2020,7 +2025,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": true
 		},
@@ -2425,7 +2431,8 @@
 			"kind": "material",
 			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
-				"Craft at a forge: 4 Iron ore, 1 Fuel"
+				"Craft at a forge: 4 Iron ore, 1 Fuel",
+				"Craft at a clay bloomery: 5 Iron ore, 3 Fuel"
 			],
 			"used_for": [
 				"Used in Hinges",
@@ -2455,7 +2462,8 @@
 				"Used in Iron - Deep-well pump",
 				"Used in Iron - Pipe",
 				"Used in Iron - Pipe elbow",
-				"Used in Iron - Tap"
+				"Used in Iron - Tap",
+				"Used in Iron - Chisel"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2477,7 +2485,8 @@
 				"Used in Steel - Spade",
 				"Used in Steel - Striker",
 				"Used in Steel - Hammer",
-				"Used in Steel - Doorway"
+				"Used in Steel - Doorway",
+				"Used in Steel - Chisel"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2539,7 +2548,8 @@
 				"Used in Clay pipe",
 				"Used in Kiln",
 				"Used in Smoker",
-				"Used in Storage jar"
+				"Used in Storage jar",
+				"Used in Clay bloomery"
 			],
 			"obtainable_now": true
 		},
@@ -3264,7 +3274,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3316,7 +3327,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3368,7 +3380,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3420,7 +3433,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3472,7 +3486,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3524,7 +3539,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3576,7 +3592,8 @@
 				"Used in Wooden - Torch post",
 				"Used in Log - Trough",
 				"Used in Oil press",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3923,12 +3940,14 @@
 			"kind": "material",
 			"description": "A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar.",
 			"how_to_get": [
-				"Craft at a workbench: 8 Stone"
+				"Craft at a workbench: 8 Stone",
+				"Craft at a stonecutters bench: 6 Stone (keep Bronze - Chisel)"
 			],
 			"used_for": [
 				"Planned masonry: stone walls and floors with mortar (no blueprint uses it yet).",
 				"Used in Stone - Doorway",
-				"Used in Stone - Window"
+				"Used in Stone - Window",
+				"Used in Carved stone block"
 			],
 			"obtainable_now": true
 		},
@@ -3995,7 +4014,8 @@
 				"Used in Stone - Cistern",
 				"Used in Stone - Raised cistern",
 				"Used in Stone - Trough",
-				"Used in Kiln"
+				"Used in Kiln",
+				"Used in Clay bloomery"
 			],
 			"obtainable_now": true
 		},
@@ -4142,7 +4162,8 @@
 				"Used in Stone - Channel tee",
 				"Used in Stone - Cistern",
 				"Used in Stone - Raised cistern",
-				"Used in Stone - Trough"
+				"Used in Stone - Trough",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": true
 		},
@@ -4155,7 +4176,8 @@
 			],
 			"used_for": [
 				"Planned: a stone roof.",
-				"Used in Stone - Roof corner"
+				"Used in Stone - Roof corner",
+				"Used in Carved stone shingle"
 			],
 			"obtainable_now": true
 		},
@@ -4750,7 +4772,8 @@
 				"Used in Bronze - Helm",
 				"Used in Bronze - Mace",
 				"Used in Bronze - Sword",
-				"Used in Bronze - Shield"
+				"Used in Bronze - Shield",
+				"Used in Bronze - Chisel"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4914,7 +4937,8 @@
 			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
 			"how_to_get": [],
 			"used_for": [
-				"Used in Iron ingot"
+				"Used in Iron ingot",
+				"Used in Iron ingot (bloomery)"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4928,7 +4952,8 @@
 				"Used in Copper ingot",
 				"Used in Iron ingot",
 				"Used in Steel ingot",
-				"Used in Tin ingot"
+				"Used in Tin ingot",
+				"Used in Iron ingot (bloomery)"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -7309,7 +7334,8 @@
 				"Used in Copper ingot",
 				"Used in Iron ingot",
 				"Used in Steel ingot",
-				"Used in Tin ingot"
+				"Used in Tin ingot",
+				"Used in Iron ingot (bloomery)"
 			],
 			"obtainable_now": true
 		},
@@ -9571,6 +9597,104 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
+		},
+		"clay_bloomery_kit": {
+			"name": "Clay bloomery",
+			"kind": "placeable",
+			"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Clay, 10 Stone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"clay_bloomery": {
+			"name": "Clay bloomery",
+			"kind": "structure",
+			"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stonecutters_bench_kit": {
+			"name": "Stonecutter's bench",
+			"kind": "placeable",
+			"description": "A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Cobblestone, 4 Log"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stonecutters_bench": {
+			"name": "Stonecutter's bench",
+			"kind": "structure",
+			"description": "A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bronze_chisel": {
+			"name": "Bronze - Chisel",
+			"kind": "tool",
+			"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+			"how_to_get": [
+				"Craft at a forge: 1 Bronze ingot, 1 Stick"
+			],
+			"used_for": [
+				"Used in Stone block (bench)",
+				"Used in Carved stone block",
+				"Used in Carved stone shingle"
+			],
+			"obtainable_now": false
+		},
+		"iron_chisel": {
+			"name": "Iron - Chisel",
+			"kind": "tool",
+			"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
+			"how_to_get": [
+				"Craft at a forge: 1 Iron ingot, 1 Stick"
+			],
+			"used_for": [
+				"Used in Stone block (bench)",
+				"Used in Carved stone block",
+				"Used in Carved stone shingle"
+			],
+			"obtainable_now": false
+		},
+		"steel_chisel": {
+			"name": "Steel - Chisel",
+			"kind": "tool",
+			"description": "A steel chisel. Cuts the hardest stone cleanly.",
+			"how_to_get": [
+				"Craft at a forge: 1 Steel ingot, 1 Stick"
+			],
+			"used_for": [
+				"Used in Stone block (bench)",
+				"Used in Carved stone block",
+				"Used in Carved stone shingle"
+			],
+			"obtainable_now": false
+		},
+		"carved_stone_block": {
+			"name": "Carved stone block",
+			"kind": "material",
+			"description": "A stone block dressed smooth and carved at the edges. For fine walls and doorways.",
+			"how_to_get": [
+				"Craft at a stonecutters bench: 1 Stone block (keep Bronze - Chisel)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"carved_stone_shingle": {
+			"name": "Carved stone shingle",
+			"kind": "material",
+			"description": "A stone shingle cut thin and even, so a roof lies tight.",
+			"how_to_get": [
+				"Craft at a stonecutters bench: 1 Stone shingle (keep Bronze - Chisel)"
+			],
+			"used_for": [],
+			"obtainable_now": true
 		}
 	}
 }
