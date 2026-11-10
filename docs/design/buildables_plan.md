@@ -14,7 +14,7 @@ Morgan, 10 Nov 2026. Plan only, no code. Inputs: Jamie's hammer audit (`buildabl
 
 ## Numbering (Jamie, 10 Nov)
 
-Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; recipes 346, 347), B1a (above), **B2 fences and gates** blueprints 64 to 77, items 580 to 607 (kit then piece), states 92 to 112 (each gate has an open twin state right after it), **B1c pillars and roof corners** blueprints 78 to 87, items 608 to 627, states 113 to 122. Ids follow Kathleen's look names (`wood_fence`, `wood_gate`, `wooden_pillar`, `wooden_roof_corner`). **Final numbers (Jamie, 10 Nov, supersede any numbers in the batch tables below):** B3 furniture blueprints 88-98, items 628-649, states 123-133 (no Iron - Workbench; the ladder stops at Stone, level 3). B1b blueprints 99-106, items 650-665, states 134-144 (open twins for double, iron and steel doorways). B4 components items 666-669 (horn_pane, lamp_oil, wooden_lantern, iron_lantern; recipes 348-351), placed lights blueprints 107-117, items 670-691, states 145-155; a lantern's candle or lamp oil goes in a new blueprint field, "spent", not refunded on take-down. B5 blueprints 118-127, items 692-711, states 156-165. B6a blueprints 128-136, items 712-729, states 166-174; Clay pipe item 730, recipe 352. B6b blueprints 137-149, items 731-756, states 175-187. **Next free: item 757, recipe 353, blueprint 150, state 188. 148 live blueprints.** The Rain barrel is the B3 Wooden - Barrel (no separate piece). The tables below still show the first-pass numbers and are to be refreshed from this list.
+Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; recipes 346, 347), B1a (above), **B2 fences and gates** blueprints 64 to 77, items 580 to 607 (kit then piece), states 92 to 112 (each gate has an open twin state right after it), **B1c pillars and roof corners** blueprints 78 to 87, items 608 to 627, states 113 to 122. Ids follow Kathleen's look names (`wood_fence`, `wood_gate`, `wooden_pillar`, `wooden_roof_corner`). **Final numbers (Jamie, 10 Nov, supersede any numbers in the batch tables below):** B3 furniture blueprints 88-98, items 628-649, states 123-133 (no Iron - Workbench; the ladder stops at Stone, level 3). B1b blueprints 99-106, items 650-665, states 134-144 (open twins for double, iron and steel doorways). B4 components items 666-669 (horn_pane, lamp_oil, wooden_lantern, iron_lantern; recipes 348-351), placed lights blueprints 107-117, items 670-691, states 145-155; a lantern's candle or lamp oil goes in a new blueprint field, "spent", not refunded on take-down. B5 blueprints 118-127, items 692-711, states 156-165. B6a blueprints 128-136, items 712-729, states 166-174; Clay pipe item 730, recipe 352. B6b blueprints 137-149, items 731-756, states 175-187. **Next free: item 757, recipe 353, blueprint 150, state 188. 148 live blueprints.** The Rain barrel is the B3 Wooden - Barrel (no separate piece). The batch tables below were refreshed to these numbers on 10 Nov (kit and piece items shown as a pair).
 
 ## 1. Rulings this plan follows
 
@@ -103,16 +103,16 @@ Stairs exist only in wood (and are the one name that breaks `Tier - Item`). Uppe
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Log - Stairs | 8 log, 2 twine | 1.0 x 2.4 x 2.4 | as Wooden - Stairs: foundation or ceiling edge up to the next ceiling | 1 | 64 / 572 / 86 |
-| 2 | Stone - Stairs | 20 cobblestone, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 65 / 573 / 87 |
-| 3 | Brick - Stairs | 20 brick, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 66 / 574 / 88 |
-| 4 | Wooden - Railing | 2 lumber, 1 twine | 2.0 x 0.1 x 1.0 | ceiling and stair edge; stops falls; end to end | 1 | 67 / 575 / 89 |
-| 5 | Iron - Railing | 2 iron ingot, 4 nails | 2.0 x 0.1 x 1.0 | as above; hammer 3 | 3 | 68 / 576 / 90 |
-| 6 | Wooden - Double doorway | 6 lumber, 2 twine, 2 hinges | 4.0 x 0.25 x 2.4 | two adjacent wall cells; look door_double (already planned) | 1 | 69 / 577 / 91 |
-| 7 | Iron - Doorway | 3 lumber, 2 iron ingot, 12 nails, 2 hinges | 2.0 x 0.25 x 2.4 | reinforced door; look door_wrought; hammer 3 | 3 | 70 / 578 / 92 |
-| 8 | Steel - Doorway | 6 steel ingot, 2 hinges | 2.0 x 0.25 x 2.4 | look door_steel; hammer 3 | 3 | 71 / 579 / 93 |
+| 1 | Log - Stairs | 8 log, 2 twine | 1.0 x 2.4 x 2.4 | as Wooden - Stairs: foundation or ceiling edge up to the next ceiling | 1 | 99 / 650-651 / 134 |
+| 2 | Stone - Stairs | 20 cobblestone, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 100 / 652-653 / 135 |
+| 3 | Brick - Stairs | 20 brick, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 101 / 654-655 / 136 |
+| 4 | Wooden - Railing | 2 lumber, 1 twine | 2.0 x 0.1 x 1.0 | ceiling and stair edge; stops falls; end to end | 1 | 102 / 656-657 / 137 |
+| 5 | Iron - Railing | 2 iron ingot, 4 nails | 2.0 x 0.1 x 1.0 | as above; hammer 3 | 3 | 103 / 658-659 / 138 |
+| 6 | Wooden - Double doorway | 6 lumber, 2 twine, 2 hinges | 4.0 x 0.25 x 2.4 | two adjacent wall cells; look door_double (already planned) | 1 | 104 / 660-661 / 139-140 |
+| 7 | Iron - Doorway | 3 lumber, 2 iron ingot, 12 nails, 2 hinges | 2.0 x 0.25 x 2.4 | reinforced door; look door_wrought; hammer 3 | 3 | 105 / 662-663 / 141-142 |
+| 8 | Steel - Doorway | 6 steel ingot, 2 hinges | 2.0 x 0.25 x 2.4 | look door_steel; hammer 3 | 3 | 106 / 664-665 / 143-144 |
 
-Reserves blueprints 64-71, items 572-579, states 86-93.
+Final: blueprints 99-106, items 650-665 (kit, piece), states 134-144 (doors carry an open twin state).
 
 ### B1c. Pillars and roof corners
 
@@ -162,20 +162,19 @@ Furniture is wood-only today. Add log, stone and iron-bound versions of the benc
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Log - Bench | 2 log, 1 twine | 2.0 x 0.4 x 0.45 | seats 2; no workbench needed | 1 | 96 / 604 / 118 |
-| 2 | Log - Table | 3 log, 2 twine | 1.4 x 0.7 x 0.8 | hand-hewn top | 1 | 97 / 605 / 119 |
-| 3 | Stone - Bench | 10 cobblestone, 2 mortar | 2.0 x 0.4 x 0.45 | heavy; cannot be moved, only taken down | 1 | 98 / 606 / 120 |
-| 4 | Stone - Table | 14 cobblestone, 3 mortar, 2 lumber | 1.4 x 0.8 x 0.85 | thick top, stone-footed | 1 | 99 / 607 / 121 |
-| 5 | Iron - Bench | 4 lumber, 1 iron ingot, 12 nails | 2.0 x 0.4 x 0.45 | iron-bound timber; hammer 3 | 3 | 100 / 608 / 122 |
-| 6 | Iron - Chair | 4 lumber, 1 iron ingot, 12 nails, 1 hide | 0.6 x 0.6 x 0.9 | hammer 3 | 3 | 101 / 609 / 123 |
-| 7 | Iron - Table | 6 lumber, 1 iron ingot, 20 nails | 1.4 x 0.7 x 0.8 | hammer 3 | 3 | 102 / 610 / 124 |
-| 8 | Stone - Workbench | 20 cobblestone, 4 mortar, 6 lumber | 2.0 x 1.0 x 0.9 | stone-topped; station tier large; takes the tool rack and vice add-ons | 1 | 103 / 611 / 125 |
-| 9 | Iron - Workbench | 12 lumber, 3 iron ingot, 80 nails | 2.0 x 1.0 x 0.9 | iron vice bench; station tier epic; hammer 3 | 3 | 104 / 612 / 126 |
-| 10 | Wooden - Shelf | 3 lumber, 1 twine | 1.2 x 0.3 x 1.2 | container: 8 slots, 30 kg; wall-hugging | 1 | 105 / 613 / 127 |
-| 11 | Wooden - Cupboard | 6 lumber, 12 nails, 2 hinges | 1.0 x 0.5 x 1.8 | container: 16 slots, 60 kg; closes (hides contents) | 1 | 106 / 614 / 128 |
-| 12 | Wooden - Barrel | 4 lumber, 2 twine, 8 nails | 0.7 x 0.7 x 0.9 | container: 8 slots, 60 kg; or holds 100 L water (see B6) | 1 | 107 / 615 / 129 |
+| 1 | Log - Bench | 2 log, 1 twine | 2.0 x 0.4 x 0.45 | seats 2; no workbench needed | 1 | 88 / 628-629 / 123 |
+| 2 | Log - Table | 3 log, 2 twine | 1.4 x 0.7 x 0.8 | hand-hewn top | 1 | 89 / 630-631 / 124 |
+| 3 | Stone - Bench | 10 cobblestone, 2 mortar | 2.0 x 0.4 x 0.45 | heavy; cannot be moved, only taken down | 1 | 90 / 632-633 / 125 |
+| 4 | Stone - Table | 14 cobblestone, 3 mortar, 2 lumber | 1.4 x 0.8 x 0.85 | thick top, stone-footed | 1 | 91 / 634-635 / 126 |
+| 5 | Iron - Bench | 4 lumber, 1 iron ingot, 12 nails | 2.0 x 0.4 x 0.45 | iron-bound timber; hammer 3 | 3 | 92 / 636-637 / 127 |
+| 6 | Iron - Chair | 4 lumber, 1 iron ingot, 12 nails, 1 hide | 0.6 x 0.6 x 0.9 | hammer 3 | 3 | 93 / 638-639 / 128 |
+| 7 | Iron - Table | 6 lumber, 1 iron ingot, 20 nails | 1.4 x 0.7 x 0.8 | hammer 3 | 3 | 94 / 640-641 / 129 |
+| 8 | Stone - Workbench | 20 cobblestone, 4 mortar, 6 lumber | 2.0 x 1.0 x 0.9 | stone-topped; station tier large; takes the tool rack and vice add-ons | 1 | 95 / 642-643 / 130 |
+| 10 | Wooden - Shelf | 3 lumber, 1 twine | 1.2 x 0.3 x 1.2 | container: 8 slots, 30 kg; wall-hugging | 1 | 96 / 644-645 / 131 |
+| 11 | Wooden - Cupboard | 6 lumber, 12 nails, 2 hinges | 1.0 x 0.5 x 1.8 | container: 16 slots, 60 kg; closes (hides contents) | 1 | 97 / 646-647 / 132 |
+| 12 | Wooden - Barrel | 4 lumber, 2 twine, 8 nails | 0.7 x 0.7 x 0.9 | container: 8 slots, 60 kg; or holds 100 L water (see B6) | 1 | 98 / 648-649 / 133 |
 
-Reserves blueprints 96-107, items 604-615, states 118-129.
+Final: blueprints 88-98, items 628-649 (kit, piece), states 123-133. No Iron - Workbench; the ladder stops at Stone.
 
 ### B4. Lights: lanterns, torch posts, lamp posts, braziers
 
@@ -183,19 +182,19 @@ No lantern exists, only the held torch. Reference: a torch gives 12 m of light a
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Wooden - Hanging lantern | 1 lumber, 1 twine, 2 horn pane, 1 candle | 0.3 x 0.3 x 0.4 | hooks to a ceiling or wall beam; 8 m light; 1 candle burns 1 game day | 1 | 108 / 616 / 130 |
-| 2 | Iron - Hanging lantern | 1 iron ingot, 2 horn pane, 1 lamp oil | 0.3 x 0.3 x 0.4 | hooks to a ceiling or wall beam; 14 m; 1 lamp oil burns 3 game days; hammer 3 | 3 | 109 / 617 / 131 |
-| 3 | Iron - Wall lantern | 1 iron ingot, 2 horn pane, 1 lamp oil | 0.3 x 0.3 x 0.5 | bracket arm on a wall edge; 14 m; hammer 3 | 3 | 110 / 618 / 132 |
-| 4 | Wooden - Torch post | 1 log, 1 twine, 2 tallow | 0.3 x 0.3 x 2.2 | hammer-built standing torch with a pitch-soaked head; 12 m; burns out in the open rain like a torch | 1 | 111 / 619 / 133 |
-| 5 | Stone - Torch pillar | 8 cobblestone, 2 mortar, 1 iron ingot, 2 tallow | 0.5 x 0.5 x 2.0 | stone pillar with an iron bowl; 12 m; rain-shielded by the bowl hood; hammer 3 | 3 | 112 / 620 / 134 |
-| 6 | Iron - Torch stand | 2 iron ingot, 2 tallow | 0.3 x 0.3 x 1.8 | 12 m; hammer 3 | 3 | 113 / 621 / 135 |
-| 7 | Wooden - Lamp post | 3 lumber, 2 twine, 1 Wooden - Lantern | 0.3 x 0.3 x 3.0 | lantern on a pole, hook arm; 10 m; candle lasts 1 game day | 1 | 114 / 622 / 136 |
-| 8 | Iron - Lamp post | 4 iron ingot, 1 Iron - Lantern | 0.3 x 0.3 x 3.4 | 16 m; oil lasts 3 game days; hammer 3 | 3 | 115 / 623 / 137 |
-| 9 | Stone - Lamp post | 8 cobblestone, 2 mortar, 1 Iron - Lantern | 0.5 x 0.5 x 3.0 | lantern on a stone post; 16 m; hammer 3 for the lantern | 3 | 116 / 624 / 138 |
-| 10 | Stone - Brazier | 12 cobblestone, 3 mortar | 0.8 x 0.8 x 0.7 | burns logs/firewood from the pack; 10 m light and 4 m warmth; counts as a fire for comfort | 1 | 117 / 625 / 139 |
-| 11 | Iron - Brazier | 3 iron ingot | 0.7 x 0.7 x 0.8 | same; portable (take down returns the iron); hammer 3 | 3 | 118 / 626 / 140 |
+| 1 | Wooden - Hanging lantern | 1 lumber, 1 twine, 2 horn pane, 1 candle | 0.3 x 0.3 x 0.4 | hooks to a ceiling or wall beam; 8 m light; 1 candle burns 1 game day | 1 | 107 / 670-671 / 145 |
+| 2 | Iron - Hanging lantern | 1 iron ingot, 2 horn pane, 1 lamp oil | 0.3 x 0.3 x 0.4 | hooks to a ceiling or wall beam; 14 m; 1 lamp oil burns 3 game days; hammer 3 | 3 | 108 / 672-673 / 146 |
+| 3 | Iron - Wall lantern | 1 iron ingot, 2 horn pane, 1 lamp oil | 0.3 x 0.3 x 0.5 | bracket arm on a wall edge; 14 m; hammer 3 | 3 | 109 / 674-675 / 147 |
+| 4 | Wooden - Torch post | 1 log, 1 twine, 2 tallow | 0.3 x 0.3 x 2.2 | hammer-built standing torch with a pitch-soaked head; 12 m; burns out in the open rain like a torch | 1 | 110 / 676-677 / 148 |
+| 5 | Stone - Torch pillar | 8 cobblestone, 2 mortar, 1 iron ingot, 2 tallow | 0.5 x 0.5 x 2.0 | stone pillar with an iron bowl; 12 m; rain-shielded by the bowl hood; hammer 3 | 3 | 111 / 678-679 / 149 |
+| 6 | Iron - Torch stand | 2 iron ingot, 2 tallow | 0.3 x 0.3 x 1.8 | 12 m; hammer 3 | 3 | 112 / 680-681 / 150 |
+| 7 | Wooden - Lamp post | 3 lumber, 2 twine, 1 Wooden - Lantern | 0.3 x 0.3 x 3.0 | lantern on a pole, hook arm; 10 m; candle lasts 1 game day | 1 | 113 / 682-683 / 151 |
+| 8 | Iron - Lamp post | 4 iron ingot, 1 Iron - Lantern | 0.3 x 0.3 x 3.4 | 16 m; oil lasts 3 game days; hammer 3 | 3 | 114 / 684-685 / 152 |
+| 9 | Stone - Lamp post | 8 cobblestone, 2 mortar, 1 Iron - Lantern | 0.5 x 0.5 x 3.0 | lantern on a stone post; 16 m; hammer 3 for the lantern | 3 | 115 / 686-687 / 153 |
+| 10 | Stone - Brazier | 12 cobblestone, 3 mortar | 0.8 x 0.8 x 0.7 | burns logs/firewood from the pack; 10 m light and 4 m warmth; counts as a fire for comfort | 1 | 116 / 688-689 / 154 |
+| 11 | Iron - Brazier | 3 iron ingot | 0.7 x 0.7 x 0.8 | same; portable (take down returns the iron); hammer 3 | 3 | 117 / 690-691 / 155 |
 
-Reserves blueprints 108-118, items 616-626, states 130-140.
+Final: components items 666-669 (recipes 348-351); placed lights blueprints 107-117, items 670-691, states 145-155.
 
 Component and carried items (an item row and a recipe row each, no blueprint or state):
 
@@ -212,18 +211,18 @@ Only the flower pot and the tilled bed exist. Plots are framed beds on the 2 m g
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Thatch - Garden plot | 10 stick, 2 twine, 6 soil | 2.0 x 2.0 x 0.3 | stick-edged bed; grid cell; E plants/tends like a tilled bed | 1 | 119 / 631 / 141 |
-| 2 | Wooden - Garden plot | 8 lumber, 2 twine, 6 soil | 2.0 x 2.0 x 0.4 | plank raised bed | 1 | 120 / 632 / 142 |
-| 3 | Stone - Garden plot | 10 cobblestone, 2 mortar, 6 soil | 2.0 x 2.0 x 0.4 | stone-edged bed | 1 | 121 / 633 / 143 |
-| 4 | Brick - Garden plot | 10 brick, 2 mortar, 6 soil | 2.0 x 2.0 x 0.4 | brick bed | 1 | 122 / 634 / 144 |
-| 5 | Wooden - Planter box | 2 lumber, 2 soil | 0.8 x 0.3 x 0.3 | window box: 2 herbs/flowers; free placed | 1 | 123 / 635 / 145 |
-| 6 | Stone - Planter | 6 cobblestone, 1 mortar, 3 soil | 0.8 x 0.8 x 0.6 | big pot: 1 dwarf shrub or herb | 1 | 124 / 636 / 146 |
-| 7 | Wooden - Trellis | 10 stick, 4 twine | 1.6 x 0.1 x 2.0 | climbing crops (beans, hops later); beside a plot | 1 | 125 / 637 / 147 |
-| 8 | Wooden - Compost bin | 4 lumber, 1 twine | 1.0 x 1.0 x 0.8 | takes plant waste and manure; yields Compost (item 345) after 3 game days | 1 | 126 / 638 / 148 |
-| 9 | Thatch - Scarecrow | 6 stick, 10 thatch, 2 twine | 0.6 x 0.6 x 2.0 | keeps crows off plots within 6 m (ties to the crow sign in the creature plan) | 1 | 127 / 639 / 149 |
-| 10 | Wooden - Cold frame | 3 lumber, 1 twine, 4 horn pane | 1.0 x 1.0 x 0.5 | plot cover: protects seedlings from frost | 1 | 128 / 640 / 150 |
+| 1 | Thatch - Garden plot | 10 stick, 2 twine, 6 soil | 2.0 x 2.0 x 0.3 | stick-edged bed; grid cell; E plants/tends like a tilled bed | 1 | 118 / 692-693 / 156 |
+| 2 | Wooden - Garden plot | 8 lumber, 2 twine, 6 soil | 2.0 x 2.0 x 0.4 | plank raised bed | 1 | 119 / 694-695 / 157 |
+| 3 | Stone - Garden plot | 10 cobblestone, 2 mortar, 6 soil | 2.0 x 2.0 x 0.4 | stone-edged bed | 1 | 120 / 696-697 / 158 |
+| 4 | Brick - Garden plot | 10 brick, 2 mortar, 6 soil | 2.0 x 2.0 x 0.4 | brick bed | 1 | 121 / 698-699 / 159 |
+| 5 | Wooden - Planter box | 2 lumber, 2 soil | 0.8 x 0.3 x 0.3 | window box: 2 herbs/flowers; free placed | 1 | 122 / 700-701 / 160 |
+| 6 | Stone - Planter | 6 cobblestone, 1 mortar, 3 soil | 0.8 x 0.8 x 0.6 | big pot: 1 dwarf shrub or herb | 1 | 123 / 702-703 / 161 |
+| 7 | Wooden - Trellis | 10 stick, 4 twine | 1.6 x 0.1 x 2.0 | climbing crops (beans, hops later); beside a plot | 1 | 124 / 704-705 / 162 |
+| 8 | Wooden - Compost bin | 4 lumber, 1 twine | 1.0 x 1.0 x 0.8 | takes plant waste and manure; yields Compost (item 345) after 3 game days | 1 | 125 / 706-707 / 163 |
+| 9 | Thatch - Scarecrow | 6 stick, 10 thatch, 2 twine | 0.6 x 0.6 x 2.0 | keeps crows off plots within 6 m (ties to the crow sign in the creature plan) | 1 | 126 / 708-709 / 164 |
+| 10 | Wooden - Cold frame | 3 lumber, 1 twine, 4 horn pane | 1.0 x 1.0 x 0.5 | plot cover: protects seedlings from frost | 1 | 127 / 710-711 / 165 |
 
-Reserves blueprints 119-128, items 631-640, states 141-150.
+Final: blueprints 118-127, items 692-711, states 156-165.
 
 ### B6a. Water 1: well, hand pumps, troughs, wooden channels
 
@@ -231,18 +230,18 @@ Nothing on the hammer touches water today except the held bucket. This batch is 
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Stone - Well | 30 cobblestone, 8 mortar, 4 lumber, 1 rope, 1 bucket | 1.6 x 1.6 x 1.1 | place where the water table is within 25 m (interim rule, section 6); windlass and bucket: E draws 10 L; shared footprint with a pump on its cap | 1 | 129 / 641 / 151 |
-| 2 | Wooden - Hand pump | 6 lumber, 20 nails, 2 twine, 1 hide | 0.5 x 0.5 x 1.1 | old style lever pump on a bored shaft; place where the water table is within 7 m (suction limit); hold E: 0.8 L/s cap into a held container, trough or channel under the spout (lifts only) | 1 | 130 / 642 / 152 |
-| 3 | Iron - Hand pump | 6 iron ingot, 1 hide, 1 hinges | 0.5 x 0.5 x 1.1 | cast-iron pitcher pump: handle, spout, plinth; same rule, 1.2 L/s cap; hammer 3 | 3 | 131 / 643 / 153 |
-| 4 | Log - Trough | 2 log, 1 twine | 1.6 x 0.5 x 0.5 | hollow log; holds 60 L; animals drink here | 1 | 132 / 644 / 154 |
-| 5 | Wooden - Trough | 4 lumber, 1 twine | 2.0 x 0.6 x 0.5 | holds 100 L; animals drink here; can sit at a channel end | 1 | 133 / 645 / 155 |
-| 6 | Wooden - Rain barrel | 4 lumber, 2 twine, 8 nails | 0.7 x 0.7 x 0.9 | holds 100 L; collects 20 L per game hour of rain within a roof's reach; same 100 L as the storage Wooden - Barrel (B3), one piece type | 1 | 134 / 646 / 156 |
-| 7 | Wooden - Channel | 3 lumber, 1 twine | 2.0 x 0.4 x 0.3 | open flume on trestles, straight; ports at both ends | 1 | 135 / 647 / 157 |
-| 8 | Wooden - Channel corner | 3 lumber, 1 twine | 2.0 x 2.0 x 0.3 | 90 degree turn | 1 | 136 / 648 / 158 |
-| 9 | Wooden - Channel tee | 4 lumber, 1 twine | 2.0 x 2.0 x 0.3 | splits flow; the branch carries a sluice setting | 1 | 137 / 649 / 159 |
-| 10 | Wooden - Sluice | 2 lumber, 1 hinges | 2.0 x 0.4 x 0.6 | gate: E opens/closes, a channel piece with a closed/open port | 1 | 138 / 650 / 160 |
+| 1 | Stone - Well | 30 cobblestone, 8 mortar, 4 lumber, 1 rope, 1 bucket | 1.6 x 1.6 x 1.1 | place where the water table is within 25 m (interim rule, section 6); windlass and bucket: E draws 10 L; shared footprint with a pump on its cap | 1 | 128 / 712-713 / 166 |
+| 2 | Wooden - Hand pump | 6 lumber, 20 nails, 2 twine, 1 hide | 0.5 x 0.5 x 1.1 | old style lever pump on a bored shaft; place where the water table is within 7 m (suction limit); hold E: 0.8 L/s cap into a held container, trough or channel under the spout (lifts only) | 1 | 129 / 714-715 / 167 |
+| 3 | Iron - Hand pump | 6 iron ingot, 1 hide, 1 hinges | 0.5 x 0.5 x 1.1 | cast-iron pitcher pump: handle, spout, plinth; same rule, 1.2 L/s cap; hammer 3 | 3 | 130 / 716-717 / 168 |
+| 4 | Log - Trough | 2 log, 1 twine | 1.6 x 0.5 x 0.5 | hollow log; holds 60 L; animals drink here | 1 | 131 / 718-719 / 169 |
+| 5 | Wooden - Trough | 4 lumber, 1 twine | 2.0 x 0.6 x 0.5 | holds 100 L; animals drink here; can sit at a channel end | 1 | 132 / 720-721 / 170 |
+| 6 | Wooden - Rain barrel (**merged into the B3 Wooden - Barrel; no separate piece, Jamie 10 Nov**) | 4 lumber, 2 twine, 8 nails | 0.7 x 0.7 x 0.9 | holds 100 L; collects 20 L per game hour of rain within a roof's reach; same 100 L as the storage Wooden - Barrel (B3), one piece type | 1 | merged into B3 Wooden - Barrel |
+| 7 | Wooden - Channel | 3 lumber, 1 twine | 2.0 x 0.4 x 0.3 | open flume on trestles, straight; ports at both ends | 1 | 133 / 722-723 / 171 |
+| 8 | Wooden - Channel corner | 3 lumber, 1 twine | 2.0 x 2.0 x 0.3 | 90 degree turn | 1 | 134 / 724-725 / 172 |
+| 9 | Wooden - Channel tee | 4 lumber, 1 twine | 2.0 x 2.0 x 0.3 | splits flow; the branch carries a sluice setting | 1 | 135 / 726-727 / 173 |
+| 10 | Wooden - Sluice | 2 lumber, 1 hinges | 2.0 x 0.4 x 0.6 | gate: E opens/closes, a channel piece with a closed/open port | 1 | 136 / 728-729 / 174 |
 
-Reserves blueprints 129-138, items 641-650, states 151-160.
+Final: blueprints 128-136, items 712-729, states 166-174; Clay pipe item 730, recipe 352.
 
 ### B6b. Water 2: stone and pipe conduits, deep pump, taps
 
@@ -250,21 +249,21 @@ Later water tier. Closed pipes can run level with the ground and carry more wate
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Stone - Trough | 12 cobblestone, 3 mortar | 2.0 x 0.7 x 0.6 | holds 200 L; carved, never freezes through | 1 | 139 / 651 / 161 |
-| 2 | Stone - Channel | 8 cobblestone, 2 mortar | 2.0 x 0.5 x 0.3 | straight; 300 L/min cap at 0.5 percent fall | 1 | 140 / 652 / 162 |
-| 3 | Stone - Channel corner | 8 cobblestone, 2 mortar | 2.0 x 2.0 x 0.3 | 90 degree turn | 1 | 141 / 653 / 163 |
-| 4 | Stone - Channel tee | 10 cobblestone, 2 mortar | 2.0 x 2.0 x 0.3 | split | 1 | 142 / 654 / 164 |
-| 5 | Clay - Pipe | 2 clay pipe | 2.0 x 0.3 x 0.3 | closed straight; 120 L/min; cracks in hard frost unless drained | 1 | 143 / 655 / 165 |
-| 6 | Clay - Pipe elbow | 2 clay pipe | 2.0 x 2.0 x 0.3 | 90 degrees | 1 | 144 / 656 / 166 |
-| 7 | Clay - Pipe tee | 3 clay pipe | 2.0 x 2.0 x 0.3 | split | 1 | 145 / 657 / 167 |
-| 8 | Iron - Pipe | 2 iron ingot | 2.0 x 0.2 x 0.2 | closed straight; 240 L/min; carries water uphill only when the deep-well force pump pushes (head); hammer 3 | 3 | 146 / 658 / 168 |
-| 9 | Iron - Pipe elbow | 2 iron ingot | 2.0 x 2.0 x 0.2 | hammer 3 | 3 | 147 / 659 / 169 |
-| 10 | Iron - Tap | 1 iron ingot, 1 hinges | 0.3 x 0.3 x 0.4 | shut-off at a pipe end or over a trough; E opens/closes; hammer 3 | 3 | 148 / 660 / 170 |
-| 11 | Iron - Deep-well pump | 8 iron ingot, 2 hide, 2 hinges, 12 nails | 0.8 x 0.8 x 1.6 | on a Stone - Well; force pump: lifts from up to 25 m and pushes up to 10 m above its spout into an iron pipe; 1.0 L/s cap; two players or an ox for full rate; hammer 3 | 3 | 149 / 661 / 171 |
-| 13 | Stone - Raised cistern | 28 cobblestone, 8 mortar, 6 lumber | 2.0 x 2.0 x 3.0 | cistern on a stone plinth up to 10 m above ground; filled by the deep-well force pump through an iron pipe; feeds a gravity main from its rim overflow port | 1 | (to number) |
-| 12 | Stone - Cistern | 24 cobblestone, 6 mortar | 2.0 x 2.0 x 1.0 | holds 2,000 L; filled by a pipe or rain barrel overflow; has a rim overflow port | 1 | 150 / 662 / 172 |
+| 1 | Stone - Trough | 12 cobblestone, 3 mortar | 2.0 x 0.7 x 0.6 | holds 200 L; carved, never freezes through | 1 | 137 / 731-732 / 175 |
+| 2 | Stone - Channel | 8 cobblestone, 2 mortar | 2.0 x 0.5 x 0.3 | straight; 300 L/min cap at 0.5 percent fall | 1 | 138 / 733-734 / 176 |
+| 3 | Stone - Channel corner | 8 cobblestone, 2 mortar | 2.0 x 2.0 x 0.3 | 90 degree turn | 1 | 139 / 735-736 / 177 |
+| 4 | Stone - Channel tee | 10 cobblestone, 2 mortar | 2.0 x 2.0 x 0.3 | split | 1 | 140 / 737-738 / 178 |
+| 5 | Clay - Pipe | 2 clay pipe | 2.0 x 0.3 x 0.3 | closed straight; 120 L/min; cracks in hard frost unless drained | 1 | 141 / 739-740 / 179 |
+| 6 | Clay - Pipe elbow | 2 clay pipe | 2.0 x 2.0 x 0.3 | 90 degrees | 1 | 142 / 741-742 / 180 |
+| 7 | Clay - Pipe tee | 3 clay pipe | 2.0 x 2.0 x 0.3 | split | 1 | 143 / 743-744 / 181 |
+| 8 | Iron - Pipe | 2 iron ingot | 2.0 x 0.2 x 0.2 | closed straight; 240 L/min; carries water uphill only when the deep-well force pump pushes (head); hammer 3 | 3 | 144 / 745-746 / 182 |
+| 9 | Iron - Pipe elbow | 2 iron ingot | 2.0 x 2.0 x 0.2 | hammer 3 | 3 | 145 / 747-748 / 183 |
+| 10 | Iron - Tap | 1 iron ingot, 1 hinges | 0.3 x 0.3 x 0.4 | shut-off at a pipe end or over a trough; E opens/closes; hammer 3 | 3 | 146 / 749-750 / 184 |
+| 11 | Iron - Deep-well pump | 8 iron ingot, 2 hide, 2 hinges, 12 nails | 0.8 x 0.8 x 1.6 | on a Stone - Well; force pump: lifts from up to 25 m and pushes up to 10 m above its spout into an iron pipe; 1.0 L/s cap; two players or an ox for full rate; hammer 3 | 3 | 147 / 751-752 / 185 |
+| 13 | Stone - Raised cistern | 28 cobblestone, 8 mortar, 6 lumber | 2.0 x 2.0 x 3.0 | cistern on a stone plinth up to 10 m above ground; filled by the deep-well force pump through an iron pipe; feeds a gravity main from its rim overflow port | 1 | 149 / 755-756 / 187 |
+| 12 | Stone - Cistern | 24 cobblestone, 6 mortar | 2.0 x 2.0 x 1.0 | holds 2,000 L; filled by a pipe or rain barrel overflow; has a rim overflow port | 1 | 148 / 753-754 / 186 |
 
-Reserves blueprints 139-150, items 651-662, states 161-172.
+Final: blueprints 137-149, items 731-756, states 175-187 (Raised cistern in the last slot, Jamie to confirm). Next free: item 757, recipe 353, blueprint 150, state 188.
 
 Component and carried items (an item row and a recipe row each, no blueprint or state):
 
@@ -303,16 +302,16 @@ Source of the amendments: `buildables/water_flow_rules_sonny.md`. The graph mode
 
 | Order | Batch | Rows | Needs first |
 |---|---|---|---|
-| 1 | B0 Metal hammers | 3 items | none |
-| 2 | B1a Foundations, doorways, windows (and drop the workbench requirement on existing rows) | 9 | none (Jamie's first batch) |
-| 3 | B1b Stairs, railings, extra doors | 8 | B0 for the iron rows |
-| 4 | B1c Pillars and roof corners | 10 | anchor table for pillars (Steve) |
-| 5 | B2 Fences and gates | 14 | B0 for iron rows |
-| 6 | B3 Furniture tiers and work benches | 12 | B0 for iron rows; station levels from Steve and Tyler |
-| 7 | B4 Lights | 11 plus 4 items | B0; horn pane and lamp oil recipes; burn rule from Steve |
-| 8 | B5 Garden | 10 | plot moisture hook (Steve) |
-| 9 | B6a Water 1 | 10 | flow rules confirmed by Sonny and Steve |
-| 10 | B6b Water 2 | 12 plus 1 item | B6a |
+| 1 | B0 Metal hammers | 3 items | 150 / 757-758 / 188 |
+| 2 | B1a Foundations, doorways, windows (and drop the workbench requirement on existing rows) | 9 | 151 / 759-760 / 189 |
+| 3 | B1b Stairs, railings, extra doors | 8 | 152 / 761-762 / 190 |
+| 4 | B1c Pillars and roof corners | 10 | 153 / 763-764 / 191 |
+| 5 | B2 Fences and gates | 14 | 154 / 765-766 / 192 |
+| 6 | B3 Furniture tiers and work benches | 12 | 155 / 767-768 / 193 |
+| 7 | B4 Lights | 11 plus 4 items | 156 / 769-770 / 194 |
+| 8 | B5 Garden | 10 | 157 / 771-772 / 195 |
+| 9 | B6a Water 1 | 10 | 158 / 773-774 / 196 |
+| 10 | B6b Water 2 | 12 plus 1 item | 159 / 775-776 / 197 |
 
 Per batch the work is the same: **Jamie** data rows and numbers; **Kathleen** looks (headless bounds test, pictures from Dino); **Jason** one placed-sound kind per material; **Steve** the shared hooks named above; **Tyler** the gate and validators; **Dino** the picture check on Dave's PC. No test or bake runs in the cloud.
 
