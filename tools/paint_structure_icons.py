@@ -1030,18 +1030,6 @@ def camp_bench():
     return faces
 
 
-def log_workbench():
-    """A log workbench with its own tool rack and a vice on the end."""
-    faces = camp_bench()
-    faces += box((-0.5, 1.4, -0.4), (0.08, 1.2, 0.08), BARK)
-    faces += box((0.5, 1.4, -0.4), (0.08, 1.2, 0.08), BARK)
-    faces += box((0.0, 1.8, -0.4), (1.1, 0.08, 0.08), BARK)
-    faces += box((-0.25, 1.5, -0.36), (0.22, 0.14, 0.04), STEEL)
-    faces += box((0.25, 1.45, -0.36), (0.08, 0.5, 0.04), PLANK)
-    faces += vice_faces(shift=(0.95, 0.82, 0.0), scale=0.6)
-    return faces
-
-
 def woodworking_table():
     """A plank table with a board on it, a plane and a bench stop."""
     faces = table()
@@ -1271,7 +1259,6 @@ def _pieces():
         "torch_sconce": (torch_sconce, rot_y(math.radians(20.0))),
         "wall_torch": (wall_torch, rot_y(math.radians(20.0))),
         "workbench": (camp_bench, STATION_VIEW),
-        "log_workbench": (log_workbench, STATION_VIEW),
         "woodworking_table": (woodworking_table, STATION_VIEW),
         "vice": (vice, rot_y(math.radians(-40.0))),
         "saw_mill": (saw_mill, rot_y(math.radians(-50.0))),

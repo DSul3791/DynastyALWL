@@ -158,6 +158,7 @@ ITEMS["engineered_roof_corner"] = ("engineered_roof_corner", CORNER_VIEW)
 ITEMS["fortified_gate"] = ("fortified_gate", WALL_VIEW)
 ITEMS["fortified_wall_top"] = ("fortified_wall_top", WALL_VIEW)
 ITEMS["mixer"] = ("mixer", STATION_VIEW)
+ITEMS["log_workbench"] = ("carpenters_bench", STATION_VIEW)   # the level-2 workbench, renamed Carpenter's bench (#966); the id stays
 for _item in ("chicken_coop", "fodder_trough", "tub", "sap_tap", "cheese_press", "spinning_wheel", "loom"):   # C7 future placeholders
     ITEMS[_item] = (_item, STATION_VIEW)
 ITEMS["tub"] = ("tub", STATION_VIEW @ rot_x(math.radians(22.0)))   # tipped toward the viewer so the water shows
