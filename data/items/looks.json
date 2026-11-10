@@ -4023,6 +4023,63 @@
    "shape": "chunk",
    "color": "#a89a70",
    "size": 0.5
+  },
+  "sling": {
+   "shape": "bundle",
+   "color": "#8a6a4a",
+   "size": 0.8
+  },
+  "sling_stone": {
+   "shape": "chunk",
+   "color": "#9a958c",
+   "size": 0.4
+  },
+  "whetstone": {
+   "shape": "chunk",
+   "color": "#6a6e72",
+   "size": 0.6
+  },
+  "fishing_spear": {
+   "shape": "shaft",
+   "color": "#c8a068",
+   "size": 1.0
+  },
+  "fire_arrow": {
+   "shape": "arrow",
+   "color": "#5a3a20",
+   "size": 1.0
+  },
+  "fishing_bait": {
+   "shape": "chunk",
+   "color": "#9a5a5a",
+   "size": 0.3
+  },
+  "bedroll": {
+   "shape": "hide",
+   "color": "#7a5a3a",
+   "size": 0.9
+  },
+  "wooden_snowshoes": {
+   "shape": "cloth",
+   "color": "#9a7a4a",
+   "size": 0.9
+  },
+  "knife": {
+   "shape": "knife",
+   "color": "#8a8a90",
+   "size": 1.0
+  },
+  "fish_trap": {
+   "shape": "kit",
+   "color": "#8a7040",
+   "size": 0.7,
+   "placeholder": true
+  },
+  "bird_trap": {
+   "shape": "kit",
+   "color": "#8a7040",
+   "size": 0.7,
+   "placeholder": true
   }
 
  }

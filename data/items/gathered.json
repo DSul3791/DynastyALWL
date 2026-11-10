@@ -1427,7 +1427,7 @@
 		},
 		"pine_tar": {
 			"number": 1104,
-			"name": "Pine pitch",
+			"name": "Pine tar",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
