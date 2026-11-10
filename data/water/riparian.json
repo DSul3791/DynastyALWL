@@ -4,7 +4,7 @@
 	"reach_m": 16.0,
 	"shrub_chance": 0.6,
 	"shrub_by_m": [[0.0, 0.35], [0.5, 1.0], [3.0, 1.0], [6.0, 0.5], [10.0, 0.18], [16.0, 0.0]],
-	"species": [["elder", 3], ["raspberry", 2], ["bramble", 2], ["dwarf_birch", 2], ["wild_rose", 1], ["blackthorn", 1], ["hawthorn", 1]],
+	"species": [["elder", 3], ["raspberry", 1], ["bramble", 2], ["dwarf_birch", 2], ["wild_rose", 1], ["blackthorn", 1], ["hawthorn", 1]],
 	"brook_half_m": 1.5,
 	"dry_above_m": 3.0,
 	"shrub_bank_clear_m": 0.15,
