@@ -203,7 +203,7 @@ var weather                             # WeatherSounds: rain, gale, thunder, sn
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
 var flame                               # FlameSounds: the torch or lantern in the hand (set_held)
-var breath                              # BreathSounds: breathing and heartbeat from exertion (set_exertion, stand-in follows the body)
+var breath                              # BreathSounds: the heartbeat (always heard, the Daggorath pulse loaded at setup), exertion and the faint (set_exertion, stand-in follows the body)
 var trees                               # TreeSounds: felling (watch the world rows, fall(), chips())
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
@@ -1331,9 +1331,6 @@ func _build_warm_list() -> void:
 
 	for sound_name in ["item_pickup", "item_drop", "inv_open", "inv_close", "item_swap", "craft_done"]:
 		_warm.append([itemfx, sound_name])
-
-	for sound_name in ["heartbeat"]:
-		_warm.append([breath, sound_name])
 
 	for sound_name in ["water_brook", "water_river", "water_pond"]:
 		_warm.append([cavewater, sound_name])         # the spring cave loops load in the background like every other sound, not as the player walks in

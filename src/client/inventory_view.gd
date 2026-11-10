@@ -179,6 +179,7 @@ var _eat_item: String = ""
 var equip_requested: Callable = Callable()   # (hotbar key) -> hold what that key points at, or put it away (the client wires it to the held item)
 var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -1 for empty hands
 var hotbar_strip                              # HotbarStrip, set by the client
+var heart_pulse                               # HeartPulse (the line over the hotbar), set by the client
 var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
 var _character                         # CharacterScreen, built the first time Tab is pressed
 var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Food", "Water" -> ProgressBar at the top of the inventory screen (the only bars in the game)
@@ -4203,6 +4204,9 @@ func _build_panel() -> void:
 	# The hotbar strip stays on top of the window's backdrop, in its place, so it can be read and dropped on with the window up (section 9).
 	if hotbar_strip != null and hotbar_strip._row != null and is_instance_valid(hotbar_strip._row) and hotbar_strip._row.get_parent() == _layer:
 		_layer.move_child(hotbar_strip._row, -1)
+
+	if heart_pulse != null and is_instance_valid(heart_pulse) and heart_pulse.get_parent() == _layer:
+		_layer.move_child(heart_pulse, -1)     # the pulse line with it, over the backdrop
 
 
 # Chest mode (redesign 4.4): with a container open the Craft column shows it, named on the plate, or the recipes, by the Chest and

@@ -3,8 +3,8 @@
 Run: python3 assets/audio/make_body.py   (needs numpy and ffmpeg)
 Writes assets/audio/body/ (3 variants each): breath_heave_N (the great chest heave of over-exertion, 1.3 s), breath_in_N (a soft intake of air, 0.8 s),
 breath_out_N (a soft release, 0.9 s), breath_gasp_N (a hard, ragged gulp of air for severe
-exertion, 0.7 s) and heartbeat_N (a lub-dub, 0.4 s, thin: nothing deep under about 70 Hz). Recordings go in assets/audio/recorded/body/
-under the same names; the game prefers them.
+exertion, 0.7 s). The heartbeat is no longer made here: it is the Daggorath pulse, assets/audio/heartbeat/ (docs/design/heartbeat_design.md).
+Recordings go in assets/audio/recorded/body/ under the same names; the game prefers them.
 """
 import os
 import subprocess
@@ -68,21 +68,6 @@ def gasp(rng):
     return finish(x * rough + 0.25 * voice, 0.75)
 
 
-def heartbeat(rng):
-    out = np.zeros(int(0.45 * SR))
-
-    # Dave, 2026-10-20: too bassy and deep. Higher pitch (about 80 Hz, was 55) with a second harmonic and a short
-    # decay, so the low end is thin.
-    for at, f0, level in ((0.0, rng.uniform(78, 92), 1.0), (0.17, rng.uniform(66, 76), 0.7)):
-        n = int(0.14 * SR)
-        t = np.arange(n) / SR
-        phase = 2 * np.pi * np.cumsum(f0 * (1.0 + 0.5 * np.exp(-t / 0.03))) / SR
-        thump = (np.sin(phase) + 0.55 * np.sin(2 * phase)) * np.exp(-t / 0.04) * np.minimum(t / 0.004, 1.0)
-        add(out, thump * level, at)
-
-    return finish(out, 0.8, 0.05)
-
-
 def heave(rng):
     """The great chest heave of over-exertion: a long, loud, rough, wide breath with a chesty voice under it."""
     n = int(1.3 * SR)
@@ -102,10 +87,9 @@ def main():
         write_ogg("breath_in_%d" % v, breath_in(rng))
         write_ogg("breath_out_%d" % v, breath_out(rng))
         write_ogg("breath_gasp_%d" % v, gasp(rng))
-        write_ogg("heartbeat_%d" % v, heartbeat(rng))
         write_ogg("breath_heave_%d" % v, heave(rng_heave))
 
-    print("Wrote %d body sounds to %s" % (VARIANTS * 5, OUT))
+    print("Wrote %d body sounds to %s" % (VARIANTS * 4, OUT))
 
 
 if __name__ == "__main__":
