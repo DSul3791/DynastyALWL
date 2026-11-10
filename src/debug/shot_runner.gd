@@ -28,7 +28,7 @@ extends Node
 #   --shot-lit          with a torch or lantern given (--shot-give=wooden_lantern): its flame burns in every picture. Its fuel (candle, lamp oil) is given
 #                       too, a dark one is lit, first person keeps the arms on so the flame hangs in the drawn hand (with the arms off it sat on the hidden
 #                       body's hand, and a light under a hidden node gives no light: Dino's black lantern shots, 10 Nov 2026), the held light stays on beside a
-#                       fire light at Low, and each picture logs the flame's state
+#                       fire light at Low, and each picture logs the flame's state. Without it a dark one given (--shot-give=wooden_lantern_dark) stays dark
 #   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
@@ -368,7 +368,7 @@ func _process(delta: float) -> void:
 		if shot_lit:
 			_give_flame_fuel()
 
-	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 40000):
+	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 90000):
 		_selected = true
 		# The key the server put the given item on (a tool or weapon goes on the first empty key when it arrives). Wait for it: a left-hand item
 		# (torch, lantern, shield) is chosen once, by what the key points at when it is selected, so selecting before the pack and keys arrived left
@@ -381,6 +381,7 @@ func _process(delta: float) -> void:
 
 		print("shot runner: %s on key %d after %.1f s; pack %s; keys %s" % [give_item, key + 1, float(now - client.connected_msec) / 1000.0,
 			str(client.items.inventory.numbers.slice(0, 12)) if client.items.inventory != null else "none", str(client.items.inventory.hotbar) if client.items.inventory != null else "none"])
+		client.held.rig_keep_dark = not shot_lit and client.items.table.entry(give_item).has("relit_item")   # --give wooden_lantern_dark: picture it unlit
 		client.held.select(maxi(key, 0))      # key index 0 = key 1: hold what was given
 		client.held.bow_force = bow_pose
 		client.held.rig_drawing = bow_drawing
@@ -2027,7 +2028,7 @@ func _flame_state() -> String:
 
 		var model: Node3D = hand[2] as Node3D
 		var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D if model != null else null
-		parts.append("%s %s flame %s light %s" % [hand[0], hand[1], str(bool(client.items.table.entry(str(hand[1])).get("flame", false))), "none" if light == null else ("drawn" if light.is_visible_in_tree() else "hidden")])
+		parts.append("%s %s flame %s light %s, %s" % [hand[0], hand[1], str(bool(client.items.table.entry(str(hand[1])).get("flame", false))), "none" if light == null else ("drawn" if light.is_visible_in_tree() else "hidden"), _in_frame(model)])
 
 	return ", ".join(parts) if not parts.is_empty() else "nothing in hand"
 
@@ -2049,3 +2050,26 @@ func _given_key() -> int:
 		return -1
 
 	return client.items.inventory.hotbar.find(number)
+
+
+# Where a held model is in the picture: "in frame at (x, y) px" from the drawn camera, "out of frame (below)" and the like, or "not drawn", so a picture
+# with the lantern lit but not seen says where it hangs (Dino 10 Nov 2026, first person pitched -25 degrees showed only the lit sand).
+func _in_frame(model: Node3D) -> String:
+	var cam: Camera3D = client.view_cam if client.view_cam != null else client.camera
+
+	if model == null or cam == null or not model.is_visible_in_tree():
+		return "not drawn"
+
+	var spot: Vector3 = model.global_position
+	var local: Vector3 = cam.global_transform.affine_inverse() * spot
+
+	if local.z > -0.01:
+		return "behind the camera (%.2f m)" % local.z
+
+	var px: Vector2 = cam.unproject_position(spot)
+	var size: Vector2 = get_viewport().get_visible_rect().size
+
+	if px.x < 0.0 or px.y < 0.0 or px.x > size.x or px.y > size.y:
+		return "out of frame at (%.0f, %.0f) px of %.0fx%.0f, %.2f m %s" % [px.x, px.y, size.x, size.y, -local.z, "below" if px.y > size.y else ("above" if px.y < 0.0 else "to the side")]
+
+	return "in frame at (%.0f, %.0f) px, %.2f m ahead" % [px.x, px.y, -local.z]
