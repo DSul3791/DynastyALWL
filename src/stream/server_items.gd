@@ -7180,6 +7180,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		if bed_in_shelter:
 			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
 
+		if str(def.get("piece_kind", "")) == PlacementRules.PILLAR_KIND and other.has("struct") and str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", "")) == PlacementRules.PILLAR_KIND and other["pos"].distance_to(spot) < PlacementRules.ANCHOR_TAKEN_M:
+			_say(peer, "Something is in the way.")   # one pillar to a point (PlacementRules.blocked)
+			return
+
 		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter and not bool(def.get("gap_exempt", false)) and not (other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("gap_exempt", false))):   # furniture (gap_exempt) stands beside fires, shelters and each other
 			_say(peer, "Something is in the way.")
 			return

@@ -1701,7 +1701,7 @@ func _update_blueprint() -> void:
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
 	_ghost_on_base = on_base
-	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows())
+	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows() + _inv.foundation_rows())   # the building pieces too, as the server sees them
 
 	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at

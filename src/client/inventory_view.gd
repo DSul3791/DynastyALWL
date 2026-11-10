@@ -2573,7 +2573,14 @@ func foundation_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state >= 22 and state <= 28 and _world[id].has("yaw"):
+		if state < 5 or not _world[id].has("yaw"):
+			continue
+
+		# Every foundation and building piece of every tier, as the server's _foundation_rows (was states 22 to 28 only: the ghost of a thatch,
+		# log, stone or brick piece, or anything on a thatch or wooden foundation, did not snap where the server put it).
+		var def: Dictionary = _structure_by_state(state)
+
+		if bool(def.get("foundation", false)) or bool(def.get("piece", false)):
 			rows.append({"pos": _world[id]["pos"], "state": state, "yaw": _world[id]["yaw"]})
 
 	return rows

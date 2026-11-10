@@ -401,5 +401,44 @@ func _init() -> void:
 	OS.delay_msec(100)
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(490.0, 10.0, 450.0))
 	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "a branch far away gives nothing")
+	_pillar_checks(cfg)
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Pillar anchors (the buildables plan, batch B1c, Morgan 10 Nov 2026): the middle and four corners of a foundation (4 x 4 m) or a ceiling cell (2 x 2 m), on its
+# top; where a ceiling lies on a foundation, the ceiling's point wins when the cursor is on the ceiling; a pillar already standing takes its point.
+# No pillar rows exist yet (Jamie's B1c batch), so a test row stands in.
+func _pillar_checks(cfg: Dictionary) -> void:
+	var with: Dictionary = cfg.duplicate(true)
+	with["structures"]["test_pillar"] = {"kit": "test_pillar_kit", "item": "test_pillar", "state": 9901, "piece": true, "piece_kind": "pillar", "footprint_x": 0.4, "footprint_z": 0.4}
+	var found: int = int(cfg["structures"]["foundation_section"]["state"])
+	var ceiling: int = int(cfg["structures"]["floor_section"]["state"])
+	var top: float = float(cfg["structures"]["foundation_section"].get("top_m", 0.3))
+	var base: Array = [{"pos": Vector3(100.0, 10.0, 100.0), "state": found, "yaw": 0.0}]
+	check(Rules.pillar_anchors(cfg["structures"]["foundation_section"]).size() == 5 and Rules.pillar_anchors(cfg["structures"]["wall_section"]).is_empty(), "a foundation has 5 pillar points, a wall none")
+	var mid: Array = Rules.snap(with, "test_pillar_kit", Vector3(100.4, 10.3, 99.7), 0, base)
+	check(bool(mid[2]) and mid[0].is_equal_approx(Vector3(100.0, 10.0 + top, 100.0)), "a pillar near a foundation's middle stands on its middle, on top (%s)" % str(mid))
+	var corner: Array = Rules.snap(with, "test_pillar_kit", Vector3(101.6, 10.3, 98.3), 0, base)
+	check(bool(corner[2]) and corner[0].is_equal_approx(Vector3(102.0, 10.0 + top, 98.0)), "near a corner it stands on the corner (%s)" % str(corner))
+
+	for kind in cfg["structures"]:
+		if bool(cfg["structures"][kind].get("foundation", false)):
+			var tier_row: Array = [{"pos": Vector3(100.0, 10.0, 100.0), "state": int(cfg["structures"][kind]["state"]), "yaw": 0.0}]
+			check(bool(Rules.snap(with, "test_pillar_kit", Vector3(98.3, 10.3, 101.8), 0, tier_row)[2]), "every foundation takes a pillar at its corners (%s)" % kind)
+
+	var ceiling_rows: Array = [{"pos": Vector3(200.0, 12.6, 200.0), "state": ceiling, "yaw": 90.0}]
+	var on_ceiling: Array = Rules.snap(with, "test_pillar_kit", Vector3(200.8, 12.7, 200.9), 0, ceiling_rows)
+	check(bool(on_ceiling[2]) and on_ceiling[0].is_equal_approx(Vector3(201.0, 12.6 + Rules.CEILING_TOP_M, 201.0)), "a pillar on a ceiling stands on its corner, on its top (%s)" % str(on_ceiling))
+	var both: Array = base + [{"pos": Vector3(101.0, 10.0 + top, 101.0), "state": ceiling, "yaw": 0.0}]
+	var on_top: Array = Rules.snap(with, "test_pillar_kit", Vector3(100.1, 10.0 + top + Rules.CEILING_TOP_M, 100.1), 0, both)
+	check(bool(on_top[2]) and is_equal_approx(on_top[0].y, 10.0 + top + Rules.CEILING_TOP_M), "on a ceiling laid on a foundation the pillar stands on the ceiling (%s)" % str(on_top))
+	var taken: Array = Rules.snap(with, "test_pillar_kit", Vector3(100.3, 10.3, 100.2), 0, base + [{"pos": Vector3(100.0, 10.0 + top, 100.0), "state": 9901, "yaw": 0.0}])
+	var held_rows: Array = base + [{"pos": Vector3(100.0, 10.0 + top, 100.0), "state": 9901, "yaw": 0.0}]
+	var ceiling_held: Array = ceiling_rows + [{"pos": Vector3(200.0, 12.6 + Rules.CEILING_TOP_M, 200.0), "state": 9901, "yaw": 0.0}]
+	var next_free: Array = Rules.snap(with, "test_pillar_kit", Vector3(200.3, 12.7, 200.3), 0, ceiling_held)
+	check(bool(next_free[2]) and next_free[0].is_equal_approx(Vector3(201.0, 12.6 + Rules.CEILING_TOP_M, 201.0)), "a point that holds a pillar is passed over for the next free one in reach (%s)" % str(next_free))
+	check(bool(taken[2]) and Rules.blocked(with, "test_pillar_kit", taken[0], held_rows) == "close", "with no free point near, the ghost sits on the held one and is red (%s)" % str(taken))
+	check(Rules.blocked(with, "test_pillar_kit", next_free[0], ceiling_held) == "", "a free point is not blocked by the pillar beside it")
+	var wall: Array = Rules.snap(cfg, "wall_section_kit", Vector3(100.0, 10.0 + top + Rules.CEILING_TOP_M, 97.8), 0, both)
+	check(bool(wall[2]) and wall[0].is_equal_approx(Vector3(99.0, 10.0 + top, 98.0)) or bool(wall[2]) and wall[0].is_equal_approx(Vector3(101.0, 10.0 + top, 98.0)), "a wall still snaps to the foundation's edge anchor, never to a ceiling (%s)" % str(wall))
