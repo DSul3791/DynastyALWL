@@ -850,10 +850,7 @@ func _start_swing() -> void:
 	_swing_hit = false
 	_pause_t = 0.0
 	swing_serial += 1
-	_arm_play("swing_fp_down" if _aim_at_ground() else "swing_fp", _swing_length())
-
-	if _sound != null:
-		_sound.hits.swing(_hit_tool(), _camera.global_position - _camera.global_transform.basis.z * 0.8)   # the whoosh, hit or miss
+	_arm_play("swing_fp_down" if _aim_at_ground() else "swing_fp", _swing_length())   # no whoosh: only the blow sounds, when it lands (Dave 10 Nov 2026)
 
 
 # True when the crosshair is on something lying on the ground (the ground, a log, a stump, a rock): the swing then comes overhead and down. A standing tree, or anything else upright, gets

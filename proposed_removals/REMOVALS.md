@@ -91,3 +91,10 @@ No whole files. Removed inside live files (git history keeps them; why, and what
 - `src/water2/water_hub2.gd`: `set_players()` and its call to `follow()`.
 - `scenes/terrain_server/terrain_server.gd`: the player positions given to the hub every 2 s.
 - `src/worldgen/tools/test_sullivan_water_live.gd`: the four follow checks (replaced by: no dig opens no region, and the 8 m levels go out untouched).
+
+## Tool swing whoosh, 10 Nov 2026 (Kathleen; Dave: "get rid of the swinging sound and only have the thwacking sound when it hits")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/audio/hits/hit_swing_0.ogg, hit_swing_1.ogg, hit_swing_2.ogg | Kathleen | 10 Nov | the whoosh every tool swing played, hit or miss | none: only the blow sounds (hit_sounds.hit) |
+| assets/audio/make_swing.py | Kathleen | 10 Nov | generated the whoosh | none |
+Also removed inside live files: hit_sounds.gd swing() with its SWING_* constants and counters, the call in held_item.gd _start_swing, the "swing" row of tools/sound_check.py, and the hit_swing rows of the sound manifest, SOUND_PACK.md and LOUDNESS.md.

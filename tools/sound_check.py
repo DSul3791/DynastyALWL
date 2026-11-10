@@ -132,11 +132,6 @@ SCENARIOS = [
         ("no squelch when dry", r", " + NUM + r" squelches when dry", 0, 0),
         ("cloth on dry steps", r", " + NUM + r" cloth steps", 15, 25),
     ]),
-    ("swing", ["--swing-test"], 3500, [
-        ("one whoosh per tool", r"swing check: " + NUM + r" swings", 4, 4),
-        ("unknown tool is silent", r"unknown tool (false)", 0, 1, "text"),
-        ("generated whoosh", r"last spade swing (hit_swing_\d) \(generated\)", 0, 1, "text"),
-    ]),
     ("insects", ["--insect-test"], 3500, [
         ("summer noon loud", r"summer noon " + NUM, 0.6, 1.0),
         ("quieter at night (job 77 night mix)", r"summer 2h " + NUM, 0.35, 0.65),
