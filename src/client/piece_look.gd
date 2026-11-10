@@ -2326,8 +2326,8 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, lea
 				_box(root, Vector3(0.08, height - 0.12, 0.025), Vector3(x, (height - 0.12) * 0.5 + 0.02, 0.0), _planks)
 				_box_rot(root, Vector3(0.057, 0.057, 0.025), Vector3(x, height - 0.1, 0.0), Vector3(0.0, 0.0, PI * 0.25), _planks)   # the pointed top
 			if leaf:
-				var brace: float = atan2(height - 0.55, w - 0.1)
-				_box_rot(root, Vector3(sqrt(pow(w - 0.1, 2.0) + pow(height - 0.55, 2.0)), 0.07, 0.04), Vector3(0.0, height * 0.5 - 0.01, 0.04), Vector3(0.0, 0.0, brace), _frame)   # the Z brace
+				var brace_angle: float = atan2(height - 0.55, w - 0.1)
+				_box_rot(root, Vector3(sqrt(pow(w - 0.1, 2.0) + pow(height - 0.55, 2.0)), 0.07, 0.04), Vector3(0.0, height * 0.5 - 0.01, 0.04), Vector3(0.0, 0.0, brace_angle), _frame)   # the Z brace
 		"log":
 			var rails: Array = [0.45, 0.9] if not leaf else [0.2, 0.55, 0.9]
 			for y in rails:
