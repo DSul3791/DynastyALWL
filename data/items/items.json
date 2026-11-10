@@ -444,7 +444,6 @@
 				]
 			],
 			"value": 120,
-			"future": true,
 			"repair_station": "forge"
 		},
 		"steel_pickaxe": {
@@ -3512,7 +3511,6 @@
 			"description": "Copper and tin melted together. Harder than copper.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -5480,7 +5478,6 @@
 			"kind": "tool",
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"material": "bronze",
 			"tool_class": "pick",
 			"tier": 2,
@@ -5506,7 +5503,6 @@
 			"kind": "tool",
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"material": "bronze",
 			"tool_class": "axe",
 			"tier": 2,
@@ -5533,7 +5529,6 @@
 			"kind": "tool",
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"material": "bronze",
 			"tool_class": "hammer",
 			"tier": 3,
@@ -5559,7 +5554,6 @@
 			"kind": "tool",
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"material": "bronze",
 			"tool_class": "knife",
 			"tier": 2,
@@ -6722,7 +6716,6 @@
 				"kind": "tool",
 				"stack": 1,
 				"unstackable": true,
-				"future": true,
 				"material": "iron",
 				"tool_class": "hammer",
 				"tier": 3,
@@ -9159,11 +9152,10 @@
 			"bronze_chisel": {
 				"number": 798,
 				"name": "Bronze - Chisel",
-				"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+				"description": "A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench.",
 				"kind": "tool",
 				"stack": 1,
 				"unstackable": true,
-				"future": true,
 				"material": "bronze",
 				"tool_class": "chisel",
 				"tier": 2,

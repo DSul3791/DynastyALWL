@@ -3868,7 +3868,7 @@
 		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 2},
-		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": true, "station": "forge"},
+		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "forge"},
 		"stone_pickaxe": {
 			"number": 186,
 			"name": "Stone - Pickaxe",
@@ -8090,10 +8090,6 @@
 				[
 					"bronze_ingot",
 					1
-				],
-				[
-					"stick",
-					1
 				]
 			],
 			"gives": [
@@ -8101,9 +8097,8 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"station": "forge",
-			"locked": true
+			"known": true,
+			"station": "forge"
 		},
 		"iron_chisel": {
 			"number": 372,
@@ -8113,10 +8108,6 @@
 				[
 					"iron_ingot",
 					1
-				],
-				[
-					"stick",
-					1
 				]
 			],
 			"gives": [
@@ -8124,10 +8115,9 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
+			"known": true,
 			"station": "brick_forge",
-			"station_level": 2,
-			"locked": true
+			"station_level": 2
 		},
 		"steel_chisel": {
 			"number": 373,

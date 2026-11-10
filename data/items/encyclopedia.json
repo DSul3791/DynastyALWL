@@ -1987,8 +1987,6 @@
 				"Used in Drying rack",
 				"Used in Sign",
 				"Used in Wicker - Basket",
-				"Used in Bronze - Chisel",
-				"Used in Iron - Chisel",
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
@@ -4887,8 +4885,7 @@
 				"Used in Bronze ingot",
 				"Used in Copper - Pot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tin_ingot": {
 			"name": "Tin ingot",
@@ -4900,15 +4897,14 @@
 			"used_for": [
 				"Used in Bronze ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bronze_ingot": {
 			"name": "Bronze ingot",
 			"kind": "material",
 			"description": "Copper and tin melted together. Harder than copper.",
 			"how_to_get": [
-				"Craft at a forge: 1 Copper ingot, 1 Tin ingot"
+				"Craft at a forge: 3 Copper ingot, 1 Tin ingot"
 			],
 			"used_for": [
 				"Used in Bronze - Helm",
@@ -4918,8 +4914,7 @@
 				"Used in Bronze - Chisel",
 				"Used in Bronze - Scale shirt"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"flour": {
 			"name": "Flour",
@@ -5061,23 +5056,25 @@
 			"name": "Copper ore",
 			"kind": "material",
 			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a copper body with any pick"
+			],
 			"used_for": [
 				"Used in Copper ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tin_ore": {
 			"name": "Tin ore",
 			"kind": "material",
 			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a tin body with any pick"
+			],
 			"used_for": [
 				"Used in Tin ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_ore": {
 			"name": "Iron ore",
@@ -6870,7 +6867,7 @@
 				"Craft: 3 Bronze ingot, 2 Stick at a forge"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_axe": {
 			"name": "Bronze - Axe",
@@ -6880,7 +6877,7 @@
 				"Craft at a forge: 2 Bronze ingot, 1 Stick, 1 Leather strap"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_hammer": {
 			"name": "Bronze - Hammer",
@@ -6890,7 +6887,7 @@
 				"Craft: 2 Bronze ingot, 1 Stick at a forge"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_knife": {
 			"name": "Bronze - Knife",
@@ -6904,7 +6901,7 @@
 				"Used in Bark shingle",
 				"Used in Wooden shingle"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"stairs_wood_kit": {
 			"name": "Wooden stairs",
@@ -9870,23 +9867,23 @@
 		"bronze_chisel": {
 			"name": "Bronze - Chisel",
 			"kind": "tool",
-			"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+			"description": "A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench.",
 			"how_to_get": [
-				"Craft at a forge: 1 Bronze ingot, 1 Stick"
+				"Craft at a forge: 1 Bronze ingot"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"iron_chisel": {
 			"name": "Iron - Chisel",
 			"kind": "tool",
 			"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
 			"how_to_get": [
-				"Craft at a brick forge: 1 Iron ingot, 1 Stick"
+				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
