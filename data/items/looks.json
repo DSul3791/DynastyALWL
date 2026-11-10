@@ -3588,9 +3588,19 @@
    "color": "#9a7a45",
    "size": 0.8
   },
+  "wooden_lantern_dark": {
+   "shape": "chunk",
+   "color": "#5e4a2c",
+   "size": 0.8
+  },
   "iron_lantern": {
    "shape": "chunk",
    "color": "#7d8087",
+   "size": 0.8
+  },
+  "iron_lantern_dark": {
+   "shape": "chunk",
+   "color": "#4a4c51",
    "size": 0.8
   },
   "wooden_hanging_lantern_kit": {
