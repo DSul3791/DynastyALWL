@@ -209,7 +209,7 @@ func aim_checks() -> void:
 
 	check(widest <= BowAim.spread_deg(cfg, 0.0) + 0.001 and widest > BowAim.spread_deg(cfg, 0.0) * 0.8, "no skill: shots turn at random up to spread_deg (%.2f)" % widest)
 	check(BowAim.spread_deg(cfg, 100.0) < BowAim.spread_deg(cfg, 0.0) * 0.2, "skill narrows the spread")
-	check(BowAim.spread(forward, 0.0, 1.0, 0.5) == forward, "no spread: the shot goes where it was aimed")
+	check(BowAim.spread(forward, 0.0, 1.0, 0.5).is_equal_approx(forward), "no spread: the shot goes where it was aimed")
 
 
 # The loaded arrow is shot first; fibre arrows (the only arrow made without feathers) are ammo.

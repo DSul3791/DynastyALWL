@@ -1816,49 +1816,46 @@ func _other_tool_hint() -> String:
 	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
 
 
+# The line over the hotbar. Dave 10 Nov 2026: it does not name what is in hand ("it doesnt need to say wooden bow in hand. or anything"), so it
+# shows only a state the player has to know: the picked blueprint and why it is red, the hammer's mode, why a placement is red, and the
+# spade's or hoe's mode. Empty otherwise.
 func _caption() -> String:
-	var number: int = held_number()
-
-	if number == 0:
-		return _off_caption()
-
-	var text: String = _inv.table.name_of(number)
+	if held_number() == 0:
+		return ""
 
 	if _blueprinting():
 		var short: bool = not blueprints.can_afford(_hammer_tier())
-		text = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
+		var text: String = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
 
 		if PlacementRules.reason_text(blueprint_state) != "":
-			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
-		elif short and blueprints.plan_picked >= 0:
-			text += "   (red: not enough materials; right click: the list)"
-		elif short:
-			text += "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
-		else:
-			text += "   (left click: build it with the materials in your pack; right click: the list)"
-	elif _hammer_tier() > 0 and blueprints.mode == "repair":
-		text += "   (Repair: left click a worn piece to mend it; right click: the menu)"
-	elif _hammer_tier() > 0 and blueprints.mode == "save":
-		text += "   (Save building plan: left click a building to keep it; right click: the menu)"
-	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
-		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
-	elif _is_placeable():
-		text += "   (left click: place; under a tree it keeps dry, in the open rain puts it out)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
-	elif _is_torch():
-		text += "   (lights the way while held)"
-	elif _is_axe():
-		text += "   (left click: swing)"
-	elif _is_spear():
-		text += "   (left click: jab; hold right click to aim, then left click to throw)"
-	elif _is_other_tool() and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
-		text += "   (%s; right click switches)" % ("Raise" if raise_mode else "Dig")
-	elif _is_other_tool() and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
-		text += "   (left click: %s; right click: choose what it does)" % _hoe_mode_name().to_lower()
-	elif _is_other_tool():
-		text += "   (in hand)"
+			return text + "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 
-	var off: String = _off_caption()
-	return text if off == "" else "%s\n%s" % [text, off]
+		if short and blueprints.plan_picked >= 0:
+			return text + "   (red: not enough materials; right click: the list)"
+
+		if short:
+			return text + "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
+
+		return text + "   (left click: build it with the materials in your pack; right click: the list)"
+
+	if _hammer_tier() > 0 and blueprints.mode == "repair":
+		return "Repair: left click a worn piece to mend it; right click: the menu"
+
+	if _hammer_tier() > 0 and blueprints.mode == "save":
+		return "Save building plan: left click a building to keep it; right click: the menu"
+
+	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
+		return "Red: %s" % PlacementRules.reason_text(blueprint_state)
+
+	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", "")) if _is_other_tool() else ""
+
+	if tool_class == "spade":
+		return "%s (right click switches)" % ("Raise" if raise_mode else "Dig")
+
+	if tool_class == "hoe":
+		return "%s (right click: choose what it does)" % _hoe_mode_name()
+
+	return ""
 
 
 func _hoe_mode_name() -> String:
@@ -1867,19 +1864,6 @@ func _hoe_mode_name() -> String:
 			return str(mode["name"])
 
 	return "Path"
-
-
-# The left-hand line under the right-hand one.
-func _off_caption() -> String:
-	if off_number() == 0:
-		return ""
-
-	var text: String = "Left hand: %s" % _inv.table.name_of(off_number())
-
-	if _off_class() == "shield":
-		text += "   (hold B to block)"
-
-	return text
 
 
 func _show_model() -> void:

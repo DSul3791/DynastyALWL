@@ -92,7 +92,7 @@ func run() -> void:
 	_check(held._off_model != null and held._off_model.get_parent() == held._arms.hand_mount_l, "the torch model sits on the left hand mount")
 	_check(held._off_model.get_node_or_null("Light") != null, "with its light")
 	_check(held._model != null and held._model.get_parent() == held._arms.hand_mount_r, "the axe model is still in the right hand")
-	_check(held._caption().contains("Left hand: Torch"), "the caption names the left-hand item")
+	_check(held._caption() == "", "the HUD names neither hand's item (Dave 10 Nov 2026)")
 	_check(not held.blocking, "not blocking without a shield")
 	held.set_first_person(false)
 	_check(held._off_model.get_parent() != null, "the left-hand model survives the camera switch")
@@ -112,7 +112,7 @@ func run() -> void:
 	_check(held.off_holding and held.off_id() == "test_shield", "a marked item goes in the left hand")
 	held._process(0.1)
 	_check(held._off_model != null and held._off_model.get_node_or_null("Light") == null, "a shield has no light")
-	_check(held._caption().contains("hold B to block"), "the caption tells how to block")
+	_check(held._caption() == "", "nor the shield")
 	held.press_slot(1)
 	_check(held.off_slot == 1 and held.off_id() == "torch", "another left-hand item replaces it")
 	view.inventory.numbers[1] = 0

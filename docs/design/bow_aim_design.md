@@ -30,6 +30,14 @@ The bow skill is the hunting skill's working level, from 0 to 100. Every curve i
 
 The client sends the bow slot, the draw time, the loaded arrow and the aim direction. The server clamps the draw time and keeps the pace check, as before. It checks that the loaded arrow is ammo and is in the pack, and otherwise takes the first ammo. It applies the spread and the damage from its own skill record. The aim assist only turns the direction the client sends, which a player could already aim by hand, so it gives a cheat nothing.
 
+## Sighting along the shaft
+
+Dave: "the string should always be inline with the bow wooden part. then you place the arrow over the left side and then draw back and sight along the arrow shaft." Kathleen's pose (#887) holds the grip, the string and the drawing hand on one line about 10 cm under the eye, with the nocked arrow on the string and resting over the left of the bow hand. It shows while the bow is up and the pack has an arrow. So the shaft points where the eye looks, and the reticle stays in the middle of the screen with no offset. The shot leaves along that same eye line.
+
+## No held-item line
+
+Dave: "it doesnt need to say wooden bow in hand. or anything. on the hud like that". The line over the hotbar no longer names what either hand holds, and it gives no how-to hints. It shows only a state the player must know: the picked blueprint and why it is red, the hammer's mode, why a placement is red, and the spade's or hoe's mode (`held_item._caption`).
+
 ## Not in this change
 
 - The bow's size (about 1.7 m) and how it is held are Kathleen's, in a separate PR. Her pose reads `bow_state()` ("idle", "raised" or "drawn") and `bow_draw()` (0 to 1) from held_item.
