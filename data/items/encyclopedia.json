@@ -2058,7 +2058,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": true
 		},
@@ -2502,7 +2502,7 @@
 				"Used in Iron - Pipe elbow",
 				"Used in Iron - Tap",
 				"Used in Iron - Chisel",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3327,7 +3327,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3381,7 +3381,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3435,7 +3435,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3489,7 +3489,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3543,7 +3543,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3597,7 +3597,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3651,7 +3651,7 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Iron - Anvil"
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -10008,7 +10008,7 @@
 			"obtainable_now": false
 		},
 		"iron_anvil_kit": {
-			"name": "Iron - Anvil",
+			"name": "Anvil",
 			"kind": "placeable",
 			"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
 			"how_to_get": [
@@ -10018,7 +10018,7 @@
 			"obtainable_now": true
 		},
 		"iron_anvil": {
-			"name": "Iron - Anvil",
+			"name": "Anvil",
 			"kind": "structure",
 			"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
 			"how_to_get": [],

@@ -9518,7 +9518,7 @@
 			"iron_anvil_kit": {
 				"number": 826,
 				"retired": true,
-				"name": "Iron - Anvil",
+				"name": "Anvil",
 				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9528,7 +9528,7 @@
 			},
 			"iron_anvil": {
 				"number": 827,
-				"name": "Iron - Anvil",
+				"name": "Anvil",
 				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
 				"kind": "structure",
 				"stack": 1,
