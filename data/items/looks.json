@@ -3812,6 +3812,77 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.0
+  },
+  "horn": {
+   "shape": "chunk",
+   "color": "#5a4a3a",
+   "size": 0.9
+  },
+  "gut": {
+   "shape": "coil",
+   "color": "#c8a088",
+   "size": 0.7
+  },
+  "toggle": {
+   "shape": "rod",
+   "color": "#d8ccb0",
+   "size": 0.3,
+   "bits": [
+    "pin"
+   ]
+  },
+  "hook": {
+   "shape": "rod",
+   "color": "#d8ccb0",
+   "size": 0.25,
+   "bits": [
+    "pin"
+   ]
+  },
+  "bone_club": {
+   "shape": "bone",
+   "color": "#d8ccb0",
+   "size": 1.6
+  },
+  "leather_quiver": {
+   "shape": "quiver",
+   "color": "#7a4a28",
+   "size": 1.0
+  },
+  "wooden_longbow": {
+   "shape": "bow",
+   "color": "#8a6a3a",
+   "size": 1.3
+  },
+  "leather_trousers": {
+   "shape": "cloth",
+   "color": "#7a4a28",
+   "size": 1.0
+  },
+  "leather_boots": {
+   "shape": "cloth",
+   "color": "#5a3a22",
+   "size": 0.8
+  },
+  "leather_gloves": {
+   "shape": "cloth",
+   "color": "#7a4a28",
+   "size": 0.6
+  },
+  "leather_backpack": {
+   "shape": "backpack",
+   "color": "#6a4024",
+   "size": 1.4
+  },
+  "straw_hat": {
+   "shape": "cloth",
+   "color": "#d8c070",
+   "size": 0.8
+  },
+  "worm": {
+   "shape": "coil",
+   "color": "#b07a6a",
+   "size": 0.3
   }
 
  }
