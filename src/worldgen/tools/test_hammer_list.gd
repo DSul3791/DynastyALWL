@@ -22,7 +22,7 @@ func _init() -> void:
 	var list = ListScript.new()
 	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
-	check(rows.size() == 127, "a wooden hammer lists every known blueprint (the Log - Shelf and Wooden - Crate make 127; the Iron - Chest needs an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
+	check(rows.size() == 134, "a wooden hammer lists every known blueprint (134 after the building tiers: the Mixer and nine Engineered pieces in, Log - Bench, Table and Shelf out; Fortified and iron pieces need an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
 	check(str(rows[0]["name"]) <= str(rows[1]["name"]), "the list is alphabetical")
 	check(not bool(rows[0]["can"]), "an empty pack covers nothing")
 
@@ -57,7 +57,7 @@ func _init() -> void:
 	check(str(shown._detail.text).begins_with("then left click a worn piece"), "the open panel shows the long Repair text (%s)" % str(shown._detail.text).left(40))
 	hud_layer.free()
 	check(not list.list_text(1).contains("(short)"), "no \"(short)\" after a name the pack cannot cover (Dave 10 Nov 2026): the have/need line says it")
-	check(list.list_text(1).contains("Stone - Foundation") and list.list_text(1).contains("Wooden - Wall"), "building pieces read Tier - Item (Dave 10 Nov 2026)")
+	check(list.list_text(1).contains("Sturdy - Foundation") and list.list_text(1).contains("Refined - Wall"), "building pieces read Tier - Item on the quality ladder (Dave 10 Nov 2026)")
 	# A long list scrolls past the highlight (Dave 5 Nov 2026): 7 lines show, the highlighted one in the middle, blank lines pad the ends so the first and last entry can reach it.
 	list.set_open(true, 1)
 	var total: int = list.entries(1).size()
@@ -88,6 +88,6 @@ func _init() -> void:
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 126 and strict_list.rows(2).size() == 127, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 133 and strict_list.rows(2).size() == 134, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
