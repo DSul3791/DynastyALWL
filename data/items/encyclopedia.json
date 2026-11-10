@@ -901,7 +901,8 @@
 			],
 			"used_for": [
 				"Used in Chestnut cakes",
-				"Used in Trail bread"
+				"Used in Trail bread",
+				"Used in Lamp oil (linseed)"
 			],
 			"obtainable_now": true
 		},
@@ -1702,7 +1703,8 @@
 				"Harvested from walnut"
 			],
 			"used_for": [
-				"Used in Nut cake"
+				"Used in Nut cake",
+				"Used in Lamp oil (walnuts)"
 			],
 			"obtainable_now": true
 		},
@@ -1920,7 +1922,9 @@
 				"Used in Stone - Arrow",
 				"Used in Stone - Axe",
 				"Used in Brick - Foundation",
-				"Used in Log - Foundation"
+				"Used in Log - Foundation",
+				"Used in Oil press",
+				"Used in Smoker"
 			],
 			"obtainable_now": true
 		},
@@ -1955,7 +1959,10 @@
 				"Used in Thatch - Garden plot",
 				"Used in Thatch - Scarecrow",
 				"Used in Wooden - Trellis",
-				"Used in Wooden - Arrow (fibre)"
+				"Used in Wooden - Arrow (fibre)",
+				"Used in Drying rack",
+				"Used in Sign",
+				"Used in Wicker - Basket"
 			],
 			"obtainable_now": true
 		},
@@ -2011,7 +2018,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": true
 		},
@@ -2079,7 +2088,14 @@
 				"Used in Wooden - Trough",
 				"Used in Bone - Club",
 				"Used in Straw - Hat",
-				"Used in Wooden - Longbow"
+				"Used in Wooden - Longbow",
+				"Used in Drying rack",
+				"Used in Tanning rack",
+				"Used in Armour stand",
+				"Used in Hide - Sack",
+				"Used in Tusk - Mount",
+				"Used in Weapon rack",
+				"Used in Wicker - Basket"
 			],
 			"obtainable_now": true
 		},
@@ -2377,7 +2393,11 @@
 				"Used in Wooden - Hand pump",
 				"Used in Wooden - Sluice",
 				"Used in Wooden - Trough",
-				"Used in Stone - Raised cistern"
+				"Used in Stone - Raised cistern",
+				"Used in Armour stand",
+				"Used in Sign",
+				"Used in Tusk - Mount",
+				"Used in Weapon rack"
 			],
 			"obtainable_now": true
 		},
@@ -2516,7 +2536,10 @@
 				"Used to build Stone forge",
 				"Used to build Brick oven",
 				"Used to build Clay hearth",
-				"Used in Clay pipe"
+				"Used in Clay pipe",
+				"Used in Kiln",
+				"Used in Smoker",
+				"Used in Storage jar"
 			],
 			"obtainable_now": true
 		},
@@ -2610,7 +2633,8 @@
 				"Used in Iron - Chair",
 				"Used in Iron - Hand pump",
 				"Used in Wooden - Hand pump",
-				"Used in Iron - Deep-well pump"
+				"Used in Iron - Deep-well pump",
+				"Used in Hide - Sack"
 			],
 			"obtainable_now": true
 		},
@@ -3238,7 +3262,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3288,7 +3314,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3338,7 +3366,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3388,7 +3418,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3438,7 +3470,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3488,7 +3522,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3538,7 +3574,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3671,7 +3709,7 @@
 			"kind": "food",
 			"description": "Salted fish smoked over the fire. Lasts for weeks.",
 			"how_to_get": [
-				"Craft at a campfire: 1 Fish, 1 Salt"
+				"Craft at a smoker: 1 Fish, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3899,7 +3937,8 @@
 			"kind": "material",
 			"description": "A fired clay brick. Builds the clay hearth and the oven.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Clay"
+				"Craft at a campfire: 2 Clay",
+				"Craft at a kiln: 2 Clay"
 			],
 			"used_for": [
 				"Used to build Brick oven",
@@ -3913,7 +3952,8 @@
 				"Used in Brick - Pillar",
 				"Used in Brick - Roof corner",
 				"Used in Brick - Stairs",
-				"Used in Brick - Garden plot"
+				"Used in Brick - Garden plot",
+				"Used in Kiln"
 			],
 			"obtainable_now": true
 		},
@@ -3954,7 +3994,8 @@
 				"Used in Stone - Channel tee",
 				"Used in Stone - Cistern",
 				"Used in Stone - Raised cistern",
-				"Used in Stone - Trough"
+				"Used in Stone - Trough",
+				"Used in Kiln"
 			],
 			"obtainable_now": true
 		},
@@ -4609,7 +4650,7 @@
 			"kind": "material",
 			"description": "Tanned hide: tough and supple.",
 			"how_to_get": [
-				"Craft at a campfire pot: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
+				"Craft at a tanning rack: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
 			],
 			"used_for": [
 				"Used in Fine leather",
@@ -4648,7 +4689,7 @@
 			"kind": "material",
 			"description": "Thick, stiff leather for armour and harness.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Leather, 2 Tannin-rich bark"
+				"Craft at a tanning rack: 2 Leather, 2 Tannin-rich bark"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -5350,7 +5391,8 @@
 				"Dropped by boar when worked with a knife"
 			],
 			"used_for": [
-				"Sold to traders (worth 20 copper)"
+				"Sold to traders (worth 20 copper)",
+				"Used in Tusk - Mount"
 			],
 			"obtainable_now": true
 		},
@@ -6004,7 +6046,7 @@
 			"kind": "food",
 			"description": "Salted meat strips dried over smoke. Keeps for weeks.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Raw meat, 1 Salt"
+				"Craft at a drying rack: 2 Raw meat, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -6026,7 +6068,7 @@
 			"kind": "food",
 			"description": "Berries dried by the fire. Sweet and long lasting.",
 			"how_to_get": [
-				"Craft at a clay hearth: 3 Berries"
+				"Craft at a drying rack: 3 Berries"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6525,7 +6567,7 @@
 			"kind": "food",
 			"description": "Autumn apples sliced and dried by the fire. Chewy and sweet, they keep for months.",
 			"how_to_get": [
-				"Craft: 3 Autumn apple at a clay hearth"
+				"Craft at a drying rack: 3 Autumn apple"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6585,7 +6627,7 @@
 			"kind": "food",
 			"description": "Figs dried until sticky and sweet. They last for months.",
 			"how_to_get": [
-				"Craft: 3 Figs at a clay hearth"
+				"Craft at a drying rack: 3 Figs"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -7260,7 +7302,8 @@
 			"kind": "material",
 			"description": "Firewood burned slow and starved of air. The best smelting fuel.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Firewood"
+				"Craft at a campfire: 2 Firewood",
+				"Craft at a kiln: 2 Firewood"
 			],
 			"used_for": [
 				"Used in Copper ingot",
@@ -8318,7 +8361,9 @@
 			"kind": "material",
 			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Herring"
+				"Craft at a campfire pot: 3 Herring",
+				"Craft at a oil press: 4 Linseed",
+				"Craft at a oil press: 4 Walnuts"
 			],
 			"used_for": [
 				"Used in Iron - Hanging lantern",
@@ -9308,6 +9353,222 @@
 			"how_to_get": [
 				"Found now and then when digging loam, humus, silt or mud"
 			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"kiln_kit": {
+			"name": "Kiln",
+			"kind": "placeable",
+			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Brick, 8 Clay, 4 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"kiln": {
+			"name": "Kiln",
+			"kind": "structure",
+			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"tanning_rack_kit": {
+			"name": "Tanning rack",
+			"kind": "placeable",
+			"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Log, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tanning_rack": {
+			"name": "Tanning rack",
+			"kind": "structure",
+			"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"drying_rack_kit": {
+			"name": "Drying rack",
+			"kind": "placeable",
+			"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"drying_rack": {
+			"name": "Drying rack",
+			"kind": "structure",
+			"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"smoker_kit": {
+			"name": "Smoker",
+			"kind": "placeable",
+			"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 16 Stone, 6 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"smoker": {
+			"name": "Smoker",
+			"kind": "structure",
+			"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"oil_press_kit": {
+			"name": "Oil press",
+			"kind": "placeable",
+			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Stone, 4 Log"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"oil_press": {
+			"name": "Oil press",
+			"kind": "structure",
+			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"storage_jar_kit": {
+			"name": "Storage jar",
+			"kind": "placeable",
+			"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"storage_jar": {
+			"name": "Storage jar",
+			"kind": "structure",
+			"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"hide_sack_kit": {
+			"name": "Hide sack",
+			"kind": "placeable",
+			"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Hide, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_sack": {
+			"name": "Hide - Sack",
+			"kind": "structure",
+			"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wicker_basket_kit": {
+			"name": "Wicker basket",
+			"kind": "placeable",
+			"description": "A woven basket of sticks and twine. A first store for a camp.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wicker_basket": {
+			"name": "Wicker - Basket",
+			"kind": "structure",
+			"description": "A woven basket of sticks and twine. A first store for a camp.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"weapon_rack_kit": {
+			"name": "Weapon rack",
+			"kind": "placeable",
+			"description": "A plank rack against a wall for spears, bows and blades.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"weapon_rack": {
+			"name": "Weapon rack",
+			"kind": "structure",
+			"description": "A plank rack against a wall for spears, bows and blades.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"armour_stand_kit": {
+			"name": "Armour stand",
+			"kind": "placeable",
+			"description": "A plank figure to hang a set of armour and clothes on.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Plank, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"armour_stand": {
+			"name": "Armour stand",
+			"kind": "structure",
+			"description": "A plank figure to hang a set of armour and clothes on.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"sign_kit": {
+			"name": "Sign",
+			"kind": "placeable",
+			"description": "A plank board on a stick to mark a camp or a path.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sign": {
+			"name": "Sign",
+			"kind": "structure",
+			"description": "A plank board on a stick to mark a camp or a path.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"tusk_mount_kit": {
+			"name": "Tusk mount",
+			"kind": "placeable",
+			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Tusk, 1 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tusk_mount": {
+			"name": "Tusk - Mount",
+			"kind": "structure",
+			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
 		}

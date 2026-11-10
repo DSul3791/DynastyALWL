@@ -737,7 +737,12 @@ func _update_bow(delta: float) -> void:
 
 
 func _is_spear() -> bool:
-	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
+	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
+
+
+# The Fishing spear (Part C): held and jabbed like a spear, only at water, and never thrown.
+func _is_fish_spear() -> bool:
+	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "fish_spear"
 
 
 # Whether the pack holds an arrow the bow can shoot (the server's ammo list, data/items/bow.json), so a draw with
@@ -1180,7 +1185,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return false
 
 	if button == MOUSE_BUTTON_RIGHT:
-		aiming = pressed
+		aiming = pressed and not _is_fish_spear()
 		return true
 
 	if button == MOUSE_BUTTON_LEFT and pressed:
@@ -1190,7 +1195,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_jab_t = 0.0
 			_arm_play("jab", JAB_S)
 			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
-			_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+			if not _is_fish_spear():
+				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
@@ -1725,6 +1731,9 @@ func _update_blueprint() -> void:
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
+	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.water_short(_placement, kit, _blueprint_at, water_depth_at):
+		blueprint_state = "shallow"   # a fish trap off the water or in too little of it, as the server refuses
+
 	if blueprint_state == "":
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
@@ -1734,7 +1743,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
