@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 381,
+	"next_number": 390,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -8298,6 +8298,203 @@
 			"craft_s": 8.0,
 			"known": true,
 			"station": "campfire"
+		},
+		"sling": {
+			"number": 381,
+			"name": "Sling",
+			"category": "Weapons",
+			"needs": [
+				[
+					"hide",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"sling",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"sling_stone": {
+			"number": 382,
+			"name": "Sling stone",
+			"category": "Weapons",
+			"needs": [
+				[
+					"gravel",
+					1
+				]
+			],
+			"gives": [
+				"sling_stone",
+				5
+			],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"whetstone": {
+			"number": 383,
+			"name": "Whetstone",
+			"category": "Tools",
+			"needs": [
+				[
+					"stone",
+					1
+				]
+			],
+			"gives": [
+				"whetstone",
+				1
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"locked": true
+		},
+		"fishing_spear": {
+			"number": 384,
+			"name": "Fishing spear",
+			"category": "Tools",
+			"needs": [
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"fishing_spear",
+				1
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"keeps": [
+				[
+					"knife",
+					1
+				]
+			],
+			"locked": true
+		},
+		"fire_arrow": {
+			"number": 385,
+			"name": "Fire arrow",
+			"category": "Weapons",
+			"needs": [
+				[
+					"wooden_arrow",
+					1
+				],
+				[
+					"pitch",
+					1
+				],
+				[
+					"plant_fibre",
+					1
+				]
+			],
+			"gives": [
+				"fire_arrow",
+				1
+			],
+			"craft_s": 4.0,
+			"known": false,
+			"locked": true
+		},
+		"fishing_bait_worm": {
+			"number": 386,
+			"name": "Fishing bait (worm)",
+			"category": "Materials",
+			"needs": [
+				[
+					"worm",
+					1
+				]
+			],
+			"gives": [
+				"fishing_bait",
+				2
+			],
+			"craft_s": 2.0,
+			"known": false,
+			"locked": true
+		},
+		"fishing_bait_fish": {
+			"number": 387,
+			"name": "Fishing bait (fish)",
+			"category": "Materials",
+			"needs": [
+				[
+					"fish",
+					1
+				]
+			],
+			"gives": [
+				"fishing_bait",
+				4
+			],
+			"craft_s": 3.0,
+			"known": false,
+			"locked": true
+		},
+		"bedroll": {
+			"number": 388,
+			"name": "Bedroll",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"bedroll",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			],
+			"locked": true
+		},
+		"wooden_snowshoes": {
+			"number": 389,
+			"name": "Wooden - Snowshoes",
+			"category": "Clothing",
+			"needs": [
+				[
+					"stick",
+					4
+				],
+				[
+					"leather_strap",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"wooden_snowshoes",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"station": "workbench",
+			"locked": true
 		}
 	}
 }
