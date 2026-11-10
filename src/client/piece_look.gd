@@ -3915,8 +3915,22 @@ static func _iron_bands(root: Node3D, size: Vector3, at: Vector3, ys: Array) -> 
 		_box(root, Vector3(size.x + 0.04, 0.09, size.z + 0.04), Vector3(at.x, float(y), at.z), _iron_mat())
 
 
+# Bolt heads on a band at height `y`: one on each face of the band (its surface at z = -face and +face, the heads standing 0.02 proud) at every x in `xs`.
+# `turned` puts them on the x faces instead (xs are then z).
+static func _bolts(root: Node3D, xs: Array, y: float, face: float, turned: bool = false) -> void:
+	var dark: StandardMaterial3D = _tone_mat(Color(0.16, 0.16, 0.17))
+
+	for x in xs:
+		for side in [-1.0, 1.0]:
+			if turned:
+				_box(root, Vector3(0.04, 0.07, 0.07), Vector3(side * face, y, float(x)), dark)
+			else:
+				_box(root, Vector3(0.07, 0.07, 0.04), Vector3(float(x), y, side * face), dark)
+
+
 # A concrete foundation, 4 x 4 m, top 0.3 m up and 2 m deep like every foundation: a cast block on a wider footing at the ground line, a chamfered top edge
-# and the slab's cast joints. Banded (Fortified): iron bands round it and iron angle plates down the four corners.
+# and the slab's cast joints. Banded (Fortified): a second footing step, iron bands round it with bolt heads along the top one, and iron angle plates down
+# the four corners.
 static func concrete_foundation(banded: bool = false) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -3928,6 +3942,9 @@ static func concrete_foundation(banded: bool = false) -> Node3D:
 
 	if banded:
 		_iron_bands(root, Vector3(4.12, 0.0, 4.12), Vector3.ZERO, [0.12, -0.5])
+		_box(root, Vector3(4.24, 0.24, 4.24), Vector3(0.0, -0.32, 0.0), _concrete)          # a second, wider footing step: the base is battered out
+		_bolts(root, [-1.2, 0.0, 1.2], 0.12, 2.08)
+		_bolts(root, [-1.2, 0.0, 1.2], 0.12, 2.08, true)
 
 		for x in [-2.04, 2.04]:
 			for z in [-2.04, 2.04]:
@@ -3938,7 +3955,7 @@ static func concrete_foundation(banded: bool = false) -> Node3D:
 
 
 # A concrete wall, 2 m wide and 2.4 m high (0.25 m thick; banded 0.3): the cast body with two board-form tie lines across it and a cast coping on top.
-# Banded (Fortified): thicker, two iron bands across both faces and an iron strap up each end.
+# Banded (Fortified): thicker, a plinth course at the foot, two iron bands across both faces bolted through, and an iron strap up each end.
 static func concrete_wall(banded: bool = false) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -3952,16 +3969,21 @@ static func concrete_wall(banded: bool = false) -> Node3D:
 
 	if banded:
 		_iron_bands(root, Vector3(2.0, 0.0, thick), Vector3.ZERO, [0.5, 1.9])
+		_box(root, Vector3(2.0, 0.2, thick + 0.04), Vector3(0.0, 0.1, 0.0), _flag)                # a heavier plinth course at the foot
 
 		for x in [-0.94, 0.94]:
 			_box(root, Vector3(0.1, 2.3, thick + 0.04), Vector3(x, 1.15, 0.0), _iron_mat())   # end straps
+
+		for y in [0.5, 1.9]:
+			_bolts(root, [-0.6, 0.0, 0.6], y, thick * 0.5 + 0.02)
 
 	_solid(root, Vector3(2.0, 2.4, thick), Vector3(0.0, 1.2, 0.0))
 	return root
 
 
 # A concrete wall with a one metre gap from `low` to `high` (a doorway from 0, a window from 0.9): the cast sides, a cast lintel over the gap (and a sill under
-# a window), the coping. A doorway hangs the plank door with iron straps; banded, the gap is framed in iron and the bands run either side of it.
+# a window), the coping. A doorway hangs the plank door with iron straps; banded (Fortified), the gap is framed in iron, the bolted bands run either side of it,
+# the door is iron-clad and a drop bar sits in two brackets on the inner face (lifted off when the door stands open).
 static func concrete_gap(banded: bool, low: float, high: float, open: bool = false) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -3985,11 +4007,43 @@ static func concrete_gap(banded: bool, low: float, high: float, open: bool = fal
 		for x in [-0.52, 0.52]:
 			_box(root, Vector3(0.05, high, thick + 0.04), Vector3(x, high * 0.5, 0.0), _iron_mat())   # the iron frame round the gap
 
-	if low == 0.0:
+		for y in [0.5, 1.9]:
+			_bolts(root, [-0.75, 0.75], y, thick * 0.5 + 0.02)
+
+	if low == 0.0 and banded:
+		_iron_door(root, open)
+
+		for x in [-0.56, 0.56]:
+			_box(root, Vector3(0.08, 0.14, 0.05), Vector3(x, 1.05, -thick * 0.5 - 0.02), _iron_mat())   # the drop-bar brackets on the inner face
+
+		if not open:
+			_box(root, Vector3(1.2, 0.1, 0.03), Vector3(0.0, 1.07, -thick * 0.5 - 0.025), _frame)          # the bar, dropped across the door
+	elif low == 0.0:
 		_strap_door(root, open)
 
 	_gap_solids(root, low, high, thick)
 	return root
+
+
+# An iron-clad door for the Fortified doorway, 1 m by 2 m: a plank core with three iron bands and two iron stiles across both faces and a ring pull.
+# Open it swings back against the +X jamb, out to +Z, like door().
+static func _iron_door(root: Node3D, open: bool) -> void:
+	var leaf: Node3D = Node3D.new()
+	root.add_child(leaf)
+	_box(leaf, Vector3(1.0, 2.0, 0.07), Vector3(0.0, 1.0, 0.0), _planks)
+
+	for y in [0.3, 1.0, 1.75]:
+		_box(leaf, Vector3(1.0, 0.12, 0.1), Vector3(0.0, y, 0.0), _iron_mat())
+
+	for x in [-0.42, 0.42]:
+		_box(leaf, Vector3(0.1, 2.0, 0.1), Vector3(x, 1.0, 0.0), _iron_mat())
+
+	_box(leaf, Vector3(0.1, 0.1, 0.14), Vector3(0.3, 1.15, 0.0), _tone_mat(Color(0.16, 0.16, 0.17)))   # the ring pull, both faces
+	_solid(leaf, Vector3(1.0, 2.0, 0.1), Vector3(0.0, 1.0, 0.0))
+
+	if open:
+		leaf.position = Vector3(0.47, 0.0, 0.5)
+		leaf.rotation = Vector3(0.0, -PI * 0.5, 0.0)
 
 
 static func engineered_doorway(open: bool = false) -> Node3D:
@@ -4004,7 +4058,7 @@ static func engineered_window() -> Node3D:
 	return concrete_gap(false, 0.9, 1.7)
 
 
-# A concrete pillar, 2.6 m: a square cast column on a wider footing with a cap (0.5 m square; banded 0.6 m, with three iron bands).
+# A concrete pillar, 2.6 m: a square cast column on a wider footing with a cap (0.5 m square; banded 0.6 m, with three iron bands, a bolt head on every face).
 static func concrete_pillar(banded: bool = false) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -4016,20 +4070,33 @@ static func concrete_pillar(banded: bool = false) -> Node3D:
 	if banded:
 		_iron_bands(root, Vector3(w - 0.1, 0.0, w - 0.1), Vector3.ZERO, [0.6, 1.3, 2.0])
 
+		for y in [0.6, 1.3, 2.0]:
+			_bolts(root, [0.0], y, (w - 0.06) * 0.5)
+			_bolts(root, [0.0], y, (w - 0.06) * 0.5, true)
+
 	_solid(root, Vector3(w, 2.6, w), Vector3(0.0, 1.3, 0.0))
 	return root
 
 
-# The Fortified - Gate, 2.0 x 0.3: two banded concrete piers 2.4 m high and between them a heavy plank leaf bound in iron, hung on the -X pier. Shut it closes
-# the gap; open it stands swung out to +Z.
+# The Fortified - Gate, 2.0 x 0.3: two banded concrete piers 2.4 m high, bolted through the upper band, joined by a cast lintel, and between them a heavy plank leaf bound in iron
+# (three bands, two stiles and a diagonal brace, both faces), hung on two iron pintles on the -X pier. Shut it closes the gap; open it stands swung out
+# to +Z.
 static func fortified_gate(open: bool = false) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
 
 	for x in [-0.8, 0.8]:
 		_box(root, Vector3(0.36, 2.4, 0.3), Vector3(x, 1.2, 0.0), _concrete)
-		_box(root, Vector3(0.4, 0.1, 0.32), Vector3(x, 2.45, 0.0), _flag)
 		_iron_bands(root, Vector3(0.32, 0.0, 0.3), Vector3(x, 0.0, 0.0), [0.5, 1.9])
+
+		_bolts(root, [x], 1.9, 0.17)
+
+	_box(root, Vector3(2.0, 0.24, 0.3), Vector3(0.0, 2.52, 0.0), _concrete)                     # the cast lintel over the gateway
+	_box(root, Vector3(2.04, 0.08, 0.34), Vector3(0.0, 2.68, 0.0), _flag)                       # its coping
+	_iron_bands(root, Vector3(2.0, 0.0, 0.3), Vector3.ZERO, [2.5])
+
+	for y in [0.4, 1.8]:
+		_box(root, Vector3(0.08, 0.08, 0.1), Vector3(-0.6, y, 0.0), _iron_mat())                # the pintles
 
 	var w: float = 1.22
 	var hinge: Node3D = Node3D.new()
@@ -4043,10 +4110,16 @@ static func fortified_gate(open: bool = false) -> Node3D:
 	for y in [0.35, 1.12, 1.9]:
 		_box(leaf, Vector3(w, 0.1, 0.14), Vector3(0.0, y, 0.0), _iron_mat())                # the iron bands across the leaf
 
+	for x in [-0.5, 0.5]:
+		_box(leaf, Vector3(0.09, 2.2, 0.13), Vector3(x, 1.12, 0.0), _iron_mat())             # the stiles
+
+	_box_rot(leaf, Vector3(0.08, 1.0, 0.12), Vector3(0.0, 0.74, 0.0), Vector3(0.0, 0.0, -1.0), _iron_mat())   # the brace between the lower bands
 	_solid(leaf, Vector3(w, 2.2, 0.1), Vector3(0.0, 1.12, 0.0))
 
 	for side in [-0.8, 0.8]:
 		_solid(root, Vector3(0.36, 2.4, 0.3), Vector3(side, 1.2, 0.0))
+
+	_solid(root, Vector3(2.0, 0.24, 0.3), Vector3(0.0, 2.52, 0.0))
 
 	if open:
 		hinge.rotation = Vector3(0.0, -PI * 0.5, 0.0)
@@ -4054,22 +4127,26 @@ static func fortified_gate(open: bool = false) -> Node3D:
 	return root
 
 
-# The Fortified - Wall top (battlement), 2.0 x 0.4, 0.8 m: a banded concrete parapet course with three merlons and the two crenels between them, set on top
-# of a wall (for now placed like a fence; a wall-top snap is Steve's).
+# The Fortified - Wall top (battlement), 2.0 x 0.4, 0.8 m: a banded, bolted concrete parapet course with a string course along its foot, and on it two
+# merlons 0.6 m wide with an arrow slit through each and a capping slab. The rhythm is one merlon and one crenel every metre, half a crenel at each end,
+# so wall tops side by side keep the same rhythm across the joint. Set on top of a wall (for now placed like a fence; a wall-top snap is Steve's).
 static func fortified_wall_top() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(2.0, 0.3, 0.4), Vector3(0.0, 0.15, 0.0), _concrete)
+	_box(root, Vector3(2.0, 0.06, 0.4), Vector3(0.0, 0.03, 0.0), _flag)                       # the string course along the foot
 
-	for x in [-0.75, 0.0, 0.75]:
-		_box(root, Vector3(0.5, 0.48, 0.36), Vector3(x, 0.54, 0.0), _concrete)                # a merlon
-		_box(root, Vector3(0.54, 0.05, 0.4), Vector3(x, 0.78, 0.0), _flag)                    # its cap
+	for x in [-0.5, 0.5]:
+		_box(root, Vector3(0.6, 0.46, 0.36), Vector3(x, 0.53, 0.0), _concrete)                # a merlon
+		_box(root, Vector3(0.64, 0.06, 0.4), Vector3(x, 0.77, 0.0), _flag)                    # its capping slab
+		_box(root, Vector3(0.06, 0.28, 0.38), Vector3(x, 0.54, 0.0), _pot)                    # the arrow slit through it
 
-	_iron_bands(root, Vector3(2.0, 0.0, 0.4), Vector3.ZERO, [0.18])
+	_iron_bands(root, Vector3(2.0, 0.0, 0.4), Vector3.ZERO, [0.2])
+	_bolts(root, [-0.75, -0.25, 0.25, 0.75], 0.2, 0.22)
 	_solid(root, Vector3(2.0, 0.3, 0.4), Vector3(0.0, 0.15, 0.0))
 
-	for x in [-0.75, 0.0, 0.75]:
-		_solid(root, Vector3(0.5, 0.5, 0.36), Vector3(x, 0.55, 0.0))
+	for x in [-0.5, 0.5]:
+		_solid(root, Vector3(0.6, 0.5, 0.36), Vector3(x, 0.55, 0.0))
 
 	return root
 
