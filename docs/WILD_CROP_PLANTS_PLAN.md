@@ -13,7 +13,7 @@ Dave's answer on QA card `claude-crop-seeds` (2 Nov 2026): option A. Each crop g
 | Potato | wild_potato (tuber vine) | temperate_grassland, heath, boreal_forest | spring to autumn | 1 to 2 small potatoes | plant + potato_seeds 1 to 3 |
 | Turnip | wild_turnip | temperate_grassland, boreal_forest, tundra | spring, autumn | 1 turnip | plant + turnip_seeds |
 | Cabbage | sea_cabbage | beach, marsh, grassland edge | summer | 1 cabbage head (small) | plant + cabbage_seeds |
-| Onion | ramsons (wild garlic) | mixed_forest, grassland, shady and damp | spring | 2 to 3 bulbs | plant + onion_seeds |
+| Onion | ramsons (Wild leek) | mixed_forest, grassland, shady and damp | spring | 2 to 3 bulbs | plant + onion_seeds |
 | Peas | wild_vetch | temperate_grassland, heath | summer | 3 to 5 pods | plant + peas_seeds |
 | Beet | sea_beet | beach, coast grassland | summer | 1 beet | plant + beet_seeds |
 | Radish | wild_radish | grassland and beach verges | spring to autumn | 2 radishes | plant + radish_seeds |

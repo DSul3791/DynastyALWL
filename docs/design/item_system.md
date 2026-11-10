@@ -233,7 +233,7 @@ Furniture B3, lights B4, garden B5 and water B6 rows are **not** repeated here. 
 | **Clay hearth** | **HAVE, stays** | **A cooking station (26 recipes; the Brick oven needs it near). Not a kiln.** |
 | Kiln | NEW | One kiln (single version, plain name; supersedes draft 3's Clay - Kiln and Brick - Kiln). Hammer; 30 Brick, 8 Clay, 4 Clay mortar. **Brick yield doubles (2 Clay → 6 Brick; the campfire gives 3) and 2 Firewood → 2 Charcoal (campfire: 1).** Glass (Sand + Potash) and Potash are made here. **Pots stay at the campfire.** The campfire makes the first bricks, pots and charcoal. |
 | Oven | RENAME (Brick oven; single version, plain) | as live; still needs the Clay hearth near it |
-| Tanning rack | NEW | 6 Log, 4 Twine. **Move the live leather recipe here with the same inputs** (Scraped hide + 2 Tannin-rich bark + 1 Water; Heavy leather too) and remove the campfire-pot version. |
+| Tanning rack | NEW | 6 Log, 4 Twine. **Move the live leather recipe here with the same inputs** (Scraped hide + 2 Tanbark + 1 Water; Heavy leather too) and remove the campfire-pot version. |
 | Drying rack | NEW | 8 Stick, 4 Twine. Jerky, dried fruit, herbs. |
 | Brewing barrel | NEW-F | absorbs Keg. Mead, ale, cider. |
 | Preserving jar | NEW | 6 Clay. Jam, pickles, compote, sauerkraut. |

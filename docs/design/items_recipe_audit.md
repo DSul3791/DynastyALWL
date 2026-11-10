@@ -209,8 +209,8 @@ Sorted by category, then tier. Inputs read "count name"; "keep" items are tools 
 | flour_from_barley | Barley flour | T1 | hand | 3 Barley; keep Hand mill | 2 Flour | 10.0 |  |  |
 | compost | Compost | T1 | hand | 3 Plant fibre | 1 Compost | 4.0 | b | Three fibres become compost in four seconds; compost is a heap that rots over days. |
 | hide_glue | Hide glue | T1 | campfire_pot | 1 Hide | 2 Hide glue | 12.0 |  |  |
-| leather | Leather | T1 | campfire_pot | 1 Scraped hide, 2 Tannin-rich bark, 1 Water | 1 Leather | 30.0 |  | Scraped hide + tannin-rich bark + water: real tanning, and Conan and Vintage Story do the same. |
-| heavy_leather | Heavy leather | T1 | campfire_pot | 2 Leather, 2 Tannin-rich bark | 1 Heavy leather | 40.0 |  |  |
+| leather | Leather | T1 | campfire_pot | 1 Scraped hide, 2 Tanbark, 1 Water | 1 Leather | 30.0 |  | Scraped hide + tannin-rich bark + water: real tanning, and Conan and Vintage Story do the same. |
+| heavy_leather | Heavy leather | T1 | campfire_pot | 2 Leather, 2 Tanbark | 1 Heavy leather | 40.0 |  |  |
 | fine_leather | Fine leather | T1 | campfire_pot | 1 Leather, 1 Animal fat | 1 Fine leather | 30.0 |  | Leather worked with fat: sensible. |
 | linen | Linen | T1 | hand | 4 Flax | 2 Linen | 20.0 | d | Flax to linen by hand in one step (no retting, spinning or loom). |
 | flour_from_oats | Oat flour | T1 | hand | 3 Oats; keep Hand mill | 2 Flour | 10.0 |  |  |
@@ -240,8 +240,8 @@ Sorted by category, then tier. Inputs read "count name"; "keep" items are tools 
 | beams_scots_pine | Scots pine beams | T3 | saw_mill | 1 Scots pine logs | 2 Scots pine beams | 6.0 | c | Makes Scots pine beams, which nothing uses (species lumber and beams are a dead end). |
 | lumber_spruce | Spruce lumber | T3 | saw_mill | 1 Spruce logs | 7 Spruce lumber | 5.0 | c | Makes Spruce lumber, which nothing uses (species lumber and beams are a dead end). |
 | beams_spruce | Spruce beams | T3 | saw_mill | 1 Spruce logs | 2 Spruce beams | 6.0 | c | Makes Spruce beams, which nothing uses (species lumber and beams are a dead end). |
-| lumber_tropical_hardwood | Tropical hardwood lumber | T3 | saw_mill | 1 Tropical hardwood logs | 6 Tropical hardwood lumber | 6.0 | c | Makes Tropical hardwood lumber, which nothing uses (species lumber and beams are a dead end). |
-| beams_tropical_hardwood | Tropical hardwood beams | T3 | saw_mill | 1 Tropical hardwood logs | 2 Tropical hardwood beams | 8.0 | c | Makes Tropical hardwood beams, which nothing uses (species lumber and beams are a dead end). |
+| lumber_tropical_hardwood | Mahogany lumber | T3 | saw_mill | 1 Mahogany logs | 6 Mahogany lumber | 6.0 | c | Makes Mahogany lumber, which nothing uses (species lumber and beams are a dead end). |
+| beams_tropical_hardwood | Mahogany beams | T3 | saw_mill | 1 Mahogany logs | 2 Mahogany beams | 8.0 | c | Makes Mahogany beams, which nothing uses (species lumber and beams are a dead end). |
 | lumber_walnut | Walnut lumber | T3 | saw_mill | 1 Walnut logs | 6 Walnut lumber | 6.0 | c | Makes Walnut lumber, which nothing uses (species lumber and beams are a dead end). |
 | beams_walnut | Walnut beams | T3 | saw_mill | 1 Walnut logs | 2 Walnut beams | 8.0 | c | Makes Walnut beams, which nothing uses (species lumber and beams are a dead end). |
 | lumber_maple | Sugar maple lumber | T3 | saw_mill | 1 Sugar maple logs | 6 Sugar maple lumber | 6.0 | c | Makes Sugar maple lumber, which nothing uses (species lumber and beams are a dead end). |
@@ -508,13 +508,13 @@ Every item some live recipe or blueprint takes (as an input or a kept tool).
 | Strawberries | strawberries | drop/harvest, flora pick, wild food |  | 1 | yes |
 | Sugar maple logs | log_maple | felling |  | 2 | yes |
 | Tallow | tallow | none | tallow | 3 | yes |
-| Tannin-rich bark | tannin_bark | drop/harvest, flora pick |  | 2 | yes |
+| Tanbark | tannin_bark | drop/harvest, flora pick |  | 2 | yes |
 | Tar | tar | drop/harvest | tar | 1 | yes |
 | Thatch | thatch | drop/harvest, flora pick, server code, wild food |  | 8 | yes |
 | Thyme | thyme | drop/harvest, flora pick, wild food |  | 4 | yes |
 | Tin ingot | tin_ingot | none | smelt_tin | 1 | yes |
 | Tin ore | tin_ore | boulder |  | 1 | yes |
-| Tropical hardwood logs | log_tropical_hardwood | felling |  | 2 | yes |
+| Mahogany logs | log_tropical_hardwood | felling |  | 2 | yes |
 | Trout | trout | animal, fishing |  | 4 | yes |
 | Turnip | turnip | crop, drop/harvest, flora pick |  | 2 | yes |
 | Twine | twine | shop (hob) | twine, twine_bark, sinew_cord | 70 | yes |
