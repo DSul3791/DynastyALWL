@@ -8365,8 +8365,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
-			"locked": true
+			"known": true
 		},
 		"fishing_spear": {
 			"number": 384,
@@ -8383,14 +8382,13 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"keeps": [
 				[
 					"knife",
 					1
 				]
-			],
-			"locked": true
+			]
 		},
 		"fire_arrow": {
 			"number": 385,
@@ -8415,8 +8413,7 @@
 				1
 			],
 			"craft_s": 4.0,
-			"known": false,
-			"locked": true
+			"known": true
 		},
 		"fishing_bait_worm": {
 			"number": 386,
@@ -8433,8 +8430,7 @@
 				2
 			],
 			"craft_s": 2.0,
-			"known": false,
-			"locked": true
+			"known": true
 		},
 		"fishing_bait_fish": {
 			"number": 387,
@@ -8451,8 +8447,7 @@
 				4
 			],
 			"craft_s": 3.0,
-			"known": false,
-			"locked": true
+			"known": true
 		},
 		"bedroll": {
 			"number": 388,
@@ -8473,14 +8468,13 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
+			"known": true,
 			"keeps": [
 				[
 					"sewing_needle",
 					1
 				]
-			],
-			"locked": true
+			]
 		},
 		"wooden_snowshoes": {
 			"number": 389,
