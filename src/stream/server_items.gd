@@ -3285,6 +3285,11 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "You cannot build in water.")
 		return
 
+	if water_depth_at.is_valid() and PlacementRules.water_short(_structures_cfg, kit_id, spot, func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
+		var trap_def: Dictionary = _structure_of_kit(kit_id)
+		_say(peer, "A %s needs water at least %s m deep." % [table.name_of(table.number_of(str(trap_def.get("item", kit_id)))).to_lower(), str(float(trap_def["min_water_m"]))])
+		return
+
 	if not on_base and ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
 		_say(peer, "The ground is too steep there.")
 		return
@@ -10890,8 +10895,8 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("weapon_class", "")) == "spear":
-		_spear_fish(peer, inv, slot, at, cfg)
+	if str(entry.get("weapon_class", "")) in ["spear", "fish_spear"]:
+		_spear_fish(peer, inv, slot, at, cfg, str(entry["weapon_class"]) == "fish_spear")
 		return
 
 	if str(entry.get("tool_class", "")) != "rod":
@@ -11051,9 +11056,14 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 	_say(peer, line)
 
 
-# A spear jab at water (the client sends ACT_FISH with the spear in hand and the point it stabs at): see fishing.json "spear".
-func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) -> void:
-	var cfg: Dictionary = fishing.get("spear", {})
+# A spear jab at water (the client sends ACT_FISH with the spear in hand and the point it stabs at): see fishing.json "spear". The Fishing
+# spear (weapon_class "fish_spear", Part C) jabs the same way with fishing.json "fish_spear" laid over those numbers.
+func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fish_spear: bool = false) -> void:
+	var cfg: Dictionary = (fishing.get("spear", {}) as Dictionary).duplicate()
+
+	if fish_spear:
+		cfg.merge(fishing.get("fish_spear", {}), true)
+
 	var pos: Vector3 = _peer_pos[peer]
 
 	if cfg.is_empty() or not water_near.is_valid() or Vector2(at.x - pos.x, at.z - pos.z).length() > float(cfg.get("reach_m", 3.0)) or not bool(water_near.call(at, 0.0)) or bool(_swimming.get(peer, false)):
@@ -11073,7 +11083,10 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 	if water_depth_at.is_valid():
 		var depth: float = float(water_depth_at.call(at))
 
-		if depth < 0.05 or depth > float(cfg.get("max_depth_m", 1.5)):
+		if depth < float(cfg.get("min_depth_m", 0.05)) or depth > float(cfg.get("max_depth_m", 1.5)):
+			if cfg.has("say_depth"):
+				_say(peer, str(cfg["say_depth"]))
+
 			return
 
 	if float(_moving.get(peer, 0.0)) > float(cfg.get("still_below", 0.25)):
@@ -11204,6 +11217,92 @@ func _fish_bait_slot(inv, cfg: Dictionary) -> int:
 				return slot
 
 	return -1
+
+
+var _trap_rolled: Dictionary = {}   # fish trap uid -> game second up to which its hours are rolled (not saved: after a restart its hour starts again)
+var _traps_at_s: float = -1.0e18    # game second of the last _fish_traps_tick pass
+const FISH_TRAP_LOOK_S := 600.0     # the traps are looked over every ten game minutes; each rolls once per whole game hour it has stood
+
+
+# Fish traps (structures.json "fish_trap": true, fishing.json "trap"; Part C plan 2): each game hour a trap rolls the fishing cell's stock at
+# hour_chance, or bait_chance with a bait from trap.bait in its slots, which a catch uses up. The fish goes into its slots, so E takes it out
+# like a chest; a full trap or a frozen one catches nothing. Every fish counts against the cell's stock, so traps cannot empty a pond faster
+# than it refills. Hours missed while the clock jumped (sleep) are rolled, at most catch_up_h of them.
+func _fish_traps_tick() -> void:
+	var cfg: Dictionary = _fishing_data().get("trap", {})
+	var now_s: float = _now_game_s()
+
+	if cfg.is_empty() or now_s - _traps_at_s < FISH_TRAP_LOOK_S:
+		return
+
+	_traps_at_s = now_s
+	var seen: Dictionary = {}
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or not it["struct"].has("uid") or not bool(_structures.get(str(it["struct"]["kind"]), {}).get("fish_trap", false)):
+			continue
+
+		var uid: int = int(it["struct"]["uid"])
+		var box = _chests.get(uid)
+
+		if box == null:
+			continue
+
+		seen[uid] = true
+		var since: float = float(_trap_rolled.get(uid, now_s))
+		var whole_h: int = floori((now_s - since) / 3600.0)
+		_trap_rolled[uid] = since + float(maxi(whole_h, 0)) * 3600.0
+
+		if whole_h <= 0 or _on_ice(it["pos"]):
+			continue
+
+		box.usable = clampi(int(_structures[str(it["struct"]["kind"])].get("slots", box.SLOTS)), 1, box.SLOTS)
+		var caught: int = 0
+
+		for h in mini(whole_h, int(cfg.get("catch_up_h", 24))):
+			if _fish_trap_roll(it["pos"], box, cfg):
+				caught += 1
+
+		if caught > 0:
+			_dirty = true
+			_push_box(id, box)
+
+	for uid in _trap_rolled.keys():
+		if not seen.has(uid):
+			_trap_rolled.erase(uid)
+
+
+# One game hour of one trap: true when a fish went into it.
+func _fish_trap_roll(pos: Vector3, box, cfg: Dictionary) -> bool:
+	var cell: Vector2i = _fish_cell(pos)
+
+	if fish_stock(cell) <= 0:
+		return false
+
+	var bait_slot: int = _fish_bait_slot(box, cfg)
+	var chance: float = float(cfg.get("bait_chance", 0.2)) if bait_slot >= 0 else float(cfg.get("hour_chance", 0.12))
+
+	if _fate_rng.randf() >= chance:   # luck-exempt: nobody stands at a trap while it fishes
+		return false
+
+	var number: int = table.number_of(_fish_species(cell))
+
+	if number == 0:
+		return false
+
+	var eaten: Dictionary = box.take_from_slot(bait_slot, 1) if bait_slot >= 0 else {}   # the bait is eaten; its slot may be where the fish goes
+
+	if box.add(number, 1) > 0:
+		if int(eaten.get("number", 0)) != 0:
+			box.add(int(eaten["number"]), 1, int(eaten.get("wear", 0)))   # full: nothing caught, the bait stays
+
+		return false
+
+	var key: String = "%d,%d" % [cell.x, cell.y]
+	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
+	return true
 
 
 func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
@@ -11680,6 +11779,7 @@ func crop_stage(crop: Dictionary) -> int:
 # makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
 func _crops_tick() -> void:
 	_plots_tick()
+	_fish_traps_tick()
 
 	if _crops.is_empty():
 		return
