@@ -5597,8 +5597,12 @@
 		"sea_salt": {
 			"name": "Salt",
 			"kind": "material",
-			"description": "Salt boiled out of sea water. Keeps meat and fish.",
-			"how_to_get": [],
+			"description": "Salt boiled out of sea water, broken from rock salt or dug from a salt flat. Keeps meat and fish.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Sea water",
+				"Mined with any pick from a rock salt outcrop",
+				"Dug from a salt flat with a spade"
+			],
 			"used_for": [
 				"Used in Cheese",
 				"Used in Jerky",
@@ -5608,8 +5612,7 @@
 				"Used in Smoked fish",
 				"Used in Sausage"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"roast_shellfish": {
 			"name": "Steamed shellfish",
@@ -9430,7 +9433,7 @@
 				"Found now and then when digging loam, humus, silt or mud"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"kiln_kit": {
 			"name": "Kiln",
