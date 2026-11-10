@@ -150,7 +150,11 @@ func _init() -> void:
 	var branch: Array = w._drops.get("trunk", {}).get("branch", [])
 	var blows: int = int(w._drops.get("trunk", {}).get("branch_blows", 3))
 	check(sticks >= blows * int(branch[0][1]) and sticks <= blows * int(branch[0][2]), "sticks of the branch blows lie beside the trunk: %d" % sticks)
-	check(leaves >= blows * int(branch[1][1]) and leaves <= blows * int(branch[1][2]), "leaves of the branch blows lie beside the trunk: %d" % leaves)
+	var per_m: Array = w._drops.get("trunk", {}).get("crown_leaves", {}).get("per_m", [0, 0])
+	var lo: int = blows * maxi(roundi(float(per_m[0]) * 6.0 / float(blows)), 1)
+	var hi: int = blows * maxi(roundi(float(per_m[1]) * 6.0 / float(blows)), 1)
+	check(leaves >= lo and leaves <= hi, "the 6 m beech's crown gives leaves by its size, %d to %d: %d beside the trunk" % [lo, hi, leaves])
+	_check_crown_leaves(w)
 	check(roots >= 1, "the root ball lies there too")
 	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == 0, "none of it went into the pack")
 
@@ -333,3 +337,27 @@ func _init() -> void:
 
 	print("fell auto-split tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Leaves by crown size (Dave 10 Nov 2026, "everyone should be giving me hundreds"): drops.json trunk.crown_leaves.per_m a metre of tree over the branch
+# blows; a bare broadleaf gives none in winter; the conifers in crown_leaves.fixed keep the branch row.
+func _check_crown_leaves(w) -> void:
+	var cfg: Dictionary = w._drops.get("trunk", {})
+	var blows: int = int(cfg.get("branch_blows", 3))
+	var per_m: Array = cfg.get("crown_leaves", {}).get("per_m", [0, 0])
+	var big: Array = w._branch_rows({"species": "oak", "length": 25.0}, cfg, Vector3.ZERO)
+	var leaf_row: Array = big.filter(func(r): return str(r[0]) == "leaves")
+	check(leaf_row.size() == 1 and blows * int(leaf_row[0][1]) >= 180 and blows * int(leaf_row[0][2]) <= 320, "a 25 m oak gives low hundreds of leaves (%s a blow, %d blows)" % [str(leaf_row), blows])
+	check(big.any(func(r): return str(r[0]) == "stick"), "the sticks stay")
+	var small: Array = w._branch_rows({"species": "oak", "length": 6.0}, cfg, Vector3.ZERO).filter(func(r): return str(r[0]) == "leaves")
+	check(small.size() == 1 and int(small[0][2]) < int(leaf_row[0][1]), "a small tree gives fewer")
+	check(is_equal_approx(float(per_m[0]) * 25.0, float(blows * int(leaf_row[0][1]))) or absf(float(per_m[0]) * 25.0 - float(blows * int(leaf_row[0][1]))) <= float(blows), "in proportion to its length")
+	var fixed: Array = w._branch_rows({"species": "spruce", "length": 25.0}, cfg, Vector3.ZERO)
+	check(fixed == cfg.get("branch", []), "a conifer keeps the branch row")
+	var keep: Callable = w.season_now
+	w.season_now = func() -> String: return "winter"
+	var bare: Array = w._branch_rows({"species": "oak", "length": 25.0}, cfg, Vector3.ZERO)
+	check(not bare.any(func(r): return str(r[0]) == "leaves") and bare.any(func(r): return str(r[0]) == "stick"), "a bare oak in winter gives no leaves, the sticks still")
+	check(w._branch_rows({"species": "spruce", "length": 25.0}, cfg, Vector3.ZERO) == cfg.get("branch", []), "a spruce in winter keeps its leaves")
+	check(w._branch_rows({"species": "wild_apple", "length": 8.0}, cfg, Vector3.ZERO).any(func(r): return str(r[0]) == "leaves"), "an apple is not on the bare list")
+	w.season_now = keep

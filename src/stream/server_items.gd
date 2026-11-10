@@ -5265,7 +5265,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	tree["blows"] = blows + 1
 
 	if blows < int(cfg.get("branch_blows", 3)):
-		for row in cfg.get("branch", []):
+		for row in _branch_rows(tree, cfg, it["pos"]):
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
 		for row in cfg.get("small", []):
@@ -5508,9 +5508,10 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	rng.seed = hash(id) ^ 7919
 	var species: String = str(tree.get("species", ""))
 	var totals: Dictionary = {}
+	var branch: Array = _branch_rows(tree, cfg, _items.get(id, {}).get("pos", Vector3.ZERO))
 
 	for blow in range(int(cfg.get("branch_blows", 3))):
-		for row in cfg.get("branch", []):
+		for row in branch:
 			var n: int = table.number_of(str(row[0]))
 			totals[n] = int(totals.get(n, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
 
@@ -5537,6 +5538,31 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	return true
 
 
+# What one branch blow of a felled trunk gives (drops.json trunk.branch), with the leaves sized to the crown (Dave 10 Nov 2026: four large leafy trees gave him
+# no leaves he could see, "everyone should be giving me hundreds"): trunk.crown_leaves.per_m leaves per metre of tree, shared over the branch blows. A bare
+# broadleaf in winter (Cover.DECIDUOUS, the season where it lies) gives none; the species in crown_leaves.fixed (the conifers) keep the branch row as it is.
+func _branch_rows(tree: Dictionary, cfg: Dictionary, at: Vector3) -> Array:
+	var branch: Array = cfg.get("branch", [])
+	var crown: Dictionary = cfg.get("crown_leaves", {})
+	var species: String = str(tree.get("species", ""))
+
+	if crown.is_empty() or (crown.get("fixed", []) as Array).has(species):
+		return branch
+
+	var bare: bool = CoverScript.is_deciduous(species) and CoverScript.leafless_for(str(season_at.call(at)) if season_at.is_valid() else _season())
+	var per_m: Array = crown.get("per_m", [8, 12])
+	var share: float = float(tree.get("length", 0.0)) / float(maxi(int(cfg.get("branch_blows", 3)), 1))
+	var rows: Array = []
+
+	for row in branch:
+		if str(row[0]) != "leaves":
+			rows.append(row)
+		elif not bare:
+			rows.append(["leaves", maxi(roundi(float(per_m[0]) * share), 1), maxi(roundi(float(per_m[1]) * share), 1)])
+
+	return rows
+
+
 # What cutting a trunk by hand gives besides the logs, as [item number, count] rows, for a trunk of `logs` whole logs (_process_trunk): the branch blows' sticks and leaves,
 # then per log the bark (or thatch) and seed rolls, and the root ball at the end. Rolled from the trunk's id like hand cutting; no player, so no luck (world drops).
 func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary) -> Array:
@@ -5544,9 +5570,10 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary) -> Arr
 	rng.seed = hash(id) ^ 7919
 	var species: String = str(tree.get("species", ""))
 	var totals: Dictionary = {}
+	var branch: Array = _branch_rows(tree, cfg, _items.get(id, {}).get("pos", Vector3.ZERO))
 
 	for blow in range(int(cfg.get("branch_blows", 3))):
-		for row in cfg.get("branch", []):
+		for row in branch:
 			var n: int = table.number_of(str(row[0]))
 			totals[n] = int(totals.get(n, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
 
