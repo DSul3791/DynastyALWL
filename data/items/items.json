@@ -9118,11 +9118,10 @@
 			"bronze_chisel": {
 				"number": 798,
 				"name": "Bronze - Chisel",
-				"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+				"description": "A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench.",
 				"kind": "tool",
 				"stack": 1,
 				"unstackable": true,
-				"future": true,
 				"material": "bronze",
 				"tool_class": "chisel",
 				"tier": 2,

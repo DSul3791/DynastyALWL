@@ -8090,10 +8090,6 @@
 				[
 					"bronze_ingot",
 					1
-				],
-				[
-					"stick",
-					1
 				]
 			],
 			"gives": [
@@ -8101,9 +8097,8 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"station": "forge",
-			"locked": true
+			"known": true,
+			"station": "forge"
 		},
 		"iron_chisel": {
 			"number": 372,
@@ -8113,10 +8108,6 @@
 				[
 					"iron_ingot",
 					1
-				],
-				[
-					"stick",
-					1
 				]
 			],
 			"gives": [
@@ -8124,10 +8115,9 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
+			"known": true,
 			"station": "brick_forge",
-			"station_level": 2,
-			"locked": true
+			"station_level": 2
 		},
 		"steel_chisel": {
 			"number": 373,

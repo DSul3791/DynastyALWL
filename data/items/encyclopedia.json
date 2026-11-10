@@ -1987,8 +1987,6 @@
 				"Used in Drying rack",
 				"Used in Sign",
 				"Used in Wicker - Basket",
-				"Used in Bronze - Chisel",
-				"Used in Iron - Chisel",
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
@@ -9845,23 +9843,23 @@
 		"bronze_chisel": {
 			"name": "Bronze - Chisel",
 			"kind": "tool",
-			"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+			"description": "A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench.",
 			"how_to_get": [
-				"Craft at a forge: 1 Bronze ingot, 1 Stick"
+				"Craft at a forge: 1 Bronze ingot"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"iron_chisel": {
 			"name": "Iron - Chisel",
 			"kind": "tool",
 			"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
 			"how_to_get": [
-				"Craft at a brick forge: 1 Iron ingot, 1 Stick"
+				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
