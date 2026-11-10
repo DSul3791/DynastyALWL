@@ -1326,7 +1326,8 @@ func _under_water(data, x: float, z: float) -> bool:
 	return not is_nan(level) and data.height_at(x, z) < level + float(_riparian.get("shrub_bank_clear_m", 0.15))
 
 
-const RIPARIAN_BASE := 16384   # bank shrub item numbers (_riparian_shrubs): RIPARIAN_BASE + spot on the spot_m grid; patch shrubs leave the main grid numbers unused
+const RIPARIAN_BASE := 16384   # bank shrub item numbers (_riparian_shrubs): RIPARIAN_BASE + clump spot x RIPARIAN_CLUMP_MAX + shrub; patch shrubs leave the main grid numbers unused
+const RIPARIAN_CLUMP_MAX := 8
 const RIPARIAN_SEED := 104729
 
 
@@ -1347,10 +1348,10 @@ func _riparian_rules() -> Dictionary:
 				chosen.append([item, maxf(float(row[1]), 0.0)])
 
 	out["chosen"] = chosen
-	var spots: int = int(ceil(chunk_m / maxf(float(out.get("spot_m", 2.0)), 0.5)))
+	var spots: int = int(ceil(chunk_m / maxf(float(out.get("clump_every_m", 5.0)), 1.0)))
 
-	if RIPARIAN_BASE + spots * spots > SPRING_BASE:
-		push_error("flora_placer: riparian spot_m %s gives %d spots a chunk, over the %d numbers below SPRING_BASE; none placed" % [str(out.get("spot_m")), spots * spots, SPRING_BASE - RIPARIAN_BASE])
+	if RIPARIAN_BASE + spots * spots * RIPARIAN_CLUMP_MAX > SPRING_BASE:
+		push_error("flora_placer: riparian clump_every_m %s gives %d clump spots a chunk, over the %d numbers below SPRING_BASE; none placed" % [str(out.get("clump_every_m")), spots * spots, SPRING_BASE - RIPARIAN_BASE])
 		return {}
 
 	return out if not chosen.is_empty() else {}
@@ -1371,21 +1372,22 @@ static func _curve_at(points: Array, x: float) -> float:
 	return float(points[points.size() - 1][1])
 
 
-# Shrubs along the water (Dave 10 Nov 2026, docs/design/riparian_growth_design.md): every spot_m spot of the chunk within reach_m of a fresh water
-# sample's edge is kept shrub_chance x shrub_by_m(distance) of the time, a bank shrub of the weighted species list that grows in its biome, with the
-# ground checks (moisture as by water). Ground more than dry_above_m over the water (a gully side) gets none. Their own numbers and draws.
+# Shrubs along the water (Dave 10 Nov 2026, docs/design/riparian_growth_design.md): thickets like every other shrub (clumps of clump_count,
+# FloraLayout 14), one clump spot every clump_every_m. A spot within reach_m of a fresh water sample's edge is kept shrub_chance x
+# shrub_by_m(distance) of the time: a clump of one species from the weighted list that grows in its biome, each shrub with the ground checks
+# (moisture as by water), none in a record brook's own channel, none on ground more than dry_above_m over the water (a gully side). Its own
+# numbers and draws.
 func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, brooks: Dictionary, found: Array) -> void:
 	if _riparian.is_empty() or wet.is_empty():
 		return
 
-	var spot: float = maxf(float(_riparian.get("spot_m", 2.0)), 0.5)
+	var spot: float = maxf(float(_riparian.get("clump_every_m", 5.0)), 1.0)
 	var spots: int = int(ceil(chunk_m / spot))
 	var reach: float = float(_riparian.get("reach_m", 16.0))
 	var sp: float = data.spacing_m
 	var brook_half: float = float(_riparian.get("brook_half_m", 1.5))
-	var best: Dictionary = {}   # spot index -> [distance from the water's edge, water level]
-
-	var jitter: float = 0.4 * spot * sqrt(2.0)   # how far a shrub can stand from its spot's centre (the 0.1 to 0.9 draw below)
+	var best: Dictionary = {}      # spot index -> [distance from the water's edge, water level]
+	var channel: Dictionary = {}   # Vector2i (sp grid) -> Array of [a, b] brook channel lines near that square
 
 	for at in wet:
 		var brook: bool = brooks.has(at)
@@ -1404,6 +1406,16 @@ func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, b
 				if brooks.has(at + step):
 					ends.append(w + Vector2(step) * sp * 0.5)   # to the midpoint: the neighbour draws the other half
 
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var near_key: Vector2i = Vector2i(floori(w.x / sp) + di, floori(w.y / sp) + dj)
+					var lines: Array = channel.get(near_key, [])
+
+					for n in range(ends.size()):
+						lines.append([w, ends[n]])
+
+					channel[near_key] = lines
+
 		var far: float = reach + half + (sp if brook else 0.0)
 		var i0: int = maxi(int(floor((w.x - far - origin.x) / spot)), 0)
 		var i1: int = mini(int(floor((w.x + far - origin.x) / spot)), spots - 1)
@@ -1418,40 +1430,30 @@ func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, b
 				for n in range(1, ends.size()):
 					d = minf(d, p.distance_to(Geometry2D.get_closest_point_to_segment(p, w, ends[n])))
 
-				d -= half
+				d = maxf(d - half, 0.0)
 				var index: int = j * spots + i
 
-				if brook and d < jitter:
-					best[index] = [-1.0, 0.0]   # a shrub of this spot could stand in the brook's own channel: never one
-					continue
-
-				d = maxf(d, 0.0)
-
-				if d <= reach and (not best.has(index) or (float(best[index][0]) >= 0.0 and d < float(best[index][0]))):
+				if d <= reach and (not best.has(index) or d < float(best[index][0])):
 					best[index] = [d, float(wet[at])]
 
 	var chance: float = float(_riparian.get("shrub_chance", 0.6))
 	var curve: Array = _riparian.get("shrub_by_m", [])
 	var dry: float = float(_riparian.get("dry_above_m", 3.0))
+	var counts: Array = _riparian.get("clump_count", [5, 8])
+	var radius: float = float(_riparian.get("clump_radius_m", 2.0))
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 	for index in best:
-		if float(best[index][0]) < 0.0:
-			continue
-
 		rng.seed = _mix(data.flora_seed, chunk.x * 65536 + chunk.y, RIPARIAN_SEED, index)
 
 		if rng.randf() >= chance * _curve_at(curve, float(best[index][0])):
 			continue
 
-		var x: float = origin.x + (float(index % spots) + rng.randf_range(0.1, 0.9)) * spot
+		var cx: float = origin.x + (float(index % spots) + rng.randf_range(0.3, 0.7)) * spot
 		@warning_ignore("integer_division")
-		var z: float = origin.y + (float(index / spots) + rng.randf_range(0.1, 0.9)) * spot
+		var cz: float = origin.y + (float(index / spots) + rng.randf_range(0.3, 0.7)) * spot
 		var pick: float = rng.randf()
-		var size: float = rng.randf()
-		var yaw: float = rng.randf() * TAU
-		var k: int = data.nearest(x, z)
-		var biome: int = data.biome[k]
+		var biome: int = data.biome[data.nearest(cx, cz)]
 		var growing: Array = (_riparian["chosen"] as Array).filter(func(row): return (row[0]["per_biome"] as PackedFloat32Array)[biome] > 0.0)
 		var total: float = 0.0
 
@@ -1471,13 +1473,38 @@ func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, b
 				item = row[0]
 				break
 
-		var y: float = _ground_ok(item, data, k, x, z, false, 1.0)
+		var many: int = clampi(rng.randi_range(int(counts[0]), int(counts[1])), 1, RIPARIAN_CLUMP_MAX)
+		var taller: float = 1.0 + WET_TALLER * NearWater.growth_near_water(float(best[index][0]))
 
-		if is_nan(y) or y - float(best[index][1]) > dry:
-			continue
+		for n in range(many):
+			var turn: float = rng.randf() * TAU
+			var out: float = sqrt(rng.randf()) * radius
+			var size: float = rng.randf()
+			var yaw: float = rng.randf() * TAU
+			var x: float = cx + cos(turn) * out
+			var z: float = cz + sin(turn) * out
 
-		var height: float = lerpf(item["height_min"], item["height_max"], size) * (1.0 + WET_TALLER * NearWater.growth_near_water(float(best[index][0])))
-		found.append([_tier(item, height), int(item["id"]), RIPARIAN_BASE + int(index), x, y, z, height, yaw, float(item["patch"]["spacing_m"])])
+			if _in_channel(channel, sp, x, z, brook_half):
+				continue
+
+			var y: float = _ground_ok(item, data, data.nearest(x, z), x, z, false, 1.0)
+
+			if is_nan(y) or y - float(best[index][1]) > dry:
+				continue
+
+			var height: float = lerpf(item["height_min"], item["height_max"], size) * taller
+			found.append([_tier(item, height), int(item["id"]), RIPARIAN_BASE + int(index) * RIPARIAN_CLUMP_MAX + n, x, y, z, height, yaw, float(item["patch"]["spacing_m"])])
+
+
+# Whether a point is in a record brook's channel (within half of one of its lines; channel from _riparian_shrubs).
+static func _in_channel(channel: Dictionary, sp: float, x: float, z: float, half: float) -> bool:
+	var p: Vector2 = Vector2(x, z)
+
+	for line in channel.get(Vector2i(floori(x / sp), floori(z / sp)), []):
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, line[0], line[1])) < half:
+			return true
+
+	return false
 
 
 # W at a spot (NearWater.growth_near_water): the distance to the nearest fresh water sample's edge (half a sample short of its centre) and the

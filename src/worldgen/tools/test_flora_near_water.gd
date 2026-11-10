@@ -19,7 +19,7 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-# A 10 x 10 tile of 8 m samples from (0, 0): a river down column 5 (x 40) at level 1.0, the sea in column 0.
+# A tile of 8 m samples from (0, 0), 10 x 10 unless told: a river down column 5 (x 40) at level 1.0, the sea in column 0.
 class FakeTile:
 	var x0: float = 0.0
 	var z0: float = 0.0
@@ -31,7 +31,8 @@ class FakeTile:
 	var flora_seed: int = 4242
 	var brooks: PackedInt32Array = PackedInt32Array()
 
-	func _init() -> void:
+	func _init(size: int = 10) -> void:
+		samples = size
 		biome.resize(samples * samples)
 		water_class.resize(samples * samples)
 		water_surface.resize(samples * samples)
@@ -130,44 +131,48 @@ func _riparian_checks() -> void:
 
 	var placer = BankPlacer.new()
 	placer.generator = FakeGround.new()
-	placer.chunk_m = 80.0
+	placer.chunk_m = 160.0
 	var shrub: Dictionary = {"id": 7, "name": "elder", "kind": Placer.KIND_SHRUB, "per_biome": PackedFloat32Array([1.0]), "height_min": 1.0, "height_max": 2.0, "patch": {"spacing_m": 1.0}}
 	var rules: Dictionary = (cfg as Dictionary).duplicate(true)
 	rules["chosen"] = [[shrub, 1.0]]
 	placer._riparian = rules
-	var tile = FakeTile.new()
-	tile.brooks = PackedInt32Array([2 * 10 + 9, 3 * 10 + 9, 4 * 10 + 9, 5 * 10 + 9, 6 * 10 + 9, 7 * 10 + 9])   # a record brook down x 72, z 16 to 56
+	var tile = FakeTile.new(20)   # the river down x 40, z 0 to 152
+	tile.brooks = PackedInt32Array([2 * 20 + 9, 3 * 20 + 9, 4 * 20 + 9, 5 * 20 + 9, 6 * 20 + 9, 7 * 20 + 9])   # a record brook down x 72, z 16 to 56
 	var brooks: Dictionary = {}
 	var wet: Dictionary = placer._wet_samples(tile, Vector2.ZERO, brooks)
 	check(wet.has(Vector2i(9, 4)) and brooks.has(Vector2i(9, 4)) and not brooks.has(Vector2i(5, 4)) and is_equal_approx(float(wet[Vector2i(9, 4)]), 1.5), "a record brook's samples are water at the ground; the river is not a brook")
 	var found: Array = []
 	placer._riparian_shrubs(Vector2i.ZERO, Vector2.ZERO, tile, wet, brooks, found)
-	var by_band: Array = [0, 0, 0, 0]   # river banks 0-4 m, 4-8 m, 8-12 m, 12-16 m (west side, x 20 to 36, z 0 to 80, away from the brook)
+	var near: int = 0   # the river's west bank 0 to 6 m from its edge (x 30 to 36)
+	var far: int = 0    # 8 to 16 m out (x 20 to 28)
 	var bad: Array = []
+	var numbers: Dictionary = {}
 
 	for f in found:
 		var x: float = f[3]
 		var number: int = f[2]
 
-		if number < Placer.RIPARIAN_BASE or number >= Placer.SPRING_BASE or int(f[0]) != Placer.TIER_SHRUB or int(f[1]) != 7:
+		if number < Placer.RIPARIAN_BASE or number >= Placer.SPRING_BASE or numbers.has(number) or int(f[0]) != Placer.TIER_SHRUB or int(f[1]) != 7:
 			bad.append("number %d" % number)
+
+		numbers[number] = true
 
 		if absf(x - 40.0) < 4.0:
 			bad.append("in the river at x %.1f" % x)
 
-		if absf(x - 72.0) < 1.0 and float(f[5]) > 18.0 and float(f[5]) < 54.0:
+		if absf(x - 72.0) < 1.4 and float(f[5]) > 17.0 and float(f[5]) < 55.0:
 			bad.append("in the brook at x %.1f" % x)
 
-		if x < 36.0 and x >= 20.0:
-			by_band[mini(int((36.0 - x) / 4.0), 3)] += 1
-
-		if x < 18.0:
+		if x < 16.5:
 			bad.append("%.1f m from the river" % (36.0 - x))
 
-	check(bad.is_empty(), "every bank shrub has its own number, none in the river or the brook, none past 16 m (%s)" % str(bad.slice(0, 4)))
-	check(by_band[0] > by_band[1] and by_band[1] > by_band[2] and by_band[3] < by_band[1], "the shrubs thin out with distance from the water (%s, about 46 24 9 3 expected)" % str(by_band))
-	check(by_band[0] >= 30, "the bank is thick with them (%d in 4 m x 80 m)" % by_band[0])
-	var near_brook: int = found.filter(func(f): return absf(float(f[3]) - 72.0) < 6.0 and float(f[5]) > 20.0 and float(f[5]) < 50.0).size()
+		near += 1 if x >= 30.0 and x < 36.0 else 0
+		far += 1 if x >= 20.0 and x < 28.0 else 0
+
+	check(bad.is_empty(), "every bank shrub has its own number, none in the river or the brook, none past the reach (%s)" % str(bad.slice(0, 4)))
+	check(near >= 40 and near > far + 10, "thick on the bank, thinning further out (%d within 6 m of the edge, %d at 8 to 16 m; about 82 and 14 expected)" % [near, far])
+	check(_clumped_share(found) >= 0.85, "they grow in thickets of 4 or more like every shrub (%.0f%%)" % (100.0 * _clumped_share(found)))
+	var near_brook: int = found.filter(func(f): return absf(float(f[3]) - 72.0) < 7.0 and float(f[5]) > 20.0 and float(f[5]) < 52.0).size()
 	check(near_brook >= 10, "a record brook's banks get shrubs too (%d)" % near_brook)
 	var again: Array = []
 	placer._riparian_shrubs(Vector2i.ZERO, Vector2.ZERO, tile, wet, brooks, again)
@@ -175,3 +180,46 @@ func _riparian_checks() -> void:
 	var none: Array = []
 	placer._riparian_shrubs(Vector2i.ZERO, Vector2.ZERO, tile, {}, {}, none)
 	check(none.is_empty(), "no fresh water near: no bank shrubs")
+
+
+# The share of the shrubs in clumps of 4 or more: chained within 2.6 m (test_flora_density's thicket rule).
+func _clumped_share(found: Array) -> float:
+	var parent: PackedInt32Array = PackedInt32Array()
+	parent.resize(found.size())
+
+	for n in found.size():
+		parent[n] = n
+
+	for a in found.size():
+		for b in range(a + 1, found.size()):
+			if Vector2(float(found[a][3]) - float(found[b][3]), float(found[a][5]) - float(found[b][5])).length() <= 2.6:
+				var ra: int = a
+				var rb: int = b
+
+				while parent[ra] != ra:
+					ra = parent[ra]
+
+				while parent[rb] != rb:
+					rb = parent[rb]
+
+				if ra != rb:
+					parent[maxi(ra, rb)] = mini(ra, rb)
+
+	var sizes: Dictionary = {}
+	var roots: Array = []
+
+	for n in found.size():
+		var r: int = n
+
+		while parent[r] != r:
+			r = parent[r]
+
+		roots.append(r)
+		sizes[r] = int(sizes.get(r, 0)) + 1
+
+	var clumped: int = 0
+
+	for r in roots:
+		clumped += 1 if int(sizes[r]) >= 4 else 0
+
+	return float(clumped) / float(maxi(found.size(), 1))

@@ -20,7 +20,9 @@ Riparian planting guides (USDA NRCS stream-bank zones) split a bank into four zo
 
 ## What the game does now
 
-| Distance from the water's edge | Shrub spots kept (`shrub_chance` 0.6 × `shrub_by_m`) |
+Bank shrubs grow in thickets, like every other shrub in the game (clumps of 4 or more, FloraLayout 14). There is one clump spot every `clump_every_m` (5 m). A kept spot gets a clump of `clump_count` (5 to 8) shrubs of one species within `clump_radius_m` (2 m). How often a spot is kept (`shrub_chance` 0.6 × `shrub_by_m`):
+
+| Distance from the water's edge | Clump spots kept |
 |---|---|
 | 0 m (the toe) | 21% |
 | 0.5 to 3 m (the bank) | 60% |
@@ -28,7 +30,7 @@ Riparian planting guides (USDA NRCS stream-bank zones) split a bank into four zo
 | 10 m | 11% |
 | 16 m and further | none |
 
-- **Where the shrubs go.** The shrubs stand on a 2 m spot grid (`spot_m`), each jittered inside its spot. They are drawn from `species` by weight: elder 3, bramble and dwarf birch 2, and raspberry, wild rose, blackthorn and hawthorn 1 (raspberry is the heaviest model, over the shrub vertex budget). Only species that grow in that biome are drawn, and each must pass its own ground checks, read as wet ground. They grow up to 25% taller by the water, as other plants do (NearWater).
+- **Which shrubs.** Each clump draws its species from `species` by weight: elder 3, bramble and dwarf birch 2, and raspberry, wild rose, blackthorn and hawthorn 1. Raspberry is the heaviest model, over the shrub vertex budget. Only species that grow in that biome are drawn. Each shrub must pass its own ground checks, read as wet ground. They grow up to 25% taller by the water, as other plants do (NearWater).
 - **Gully sides.** Ground more than `dry_above_m` (3 m) over the water gets no bank shrubs. A gully side stays as it was.
 - **Water sources.** The water is every lake and river sample, as the lush growth already used, plus every record brook sample: the drink channels from the bake, which the settled water often does not draw. A brook counts as water `brook_half_m` (1.5 m) either side of the line between its samples. No shrub stands in its channel.
 - **Shrubs on the bank.** A shrub stands on any bank whose ground is at least `shrub_bank_clear_m` (0.15 m) over the water beside it. Before, any shrub within 4 m of a water sample was refused, and the samples are 8 m apart, so no bush ever stood on a bank. Trees keep the old 4 m rule.
