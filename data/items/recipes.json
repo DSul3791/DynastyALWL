@@ -1713,7 +1713,7 @@
 		"lumber_tropical_hardwood": {
 			"number": 68,
 			"retired": true,
-			"name": "Tropical hardwood lumber",
+			"name": "Mahogany lumber",
 			"category": "Materials",
 			"needs": [
 				[
@@ -1732,7 +1732,7 @@
 		"beams_tropical_hardwood": {
 			"number": 69,
 			"retired": true,
-			"name": "Tropical hardwood beam",
+			"name": "Mahogany beam",
 			"category": "Materials",
 			"needs": [
 				[

@@ -1509,8 +1509,8 @@
 		},
 		"log_tropical_hardwood": {
 			"number": 124,
-			"name": "Tropical hardwood log",
-			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
+			"name": "Mahogany log",
+			"description": "A full-size mahogany log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
 			"unstackable": true,
@@ -1522,8 +1522,8 @@
 		},
 		"lumber_tropical_hardwood": {
 			"number": 125,
-			"name": "Tropical hardwood lumber",
-			"description": "Sawn tropical hardwood boards.",
+			"name": "Mahogany lumber",
+			"description": "Sawn mahogany boards.",
 			"kind": "material",
 			"stack": 20,
 			"species": "tropical_hardwood",
@@ -1533,8 +1533,8 @@
 		},
 		"beam_tropical_hardwood": {
 			"number": 126,
-			"name": "Tropical hardwood beam",
-			"description": "Heavy squared tropical hardwood beams for building.",
+			"name": "Mahogany beam",
+			"description": "Heavy squared mahogany beams for building.",
 			"kind": "material",
 			"stack": 5,
 			"species": "tropical_hardwood",
