@@ -21,6 +21,12 @@ class FakeTable:
 	func entry(_id: String) -> Dictionary:
 		return {}
 
+	func sentence_name(number: int) -> String:
+		return in_sentence(name_of(number))
+
+	func in_sentence(text: String) -> String:
+		return text.replace(" - ", " ").to_lower()
+
 
 class FakeInventory:
 	const SLOTS := 30

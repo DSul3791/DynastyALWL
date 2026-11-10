@@ -464,6 +464,7 @@ func setup(item_table, store_dir: String) -> void:
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
+	_water_rebuild((crops_parsed.get("tanks", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("tanks", null)) == TYPE_DICTIONARY else {})
 	_rebuild_supports()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -1288,7 +1289,8 @@ func tick(delta: float) -> void:
 		_auto_split()
 		_slow_mark("auto-split", t0)
 		_crops_tick()
-		_slow_mark("crops", t0)
+		_water_tick()
+		_slow_mark("crops-water", t0)
 		_lights_tick(spent)
 		_dev_pending_tick(spent)
 		_slow_mark("lights-dev", t0)
@@ -1439,7 +1441,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water})
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION, "no_kits": true})
 
@@ -3369,7 +3371,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	if water_depth_at.is_valid() and PlacementRules.water_short(_structures_cfg, kit_id, spot, func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
 		var trap_def: Dictionary = _structure_of_kit(kit_id)
-		_say(peer, "A %s needs water at least %s m deep." % [table.name_of(table.number_of(str(trap_def.get("item", kit_id)))).to_lower(), str(float(trap_def["min_water_m"]))])
+		_say(peer, "A %s needs water at least %s m deep." % [table.sentence_name(table.number_of(str(trap_def.get("item", kit_id)))), str(float(trap_def["min_water_m"]))])
 		return
 
 	if not on_base and ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
@@ -5309,9 +5311,9 @@ func _say_tool_missing(peer: int, inv, tool_class: String) -> void:
 	if found < 0:
 		_say(peer, "You need a %s for that." % tool_class)
 	elif _is_broken(inv.numbers[found], inv.wear[found]):
-		_say(peer, "Your %s is worn out. Repair it (R in the inventory) with %s." % [table.name_of(inv.numbers[found]).to_lower(), _repair_text(table.entry(table.id_of(inv.numbers[found])).get("repair", []))])
+		_say(peer, "Your %s is worn out. Repair it (R in the inventory) with %s." % [table.sentence_name(inv.numbers[found]), _repair_text(table.entry(table.id_of(inv.numbers[found])).get("repair", []))])
 	else:
-		_say(peer, "Put your %s on the hotbar: select it in the inventory and press E." % table.name_of(inv.numbers[found]).to_lower())
+		_say(peer, "Put your %s on the hotbar: select it in the inventory and press E." % table.sentence_name(inv.numbers[found]))
 
 
 # Worn out: durability is the number of uses a tool lasts (items.json); items without it never wear.
@@ -5345,7 +5347,7 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	_dirty = true
 
 	if _is_broken(inv.numbers[slot], inv.wear[slot]):
-		_say(peer, "Your %s broke. Repair it with new materials." % table.name_of(inv.numbers[slot]).to_lower())
+		_say(peer, "Your %s broke. Repair it with new materials." % table.sentence_name(inv.numbers[slot]))
 
 	_send_changes(peer, inv, before)
 
@@ -5358,6 +5360,9 @@ func _repair(peer: int, inv, slot: int) -> void:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 	var costs: Array = entry.get("repair", [])
+
+	if bool(entry.get("edge", false)) and _hone(peer, inv, slot, entry):
+		return
 
 	if costs.is_empty():
 		return
@@ -5386,11 +5391,45 @@ func _repair(peer: int, inv, slot: int) -> void:
 	practice(peer, "tool_care")
 
 
+# Whetstone hand repair (Part C plan 4; drops.json tool_wear.hone): R on an edged tool (items.json "edge": true) with a sound whetstone in the
+# pack hones it with no materials. It wins back hone.restores of its durability but never past hone.up_to of it; the whetstone wears and is
+# kept. False (and the real repair goes ahead) with no whetstone, or when the tool is already that sharp: past it, the haft and binding need mending.
+func _hone(peer: int, inv, slot: int, entry: Dictionary) -> bool:
+	var cfg: Dictionary = _drops.get("tool_wear", {}).get("hone", {})
+	var stone: int = table.number_of(str(cfg.get("item", "whetstone")))
+	var most: int = int(entry.get("durability", 0))
+
+	if cfg.is_empty() or stone == 0 or most <= 0:
+		return false
+
+	var sharpest: int = int(ceil(float(most) * (1.0 - float(cfg.get("up_to", 0.75)))))   # the least wear a hone leaves
+
+	if inv.wear[slot] <= sharpest:
+		return false
+
+	var stone_slot: int = -1
+
+	for s in inv.SLOTS:
+		if s != slot and inv.numbers[s] == stone and not _is_broken(stone, inv.wear[s]):
+			stone_slot = s
+			break
+
+	if stone_slot < 0:
+		return false
+
+	inv.wear[slot] = maxi(sharpest, inv.wear[slot] - int(float(most) * float(cfg.get("restores", 0.25))))
+	_wear_slot(peer, inv, stone_slot, "hone")
+	practice(peer, "tool_care")
+	_say(peer, str(cfg.get("say_hone", "")) % table.name_of(inv.numbers[slot]).to_lower())
+	_dirty = true
+	return true
+
+
 func _repair_text(costs: Array) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 
 	for cost in costs:
-		parts.append("%d %s" % [int(cost[1]), table.name_of(table.number_of(str(cost[0]))).to_lower()])
+		parts.append("%d %s" % [int(cost[1]), table.sentence_name(table.number_of(str(cost[0])))])
 
 	return ", ".join(parts)
 
@@ -6755,7 +6794,7 @@ func _sick_due_tick(peer: int, v: Dictionary, game_s: float) -> void:
 		var item_id: String = str(due[2])
 		var days: int = maxi(int(round(float(due[3]) / 86400.0)), 1)
 		var when: String = "yesterday" if days == 1 else "%d days ago" % days
-		var food: String = table.name_of(table.number_of(item_id)).to_lower() if table != null else item_id
+		var food: String = table.sentence_name(table.number_of(item_id)) if table != null else item_id
 		_say(peer, str(_sick_cfg.get("infection", {}).get("say_onset", "Your stomach turns. It was the %s %s.")) % [food, when])
 		_learn_food(peer, item_id, "harm")
 		make_sick(peer, float(due[1]), false)   # the onset line above says it
@@ -7111,7 +7150,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 			if site_ok:
 				continue   # a blueprint site is set down anyway; the materials are deposited later (Dave 5 Nov 2026)
 
-			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
+			_say(peer, "Not enough %s (%d needed)." % [table.in_sentence(str(table.entry(str(need[0])).get("name", need[0]))), int(need[1])])
 			return false
 
 	return true
@@ -7295,6 +7334,12 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_say(peer, "Too many of these stand here already.")
 		return
 
+	var water_why: String = _water_refusal(def, spot, yaw_deg)
+
+	if water_why != "":
+		_say(peer, water_why)
+		return
+
 	if slot < 0 and free_build:
 		pass   # a test or admin piece: nothing is taken
 	elif slot < 0 and not site_row.is_empty():
@@ -7335,6 +7380,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		return   # a site counts as built, holds nothing up and shelters nobody until _finish_site
 
 	_after_built(peer, entry, def)
+	_water_add(_next_id - 1)
 	_dirty = true
 
 
@@ -7471,7 +7517,7 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 			have += box[1].count_of(number)
 
 		if have < int(need[1]):
-			short.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+			short.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
 
 	if not short.is_empty():
 		_say(peer, "Repairing the %s (%d percent) needs %s." % [piece_name, int(round(cond * 100.0)), ", ".join(short)])
@@ -7650,7 +7696,7 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 
 	for need in _site_needs(site):
 		if int(need[1]) > 0:
-			missing.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+			missing.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
 
 	if moved == 0:
 		_say(peer, "You have none of what it needs: %s." % ", ".join(missing))
@@ -7755,7 +7801,7 @@ func _gather_site(peer: int, inv, id: int) -> void:
 
 
 func _item_name_lower(item_id: String) -> String:
-	return str(table.entry(item_id).get("name", item_id)).to_lower()
+	return table.in_sentence(str(table.entry(item_id).get("name", item_id)))
 
 
 # Every material is in: the site becomes the real piece.
@@ -7766,6 +7812,7 @@ func _finish_site(peer: int, id: int) -> void:
 	_grid_add(id, it)
 	_add_roof(it)
 	_after_built(peer, it, def)
+	_water_add(id)
 	_dirty = true
 
 
@@ -11201,7 +11248,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 			if left > 0:
 				drop_in_world(table.number_of(species), left, _peer_pos[peer])
 
-			caught.append(table.name_of(table.number_of(species)).to_lower())
+			caught.append(table.sentence_name(table.number_of(species)))
 
 	_wear_slot(peer, inv, slot, "net")
 	_dirty = true
@@ -11284,7 +11331,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 
 		practice(peer, "fish")
 		_goal_event(peer, "fish_caught")
-		_say(peer, str(cfg.get("say_hit", "")) % table.name_of(table.number_of(species)).to_lower())
+		_say(peer, str(cfg.get("say_hit", "")) % table.sentence_name(table.number_of(species)))
 		_dirty = true
 	else:
 		_say(peer, str(cfg.get("say_miss", "")))
@@ -11487,7 +11534,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
-	var landed: String = "You land a %s." % table.name_of(table.number_of(species)).to_lower()
+	var landed: String = "You land a %s." % table.sentence_name(table.number_of(species))
 
 	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):
 		landed += " " + str(_fishing_data().get("say_still", "The water is still."))
@@ -11540,11 +11587,11 @@ func _fish_tick() -> void:
 func _station_name(station: String) -> String:
 	for kind in _structures:
 		if str(_structures[kind].get("station", "")) == station:
-			return table.name_of(table.number_of(str(_structures[kind].get("item", "")))).to_lower()
+			return table.sentence_name(table.number_of(str(_structures[kind].get("item", ""))))
 
 	for kind in _structures:
 		if _structures[kind].get("also", {}).has(station):
-			return table.name_of(table.number_of(str(_structures[kind].get("item", "")))).to_lower()
+			return table.sentence_name(table.number_of(str(_structures[kind].get("item", ""))))
 
 	return station.replace("_", " ")
 
@@ -11803,6 +11850,179 @@ func _plots_tick() -> void:
 		if not seen.has(key):
 			_plot_water.erase(key)
 
+	_water_dirty = _water_dirty or not _water_kind.is_empty()   # the weather moved the plots' moisture: their room changed
+
+
+# --- Water pieces (buildables plan section 6, part 6b; Sonny's water rules; Steve's design note, 10 Nov 2026) ---
+# A structure with a structures.json "water" block is a piece of the water network (water_network.gd): its block names the role and numbers, and its
+# inlet and outlet as [x, y, z] metres from the piece's middle, turned with its yaw. The network is accounting only: the live water sim never sees it.
+# Pieces join when built (a blueprint site joins when finished) and leave when the structure is gone; the network is solved again then and at its next
+# event (a tank full or empty, a plot full, water going still). A garden plot's water block makes it a consumer: what flows in becomes moisture (1
+# percent a litre on a 2 x 2 plot: its store_mm over its area), and a full plot takes no more. Tank litres are saved in crops.json "tanks".
+# Times are real seconds (the game clock over GameClock.RATIO), as pumping and flow are.
+const WaterNetwork := preload("res://src/shared/water_network.gd")
+const GameClockScript := preload("res://src/shared/game_clock.gd")
+const WATER_SOURCES_PER_CHUNK := 4
+var _water = WaterNetwork.new()
+var _water_kind: Dictionary = {}        # item id -> structure kind of a piece in the network
+var _water_dirty: bool = false
+var _water_at_s: float = -1.0           # real second of the last solve
+var _water_next_s: float = INF          # the network's next event, real seconds
+var _water_tanks_saved: Dictionary = {} # crops.json "tanks": position key -> litres, read at load
+
+
+func _water_now_s() -> float:
+	return _now_game_s() / GameClockScript.RATIO
+
+
+# The network piece a structure of `def` makes standing at `pos` turned `yaw_deg`, or {} when it carries no water.
+func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float) -> Dictionary:
+	var block: Variant = def.get("water", {})
+
+	if typeof(block) != TYPE_DICTIONARY or (block as Dictionary).is_empty():
+		return {}
+
+	var piece: Dictionary = {}
+
+	for key in block:
+		var value: Variant = block[key]
+
+		if (key == "inlet" or key == "outlet") and typeof(value) == TYPE_ARRAY and (value as Array).size() == 3:
+			piece[key] = pos + Vector3(float(value[0]), float(value[1]), float(value[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg))
+		elif key != "note":
+			piece[key] = value
+
+	return piece
+
+
+# Why a water piece may not go here ("" when it may): more than WATER_SOURCES_PER_CHUNK sources in the chunk, a loop, or a network past 256 pieces.
+func _water_refusal(def: Dictionary, spot: Vector3, yaw_deg: int) -> String:
+	var piece: Dictionary = water_piece(def, spot, float(posmod(yaw_deg, 360)))
+
+	if piece.is_empty():
+		return ""
+
+	if str(piece.get("role", "")) == "source":
+		var sources: int = 0
+
+		for id in _water_kind:
+			if str(_water.pieces.get(id, {}).get("role", "")) == "source" and _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
+				sources += 1
+
+		if sources >= WATER_SOURCES_PER_CHUNK:
+			return "Too many water sources stand here already."
+
+	match _water.check(piece):
+		"loop":
+			return "This would make a loop."
+		"full":
+			return "This water network cannot grow any bigger."
+
+	return ""
+
+
+# A built structure joins the network when it carries water.
+func _water_add(id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or it["struct"].has("site"):
+		return
+
+	var kind: String = str(it["struct"]["kind"])
+	var piece: Dictionary = water_piece(_structures.get(kind, {}), it["pos"], float(it["struct"].get("yaw", 0.0)))
+
+	if piece.is_empty():
+		return
+
+	_water.add(id, piece)
+	_water_kind[id] = kind
+
+	if str(piece.get("role", "")) == "tank":
+		_water.set_litres(id, float(_water_tanks_saved.get(_water_key(it["pos"]), 0.0)))
+		_water_tanks_saved.erase(_water_key(it["pos"]))
+
+	_water_dirty = true
+
+
+func _water_key(pos: Vector3) -> String:
+	return "%.2f,%.2f,%.2f" % [pos.x, pos.y, pos.z]
+
+
+# At load: every standing water structure joins, and tanks take their saved litres.
+func _water_rebuild(tanks: Dictionary) -> void:
+	_water = WaterNetwork.new()
+	_water.still_after_s = 3.0 * GameClockScript.SECONDS_PER_DAY / GameClockScript.RATIO   # 3 game days (Sonny's rules)
+	_water_kind.clear()
+	_water_tanks_saved = tanks.duplicate()
+	_water_at_s = -1.0
+
+	for id in _items:
+		if _items[id].has("struct") and _structures.get(str(_items[id]["struct"]["kind"]), {}).has("water"):
+			_water_add(id)
+
+	_water_tanks_saved.clear()
+
+
+func _water_tanks_save() -> Dictionary:
+	var out: Dictionary = {}
+	var now_s: float = _water_now_s()
+
+	for id in _water_kind:
+		if str(_water.pieces.get(id, {}).get("role", "")) == "tank":
+			out[_water_key(_items[id]["pos"])] = snappedf(_water.litres(id, now_s), 0.01)
+
+	return out
+
+
+# Litres a garden plot takes for 1 percent of moisture: its store over its area (25 mm on 2 x 2 m: 1 L).
+func _plot_litres_per_pct(kind: String) -> float:
+	var def: Dictionary = _structures.get(kind, {})
+	_crop_table()
+	return maxf(float(_moisture_cfg.get("store_mm", 25.0)) * float(def.get("footprint_x", 1.0)) * float(def.get("footprint_z", 1.0)) / 100.0, 0.01)
+
+
+# Pieces whose structure is gone leave; then, when anything changed or the next event is due, the water that flowed into plots since the last solve
+# becomes moisture, each plot's room is set from its moisture, and the network is solved again.
+func _water_tick() -> void:
+	if _water_kind.is_empty():
+		return
+
+	for id in _water_kind.keys():
+		var it: Dictionary = _items.get(id, {})
+
+		if it.is_empty() or not it.has("struct") or str(it["struct"]["kind"]) != str(_water_kind[id]) or it["struct"].has("site"):
+			_water.remove(id)
+			_water_kind.erase(id)
+			_water_dirty = true
+
+	var now_s: float = _water_now_s()
+
+	if not _water_dirty and now_s < _water_next_s:
+		return
+
+	_water_dirty = false
+
+	for id in _water_kind:
+		var piece: Dictionary = _water.pieces[id]
+
+		if str(piece.get("role", "")) != "consumer" or not _is_plot_kind(str(_water_kind[id])):
+			continue
+
+		var key: String = _bed_key(_items[id]["pos"])
+		var per_pct: float = _plot_litres_per_pct(str(_water_kind[id]))
+		var pct: float = plot_moisture(_items[id]["pos"])
+
+		if _water_at_s >= 0.0 and _water.inflow_lpm(id) > 0.0:
+			pct = minf(100.0, pct + _water.inflow_lpm(id) * maxf(now_s - _water_at_s, 0.0) / 60.0 / per_pct)
+			var row: Array = _plot_water.get(key, [])
+			_plot_water[key] = [pct, float(row[1]) if row.size() >= 2 else _now_game_s()]   # its weather clock goes on as it was
+
+		piece["room_l"] = (100.0 - pct) * per_pct if pct < 99.99 else 0.0
+
+	_water.solve(now_s)
+	_water_at_s = now_s
+	_water_next_s = _water.next_event_s()
+
 
 # One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
 func till(peer: int, inv, at: Vector3) -> int:
@@ -11882,7 +12102,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
 
 	if not sow_seasons.has(_season()):
-		_say(peer, "Wrong season to sow %s" % str(def.get("name", crop_id)).to_lower())
+		_say(peer, "Wrong season to sow %s" % table.in_sentence(str(def.get("name", crop_id))))
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
@@ -12023,7 +12243,7 @@ func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
 	var left: float = float(it["struct"].get("fuel_left", 0.0)) if bool(it["struct"].get("lit", false)) else 0.0
 
 	if fuel <= 0 or not inv.has(fuel, 1):
-		_say(peer, "You need %s to light that." % table.name_of(fuel).to_lower() if fuel > 0 else "It cannot be lit.")
+		_say(peer, "You need %s to light that." % table.sentence_name(fuel) if fuel > 0 else "It cannot be lit.")
 		return
 
 	if left + burn > burn * 2.0:
@@ -13169,7 +13389,7 @@ func _try_learn(peer: int, inv, recipe: Dictionary) -> bool:
 
 	learned[str(int(recipe["number"]))] = true
 	_dirty = true
-	_say(peer, "You work out how to make %s" % str(recipe.get("name", "that")).to_lower())
+	_say(peer, "You work out how to make %s" % table.in_sentence(str(recipe.get("name", "that"))))
 	return true
 
 
@@ -13832,7 +14052,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	for made in plan["made"]:   # the made parts must fit in the pack and under the carry limit
 		if _fit(peer, inv, int(made[0]), int(made[1])) < int(made[1]):
-			_say(peer, "You cannot carry that many %s" % table.name_of(int(made[0])).to_lower())
+			_say(peer, "You cannot carry that many %s" % table.sentence_name(int(made[0])))
 			return 0
 
 	var chain: int = 1
