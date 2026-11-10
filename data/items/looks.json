@@ -3297,6 +3297,11 @@
    "shape": "rod",
    "color": "#7a5434",
    "size": 0.6
+  },
+  "wood_foundation_kit": {
+   "shape": "kit",
+   "color": "#9a7a45",
+   "size": 1.2
   }
 
  }

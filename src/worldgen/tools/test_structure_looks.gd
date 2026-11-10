@@ -42,6 +42,7 @@ const GOLDEN := {
 	"snare_trap": "snare_trap",
 	"oven": "oven",
 	"thatch_floor": "thatch_floor",
+	"wood_foundation": "wood_foundation",
 	"thatch_roof": "thatch_roof",
 	"thatch_doorway": "thatch_doorway",
 	"rock_pile": "rock_pile",

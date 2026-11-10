@@ -1126,29 +1126,50 @@ static func thatch_roof() -> Node3D:
 	return root
 
 
-# A thatch floor (tier 1 foundation, Dave and Tyler 24 Oct), 4 m square, 0.1 m high, on stakes: a dark timber sub-floor, straw bundles laid side by side, each a
-# little out of line, a log along every edge and a stake at each corner.
+# A thatch foundation (tier 1, Dave and Tyler 24 Oct). Dave 10 Nov 2026: it works exactly like the stone foundation, so it has the same body, 4 m square
+# and 2 m deep, from 0.3 m above the spot down 1.7 m below it. Only the look differs: woven sticks round the sides, straw bundles laid side by side on
+# top (each a little out of line), a log along every top edge and a stake at each corner.
 static func thatch_floor() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(3.9, 0.04, 3.9), Vector3(0.0, 0.02, 0.0), _frame)
+	_box(root, Vector3(3.96, 2.0, 3.96), Vector3(0.0, -0.7, 0.0), _logs)                # the packed stick body
 
 	for k in 8:
 		var z: float = -1.75 + 0.5 * float(k)
 		var shift: float = 0.04 * float((k * 5) % 3 - 1)
-		_box(root, Vector3(3.8, 0.05 + 0.01 * float(k % 2), 0.5), Vector3(shift, 0.05, z), _thatch)
+		_box(root, Vector3(3.8, 0.06 + 0.01 * float(k % 2), 0.5), Vector3(shift, 0.31, z), _thatch)
 
 	for z in [-1.96, 1.96]:
-		_box(root, Vector3(4.0, 0.1, 0.08), Vector3(0.0, 0.05, z), _log)
+		_box(root, Vector3(4.0, 0.12, 0.1), Vector3(0.0, 0.26, z), _log)
 
 	for x in [-1.96, 1.96]:
-		_box(root, Vector3(0.08, 0.1, 3.84), Vector3(x, 0.05, 0.0), _log)
+		_box(root, Vector3(0.1, 0.12, 3.82), Vector3(x, 0.26, 0.0), _log)
 
 	for x in [-1.96, 1.96]:
 		for z in [-1.96, 1.96]:
-			_box(root, Vector3(0.12, 0.16, 0.12), Vector3(x, 0.06, z), _frame)
+			_box(root, Vector3(0.14, 2.1, 0.14), Vector3(x, -0.67, z), _frame)
 
-	_solid(root, Vector3(4.0, 0.1, 4.0), Vector3(0.0, 0.05, 0.0))
+	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
+	return root
+
+
+# A wooden foundation (Dave 10 Nov 2026): works exactly like the stone foundation, the same body 4 m square and 2 m deep from 0.3 m above the spot,
+# built as a crib of stacked logs with boards laid across the top and a squared timber along every top edge.
+static func wood_foundation() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(3.96, 2.0, 3.96), Vector3(0.0, -0.7, 0.0), _logs)                # the log crib
+
+	for k in 8:
+		_box(root, Vector3(3.8, 0.05, 0.47), Vector3(0.0, 0.305, -1.75 + 0.5 * float(k)), _planks)
+
+	for z in [-1.94, 1.94]:
+		_box(root, Vector3(4.0, 0.14, 0.14), Vector3(0.0, 0.24, z), _frame)
+
+	for x in [-1.94, 1.94]:
+		_box(root, Vector3(0.14, 0.14, 3.74), Vector3(x, 0.24, 0.0), _frame)
+
+	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
 	return root
 
 
