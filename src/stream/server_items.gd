@@ -4334,7 +4334,7 @@ func _load_world_items() -> void:
 	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
 
 	for row in parsed["items"]:
-		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+		var entry: Dictionary = {"number": table.current_number(int(row[0])), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 
 		if is_dead_kit(int(row[0])):
 			continue
@@ -9777,7 +9777,7 @@ func _clean_worn(raw: Variant) -> Array:
 	var slots: Array = _clothing_slots()
 
 	for i in slots.size():
-		var number: int = int(raw[i]) if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0
+		var number: int = table.current_number(int(raw[i])) if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0   # worn Hide leggings come back as Hide trousers
 		out.append(number if number > 0 and table.id_of(number) != "" and str(table.entry(table.id_of(number)).get("slot", "")) == str(slots[i]) else 0)
 
 	return out
@@ -13186,7 +13186,7 @@ func _join_hotbar(peer: int, key: String) -> void:
 
 	if saved is Array:
 		for k in mini((saved as Array).size(), inv.HOTBAR_KEYS):
-			var number: int = int(saved[k])
+			var number: int = table.current_number(int(saved[k]))
 			inv.hotbar[k] = number if number > 0 and table.id_of(number) != "" and not inv.hotbar.has(number) else 0
 	else:
 		for k in inv.HOTBAR_KEYS:
