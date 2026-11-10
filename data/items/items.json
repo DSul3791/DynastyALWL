@@ -6011,7 +6011,7 @@
 		},
 		"antler_mount": {
 			"number": 516,
-			"name": "Antler - Mount",
+			"name": "Antler mount",
 			"description": "Antlers mounted on a board.",
 			"kind": "structure",
 			"stack": 1,
@@ -6154,7 +6154,7 @@
 		"antler_mount_kit": {
 			"number": 500,
 			"retired": true,
-			"name": "Antler - Mount",
+			"name": "Antler mount",
 			"description": "A pair of antlers on a plaque. A hunter's trophy.",
 			"kind": "placeable",
 			"stack": 1,

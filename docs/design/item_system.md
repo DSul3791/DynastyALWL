@@ -207,7 +207,7 @@ Furniture B3, lights B4, garden B5 and water B6 rows are **not** repeated here. 
 | Canopy bed | RENAME (Canopy bed; one version, the top bed) | as live |
 | Bedroll | NEW | 3 Hide, 2 Twine, needle. Portable sleep: in the pack, open and dry, sleep quality 0.85 instead of 0.6 and a 0.05 warmth bonus; rain still stops sleep (code plan s5). |
 | Hide - Rug, Wool - Rug | HAVE / FUTURE | as live |
-| Antler - Mount | RENAME | as live. Tusk mount NEW now (Tusk is live, item 347). **Skull - Mount dropped.** |
+| Antler mount | RENAME | as live. Tusk mount NEW now (Tusk is live, item 347). **Skull - Mount dropped.** |
 | Weapon rack, Armour stand | NEW | 6 and 8 Planks, 2 Twine |
 | Tool rack | HAVE | as live (it is the workbench add-on) |
 | Flower pot | RENAME (absorbs Garden pot) | 2 Clay, 1 Soil |
@@ -361,7 +361,7 @@ Knife, saw, needle, axe, pick and hammer groups so a kept tool of any tier works
 | Rough bed / Straw bed / Feather bed | Thatch - Bed (thatch cost) / Straw - Bed / Feather - Bed |
 | Canopy bed | Canopy bed (unchanged) |
 | Log seat | Log - Seat |
-| Antler mount | Antler - Mount |
+| Antler mount | Antler mount (kept plain: one material, 10 Nov 2026) |
 | Flower pot | Flower pot |
 | Workbench / Sturdy workbench | Wooden - Workbench / Log - Workbench |
 | Planks | Plank |

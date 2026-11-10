@@ -5556,7 +5556,7 @@
 				"Dropped by reindeer when worked with a knife"
 			],
 			"used_for": [
-				"Used in Antler - Mount"
+				"Used in Antler mount"
 			],
 			"obtainable_now": true
 		},
@@ -7352,7 +7352,7 @@
 			"obtainable_now": true
 		},
 		"antler_mount": {
-			"name": "Antler - Mount",
+			"name": "Antler mount",
 			"kind": "structure",
 			"description": "Antlers mounted on a board.",
 			"how_to_get": [
@@ -7484,7 +7484,7 @@
 			"obtainable_now": true
 		},
 		"antler_mount_kit": {
-			"name": "Antler - Mount",
+			"name": "Antler mount",
 			"kind": "placeable",
 			"description": "A pair of antlers on a plaque. A hunter's trophy.",
 			"how_to_get": [
