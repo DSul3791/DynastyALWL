@@ -88,10 +88,16 @@ func _init() -> void:
 		# A retired kit recipe can never be learned (the recipe table skips it), so a blueprint marked unknown could never be built (fireplace, Dino S-place 2 Nov).
 		check(bool(row.get("known", true)) or bool(row.get("locked", false)), "%s: known (or locked), since its kit recipe is retired and cannot be learned" % id)
 
-	check(live.size() == 53 and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
+	check(live.size() == 62 and live.has("log_foundation") and live.has("brick_window") and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
 
-	# Place: a hammer, the station near at its level, every material; a short pack takes nothing.
+	# Dave 10 Nov 2026 (docs/design/buildables_plan.md): no hammer blueprint needs a workbench near.
+	check(live.values().all(func(r): return str(r.get("station", "")) != "workbench"), "no hammer blueprint needs a workbench")
+
+	# Place: a hammer, the station near at its level, every material; a short pack takes nothing. No row names a station any more, so
+	# the test gives the woodworking table one to check the rule still holds for a row that does.
 	var table_bp: Dictionary = live["woodworking_table"]
+	items._blueprints[int(table_bp["number"])]["station"] = "workbench"
+	items._blueprints[int(table_bp["number"])]["station_level"] = 1
 	var spot: Vector3 = Vector3(200.0, 10.0, 205.0)
 	items.report_position(1, Vector3(200.0, 10.0, 204.0))
 	_clear(1)
@@ -119,14 +125,18 @@ func _init() -> void:
 	check(items.world_item_count() == with_bench + 1 and _ids_standing("woodworking_table").size() == 1 and not items._items[site_id]["struct"].has("site"), "E on the site deposits the materials and the table stands")
 	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "woodworking_table_kit") == 0 and _have(1, "wooden_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
 
-	# A station level the bench cannot give: the blacksmithy needs level 4, the log workbench is level 2.
+	# A station level the bench cannot give: a row asking for level 4 (set here), the log workbench is level 2.
 	var smith: Dictionary = live["blacksmithy"]
+	items._blueprints[int(smith["number"])]["station"] = "workbench"
+	items._blueprints[int(smith["number"])]["station_level"] = 4
 	_give(1, "stone", 30)
 	_give(1, "log", 10)
 	_give(1, "clay", 10)
 	var smith_before: int = items.world_item_count()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(smith["number"]), 0, 0, Vector3(204.0, 10.0, 205.0))
 	check(items.world_item_count() == smith_before and _have(1, "stone") == 30, "a bench of too low a level places nothing and takes nothing")
+	items._blueprints[int(smith["number"])]["station"] = ""
+	items._blueprints[int(table_bp["number"])]["station"] = ""
 
 	# Row hammer tier: a row asking for hammer 2 refuses the wooden hammer.
 	items._blueprints[int(table_bp["number"])]["hammer"] = 2
