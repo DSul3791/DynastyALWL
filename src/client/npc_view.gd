@@ -13,6 +13,9 @@ const STAND := 0
 const WALK := 1
 const SIT := 2
 const SLEEP := 3
+const SEAT_TOP_M := 0.45                 # the chair's seat top above its feet (building_look.gd chair: slats at 0.43, 0.045 thick)
+const SEAT_HIPS_ABOVE_M := 0.07          # the hips joint over the seat top, as the player sits (terrain_client.gd, #517)
+const SEAT_LIFT_MAX_M := 0.6             # never move the body more than this to meet the seat
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
 const BodyGenerator := preload("res://src/client/character/body_generator.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
@@ -140,7 +143,8 @@ func _process_body(delta: float) -> void:
 		node.get_node("Bed").visible = state == SLEEP
 		var pace: float = lerpf(float(body.get("pace", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), clampf(delta * 5.0, 0.0, 1.0))
 		body["pace"] = pace
-		var clip: String = "lie" if state == SLEEP else ("sit" if state == SIT else "idle")
+		# On the chair, not on the ground inside it (Dave 10 Nov 2026: "Edda is still sitting on the ground"): the chair clip, hips on the seat.
+		var clip: String = "lie" if state == SLEEP else (_sit_clip(ragdoll) if state == SIT else "idle")
 
 		if state == WALK or (state == STAND and pace > 0.5):
 			clip = "run" if pace > 5.0 else ("jog" if pace > 2.2 else ("walk" if pace > 0.4 else "idle"))
@@ -148,7 +152,8 @@ func _process_body(delta: float) -> void:
 		if ragdoll.current() != clip and not ragdoll.is_one_shot_playing():
 			ragdoll.play(clip, 1.0, 0.25)
 
-		ragdoll.position.y = lerpf(ragdoll.position.y, 0.25 if state == SLEEP else 0.0, clampf(delta * 4.0, 0.0, 1.0))   # lying on the bed, not the floor
+		var lift: float = 0.25 if state == SLEEP else (seat_lift(node, ragdoll) if state == SIT else 0.0)   # lying on the bed, sitting on the chair
+		ragdoll.position.y = lerpf(ragdoll.position.y, lift, clampf(delta * 4.0, 0.0, 1.0))
 		var player: AnimationPlayer = ragdoll.animation_player
 		player.speed_scale = clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
 		var distance: float = eye.distance_to(node.global_position)
@@ -173,6 +178,30 @@ func _process_body(delta: float) -> void:
 			body["owed"] = 0.0
 		elif every == 0:
 			body["owed"] = 0.0
+
+
+# The sitting clip: on the chair (the clip the player sits on a seat with) when the body has it, else the ground sit.
+static func _sit_clip(ragdoll: Node3D) -> String:
+	var player: AnimationPlayer = ragdoll.get("animation_player") as AnimationPlayer
+	return "sit_chair" if player != null and player.has_animation("sit_chair") else "sit"
+
+
+# How high the rig must stand in its NPC node so the posed hips joint rests SEAT_HIPS_ABOVE_M over the chair's seat (the chair stands
+# on the node's ground): measured from the skeleton, so it holds for any body, clip or bone lengths, as terrain_client.gd does for
+# the player. The rig's current lift is part of the measurement, so the answer is where it should be, not a step.
+static func seat_lift(node: Node3D, ragdoll: Node3D) -> float:
+	var skel: Skeleton3D = ragdoll.get("skeleton") as Skeleton3D
+
+	if skel == null or not skel.is_inside_tree():
+		return 0.0
+
+	var hips: int = skel.find_bone("mixamorig_Hips")
+
+	if hips < 0:
+		return 0.0
+
+	var hips_y: float = (node.global_transform.affine_inverse() * (skel.global_transform * skel.get_bone_global_pose(hips).origin)).y
+	return clampf(ragdoll.position.y + SEAT_TOP_M + SEAT_HIPS_ABOVE_M - hips_y, -SEAT_LIFT_MAX_M, SEAT_LIFT_MAX_M)
 
 
 # The worn items of an outfit name (data/npcs/outfits.json), read once.
