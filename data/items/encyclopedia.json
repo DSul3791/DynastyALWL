@@ -2472,8 +2472,7 @@
 				"Build with a hammer (press R): 8 Plank, 2 Twine, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"plank_chest": {
 			"name": "Wooden - Chest",
@@ -2481,8 +2480,7 @@
 			"description": "A plank chest for storing more things.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_ingot": {
 			"name": "Iron ingot",
@@ -4305,7 +4303,6 @@
 				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
-				"Planned: doors and chests. Made at a forge from an iron ingot.",
 				"Used in Iron - Gate",
 				"Used in Iron - Doorway",
 				"Used in Steel - Doorway",
@@ -4410,8 +4407,7 @@
 			"used_for": [
 				"Used to build Sawmill"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"saw_mill_kit": {
 			"name": "Sawmill",
@@ -4441,8 +4437,7 @@
 				"Build with a hammer (press R): 12 Plank, 60 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"woodworking_table": {
 			"name": "Woodworking table",
@@ -4450,8 +4445,7 @@
 			"description": "A woodworking table. Stand near it for fine woodwork.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"rock_pile": {
 			"name": "Rock pile",
@@ -7763,8 +7757,7 @@
 				"Build with a hammer (press R): 3 Plank, 1 Twine, 1 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wood_gate": {
 			"name": "Refined - Gate",
@@ -7772,8 +7765,7 @@
 			"description": "A plank gate with a Z brace. Opens like a door.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_fence_kit": {
 			"name": "Log fence",
@@ -7837,8 +7829,7 @@
 				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_palisade_gate": {
 			"name": "Palisade gate",
@@ -7846,8 +7837,7 @@
 			"description": "A palisade section that swings open like a door.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_fence_kit": {
 			"name": "Stone fence",
@@ -7875,8 +7865,7 @@
 				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_gate": {
 			"name": "Sturdy - Gate",
@@ -7884,8 +7873,7 @@
 			"description": "A timber gate between stone piers. Opens like a door.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"brick_fence_kit": {
 			"name": "Brick fence",
@@ -7913,8 +7901,7 @@
 				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"brick_gate": {
 			"name": "Superior - Gate",
@@ -7922,8 +7909,7 @@
 			"description": "A timber gate between brick piers. Opens like a door.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_fence_kit": {
 			"name": "Iron fence",
@@ -8325,8 +8311,7 @@
 				"Build with a hammer (press R): 6 Plank, 12 Nails, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_cupboard": {
 			"name": "Cupboard",
@@ -8334,8 +8319,7 @@
 			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_barrel_kit": {
 			"name": "Wooden barrel",
@@ -8345,8 +8329,7 @@
 				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_barrel": {
 			"name": "Barrel",
@@ -8354,8 +8337,7 @@
 			"description": "A hooped plank barrel. Holds 8 stacks.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_stairs_kit": {
 			"name": "Log stairs",
@@ -8457,8 +8439,7 @@
 				"Build with a hammer (press R): 6 Plank, 2 Twine, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"double_doorway": {
 			"name": "Refined - Double doorway",
@@ -8466,8 +8447,7 @@
 			"description": "A plank wall four metres wide with a pair of doors.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_doorway_kit": {
 			"name": "Iron doorway",
@@ -10391,8 +10371,7 @@
 				"Build with a hammer (press R): 5 Plank, 8 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_crate": {
 			"name": "Crate",
@@ -10400,8 +10379,7 @@
 			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_chest_kit": {
 			"name": "Iron chest",
@@ -10485,8 +10463,7 @@
 				"Build with a hammer (press R): 8 Concrete, 2 Plank, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"engineered_doorway": {
 			"name": "Engineered - Doorway",
@@ -10494,8 +10471,7 @@
 			"description": "A concrete wall with a plank door, two metres wide.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"engineered_window_kit": {
 			"name": "Engineered window",
@@ -10831,6 +10807,60 @@
 			],
 			"obtainable_now": false,
 			"status": "planned"
+		},
+		"bronze_nails": {
+			"name": "Bronze nails",
+			"kind": "material",
+			"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
+			"how_to_get": [
+				"Craft at a forge: 1 Bronze ingot"
+			],
+			"used_for": [
+				"Used in Water wheel",
+				"Used to build Sawmill",
+				"Used to build Woodworking table",
+				"Used in Iron - Fence",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table",
+				"Used in Iron - Doorway",
+				"Used in Iron - Railing",
+				"Used in Wooden - Hand pump",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Chest",
+				"Used in Barrel",
+				"Used in Crate",
+				"Used in Cupboard"
+			],
+			"obtainable_now": true
+		},
+		"bronze_hinges": {
+			"name": "Bronze hinges",
+			"kind": "material",
+			"description": "A pair of bronze hinges for a door, a gate or a lid.",
+			"how_to_get": [
+				"Craft at a forge: 1 Bronze ingot"
+			],
+			"used_for": [
+				"Used in Iron - Gate",
+				"Used in Iron - Doorway",
+				"Used in Steel - Doorway",
+				"Used in Iron - Hand pump",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Tap",
+				"Used in Iron - Chest",
+				"Used in Cupboard",
+				"Used in Engineered - Doorway",
+				"Used in Fortified - Doorway",
+				"Used in Fortified - Gate",
+				"Used in Palisade gate",
+				"Used in Refined - Double doorway",
+				"Used in Refined - Gate",
+				"Used in Sluice",
+				"Used in Sturdy - Gate",
+				"Used in Superior - Gate"
+			],
+			"obtainable_now": true
 		}
 	},
 	"chapters": {

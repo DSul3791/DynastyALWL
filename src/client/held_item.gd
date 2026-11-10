@@ -144,6 +144,7 @@ var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the 
 var _reticle = null                       # BowReticle: the cross while the bow is up
 var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
 var rig_drawing: bool = false              # the shot runner's --shot-draw (look rig only): the bow is held up and drawing as if right were held, so the crosshair, sway and loosed arrows can be pictured
+var rig_lit: bool = false                  # the shot runner's --shot-lit (look rig only): the held flame's light stays on beside a fire light at Low
 var bow_force: String = ""                 # the shot runner's bow pose, "STATE[:DRAW]" (idle, raised, drawn; draw 0 to 1), "" = from play
 var _bow_up: bool = false                  # the bow is raised or drawn: the arms come up to the camera pose
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
@@ -1415,7 +1416,7 @@ func _process_body(delta: float) -> void:
 
 		if flicker != null:
 			# Own light: one, shadowless. At Low it gives way to a fire light within 8 m, so no more than one lamp lights the same spot.
-			flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
+			flicker.visible = rig_lit or not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 			flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
 
 		if not _mounted:
@@ -2289,7 +2290,7 @@ func _show_off_model(delta: float) -> void:
 	var lantern: bool = _lantern_in_left()
 
 	if flicker != null:
-		flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
+		flicker.visible = rig_lit or not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 		# A lantern's flame is behind horn: it barely flickers.
 		flicker.light_energy = (1.6 + 0.06 * sin(float(Time.get_ticks_msec()) * 0.011)) if lantern else 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
 
