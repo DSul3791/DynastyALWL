@@ -46,6 +46,8 @@ func _init() -> void:
 	list.move(false, 1)
 	list.move(false, 1)
 	check(list.list_text(1).contains(">"), "the highlight shows in the text")
+	check(not list.list_text(1).contains("(short)"), "no \"(short)\" after a name the pack cannot cover (Dave 10 Nov 2026): the have/need line says it")
+	check(list.list_text(1).contains("Stone - Foundation") and list.list_text(1).contains("Wooden - Wall"), "building pieces read Tier - Item (Dave 10 Nov 2026)")
 	# A long list scrolls past the highlight (Dave 5 Nov 2026): 7 lines show, the highlighted one in the middle, blank lines pad the ends so the first and last entry can reach it.
 	list.set_open(true, 1)
 	var total: int = list.entries(1).size()

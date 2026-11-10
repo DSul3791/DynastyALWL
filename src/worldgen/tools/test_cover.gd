@@ -33,10 +33,17 @@ func _init() -> void:
 	check(Cover.at(Vector3(100.0, 80.0, 100.0), index) == 0.0, "above the treetop is open")
 	# The smaller grown tree (height 17 of 20, scale 0.85): radius 10 * 0.85 = 8.5 m.
 	check(Cover.at(Vector3(138.4, 52.0, 100.0), index) == 1.0 and Cover.at(Vector3(138.6, 52.0, 100.0), index) == 0.0, "crown grows with the tree's size")
-	# A young tree (height 10 of 20, scale 0.5) gives no shelter at all (Dave 2026-10-30).
-	var young: Dictionary = {"ids": PackedInt32Array([(3 << 16) | 8]), "positions": PackedVector3Array([Vector3(400.0, 50.0, 400.0)]), "heights": PackedFloat32Array([10.0]), "yaws": PackedFloat32Array([0.0])}
+	# A sapling (3 m, under SHELTER_MIN_HEIGHT_M) gives no shelter at all (Dave 2026-10-30).
+	var young: Dictionary = {"ids": PackedInt32Array([(3 << 16) | 8]), "positions": PackedVector3Array([Vector3(400.0, 50.0, 400.0)]), "heights": PackedFloat32Array([3.0]), "yaws": PackedFloat32Array([0.0])}
 	Cover.add_chunk(index, Vector2i(2, 2), young, info)
-	check(Cover.at(Vector3(400.0, 52.0, 400.0), index) == 0.0, "a young tree gives no shelter")
+	check(Cover.at(Vector3(400.0, 52.0, 400.0), index) == 0.0, "a sapling gives no shelter")
+	# Dave 10 Nov 2026: an oak of 13 m (two thirds of its species' 19.5 m average) is a tree to stand under, as a 6 m apple tree is: both shelter.
+	var oak_info: Callable = func(species_id: int) -> Array: return [0, 9.0, 19.5, true] if species_id == 0 else [0, 3.0, 7.0, false]
+	var pair: Dictionary = {"ids": PackedInt32Array([(0 << 16) | 1, (40 << 16) | 2]), "positions": PackedVector3Array([Vector3(500.0, 30.0, 500.0), Vector3(520.0, 30.0, 500.0)]), "heights": PackedFloat32Array([13.0, 6.0]), "yaws": PackedFloat32Array([0.0, 0.0])}
+	Cover.add_chunk(index, Vector2i(3, 3), pair, oak_info)
+	check(Cover.at(Vector3(502.0, 31.0, 500.0), index) == 1.0, "a 13 m oak shelters")
+	check(Cover.at(Vector3(520.5, 31.0, 500.0), index) == 1.0, "and so does a 6 m apple tree")
+	index.remove_chunk(Vector2i(3, 3))
 	check(Cover.at(Vector3(200.0, 52.0, 200.0), index) == 0.0, "shrubs give no cover")
 	check(Cover.at(Vector3(100.0, 52.0, 100.0), null) == 0.0, "no index means open")
 

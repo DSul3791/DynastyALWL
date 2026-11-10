@@ -142,6 +142,7 @@ const WaterVolume := preload("res://src/shared/water_volume.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const HeartPulseScript := preload("res://src/client/heart_pulse.gd")
+const HudFadeScript := preload("res://src/client/hud_fade.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const StepUpScript := preload("res://src/client/step_up.gd")
@@ -480,6 +481,7 @@ var harvest                           # Harvest: E prompt, tap to pick, hold to 
 var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the left of the screen
 var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (keys hold items: inventory step 4)
 var heart_pulse                       # HeartPulse: the line of light over the hotbar that pulses with the heartbeat (heartbeat_design.md)
+var hud_fade                          # HudFade: passing out fades the whole HUD but the heartbeat line (heartbeat_design.md "Passing out")
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
@@ -1507,6 +1509,9 @@ func _welcome_body(info: Dictionary) -> void:
 	heart_pulse = HeartPulseScript.new()
 	heart_pulse.setup(sound.breath, layer)
 	items.heart_pulse = heart_pulse
+	hud_fade = HudFadeScript.new()
+	add_child(hud_fade)
+	hud_fade.setup(layer, [heart_pulse, faint._rect], sound.breath.heart.get("faint_hud", {}))
 	pickup_feed = PickupFeedScript.new()
 	pickup_feed.setup(items, layer)
 
@@ -4334,6 +4339,17 @@ func _step_player(delta: float) -> void:
 
 		sound.breath.set_server_heart(float(items.body_bpm), items.body_phase)
 		sound.breath.set_body(items.strain, heard, heard_progress)
+
+	# Passing out (Dave 10 Nov 2026): the whole HUD goes with the vision, only the heartbeat line stays. The scripted --faint run has no server.
+	if hud_fade != null:
+		var black: float = 0.0
+
+		if items != null and not test_exertion and not test_faint and sound.breath._demo_t < 0.0:
+			black = HudFadeScript.black_of(items.strain_state, items.strain_fade, items.asleep)
+		elif sound.breath.state in ["fainting", "fainted", "waking"]:
+			black = sound.breath._faint
+
+		hud_fade.step(delta, black)
 
 	var tsd: int = Probe.start()
 	if swimming:

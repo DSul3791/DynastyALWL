@@ -1020,7 +1020,7 @@ func toggle_auto_pickup() -> void:
 func _auto_pickup_tick(now: int) -> void:
 	if _auto_label != null and _auto_label.text != "":
 		var left: int = auto_pickup.announce_until_msec - now
-		_auto_label.modulate.a = clampf(float(left) / 500.0, 0.0, 1.0)
+		_auto_label.self_modulate.a = clampf(float(left) / 500.0, 0.0, 1.0)
 
 		if left <= 0:
 			_auto_label.text = ""
@@ -4136,7 +4136,7 @@ func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String =
 	_comfort_label.tooltip_text = tip
 	comfort_tip = tip
 	_comfort_label.visible = _comfort_label.text != ""
-	_comfort_label.modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
+	_comfort_label.self_modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
 
 
 # The words of the comfort line: "" when there is nothing to say.

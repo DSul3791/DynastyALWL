@@ -273,8 +273,8 @@ func _add_admin_builds() -> void:
 	if AdminScript.check_enabled():
 		return
 
-	view._recipe_list.add_child(_section("Admin"))
-
+	var typed: String = view._recipe_search.text if view._recipe_search != null else ""
+	var listed: int = 0
 	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit", "oven_kit"]
 	admin_ids.sort_custom(func(a, b): return view.table.name_of(view.table.number_of(str(a))).naturalnocasecmp_to(view.table.name_of(view.table.number_of(str(b)))) < 0)
 
@@ -284,6 +284,13 @@ func _add_admin_builds() -> void:
 		if number == 0 or bool(view.table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
 			continue
 
+		if not RecipeFilter.matches(view.table.name_of(number), typed):   # the search box filters the kits by name too (Dave 10 Nov)
+			continue
+
+		if listed == 0:
+			view._recipe_list.add_child(_section("Admin"))   # no Admin heading over an empty list
+
+		listed += 1
 		# The same row as a recipe's (44 px, its icon and name), gold-lettered: a click gives the kit.
 		var entry: Button = Button.new()
 		entry.text = view.table.name_of(number)

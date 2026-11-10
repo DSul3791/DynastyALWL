@@ -1,0 +1,14 @@
+{
+	"_note": "Campfire smoke (docs/design/fire_smoke_wind_design.md; Dave 10 Nov 2026: 'its hovering around like flies. it should be drifting away with the breeze'). Each puff leaves the flames rising at rise_m_s for the fire's tier (small, medium, large) and moving with the world wind (weather_look.gd set_fire_air: speed and where it blows toward). It rises more slowly as it goes, down to rise_end_share of its start by the end of its life_s, and spreads (it grows grow_to times its start size, puff_m by tier) and fades. In near calm (wind under calm_mps[0], bending from there to calm_mps[1]) it goes straight up at calm_rise_m_s at least. On a still clear night it rises at night_rise_m_s and stops at about night_top_m, spreading flat. spread_deg is the cone the puffs leave in, [calm, windy]. No noise steers the puffs (the old turbulence turned each puff's velocity toward a random noise direction within a second, so the puffs wandered round the fire like flies).",
+	"rise_m_s": [0.30, 0.39, 0.53],
+	"amount": [14, 22, 32],
+	"puff_m": [0.5, 0.7, 0.9],
+	"grow_to": 4.0,
+	"life_s": 20.0,
+	"rise_end_share": 0.4,
+	"calm_rise_m_s": 0.8,
+	"calm_mps": [0.3, 1.0],
+	"night_rise_m_s": 1.2,
+	"night_top_m": 12.0,
+	"spread_deg": [8.0, 14.0]
+}
