@@ -1,0 +1,7 @@
+{
+	"_note": "Dave 10 Nov 2026: with the pack open at any station (a fire, the workbench, a forge, a pot, the hearth, the oven, the saw mill...), what that station can use sorts to the top of the pack with a golden glowing line round its well: first what it burns (the fire's fuel, a torch's or fireplace's own fuel), then what it takes in (the ingredients of every recipe made there, and for a fire the food it cooks). Everything else keeps its order. Read by src/client/ui/inventory/item_slot.gd; the set is src/client/ui/inventory/station_use.gd.",
+	"colour": "#ffc83a",
+	"line_px": 2.0,
+	"glow_px": 6.0,
+	"glow_alpha": 0.5
+}

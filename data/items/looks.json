@@ -2042,23 +2042,23 @@
   "wooden_bow": {
    "shape": "bow",
    "color": "#a8804a",
-   "size": 0.55
+   "size": 1.0
   },
   "wooden_arrow": {
    "shape": "arrow",
    "color": "#d8b070",
-   "size": 0.55
+   "size": 1.0
   },
   "stone_arrow": {
    "shape": "arrow",
    "color": "#b8bcc4",
-   "size": 0.55,
+   "size": 1.0,
    "bits": ["stone"]
   },
   "quiver": {
    "shape": "quiver",
    "color": "#6b4c31",
-   "size": 0.55
+   "size": 1.0
   },
   "oven_kit": {
    "shape": "kit",

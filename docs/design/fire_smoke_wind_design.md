@@ -94,3 +94,28 @@ Dave, in a playtest: "I assume that is suppose to look like smoke but its hoveri
 - The visibility box grew to 80 m to hold the longer drift.
 
 `test_fire_smoke.gd` checks each of these.
+
+## One plume, like real fire smoke (Dave, 10 Nov 2026)
+
+Dave: "make fire smoke actually look and act more like fire smoke." The ruling asked for:
+
+- a continuous plume, not separate puffs;
+- dark and dense at the fire, thinning and lightening as it rises;
+- narrow at the fire, widening upward;
+- a slight waver;
+- a lean with the wind that grows with height;
+- more smoke from a bigger fire, thin wisps from coals.
+
+**Now** (every number is in `data/look/fire_smoke.json`):
+
+- **One plume.** Each fire emits 90, 130 or 190 small overlapping puffs (`amount`). Each puff is only `alpha` (0.2) of full density, so together
+  they read as one column. A small fire's puffs leave about 7 cm apart and are 30 cm wide.
+- **Narrow, then wide.** Puffs start at `puff_m` (0.3 to 0.5 m) and grow `grow_to` (8) times over their life.
+- **Dark and dense low, light and thin high.** The shader moves each puff from `near_grey` (0.3) to `far_grey` (0.74) as it ages (`INSTANCE_CUSTOM.y`).
+  `fade` sets the density over its life: thick just above the fire, thinning to nothing.
+- **Leans more as it rises.** A fresh puff gets only `wind_start_share` (0.25) of the wind, since its heat lifts it. A steady sideways pull brings it
+  up to the full wind by the end of its life. The plume leaves the fire steep and bends over higher up. In a 2 m/s breeze it drifts 25 m.
+- **Wavers as one column.** The sway depends on height and time, so puffs at the same height move together. It grows to `waver_m` (0.6 m) by the end
+  of a puff's life. This is not per-puff noise, so the "flies" do not come back.
+- **Bigger fire, more smoke; coals, a wisp.** Bigger fires get more puffs that rise faster. A bed of glowing coals (state 76) gives a thin wisp
+  (`coals`: 30 puffs, 0.15 m, 0.25 m/s, 0.45 density).
