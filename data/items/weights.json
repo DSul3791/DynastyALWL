@@ -104,6 +104,8 @@
 		"tin_ore": 1.5,
 		"iron_ore": 1.5,
 		"coal": 0.5,
+		"crystal_lens": 0.02,
+		"spyglass": 0.6,
 		"charcoal": 0.3,
 		"fuel": 0.4,
 		"wool_cloth": 0.4,

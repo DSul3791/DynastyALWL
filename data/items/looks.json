@@ -3287,6 +3287,16 @@
    "shape": "chunk",
    "color": "#c98a2a",
    "size": 0.8
+  },
+  "crystal_lens": {
+   "shape": "chunk",
+   "color": "#dcebf0",
+   "size": 0.4
+  },
+  "spyglass": {
+   "shape": "rod",
+   "color": "#7a5434",
+   "size": 0.6
   }
 
  }

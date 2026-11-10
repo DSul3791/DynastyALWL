@@ -2056,7 +2056,8 @@
 			],
 			"used_for": [
 				"Used in Leather strap",
-				"Used in Wooden bowl"
+				"Used in Wooden bowl",
+				"Used in Spyglass"
 			],
 			"obtainable_now": true
 		},
@@ -3832,7 +3833,8 @@
 			"used_for": [
 				"Used in Wooden - Hammer",
 				"Used in Wooden - Club",
-				"Used in Wooden bowl"
+				"Used in Wooden bowl",
+				"Used in Spyglass"
 			],
 			"obtainable_now": false
 		},
@@ -5748,7 +5750,8 @@
 			"used_for": [
 				"Used in Leather - Jerkin",
 				"Used in Bronze - Axe",
-				"Used in Leather - Cap"
+				"Used in Leather - Cap",
+				"Used in Spyglass"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -6928,6 +6931,28 @@
 				"Used in Fur - Cloak",
 				"Used in Fur - Hat"
 			],
+			"obtainable_now": true
+		},
+		"crystal_lens": {
+			"name": "Crystal lens",
+			"kind": "material",
+			"description": "Clear quartz worn smooth into a lens. A rare find when digging rock or gravel.",
+			"how_to_get": [
+				"Found now and then when digging gravel or bare rock with a spade"
+			],
+			"used_for": [
+				"Used in Spyglass"
+			],
+			"obtainable_now": true
+		},
+		"spyglass": {
+			"name": "Spyglass",
+			"kind": "tool",
+			"description": "A wooden tube with a crystal lens. Hold it and right-click to see three times closer.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Wooden block, 1 Leather strap, 1 Crystal lens (keep Stone - Knife)"
+			],
+			"used_for": [],
 			"obtainable_now": true
 		}
 	}
