@@ -4133,6 +4133,11 @@
    "shape": "bundle",
    "color": "#d8c8a0",
    "size": 0.5
+  },
+  "leather_belt": {
+   "shape": "cloth",
+   "color": "#6a4024",
+   "size": 0.6
   }
 
  }
