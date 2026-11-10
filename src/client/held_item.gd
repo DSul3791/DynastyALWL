@@ -1232,7 +1232,8 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
-	var v: Vector3 = direction * float(_bow_cfg.get("speed_max", 45.0)) * bow_power(draw_ms, _bow_cfg)
+	var bow_id: String = held_id()
+	var v: Vector3 = direction * BowAim.bow_speed_max(_bow_cfg, bow_id) * bow_power(draw_ms, _bow_cfg)
 	var node: Node3D = _make_arrow_model(arrow)
 	_root.add_child(node)
 	node.global_position = _camera.global_position + direction * 0.8
@@ -1244,7 +1245,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	var at: Vector3 = _camera.global_position
 	var flown: float = 0.0
 	var t: float = 0.0
-	var range_m: float = float(_bow_cfg.get("range_m", 80.0))
+	var range_m: float = BowAim.bow_range_m(_bow_cfg, bow_id)
 
 	var into_wood: bool = false
 
