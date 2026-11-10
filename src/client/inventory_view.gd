@@ -35,6 +35,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
+const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
@@ -2423,6 +2424,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("girth"):   # a split log is as thick as the trunk it came from (the mesh lies along x)
 				var girth: float = float(row[5]["girth"])
 				node.scale = Vector3(node.scale.x, node.scale.y * girth, node.scale.z * girth)
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("tilt"):   # an arrow stuck in a tree (Dave 10 Nov 2026)
+				node.rotation = Vector3(0.0, float(row[5].get("rot_y", 0.0)), float(row[5]["tilt"]))
+				node.position = row[3] - Basis.from_euler(node.rotation).x * STUCK_ARROW_BACK_M * node.scale.x   # the model lies along x, its point at +x
 		else:
 			var fire_extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 			node = BuildingLook.coals_fire(float(fire_extra.get("glow", 1.0))) if state == StructureLook.FIRE_COALS else _make_fire(_lit_state(state), state == 9, _fire_tier(state))
