@@ -59,7 +59,7 @@ class FakeTile:
 
 # The placer with every spot's ground fine except under the water: the riparian pass alone is under test.
 class BankPlacer extends "res://src/worldgen/runtime/flora_placer.gd":
-	func _ground_ok(item: Dictionary, data, _k: int, x: float, z: float, _in_belt: bool = false, _near_water: float = 0.0) -> float:
+	func _ground_ok(item: Dictionary, data, _k: int, x: float, z: float, _belt: bool = false, _wet: float = 0.0) -> float:
 		if item["kind"] == KIND_SHRUB and _under_water(data, x, z):
 			return NAN
 
