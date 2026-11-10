@@ -59,6 +59,12 @@ func _init() -> void:
 	items._next_id += 1
 	items._items[items._next_id] = {"number": items.table.number_of("oven"), "count": 1, "pos": Vector3(0.0, 10.0, 1.0), "left": 1.0e9, "struct": {"kind": "oven", "yaw": 0.0}}
 
+	# Smoked fish at a smoker, jerky and the dried fruit at a drying rack (item_system.md stations, the C2 batch).
+	items._next_id += 1
+	items._items[items._next_id] = {"number": items.table.number_of("smoker"), "count": 1, "pos": Vector3(-1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "smoker", "yaw": 0.0}}
+	items._next_id += 1
+	items._items[items._next_id] = {"number": items.table.number_of("drying_rack"), "count": 1, "pos": Vector3(0.0, 10.0, -1.0), "left": 1.0e9, "struct": {"kind": "drying_rack", "yaw": 0.0}}
+
 	var best_by_kinds: Dictionary = {}
 
 	for dish_id in dishes:
