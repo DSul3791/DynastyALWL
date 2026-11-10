@@ -2363,10 +2363,11 @@ func _send_npcs(delta: float) -> void:
 			_npc_sent_ms[peer] = now_ms
 			net.npcs.rpc_id(peer, rows)
 
-		# The admin spyglass (docs/design/spyglass_design.md): out to the spyglass radius while an admin looks, and the watched animal's readout.
+		# The spyglass (docs/design/spyglass_design.md): out to the spyglass radius while one is looked through (the admin glass: animals.json
+		# "spyglass"; a spyglass item: its tier in data/items/spyglass.json), and the watched animal's readout (admin, or a tier with one).
 		var spy: int = int(items.spyglass.get(peer, 0)) if items.spyglass.has(peer) else -2
-		var spy_cfg: Dictionary = animals.cfg.get("spyglass", {})
-		var beasts: Array = animals.rows_near(at, float(spy_cfg.get("send_radius_m", 300.0)), int(spy_cfg.get("cap", 60))) if spy >= 0 else animals.rows_near(at)
+		var reach: Array = items.spyglass_reach(peer, animals.cfg.get("spyglass", {}))
+		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at)
 		var sig: String = str(beasts)
 
 		if spy == -1:

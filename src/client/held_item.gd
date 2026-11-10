@@ -144,6 +144,8 @@ var swing_serial: int = 0                  # +1 at every swing start: the third-
 var _pause_t: float = 0.0
 var _swing_hit: bool = false
 var _cover_at: Callable                   # (point) -> true when under a tree's crown
+var spyglass_look: Callable = Callable()   # (on, pack slot, tier): the held spyglass up to the eye or down (the client scene's _spyglass_item)
+var _spyglass_up: bool = false             # right mouse is held on a spyglass in hand
 var _blueprint: Node3D
 var _blueprint_kit: String = ""
 var _ghost_material: StandardMaterial3D
@@ -609,6 +611,21 @@ func has_arrow() -> bool:
 	return false
 
 
+# A spyglass item in hand (tool_class "spyglass", data/items/spyglass.json), not broken: right mouse held looks through it.
+func _is_spyglass() -> bool:
+	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "spyglass" and not _inv.is_broken(held_slot)
+
+
+func _look_spyglass(on: bool) -> void:
+	if on == _spyglass_up:
+		return
+
+	_spyglass_up = on
+
+	if spyglass_look.is_valid():
+		spyglass_look.call(on, held_slot, int(_inv.table.entry(held_id()).get("tier", 1)) if on else 0)
+
+
 func _is_bow() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "bow" and not _inv.is_broken(held_slot)
 
@@ -891,6 +908,13 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
+	if holding and _is_spyglass():
+		if button == MOUSE_BUTTON_RIGHT:
+			_look_spyglass(pressed)
+			return true
+
+		return false
+
 	if _is_bow():
 		# The bow: hold the left button to draw, let go to loose the arrow along the view; the server clamps the draw time (data/items/bow.json).
 		if button == MOUSE_BUTTON_LEFT:
@@ -1106,6 +1130,9 @@ func _process_body(delta: float) -> void:
 
 	if _draw_t >= 0.0:
 		_draw_t = _draw_t + delta if _is_bow() else -1.0   # putting the bow away lets the draw go
+
+	if _spyglass_up and (not holding or not _is_spyglass() or not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
+		_look_spyglass(false)   # put away, broken, or the button let go while the mouse was elsewhere
 
 	_update_blueprint()
 	_plan_step()

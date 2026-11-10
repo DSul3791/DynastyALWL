@@ -203,7 +203,7 @@ const ACT_CRAFT_STOCK := 65      # ask for craft_stock: what a craft may use bes
 const ACT_BULK := 66             # a = 0 Take all, 1 Store all (the open container), 2 Stack to nearby (own chests within 12 m holding the item), 3 Sort (the pack and an open chest; b = the sort key: 1 name, 2/3 weight, 4/5 value, 0 name); favourites and pack slots 1 to 10 never move; answered with bulk_done (protocol 99)
 const ACT_FAVOURITE := 67        # a = pack slot, b = 1 favourite, 0 not: bulk buttons and Sort leave a favourite where it is; answered with favourites (protocol 99)
 const ACT_HOTBAR_SET := 68       # a = key 0 to 9 (keys 1 to 9 and 0), b = item number, 0 clears the key; one key per item (putting it on a key takes it off another); answered with hotbar (protocol 100)
-const ACT_SPYGLASS := 69         # a = 1 looking through the admin spyglass, 0 not; b = the watched animal id (0 none). Admin only: the server sends animals out to the spyglass radius and animal_info for the watched one; a non-admin gets animal_info(-1, {})
+const ACT_SPYGLASS := 69         # a = 1 looking through the admin spyglass, 0 not; b = the watched animal id (0 none). Admin only: the server sends animals out to the spyglass radius and animal_info for the watched one; a non-admin gets animal_info(-1, {}). a = 2 (10 Nov 2026): looking through the spyglass item in pack slot `count` (no admin; the tier's radius, data/items/spyglass.json; refused without one)
 
 
 @rpc("authority", "call_remote", "reliable")
