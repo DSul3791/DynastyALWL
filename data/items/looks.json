@@ -3532,6 +3532,46 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.0
+  },
+  "log_stairs_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_stairs_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "brick_stairs_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_railing_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_railing_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "double_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "steel_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
   }
 
  }
