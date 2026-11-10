@@ -101,6 +101,10 @@ const ART_OVERRIDES := {
 	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
 	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze", "forged"]},
 	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["forged"]},
+	"wooden_lantern": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},
+	"iron_lantern": {"shape": "lantern", "color": "#3f4045", "size": 1.0, "bits": ["metal"]},
+	"horn_pane": {"shape": "pane", "color": "#d6ad6a", "size": 1.0},
+	"lamp_oil": {"shape": "bottle", "color": "#9a7a32", "size": 1.0},
 	"steel_hammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.0, "bits": ["forged"]},
 	"bronze_knife": {"shape": "knife", "color": "#b5803a", "size": 1.35, "bits": ["bronze"]},
 	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
@@ -1418,6 +1422,28 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			if bits.has("lit"):
 				_sph(parts, 0.012, Vector3(1.9, 0.8, 0.8), Vector3(0.14, 0.0, 0.0), Color(1.0, 0.75, 0.2), true)
+		"lantern":
+			# A carried lantern (buildables plan B4): a frame round four horn panes (warm, half see-through horn; no glass yet), a base, a pointed cap and a bail
+			# handle over it; a candle stub (wood) or an oil cup (bits "metal": an iron frame) inside. Upright along y, about 0.3 m with the bail.
+			var horn: Color = Color(0.86, 0.68, 0.4)
+			_box(parts, Vector3(0.15, 0.17, 0.15), Vector3(0.0, 0.0, 0.0), horn)
+			for x in [-0.075, 0.075]:
+				for z in [-0.075, 0.075]:
+					_box(parts, Vector3(0.018, 0.19, 0.018), Vector3(x, 0.0, z), color)
+					if bits.has("metal"):
+						_metal(parts, 0.6, 0.5)
+			for y in [-0.095, 0.095]:
+				_box(parts, Vector3(0.17, 0.018, 0.17), Vector3(0.0, y, 0.0), color)
+				if bits.has("metal"):
+					_metal(parts, 0.6, 0.5)
+			_frustum(parts, 0.11, 0.02, 0.06, Vector3(0.0, 0.13, 0.0), color.darkened(0.1))
+			_torus_v(parts, 0.07, 0.006, Vector3(0.0, 0.17, 0.0), color.darkened(0.2))
+			_cyl(parts, 0.02, 0.05, Vector3(0.0, -0.06, 0.0), Vector3.ZERO, Color(0.85, 0.8, 0.65) if not bits.has("metal") else color.darkened(0.3))
+		"pane":
+			# A horn pane (buildables plan B4): a thin scraped plate of horn, warm and cloudy, a little curled, with a darker rim.
+			_box(parts, Vector3(0.12, 0.004, 0.16), Vector3(0.0, 0.0, 0.0), color)
+			_box(parts, Vector3(0.124, 0.005, 0.008), Vector3(0.0, 0.0, 0.08), color.darkened(0.25))
+			_box(parts, Vector3(0.124, 0.005, 0.008), Vector3(0.0, 0.0, -0.08), color.darkened(0.25))
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)

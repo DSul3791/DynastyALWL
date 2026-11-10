@@ -13,6 +13,19 @@ const BIG := {"rock_pile": 900, "rough_bed": 1300, "log_wall": 1500, "saw_mill":
 # door, 450 (the oven's).
 const B1A := {"log_foundation": 600, "thatch_doorway_open": 400, "thatch_window": 400, "log_doorway": 800, "log_doorway_open": 800, "log_window": 800,
 	"stone_doorway": 450, "stone_doorway_open": 450, "brick_doorway": 450, "brick_doorway_open": 450, "stone_window": 450, "brick_window": 450}
+# Buildables B1b to B6 (Kathleen, 10 Nov 2026), again the cap of the piece each matches. The log stairs are the stone stairs' ten steps (240) on two log
+# stringers, 350. The iron and steel doorways are the stone doorway's family, 450. The thatch and log roof corners are their straight roofs (log 300)
+# with a third eave or a fascia and a corner post, 400 (the thatch doorway's). A fence section or gate is a 2 m wall piece between two shared
+# eight-sided posts, 600 (door_double's); the log palisade is six whole sharpened stakes, a log wall stood upright, 900 (under log_wall's 1500). The
+# barrel, the stone well and the deep well pump are round builds like the clay hearth and flower pot, 500 (the well 550); the stone torch pillar
+# and the lamp posts are a round pillar or iron standard with a lantern on it, 450 (the oven's; the chandelier is 600); the thatch garden plot is
+# a 2 m bed with four lashed stakes and a woven edge, 600 (the foundation's).
+const FENCES := ["thatch_fence", "thatch_gate", "thatch_gate_open", "wood_fence", "wood_gate", "wood_gate_open", "log_fence", "log_gate", "log_gate_open",
+	"stone_fence", "stone_gate", "stone_gate_open", "brick_fence", "brick_gate", "brick_gate_open", "iron_fence", "iron_gate", "iron_gate_open"]
+const B1B_B6 := {"log_stairs": 350, "iron_doorway": 450, "iron_doorway_open": 450, "steel_doorway": 450, "steel_doorway_open": 450,
+	"thatch_roof_corner": 400, "log_roof_corner": 400, "log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
+	"wooden_barrel": 500, "stone_well": 550, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
+	"stone_lamp_post": 450, "thatch_garden_plot": 600}
 
 var failures: int = 0
 
@@ -35,12 +48,19 @@ func _triangles(node: Node) -> int:
 	return total
 
 
+func _cap(look: String) -> int:
+	if look in FENCES:
+		return 600
+
+	return int(BIG.get(look, B1A.get(look, B1B_B6.get(look, NEAR_TRIANGLES))))
+
+
 func _init() -> void:
 	for look in LookTable.LOOKS:
 		var model: Node3D = LookTable.build(look)
 		var tris: int = _triangles(model)
 		check(model != null and model.get_child_count() > 0, "look %s builds a model" % look)
-		check(tris <= int(BIG.get(look, B1A.get(look, NEAR_TRIANGLES))), "look %s stays under its triangle cap (%d)" % [look, tris])
+		check(tris <= _cap(look), "look %s stays under its triangle cap (%d)" % [look, tris])
 		model.free()
 
 	var unknown: Node3D = LookTable.build("no_such_look_name")
