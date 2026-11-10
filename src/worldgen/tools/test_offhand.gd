@@ -134,6 +134,7 @@ func run() -> void:
 	_check(lamp != null and is_equal_approx(lamp.omni_range, 8.0), "the lantern gives one light of its light_m")
 	_check(held._off_model != null and held._off_model.is_inside_tree() and held._off_model.global_basis.y.dot(Vector3.UP) > 0.99, "it hangs upright from the fist")
 	view.inventory.numbers[3] = 9997
+	view.keys[3] = 9997   # the game's key follows the flame twin (Inventory._flame_twin); this stand-in view only finds the number it holds
 	held._process(0.1)
 	_check(held._off_model != null and held._off_model.get_node_or_null("Light") == null, "a dark lantern has no light")
 	print("offhand: %d failures" % failures)
