@@ -7270,10 +7270,12 @@ func _ground_stock(peer: int, number: int) -> Array:
 	if peer < 0 or number <= 0 or not _peer_pos.has(peer) or number == table.number_of("log"):
 		return out
 
+	var fills: PackedInt32Array = _fills(number)   # a group cost (nails: any nails) is filled by any member lying there
+
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder") or int(it.get("number", 0)) != number:
+		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder") or not fills.has(int(it.get("number", 0))):
 			continue
 
 		var d: float = _peer_pos[peer].distance_to(it["pos"])
@@ -7587,7 +7589,7 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 			log_need = int(need[1])
 
 	if log_need > 0:
-		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_of(table.number_of("log"))))   # shoulder and ground logs count, as for building
+		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_fill(table.number_of("log"))))   # shoulder and ground logs count, as for building
 
 	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0))
 	var boxes: Array = _boxes_near(peer)
@@ -7595,10 +7597,10 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 
 	for need in needs:
 		var number: int = table.number_of(str(need[0]))
-		var have: int = inv.count_of(number) + _ground_count(number, it["pos"], ground_m)
+		var have: int = inv.count_fill(number) + _ground_count(number, it["pos"], ground_m)
 
 		for box in boxes:
-			have += box[1].count_of(number)
+			have += box[1].count_fill(number)
 
 		if have < int(need[1]):
 			short.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
@@ -7616,28 +7618,29 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 			if left <= 0:
 				break
 
-			var from_box: int = mini(left, box[1].count_of(number))
+			var from_box: int = mini(left, box[1].count_fill(number))
 
-			if from_box > 0 and box[1].remove(number, from_box):
+			if from_box > 0 and box[1].remove_fill(number, from_box):
 				left -= from_box
 				_push_box(int(box[0]), box[1])
 
 		if left > 0:
-			inv.remove(number, left)
+			inv.remove_fill(number, left)
 
 	it["struct"]["born"] = _now_game_s()
 	_dirty = true
 	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
 
 
-# Loose items (not structures, fires or trees) of one kind within `radius` of a spot.
+# Loose items (not structures, fires or trees) of one kind, or of any member of its group, within `radius` of a spot.
 func _ground_count(number: int, at: Vector3, radius: float) -> int:
 	var total: int = 0
+	var fills: PackedInt32Array = _fills(number)
 
 	for gid in _items:
 		var g: Dictionary = _items[gid]
 
-		if int(g.get("number", 0)) == number and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
+		if fills.has(int(g.get("number", 0))) and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
 			total += int(g["count"])
 
 	return total
@@ -7645,6 +7648,7 @@ func _ground_count(number: int, at: Vector3, radius: float) -> int:
 
 func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 	var taken: int = 0
+	var fills: PackedInt32Array = _fills(number)
 
 	for gid in _items.keys():
 		if taken >= want:
@@ -7652,7 +7656,7 @@ func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 
 		var g: Dictionary = _items[gid]
 
-		if int(g.get("number", 0)) != number or g.has("struct") or g.has("fire") or g.has("tree") or (g["pos"] as Vector3).distance_to(at) > radius:
+		if not fills.has(int(g.get("number", 0))) or g.has("struct") or g.has("fire") or g.has("tree") or (g["pos"] as Vector3).distance_to(at) > radius:
 			continue
 
 		var take: int = mini(int(g["count"]), want - taken)
@@ -7665,6 +7669,13 @@ func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 		taken += take
 
 	return taken
+
+
+# The item numbers that fill an ingredient or a blueprint cost: its group's members (item_table.gd load_groups: "log", "nails", "hinges"), or the number alone.
+# Inventory.fills_of is the same rule for a pack or a chest.
+func _fills(number: int) -> PackedInt32Array:
+	var members: PackedInt32Array = table.group_members(number)
+	return members if not members.is_empty() else PackedInt32Array([number])
 
 
 # [[item id, inventory], ...] of containers (chests) within reach of the player.
@@ -7720,10 +7731,10 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 
 	for need in _site_needs(_site_of(it)):
 		var number: int = table.number_of(str(need[0]))
-		var on_hand: int = inv.count_of(number) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M)
+		var on_hand: int = inv.count_fill(number) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M)
 
 		for box in boxes:
-			on_hand += box[1].count_of(number)
+			on_hand += box[1].count_fill(number)
 
 		out.append([str(need[0]), int(need[1]), on_hand])
 
@@ -7754,9 +7765,9 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 
 		var number: int = table.number_of(str(need[0]))
 		var put: int = 0
-		var from_pack: int = mini(left, inv.count_of(number))
+		var from_pack: int = mini(left, inv.count_fill(number))
 
-		if from_pack > 0 and inv.remove(number, from_pack):
+		if from_pack > 0 and inv.remove_fill(number, from_pack):
 			put += from_pack
 
 		if put < left:
@@ -7766,9 +7777,9 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 			if put >= left:
 				break
 
-			var from_box: int = mini(left - put, box[1].count_of(number))
+			var from_box: int = mini(left - put, box[1].count_fill(number))
 
-			if from_box > 0 and box[1].remove(number, from_box):
+			if from_box > 0 and box[1].remove_fill(number, from_box):
 				put += from_box
 				_push_box(int(box[0]), box[1])
 
