@@ -3535,3 +3535,23 @@ static func bird_trap() -> Node3D:
 	_rod(root, Vector3(0.0, 0.1, 0.2), Vector3(0.0, 0.09, 0.0), 0.02, _frame)                       # its bait stick, into the cage
 	_dome(root, 0.07, Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.5, 1.0), _tone_mat(Color(0.82, 0.68, 0.36)), 6, 2)   # the grain
 	return root
+
+
+# The Iron - Anvil (#950), 0.6 x 0.4: the add-on beside the Brick - Forge for steel. The forges' anvil (building_look.gd _anvil: a foot, a waist,
+# the face with its horn to +X and the heel block) on a log stump bound with two iron bands, a hammer laid across the face.
+static func iron_anvil() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var warm: StandardMaterial3D = _tone_mat(Color(0.32, 0.27, 0.24))
+	_cyl(root, 0.19, 0.5, Vector3(0.0, 0.25, 0.0), _log, 8)                                       # the stump
+	_cyl(root, 0.2, 0.04, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8)                                 # its bands
+	_cyl(root, 0.2, 0.04, Vector3(0.0, 0.42, 0.0), _iron_mat(), 8)
+	_box(root, Vector3(0.34, 0.06, 0.2), Vector3(-0.08, 0.54, 0.0), _iron_mat())                  # the anvil's foot
+	_box(root, Vector3(0.18, 0.1, 0.13), Vector3(-0.08, 0.62, 0.0), warm)                         # its waist
+	_box(root, Vector3(0.42, 0.09, 0.17), Vector3(-0.08, 0.71, 0.0), _iron_mat())                 # its face
+	_cyl(root, 0.075, 0.22, Vector3(0.23, 0.71, 0.0), _iron_mat(), 6, 0.015).rotation = Vector3(0.0, 0.0, -PI * 0.5)   # the horn
+	_box(root, Vector3(0.06, 0.07, 0.15), Vector3(-0.31, 0.71, 0.0), warm)                        # the heel
+	_box_rot(root, Vector3(0.3, 0.025, 0.025), Vector3(-0.1, 0.77, 0.04), Vector3(0.0, 0.5, 0.0), _frame)    # the hammer's handle
+	_box_rot(root, Vector3(0.05, 0.05, 0.11), Vector3(0.02, 0.78, -0.03), Vector3(0.0, 0.5, 0.0), _iron_mat())   # and its head
+	_solid(root, Vector3(0.6, 0.76, 0.4), Vector3(0.0, 0.38, 0.0))
+	return root
