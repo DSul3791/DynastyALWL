@@ -6849,7 +6849,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 
 	if lit:
 		placed["struct"]["lit"] = true
-		placed["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0))
+		placed["struct"]["fuel_left"] = light_burn_s(def)
 
 	_items[_next_id] = placed
 	_grid_add(_next_id, placed)
@@ -7108,13 +7108,25 @@ func _take_ground_stock(peer: int, number: int, want: int) -> int:
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
-func _refund_blueprint(peer: int, inv, row: Dictionary) -> bool:
+# A blueprint's materials back in the pack, all or nothing. `taken_down`: the piece stood, so what it burned is gone (blueprints.json "spent", [item,
+# count], also counted in "cost": a lantern's candle or lamp oil; coordinator ruling 10 Nov 2026) and only the rest comes back.
+func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false) -> bool:
 	var given: Array = []
 
 	for need in row["cost"]:
 		var number: int = table.number_of(str(need[0]))
-		var left: int = inv.add(number, int(need[1]))
-		given.append([number, int(need[1]) - left])
+		var count: int = int(need[1])
+
+		if taken_down:
+			for burnt in row.get("spent", []):
+				if str(burnt[0]) == str(need[0]):
+					count = maxi(count - int(burnt[1]), 0)
+
+		if count <= 0:
+			continue
+
+		var left: int = inv.add(number, count)
+		given.append([number, count - left])
 
 		if left > 0:
 			for put in given:
@@ -7241,6 +7253,12 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 # What a piece does once it stands: a support holds the ground, a lean-to is a place to rest, the goal list hears of it.
 func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 	var spot: Vector3 = entry["pos"]
+
+	if str(def.get("use", "")) == "light" and _blueprint_of_kit.has(str(def.get("kit", ""))):   # a lantern built with its candle or oil ("spent") stands lit on it
+		for burnt in _blueprints[int(_blueprint_of_kit[str(def["kit"])])].get("spent", []):
+			if str(burnt[0]) == str(def.get("fuel", "")) and int(burnt[1]) > 0:
+				entry["struct"]["lit"] = true
+				entry["struct"]["fuel_left"] = light_burn_s(def) * float(int(burnt[1]))
 
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
@@ -7766,7 +7784,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
+		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
 	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
 		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out
@@ -9869,6 +9887,9 @@ func _lit_fires() -> Array:
 	for row in _lit_rows():
 		found.append(row[0])
 
+	for row in _guard_rows():   # a lit torch post or other placed light with protect_m keeps them off too (buildables plan, batch B4)
+		found.append(row[0])
+
 	return found
 
 
@@ -9881,6 +9902,10 @@ func fire_protect_m(at: Vector3) -> float:
 	for row in _lit_rows():
 		if (row[0] as Vector3).is_equal_approx(at):
 			return float(((_cooking.get("fire_tiers", {}) as Dictionary).get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("protect_m", 10.0))
+
+	for row in _guard_rows():
+		if (row[0] as Vector3).is_equal_approx(at):
+			return float(row[1])
 
 	return 10.0
 
@@ -9899,6 +9924,7 @@ func _lit_rows() -> Array:
 
 	var found: Array = []
 	_coal_cache_rows = []
+	_guard_cache_rows = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -9907,6 +9933,8 @@ func _lit_rows() -> Array:
 			found.append([it["pos"], int(it["fire"]["state"])])
 		elif it.has("fire") and int(it["fire"]["state"]) == FIRE_STATE_COALS:
 			_coal_cache_rows.append(it["pos"])
+		elif it.has("struct") and bool(it["struct"].get("lit", false)) and float(_structures.get(str(it["struct"]["kind"]), {}).get("protect_m", 0.0)) > 0.0:
+			_guard_cache_rows.append([it["pos"], float(_structures[str(it["struct"]["kind"])]["protect_m"])])
 
 	if _in_vitals:
 		_lit_cache_rows = found
@@ -9917,6 +9945,14 @@ func _lit_rows() -> Array:
 
 # The positions of glowing coals (state 76): they warm coals.heat_c within coals.heat_m and keep nothing off. The same scan as _lit_rows.
 var _coal_cache_rows: Array = []
+var _guard_cache_rows: Array = []   # [position, protect_m] of every lit placed light whose structures.json row has protect_m (the same scan)
+
+
+func _guard_rows() -> Array:
+	if not (_in_vitals and _lit_valid):
+		_lit_rows()
+
+	return _guard_cache_rows
 
 
 func _coal_rows() -> Array:
@@ -11667,7 +11703,7 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 # for comfort; the flag and the fuel left live on the placed row and burn down on the slow tick (not saved: a restart puts them out).
 func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
 	var fuel: int = table.number_of(str(def.get("fuel", "")))
-	var burn: float = float(def.get("fuel_s", 1800.0))
+	var burn: float = light_burn_s(def)
 	var left: float = float(it["struct"].get("fuel_left", 0.0)) if bool(it["struct"].get("lit", false)) else 0.0
 
 	if fuel <= 0 or not inv.has(fuel, 1):
@@ -11683,6 +11719,15 @@ func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
 	it["struct"]["fuel_left"] = left + burn
 	_dirty = true
 	_say(peer, "It burns.")
+
+
+# How long one of a light's fuel items burns (buildables plan, batch B4: burn times in game days): structures.json fuel_days game days
+# (BuildingWear.GAME_DAY_S, 1 game day = 1 real hour), else fuel_s seconds. A candle, lamp oil or tallow is just the row's "fuel" item.
+func light_burn_s(def: Dictionary, fallback_s: float = 1800.0) -> float:
+	if def.has("fuel_days"):
+		return float(def["fuel_days"]) * BuildingWear.GAME_DAY_S
+
+	return float(def.get("fuel_s", fallback_s))
 
 
 # The lit lights (and the fuel each has left) are saved beside the world items in lights.json as [x, y, z, fuel_left] and put back on the structures at those spots after a load.
@@ -12159,7 +12204,7 @@ func dev_place(spec: String) -> int:
 
 	if lit:
 		row["lit"] = true
-		row["fuel_left"] = float(def.get("fuel_s", 3600.0)) * 2.0
+		row["fuel_left"] = light_burn_s(def, 3600.0) * 2.0
 
 	var entry: Dictionary = {"number": table.number_of(str(def.get("item", name))), "count": 1, "pos": at, "left": 1.0e9, "struct": row}
 
