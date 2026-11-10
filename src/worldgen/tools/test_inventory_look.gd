@@ -17,6 +17,12 @@ class FakeTable:
 	func name_of(number: int) -> String:
 		return {1: "Twine", 2: "Stick", 9: "Snare"}.get(number, "?")
 
+	func sentence_name(number: int) -> String:
+		return in_sentence(name_of(number))
+
+	func in_sentence(text: String) -> String:
+		return text.replace(" - ", " ").to_lower()
+
 
 class FakeRecipes:
 	func recipe(number: int) -> Dictionary:

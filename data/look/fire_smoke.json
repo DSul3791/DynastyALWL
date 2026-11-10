@@ -6,14 +6,14 @@
 		0.53
 	],
 	"amount": [
-		90,
-		130,
-		190
+		120,
+		150,
+		200
 	],
 	"puff_m": [
-		0.3,
-		0.4,
-		0.5
+		0.45,
+		0.55,
+		0.65
 	],
 	"grow_to": 8.0,
 	"life_s": 20.0,
@@ -29,8 +29,8 @@
 		8.0,
 		14.0
 	],
-	"_note_plume": "Dave 10 Nov 2026 ('make fire smoke actually look and act more like fire smoke'): one continuous plume, not puffs. amount is many small overlapping puffs (each only alpha of the full density), starting puff_m wide and growing grow_to times (narrow at the fire, wide up high). Each puff is near_grey at the fire and far_grey by the end (dark and dense low, light and thin high); fade is the density over its life [[life share, density]...]. wind_start_share: a fresh puff rises on its heat with only this share of the wind, and the wind takes it fully by the end of its life, so the plume bends over more the higher it goes. waver_m: the column sways this far by the end of its life, the same at the same height (one wavering column, not jitter). coals: the thin wisp from a bed of glowing coals.",
-	"alpha": 0.2,
+	"_note_plume": "Steve 10 Nov 2026, after Dino's small-fire shot (plume_small_shore_calm.png: no smoke to see above a small fire by day): alpha 0.2 -> 0.35, puff_m +0.15 each, amount 90/130/190 -> 120/150/200, so the column shows dark and dense at the flames. Dave 10 Nov 2026 ('make fire smoke actually look and act more like fire smoke'): one continuous plume, not puffs. amount is many small overlapping puffs (each only alpha of the full density), starting puff_m wide and growing grow_to times (narrow at the fire, wide up high). Each puff is near_grey at the fire and far_grey by the end (dark and dense low, light and thin high); fade is the density over its life [[life share, density]...]. wind_start_share: a fresh puff rises on its heat with only this share of the wind, and the wind takes it fully by the end of its life, so the plume bends over more the higher it goes. waver_m: the column sways this far by the end of its life, the same at the same height (one wavering column, not jitter). coals: the thin wisp from a bed of glowing coals.",
+	"alpha": 0.35,
 	"near_grey": 0.3,
 	"far_grey": 0.74,
 	"fade": [

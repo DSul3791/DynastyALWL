@@ -3479,3 +3479,116 @@ static func stonecutters_bench() -> Node3D:
 
 	_solid(root, Vector3(2.0, 0.8, 1.0), Vector3(0.0, 0.4, 0.0))
 	return root
+
+
+# --- Traps (item system, Jamie's #941 and Steve's #944, 10 Nov 2026): the set pieces fish_trap_set and bird_trap_set, placed from their kits
+# (fish_trap, bird_trap) like the snare. Free-placed, standing on y = 0, not solid.
+
+# The Fish trap, 0.8 x 0.5 and 0.4 high, set on the bed in 0.3 m of water or more: a cone of woven sticks lying along X with its wide mouth at +X
+# (the funnel inside it dark) and its narrow tail at -X tied off, two hoops round it, and two stakes either side holding it against the current
+# with a cord from one of them.
+static func fish_trap() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var wicker: StandardMaterial3D = _tone_mat(Color(0.56, 0.43, 0.25))
+	var band: StandardMaterial3D = _tone_mat(Color(0.4, 0.29, 0.16))
+	var cone: Node3D = Node3D.new()
+	cone.position = Vector3(0.0, 0.13, 0.0)
+	cone.rotation = Vector3(0.0, 0.0, 0.22)                                                         # tipped so the cone's underside lies on the bed
+	root.add_child(cone)
+	_cyl(cone, 0.06, 0.62, Vector3.ZERO, wicker, 8, 0.2).rotation = Vector3(0.0, 0.0, -PI * 0.5)    # the cone, wide end at +X
+	_cyl(cone, 0.05, 0.18, Vector3(0.23, 0.0, 0.0), _pot, 8, 0.14).rotation = Vector3(0.0, 0.0, -PI * 0.5)   # the funnel in its mouth
+	_cyl(cone, 0.07, 0.04, Vector3(-0.32, 0.0, 0.0), band, 6).rotation = Vector3(0.0, 0.0, -PI * 0.5)      # the tie at the tail
+
+	for at in [[-0.1, 0.112], [0.15, 0.168]]:
+		_cyl(cone, float(at[1]), 0.035, Vector3(float(at[0]), 0.0, 0.0), band, 8).rotation = Vector3(0.0, 0.0, -PI * 0.5)   # the hoops
+
+	for x in [-0.2, 0.2]:
+		_cyl(root, 0.022, 0.42, Vector3(x, 0.21, 0.21), _log, 4)                                    # the stakes
+	_rod(root, Vector3(-0.2, 0.38, 0.21), Vector3(-0.08, 0.2, 0.1), 0.012, _frame)                   # the cord
+	return root
+
+
+# The Bird trap, 0.6 x 0.6 and 0.35 high: a square cage of sticks laid log-cabin fashion and lashed, two sticks across its top, its back edge on the
+# ground and its front edge propped up on a figure-4 trigger, a little heap of grain under it for the bait.
+static func bird_trap() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var cage: Node3D = Node3D.new()
+	cage.position = Vector3(0.0, 0.0, -0.25)
+	cage.rotation = Vector3(-0.3, 0.0, 0.0)                                                         # its front raised on the trigger
+	root.add_child(cage)
+
+	for k in 4:
+		var half: float = 0.25 - 0.02 * float(k)
+		var y: float = 0.02 + 0.06 * float(k)
+		for z in [0.25 - half, 0.25 + half]:
+			_box(cage, Vector3(half * 2.0 + 0.04, 0.035, 0.035), Vector3(0.0, y, z), _log)
+		for x in [-half, half]:
+			_box(cage, Vector3(0.035, 0.035, half * 2.0 + 0.04), Vector3(x, y + 0.035, 0.25), _log)
+
+	for x in [-0.08, 0.08]:
+		_box(cage, Vector3(0.035, 0.035, 0.4), Vector3(x, 0.235, 0.25), _log)                     # the top
+
+	_rod(root, Vector3(0.0, 0.0, 0.2), Vector3(0.0, 0.15, 0.2), 0.025, _frame)                      # the trigger's upright
+	_rod(root, Vector3(-0.12, 0.04, 0.24), Vector3(0.06, 0.16, 0.18), 0.02, _frame)                 # its diagonal
+	_rod(root, Vector3(0.0, 0.1, 0.2), Vector3(0.0, 0.09, 0.0), 0.02, _frame)                       # its bait stick, into the cage
+	_dome(root, 0.07, Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.5, 1.0), _tone_mat(Color(0.82, 0.68, 0.36)), 6, 2)   # the grain
+	return root
+
+
+# The Iron - Anvil (#950), 0.6 x 0.4: the add-on beside the Brick - Forge for steel. The forges' anvil (building_look.gd _anvil: a foot, a waist,
+# the face with its horn to +X and the heel block) on a log stump bound with two iron bands, a hammer laid across the face.
+static func iron_anvil() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var warm: StandardMaterial3D = _tone_mat(Color(0.32, 0.27, 0.24))
+	_cyl(root, 0.19, 0.5, Vector3(0.0, 0.25, 0.0), _log, 8)                                       # the stump
+	_cyl(root, 0.2, 0.04, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8)                                 # its bands
+	_cyl(root, 0.2, 0.04, Vector3(0.0, 0.42, 0.0), _iron_mat(), 8)
+	_box(root, Vector3(0.34, 0.06, 0.2), Vector3(-0.08, 0.54, 0.0), _iron_mat())                  # the anvil's foot
+	_box(root, Vector3(0.18, 0.1, 0.13), Vector3(-0.08, 0.62, 0.0), warm)                         # its waist
+	_box(root, Vector3(0.42, 0.09, 0.17), Vector3(-0.08, 0.71, 0.0), _iron_mat())                 # its face
+	_cyl(root, 0.075, 0.22, Vector3(0.23, 0.71, 0.0), _iron_mat(), 6, 0.015).rotation = Vector3(0.0, 0.0, -PI * 0.5)   # the horn
+	_box(root, Vector3(0.06, 0.07, 0.15), Vector3(-0.31, 0.71, 0.0), warm)                        # the heel
+	_box_rot(root, Vector3(0.3, 0.025, 0.025), Vector3(-0.1, 0.77, 0.04), Vector3(0.0, 0.5, 0.0), _frame)    # the hammer's handle
+	_box_rot(root, Vector3(0.05, 0.05, 0.11), Vector3(0.02, 0.78, -0.03), Vector3(0.0, 0.5, 0.0), _iron_mat())   # and its head
+	_solid(root, Vector3(0.6, 0.76, 0.4), Vector3(0.0, 0.38, 0.0))
+	return root
+
+
+# The Preserving jar (#955), 0.5 x 0.5: a squat wide-mouthed crock, not the tall narrow Storage jar: a broad belly, a thick rim with a dark
+# water-seal groove, a wooden lid on it with a knob, and two lug handles.
+static func preserving_jar() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.16, 0.22, Vector3(0.0, 0.11, 0.0), _clay, 10, 0.22)                    # the belly
+	_cyl(root, 0.22, 0.14, Vector3(0.0, 0.29, 0.0), _clay, 10, 0.19)                    # the shoulder, barely narrowing to the wide mouth
+	_cyl(root, 0.205, 0.05, Vector3(0.0, 0.385, 0.0), _pot, 10)                         # the rim and its water-seal groove
+	_dome(root, 0.17, Vector3(0.0, 0.41, 0.0), Vector3(1.0, 0.35, 1.0), _planks, 10, 2)   # the wooden lid
+	_box(root, Vector3(0.06, 0.05, 0.06), Vector3(0.0, 0.48, 0.0), _frame)               # its knob
+	_box(root, Vector3(0.05, 0.05, 0.08), Vector3(-0.215, 0.3, 0.0), _clay)             # the lug handles
+	_box(root, Vector3(0.05, 0.05, 0.08), Vector3(0.215, 0.3, 0.0), _clay)
+	_solid(root, Vector3(0.44, 0.48, 0.44), Vector3(0.0, 0.24, 0.0))
+	return root
+
+
+# The Root cellar (#955), 2.0 x 2.0: a low turfed mound with a ring of kerb stones round its foot, and on its front slope a stone-lined
+# opening under a plank hatch, two battens and an iron pull across it.
+static func root_cellar() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var tilt: Vector3 = Vector3(0.35, 0.0, 0.0)                                         # the front slope of the mound
+	_dome(root, 0.95, Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.5, 1.0), _tone_mat(Color(0.4, 0.44, 0.26)), 12, 4)   # the turfed mound
+
+	for i in 6:
+		var a: float = TAU * (float(i) + 0.5) / 6.0
+		_box_rot(root, Vector3(0.34, 0.2, 0.22), Vector3(cos(a) * 0.84, 0.1, sin(a) * 0.84), Vector3(0.0, -a + PI * 0.5, 0.0), _stone)   # a kerb stone
+
+	_box_rot(root, Vector3(0.76, 0.08, 0.7), Vector3(0.0, 0.38, 0.52), tilt, _stone)         # the stone lining round the opening
+	_box_rot(root, Vector3(0.6, 0.05, 0.55), Vector3(0.0, 0.441, 0.542), tilt, _planks)     # the plank hatch
+	_box_rot(root, Vector3(0.07, 0.03, 0.5), Vector3(-0.18, 0.479, 0.556), tilt, _frame)    # its battens
+	_box_rot(root, Vector3(0.07, 0.03, 0.5), Vector3(0.18, 0.479, 0.556), tilt, _frame)
+	_box_rot(root, Vector3(0.14, 0.04, 0.04), Vector3(0.0, 0.47, 0.72), tilt, _iron_mat())  # the iron pull
+	_solid(root, Vector3(1.8, 0.46, 1.8), Vector3(0.0, 0.23, 0.0))
+	return root

@@ -66,7 +66,7 @@ func _check_glyphs() -> void:
 
 	check(missing.is_empty(), "every glyph in the brief has a placeholder shape (missing: %s)" % ", ".join(missing))
 	check(ArtKit.TAB_GLYPH.size() == 11, "11 category tabs: All and the 10 recipe categories")
-	check(ArtKit.GEAR_GHOST.size() == 8, "8 gear slots: 6 wear slots and two hands")
+	check(ArtKit.GEAR_GHOST.size() == 10, "10 gear slots: 8 wear slots (outer and waist since 10 Nov 2026) and two hands")
 	check(not ArtKit.has_glyph("no_such_glyph"), "an unknown glyph has no shape")
 
 
