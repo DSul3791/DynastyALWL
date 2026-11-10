@@ -124,6 +124,7 @@ const OUTCROP_LOOK := {
 	"chalk": [Color(0.72, 0.71, 0.66), 0.75, Color(0.3, 0.3, 0.3), 0.03, 0.9, 0.0, 0.04],          # white, with dark flint bands
 	"marble": [Color(0.64, 0.64, 0.62), 0.7, Color(0.42, 0.43, 0.45), 0.05, 0.3, 0.1, 0.0],         # grey veining
 }
+const OUTCROP_MOSS := 0.2   # an outcrop is a weathered, freshly broken face: little moss (plain boulders 0.65), so the host rock and its veins show (Dino's tin shot, 10 Nov: moss hid the pale quartz)
 const OUTCROP_GLSL := """	vec3 rock = mix(stone, ore_tint, tint_share) * (0.85 + 0.3 * mottle);
 	if (vein_amount > 0.0) {
 		vec3 lp = world_pos - NODE_POSITION_WORLD;
@@ -2726,6 +2727,7 @@ func _boulder_material(ore: String) -> ShaderMaterial:
 		m.set_shader_parameter("vein_flat", look[4])
 		m.set_shader_parameter("halo_share", look[5])
 		m.set_shader_parameter("fleck_share", look[6])
+		m.set_shader_parameter("mossiness", OUTCROP_MOSS)
 		_outcrop_rock[ore] = m
 
 	return _outcrop_rock[ore]
