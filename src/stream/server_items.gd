@@ -174,7 +174,7 @@ var ice_moat_at: Callable        # (position) -> true in a thaw's shore moat (Ka
 var spring_ice_x: Callable       # (position) -> the ice's share by springs (Jamie #739): 0 on the open brook below a spring, 0.5 near a spring mouth or inflow, else 1; unset: 1
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
-var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
+var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
@@ -4796,7 +4796,7 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 	if float(hash(key) % 1000) >= 1000.0 * float(cfg.get("boulder_share", 0.0)):
 		return ""
 
-	var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0))))
+	var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
 	return name if (cfg.get("items", {}) as Dictionary).has(name) else ""
 
 
