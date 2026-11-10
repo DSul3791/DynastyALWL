@@ -164,6 +164,8 @@ const GOLDEN := {
 	"armour_stand": "armour_stand",
 	"sign": "sign",
 	"tusk_mount": "tusk_mount",
+	"clay_bloomery": "clay_bloomery",
+	"stonecutters_bench": "stonecutters_bench",
 	"thatch_roof": "thatch_roof",
 	"thatch_doorway": "thatch_doorway",
 	"rock_pile": "rock_pile",
