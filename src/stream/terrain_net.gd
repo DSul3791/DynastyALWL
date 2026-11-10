@@ -37,7 +37,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 104  # 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 105  # 105 (10 Nov 2026): wheel_share (the sawmill ghost asks the server what its water wheel would give: ACT_WHEEL_ASK; water rules section 10). 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -88,6 +88,7 @@ signal chest_received(id: int, bytes: PackedByteArray)
 signal chest_info_received(id: int, keep_out: bool, may_set: bool)
 signal craft_stock_received(numbers: PackedInt32Array, counts: PackedInt32Array)
 signal step_to_received(position: Vector3, yaw: float)
+signal wheel_share_received(at: Vector3, yaw_deg: int, percent: int, why: String)
 signal favourites_received(flags: PackedByteArray)
 signal hotbar_received(keys: PackedInt32Array)
 signal bulk_done_received(kind: int, stacks: int, containers: int, ids: PackedInt32Array)
@@ -205,6 +206,7 @@ const ACT_BULK := 66             # a = 0 Take all, 1 Store all (the open contain
 const ACT_FAVOURITE := 67        # a = pack slot, b = 1 favourite, 0 not: bulk buttons and Sort leave a favourite where it is; answered with favourites (protocol 99)
 const ACT_HOTBAR_SET := 68       # a = key 0 to 9 (keys 1 to 9 and 0), b = item number, 0 clears the key; one key per item (putting it on a key takes it off another); answered with hotbar (protocol 100)
 const ACT_SPYGLASS := 69         # a = 1 looking through the admin spyglass, 0 not; b = the watched animal id (0 none). Admin only: the server sends animals out to the spyglass radius and animal_info for the watched one; a non-admin gets animal_info(-1, {}). a = 2 (10 Nov 2026): looking through the spyglass item in pack slot `count` (no admin; the tier's radius, data/items/spyglass.json; refused without one)
+const ACT_WHEEL_ASK := 70        # at = the sawmill ghost's spot, a = its turn in degrees, b = the kit's item number: what would its water wheel give there? Answered with wheel_share (protocol 105)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -714,6 +716,13 @@ func chest_info(id: int, keep_out: bool, may_set: bool) -> void:
 @rpc("authority", "call_remote", "reliable")
 func craft_stock(numbers: PackedInt32Array, counts: PackedInt32Array) -> void:
 	craft_stock_received.emit(numbers, counts)
+
+
+# What a water wheel would give at a sawmill ghost's spot (protocol 105, server_items._wheel_ask; water rules section 10): the share of full speed
+# in percent (0: it would be refused) and why not ("" when it turns; dry, river, still, shallow, along, weak).
+@rpc("authority", "call_remote", "reliable")
+func wheel_share(at: Vector3, yaw_deg: int, percent: int, why: String) -> void:
+	wheel_share_received.emit(at, yaw_deg, percent, why)
 
 
 # The server moved this player to a station to craft there (Dave 10 Nov 2026, protocol 103; server_items._step_to_station): stand at `position`

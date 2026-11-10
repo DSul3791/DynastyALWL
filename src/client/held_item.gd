@@ -200,6 +200,9 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_inv = inventory_view
 	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
 	_net = terrain_net
+
+	if _net != null and _net.has_signal("wheel_share_received"):
+		_net.wheel_share_received.connect(_on_wheel_share)
 	if _net != null:
 		_net.road_marker_reached.connect(_on_road_marker_reached)
 	_camera = camera
@@ -1655,6 +1658,10 @@ func _say_why_not() -> void:
 		"far": "Too far to place that. Step closer.",
 	}.get(blueprint_state, ""))
 
+	if why == "" and PlacementRules.reason_text(blueprint_state) != "":
+		var reason: String = PlacementRules.reason_text(blueprint_state)
+		why = reason.left(1).to_upper() + reason.substr(1) + "."
+
 	if why == "" and _blueprinting() and not blueprints.can_afford(_hammer_tier()):
 		why = "You do not have all the materials for that."
 
@@ -1739,6 +1746,9 @@ func _update_blueprint() -> void:
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
+	if blueprint_state == "" and PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water"):
+		blueprint_state = _wheel_state(kit)
+
 	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.water_short(_placement, kit, _blueprint_at, water_depth_at):
 		blueprint_state = "shallow"   # a fish trap off the water or in too little of it, as the server refuses
 
@@ -1751,9 +1761,47 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
+	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
+
+
+# The sawmill ghost's water wheel (water rules section 10, protocol 105): the server works out what the wheel would give where the ghost stands
+# (the same rule as placing) and the ghost shows it, "Sawmill: 62 %" in green or the reason in red. Asked again only when the ghost has moved a
+# quarter metre or turned, at most every WHEEL_ASK_MS; until the answer for this spot comes the ghost keeps its other colour.
+const WHEEL_ASK_MS := 300
+const WHEEL_MOVE_M := 0.25
+
+var _wheel_asked_at: Vector3 = Vector3(INF, INF, INF)
+var _wheel_asked_yaw: int = -1
+var _wheel_asked_msec: int = -100000
+var _wheel_answer: Array = []            # [at, yaw degrees, percent, why] of the last answer
+var wheel_note: String = ""               # the ghost's caption line for a sawmill: "Sawmill: 62 %", or "" (tests read it)
+
+
+func _wheel_state(kit: String) -> String:
+	var moved: bool = _wheel_asked_at.distance_to(_blueprint_at) > WHEEL_MOVE_M or _wheel_asked_yaw != _blueprint_yaw
+
+	if moved and Time.get_ticks_msec() - _wheel_asked_msec >= WHEEL_ASK_MS and _net != null:
+		_wheel_asked_at = _blueprint_at
+		_wheel_asked_yaw = _blueprint_yaw
+		_wheel_asked_msec = Time.get_ticks_msec()
+		_net.inventory_action.rpc_id(1, Net.ACT_WHEEL_ASK, _blueprint_yaw, _inv.table.number_of(kit), 0, _blueprint_at)
+
+	wheel_note = ""
+
+	if _wheel_answer.is_empty() or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
+		return ""   # no answer for this spot yet
+
+	if str(_wheel_answer[3]) != "":
+		return "wheel_" + str(_wheel_answer[3])
+
+	wheel_note = "Sawmill: %d %%" % int(_wheel_answer[2])
+	return ""
+
+
+func _on_wheel_share(at: Vector3, yaw_deg: int, percent: int, why: String) -> void:
+	_wheel_answer = [at, yaw_deg, percent, why]
 
 
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
@@ -2066,6 +2114,9 @@ func _caption() -> String:
 		if PlacementRules.reason_text(blueprint_state) != "":
 			return text + "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 
+		if wheel_note != "":
+			text += "   (%s)" % wheel_note
+
 		if short and blueprints.plan_picked >= 0:
 			return text + "   (red: not enough materials; right click: the list)"
 
@@ -2082,6 +2133,9 @@ func _caption() -> String:
 
 	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
 		return "Red: %s" % PlacementRules.reason_text(blueprint_state)
+
+	if _is_placeable() and wheel_note != "":
+		return wheel_note
 
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", "")) if _is_other_tool() else ""
 

@@ -595,6 +595,18 @@ static func reason_text(state: String) -> String:
 			return "that fire already has a pot"
 		"far":
 			return "too far away: step closer"
+		"wheel_dry":
+			return "the wheel needs running water under all of it"
+		"wheel_river":
+			return "the wheel must stand over a river"
+		"wheel_still":
+			return "the water does not run here"
+		"wheel_shallow":
+			return "the water is too shallow for the wheel"
+		"wheel_along":
+			return "turn the wheel across the current"
+		"wheel_weak":
+			return "too slow: the wheel gives under 150 W here"
 
 	return ""
 
