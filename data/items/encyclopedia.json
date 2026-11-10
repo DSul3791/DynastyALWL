@@ -2005,7 +2005,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": true
 		},
@@ -2054,7 +2055,11 @@
 				"Used in Wooden - Shelf",
 				"Used in Log - Stairs",
 				"Used in Wooden - Double doorway",
-				"Used in Wooden - Railing"
+				"Used in Wooden - Railing",
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lamp post",
+				"Used in Wooden - Lantern",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": true
 		},
@@ -2337,7 +2342,10 @@
 				"Used in Wooden - Shelf",
 				"Used in Iron - Doorway",
 				"Used in Wooden - Double doorway",
-				"Used in Wooden - Railing"
+				"Used in Wooden - Railing",
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lamp post",
+				"Used in Wooden - Lantern"
 			],
 			"obtainable_now": true
 		},
@@ -2383,7 +2391,14 @@
 				"Used in Iron - Chair",
 				"Used in Iron - Table",
 				"Used in Iron - Doorway",
-				"Used in Iron - Railing"
+				"Used in Iron - Railing",
+				"Used in Iron - Brazier",
+				"Used in Iron - Hanging lantern",
+				"Used in Iron - Lamp post",
+				"Used in Iron - Lantern",
+				"Used in Iron - Torch stand",
+				"Used in Iron - Wall lantern",
+				"Used in Stone - Torch pillar"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2945,6 +2960,7 @@
 				"Used in Fish stew",
 				"Used in Herb fish",
 				"Used in Juniper trout",
+				"Used in Lamp oil",
 				"Used in Smoked fish"
 			],
 			"obtainable_now": true
@@ -3166,7 +3182,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3214,7 +3231,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3262,7 +3280,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3310,7 +3329,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3358,7 +3378,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3406,7 +3427,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3454,7 +3476,8 @@
 				"Used in Log - Roof corner",
 				"Used in Log - Bench",
 				"Used in Log - Table",
-				"Used in Log - Stairs"
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3856,7 +3879,10 @@
 				"Used in Stone - Table",
 				"Used in Stone - Workbench",
 				"Used in Brick - Stairs",
-				"Used in Stone - Stairs"
+				"Used in Stone - Stairs",
+				"Used in Stone - Brazier",
+				"Used in Stone - Lamp post",
+				"Used in Stone - Torch pillar"
 			],
 			"obtainable_now": true
 		},
@@ -3989,7 +4015,10 @@
 				"Used in Stone - Bench",
 				"Used in Stone - Table",
 				"Used in Stone - Workbench",
-				"Used in Stone - Stairs"
+				"Used in Stone - Stairs",
+				"Used in Stone - Brazier",
+				"Used in Stone - Lamp post",
+				"Used in Stone - Torch pillar"
 			],
 			"obtainable_now": true
 		},
@@ -4838,7 +4867,10 @@
 				"Craft: 1 Animal fat, 1 Plant fibre",
 				"Craft: 1 Tallow, 1 Plant fibre"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lantern"
+			],
 			"obtainable_now": true
 		},
 		"wicker_shield": {
@@ -5213,7 +5245,9 @@
 				"Dropped by moose when worked with a knife",
 				"Dropped by reindeer when worked with a knife"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Horn pane"
+			],
 			"obtainable_now": true
 		},
 		"tusk": {
@@ -5957,7 +5991,10 @@
 			],
 			"used_for": [
 				"Used in Soap",
-				"Used in Tallow candle"
+				"Used in Tallow candle",
+				"Used in Iron - Torch stand",
+				"Used in Stone - Torch pillar",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": true
 		},
@@ -8156,6 +8193,259 @@
 			"name": "Steel - Doorway",
 			"kind": "structure",
 			"description": "A wall with a steel door, one metre wide and two high.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"horn_pane": {
+			"name": "Horn pane",
+			"kind": "material",
+			"description": "A thin pane of scraped horn. Lets lantern light through.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Antler"
+			],
+			"used_for": [
+				"Used in Iron - Hanging lantern",
+				"Used in Iron - Lantern",
+				"Used in Iron - Wall lantern",
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lantern"
+			],
+			"obtainable_now": true
+		},
+		"lamp_oil": {
+			"name": "Lamp oil",
+			"kind": "material",
+			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
+			"how_to_get": [
+				"Craft at a campfire pot: 3 Herring"
+			],
+			"used_for": [
+				"Used in Iron - Hanging lantern",
+				"Used in Iron - Lantern",
+				"Used in Iron - Wall lantern"
+			],
+			"obtainable_now": true
+		},
+		"wooden_lantern": {
+			"name": "Wooden - Lantern",
+			"kind": "tool",
+			"description": "A plank lantern with horn panes. Takes a candle; does not go out in the rain.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Plank, 1 Twine, 2 Horn pane, 1 Tallow - Candle"
+			],
+			"used_for": [
+				"Used in Wooden - Lamp post"
+			],
+			"obtainable_now": false
+		},
+		"iron_lantern": {
+			"name": "Iron - Lantern",
+			"kind": "tool",
+			"description": "An iron lantern with horn panes. Burns lamp oil; does not go out in the rain.",
+			"how_to_get": [
+				"Craft at a forge: 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
+			],
+			"used_for": [
+				"Used in Iron - Lamp post",
+				"Used in Stone - Lamp post"
+			],
+			"obtainable_now": false
+		},
+		"wooden_hanging_lantern_kit": {
+			"name": "Wooden hanging lantern",
+			"kind": "placeable",
+			"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Plank, 1 Twine, 2 Horn pane, 1 Tallow - Candle"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_hanging_lantern": {
+			"name": "Wooden - Hanging lantern",
+			"kind": "structure",
+			"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hanging_lantern_kit": {
+			"name": "Iron hanging lantern",
+			"kind": "placeable",
+			"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hanging_lantern": {
+			"name": "Iron - Hanging lantern",
+			"kind": "structure",
+			"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_wall_lantern_kit": {
+			"name": "Iron wall lantern",
+			"kind": "placeable",
+			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_wall_lantern": {
+			"name": "Iron - Wall lantern",
+			"kind": "structure",
+			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_torch_post_kit": {
+			"name": "Wooden torch post",
+			"kind": "placeable",
+			"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Log, 1 Twine, 2 Tallow"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_torch_post": {
+			"name": "Wooden - Torch post",
+			"kind": "structure",
+			"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_torch_pillar_kit": {
+			"name": "Stone torch pillar",
+			"kind": "placeable",
+			"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar, 1 Iron ingot, 2 Tallow"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_torch_pillar": {
+			"name": "Stone - Torch pillar",
+			"kind": "structure",
+			"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_torch_stand_kit": {
+			"name": "Iron torch stand",
+			"kind": "placeable",
+			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot, 2 Tallow"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_torch_stand": {
+			"name": "Iron - Torch stand",
+			"kind": "structure",
+			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_lamp_post_kit": {
+			"name": "Wooden lamp post",
+			"kind": "placeable",
+			"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 2 Twine, 1 Wooden - Lantern"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_lamp_post": {
+			"name": "Wooden - Lamp post",
+			"kind": "structure",
+			"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_lamp_post_kit": {
+			"name": "Iron lamp post",
+			"kind": "placeable",
+			"description": "An iron lantern on a tall iron post.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Iron ingot, 1 Iron - Lantern"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_lamp_post": {
+			"name": "Iron - Lamp post",
+			"kind": "structure",
+			"description": "An iron lantern on a tall iron post.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_lamp_post_kit": {
+			"name": "Stone lamp post",
+			"kind": "placeable",
+			"description": "An iron lantern on a stone post.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar, 1 Iron - Lantern"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_lamp_post": {
+			"name": "Stone - Lamp post",
+			"kind": "structure",
+			"description": "An iron lantern on a stone post.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_brazier_kit": {
+			"name": "Stone brazier",
+			"kind": "placeable",
+			"description": "A stone fire bowl. Burns logs for light.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Cobblestone, 3 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_brazier": {
+			"name": "Stone - Brazier",
+			"kind": "structure",
+			"description": "A stone fire bowl. Burns logs for light.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_brazier_kit": {
+			"name": "Iron brazier",
+			"kind": "placeable",
+			"description": "An iron fire bowl on legs. Burns logs for light.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_brazier": {
+			"name": "Iron - Brazier",
+			"kind": "structure",
+			"description": "An iron fire bowl on legs. Burns logs for light.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
