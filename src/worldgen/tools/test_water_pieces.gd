@@ -45,7 +45,7 @@ func make(dir: String):
 	it._structures["test_channel"] = {"kit": "test_channel_kit", "item": "test_channel", "state": 9908, "piece": true, "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "water": {"role": "conduit", "inlet": [-1.0, 0.3, 0.0], "outlet": [1.0, 0.29, 0.0], "cap_lpm": 120.0, "closed": false}}
 	it._structures["test_level_channel"] = {"kit": "test_level_kit", "item": "test_level_channel", "state": 9909, "piece": true, "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "water": {"role": "conduit", "inlet": [-1.0, 0.3, 0.0], "outlet": [1.0, 0.3, 0.0], "cap_lpm": 120.0, "closed": false}}
 	it._structures["test_plot"] = {"kit": "test_plot_kit", "item": "test_plot", "state": 9910, "plot": true, "footprint_x": 2.0, "footprint_z": 2.0, "cap_per_chunk": 50, "water": {"role": "consumer", "inlet": [0.0, 0.2, 0.0]}}
-	it._structures["test_pump"] = {"kit": "test_pump_kit", "item": "test_pump", "state": 9912, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "use_reach_m": 3.0, "water": {"role": "source", "outlet": [0.0, 1.0, 0.0], "cap_lpm": 48.0, "ground_water": true, "max_depth_m": 7.0, "pump": {"cap_lps": 0.8, "watts": 40.0}, "effort": 0.7, "quality": "clean"}}
+	it._structures["test_pump"] = {"kit": "test_pump_kit", "item": "test_pump", "state": 9912, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "use_reach_m": 3.0, "water": {"role": "source", "outlet": [0.0, 1.0, 0.0], "cap_lpm": 48.0, "ground_water": true, "max_depth_m": 7.0, "suction": true, "pump": {"cap_lps": 0.8, "watts": 40.0}, "effort": 0.7, "quality": "clean"}}
 	it._structures["test_trough"] = {"kit": "test_trough_kit", "item": "test_trough", "state": 9911, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "water": {"role": "tank", "inlet": [0.0, 0.4, 0.0], "litres_max": 100.0}}
 	return it
 
@@ -122,6 +122,19 @@ func _init() -> void:
 	check(is_equal_approx(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0), 5.0), "the lake 141 m away is the nearest fresh water (%.1f)" % tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0))
 	check(is_nan(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 100.0)), "none within 100 m")
 	check(is_nan(tile.fresh_water_y(Vector3(200.0, 20.0, 200.0), 50.0)), "the sea is not fresh water")
+	check(is_equal_approx(tile.fresh_water_near(Vector3(0.0, 20.0, 0.0), 200.0).x, sqrt(20000.0)), "fresh_water_near gives the distance too, to pick the nearest across tiles")
+
+	# Sonny: seasonal channels and ponds (8, 9) and salt marsh (10) are not fresh water for a well; a bog (7) is, with the table at the surface.
+	for code in [8, 9, 10]:
+		tile.water_class = PackedByteArray([0, 0, 0, 0, code, 0, 0, 0, 1])
+		check(is_nan(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0)), "water class %d does not count for a well" % code)
+
+	tile.water_class = PackedByteArray([0, 0, 0, 0, 7, 0, 0, 0, 1])
+	check(is_equal_approx(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0), 5.0), "a bog counts for a well")
+
+	# Sonny section 1: a suction pump's 7 m falls 1 m for every 1,000 m of height; a windlass or deep pump (no suction) keeps its reach.
+	check(is_equal_approx(ItemsScript._lift_limit_m(items._structures["test_pump"]["water"], Vector3(0.0, 2000.0, 0.0)), 5.0), "a hand pump 2,000 m up lifts 5 m")
+	check(is_equal_approx(ItemsScript._lift_limit_m({"max_depth_m": 25.0}, Vector3(0.0, 2000.0, 0.0)), 25.0), "a windlass 2,000 m up still reaches 25 m")
 
 	# Wells and pumps (6b part 2): they reach down to the nearest fresh water within 200 m, no deeper than their max_depth_m.
 	items.fresh_water_y = func(pos, _reach): return NAN if pos.x > 500.0 else (1.0 if pos.z > 400.0 else 6.0)

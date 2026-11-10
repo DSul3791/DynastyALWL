@@ -332,12 +332,19 @@ func make_placeholder(tile_coord: Vector2i, tile_size_m: float, depth_m: float) 
 
 # ---------------------------------------------------------------- sampling
 
-# The surface height of the nearest fresh water (a lake or river sample of the baked map, not the sea) within `reach` metres of `pos` across the
-# ground, or NAN when there is none (Sonny's water rules, section 3: a well or pump reaches down to the level of the nearest fresh water within 200 m,
-# an interim rule until the depth-to-table layer). Looked at once when a well or pump is placed or first worked.
-func fresh_water_y(pos: Vector3, reach: float) -> float:
+# The nearest fresh water within `reach` metres of `pos` across the ground, as Vector2(distance, surface height), or Vector2(INF, NAN) when this
+# tile has none (Sonny's water rules, section 3: a well or pump reaches down to the level of the nearest fresh water within 200 m, an interim rule
+# until the depth-to-table layer). Fresh water is FRESH_FIRST..FRESH_LAST of the record's water classes: lake, river, marsh, swamp, fen and bog
+# (wetlands have the table at the surface: the best well sites). Not the sea (1), the seasonal channel and pond (8, 9: dry part of the year, the
+# table then lies below them) or the salt marsh (10). Looked at once when a well or pump is placed or first worked; the server scene asks the
+# neighbouring tiles too when the reach crosses this tile's edge.
+const FRESH_FIRST := 2
+const FRESH_LAST := 7
+
+
+func fresh_water_near(pos: Vector3, reach: float) -> Vector2:
 	if placeholder or water_class.size() != samples * samples:
-		return NAN
+		return Vector2(INF, NAN)
 
 	var steps: int = int(ceil(reach / spacing_m))
 	var ci: int = int(round((pos.x - x0) / spacing_m))
@@ -349,8 +356,8 @@ func fresh_water_y(pos: Vector3, reach: float) -> float:
 		for i in range(maxi(ci - steps, 0), mini(ci + steps, samples - 1) + 1):
 			var k: int = j * samples + i
 
-			if water_class[k] < 2 or is_nan(water_surface[k]):
-				continue   # dry, or the sea (class 1)
+			if water_class[k] < FRESH_FIRST or water_class[k] > FRESH_LAST or is_nan(water_surface[k]):
+				continue   # dry, the sea, seasonal water or salt marsh
 
 			var gap: float = Vector2(x0 + float(i) * spacing_m - pos.x, z0 + float(j) * spacing_m - pos.z).length()
 
@@ -358,7 +365,12 @@ func fresh_water_y(pos: Vector3, reach: float) -> float:
 				best = gap
 				surface = water_surface[k]
 
-	return surface
+	return Vector2(best, surface)
+
+
+# The surface height of the nearest fresh water in this tile within `reach` (fresh_water_near), NAN when there is none.
+func fresh_water_y(pos: Vector3, reach: float) -> float:
+	return fresh_water_near(pos, reach).y
 
 
 # Ground height at a world position inside the tile: smooth (Catmull-Rom) on dry land, and under water the same straight-line (bilinear)

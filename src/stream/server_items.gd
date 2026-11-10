@@ -11774,10 +11774,17 @@ func _ground_water_refusal(piece: Dictionary, spot: Vector3) -> String:
 	if is_nan(depth):
 		return "There is no fresh water within %d m to reach down to." % int(WELL_REACH_M)
 
-	if depth > float(piece.get("max_depth_m", 25.0)):
+	if depth > _lift_limit_m(piece, spot):
 		return "The water lies %d m down here, too deep for this." % int(round(depth))
 
 	return ""
+
+
+# How deep a well or pump reaches (Sonny's water rules, section 1): its max_depth_m (25 m when it has none: the windlass and the deep pump), and a
+# suction pump ("suction": true, the hand pumps' 7 m) loses 1 m of it for every 1,000 m of height, as the air pressure falls.
+static func _lift_limit_m(piece: Dictionary, spot: Vector3) -> float:
+	var limit: float = float(piece.get("max_depth_m", 25.0))
+	return limit - maxf(spot.y, 0.0) / 1000.0 if bool(piece.get("suction", false)) else limit
 
 
 func _is_pumpable(piece: Dictionary) -> bool:
