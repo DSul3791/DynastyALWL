@@ -192,6 +192,12 @@ const OUT_OF_SEASON_FORMAT := "%s - Out of Season"
 
 # What the look-at line says for a berry bush or fruit tree (Dave 2026-10-23): the product while it can be picked ("Blackberries"), "Raspberries - Out of
 # Season" when its season is not now; "" when it has been picked bare, and the caller shows the plant's own name.
+# Whether the look-at line names a plant for what it gives ("Raspberries"): bushes and herbs yes; a tree is named for itself, never for its
+# harvest (Dave 10 Nov 2026: an oak read "Tannin-rich bark"; an apple tree is not "Apple").
+static func named_for_product(flora_row: Dictionary) -> bool:
+	return str(flora_row.get("kind", "")) != "tree"
+
+
 func product_name_at(point: Vector3) -> String:
 	var found: Array = _client.flora.instance_near(point, 1.3)
 
@@ -200,6 +206,10 @@ func product_name_at(point: Vector3) -> String:
 
 	var id: int = int(found[1])
 	var row: Dictionary = _flora_by_id.get(id >> 16, {})
+
+	if not named_for_product(row):
+		return ""
+
 	var berry: Dictionary = GatherRules.harvest_row(_drops, str(row.get("name", "")))
 
 	if berry.is_empty() or _client.flora.is_stripped(found[0], id):

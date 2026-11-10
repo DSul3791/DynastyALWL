@@ -1273,12 +1273,17 @@ static func _load_texture(path: String) -> Texture2D:
 
 
 # "Hemlock (Toxic)": the display name, with the first listed property as a note.
+# The look-at name of a species: its display name, with a warning in brackets when it has one ("Foxglove (Toxic)", "Nettle (Stings)"). Other
+# properties (a remedy, a use) are for the encyclopedia, not the hover line (Jamie, 10 Nov 2026: an olive read "Olive (Cough remedy)").
+const WARNING_PROPERTIES := ["toxic", "stings"]
+
+
 static func _label_for(entry: Dictionary) -> String:
 	var text: String = str(entry.get("display", entry.get("name", "Plant")))
-	var properties: Array = entry.get("properties", [])
 
-	if not properties.is_empty():
-		text += " (%s)" % str(properties[0]).replace("_", " ").capitalize()
+	for property in entry.get("properties", []):
+		if WARNING_PROPERTIES.has(str(property)):
+			return text + " (%s)" % str(property).replace("_", " ").capitalize()
 
 	return text
 
