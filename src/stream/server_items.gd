@@ -464,6 +464,7 @@ func setup(item_table, store_dir: String) -> void:
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
+	_water_rebuild((crops_parsed.get("tanks", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("tanks", null)) == TYPE_DICTIONARY else {})
 	_rebuild_supports()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -1288,7 +1289,8 @@ func tick(delta: float) -> void:
 		_auto_split()
 		_slow_mark("auto-split", t0)
 		_crops_tick()
-		_slow_mark("crops", t0)
+		_water_tick()
+		_slow_mark("crops-water", t0)
 		_lights_tick(spent)
 		_dev_pending_tick(spent)
 		_slow_mark("lights-dev", t0)
@@ -1439,7 +1441,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water})
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION, "no_kits": true})
 
@@ -7332,6 +7334,12 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_say(peer, "Too many of these stand here already.")
 		return
 
+	var water_why: String = _water_refusal(def, spot, yaw_deg)
+
+	if water_why != "":
+		_say(peer, water_why)
+		return
+
 	if slot < 0 and free_build:
 		pass   # a test or admin piece: nothing is taken
 	elif slot < 0 and not site_row.is_empty():
@@ -7372,6 +7380,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		return   # a site counts as built, holds nothing up and shelters nobody until _finish_site
 
 	_after_built(peer, entry, def)
+	_water_add(_next_id - 1)
 	_dirty = true
 
 
@@ -7803,6 +7812,7 @@ func _finish_site(peer: int, id: int) -> void:
 	_grid_add(id, it)
 	_add_roof(it)
 	_after_built(peer, it, def)
+	_water_add(id)
 	_dirty = true
 
 
@@ -11839,6 +11849,179 @@ func _plots_tick() -> void:
 	for key in _plot_water.keys():
 		if not seen.has(key):
 			_plot_water.erase(key)
+
+	_water_dirty = _water_dirty or not _water_kind.is_empty()   # the weather moved the plots' moisture: their room changed
+
+
+# --- Water pieces (buildables plan section 6, part 6b; Sonny's water rules; Steve's design note, 10 Nov 2026) ---
+# A structure with a structures.json "water" block is a piece of the water network (water_network.gd): its block names the role and numbers, and its
+# inlet and outlet as [x, y, z] metres from the piece's middle, turned with its yaw. The network is accounting only: the live water sim never sees it.
+# Pieces join when built (a blueprint site joins when finished) and leave when the structure is gone; the network is solved again then and at its next
+# event (a tank full or empty, a plot full, water going still). A garden plot's water block makes it a consumer: what flows in becomes moisture (1
+# percent a litre on a 2 x 2 plot: its store_mm over its area), and a full plot takes no more. Tank litres are saved in crops.json "tanks".
+# Times are real seconds (the game clock over GameClock.RATIO), as pumping and flow are.
+const WaterNetwork := preload("res://src/shared/water_network.gd")
+const GameClockScript := preload("res://src/shared/game_clock.gd")
+const WATER_SOURCES_PER_CHUNK := 4
+var _water = WaterNetwork.new()
+var _water_kind: Dictionary = {}        # item id -> structure kind of a piece in the network
+var _water_dirty: bool = false
+var _water_at_s: float = -1.0           # real second of the last solve
+var _water_next_s: float = INF          # the network's next event, real seconds
+var _water_tanks_saved: Dictionary = {} # crops.json "tanks": position key -> litres, read at load
+
+
+func _water_now_s() -> float:
+	return _now_game_s() / GameClockScript.RATIO
+
+
+# The network piece a structure of `def` makes standing at `pos` turned `yaw_deg`, or {} when it carries no water.
+func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float) -> Dictionary:
+	var block: Variant = def.get("water", {})
+
+	if typeof(block) != TYPE_DICTIONARY or (block as Dictionary).is_empty():
+		return {}
+
+	var piece: Dictionary = {}
+
+	for key in block:
+		var value: Variant = block[key]
+
+		if (key == "inlet" or key == "outlet") and typeof(value) == TYPE_ARRAY and (value as Array).size() == 3:
+			piece[key] = pos + Vector3(float(value[0]), float(value[1]), float(value[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg))
+		elif key != "note":
+			piece[key] = value
+
+	return piece
+
+
+# Why a water piece may not go here ("" when it may): more than WATER_SOURCES_PER_CHUNK sources in the chunk, a loop, or a network past 256 pieces.
+func _water_refusal(def: Dictionary, spot: Vector3, yaw_deg: int) -> String:
+	var piece: Dictionary = water_piece(def, spot, float(posmod(yaw_deg, 360)))
+
+	if piece.is_empty():
+		return ""
+
+	if str(piece.get("role", "")) == "source":
+		var sources: int = 0
+
+		for id in _water_kind:
+			if str(_water.pieces.get(id, {}).get("role", "")) == "source" and _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
+				sources += 1
+
+		if sources >= WATER_SOURCES_PER_CHUNK:
+			return "Too many water sources stand here already."
+
+	match _water.check(piece):
+		"loop":
+			return "This would make a loop."
+		"full":
+			return "This water network cannot grow any bigger."
+
+	return ""
+
+
+# A built structure joins the network when it carries water.
+func _water_add(id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or it["struct"].has("site"):
+		return
+
+	var kind: String = str(it["struct"]["kind"])
+	var piece: Dictionary = water_piece(_structures.get(kind, {}), it["pos"], float(it["struct"].get("yaw", 0.0)))
+
+	if piece.is_empty():
+		return
+
+	_water.add(id, piece)
+	_water_kind[id] = kind
+
+	if str(piece.get("role", "")) == "tank":
+		_water.set_litres(id, float(_water_tanks_saved.get(_water_key(it["pos"]), 0.0)))
+		_water_tanks_saved.erase(_water_key(it["pos"]))
+
+	_water_dirty = true
+
+
+func _water_key(pos: Vector3) -> String:
+	return "%.2f,%.2f,%.2f" % [pos.x, pos.y, pos.z]
+
+
+# At load: every standing water structure joins, and tanks take their saved litres.
+func _water_rebuild(tanks: Dictionary) -> void:
+	_water = WaterNetwork.new()
+	_water.still_after_s = 3.0 * GameClockScript.SECONDS_PER_DAY / GameClockScript.RATIO   # 3 game days (Sonny's rules)
+	_water_kind.clear()
+	_water_tanks_saved = tanks.duplicate()
+	_water_at_s = -1.0
+
+	for id in _items:
+		if _items[id].has("struct") and _structures.get(str(_items[id]["struct"]["kind"]), {}).has("water"):
+			_water_add(id)
+
+	_water_tanks_saved.clear()
+
+
+func _water_tanks_save() -> Dictionary:
+	var out: Dictionary = {}
+	var now_s: float = _water_now_s()
+
+	for id in _water_kind:
+		if str(_water.pieces.get(id, {}).get("role", "")) == "tank":
+			out[_water_key(_items[id]["pos"])] = snappedf(_water.litres(id, now_s), 0.01)
+
+	return out
+
+
+# Litres a garden plot takes for 1 percent of moisture: its store over its area (25 mm on 2 x 2 m: 1 L).
+func _plot_litres_per_pct(kind: String) -> float:
+	var def: Dictionary = _structures.get(kind, {})
+	_crop_table()
+	return maxf(float(_moisture_cfg.get("store_mm", 25.0)) * float(def.get("footprint_x", 1.0)) * float(def.get("footprint_z", 1.0)) / 100.0, 0.01)
+
+
+# Pieces whose structure is gone leave; then, when anything changed or the next event is due, the water that flowed into plots since the last solve
+# becomes moisture, each plot's room is set from its moisture, and the network is solved again.
+func _water_tick() -> void:
+	if _water_kind.is_empty():
+		return
+
+	for id in _water_kind.keys():
+		var it: Dictionary = _items.get(id, {})
+
+		if it.is_empty() or not it.has("struct") or str(it["struct"]["kind"]) != str(_water_kind[id]) or it["struct"].has("site"):
+			_water.remove(id)
+			_water_kind.erase(id)
+			_water_dirty = true
+
+	var now_s: float = _water_now_s()
+
+	if not _water_dirty and now_s < _water_next_s:
+		return
+
+	_water_dirty = false
+
+	for id in _water_kind:
+		var piece: Dictionary = _water.pieces[id]
+
+		if str(piece.get("role", "")) != "consumer" or not _is_plot_kind(str(_water_kind[id])):
+			continue
+
+		var key: String = _bed_key(_items[id]["pos"])
+		var per_pct: float = _plot_litres_per_pct(str(_water_kind[id]))
+		var pct: float = plot_moisture(_items[id]["pos"])
+
+		if _water_at_s >= 0.0 and _water.inflow_lpm(id) > 0.0:
+			pct = minf(100.0, pct + _water.inflow_lpm(id) * maxf(now_s - _water_at_s, 0.0) / 60.0 / per_pct)
+			var row: Array = _plot_water.get(key, [])
+			_plot_water[key] = [pct, float(row[1]) if row.size() >= 2 else _now_game_s()]   # its weather clock goes on as it was
+
+		piece["room_l"] = (100.0 - pct) * per_pct if pct < 99.99 else 0.0
+
+	_water.solve(now_s)
+	_water_at_s = now_s
+	_water_next_s = _water.next_event_s()
 
 
 # One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
