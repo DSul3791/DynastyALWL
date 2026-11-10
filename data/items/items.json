@@ -4455,7 +4455,10 @@
 			"tip": "wood",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"future": true,
+			"retired": true,
+			"note": "Item system 10 Nov 2026: fibre-fletched arrows are now made as Wooden - Arrow (recipe fibre_arrow); kept so arrows already made still shoot. Number kept, never reused."
 		},
 		"seaweed": {
 			"number": 355,

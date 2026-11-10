@@ -1942,7 +1942,6 @@
 				"Used in Wooden - Workbench",
 				"Used in Campfire",
 				"Used in Campfire pot",
-				"Used in Fibre - Arrow",
 				"Used in Iron - Hammer",
 				"Used in Log - Workbench",
 				"Used in Steel - Hammer",
@@ -1954,7 +1953,8 @@
 				"Used in Wooden - Roof corner",
 				"Used in Thatch - Garden plot",
 				"Used in Thatch - Scarecrow",
-				"Used in Wooden - Trellis"
+				"Used in Wooden - Trellis",
+				"Used in Wooden - Arrow (fibre)"
 			],
 			"obtainable_now": true
 		},
@@ -1972,15 +1972,14 @@
 			],
 			"used_for": [
 				"Used in Torch",
-				"Used in Tallow - Candle",
 				"Used in Compost",
-				"Used in Fibre - Arrow",
 				"Used in Fibre - Sandals",
 				"Used in Fibre - Cloak",
 				"Used in Fibre - Skirt",
 				"Used in Leaf bandage",
 				"Used in Fibre cloth",
-				"Used in Fibre - Gambeson"
+				"Used in Fibre - Gambeson",
+				"Used in Wooden - Arrow (fibre)"
 			],
 			"obtainable_now": true
 		},
@@ -2915,7 +2914,6 @@
 			],
 			"used_for": [
 				"Used in Baked potato",
-				"Used in Tallow - Candle",
 				"Used in Egg and nettle fry",
 				"Used in Fine leather",
 				"Used in Hearty pottage",
@@ -4317,8 +4315,7 @@
 			"description": "Sticks, branches and rough bedding lashed with twine. Set it under a roof and lie down to sleep.",
 			"how_to_get": [
 				"Craft: 10 Thatch, 4 Stick, 2 Twine",
-				"Craft: 8 Bedding, 4 Stick, 2 Twine",
-				"Craft: 8 Straw, 4 Stick, 2 Twine"
+				"Craft: 8 Bedding, 4 Stick, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4456,7 +4453,9 @@
 			"kind": "material",
 			"description": "A hardened stick with feather fletching. Needs a bow.",
 			"how_to_get": [
-				"Craft: 2 Stick, 2 Feather"
+				"Craft: 2 Stick, 2 Feather",
+				"Craft: 2 Stick, 1 Quill",
+				"Craft: 2 Stick, 1 Plant fibre"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4944,7 +4943,6 @@
 			"kind": "tool",
 			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"how_to_get": [
-				"Craft: 1 Animal fat, 1 Plant fibre",
 				"Craft: 1 Tallow, 1 Plant fibre"
 			],
 			"used_for": [
@@ -5088,7 +5086,7 @@
 			"kind": "clothing",
 			"description": "A close leather cap. Better than bare hide.",
 			"how_to_get": [
-				"Craft: 1 Leather, 1 Leather strap"
+				"Craft at a workbench: 1 Leather, 1 Leather strap"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5421,10 +5419,10 @@
 			"kind": "material",
 			"description": "A hardened stick with fibre fletching. Weak and short, but needs no feather.",
 			"how_to_get": [
-				"Craft: 2 Stick, 1 Plant fibre"
+				"No longer made: plant fibre fletching now makes Wooden - Arrow (2 Stick, 1 Plant fibre)"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false
 		},
 		"seaweed": {
 			"name": "Seaweed",
@@ -5560,7 +5558,7 @@
 			"kind": "clothing",
 			"description": "A woven wool shirt. Warm.",
 			"how_to_get": [
-				"Craft: 2 Wool cloth, 1 Twine"
+				"Craft at a workbench: 2 Wool cloth, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5571,7 +5569,7 @@
 			"kind": "clothing",
 			"description": "Heavy woven wool trousers.",
 			"how_to_get": [
-				"Craft: 2 Wool cloth, 1 Twine"
+				"Craft at a workbench: 2 Wool cloth, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5582,7 +5580,7 @@
 			"kind": "clothing",
 			"description": "A snug knitted wool cap.",
 			"how_to_get": [
-				"Craft: 1 Wool cloth"
+				"Craft at a workbench: 1 Wool cloth"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5593,7 +5591,7 @@
 			"kind": "clothing",
 			"description": "Thick wool mittens.",
 			"how_to_get": [
-				"Craft: 1 Wool cloth"
+				"Craft at a workbench: 1 Wool cloth"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5604,7 +5602,7 @@
 			"kind": "clothing",
 			"description": "A light linen shirt. Cool in summer heat.",
 			"how_to_get": [
-				"Craft: 3 Linen, 1 Twine"
+				"Craft at a workbench: 3 Linen, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5615,7 +5613,7 @@
 			"kind": "clothing",
 			"description": "A heavy cloak of fur pelts. The warmest body cover.",
 			"how_to_get": [
-				"Craft: 3 Fur, 2 Sinew"
+				"Craft at a workbench: 3 Fur, 2 Sinew"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5626,7 +5624,7 @@
 			"kind": "clothing",
 			"description": "A fur hat with ear flaps.",
 			"how_to_get": [
-				"Craft: 1 Fur, 1 Sinew"
+				"Craft at a workbench: 1 Fur, 1 Sinew"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5637,7 +5635,7 @@
 			"kind": "clothing",
 			"description": "Fur boots with the hair turned in.",
 			"how_to_get": [
-				"Craft: 2 Fur, 1 Sinew"
+				"Craft at a workbench: 2 Fur, 1 Sinew"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -6093,7 +6091,7 @@
 			"kind": "material",
 			"description": "A strip of leather for straps, belts and harness.",
 			"how_to_get": [
-				"Craft: 1 Leather (keep Stone - Knife)"
+				"Craft at a workbench: 1 Leather (keep Stone - Knife)"
 			],
 			"used_for": [
 				"Used in Leather - Jerkin",

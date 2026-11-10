@@ -3467,7 +3467,7 @@
 			"craft_s": 40.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 3
 		},
 		"saw_mill_kit": {
 			"number": 154,
@@ -3586,7 +3586,8 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"stone_adze": {
 			"number": 158,
@@ -4111,7 +4112,9 @@
 				2
 			],
 			"craft_s": 6.0,
-			"known": true
+			"known": false,
+			"locked": true,
+			"retired": true
 		},
 		"wicker_shield": {
 			"number": 201,
@@ -4183,7 +4186,8 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"bronze_sword": {
 			"number": 204,
@@ -4417,7 +4421,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 2
 		},
 		"leather_jerkin": {
 			"number": 214,
@@ -4439,7 +4445,8 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"bronze_helm": {
 			"number": 215,
@@ -4484,7 +4491,8 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"iron_helm": {
 			"number": 217,
@@ -4791,7 +4799,7 @@
 		},
 		"fibre_arrow": {
 			"number": 228,
-			"name": "Fibre - Arrow",
+			"name": "Wooden - Arrow (fibre)",
 			"category": "Tools",
 			"needs": [
 				[
@@ -4804,7 +4812,7 @@
 				]
 			],
 			"gives": [
-				"fibre_arrow",
+				"wooden_arrow",
 				4
 			],
 			"craft_s": 4.0,
@@ -4924,7 +4932,9 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": true
+			"known": false,
+			"locked": true,
+			"retired": true
 		},
 		"leather": {
 			"number": 234,
@@ -5015,7 +5025,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"wool_trousers": {
 			"number": 238,
@@ -5036,7 +5048,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"wool_cap": {
 			"number": 239,
@@ -5053,7 +5067,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"wool_mittens": {
 			"number": 240,
@@ -5070,7 +5086,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"linen_shirt": {
 			"number": 241,
@@ -5091,7 +5109,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"fur_cloak": {
 			"number": 242,
@@ -5112,7 +5132,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"fur_hat": {
 			"number": 243,
@@ -5133,7 +5155,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"fur_boots": {
 			"number": 244,
@@ -5154,7 +5178,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"station": "workbench",
+			"station_level": 3
 		},
 		"linen": {
 			"number": 245,
@@ -5966,7 +5992,8 @@
 				2
 			],
 			"craft_s": 6.0,
-			"known": true
+			"known": true,
+			"station": "workbench"
 		},
 		"butter": {
 			"number": 279,
@@ -7290,7 +7317,8 @@
 			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 3
 		},
 		"wood_foundation_kit": {
 			"number": 345,
