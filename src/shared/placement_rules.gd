@@ -12,6 +12,11 @@ const POT_ATTACH_M := 2.0
 const STRUCTURE_STATES := [5, 6, 7]
 const WATER_BLOCK_M := 0.15          # water at least this deep under a kit blocks it
 const FIRE_WATER_BLOCK_M := 0.05     # a fire cannot go on any visible water (Dave 2 Nov 2026)
+const PILLAR_KIND := "pillar"        # structures.json piece_kind of a pillar (the buildables plan, batch B1c, Morgan 10 Nov 2026)
+const CEILING_TOP_M := 0.12          # a ceiling's top above its spot (piece_look floor_piece is 0.12 m thick), unless its row has top_m
+const ANCHOR_REACH_M := 1.4          # the cursor's reach to an anchor
+const ANCHOR_TIE_M := 0.05           # anchors this close across the ground are one point; the one at the cursor's height wins
+const ANCHOR_TAKEN_M := 0.2          # a pillar already this close to a pillar anchor takes it
 
 
 static func load_config() -> Dictionary:
@@ -34,7 +39,9 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 
 # Building pieces (structures.json "piece": true) click to a grid: x and z to the piece's snap_m (else piece_snap_m) metres, the turn to
 # a quarter circle, so neighbours meet edge to edge. A wall, floor or roof near a foundation (rows: {"pos", "state"}) snaps to the
-# nearest of the foundation's anchors instead and stands on its top. Anything else keeps its spot and turn.
+# nearest of the foundation's anchors instead and stands on its top; a pillar snaps to the middle or a corner of a foundation or a ceiling
+# (pillar_anchors). Where two bases offer the same point (a ceiling laid on a foundation), the one whose top is nearest the cursor's height
+# wins. Anything else keeps its spot and turn.
 # Returns [spot, yaw in degrees, on_foundation].
 static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, rows: Array = []) -> Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
@@ -60,10 +67,19 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 	var piece_kind: String = str(def.get("piece_kind", ""))
 
 	if piece_kind != "":
+		var best: Array = []   # [spot, yaw, ground distance]
+		var held: Array = []   # the same for a pillar point that already holds a pillar: used only when no free point is near (blocked says "close")
+
 		for row in rows:
 			var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+			var anchors: Array = []
 
-			if base.is_empty() or not bool(base.get("foundation", false)):
+			if piece_kind == PILLAR_KIND:
+				anchors = pillar_anchors(base)
+			elif bool(base.get("foundation", false)):
+				anchors = base.get("anchors", {}).get(piece_kind, [])
+
+			if anchors.is_empty():
 				continue
 
 			var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z)
@@ -71,19 +87,28 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 			if absf(local.x) > float(base.get("footprint_x", 4.0)) * 0.5 + 1.0 or absf(local.y) > float(base.get("footprint_z", 4.0)) * 0.5 + 1.0:
 				continue
 
-			var best: Array = []
-			var best_d: float = 1.4
-
-			for anchor in base.get("anchors", {}).get(piece_kind, []):
+			for anchor in anchors:
 				var d: float = local.distance_to(Vector2(float(anchor[0]), float(anchor[1])))
 
-				if d < best_d:
-					best_d = d
-					best = anchor
+				if d >= ANCHOR_REACH_M:
+					continue
 
-			if not best.is_empty():
-				var yaw_at: int = int(best[2]) if best.size() > 2 else turned
-				return [Vector3(row["pos"].x + float(best[0]), row["pos"].y + float(base.get("top_m", 0.3)), row["pos"].z + float(best[1])), yaw_at, true]
+				var at: Vector3 = Vector3(row["pos"].x + float(anchor[0]), row["pos"].y + anchor_top(base), row["pos"].z + float(anchor[1]))
+
+				if piece_kind == PILLAR_KIND and _pillar_at(cfg, at, rows):
+					if held.is_empty() or d < float(held[2]):
+						held = [at, turned, d]
+
+					continue
+
+				if best.is_empty() or d < float(best[2]) - ANCHOR_TIE_M or (d <= float(best[2]) + ANCHOR_TIE_M and absf(at.y - spot.y) < absf((best[0] as Vector3).y - spot.y)):
+					best = [at, int(anchor[2]) if anchor.size() > 2 else turned, d]
+
+		if best.is_empty():
+			best = held
+
+		if not best.is_empty():
+			return [best[0], best[1], true]
 
 	var joined: Array = _join(cfg, piece_kind, spot, rows)
 
@@ -92,6 +117,31 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
 	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
+
+
+# Where a pillar may stand on `base` (a structures.json row): the middle and the four corners of a foundation (4 x 4 m) or of a ceiling cell
+# (piece_kind "floor", 2 x 2 m), from the footprint, as offsets [x, z] from the base's middle (art/BUILDING_TIERS_LOOKS.md: 5 snap points;
+# the buildables plan, batch B1c, Morgan 10 Nov 2026). [] for anything else. Every foundation and ceiling kind gets them, whatever its tier.
+static func pillar_anchors(base: Dictionary) -> Array:
+	if base.is_empty() or not (bool(base.get("foundation", false)) or str(base.get("piece_kind", "")) == "floor"):
+		return []
+
+	var hx: float = float(base.get("footprint_x", 2.0)) * 0.5
+	var hz: float = float(base.get("footprint_z", 2.0)) * 0.5
+	return [[0.0, 0.0], [-hx, -hz], [hx, -hz], [-hx, hz], [hx, hz]]
+
+
+# How far above its spot a piece stands on `base`: its top_m, else 0.3 for a foundation and CEILING_TOP_M for a ceiling.
+static func anchor_top(base: Dictionary) -> float:
+	return float(base.get("top_m", 0.3 if bool(base.get("foundation", false)) else CEILING_TOP_M))
+
+
+static func _pillar_at(cfg: Dictionary, at: Vector3, rows: Array) -> bool:
+	for row in rows:
+		if (row["pos"] as Vector3).distance_to(at) < ANCHOR_TAKEN_M and str(structure_of_state(cfg, int(row["state"])).get("piece_kind", "")) == PILLAR_KIND:
+			return true
+
+	return false
 
 
 # Aiming at the middle of a foundation's top puts a new one on it: the same spot, one body (def "stack_m", 2 m) higher, up to STACK_MAX_LAYERS
@@ -325,6 +375,9 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	var gap: float = float(cfg.get("gap_m", 2.5))
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
+
+	if str(def.get("piece_kind", "")) == PILLAR_KIND and _pillar_at(cfg, spot, rows):
+		return "close"   # one pillar to a point (the server says the same)
 
 	if str(def.get("attach_to", "")) == "fire":
 		var over_fire: bool = false
