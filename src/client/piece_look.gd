@@ -3032,7 +3032,10 @@ static func trough(kind: String = "wood") -> Node3D:
 		_:
 			_box(root, Vector3(2.0, 0.56, 0.7), Vector3(0.0, 0.28, 0.0), _stone)
 			_box(root, Vector3(1.8, 0.02, 0.5), Vector3(0.0, 0.565, 0.0), hollow)
-			_box(root, Vector3(2.04, 0.05, 0.74), Vector3(0.0, 0.575, 0.0), _flag)
+			for z in [-0.31, 0.31]:
+				_box(root, Vector3(2.04, 0.05, 0.12), Vector3(0.0, 0.575, z), _flag)              # the capstones, a rim round the hollow
+			for x in [-0.96, 0.96]:
+				_box(root, Vector3(0.12, 0.05, 0.5), Vector3(x, 0.575, 0.0), _flag)
 			_solid(root, Vector3(2.0, 0.6, 0.7), Vector3(0.0, 0.3, 0.0))
 
 	return root
