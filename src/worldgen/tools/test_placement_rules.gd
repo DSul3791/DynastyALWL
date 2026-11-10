@@ -306,14 +306,14 @@ func _init() -> void:
 
 	check(saw_id >= 0 and items.wheel_percent(items._items[saw_id]) == 60, "the placed sawmill's wheel gives 60 %% at 600 W")
 	check(plain_id >= 0 and items.wheel_percent(items._items[plain_id]) == -1, "a foundation has no wheel share (-1)")
-	var rows: Array = []
-	items.send_world_items = func(_p, added, _r): rows.append_array(added)
+	var sent_rows: Array = []
+	items.send_world_items = func(_p, added, _r): sent_rows.append_array(added)
 	items._known[2] = {}
 	items._sync_world_items()
 	var saw_row_wheel: int = -2
 	var other_rows_wheel: int = 0
 
-	for row in rows:
+	for row in sent_rows:
 		if typeof(row[5]) != TYPE_DICTIONARY or not (row[5] as Dictionary).has("wheel"):
 			continue
 
