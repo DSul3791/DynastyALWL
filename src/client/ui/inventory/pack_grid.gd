@@ -21,6 +21,7 @@ var _slot_scroll: ScrollContainer   # holds the slot grid
 var info: InfoStrip                 # the item under the pointer, or the selected one (redesign 4.1)
 var _last_numbers: PackedInt32Array = PackedInt32Array()   # the pack at the last refresh, to see what just arrived
 var _last_counts: PackedInt32Array = PackedInt32Array()
+var station: Dictionary = {}         # what the station here can use (inventory_view.station_use): item number -> StationUse.FUEL or INPUT
 var _crafted: Dictionary = {}        # item number a queued craft gives -> msec it was last seen in the queue (its arrival flies in)
 const CRAFT_FLY_WINDOW_MS := 30000
 
@@ -137,6 +138,7 @@ func fit_rows(room: Vector2) -> void:
 
 # The slots: arranged by the sort, then each one's text, bars, tooltip and whether the search shows it.
 func refresh() -> void:
+	station = view.station_use() if view.has_method("station_use") else {}
 	arrange_slots()
 
 	if view._weight_label != null:
@@ -300,6 +302,7 @@ func _refresh_look_slot(i: int, filter: String) -> void:
 	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], "")
 	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
 	slot.set_favourite(view.inventory.is_fav(i))
+	slot.set_station_glow(number != 0 and station.has(number))   # the station here can use it (Dave 10 Nov 2026)
 	slot.set_linked_key(view.linked_key(i))
 	_note_arrival(i, slot, number)
 	slot.visible = (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
@@ -351,7 +354,7 @@ func _matches(text: String, filter: String) -> bool:
 
 
 # The slot buttons keep their slot (clicks, moves and the hotbar are unchanged); only where they sit in the grid
-# changes. Empty slots go last. Unsorted is the order the item kinds were picked up in.
+# changes. Empty slots go last. Unsorted is the order the item kinds were picked up in. At a station what it can use comes first (station_use.gd).
 func arrange_slots() -> void:
 	if view._panel == null or view._buttons.is_empty():
 		return
@@ -386,6 +389,13 @@ func arrange_slots() -> void:
 
 		if empty_a:
 			return a < b
+
+		# At a station (Dave 10 Nov 2026): what it burns first, then what it takes in, then the rest; each group keeps the chosen sort.
+		var group_a: int = int(station.get(view.inventory.numbers[a], 2))
+		var group_b: int = int(station.get(view.inventory.numbers[b], 2))
+
+		if group_a != group_b:
+			return group_a < group_b
 
 		var ka: Variant = key.call(a)
 		var kb: Variant = key.call(b)

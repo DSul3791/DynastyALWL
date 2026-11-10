@@ -25,6 +25,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
@@ -34,6 +35,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
+const FIRE_USE_M := 4.5                 # a fire this near is a station the pack sorts for (station_use; the craft list's campfire reach too)
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
 var open: bool = false
@@ -3065,6 +3067,54 @@ func _lit_fire_near(pos: Vector3, r: float) -> bool:
 			return true
 
 	return false
+
+
+# What the station you stand at can use (station_use.gd, Dave 10 Nov 2026): item number -> StationUse.FUEL or INPUT, for the pack's order and its
+# golden line. Every station here counts: a fire within FIRE_USE_M (any campfire state, lit, laid or cold), and each structure within its own
+# reach_m with its "station", the stations it stands in for ("also") and its own "fuel". {} with the pack shut or away from every station.
+func station_use() -> Dictionary:
+	if not open or not _player_position.is_valid():
+		return {}
+
+	var here: Vector3 = _player_position.call()
+	var stations: Array = []
+	var fire: bool = false
+	var fuels: Array = []
+
+	for id in _world:
+		var state: int = int(_world[id]["state"])
+
+		if state == 0:
+			continue
+
+		var away: float = here.distance_to(_world[id]["pos"])
+
+		if StructureLook.CAMPFIRE_STATES.has(state):
+			if away <= FIRE_USE_M:
+				fire = true
+
+				if not stations.has("campfire"):
+					stations.append("campfire")
+
+			continue
+
+		var def: Dictionary = _structure_by_state(state)
+
+		if def.is_empty() or away > float(def.get("reach_m", 3.0)):
+			continue
+
+		for station in [str(def.get("station", ""))] + (def.get("also", {}) as Dictionary).keys():
+			if str(station) != "" and not stations.has(str(station)):
+				stations.append(str(station))
+
+		if str(def.get("fuel", "")) != "" and not fuels.has(str(def["fuel"])):
+			fuels.append(str(def["fuel"]))
+
+	if (fire or not fuels.is_empty()) and _cooking_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
+		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
+
+	return StationUse.usable(stations, fire, fuels, recipes, table, _cooking_cfg)
 
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
