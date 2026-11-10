@@ -2010,7 +2010,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": true
 		},
@@ -2069,7 +2070,13 @@
 				"Used in Wooden - Cold frame",
 				"Used in Wooden - Compost bin",
 				"Used in Wooden - Garden plot",
-				"Used in Wooden - Trellis"
+				"Used in Wooden - Trellis",
+				"Used in Log - Trough",
+				"Used in Wooden - Channel",
+				"Used in Wooden - Channel corner",
+				"Used in Wooden - Channel tee",
+				"Used in Wooden - Hand pump",
+				"Used in Wooden - Trough"
 			],
 			"obtainable_now": true
 		},
@@ -2359,7 +2366,15 @@
 				"Used in Wooden - Cold frame",
 				"Used in Wooden - Compost bin",
 				"Used in Wooden - Garden plot",
-				"Used in Wooden - Planter box"
+				"Used in Wooden - Planter box",
+				"Used in Stone - Well",
+				"Used in Wooden - Channel",
+				"Used in Wooden - Channel corner",
+				"Used in Wooden - Channel tee",
+				"Used in Wooden - Hand pump",
+				"Used in Wooden - Sluice",
+				"Used in Wooden - Trough",
+				"Used in Stone - Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -2412,7 +2427,12 @@
 				"Used in Iron - Lantern",
 				"Used in Iron - Torch stand",
 				"Used in Iron - Wall lantern",
-				"Used in Stone - Torch pillar"
+				"Used in Stone - Torch pillar",
+				"Used in Iron - Hand pump",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Pipe",
+				"Used in Iron - Pipe elbow",
+				"Used in Iron - Tap"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2492,7 +2512,8 @@
 				"Used in Clay mortar",
 				"Used to build Stone forge",
 				"Used to build Brick oven",
-				"Used to build Clay hearth"
+				"Used to build Clay hearth",
+				"Used in Clay pipe"
 			],
 			"obtainable_now": true
 		},
@@ -2549,7 +2570,9 @@
 			"how_to_get": [
 				"Craft: 6 Plank, 2 Twine"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Stone - Well"
+			],
 			"obtainable_now": true
 		},
 		"waterskin": {
@@ -2581,7 +2604,10 @@
 				"Used in Hide - Gloves",
 				"Used in Hide glue",
 				"Used in Wooden - Chair",
-				"Used in Iron - Chair"
+				"Used in Iron - Chair",
+				"Used in Iron - Hand pump",
+				"Used in Wooden - Hand pump",
+				"Used in Iron - Deep-well pump"
 			],
 			"obtainable_now": true
 		},
@@ -2593,7 +2619,8 @@
 				"Craft: 4 Twine"
 			],
 			"used_for": [
-				"Used in Hide - Backpack"
+				"Used in Hide - Backpack",
+				"Used in Stone - Well"
 			],
 			"obtainable_now": true
 		},
@@ -3203,7 +3230,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3252,7 +3280,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3301,7 +3330,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3350,7 +3380,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3399,7 +3430,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3448,7 +3480,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3497,7 +3530,8 @@
 				"Used in Log - Bench",
 				"Used in Log - Table",
 				"Used in Log - Stairs",
-				"Used in Wooden - Torch post"
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3906,7 +3940,14 @@
 				"Used in Stone - Torch pillar",
 				"Used in Brick - Garden plot",
 				"Used in Stone - Garden plot",
-				"Used in Stone - Planter"
+				"Used in Stone - Planter",
+				"Used in Stone - Well",
+				"Used in Stone - Channel",
+				"Used in Stone - Channel corner",
+				"Used in Stone - Channel tee",
+				"Used in Stone - Cistern",
+				"Used in Stone - Raised cistern",
+				"Used in Stone - Trough"
 			],
 			"obtainable_now": true
 		},
@@ -4019,7 +4060,9 @@
 				"Used in Wooden - Barrel",
 				"Used in Wooden - Cupboard",
 				"Used in Iron - Doorway",
-				"Used in Iron - Railing"
+				"Used in Iron - Railing",
+				"Used in Wooden - Hand pump",
+				"Used in Iron - Deep-well pump"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4044,7 +4087,14 @@
 				"Used in Stone - Lamp post",
 				"Used in Stone - Torch pillar",
 				"Used in Stone - Garden plot",
-				"Used in Stone - Planter"
+				"Used in Stone - Planter",
+				"Used in Stone - Well",
+				"Used in Stone - Channel",
+				"Used in Stone - Channel corner",
+				"Used in Stone - Channel tee",
+				"Used in Stone - Cistern",
+				"Used in Stone - Raised cistern",
+				"Used in Stone - Trough"
 			],
 			"obtainable_now": true
 		},
@@ -4091,7 +4141,11 @@
 				"Used in Wooden - Cupboard",
 				"Used in Iron - Doorway",
 				"Used in Steel - Doorway",
-				"Used in Wooden - Double doorway"
+				"Used in Wooden - Double doorway",
+				"Used in Iron - Hand pump",
+				"Used in Wooden - Sluice",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Tap"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -8653,6 +8707,416 @@
 			"name": "Wooden - Cold frame",
 			"kind": "structure",
 			"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_well_kit": {
+			"name": "Stone well",
+			"kind": "placeable",
+			"description": "A stone well with a windlass and bucket. E draws ten litres.",
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Cobblestone, 8 Clay mortar, 4 Plank, 1 Rope, 1 Bucket"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_well": {
+			"name": "Stone - Well",
+			"kind": "structure",
+			"description": "A stone well with a windlass and bucket. E draws ten litres.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_hand_pump_kit": {
+			"name": "Wooden hand pump",
+			"kind": "placeable",
+			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 20 Nails, 2 Twine, 1 Hide"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_hand_pump": {
+			"name": "Wooden - Hand pump",
+			"kind": "structure",
+			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hand_pump_kit": {
+			"name": "Iron hand pump",
+			"kind": "placeable",
+			"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Iron ingot, 1 Hide, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hand_pump": {
+			"name": "Iron - Hand pump",
+			"kind": "structure",
+			"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_trough_kit": {
+			"name": "Log trough",
+			"kind": "placeable",
+			"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_trough": {
+			"name": "Log - Trough",
+			"kind": "structure",
+			"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_trough_kit": {
+			"name": "Wooden trough",
+			"kind": "placeable",
+			"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_trough": {
+			"name": "Wooden - Trough",
+			"kind": "structure",
+			"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_kit": {
+			"name": "Wooden channel",
+			"kind": "placeable",
+			"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel": {
+			"name": "Wooden - Channel",
+			"kind": "structure",
+			"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_corner_kit": {
+			"name": "Wooden channel corner",
+			"kind": "placeable",
+			"description": "A flume that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_corner": {
+			"name": "Wooden - Channel corner",
+			"kind": "structure",
+			"description": "A flume that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_tee_kit": {
+			"name": "Wooden channel tee",
+			"kind": "placeable",
+			"description": "A flume that splits its water two ways.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_tee": {
+			"name": "Wooden - Channel tee",
+			"kind": "structure",
+			"description": "A flume that splits its water two ways.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_sluice_kit": {
+			"name": "Wooden sluice",
+			"kind": "placeable",
+			"description": "A flume with a gate. E opens or shuts it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_sluice": {
+			"name": "Wooden - Sluice",
+			"kind": "structure",
+			"description": "A flume with a gate. E opens or shuts it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe": {
+			"name": "Clay pipe",
+			"kind": "material",
+			"description": "A fired clay pipe section. Two make a length of closed water pipe.",
+			"how_to_get": [
+				"Craft at a campfire: 3 Clay"
+			],
+			"used_for": [
+				"Used in Clay - Pipe",
+				"Used in Clay - Pipe elbow",
+				"Used in Clay - Pipe tee"
+			],
+			"obtainable_now": true
+		},
+		"stone_trough_kit": {
+			"name": "Stone trough",
+			"kind": "placeable",
+			"description": "A carved stone trough that holds two hundred litres.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Cobblestone, 3 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_trough": {
+			"name": "Stone - Trough",
+			"kind": "structure",
+			"description": "A carved stone trough that holds two hundred litres.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_kit": {
+			"name": "Stone channel",
+			"kind": "placeable",
+			"description": "An open stone channel, two metres long. Carries more than a flume.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel": {
+			"name": "Stone - Channel",
+			"kind": "structure",
+			"description": "An open stone channel, two metres long. Carries more than a flume.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_corner_kit": {
+			"name": "Stone channel corner",
+			"kind": "placeable",
+			"description": "A stone channel that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_corner": {
+			"name": "Stone - Channel corner",
+			"kind": "structure",
+			"description": "A stone channel that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_tee_kit": {
+			"name": "Stone channel tee",
+			"kind": "placeable",
+			"description": "A stone channel that splits its water two ways.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_tee": {
+			"name": "Stone - Channel tee",
+			"kind": "structure",
+			"description": "A stone channel that splits its water two ways.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_run_kit": {
+			"name": "Clay pipe",
+			"kind": "placeable",
+			"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Clay pipe"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_run": {
+			"name": "Clay - Pipe",
+			"kind": "structure",
+			"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_elbow_kit": {
+			"name": "Clay pipe elbow",
+			"kind": "placeable",
+			"description": "A clay pipe that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Clay pipe"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_elbow": {
+			"name": "Clay - Pipe elbow",
+			"kind": "structure",
+			"description": "A clay pipe that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_tee_kit": {
+			"name": "Clay pipe tee",
+			"kind": "placeable",
+			"description": "A clay pipe that splits its water two ways.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Clay pipe"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_tee": {
+			"name": "Clay - Pipe tee",
+			"kind": "structure",
+			"description": "A clay pipe that splits its water two ways.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe_kit": {
+			"name": "Iron pipe",
+			"kind": "placeable",
+			"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe": {
+			"name": "Iron - Pipe",
+			"kind": "structure",
+			"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe_elbow_kit": {
+			"name": "Iron pipe elbow",
+			"kind": "placeable",
+			"description": "An iron pipe that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe_elbow": {
+			"name": "Iron - Pipe elbow",
+			"kind": "structure",
+			"description": "An iron pipe that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_tap_kit": {
+			"name": "Iron tap",
+			"kind": "placeable",
+			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Iron ingot, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_tap": {
+			"name": "Iron - Tap",
+			"kind": "structure",
+			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_deep_well_pump_kit": {
+			"name": "Iron deep-well pump",
+			"kind": "placeable",
+			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Iron ingot, 2 Hide, 2 Hinges, 12 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_deep_well_pump": {
+			"name": "Iron - Deep-well pump",
+			"kind": "structure",
+			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_cistern_kit": {
+			"name": "Stone cistern",
+			"kind": "placeable",
+			"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Cobblestone, 6 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_cistern": {
+			"name": "Stone - Cistern",
+			"kind": "structure",
+			"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_raised_cistern_kit": {
+			"name": "Stone raised cistern",
+			"kind": "placeable",
+			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"how_to_get": [
+				"Build with a hammer (press R): 28 Cobblestone, 8 Clay mortar, 6 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_raised_cistern": {
+			"name": "Stone - Raised cistern",
+			"kind": "structure",
+			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
