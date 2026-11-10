@@ -132,12 +132,19 @@ func _init() -> void:
 	check(not tiers.station_near(1, "brick_forge", 3), "no anvil yet: the brick forge is level 2")
 	var anvil: int = tiers.table.number_of("iron_anvil_kit")
 	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
-	tiers.place_item(1, anvil, spots[2] + Vector3(0.0, 0.0, 2.0), 0)
+	tiers.place_item(1, anvil, spots[2] + Vector3(0.0, 0.0, 3.0), 0)   # outside the 2.5 m structure gap, inside the 5 m add-on reach
+	var anvils: int = 0
+
+	for id in tiers._items:
+		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "iron_anvil":
+			anvils += 1
+
+	check(anvils == 1, "the anvil stands beside the brick forge (%d)" % anvils)
 	check(tiers.station_near(1, "brick_forge", 3) and not tiers.station_near(1, "brick_forge", 4), "an anvil beside it makes the brick forge level 3, for steel")
 	check(tiers.station_near(1, "forge", 1) and not tiers.station_near(1, "forge", 2), "and it is still a level 1 forge for bronze, no higher")
 	tiers.report_position(1, spots[1] - Vector3(2.0, 0.0, 0.0))
 	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
-	tiers.place_item(1, anvil, spots[1] + Vector3(0.0, 0.0, 2.0), 0)
+	tiers.place_item(1, anvil, spots[1] + Vector3(0.0, 0.0, 3.0), 0)
 	check(not tiers.station_near(1, "forge", 2) and not tiers.station_near(1, "brick_forge", 1), "an anvil beside a stone forge does nothing: the stone forge never reaches iron")
 
 	print("station tests: %d failures" % failures)
