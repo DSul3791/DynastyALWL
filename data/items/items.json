@@ -2877,7 +2877,7 @@
 		"nails": {
 			"number": 228,
 			"name": "Nails",
-			"description": "Small iron nails. Fix boards in builds.",
+			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 200,
@@ -2915,7 +2915,7 @@
 		"hinges": {
 			"number": 232,
 			"name": "Hinges",
-			"description": "A pair of iron hinges for a door.",
+			"description": "A pair of iron hinges for a door, a gate or a lid.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 40,
@@ -3830,7 +3830,7 @@
 		"candle": {
 			"number": 311,
 			"name": "Candle",
-			"description": "A wick dipped in fat. A small steady light for indoors.",
+			"description": "A wick dipped in tallow. A small steady light, and what a wooden lantern burns.",
 			"kind": "tool",
 			"tool_class": "candle",
 			"tier": 1,
@@ -7627,7 +7627,7 @@
 			"lamp_oil": {
 				"number": 667,
 				"name": "Lamp oil",
-				"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
+				"description": "Oil from herring, linseed or walnuts. Burns three game days in an iron lantern.",
 				"kind": "material",
 				"stack": 10,
 				"look_alikes": [],

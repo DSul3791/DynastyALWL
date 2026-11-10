@@ -1,5 +1,5 @@
 {
-	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status` (planned: not obtainable in the game yet; retired: replaced by another item) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. `chapters` are player-facing reading pages (ore: Morgan, 10 Nov 2026, from Sonny's ground_resources.md); a section about something not in the game yet stays out until it is. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
+	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status` (planned: not obtainable in the game yet; retired: replaced by another item) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. `chapters` are player-facing reading pages (ore: Morgan, 10 Nov 2026, from Sonny's ground_resources.md; lights and hardware: Jamie, 10 Nov 2026, reviewed by Morgan); a section about something not in the game yet stays out until it is. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
 	"items": {
 		"acorns": {
 			"name": "Acorns",
@@ -4210,7 +4210,7 @@
 		"nails": {
 			"name": "Nails",
 			"kind": "material",
-			"description": "Small iron nails. Fix boards in builds.",
+			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -4297,7 +4297,7 @@
 		"hinges": {
 			"name": "Hinges",
 			"kind": "material",
-			"description": "A pair of iron hinges for a door.",
+			"description": "A pair of iron hinges for a door, a gate or a lid.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -5130,7 +5130,7 @@
 		"candle": {
 			"name": "Candle",
 			"kind": "tool",
-			"description": "A wick dipped in fat. A small steady light for indoors.",
+			"description": "A wick dipped in tallow. A small steady light, and what a wooden lantern burns.",
 			"how_to_get": [
 				"Craft: 1 Tallow, 1 Plant fibre"
 			],
@@ -8508,7 +8508,7 @@
 		"lamp_oil": {
 			"name": "Lamp oil",
 			"kind": "material",
-			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
+			"description": "Oil from herring, linseed or walnuts. Burns three game days in an iron lantern.",
 			"how_to_get": [
 				"Craft at a campfire pot: 3 Herring",
 				"Craft at an oil press: 4 Linseed",
@@ -10914,6 +10914,46 @@
 				{
 					"title": "Caves",
 					"text": "Caves are cool, dark and quiet, and cave boulders can be outcrops too. Bring a torch. Wet ground and rockfall are real dangers, so watch your head."
+				}
+			]
+		},
+		"lights": {
+			"title": "Lights you carry",
+			"text": "Night is long and the dark is real. A light in your off hand lets you work, walk and keep your head. Each kind burns for a while and then needs feeding.",
+			"sections": [
+				{
+					"title": "Torch",
+					"text": "A stick, a twist of fibre and pitch. It throws a wide light, wider than a wooden lantern's, but it burns out in half a game day, and rain or water puts it out."
+				},
+				{
+					"title": "Wooden - Lantern",
+					"text": "A plank frame with two horn panes and a candle inside, made at a workbench. Its light is smaller than a torch's, but it keeps burning in the rain. A candle lasts one game day. When it burns down, the lantern goes dark. Light it again, and it takes a fresh candle from your pack. Water still puts it out, so do not wade with it."
+				},
+				{
+					"title": "Iron - Lantern",
+					"text": "Iron and horn panes, burning lamp oil, made at a brick forge. It throws more light than a torch, and well over a wooden lantern, and one fill of oil lasts three game days. Rain does not trouble it. It takes iron, and iron is hard to come by near your first camp."
+				},
+				{
+					"title": "Candle",
+					"text": "One tallow and one plant fibre make three candles, by hand. A candle gives a small, steady light for indoors and keeps a wooden lantern going."
+				},
+				{
+					"title": "Lamp oil",
+					"text": "Three herring in a stoppered campfire pot render one flask of oil. Once you have an oil press, four linseed or four walnuts do the same. Lamp oil feeds the iron lantern, and the iron hanging lanterns, wall lanterns and lamp posts too."
+				}
+			]
+		},
+		"hardware": {
+			"title": "Building and hardware",
+			"text": "Most early building needs nothing but wood, stone and twine. Gates, doors that swing, chests with lids, barrels and crates need hardware: nails to hold the boards and hinges to hang them.",
+			"sections": [
+				{
+					"title": "Bronze nails and Bronze hinges",
+					"text": "The first metal hardware. At a Stone - Forge, one bronze ingot makes a hundred nails or twenty hinges. Every gate, door, chest and cupboard that asks for nails or hinges takes bronze ones."
+				},
+				{
+					"title": "Nails and Hinges (iron)",
+					"text": "Iron does the same job, made at a brick forge from an iron ingot. Where a cost says nails or hinges, any kind will do. Iron bands for fortified walls have no bronze stand-in: those wait for iron."
 				}
 			]
 		}
