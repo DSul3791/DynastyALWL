@@ -105,6 +105,40 @@ def carried_lantern(iron):
     return root
 
 
+def fish_trap_kit():
+    """Fish trap (the carried kit, #941): the trap's own cone, carried as it is made, without the stakes it is set with."""
+    rt = look_runtime
+    root = rt.build("fish_trap")
+    cone = root.children[0]
+    root.children = [cone]
+    cone.position = rt.Vector3(0.0, 0.2, 0.0)
+    cone.rotation = rt.Vector3(0.0, 0.0, 0.0)
+    return root
+
+
+def bird_trap_kit():
+    """Bird trap (the carried kit, #941): the cage's sticks bundled flat in two layers, tied twice with twine, the trigger's three sticks on top."""
+    rt = look_runtime
+    rt.looks()
+    root = rt.Node3D()
+    twine = rt._tone_mat(rt.Color(0.7, 0.58, 0.36))
+
+    for k in range(7):
+        rt._box(root, rt.Vector3(0.56 - 0.03 * (k % 3), 0.04, 0.04), rt.Vector3(0.0, 0.02 + 0.04 * (k // 4), -0.12 + 0.04 * (k % 4) + 0.02 * (k // 4)), rt._log)
+
+    for x in (-0.16, 0.16):
+        rt._box(root, rt.Vector3(0.03, 0.1, 0.19), rt.Vector3(x, 0.04, -0.04), twine)
+
+    for k, (a, b) in enumerate((((-0.2, 0.1, -0.08), (0.18, 0.1, 0.02)), ((-0.12, 0.11, 0.04), (0.14, 0.11, -0.1)), ((-0.04, 0.12, -0.12), (0.06, 0.12, 0.08)))):
+        rt._rod(root, rt.Vector3(*a), rt.Vector3(*b), 0.025, rt._frame)
+
+    return root
+
+
+ITEMS["fish_trap"] = ("fish_trap", STATION_VIEW)   # traps (#941): the placed pieces and their carried kits
+ITEMS["bird_trap"] = ("bird_trap", STATION_VIEW)
+ITEMS["fish_trap_kit"] = (fish_trap_kit, STATION_VIEW)
+ITEMS["bird_trap_kit"] = (bird_trap_kit, rot_y(math.radians(-20.0)) @ rot_x(math.radians(20.0)))
 ITEMS["wooden_lantern"] = (lambda: carried_lantern(False), STATION_VIEW)
 ITEMS["iron_lantern"] = (lambda: carried_lantern(True), STATION_VIEW)
 NAMES = tuple(ITEMS)

@@ -181,6 +181,8 @@ const LOOKS := {
 	"tusk_mount": {"builder": "tusk_mount", "args": []},
 	"clay_bloomery": {"builder": "clay_bloomery", "args": []},
 	"stonecutters_bench": {"builder": "stonecutters_bench", "args": []},
+	"fish_trap": {"builder": "fish_trap", "args": []},
+	"bird_trap": {"builder": "bird_trap", "args": []},
 	"wooden_channel": {"builder": "conduit", "args": ["wood", "straight"]},
 	"wooden_channel_corner": {"builder": "conduit", "args": ["wood", "corner"]},
 	"wooden_channel_tee": {"builder": "conduit", "args": ["wood", "tee"]},

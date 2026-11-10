@@ -3479,3 +3479,58 @@ static func stonecutters_bench() -> Node3D:
 
 	_solid(root, Vector3(2.0, 0.8, 1.0), Vector3(0.0, 0.4, 0.0))
 	return root
+
+
+# --- Traps (item system, Jamie's #941, 10 Nov 2026): placed from their kits like the snare. Free-placed, standing on y = 0, not solid.
+
+# The Fish trap, 0.8 x 0.5 and 0.4 high, set on the bed in 0.3 m of water or more: a cone of woven sticks lying along X with its wide mouth at +X
+# (the funnel inside it dark) and its narrow tail at -X tied off, two hoops round it, and two stakes either side holding it against the current
+# with a cord from one of them.
+static func fish_trap() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var wicker: StandardMaterial3D = _tone_mat(Color(0.56, 0.43, 0.25))
+	var band: StandardMaterial3D = _tone_mat(Color(0.4, 0.29, 0.16))
+	var cone: Node3D = Node3D.new()
+	cone.position = Vector3(0.0, 0.13, 0.0)
+	cone.rotation = Vector3(0.0, 0.0, 0.22)                                                         # tipped so the cone's underside lies on the bed
+	root.add_child(cone)
+	_cyl(cone, 0.06, 0.62, Vector3.ZERO, wicker, 8, 0.2).rotation = Vector3(0.0, 0.0, -PI * 0.5)    # the cone, wide end at +X
+	_cyl(cone, 0.05, 0.18, Vector3(0.23, 0.0, 0.0), _pot, 8, 0.14).rotation = Vector3(0.0, 0.0, -PI * 0.5)   # the funnel in its mouth
+	_cyl(cone, 0.07, 0.04, Vector3(-0.32, 0.0, 0.0), band, 6).rotation = Vector3(0.0, 0.0, -PI * 0.5)      # the tie at the tail
+
+	for at in [[-0.1, 0.112], [0.15, 0.168]]:
+		_cyl(cone, float(at[1]), 0.035, Vector3(float(at[0]), 0.0, 0.0), band, 8).rotation = Vector3(0.0, 0.0, -PI * 0.5)   # the hoops
+
+	for x in [-0.2, 0.2]:
+		_cyl(root, 0.022, 0.42, Vector3(x, 0.21, 0.21), _log, 4)                                    # the stakes
+	_rod(root, Vector3(-0.2, 0.38, 0.21), Vector3(-0.08, 0.2, 0.1), 0.012, _frame)                   # the cord
+	return root
+
+
+# The Bird trap, 0.6 x 0.6 and 0.35 high: a square cage of sticks laid log-cabin fashion and lashed, two sticks across its top, its back edge on the
+# ground and its front edge propped up on a figure-4 trigger, a little heap of grain under it for the bait.
+static func bird_trap() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var cage: Node3D = Node3D.new()
+	cage.position = Vector3(0.0, 0.0, -0.25)
+	cage.rotation = Vector3(-0.3, 0.0, 0.0)                                                         # its front raised on the trigger
+	root.add_child(cage)
+
+	for k in 4:
+		var half: float = 0.25 - 0.02 * float(k)
+		var y: float = 0.02 + 0.06 * float(k)
+		for z in [0.25 - half, 0.25 + half]:
+			_box(cage, Vector3(half * 2.0 + 0.04, 0.035, 0.035), Vector3(0.0, y, z), _log)
+		for x in [-half, half]:
+			_box(cage, Vector3(0.035, 0.035, half * 2.0 + 0.04), Vector3(x, y + 0.035, 0.25), _log)
+
+	for x in [-0.08, 0.08]:
+		_box(cage, Vector3(0.035, 0.035, 0.4), Vector3(x, 0.235, 0.25), _log)                     # the top
+
+	_rod(root, Vector3(0.0, 0.0, 0.2), Vector3(0.0, 0.15, 0.2), 0.025, _frame)                      # the trigger's upright
+	_rod(root, Vector3(-0.12, 0.04, 0.24), Vector3(0.06, 0.16, 0.18), 0.02, _frame)                 # its diagonal
+	_rod(root, Vector3(0.0, 0.1, 0.2), Vector3(0.0, 0.09, 0.0), 0.02, _frame)                       # its bait stick, into the cage
+	_dome(root, 0.07, Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.5, 1.0), _tone_mat(Color(0.82, 0.68, 0.36)), 6, 2)   # the grain
+	return root
