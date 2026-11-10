@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compose the icons of the ingredient groups from their members' icons (Kathleen, 10 Nov 2026).
 
-A group (data/items/wood_species.json ingredient_groups: fish, mushrooms, nuts, berries, fuel, pitch) is never given itself, but a
+A group (data/items/wood_species.json ingredient_groups: fish, mushrooms, nuts, berries, fuel, pitch, knife, fruit) is never given itself, but a
 recipe that asks for it shows it in its Needs well, so it needs an icon or the well shows the "?" tile. A group's icon is two or
 three of its members' own icons fanned from the back left to the front right, each at 70 %, the ones behind a little darker, so it
 reads as "any of these" and always matches the members' art. Run after the members are painted or baked.
@@ -20,6 +20,9 @@ GROUPS = {
 	"berries": ("cloudberries", "blueberries", "raspberries"),
 	"fuel": ("coal", "charcoal"),
 	"pitch": ("animal_fat", "resin", "pine_tar"),
+	"knife": ("stone_knife", "obsidian_knife", "bronze_knife"),   # any knife (#941)
+	"fruit": ("plums", "pear_summer", "apple_summer"),   # any juicy fruit or berry (#940)
+	"vegetable": ("cabbage", "beet", "carrot"),   # any root or cabbage-type vegetable (#955)
 }
 NAMES = tuple(GROUPS)
 SIZE = 128
