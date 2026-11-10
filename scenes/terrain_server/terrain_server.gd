@@ -1287,14 +1287,8 @@ func _update_water_live() -> void:
 
 	_water_live_next = now + 2000
 
-	var players: PackedVector2Array = PackedVector2Array()
-
 	for position in items.peer_positions():
 		_water_seen[generator.tile_of(position.x, position.z)] = now
-		players.append(Vector2(position.x, position.z))
-
-	if water_live.has_method("set_players"):
-		water_live.set_players(players)   # Sullivan water: a 2 m region follows the first player near water
 
 	var tiles: Array = []
 
