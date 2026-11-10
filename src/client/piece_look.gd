@@ -3935,14 +3935,15 @@ static func concrete_foundation(banded: bool = false) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0), _concrete)
-	_box(root, Vector3(4.12, 0.2, 4.12), Vector3(0.0, -0.1, 0.0), _concrete)           # the footing at the ground line
+	_box(root, Vector3(4.12, 1.7, 4.12), Vector3(0.0, -0.85, 0.0), _concrete)          # the footing, from the ground line down to the body's foot: no ledge to read as a gap on a slope
 	_box(root, Vector3(4.04, 0.05, 4.04), Vector3(0.0, 0.28, 0.0), _flag)              # the chamfered top edge
 	_box(root, Vector3(4.0, 0.01, 0.03), Vector3(0.0, 0.306, 0.0), _pot)              # the cast joints
 	_box(root, Vector3(0.03, 0.01, 4.0), Vector3(0.0, 0.306, 0.0), _pot)
 
 	if banded:
-		_iron_bands(root, Vector3(4.12, 0.0, 4.12), Vector3.ZERO, [0.12, -0.5])
-		_box(root, Vector3(4.24, 0.24, 4.24), Vector3(0.0, -0.32, 0.0), _concrete)          # a second, wider footing step: the base is battered out
+		_iron_bands(root, Vector3(4.12, 0.0, 4.12), Vector3.ZERO, [0.12])
+		_box(root, Vector3(4.24, 1.5, 4.24), Vector3(0.0, -0.95, 0.0), _concrete)          # a second, wider footing step, battered out and running down to the body's foot
+		_iron_bands(root, Vector3(4.24, 0.0, 4.24), Vector3.ZERO, [-0.5])                   # the lower band rides the wider step
 		_bolts(root, [-1.2, 0.0, 1.2], 0.12, 2.08)
 		_bolts(root, [-1.2, 0.0, 1.2], 0.12, 2.08, true)
 
