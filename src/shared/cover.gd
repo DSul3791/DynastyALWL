@@ -52,14 +52,14 @@ const ROOF_BELOW_M := 0.5   # a structure's roof covers from this far under its 
 
 
 # The roof of a placed structure: the box from its structures.json "half_x", "half_z" and "height" (a lean-to, every tier's roof piece), turned
-# with it, from ROOF_BELOW_M under its base `at` up to its height. [] for a structure that is no roof. Client and server both add exactly this,
+# with it, from ROOF_BELOW_M under its `base` up to its height. [] for a structure that is no roof. Client and server both add exactly this,
 # so the cover a player sees (rain stops, the torch burns) and the cover the server rules on cannot drift (Dave 10 Nov 2026: in a lean-to the
 # client's old hard-coded box was 1.3 x 1.7 m and 1.5 m tall, the server's 2.08 x 2.72 m and 2.4 m, so the eye was "out in the rain").
-static func structure_roof(def: Dictionary, at: Vector3, yaw: float) -> Array:
+static func structure_roof(def: Dictionary, base: Vector3, yaw: float) -> Array:
 	if not def.has("height") or not def.has("half_x") or not def.has("half_z"):
 		return []
 
-	return box_roof(Vector2(at.x, at.z), float(def["half_x"]), float(def["half_z"]), yaw, at.y - ROOF_BELOW_M, at.y + float(def["height"]))
+	return box_roof(Vector2(base.x, base.z), float(def["half_x"]), float(def["half_z"]), yaw, base.y - ROOF_BELOW_M, base.y + float(def["height"]))
 
 
 static func disc_roof(centre: Vector2, radius: float, floor_y: float, top_y: float) -> Array:
