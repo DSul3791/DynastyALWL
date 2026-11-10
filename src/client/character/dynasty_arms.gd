@@ -18,6 +18,16 @@ const ELBOW_BAND := 0.07           # the skin blend reaches this far (fraction o
 const WRIST_BAND := 0.04
 const SKIN_TEXTURE := "res://assets/character/Humanoid/Dynasty_Arm_Skin.png"   # the file's colour texture with its dark olive patches (hair and cloth baked into the atlas: the blotches on the arms) painted over with skin tone
 
+# The hands' grip (Dave 10 Nov 2026, the bow test: "the bow going right through his hand where he should be holding it"). Dave's hands are one rigid open piece, so
+# each arm mesh carries a blend shape, "grip", in which the four fingers bend round a bar across the palm: the left hand closes round the bow's handle, the right
+# hand's fingers hook the string. Hand bone space (the hand hanging down -Y from the wrist, the knuckles across Z, the palm facing +X on the left hand, -X on the
+# right; measured from the parts file). Per side: the palm's side (+1 or -1), the height where the fingers start to bend, the bar's distance out from the fingers'
+# middle, the most the fingers turn (radians). GRIP_AT is where on that bar the bow's grip middle (left) and the string's nock point (right) go: the index finger
+# is at -Z, on top when the bow is up, so the left hand sits a little below the bow's middle (the arrow rests on the index finger) and the right hand's index
+# finger is above the nock.
+const GRIP_CURL := {"l": [1.0, -0.10, 0.032, 2.8], "r": [-1.0, -0.135, 0.014, 2.2]}
+const GRIP_AT := {"l": Vector3(0.032, -0.10, -0.015), "r": Vector3(-0.014, -0.135, -0.02)}
+
 static var _sources: Dictionary = {}         # "r" and "l": the arm's ArrayMesh from the file, read once
 static var _skinned: Dictionary = {}         # "r" and "l": the one skinned mesh per arm, built once
 static var _material: Material
@@ -196,6 +206,26 @@ func _finish() -> void:
 		skeleton.add_child(instance)
 
 
+# The fingers closed round the bow (both hands; held_item.gd _pose_bow) or open (anything else). Only the drawn hands change; a no-op when nothing changes.
+func set_grip(on: bool) -> void:
+	if skeleton == null:
+		return
+
+	for side in ["r", "l"]:
+		var instance: MeshInstance3D = skeleton.get_node_or_null("Dynasty_" + side) as MeshInstance3D
+
+		if instance != null and instance.mesh != null and instance.mesh.get_blend_shape_count() > 0 and instance.get_blend_shape_value(0) != (1.0 if on else 0.0):
+			instance.set_blend_shape_value(0, 1.0 if on else 0.0)
+
+
+# Where `side`'s closed fingers hold the bar (GRIP_AT), in world space, the arms as posed now. The old tube arms (no parts file) have their fist on the hand mount.
+func grip_point(side: String) -> Vector3:
+	if skeleton == null or skeleton.get_node_or_null("Dynasty_" + side) == null:
+		return (hand_mount_l if side == "l" else hand_mount_r).global_position
+
+	return skeleton.global_transform * (skeleton.get_bone_global_pose(_bones["hand_" + side]) * Vector3(GRIP_AT[side]))
+
+
 # The creator's skin colour on the first-person arms too (Kathreen 3 Nov 2026), the same tint as the body (dynasty_body.gd skin_tint): a dark-skinned character had pale arms.
 func _tint_skin(instance: MeshInstance3D) -> void:
 	var g: Dictionary = MyCharacter.genome()
@@ -270,9 +300,17 @@ func _skin_arm(source: ArrayMesh, side: String) -> ArrayMesh:
 
 
 # One skinned surface from _skin_arrays, with the arm material (main thread: it makes a rendering resource).
-static func _mesh_from(arrays: Array) -> ArrayMesh:
+static func _mesh_from(data: Array) -> ArrayMesh:
 	var mesh: ArrayMesh = ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var arrays: Array = data.slice(0, Mesh.ARRAY_MAX)
+	var shapes: Array = []
+
+	if data.size() > Mesh.ARRAY_MAX:
+		mesh.blend_shape_mode = Mesh.BLEND_SHAPE_MODE_NORMALIZED    # the shape holds the bent hand's own positions: weight 1 draws it, 0 the open hand
+		mesh.add_blend_shape("grip")
+		shapes.append(data[Mesh.ARRAY_MAX])
+
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, shapes)
 	mesh.surface_set_material(0, _arm_material())
 	mesh.custom_aabb = AABB(Vector3(-1.2, -1.2, -1.2), Vector3(2.4, 2.4, 2.4))
 	return mesh
@@ -287,7 +325,7 @@ func _skin_arrays(source: ArrayMesh, side: String) -> Array:
 # What _skin_data needs, read from the rig and the source mesh on the main thread: [surface arrays, aabb, bone ids, arm bone rest].
 func _skin_input(source: ArrayMesh, side: String) -> Array:
 	var bone_names: Array = ["arm_" + side, "forearm_" + side, "hand_" + side]
-	return [source.surface_get_arrays(0), source.get_aabb(), [_bones[bone_names[0]], _bones[bone_names[1]], _bones[bone_names[2]]], _global_rest(bone_names[0])]
+	return [source.surface_get_arrays(0), source.get_aabb(), [_bones[bone_names[0]], _bones[bone_names[1]], _bones[bone_names[2]]], _global_rest(bone_names[0]), side, _global_rest(bone_names[2])]
 
 
 # The skinning itself, plain data in and out: safe on a worker thread (no node, no rendering call).
@@ -387,7 +425,64 @@ static func _skin_data(input: Array) -> Array:
 
 	tool.index()
 	tool.generate_tangents()
-	return tool.commit_to_arrays()
+	var done: Array = tool.commit_to_arrays()
+
+	if input.size() > 5:
+		done.append(_grip_shape(done, GRIP_CURL[input[4]], input[5]))     # one extra entry: _mesh_from takes it off as the "grip" blend shape
+
+	return done
+
+
+# The "grip" blend shape of a skinned arm (arrays from _skin_data): the fingers past the bend height wrap round a bar along the hand's Z, `out` metres from their
+# middle on the palm's side; each finger point keeps its distance from the bar, turned by its distance along the finger over `out` (at most `most` radians, then
+# straight on). The thumb (the palm side, beside the index finger, above the fingertips) and everything above the bend stay as they are. Plain data: worker safe.
+static func _grip_shape(arrays: Array, curl: Array, hand_rest: Transform3D) -> Array:
+	var side: float = float(curl[0])
+	var bend_y: float = float(curl[1])
+	var out: float = float(curl[2])
+	var most: float = float(curl[3])
+	var to_hand: Transform3D = hand_rest.affine_inverse()
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var tangents: PackedFloat32Array = arrays[Mesh.ARRAY_TANGENT]
+	var shape_v: PackedVector3Array = verts.duplicate()
+	var shape_n: PackedVector3Array = normals.duplicate()
+	var shape_t: PackedFloat32Array = tangents.duplicate()
+
+	for i in range(verts.size()):
+		var h: Vector3 = to_hand * verts[i]
+		var across: float = h.x * side       # + toward the palm
+		var thumb: bool = h.z < -0.025 and across > 0.035 and h.y > -0.12   # the thumb stands out on the palm side by the index finger
+
+		if h.y >= bend_y or thumb:
+			continue
+
+		var from_bar: float = out - across   # the point's distance from the bar
+		var along: float = bend_y - h.y      # how far down the finger past the bend
+		var turn: float = minf(along / out, most)
+		var beyond: float = maxf(along - out * most, 0.0) * from_bar / out
+		var c: float = cos(turn)
+		var s: float = sin(turn)
+		var bent: Vector3 = Vector3((out - from_bar * c + beyond * s) * side, bend_y - from_bar * s - beyond * c, h.z)
+		shape_v[i] = hand_rest * bent
+		var n: Vector3 = to_hand.basis * normals[i]
+		var n_across: float = n.x * side
+		shape_n[i] = (hand_rest.basis * Vector3((n_across * c - n.y * s) * side, n_across * s + n.y * c, n.z)).normalized()
+
+		if tangents.size() >= (i + 1) * 4:
+			var t: Vector3 = to_hand.basis * Vector3(tangents[i * 4], tangents[i * 4 + 1], tangents[i * 4 + 2])
+			var t_across: float = t.x * side
+			var tt: Vector3 = (hand_rest.basis * Vector3((t_across * c - t.y * s) * side, t_across * s + t.y * c, t.z)).normalized()
+			shape_t[i * 4] = tt.x
+			shape_t[i * 4 + 1] = tt.y
+			shape_t[i * 4 + 2] = tt.z
+
+	var shape: Array = []
+	shape.resize(Mesh.ARRAY_MAX)
+	shape[Mesh.ARRAY_VERTEX] = shape_v
+	shape[Mesh.ARRAY_NORMAL] = shape_n
+	shape[Mesh.ARRAY_TANGENT] = shape_t
+	return shape
 
 
 # The middle of the vertices within `band` of height `y`.

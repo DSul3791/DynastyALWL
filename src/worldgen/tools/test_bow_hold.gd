@@ -8,6 +8,7 @@ extends SceneTree
 const RagdollBody := preload("res://src/client/ragdoll_body.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
+const DynastyArms := preload("res://src/client/character/dynasty_arms.gd")
 
 var failures: int = 0
 
@@ -19,12 +20,12 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-# The hand mount of `side` in camera space, the arms at the camera pose (held_item.gd ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE).
-func _mount_at(arms, side: String) -> Vector3:
+# Where `side`'s closed fingers hold (dynasty_arms.gd GRIP_AT) in camera space, the arms at the camera pose (held_item.gd ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE).
+func _grip_at(arms, side: String) -> Vector3:
 	var rig: Transform3D = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(HeldItem.ARMS_PITCH_DEG)).scaled(Vector3.ONE * HeldItem.ARMS_SCALE), HeldItem.ARMS_POS)
 	var skeleton: Skeleton3D = arms.skeleton
 	var hand: Transform3D = skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side))
-	return rig * (hand * Vector3(0.0, -0.07, 0.0))
+	return rig * (hand * Vector3(DynastyArms.GRIP_AT[side]))
 
 
 func _initialize() -> void:
@@ -38,15 +39,33 @@ func _run() -> void:
 	var player: AnimationPlayer = arms.animation_player
 	check(player.has_animation("bow_draw") and not player.has_animation("bow_idle"), "the arms have the bow clip (the first-person idle is bow_draw at 0, ready to shoot)")
 
-	for step in [[0.0, Vector3(0.015, -0.10, -0.24)], [1.0, Vector3(0.015, -0.10, -0.10)]]:
+	# The bow's plane runs through the eye (the string lies along the stave from the eye), the nock point 3 cm above the grip (ragdoll_body.gd BOW_ARM_L).
+	for step in [[0.0, Vector3(-0.012, -0.070, -0.24)], [1.0, Vector3(-0.012, -0.070, -0.10)]]:
 		player.play("bow_draw")
 		player.seek(float(step[0]) * player.get_animation("bow_draw").length * 0.999, true)
 		player.advance(0.0)
 		await process_frame
-		var left: Vector3 = _mount_at(arms, "l")
-		var right: Vector3 = _mount_at(arms, "r")
-		check(left.distance_to(Vector3(0.015, -0.10, -0.40)) < 0.04, "draw %.0f: the left hand on the grip at arm's length (%.2f, %.2f, %.2f)" % [float(step[0]), left.x, left.y, left.z])
-		check(right.distance_to(step[1]) < 0.04 and absf(right.x - left.x) < 0.03 and absf(right.y - left.y) < 0.03, "draw %.0f: the right hand at (%.2f, %.2f, %.2f), wanted (%.2f, %.2f, %.2f)" % [float(step[0]), right.x, right.y, right.z, step[1].x, step[1].y, step[1].z])
+		var left: Vector3 = _grip_at(arms, "l")
+		var right: Vector3 = _grip_at(arms, "r")
+		check(left.distance_to(Vector3(-0.018, -0.10, -0.40)) < 0.02, "draw %.0f: the left hand closed round the grip at arm's length (%.3f, %.3f, %.3f)" % [float(step[0]), left.x, left.y, left.z])
+		check(right.distance_to(step[1]) < 0.02, "draw %.0f: the right hand's fingers on the string at (%.3f, %.3f, %.3f), wanted (%.3f, %.3f, %.3f)" % [float(step[0]), right.x, right.y, right.z, step[1].x, step[1].y, step[1].z])
+		var plane: Vector3 = Vector3(cos(deg_to_rad(HeldItem.BOW_CANT_DEG)), -sin(deg_to_rad(HeldItem.BOW_CANT_DEG)), 0.0)   # the canted bow's plane through the eye
+		check(absf(left.dot(plane)) < 0.01 and absf(right.dot(plane)) < 0.01, "draw %.0f: grip and string hand in the bow's plane through the eye (%.3f, %.3f)" % [float(step[0]), left.dot(plane), right.dot(plane)])
+
+	# The grip shape (dynasty_arms.gd _grip_shape) on two points of a left hand: a finger point past the bend wraps round the bar at its own distance; the palm stays.
+	var finger: Vector3 = Vector3(0.0, -0.15, 0.02)
+	var palm: Vector3 = Vector3(0.0, -0.05, 0.02)
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([finger, palm])
+	arrays[Mesh.ARRAY_NORMAL] = PackedVector3Array([Vector3(-1.0, 0.0, 0.0), Vector3(-1.0, 0.0, 0.0)])
+	arrays[Mesh.ARRAY_TANGENT] = PackedFloat32Array([0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0])
+	var shape: Array = DynastyArms._grip_shape(arrays, DynastyArms.GRIP_CURL["l"], Transform3D.IDENTITY)
+	var bent: Vector3 = shape[Mesh.ARRAY_VERTEX][0]
+	var bar: Vector3 = DynastyArms.GRIP_AT["l"]
+	check(absf(Vector2(bent.x - bar.x, bent.y - bar.y).length() - 0.032) < 0.001 and bent.x > 0.02 and bent.y < bar.y, "a finger point wraps round the grip bar (%.3f, %.3f)" % [bent.x, bent.y])
+	check(Vector3(shape[Mesh.ARRAY_VERTEX][1]) == palm, "the palm does not move")
+	check(absf(Vector3(shape[Mesh.ARRAY_NORMAL][0]).length() - 1.0) < 0.001, "the bent normal stays a unit vector")
 
 	# The string: two cords from the tips to the nock point.
 	var bow: Node3D = Node3D.new()

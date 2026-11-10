@@ -21,7 +21,8 @@ extends Node
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
 #   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert), and logs which clip each played
 #   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (ready to shoot, the string at rest), raised[:0 to 1] (the string drawn that far) or drawn (at the jaw);
-#                       first person keeps the arms on; look rig --cam left|right shows the body with the bow at its side
+#                       first person keeps the arms on and ten stone arrows are given too (the nocked arrow shows only with arrows in the pack);
+#                       look rig --cam left|right shows the body with the bow at its side
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -344,6 +345,9 @@ func _process(delta: float) -> void:
 	if give_item != "" and not _given and now - client.connected_msec > 8000:
 		_given = true
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of(give_item), 0, give_count, Vector3.ZERO)
+
+		if bow_pose != "":
+			client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("stone_arrow"), 0, 10, Vector3.ZERO)   # arrows in the pack, so one is nocked
 
 	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null:
 		_selected = true

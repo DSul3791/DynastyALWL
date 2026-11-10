@@ -1292,6 +1292,9 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 	if _off_model != null:
 		_off_model.visible = not bow    # both hands are on the bow: a torch or shield in the left hand is put away while it is held
 
+	if _arms != null and _arms.has_method("set_grip"):
+		_arms.set_grip(bow and _first_person)   # Dave's hands close round the grip and hook the string (dynasty_arms.gd "grip"); open for anything else
+
 	if not bow:
 		return
 
@@ -1324,6 +1327,10 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 	var across: Vector3 = back.cross(up).normalized()     # mesh y
 	var frame: Basis = Basis(up, across, up.cross(across).normalized())   # mesh x along the limbs, z toward the target
 	var grip: Vector3 = mount.global_position
+
+	if _first_person and _arms != null and _arms.has_method("grip_point"):
+		grip = _arms.grip_point("l")    # inside the closed fingers, not through the palm (Dave: "the bow going right through his hand")
+
 	_model.global_transform = Transform3D(frame, grip - frame.z * BasicLook.BOW_BRACE_M)   # the grip in the fist, the string BOW_BRACE_M nearer the archer
 
 	if not _first_person:
@@ -1335,7 +1342,8 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 	if up_now:
 		# The string's nock point is in the right hand, pulled straight back toward the archer (never pushed past the brace, at most a full draw). It stays in the
 		# bow's own plane, a little above the grip where the arrow sits (Dave: "the string should always be inline with the bow wooden part").
-		var pull: float = (_model.global_transform.affine_inverse() * _arms.hand_mount_r.global_position).z
+		var hook: Vector3 = _arms.grip_point("r") if _arms.has_method("grip_point") else _arms.hand_mount_r.global_position   # in the hooked fingers
+		var pull: float = (_model.global_transform.affine_inverse() * hook).z
 		nock = Vector3(BOW_NOCK_ABOVE_M, 0.0, clampf(pull, -BOW_DRAW_MAX_M, 0.0))
 
 	_set_bow_string(_model, nock)

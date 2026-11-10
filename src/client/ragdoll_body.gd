@@ -48,17 +48,20 @@ const SWING_FP_S := 0.95                # the first-person chop: its keys below 
 const LEFT_REST_ARM := Vector3(0.0, 0.0, -0.07)
 const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
 # The bow, first person (Dave 10 Nov 2026: the bow was held wrong; "the string should always be inline with the bow wooden part ... place the arrow over the left side
-# and then draw back and sight along the arrow shaft"). The arrow runs straight ahead under the eye, so the player sights along it: the grip, the string and the drawing
-# hand all lie on one line 10 cm below the eye, the bow's plane through it. The arms rig at the camera pose (held_item.gd ARMS_POS, pitch 50 degrees, scale 0.85) with
-# these angles, solved for the hand positions (camera space, metres): the left hand on the grip at arm's length, (0.015, -0.10, -0.40); the right hand on the string
-# 16 cm nearer, (0.015, -0.10, -0.24), at draw 0 and back at the jaw, (0.015, -0.10, -0.10), at full draw, the elbow out to the right. The bow and its string are
-# placed by the hands (held_item.gd _pose_bow), so the pose sets where they go.
-const BOW_ARM_L := Vector3(0.440, -0.153, 0.418)
-const BOW_FOREARM_L := Vector3(0.121, 0.0, 0.0)
-const BOW_HAND_L := Vector3(0.125, -0.028, 0.0)
-const BOW_DRAW_ARM_R := [[0.0, Vector3(-0.144, 0.798, -0.280)], [0.5, Vector3(-0.249, 1.112, -0.242)], [1.0, Vector3(-0.319, 1.207, -0.530)]]
-const BOW_DRAW_FOREARM_R := [[0.0, 1.338], [0.5, 1.759], [1.0, 1.981]]
-const BOW_DRAW_HAND_R := [[0.0, Vector3(0.743, 0.097, 0.0)], [0.5, Vector3(0.199, 0.045, 0.0)], [1.0, Vector3(0.103, 0.025, 0.0)]]
+# and then draw back and sight along the arrow shaft"; later "the bow going right through his hand where he should be holding it"). The bow's plane runs through the
+# eye, so from the eye the string lies along the stave, and the arrow runs straight ahead just under the eye. The arms rig at the camera pose (held_item.gd ARMS_POS,
+# pitch 50 degrees, scale 0.85) with these angles, solved for where the CLOSED fingers hold (dynasty_arms.gd GRIP_AT; camera space, metres): the left hand round the
+# grip at arm's length, (-0.018, -0.10, -0.40), the knuckles along the stave with the index finger on top (the arrow rests on it), the hand on the stave's left,
+# the palm toward the string side and the fingers round the front; the right hand's
+# fingers (index on top) hooked on the string at the nock point, 16 cm nearer and 3 cm higher, (-0.012, -0.070, -0.24), at draw 0 (also the ready idle) and back at the jaw,
+# (-0.012, -0.070, -0.10), at full draw, the palm toward the face, the fingers along the string, the elbow out to the right. The bow and its string are placed by the
+# hands (held_item.gd _pose_bow), so the pose sets where they go.
+const BOW_ARM_L := Vector3(0.123, -1.385, -0.270)
+const BOW_FOREARM_L := Vector3(0.837, 0.0, 0.0)
+const BOW_HAND_L := Vector3(0.008, 0.990, -0.910)
+const BOW_DRAW_ARM_R := [[0.0, Vector3(0.028, 1.098, -0.344)], [0.5, Vector3(0.039, 1.255, -0.474)], [1.0, Vector3(-0.100, 1.207, -1.050)]]
+const BOW_DRAW_FOREARM_R := [[0.0, 1.703], [0.5, 1.905], [1.0, 2.016]]
+const BOW_DRAW_HAND_R := [[0.0, Vector3(-0.371, -0.530, 1.341)], [0.5, Vector3(-0.449, -0.424, 1.477)], [1.0, Vector3(-0.516, 0.252, 1.063)]]
 const ARM_BONES := ["chest", "arm_r", "forearm_r", "hand_r", "arm_l", "forearm_l", "hand_l"]
 
 # Shapes, each on one bone, in that bone's own space: bone, shape, centre, size, in arms only (the first person model).
