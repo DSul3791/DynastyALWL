@@ -2351,7 +2351,7 @@
 			"obtainable_now": false
 		},
 		"chest_kit": {
-			"name": "Wicker chest",
+			"name": "Wicker - Chest",
 			"kind": "placeable",
 			"description": "Woven sticks and twine. A chest to store things in.",
 			"how_to_get": [
@@ -2487,7 +2487,7 @@
 			"obtainable_now": true
 		},
 		"plank_chest_kit": {
-			"name": "Wooden chest",
+			"name": "Wooden - Chest",
 			"kind": "placeable",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"how_to_get": [
@@ -3908,7 +3908,7 @@
 			"obtainable_now": true
 		},
 		"wall_section_kit": {
-			"name": "Wooden wall",
+			"name": "Refined - Wall",
 			"kind": "placeable",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"how_to_get": [
@@ -3926,7 +3926,7 @@
 			"obtainable_now": false
 		},
 		"floor_section_kit": {
-			"name": "Ceiling section",
+			"name": "Refined - Ceiling",
 			"kind": "placeable",
 			"description": "A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge.",
 			"how_to_get": [
@@ -3944,7 +3944,7 @@
 			"obtainable_now": false
 		},
 		"roof_section_kit": {
-			"name": "Wooden roof",
+			"name": "Refined - Roof",
 			"kind": "placeable",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [
@@ -3962,7 +3962,7 @@
 			"obtainable_now": false
 		},
 		"foundation_section_kit": {
-			"name": "Foundation",
+			"name": "Sturdy - Foundation",
 			"kind": "placeable",
 			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
@@ -3980,7 +3980,7 @@
 			"obtainable_now": false
 		},
 		"doorway_section_kit": {
-			"name": "Wooden doorway",
+			"name": "Refined - Doorway",
 			"kind": "placeable",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"how_to_get": [
@@ -3998,7 +3998,7 @@
 			"obtainable_now": false
 		},
 		"window_section_kit": {
-			"name": "Wooden window",
+			"name": "Refined - Window",
 			"kind": "placeable",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"how_to_get": [
@@ -4016,7 +4016,7 @@
 			"obtainable_now": false
 		},
 		"timber_prop_kit": {
-			"name": "Wooden - Post",
+			"name": "Post",
 			"kind": "placeable",
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"how_to_get": [
@@ -4034,7 +4034,7 @@
 			"obtainable_now": false
 		},
 		"timber_set_kit": {
-			"name": "Wooden - Beam",
+			"name": "Beam",
 			"kind": "placeable",
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"how_to_get": [
@@ -4540,7 +4540,7 @@
 			"obtainable_now": true
 		},
 		"thatch_wall_kit": {
-			"name": "Thatch wall",
+			"name": "Crude - Wall",
 			"kind": "placeable",
 			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
 			"how_to_get": [
@@ -4594,7 +4594,7 @@
 			"obtainable_now": false
 		},
 		"thatch_floor_kit": {
-			"name": "Thatch foundation",
+			"name": "Crude - Foundation",
 			"kind": "placeable",
 			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
 			"how_to_get": [
@@ -4612,7 +4612,7 @@
 			"obtainable_now": false
 		},
 		"thatch_roof_kit": {
-			"name": "Thatch roof",
+			"name": "Crude - Roof",
 			"kind": "placeable",
 			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
 			"how_to_get": [
@@ -4630,7 +4630,7 @@
 			"obtainable_now": false
 		},
 		"thatch_doorway_kit": {
-			"name": "Thatch doorway",
+			"name": "Crude - Doorway",
 			"kind": "placeable",
 			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
 			"how_to_get": [
@@ -6907,7 +6907,7 @@
 			"obtainable_now": false
 		},
 		"stairs_wood_kit": {
-			"name": "Wooden stairs",
+			"name": "Refined - Stairs",
 			"kind": "placeable",
 			"description": "Planks and twine for a flight of stairs. Set it against a floor edge to climb up.",
 			"how_to_get": [
@@ -6927,7 +6927,7 @@
 			"obtainable_now": true
 		},
 		"log_wall_kit": {
-			"name": "Log wall",
+			"name": "Rustic - Wall",
 			"kind": "placeable",
 			"description": "Round logs lashed in a wall, two metres wide. Warm and sturdy.",
 			"how_to_get": [
@@ -6949,7 +6949,7 @@
 			"obtainable_now": true
 		},
 		"log_floor_kit": {
-			"name": "Log ceiling",
+			"name": "Rustic - Ceiling",
 			"kind": "placeable",
 			"description": "Logs laid side by side on a frame. A rough, strong ceiling.",
 			"how_to_get": [
@@ -6971,7 +6971,7 @@
 			"obtainable_now": true
 		},
 		"log_roof_kit": {
-			"name": "Log roof",
+			"name": "Rustic - Roof",
 			"kind": "placeable",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"how_to_get": [
@@ -6993,7 +6993,7 @@
 			"obtainable_now": true
 		},
 		"stone_wall_kit": {
-			"name": "Stone wall",
+			"name": "Sturdy - Wall",
 			"kind": "placeable",
 			"description": "Cut stone laid in mortar, two metres wide. Fire proof and strong.",
 			"how_to_get": [
@@ -7013,7 +7013,7 @@
 			"obtainable_now": true
 		},
 		"stone_floor_kit": {
-			"name": "Stone ceiling",
+			"name": "Sturdy - Ceiling",
 			"kind": "placeable",
 			"description": "Cobbles bedded in sand. A hard dry ceiling.",
 			"how_to_get": [
@@ -7033,7 +7033,7 @@
 			"obtainable_now": true
 		},
 		"stone_roof_kit": {
-			"name": "Stone roof",
+			"name": "Sturdy - Roof",
 			"kind": "placeable",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"how_to_get": [
@@ -7053,7 +7053,7 @@
 			"obtainable_now": true
 		},
 		"brick_wall_kit": {
-			"name": "Brick wall",
+			"name": "Superior - Wall",
 			"kind": "placeable",
 			"description": "Fired bricks laid in mortar, two metres wide.",
 			"how_to_get": [
@@ -7073,7 +7073,7 @@
 			"obtainable_now": true
 		},
 		"brick_floor_kit": {
-			"name": "Brick ceiling",
+			"name": "Superior - Ceiling",
 			"kind": "placeable",
 			"description": "Bricks laid on sand. A smooth hard ceiling.",
 			"how_to_get": [
@@ -7093,7 +7093,7 @@
 			"obtainable_now": true
 		},
 		"brick_roof_kit": {
-			"name": "Brick roof",
+			"name": "Superior - Roof",
 			"kind": "placeable",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"how_to_get": [
@@ -7172,7 +7172,7 @@
 			"obtainable_now": true
 		},
 		"log_seat_kit": {
-			"name": "Log - Seat",
+			"name": "Seat",
 			"kind": "placeable",
 			"description": "A log set on end with the top flattened. Sit on it by the fire.",
 			"how_to_get": [
@@ -7362,7 +7362,7 @@
 			"obtainable_now": true
 		},
 		"bench_kit": {
-			"name": "Bench",
+			"name": "Wooden - Bench",
 			"kind": "placeable",
 			"description": "A plank seat on four legs. Seats you by the fire and adds comfort.",
 			"how_to_get": [
@@ -7372,7 +7372,7 @@
 			"obtainable_now": true
 		},
 		"chair_kit": {
-			"name": "Chair",
+			"name": "Wooden - Chair",
 			"kind": "placeable",
 			"description": "A plank chair with a hide seat. More comfortable than a bench.",
 			"how_to_get": [
@@ -7382,7 +7382,7 @@
 			"obtainable_now": true
 		},
 		"table_kit": {
-			"name": "Table",
+			"name": "Wooden - Table",
 			"kind": "placeable",
 			"description": "A plank table to eat and work at. Adds comfort to a camp.",
 			"how_to_get": [
@@ -7392,7 +7392,7 @@
 			"obtainable_now": true
 		},
 		"hide_rug_kit": {
-			"name": "Hide rug",
+			"name": "Hide - Rug",
 			"kind": "placeable",
 			"description": "A tanned hide spread on the floor. Warm underfoot.",
 			"how_to_get": [
@@ -7402,7 +7402,7 @@
 			"obtainable_now": true
 		},
 		"wool_rug_kit": {
-			"name": "Wool rug",
+			"name": "Wool - Rug",
 			"kind": "placeable",
 			"description": "A thick wool rug. Warmer and softer than hide.",
 			"how_to_get": [
@@ -7593,7 +7593,7 @@
 			"obtainable_now": true
 		},
 		"wood_foundation_kit": {
-			"name": "Wooden foundation",
+			"name": "Refined - Foundation",
 			"kind": "placeable",
 			"description": "A log and plank base, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
@@ -7611,7 +7611,7 @@
 			"obtainable_now": false
 		},
 		"log_foundation_kit": {
-			"name": "Log foundation",
+			"name": "Rustic - Foundation",
 			"kind": "placeable",
 			"description": "Log sills on stone footings, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
@@ -7629,7 +7629,7 @@
 			"obtainable_now": false
 		},
 		"brick_foundation_kit": {
-			"name": "Brick foundation",
+			"name": "Superior - Foundation",
 			"kind": "placeable",
 			"description": "A brick plinth, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
@@ -7647,7 +7647,7 @@
 			"obtainable_now": false
 		},
 		"log_doorway_kit": {
-			"name": "Log doorway",
+			"name": "Rustic - Doorway",
 			"kind": "placeable",
 			"description": "A log wall with a plank door, one metre wide and two high.",
 			"how_to_get": [
@@ -7665,7 +7665,7 @@
 			"obtainable_now": false
 		},
 		"stone_doorway_kit": {
-			"name": "Stone doorway",
+			"name": "Sturdy - Doorway",
 			"kind": "placeable",
 			"description": "A stone wall with a timber lintel and a door, one metre wide and two high.",
 			"how_to_get": [
@@ -7683,7 +7683,7 @@
 			"obtainable_now": false
 		},
 		"brick_doorway_kit": {
-			"name": "Brick doorway",
+			"name": "Superior - Doorway",
 			"kind": "placeable",
 			"description": "A brick wall with a timber door, one metre wide and two high.",
 			"how_to_get": [
@@ -7701,7 +7701,7 @@
 			"obtainable_now": false
 		},
 		"thatch_window_kit": {
-			"name": "Thatch window",
+			"name": "Crude - Window",
 			"kind": "placeable",
 			"description": "A thatch wall with an opening at chest height to see through.",
 			"how_to_get": [
@@ -7719,7 +7719,7 @@
 			"obtainable_now": false
 		},
 		"log_window_kit": {
-			"name": "Log window",
+			"name": "Rustic - Window",
 			"kind": "placeable",
 			"description": "A log wall with an opening at chest height to see through.",
 			"how_to_get": [
@@ -7737,7 +7737,7 @@
 			"obtainable_now": false
 		},
 		"stone_window_kit": {
-			"name": "Stone window",
+			"name": "Sturdy - Window",
 			"kind": "placeable",
 			"description": "A stone wall with a sill and an opening at chest height to see through.",
 			"how_to_get": [
@@ -7755,7 +7755,7 @@
 			"obtainable_now": false
 		},
 		"brick_window_kit": {
-			"name": "Brick window",
+			"name": "Superior - Window",
 			"kind": "placeable",
 			"description": "A brick wall with an arched opening at chest height to see through.",
 			"how_to_get": [
@@ -7793,7 +7793,7 @@
 			"obtainable_now": false
 		},
 		"thatch_fence_kit": {
-			"name": "Thatch fence",
+			"name": "Crude - Fence",
 			"kind": "placeable",
 			"description": "Stakes woven with sticks and lashed with twine, two metres long.",
 			"how_to_get": [
@@ -7811,7 +7811,7 @@
 			"obtainable_now": false
 		},
 		"thatch_gate_kit": {
-			"name": "Thatch gate",
+			"name": "Crude - Gate",
 			"kind": "placeable",
 			"description": "A woven hurdle hung on twine hinges. Opens like a door.",
 			"how_to_get": [
@@ -7829,7 +7829,7 @@
 			"obtainable_now": false
 		},
 		"wood_fence_kit": {
-			"name": "Wooden fence",
+			"name": "Refined - Fence",
 			"kind": "placeable",
 			"description": "A picket fence of planks, two metres long.",
 			"how_to_get": [
@@ -7847,7 +7847,7 @@
 			"obtainable_now": false
 		},
 		"wood_gate_kit": {
-			"name": "Wooden gate",
+			"name": "Refined - Gate",
 			"kind": "placeable",
 			"description": "A plank gate with a Z brace. Opens like a door.",
 			"how_to_get": [
@@ -7865,7 +7865,7 @@
 			"obtainable_now": false
 		},
 		"log_fence_kit": {
-			"name": "Log fence",
+			"name": "Rustic - Fence",
 			"kind": "placeable",
 			"description": "Split rails pegged into log posts, two metres long.",
 			"how_to_get": [
@@ -7883,7 +7883,7 @@
 			"obtainable_now": false
 		},
 		"log_gate_kit": {
-			"name": "Log gate",
+			"name": "Rustic - Gate",
 			"kind": "placeable",
 			"description": "A rail gate of split logs. Opens like a door.",
 			"how_to_get": [
@@ -7901,7 +7901,7 @@
 			"obtainable_now": false
 		},
 		"log_palisade_kit": {
-			"name": "Log palisade",
+			"name": "Palisade",
 			"kind": "placeable",
 			"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
 			"how_to_get": [
@@ -7919,7 +7919,7 @@
 			"obtainable_now": false
 		},
 		"log_palisade_gate_kit": {
-			"name": "Log palisade gate",
+			"name": "Palisade gate",
 			"kind": "placeable",
 			"description": "A palisade section that swings open like a door.",
 			"how_to_get": [
@@ -7937,7 +7937,7 @@
 			"obtainable_now": false
 		},
 		"stone_fence_kit": {
-			"name": "Stone fence",
+			"name": "Sturdy - Fence",
 			"kind": "placeable",
 			"description": "A low dry-stone wall with capstones, two metres long.",
 			"how_to_get": [
@@ -7955,7 +7955,7 @@
 			"obtainable_now": false
 		},
 		"stone_gate_kit": {
-			"name": "Stone gate",
+			"name": "Sturdy - Gate",
 			"kind": "placeable",
 			"description": "A timber gate between stone piers. Opens like a door.",
 			"how_to_get": [
@@ -7973,7 +7973,7 @@
 			"obtainable_now": false
 		},
 		"brick_fence_kit": {
-			"name": "Brick fence",
+			"name": "Superior - Fence",
 			"kind": "placeable",
 			"description": "A low brick wall on a stone plinth, two metres long.",
 			"how_to_get": [
@@ -7991,7 +7991,7 @@
 			"obtainable_now": false
 		},
 		"brick_gate_kit": {
-			"name": "Brick gate",
+			"name": "Superior - Gate",
 			"kind": "placeable",
 			"description": "A timber gate between brick piers. Opens like a door.",
 			"how_to_get": [
@@ -8009,7 +8009,7 @@
 			"obtainable_now": false
 		},
 		"iron_fence_kit": {
-			"name": "Iron fence",
+			"name": "Iron - Fence",
 			"kind": "placeable",
 			"description": "Iron railings on a brick plinth, two metres long.",
 			"how_to_get": [
@@ -8027,7 +8027,7 @@
 			"obtainable_now": false
 		},
 		"iron_gate_kit": {
-			"name": "Iron gate",
+			"name": "Iron - Gate",
 			"kind": "placeable",
 			"description": "A wrought iron gate. Opens like a door.",
 			"how_to_get": [
@@ -8045,7 +8045,7 @@
 			"obtainable_now": false
 		},
 		"thatch_pillar_kit": {
-			"name": "Thatch pillar",
+			"name": "Crude - Pillar",
 			"kind": "placeable",
 			"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 			"how_to_get": [
@@ -8063,7 +8063,7 @@
 			"obtainable_now": false
 		},
 		"wooden_pillar_kit": {
-			"name": "Wooden pillar",
+			"name": "Refined - Pillar",
 			"kind": "placeable",
 			"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 			"how_to_get": [
@@ -8081,7 +8081,7 @@
 			"obtainable_now": false
 		},
 		"log_pillar_kit": {
-			"name": "Log pillar",
+			"name": "Rustic - Pillar",
 			"kind": "placeable",
 			"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 			"how_to_get": [
@@ -8099,7 +8099,7 @@
 			"obtainable_now": false
 		},
 		"stone_pillar_kit": {
-			"name": "Stone pillar",
+			"name": "Sturdy - Pillar",
 			"kind": "placeable",
 			"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 			"how_to_get": [
@@ -8117,7 +8117,7 @@
 			"obtainable_now": false
 		},
 		"brick_pillar_kit": {
-			"name": "Brick pillar",
+			"name": "Superior - Pillar",
 			"kind": "placeable",
 			"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 			"how_to_get": [
@@ -8135,7 +8135,7 @@
 			"obtainable_now": false
 		},
 		"thatch_roof_corner_kit": {
-			"name": "Thatch roof corner",
+			"name": "Crude - Roof corner",
 			"kind": "placeable",
 			"description": "The corner of a thatch roof, where two slopes meet.",
 			"how_to_get": [
@@ -8153,7 +8153,7 @@
 			"obtainable_now": false
 		},
 		"wooden_roof_corner_kit": {
-			"name": "Wooden roof corner",
+			"name": "Refined - Roof corner",
 			"kind": "placeable",
 			"description": "The corner of a wooden roof, where two slopes meet.",
 			"how_to_get": [
@@ -8171,7 +8171,7 @@
 			"obtainable_now": false
 		},
 		"log_roof_corner_kit": {
-			"name": "Log roof corner",
+			"name": "Rustic - Roof corner",
 			"kind": "placeable",
 			"description": "The corner of a log roof, where two slopes meet.",
 			"how_to_get": [
@@ -8189,7 +8189,7 @@
 			"obtainable_now": false
 		},
 		"stone_roof_corner_kit": {
-			"name": "Stone roof corner",
+			"name": "Sturdy - Roof corner",
 			"kind": "placeable",
 			"description": "The corner of a stone roof, where two slopes meet.",
 			"how_to_get": [
@@ -8207,7 +8207,7 @@
 			"obtainable_now": false
 		},
 		"brick_roof_corner_kit": {
-			"name": "Brick roof corner",
+			"name": "Superior - Roof corner",
 			"kind": "placeable",
 			"description": "The corner of a brick roof, where two slopes meet.",
 			"how_to_get": [
@@ -8225,7 +8225,7 @@
 			"obtainable_now": false
 		},
 		"log_bench_kit": {
-			"name": "Log bench",
+			"name": "Log - Bench",
 			"kind": "placeable",
 			"description": "A split log on two stumps. Seats two or three.",
 			"how_to_get": [
@@ -8243,7 +8243,7 @@
 			"obtainable_now": false
 		},
 		"log_table_kit": {
-			"name": "Log table",
+			"name": "Log - Table",
 			"kind": "placeable",
 			"description": "A table with a hand-hewn log top.",
 			"how_to_get": [
@@ -8261,7 +8261,7 @@
 			"obtainable_now": false
 		},
 		"stone_bench_kit": {
-			"name": "Stone bench",
+			"name": "Stone - Bench",
 			"kind": "placeable",
 			"description": "A heavy stone slab on stone feet. Seats two or three.",
 			"how_to_get": [
@@ -8279,7 +8279,7 @@
 			"obtainable_now": false
 		},
 		"stone_table_kit": {
-			"name": "Stone table",
+			"name": "Stone - Table",
 			"kind": "placeable",
 			"description": "A thick stone-footed table with a plank top.",
 			"how_to_get": [
@@ -8297,7 +8297,7 @@
 			"obtainable_now": false
 		},
 		"iron_bench_kit": {
-			"name": "Iron bench",
+			"name": "Iron - Bench",
 			"kind": "placeable",
 			"description": "A timber bench bound with iron. Seats two or three.",
 			"how_to_get": [
@@ -8315,7 +8315,7 @@
 			"obtainable_now": false
 		},
 		"iron_chair_kit": {
-			"name": "Iron chair",
+			"name": "Iron - Chair",
 			"kind": "placeable",
 			"description": "An iron-bound chair with a hide seat.",
 			"how_to_get": [
@@ -8333,7 +8333,7 @@
 			"obtainable_now": false
 		},
 		"iron_table_kit": {
-			"name": "Iron table",
+			"name": "Iron - Table",
 			"kind": "placeable",
 			"description": "A plank table bound with iron.",
 			"how_to_get": [
@@ -8351,7 +8351,7 @@
 			"obtainable_now": false
 		},
 		"stone_workbench_kit": {
-			"name": "Stone workbench",
+			"name": "Stone - Workbench",
 			"kind": "placeable",
 			"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
 			"how_to_get": [
@@ -8369,7 +8369,7 @@
 			"obtainable_now": false
 		},
 		"wooden_shelf_kit": {
-			"name": "Wooden shelf",
+			"name": "Shelf",
 			"kind": "placeable",
 			"description": "Plank shelves to set against a wall. Holds 8 stacks.",
 			"how_to_get": [
@@ -8387,7 +8387,7 @@
 			"obtainable_now": false
 		},
 		"wooden_cupboard_kit": {
-			"name": "Wooden cupboard",
+			"name": "Cupboard",
 			"kind": "placeable",
 			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
 			"how_to_get": [
@@ -8405,7 +8405,7 @@
 			"obtainable_now": false
 		},
 		"wooden_barrel_kit": {
-			"name": "Wooden barrel",
+			"name": "Barrel",
 			"kind": "placeable",
 			"description": "A hooped plank barrel. Holds 8 stacks.",
 			"how_to_get": [
@@ -8423,7 +8423,7 @@
 			"obtainable_now": false
 		},
 		"log_stairs_kit": {
-			"name": "Log stairs",
+			"name": "Rustic - Stairs",
 			"kind": "placeable",
 			"description": "A flight of hewn log steps up to the next ceiling.",
 			"how_to_get": [
@@ -8441,7 +8441,7 @@
 			"obtainable_now": false
 		},
 		"stone_stairs_kit": {
-			"name": "Stone stairs",
+			"name": "Sturdy - Stairs",
 			"kind": "placeable",
 			"description": "A flight of mortared stone steps up to the next ceiling.",
 			"how_to_get": [
@@ -8459,7 +8459,7 @@
 			"obtainable_now": false
 		},
 		"brick_stairs_kit": {
-			"name": "Brick stairs",
+			"name": "Superior - Stairs",
 			"kind": "placeable",
 			"description": "A flight of brick steps up to the next ceiling.",
 			"how_to_get": [
@@ -8477,7 +8477,7 @@
 			"obtainable_now": false
 		},
 		"wooden_railing_kit": {
-			"name": "Wooden railing",
+			"name": "Wooden - Railing",
 			"kind": "placeable",
 			"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
 			"how_to_get": [
@@ -8495,7 +8495,7 @@
 			"obtainable_now": false
 		},
 		"iron_railing_kit": {
-			"name": "Iron railing",
+			"name": "Iron - Railing",
 			"kind": "placeable",
 			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
 			"how_to_get": [
@@ -8513,7 +8513,7 @@
 			"obtainable_now": false
 		},
 		"double_doorway_kit": {
-			"name": "Wooden double doorway",
+			"name": "Refined - Double doorway",
 			"kind": "placeable",
 			"description": "A plank wall four metres wide with a pair of doors.",
 			"how_to_get": [
@@ -8531,7 +8531,7 @@
 			"obtainable_now": false
 		},
 		"iron_doorway_kit": {
-			"name": "Iron doorway",
+			"name": "Iron - Doorway",
 			"kind": "placeable",
 			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
 			"how_to_get": [
@@ -8549,7 +8549,7 @@
 			"obtainable_now": false
 		},
 		"steel_doorway_kit": {
-			"name": "Steel doorway",
+			"name": "Steel - Doorway",
 			"kind": "placeable",
 			"description": "A wall with a steel door, one metre wide and two high.",
 			"how_to_get": [
@@ -8649,7 +8649,7 @@
 			"obtainable_now": false
 		},
 		"wooden_hanging_lantern_kit": {
-			"name": "Wooden hanging lantern",
+			"name": "Wooden - Hanging lantern",
 			"kind": "placeable",
 			"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
 			"how_to_get": [
@@ -8667,7 +8667,7 @@
 			"obtainable_now": false
 		},
 		"iron_hanging_lantern_kit": {
-			"name": "Iron hanging lantern",
+			"name": "Iron - Hanging lantern",
 			"kind": "placeable",
 			"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
 			"how_to_get": [
@@ -8685,7 +8685,7 @@
 			"obtainable_now": false
 		},
 		"iron_wall_lantern_kit": {
-			"name": "Iron wall lantern",
+			"name": "Iron - Wall lantern",
 			"kind": "placeable",
 			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 			"how_to_get": [
@@ -8703,7 +8703,7 @@
 			"obtainable_now": false
 		},
 		"wooden_torch_post_kit": {
-			"name": "Wooden torch post",
+			"name": "Torch post",
 			"kind": "placeable",
 			"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
 			"how_to_get": [
@@ -8721,7 +8721,7 @@
 			"obtainable_now": false
 		},
 		"stone_torch_pillar_kit": {
-			"name": "Stone torch pillar",
+			"name": "Torch pillar",
 			"kind": "placeable",
 			"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
 			"how_to_get": [
@@ -8739,7 +8739,7 @@
 			"obtainable_now": false
 		},
 		"iron_torch_stand_kit": {
-			"name": "Iron torch stand",
+			"name": "Iron - Torch stand",
 			"kind": "placeable",
 			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 			"how_to_get": [
@@ -8757,7 +8757,7 @@
 			"obtainable_now": false
 		},
 		"wooden_lamp_post_kit": {
-			"name": "Wooden lamp post",
+			"name": "Wooden - Lamp post",
 			"kind": "placeable",
 			"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
 			"how_to_get": [
@@ -8775,7 +8775,7 @@
 			"obtainable_now": false
 		},
 		"iron_lamp_post_kit": {
-			"name": "Iron lamp post",
+			"name": "Iron - Lamp post",
 			"kind": "placeable",
 			"description": "An iron lantern on a tall iron post.",
 			"how_to_get": [
@@ -8793,7 +8793,7 @@
 			"obtainable_now": false
 		},
 		"stone_lamp_post_kit": {
-			"name": "Stone lamp post",
+			"name": "Stone - Lamp post",
 			"kind": "placeable",
 			"description": "An iron lantern on a stone post.",
 			"how_to_get": [
@@ -8811,7 +8811,7 @@
 			"obtainable_now": false
 		},
 		"stone_brazier_kit": {
-			"name": "Stone brazier",
+			"name": "Stone - Brazier",
 			"kind": "placeable",
 			"description": "A stone fire bowl. Burns logs for light.",
 			"how_to_get": [
@@ -8829,7 +8829,7 @@
 			"obtainable_now": false
 		},
 		"iron_brazier_kit": {
-			"name": "Iron brazier",
+			"name": "Iron - Brazier",
 			"kind": "placeable",
 			"description": "An iron fire bowl on legs. Burns logs for light.",
 			"how_to_get": [
@@ -8847,7 +8847,7 @@
 			"obtainable_now": false
 		},
 		"thatch_garden_plot_kit": {
-			"name": "Thatch garden plot",
+			"name": "Thatch - Garden plot",
 			"kind": "placeable",
 			"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
 			"how_to_get": [
@@ -8865,7 +8865,7 @@
 			"obtainable_now": false
 		},
 		"wooden_garden_plot_kit": {
-			"name": "Wooden garden plot",
+			"name": "Wooden - Garden plot",
 			"kind": "placeable",
 			"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
 			"how_to_get": [
@@ -8883,7 +8883,7 @@
 			"obtainable_now": false
 		},
 		"stone_garden_plot_kit": {
-			"name": "Stone garden plot",
+			"name": "Stone - Garden plot",
 			"kind": "placeable",
 			"description": "A stone-edged raised bed, two metres square. Holds its water best.",
 			"how_to_get": [
@@ -8901,7 +8901,7 @@
 			"obtainable_now": false
 		},
 		"brick_garden_plot_kit": {
-			"name": "Brick garden plot",
+			"name": "Brick - Garden plot",
 			"kind": "placeable",
 			"description": "A brick raised bed, two metres square. Holds its water best.",
 			"how_to_get": [
@@ -8919,7 +8919,7 @@
 			"obtainable_now": false
 		},
 		"wooden_planter_box_kit": {
-			"name": "Wooden planter box",
+			"name": "Planter box",
 			"kind": "placeable",
 			"description": "A plank window box of soil for herbs and flowers.",
 			"how_to_get": [
@@ -8937,7 +8937,7 @@
 			"obtainable_now": false
 		},
 		"stone_planter_kit": {
-			"name": "Stone planter",
+			"name": "Stone - Planter",
 			"kind": "placeable",
 			"description": "A big stone pot of soil for a herb or a small shrub.",
 			"how_to_get": [
@@ -8955,7 +8955,7 @@
 			"obtainable_now": false
 		},
 		"wooden_trellis_kit": {
-			"name": "Wooden trellis",
+			"name": "Trellis",
 			"kind": "placeable",
 			"description": "A lattice of sticks to set beside a plot for climbing plants.",
 			"how_to_get": [
@@ -8973,7 +8973,7 @@
 			"obtainable_now": false
 		},
 		"wooden_compost_bin_kit": {
-			"name": "Wooden compost bin",
+			"name": "Compost bin",
 			"kind": "placeable",
 			"description": "A slatted bin that rots plant waste down into compost.",
 			"how_to_get": [
@@ -8991,7 +8991,7 @@
 			"obtainable_now": false
 		},
 		"thatch_scarecrow_kit": {
-			"name": "Thatch scarecrow",
+			"name": "Thatch - Scarecrow",
 			"kind": "placeable",
 			"description": "A straw figure on a pole to watch over the plots.",
 			"how_to_get": [
@@ -9009,7 +9009,7 @@
 			"obtainable_now": false
 		},
 		"wooden_cold_frame_kit": {
-			"name": "Wooden cold frame",
+			"name": "Cold frame",
 			"kind": "placeable",
 			"description": "A horn-paned box over a plot that keeps frost off seedlings.",
 			"how_to_get": [
@@ -9027,7 +9027,7 @@
 			"obtainable_now": false
 		},
 		"stone_well_kit": {
-			"name": "Stone well",
+			"name": "Well",
 			"kind": "placeable",
 			"description": "A stone well with a windlass and bucket. E draws ten litres.",
 			"how_to_get": [
@@ -9045,7 +9045,7 @@
 			"obtainable_now": false
 		},
 		"wooden_hand_pump_kit": {
-			"name": "Wooden hand pump",
+			"name": "Wooden - Hand pump",
 			"kind": "placeable",
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 			"how_to_get": [
@@ -9063,7 +9063,7 @@
 			"obtainable_now": false
 		},
 		"iron_hand_pump_kit": {
-			"name": "Iron hand pump",
+			"name": "Iron - Hand pump",
 			"kind": "placeable",
 			"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
 			"how_to_get": [
@@ -9081,7 +9081,7 @@
 			"obtainable_now": false
 		},
 		"log_trough_kit": {
-			"name": "Log trough",
+			"name": "Log - Trough",
 			"kind": "placeable",
 			"description": "A hollowed log that holds sixty litres. Animals drink from it.",
 			"how_to_get": [
@@ -9099,7 +9099,7 @@
 			"obtainable_now": false
 		},
 		"wooden_trough_kit": {
-			"name": "Wooden trough",
+			"name": "Wooden - Trough",
 			"kind": "placeable",
 			"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
 			"how_to_get": [
@@ -9117,7 +9117,7 @@
 			"obtainable_now": false
 		},
 		"wooden_channel_kit": {
-			"name": "Wooden channel",
+			"name": "Wooden - Channel",
 			"kind": "placeable",
 			"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
 			"how_to_get": [
@@ -9135,7 +9135,7 @@
 			"obtainable_now": false
 		},
 		"wooden_channel_corner_kit": {
-			"name": "Wooden channel corner",
+			"name": "Wooden - Channel corner",
 			"kind": "placeable",
 			"description": "A flume that turns a quarter circle.",
 			"how_to_get": [
@@ -9153,7 +9153,7 @@
 			"obtainable_now": false
 		},
 		"wooden_channel_tee_kit": {
-			"name": "Wooden channel tee",
+			"name": "Wooden - Channel tee",
 			"kind": "placeable",
 			"description": "A flume that splits its water two ways.",
 			"how_to_get": [
@@ -9171,7 +9171,7 @@
 			"obtainable_now": false
 		},
 		"wooden_sluice_kit": {
-			"name": "Wooden sluice",
+			"name": "Sluice",
 			"kind": "placeable",
 			"description": "A flume with a gate. E opens or shuts it.",
 			"how_to_get": [
@@ -9203,7 +9203,7 @@
 			"obtainable_now": true
 		},
 		"stone_trough_kit": {
-			"name": "Stone trough",
+			"name": "Stone - Trough",
 			"kind": "placeable",
 			"description": "A carved stone trough that holds two hundred litres.",
 			"how_to_get": [
@@ -9221,7 +9221,7 @@
 			"obtainable_now": false
 		},
 		"stone_channel_kit": {
-			"name": "Stone channel",
+			"name": "Stone - Channel",
 			"kind": "placeable",
 			"description": "An open stone channel, two metres long. Carries more than a flume.",
 			"how_to_get": [
@@ -9239,7 +9239,7 @@
 			"obtainable_now": false
 		},
 		"stone_channel_corner_kit": {
-			"name": "Stone channel corner",
+			"name": "Stone - Channel corner",
 			"kind": "placeable",
 			"description": "A stone channel that turns a quarter circle.",
 			"how_to_get": [
@@ -9257,7 +9257,7 @@
 			"obtainable_now": false
 		},
 		"stone_channel_tee_kit": {
-			"name": "Stone channel tee",
+			"name": "Stone - Channel tee",
 			"kind": "placeable",
 			"description": "A stone channel that splits its water two ways.",
 			"how_to_get": [
@@ -9275,7 +9275,7 @@
 			"obtainable_now": false
 		},
 		"clay_pipe_run_kit": {
-			"name": "Clay pipe",
+			"name": "Clay - Pipe",
 			"kind": "placeable",
 			"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
 			"how_to_get": [
@@ -9293,7 +9293,7 @@
 			"obtainable_now": false
 		},
 		"clay_pipe_elbow_kit": {
-			"name": "Clay pipe elbow",
+			"name": "Clay - Pipe elbow",
 			"kind": "placeable",
 			"description": "A clay pipe that turns a quarter circle.",
 			"how_to_get": [
@@ -9311,7 +9311,7 @@
 			"obtainable_now": false
 		},
 		"clay_pipe_tee_kit": {
-			"name": "Clay pipe tee",
+			"name": "Clay - Pipe tee",
 			"kind": "placeable",
 			"description": "A clay pipe that splits its water two ways.",
 			"how_to_get": [
@@ -9329,7 +9329,7 @@
 			"obtainable_now": false
 		},
 		"iron_pipe_kit": {
-			"name": "Iron pipe",
+			"name": "Iron - Pipe",
 			"kind": "placeable",
 			"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
 			"how_to_get": [
@@ -9347,7 +9347,7 @@
 			"obtainable_now": false
 		},
 		"iron_pipe_elbow_kit": {
-			"name": "Iron pipe elbow",
+			"name": "Iron - Pipe elbow",
 			"kind": "placeable",
 			"description": "An iron pipe that turns a quarter circle.",
 			"how_to_get": [
@@ -9365,7 +9365,7 @@
 			"obtainable_now": false
 		},
 		"iron_tap_kit": {
-			"name": "Iron tap",
+			"name": "Iron - Tap",
 			"kind": "placeable",
 			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 			"how_to_get": [
@@ -9383,7 +9383,7 @@
 			"obtainable_now": false
 		},
 		"iron_deep_well_pump_kit": {
-			"name": "Iron deep-well pump",
+			"name": "Iron - Deep-well pump",
 			"kind": "placeable",
 			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 			"how_to_get": [
@@ -9401,7 +9401,7 @@
 			"obtainable_now": false
 		},
 		"stone_cistern_kit": {
-			"name": "Stone cistern",
+			"name": "Cistern",
 			"kind": "placeable",
 			"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
 			"how_to_get": [
@@ -9419,7 +9419,7 @@
 			"obtainable_now": false
 		},
 		"stone_raised_cistern_kit": {
-			"name": "Stone raised cistern",
+			"name": "Raised cistern",
 			"kind": "placeable",
 			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
 			"how_to_get": [
@@ -9724,7 +9724,7 @@
 			"obtainable_now": false
 		},
 		"hide_sack_kit": {
-			"name": "Hide sack",
+			"name": "Hide - Sack",
 			"kind": "placeable",
 			"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
 			"how_to_get": [
@@ -9742,7 +9742,7 @@
 			"obtainable_now": false
 		},
 		"wicker_basket_kit": {
-			"name": "Wicker basket",
+			"name": "Wicker - Basket",
 			"kind": "placeable",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [
@@ -9814,7 +9814,7 @@
 			"obtainable_now": false
 		},
 		"tusk_mount_kit": {
-			"name": "Tusk mount",
+			"name": "Tusk - Mount",
 			"kind": "placeable",
 			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
 			"how_to_get": [
@@ -10333,7 +10333,7 @@
 			"obtainable_now": true
 		},
 		"log_shelf_kit": {
-			"name": "Log shelf",
+			"name": "Log - Shelf",
 			"kind": "placeable",
 			"description": "Split logs lashed between two log uprights. A first shelf to set against a wall.",
 			"how_to_get": [
@@ -10351,7 +10351,7 @@
 			"obtainable_now": false
 		},
 		"wooden_crate_kit": {
-			"name": "Wooden crate",
+			"name": "Crate",
 			"kind": "placeable",
 			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 			"how_to_get": [
@@ -10369,7 +10369,7 @@
 			"obtainable_now": false
 		},
 		"iron_chest_kit": {
-			"name": "Iron chest",
+			"name": "Iron - Chest",
 			"kind": "placeable",
 			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
 			"how_to_get": [
@@ -10405,7 +10405,7 @@
 			"obtainable_now": false
 		},
 		"engineered_foundation_kit": {
-			"name": "Engineered foundation",
+			"name": "Engineered - Foundation",
 			"kind": "placeable",
 			"description": "A poured concrete slab on a stone footing, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
@@ -10423,7 +10423,7 @@
 			"obtainable_now": false
 		},
 		"engineered_wall_kit": {
-			"name": "Engineered wall",
+			"name": "Engineered - Wall",
 			"kind": "placeable",
 			"description": "A poured concrete wall, two metres wide.",
 			"how_to_get": [
@@ -10441,7 +10441,7 @@
 			"obtainable_now": false
 		},
 		"engineered_doorway_kit": {
-			"name": "Engineered doorway",
+			"name": "Engineered - Doorway",
 			"kind": "placeable",
 			"description": "A concrete wall with a plank door, two metres wide.",
 			"how_to_get": [
@@ -10459,7 +10459,7 @@
 			"obtainable_now": false
 		},
 		"engineered_window_kit": {
-			"name": "Engineered window",
+			"name": "Engineered - Window",
 			"kind": "placeable",
 			"description": "A concrete wall with a window opening, two metres wide.",
 			"how_to_get": [
@@ -10477,7 +10477,7 @@
 			"obtainable_now": false
 		},
 		"engineered_pillar_kit": {
-			"name": "Engineered pillar",
+			"name": "Engineered - Pillar",
 			"kind": "placeable",
 			"description": "A square concrete pillar to hold up a ceiling or a roof.",
 			"how_to_get": [
@@ -10495,7 +10495,7 @@
 			"obtainable_now": false
 		},
 		"engineered_stairs_kit": {
-			"name": "Engineered stairs",
+			"name": "Engineered - Stairs",
 			"kind": "placeable",
 			"description": "A flight of poured concrete steps up to the next storey.",
 			"how_to_get": [
@@ -10513,7 +10513,7 @@
 			"obtainable_now": false
 		},
 		"engineered_floor_kit": {
-			"name": "Engineered ceiling",
+			"name": "Engineered - Ceiling",
 			"kind": "placeable",
 			"description": "A concrete slab cast over planks. A ceiling below and a floor above.",
 			"how_to_get": [
@@ -10531,7 +10531,7 @@
 			"obtainable_now": false
 		},
 		"engineered_roof_kit": {
-			"name": "Engineered roof",
+			"name": "Engineered - Roof",
 			"kind": "placeable",
 			"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 			"how_to_get": [
@@ -10549,7 +10549,7 @@
 			"obtainable_now": false
 		},
 		"engineered_roof_corner_kit": {
-			"name": "Engineered roof corner",
+			"name": "Engineered - Roof corner",
 			"kind": "placeable",
 			"description": "A clay tile roof corner on pinned plank rafters.",
 			"how_to_get": [
@@ -10567,7 +10567,7 @@
 			"obtainable_now": false
 		},
 		"fortified_foundation_kit": {
-			"name": "Fortified foundation",
+			"name": "Fortified - Foundation",
 			"kind": "placeable",
 			"description": "A concrete slab tied with iron bands, four metres square. The base of a fort.",
 			"how_to_get": [
@@ -10585,7 +10585,7 @@
 			"obtainable_now": false
 		},
 		"fortified_wall_kit": {
-			"name": "Fortified wall",
+			"name": "Fortified - Wall",
 			"kind": "placeable",
 			"description": "A concrete wall banded with iron, two metres wide. Built to stand a siege.",
 			"how_to_get": [
@@ -10603,7 +10603,7 @@
 			"obtainable_now": false
 		},
 		"fortified_doorway_kit": {
-			"name": "Fortified doorway",
+			"name": "Fortified - Doorway",
 			"kind": "placeable",
 			"description": "A banded concrete wall with a heavy iron-strapped door.",
 			"how_to_get": [
@@ -10621,7 +10621,7 @@
 			"obtainable_now": false
 		},
 		"fortified_gate_kit": {
-			"name": "Fortified gate",
+			"name": "Fortified - Gate",
 			"kind": "placeable",
 			"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
 			"how_to_get": [
@@ -10639,7 +10639,7 @@
 			"obtainable_now": false
 		},
 		"fortified_pillar_kit": {
-			"name": "Fortified pillar",
+			"name": "Fortified - Pillar",
 			"kind": "placeable",
 			"description": "A concrete pillar bound with iron bands.",
 			"how_to_get": [
@@ -10657,7 +10657,7 @@
 			"obtainable_now": false
 		},
 		"fortified_wall_top_kit": {
-			"name": "Fortified wall top",
+			"name": "Fortified - Wall top",
 			"kind": "placeable",
 			"description": "A crenellated concrete parapet with iron ties. Cover for whoever holds the wall.",
 			"how_to_get": [
