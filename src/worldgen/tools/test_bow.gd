@@ -365,7 +365,7 @@ func fire_checks() -> void:
 	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0), fire_n)
 	check(items._arrows.size() == 1 and bool(items._arrows[0]["fire"]) and is_equal_approx(float(alarms[0][1]), noise * 2.0), "by a fire it is lit, and heard twice as far")
 	fly(items, 2.0)
-	check(hits.size() == 1 and is_equal_approx(float(hits[0]), plain * 1.5), "a lit arrow does half again the damage (%.1f against %.1f)" % [float(hits[0]) if hits.size() > 0 else 0.0, plain])
+	check(hits.size() == 1 and plain > 0.0 and absf(float(hits[0]) / plain - 1.5) < 0.05, "a lit arrow does half again the damage, within 0.05: the first hit trains the hunting skill a hair (%.1f against %.1f)" % [float(hits[0]) if hits.size() > 0 else 0.0, plain])
 	var lying: int = 0
 
 	for id in items._items:
