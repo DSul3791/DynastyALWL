@@ -357,7 +357,7 @@ func _refresh_detail() -> void:
 	var parts: Dictionary = view._parts_plan(view._selected_recipe)
 
 	if bool(parts["ok"]):
-		var made_first: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], view.table.name_of(m[0]).to_lower()])
+		var made_first: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], view.table.sentence_name(m[0])])
 		# The helper (look doc section 9): one press queues the recipe, and the server makes the parts first.
 		var helper: Button = _hint_button("Make it  (makes %s first)" % " and ".join(made_first))
 		var helper_number: int = view._selected_recipe
@@ -493,7 +493,7 @@ func _stats_of(entry: Dictionary) -> Array:
 	var mends: PackedStringArray = PackedStringArray()
 
 	for cost in entry.get("repair", []):
-		mends.append(view.table.name_of(view.table.number_of(str(cost[0]))).to_lower())
+		mends.append(view.table.sentence_name(view.table.number_of(str(cost[0]))))
 
 	if not mends.is_empty():
 		stats.append(["Mends with", ", ".join(mends)])
@@ -561,7 +561,7 @@ func missing_text(r: Dictionary) -> String:
 		var have: int = view.stock_fill(int(need[0]))
 
 		if have < int(need[1]):
-			short.append("%s %d / %d" % [view.table.name_of(int(need[0])).to_lower(), have, int(need[1])])
+			short.append("%s %d / %d" % [view.table.sentence_name(int(need[0])), have, int(need[1])])
 
 	if short.is_empty():
 		return ""

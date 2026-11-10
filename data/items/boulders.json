@@ -27,7 +27,7 @@
 	"bank_chance": 0.4,
 	"luck_extra": 0.05,
 	"ore": {
-		"note": "Ore and coal from boulders (guide finding F-23, FLINT_ORE_SPEC.md): a boulder that lies within reach_m of an ore body of the terrain (the geology's ore_bodies) is an outcrop with that ore with chance boulder_share (decided from the boulder's key, so it is the same every time). A PICK (not an axe) takes the ore: each piece that comes away is the ore with chance piece_share, else stone. Iron needs no better pick than copper: there is no bronze pick in the game, and an iron pick needs iron ore first (a circle), so the ladder is made by rarity, not by tool. items: ore name in data/tables/resources.json -> item id. 2026-10-31 (Sal): `needs_material` lists which pick materials may take each ore: coal, copper and tin with any pick, iron only with a bronze, iron or steel pick, so the ladder is stone pick (copper, tin, coal) -> forge -> bronze ingot -> bronze pickaxe -> iron. The server reads needs_material in _hit_boulder (checked 3 Nov 2026), so a stone pick cannot take iron. 2026-11-10 (Steve, Jamie's tin check): a compact ore body (lens, halo, pipe, vein, placer) within reach_m comes first, the nearest of them; else a coal seam or other layer of the province under the boulder counts only where one of its bands lies within layer_depth_m under the bedrock surface. Bodies of ores not in items (gems, flint) are skipped instead of hiding the rest.",
+		"note": "Ore and coal from boulders (guide finding F-23, FLINT_ORE_SPEC.md): a boulder that lies within reach_m of an ore body of the terrain (the geology's ore_bodies) is an outcrop with that ore with chance boulder_share (decided from the boulder's key, so it is the same every time). A PICK (not an axe) takes the ore: each piece that comes away is the ore with chance piece_share, else stone. Iron needs no better pick than copper: there is no bronze pick in the game, and an iron pick needs iron ore first (a circle), so the ladder is made by rarity, not by tool. items: ore name in data/tables/resources.json -> item id. 2026-10-31 (Sal): `needs_material` lists which pick materials may take each ore: coal, copper and tin with any pick, iron only with a bronze, iron or steel pick, so the ladder is stone pick (copper, tin, coal) -> forge -> bronze ingot -> bronze pickaxe -> iron. The server reads needs_material in _hit_boulder (checked 3 Nov 2026), so a stone pick cannot take iron. 2026-11-10 (Steve, Jamie's tin check): a compact ore body (lens, halo, pipe, vein, placer) within reach_m comes first, the nearest of them; else a coal seam or other layer of the province under the boulder counts only where one of its bands lies within layer_depth_m under the bedrock surface. Bodies of ores not in items (gems, flint) are skipped instead of hiding the rest. 10 Nov 2026 (coordinator, item_system.md): rock salt. An evaporite salt bed (a layer) shows in boulders where its band comes within layer_depth_m of the bedrock surface, and a salt dome (a pipe) only where its top does; its pieces are the same Salt as sea salt, with any pick.",
 		"reach_m": 40.0,
 		"layer_depth_m": 10.0,
 		"boulder_share": 0.4,
@@ -37,7 +37,8 @@
 			"coal": "coal",
 			"copper": "copper_ore",
 			"tin": "tin_ore",
-			"iron": "iron_ore"
+			"iron": "iron_ore",
+			"salt": "salt"
 		},
 		"needs_material": {
 			"coal": [
@@ -53,6 +54,12 @@
 				"steel"
 			],
 			"tin": [
+				"stone",
+				"bronze",
+				"iron",
+				"steel"
+			],
+			"salt": [
 				"stone",
 				"bronze",
 				"iron",

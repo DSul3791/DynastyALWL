@@ -65,6 +65,7 @@ func _init() -> void:
 	var herbs = Inventory.new(table)
 	herbs.add(table.number_of("plantain_leaves"), 4)
 	herbs.add(table.number_of("plant_fibre"), 2)
+	herbs.add(table.number_of("mortar_pestle"), 1)   # grinding herbs keeps the mortar and pestle (item system, Part C)
 	check(recipes.craft(8, herbs) and herbs.count_of(table.number_of("poultice")) == 1 and herbs.count_of(table.number_of("plantain_leaves")) == 1, "plantain poultice takes 3 leaves")
 	check(recipes.craft(10, herbs) and herbs.count_of(table.number_of("bandage")) == 1 and herbs.count_of(table.number_of("plant_fibre")) == 0, "leaf bandage takes 1 leaf and 2 fibre")
 	check(recipes.recipe(8)["identify"] == [table.number_of("plantain_leaves")], "poultice asks for the herb to be identified")

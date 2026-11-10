@@ -221,7 +221,7 @@ func _prompt_for(c: Dictionary) -> String:
 
 	if c["ok"]:
 		if int(c.get("left", -1)) > 0:
-			return "Press E to pick %s (%d left)" % [_items.table.name_of(_items.table.number_of(str(c.get("item", "")))).to_lower(), int(c["left"])]
+			return "Press E to pick %s (%d left)" % [_items.table.sentence_name(_items.table.number_of(str(c.get("item", "")))), int(c["left"])]
 
 		return "Press E to pick"
 

@@ -24,6 +24,12 @@ class FakeTable:
 	func shelf_units(_number: int) -> int:
 		return 0
 
+	func sentence_name(number: int) -> String:
+		return in_sentence(name_of(number))
+
+	func in_sentence(text: String) -> String:
+		return text.replace(" - ", " ").to_lower()
+
 
 class FakeStore:
 	const SLOTS := 36

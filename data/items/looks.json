@@ -3943,6 +3943,86 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.0
+  },
+  "clay_bloomery_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stonecutters_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "bronze_chisel": {
+   "shape": "knife",
+   "color": "#b0803a",
+   "size": 1.0
+  },
+  "iron_chisel": {
+   "shape": "knife",
+   "color": "#8a8a90",
+   "size": 1.0
+  },
+  "steel_chisel": {
+   "shape": "knife",
+   "color": "#b8c0c8",
+   "size": 1.0
+  },
+  "carved_stone_block": {
+   "shape": "block",
+   "color": "#9a978f",
+   "size": 1.5
+  },
+  "carved_stone_shingle": {
+   "shape": "chunk",
+   "color": "#7a7d84",
+   "size": 0.7
+  },
+  "meat_skewer": {
+   "shape": "joint",
+   "color": "#7a4424",
+   "size": 0.8
+  },
+  "sausage": {
+   "shape": "joint",
+   "color": "#8a3a2a",
+   "size": 0.7
+  },
+  "fruit": {
+   "shape": "round_berries",
+   "color": "#b0502a",
+   "size": 1.0
+  },
+  "fruit_juice": {
+   "shape": "bottle",
+   "color": "#c06a2a",
+   "size": 0.8
+  },
+  "mortar_pestle": {
+   "shape": "chunk",
+   "color": "#8a8580",
+   "size": 0.9
+  },
+  "herb_antidote": {
+   "shape": "bottle",
+   "color": "#5a7a3a",
+   "size": 0.8
+  },
+  "bonemeal": {
+   "shape": "crumble",
+   "color": "#d8d0c0",
+   "size": 1.0
+  },
+  "parsnip": {
+   "shape": "chunk",
+   "color": "#e0d6a8",
+   "size": 1.0
+  },
+  "parsnip_seeds": {
+   "shape": "chunk",
+   "color": "#a89a70",
+   "size": 0.5
   }
 
  }
