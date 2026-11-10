@@ -3477,6 +3477,61 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.0
+  },
+  "log_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "log_table_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_table_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_bench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_chair_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_table_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_workbench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_shelf_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_cupboard_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_barrel_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
   }
 
  }

@@ -2002,7 +2002,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": true
 		},
@@ -2044,7 +2046,11 @@
 				"Used in Thatch - Pillar",
 				"Used in Thatch - Roof corner",
 				"Used in Wooden - Pillar",
-				"Used in Wooden - Roof corner"
+				"Used in Wooden - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Wooden - Barrel",
+				"Used in Wooden - Shelf"
 			],
 			"obtainable_now": true
 		},
@@ -2316,7 +2322,15 @@
 				"Used in Brick - Roof corner",
 				"Used in Stone - Roof corner",
 				"Used in Wooden - Pillar",
-				"Used in Wooden - Roof corner"
+				"Used in Wooden - Roof corner",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table",
+				"Used in Stone - Table",
+				"Used in Stone - Workbench",
+				"Used in Wooden - Barrel",
+				"Used in Wooden - Cupboard",
+				"Used in Wooden - Shelf"
 			],
 			"obtainable_now": true
 		},
@@ -2357,7 +2371,10 @@
 				"Used in Iron - Shield",
 				"Used in Iron - Hammer",
 				"Used in Iron - Fence",
-				"Used in Iron - Gate"
+				"Used in Iron - Gate",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2518,7 +2535,8 @@
 				"Used in Hide - Cloak",
 				"Used in Hide - Gloves",
 				"Used in Hide glue",
-				"Used in Wooden - Chair"
+				"Used in Wooden - Chair",
+				"Used in Iron - Chair"
 			],
 			"obtainable_now": true
 		},
@@ -3135,7 +3153,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3180,7 +3200,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3225,7 +3247,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3270,7 +3294,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3315,7 +3341,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3360,7 +3388,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3405,7 +3435,9 @@
 				"Used in Log - Palisade",
 				"Used in Log - Palisade gate",
 				"Used in Log - Pillar",
-				"Used in Log - Roof corner"
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3801,7 +3833,10 @@
 				"Used in Brick - Fence",
 				"Used in Brick - Gate",
 				"Used in Brick - Pillar",
-				"Used in Stone - Pillar"
+				"Used in Stone - Pillar",
+				"Used in Stone - Bench",
+				"Used in Stone - Table",
+				"Used in Stone - Workbench"
 			],
 			"obtainable_now": true
 		},
@@ -3907,7 +3942,12 @@
 				"Used in Water wheel",
 				"Used to build Sawmill",
 				"Used to build Woodworking table",
-				"Used in Iron - Fence"
+				"Used in Iron - Fence",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table",
+				"Used in Wooden - Barrel",
+				"Used in Wooden - Cupboard"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3923,7 +3963,10 @@
 				"Planned: a cobble floor and path.",
 				"Used in Stone - Fence",
 				"Used in Stone - Gate",
-				"Used in Stone - Pillar"
+				"Used in Stone - Pillar",
+				"Used in Stone - Bench",
+				"Used in Stone - Table",
+				"Used in Stone - Workbench"
 			],
 			"obtainable_now": true
 		},
@@ -3966,7 +4009,8 @@
 				"Used in Iron - Gate",
 				"Used in Log - Palisade gate",
 				"Used in Stone - Gate",
-				"Used in Wooden - Gate"
+				"Used in Wooden - Gate",
+				"Used in Wooden - Cupboard"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -7744,6 +7788,204 @@
 			"name": "Brick - Roof corner",
 			"kind": "structure",
 			"description": "The corner of a brick roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_bench_kit": {
+			"name": "Log bench",
+			"kind": "placeable",
+			"description": "A split log on two stumps. Seats two or three.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_bench": {
+			"name": "Log - Bench",
+			"kind": "structure",
+			"description": "A split log on two stumps. Seats two or three.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_table_kit": {
+			"name": "Log table",
+			"kind": "placeable",
+			"description": "A table with a hand-hewn log top.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_table": {
+			"name": "Log - Table",
+			"kind": "structure",
+			"description": "A table with a hand-hewn log top.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_bench_kit": {
+			"name": "Stone bench",
+			"kind": "placeable",
+			"description": "A heavy stone slab on stone feet. Seats two or three.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_bench": {
+			"name": "Stone - Bench",
+			"kind": "structure",
+			"description": "A heavy stone slab on stone feet. Seats two or three.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_table_kit": {
+			"name": "Stone table",
+			"kind": "placeable",
+			"description": "A thick stone-footed table with a plank top.",
+			"how_to_get": [
+				"Build with a hammer (press R): 14 Cobblestone, 3 Clay mortar, 2 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_table": {
+			"name": "Stone - Table",
+			"kind": "structure",
+			"description": "A thick stone-footed table with a plank top.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_bench_kit": {
+			"name": "Iron bench",
+			"kind": "placeable",
+			"description": "A timber bench bound with iron. Seats two or three.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_bench": {
+			"name": "Iron - Bench",
+			"kind": "structure",
+			"description": "A timber bench bound with iron. Seats two or three.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_chair_kit": {
+			"name": "Iron chair",
+			"kind": "placeable",
+			"description": "An iron-bound chair with a hide seat.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails, 1 Hide"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_chair": {
+			"name": "Iron - Chair",
+			"kind": "structure",
+			"description": "An iron-bound chair with a hide seat.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_table_kit": {
+			"name": "Iron table",
+			"kind": "placeable",
+			"description": "A plank table bound with iron.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_table": {
+			"name": "Iron - Table",
+			"kind": "structure",
+			"description": "A plank table bound with iron.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_workbench_kit": {
+			"name": "Stone workbench",
+			"kind": "placeable",
+			"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Cobblestone, 4 Clay mortar, 6 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_workbench": {
+			"name": "Stone - Workbench",
+			"kind": "structure",
+			"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_shelf_kit": {
+			"name": "Wooden shelf",
+			"kind": "placeable",
+			"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_shelf": {
+			"name": "Wooden - Shelf",
+			"kind": "structure",
+			"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_cupboard_kit": {
+			"name": "Wooden cupboard",
+			"kind": "placeable",
+			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 12 Nails, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_cupboard": {
+			"name": "Wooden - Cupboard",
+			"kind": "structure",
+			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_barrel_kit": {
+			"name": "Wooden barrel",
+			"kind": "placeable",
+			"description": "A hooped plank barrel. Holds 8 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_barrel": {
+			"name": "Wooden - Barrel",
+			"kind": "structure",
+			"description": "A hooped plank barrel. Holds 8 stacks.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
