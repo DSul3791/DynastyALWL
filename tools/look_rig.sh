@@ -23,7 +23,7 @@
 #   --dist M  third-person camera distance (under 2 m aims at the held item: a hand close-up)
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
 #   --at     world x,z (default the spawn 53301,68427); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
-#   --cam right = the character seen from its right (the right hand shows); --nograss hides the grass; --bow STATE[:DRAW] poses a held bow (with --give wooden_bow); --keep keeps the temp folder
+#   --cam right = the character seen from its right (the right hand shows); --nograss hides the grass; --bow STATE[:DRAW] poses a held bow (with --give wooden_bow; first person shows the arms, --cam left the body with the bow at its side); --keep keeps the temp folder
 #   --admin  also show the F3 admin/debug lines
 #   --walk M_PER_S  with --cam left|right: the third-person body walks at that speed (4 = walk, 8 = run, 0 = standing; the shot runner fakes the pace)
 #   --server-arg ARG  pass one extra argument to the throwaway server (repeat), e.g. --server-arg --water2 (Dynasty water)

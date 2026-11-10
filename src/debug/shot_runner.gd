@@ -20,7 +20,8 @@ extends Node
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
 #   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert), and logs which clip each played
-#   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (lowered at the side), raised[:0 to 1] (up, the string drawn that far) or drawn (at the jaw)
+#   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (ready to shoot, the string at rest), raised[:0 to 1] (the string drawn that far) or drawn (at the jaw);
+#                       first person keeps the arms on; look rig --cam left|right shows the body with the bow at its side
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -325,8 +326,10 @@ func _process(delta: float) -> void:
 		if no_grass and client.grass != null and client.grass.enabled:
 			client.grass.set_radius(0.0)      # the grass view draws nothing (a quality change may turn it back on)
 
+		# No arms in the pictures, except a first-person bow shot: the bow is held in both hands of the arms (held_item.gd _pose_bow), and with the arms off it went
+		# to the hidden body's hand and the pictures showed no bow (Dino, 10 Nov 2026).
 		if client.held != null:
-			client.held.set_first_person(false)
+			client.held.set_first_person(bow_pose != "" and float(shots[_index]["walk"]) < 0.0)
 
 		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
 			client._avatar.visible = false
