@@ -31,7 +31,7 @@ func check(ok: bool, what: String) -> void:
 
 	if not ok:
 		failures += 1
-		print("     the server said: ", said.slice(maxi(said.size() - 3, 0)) if not said.is_empty() else "nothing")
+		print("     the server said: ", str(said.slice(maxi(said.size() - 3, 0))) if not said.is_empty() else "nothing")
 
 
 func have(id: String) -> int:
