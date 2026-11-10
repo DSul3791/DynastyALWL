@@ -230,7 +230,7 @@ Furniture B3, lights B4, garden B5 and water B6 rows are **not** repeated here. 
 | Brick - Forge | RENAME (Blacksmith's forge) | iron. **New cost (ruled): 20 Brick, 10 Stone, 4 Clay mortar. Kathleen reskins it: brick body, keep the hood and iron straps.** |
 | Anvil | NEW | **Brick - Forge add-on** (`addon_of: brick_forge`) within 5 m. 5 Iron ingot + 1 Log (as #883). **The bellows is dropped.** |
 | Large forge, Master forge | PARKED | The unpark is withdrawn; the anvil is the steel step. |
-| **Clay hearth** | **HAVE, stays** | **A cooking station (26 recipes; the Brick oven needs it near). Not a kiln.** |
+| **Clay hearth** | **HAVE, stays** | **A cooking station (26 recipes; the Oven needs it near). Not a kiln.** |
 | Kiln | NEW | One kiln (single version, plain name; supersedes draft 3's Clay - Kiln and Brick - Kiln). Hammer; 30 Brick, 8 Clay, 4 Clay mortar. **Brick yield doubles (2 Clay → 6 Brick; the campfire gives 3) and 2 Firewood → 2 Charcoal (campfire: 1).** Glass (Sand + Potash) and Potash are made here. **Pots stay at the campfire.** The campfire makes the first bricks, pots and charcoal. |
 | Oven | RENAME (Brick oven; single version, plain) | as live; still needs the Clay hearth near it |
 | Tanning rack | NEW | 6 Log, 4 Twine. **Move the live leather recipe here with the same inputs** (Scraped hide + 2 Tanbark + 1 Water; Heavy leather too) and remove the campfire-pot version. |
