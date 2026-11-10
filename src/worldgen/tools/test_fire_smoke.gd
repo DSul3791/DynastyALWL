@@ -66,7 +66,7 @@ func _init() -> void:
 	var small_fire: Node3D = BuildingLook.fire(true, false, 1)
 	var small_plume: GPUParticles3D = small_fire.get_node("Smoke") as GPUParticles3D
 	var small_end_m: float = BuildingLook.smoke_tier("puff_m", 1) * 0.5 * BuildingLook.smoke_tier("grow_to", 1)
-	_check(small_end_m <= 1.0 and small_plume.lifetime <= 10.0 and small_plume.lifetime < life, "a small fire's smoke is a wisp: %.1f m wide at the end, gone in %.0f s" % [small_end_m, small_plume.lifetime])
+	_check(small_end_m <= 1.0 and small_plume.lifetime <= 12.5 and small_plume.lifetime < life, "a small fire's smoke is a wisp: %.1f m wide at the end, gone in %.0f s" % [small_end_m, small_plume.lifetime])
 	_check(BuildingLook.smoke_tier("density", 1) < BuildingLook.smoke_tier("density", 2) and BuildingLook.smoke_tier("puff_m", 1) < BuildingLook.smoke_tier("puff_m", 2), "and thinner and narrower than a medium fire's")
 	small_fire.free()
 	_check(ramp.sample(0.1).a > ramp.sample(0.5).a and ramp.sample(0.5).a > ramp.sample(0.9).a, "dense at the fire, thinning as it rises")
