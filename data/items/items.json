@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 757,
+	"next_number": 770,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -8637,6 +8637,185 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Water piece: row state 187. Locked until Steve's water_network module lands."
+			},
+			"horn": {
+				"number": 757,
+				"name": "Horn",
+				"description": "A hollow horn from a goat, sheep or ox. Pressed thin it lets light through; carved, it holds a drink.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [
+					"Antler"
+				],
+				"value": 6
+			},
+			"gut": {
+				"number": 758,
+				"name": "Gut",
+				"description": "Cleaned intestine from a large kill. Casing for sausage, and strong cord when dried and twisted.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [
+					"Sinew"
+				],
+				"value": 3
+			},
+			"toggle": {
+				"number": 759,
+				"name": "Toggle",
+				"description": "A short bone peg with a groove. Fastens a belt or a cloak through a loop.",
+				"kind": "material",
+				"stack": 50,
+				"look_alikes": [
+					"Wooden pin"
+				],
+				"value": 1
+			},
+			"hook": {
+				"number": 760,
+				"name": "Hook",
+				"description": "A fish hook ground from bone. A fishing rod needs one.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2
+			},
+			"bone_club": {
+				"number": 761,
+				"name": "Bone - Club",
+				"description": "A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer.",
+				"kind": "weapon",
+				"weapon_class": "club",
+				"tier": 1,
+				"stack": 1,
+				"unstackable": true,
+				"damage": 8.0,
+				"durability": 450,
+				"look_alikes": [
+					"Wooden - Club"
+				],
+				"repair": [
+					[
+						"bone",
+						1
+					]
+				],
+				"value": 12
+			},
+			"leather_quiver": {
+				"number": 762,
+				"name": "Leather - Quiver",
+				"description": "A stiff leather tube worn on the back. Holds 60 arrows and keeps them dry.",
+				"kind": "gear",
+				"slot": "back",
+				"ammo_class": "arrow",
+				"ammo_capacity": 60,
+				"stack": 1,
+				"unstackable": true,
+				"value": 45,
+				"look_alikes": [
+					"Hide - Quiver"
+				]
+			},
+			"wooden_longbow": {
+				"number": 763,
+				"name": "Wooden - Longbow",
+				"description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.",
+				"kind": "weapon",
+				"weapon_class": "bow",
+				"tier": 2,
+				"durability": 600,
+				"repair": [
+					[
+						"sinew",
+						1
+					]
+				],
+				"stack": 1,
+				"unstackable": true,
+				"value": 50,
+				"look_alikes": [
+					"Wooden - Bow"
+				]
+			},
+			"leather_trousers": {
+				"number": 764,
+				"name": "Leather - Trousers",
+				"description": "Leather trousers laced with straps. Tougher than hide and better in the wet.",
+				"kind": "clothing",
+				"slot": "legs",
+				"warmth": 0.16,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Hide - Trousers"
+				],
+				"value": 55
+			},
+			"leather_boots": {
+				"number": 765,
+				"name": "Leather - Boots",
+				"description": "Leather boots with a strapped ankle. They keep the feet dry for longer.",
+				"kind": "clothing",
+				"slot": "feet",
+				"warmth": 0.13,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Hide - Boots"
+				],
+				"value": 40
+			},
+			"leather_gloves": {
+				"number": 766,
+				"name": "Leather - Gloves",
+				"description": "Leather gloves with fingers. For work, the bowstring and the cold.",
+				"kind": "clothing",
+				"slot": "hands",
+				"warmth": 0.09,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Hide - Gloves"
+				],
+				"value": 30
+			},
+			"leather_backpack": {
+				"number": 767,
+				"name": "Leather - Backpack",
+				"description": "A leather pack with a frame of straps. Worn on the back, it carries more than a hide pack.",
+				"kind": "gear",
+				"slot": "back",
+				"carry_bonus_kg": 18,
+				"stack": 1,
+				"unstackable": true,
+				"value": 90,
+				"look_alikes": [
+					"Hide - Backpack"
+				]
+			},
+			"straw_hat": {
+				"number": 768,
+				"name": "Straw - Hat",
+				"description": "A wide hat of plaited straw. Light, and it keeps sun and a little rain off.",
+				"kind": "clothing",
+				"slot": "head",
+				"warmth": 0.04,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 10
+			},
+			"worm": {
+				"number": 769,
+				"name": "Worm",
+				"description": "A fat earthworm turned up by the spade in rich soil. Fish take it as bait.",
+				"kind": "material",
+				"stack": 50,
+				"look_alikes": [],
+				"value": 1,
+				"future": true,
+				"note": "Found when digging soil (Steve #931, digging.json finds); future until that lands."
 			}
 	}
 }

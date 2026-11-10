@@ -1482,7 +1482,8 @@
 				"Picked from tall grass (spring/summer/autumn)"
 			],
 			"used_for": [
-				"Used in Thatch - Bed"
+				"Used in Thatch - Bed",
+				"Used in Straw - Hat"
 			],
 			"obtainable_now": true
 		},
@@ -2075,7 +2076,10 @@
 				"Used in Wooden - Channel corner",
 				"Used in Wooden - Channel tee",
 				"Used in Wooden - Hand pump",
-				"Used in Wooden - Trough"
+				"Used in Wooden - Trough",
+				"Used in Bone - Club",
+				"Used in Straw - Hat",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -2669,7 +2673,10 @@
 			],
 			"used_for": [
 				"Used in Bone - Arrow",
-				"Used in Bone - Needle"
+				"Used in Bone - Needle",
+				"Used in Bone - Club",
+				"Used in Hook",
+				"Used in Toggle"
 			],
 			"obtainable_now": true
 		},
@@ -2897,7 +2904,8 @@
 				"Used in Fur - Boots",
 				"Used in Fur - Cloak",
 				"Used in Fur - Hat",
-				"Used in Sinew cord"
+				"Used in Sinew cord",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -2968,7 +2976,7 @@
 			"kind": "tool",
 			"description": "A stick, line and hook. Cast at water, then click again when something bites.",
 			"how_to_get": [
-				"Craft: 2 Stick, 2 Twine"
+				"Craft: 2 Stick, 2 Twine, 1 Hook"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4614,7 +4622,12 @@
 				"Used in Bronze - Sword",
 				"Used in Iron - Helm",
 				"Used in Iron - Mail shirt",
-				"Used in Steel - Sword"
+				"Used in Steel - Sword",
+				"Used in Leather - Backpack",
+				"Used in Leather - Boots",
+				"Used in Leather - Gloves",
+				"Used in Leather - Quiver",
+				"Used in Leather - Trousers"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5325,7 +5338,7 @@
 				"Dropped by reindeer when worked with a knife"
 			],
 			"used_for": [
-				"Used in Horn pane"
+				"Used in Antler - Mount"
 			],
 			"obtainable_now": true
 		},
@@ -6098,7 +6111,12 @@
 				"Used in Leather - Jerkin",
 				"Used in Bronze - Axe",
 				"Used in Leather - Cap",
-				"Used in Wooden - Spyglass"
+				"Used in Wooden - Spyglass",
+				"Used in Leather - Backpack",
+				"Used in Leather - Boots",
+				"Used in Leather - Gloves",
+				"Used in Leather - Quiver",
+				"Used in Leather - Trousers"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -7217,7 +7235,8 @@
 			"used_for": [
 				"Split on a chopping block: 4 firewood",
 				"Make a chopping block",
-				"Burn it in a fire"
+				"Burn it in a fire",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -7231,7 +7250,8 @@
 			"used_for": [
 				"Split on a chopping block: 4 firewood",
 				"Make a chopping block",
-				"Burn it in a fire"
+				"Burn it in a fire",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -8281,7 +8301,7 @@
 			"kind": "material",
 			"description": "A thin pane of scraped horn. Lets lantern light through.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Antler"
+				"Craft at a workbench: 1 Horn"
 			],
 			"used_for": [
 				"Used in Iron - Hanging lantern",
@@ -9148,9 +9168,148 @@
 				"Used in Wool - Cap",
 				"Used in Wool - Mittens",
 				"Used in Wool - Trousers",
-				"Used in Wool - Tunic"
+				"Used in Wool - Tunic",
+				"Used in Leather - Backpack",
+				"Used in Leather - Boots",
+				"Used in Leather - Gloves",
+				"Used in Leather - Quiver",
+				"Used in Leather - Trousers"
 			],
 			"obtainable_now": true
+		},
+		"horn": {
+			"name": "Horn",
+			"kind": "material",
+			"description": "A hollow horn from a goat, sheep or ox. Pressed thin it lets light through; carved, it holds a drink.",
+			"how_to_get": [
+				"Dropped by mountain goat, wild sheep, bighorn, chamois, cow, goat, buffalo, pronghorn, wildebeest and rhino when worked with a knife"
+			],
+			"used_for": [
+				"Used in Horn pane"
+			],
+			"obtainable_now": true
+		},
+		"gut": {
+			"name": "Gut",
+			"kind": "material",
+			"description": "Cleaned intestine from a large kill. Casing for sausage, and strong cord when dried and twisted.",
+			"how_to_get": [
+				"Dropped by boar, deer, wolf, moose, beaver, lynx, bear, mountain goat, wild sheep, reindeer, seal, horse, donkey, black bear, elk, bighorn, chamois, cow, goat, dog, buffalo, puma, pronghorn, warthog, hyena, wildebeest, lion, leopard, rhino, elephant, camel, kangaroo, mammoth and tiger when worked with a knife"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"toggle": {
+			"name": "Toggle",
+			"kind": "material",
+			"description": "A short bone peg with a groove. Fastens a belt or a cloak through a loop.",
+			"how_to_get": [
+				"Craft: 1 Bone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hook": {
+			"name": "Hook",
+			"kind": "material",
+			"description": "A fish hook ground from bone. A fishing rod needs one.",
+			"how_to_get": [
+				"Craft: 1 Bone"
+			],
+			"used_for": [
+				"Used in Fishing rod"
+			],
+			"obtainable_now": true
+		},
+		"bone_club": {
+			"name": "Bone - Club",
+			"kind": "weapon",
+			"description": "A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer.",
+			"how_to_get": [
+				"Craft: 2 Bone, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_quiver": {
+			"name": "Leather - Quiver",
+			"kind": "gear",
+			"description": "A stiff leather tube worn on the back. Holds 60 arrows and keeps them dry.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_longbow": {
+			"name": "Wooden - Longbow",
+			"kind": "weapon",
+			"description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Large wooden block, 1 Sinew, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_trousers": {
+			"name": "Leather - Trousers",
+			"kind": "clothing",
+			"description": "Leather trousers laced with straps. Tougher than hide and better in the wet.",
+			"how_to_get": [
+				"Craft at a workbench: 3 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_boots": {
+			"name": "Leather - Boots",
+			"kind": "clothing",
+			"description": "Leather boots with a strapped ankle. They keep the feet dry for longer.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_gloves": {
+			"name": "Leather - Gloves",
+			"kind": "clothing",
+			"description": "Leather gloves with fingers. For work, the bowstring and the cold.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_backpack": {
+			"name": "Leather - Backpack",
+			"kind": "gear",
+			"description": "A leather pack with a frame of straps. Worn on the back, it carries more than a hide pack.",
+			"how_to_get": [
+				"Craft at a workbench: 4 Leather, 4 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"straw_hat": {
+			"name": "Straw - Hat",
+			"kind": "clothing",
+			"description": "A wide hat of plaited straw. Light, and it keeps sun and a little rain off.",
+			"how_to_get": [
+				"Craft: 6 Straw, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"worm": {
+			"name": "Worm",
+			"kind": "material",
+			"description": "A fat earthworm turned up by the spade in rich soil. Fish take it as bait.",
+			"how_to_get": [
+				"Found now and then when digging loam, humus, silt or mud"
+			],
+			"used_for": [],
+			"obtainable_now": false
 		}
 	}
 }
