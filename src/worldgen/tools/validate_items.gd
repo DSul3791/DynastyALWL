@@ -463,6 +463,30 @@ func _init() -> void:
 			gatherable[id] = true
 			obtainable[id] = true
 
+	# Felling (server_items.gd _log_number): a felled tree gives its own log_<species>, or the plain Log when that item is missing or retired.
+	for entry in _read("../tables/flora.json").get("entries", []):
+		if String(entry.get("kind", "")) == "tree":
+			var felled_log: String = "log_" + String(entry["name"])
+
+			if all.has(felled_log) and not bool(all[felled_log].get("retired", false)):
+				obtainable[felled_log] = true
+			else:
+				obtainable["log"] = true
+
+	# Farming (crops.json): a sown seed grows into its yields and gives seeds back (server_items.gd tilled beds).
+	var crops_file: Dictionary = _read("crops.json")
+
+	for crop_id in crops_file.get("crops", {}):
+		var crop: Dictionary = crops_file["crops"][crop_id]
+
+		for row in crop.get("yields", []):
+			want_item.call(String(row[0]), "crops.json %s yields" % crop_id)
+			obtainable[String(row[0])] = true
+
+		if crop.has("seeds_back"):
+			want_item.call(String(crop["seeds_back"][0]), "crops.json %s seeds_back" % crop_id)
+			obtainable[String(crop["seeds_back"][0])] = true
+
 	# Skill hooks: every action names a skill and an effect the code knows.
 	for action in _read("skills.json").get("actions", {}):
 		var def: Dictionary = _read("skills.json")["actions"][action]

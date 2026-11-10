@@ -1228,8 +1228,7 @@
 			"carry": "shoulder",
 			"species": "oak",
 			"look_alikes": [],
-			"value": 48,
-			"future": true
+			"value": 48
 		},
 		"lumber_oak": {
 			"number": 101,
@@ -1263,8 +1262,7 @@
 			"carry": "shoulder",
 			"species": "beech",
 			"look_alikes": [],
-			"value": 48,
-			"future": true
+			"value": 48
 		},
 		"lumber_beech": {
 			"number": 104,
@@ -1298,8 +1296,7 @@
 			"carry": "shoulder",
 			"species": "birch",
 			"look_alikes": [],
-			"value": 24,
-			"future": true
+			"value": 24
 		},
 		"lumber_birch": {
 			"number": 107,
@@ -1333,8 +1330,7 @@
 			"carry": "shoulder",
 			"species": "scots_pine",
 			"look_alikes": [],
-			"value": 32,
-			"future": true
+			"value": 32
 		},
 		"lumber_scots_pine": {
 			"number": 110,
@@ -1368,8 +1364,7 @@
 			"carry": "shoulder",
 			"species": "spruce",
 			"look_alikes": [],
-			"value": 32,
-			"future": true
+			"value": 32
 		},
 		"lumber_spruce": {
 			"number": 113,
@@ -1517,8 +1512,7 @@
 			"carry": "shoulder",
 			"species": "tropical_hardwood",
 			"look_alikes": [],
-			"value": 48,
-			"future": true
+			"value": 48
 		},
 		"lumber_tropical_hardwood": {
 			"number": 125,
@@ -1818,8 +1812,7 @@
 			"carry": "shoulder",
 			"species": "walnut",
 			"look_alikes": [],
-			"value": 48,
-			"future": true
+			"value": 48
 		},
 		"lumber_walnut": {
 			"number": 149,
@@ -2119,8 +2112,7 @@
 			"carry": "shoulder",
 			"species": "maple",
 			"look_alikes": [],
-			"value": 48,
-			"future": true
+			"value": 48
 		},
 		"lumber_maple": {
 			"number": 173,
@@ -3553,7 +3545,6 @@
 			"tier": 1,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"durability": 300,
 			"look_alikes": [],
 			"repair": [
@@ -3597,7 +3588,6 @@
 			"tier": 2,
 			"stack": 5,
 			"unstackable": true,
-			"future": true,
 			"damage": 4.0,
 			"throw_damage": 9.0,
 			"durability": 120,
@@ -3671,7 +3661,6 @@
 			"tier": 1,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"durability": 600,
 			"look_alikes": [],
 			"repair": [
@@ -3904,7 +3893,6 @@
 			"tier": 2,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"durability": 300,
 			"look_alikes": [],
 			"repair": [
@@ -4223,7 +4211,6 @@
 			"description": "Golden heads of grain. Thresh and grind for flour.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4233,7 +4220,6 @@
 			"description": "Hardy grain for bread and brewing.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4243,7 +4229,6 @@
 			"description": "A sweet orange root grown in a tilled bed.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4253,7 +4238,6 @@
 			"description": "A starchy tuber that keeps well.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4263,7 +4247,6 @@
 			"description": "A round root, good in stew.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4273,7 +4256,6 @@
 			"description": "Tall stalks with strong fibres inside.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4303,7 +4285,6 @@
 			"description": "Seeds for sowing carrot. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4314,7 +4295,6 @@
 			"description": "Seeds for sowing potato. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4325,7 +4305,6 @@
 			"description": "Seeds for sowing turnip. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4336,7 +4315,6 @@
 			"description": "Seeds for sowing flax. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4410,7 +4388,6 @@
 			"description": "A stiff spine from a porcupine. Sharp, and can be used as a pin or a point.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -4555,7 +4532,6 @@
 			"description": "Fleece from a wild sheep. Warm, and spun into thread.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
@@ -4565,7 +4541,6 @@
 			"description": "Cloth woven from flax. Light, and cool in summer.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -4587,7 +4562,6 @@
 			"warmth": 0.3,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 40
 		},
@@ -4600,7 +4574,6 @@
 			"warmth": 0.22,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 32
 		},
@@ -4613,7 +4586,6 @@
 			"warmth": 0.12,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 14
 		},
@@ -4626,7 +4598,6 @@
 			"warmth": 0.12,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 14
 		},
@@ -4639,7 +4610,6 @@
 			"warmth": 0.1,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 22
 		},
@@ -4652,7 +4622,6 @@
 			"warmth": 0.42,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 70
 		},
@@ -4665,7 +4634,6 @@
 			"warmth": 0.16,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 24
 		},
@@ -4678,7 +4646,6 @@
 			"warmth": 0.2,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"look_alikes": [],
 			"value": 36
 		},
@@ -4688,7 +4655,6 @@
 			"description": "Hardy grain for porridge and bread in cool, wet ground.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4698,7 +4664,6 @@
 			"description": "A tough grain that grows where wheat will not.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4708,7 +4673,6 @@
 			"description": "A heavy leafy head. Keeps through the winter.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4718,7 +4682,6 @@
 			"description": "A pungent bulb. Flavours food and keeps well.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4728,7 +4691,6 @@
 			"description": "Green pods of sweet peas. Dry them for winter.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4738,7 +4700,6 @@
 			"description": "A deep red root, sweet when roasted.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4768,7 +4729,6 @@
 			"description": "Seeds for sowing cabbage. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4779,7 +4739,6 @@
 			"description": "Seeds for sowing onion. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4790,7 +4749,6 @@
 			"description": "Seeds for sowing peas. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4801,7 +4759,6 @@
 			"description": "Seeds for sowing beet. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4813,8 +4770,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 16,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"barley_broth": {
 			"number": 387,
@@ -4823,8 +4779,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 16,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"rye_flatbread": {
 			"number": 388,
@@ -4833,8 +4788,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 15,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pea_soup": {
 			"number": 389,
@@ -4843,8 +4797,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 15,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"turnip_mash": {
 			"number": 390,
@@ -4853,8 +4806,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 11,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"baked_potato": {
 			"number": 391,
@@ -4863,8 +4815,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"cabbage_stew": {
 			"number": 392,
@@ -4873,8 +4824,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 20,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"beet_roast": {
 			"number": 393,
@@ -4883,8 +4833,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"onion_roast": {
 			"number": 394,
@@ -4893,8 +4842,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"seaweed_soup": {
 			"number": 395,
@@ -4921,8 +4869,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 14,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"egg_nettle_fry": {
 			"number": 398,
@@ -4949,8 +4896,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 14,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"venison_pie": {
 			"number": 401,
@@ -4959,8 +4905,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 20,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"fish_pie": {
 			"number": 402,
@@ -4969,8 +4914,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 19,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"juniper_trout": {
 			"number": 403,
@@ -4988,8 +4932,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 11,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"oat_cakes": {
 			"number": 405,
@@ -4998,8 +4941,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 15,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"jerky": {
 			"number": 406,
@@ -5035,8 +4977,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"hazelnut_butter": {
 			"number": 410,
@@ -5054,8 +4995,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"cactus_fry": {
 			"number": 412,
@@ -5064,8 +5004,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"tallow": {
 			"number": 413,
@@ -5184,7 +5123,6 @@
 			"description": "A peppery red root that grows fast in cool ground.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -5194,7 +5132,6 @@
 			"description": "Soft green leaves that grow fast and spoil fast.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -5204,7 +5141,6 @@
 			"description": "Seeds for sowing radish. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -5215,7 +5151,6 @@
 			"description": "Seeds for sowing lettuce. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -5344,8 +5279,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"olives": {
 			"number": 445,
@@ -5354,8 +5288,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pomegranates": {
 			"number": 446,
@@ -5364,8 +5297,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"mangoes": {
 			"number": 447,
@@ -5374,8 +5306,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"oranges": {
 			"number": 448,
@@ -5384,8 +5315,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"lemons": {
 			"number": 449,
@@ -5394,8 +5324,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"dried_apples": {
 			"number": 450,
@@ -5422,8 +5351,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 25,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"plum_jam": {
 			"number": 453,
@@ -5459,8 +5387,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"quince_paste": {
 			"number": 457,
