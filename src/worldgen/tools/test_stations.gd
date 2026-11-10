@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Crafting stations (Items refill 12): a recipe with a station is queued only near a placed station, waits while you are away,
-# and the camp bench places like the other kits.
+# and the camp bench places like the other kits; a recipe's station is a body and a level, and add-ons count only within their body.
 #   godot --headless --path . --script res://src/worldgen/tools/test_stations.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -101,7 +101,9 @@ func _init() -> void:
 	tiers.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0), Vector3(600.0, 10.0, 0.0), Vector3(800.0, 10.0, 0.0)]
 	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
-	var want: Array = [[2, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
+	# [workbench, forge, brick_forge]. The Brick - Forge is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
+	# level-1 forge for bronze (also). The large and master forges are parked and keep their old forge levels.
+	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 3, 0], [0, 4, 0]]
 
 	for n in 5:
 		var kit_number: int = tiers.table.number_of(kits[n])
@@ -114,6 +116,8 @@ func _init() -> void:
 		check(not tiers.station_near(1, "workbench", int(want[n][0]) + 1), "%s gives no more than %d" % [kits[n], int(want[n][0])])
 		check(tiers.station_near(1, "forge", int(want[n][1])) or int(want[n][1]) == 0, "%s forge %d" % [kits[n], int(want[n][1])])
 		check(int(want[n][1]) == 0 or not tiers.station_near(1, "forge", int(want[n][1]) + 1), "%s forge capped" % kits[n])
+		check(tiers.station_near(1, "brick_forge", int(want[n][2])) or int(want[n][2]) == 0, "%s brick forge %d" % [kits[n], int(want[n][2])])
+		check(not tiers.station_near(1, "brick_forge", int(want[n][2]) + 1), "%s brick forge capped at %d" % [kits[n], int(want[n][2])])
 
 	var steel: int = 0
 
@@ -121,8 +125,57 @@ func _init() -> void:
 		if str(tiers.recipes.recipe(number)["id"]) == "steel_pickaxe":
 			steel = number
 
-	check(int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel needs forge level 3 (the metal sets the level: bronze 1, iron 2, steel 3; recipe audit 10 Nov 2026)")
-	check(tiers.station_near(1, "forge", 3), "a level 3 forge forges steel")
+	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel needs the brick forge at level 3 (bronze forge 1, iron brick forge 2, steel brick forge 3)")
+
+	# The Anvil beside the brick forge is the steel step: brick forge 2 plus one add-on kind is level 3. Beside a stone forge it adds nothing.
+	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
+	check(not tiers.station_near(1, "brick_forge", 3), "no anvil yet: the brick forge is level 2")
+	var anvil: int = tiers.table.number_of("iron_anvil_kit")
+	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
+	tiers.place_item(1, anvil, spots[2] + Vector3(0.0, 0.0, 3.0), 0)   # outside the 2.5 m structure gap, inside the 5 m add-on reach
+	var anvils: int = 0
+
+	for id in tiers._items:
+		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "iron_anvil":
+			anvils += 1
+
+	check(anvils == 1, "the anvil stands beside the brick forge (%d)" % anvils)
+	check(tiers.station_near(1, "brick_forge", 3) and not tiers.station_near(1, "brick_forge", 4), "an anvil beside it makes the brick forge level 3, for steel")
+	check(tiers.station_near(1, "forge", 1) and not tiers.station_near(1, "forge", 2), "and it is still a level 1 forge for bronze, no higher")
+	tiers.report_position(1, spots[1] - Vector3(2.0, 0.0, 0.0))
+	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
+	tiers.place_item(1, anvil, spots[1] + Vector3(0.0, 0.0, 3.0), 0)
+	check(not tiers.station_near(1, "forge", 2) and not tiers.station_near(1, "brick_forge", 1), "an anvil beside a stone forge does nothing: the stone forge never reaches iron")
+
+	_body_checks(tiers)
 
 	print("station tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# A recipe names a station body and a level (item_system.md section 6, code requirement; Morgan, 10 Nov 2026): add-ons raise a level only within
+# their own body (addon_of), and an "also" station counts at its fixed level, add-ons or not. So a stone forge with an anvil beside it never reaches
+# iron, while the brick forge body is level 2 alone and 3 with its anvil, and still does bronze work (also forge 1). Stand-in rows, far from the rest.
+func _body_checks(tiers) -> void:
+	tiers._structures["test_stone_forge"] = {"kit": "", "item": "stone", "state": 9913, "station": "test_forge", "station_level": 1, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50}
+	tiers._structures["test_brick_forge"] = {"kit": "", "item": "stone", "state": 9914, "station": "test_brick_forge", "station_level": 2, "also": {"test_forge": 1}, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50}
+	tiers._structures["test_anvil"] = {"kit": "", "item": "stone", "state": 9915, "addon_of": "test_brick_forge", "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50}
+	var at: Vector3 = Vector3(2000.0, 10.0, 0.0)
+
+	for row in [["test_stone_forge", at], ["test_anvil", at + Vector3(2.0, 0.0, 0.0)]]:
+		tiers._items[tiers._next_id] = {"number": 0, "count": 1, "pos": row[1], "left": 1.0e9, "struct": {"kind": row[0], "yaw": 0.0}}
+		tiers._next_id += 1
+
+	tiers.report_position(1, at + Vector3(1.0, 0.0, 0.0))
+	check(tiers.station_near(1, "test_forge", 1) and not tiers.station_near(1, "test_forge", 2), "a stone forge with an anvil beside it stays level 1: the anvil belongs to the brick forge")
+	check(not tiers.station_near(1, "test_brick_forge", 2), "and it is no brick forge")
+	var brick: Vector3 = Vector3(2400.0, 10.0, 0.0)
+	tiers._items[tiers._next_id] = {"number": 0, "count": 1, "pos": brick, "left": 1.0e9, "struct": {"kind": "test_brick_forge", "yaw": 0.0}}
+	tiers._next_id += 1
+	tiers.report_position(1, brick + Vector3(1.0, 0.0, 0.0))
+	check(tiers.station_near(1, "test_brick_forge", 2) and not tiers.station_near(1, "test_brick_forge", 3), "a brick forge alone is level 2: iron")
+	check(tiers.station_near(1, "test_forge", 1) and not tiers.station_near(1, "test_forge", 2), "and still does level 1 forge work (also)")
+	tiers._items[tiers._next_id] = {"number": 0, "count": 1, "pos": brick + Vector3(2.0, 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "test_anvil", "yaw": 0.0}}
+	tiers._next_id += 1
+	check(tiers.station_near(1, "test_brick_forge", 3), "with its anvil it is level 3: steel")
+	check(not tiers.station_near(1, "test_forge", 2), "the anvil does not lift its also level")

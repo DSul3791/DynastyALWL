@@ -102,7 +102,7 @@ func rows(hammer_tier: int) -> Array:
 		for need in row["cost"]:
 			var have: int = _pack.count_of(_table.number_of(str(need[0])))
 			all = all and have >= int(need[1])
-			parts.append("%s %d/%d" % [str(_table.entry(str(need[0])).get("name", need[0])).to_lower(), have, int(need[1])])
+			parts.append("%s %d/%d" % [_table.in_sentence(str(_table.entry(str(need[0])).get("name", need[0]))), have, int(need[1])])
 
 		out.append({"number": int(row["number"]), "name": str(row["name"]), "kit": str(row["kit"]), "text": ", ".join(parts), "can": all, "station": str(row.get("station", "")), "category": str(row.get("category", "Other"))})
 
@@ -180,7 +180,7 @@ func plan_text(plan: Dictionary) -> String:
 	var parts: PackedStringArray = []
 
 	for id in cost:
-		parts.append("%s %d/%d" % [str(_table.entry(str(id)).get("name", id)).to_lower(), _pack.count_of(_table.number_of(str(id))), int(cost[id])])
+		parts.append("%s %d/%d" % [_table.in_sentence(str(_table.entry(str(id)).get("name", id))), _pack.count_of(_table.number_of(str(id))), int(cost[id])])
 
 	return "%d pieces: %s" % [plan["pieces"].size(), ", ".join(parts)]
 

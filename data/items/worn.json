@@ -18,6 +18,12 @@
 		"fur_boots": {"builder": "boots", "color": "#4a3322", "layer": 2},
 		"leather_cap": {"builder": "cap", "color": "#8a5a30", "layer": 1},
 		"leather_jerkin": {"builder": "jerkin", "color": "#7a4a28", "layer": 2},
+		"straw_hat": {"builder": "cap", "color": "#d8c070", "layer": 1},
+		"leather_backpack": {"builder": "pack", "color": "#6a4024", "layer": 3},
+		"leather_gloves": {"builder": "mittens", "color": "#7a4a28", "layer": 1},
+		"leather_boots": {"builder": "boots", "color": "#5a3a22", "layer": 1},
+		"leather_trousers": {"builder": "trousers", "color": "#7a4a28", "layer": 1},
+		"leather_quiver": {"builder": "pack", "color": "#7a4a28", "layer": 3},
 		"bronze_helm": {"builder": "helm", "color": "#a8743a", "layer": 1},
 		"gambeson": {"builder": "padded", "color": "#b8a468", "layer": 2},
 		"iron_helm": {"builder": "helm", "color": "#6a6a70", "layer": 1},
@@ -29,6 +35,9 @@
 		"grass_skirt": {"builder": "skirt", "color": "#8aa04a", "layer": 1},
 		"fibre_sandals": {"builder": "sandals", "color": "#b8a468", "layer": 1},
 		"backpack": {"builder": "pack", "color": "#7a5a3a", "layer": 3},
-		"quiver": {"builder": "pack", "color": "#6b4c31", "layer": 3}
+		"quiver": {"builder": "pack", "color": "#6b4c31", "layer": 3},
+		"wooden_snowshoes": {"builder": "sandals", "color": "#9a7a4a", "layer": 1},
+		"bronze_scale_shirt": {"builder": "mailshirt", "color": "#b0803a", "layer": 2},
+		"leather_belt": {"builder": "belt", "color": "#6a4024", "layer": 2}
 	}
 }

@@ -62,7 +62,7 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
 const HELD_SPEAR_SCALE := 1.0
-const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
+const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const BowReticle := preload("res://src/client/bow_reticle.gd")
 const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
@@ -138,9 +138,10 @@ var _label: Label
 var _jab_t: float = -1.0
 var _bow_cfg: Dictionary = {}               # data/items/bow.json, read on the first shot (the arrow sound follows its flight)
 var _draw_t: float = -1.0                 # the bow up and drawing (Dave 10 Nov 2026: right mouse held): seconds since it went up, -1 when it is down
-var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the view turned by the sway and drawn to a vital zone (aim_direction)
+var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the middle of the view, which the sway and the pull turn (bow_view_turn)
 var _reticle = null                       # BowReticle: the cross while the bow is up
 var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
+var rig_drawing: bool = false              # the shot runner's --shot-draw (look rig only): the bow is held up and drawing as if right were held, so the crosshair, sway and loosed arrows can be pictured
 var bow_force: String = ""                 # the shot runner's bow pose, "STATE[:DRAW]" (idle, raised, drawn; draw 0 to 1), "" = from play
 var _bow_up: bool = false                  # the bow is raised or drawn: the arms come up to the camera pose
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
@@ -621,7 +622,7 @@ func _bow_config() -> Dictionary:
 
 func _raise_bow() -> void:
 	if not has_arrow():
-		_inv._on_notice(str(_bow_config().get("say_no_ammo", "You have no arrows.")))
+		_inv._on_notice(BowAim.say(_bow_config(), held_id(), "say_no_ammo"))
 		return
 
 	_draw_t = 0.0
@@ -638,6 +639,7 @@ func _lower_bow() -> void:
 
 # Left click with the bow up: the arrow goes along the aim (the server turns it by the skill's spread). Still holding right, the next arrow is drawn.
 func _loose() -> void:
+	_aim_dir = -_camera.global_transform.basis.z   # through the cross in the middle of the screen
 	var draw_ms: int = int(_draw_t * 1000.0)
 	var arrow: int = arrow_to_shoot()
 	_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, draw_ms, arrow, _aim_dir)
@@ -648,7 +650,7 @@ func _loose() -> void:
 
 		_arrow_flight(draw_ms, _aim_dir, arrow)
 
-	_draw_t = 0.0 if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and has_arrow() else -1.0
+	_draw_t = 0.0 if _right_held() and has_arrow() else -1.0
 
 
 # "idle" (the bow down), "raised" (up at sight, the string coming back) or "drawn" (full draw); the arms pose follows it (Kathleen's _pose_bow).
@@ -677,7 +679,8 @@ func bow_wobble() -> Vector2:
 	return BowAim.wobble_offset(BowAim.wobble_deg(cfg, _inv.skill_level_of("hunting"), drawn_s), _draw_t, float(cfg.get("aim", {}).get("wobble_hz", 0.6)))
 
 
-# Where the drawn bow points: the view turned by the sway, then drawn toward a vital zone of an animal near the aim by the skill's pull.
+# Where the sway and the pull would take the aim from the unturned view: the view turned by the sway, then drawn toward a vital zone of an
+# animal near the aim by the skill's pull. bow_view_turn turns the whole view this way, so the aim stays the middle of the screen.
 func aim_direction() -> Vector3:
 	var view: Basis = _camera.global_transform.basis
 	var aim: Vector3 = BowAim.turned(-view.z, view.x, view.y, bow_wobble())
@@ -690,18 +693,38 @@ func aim_direction() -> Vector3:
 	return BowAim.assist(_bow_config(), _inv.skill_level_of("hunting"), _camera.global_position, aim, points)
 
 
+# How far the drawn bow turns the whole view (degrees: x to the right, y up), the sway and the pull together (Dave 10 Nov 2026: "the
+# crosshairs shouldnt move around like they do the whole screen should move like that but much less. it my aiming thats moving not just the
+# crosshairs"). The client scene sets the eye camera back to the mouse's look first, then turns it by this; the cross stays in the middle and the
+# arrow goes where it points. Zero with the bow down.
+func bow_view_turn() -> Vector2:
+	if _draw_t < 0.0 or _camera == null:
+		return Vector2.ZERO
+
+	var view: Basis = _camera.global_transform.basis
+	return BowAim.turn_of(aim_direction(), -view.z, view.x, view.y)
+
+
 # The view narrows a little as the bow comes up (bow.json aim.zoom_fov_share at full draw); 1 with the bow down. The client scene multiplies its field of view by it.
 func aim_fov_share() -> float:
 	return lerpf(1.0, float(_bow_config().get("aim", {}).get("zoom_fov_share", 0.85)), bow_draw())
 
 
+# Right held, or the look rig holding it for the pictures (rig_drawing).
+func _right_held() -> bool:
+	return rig_drawing or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+
+
 func _update_bow(delta: float) -> void:
-	if _draw_t >= 0.0 and (not _is_bow() or not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
+	if _draw_t >= 0.0 and (not _is_bow() or not _right_held()):
 		_draw_t = -1.0   # the bow put away, or right let go outside the game window
+
+	if rig_drawing and _draw_t < 0.0 and _is_bow() and holding and has_arrow() and _camera != null:
+		_raise_bow()   # the rig keeps it up: drawn again after each loose
 
 	if _draw_t >= 0.0:
 		_draw_t += delta
-		_aim_dir = aim_direction()
+		_aim_dir = -_camera.global_transform.basis.z   # the view is the aim: bow_view_turn already turned it
 
 	if _reticle == null and _hud_layer != null:
 		_reticle = BowReticle.new()
@@ -710,13 +733,16 @@ func _update_bow(delta: float) -> void:
 
 	if _reticle != null:
 		_reticle.visible = _draw_t >= 0.0
-
-		if _reticle.visible and not _camera.is_position_behind(_camera.global_position + _aim_dir * 30.0):
-			_reticle.point = _camera.unproject_position(_camera.global_position + _aim_dir * 30.0)
+		_reticle.point = _reticle.global_position + _reticle.size * 0.5   # always the middle of the screen: the view moves, not the cross
 
 
 func _is_spear() -> bool:
-	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
+	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
+
+
+# The Fishing spear (Part C): held and jabbed like a spear, only at water, and never thrown.
+func _is_fish_spear() -> bool:
+	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "fish_spear"
 
 
 # Whether the pack holds an arrow the bow can shoot (the server's ammo list, data/items/bow.json), so a draw with
@@ -728,11 +754,12 @@ func has_arrow() -> bool:
 # The arrow the next shot takes, as the server picks it: the one the bow is loaded with while the pack holds it, else the first of BOW_AMMO there; 0 none.
 func arrow_to_shoot() -> int:
 	var loaded: int = int(_inv.bow_arrow)
+	var ammo: Array = BowAim.ammo_for(_bow_config(), held_id())
 
-	if loaded != 0 and _inv.inventory.count_of(loaded) > 0:
+	if loaded != 0 and _inv.inventory.count_of(loaded) > 0 and ammo.has(_inv.table.id_of(loaded)):
 		return loaded
 
-	for id in BOW_AMMO:
+	for id in ammo:
 		var number: int = _inv.table.number_of(id)
 
 		if number > 0 and _inv.inventory.count_of(number) > 0:   # 0 = not in the table (0 is also an empty slot)
@@ -757,7 +784,7 @@ func _look_spyglass(on: bool) -> void:
 
 
 func _is_bow() -> bool:
-	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "bow" and not _inv.is_broken(held_slot)
+	return BowAim.shoots(_inv.table.entry(held_id())) and not _inv.is_broken(held_slot)   # a bow or a sling
 
 
 func _is_placeable() -> bool:
@@ -1158,7 +1185,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return false
 
 	if button == MOUSE_BUTTON_RIGHT:
-		aiming = pressed
+		aiming = pressed and not _is_fish_spear()
 		return true
 
 	if button == MOUSE_BUTTON_LEFT and pressed:
@@ -1168,7 +1195,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_jab_t = 0.0
 			_arm_play("jab", JAB_S)
 			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
-			_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+			if not _is_fish_spear():
+				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
@@ -1198,13 +1226,33 @@ func _throw() -> void:
 # The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
 # speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
 # instead; the server's spread may turn the real arrow a little from this one.
+const ARROW_STUCK_SHOW_S := 1.5   # the flown arrow stays where it hit this long; the server's stuck arrow is drawn by then
+
+
+# The first solid thing (a tree trunk's collider, the ground, a wall) on a flight step, or {} (a physics ray, so it needs the world).
+func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
+	if _camera == null or not _camera.is_inside_tree() or from.distance_to(to) < 0.0001:
+		return {}
+
+	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
+
+
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
-	var v: Vector3 = direction * float(_bow_cfg.get("speed_max", 45.0)) * bow_power(draw_ms, _bow_cfg)
+	var bow_id: String = held_id()
+	var v: Vector3 = direction * BowAim.bow_speed_max(_bow_cfg, bow_id) * bow_power(draw_ms, _bow_cfg)
 	var node: Node3D = _make_arrow_model(arrow)
 	_root.add_child(node)
 	node.global_position = _camera.global_position + direction * 0.8
 	_flights.append({"node": node, "vel": v, "age": 0.0, "arrow": true})
+
+	if bool(_inv.table.entry(_inv.table.id_of(arrow)).get("fire", false)) and _inv._lit_fire_near(_camera.global_position, float(_bow_cfg.get("fire_arrow", {}).get("light_m", 3.0))):
+		var glow: OmniLight3D = OmniLight3D.new()   # a burning fire arrow (Part C plan 6): a stand-in orange glow until Kathleen's flame look
+		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_energy = 1.6
+		glow.omni_range = 2.0
+		glow.shadow_enabled = false
+		node.add_child(glow)
 
 	if _sound == null:
 		return
@@ -1212,11 +1260,21 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	var at: Vector3 = _camera.global_position
 	var flown: float = 0.0
 	var t: float = 0.0
-	var range_m: float = float(_bow_cfg.get("range_m", 80.0))
+	var range_m: float = BowAim.bow_range_m(_bow_cfg, bow_id)
+
+	var into_wood: bool = false
 
 	while t < 6.0 and flown < range_m:
 		v.y -= THROW_GRAVITY * 0.05
 		flown += (v * 0.05).length()
+		var step_hit: Dictionary = _flight_hit(at, at + v * 0.05)
+
+		if not step_hit.is_empty() and absf(float((step_hit["normal"] as Vector3).y)) < 0.7:   # something upright, a trunk: the arrow thunks into wood
+			t += 0.05 * at.distance_to(step_hit["position"]) / maxf((v * 0.05).length(), 0.001)
+			at = step_hit["position"]
+			into_wood = true
+			break
+
 		at += v * 0.05
 		t += 0.05
 		var ground: float = _ground_below.call(at)
@@ -1225,7 +1283,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 			at.y = ground
 			break
 
-	_sound.spear.arrow(at, t, "wood" if _tree_near.is_valid() and _tree_near.call(at) else "soil")
+	_sound.spear.arrow(at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil")
 
 
 # The shot's power from the draw time, as the server works it out (bow.json): a draw under draw_min_ms is weak_power, then
@@ -1377,9 +1435,27 @@ func _process_body(delta: float) -> void:
 		_model.rotation.x = lerpf(_model.rotation.x, deg_to_rad(35.0) if aiming else 0.0, clampf(delta * 14.0, 0.0, 1.0))
 
 	for flight in _flights.duplicate():
+		if flight.has("stuck_left"):   # an arrow that hit something waits there until the server's stuck arrow is drawn
+			flight["stuck_left"] = float(flight["stuck_left"]) - delta
+
+			if float(flight["stuck_left"]) <= 0.0:
+				flight["node"].queue_free()
+				_flights.erase(flight)
+
+			continue
+
 		flight["vel"].y -= THROW_GRAVITY * delta
+		var was: Vector3 = flight["node"].global_position
 		flight["node"].global_position += flight["vel"] * delta
 		flight["age"] += delta
+
+		if bool(flight.get("arrow", false)):
+			var hit: Dictionary = _flight_hit(was, flight["node"].global_position)
+
+			if not hit.is_empty():   # a trunk or anything solid: the arrow stops in it, as the server's does (Dave 10 Nov 2026)
+				flight["node"].global_position = hit["position"]
+				flight["stuck_left"] = ARROW_STUCK_SHOW_S
+				continue
 
 		if bool(flight.get("arrow", false)) and (flight["vel"] as Vector3).length() > 0.1:
 			flight["node"].look_at(flight["node"].global_position + flight["vel"], Vector3.UP)   # an arrow points along its flight
@@ -1650,7 +1726,7 @@ func _update_blueprint() -> void:
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
 	_ghost_on_base = on_base
-	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows())
+	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows() + _inv.foundation_rows())   # the building pieces too, as the server sees them
 
 	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at
@@ -1663,6 +1739,9 @@ func _update_blueprint() -> void:
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
+	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.water_short(_placement, kit, _blueprint_at, water_depth_at):
+		blueprint_state = "shallow"   # a fish trap off the water or in too little of it, as the server refuses
+
 	if blueprint_state == "":
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
@@ -1672,7 +1751,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 

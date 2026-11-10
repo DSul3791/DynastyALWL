@@ -4,7 +4,8 @@
 		"stone_arrow",
 		"bone_arrow",
 		"wooden_arrow",
-		"fibre_arrow"
+		"fibre_arrow",
+		"fire_arrow"
 	],
 	"draw_min_ms": 300,
 	"draw_max_ms": 1200,
@@ -12,23 +13,58 @@
 	"min_power": 0.5,
 	"speed_max": 45.0,
 	"range_m": 80.0,
+	"bows_note": "Each bow against the plain wooden bow (Jamie #933): speed_mult on the arrow's speed at full draw (speed_max), damage_mult on its damage, range_mult on its flight cap (range_m). A bow with no row shoots like the wooden bow. The longbow: a taller, heavier stave stores more energy, so its arrow leaves faster (about 54 m/s against 45, as a heavy self bow against a short one), hits harder (energy goes as speed squared, about 1.44; 1.4 here) and flies further (range_m 120). Estimates. The sling (item_system.md: 1 Hide, 1 Twine; ammo Sling stone) is drawn and loosed like a bow: its stone leaves at about 32 m/s (a hand sling), reaches 60 m and hits a little softer than an arrow; it takes only sling stones (its own ammo list), never sticks in a trunk (it drops at the foot), and says its own lines. A sling stone's tip is stone_shot (break_chance 0.05).",
+	"bows": {
+		"wooden_bow": {
+			"speed_mult": 1.0,
+			"damage_mult": 1.0,
+			"range_mult": 1.0
+		},
+		"wooden_longbow": {
+			"speed_mult": 1.2,
+			"damage_mult": 1.4,
+			"range_mult": 1.5
+		},
+		"sling": {
+			"speed_mult": 0.7,
+			"damage_mult": 0.8,
+			"range_mult": 0.75,
+			"sticks": false,
+			"ammo": [
+				"sling_stone"
+			],
+			"say_no_ammo": "You have no sling stones.",
+			"say_load": "Your sling is loaded with %s.",
+			"say_not_ammo": "That is not a stone this sling can throw."
+		}
+	},
 	"pace_ms": 700,
+	"stuck_s": 300.0,
+	"stuck_note": "An arrow that hits a tree trunk sticks in it at the hit point (Dave 10 Nov 2026: \"there should be an arrow in that tree until I collect it or it fades out in 5 minutes\"): it stays stuck_s seconds unless picked up. It breaks at the arrow's break_chance, as one landing on the ground.",
 	"step_s": 0.05,
 	"hit_radius_m": 0.6,
 	"chest_m": 0.5,
 	"noise_m": 40.0,
+	"fire_arrow": {
+		"note": "Part C plan 6 (10 Nov 2026): an arrow with fire: true (the Fire arrow) is lit as it is loosed when a burning fire, a lit placed light or torch post, or a torch bearer is within light_m of the archer; otherwise it flies as a plain arrow. Lit, it does damage_mult on an animal, the shot's noise reaches alarm_mult as far, it lights a laid fire (wood on it) or an unlit torch post or other placed light within ignite_m of where it comes down (not in open rain, nor in water), and it is always burnt up. There is no fire spread: nothing else catches.",
+		"light_m": 3.0,
+		"damage_mult": 1.5,
+		"alarm_mult": 2.0,
+		"ignite_m": 0.6
+	},
 	"break_chance": {
 		"wood": 0.5,
 		"stone": 0.35,
 		"flint": 0.25,
-		"bone": 0.3
+		"bone": 0.3,
+		"stone_shot": 0.05
 	},
 	"hit_break_mult": 1.5,
 	"water_loss": 0.5,
 	"say_no_ammo": "You have no arrows.",
 	"say_weak": "You loose it too soon; the arrow barely flies.",
 	"say_lost": "The arrow is gone.",
-	"aim_note": "Dave 10 Nov 2026 (the bow): hold the right mouse button to raise the bow and draw (draw time as above), left click looses, letting right go lowers it with no shot. Every curve is [[bow skill level 0..100 (the hunting skill's working level), value], ...], straight lines between. steady_s: how long the aim stays still once drawn; then the aim sways by wobble_deg_per_s more each second up to wobble_max_deg, at wobble_hz. pull: the share of the way the reticle is drawn to a vital zone (zones: metres forward of the animal's middle and up from its feet) within pull_cone_deg of the aim; no skill, no pull. spread_deg: the server turns each shot by up to this much at random (luck narrows it). damage_mult: the arrow's damage times this. zoom_fov_share: the view narrows to this share of the field of view while drawn. reticle_px: the cross's arm length.",
+	"aim_note": "Dave 10 Nov 2026 (the bow): hold the right mouse button to raise the bow and draw (draw time as above), left click looses, letting right go lowers it with no shot. Every curve is [[bow skill level 0..100 (the hunting skill's working level), value], ...], straight lines between. steady_s: how long the aim stays still once drawn; then the aim sways by wobble_deg_per_s more each second up to wobble_max_deg, at wobble_hz. The sway turns the whole view and the reticle stays in the middle of the screen (Dave 10 Nov 2026: \"the whole screen should move like that but much less\"), so it is a third of what the reticle moved before (wobble_max_deg 4 to 1.2, wobble_deg_per_s 1.5/0.8/0.3 to 0.5/0.27/0.1). pull: the share of the way the view is drawn to a vital zone (zones: metres forward of the animal's middle and up from its feet) within pull_cone_deg of the aim; no skill, no pull. spread_deg: the server turns each shot by up to this much at random (luck narrows it). damage_mult: the arrow's damage times this. zoom_fov_share: the view narrows to this share of the field of view while drawn. reticle_px: the cross's arm length.",
 	"aim": {
 		"steady_s": [
 			[
@@ -47,18 +83,18 @@
 		"wobble_deg_per_s": [
 			[
 				0,
-				1.5
+				0.5
 			],
 			[
 				50,
-				0.8
+				0.27
 			],
 			[
 				100,
-				0.3
+				0.1
 			]
 		],
-		"wobble_max_deg": 4.0,
+		"wobble_max_deg": 1.2,
 		"wobble_hz": 0.6,
 		"pull": [
 			[

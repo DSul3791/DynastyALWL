@@ -439,6 +439,14 @@ func _init() -> void:
 			want_item.call(String(digging["under"][material][0]), "digging.json under.%s" % material)
 			obtainable[String(digging["under"][material][0])] = true
 
+		for find in digging.get("finds", []):   # a chance per dig stroke of a thing living in the soil (a worm in moist living soil)
+			want_item.call(String(find.get("item", "")), "digging.json finds")
+			obtainable[String(find.get("item", ""))] = true
+
+			for material in find.get("soils", []):
+				if not soil_names.has(String(material)):
+					fail("digging.json finds %s: unknown ground material '%s'" % [find.get("item", ""), material])
+
 	# Flora yields that the generated gathered items stand for (plain materials any gatherer may find in time).
 	var yields: Dictionary = {}
 
@@ -924,7 +932,7 @@ func _init() -> void:
 			for id in items_file.get("items", {}):
 				var slot: String = String(items_file["items"][id].get("slot", ""))
 
-				if slot in ["head", "body", "legs", "feet", "hands", "back"] and not rows.has(id):
+				if slot in ["head", "body", "legs", "feet", "hands", "back", "outer", "waist"] and not rows.has(id):
 					fail("items.json: '%s' has body slot '%s' but no worn.json row" % [id, slot])
 
 	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).

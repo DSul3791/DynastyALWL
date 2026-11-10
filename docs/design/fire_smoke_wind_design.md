@@ -108,10 +108,17 @@ Dave: "make fire smoke actually look and act more like fire smoke." The ruling a
 
 **Now** (every number is in `data/look/fire_smoke.json`):
 
-- **One plume.** Each fire emits 90, 130 or 190 small overlapping puffs (`amount`). Each puff is only `alpha` (0.2) of full density, so together
-  they read as one column. A small fire's puffs leave about 7 cm apart and are 30 cm wide.
-- **Narrow, then wide.** Puffs start at `puff_m` (0.3 to 0.5 m) and grow `grow_to` (8) times over their life.
-- **Dark and dense low, light and thin high.** The shader moves each puff from `near_grey` (0.3) to `far_grey` (0.74) as it ages (`INSTANCE_CUSTOM.y`).
+- **One plume.** Each fire emits 120, 150 or 200 small overlapping puffs (`amount`). Each puff is only `alpha` (0.35) of full density, so together
+  they read as one column. A small fire's puffs leave about 5 cm apart and are 30 cm wide at first.
+- **Narrow, then wide.** Puffs start at `puff_m` (0.6 to 0.8 m) and grow `grow_to` (8) times over their life. `grow_shape` puts 55% of
+  that growth in the first fifth of the life, so near the fire the puffs swell into each other faster than the `spread_deg` cone (3 to 6
+  degrees) scatters them. Each puff is soft right out to its rim. (10 Nov 2026: Dino's night shot showed a column of separate round puffs.)
+- **A small fire is a wisp.** The small tier has its own row in each per-tier list: 90 puffs of 0.3 m that grow 4 times, at half the density,
+  living 0.6 of the life (12 s), so the smoke is a hand or two wide at the flames and climbs two or three metres before it thins out. (10 Nov 2026: the one-rock-ring
+  fire laid a haze as wide as the lake.) `density` and `life_share` are per tier; medium and large keep 1.
+- **Grey, not orange.** The sun and moon light the smoke fully. A fire's or lamp's light is greyed (`light_grey` 0.7) and cut to `fire_light`
+  (0.45), so the column over a fire reads as grey smoke lit from below.
+- **Dark and dense low, light and thin high.** The shader moves each puff from `near_grey` (0.3) to `far_grey` (0.62) as it ages (`INSTANCE_CUSTOM.y`).
   `fade` sets the density over its life: thick just above the fire, thinning to nothing.
 - **Leans more as it rises.** A fresh puff gets only `wind_start_share` (0.25) of the wind, since its heat lifts it. A steady sideways pull brings it
   up to the full wind by the end of its life. The plume leaves the fire steep and bends over higher up. In a 2 m/s breeze it drifts 25 m.

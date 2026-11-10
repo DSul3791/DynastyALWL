@@ -10,7 +10,7 @@
 	},
 	"aliases": {
 		"axe": ["stone_axe"], "pickaxe": ["iron_pickaxe", "steel_pickaxe"], "spade": ["stone_spade", "wooden_spade"], "knife": ["stone_knife"], "hoe": ["wooden_hoe", "stone_hoe", "iron_hoe", "steel_hoe"],
-		"hammer": ["wooden_hammer", "stone_hammer"], "saw": ["hand_saw"],
+		"hammer": ["wooden_hammer", "stone_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"], "saw": ["hand_saw"],
 		"forge": ["stone_forge"], "boots": ["hide_boots"], "cloak": ["hide_cloak", "grass_cloak"], "hood": ["hide_hood"]
 	}
 }

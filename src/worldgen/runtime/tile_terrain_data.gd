@@ -18,6 +18,8 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
+const ORE_PIPE := 2
+const ORE_FIRST_LAYER := 5   # ore codes (_load_ores): lens 0, halo 1, pipe 2, vein 3, placer 4 are compact bodies; layer 5 and scatter 6 cover a province
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
 const RIVER_CLASS := 3
 const RIVER_FILM_M := 0.05   # a painted river cell thinner than WetMeters is still drawn, this deep (riffles between pools)
@@ -331,6 +333,60 @@ func make_placeholder(tile_coord: Vector2i, tile_size_m: float, depth_m: float) 
 
 
 # ---------------------------------------------------------------- sampling
+
+# The nearest fresh water within `reach` metres of `pos` across the ground, as Vector2(distance, surface height), or Vector2(INF, NAN) when this
+# tile has none (Sonny's water rules, section 3: a well or pump reaches down to the level of the nearest fresh water within 200 m, an interim rule
+# until the depth-to-table layer). The water a well may reach is the water classes with "well" in data/tables/water_classes.json: lake, river and
+# the wetlands (their table is at the surface: the best well sites); not the sea, the brackish estuary, the seasonal channel and pond (dry part of
+# the year, the table then lies below them) or the salt marsh. Looked at once when a well or pump is placed or first worked; the server scene
+# asks the neighbouring tiles too when the reach crosses this tile's edge.
+static var _well_ids: PackedByteArray = PackedByteArray()
+
+
+# 256 flags by water class id: 1 where a well may reach the water (water_classes.json "well").
+static func well_flags() -> PackedByteArray:
+	if _well_ids.is_empty():
+		_well_ids.resize(256)
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/water_classes.json"))
+
+		for row in (parsed.get("entries", []) if typeof(parsed) == TYPE_DICTIONARY else []):
+			if bool(row.get("well", false)) and not bool(row.get("retired", false)):
+				_well_ids[int(row["id"])] = 1
+
+	return _well_ids
+
+
+func fresh_water_near(pos: Vector3, reach: float) -> Vector2:
+	if placeholder or water_class.size() != samples * samples:
+		return Vector2(INF, NAN)
+
+	var steps: int = int(ceil(reach / spacing_m))
+	var ci: int = int(round((pos.x - x0) / spacing_m))
+	var cj: int = int(round((pos.z - z0) / spacing_m))
+	var best: float = INF
+	var surface: float = NAN
+	var well: PackedByteArray = well_flags()
+
+	for j in range(maxi(cj - steps, 0), mini(cj + steps, samples - 1) + 1):
+		for i in range(maxi(ci - steps, 0), mini(ci + steps, samples - 1) + 1):
+			var k: int = j * samples + i
+
+			if well[water_class[k]] == 0 or is_nan(water_surface[k]):
+				continue   # dry, the sea, the estuary, seasonal water or salt marsh
+
+			var gap: float = Vector2(x0 + float(i) * spacing_m - pos.x, z0 + float(j) * spacing_m - pos.z).length()
+
+			if gap <= reach and gap < best:
+				best = gap
+				surface = water_surface[k]
+
+	return Vector2(best, surface)
+
+
+# The surface height of the nearest fresh water in this tile within `reach` (fresh_water_near), NAN when there is none.
+func fresh_water_y(pos: Vector3, reach: float) -> float:
+	return fresh_water_near(pos, reach).y
+
 
 # Ground height at a world position inside the tile: smooth (Catmull-Rom) on dry land, and under water the same straight-line (bilinear)
 # shape the water is drawn and simulated with, blended by wet_at.
@@ -733,18 +789,24 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 				var center: Vector2 = Vector2(float(ore["center"][0]), float(ore["center"][2]))
 				var r: float = maxf(float(ore["radius_a_m"]), float(ore["radius_b_m"]))
 				entry["rect"] = Rect2(center - Vector2(r, r), Vector2(r, r) * 2.0)
+				entry["mid"] = center
+				entry["size_m"] = r
 				entry["y_min"] = float(ore["center"][1]) - 0.5 * float(ore["thickness_m"])
 				entry["y_max"] = float(ore["center"][1]) + 0.5 * float(ore["thickness_m"])
 			"halo":
 				var center: Vector2 = Vector2(float(ore["center"][0]), float(ore["center"][1]))
 				var r: float = maxf(float(ore["radius_a_m"]), float(ore["radius_b_m"]))
 				entry["rect"] = Rect2(center - Vector2(r, r), Vector2(r, r) * 2.0)
+				entry["mid"] = center
+				entry["size_m"] = r
 				entry["y_min"] = float(ore["top_y"]) - 2.0 * float(ore["thickness_m"])
 				entry["y_max"] = float(ore["top_y"])
 			"pipe":
 				var center: Vector2 = Vector2(float(ore["center"][0]), float(ore["center"][1]))
 				var r: float = float(ore["radius_m"])
 				entry["rect"] = Rect2(center - Vector2(r, r), Vector2(r, r) * 2.0)
+				entry["mid"] = center
+				entry["size_m"] = r
 				entry["y_min"] = float(ore["bottom_y"])
 				entry["y_max"] = float(ore["top_y"])
 			"vein":
@@ -752,6 +814,7 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 				var b: Vector2 = Vector2(float(ore["points"][1][0]), float(ore["points"][1][1]))
 				var reach: float = absf(float(ore["top_y"]) - float(ore["bottom_y"])) / maxf(tan(deg_to_rad(float(ore["dip_deg"]))), 0.05) + float(ore["width_m"])
 				entry["rect"] = Rect2(a, Vector2.ZERO).expand(b).grow(reach)
+				entry["trace"] = PackedVector2Array([a, b])   # for the boulder ore score (ore_at)
 				entry["y_min"] = float(ore["bottom_y"])
 				entry["y_max"] = float(ore["top_y"])
 			"layer", "scatter":
@@ -781,6 +844,91 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 				continue
 
 		ores.append(entry)
+
+
+# The ore a boulder at `pos` (on the ground) is an outcrop of, among the bodies whose resource is a key of `names` (boulders.json ore items), or ""
+# (Jamie's tin check, 10 Nov 2026: the server took the first body whose box held the spot, and a layer or scatter body's box is the whole tile, so on
+# tile 3,4 every outcrop was coal and tin and copper never showed; elsewhere a gem or flint body that boulders do not carry came first and hid the rest).
+# A compact body (lens, halo, pipe, vein, placer) comes first: of those holding the spot the smallest (a copper lens inside a wide tin halo is copper where
+# it sits; Jamie's spawn simulation, 10 Nov 2026), else the nearest within `reach` measured in its own size; else a layer or scatter band of the province under the spot
+# whose band comes within `depth_m` below the bedrock surface there (a coal seam shows where it nears the ground, not over the whole province).
+func ore_at(pos: Vector3, reach: float, names: Dictionary, depth_m: float) -> String:
+	if placeholder:
+		return ""
+
+	var flat: Vector2 = Vector2(pos.x, pos.z)
+	var best: String = ""
+	var best_m: float = INF   # rank of the best body so far (lower wins)
+
+	for ore in ores:
+		var name: String = str(ore.get("resource", ""))
+
+		if int(ore["code"]) >= ORE_FIRST_LAYER or not names.has(name):
+			continue
+
+		if not (ore["rect"] as Rect2).grow(reach).has_point(flat):
+			continue
+
+		# A pipe is a vertical body: it shows at the ground only where its top comes within depth_m of the bedrock surface (a salt dome buried
+		# 80 to 600 m gives no rock salt at the surface; 10 Nov 2026).
+		if int(ore["code"]) == ORE_PIPE and float(ore.get("y_max", INF)) < pos.y - cover_at(pos.x, pos.z) - depth_m:
+			continue
+
+		var score: float = _ore_score(ore, flat, reach)
+		var size: float = float(ore.get("size_m", 0.5 * float(ore.get("width_m", 2.0))))
+		var rank: float = size if score <= 1.0 else 1.0e9 + score   # inside a body: the smallest body holding the spot; else the nearest in its own size
+
+		if score < INF and rank < best_m:
+			best_m = rank
+			best = name
+
+	if best != "" or province.is_empty():
+		return best
+
+	var p: int = int(province[nearest(pos.x, pos.z)])
+
+	if p >= prov_datum.size():
+		return ""
+
+	var top: float = prov_datum[p] + offset_at(pos.x, pos.z)
+	var bed: float = pos.y - cover_at(pos.x, pos.z)
+
+	for ore in ores:
+		var name: String = str(ore.get("resource", ""))
+
+		if int(ore["code"]) >= ORE_FIRST_LAYER and int(ore.get("province_index", -1)) == p and names.has(name) and _band_near(ore, top, bed, depth_m):
+			return name
+
+	return ""
+
+
+# How far a spot is from a compact ore body, in the body's own size: under 1 inside it. Round bodies (lens, halo, pipe) by their centre and largest
+# radius; a vein by its trace and a placer by its line, over half their width. INF beyond reach of it.
+static func _ore_score(ore: Dictionary, flat: Vector2, reach: float) -> float:
+	if ore.has("mid"):
+		var gap: float = flat.distance_to(ore["mid"])
+		return gap / maxf(float(ore["size_m"]), 1.0) if gap <= float(ore["size_m"]) + reach else INF
+
+	var line: PackedVector2Array = ore.get("trace", ore.get("polyline", PackedVector2Array()))
+	var best: float = INF
+
+	for n in range(line.size() - 1):
+		best = minf(best, Geometry2D.get_closest_point_to_segment(flat, line[n], line[n + 1]).distance_to(flat))
+
+	return best / maxf(0.5 * float(ore.get("width_m", 2.0)), 1.0) if best < INF else INF
+
+
+# Whether a band of a layer or scatter body (one every cycle_m from depth_below_datum_m under the province top `top`, until repeat_to_m) has rock
+# between `bed` - `depth_m` and the bedrock surface `bed`.
+static func _band_near(ore: Dictionary, top: float, bed: float, depth_m: float) -> bool:
+	var start: float = float(ore.get("depth_below_datum_m", 0.0))
+	var cycle: float = maxf(float(ore.get("cycle_m", 1.0e9)), 0.01)
+	var thickness: float = float(ore.get("thickness_m", 0.0))
+	var repeat_to: float = float(ore.get("repeat_to_m", start + 0.001))
+	# The first band whose bottom is at or below the bedrock surface: top - depth - thickness <= bed.
+	var n: int = maxi(ceili((top - bed - thickness - start) / cycle), 0)
+	var depth_top: float = start + float(n) * cycle
+	return depth_top < repeat_to and top - depth_top >= bed - depth_m
 
 
 # The goblin den node of each cave in one tile's list (parallel to it; -1 for none). A cave's own rule is goblin_den_node; on top of it the tile's

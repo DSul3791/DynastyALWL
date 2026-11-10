@@ -55,17 +55,38 @@ func _init() -> void:
 	_check(drift >= 24.0, "it drifts well clear of the fire: %.0f m downwind over its life" % drift)
 	_check(absf(life - float(cfg["life_s"])) < 0.001 and plume.preprocess == life, "life and warm start from data/look/fire_smoke.json")
 	var grow: Curve = (mat.scale_curve as CurveTexture).curve
-	_check(absf(grow.sample(1.0) / grow.sample(0.0) - float(cfg["grow_to"])) < 0.05, "each puff spreads %.1f times as it goes" % (grow.sample(1.0) / grow.sample(0.0)))
+	_check(absf(grow.sample(1.0) / grow.sample(0.0) - BuildingLook.smoke_tier("grow_to", 2)) < 0.05, "each puff spreads %.1f times as it goes" % (grow.sample(1.0) / grow.sample(0.0)))
 	var ramp: Gradient = (mat.color_ramp as GradientTexture1D).gradient
 	_check(ramp.sample(1.0).a < 0.01, "and fades out")
 	# Dave 10 Nov 2026, "make fire smoke actually look and act more like fire smoke": one continuous plume, dark and dense low, light and thin high,
 	# narrow at the fire and wide up high, wavering as one column.
-	var gap_m: float = BuildingLook.smoke_tier("rise_m_s", 1) * life / float(BuildingLook.smoke_tier("amount", 1))
+	var gap_m: float = BuildingLook.smoke_tier("rise_m_s", 1) * life * BuildingLook.smoke_tier("life_share", 1) / float(BuildingLook.smoke_tier("amount", 1))
 	_check(gap_m < 0.5 * BuildingLook.smoke_tier("puff_m", 1), "puffs overlap into one plume even for a small fire (%.2f m apart, %.2f m wide)" % [gap_m, BuildingLook.smoke_tier("puff_m", 1)])
+	# Dino's reshoot 10 Nov 2026: the one-rock-ring fire laid a haze as wide as the lake. A small fire gives a thin wisp, gone within a few metres.
+	var small_fire: Node3D = BuildingLook.fire(true, false, 1)
+	var small_plume: GPUParticles3D = small_fire.get_node("Smoke") as GPUParticles3D
+	var small_end_m: float = BuildingLook.smoke_tier("puff_m", 1) * 0.5 * BuildingLook.smoke_tier("grow_to", 1)
+	_check(small_end_m <= 1.0 and small_plume.lifetime <= 12.5 and small_plume.lifetime < life, "a small fire's smoke is a wisp: %.1f m wide at the end, gone in %.0f s" % [small_end_m, small_plume.lifetime])
+	_check(BuildingLook.smoke_tier("density", 1) < BuildingLook.smoke_tier("density", 2) and BuildingLook.smoke_tier("puff_m", 1) < BuildingLook.smoke_tier("puff_m", 2), "and thinner and narrower than a medium fire's")
+	small_fire.free()
 	_check(ramp.sample(0.1).a > ramp.sample(0.5).a and ramp.sample(0.5).a > ramp.sample(0.9).a, "dense at the fire, thinning as it rises")
 	var look: ShaderMaterial = plume.draw_pass_1.surface_get_material(0) as ShaderMaterial
 	_check(look != null and float(look.get_shader_parameter("near_grey")) < float(look.get_shader_parameter("far_grey")), "darker at the fire, lighter higher up")
 	_check(look != null and float(look.get_shader_parameter("waver_m")) > 0.0 and str(look.shader.code).find("INSTANCE_CUSTOM.y") >= 0, "the column wavers more the older the smoke")
+	# Dino's reshoot 10 Nov 2026 (separate round orange puffs at night): puffs swell into each other faster than the cone scatters them, and a
+	# fire's own light is greyed, so the column reads as grey smoke lit from below.
+	var early: float = (grow.sample(0.2) - grow.sample(0.0)) / maxf(grow.sample(1.0) - grow.sample(0.0), 0.001)
+	_check(early > 0.5, "most of a puff's growth comes early (%.0f%% by a fifth of its life)" % (early * 100.0))
+	var big_fire: Node3D = BuildingLook.fire(true, false, 3)
+	var big: ParticleProcessMaterial = (big_fire.get_node("Smoke") as GPUParticles3D).process_material as ParticleProcessMaterial
+	BuildingLook.set_fire_air(0.0, 0.0, 1.0)
+	var big_life: float = float(cfg["life_s"])
+	var at_2s: float = big.scale_min * grow.sample(2.0 / big_life)
+	var scatter_2s: float = tan(deg_to_rad(big.spread)) * big.initial_velocity_max * 2.0
+	_check(scatter_2s < 0.5 * at_2s, "on a still night the cone scatters a big fire's puffs %.2f m in 2 s; they are %.2f m wide by then" % [scatter_2s, at_2s])
+	big_fire.free()
+	var code: String = str(look.shader.code)
+	_check(code.find("void light()") >= 0 and code.find("LIGHT_IS_DIRECTIONAL") >= 0 and float(look.get_shader_parameter("fire_light")) < 1.0 and float(look.get_shader_parameter("light_grey")) > 0.0, "a fire's light greys and dims on the smoke; the sun and moon light it fully")
 	_check(BuildingLook.smoke_tier("amount", 3) > BuildingLook.smoke_tier("amount", 1) and BuildingLook.smoke_tier("rise_m_s", 3) > BuildingLook.smoke_tier("rise_m_s", 1), "a bigger fire smokes more and higher")
 	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
 	var up: Vector3 = mat.direction

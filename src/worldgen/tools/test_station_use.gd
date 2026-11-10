@@ -43,7 +43,9 @@ func _init() -> void:
 	check(hearth.get(n.call("beet"), -1) == StationUse.INPUT and hearth.get(n.call("raw_meat"), -1) == StationUse.INPUT, "a clay hearth: its own recipes and the campfire's it stands in for")
 
 	var forge: Dictionary = StationUse.usable(["forge"], false, [], recipes, table, cooking)
-	check(forge.get(n.call("iron_ore"), -1) == StationUse.INPUT, "a forge takes iron ore")
+	check(forge.get(n.call("copper_ore"), -1) == StationUse.INPUT and not forge.has(n.call("iron_ore")), "a stone forge takes copper ore, not iron ore")
+	var brick: Dictionary = StationUse.usable(["brick_forge", "forge"], false, [], recipes, table, cooking)
+	check(brick.get(n.call("iron_ore"), -1) == StationUse.INPUT and brick.get(n.call("copper_ore"), -1) == StationUse.INPUT, "a brick forge takes iron ore, and copper for the bronze work it also does")
 
 	var torch: Dictionary = StationUse.usable([], false, ["stick"], recipes, table, cooking)
 	check(torch.size() == 1 and torch.get(n.call("stick"), -1) == StationUse.FUEL, "a wall torch: only its own fuel")
@@ -54,7 +56,7 @@ func _init() -> void:
 	# Every lifted item is a real item, and every recipe made at a station has all its ingredients lifted there.
 	var all_real: bool = true
 
-	for number in fire.keys() + bench.keys() + forge.keys():
+	for number in fire.keys() + bench.keys() + forge.keys() + brick.keys():
 		all_real = all_real and table.id_of(int(number)) != ""
 
 	check(all_real, "every lifted number is a real item")

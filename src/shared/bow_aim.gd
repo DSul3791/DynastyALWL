@@ -30,6 +30,45 @@ static func curve(points: Array, x: float) -> float:
 	return float(points[points.size() - 1][1])
 
 
+# One bow's own numbers against the plain wooden bow (bow.json "bows", by item id; Jamie #933, the Wooden - Longbow): speed_mult on the arrow's
+# speed, damage_mult on its damage and range_mult on its flight cap. A bow with no row shoots like the wooden bow (all 1).
+static func bow_stats(cfg: Dictionary, bow_id: String) -> Dictionary:
+	var row: Dictionary = cfg.get("bows", {}).get(bow_id, {})
+	return {"speed_mult": float(row.get("speed_mult", 1.0)), "damage_mult": float(row.get("damage_mult", 1.0)), "range_mult": float(row.get("range_mult", 1.0))}
+
+
+# What a shooter takes (bow.json "bows" row "ammo", else the bows' "ammo" list): the sling throws sling stones, the bows arrows.
+static func ammo_for(cfg: Dictionary, bow_id: String) -> Array:
+	return cfg.get("bows", {}).get(bow_id, {}).get("ammo", cfg.get("ammo", []))
+
+
+# Whether a shot from it sticks in a trunk it hits (an arrow does; a sling stone drops at the foot): the row's "sticks", true by default.
+static func sticks(cfg: Dictionary, bow_id: String) -> bool:
+	return bool(cfg.get("bows", {}).get(bow_id, {}).get("sticks", true))
+
+
+# One of a shooter's lines (say_no_ammo, say_load, say_not_ammo): the row's own, else the bows' line.
+static func say(cfg: Dictionary, bow_id: String, key: String) -> String:
+	return str(cfg.get("bows", {}).get(bow_id, {}).get(key, cfg.get(key, "")))
+
+
+# A weapon drawn and loosed through ACT_SHOOT: a bow or a sling (items.json weapon_class).
+static func shoots(entry: Dictionary) -> bool:
+	return str(entry.get("weapon_class", "")) in SHOOTERS
+
+
+const SHOOTERS := ["bow", "sling"]
+
+
+# The arrow's speed (m/s) at full draw from this bow, and how far it may fly.
+static func bow_speed_max(cfg: Dictionary, bow_id: String) -> float:
+	return float(cfg.get("speed_max", 45.0)) * float(bow_stats(cfg, bow_id)["speed_mult"])
+
+
+static func bow_range_m(cfg: Dictionary, bow_id: String) -> float:
+	return float(cfg.get("range_m", 80.0)) * float(bow_stats(cfg, bow_id)["range_mult"])
+
+
 static func _aim(cfg: Dictionary) -> Dictionary:
 	return cfg.get("aim", {})
 
@@ -67,6 +106,42 @@ static func turned(forward: Vector3, right: Vector3, up: Vector3, offset_deg: Ve
 	d = d.rotated(up.normalized(), -deg_to_rad(offset_deg.x))
 	d = d.rotated(right.normalized(), deg_to_rad(offset_deg.y))
 	return d.normalized()
+
+
+# The turn (degrees: x to the right, y up) that takes `forward` to `aim`, about the view's own `right` and `up`: the inverse of turned() for the
+# small angles of a sway (the client turns the whole view by it).
+static func turn_of(aim: Vector3, forward: Vector3, right: Vector3, up: Vector3) -> Vector2:
+	var a: Vector3 = aim.normalized()
+	return Vector2(rad_to_deg(atan2(a.dot(right), a.dot(forward))), rad_to_deg(asin(clampf(a.dot(up), -1.0, 1.0))))
+
+
+# Where a flight segment `from` -> `to` first meets a standing trunk: a vertical cylinder of `radius` round `root`, from just under the root up
+# `height` (Dave 10 Nov 2026: an arrow shot at a tree must stick in it). The share 0..1 along the segment, or -1 when it misses.
+static func segment_trunk(from: Vector3, to: Vector3, root: Vector3, radius: float, height: float) -> float:
+	var d: Vector2 = Vector2(to.x - from.x, to.z - from.z)
+	var f: Vector2 = Vector2(from.x - root.x, from.z - root.z)
+	var c: float = f.dot(f) - radius * radius
+	var t: float = 0.0
+
+	if c > 0.0:   # outside the trunk at the start: the first crossing of its circle
+		var a: float = d.dot(d)
+
+		if a < 0.000001:
+			return -1.0
+
+		var b: float = 2.0 * f.dot(d)
+		var disc: float = b * b - 4.0 * a * c
+
+		if disc < 0.0:
+			return -1.0
+
+		t = (-b - sqrt(disc)) / (2.0 * a)
+
+		if t < 0.0 or t > 1.0:
+			return -1.0
+
+	var y: float = lerpf(from.y, to.y, t)
+	return t if y >= root.y - 0.2 and y <= root.y + height else -1.0
 
 
 # The vital zones of an animal standing at `pos` facing `heading` (radians, the server's: forward is Vector2.from_angle(heading) on x, z).

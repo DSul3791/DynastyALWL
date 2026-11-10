@@ -16,7 +16,7 @@ Data is ready: crops and seeds (items 332 to 343), `data/items/crops.json` (new,
 - Test: sow in season works, out of season is refused, the seed is consumed.
 
 ## 4. Growth by season and water
-- Stage = floor(age_days / grow_days x 4): seedling, young, growing, ripe. A day with rain, or with a bucket or jug of `water` poured on the bed (the item WATER_GATHER_SPEC.md fills), counts as watered. A crop needs `water_per_day` x grow_days watered days or growth stalls (it does not die). Frost kills seedlings; winter pauses everything except turnip.
+- Stage = floor(age_days / grow_days x 4): seedling, young, growing, ripe. A day that ends with the bed's moisture at 25 percent or more counts as watered (10 Nov 2026, buildables plan B5 and Sonny's water rules: every bed and garden plot holds 0 to 100 percent; heavy rain fills it, lighter rain wets it, a bucket or jug of `water` poured on it (the item WATER_GATHER_SPEC.md fills, once a day) adds 8 percent, and the dry weather takes the day's evaporation, about 16 percent on a hot day and 5 on a cool one, less from a framed plot; data/items/crops.json "moisture", src/shared/plot_water.gd). A crop needs `water_per_day` x grow_days watered days or growth stalls (it does not die). Frost kills seedlings; winter pauses everything except turnip.
 - Compost on a bed gives +20 percent growth speed for one crop cycle.
 - Test: advance the game clock and the stages change; a dry bed stalls; frost kills a seedling; compost speeds growth.
 

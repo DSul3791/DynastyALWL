@@ -65,7 +65,7 @@ func _init() -> void:
 
 	for row in before:
 		if row[0] == "thatch_wall" or row[0] == "thatch_doorway":
-			check(is_equal_approx(row[2], 10.1), "a %s stands on the thatch floor top, 0.1 m up (y %.2f)" % [row[0], row[2]])
+			check(is_equal_approx(row[2], 10.3), "a %s stands on the thatch floor top, 0.3 m up like the stone foundation (y %.2f)" % [row[0], row[2]])
 
 	var ids_before: Array = items._items.keys()
 	items._dirty = true

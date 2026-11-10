@@ -6,6 +6,7 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const HeldItem := preload("res://src/client/held_item.gd")   # HeldItem.HOTBAR_SLOTS: the one hotbar size
+const BowAim := preload("res://src/shared/bow_aim.gd")
 const CharacterKeys := preload("res://src/client/character/character_keys.gd")
 const CharacterStore := preload("res://src/client/character/character_store.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
@@ -35,6 +36,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
+const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
@@ -867,8 +869,17 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return seat
 
+	# Water pieces (buildables plan section 6): E works a well or pump (E again stops), E at a trough, barrel or cistern drinks, or fills the container in hand.
+	var water: Variant = station_def.get("water", {})
+
+	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "source" and (water.has("pump") or bool(water.get("windlass", false))):
+		return {"prompt": "Press E to work the %s, E again to stop (hold E to take it down)" % table.sentence_name(_world[id]["number"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "tank":
+		return {"prompt": "Press E to drink, or to fill what you hold (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if str(station_def.get("station", "")) != "":
-		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
+		return {"prompt": "Press F to use the %s" % table.sentence_name(_world[id]["number"]), "tap": _open_station, "hold": take_down}
 
 	# A light (a torch stuck in the ground or on a wall, a wall torch, a chandelier): E lights it with its fuel from the pack (a stick for a torch), hold E takes it down.
 	if str(station_def.get("use", "")) == "light":
@@ -880,9 +891,9 @@ func _probe_structure_for(id: int) -> Dictionary:
 			else:
 				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
 
-		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.name_of(table.number_of(str(station_def.get("fuel", "stick")))).to_lower()]), "tap": tap, "hold": take_down}
+		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.sentence_name(table.number_of(str(station_def.get("fuel", "stick"))))]), "tap": tap, "hold": take_down}
 
-	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
+	return {"prompt": "Hold E to take down the %s" % table.sentence_name(_world[id]["number"]), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
 
 func press_e() -> bool:
@@ -2142,7 +2153,7 @@ func eat_slot(slot: int) -> void:
 	var entry: Dictionary = table.entry(table.id_of(number))
 
 	if knowledge != null and not entry.get("look_alikes", []).is_empty() and not knowledge.is_known("i%d" % number):
-		_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.name_of(number).to_lower())
+		_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.sentence_name(number))
 		return
 
 	_eat_item = table.id_of(number)
@@ -2376,6 +2387,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
 				node.add_child(fixture)
 				fixture_light = fixture.get_node_or_null("Light")
+				var light_m: float = float(_structure_by_state(state).get("light_m", 0.0))   # structures.json light_m: the reach of its light (buildables plan, batch B4)
+
+				if light_m > 0.0 and fixture_light is OmniLight3D:
+					(fixture_light as OmniLight3D).omni_range = light_m
+				elif light_m > 0.0 and fixture_light is SpotLight3D:
+					(fixture_light as SpotLight3D).spot_range = light_m
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw)}
 
@@ -2417,6 +2434,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("girth"):   # a split log is as thick as the trunk it came from (the mesh lies along x)
 				var girth: float = float(row[5]["girth"])
 				node.scale = Vector3(node.scale.x, node.scale.y * girth, node.scale.z * girth)
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("tilt"):   # an arrow stuck in a tree (Dave 10 Nov 2026)
+				node.rotation = Vector3(0.0, float(row[5].get("rot_y", 0.0)), float(row[5]["tilt"]))
+				node.position = row[3] - Basis.from_euler(node.rotation).x * STUCK_ARROW_BACK_M * node.scale.x   # the model lies along x, its point at +x
 		else:
 			var fire_extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 			node = BuildingLook.coals_fire(float(fire_extra.get("glow", 1.0))) if state == StructureLook.FIRE_COALS else _make_fire(_lit_state(state), state == 9, _fire_tier(state))
@@ -2568,7 +2589,14 @@ func foundation_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state >= 22 and state <= 28 and _world[id].has("yaw"):
+		if state < 5 or not _world[id].has("yaw"):
+			continue
+
+		# Every foundation and building piece of every tier, as the server's _foundation_rows (was states 22 to 28 only: the ghost of a thatch,
+		# log, stone or brick piece, or anything on a thatch or wooden foundation, did not snap where the server put it).
+		var def: Dictionary = _structure_by_state(state)
+
+		if bool(def.get("foundation", false)) or bool(def.get("piece", false)):
 			rows.append({"pos": _world[id]["pos"], "state": state, "yaw": _world[id]["yaw"]})
 
 	return rows
@@ -2981,7 +3009,7 @@ func _logs_cover(number: int) -> bool:
 			return false
 
 	for keep in r["keeps"]:
-		if not inventory.has(int(keep[0]), int(keep[1])):
+		if not inventory.has_fill(int(keep[0]), int(keep[1])):
 			return false
 
 	return uses_log
@@ -3025,11 +3053,11 @@ func station_in_reach(r: Dictionary) -> bool:
 func _station_label(r: Dictionary) -> String:
 	for kind in _structure_kinds():
 		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")):
-			return table.name_of(table.number_of(str(_structures_cfg[kind].get("item", "")))).to_lower()
+			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	for kind in _structure_kinds():
 		if _structures_cfg[kind].get("also", {}).has(str(r.get("station", ""))):
-			return table.name_of(table.number_of(str(_structures_cfg[kind].get("item", "")))).to_lower()
+			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	return str(r.get("station", "")).replace("_", " ")
 
@@ -3069,10 +3097,28 @@ func _make_forge() -> Node3D:
 	return model if model != null else BuildingLook.stone_forge()
 
 
-# The Medium Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins.
+# The Brick - Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins, its cut stone
+# reskinned in brick (item system 10 Nov 2026: brick body, keep the hood and iron straps): every surface of the cut_stone material takes the
+# brick walls' surface; the iron, firebrick, charcoal and fire keep Dave's.
 func _make_smithy() -> Node3D:
 	var model: Node3D = _forge_glb("forge_medium")
-	return model if model != null else BuildingLook.masonry_forge()
+
+	if model == null:
+		return BuildingLook.masonry_forge()
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_node: MeshInstance3D = child
+
+		if mesh_node.mesh == null:
+			continue
+
+		for surface in mesh_node.mesh.get_surface_count():
+			var material: Material = mesh_node.mesh.surface_get_material(surface)
+
+			if material != null and material.resource_name == "cut_stone":
+				mesh_node.set_surface_override_material(surface, PieceLook.brick_skin())
+
+	return model
 
 
 # Large Forge (state 20) and Master Forge (state 21): Dave's models in assets/stations when present, else the Medium Forge scaled
@@ -3414,7 +3460,7 @@ func _site_lines(site: Array) -> String:
 			continue
 
 		var colour: String = "#55ee66" if int(line[2]) >= need else "#ff5555"
-		lines.append("[color=%s]%d %s  (%d to hand)[/color]" % [colour, need, table.name_of(table.number_of(str(line[0]))).to_lower(), int(line[2])])
+		lines.append("[color=%s]%d %s  (%d to hand)[/color]" % [colour, need, table.sentence_name(table.number_of(str(line[0]))), int(line[2])])
 
 	return "[center]%s[/center]" % "\n".join(lines)
 
@@ -4121,15 +4167,31 @@ func skill_level_of(skill: String) -> float:
 	return 0.0
 
 
+var _bow_cfg_cache: Dictionary = {}   # bow.json, read once
+
+
+func _bow_cfg() -> Dictionary:
+	if _bow_cfg_cache.is_empty():
+		_bow_cfg_cache = BowAim.load_config()
+
+	return _bow_cfg_cache
+
+
+# True when `number` is ammunition the shooter `bow_number` takes (bow.json "bows" ammo, as the server reads it; a sling takes sling stones).
+func is_ammo_for(number: int, bow_number: int) -> bool:
+	return BowAim.ammo_for(_bow_cfg(), table.id_of(bow_number)).has(table.id_of(number))
+
+
 # Arrows dragged onto the bow on the hotbar load it with that arrow (Dave 10 Nov 2026); the next shots take that kind while the pack holds it.
-# True when `number` is an arrow the bow shoots (bow.json ammo, as the server reads it).
-func load_bow(number: int) -> bool:
-	if not (HeldItem.BOW_AMMO as Array).has(table.id_of(number)):
-		_on_notice("That is not an arrow this bow can shoot.")
+func load_bow(number: int, bow_number: int = 0) -> bool:
+	var bow_id: String = table.id_of(bow_number)
+
+	if not is_ammo_for(number, bow_number):
+		_on_notice(BowAim.say(_bow_cfg(), bow_id, "say_not_ammo"))
 		return false
 
 	bow_arrow = number
-	_on_notice("Your bow is loaded with %s." % table.name_of(number).to_lower())
+	_on_notice(BowAim.say(_bow_cfg(), bow_id, "say_load") % table.sentence_name(number))
 	return true
 
 
@@ -4567,7 +4629,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 	for item in recipes.recipe(number).get("identify", []):
 		if knowledge != null and not knowledge.is_known("i%d" % item):
-			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.name_of(item).to_lower())
+			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.sentence_name(item))
 			return
 
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, 0, count, Vector3.ZERO)
@@ -4685,7 +4747,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 		var parts: PackedStringArray = PackedStringArray()
 
 		for cost in entry.get("repair", []):
-			parts.append("%d %s" % [int(cost[1]), table.name_of(table.number_of(str(cost[0]))).to_lower()])
+			parts.append("%d %s" % [int(cost[1]), table.sentence_name(table.number_of(str(cost[0])))])
 
 		text += ", ".join(parts)
 

@@ -99,7 +99,13 @@ const ART_OVERRIDES := {
 	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
 	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
 	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
-	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze", "forged"]},
+	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["forged"]},
+	"wooden_lantern": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},
+	"iron_lantern": {"shape": "lantern", "color": "#3f4045", "size": 1.0, "bits": ["metal"]},
+	"horn_pane": {"shape": "pane", "color": "#d6ad6a", "size": 1.0},
+	"lamp_oil": {"shape": "bottle", "color": "#9a7a32", "size": 1.0},
+	"steel_hammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.0, "bits": ["forged"]},
 	"bronze_knife": {"shape": "knife", "color": "#b5803a", "size": 1.35, "bits": ["bronze"]},
 	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
 	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0},
@@ -136,6 +142,7 @@ const ART_OVERRIDES := {
 	"floor_section_kit": {"shape": "parcel", "color": "#a98350", "size": 1.0, "bits": ["planks"]},
 	"roof_section_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["planks"]},
 	"foundation_section_kit": {"shape": "parcel", "color": "#7d7a74", "size": 1.0, "bits": ["planks"]},
+	"wood_foundation_kit": {"shape": "parcel", "color": "#9a7a45", "size": 1.0, "bits": ["planks"]},
 	"doorway_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks", "door"]},
 	"window_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks", "window"]},
 	"saw_mill_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["sawmill"]},
@@ -1415,6 +1422,28 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			if bits.has("lit"):
 				_sph(parts, 0.012, Vector3(1.9, 0.8, 0.8), Vector3(0.14, 0.0, 0.0), Color(1.0, 0.75, 0.2), true)
+		"lantern":
+			# A carried lantern (buildables plan B4): a frame round four horn panes (warm, half see-through horn; no glass yet), a base, a pointed cap and a bail
+			# handle over it; a candle stub (wood) or an oil cup (bits "metal": an iron frame) inside. Upright along y, about 0.3 m with the bail.
+			var horn: Color = Color(0.86, 0.68, 0.4)
+			_box(parts, Vector3(0.15, 0.17, 0.15), Vector3(0.0, 0.0, 0.0), horn)
+			for x in [-0.075, 0.075]:
+				for z in [-0.075, 0.075]:
+					_box(parts, Vector3(0.018, 0.19, 0.018), Vector3(x, 0.0, z), color)
+					if bits.has("metal"):
+						_metal(parts, 0.6, 0.5)
+			for y in [-0.095, 0.095]:
+				_box(parts, Vector3(0.17, 0.018, 0.17), Vector3(0.0, y, 0.0), color)
+				if bits.has("metal"):
+					_metal(parts, 0.6, 0.5)
+			_frustum(parts, 0.11, 0.02, 0.06, Vector3(0.0, 0.13, 0.0), color.darkened(0.1))
+			_torus_v(parts, 0.07, 0.006, Vector3(0.0, 0.17, 0.0), color.darkened(0.2))
+			_cyl(parts, 0.02, 0.05, Vector3(0.0, -0.06, 0.0), Vector3.ZERO, Color(0.85, 0.8, 0.65) if not bits.has("metal") else color.darkened(0.3))
+		"pane":
+			# A horn pane (buildables plan B4): a thin scraped plate of horn, warm and cloudy, a little curled, with a darker rim.
+			_box(parts, Vector3(0.12, 0.004, 0.16), Vector3(0.0, 0.0, 0.0), color)
+			_box(parts, Vector3(0.124, 0.005, 0.008), Vector3(0.0, 0.0, 0.08), color.darkened(0.25))
+			_box(parts, Vector3(0.124, 0.005, 0.008), Vector3(0.0, 0.0, -0.08), color.darkened(0.25))
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)
@@ -2008,7 +2037,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"hammer":
 			# A hafted hammer (modelled on a real stone club hammer; a wooden mallet when bits has "wood"): a short ash haft with weathered grain, a heavy blunt head across
 			# the end with flat faces both sides (no edge), worn darker striking faces, and leather thong lashing either side of the head. Mesh axes: haft along x, head along z.
+			# Bronze, iron and steel (bits "forged", buildables plan B0, forge-made): a forged cross-peen head with a punched eye on the haft end, no lashing.
 			var mallet: bool = bits.has("wood")
+			var forged: bool = bits.has("forged")
 			var haft_wood: Color = Color(0.4, 0.27, 0.14)                                                            # wood brown, so the haft does not read dark grey in the hand
 			var thong: Color = Color(0.5, 0.38, 0.2)                                                                 # rope / hide colour
 			for k in range(9):
@@ -2019,6 +2050,19 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.05, 0.2, Vector3(0.2, 0.0, 0.0), Vector3(PI * 0.5, 0.0, 0.0), _tone(grain, 3, 0.1))
 				for end in [-0.09, 0.09]:
 					_cyl(parts, 0.053, 0.02, Vector3(0.2, 0.0, end), Vector3(PI * 0.5, 0.0, 0.0), thong.darkened(0.15))
+			elif forged:
+				_box_rot(parts, Vector3(0.042, 0.042, 0.075), Vector3(0.2, 0.0, 0.0375), Vector3.ZERO, color)          # the body round the eye, to the striking end
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.048, 0.048, 0.012), Vector3(0.2, 0.0, 0.081), Vector3.ZERO, color.lightened(0.18))   # the flared, worn-bright striking face
+				_metal(parts, 0.35, 0.85)
+				_box_rot(parts, Vector3(0.036, 0.04, 0.03), Vector3(0.2, 0.0, -0.015), Vector3.ZERO, color.darkened(0.08))     # the cheeks behind the eye
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.026, 0.04, 0.022), Vector3(0.2, 0.0, -0.041), Vector3.ZERO, color.darkened(0.08))     # the cross peen, stepping down
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.012, 0.04, 0.018), Vector3(0.2, 0.0, -0.061), Vector3.ZERO, color.darkened(0.12))     # to a blunt edge across the haft
+				_metal(parts, 0.45, 0.8)
+				_box_rot(parts, Vector3(0.012, 0.03, 0.006), Vector3(0.223, 0.0, 0.0), Vector3.ZERO, Color(0.2, 0.2, 0.22))    # the iron wedge in the haft's end
+				_metal(parts, 0.5, 0.7)
 			else:
 				color = color if bits.has("bronze") else _warm_stone(color)
 				dark = color.darkened(0.3)
@@ -2026,7 +2070,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box_rot(parts, Vector3(0.06, 0.05, 0.08), Vector3(0.205, 0.008, -0.01), Vector3(-0.2, -0.3, 0.12), _tone(color, 5, 0.12))   # a second, uneven face so the lump is not a clean block
 				_box_rot(parts, Vector3(0.05, 0.05, 0.035), Vector3(0.2, 0.0, 0.065), Vector3(0.0, 0.0, 0.15), dark)    # a worn, darker striking face
 				_box_rot(parts, Vector3(0.05, 0.05, 0.035), Vector3(0.2, 0.0, -0.065), Vector3(0.0, 0.0, -0.15), dark)
-			for k in range(4):                                                                                       # leather thong lashing either side of the head
+			for k in range(0 if forged else 4):                                                                      # leather thong lashing either side of the head
 				_cyl(parts, 0.03, 0.01, Vector3(0.135 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
 				_cyl(parts, 0.03, 0.01, Vector3(0.255 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
 		"hoe":

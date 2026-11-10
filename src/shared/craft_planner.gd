@@ -48,7 +48,7 @@ static func _make(recipes, table, number: int, times: int, ctx: Dictionary, stat
 	# Kept tools are never made for you.
 	for keep in r["keeps"]:
 		if _free(ctx, state, keep[0]) < keep[1]:
-			state["msg"] = "You need a %s to make that" % table.name_of(keep[0]).to_lower()
+			state["msg"] = "You need a %s to make that" % table.sentence_name(keep[0])
 			return false
 
 	var take: Array = []
@@ -99,7 +99,7 @@ static func _make(recipes, table, number: int, times: int, ctx: Dictionary, stat
 
 		if winners.size() > 1:
 			state["ambiguous"] = need[0]
-			state["msg"] = "Choose how to make %s" % table.name_of(need[0]).to_lower()
+			state["msg"] = "Choose how to make %s" % table.sentence_name(need[0])
 			return false
 
 		for key in ["reserved", "steps", "crafts", "made"]:

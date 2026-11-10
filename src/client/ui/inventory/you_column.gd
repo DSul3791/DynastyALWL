@@ -13,8 +13,8 @@ const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 
 const GEAR_PX := 96.0
 const FIGURE := Vector2(196.0, 470.0)
-const LEFT := ["head", "body", "legs", "feet"]
-const RIGHT := ["hands", "back", "right", "left"]
+const LEFT := ["head", "body", "outer", "legs", "feet"]
+const RIGHT := ["hands", "back", "waist", "right", "left"]
 const CAPTION := "Live character, as equipped"
 
 var view                            # the InventoryView (src/client/inventory_view.gd)
@@ -54,7 +54,7 @@ func build() -> Control:
 func _gear_column(names: Array) -> Control:
 	var column: VBoxContainer = VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 26)
+	column.add_theme_constant_override("separation", 16)   # five wells a side since the outer and waist slots (10 Nov 2026); was four at 26
 
 	for gear in names:
 		var slot = InventoryLook.make_slot(view, -1)

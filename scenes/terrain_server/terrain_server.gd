@@ -301,11 +301,12 @@ func _ready() -> void:
 	items.cover_at = _cover_at
 	items.cave_air = func(pos): return _cave_air(pos)   # depth in from the mouth and the day swing, for the cave air blend (docs/design/cave_climate_design.md)
 	items.cave_mean_c = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y) if _in_cave(pos) else NAN   # cave air: the island's year mean at that height (#664)
+	items.year_mean_at = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y)   # a cold store: the ground below 2 m holds the year mean (item_system.md D1)
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()
 
-	for dev_arg in OS.get_cmdline_user_args():   # testing only (rigs and screenshots): --dev-place=name@x,z,yaw[,lit], repeatable; normal play never passes it
+	for dev_arg in OS.get_cmdline_user_args():   # testing only (rigs and screenshots): --dev-place=name@x,z,yaw[,lit or coals or ash][,firewood or log], repeatable; normal play never passes it
 		if dev_arg.begins_with("--dev-place="):
 			items.dev_place_later(dev_arg.trim_prefix("--dev-place="))   # placed as soon as the ground under it is loaded
 	items.tree_info = _tree_info
@@ -347,19 +348,22 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.send_training = func(peer, percent): net.training.rpc_id(peer, percent)
-	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
-		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
+	items.ore_near = func(pos, reach, names, depth_m):   # the ore of the baked tile a boulder at the spot is an outcrop of (TileTerrainData.ore_at), "" when none
+		return generator.get_tile(generator.tile_of(pos.x, pos.z)).ore_at(pos, reach, names, depth_m)
+	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
+		var best: Vector2 = Vector2(INF, NAN)
+		var coords: Dictionary = {}
 
-		if ore_tile.placeholder:
-			return ""
+		for corner in [Vector2(-reach, -reach), Vector2(reach, -reach), Vector2(-reach, reach), Vector2(reach, reach)]:
+			coords[generator.tile_of(pos.x + corner.x, pos.z + corner.y)] = true
 
-		var flat: Vector2 = Vector2(pos.x, pos.z)
+		for coord in coords:
+			var near: Vector2 = generator.get_tile(coord).fresh_water_near(pos, reach)
 
-		for ore in ore_tile.ores:
-			if (ore["rect"] as Rect2).grow(reach).has_point(flat):
-				return str(ore.get("resource", ""))
+			if near.x < best.x:
+				best = near
 
-		return ""
+		return best.y
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 
@@ -480,6 +484,7 @@ func _ready() -> void:
 		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
 	items.trees_near = _trees_near
 	items.trees_near_cached = _trees_near_cached
+	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
@@ -1636,6 +1641,27 @@ var _tree_names: Dictionary = {}     # placer species id -> name, trees only (bu
 # player for an 8 m circle. Now a chunk the circle does not touch is skipped (not even listed), and a listed chunk keeps its trees in 16 m cells, so
 # a look reads only the cells under the circle.
 func _trees_near_cached(point: Vector3, radius: float) -> Array:
+	var found: Array = []
+
+	for tree in _cached_trees(point, radius):
+		found.append([tree[1], tree[2]])
+
+	return found
+
+
+# Standing tree trunks near a point for an arrow's flight (Dave 10 Nov 2026: an arrow shot at a tree must stick in it), from the same cached cells:
+# [root position, trunk radius m, height m] each. The radius is the collider's (flora_placer.collider_radius: the species trunk scaled by the tree's height).
+func _arrow_trunks(point: Vector3, radius: float) -> Array:
+	var found: Array = []
+
+	for tree in _cached_trees(point, radius):
+		found.append([tree[1], float(tree[3]), float(tree[4])])
+
+	return found
+
+
+# The cached standing trees within `radius` of a point (flat): [id, root position, species name, trunk radius, height] each, from chunks already made only.
+func _cached_trees(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
 	var reach: int = maxi(int(ceil(radius / size)), 1)
@@ -1671,6 +1697,7 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 				var cells: Dictionary = {}
 				var ids: PackedInt32Array = trees["ids"]
 				var positions: PackedVector3Array = trees["positions"]
+				var heights: Variant = trees.get("heights", [])
 
 				for n in range(ids.size()):
 					var tree_name: Variant = _tree_names.get(ids[n] >> 16)
@@ -1678,11 +1705,14 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 					if tree_name != null:
 						var at: Vector3 = positions[n]
 						var cell: Vector2i = Vector2i(int(floor(at.x / TREE_CELL_M)), int(floor(at.z / TREE_CELL_M)))
+						var species: Dictionary = flora.placer._by_id[ids[n] >> 16]
+						var tall: float = float(heights[n]) if n < heights.size() else float(species["height_min"])
+						var ref_height: float = maxf(0.5 * (float(species["height_min"]) + float(species["height_max"])), 0.1)
 
 						if not cells.has(cell):
 							cells[cell] = []
 
-						cells[cell].append([ids[n], at, tree_name])
+						cells[cell].append([ids[n], at, tree_name, float(species["trunk"]) * tall / ref_height, tall])
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
@@ -1709,7 +1739,7 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 							gone_read = true
 
 						if not gone.has(tree[0]):
-							found.append([tree[1], tree[2]])
+							found.append(tree)
 
 	return found
 

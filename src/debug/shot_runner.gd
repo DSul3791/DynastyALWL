@@ -23,6 +23,9 @@ extends Node
 #   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (ready to shoot, the string at rest), raised[:0 to 1] (the string drawn that far) or drawn (at the jaw);
 #                       first person keeps the arms on and ten stone arrows are given too (the nocked arrow shows only with arrows in the pack);
 #                       look rig --cam left|right shows the body with the bow at its side
+#   --shot-draw         with a bow given (--shot-item=... bow): keep it up and drawing as if right were held, each frame (held_item rig_drawing), so the crosshair,
+#                       the sway and arrows loosed into trunks can be pictured (the rig cannot hold the mouse; Dino 10 Nov 2026)
+#   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -38,6 +41,8 @@ var wait_s: float = 60.0
 var settle_s: float = 25.0
 
 var _index: int = -1
+var bow_drawing: bool = false   # --shot-draw
+var bow_sway: bool = false      # --shot-sway
 var _placed: bool = false
 var _anchor_told_msec: int = 0        # when the kit-placing shot told the server where the player really is
 var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
@@ -177,6 +182,10 @@ func setup(owner_client, args: Array) -> void:
 			clip_name = argument.trim_prefix("--shot-clip=")
 		elif argument == "--shot-chop":
 			chop_strip = true
+		elif argument == "--shot-draw":
+			bow_drawing = true
+		elif argument == "--shot-sway":
+			bow_sway = true
 		elif argument.begins_with("--shot-lapse="):
 			var lapse_parts: PackedStringArray = argument.trim_prefix("--shot-lapse=").split(",")
 			lapse_frames = int(lapse_parts[0])
@@ -353,6 +362,8 @@ func _process(delta: float) -> void:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
 		client.held.bow_force = bow_pose
+		client.held.rig_drawing = bow_drawing
+		client.shot_sway = bow_sway
 
 	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
 		# The server refuses a kit placed farther than its reach from where IT thinks the player is, and a shot that moves the body reports nothing (the flying anchor stays at the spawn):

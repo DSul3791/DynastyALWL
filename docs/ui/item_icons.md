@@ -13,17 +13,20 @@ Where the inventory's item icons live, which ones are baked and which are painte
 
 ## Baked or painted
 
-All 598 live items have an icon: 424 in `items.json` and 174 in `gathered.json`. There are two kinds.
+Every live item has an icon (10 Nov 2026), in `items.json` and `gathered.json`, including the buildables (B0 to B6) and item system C1 to C7 rows still on open PRs. Most are baked; the rest are painted or composed.
 
 | Kind | Count | Made by | Ran where |
 |---|---|---|---|
-| **Baked** | 425 (323 made items, 102 gathered materials) | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
+| **Baked** | 422 (320 made items, 102 gathered materials) | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
 | **Painted, basic** | 2 (log, stone) | `tools/paint_basic_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, made pieces** | 71 (walls, floors, roofs, stairs, ladder, log species, driftwood, furniture, stations, fires, torches, traps, carcass) | `tools/paint_structure_icons.py` | Anywhere; Python with numpy and Pillow |
-| **Painted, small items** | 34 (spears, arrows, stick, spades, the 14 crop seeds, pies; kindling, tinder, thatch, straw, birch bark, withies): items the bake drew too thin or too alike to read at 23 px, and the common fire and shelter materials | `tools/paint_item_icons.py` | Anywhere; Python with numpy and Pillow |
+| **Painted, small items** | 84 (spears, arrows, fire arrows, fishing spear, sling and sling stones, stick, the five hammers, the bronze, iron and steel chisels, the bone needle, charcoal, wool cloth, fur, crystal lens, spyglass, horn pane, clay pipe, carved stone block and shingle, whetstone, mortar and pestle, mug, fruit juice, herb antidote, bonemeal, meat skewer, sausage, parsnip, fishing bait, bedroll, snowshoes, leather belt, the C7 pickled vegetables, copper pot, fish soup, meatballs, claw necklace and bronze scale shirt, horn, gut, toggle, hook, bone club, longbow, straw hat, worm, spades, the 15 crop seeds, pies; kindling, tinder, thatch, straw, birch bark, withies): items the bake drew too thin or too alike to read at 23 px, and the common fire and shelter materials | `tools/paint_item_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, plants** | 66 (29 herbs and leaves, 24 flowers, 13 roots and bulbs from `gathered.json`): the bake drew each family with one shape, so they differed only by tint | `tools/paint_plant_icons.py` | Anywhere; Python with numpy and Pillow |
+| **Composed, groups** | 9 (fish, mushrooms, nuts, berries, fuel, pitch, knife, fruit, vegetable): ingredient groups, never given but shown in a recipe's Needs well; two or three members' own icons fanned | `tools/compose_group_icons.py` (after the members) | Anywhere; Python with Pillow |
+| **Painted from looks** | 124 (the buildables B1 to B6 pieces and the B3b Log - Shelf, Iron - Chest and Wooden - Crate, the C2 to C4 stations and stores, the C7 Preserving jar and Root cellar and their kits, the two carried lanterns, the fish and bird traps and their kits, the Iron - Anvil and its kit): each piece's own `piece_look.gd` look, run in Python by `tools/look_runtime.py`, drawn to the painted rig | `tools/paint_look_icons.py` | Anywhere; Python with numpy and Pillow |
+| **Recoloured** | 6 (the leather trousers, boots, gloves, backpack and quiver, lamp oil): a material version drawn as its sibling's icon (hide clothes, the hide backpack and quiver, the oil bottle) on its own colour ramp | `tools/recolour_icons.py` (after the sources) | Anywhere; Python with numpy and Pillow |
 
-**The painted list is the code.** It is `("log", "stone")` plus `NAMES` in `tools/paint_structure_icons.py`, `tools/paint_item_icons.py` and `tools/paint_plant_icons.py`, each the keys of that file's `PIECES` dict. The importer reads that same list as `PAINTED`, so there is no second copy to keep in step. To print it:
+**The painted list is the code.** It is `("log", "stone")` plus `NAMES` in `tools/paint_structure_icons.py`, `tools/paint_item_icons.py` and `tools/paint_plant_icons.py` (each the keys of that file's `PIECES` dict) `tools/compose_group_icons.py` (its `GROUPS`), `tools/recolour_icons.py` (its `RECOLOURS`) and `tools/paint_look_icons.py` (its `ITEMS`). The importer reads that same list as `PAINTED`, so there is no second copy to keep in step. To print it:
 
 ```
 python3 -c "import sys; sys.path.insert(0, 'tools'); import import_item_icons as i; print(len(i.PAINTED), i.PAINTED)"
@@ -51,6 +54,12 @@ All the painters share the rig in `paint_basic_icons.py`:
 - **Glowing faces.** A colour with a fourth value of 1 is drawn unlit. Coals, embers, flames and gems use this.
 - **Too dark for the slot.** An id in a painter's `LIFT` list is brightened after the render by `lift_dark` (`paint_basic_icons.py`): a plain gain until its lit body averages 82 of 255, so the hue stays (walnut stays brown). The 9 Nov style review put 11 there: three dark log species, the vice, the tilled bed, and six dark roots and flowers. The list is in `inventory/icons_style_review.md` in the shared files.
 - **The turn.** Each `PIECES` entry is `(builder, turn)`. The turn picks the side shown: walls show their face, slabs their top, roofs both slopes, and logs their cut ends toward the light.
+
+`paint_look_icons.py` draws a building piece from its game look, so the icon is what gets built and a new look gets its icon by adding one `ITEMS` row (`item: (look, turn)`):
+- **`look_runtime.py`** reads `piece_look.gd` and `look_table.gd`, turns each builder into Python line by line (typed vars, `match`, int ranges, Vector3 and Color) and runs it on stand-ins for `_box`, `_box_rot`, `_cyl`, `_dome`, `_torus_at`, `_rod` and the log meshes, with the same sizes, sides and rotation order (YXZ). Materials become the painted palette's colours. It also prints a look's bounds and triangle count without Godot: `python3 tools/look_runtime.py kiln smoker`.
+- **Doorways** show their open look (a shut door reads as a wall at slot size); gates their shut one.
+- **Tall thin pieces** (pillars, torch and lamp posts, the scarecrow, the armour stand) have their plain shaft drawn shorter (`SHORTEN`), so the foot and head keep their shape and the icon is not a hairline.
+- **Torches and braziers** are drawn lit, a flame at their `PieceLook.LIGHT_SPOTS` spot; lanterns and lamps show their own lit panes.
 
 `paint_plant_icons.py` gives each herb, flower and root its own form, in the item's `looks.json` colour so the icon matches the plant in the world:
 - **Leaves** grow as the plant does: a bunch, a sprig of pairs (mint, sage), a fern or palm frond, needles on twigs (rosemary), a ribbed rosette (plantain), coils (fiddleheads). A telling detail goes on where it helps: a black berry on belladonna, white flowers on wild garlic.

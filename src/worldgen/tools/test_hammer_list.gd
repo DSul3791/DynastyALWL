@@ -22,7 +22,7 @@ func _init() -> void:
 	var list = ListScript.new()
 	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
-	check(rows.size() == 51, "a wooden hammer lists every known blueprint: the rough bed is a pack craft and the wool rug is locked (%d)" % rows.size())
+	check(rows.size() == 127, "a wooden hammer lists every known blueprint (the Log - Shelf and Wooden - Crate make 127; the Iron - Chest needs an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
 	check(str(rows[0]["name"]) <= str(rows[1]["name"]), "the list is alphabetical")
 	check(not bool(rows[0]["can"]), "an empty pack covers nothing")
 
@@ -32,13 +32,13 @@ func _init() -> void:
 		if str(row["name"]) == "Woodworking table":
 			wall = row
 
-	check(wall.get("kit", "") == "woodworking_table_kit" and str(wall["text"]) == "planks 0/12, nails 0/60", "table row: kit and have/need text (%s)" % str(wall.get("text", "")))
+	check(wall.get("kit", "") == "woodworking_table_kit" and str(wall["text"]) == "plank 0/12, nails 0/60", "table row: kit and have/need text (%s)" % str(wall.get("text", "")))
 	pack.add(table.number_of("lumber"), 11)
 	pack.add(table.number_of("nails"), 60)
 	check(not list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]["can"], "11 of 12 planks is short")
 	pack.add(table.number_of("lumber"), 1)
 	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]
-	check(bool(wall_now["can"]) and str(wall_now["text"]) == "planks 12/12, nails 60/60", "12 planks (lumber, shown as Planks since the recipe audit 10 Nov 2026) and 60 nails cover the table (%s)" % str(wall_now["text"]))
+	check(bool(wall_now["can"]) and str(wall_now["text"]) == "plank 12/12, nails 60/60", "12 planks (lumber, shown as Plank since the item system renames 10 Nov 2026) and 60 nails cover the table (%s)" % str(wall_now["text"]))
 
 	list.set_open(true, 1)
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
@@ -88,6 +88,6 @@ func _init() -> void:
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 50 and strict_list.rows(2).size() == 51, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 126 and strict_list.rows(2).size() == 127, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
