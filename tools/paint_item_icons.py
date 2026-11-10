@@ -888,15 +888,16 @@ def bonemeal():
 
 
 def sling():
-    """Sling: a hide pouch with a stone in it, its two cords curling out either side to a knot and a finger loop."""
-    faces = blob((0.0, -0.1, 0.0), (0.62, 0.2, 0.46), LEATHER, seed=280, seg=9, rings=4, rough=0.06)
-    faces += blob((0.0, 0.06, 0.0), (0.26, 0.22, 0.26), (150, 144, 134), seed=281, seg=7, rings=4, rough=0.03)
-    for side, end in ((-1.0, (-0.85, 0.6, 0.0)), (1.0, (0.8, 0.65, 0.1))):
-        pts = [(0.56 * side, -0.08, 0.0), (0.85 * side, 0.15, 0.0), (end[0] * 1.08, 0.45, 0.05), end]
-        faces += _path(pts, [0.08] * 4, [CORD] * 4, sides=6, seed=282)
-    faces += blob((-0.85, 0.6, 0.0), (0.15, 0.15, 0.15), CORD, seed=284, seg=6, rings=3)                    # the knot
-    loop = [(0.8 + 0.2 * math.sin(a), 0.65 + 0.2 * (1.0 - math.cos(a)), 0.1) for a in np.linspace(0.0, 2.0 * math.pi, 9)]
-    faces += _path(loop, [0.07] * 9, [CORD] * 9, sides=6, seed=285)                                          # the finger loop
+    """Sling: a hide pouch with a stone in it, its two cords laid out long and nearly straight to either side, a knot at one end and a
+    small finger loop at the other (curled cords read as claws at slot size)."""
+    faces = blob((0.0, 0.0, 0.0), (0.42, 0.12, 0.3), LEATHER, seed=280, seg=9, rings=4, rough=0.06)
+    faces += blob((0.0, 0.1, 0.0), (0.2, 0.17, 0.2), (150, 144, 134), seed=281, seg=7, rings=4, rough=0.03)
+    for side in (-1.0, 1.0):
+        pts = [(0.38 * side, 0.0, 0.0), (0.9 * side, -0.04, 0.02), (1.45 * side, -0.02, 0.0)]
+        faces += _path(pts, [0.065] * 3, [CORD] * 3, sides=6, seed=282)
+    faces += blob((-1.5, -0.02, 0.0), (0.12, 0.12, 0.12), CORD, seed=284, seg=6, rings=3)                   # the knot
+    loop = [(1.45 + 0.13 * (1.0 - math.cos(a)), 0.0, 0.13 * math.sin(a)) for a in np.linspace(0.0, 2.0 * math.pi, 9)]
+    faces += _path(loop, [0.055] * 9, [CORD] * 9, sides=6, seed=285)                                         # the finger loop
     return faces
 
 
@@ -1021,7 +1022,7 @@ def _pieces():
         "mortar_pestle": (mortar_pestle, rot_x(math.radians(18.0))),
         "herb_antidote": (herb_antidote, rot_y(math.radians(-20.0))),
         "bonemeal": (bonemeal, rot_x(math.radians(14.0))),
-        "sling": (sling, rot_x(math.radians(20.0))),
+        "sling": (sling, rot_z(math.radians(24.0)) @ rot_x(math.radians(30.0))),
         "sling_stone": (sling_stone, rot_x(math.radians(20.0))),
         "whetstone": (whetstone, rot_y(math.radians(-25.0)) @ rot_x(math.radians(25.0))),
         "fishing_spear": (fishing_spear, DIAGONAL),
