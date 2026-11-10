@@ -10694,12 +10694,12 @@
 			"kind": "material",
 			"description": "A pale lump of soft rock. Burnt in a kiln it crumbles to lime.",
 			"how_to_get": [
-				"Broken from boulders on limestone, chalk or marble bedrock with a pick (coming with the rock rule)."
+				"Broken from a boulder on limestone, chalk or marble bedrock with any pick"
 			],
 			"used_for": [
 				"Used in Lime powder"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"lime_powder": {
 			"name": "Lime powder",
@@ -10711,7 +10711,7 @@
 			"used_for": [
 				"Used in Concrete"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"concrete": {
 			"name": "Concrete",
@@ -10737,7 +10737,7 @@
 				"Used in Fortified - Wall",
 				"Used in Fortified - Wall top"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"iron_band": {
 			"name": "Iron band",
