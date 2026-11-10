@@ -77,7 +77,7 @@ const STAT_GLYPH := {
 const GLYPH_FILE := {
 	"heart": "stat_health", "bolt": "stat_exertion", "moon": "stat_energy", "flame": "stat_warmth", "bread": "stat_food", "drop": "stat_water",
 	"helmet": "ghost_head", "tunic": "ghost_body", "trousers": "ghost_legs", "boot": "ghost_feet", "glove": "ghost_hands",
-	"pack": "ghost_back", "hand_axe": "ghost_right", "shield": "ghost_left",
+	"pack": "ghost_back", "hand_axe": "ghost_right", "shield": "ghost_left", "cloak": "ghost_outer", "belt": "ghost_waist",
 	"all": "tab_all", "axe": "tab_tools", "spear": "tab_weapons", "house": "tab_building", "anvil": "tab_stations", "fire": "tab_fire",
 	"bowl": "tab_food", "leaf": "tab_medicine", "shirt": "tab_clothing", "chest": "tab_storage", "planks": "tab_materials",
 	"workbench": "station_workbench", "forge": "station_forge", "campfire": "station_campfire", "campfire_pot": "station_campfire_pot",
@@ -85,10 +85,10 @@ const GLYPH_FILE := {
 	"woodworking_table": "station_woodworking_table", "mark_chest": "mark_chest", "search": "glyph_search", "sort": "glyph_sort",
 }
 
-# The empty gear slots, in the order of the You column (left: head, body, legs, feet; right: hands, back, right hand, left hand).
+# The empty gear slots, in the order of the You column (left: head, body, outer, legs, feet; right: hands, back, waist, right hand, left hand).
 const GEAR_GHOST := {
-	"head": "helmet", "body": "tunic", "legs": "trousers", "feet": "boot",
-	"hands": "glove", "back": "pack", "right": "hand_axe", "left": "shield",
+	"head": "helmet", "body": "tunic", "outer": "cloak", "legs": "trousers", "feet": "boot",
+	"hands": "glove", "back": "pack", "waist": "belt", "right": "hand_axe", "left": "shield",
 }
 
 # The 10 recipe categories of recipes.json, plus All, in tab order, with their glyphs. One food tab, the soup bowl (Dave 10 Nov 2026: Fire and cooking was the same thing).
@@ -856,6 +856,10 @@ static func glyph_shapes(glyph_name: String) -> Array:
 		"glove":
 			return [["rect", 0.26, 0.42, 0.74, 0.92], ["rect", 0.27, 0.18, 0.37, 0.5], ["rect", 0.39, 0.12, 0.49, 0.5],
 				["rect", 0.51, 0.12, 0.61, 0.5], ["rect", 0.63, 0.18, 0.73, 0.5], ["poly", 0.26, 0.6, 0.1, 0.42, 0.16, 0.36, 0.3, 0.5]]
+		"cloak":   # drawn until ghost_outer.png is painted
+			return [["poly", 0.36, 0.08, 0.64, 0.08, 0.7, 0.2, 0.9, 0.92, 0.1, 0.92, 0.3, 0.2], ["ell-", 0.42, 0.06, 0.58, 0.2]]
+		"belt":    # drawn until ghost_waist.png is painted
+			return [["rect", 0.06, 0.4, 0.94, 0.6], ["rect-", 0.4, 0.36, 0.6, 0.64], ["rect", 0.46, 0.44, 0.54, 0.56]]
 		"pack":
 			return [["rect", 0.2, 0.2, 0.8, 0.92], ["arc", 0.34, 0.04, 0.66, 0.36, 180, 360, 0.07], ["rect-", 0.3, 0.5, 0.7, 0.74]]
 		"axe", "hand_axe":

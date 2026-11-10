@@ -924,7 +924,7 @@ func _init() -> void:
 			for id in items_file.get("items", {}):
 				var slot: String = String(items_file["items"][id].get("slot", ""))
 
-				if slot in ["head", "body", "legs", "feet", "hands", "back"] and not rows.has(id):
+				if slot in ["head", "body", "legs", "feet", "hands", "back", "outer", "waist"] and not rows.has(id):
 					fail("items.json: '%s' has body slot '%s' but no worn.json row" % [id, slot])
 
 	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).

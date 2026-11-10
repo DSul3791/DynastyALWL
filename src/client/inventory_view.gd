@@ -6,6 +6,7 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const HeldItem := preload("res://src/client/held_item.gd")   # HeldItem.HOTBAR_SLOTS: the one hotbar size
+const BowAim := preload("res://src/shared/bow_aim.gd")
 const CharacterKeys := preload("res://src/client/character/character_keys.gd")
 const CharacterStore := preload("res://src/client/character/character_store.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
@@ -3087,10 +3088,28 @@ func _make_forge() -> Node3D:
 	return model if model != null else BuildingLook.stone_forge()
 
 
-# The Medium Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins.
+# The Brick - Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins, its cut stone
+# reskinned in brick (item system 10 Nov 2026: brick body, keep the hood and iron straps): every surface of the cut_stone material takes the
+# brick walls' surface; the iron, firebrick, charcoal and fire keep Dave's.
 func _make_smithy() -> Node3D:
 	var model: Node3D = _forge_glb("forge_medium")
-	return model if model != null else BuildingLook.masonry_forge()
+
+	if model == null:
+		return BuildingLook.masonry_forge()
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_node: MeshInstance3D = child
+
+		if mesh_node.mesh == null:
+			continue
+
+		for surface in mesh_node.mesh.get_surface_count():
+			var material: Material = mesh_node.mesh.surface_get_material(surface)
+
+			if material != null and material.resource_name == "cut_stone":
+				mesh_node.set_surface_override_material(surface, PieceLook.brick_skin())
+
+	return model
 
 
 # Large Forge (state 20) and Master Forge (state 21): Dave's models in assets/stations when present, else the Medium Forge scaled
@@ -4139,15 +4158,31 @@ func skill_level_of(skill: String) -> float:
 	return 0.0
 
 
+var _bow_cfg_cache: Dictionary = {}   # bow.json, read once
+
+
+func _bow_cfg() -> Dictionary:
+	if _bow_cfg_cache.is_empty():
+		_bow_cfg_cache = BowAim.load_config()
+
+	return _bow_cfg_cache
+
+
+# True when `number` is ammunition the shooter `bow_number` takes (bow.json "bows" ammo, as the server reads it; a sling takes sling stones).
+func is_ammo_for(number: int, bow_number: int) -> bool:
+	return BowAim.ammo_for(_bow_cfg(), table.id_of(bow_number)).has(table.id_of(number))
+
+
 # Arrows dragged onto the bow on the hotbar load it with that arrow (Dave 10 Nov 2026); the next shots take that kind while the pack holds it.
-# True when `number` is an arrow the bow shoots (bow.json ammo, as the server reads it).
-func load_bow(number: int) -> bool:
-	if not (HeldItem.BOW_AMMO as Array).has(table.id_of(number)):
-		_on_notice("That is not an arrow this bow can shoot.")
+func load_bow(number: int, bow_number: int = 0) -> bool:
+	var bow_id: String = table.id_of(bow_number)
+
+	if not is_ammo_for(number, bow_number):
+		_on_notice(BowAim.say(_bow_cfg(), bow_id, "say_not_ammo"))
 		return false
 
 	bow_arrow = number
-	_on_notice("Your bow is loaded with %s." % table.name_of(number).to_lower())
+	_on_notice(BowAim.say(_bow_cfg(), bow_id, "say_load") % table.name_of(number).to_lower())
 	return true
 
 

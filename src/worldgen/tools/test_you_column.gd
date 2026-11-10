@@ -1,6 +1,6 @@
 extends SceneTree
 
-# The You column, redesign step 3d (docs/ui/inventory_crafting_redesign.md sections 4.2 and 6.6): eight gear wells with silhouettes
+# The You column, redesign step 3d (docs/ui/inventory_crafting_redesign.md sections 4.2 and 6.6): ten gear wells (eight until the outer and waist slots, 10 Nov 2026) with silhouettes
 # while empty, the worn item in its well, the item in hand in the right hand, and the live preview rendering only while the window is open.
 #   godot --headless --path . --script res://src/worldgen/tools/test_you_column.gd
 
@@ -34,12 +34,12 @@ class FakeInventory:
 class FakeView:
 	var table: FakeTable = FakeTable.new()
 	var inventory: FakeInventory = FakeInventory.new()
-	var worn: PackedInt32Array = PackedInt32Array([0, 3, 0, 0, 0, 0])
+	var worn: PackedInt32Array = PackedInt32Array([0, 3, 0, 0, 0, 0, 0, 0])
 	var held_slot_now: Callable = func() -> int: return 4
 	var text_scale: float = 1.0
 
 	func clothing_slots() -> Array:
-		return ["head", "body", "legs", "feet", "hands", "back"]
+		return ["head", "body", "legs", "feet", "hands", "back", "outer", "waist"]
 
 	func _px(size: int) -> int:
 		return size
@@ -64,7 +64,7 @@ func _initialize() -> void:
 	root.add_child(built)
 	part.refresh()
 	await process_frame
-	check(part.wells.size() == 8, "eight gear wells: head, body, legs, feet, hands, back and both hands")
+	check(part.wells.size() == 10, "ten gear wells: head, body, outer, legs, feet, hands, back, waist and both hands")
 	check(part.wells["head"].is_empty() and (part.wells["head"].get_node("Ghost") as Control).visible, "an empty well shows its silhouette")
 	check(not part.wells["body"].is_empty() and not (part.wells["body"].get_node("Ghost") as Control).visible, "the worn shirt sits in the body well")
 	check(not part.wells["right"].is_empty(), "the item in hand shows in the right hand")

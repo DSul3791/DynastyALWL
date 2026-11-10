@@ -151,7 +151,7 @@ func _init() -> void:
 	check(items.worn_of(1)[6] == 0 and inv.count_of(items.table.number_of("hide_cloak")) == 1, "taking a piece off returns it to the pack")
 	items._dirty = true
 	items.save()
-	check(make(dir).worn_of(1).size() == 6 or true, "worn list has one entry per slot")
+	check(make(dir).worn_of(1).size() == 8 or true, "worn list has one entry per slot")
 	items.insulation_of = func(_p): return 0.5
 
 	# Respawn resets it; old saves read warm.
