@@ -239,11 +239,12 @@ def fur():
 
 
 def crystal_lens():
-    """Crystal lens: a clear round lens ground convex on both faces, a thin rim."""
-    glass = (176, 212, 222)
-    faces = rod((-0.08, 0, 0), (0.08, 0, 0), 0.82, shade(glass, 0.85), end=glass, sides=16, seed=60)
+    """Crystal lens: a clear round lens ground convex on both faces and a darker rim. The rig's warm light greys it, so _glass() brightens
+    it after the render and lays a white window highlight on it: it reads as glass and not a grey pebble at hotbar size."""
+    glass = (206, 232, 240)
+    faces = rod((-0.08, 0, 0), (0.08, 0, 0), 0.82, (112, 150, 162), end=glass, sides=16, seed=60)   # the rim
     for side in (-1.0, 1.0):
-        faces += blob((0.08 * side, 0.0, 0.0), (0.1, 0.74, 0.74), shade(glass, 1.12), seed=61, seg=14, rings=5, rough=0.0)
+        faces += blob((0.08 * side, 0.0, 0.0), (0.1, 0.74, 0.74), glass, seed=61, seg=14, rings=5, rough=0.0)
     return faces
 
 
@@ -676,6 +677,27 @@ def _pieces():
     }
 
 
+def _glass(image):
+    """After the render: lift and cool the lens, then two white streaks (a window's reflection) across its upper left."""
+    from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+    alpha = image.getchannel("A")
+    lifted = ImageEnhance.Brightness(image.convert("RGB")).enhance(1.35)
+    r, g, b = lifted.split()
+    lifted = Image.merge("RGB", (r.point(lambda v: int(v * 0.92)), g, b.point(lambda v: min(255, int(v * 1.08))))).convert("RGBA")
+    lifted.putalpha(alpha)
+    left, top, right, bottom = alpha.getbbox()
+    w, h = right - left, bottom - top
+    shine = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(shine)
+    d.line([(left + w * 0.3, top + h * 0.62), (left + w * 0.5, top + h * 0.2)], fill=(255, 255, 255, 230), width=max(3, w // 11))
+    d.line([(left + w * 0.46, top + h * 0.7), (left + w * 0.6, top + h * 0.4)], fill=(255, 255, 255, 170), width=max(2, w // 20))
+    shine = shine.filter(ImageFilter.GaussianBlur(0.8))
+    shine.putalpha(Image.composite(shine.getchannel("A"), Image.new("L", image.size, 0), alpha))
+    lifted.alpha_composite(shine)
+    return lifted
+
+
+AFTER = {"crystal_lens": _glass}   # a touch after the render for an item the rig alone cannot make read
 PIECES = _pieces()
 NAMES = tuple(PIECES)
 
@@ -693,7 +715,8 @@ def main():
             continue
 
         path = os.path.join(args.out, name + ".png")
-        render(build(), turn, colour_jitter=0.04, seed=len(name)).save(path)
+        image = render(build(), turn, colour_jitter=0.04, seed=len(name))
+        AFTER.get(name, lambda i: i)(image).save(path)
         print("painted", path)
 
 
