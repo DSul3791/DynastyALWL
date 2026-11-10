@@ -1912,7 +1912,7 @@
 				"Used in Stone - Foundation",
 				"Used in Hand mill",
 				"Used in Rock pile",
-				"Used in Fibre - Fishing net",
+				"Used in Fishing net",
 				"Used in Stone - Arrow",
 				"Used in Stone - Axe",
 				"Used in Brick - Foundation",
@@ -2075,7 +2075,7 @@
 			"used_for": [
 				"Used in Leather strap",
 				"Used in Wooden bowl",
-				"Used in Spyglass"
+				"Used in Wooden - Spyglass"
 			],
 			"obtainable_now": true
 		},
@@ -2848,7 +2848,7 @@
 			"obtainable_now": true
 		},
 		"shore_net": {
-			"name": "Fibre - Fishing net",
+			"name": "Fishing net",
 			"kind": "tool",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"how_to_get": [
@@ -3898,7 +3898,7 @@
 				"Used in Wooden - Hammer",
 				"Used in Wooden - Club",
 				"Used in Wooden bowl",
-				"Used in Spyglass"
+				"Used in Wooden - Spyglass"
 			],
 			"obtainable_now": false
 		},
@@ -4281,7 +4281,7 @@
 				"Sometimes comes off a boulder you break with the axe or pick (more often near water)"
 			],
 			"used_for": [
-				"Used in Flint - Scraper",
+				"Used in Scraper",
 				"Used in Javelin",
 				"Used in Stone - Sickle"
 			],
@@ -4312,7 +4312,7 @@
 			"kind": "material",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"how_to_get": [
-				"Craft: 1 Hide (keep Flint - Scraper)"
+				"Craft: 1 Hide (keep Scraper)"
 			],
 			"used_for": [
 				"Used in Leather"
@@ -4469,7 +4469,7 @@
 			"status": "planned"
 		},
 		"hide_scraper": {
-			"name": "Flint - Scraper",
+			"name": "Scraper",
 			"kind": "tool",
 			"description": "A flint blade on a handle. Scrapes flesh and hair off a raw hide.",
 			"how_to_get": [
@@ -5815,7 +5815,7 @@
 				"Used in Leather - Jerkin",
 				"Used in Bronze - Axe",
 				"Used in Leather - Cap",
-				"Used in Spyglass"
+				"Used in Wooden - Spyglass"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -6773,7 +6773,7 @@
 			"obtainable_now": true
 		},
 		"flower_pot": {
-			"name": "Clay - Flower pot",
+			"name": "Flower pot",
 			"kind": "structure",
 			"description": "A pot of flowers.",
 			"how_to_get": [
@@ -6905,7 +6905,7 @@
 			"obtainable_now": true
 		},
 		"flower_pot_kit": {
-			"name": "Clay - Flower pot",
+			"name": "Flower pot",
 			"kind": "placeable",
 			"description": "A clay pot of soil with a living plant.",
 			"how_to_get": [
@@ -7005,12 +7005,12 @@
 				"Found now and then when digging gravel or bare rock with a spade"
 			],
 			"used_for": [
-				"Used in Spyglass"
+				"Used in Wooden - Spyglass"
 			],
 			"obtainable_now": true
 		},
 		"spyglass": {
-			"name": "Spyglass",
+			"name": "Wooden - Spyglass",
 			"kind": "tool",
 			"description": "A wooden tube with a crystal lens. Hold it and right-click to see three times closer.",
 			"how_to_get": [

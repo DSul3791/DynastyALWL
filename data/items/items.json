@@ -963,7 +963,7 @@
 		},
 		"shore_net": {
 			"number": 260,
-			"name": "Fibre - Fishing net",
+			"name": "Fishing net",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"kind": "tool",
 			"tool_class": "net",
@@ -3544,7 +3544,7 @@
 		},
 		"hide_scraper": {
 			"number": 293,
-			"name": "Flint - Scraper",
+			"name": "Scraper",
 			"description": "A flint blade on a handle. Scrapes flesh and hair off a raw hide.",
 			"kind": "tool",
 			"tool_class": "scraper",
@@ -5987,7 +5987,7 @@
 		},
 		"flower_pot": {
 			"number": 515,
-			"name": "Clay - Flower pot",
+			"name": "Flower pot",
 			"description": "A pot of flowers.",
 			"kind": "structure",
 			"stack": 1,
@@ -6128,7 +6128,7 @@
 		"flower_pot_kit": {
 			"number": 499,
 			"retired": true,
-			"name": "Clay - Flower pot",
+			"name": "Flower pot",
 			"description": "A clay pot of soil with a living plant.",
 			"kind": "placeable",
 			"stack": 1,
@@ -6463,7 +6463,7 @@
 			},
 			"spyglass": {
 				"number": 557,
-				"name": "Spyglass",
+				"name": "Wooden - Spyglass",
 				"description": "A wooden tube with a crystal lens. Hold it and right-click to see three times closer.",
 				"kind": "tool",
 				"tool_class": "spyglass",

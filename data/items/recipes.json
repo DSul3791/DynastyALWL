@@ -1168,7 +1168,7 @@
 		},
 		"shore_net": {
 			"number": 163,
-			"name": "Fibre - Fishing net",
+			"name": "Fishing net",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3782,7 +3782,7 @@
 		},
 		"kindling": {"number": 178, "name": "Kindling", "category": "Materials", "needs": [["stick", 1]], "gives": ["kindling", 3], "craft_s": 2.0, "known": true},
 		"processed_hide": {"number": 179, "name": "Scraped hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
-		"hide_scraper": {"number": 180, "name": "Flint - Scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"hide_scraper": {"number": 180, "name": "Scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge", "station_level": 3},
@@ -7137,7 +7137,7 @@
 		},
 		"flower_pot_kit": {
 			"number": 331,
-			"name": "Clay - Flower pot",
+			"name": "Flower pot",
 			"category": "Containers and furniture",
 			"needs": [
 				[
@@ -7262,7 +7262,7 @@
 		},
 		"spyglass": {
 			"number": 344,
-			"name": "Spyglass",
+			"name": "Wooden - Spyglass",
 			"category": "Tools",
 			"needs": [
 				[

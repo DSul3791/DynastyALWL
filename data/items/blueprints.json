@@ -172,7 +172,7 @@
 		"canopy_bed": {"category": "Furniture", "number": 48, "name": "Canopy bed", "structure": "canopy_bed", "cost": [["feather", 30], ["lumber", 8], ["fibre_cloth", 4]], "station": "", "hammer": 1, "known": true, "recipe": "canopy_bed_kit"},
 		"wall_torch": {"category": "Lights and decoration", "number": 49, "name": "Wall torch", "structure": "wall_torch", "cost": [["stick", 2], ["tallow", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_torch_kit"},
 		"chandelier": {"category": "Lights and decoration", "number": 50, "name": "Chandelier", "structure": "chandelier", "cost": [["lumber", 2], ["twine", 2], ["candle", 6]], "station": "", "hammer": 1, "known": true, "recipe": "chandelier_kit"},
-		"flower_pot": {"category": "Lights and decoration", "number": 51, "name": "Clay - Flower pot", "structure": "flower_pot", "cost": [["clay", 2], ["soil", 1]], "station": "", "hammer": 1, "known": true, "recipe": "flower_pot_kit"},
+		"flower_pot": {"category": "Lights and decoration", "number": 51, "name": "Flower pot", "structure": "flower_pot", "cost": [["clay", 2], ["soil", 1]], "station": "", "hammer": 1, "known": true, "recipe": "flower_pot_kit"},
 		"antler_mount": {"category": "Lights and decoration", "number": 52, "name": "Antler - Mount", "structure": "antler_mount", "cost": [["antler", 2], ["lumber", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "antler_mount_kit"},
 		"vice": {"category": "Workshops and stations", "number": 53, "name": "Vice", "structure": "vice", "cost": [["stick", 8], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "vice_kit"}
 	}
