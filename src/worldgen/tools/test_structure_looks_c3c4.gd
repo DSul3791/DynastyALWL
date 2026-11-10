@@ -19,6 +19,7 @@ const SIZES := {
 	"iron_anvil": Vector3(0.6, 0.85, 0.4), "preserving_jar": Vector3(0.5, 0.6, 0.5), "root_cellar": Vector3(2.0, 0.7, 2.0),
 }
 const NOT_SOLID := ["tusk_mount", "fish_trap_set", "bird_trap_set"]   # hung on a wall, or a trap you can walk over (no blocks_walk)
+const LOW := {"fish_trap_set": 0.3, "bird_trap_set": 0.3}   # pieces lower than the usual 0.4 m: the traps lie on the ground
 
 var failures: int = 0
 
@@ -38,11 +39,22 @@ func _mesh_box(node: Node3D) -> AABB:
 	var box: AABB = AABB()
 	var first: bool = true
 
-	for child in node.find_children("*", "MeshInstance3D", true, false):
+	for child in node.find_children("*", "MeshInstance3D", true, false):   # the mesh's own corners, not its turned AABB, which grows on a tipped part
 		var mi: MeshInstance3D = child
-		var b: AABB = (node.global_transform.affine_inverse() * mi.global_transform) * mi.get_aabb()
-		box = b if first else box.merge(b)
-		first = false
+
+		if mi.mesh == null:
+			continue
+
+		var to_node: Transform3D = node.global_transform.affine_inverse() * mi.global_transform
+
+		for v in mi.mesh.get_faces():
+			var p: Vector3 = to_node * v
+
+			if first:
+				box = AABB(p, Vector3.ZERO)
+				first = false
+			else:
+				box = box.expand(p)
 
 	return box
 
@@ -85,7 +97,7 @@ func _run() -> void:
 		var size: Vector3 = SIZES[look]
 		var box: AABB = _mesh_box(node)
 		check(box.position.x >= -size.x * 0.5 - 0.04 and box.end.x <= size.x * 0.5 + 0.04 and box.position.z >= -size.z * 0.5 - 0.04 and box.end.z <= size.z * 0.5 + 0.04
-			and box.position.y >= -0.01 and box.end.y <= size.y and box.end.y >= 0.4, "%s: in its %s footprint (%s)" % [look, size, box])
+			and box.position.y >= -0.01 and box.end.y <= size.y and box.end.y >= float(LOW.get(look, 0.4)), "%s: in its %s footprint (%s)" % [look, size, box])
 
 		if look not in NOT_SOLID:
 			check(_solid_at(node, Vector3(0.0, 0.2, 0.0)), "%s: solid where it stands" % look)
