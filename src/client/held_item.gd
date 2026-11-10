@@ -144,6 +144,7 @@ var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the 
 var _reticle = null                       # BowReticle: the cross while the bow is up
 var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
 var rig_drawing: bool = false              # the shot runner's --shot-draw (look rig only): the bow is held up and drawing as if right were held, so the crosshair, sway and loosed arrows can be pictured
+var rig_keep_dark: bool = false            # the shot runner (look rig only), given a dark torch or lantern without --shot-lit: selecting it does not light it
 var rig_lit: bool = false                  # the shot runner's --shot-lit (look rig only): the held flame's light stays on beside a fire light at Low
 var bow_force: String = ""                 # the shot runner's bow pose, "STATE[:DRAW]" (idle, raised, drawn; draw 0 to 1), "" = from play
 var _bow_up: bool = false                  # the bow is raised or drawn: the arms come up to the camera pose
@@ -335,8 +336,8 @@ func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	if relit == "":
 		return
 
-	if quiet:
-		return   # the same key again puts the torch away
+	if quiet or rig_keep_dark:
+		return   # the same key again puts the torch away; the look rig pictures a dark one as it is
 
 	# A lantern (buildables plan B4) burns behind its horn panes, so only water stops it lighting; a torch needs to be out of the rain too. Out of fuel, the
 	# server loads a candle or lamp oil from the pack, or says there is none.

@@ -28,7 +28,7 @@ extends Node
 #   --shot-lit          with a torch or lantern given (--shot-give=wooden_lantern): its flame burns in every picture. Its fuel (candle, lamp oil) is given
 #                       too, a dark one is lit, first person keeps the arms on so the flame hangs in the drawn hand (with the arms off it sat on the hidden
 #                       body's hand, and a light under a hidden node gives no light: Dino's black lantern shots, 10 Nov 2026), the held light stays on beside a
-#                       fire light at Low, and each picture logs the flame's state
+#                       fire light at Low, and each picture logs the flame's state. Without it a dark one given (--shot-give=wooden_lantern_dark) stays dark
 #   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
@@ -368,7 +368,7 @@ func _process(delta: float) -> void:
 		if shot_lit:
 			_give_flame_fuel()
 
-	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 40000):
+	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 90000):
 		_selected = true
 		# The key the server put the given item on (a tool or weapon goes on the first empty key when it arrives). Wait for it: a left-hand item
 		# (torch, lantern, shield) is chosen once, by what the key points at when it is selected, so selecting before the pack and keys arrived left
@@ -381,6 +381,7 @@ func _process(delta: float) -> void:
 
 		print("shot runner: %s on key %d after %.1f s; pack %s; keys %s" % [give_item, key + 1, float(now - client.connected_msec) / 1000.0,
 			str(client.items.inventory.numbers.slice(0, 12)) if client.items.inventory != null else "none", str(client.items.inventory.hotbar) if client.items.inventory != null else "none"])
+		client.held.rig_keep_dark = not shot_lit and client.items.table.entry(give_item).has("relit_item")   # --give wooden_lantern_dark: picture it unlit
 		client.held.select(maxi(key, 0))      # key index 0 = key 1: hold what was given
 		client.held.bow_force = bow_pose
 		client.held.rig_drawing = bow_drawing
