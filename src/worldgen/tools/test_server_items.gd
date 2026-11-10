@@ -788,7 +788,7 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(clay_n) >= 1, "a dig in clay brings up clay")
-	var salt_n: int = m.table.number_of("salt")
+	var salt_n: int = m.table.number_of("sea_salt")   # the one live Salt (item "salt" 292 is retired)
 	mat[0] = "salt_flat"
 	m._last_dig.clear()
 	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))

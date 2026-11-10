@@ -4089,6 +4089,51 @@
     "anvil"
    ]
   },
+  "preserving_jar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "root_cellar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "vegetable": {
+   "shape": "chunk",
+   "color": "#c07a3a",
+   "size": 1.0
+  },
+  "pickled_vegetables": {
+   "shape": "pot",
+   "color": "#8a9a4a",
+   "size": 0.8
+  },
+  "copper_pot": {
+   "shape": "pot",
+   "color": "#b8733a",
+   "size": 1.0
+  },
+  "fish_soup": {
+   "shape": "bowl",
+   "color": "#c8b080",
+   "size": 0.8
+  },
+  "meatballs": {
+   "shape": "joint",
+   "color": "#7a4424",
+   "size": 0.6
+  },
+  "bronze_scale_shirt": {
+   "shape": "cloth",
+   "color": "#b0803a",
+   "size": 1.0
+  },
+  "claw_necklace": {
+   "shape": "bundle",
+   "color": "#d8c8a0",
+   "size": 0.5
+  },
   "leather_belt": {
    "shape": "cloth",
    "color": "#6a4024",

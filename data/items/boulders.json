@@ -38,7 +38,7 @@
 			"copper": "copper_ore",
 			"tin": "tin_ore",
 			"iron": "iron_ore",
-			"salt": "salt"
+			"salt": "sea_salt"
 		},
 		"needs_material": {
 			"coal": [

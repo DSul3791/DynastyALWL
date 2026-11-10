@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 829,
+	"next_number": 847,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -4518,7 +4518,7 @@
 		"sea_salt": {
 			"number": 360,
 			"name": "Salt",
-			"description": "Salt boiled out of sea water. Keeps meat and fish.",
+			"description": "Salt boiled out of sea water, broken from rock salt or dug from a salt flat. Keeps meat and fish.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -8826,8 +8826,7 @@
 				"stack": 50,
 				"look_alikes": [],
 				"value": 1,
-				"future": true,
-				"note": "Found when digging soil (Steve #931, digging.json finds); future until that lands."
+				"note": "Found when digging moist living soil (digging.json finds, Steve #931)."
 			},
 			"kiln_kit": {
 				"number": 770,
@@ -9535,6 +9534,206 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed add-on: row state 204, addon_of brick_forge."
+			},
+			"preserving_jar_kit": {
+				"number": 829,
+				"retired": true,
+				"name": "Preserving jar",
+				"description": "A wide-mouthed clay jar with a lid, for pickling and preserving.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 6
+			},
+			"preserving_jar": {
+				"number": 830,
+				"name": "Preserving jar",
+				"description": "A wide-mouthed clay jar with a lid, for pickling and preserving.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 205."
+			},
+			"root_cellar_kit": {
+				"number": 831,
+				"retired": true,
+				"name": "Root cellar",
+				"description": "A stone-lined store dug into the ground. Cool all year, so food keeps far longer.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 536
+			},
+			"root_cellar": {
+				"number": 832,
+				"name": "Root cellar",
+				"description": "A stone-lined store dug into the ground. Cool all year, so food keeps far longer.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 206."
+			},
+			"vegetable": {
+				"number": 833,
+				"name": "Vegetable",
+				"description": "Any root or cabbage-type vegetable: carrot, beet, onion, turnip, cabbage, parsnip, radish.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2,
+				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
+			},
+			"pickled_vegetables": {
+				"number": 834,
+				"name": "Pickled vegetables",
+				"description": "Roots and cabbage packed in salt brine. Sour, and keeps for months.",
+				"kind": "food",
+				"stack": 10,
+				"value": 8,
+				"look_alikes": [],
+				"future": true
+			},
+			"copper_pot": {
+				"number": 835,
+				"name": "Copper - Pot",
+				"description": "A hammered copper pot. Holds three litres and cooks soups over a fire.",
+				"kind": "container",
+				"stack": 1,
+				"unstackable": true,
+				"capacity_ml": 3000,
+				"look_alikes": [
+					"Clay - Pot"
+				],
+				"value": 50,
+				"future": true
+			},
+			"fish_soup": {
+				"number": 836,
+				"name": "Fish soup",
+				"description": "Fish, wild garlic and salt simmered in a copper pot. Hot and filling.",
+				"kind": "food",
+				"stack": 10,
+				"value": 16,
+				"look_alikes": [],
+				"future": true
+			},
+			"meatballs": {
+				"number": 837,
+				"name": "Meatballs",
+				"description": "Minced meat rolled with flour and salt and cooked in a copper pot.",
+				"kind": "food",
+				"stack": 10,
+				"value": 18,
+				"look_alikes": [],
+				"future": true
+			},
+			"bronze_scale_shirt": {
+				"number": 838,
+				"name": "Bronze - Scale shirt",
+				"description": "Bronze scales laced over leather. Bronze body armour, lighter than mail.",
+				"kind": "clothing",
+				"slot": "body",
+				"warmth": 0.1,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Iron - Mail shirt"
+				],
+				"value": 120,
+				"future": true
+			},
+			"claw_necklace": {
+				"number": 839,
+				"name": "Claw - Necklace",
+				"description": "Animal claws strung on a cord. Worn for luck and to show what you have hunted.",
+				"kind": "material",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 20,
+				"note": "Jewellery: worn once a neck slot exists (item_system.md jewellery).",
+				"future": true
+			},
+			"chicken_coop": {
+				"number": 840,
+				"name": "Chicken coop",
+				"description": "A thatched coop for four chickens. They lay eggs.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"future": true,
+				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: 12 Plank, 6 Thatch, 2 Twine; holds 4 chickens; gives eggs; hammer 1."
+			},
+			"fodder_trough": {
+				"number": 841,
+				"name": "Fodder trough",
+				"description": "A plank trough that holds fodder for penned animals.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"future": true,
+				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: 4 Plank, 2 Twine; holds 20 Fodder; hammer 1."
+			},
+			"tub": {
+				"number": 842,
+				"name": "Tub",
+				"description": "A wooden bathtub filled from a bucket. Warm it with a fire close by.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"future": true,
+				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: Wooden gate; fills from a bucket; heated by a fire within 3 m; future until hygiene exists."
+			},
+			"sap_tap": {
+				"number": 843,
+				"name": "Sap tap",
+				"description": "A wooden spout driven into a maple or birch to catch sap.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"future": true,
+				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: 2 Plank; on maple or birch; sap and resin."
+			},
+			"cheese_press": {
+				"number": 844,
+				"name": "Cheese press",
+				"description": "A wooden press that squeezes curds into cheese.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"future": true,
+				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: With dairy; cheese moves here from the pot."
+			},
+			"spinning_wheel": {
+				"number": 845,
+				"name": "Spinning wheel",
+				"description": "A treadle wheel that spins wool and flax into thread.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"future": true,
+				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: With yarn and thread; the hand cloth recipes go when it lands."
+			},
+			"loom": {
+				"number": 846,
+				"name": "Loom",
+				"description": "A wooden frame loom for weaving thread into cloth.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"future": true,
+				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: With yarn and thread; the hand cloth recipes go when it lands."
 			},
 			"leather_belt": {
 				"number": 828,

@@ -37,6 +37,7 @@
 		"backpack": {"builder": "pack", "color": "#7a5a3a", "layer": 3},
 		"quiver": {"builder": "pack", "color": "#6b4c31", "layer": 3},
 		"wooden_snowshoes": {"builder": "sandals", "color": "#9a7a4a", "layer": 1},
+		"bronze_scale_shirt": {"builder": "mailshirt", "color": "#b0803a", "layer": 2},
 		"leather_belt": {"builder": "belt", "color": "#6a4024", "layer": 2}
 	}
 }

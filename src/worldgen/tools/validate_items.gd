@@ -439,6 +439,14 @@ func _init() -> void:
 			want_item.call(String(digging["under"][material][0]), "digging.json under.%s" % material)
 			obtainable[String(digging["under"][material][0])] = true
 
+		for find in digging.get("finds", []):   # a chance per dig stroke of a thing living in the soil (a worm in moist living soil)
+			want_item.call(String(find.get("item", "")), "digging.json finds")
+			obtainable[String(find.get("item", ""))] = true
+
+			for material in find.get("soils", []):
+				if not soil_names.has(String(material)):
+					fail("digging.json finds %s: unknown ground material '%s'" % [find.get("item", ""), material])
+
 	# Flora yields that the generated gathered items stand for (plain materials any gatherer may find in time).
 	var yields: Dictionary = {}
 

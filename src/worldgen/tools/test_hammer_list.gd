@@ -22,7 +22,7 @@ func _init() -> void:
 	var list = ListScript.new()
 	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
-	check(rows.size() == 123, "a wooden hammer lists every known blueprint (the Anvil makes 123): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
+	check(rows.size() == 125, "a wooden hammer lists every known blueprint (the Anvil, Preserving jar and Root cellar make 125): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
 	check(str(rows[0]["name"]) <= str(rows[1]["name"]), "the list is alphabetical")
 	check(not bool(rows[0]["can"]), "an empty pack covers nothing")
 
@@ -88,6 +88,6 @@ func _init() -> void:
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 122 and strict_list.rows(2).size() == 123, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 124 and strict_list.rows(2).size() == 125, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
