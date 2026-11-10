@@ -8607,7 +8607,19 @@
 			"used_for": [
 				"Used in Wooden - Lamp post"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
+		},
+		"wooden_lantern_dark": {
+			"name": "Wooden - Lantern",
+			"kind": "tool",
+			"description": "A lantern gone out. Press its key to light it, with a candle in your pack if it burned out.",
+			"how_to_get": [
+				"A lit lantern goes dark under water, when you put it out, or when its candle burns down (1 game day)"
+			],
+			"used_for": [
+				"Light it again with its key; a burned-out one takes a Tallow - Candle from your pack"
+			],
+			"obtainable_now": true
 		},
 		"iron_lantern": {
 			"name": "Iron - Lantern",
@@ -8619,6 +8631,18 @@
 			"used_for": [
 				"Used in Iron - Lamp post",
 				"Used in Stone - Lamp post"
+			],
+			"obtainable_now": false
+		},
+		"iron_lantern_dark": {
+			"name": "Iron - Lantern",
+			"kind": "tool",
+			"description": "A lantern gone out. Press its key to light it, with lamp oil in your pack if it burned out.",
+			"how_to_get": [
+				"A lit lantern goes dark under water, when you put it out, or when its lamp oil burns down (3 game days)"
+			],
+			"used_for": [
+				"Light it again with its key; a burned-out one takes Lamp oil from your pack"
 			],
 			"obtainable_now": false
 		},
