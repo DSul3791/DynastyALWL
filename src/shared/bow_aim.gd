@@ -69,6 +69,42 @@ static func turned(forward: Vector3, right: Vector3, up: Vector3, offset_deg: Ve
 	return d.normalized()
 
 
+# The turn (degrees: x to the right, y up) that takes `forward` to `aim`, about the view's own `right` and `up`: the inverse of turned() for the
+# small angles of a sway (the client turns the whole view by it).
+static func turn_of(aim: Vector3, forward: Vector3, right: Vector3, up: Vector3) -> Vector2:
+	var a: Vector3 = aim.normalized()
+	return Vector2(rad_to_deg(atan2(a.dot(right), a.dot(forward))), rad_to_deg(asin(clampf(a.dot(up), -1.0, 1.0))))
+
+
+# Where a flight segment `from` -> `to` first meets a standing trunk: a vertical cylinder of `radius` round `root`, from just under the root up
+# `height` (Dave 10 Nov 2026: an arrow shot at a tree must stick in it). The share 0..1 along the segment, or -1 when it misses.
+static func segment_trunk(from: Vector3, to: Vector3, root: Vector3, radius: float, height: float) -> float:
+	var d: Vector2 = Vector2(to.x - from.x, to.z - from.z)
+	var f: Vector2 = Vector2(from.x - root.x, from.z - root.z)
+	var c: float = f.dot(f) - radius * radius
+	var t: float = 0.0
+
+	if c > 0.0:   # outside the trunk at the start: the first crossing of its circle
+		var a: float = d.dot(d)
+
+		if a < 0.000001:
+			return -1.0
+
+		var b: float = 2.0 * f.dot(d)
+		var disc: float = b * b - 4.0 * a * c
+
+		if disc < 0.0:
+			return -1.0
+
+		t = (-b - sqrt(disc)) / (2.0 * a)
+
+		if t < 0.0 or t > 1.0:
+			return -1.0
+
+	var y: float = lerpf(from.y, to.y, t)
+	return t if y >= root.y - 0.2 and y <= root.y + height else -1.0
+
+
 # The vital zones of an animal standing at `pos` facing `heading` (radians, the server's: forward is Vector2.from_angle(heading) on x, z).
 static func zone_points(cfg: Dictionary, pos: Vector3, heading: float) -> Array:
 	var fwd: Vector2 = Vector2.from_angle(heading)

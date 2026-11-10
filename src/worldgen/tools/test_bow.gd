@@ -168,6 +168,7 @@ func _init() -> void:
 	check(items._arrows.size() == count_before, "a broken bow does not shoot")
 	aim_checks()
 	loaded_checks()
+	tree_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -229,3 +230,58 @@ func loaded_checks() -> void:
 	check(arrows(items, "stone_arrow") == 2, "loaded arrows run out: the next ammo in the pack is shot")
 	shoot(items, slot, 1200, Vector3(0.0, 0.2, -1.0), items.table.number_of("wooden_bow"))
 	check(arrows(items, "stone_arrow") == 1, "a forged 'loaded' item that is not ammo is ignored")
+
+
+# An arrow shot at a tree sticks in it (Dave 10 Nov 2026: "I just stood right infront of a tree and shot an arrow and it did not hit the tree or stick
+# into it. there should be an arrow in that tree until I collect it or it fades out in 5 minutes"); the sway turns the whole view (BowAim.turn_of).
+func tree_checks() -> void:
+	# The trunk test: a level flight 1.5 m up meets a 0.3 m trunk 8 m ahead at its bark; passing beside it, over its top or after the segment misses.
+	var trunk_foot: Vector3 = Vector3(0.0, 10.0, -8.0)
+	var t: float = BowAim.segment_trunk(Vector3(0.0, 11.5, 0.0), Vector3(0.0, 11.5, -10.0), trunk_foot, 0.3, 12.0)
+	check(absf(t - 0.77) < 0.001, "a level shot meets the trunk at its bark, 7.7 m out (%.3f)" % t)
+	check(BowAim.segment_trunk(Vector3(1.0, 11.5, 0.0), Vector3(1.0, 11.5, -10.0), trunk_foot, 0.3, 12.0) < 0.0, "1 m to the side misses")
+	check(BowAim.segment_trunk(Vector3(0.0, 23.0, 0.0), Vector3(0.0, 23.0, -10.0), trunk_foot, 0.3, 12.0) < 0.0, "over the top of a 12 m tree misses")
+	check(BowAim.segment_trunk(Vector3(0.0, 11.5, 0.0), Vector3(0.0, 11.5, -5.0), trunk_foot, 0.3, 12.0) < 0.0, "a step that ends short of the trunk misses")
+
+	# The server: a full draw at the trunk 8 m ahead (Dave stood right in front of it) leaves one arrow stuck at the bark, for 5 minutes.
+	deer_at = Vector3(0.0, -100.0, 0.0)
+	var items = make("user://test_bow_tree")
+	items.trunks_near = func(point: Vector3, radius: float) -> Array:
+		return [[trunk_foot, 0.3, 12.0]] if Vector2(point.x - trunk_foot.x, point.z - trunk_foot.z).length() <= radius else []
+	items._bow.cfg["break_chance"] = {}   # every tip unbreakable here: the check is where it ends, not the luck of it
+	items._bow.cfg["break_chance"]["stone"] = 0.0
+	var bow_no: int = items.table.number_of("wooden_bow")
+	items.action(1, Net.ACT_ADMIN_GIVE, bow_no, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_arrow"), 0, 2, Vector3.ZERO)
+	var slot: int = items.inventory_of(1).numbers.find(bow_no)
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0))
+	fly(items, 2.0)
+	var stuck: Array = []
+
+	for id in items._items:
+		if items._items[id].has("tilt"):
+			stuck.append(items._items[id])
+
+	check(items._arrows.is_empty() and stuck.size() == 1, "the arrow stops in the trunk and stays there (%d stuck)" % stuck.size())
+
+	if stuck.size() == 1:
+		var at: Vector3 = stuck[0]["pos"]
+		check(Vector2(at.x - trunk_foot.x, at.z - trunk_foot.z).length() < 0.31 and at.y > 11.0 and at.y < 12.0, "at the bark, about eye height (%s)" % str(at))
+		check(is_equal_approx(float(stuck[0]["left"]), 300.0) and float(items._bow.cfg.get("stuck_s", 0.0)) == 300.0, "it stays 5 minutes unless picked up (bow.json stuck_s)")
+		check(absf(float(stuck[0]["tilt"])) < 0.2 and absf(wrapf(float(stuck[0]["rot_y"]) - PI * 0.5, -PI, PI)) < 0.01, "it points along its flight (yaw %.2f, tilt %.2f)" % [float(stuck[0]["rot_y"]), float(stuck[0]["tilt"])])
+
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0))
+	fly(items, 2.0)
+	var stuck_now: int = 0
+
+	for id in items._items:
+		stuck_now += 1 if items._items[id].has("tilt") else 0
+
+	check(stuck_now == 2, "a second arrow beside the first is its own stuck arrow, not a pile (%d)" % stuck_now)
+
+	# The sway's turn of the view: turn_of undoes turned for small angles.
+	var fwd: Vector3 = Vector3(0.0, 0.0, -1.0)
+	var turn: Vector2 = BowAim.turn_of(BowAim.turned(fwd, Vector3.RIGHT, Vector3.UP, Vector2(0.8, -0.5)), fwd, Vector3.RIGHT, Vector3.UP)
+	check(absf(turn.x - 0.8) < 0.01 and absf(turn.y + 0.5) < 0.01, "the view turns by the sway it is given (%s)" % str(turn))
+	var cfg: Dictionary = BowAim.load_config()
+	check(float(cfg["aim"]["wobble_max_deg"]) <= 1.5, "the sway is much less than the 4 degrees the cross moved (%.1f)" % float(cfg["aim"]["wobble_max_deg"]))

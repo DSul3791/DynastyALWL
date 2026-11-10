@@ -152,6 +152,7 @@ var dig_refusal: Callable        # () -> String: why the last dig changed nothin
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
 var trees_near: Callable        # (point, radius) -> Array of [chunk Vector2i, id int]: standing placer trees whose root is that close; set by the server scene
 var trees_near_cached: Callable # (point, radius) -> Array of [position, species name]: the same trees from chunks already made only, cheap (the hint triggers); unset = trees_near
+var trunks_near: Callable       # (point, radius) -> Array of [root position, trunk radius m, height m]: standing trunks an arrow can stick in (terrain_server _arrow_trunks)
 var dig_support: Callable       # (base, radius, depth) -> share 0..1 of the ground under a tree not dug away; set by the server scene
 var ground_material: Callable   # (x, z) -> the surface material's name there ("loam", "clay", "sand", ... or "rock"); set by the server scene, feeds dig yields
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
@@ -920,7 +921,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 
 			var near: Dictionary = _items[id]
 
-			if near.has("scatter") or near.has("showroom") or near.has("struct") or near.has("fire") or near.has("tree") or near.has("boulder"):
+			if near.has("scatter") or near.has("showroom") or near.has("struct") or near.has("fire") or near.has("tree") or near.has("boulder") or near.has("tilt"):   # an arrow in a tree stays one arrow
 				continue
 
 			if int(near["number"]) != number or int(near.get("wear", 0)) != 0 or int(near["count"]) >= PILE_CAP:
@@ -1400,7 +1401,12 @@ func save() -> void:
 			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0])
 			continue
 
-		var row: Array = [int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
+		var at: Vector3 = it["pos"]
+
+		if it.has("tilt") and ground_height.is_valid() and not is_nan(float(ground_height.call(at.x, at.z))):
+			at.y = float(ground_height.call(at.x, at.z))   # an arrow stuck in a tree is saved as fallen to the foot of it (the tilt is not saved)
+
+		var row: Array = [int(it["number"]), int(it["count"]), at.x, at.y, at.z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
 
 		if not it.has("fire") and it.has("rot_y"):
 			row.append(float(it["rot_y"]))   # a loose item's turn (a split log along its trunk); fires use this slot for their store
@@ -2187,6 +2193,7 @@ func _arrow_fly(delta: float) -> void:
 			var landed: bool = false
 			var hit_animal_now: bool = false
 			var at: Vector3 = to
+			var stuck: bool = false
 
 			if hit_animal_path.is_valid():
 				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]))
@@ -2197,6 +2204,14 @@ func _arrow_fly(delta: float) -> void:
 					at = hit["at"]
 					practice(int(ar["peer"]), "bow")
 					hit_number(int(ar["peer"]), at, float(ar["damage"]))
+
+			if not landed and trunks_near.is_valid():   # a tree trunk on the way: the arrow sticks in it (Dave 10 Nov 2026)
+				var into: float = _arrow_trunk(from, to)
+
+				if into >= 0.0:
+					landed = true
+					stuck = true
+					at = from.lerp(to, into)
 
 			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
 
@@ -2212,7 +2227,12 @@ func _arrow_fly(delta: float) -> void:
 			_arrows.erase(ar)
 			var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05
 
-			if fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), hit_animal_now, wet)):
+			if stuck and fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), false, false)):
+				_stick_arrow(int(ar["number"]), at, (ar["vel"] as Vector3).normalized())
+				print("server items: arrow stuck in a tree at x%d z%d y%.1f after %.0f m" % [int(at.x), int(at.z), at.y, float(ar["flown"])])
+			elif stuck:
+				print("server items: arrow hit a tree at x%d z%d after %.0f m: broke" % [int(at.x), int(at.z), float(ar["flown"])])
+			elif fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), hit_animal_now, wet)):
 				var kept: bool = drop_in_world(int(ar["number"]), 1, at)
 				print("server items: arrow landed at x%d z%d y%.1f after %.0f m (animal %s, water %s): %s" % [int(at.x), int(at.z), at.y, float(ar["flown"]), str(hit_animal_now), str(wet), "lying there" if kept else "NOT dropped (crowded or refused)"])
 			else:
@@ -2220,6 +2240,32 @@ func _arrow_fly(delta: float) -> void:
 
 				if wet:
 					_say(int(ar["peer"]), str(_bow.cfg.get("say_lost", "")))
+
+
+# The share 0..1 along from -> to where the flight first meets a standing trunk, or -1 (BowAim.segment_trunk on each trunk near the segment).
+const ARROW_TRUNK_SEARCH_M := 2.0   # the thickest trunk's radius and a little over
+
+
+func _arrow_trunk(from: Vector3, to: Vector3) -> float:
+	var best: float = -1.0
+
+	for trunk in trunks_near.call(from.lerp(to, 0.5), from.distance_to(to) * 0.5 + ARROW_TRUNK_SEARCH_M):
+		var t: float = BowAim.segment_trunk(from, to, trunk[0], float(trunk[1]), float(trunk[2]))
+
+		if t >= 0.0 and (best < 0.0 or t < best):
+			best = t
+
+	return best
+
+
+# An arrow stuck in a tree where it hit (Dave 10 Nov 2026: "there should be an arrow in that tree until I collect it or it fades out in 5 minutes"):
+# a loose arrow at the hit point, not let down to the ground, turned along its flight (rot_y about the vertical, tilt up), bow.json stuck_s seconds
+# (300) unless picked up. It never joins another arrow's pile.
+func _stick_arrow(number: int, at: Vector3, along: Vector3) -> void:
+	_items[_next_id] = {"number": number, "count": 1, "pos": at, "left": float(_bow.cfg.get("stuck_s", 300.0)), "wear": 0,
+		"rot_y": atan2(-along.z, along.x), "tilt": asin(clampf(along.y, -1.0, 1.0))}
+	_next_id += 1
+	_dirty = true
 
 
 func _fly(delta: float) -> void:
@@ -4135,7 +4181,7 @@ func _sync_world_items() -> void:
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") else {}))))])
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 					known[id] = signature
@@ -5998,6 +6044,9 @@ func _loose_extra(it: Dictionary) -> Dictionary:
 
 	if it.has("girth"):
 		extra["girth"] = float(it["girth"])
+
+	if it.has("tilt"):
+		extra["tilt"] = float(it["tilt"])   # an arrow stuck in a tree: drawn where it is, along its flight
 
 	return extra
 
