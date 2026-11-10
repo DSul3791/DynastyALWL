@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 560,
+	"next_number": 580,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -1118,7 +1118,7 @@
 		},
 		"log_workbench": {
 			"number": 86,
-			"name": "Sturdy workbench",
+			"name": "Log - Workbench",
 			"description": "A log workbench with its own rack and vice. Stand near it to make the things that need a work table.",
 			"kind": "structure",
 			"stack": 1,
@@ -5869,7 +5869,7 @@
 		},
 		"bench": {
 			"number": 504,
-			"name": "Bench",
+			"name": "Wooden - Bench",
 			"description": "A plank bench that seats two or three.",
 			"kind": "structure",
 			"stack": 1,
@@ -5878,7 +5878,7 @@
 		},
 		"chair": {
 			"number": 505,
-			"name": "Chair",
+			"name": "Wooden - Chair",
 			"description": "A chair with a back. Sit and rest.",
 			"kind": "structure",
 			"stack": 1,
@@ -5887,7 +5887,7 @@
 		},
 		"table": {
 			"number": 506,
-			"name": "Table",
+			"name": "Wooden - Table",
 			"description": "A plank table on trestles.",
 			"kind": "structure",
 			"stack": 1,
@@ -6501,6 +6501,256 @@
 				"look_alikes": [],
 				"material": "wood",
 				"note": "Building piece: row state 78."
+			},
+			"log_foundation_kit": {
+				"number": 562,
+				"retired": true,
+				"name": "Log foundation",
+				"description": "Log sills on stone footings, four metres square. Walls and ceilings snap onto it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 52
+			},
+			"log_foundation": {
+				"number": 563,
+				"name": "Log - Foundation",
+				"description": "Log sills on stone footings, four metres square. Walls and ceilings snap onto it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 79."
+			},
+			"brick_foundation_kit": {
+				"number": 564,
+				"retired": true,
+				"name": "Brick foundation",
+				"description": "A brick plinth, four metres square. Walls and ceilings snap onto it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 92
+			},
+			"brick_foundation": {
+				"number": 565,
+				"name": "Brick - Foundation",
+				"description": "A brick plinth, four metres square. Walls and ceilings snap onto it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 80."
+			},
+			"log_doorway_kit": {
+				"number": 566,
+				"retired": true,
+				"name": "Log doorway",
+				"description": "A log wall with a plank door, one metre wide and two high.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 26
+			},
+			"log_doorway": {
+				"number": 567,
+				"name": "Log - Doorway",
+				"description": "A log wall with a plank door, one metre wide and two high.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 81."
+			},
+			"stone_doorway_kit": {
+				"number": 568,
+				"retired": true,
+				"name": "Stone doorway",
+				"description": "A stone wall with a timber lintel and a door, one metre wide and two high.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 243
+			},
+			"stone_doorway": {
+				"number": 569,
+				"name": "Stone - Doorway",
+				"description": "A stone wall with a timber lintel and a door, one metre wide and two high.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 83."
+			},
+			"brick_doorway_kit": {
+				"number": 570,
+				"retired": true,
+				"name": "Brick doorway",
+				"description": "A brick wall with a timber door, one metre wide and two high.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 66
+			},
+			"brick_doorway": {
+				"number": 571,
+				"name": "Brick - Doorway",
+				"description": "A brick wall with a timber door, one metre wide and two high.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 85."
+			},
+			"thatch_window_kit": {
+				"number": 572,
+				"retired": true,
+				"name": "Thatch window",
+				"description": "A thatch wall with an opening at chest height to see through.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 47
+			},
+			"thatch_window": {
+				"number": 573,
+				"name": "Thatch - Window",
+				"description": "A thatch wall with an opening at chest height to see through.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "thatch",
+				"note": "Building piece: row state 87."
+			},
+			"log_window_kit": {
+				"number": 574,
+				"retired": true,
+				"name": "Log window",
+				"description": "A log wall with an opening at chest height to see through.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 26
+			},
+			"log_window": {
+				"number": 575,
+				"name": "Log - Window",
+				"description": "A log wall with an opening at chest height to see through.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 88."
+			},
+			"stone_window_kit": {
+				"number": 576,
+				"retired": true,
+				"name": "Stone window",
+				"description": "A stone wall with a sill and an opening at chest height to see through.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 243
+			},
+			"stone_window": {
+				"number": 577,
+				"name": "Stone - Window",
+				"description": "A stone wall with a sill and an opening at chest height to see through.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 89."
+			},
+			"brick_window_kit": {
+				"number": 578,
+				"retired": true,
+				"name": "Brick window",
+				"description": "A brick wall with an arched opening at chest height to see through.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 66
+			},
+			"brick_window": {
+				"number": 579,
+				"name": "Brick - Window",
+				"description": "A brick wall with an arched opening at chest height to see through.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 90."
+			},
+			"iron_hammer": {
+				"number": 560,
+				"name": "Iron - Hammer",
+				"description": "A forged iron head on a short haft. Hold it to place big builds from blueprints.",
+				"kind": "tool",
+				"stack": 1,
+				"unstackable": true,
+				"future": true,
+				"material": "iron",
+				"tool_class": "hammer",
+				"tier": 3,
+				"durability": 9000,
+				"repair": [
+					[
+						"iron_ingot",
+						1
+					],
+					[
+						"stick",
+						1
+					]
+				],
+				"repair_station": "forge",
+				"look_alikes": [],
+				"value": 90
+			},
+			"steel_hammer": {
+				"number": 561,
+				"name": "Steel - Hammer",
+				"description": "A forged steel head on a short haft. Hold it to place big builds from blueprints.",
+				"kind": "tool",
+				"stack": 1,
+				"unstackable": true,
+				"future": true,
+				"material": "steel",
+				"tool_class": "hammer",
+				"tier": 3,
+				"durability": 22500,
+				"repair": [
+					[
+						"steel_ingot",
+						1
+					],
+					[
+						"stick",
+						1
+					]
+				],
+				"repair_station": "forge",
+				"look_alikes": [],
+				"value": 140
 			}
 	}
 }
