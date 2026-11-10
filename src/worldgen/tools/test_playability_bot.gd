@@ -300,15 +300,15 @@ func _init() -> void:
 	if halted:
 		return
 
-	# A chopping block from the log on the shoulder plus a second log lying on the ground (the way logs are really carried and cut).
-	step("block: a chopping block from a shoulder log and a ground log")
-	items.drop_in_world(items.table.number_of("log_oak"), 1, items._peer_pos[1] + Vector3(1.0, 0.0, 0.0))
+	# A chopping block from one large wooden block (Dave 10 Nov 2026). The shoulder and ground log rules are test_logs_carry's.
+	step("block: a chopping block from a large wooden block")
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_block_large"), 0, 1, Vector3.ZERO)
 	why = craft("chopping_block", 1)
 	need(why == "", why)
 	if halted:
 		return
 
-	need(count("chopping_block") >= 1 and items.shoulder_of(1) == "", "the chopping block was made but the shoulder log is still on the shoulder")
+	need(count("chopping_block") >= 1 and count("wooden_block_large") == 0, "the chopping block was made but the large block is still in the pack")
 	if halted:
 		return
 

@@ -55,7 +55,7 @@
 		},
 		"stone_axe": {
 			"number": 6,
-			"name": "Stone axe",
+			"name": "Stone - Axe",
 			"description": "A stone bound to a handle. Fells trees, breaks rock and works wood.",
 			"kind": "tool",
 			"tool_class": "axe",
@@ -81,7 +81,7 @@
 		},
 		"spear": {
 			"number": 7,
-			"name": "Stone spear",
+			"name": "Stone - Spear",
 			"description": "A stone point on a long shaft. Jab with it or throw it; it kills a rabbit in one blow.",
 			"kind": "weapon",
 			"weapon_class": "spear",
@@ -116,7 +116,7 @@
 		},
 		"wooden_spear": {
 			"number": 10,
-			"name": "Wooden spear",
+			"name": "Wooden - Spear",
 			"description": "A sharpened stick. Jab with it or throw it.",
 			"kind": "weapon",
 			"weapon_class": "spear",
@@ -137,7 +137,7 @@
 		},
 		"stone_knife": {
 			"number": 11,
-			"name": "Stone knife",
+			"name": "Stone - Knife",
 			"description": "A flaked stone on a handle. Dresses a kill and cuts bark.",
 			"kind": "tool",
 			"tool_class": "knife",
@@ -262,7 +262,7 @@
 		},
 		"wooden_spade": {
 			"number": 19,
-			"name": "Wooden spade",
+			"name": "Wooden - Spade",
 			"description": "A sharpened wooden blade. Digs roots and bulbs.",
 			"kind": "tool",
 			"tool_class": "spade",
@@ -311,7 +311,7 @@
 		},
 		"chest": {
 			"number": 23,
-			"name": "Wicker chest",
+			"name": "Wicker - Chest",
 			"description": "A woven chest for storing things.",
 			"kind": "structure",
 			"stack": 1,
@@ -385,7 +385,7 @@
 		},
 		"plank_chest": {
 			"number": 29,
-			"name": "Wooden chest",
+			"name": "Wooden - Chest",
 			"description": "A plank chest for storing more things.",
 			"kind": "structure",
 			"stack": 1,
@@ -416,7 +416,7 @@
 		},
 		"iron_pickaxe": {
 			"number": 33,
-			"name": "Iron pickaxe",
+			"name": "Iron - Pickaxe",
 			"description": "An iron head on a hardwood handle. One blow breaks one stone off a boulder.",
 			"kind": "tool",
 			"tool_class": "pick",
@@ -442,7 +442,7 @@
 		},
 		"steel_pickaxe": {
 			"number": 34,
-			"name": "Steel pickaxe",
+			"name": "Steel - Pickaxe",
 			"description": "A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest.",
 			"kind": "tool",
 			"tool_class": "pick",
@@ -574,7 +574,7 @@
 		},
 		"stone_spade": {
 			"number": 45,
-			"name": "Stone spade",
+			"name": "Stone - Spade",
 			"description": "A spade with a stone blade. Digs deeper and lasts longer than wood.",
 			"kind": "tool",
 			"tool_class": "spade",
@@ -599,7 +599,7 @@
 		},
 		"iron_spade": {
 			"number": 46,
-			"name": "Iron spade",
+			"name": "Iron - Spade",
 			"description": "A spade with an iron blade.",
 			"kind": "tool",
 			"tool_class": "spade",
@@ -626,7 +626,7 @@
 		},
 		"steel_spade": {
 			"number": 47,
-			"name": "Steel spade",
+			"name": "Steel - Spade",
 			"description": "A spade with a steel blade.",
 			"kind": "tool",
 			"tool_class": "spade",
@@ -779,7 +779,7 @@
 		},
 		"grass_skirt": {
 			"number": 60,
-			"name": "Grass skirt",
+			"name": "Grass - Skirt",
 			"description": "Woven grass hung from the waist. Barely warm, and it rots quickly.",
 			"kind": "clothing",
 			"slot": "legs",
@@ -791,7 +791,7 @@
 		},
 		"grass_cloak": {
 			"number": 61,
-			"name": "Grass cloak",
+			"name": "Grass - Cloak",
 			"description": "Woven grass over the shoulders. Keeps a little wind off.",
 			"kind": "clothing",
 			"slot": "body",
@@ -803,7 +803,7 @@
 		},
 		"fibre_sandals": {
 			"number": 62,
-			"name": "Fibre sandals",
+			"name": "Fibre - Sandals",
 			"description": "Twisted fibre soles tied to the foot.",
 			"kind": "clothing",
 			"slot": "feet",
@@ -815,7 +815,7 @@
 		},
 		"hide_cloak": {
 			"number": 63,
-			"name": "Hide cloak",
+			"name": "Hide - Cloak",
 			"description": "A wrapped animal hide. Warm over the shoulders.",
 			"kind": "clothing",
 			"slot": "body",
@@ -827,7 +827,7 @@
 		},
 		"hide_boots": {
 			"number": 64,
-			"name": "Hide boots",
+			"name": "Hide - Boots",
 			"description": "Hide stitched around the foot. Warm and tough.",
 			"kind": "clothing",
 			"slot": "feet",
@@ -839,7 +839,7 @@
 		},
 		"hide_hood": {
 			"number": 65,
-			"name": "Hide hood",
+			"name": "Hide - Hood",
 			"description": "A close hood of hide with the hair turned in.",
 			"kind": "clothing",
 			"slot": "head",
@@ -851,7 +851,7 @@
 		},
 		"hide_mittens": {
 			"number": 66,
-			"name": "Hide mittens",
+			"name": "Hide - Mittens",
 			"description": "Stitched hide mittens. Warm hands.",
 			"kind": "clothing",
 			"slot": "hands",
@@ -863,7 +863,7 @@
 		},
 		"hide_leggings": {
 			"number": 67,
-			"name": "Hide leggings",
+			"name": "Hide - Leggings",
 			"description": "Hide tied around each leg.",
 			"kind": "clothing",
 			"slot": "legs",
@@ -2304,7 +2304,7 @@
 		},
 		"wall_section": {
 			"number": 193,
-			"name": "Wooden wall",
+			"name": "Wooden - Wall",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "structure",
 			"stack": 1,
@@ -2326,7 +2326,7 @@
 		},
 		"floor_section": {
 			"number": 195,
-			"name": "Ceiling section",
+			"name": "Wooden - Ceiling",
 			"description": "A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge.",
 			"kind": "structure",
 			"stack": 1,
@@ -2348,7 +2348,7 @@
 		},
 		"roof_section": {
 			"number": 197,
-			"name": "Wooden roof",
+			"name": "Wooden - Roof",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"kind": "structure",
 			"stack": 1,
@@ -2370,7 +2370,7 @@
 		},
 		"foundation_section": {
 			"number": 199,
-			"name": "Foundation",
+			"name": "Stone - Foundation",
 			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"kind": "structure",
 			"stack": 1,
@@ -2392,7 +2392,7 @@
 		},
 		"doorway_section": {
 			"number": 201,
-			"name": "Wooden doorway",
+			"name": "Wooden - Doorway",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "structure",
 			"stack": 1,
@@ -2414,7 +2414,7 @@
 		},
 		"window_section": {
 			"number": 203,
-			"name": "Wooden window",
+			"name": "Wooden - Window",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"kind": "structure",
 			"stack": 1,
@@ -2732,7 +2732,7 @@
 		},
 		"wooden_hoe": {
 			"number": 221,
-			"name": "Wooden hoe",
+			"name": "Wooden - Hoe",
 			"description": "A flat blade on a long handle. Paths the ground and tills beds.",
 			"kind": "tool",
 			"tool_class": "hoe",
@@ -2750,7 +2750,7 @@
 		},
 		"stone_hoe": {
 			"number": 222,
-			"name": "Stone hoe",
+			"name": "Stone - Hoe",
 			"description": "A hoe with a stone blade. Lasts longer than wood.",
 			"kind": "tool",
 			"tool_class": "hoe",
@@ -2774,7 +2774,7 @@
 		},
 		"iron_hoe": {
 			"number": 223,
-			"name": "Iron hoe",
+			"name": "Iron - Hoe",
 			"description": "A hoe with an iron blade.",
 			"kind": "tool",
 			"tool_class": "hoe",
@@ -2800,7 +2800,7 @@
 		},
 		"steel_hoe": {
 			"number": 224,
-			"name": "Steel hoe",
+			"name": "Steel - Hoe",
 			"description": "A hoe with a steel blade.",
 			"kind": "tool",
 			"tool_class": "hoe",
@@ -3033,7 +3033,7 @@
 		},
 		"wooden_hammer": {
 			"number": 247,
-			"name": "Wooden hammer",
+			"name": "Wooden - Hammer",
 			"description": "A wooden head on a stick. The weakest hammer; it wears out fast.",
 			"kind": "tool",
 			"tool_class": "hammer",
@@ -3057,7 +3057,7 @@
 		},
 		"stone_hammer": {
 			"number": 244,
-			"name": "Stone hammer",
+			"name": "Stone - Hammer",
 			"description": "A hafted stone hammer. Hold it to place big builds from blueprints.",
 			"kind": "tool",
 			"tool_class": "hammer",
@@ -3161,7 +3161,7 @@
 		},
 		"thatch_wall": {
 			"number": 253,
-			"name": "Thatch wall",
+			"name": "Thatch - Wall",
 			"description": "A thatch wall.",
 			"kind": "structure",
 			"stack": 1,
@@ -3221,7 +3221,7 @@
 		},
 		"thatch_floor": {
 			"number": 262,
-			"name": "Thatch foundation",
+			"name": "Thatch - Foundation",
 			"description": "A thatch foundation on stakes. Walls and roofs stand on it.",
 			"kind": "structure",
 			"stack": 1,
@@ -3241,7 +3241,7 @@
 		},
 		"thatch_roof": {
 			"number": 264,
-			"name": "Thatch roof",
+			"name": "Thatch - Roof",
 			"description": "A thatch roof. It keeps the rain off.",
 			"kind": "structure",
 			"stack": 1,
@@ -3261,7 +3261,7 @@
 		},
 		"thatch_doorway": {
 			"number": 266,
-			"name": "Thatch doorway",
+			"name": "Thatch - Doorway",
 			"description": "A thatch doorway with a hanging door.",
 			"kind": "structure",
 			"stack": 1,
@@ -3270,7 +3270,7 @@
 		},
 		"wooden_bow": {
 			"number": 269,
-			"name": "Wooden bow",
+			"name": "Wooden - Bow",
 			"description": "A bow of bent wood and twine. Needs arrows.",
 			"kind": "weapon",
 			"weapon_class": "bow",
@@ -3284,7 +3284,7 @@
 		},
 		"wooden_arrow": {
 			"number": 270,
-			"name": "Wooden arrow",
+			"name": "Wooden - Arrow",
 			"description": "A hardened stick with feather fletching. Needs a bow.",
 			"kind": "material",
 			"ammo_class": "arrow",
@@ -3296,7 +3296,7 @@
 		},
 		"stone_arrow": {
 			"number": 271,
-			"name": "Stone arrow",
+			"name": "Stone - Arrow",
 			"description": "An arrow with a flaked stone point. Hits harder than wood.",
 			"kind": "material",
 			"ammo_class": "arrow",
@@ -3563,7 +3563,7 @@
 		},
 		"steel_striker": {
 			"number": 294,
-			"name": "Steel striker",
+			"name": "Steel - Striker",
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"kind": "tool",
 			"tool_class": "striker",
@@ -3605,7 +3605,7 @@
 		},
 		"obsidian_knife": {
 			"number": 296,
-			"name": "Obsidian knife",
+			"name": "Obsidian - Knife",
 			"description": "A razor-sharp black glass blade. Cuts better than flint, but chips more easily.",
 			"kind": "tool",
 			"tool_class": "knife",
@@ -3631,7 +3631,7 @@
 		},
 		"stone_pickaxe": {
 			"number": 297,
-			"name": "Stone pickaxe",
+			"name": "Stone - Pickaxe",
 			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly.",
 			"kind": "tool",
 			"tool_class": "pick",
@@ -3706,7 +3706,7 @@
 		},
 		"wooden_club": {
 			"number": 300,
-			"name": "Wooden club",
+			"name": "Wooden - Club",
 			"description": "A stout length of hardwood, heavy at one end. Hits hard and needs no skill.",
 			"kind": "weapon",
 			"weapon_class": "club",
@@ -3762,7 +3762,7 @@
 		},
 		"hide_tunic": {
 			"number": 305,
-			"name": "Hide tunic",
+			"name": "Hide - Tunic",
 			"description": "A sewn hide shirt with sleeves. Warmer than a cloak.",
 			"kind": "clothing",
 			"slot": "body",
@@ -3774,7 +3774,7 @@
 		},
 		"hide_trousers": {
 			"number": 306,
-			"name": "Hide trousers",
+			"name": "Hide - Trousers",
 			"description": "Hide sewn into trousers. Better than leggings.",
 			"kind": "clothing",
 			"slot": "legs",
@@ -3786,7 +3786,7 @@
 		},
 		"hide_gloves": {
 			"number": 307,
-			"name": "Hide gloves",
+			"name": "Hide - Gloves",
 			"description": "Stitched hide gloves with fingers. For work and cold.",
 			"kind": "clothing",
 			"slot": "hands",
@@ -3842,7 +3842,7 @@
 		},
 		"wicker_shield": {
 			"number": 312,
-			"name": "Wicker shield",
+			"name": "Wicker - Shield",
 			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -3862,7 +3862,7 @@
 		},
 		"stone_mace": {
 			"number": 313,
-			"name": "Stone mace",
+			"name": "Stone - Mace",
 			"description": "A heavy stone lashed to a stick. Cracks armour and bone.",
 			"kind": "weapon",
 			"weapon_class": "mace",
@@ -3886,7 +3886,7 @@
 		},
 		"plank_shield": {
 			"number": 314,
-			"name": "Plank shield",
+			"name": "Plank - Shield",
 			"description": "Boards bound with hide. Sturdier than wicker.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -3907,7 +3907,7 @@
 		},
 		"bronze_sword": {
 			"number": 315,
-			"name": "Bronze sword",
+			"name": "Bronze - Sword",
 			"description": "A bronze blade on a short grip. Quick and sharp.",
 			"kind": "weapon",
 			"weapon_class": "sword",
@@ -3929,7 +3929,7 @@
 		},
 		"bronze_mace": {
 			"number": 316,
-			"name": "Bronze mace",
+			"name": "Bronze - Mace",
 			"description": "A cast bronze head on a stout haft.",
 			"kind": "weapon",
 			"weapon_class": "mace",
@@ -3951,7 +3951,7 @@
 		},
 		"bronze_shield": {
 			"number": 317,
-			"name": "Bronze-rimmed shield",
+			"name": "Bronze - Kite shield",
 			"description": "A plank shield with a bronze rim and boss.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -3973,7 +3973,7 @@
 		},
 		"iron_sword": {
 			"number": 318,
-			"name": "Iron sword",
+			"name": "Iron - Sword",
 			"description": "A forged iron blade with a leather grip.",
 			"kind": "weapon",
 			"weapon_class": "sword",
@@ -3995,7 +3995,7 @@
 		},
 		"iron_mace": {
 			"number": 319,
-			"name": "Iron mace",
+			"name": "Iron - Mace",
 			"description": "A flanged iron head that breaks armour.",
 			"kind": "weapon",
 			"weapon_class": "mace",
@@ -4017,7 +4017,7 @@
 		},
 		"iron_shield": {
 			"number": 320,
-			"name": "Iron-banded shield",
+			"name": "Iron - Kite shield",
 			"description": "Boards held by iron bands. Hard to break.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -4039,7 +4039,7 @@
 		},
 		"steel_sword": {
 			"number": 321,
-			"name": "Steel sword",
+			"name": "Steel - Sword",
 			"description": "A tempered steel blade. Keeps its edge.",
 			"kind": "weapon",
 			"weapon_class": "sword",
@@ -4061,7 +4061,7 @@
 		},
 		"steel_mace": {
 			"number": 322,
-			"name": "Steel mace",
+			"name": "Steel - Mace",
 			"description": "A steel flanged head on a long haft.",
 			"kind": "weapon",
 			"weapon_class": "mace",
@@ -4083,7 +4083,7 @@
 		},
 		"steel_shield": {
 			"number": 323,
-			"name": "Steel kite shield",
+			"name": "Steel - Kite shield",
 			"description": "A long steel-faced shield that covers shoulder to shin.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -4105,7 +4105,7 @@
 		},
 		"leather_cap": {
 			"number": 324,
-			"name": "Leather cap",
+			"name": "Leather - Cap",
 			"description": "A close leather cap. Better than bare hide.",
 			"kind": "clothing",
 			"slot": "head",
@@ -4117,7 +4117,7 @@
 		},
 		"leather_jerkin": {
 			"number": 325,
-			"name": "Leather jerkin",
+			"name": "Leather - Jerkin",
 			"description": "A stiff leather vest. Turns a glancing blow.",
 			"kind": "clothing",
 			"slot": "body",
@@ -4129,7 +4129,7 @@
 		},
 		"bronze_helm": {
 			"number": 326,
-			"name": "Bronze helm",
+			"name": "Bronze - Helm",
 			"description": "A beaten bronze cap with a nose guard.",
 			"kind": "clothing",
 			"slot": "head",
@@ -4154,7 +4154,7 @@
 		},
 		"iron_helm": {
 			"number": 328,
-			"name": "Iron helm",
+			"name": "Iron - Helm",
 			"description": "A riveted iron helmet.",
 			"kind": "clothing",
 			"slot": "head",
@@ -4180,7 +4180,7 @@
 		},
 		"steel_helm": {
 			"number": 330,
-			"name": "Steel helm",
+			"name": "Steel - Helm",
 			"description": "A fitted steel helm with leather lining.",
 			"kind": "clothing",
 			"slot": "head",
@@ -4412,7 +4412,7 @@
 		},
 		"bone_arrow": {
 			"number": 352,
-			"name": "Bone arrow",
+			"name": "Bone - Arrow",
 			"description": "An arrow with a sharpened bone point.",
 			"kind": "material",
 			"ammo_class": "arrow",
@@ -4424,7 +4424,7 @@
 		},
 		"stone_wedge": {
 			"number": 353,
-			"name": "Stone wedge",
+			"name": "Stone - Wedge",
 			"description": "A flaked stone wedge. Driven into a log at a workbench, it splits two rough planks.",
 			"kind": "tool",
 			"tool_class": "wedge",
@@ -4442,7 +4442,7 @@
 		},
 		"fibre_arrow": {
 			"number": 354,
-			"name": "Fibre arrow",
+			"name": "Fibre - Arrow",
 			"description": "A hardened stick with fibre fletching. Weak and short, but needs no feather.",
 			"kind": "material",
 			"ammo_class": "arrow",
@@ -4564,7 +4564,7 @@
 		},
 		"wool_tunic": {
 			"number": 366,
-			"name": "Wool tunic",
+			"name": "Wool - Tunic",
 			"description": "A woven wool shirt. Warm.",
 			"kind": "clothing",
 			"slot": "body",
@@ -4577,7 +4577,7 @@
 		},
 		"wool_trousers": {
 			"number": 367,
-			"name": "Wool trousers",
+			"name": "Wool - Trousers",
 			"description": "Heavy woven wool trousers.",
 			"kind": "clothing",
 			"slot": "legs",
@@ -4590,7 +4590,7 @@
 		},
 		"wool_cap": {
 			"number": 368,
-			"name": "Wool cap",
+			"name": "Wool - Cap",
 			"description": "A snug knitted wool cap.",
 			"kind": "clothing",
 			"slot": "head",
@@ -4603,7 +4603,7 @@
 		},
 		"wool_mittens": {
 			"number": 369,
-			"name": "Wool mittens",
+			"name": "Wool - Mittens",
 			"description": "Thick wool mittens.",
 			"kind": "clothing",
 			"slot": "hands",
@@ -4616,7 +4616,7 @@
 		},
 		"linen_shirt": {
 			"number": 370,
-			"name": "Linen shirt",
+			"name": "Linen - Shirt",
 			"description": "A light linen shirt. Cool in summer heat.",
 			"kind": "clothing",
 			"slot": "body",
@@ -4629,7 +4629,7 @@
 		},
 		"fur_cloak": {
 			"number": 371,
-			"name": "Fur cloak",
+			"name": "Fur - Cloak",
 			"description": "A heavy cloak of fur pelts. The warmest body cover.",
 			"kind": "clothing",
 			"slot": "body",
@@ -4642,7 +4642,7 @@
 		},
 		"fur_hat": {
 			"number": 372,
-			"name": "Fur hat",
+			"name": "Fur - Hat",
 			"description": "A fur hat with ear flaps.",
 			"kind": "clothing",
 			"slot": "head",
@@ -4655,7 +4655,7 @@
 		},
 		"fur_boots": {
 			"number": 373,
-			"name": "Fur boots",
+			"name": "Fur - Boots",
 			"description": "Hide boots lined with fur.",
 			"kind": "clothing",
 			"slot": "feet",
@@ -5457,7 +5457,7 @@
 		},
 		"bronze_pickaxe": {
 			"number": 458,
-			"name": "Bronze pickaxe",
+			"name": "Bronze - Pickaxe",
 			"description": "A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder.",
 			"kind": "tool",
 			"stack": 1,
@@ -5483,7 +5483,7 @@
 		},
 		"bronze_axe": {
 			"number": 459,
-			"name": "Bronze axe",
+			"name": "Bronze - Axe",
 			"description": "A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone.",
 			"kind": "tool",
 			"stack": 1,
@@ -5509,7 +5509,7 @@
 		},
 		"bronze_hammer": {
 			"number": 460,
-			"name": "Bronze hammer",
+			"name": "Bronze - Hammer",
 			"description": "A cast bronze head on a short haft. Hold it to place big builds from blueprints.",
 			"kind": "tool",
 			"stack": 1,
@@ -5535,7 +5535,7 @@
 		},
 		"bronze_knife": {
 			"number": 461,
-			"name": "Bronze knife",
+			"name": "Bronze - Knife",
 			"description": "A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark.",
 			"kind": "tool",
 			"stack": 1,
@@ -5572,7 +5572,7 @@
 		},
 		"stairs_wood": {
 			"number": 463,
-			"name": "Wooden stairs",
+			"name": "Wooden - Stairs",
 			"description": "A wooden flight of stairs, 2.4 m long.",
 			"kind": "structure",
 			"stack": 1,
@@ -5592,7 +5592,7 @@
 		},
 		"log_wall": {
 			"number": 465,
-			"name": "Log wall",
+			"name": "Log - Wall",
 			"description": "A log wall, two metres wide.",
 			"kind": "structure",
 			"stack": 1,
@@ -5612,7 +5612,7 @@
 		},
 		"log_floor": {
 			"number": 467,
-			"name": "Log ceiling",
+			"name": "Log - Ceiling",
 			"description": "A ceiling of laid logs.",
 			"kind": "structure",
 			"stack": 1,
@@ -5632,7 +5632,7 @@
 		},
 		"log_roof": {
 			"number": 469,
-			"name": "Log roof",
+			"name": "Log - Roof",
 			"description": "A log-framed thatch roof.",
 			"kind": "structure",
 			"stack": 1,
@@ -5652,7 +5652,7 @@
 		},
 		"stone_wall": {
 			"number": 471,
-			"name": "Stone wall",
+			"name": "Stone - Wall",
 			"description": "A stone wall, two metres wide.",
 			"kind": "structure",
 			"stack": 1,
@@ -5672,7 +5672,7 @@
 		},
 		"stone_floor": {
 			"number": 473,
-			"name": "Stone ceiling",
+			"name": "Stone - Ceiling",
 			"description": "A cobbled stone ceiling.",
 			"kind": "structure",
 			"stack": 1,
@@ -5692,7 +5692,7 @@
 		},
 		"stone_roof": {
 			"number": 475,
-			"name": "Stone roof",
+			"name": "Stone - Roof",
 			"description": "A stone-shingle roof.",
 			"kind": "structure",
 			"stack": 1,
@@ -5712,7 +5712,7 @@
 		},
 		"brick_wall": {
 			"number": 477,
-			"name": "Brick wall",
+			"name": "Brick - Wall",
 			"description": "A brick wall, two metres wide.",
 			"kind": "structure",
 			"stack": 1,
@@ -5732,7 +5732,7 @@
 		},
 		"brick_floor": {
 			"number": 479,
-			"name": "Brick ceiling",
+			"name": "Brick - Ceiling",
 			"description": "A brick ceiling.",
 			"kind": "structure",
 			"stack": 1,
@@ -5752,7 +5752,7 @@
 		},
 		"brick_roof": {
 			"number": 481,
-			"name": "Brick roof",
+			"name": "Brick - Roof",
 			"description": "A tiled brick roof.",
 			"kind": "structure",
 			"stack": 1,
@@ -5891,7 +5891,7 @@
 		},
 		"hide_rug": {
 			"number": 507,
-			"name": "Hide rug",
+			"name": "Hide - Rug",
 			"description": "A pelt on the floor.",
 			"kind": "structure",
 			"stack": 1,
@@ -5900,7 +5900,7 @@
 		},
 		"wool_rug": {
 			"number": 508,
-			"name": "Wool rug",
+			"name": "Wool - Rug",
 			"description": "A striped woven rug.",
 			"kind": "structure",
 			"stack": 1,
