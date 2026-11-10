@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 712,
+	"next_number": 730,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -8163,6 +8163,195 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 165."
+			},
+			"stone_well_kit": {
+				"number": 712,
+				"retired": true,
+				"name": "Stone well",
+				"description": "A stone well with a windlass and bucket. E draws ten litres.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 215
+			},
+			"stone_well": {
+				"number": 713,
+				"name": "Stone - Well",
+				"description": "A stone well with a windlass and bucket. E draws ten litres.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 166. Locked until Steve's water_network module lands."
+			},
+			"wooden_hand_pump_kit": {
+				"number": 714,
+				"retired": true,
+				"name": "Wooden hand pump",
+				"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 77
+			},
+			"wooden_hand_pump": {
+				"number": 715,
+				"name": "Wooden - Hand pump",
+				"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 167. Locked until Steve's water_network module lands."
+			},
+			"iron_hand_pump_kit": {
+				"number": 716,
+				"retired": true,
+				"name": "Iron hand pump",
+				"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 185
+			},
+			"iron_hand_pump": {
+				"number": 717,
+				"name": "Iron - Hand pump",
+				"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 168. Locked until Steve's water_network module lands."
+			},
+			"log_trough_kit": {
+				"number": 718,
+				"retired": true,
+				"name": "Log trough",
+				"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 11
+			},
+			"log_trough": {
+				"number": 719,
+				"name": "Log - Trough",
+				"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 169. Locked until Steve's water_network module lands."
+			},
+			"wooden_trough_kit": {
+				"number": 720,
+				"retired": true,
+				"name": "Wooden trough",
+				"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 35
+			},
+			"wooden_trough": {
+				"number": 721,
+				"name": "Wooden - Trough",
+				"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 170. Locked until Steve's water_network module lands."
+			},
+			"wooden_channel_kit": {
+				"number": 722,
+				"retired": true,
+				"name": "Wooden channel",
+				"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"wooden_channel": {
+				"number": 723,
+				"name": "Wooden - Channel",
+				"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 171. Locked until Steve's water_network module lands."
+			},
+			"wooden_channel_corner_kit": {
+				"number": 724,
+				"retired": true,
+				"name": "Wooden channel corner",
+				"description": "A flume that turns a quarter circle.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"wooden_channel_corner": {
+				"number": 725,
+				"name": "Wooden - Channel corner",
+				"description": "A flume that turns a quarter circle.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 172. Locked until Steve's water_network module lands."
+			},
+			"wooden_channel_tee_kit": {
+				"number": 726,
+				"retired": true,
+				"name": "Wooden channel tee",
+				"description": "A flume that splits its water two ways.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 35
+			},
+			"wooden_channel_tee": {
+				"number": 727,
+				"name": "Wooden - Channel tee",
+				"description": "A flume that splits its water two ways.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 173. Locked until Steve's water_network module lands."
+			},
+			"wooden_sluice_kit": {
+				"number": 728,
+				"retired": true,
+				"name": "Wooden sluice",
+				"description": "A flume with a gate. E opens or shuts it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"wooden_sluice": {
+				"number": 729,
+				"name": "Wooden - Sluice",
+				"description": "A flume with a gate. E opens or shuts it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 174. Locked until Steve's water_network module lands."
 			}
 	}
 }
