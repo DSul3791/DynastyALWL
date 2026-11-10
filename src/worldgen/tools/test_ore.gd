@@ -122,7 +122,7 @@ func _init() -> void:
 
 	for cx in range(0, 40):
 		l._items.clear()
-		l._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		l._lay_out_boulders(Vector2i(cx, 3), 32.0)
 		var again: Array = []
 
 		for k in l._items:
@@ -134,7 +134,7 @@ func _init() -> void:
 				unknown += 1 if o == "unobtainium" else 0
 
 		l._items.clear()
-		l._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		l._lay_out_boulders(Vector2i(cx, 3), 32.0)
 		var second: Array = []
 
 		for k in l._items:
@@ -163,7 +163,7 @@ func _init() -> void:
 
 	for cx in range(0, 40):
 		ra._items.clear()
-		ra._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		ra._lay_out_boulders(Vector2i(cx, 3), 32.0)
 
 		for k in ra._items:
 			if ra._items[k].has("boulder"):
@@ -179,7 +179,7 @@ func _init() -> void:
 
 	for cx in range(0, 10):
 		ra._items.clear()
-		ra._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		ra._lay_out_boulders(Vector2i(cx, 3), 32.0)
 
 		for k in ra._items:
 			if ra._items[k].has("boulder"):
@@ -208,8 +208,3 @@ func _init() -> void:
 	print("ore: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
-
-func _rng(seed_value: int) -> RandomNumberGenerator:
-	var r: RandomNumberGenerator = RandomNumberGenerator.new()
-	r.seed = seed_value
-	return r

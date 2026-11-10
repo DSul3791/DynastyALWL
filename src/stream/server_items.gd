@@ -4804,11 +4804,21 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	part_usec = _cell_part("stones and sticks", part_usec)
 	_bank_ground_usec = 0
 	_bank_water_usec = 0
-	_lay_out_bank_stones(cell, cell_m, cfg, rng, kinds.size())
+	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
-	_lay_out_boulders(cell, cell_m, rng)
+	_lay_out_boulders(cell, cell_m)
 	_cell_part("boulders", part_usec)
+
+
+# A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
+# takes more or fewer draws as the flora cover reads 0 or 1 (cover_at reads 0 until a worker builds the flora chunk). So the bank stones and boulders after
+# them moved with the timing, and a boulder's key (its worked count, its outcrop ore) could land on another boulder after a restart. Bank stones and
+# boulders each draw from their own stream, seeded from the cell, the world seed and the part, so their places are fixed per world.
+func _layout_rng(cell: Vector2i, part: String) -> RandomNumberGenerator:
+	var stream: RandomNumberGenerator = RandomNumberGenerator.new()
+	stream.seed = hash([cell.x, cell.y, world_seed, part])
+	return stream
 
 
 # Notes a part of a scatter cell's layout in _cell_parts (for the slow-cell line); returns now, the next part's start.
@@ -4819,7 +4829,7 @@ func _cell_part(part: String, since_usec: int) -> int:
 
 
 # Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
-# cell like loose stones (same seeded rng, drawn last so the stones above do not move), only where the ground rises or at a
+# cell like loose stones, from the cell's own "boulders" stream (_layout_rng), only where the ground rises or at a
 # water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
 # with; the item's count is the stones left.
 func _boulder_stones(radius: float) -> int:
@@ -4829,15 +4839,18 @@ func _boulder_stones(radius: float) -> int:
 	return maxi(int(volume * float(cfg.get("density_kg_m3", 2600)) * float(cfg.get("yield", 0.5)) / stone_kg), 1)
 
 
-func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator) -> void:
+func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 	var cfg: Dictionary = _boulder_cfg
 
 	if cfg.is_empty():
 		return
 
+	var rng: RandomNumberGenerator = _layout_rng(cell, "boulders")
 	var laid: int = 0
 
-	for attempt in range(int(cfg.get("tries", 8))):
+	# Every try takes the same five draws whatever happens to it, and the boulder's key is its try, not its count: a try that the live water turns
+	# on or off (the bank chance) adds or drops that one boulder and moves no other boulder's key.
+	for attempt in range(mini(int(cfg.get("tries", 8)), 16)):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
@@ -4858,7 +4871,7 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator
 		if draw > chance:
 			continue
 
-		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | laid
+		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | attempt
 		laid += 1
 		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
 		var total: int = _boulder_stones(radius)
@@ -5061,11 +5074,13 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 # Stones along the water's edge (Dave 2026-10-21: any rock put down is pickable, so Art's drawn pebbles and boulders became
 # real stones). A cell with water in or near it tries bank_tries spots; a dry spot within bank_reach_m of water takes a
 # stone with chance bank_chance, up to bank_max a cell. Item keys continue after the cell's own scatter (low four bits).
-func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: RandomNumberGenerator, used: int) -> void:
+func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, used: int) -> void:
 	var bank: Dictionary = cfg.get("bank", {})
 
 	if bank.is_empty() or not water_near.is_valid():
 		return
+
+	var rng: RandomNumberGenerator = _layout_rng(cell, "bank stones")   # its own stream: the sticks before it no longer move it
 
 	var centre: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
 
@@ -5108,7 +5123,7 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 		if _taken.has(key):
 			continue
 
-		var driftwood: bool = rng.randf() < float(bank.get("driftwood", 0.12))   # luck-exempt: seeded world layout
+		var driftwood: bool = float(hash([key, "driftwood"]) % 1000) < 1000.0 * float(bank.get("driftwood", 0.12))   # from the key, so every try takes three draws
 		var bank_number: String = "driftwood" if driftwood else "stone"
 
 		if not driftwood and float(bank.get("flint", 0.0)) > 0.0 and float(hash(key) % 1000) < 1000.0 * float(bank.get("flint", 0.0)):
