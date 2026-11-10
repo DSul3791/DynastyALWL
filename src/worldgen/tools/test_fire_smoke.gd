@@ -65,7 +65,7 @@ func _init() -> void:
 	_check(ramp.sample(0.1).a > ramp.sample(0.5).a and ramp.sample(0.5).a > ramp.sample(0.9).a, "dense at the fire, thinning as it rises")
 	var look: ShaderMaterial = plume.draw_pass_1.surface_get_material(0) as ShaderMaterial
 	_check(look != null and float(look.get_shader_parameter("near_grey")) < float(look.get_shader_parameter("far_grey")), "darker at the fire, lighter higher up")
-	_check(look != null and float(look.get_shader_parameter("waver_m")) > 0.0 and look.shader.code.contains("INSTANCE_CUSTOM.y"), "the column wavers more the older the smoke")
+	_check(look != null and float(look.get_shader_parameter("waver_m")) > 0.0 and str(look.shader.code).find("INSTANCE_CUSTOM.y") >= 0, "the column wavers more the older the smoke")
 	_check(BuildingLook.smoke_tier("amount", 3) > BuildingLook.smoke_tier("amount", 1) and BuildingLook.smoke_tier("rise_m_s", 3) > BuildingLook.smoke_tier("rise_m_s", 1), "a bigger fire smokes more and higher")
 	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
 	var up: Vector3 = mat.direction
