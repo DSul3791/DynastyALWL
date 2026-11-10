@@ -14,16 +14,16 @@ Morgan, 10 Nov 2026. Plan only, no code. Inputs: Jamie's hammer audit (`buildabl
 
 ## Numbering (Jamie, 10 Nov)
 
-Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; recipes 346, 347), B1a (above), **B2 fences and gates** blueprints 64 to 77, items 580 to 607 (kit then piece), states 92 to 112 (each gate has an open twin state right after it), **B1c pillars and roof corners** blueprints 78 to 87, items 608 to 627, states 113 to 122. Ids follow Kathleen's look names (`wood_fence`, `wood_gate`, `wooden_pillar`, `wooden_roof_corner`). **Next free: item 628, recipe 348, blueprint 88, state 123.** B1b (stairs, railings, double/iron/steel doorways) takes numbers from there once Steve rules on railings. **Where a later batch table below shows other numbers, the batch is renumbered from this list when it is scheduled.**
+Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; recipes 346, 347), B1a (above), **B2 fences and gates** blueprints 64 to 77, items 580 to 607 (kit then piece), states 92 to 112 (each gate has an open twin state right after it), **B1c pillars and roof corners** blueprints 78 to 87, items 608 to 627, states 113 to 122. Ids follow Kathleen's look names (`wood_fence`, `wood_gate`, `wooden_pillar`, `wooden_roof_corner`). **Final numbers (Jamie, 10 Nov, supersede any numbers in the batch tables below):** B3 furniture blueprints 88-98, items 628-649, states 123-133 (no Iron - Workbench; the ladder stops at Stone, level 3). B1b blueprints 99-106, items 650-665, states 134-144 (open twins for double, iron and steel doorways). B4 components items 666-669 (horn_pane, lamp_oil, wooden_lantern, iron_lantern; recipes 348-351), placed lights blueprints 107-117, items 670-691, states 145-155; a lantern's candle or lamp oil goes in a new blueprint field, "spent", not refunded on take-down. B5 blueprints 118-127, items 692-711, states 156-165. B6a blueprints 128-136, items 712-729, states 166-174; Clay pipe item 730, recipe 352. B6b blueprints 137-149, items 731-756, states 175-187. **Next free: item 757, recipe 353, blueprint 150, state 188. 148 live blueprints.** The Rain barrel is the B3 Wooden - Barrel (no separate piece). The tables below still show the first-pass numbers and are to be refreshed from this list.
 
 ## 1. Rulings this plan follows
 
 | Ruling | How it is applied |
 |---|---|
 | No "floor" pieces | The foundation is the floor of the ground storey; the ceiling is the floor of the next. No floor blueprint is added. (The ids `floor_section` and `log_floor` stay as ids only; display names are already "Ceiling".) |
-| Names are sentence case, `Tier - Item` | Every new name is `Tier - Item` ("Log - Foundation", "Iron - Hand pump"). Existing breaches to rename (display only, ids kept): Stairs -> Wooden - Stairs; Bench, Chair, Table -> Wooden - Bench, Wooden - Chair, Wooden - Table; Sturdy workbench -> Log - Workbench; Workbench stays Workbench (the base). |
+| Names are sentence case, `Tier - Item` | Every new name is `Tier - Item` ("Log - Foundation", "Iron - Hand pump"). Existing breaches to rename (display only, ids kept): Stairs -> Wooden - Stairs; Bench, Chair, Table -> Wooden - Bench, Wooden - Chair, Wooden - Table; Sturdy workbench -> Log - Workbench; Workbench becomes Wooden - Workbench (the base; coordinator ruling 10 Nov, tier word where an item has several materials). |
 | Hammers of any metal | Hammer tier 3 means any metal hammer (bronze, iron or steel). **None exists today** (TOOL_TIERS lists only wooden and stone), so batch B0 adds three hammer items first; every metal piece below is hammer 3. |
-| No flags | No flag, banner or standard pieces in any batch. |
+| No flags | No code feature flags in any batch (Dave's NO FLAGS means feature flags in code). Cloth banners and tapestries are allowed and are in `item_system.md`, not in these batches. |
 | Hammer blueprints, no kits | Every row is a hammer blueprint taken down for a refund. No kit recipes. |
 | Jamie owns numbering | The numbers below are a **reservation request** starting at the free numbers she gave (item 560, recipe 346, blueprint 55, state 77). She may shift any range when #883 and #902 settle. |
 
@@ -202,7 +202,7 @@ Component and carried items (an item row and a recipe row each, no blueprint or 
 | Item | Recipe | Notes | Item / recipe |
 |---|---|---|---|
 | Horn pane | 1 antler -> 2 panes | workbench; thin scraped horn (no glass yet, Kathleen) | 627 / 349 |
-| Lamp oil | 3 tallow -> 1 lamp oil | campfire pot; fuel for Iron lanterns | 628 / 350 |
+| Lamp oil | from the Stone - Oil press (linseed, walnut, olive) or 3 fish or seal fat -> 1 lamp oil at the campfire pot; **the tallow route is removed** (`item_system.md`, 10 Nov ruling) | fuel for Iron lanterns | 667 / 349 (Jamie's final numbers) |
 | Wooden - Lantern (carried) | 1 lumber, 1 twine, 2 horn pane, 1 candle | left-hand item like the torch; 8 m; Steve decides the hotbar rule | 629 / 351 |
 | Iron - Lantern (carried) | 1 iron ingot, 2 horn pane, 1 lamp oil | left-hand item; 14 m; also the lantern consumed by lamp posts | 630 / 352 |
 
