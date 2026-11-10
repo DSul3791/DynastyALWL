@@ -104,7 +104,7 @@ var reach_stock: Dictionary = {}        # item number -> count a craft may use b
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
-var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
+var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, ore, yaw}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
 var _boulder_mesh: ArrayMesh
@@ -2656,9 +2656,20 @@ uniform vec3 moss_color")
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
 	_root.add_child(body)
-	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5))}
+	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)), "ore": str(extra.get("ore", "")), "yaw": float(extra.get("yaw", 0.0))}
 	_boulders[id] = entry
 	_size_boulder(entry)
+
+
+# What the client knows of one boulder, for its look (Kathleen's outcrop look): {pos, radius (whole), now (the radius left), left, total stones,
+# ore, yaw}. "ore" is the item key a pick takes out of it (boulders.json ore: tin, copper, coal, salt, iron, or limestone for a limestone, chalk or
+# marble boulder), "" for a plain boulder. {} when that boulder is not drawn.
+func boulder_info(id: int) -> Dictionary:
+	if not _boulders.has(id):
+		return {}
+
+	var entry: Dictionary = _boulders[id]
+	return {"pos": entry["pos"], "radius": float(entry["radius"]), "now": float(entry.get("now", entry["radius"])), "left": int(entry["left"]), "total": int(entry["total"]), "ore": str(entry.get("ore", "")), "yaw": float(entry.get("yaw", 0.0))}
 
 
 # Scale to the radius still left (the cube root of the stones left), sunk a fifth into the ground like Art's scenery boulders.
