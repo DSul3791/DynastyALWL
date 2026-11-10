@@ -47,6 +47,18 @@ const ARMS_SPREAD := 1.3               # the first-person shoulders' distance fr
 const SWING_FP_S := 0.95                # the first-person chop: its keys below are in seconds of this (motion_extra.gd CHOP_LENGTH; 0.55 s until 31 Oct 2026)
 const LEFT_REST_ARM := Vector3(0.0, 0.0, -0.07)
 const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
+# The bow, first person (Dave 10 Nov 2026: the bow was held wrong; "the string should always be inline with the bow wooden part ... place the arrow over the left side
+# and then draw back and sight along the arrow shaft"). The arrow runs straight ahead under the eye, so the player sights along it: the grip, the string and the drawing
+# hand all lie on one line 10 cm below the eye, the bow's plane through it. The arms rig at the camera pose (held_item.gd ARMS_POS, pitch 50 degrees, scale 0.85) with
+# these angles, solved for the hand positions (camera space, metres): the left hand on the grip at arm's length, (0.015, -0.10, -0.40); the right hand on the string
+# 16 cm nearer, (0.015, -0.10, -0.24), at draw 0 and back at the jaw, (0.015, -0.10, -0.10), at full draw, the elbow out to the right. The bow and its string are
+# placed by the hands (held_item.gd _pose_bow), so the pose sets where they go.
+const BOW_ARM_L := Vector3(0.440, -0.153, 0.418)
+const BOW_FOREARM_L := Vector3(0.121, 0.0, 0.0)
+const BOW_HAND_L := Vector3(0.125, -0.028, 0.0)
+const BOW_DRAW_ARM_R := [[0.0, Vector3(-0.144, 0.798, -0.280)], [0.5, Vector3(-0.249, 1.112, -0.242)], [1.0, Vector3(-0.319, 1.207, -0.530)]]
+const BOW_DRAW_FOREARM_R := [[0.0, 1.338], [0.5, 1.759], [1.0, 1.981]]
+const BOW_DRAW_HAND_R := [[0.0, Vector3(0.743, 0.097, 0.0)], [0.5, Vector3(0.199, 0.045, 0.0)], [1.0, Vector3(0.103, 0.025, 0.0)]]
 const ARM_BONES := ["chest", "arm_r", "forearm_r", "hand_r", "arm_l", "forearm_l", "hand_l"]
 
 # Shapes, each on one bone, in that bone's own space: bone, shape, centre, size, in arms only (the first person model).
@@ -382,6 +394,7 @@ func _build_animations() -> void:
 	library.add_animation("throw", _once(0.8, 16, _throw))
 	library.add_animation("use", _once(0.6, 12, _use))
 	library.add_animation("gather", _once(0.6, 14, _gather))
+	library.add_animation("bow_draw", _once(1.0, 20, _bow_draw))
 	animation_player.add_animation_library("", library)
 	animation_player.play("idle")
 
@@ -683,4 +696,14 @@ func _use(p: float) -> Dictionary:
 		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"chest": Vector3(-0.08 * sin(PI * p), 0.0, 0.0), "head": Vector3(0.1 * sin(PI * p), 0.0, 0.0),
+	}
+
+
+# The bow in both hands, ready and drawing: the left arm straight out to the grip, the right hand from the string at rest (phase 0, also the first-person idle, ready
+# to shoot) back to the jaw (phase 1). held_item.gd holds
+# the clip at the draw (0 to 1) with seek().
+func _bow_draw(p: float) -> Dictionary:
+	return {
+		"arm_l": BOW_ARM_L, "forearm_l": BOW_FOREARM_L, "hand_l": BOW_HAND_L,
+		"arm_r": _keys(BOW_DRAW_ARM_R, p), "forearm_r": Vector3(float(_keys(BOW_DRAW_FOREARM_R, p)), 0.0, 0.0), "hand_r": _keys(BOW_DRAW_HAND_R, p),
 	}

@@ -22,6 +22,13 @@ const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar key is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
 const AIMED := Vector3(0.28, -0.12, -0.35)
+const BOW_FULL_DRAW_S := 1.2        # today's draw: the string is fully back after this long (data/items/bow.json draw_max_ms)
+const BOW_CANT_DEG := 10.0          # the raised bow's top tilts this far to the right
+const BOW_IDLE_LEAN_DEG := 30.0     # lowered at the side: the upper limb leans this far forward
+const BOW_DRAW_MAX_M := 0.7         # the nock point comes back at most this far from the braced string (a 28 inch draw)
+const BOW_NOCK_ABOVE_M := 0.03      # the arrow sits on the bow hand, this far above the middle of the grip; the string's nock point is level with it
+const BOW_ARROW_SIDE_M := 0.018     # the shaft passes the stave on its left side, this far from the bow's plane
+const ARROW_NOCK_M := 0.355         # the arrow mesh's nock end lies this far back from its origin (basic_look.gd "arrow")
 # First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
 # pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
 # (the rig's hand_mount_r: the rig's right is +X, see assets/character/README.md), grip at the mount origin, its business end tipped
@@ -130,6 +137,8 @@ var _label: Label
 var _jab_t: float = -1.0
 var _bow_cfg: Dictionary = {}               # data/items/bow.json, read on the first shot (the arrow sound follows its flight)
 var _draw_t: float = -1.0                 # a bow being drawn: seconds since the left button went down, -1 when not
+var bow_force: String = ""                 # the shot runner's bow pose, "STATE[:DRAW]" (idle, raised, drawn; draw 0 to 1), "" = from play
+var _bow_up: bool = false                  # the bow is raised or drawn: the arms come up to the camera pose
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
 var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
@@ -1134,9 +1143,16 @@ func _process_body(delta: float) -> void:
 
 	if _inv != null:
 		_label.offset_bottom = -LABEL_ABOVE    # above the hotbar tray, which keeps its place at any text size (Dave, build 617: they overlapped)
-	_place_arms(delta)
 
-	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing():
+	# The bow's pose from today's draw (left button held: raised, then fully drawn at BOW_FULL_DRAW_S). Steve's bow rework replaces these two values with his
+	# bow_state() and bow_draw(); _pose_bow is the one entry point. The shot runner can set the pose (bow_force).
+	# The arms are placed first, so the bow is put in the hands where they are this frame, not where they were the frame before (Dave, build 826: the bow sat
+	# "awkwardly shaking").
+	_place_arms(delta)
+	var pose_state: String = "idle" if _draw_t < 0.0 else ("drawn" if _draw_t >= BOW_FULL_DRAW_S else "raised")
+	_pose_bow(pose_state, clampf(_draw_t / BOW_FULL_DRAW_S, 0.0, 1.0) if _draw_t >= 0.0 else 0.0, delta)
+
+	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing() and not _bow_posing():
 		_arms.play("idle")
 
 	# Hit stop: the animation freezes for a moment at the impact (Tyler Report 26), then goes on.
@@ -1253,9 +1269,119 @@ func _place_arms(delta: float) -> void:
 	if _arms == null or not _arms.visible:
 		return
 
-	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _arms.is_one_shot_playing()
+	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _bow_up or _arms.is_one_shot_playing()
 	_arm_up = ArmsView.next_arm_up(_arm_up, working, ARMS_FOLLOW_K, delta)
 	_arms.transform = ArmsView.arms_transform(_camera.global_transform, _camera.global_rotation.y, _arm_up, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE)
+
+
+# The bow in the hands (Dave 10 Nov 2026: "have art department fix how its held because it isnt right"). A right-handed archer: the LEFT hand holds the grip, the right
+# hand draws the string. state is "idle" (held, not in use), "raised" (the right hand on the string, drawing by `draw`) or "drawn" (the string at the jaw); draw is
+# 0 to 1, how far the string is back. First person, in every state: both hands on the bow, ready to shoot (Dave 10 Nov 2026: "you should have an arrow notched
+# holding the bow with both hands like you are ready to shoot", "before you draw back the string"). The arms hold bow_draw at `draw` (ragdoll_body.gd; idle is draw
+# 0, the string at rest), the bow stands upright before the view with a slight cant at the left hand, the string's middle follows the right hand and the arrow is
+# nocked. The pose is held still (seek every frame, no sway), the bow placed after the arms. Third person: the bow hangs at the side in the left hand, upright in
+# the world (the body has no bow draw yet). Nothing else in this file reads the pose: Steve's bow code calls this with its own state.
+func _pose_bow(state: String, draw: float, _delta: float) -> void:
+	if bow_force != "":
+		state = bow_force.get_slice(":", 0)
+		draw = clampf(float(bow_force.get_slice(":", 1)) if bow_force.contains(":") else (1.0 if state == "drawn" else 0.0), 0.0, 1.0)
+
+	var bow: bool = _model != null and _model.has_meta("bow") and _model.is_inside_tree()
+	_bow_up = bow and _first_person
+
+	if _off_model != null:
+		_off_model.visible = not bow    # both hands are on the bow: a torch or shield in the left hand is put away while it is held
+
+	if not bow:
+		return
+
+	var mount: Node3D = _model.get_parent() as Node3D
+
+	if mount == null or mount == _camera:
+		return     # no arms: the bow keeps the plain spot before the camera
+
+	if _first_person and _arms != null and _arms.visible:
+		if _arms.current() != "bow_draw":
+			_arms.play("bow_draw")   # held at the draw below: seek() every frame sets the pose, the clip's own play only blends it in
+
+		_arms.animation_player.seek(clampf(draw if state != "idle" else 0.0, 0.0, 1.0) * _arms.animation_player.get_animation("bow_draw").length * 0.999, true)
+
+	var view: Basis = _camera.global_basis.orthonormalized()
+	var up: Vector3
+	var back: Vector3      # the back of the bow faces the target
+
+	if not _first_person:
+		# Third person, lowered and relaxed: the bow hangs from the hand, the upper limb leaning forward along the way the body faces.
+		var face: Vector3 = Vector3(-view.z.x, 0.0, -view.z.z)
+		face = face.normalized() if face.length() > 0.001 else Vector3.FORWARD
+		up = (Vector3.UP * cos(deg_to_rad(BOW_IDLE_LEAN_DEG)) + face * sin(deg_to_rad(BOW_IDLE_LEAN_DEG))).normalized()
+		back = (face - up * face.dot(up)).normalized()
+	else:
+		# First person, ready or drawing: upright before the view at arm's length, the top canted a little to the right (an instinctive archer's cant).
+		up = (view.y * cos(deg_to_rad(BOW_CANT_DEG)) + view.x * sin(deg_to_rad(BOW_CANT_DEG))).normalized()
+		back = -view.z
+
+	var across: Vector3 = back.cross(up).normalized()     # mesh y
+	var frame: Basis = Basis(up, across, up.cross(across).normalized())   # mesh x along the limbs, z toward the target
+	var grip: Vector3 = mount.global_position
+	_model.global_transform = Transform3D(frame, grip - frame.z * BasicLook.BOW_BRACE_M)   # the grip in the fist, the string BOW_BRACE_M nearer the archer
+
+	if not _first_person:
+		_third_fist_on(_model).visible = true
+
+	var nock: Vector3 = Vector3.ZERO
+	var up_now: bool = _first_person and _arms != null and _arms.hand_mount_r != null
+
+	if up_now:
+		# The string's nock point is in the right hand, pulled straight back toward the archer (never pushed past the brace, at most a full draw). It stays in the
+		# bow's own plane, a little above the grip where the arrow sits (Dave: "the string should always be inline with the bow wooden part").
+		var pull: float = (_model.global_transform.affine_inverse() * _arms.hand_mount_r.global_position).z
+		nock = Vector3(BOW_NOCK_ABOVE_M, 0.0, clampf(pull, -BOW_DRAW_MAX_M, 0.0))
+
+	_set_bow_string(_model, nock)
+	_place_nocked_arrow(_model, nock, up_now and (_inv == null or has_arrow()))
+
+
+# The nocked arrow: its nock (the arrow mesh's back end, x = -ARROW_NOCK_M) on the string at `nock`, its shaft over the bow hand on the left side of the bow (mesh -y).
+static func _place_nocked_arrow(bow: Node3D, nock: Vector3, shown: bool) -> void:
+	var arrow: MeshInstance3D = bow.get_node_or_null("NockedArrow") as MeshInstance3D
+
+	if arrow == null:
+		return
+
+	arrow.visible = shown
+
+	if not shown:
+		return
+
+	var rest: Vector3 = Vector3(BOW_NOCK_ABOVE_M, -BOW_ARROW_SIDE_M, BasicLook.BOW_BRACE_M)   # where the shaft crosses the grip
+	var along: Vector3 = (rest - nock).normalized()
+	var side: Vector3 = Vector3.RIGHT.cross(along)
+	side = side.normalized() if side.length() > 0.001 else Vector3.UP
+	arrow.transform = Transform3D(Basis(along, side, along.cross(side)), nock + along * ARROW_NOCK_M)
+
+
+func _bow_posing() -> bool:
+	return _model != null and _model.has_meta("bow")
+
+
+# The two halves of the bow's string, from each nock (the tips, mesh x = +-BOW_HALF_M) to the nock point `at` (the bow's own space).
+static func _set_bow_string(bow: Node3D, at: Vector3) -> void:
+	bow.set_meta("nock", at)
+
+	for cord_name in ["StringTop", "StringBottom"]:
+		var cord: MeshInstance3D = bow.get_node_or_null(cord_name) as MeshInstance3D
+
+		if cord == null:
+			continue
+
+		var tip: Vector3 = Vector3(BasicLook.BOW_HALF_M if cord_name == "StringTop" else -BasicLook.BOW_HALF_M, 0.0, 0.0)
+		var along: Vector3 = at - tip
+		var length: float = maxf(along.length(), 0.001)
+		var y_axis: Vector3 = along / length
+		var x_axis: Vector3 = Vector3.FORWARD.cross(y_axis)
+		x_axis = x_axis.normalized() if x_axis.length() > 0.001 else Vector3.RIGHT
+		cord.transform = Transform3D(Basis(x_axis, y_axis * length, x_axis.cross(y_axis)), tip + along * 0.5)   # the unit cord stretched to the length
 
 
 # Makes a world model a ghost: solid bodies, lights, particles and sounds go, every mesh takes the one see-through material.
@@ -1785,6 +1911,12 @@ func _mount_model() -> void:
 		_model.position = REST
 		return
 
+	# The bow is held in the left hand (a right-handed archer: the left arm holds the bow out, the right hand draws the string). _pose_bow places it every frame.
+	if _model.has_meta("bow"):
+		var bow_hand: Node3D = _avatar_rig.hand_mount_l if not _first_person and _avatar_rig != null and _avatar_rig.hand_mount_l != null else _arms.hand_mount_l
+		bow_hand.add_child(_model)
+		return
+
 	if not _first_person and _avatar_rig != null and _avatar_rig.hand_mount_r != null:
 		_mount_model_third(kind)
 		return
@@ -2175,6 +2307,38 @@ func _make_look_tool_model() -> Node3D:
 
 	if shape == "bow":
 		node.set_meta("grip_y", 0.03)   # a bow is held at its middle
+		# The hand's bow has no string in its mesh: two thin cords from the tips to the nock point, which follows the drawing hand (_pose_bow).
+		mesh.mesh = BasicLook.mesh("bow", Color.html(str(def.get("color", "#a8804a"))), float(def.get("size", 1.0)), (def.get("bits", []) as Array) + ["held"])
+		mesh.basis = Basis.IDENTITY
+		node.set_meta("bow", true)
+		node.set_meta("nock", Vector3.ZERO)   # the nock point in the bow's own space (mesh axes: limbs along x, back of the bow toward +z)
+
+		for cord_name in ["StringTop", "StringBottom"]:
+			var cord: MeshInstance3D = MeshInstance3D.new()
+			cord.name = cord_name
+			var line: CylinderMesh = CylinderMesh.new()
+			line.top_radius = BasicLook.BOW_STRING_R
+			line.bottom_radius = BasicLook.BOW_STRING_R
+			line.height = 1.0
+			line.radial_segments = 4
+			line.rings = 1
+			var gut: StandardMaterial3D = StandardMaterial3D.new()
+			gut.albedo_color = Color(0.85, 0.82, 0.72)
+			gut.roughness = 0.8
+			line.material = gut
+			cord.mesh = line
+			cord.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			node.add_child(cord)
+
+		_set_bow_string(node, Vector3.ZERO)
+		# The arrow on the string while the bow is up (shown only with an arrow in the pack): its nock on the string, its shaft over the left side of the bow,
+		# resting on the bow hand (Dave 10 Nov 2026: "you place the arrow over the left side and then draw back and sight along the arrow shaft").
+		var nocked: MeshInstance3D = MeshInstance3D.new()
+		nocked.name = "NockedArrow"
+		nocked.mesh = BasicLook.mesh_for("stone_arrow")
+		nocked.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		nocked.visible = false
+		node.add_child(nocked)
 
 	if shape == "arrow":
 		node.set_meta("held_pitch_deg", 30.0)

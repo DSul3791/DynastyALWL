@@ -184,9 +184,13 @@ func _init() -> void:
 
 		_check(bow_tris >= 100 and bow_tris <= 1200, id + ": %d triangles" % bow_tris)
 
-	_check(BasicLook.mesh_for("wooden_bow").get_aabb().size.x > 0.6 and BasicLook.mesh_for("wooden_bow").get_aabb().size.x < 0.7, "wooden bow: about 1.2 m at real size (x0.55 shown)")
-	_check(BasicLook.mesh_for("wooden_arrow").get_aabb().size.x > 0.35 and BasicLook.mesh_for("wooden_arrow").get_aabb().size.x < 0.42, "wooden arrow: about 0.7 m at real size")
-	_check(BasicLook.mesh_for("stone_arrow").get_aabb().size.x > 0.35 and BasicLook.mesh_for("stone_arrow").get_aabb().size.x < 0.42, "stone arrow: about 0.7 m at real size")
+	# Dave 10 Nov 2026: a simple homemade self bow is about the archer's height, 1.6 to 1.8 m nock to nock; braced about 16 cm string to grip.
+	var bow_box: AABB = BasicLook.mesh_for("wooden_bow").get_aabb()
+	_check(bow_box.size.x > 1.65 and bow_box.size.x < 1.8, "wooden bow: %.2f m nock to nock (a self bow, 1.6 to 1.8 m)" % bow_box.size.x)
+	_check(bow_box.size.z > 0.15 and bow_box.size.z < 0.22, "wooden bow: braced %.2f m deep (string to grip about 16 cm)" % bow_box.size.z)
+	# Real size (Dave 10 Nov 2026: the bow was too small): the arrows were drawn at 0.55 of their 0.7 m from the days held looks were enlarged 1.8x.
+	_check(BasicLook.mesh_for("wooden_arrow").get_aabb().size.x > 0.65 and BasicLook.mesh_for("wooden_arrow").get_aabb().size.x < 0.76, "wooden arrow: about 0.7 m at real size")
+	_check(BasicLook.mesh_for("stone_arrow").get_aabb().size.x > 0.65 and BasicLook.mesh_for("stone_arrow").get_aabb().size.x < 0.76, "stone arrow: about 0.7 m at real size")
 
 	quit(1 if failures > 0 else 0)
 
