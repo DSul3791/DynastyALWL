@@ -1571,7 +1571,9 @@
 				"Used in Thatch - Roof",
 				"Used in Thatch - Wall",
 				"Used in Tinder",
-				"Used in Thatch - Window"
+				"Used in Thatch - Window",
+				"Used in Log - Roof corner",
+				"Used in Thatch - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -1945,7 +1947,10 @@
 				"Used in Steel - Hammer",
 				"Used in Thatch - Window",
 				"Used in Thatch - Fence",
-				"Used in Thatch - Gate"
+				"Used in Thatch - Gate",
+				"Used in Thatch - Pillar",
+				"Used in Thatch - Roof corner",
+				"Used in Wooden - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -1995,7 +2000,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -2031,7 +2038,13 @@
 				"Used in Thatch - Fence",
 				"Used in Thatch - Gate",
 				"Used in Wooden - Fence",
-				"Used in Wooden - Gate"
+				"Used in Wooden - Gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Thatch - Pillar",
+				"Used in Thatch - Roof corner",
+				"Used in Wooden - Pillar",
+				"Used in Wooden - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -2299,7 +2312,11 @@
 				"Used in Brick - Gate",
 				"Used in Stone - Gate",
 				"Used in Wooden - Fence",
-				"Used in Wooden - Gate"
+				"Used in Wooden - Gate",
+				"Used in Brick - Roof corner",
+				"Used in Stone - Roof corner",
+				"Used in Wooden - Pillar",
+				"Used in Wooden - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -3116,7 +3133,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3159,7 +3178,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3202,7 +3223,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3245,7 +3268,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3288,7 +3313,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3331,7 +3358,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3374,7 +3403,9 @@
 				"Used in Log - Fence",
 				"Used in Log - Gate",
 				"Used in Log - Palisade",
-				"Used in Log - Palisade gate"
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3745,7 +3776,9 @@
 				"Used in Brick - Foundation",
 				"Used in Brick - Window",
 				"Used in Brick - Fence",
-				"Used in Brick - Gate"
+				"Used in Brick - Gate",
+				"Used in Brick - Pillar",
+				"Used in Brick - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -3766,7 +3799,9 @@
 				"Used in Stone - Doorway",
 				"Used in Stone - Window",
 				"Used in Brick - Fence",
-				"Used in Brick - Gate"
+				"Used in Brick - Gate",
+				"Used in Brick - Pillar",
+				"Used in Stone - Pillar"
 			],
 			"obtainable_now": true
 		},
@@ -3887,7 +3922,8 @@
 			"used_for": [
 				"Planned: a cobble floor and path.",
 				"Used in Stone - Fence",
-				"Used in Stone - Gate"
+				"Used in Stone - Gate",
+				"Used in Stone - Pillar"
 			],
 			"obtainable_now": true
 		},
@@ -3899,7 +3935,8 @@
 				"Craft at a workbench: 2 Stone"
 			],
 			"used_for": [
-				"Planned: a stone roof."
+				"Planned: a stone roof.",
+				"Used in Stone - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -7527,6 +7564,186 @@
 			"name": "Iron - Gate",
 			"kind": "structure",
 			"description": "A wrought iron gate. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_pillar_kit": {
+			"name": "Thatch pillar",
+			"kind": "placeable",
+			"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_pillar": {
+			"name": "Thatch - Pillar",
+			"kind": "structure",
+			"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_pillar_kit": {
+			"name": "Wooden pillar",
+			"kind": "placeable",
+			"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_pillar": {
+			"name": "Wooden - Pillar",
+			"kind": "structure",
+			"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_pillar_kit": {
+			"name": "Log pillar",
+			"kind": "placeable",
+			"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_pillar": {
+			"name": "Log - Pillar",
+			"kind": "structure",
+			"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_pillar_kit": {
+			"name": "Stone pillar",
+			"kind": "placeable",
+			"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_pillar": {
+			"name": "Stone - Pillar",
+			"kind": "structure",
+			"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_pillar_kit": {
+			"name": "Brick pillar",
+			"kind": "placeable",
+			"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Brick, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_pillar": {
+			"name": "Brick - Pillar",
+			"kind": "structure",
+			"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_roof_corner_kit": {
+			"name": "Thatch roof corner",
+			"kind": "placeable",
+			"description": "The corner of a thatch roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Twine, 18 Thatch, 8 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_roof_corner": {
+			"name": "Thatch - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a thatch roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_roof_corner_kit": {
+			"name": "Wooden roof corner",
+			"kind": "placeable",
+			"description": "The corner of a wooden roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 2 Twine, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_roof_corner": {
+			"name": "Wooden - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a wooden roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_roof_corner_kit": {
+			"name": "Log roof corner",
+			"kind": "placeable",
+			"description": "The corner of a log roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Log, 12 Thatch, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_roof_corner": {
+			"name": "Log - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a log roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_roof_corner_kit": {
+			"name": "Stone roof corner",
+			"kind": "placeable",
+			"description": "The corner of a stone roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Stone shingle, 4 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_roof_corner": {
+			"name": "Stone - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a stone roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_roof_corner_kit": {
+			"name": "Brick roof corner",
+			"kind": "placeable",
+			"description": "The corner of a brick roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Brick, 4 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_roof_corner": {
+			"name": "Brick - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a brick roof, where two slopes meet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
