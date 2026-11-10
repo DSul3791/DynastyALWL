@@ -55,6 +55,8 @@
 		"stewed_pears": {"name": "Stewed pears", "station": "campfire_pot", "needs": [["pear_autumn", 2], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 360, "shelf_h": 120, "warms": 12, "craft_s": 10, "description": "Pears stewed soft in honey. Good hot or cold."},
 		"preserved_damsons": {"name": "Preserved damsons", "station": "campfire_pot", "needs": [["damsons", 3], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 400, "shelf_h": 1440, "warms": 6, "craft_s": 12, "description": "Damsons sealed in sweet syrup. A winter store."},
 		"dried_figs": {"name": "Dried figs", "station": "drying_rack", "needs": [["figs", 3]], "gives": 3, "kcal": 320, "shelf_h": 1440, "warms": 4, "craft_s": 10, "description": "Figs dried until sticky and sweet. They last for months."},
-		"quince_paste": {"name": "Quince paste", "station": "campfire_pot", "needs": [["quince", 2], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 360, "shelf_h": 960, "warms": 6, "craft_s": 14, "description": "Quince boiled with honey into a firm sweet paste."}
+		"quince_paste": {"name": "Quince paste", "station": "campfire_pot", "needs": [["quince", 2], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 360, "shelf_h": 960, "warms": 6, "craft_s": 14, "description": "Quince boiled with honey into a firm sweet paste."},
+		"meat_skewer": {"name": "Meat skewer", "station": "campfire", "needs": [["raw_meat", 2], ["stick", 1], ["wild_garlic_leaves", 1]], "gives": 2, "kcal": 720, "shelf_h": 48, "warms": 12, "craft_s": 8, "description": "Chunks of meat and wild garlic roasted on a stick."},
+		"sausage": {"name": "Sausage", "station": "campfire_pot", "needs": [["raw_meat", 2], ["gut", 1], ["sea_salt", 1]], "gives": 2, "kcal": 760, "shelf_h": 360, "warms": 14, "craft_s": 12, "description": "Salted meat packed into gut and simmered. Keeps for weeks."}
 	}
 }
