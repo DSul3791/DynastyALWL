@@ -1,6 +1,7 @@
 extends Node
 const PieceLook := preload("res://src/client/piece_look.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const CraftStock := preload("res://src/shared/craft_stock.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
@@ -25,6 +26,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
@@ -34,6 +36,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
+const FIRE_USE_M := 4.5                 # a fire this near is a station the pack sorts for (station_use; the craft list's campfire reach too)
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
 var open: bool = false
@@ -97,7 +100,7 @@ var chest_inv                          # contents of the open chest (Inventory),
 var chest_id: int = 0
 var chest_keep_out: bool = false        # the open container is ticked "keep out" (protocol 98 chest_info): crafting and blueprint sites leave it alone
 var chest_may_keep_out: bool = false    # and this player owns it, so the tick may be changed (set_keep_out)
-var reach_stock: Dictionary = {}        # item number -> count a craft may use besides the pack: loose stacks within 3 m and own containers within 12 m (craft_stock)
+var reach_stock: Dictionary = {}        # item number -> count a craft may use besides the pack: loose stacks within 12 m and own containers within 12 m (craft_stock)
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
@@ -2683,7 +2686,7 @@ const CRAFT_MOST := 20          # the server's CRAFT_QUEUE_MAX_COUNT and the cou
 func max_makeable(number: int) -> int:
 	var r: Dictionary = recipes.recipe(number)
 
-	if r.is_empty() or not _station_ok(r):
+	if r.is_empty() or not (_station_ok(r) or station_in_reach(r)):
 		return 0
 
 	if _free_craft():
@@ -2713,7 +2716,7 @@ static func click_count(most: int, shift: bool, held: bool) -> int:
 	return most if held else (mini(CRAFT_SHIFT_COUNT, most) if shift else 1)
 
 
-# --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 3 m
+# --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 12 m
 # and the player's own containers within 12 m that are not kept out. The server sends what lies outside the pack (craft_stock, protocol 98).
 
 # How much of an ingredient a craft may use: the pack plus the stock in reach (any member of a group fills a group need, as in the pack).
@@ -2895,6 +2898,12 @@ func _station_ok(r: Dictionary) -> bool:
 	return _free_craft() or str(r.get("station", "")) == "" or station_near(str(r["station"]), int(r.get("station_level", 1)))
 
 
+# A station recipe whose station is working within the crafting reach (12 m): crafting it moves you there (server_items._step_to_station).
+# The real check, admin mode or not: the recipe list sorts these second, under what the hands make (Dave 10 Nov 2026).
+func station_in_reach(r: Dictionary) -> bool:
+	return str(r.get("station", "")) != "" and station_near(str(r["station"]), int(r.get("station_level", 1)), CraftStock.CRAFT_REACH_M)
+
+
 func _station_label(r: Dictionary) -> String:
 	for kind in _structure_kinds():
 		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")):
@@ -3069,19 +3078,68 @@ func _lit_fire_near(pos: Vector3, r: float) -> bool:
 	return false
 
 
+# What the station you stand at can use (station_use.gd, Dave 10 Nov 2026): item number -> StationUse.FUEL or INPUT, for the pack's order and its
+# golden line. Every station here counts: a fire within FIRE_USE_M (any campfire state, lit, laid or cold), and each structure within its own
+# reach_m with its "station", the stations it stands in for ("also") and its own "fuel". {} with the pack shut or away from every station.
+func station_use() -> Dictionary:
+	if not open or not _player_position.is_valid():
+		return {}
+
+	var here: Vector3 = _player_position.call()
+	var stations: Array = []
+	var fire: bool = false
+	var fuels: Array = []
+
+	for id in _world:
+		var state: int = int(_world[id]["state"])
+
+		if state == 0:
+			continue
+
+		var away: float = here.distance_to(_world[id]["pos"])
+
+		if StructureLook.CAMPFIRE_STATES.has(state):
+			if away <= FIRE_USE_M:
+				fire = true
+
+				if not stations.has("campfire"):
+					stations.append("campfire")
+
+			continue
+
+		var def: Dictionary = _structure_by_state(state)
+
+		if def.is_empty() or away > float(def.get("reach_m", 3.0)):
+			continue
+
+		for station in [str(def.get("station", ""))] + (def.get("also", {}) as Dictionary).keys():
+			if str(station) != "" and not stations.has(str(station)):
+				stations.append(str(station))
+
+		if str(def.get("fuel", "")) != "" and not fuels.has(str(def["fuel"])):
+			fuels.append(str(def["fuel"]))
+
+	if (fire or not fuels.is_empty()) and _cooking_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
+		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
+
+	return StationUse.usable(stations, fire, fuels, recipes, table, _cooking_cfg)
+
+
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
-func station_near(station: String, level: int = 1) -> bool:
+# `reach_m` above a station's own reach widens it (the crafting reach: a station recipe whose station is that near moves you to it, Dave 10 Nov 2026).
+func station_near(station: String, level: int = 1, reach_m: float = 0.0) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
 	if station == "campfire":   # a lit campfire (state 1) within reach, or a clay hearth or oven beside you ("also")
 		for fire_id in _world:
-			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
+			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= maxf(4.5, reach_m):
 				return true
 
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
-		if def.is_empty() or here.distance_to(_world[id]["pos"]) > float(def.get("reach_m", 3.0)):
+		if def.is_empty() or here.distance_to(_world[id]["pos"]) > maxf(float(def.get("reach_m", 3.0)), reach_m):
 			continue
 
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:

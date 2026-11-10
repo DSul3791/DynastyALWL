@@ -188,9 +188,8 @@ func _init() -> void:
 		dish_nums[str(items.recipes.recipe(rn)["id"])] = rn
 
 	check(str(items.recipes.recipe(dish_nums["cook_flatbread"]).get("station", "")) == "clay_hearth" and str(items.recipes.recipe(dish_nums["cook_honey_loaf"]).get("station", "")) == "oven", "the new dishes name their station")
-	_give(1, "seed_bundle", 6)
+	_give(1, "flour", 3)   # recipe audit 10 Nov 2026: flatbread 1 flour + 1 water, honey loaf 2 flour + 1 honey
 	_give(1, "water", 2)
-	_give(1, "hazelnuts", 1)
 	_give(1, "honeyspindle_nectar", 1)
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, Vector3.ZERO)

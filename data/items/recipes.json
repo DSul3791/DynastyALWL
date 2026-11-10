@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 341,
+	"next_number": 345,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -131,7 +131,11 @@
 				],
 				[
 					"plant_fibre",
-					2
+					1
+				],
+				[
+					"pitch",
+					1
 				]
 			],
 			"gives": [
@@ -340,7 +344,7 @@
 		},
 		"lumber": {
 			"number": 16,
-			"name": "Lumber",
+			"name": "Planks",
 			"category": "Materials",
 			"needs": [
 				[
@@ -404,7 +408,8 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "forge"
+			"station": "forge",
+			"station_level": 2
 		},
 		"steel_pickaxe": {
 			"number": 19,
@@ -428,7 +433,7 @@
 			"known": false,
 			"locked": true,
 			"station": "forge",
-			"station_level": 2
+			"station_level": 3
 		},
 		"wooden_bowl": {
 			"number": 20,
@@ -436,7 +441,7 @@
 			"category": "Containers and furniture",
 			"needs": [
 				[
-					"firewood",
+					"wooden_block",
 					1
 				]
 			],
@@ -445,7 +450,13 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"stone_knife",
+					1
+				]
+			]
 		},
 		"clay_pot": {
 			"number": 21,
@@ -462,7 +473,8 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": true
+			"known": true,
+			"station": "campfire"
 		},
 		"bucket": {
 			"number": 22,
@@ -586,7 +598,8 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "forge"
+			"station": "forge",
+			"station_level": 2
 		},
 		"steel_spade": {
 			"number": 28,
@@ -608,7 +621,8 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "forge"
+			"station": "forge",
+			"station_level": 3
 		},
 		"sewing_needle": {
 			"number": 29,
@@ -656,15 +670,11 @@
 			"category": "Food and drink",
 			"needs": [
 				[
-					"hazelnuts",
+					"nuts",
 					3
 				],
 				[
-					"dates",
-					2
-				],
-				[
-					"yarrow",
+					"honeyspindle_nectar",
 					1
 				]
 			],
@@ -683,6 +693,10 @@
 				[
 					"mint",
 					3
+				],
+				[
+					"water",
+					1
 				]
 			],
 			"gives": [
@@ -690,7 +704,8 @@
 				1
 			],
 			"craft_s": 4.0,
-			"known": true
+			"known": true,
+			"station": "campfire_pot"
 		},
 		"stomach_tea": {
 			"number": 33,
@@ -704,6 +719,10 @@
 				[
 					"chamomile_flowers",
 					2
+				],
+				[
+					"water",
+					1
 				]
 			],
 			"keeps": [
@@ -721,7 +740,8 @@
 			"identify": [
 				"mint",
 				"chamomile_flowers"
-			]
+			],
+			"station": "campfire_pot"
 		},
 		"chamomile_tea": {
 			"number": 34,
@@ -731,6 +751,10 @@
 				[
 					"chamomile_flowers",
 					3
+				],
+				[
+					"water",
+					1
 				]
 			],
 			"keeps": [
@@ -747,7 +771,8 @@
 			"known": true,
 			"identify": [
 				"chamomile_flowers"
-			]
+			],
+			"station": "campfire_pot"
 		},
 		"willow_bark_tea": {
 			"number": 35,
@@ -757,6 +782,10 @@
 				[
 					"willow_bark",
 					2
+				],
+				[
+					"water",
+					1
 				]
 			],
 			"keeps": [
@@ -773,7 +802,8 @@
 			"known": true,
 			"identify": [
 				"willow_bark"
-			]
+			],
+			"station": "campfire_pot"
 		},
 		"grass_skirt": {
 			"number": 36,
@@ -984,7 +1014,7 @@
 		"campfire_pot_kit": {
 			"number": 165,
 			"name": "Campfire pot",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"stick",
@@ -1067,7 +1097,7 @@
 				],
 				[
 					"thatch",
-					40
+					30
 				],
 				[
 					"stick",
@@ -1309,6 +1339,7 @@
 		},
 		"lumber_oak": {
 			"number": 52,
+			"retired": true,
 			"name": "Oak lumber",
 			"category": "Materials",
 			"needs": [
@@ -1327,6 +1358,7 @@
 		},
 		"beams_oak": {
 			"number": 53,
+			"retired": true,
 			"name": "Oak beams",
 			"category": "Materials",
 			"needs": [
@@ -1345,6 +1377,7 @@
 		},
 		"lumber_beech": {
 			"number": 54,
+			"retired": true,
 			"name": "Beech lumber",
 			"category": "Materials",
 			"needs": [
@@ -1363,6 +1396,7 @@
 		},
 		"beams_beech": {
 			"number": 55,
+			"retired": true,
 			"name": "Beech beams",
 			"category": "Materials",
 			"needs": [
@@ -1381,6 +1415,7 @@
 		},
 		"lumber_birch": {
 			"number": 56,
+			"retired": true,
 			"name": "Birch lumber",
 			"category": "Materials",
 			"needs": [
@@ -1399,6 +1434,7 @@
 		},
 		"beams_birch": {
 			"number": 57,
+			"retired": true,
 			"name": "Birch beams",
 			"category": "Materials",
 			"needs": [
@@ -1417,6 +1453,7 @@
 		},
 		"lumber_scots_pine": {
 			"number": 58,
+			"retired": true,
 			"name": "Scots pine lumber",
 			"category": "Materials",
 			"needs": [
@@ -1435,6 +1472,7 @@
 		},
 		"beams_scots_pine": {
 			"number": 59,
+			"retired": true,
 			"name": "Scots pine beams",
 			"category": "Materials",
 			"needs": [
@@ -1453,6 +1491,7 @@
 		},
 		"lumber_spruce": {
 			"number": 60,
+			"retired": true,
 			"name": "Spruce lumber",
 			"category": "Materials",
 			"needs": [
@@ -1471,6 +1510,7 @@
 		},
 		"beams_spruce": {
 			"number": 61,
+			"retired": true,
 			"name": "Spruce beams",
 			"category": "Materials",
 			"needs": [
@@ -1609,6 +1649,7 @@
 		},
 		"lumber_tropical_hardwood": {
 			"number": 68,
+			"retired": true,
 			"name": "Tropical hardwood lumber",
 			"category": "Materials",
 			"needs": [
@@ -1627,6 +1668,7 @@
 		},
 		"beams_tropical_hardwood": {
 			"number": 69,
+			"retired": true,
 			"name": "Tropical hardwood beams",
 			"category": "Materials",
 			"needs": [
@@ -1925,6 +1967,7 @@
 		},
 		"lumber_walnut": {
 			"number": 84,
+			"retired": true,
 			"name": "Walnut lumber",
 			"category": "Materials",
 			"needs": [
@@ -1943,6 +1986,7 @@
 		},
 		"beams_walnut": {
 			"number": 85,
+			"retired": true,
 			"name": "Walnut beams",
 			"category": "Materials",
 			"needs": [
@@ -2241,6 +2285,7 @@
 		},
 		"lumber_maple": {
 			"number": 100,
+			"retired": true,
 			"name": "Sugar maple lumber",
 			"category": "Materials",
 			"needs": [
@@ -2259,6 +2304,7 @@
 		},
 		"beams_maple": {
 			"number": 101,
+			"retired": true,
 			"name": "Sugar maple beams",
 			"category": "Materials",
 			"needs": [
@@ -2278,10 +2324,10 @@
 		"cook_berry_compote": {
 			"number": 102,
 			"name": "Berry compote",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"blueberries",
+					"berries",
 					2
 				],
 				[
@@ -2300,7 +2346,7 @@
 		"cook_nut_paste": {
 			"number": 103,
 			"name": "Nut paste",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"hazelnuts",
@@ -2322,7 +2368,7 @@
 		"cook_roast_roots": {
 			"number": 104,
 			"name": "Roast roots",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"burdock_roots",
@@ -2344,7 +2390,7 @@
 		"cook_acorn_mash": {
 			"number": 105,
 			"name": "Acorn mash",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"acorns",
@@ -2366,7 +2412,7 @@
 		"cook_baked_apples": {
 			"number": 106,
 			"name": "Baked apples",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"crab_apples",
@@ -2388,15 +2434,11 @@
 		"cook_mushroom_skewer": {
 			"number": 107,
 			"name": "Mushroom skewer",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"porcini",
-					2
-				],
-				[
-					"chanterelles",
-					1
+					"mushrooms",
+					3
 				],
 				[
 					"wild_garlic_leaves",
@@ -2414,18 +2456,14 @@
 		"cook_herb_fish": {
 			"number": 108,
 			"name": "Herb fish",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"trout",
+					"fish",
 					1
 				],
 				[
-					"thyme",
-					1
-				],
-				[
-					"samphire",
+					"herbs",
 					1
 				]
 			],
@@ -2440,7 +2478,7 @@
 		"cook_garlic_meat": {
 			"number": 109,
 			"name": "Garlic meat",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"raw_meat",
@@ -2466,7 +2504,7 @@
 		"cook_chestnut_cakes": {
 			"number": 110,
 			"name": "Chestnut cakes",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"chestnuts",
@@ -2492,7 +2530,7 @@
 		"cook_fruit_leather": {
 			"number": 111,
 			"name": "Fruit leather",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"crab_apples",
@@ -2518,18 +2556,14 @@
 		"cook_smoked_fish": {
 			"number": 112,
 			"name": "Smoked fish",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"pike",
+					"fish",
 					1
 				],
 				[
-					"samphire",
-					1
-				],
-				[
-					"juniper_berries",
+					"sea_salt",
 					1
 				]
 			],
@@ -2544,7 +2578,7 @@
 		"cook_hunters_stew": {
 			"number": 113,
 			"name": "Hunter's stew",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"raw_meat",
@@ -2570,7 +2604,7 @@
 		"cook_forager_stew": {
 			"number": 114,
 			"name": "Forager's stew",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"nettles",
@@ -2596,7 +2630,7 @@
 		"cook_fish_stew": {
 			"number": 115,
 			"name": "Fish stew",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"perch",
@@ -2622,7 +2656,7 @@
 		"cook_trail_bread": {
 			"number": 116,
 			"name": "Trail bread",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"linseed",
@@ -2648,22 +2682,18 @@
 		"cook_hearty_pottage": {
 			"number": 117,
 			"name": "Hearty pottage",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"seed_bundle",
-					2
+					"flour",
+					1
 				],
 				[
 					"wild_carrot_roots",
 					1
 				],
 				[
-					"dandelion_flowers",
-					1
-				],
-				[
-					"marjoram",
+					"herbs",
 					1
 				],
 				[
@@ -2682,23 +2712,15 @@
 		"cook_feast_roast": {
 			"number": 118,
 			"name": "Roast beast",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"raw_meat",
 					2
 				],
 				[
-					"wild_garlic_leaves",
-					1
-				],
-				[
-					"thyme",
-					1
-				],
-				[
-					"rosemary",
-					1
+					"herbs",
+					2
 				],
 				[
 					"animal_fat",
@@ -2961,7 +2983,7 @@
 			"category": "Shelter and building",
 			"needs": [
 				[
-					"rough_plank",
+					"lumber",
 					4
 				],
 				[
@@ -3249,7 +3271,8 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "forge"
+			"station": "forge",
+			"station_level": 2
 		},
 		"steel_hoe": {
 			"number": 142,
@@ -3271,10 +3294,12 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "forge"
+			"station": "forge",
+			"station_level": 3
 		},
 		"rough_plank": {
 			"number": 143,
+			"retired": true,
 			"name": "Rough plank",
 			"category": "Materials",
 			"needs": [
@@ -3294,6 +3319,7 @@
 		},
 		"fine_board": {
 			"number": 144,
+			"retired": true,
 			"name": "Fine board",
 			"category": "Materials",
 			"needs": [
@@ -3534,8 +3560,7 @@
 				1
 			],
 			"craft_s": 15.0,
-			"known": true,
-			"station": "workbench"
+			"known": true
 		},
 		"hand_saw": {
 			"number": 157,
@@ -3592,7 +3617,7 @@
 		},
 		"lumber_by_hand": {
 			"number": 159,
-			"name": "Lumber by hand",
+			"name": "Planks by hand",
 			"category": "Materials",
 			"needs": [
 				[
@@ -3667,11 +3692,11 @@
 		"cook_flatbread": {
 			"number": 174,
 			"name": "Flatbread",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"seed_bundle",
-					3
+					"flour",
+					1
 				],
 				[
 					"water",
@@ -3689,15 +3714,11 @@
 		"cook_honey_loaf": {
 			"number": 175,
 			"name": "Honey loaf",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"seed_bundle",
-					3
-				],
-				[
-					"hazelnuts",
-					1
+					"flour",
+					2
 				],
 				[
 					"honeyspindle_nectar",
@@ -3715,7 +3736,7 @@
 		"cook_roast_joint": {
 			"number": 176,
 			"name": "Rosemary joint",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"raw_meat",
@@ -3759,12 +3780,12 @@
 			"craft_s": 6.0,
 			"known": true
 		},
-		"kindling": {"number": 178, "name": "Kindling", "category": "Fire and cooking", "needs": [["stick", 1]], "gives": ["kindling", 3], "craft_s": 2.0, "known": true},
+		"kindling": {"number": 178, "name": "Kindling", "category": "Materials", "needs": [["stick", 1]], "gives": ["kindling", 3], "craft_s": 2.0, "known": true},
 		"processed_hide": {"number": 179, "name": "Scraped hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
 		"hide_scraper": {"number": 180, "name": "Hide scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
-		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge"},
+		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge", "station_level": 3},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "forge"},
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": true, "station": "forge"},
 		"stone_pickaxe": {
@@ -3790,8 +3811,7 @@
 				1
 			],
 			"craft_s": 25.0,
-			"known": true,
-			"station": "workbench"
+			"known": true
 		},
 		"sickle": {
 			"number": 187,
@@ -3839,7 +3859,8 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "forge"
+			"station": "forge",
+			"station_level": 2
 		},
 		"wooden_club": {
 			"number": 189,
@@ -3847,8 +3868,8 @@
 			"category": "Weapons",
 			"needs": [
 				[
-					"stick",
-					3
+					"wooden_block",
+					1
 				]
 			],
 			"gives": [
@@ -3866,6 +3887,10 @@
 				[
 					"copper_ore",
 					3
+				],
+				[
+					"fuel",
+					1
 				]
 			],
 			"gives": [
@@ -3884,6 +3909,10 @@
 				[
 					"tin_ore",
 					3
+				],
+				[
+					"fuel",
+					1
 				]
 			],
 			"gives": [
@@ -3904,7 +3933,7 @@
 					4
 				],
 				[
-					"coal",
+					"fuel",
 					1
 				]
 			],
@@ -3926,7 +3955,7 @@
 					2
 				],
 				[
-					"coal",
+					"fuel",
 					1
 				]
 			],
@@ -4018,7 +4047,8 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": true
+			"known": true,
+			"station": "campfire"
 		},
 		"herb_salve": {
 			"number": 198,
@@ -4065,7 +4095,7 @@
 		"candle": {
 			"number": 200,
 			"name": "Candle",
-			"category": "Fire and cooking",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"animal_fat",
@@ -4165,7 +4195,7 @@
 					2
 				],
 				[
-					"stick",
+					"leather",
 					1
 				]
 			],
@@ -4176,8 +4206,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
-			"station_level": 2
+			"station": "forge"
 		},
 		"bronze_mace": {
 			"number": 205,
@@ -4200,8 +4229,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
-			"station_level": 2
+			"station": "forge"
 		},
 		"bronze_shield": {
 			"number": 206,
@@ -4224,8 +4252,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
-			"station_level": 2
+			"station": "forge"
 		},
 		"iron_sword": {
 			"number": 207,
@@ -4309,7 +4336,7 @@
 					2
 				],
 				[
-					"heavy_leather",
+					"leather",
 					1
 				]
 			],
@@ -4354,7 +4381,7 @@
 			"needs": [
 				[
 					"lumber",
-					1
+					2
 				],
 				[
 					"steel_ingot",
@@ -4381,7 +4408,7 @@
 					1
 				],
 				[
-					"fine_leather",
+					"leather_strap",
 					1
 				]
 			],
@@ -4422,6 +4449,10 @@
 				[
 					"bronze_ingot",
 					3
+				],
+				[
+					"leather",
+					1
 				]
 			],
 			"gives": [
@@ -4431,8 +4462,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
-			"station_level": 2
+			"station": "forge"
 		},
 		"gambeson": {
 			"number": 216,
@@ -4440,16 +4470,12 @@
 			"category": "Armour",
 			"needs": [
 				[
-					"twine",
+					"fibre_cloth",
 					3
 				],
 				[
-					"leather",
-					1
-				],
-				[
-					"leather_strap",
-					1
+					"plant_fibre",
+					2
 				]
 			],
 			"gives": [
@@ -4468,6 +4494,10 @@
 				[
 					"iron_ingot",
 					3
+				],
+				[
+					"leather",
+					1
 				]
 			],
 			"gives": [
@@ -4492,6 +4522,10 @@
 				[
 					"iron_ingot",
 					2
+				],
+				[
+					"leather",
+					1
 				]
 			],
 			"gives": [
@@ -4779,7 +4813,7 @@
 		"tinder": {
 			"number": 229,
 			"name": "Tinder",
-			"category": "Fire and cooking",
+			"category": "Materials",
 			"needs": [
 				[
 					"thatch",
@@ -4795,7 +4829,7 @@
 		},
 		"lumber_wedge": {
 			"number": 230,
-			"name": "Hand-split lumber",
+			"name": "Hand-split planks",
 			"category": "Materials",
 			"needs": [
 				[
@@ -4968,8 +5002,8 @@
 			"category": "Clothing",
 			"needs": [
 				[
-					"wool",
-					3
+					"wool_cloth",
+					2
 				],
 				[
 					"twine",
@@ -4989,8 +5023,8 @@
 			"category": "Clothing",
 			"needs": [
 				[
-					"wool",
-					3
+					"wool_cloth",
+					2
 				],
 				[
 					"twine",
@@ -5010,8 +5044,8 @@
 			"category": "Clothing",
 			"needs": [
 				[
-					"wool",
-					2
+					"wool_cloth",
+					1
 				]
 			],
 			"gives": [
@@ -5027,8 +5061,8 @@
 			"category": "Clothing",
 			"needs": [
 				[
-					"wool",
-					2
+					"wool_cloth",
+					1
 				]
 			],
 			"gives": [
@@ -5065,7 +5099,7 @@
 			"category": "Clothing",
 			"needs": [
 				[
-					"hide",
+					"fur",
 					3
 				],
 				[
@@ -5086,7 +5120,7 @@
 			"category": "Clothing",
 			"needs": [
 				[
-					"hide",
+					"fur",
 					1
 				],
 				[
@@ -5107,7 +5141,7 @@
 			"category": "Clothing",
 			"needs": [
 				[
-					"hide",
+					"fur",
 					2
 				],
 				[
@@ -5141,12 +5175,18 @@
 		},
 		"fibre_cloth": {
 			"number": 334,
-			"name": "Woven cloth",
+			"name": "Cloth",
 			"category": "Materials",
 			"needs": [
-				["plant_fibre", 8]
+				[
+					"plant_fibre",
+					8
+				]
 			],
-			"gives": ["fibre_cloth", 1],
+			"gives": [
+				"fibre_cloth",
+				1
+			],
 			"craft_s": 30.0,
 			"known": true
 		},
@@ -5199,7 +5239,7 @@
 		"cook_oat_porridge": {
 			"number": 248,
 			"name": "Oat porridge",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"oats",
@@ -5225,7 +5265,7 @@
 		"cook_barley_broth": {
 			"number": 249,
 			"name": "Barley broth",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"barley",
@@ -5251,7 +5291,7 @@
 		"cook_rye_flatbread": {
 			"number": 250,
 			"name": "Rye flatbread",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"flour",
@@ -5277,7 +5317,7 @@
 		"cook_pea_soup": {
 			"number": 251,
 			"name": "Pea soup",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"peas",
@@ -5303,7 +5343,7 @@
 		"cook_turnip_mash": {
 			"number": 252,
 			"name": "Turnip mash",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"turnip",
@@ -5325,7 +5365,7 @@
 		"cook_baked_potato": {
 			"number": 253,
 			"name": "Baked potato",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"potato",
@@ -5347,7 +5387,7 @@
 		"cook_cabbage_stew": {
 			"number": 254,
 			"name": "Cabbage stew",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"cabbage",
@@ -5373,7 +5413,7 @@
 		"cook_beet_roast": {
 			"number": 255,
 			"name": "Beet roast",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"beet",
@@ -5395,7 +5435,7 @@
 		"cook_onion_roast": {
 			"number": 256,
 			"name": "Onion roast",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"onion",
@@ -5417,7 +5457,7 @@
 		"cook_seaweed_soup": {
 			"number": 257,
 			"name": "Seaweed soup",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"seaweed",
@@ -5443,7 +5483,7 @@
 		"cook_mussel_stew": {
 			"number": 258,
 			"name": "Mussel stew",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"shellfish",
@@ -5469,7 +5509,7 @@
 		"cook_crab_cakes": {
 			"number": 259,
 			"name": "Crab cakes",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"crab_meat",
@@ -5491,7 +5531,7 @@
 		"cook_egg_nettle_fry": {
 			"number": 260,
 			"name": "Egg and nettle fry",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"egg",
@@ -5517,7 +5557,7 @@
 		"cook_herb_omelette": {
 			"number": 261,
 			"name": "Herb omelette",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"egg",
@@ -5539,7 +5579,7 @@
 		"cook_seal_stew": {
 			"number": 262,
 			"name": "Seal stew",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"seal_meat",
@@ -5565,7 +5605,7 @@
 		"cook_venison_pie": {
 			"number": 263,
 			"name": "Venison pie",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"raw_meat",
@@ -5591,7 +5631,7 @@
 		"cook_fish_pie": {
 			"number": 264,
 			"name": "Fish pie",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"trout",
@@ -5617,10 +5657,10 @@
 		"cook_juniper_trout": {
 			"number": 265,
 			"name": "Juniper trout",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"trout",
+					"fish",
 					1
 				],
 				[
@@ -5639,7 +5679,7 @@
 		"cook_garlic_bread": {
 			"number": 266,
 			"name": "Garlic bread",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"flour",
@@ -5661,7 +5701,7 @@
 		"cook_oat_cakes": {
 			"number": 267,
 			"name": "Oat cakes",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"oats",
@@ -5683,7 +5723,7 @@
 		"cook_jerky": {
 			"number": 268,
 			"name": "Jerky",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"raw_meat",
@@ -5704,8 +5744,8 @@
 		},
 		"sea_salt": {
 			"number": 281,
-			"name": "Sea salt",
-			"category": "Fire and cooking",
+			"name": "Salt",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"sea_water",
@@ -5723,7 +5763,7 @@
 		"cook_salted_fish": {
 			"number": 269,
 			"name": "Salted fish",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"trout",
@@ -5745,10 +5785,10 @@
 		"cook_dried_berries": {
 			"number": 270,
 			"name": "Dried berries",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
-					"blueberries",
+					"berries",
 					3
 				]
 			],
@@ -5763,7 +5803,7 @@
 		"cook_sauerkraut": {
 			"number": 271,
 			"name": "Sauerkraut",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"cabbage",
@@ -5785,7 +5825,7 @@
 		"cook_hazelnut_butter": {
 			"number": 272,
 			"name": "Hazelnut butter",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"hazelnuts",
@@ -5803,7 +5843,7 @@
 		"cook_banana_fritter": {
 			"number": 273,
 			"name": "Banana fritter",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"bananas",
@@ -5825,7 +5865,7 @@
 		"cook_cactus_fry": {
 			"number": 274,
 			"name": "Cactus fry",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"prickly_pears",
@@ -5887,7 +5927,7 @@
 		"tallow_candle": {
 			"number": 277,
 			"name": "Tallow candle",
-			"category": "Fire and cooking",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"tallow",
@@ -5931,7 +5971,7 @@
 		"butter": {
 			"number": 279,
 			"name": "Butter",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"milk",
@@ -5948,7 +5988,7 @@
 		"cheese": {
 			"number": 280,
 			"name": "Cheese",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"milk",
@@ -5970,7 +6010,7 @@
 		"cook_dried_apples": {
 			"number": 282,
 			"name": "Dried apples",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"apple_autumn",
@@ -5988,7 +6028,7 @@
 		"cook_apple_sauce": {
 			"number": 283,
 			"name": "Apple sauce",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"apple_cooking",
@@ -6010,7 +6050,7 @@
 		"cook_apple_pie": {
 			"number": 284,
 			"name": "Apple pie",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"apple_cooking",
@@ -6036,7 +6076,7 @@
 		"cook_plum_jam": {
 			"number": 285,
 			"name": "Plum jam",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"plums",
@@ -6058,7 +6098,7 @@
 		"cook_stewed_pears": {
 			"number": 286,
 			"name": "Stewed pears",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"pear_autumn",
@@ -6080,7 +6120,7 @@
 		"cook_preserved_damsons": {
 			"number": 287,
 			"name": "Preserved damsons",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"damsons",
@@ -6102,7 +6142,7 @@
 		"cook_dried_figs": {
 			"number": 288,
 			"name": "Dried figs",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"figs",
@@ -6120,7 +6160,7 @@
 		"cook_quince_paste": {
 			"number": 289,
 			"name": "Quince paste",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"quince",
@@ -6175,7 +6215,7 @@
 					1
 				],
 				[
-					"twine",
+					"leather_strap",
 					1
 				]
 			],
@@ -6361,7 +6401,7 @@
 					16
 				],
 				[
-					"sand",
+					"mortar",
 					4
 				]
 			],
@@ -6433,7 +6473,7 @@
 					20
 				],
 				[
-					"sand",
+					"mortar",
 					4
 				]
 			],
@@ -6524,7 +6564,7 @@
 		"stew_raspberries": {
 			"number": 306,
 			"name": "Stewed raspberries",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"raspberries",
@@ -6546,7 +6586,7 @@
 		"stew_blueberries": {
 			"number": 307,
 			"name": "Stewed blueberries",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"blueberries",
@@ -6568,7 +6608,7 @@
 		"stew_blackberries": {
 			"number": 308,
 			"name": "Stewed blackberries",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"blackberries",
@@ -6590,7 +6630,7 @@
 		"stew_strawberries": {
 			"number": 309,
 			"name": "Stewed strawberries",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"strawberries",
@@ -6612,7 +6652,7 @@
 		"boil_eggs": {
 			"number": 310,
 			"name": "Boiled egg",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"egg",
@@ -6634,7 +6674,7 @@
 		"roast_hazelnuts": {
 			"number": 311,
 			"name": "Roasted hazelnuts",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"hazelnuts",
@@ -6652,7 +6692,7 @@
 		"roast_chestnuts": {
 			"number": 312,
 			"name": "Roasted chestnuts",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"chestnuts",
@@ -6670,7 +6710,7 @@
 		"roast_walnuts": {
 			"number": 313,
 			"name": "Roasted walnuts",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"walnuts",
@@ -6688,7 +6728,7 @@
 		"roast_beechnuts": {
 			"number": 314,
 			"name": "Roasted beechnuts",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"beechnuts",
@@ -6706,7 +6746,7 @@
 		"roast_morels": {
 			"number": 315,
 			"name": "Roasted morels",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"morels",
@@ -6724,7 +6764,7 @@
 		"roast_bananas": {
 			"number": 316,
 			"name": "Roasted bananas",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"bananas",
@@ -6742,7 +6782,7 @@
 		"roast_fiddleheads": {
 			"number": 317,
 			"name": "Roasted fiddleheads",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"fiddleheads",
@@ -6760,7 +6800,7 @@
 		"roast_wild_pears": {
 			"number": 318,
 			"name": "Roasted pears",
-			"category": "Fire and cooking",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"wild_pears",
@@ -6919,8 +6959,8 @@
 			"category": "Containers and furniture",
 			"needs": [
 				[
-					"wool",
-					4
+					"wool_cloth",
+					2
 				],
 				[
 					"twine",
@@ -7161,6 +7201,96 @@
 			],
 			"craft_s": 8.0,
 			"known": true
+		},
+		"charcoal": {
+			"number": 341,
+			"name": "Charcoal",
+			"category": "Materials",
+			"needs": [
+				[
+					"firewood",
+					2
+				]
+			],
+			"gives": [
+				"charcoal",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "campfire"
+		},
+		"wool_cloth": {
+			"number": 342,
+			"name": "Wool cloth",
+			"category": "Materials",
+			"needs": [
+				[
+					"wool",
+					3
+				]
+			],
+			"gives": [
+				"wool_cloth",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true
+		},
+		"wild_grain_flour": {
+			"number": 343,
+			"name": "Wild grain flour",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"seed_bundle",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"flour",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"spyglass": {
+			"number": 344,
+			"name": "Spyglass",
+			"category": "Tools",
+			"needs": [
+				[
+					"wooden_block",
+					1
+				],
+				[
+					"leather_strap",
+					1
+				],
+				[
+					"crystal_lens",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"stone_knife",
+					1
+				]
+			],
+			"gives": [
+				"spyglass",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "workbench"
 		}
 	}
 }

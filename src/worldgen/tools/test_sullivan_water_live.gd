@@ -7,6 +7,7 @@ extends SceneTree
 
 const DigWindows := preload("res://src/sullivan_water/live/dig_windows.gd")
 const Grid := preload("res://src/sullivan_water/freshwater/water_grid_2d.gd")
+const Hub := preload("res://src/water2/water_hub2.gd")
 
 var failures: int = 0
 
@@ -140,25 +141,32 @@ func _init() -> void:
 	_check(texel.a > 0.2 and absf(texel.r - grid.surface(far_i, far_j)) < 1.0e-4, "the ditch texel carries its depth and surface (%.2f m deep, surface %.3f)" % [texel.a, texel.r])
 	_check(fine["packets"][0][1] == Vector2(97.0, -95.0) and live.fine_packets(true)["packets"].size() == 2, "packet origin is cell (0, 0)'s centre, and sleeping regions go too when asked")
 
-	# Following a player (docs/water/follow_players_2m.md): a player by the river gets a 2 x 2 tile region, not dug; staying inside it opens
-	# nothing more; under the budget a region nobody dug in closes instead of sleeping.
-	ground.digs.append([Vector3(160.0, 1.0, 37.0), 1.5])   # a hollow on the bank under the river's 8 m level, cut off by the bank
+	# No dig, no 2 m region (docs/water/follow_region_repair.md): the region that followed a player near water drained spring brooks and hid
+	# the 8 m water round the player (Dave's playtest, 10 Nov 2026), so it was removed. Water nobody dug in stays the 8 m field's: the hub
+	# takes no player positions, a minute of water with no dig opens nothing, and the hub's levels go out exactly as they came in.
 	var live2 = DigWindows.new()
 	live2.source = ground
-	live2.follow(PackedVector2Array([Vector2(150.0, 44.0)]), level_at)
-	_check(live2.windows.size() == 1 and live2.windows[0]["tiles"] == Rect2i(1, -1, 2, 2) and not bool(live2.windows[0]["dug"]), "a player by the river gets a 2 x 2 tile region, not dug (%d regions)" % live2.windows.size())
-	_check(live2.windows[0]["grid"].total_volume() > 0.0, "the followed region starts with the river's water (%.0f m3)" % live2.windows[0]["grid"].total_volume())
+
+	for _s in range(60):
+		live2.update(1.0, level_at)
+
+	var kept: PackedFloat32Array = levels.duplicate()
+	var moved2: bool = live2.publish(kept, samples, 0.0, 0.0)
+	var same: bool = true
+
+	for k2 in range(kept.size()):
+		same = same and (kept[k2] == levels[k2] or (is_nan(kept[k2]) and is_nan(levels[k2])))
+
+	_check(live2.windows.is_empty() and live2.sleeping.is_empty() and not moved2 and same, "with no dig no 2 m region opens, and the 8 m river is published untouched")
+	_check(not live2.has_method("follow") and not Hub.new().has_method("set_players") and live2.built == 0, "nothing opens a 2 m region round a player")
+
+	# A region seeds only real 8 m water: a hollow on the bank under the river's 8 m level, cut off by the bank, stays dry.
+	ground.digs.append([Vector3(160.0, 1.0, 37.0), 1.5])
+	live2._open(Rect2i(1, -1, 2, 2), level_at)
+	_check(live2.windows.size() == 1 and live2.windows[0]["grid"].total_volume() > 0.0, "a region by the river starts with the river's water (%.0f m3)" % live2.windows[0]["grid"].total_volume())
 	var g2 = live2.windows[0]["grid"]
 	var hollow: Vector2i = Vector2i(int((160.0 - live2.windows[0]["origin"].x) / 2.0), int((37.0 - live2.windows[0]["origin"].y) / 2.0))
 	_check(g2.depth(hollow.x, hollow.y) == 0.0 and live2.dry_pieces >= 1, "a bank hollow under the 8 m level but cut off from the river stays dry (%.2f m, %d dry pieces)" % [g2.depth(hollow.x, hollow.y), live2.dry_pieces])
-	live2.follow(PackedVector2Array([Vector2(150.0, 44.0)]), level_at)
-	_check(live2.followed == 1, "a player well inside the region opens nothing more (%d opens)" % live2.followed)
-	live2._follow_next_ms = 0   # past the rate limit, so only the dryness decides
-	live2.follow(PackedVector2Array([Vector2(150.0, 200.0)]), level_at)
-	_check(live2.followed == 1, "dry ground (no 8 m water) opens nothing")
-	live2.dig(Vector3(288.0, 1.0, 288.0), 1.5, false)
-	live2.update(0.0, level_at)
-	_check(live2.sleeping.is_empty() and live2.windows.size() == 1 and bool(live2.windows[0]["dug"]), "under the budget the region nobody dug in closes rather than sleeps")
 
 	# Dave 7 Nov 2026 (footsteps splashed on a dry hillside): 2 m films draining off a slope give no 8 m level; real water still does.
 	var live3 = DigWindows.new()

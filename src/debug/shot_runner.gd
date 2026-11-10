@@ -20,6 +20,9 @@ extends Node
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
 #   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert), and logs which clip each played
+#   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (ready to shoot, the string at rest), raised[:0 to 1] (the string drawn that far) or drawn (at the jaw);
+#                       first person keeps the arms on and ten stone arrows are given too (the nocked arrow shows only with arrows in the pack);
+#                       look rig --cam left|right shows the body with the bow at its side
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -53,6 +56,7 @@ var _busy: bool = false
 var costs: bool = false
 var admin_text: bool = false
 var no_grass: bool = false
+var bow_pose: String = ""        # --shot-bow=STATE[:DRAW]
 var item_mode: bool = false        # --shot-item (see the header)
 var item_at: Vector2 = Vector2(INF, INF)
 var _item_built: bool = false
@@ -266,6 +270,8 @@ func setup(owner_client, args: Array) -> void:
 		elif argument.begins_with("--shot-dig="):
 			dig_steps = int(argument.trim_prefix("--shot-dig="))
 			ground_test = true
+		elif argument.begins_with("--shot-bow="):
+			bow_pose = argument.trim_prefix("--shot-bow=")      # a held bow's pose: idle, raised[:DRAW] or drawn (held_item.gd _pose_bow); use with --shot-give=wooden_bow
 		elif argument == "--shot-nograss":
 			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
@@ -321,8 +327,10 @@ func _process(delta: float) -> void:
 		if no_grass and client.grass != null and client.grass.enabled:
 			client.grass.set_radius(0.0)      # the grass view draws nothing (a quality change may turn it back on)
 
+		# No arms in the pictures, except a first-person bow shot: the bow is held in both hands of the arms (held_item.gd _pose_bow), and with the arms off it went
+		# to the hidden body's hand and the pictures showed no bow (Dino, 10 Nov 2026).
 		if client.held != null:
-			client.held.set_first_person(false)
+			client.held.set_first_person(bow_pose != "" and float(shots[_index]["walk"]) < 0.0)
 
 		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
 			client._avatar.visible = false
@@ -338,9 +346,13 @@ func _process(delta: float) -> void:
 		_given = true
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of(give_item), 0, give_count, Vector3.ZERO)
 
+		if bow_pose != "":
+			client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("stone_arrow"), 0, 10, Vector3.ZERO)   # arrows in the pack, so one is nocked
+
 	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
+		client.held.bow_force = bow_pose
 
 	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
 		# The server refuses a kit placed farther than its reach from where IT thinks the player is, and a shot that moves the body reports nothing (the flying anchor stays at the spawn):

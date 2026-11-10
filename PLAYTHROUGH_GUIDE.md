@@ -66,7 +66,7 @@ Recipe **Stone axe** (#2, known, no station): **1 stone + 1 stick + 2 twine -> s
 
 Put it on the hotbar: drag it from the pack onto a hotbar box, or press E on it in the inventory. Press its number to hold it.
 
-Also craftable at once with no station: **stone knife** (#6: 2 stone + 1 stick), **wooden spear** (#5: 1 stick, keeps 1 stone in the pack), **torch** (#7: 1 stick + 2 plant fibre).
+Also craftable at once with no station: **stone knife** (#6: 2 stone + 1 stick), **wooden spear** (#5: 1 stick, keeps 1 stone in the pack), **torch** (#7: 1 stick + 1 plant fibre + 1 pitch, which is resin, pine tar or animal fat).
 
 ## Step 06. Chop a tree
 

@@ -64,7 +64,7 @@ func reset() -> void:
 
 	items._characters[items._peer_key[1]]["shoulder"] = ""
 
-	for name in ["log_oak", "log_birch", "chopping_block", "rough_plank", "lumber"]:
+	for name in ["log_oak", "log_birch", "chopping_block", "stone_wedge", "lumber"]:
 		items.inventory_of(1).remove(items.table.number_of(name), count(name))
 
 	said.clear()
@@ -117,12 +117,18 @@ func _init() -> void:
 	craft("two_logs_test", 1)
 	check(count("chopping_block") == 0 and items.shoulder_of(1) == "log_oak" and count("log_oak") == 1, "one log is not enough for a two-log craft: the carried log stays")
 
-	# 3. A log 6 m away is not used.
+	# 3. Loose stock counts within CraftStock.LOOSE_STOCK_M, 12 m (Dave 10 Nov 2026: "or they are within 12m of you"): a log 6 m away is used where
+	# it lies (nobody carries it), one 14 m away is out of reach and stays.
 	reset()
 	items.give(1, oak, 1)
 	items.drop_in_world(birch, 1, Vector3(6.0, 10.0, 0.0))
 	craft("two_logs_test", 1)
-	check(count("chopping_block") == 0 and ground_logs() == 1, "a log lying 6 m away is out of reach and stays")
+	check(count("chopping_block") == 1 and ground_logs() == 0 and items.shoulder_of(1) == "", "a log lying 6 m away is used for the craft (block %d, %d on the ground)" % [count("chopping_block"), ground_logs()])
+	reset()
+	items.give(1, oak, 1)
+	items.drop_in_world(birch, 1, Vector3(14.0, 10.0, 0.0))
+	craft("two_logs_test", 1)
+	check(count("chopping_block") == 0 and ground_logs() == 1 and items.shoulder_of(1) == "log_oak", "a log lying 14 m away is out of reach and stays")
 
 	# 4. Ground logs only, a stack of 2 on the ground.
 	reset()
@@ -130,13 +136,14 @@ func _init() -> void:
 	craft("two_logs_test", 1)
 	check(count("chopping_block") == 1 and ground_logs() == 0, "two logs lying on the ground make the two-log craft")
 
-	# 5. Rough planks (1 log) at a workbench, log on the shoulder.
+	# 5. Hand-split planks (1 log, the wedge kept) at a workbench, log on the shoulder (rough planks are retired, recipe audit 10 Nov 2026).
 	reset()
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("workbench_kit"), 0, 1, Vector3.ZERO)
 	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
+	items.inventory_of(1).add(items.table.number_of("stone_wedge"), 1)
 	items.give(1, oak, 1)
-	craft("rough_plank", 1)
-	check(count("rough_plank") == 4 and items.shoulder_of(1) == "", "rough planks from the shoulder log at the workbench (%d planks)" % count("rough_plank"))
+	craft("lumber_wedge", 1)
+	check(count("lumber") == 2 and items.shoulder_of(1) == "", "planks from the shoulder log at the workbench (%d planks)" % count("lumber"))
 
 	# 6. A pack log is used when nothing is near (the old behaviour).
 	reset()

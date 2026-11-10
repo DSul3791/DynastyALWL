@@ -15,6 +15,8 @@ extends Control
 #   slot.flash_new()                       a gold shimmer fading over 2 s, the first time an item appears
 #   slot.set_caption(text)                 the item's name, drawn small in the slot while it has no icon yet (icons come from tools/icon_bake.gd)
 #   slot.set_marked(mode)                  0 plain, MARK_GOLD the held or selected slot (a bright gold edge), MARK_CREAM the off hand
+#   slot.set_station_glow(on)              a golden glowing line round the well: the station you stand at can use it (Dave 10 Nov 2026;
+#                                          colour and widths in data/ui/station_highlight.json)
 # The top-right corner is kept free for a quality mark later (Morgan's call 6).
 # Hover and keyboard focus look the same, so a controller later needs no new art. Each change eases in 80 ms; with
 # Reduce motion (display_settings.reduce_motion) it is instant and the new-item shimmer is skipped.
@@ -42,6 +44,7 @@ const GREY_ALPHA := 0.6
 const CAPTION_PX := 12
 const MARK_GOLD := 1
 const MARK_CREAM := 2
+const STATION_GLOW_PATH := "res://data/ui/station_highlight.json"
 
 signal clicked(button: int, shift: bool)     # a single press: left, right (the owner opens the menu), middle
 signal double_clicked                         # double-click: use
@@ -58,6 +61,8 @@ var key_number: int = -1
 var linked_key: int = -1
 var greyed: bool = false
 var caption: String = ""
+var station_glow: bool = false
+static var _glow_cfg: Dictionary = {}
 var marked: int = 0
 var dragging: bool = false        # this slot's item is being carried by the pointer
 var can_drop: Callable            # (data: Variant) -> bool, set by the owner; unset means nothing drops here
@@ -148,6 +153,22 @@ func set_caption(text: String) -> void:
 func set_marked(mode: int) -> void:
 	marked = mode
 	queue_redraw()
+
+
+func set_station_glow(on: bool) -> void:
+	if on != station_glow:
+		station_glow = on
+		queue_redraw()
+
+
+# data/ui/station_highlight.json, read once: colour, line_px, glow_px, glow_alpha.
+static func glow_cfg() -> Dictionary:
+	if _glow_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(STATION_GLOW_PATH)) if FileAccess.file_exists(STATION_GLOW_PATH) else null
+		_glow_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+		_glow_cfg["_read"] = true
+
+	return _glow_cfg
 
 
 func set_dragging(on: bool) -> void:
@@ -275,6 +296,19 @@ func _draw() -> void:
 
 	if marked == MARK_CREAM:
 		draw_rect(r.grow(-1.0), ArtKit.CREAM, false, 2.0)
+
+	if station_glow:   # the golden line, with its glow fading inward over glow_px
+		var cfg: Dictionary = glow_cfg()
+		var gold: Color = Color.html(str(cfg.get("colour", "#ffc83a")))
+		var line: float = float(cfg.get("line_px", 2.0)) * unit
+		var glow: float = float(cfg.get("glow_px", 6.0)) * unit
+		var steps: int = maxi(1, ceili(glow / maxf(line, 1.0)))
+
+		for k in range(steps, 0, -1):
+			var inset: float = line + glow * float(k) / float(steps)
+			draw_rect(r.grow(-inset + line * 0.5), Color(gold, float(cfg.get("glow_alpha", 0.5)) * (1.0 - float(k) / float(steps + 1))), false, line)
+
+		draw_rect(r.grow(-line * 0.5), gold, false, line)
 
 	if _pressed:
 		draw_rect(r, Color(0.0, 0.0, 0.0, 0.25))

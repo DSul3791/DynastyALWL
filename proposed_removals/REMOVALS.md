@@ -84,3 +84,10 @@ Also removed inside live files (git history keeps them):
 | src/worldgen/tools/test_drainage_natural.gd (+ .uid) | Sonny, coordinator approved (flags sweep) | 9 Nov | tests drainage_natural.gd only | none |
 | src/worldgen/tools/test_water_small.gd (+ .uid) | Sonny, coordinator approved (flags sweep) | 9 Nov | runs the live water on natural rivers ground only | the settler's tests (test_water_settle_rules, test_head_pond_fill) and the live sim's (test_water_sim, test_dam_backup, test_water_falls, test_river_hold) |
 | assets/audio/body/heartbeat_0.ogg, heartbeat_1.ogg, heartbeat_2.ogg | Steve, Dave's heartbeat order | 10 Nov | the generated lub-dub heartbeat (make_body.py) | assets/audio/heartbeat/Daggorath_Style_Heartbeat_Pulse.wav, the Daggorath pulse (docs/design/heartbeat_design.md) |
+
+## The 2 m region that followed the player, 10 Nov 2026 (Sonny, branch sonny-water-follow-removed; the coordinator's call during Dave's playtest)
+No whole files. Removed inside live files (git history keeps them; why, and what a repaired one needs: docs/water/follow_region_repair.md):
+- `src/sullivan_water/live/dig_windows.gd`: `follow()`, `_wet_in()`, `FOLLOW_EDGE_M`, `FOLLOW_EVERY_MS`, the `followed` count, the "dug" mark, and the rule that a region nobody dug in closes instead of sleeping (every region is a dug one now).
+- `src/water2/water_hub2.gd`: `set_players()` and its call to `follow()`.
+- `scenes/terrain_server/terrain_server.gd`: the player positions given to the hub every 2 s.
+- `src/worldgen/tools/test_sullivan_water_live.gd`: the four follow checks (replaced by: no dig opens no region, and the 8 m levels go out untouched).

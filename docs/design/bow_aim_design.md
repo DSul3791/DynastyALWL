@@ -15,7 +15,7 @@ Dave's playtest note: the bow "doesn't work at all but it makes funny sounds". H
 | Steady | For `steady_s` seconds at full draw the aim holds still. That is 2 s with no skill (Dave), 3 s at 50 and 4.5 s at 100. |
 | Wobble | After that the aim sways a little, a slow figure of two sines (`wobble_hz` 0.6). The sway grows by `wobble_deg_per_s` (1.5°/s with no skill, 0.3°/s at 100) up to `wobble_max_deg` 4°. |
 | Loose | Left click while drawn fires at the reticle. If the right button is still held, the bow draws again for the next arrow. |
-| Lower | Let go of the right button and the bow comes down with no shot. |
+| Lower | Let go of the right button and the bow goes back to the ready stance (both hands on it, an arrow nocked, Kathleen's pose) with no shot. |
 
 ## Bow skill
 

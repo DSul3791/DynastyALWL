@@ -449,6 +449,7 @@ func _ready() -> void:
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.send_chest_info = func(peer, id, keep_out, may_set): net.chest_info.rpc_id(peer, id, keep_out, may_set)
 	items.send_craft_stock = func(peer, numbers, counts): net.craft_stock.rpc_id(peer, numbers, counts)
+	items.send_step_to = func(peer, spot, yaw): net.step_to.rpc_id(peer, spot, yaw)
 	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
 	items.send_hotbar = func(peer, keys): net.hotbar.rpc_id(peer, keys)
 	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
@@ -1287,14 +1288,8 @@ func _update_water_live() -> void:
 
 	_water_live_next = now + 2000
 
-	var players: PackedVector2Array = PackedVector2Array()
-
 	for position in items.peer_positions():
 		_water_seen[generator.tile_of(position.x, position.z)] = now
-		players.append(Vector2(position.x, position.z))
-
-	if water_live.has_method("set_players"):
-		water_live.set_players(players)   # Sullivan water: a 2 m region follows the first player near water
 
 	var tiles: Array = []
 
