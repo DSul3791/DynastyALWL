@@ -3693,7 +3693,7 @@
 			"kind": "food",
 			"description": "Berries stewed sweet. Quick energy.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Berries, 1 Honey"
+				"Craft at a preserving jar: 2 Berries, 1 Honey"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6195,7 +6195,7 @@
 			"kind": "food",
 			"description": "Salted cabbage fermented in a pot.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Cabbage, 1 Salt"
+				"Craft at a preserving jar: 2 Cabbage, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -6726,7 +6726,7 @@
 			"kind": "food",
 			"description": "Cooking apples stewed soft with honey.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Cooking apple, 1 Honey"
+				"Craft at a preserving jar: 3 Cooking apple, 1 Honey"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6746,7 +6746,7 @@
 			"kind": "food",
 			"description": "Plums boiled down with honey. Keeps through winter in a crock.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Plums, 1 Honey"
+				"Craft at a preserving jar: 3 Plums, 1 Honey"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6766,7 +6766,7 @@
 			"kind": "food",
 			"description": "Damsons sealed in sweet syrup. A winter store.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Damsons, 1 Honey"
+				"Craft at a preserving jar: 3 Damsons, 1 Honey"
 			],
 			"used_for": [],
 			"obtainable_now": true

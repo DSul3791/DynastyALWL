@@ -2403,7 +2403,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_nut_paste": {
@@ -6004,7 +6004,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_hazelnut_butter": {
@@ -6230,7 +6230,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_apple_pie": {
@@ -6278,7 +6278,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_stewed_pears": {
@@ -6322,7 +6322,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_dried_figs": {

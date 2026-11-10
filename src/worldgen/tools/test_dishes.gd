@@ -64,6 +64,9 @@ func _init() -> void:
 	items._items[items._next_id] = {"number": items.table.number_of("smoker"), "count": 1, "pos": Vector3(-1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "smoker", "yaw": 0.0}}
 	items._next_id += 1
 	items._items[items._next_id] = {"number": items.table.number_of("drying_rack"), "count": 1, "pos": Vector3(0.0, 10.0, -1.0), "left": 1.0e9, "struct": {"kind": "drying_rack", "yaw": 0.0}}
+	# Jam, compote, sauerkraut, preserved damsons and apple sauce at a preserving jar (item_system.md line 239; Morgan 10 Nov).
+	items._next_id += 1
+	items._items[items._next_id] = {"number": items.table.number_of("preserving_jar"), "count": 1, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9, "struct": {"kind": "preserving_jar", "yaw": 0.0}}
 
 	var best_by_kinds: Dictionary = {}
 
