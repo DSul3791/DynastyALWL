@@ -2028,7 +2028,7 @@ func _flame_state() -> String:
 
 		var model: Node3D = hand[2] as Node3D
 		var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D if model != null else null
-		parts.append("%s %s flame %s light %s" % [hand[0], hand[1], str(bool(client.items.table.entry(str(hand[1])).get("flame", false))), "none" if light == null else ("drawn" if light.is_visible_in_tree() else "hidden")])
+		parts.append("%s %s flame %s light %s, %s" % [hand[0], hand[1], str(bool(client.items.table.entry(str(hand[1])).get("flame", false))), "none" if light == null else ("drawn" if light.is_visible_in_tree() else "hidden"), _in_frame(model)])
 
 	return ", ".join(parts) if not parts.is_empty() else "nothing in hand"
 
@@ -2050,3 +2050,26 @@ func _given_key() -> int:
 		return -1
 
 	return client.items.inventory.hotbar.find(number)
+
+
+# Where a held model is in the picture: "in frame at (x, y) px" from the drawn camera, "out of frame (below)" and the like, or "not drawn", so a picture
+# with the lantern lit but not seen says where it hangs (Dino 10 Nov 2026, first person pitched -25 degrees showed only the lit sand).
+func _in_frame(model: Node3D) -> String:
+	var cam: Camera3D = client.view_cam if client.view_cam != null else client.camera
+
+	if model == null or cam == null or not model.is_visible_in_tree():
+		return "not drawn"
+
+	var spot: Vector3 = model.global_position
+	var local: Vector3 = cam.global_transform.affine_inverse() * spot
+
+	if local.z > -0.01:
+		return "behind the camera (%.2f m)" % local.z
+
+	var px: Vector2 = cam.unproject_position(spot)
+	var size: Vector2 = get_viewport().get_visible_rect().size
+
+	if px.x < 0.0 or px.y < 0.0 or px.x > size.x or px.y > size.y:
+		return "out of frame at (%.0f, %.0f) px of %.0fx%.0f, %.2f m %s" % [px.x, px.y, size.x, size.y, -local.z, "below" if px.y > size.y else ("above" if px.y < 0.0 else "to the side")]
+
+	return "in frame at (%.0f, %.0f) px, %.2f m ahead" % [px.x, px.y, -local.z]
