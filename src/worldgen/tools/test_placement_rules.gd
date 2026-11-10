@@ -289,6 +289,50 @@ func _init() -> void:
 	items.report_position(2, Vector3(900.0, 10.0, 910.0))
 	check(absf(items._wheel_slow(2, {"station": "saw_mill", "station_level": 1}) - 1.0 / 0.6) < 0.01, "at 600 W a sawmill recipe takes 1/0.6 as long")
 	check(is_equal_approx(items._wheel_slow(2, {"station": "workbench"}), 1.0) and is_equal_approx(items._wheel_slow(2, {}), 1.0), "other stations and hand crafts keep their time")
+	# Looking at the placed sawmill shows its wheel's share: the server puts "wheel" on the piece's world row; other pieces carry none.
+	var saw_id: int = -1
+	var plain_id: int = -1
+
+	for id in items._items:
+		var piece: Dictionary = items._items[id]
+
+		if not piece.has("struct") or piece["struct"].has("site"):
+			continue
+
+		if str(piece["struct"]["kind"]) == "saw_mill":
+			saw_id = int(id)
+		elif str(piece["struct"]["kind"]).contains("foundation"):
+			plain_id = int(id)
+
+	check(saw_id >= 0 and items.wheel_percent(items._items[saw_id]) == 60, "the placed sawmill's wheel gives 60 %% at 600 W")
+	check(plain_id >= 0 and items.wheel_percent(items._items[plain_id]) == -1, "a foundation has no wheel share (-1)")
+	# A mill whose water is not answered yet (a saved mill sent at the join before its tile's water is read: "dry", 0 W) is not kept at that.
+	if saw_id >= 0:
+		var kept_w: float = float(items._items[saw_id]["struct"]["wheel_w"])
+		items._items[saw_id]["struct"].erase("wheel_w")
+		flows[0] = false
+		check(items.wheel_percent(items._items[saw_id]) == 15 and not items._items[saw_id]["struct"].has("wheel_w"), "a mill whose water does not answer shows the floor share and keeps nothing")
+		flows[0] = true
+		check(items.wheel_percent(items._items[saw_id]) == 60 and is_equal_approx(float(items._items[saw_id]["struct"].get("wheel_w", 0.0)), kept_w), "once the water answers it gives 60 %% and keeps its watts")
+
+	var sent_rows: Array = []
+	items.send_world_items = func(_p, added, _r): sent_rows.append_array(added)
+	items._known[2] = {}
+	items._sync_world_items()
+	var saw_row_wheel: int = -2
+	var other_rows_wheel: int = 0
+
+	for row in sent_rows:
+		if typeof(row[5]) != TYPE_DICTIONARY or not (row[5] as Dictionary).has("wheel"):
+			continue
+
+		if int(row[0]) == saw_id:
+			saw_row_wheel = int(row[5]["wheel"])
+		else:
+			other_rows_wheel += 1
+
+	check(saw_row_wheel == 60 and other_rows_wheel == 0, "only the sawmill's world row carries the wheel share (%d, %d others)" % [saw_row_wheel, other_rows_wheel])
+	items.send_world_items = func(_p, _a, _r): pass
 	# The ghost asks before placing (protocol 105): the same rule answers with the share, or why not.
 	var shares: Array = []
 	items.send_wheel_share = func(_p: int, _at: Vector3, _yaw: int, percent: int, why: String) -> void: shares.append([percent, why])

@@ -836,6 +836,14 @@ func _probe_fire() -> Dictionary:
 	return found
 
 
+# A placed sawmill's look-at addition: "   (the wheel gives 62 %)" from its row's water wheel share, "" for every other piece.
+func wheel_note(id: int) -> String:
+	if not _world.has(id) or not _world[id].has("wheel"):
+		return ""
+
+	return "   (the wheel gives %d %%)" % int(_world[id]["wheel"])
+
+
 func _probe_structure() -> Dictionary:
 	# A fire has its own probe (_probe_fire), so it is left out here. Before, this probe found it too, aimed a little higher, and its "Hold E to take down"
 	# line hid "Press E to light" and "Press F to add wood" (Dave 5 Nov, a campfire with no fuel).
@@ -906,7 +914,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to drink, or to fill what you hold (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if str(station_def.get("station", "")) != "":
-		return {"prompt": "Press F to use the %s" % table.sentence_name(_world[id]["number"]), "tap": _open_station, "hold": take_down}
+		return {"prompt": "Press F to use the %s%s" % [table.sentence_name(_world[id]["number"]), wheel_note(id)], "tap": _open_station, "hold": take_down}
 
 	# A light (a torch stuck in the ground or on a wall, a wall torch, a chandelier): E lights it with its fuel from the pack (a stick for a torch), hold E takes it down.
 	if str(station_def.get("use", "")) == "light":
@@ -2427,6 +2435,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if site_extra != null:
 				_world[id]["site"] = site_extra
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("wheel"):
+				_world[id]["wheel"] = int(row[5]["wheel"])   # a sawmill's water wheel share in percent (server_items.wheel_percent)
 
 			if site_extra != null:
 				pass   # a site is walked through and climbed by nobody until it is finished
