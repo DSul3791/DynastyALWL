@@ -29,9 +29,14 @@ UNITS = [
     ("server_items", "src/worldgen/tools/test_server_items.gd"),
     ("death", "src/worldgen/tools/test_death.gd"),
     ("stations", "src/worldgen/tools/test_stations.gd"),
+    ("bloomery bench", "src/worldgen/tools/test_bloomery_bench.gd"),
     ("fishing", "src/worldgen/tools/test_fishing.gd"),
+    ("whetstone", "src/worldgen/tools/test_whetstone.gd"),
+    ("fish trap", "src/worldgen/tools/test_fish_trap.gd"),
     ("shore net", "src/worldgen/tools/test_shore_net.gd"),
     ("bed", "src/worldgen/tools/test_bed.gd"),
+    ("bedroll", "src/worldgen/tools/test_bedroll.gd"),
+    ("snow walk", "src/worldgen/tools/test_snow_walk.gd"),
     ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
     ("cold store", "src/worldgen/tools/test_cold_store.gd"),
     ("warmth", "src/worldgen/tools/test_warmth.gd"),
@@ -65,6 +70,8 @@ UNITS = [
     ("new_player_day", "src/worldgen/tools/test_new_player_day.gd"),
     ("placement_rules", "src/worldgen/tools/test_placement_rules.gd"),
     ("save_compat", "src/worldgen/tools/test_save_compat.gd"),
+    ("sentence_names", "src/worldgen/tools/test_sentence_names.gd"),
+    ("item_renames", "src/worldgen/tools/test_item_renames.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
 

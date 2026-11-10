@@ -18,6 +18,7 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
+const ORE_PIPE := 2
 const ORE_FIRST_LAYER := 5   # ore codes (_load_ores): lens 0, halo 1, pipe 2, vein 3, placer 4 are compact bodies; layer 5 and scatter 6 cover a province
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
 const RIVER_CLASS := 3
@@ -812,6 +813,11 @@ func ore_at(pos: Vector3, reach: float, names: Dictionary, depth_m: float) -> St
 			continue
 
 		if not (ore["rect"] as Rect2).grow(reach).has_point(flat):
+			continue
+
+		# A pipe is a vertical body: it shows at the ground only where its top comes within depth_m of the bedrock surface (a salt dome buried
+		# 80 to 600 m gives no rock salt at the surface; 10 Nov 2026).
+		if int(ore["code"]) == ORE_PIPE and float(ore.get("y_max", INF)) < pos.y - cover_at(pos.x, pos.z) - depth_m:
 			continue
 
 		var score: float = _ore_score(ore, flat, reach)
