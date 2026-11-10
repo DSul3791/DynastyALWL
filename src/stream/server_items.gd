@@ -87,7 +87,7 @@ const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
-const CraftStock := preload("res://src/shared/craft_stock.gd")   # what a craft may draw on: the pack, ground within 3 m, own containers within 12 m
+const CraftStock := preload("res://src/shared/craft_stock.gd")   # what a craft may draw on: the pack, ground within 12 m, own containers within 12 m
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
@@ -179,6 +179,7 @@ var water_source: Callable       # (position, reach in metres) -> Array of Drink
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
 var send_craft_stock: Callable  # (peer, numbers PackedInt32Array, counts PackedInt32Array): what a craft may use besides the pack (protocol 98)
+var send_step_to: Callable      # (peer, position, yaw radians): the server moved the player to a station to craft there (protocol 103, _step_to_station)
 var send_favourites: Callable   # (peer, flags PackedByteArray): one byte per pack slot, 1 for a favourite (protocol 99)
 var send_hotbar: Callable      # (peer, keys PackedInt32Array): the ten hotbar keys' item numbers (protocol 100)
 var send_bulk_done: Callable    # (peer, kind, stacks moved, container count, container ids PackedInt32Array): a bulk button's result for the toast (protocol 99)
@@ -10276,15 +10277,27 @@ func _queue_of(peer: int) -> Dictionary:
 # Crafting stations (structures.json "station", "station_level", "reach_m"): a placed structure of that station within reach of the
 # player. The server measures the distance with 1 m of grace so lag never fails a craft; the client only displays (Tyler).
 func station_near(peer: int, station: String, level: int = 1) -> bool:
+	return serving_station(peer, station, level) >= 0
+
+
+# The world id of the nearest placed station that serves `station` at `level` and is working (a lit fire; a pot over a lit fire), within its
+# own reach (station_near) or, with `far_m` above it, within far_m (the crafting reach: _step_to_station); -1 when none.
+func serving_station(peer: int, station: String, level: int = 1, far_m: float = 0.0) -> int:
 	if not _peer_pos.has(peer):
-		return false
+		return -1
+
+	var here: Vector3 = _peer_pos[peer]
+	var best: int = -1
+	var best_d: float = INF
 
 	if station == "campfire":   # dishes are cooked at a lit campfire (data/items/dishes.json); a clay hearth or an oven beside you cooks them too ("also" in structures.json)
 		for id in _items:
 			var fire_item: Dictionary = _items[id]
+			var d: float = here.distance_to(fire_item["pos"])
 
-			if fire_item.has("fire") and fire_is_lit(int(fire_item["fire"]["state"])) and _peer_pos[peer].distance_to(fire_item["pos"]) <= FIRE_USE_M + 1.0:
-				return true
+			if fire_item.has("fire") and fire_is_lit(int(fire_item["fire"]["state"])) and d <= maxf(FIRE_USE_M + 1.0, far_m) and d < best_d:
+				best = int(id)
+				best_d = d
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -10293,14 +10306,68 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 			continue
 
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+		var d: float = here.distance_to(it["pos"])
 
-		if _peer_pos[peer].distance_to(it["pos"]) > float(def.get("reach_m", 3.0)) + 1.0:
+		if d > maxf(float(def.get("reach_m", 3.0)) + 1.0, far_m) or d >= best_d:
 			continue
 
 		if station_level_of(it, def, station) >= level:
 			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_within(it["pos"], POT_ON_FIRE_M):
 				continue   # the pot hangs over its fire: with that fire out nothing cooks, the craft waits where it is and nothing is lost
 
+			best = int(id)
+			best_d = d
+
+	return best
+
+
+var _step_cfg: Dictionary = {}   # data/items/station_step.json, read on the first step
+
+
+# Dave 10 Nov 2026: a station recipe crafted from the pack with its station in the crafting reach but not beside you moves you to the station.
+# Directly in front of it (its +Z turned by its yaw; a fire: the side you came from), facing it; another player there: to one side, then
+# behind. Returns the spot. The client is told (send_step_to) and the server's position is the spot at once, so the station check passes.
+func _step_to_station(peer: int, station_id: int) -> Vector3:
+	if _step_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/station_step.json")) if FileAccess.file_exists("res://data/items/station_step.json") else null
+		_step_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"_read": true}
+
+	var it: Dictionary = _items[station_id]
+	var centre: Vector3 = it["pos"]
+	var front: Vector3
+
+	if it.has("struct") and not it.has("fire"):
+		var yaw: float = deg_to_rad(float(it["struct"].get("yaw", 0.0)))
+		front = Vector3(sin(yaw), 0.0, cos(yaw)) * float(_step_cfg.get("front_m", 1.3))   # the model's front: Godot's +Z (Vector3.MODEL_FRONT) turned by the yaw
+	else:
+		var from: Vector3 = Vector3(_peer_pos[peer].x - centre.x, 0.0, _peer_pos[peer].z - centre.z)
+		front = (from.normalized() if from.length() > 0.01 else Vector3.BACK) * float(_step_cfg.get("fire_m", 1.5))
+
+	var side: Vector3 = front.normalized().cross(Vector3.UP) * float(_step_cfg.get("side_m", 1.4))
+	var spot: Vector3 = centre + front
+
+	for candidate in [centre + front, centre + front.normalized() * front.length() + side, centre + front.normalized() * front.length() - side, centre - front]:
+		if not _player_within(candidate, float(_step_cfg.get("clear_m", 0.9)), peer):
+			spot = candidate
+			break
+
+	if ground_height.is_valid():
+		spot.y = float(ground_height.call(spot.x, spot.z))
+
+	_peer_pos[peer] = spot
+	var look: Vector3 = centre - spot
+	var yaw_to: float = atan2(-look.x, -look.z)   # the client's body.rotation.y facing the station (Godot looks down -Z)
+
+	if send_step_to.is_valid():
+		send_step_to.call(peer, spot, yaw_to)
+
+	return spot
+
+
+# Another player stands within `radius` (on the ground plane) of a point.
+func _player_within(point: Vector3, radius: float, but: int) -> bool:
+	for other in _peer_pos:
+		if int(other) != but and Vector2(_peer_pos[other].x - point.x, _peer_pos[other].z - point.z).length() <= radius:
 			return true
 
 	return false
@@ -12975,6 +13042,16 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 
 	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
 		return
+
+	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
+	var station_name: String = str(recipe.get("station", ""))
+	var station_level: int = int(recipe.get("station_level", 1))
+
+	if station_name != "" and not station_near(peer, station_name, station_level):
+		var far_id: int = serving_station(peer, station_name, station_level, CraftStock.CRAFT_REACH_M)
+
+		if far_id >= 0 and (free or _stock_covers(inv, recipe, 1, _stock_of(peer))):
+			_step_to_station(peer, far_id)
 
 	if free:
 		var line: Array = queue["entries"]

@@ -37,3 +37,30 @@ static func text_of(recipe: Dictionary, table = null) -> String:
 		parts.append(table.name_of(int(gives[0])))
 
 	return " ".join(parts).to_lower()
+
+
+# The recipe list's order (Dave 10 Nov 2026): first what the hands make now (no station; everything in the pack or within the crafting reach,
+# 12 m), then what a working station within that reach makes now (crafting it moves you to the station), then the rest; each alphabetical by
+# name, case-insensitive. `makeable` (recipe) -> the stock covers it; `station_in_reach` (recipe) -> its station works within 12 m.
+# Returns [hand, station, rest].
+static func order_groups(rows: Array, makeable: Callable, station_in_reach: Callable) -> Array:
+	var hand: Array = []
+	var station: Array = []
+	var rest: Array = []
+
+	for r in rows:
+		var can: bool = bool(makeable.call(r))
+
+		if can and str(r.get("station", "")) == "":
+			hand.append(r)
+		elif can and bool(station_in_reach.call(r)):
+			station.append(r)
+		else:
+			rest.append(r)
+
+	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
+
+	for group in [hand, station, rest]:
+		group.sort_custom(by_name)
+
+	return [hand, station, rest]

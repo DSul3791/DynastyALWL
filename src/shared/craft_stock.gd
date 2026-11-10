@@ -6,7 +6,7 @@ extends RefCounted
 # docs/design/OVERNIGHT_DECISIONS_8NOV.md.
 
 const CRAFT_REACH_M := 12.0     # one distance for crafting and blueprint sites (the sites' old 30 m is gone)
-const LOOSE_STOCK_M := 3.0      # loose stacks on the ground this close count as stock
+const LOOSE_STOCK_M := 12.0     # loose stacks on the ground this close count as stock (Dave 10 Nov 2026: "or they are within 12m of you"; was 3 m)
 
 
 # Whether a container's owner lets this player's crafting use it. Households come later: today a player's own containers only.

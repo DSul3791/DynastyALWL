@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md, 8 Nov 2026): a craft draws on the
-# pack, loose stacks within 3 m and the player's own storage containers within CraftStock.CRAFT_REACH_M (12 m) that are not ticked "keep out", pack first,
+# pack, loose stacks within 12 m and the player's own storage containers within CraftStock.CRAFT_REACH_M (12 m) that are not ticked "keep out", pack first,
 # then the ground, then the nearest container. A stranger's chest and a fire's store never count. A container saved before owners belongs to its first
 # opener; the owner and the tick survive a save and load. Blueprint sites use the same containers. The client is told the stock (craft_stock).
 #   godot --headless --path . --script res://src/worldgen/tools/test_craft_stock.gd
@@ -18,6 +18,7 @@ var stock_sent: Dictionary = {}     # peer -> {number: count} from the last craf
 var info_sent: Array = []           # [peer, id, keep_out, may_set] from the last chest_info
 var clay: int = 0
 var pot_recipe: int = 0
+var stepped: Array = []             # [peer, spot, yaw] from the last step_to
 
 
 func check(ok: bool, what: String) -> void:
@@ -73,7 +74,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(dir + "/" + file)
 
 	# The rule itself.
-	check(CraftStock.CRAFT_REACH_M == 12.0 and CraftStock.LOOSE_STOCK_M == 3.0, "one crafting distance, 12 m, and loose stock within 3 m")
+	check(CraftStock.CRAFT_REACH_M == 12.0 and CraftStock.LOOSE_STOCK_M == 12.0, "one crafting distance, 12 m, for containers and loose stock alike (Dave 10 Nov 2026)")
 	check(CraftStock.box_counts("a", false, "a", 11.9) and not CraftStock.box_counts("a", false, "a", 12.1), "own chest at 11.9 m counts, at 12.1 m it does not")
 	check(not CraftStock.box_counts("a", true, "a", 2.0) and not CraftStock.box_counts("b", false, "a", 2.0) and not CraftStock.box_counts("", false, "a", 2.0), "keep out, a stranger's and an unowned chest never count")
 	check(CraftStock.take_plan(7, [2, 1, 5, 5]) == [2, 1, 4, 0] and CraftStock.take_plan(3, [0, 0, 1]) == [0, 0, 1], "take_plan splits in order: pack, ground, nearest container")
@@ -94,6 +95,7 @@ func _init() -> void:
 			rows[int(numbers[i])] = int(counts[i])
 
 		stock_sent[p] = rows
+	items.send_step_to = func(p, spot, yaw): stepped = [p, spot, yaw]
 	items.ground_height = func(_x, _z): return 10.0
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "craftstock001")
@@ -153,11 +155,11 @@ func _init() -> void:
 	# 5. A fire's store never counts (fires are fuel, not storage).
 	check(items._is_storage({"fire": {"uid": 1}, "struct": {"kind": "chest", "uid": 1}}) == false, "a fire is not a storage container")
 
-	# 6. Order: pack first, then the ground within 3 m, then the nearest chest, then the next.
+	# 6. Order: pack first, then the ground within 12 m, then the nearest chest, then the next.
 	reset()
 	items.inventory_of(1).add(clay, 1)
 	items.drop_in_world(clay, 1, Vector3(2.0, 10.0, 0.0))
-	items.drop_in_world(clay, 5, Vector3(0.0, 10.0, 6.0))   # 6 m: not loose stock
+	items.drop_in_world(clay, 5, Vector3(0.0, 10.0, 14.0))   # 14 m: not loose stock
 	var first: int = chest_at(5.0, 1)
 	var second: int = chest_at(9.0, 1)
 	box(first).add(clay, 3)
@@ -200,5 +202,63 @@ func _init() -> void:
 	var site_boxes: Array = items._craft_boxes(1)
 	check(site_boxes.size() == 1 and int(site_boxes[0][0]) == mine, "a blueprint site sees only your own chest within 12 m (got %d)" % site_boxes.size())
 
+	step_checks()
 	print("craft stock: %s" % ("all passed" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)
+
+
+# 9. Dave 10 Nov 2026: crafting a station recipe with the station within 12 m but not beside you moves you in front of it, facing it, and the
+# craft goes on there; another player in the spot: to one side. Farther than 12 m: no move, and the old "needs a ... nearby".
+func step_checks() -> void:
+	reset()
+	var cobble: int = 0
+
+	for k in items.recipes.numbers():
+		if str(items.recipes.recipe(int(k)).get("id", "")) == "cobblestone":
+			cobble = int(k)
+
+	check(cobble != 0 and str(items.recipes.recipe(cobble).get("station", "")) == "workbench", "cobblestone is made at a workbench")
+	items._learned_of(1)[str(cobble)] = true
+	var stone: int = items.table.number_of("stone")
+	var bench: int = items.dev_place("workbench@8,0,0")
+	check(bench != 0 and items._items.has(bench), "a workbench stands 8 m away")
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	items.report_position(2, Vector3(0.0, 10.0, 40.0))
+	check(not items.station_near(1, "workbench") and items.serving_station(1, "workbench", 1, CraftStock.CRAFT_REACH_M) == bench, "8 m: not at the bench, but it is within the crafting reach")
+	items.inventory_of(1).add(stone, 3)
+	stepped.clear()
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	var queue: Array = items._craft_queues[items._peer_key[1]]["entries"]
+	var front: Vector3 = Vector3(8.0, 10.0, 1.3)
+	check(stepped.size() == 3 and int(stepped[0]) == 1 and (stepped[1] as Vector3).distance_to(front) < 0.05, "the player is moved in front of the bench (%s)" % str(stepped[1] if stepped.size() == 3 else "none"))
+	check(stepped.size() == 3 and absf(angle_difference(float(stepped[2]), 0.0)) < 0.01, "facing the bench")
+	check(items._peer_pos[1].distance_to(front) < 0.05 and queue.size() == 1 and items.inventory_of(1).count_of(stone) == 0, "the server has them there and the craft is queued")
+
+	# Someone already stands in front: to the side.
+	items._craft_queues[items._peer_key[1]]["entries"].clear()
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	items.report_position(2, front)
+	items.inventory_of(1).add(stone, 3)
+	stepped.clear()
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	check(stepped.size() == 3 and (stepped[1] as Vector3).distance_to(front) > 1.0 and (stepped[1] as Vector3).distance_to(Vector3(8.0, 10.0, 0.0)) < 2.5, "another player in the spot: beside the bench instead (%s)" % str(stepped[1] if stepped.size() == 3 else "none"))
+
+	# Not enough stone: no move.
+	items._craft_queues[items._peer_key[1]]["entries"].clear()
+	items.inventory_of(1).remove(stone, items.inventory_of(1).count_of(stone))
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	stepped.clear()
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	check(stepped.is_empty() and items._peer_pos[1].distance_to(Vector3(0.0, 10.0, 0.0)) < 0.01, "without the stone nobody is moved")
+
+	# Beyond 12 m: no move, the old answer.
+	items.inventory_of(1).add(stone, 3)
+	items.report_position(1, Vector3(-10.0, 10.0, 0.0))
+	said.clear()
+	stepped.clear()
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	check(stepped.is_empty() and said.size() > 0 and str(said[said.size() - 1]).begins_with("That needs a"), "18 m away: no move, it says it needs the bench nearby")

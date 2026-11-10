@@ -852,6 +852,7 @@ func _ready() -> void:
 		if display.damage_numbers:
 			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
+	net.step_to_received.connect(_on_step_to)
 	net.water_received.connect(_on_water_received)
 	net.cave_streams_received.connect(_on_cave_streams)
 	net.cave_dressing_received.connect(_on_cave_dressing)
@@ -2163,6 +2164,17 @@ func _on_start_at(spot: Vector3) -> void:
 	_telemetry.event("JOIN: resuming at %s (from %s)" % [str(spot.round()), str(body.global_position.round())])
 	body.global_position = spot + Vector3(0.0, 1.0, 0.0)
 	body.velocity = Vector3.ZERO
+
+
+# The server moved this player to a station to craft there (protocol 103, server_items._step_to_station): stand there facing it.
+func _on_step_to(spot: Vector3, yaw: float) -> void:
+	if body == null:
+		return
+
+	_telemetry.event("CRAFT: stepped to the station at %s (from %s)" % [str(spot.round()), str(body.global_position.round())])
+	body.global_position = spot + Vector3(0.0, 1.0, 0.0)
+	body.velocity = Vector3.ZERO
+	body.rotation.y = yaw
 
 
 # Tells the server this quit is on purpose, then lets the packet go out before the game closes.

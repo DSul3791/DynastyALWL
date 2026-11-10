@@ -1,0 +1,7 @@
+{
+	"_note": "Dave 10 Nov 2026: crafting a station recipe from your own inventory while the station is within the crafting reach (CraftStock.CRAFT_REACH_M, 12 m) but not beside you moves you to it, and the craft goes on there. You stand directly in front of it (the model's front, its +Z turned by its yaw), facing it, front_m from its centre; at a fire (round) on the side you came from, fire_m out. If another player stands within clear_m of that spot, you go to one side of it (side_m out, left then right), then behind. The server decides the spot (server_items._step_to_station) and tells the client (rpc step_to, protocol 103).",
+	"front_m": 1.3,
+	"fire_m": 1.5,
+	"side_m": 1.4,
+	"clear_m": 0.9
+}

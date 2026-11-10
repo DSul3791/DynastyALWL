@@ -145,6 +145,29 @@ static func style_recipe_row(entry: Button, makeable: bool, chosen: bool, unit: 
 	entry.add_theme_color_override("font_pressed_color", DynastyTheme.GOLD)
 
 
+# The golden line round a recipe row that can be made now (Dave 10 Nov 2026: by hand, or at a working station within 12 m), the same colour, line and
+# glow as a pack well at a station (data/ui/station_highlight.json, item_slot.gd).
+static func glow_recipe_row(entry: Button, cfg: Dictionary, unit: float) -> void:
+	var colour: Color = Color(str(cfg.get("colour", "#ffc83a")))
+	var line: int = maxi(roundi(float(cfg.get("line_px", 2.0)) * unit), 1)
+
+	for look in ["normal", "hover", "pressed", "focus"]:
+		var box: StyleBoxFlat = entry.get_theme_stylebox(look) as StyleBoxFlat
+
+		if box == null:
+			continue
+
+		box = box.duplicate() as StyleBoxFlat
+		box.border_color = colour
+		box.border_width_left = maxi(box.border_width_left, line)
+		box.border_width_top = line
+		box.border_width_right = line
+		box.border_width_bottom = line
+		box.shadow_color = Color(colour, float(cfg.get("glow_alpha", 0.5)))
+		box.shadow_size = roundi(float(cfg.get("glow_px", 6.0)) * unit * 0.5)
+		entry.add_theme_stylebox_override(look, box)
+
+
 # A tiny chest drawn beside an ingredient that comes from a chest in reach (like Dragonwilds' linked marker).
 static func chest_mark(px: int) -> Control:
 	var mark: Control = Control.new()
