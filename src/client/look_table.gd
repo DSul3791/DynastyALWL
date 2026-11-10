@@ -40,6 +40,7 @@ const LOOKS := {
 	"oven": {"builder": "oven", "args": []},
 	"snare_trap": {"builder": "snare_trap", "args": []},
 	"thatch_floor": {"builder": "thatch_floor", "args": []},
+	"wood_foundation": {"builder": "wood_foundation", "args": []},
 	"thatch_roof": {"builder": "thatch_roof", "args": []},
 	"thatch_doorway": {"builder": "thatch_doorway", "args": []},
 	"stairs": {"builder": "stairs", "args": []},

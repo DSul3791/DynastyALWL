@@ -13,6 +13,8 @@
 	"speed_max": 45.0,
 	"range_m": 80.0,
 	"pace_ms": 700,
+	"stuck_s": 300.0,
+	"stuck_note": "An arrow that hits a tree trunk sticks in it at the hit point (Dave 10 Nov 2026: \"there should be an arrow in that tree until I collect it or it fades out in 5 minutes\"): it stays stuck_s seconds unless picked up. It breaks at the arrow's break_chance, as one landing on the ground.",
 	"step_s": 0.05,
 	"hit_radius_m": 0.6,
 	"chest_m": 0.5,
@@ -28,7 +30,7 @@
 	"say_no_ammo": "You have no arrows.",
 	"say_weak": "You loose it too soon; the arrow barely flies.",
 	"say_lost": "The arrow is gone.",
-	"aim_note": "Dave 10 Nov 2026 (the bow): hold the right mouse button to raise the bow and draw (draw time as above), left click looses, letting right go lowers it with no shot. Every curve is [[bow skill level 0..100 (the hunting skill's working level), value], ...], straight lines between. steady_s: how long the aim stays still once drawn; then the aim sways by wobble_deg_per_s more each second up to wobble_max_deg, at wobble_hz. pull: the share of the way the reticle is drawn to a vital zone (zones: metres forward of the animal's middle and up from its feet) within pull_cone_deg of the aim; no skill, no pull. spread_deg: the server turns each shot by up to this much at random (luck narrows it). damage_mult: the arrow's damage times this. zoom_fov_share: the view narrows to this share of the field of view while drawn. reticle_px: the cross's arm length.",
+	"aim_note": "Dave 10 Nov 2026 (the bow): hold the right mouse button to raise the bow and draw (draw time as above), left click looses, letting right go lowers it with no shot. Every curve is [[bow skill level 0..100 (the hunting skill's working level), value], ...], straight lines between. steady_s: how long the aim stays still once drawn; then the aim sways by wobble_deg_per_s more each second up to wobble_max_deg, at wobble_hz. The sway turns the whole view and the reticle stays in the middle of the screen (Dave 10 Nov 2026: \"the whole screen should move like that but much less\"), so it is a third of what the reticle moved before (wobble_max_deg 4 to 1.2, wobble_deg_per_s 1.5/0.8/0.3 to 0.5/0.27/0.1). pull: the share of the way the view is drawn to a vital zone (zones: metres forward of the animal's middle and up from its feet) within pull_cone_deg of the aim; no skill, no pull. spread_deg: the server turns each shot by up to this much at random (luck narrows it). damage_mult: the arrow's damage times this. zoom_fov_share: the view narrows to this share of the field of view while drawn. reticle_px: the cross's arm length.",
 	"aim": {
 		"steady_s": [
 			[
@@ -47,18 +49,18 @@
 		"wobble_deg_per_s": [
 			[
 				0,
-				1.5
+				0.5
 			],
 			[
 				50,
-				0.8
+				0.27
 			],
 			[
 				100,
-				0.3
+				0.1
 			]
 		],
-		"wobble_max_deg": 4.0,
+		"wobble_max_deg": 1.2,
 		"wobble_hz": 0.6,
 		"pull": [
 			[
