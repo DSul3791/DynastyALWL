@@ -76,3 +76,21 @@ Must never show: smoke upwind, or a bright grey plume glowing in the dark.
 - **Pre-dawn drainage downhill** (Jamie: the flat layer drifts down the valley at 1 to 3 m/s) needs the slope at the fire. It is left for a later step.
 - **Smoke that "follows you"**: not wanted. It reads as a bug in a game.
 - **Wet-wood white smoke, and embers that glow for hours after the flames:** these wait on Dave's calls (Jamie's page).
+
+
+## Dave 10 Nov 2026: drifting, not hovering
+
+Dave, in a playtest: "I assume that is suppose to look like smoke but its hovering around like flies. it should be drifting away with the breeze".
+
+**Cause.** The campfire puffs had turbulence turned on. Godot's turbulence turns each particle's velocity toward a noise direction (influence 0.1 a frame) and keeps only its speed. Within a second every puff had lost its rise and its wind and was wandering at plume speed. Over a 16 s life that scattered puffs at head height up to about 10 m round the fire, which explains the puffs by the stumps. The forge smoke had the same setting. The puff growth curve was also clamped at 1.0, its default top, so puffs only doubled in size instead of growing four times.
+
+**Now** (every number is in `data/look/fire_smoke.json`):
+- No turbulence or damping on the smoke. The sparks keep theirs, since they are short-lived and meant to waver.
+- Each puff leaves the flames with the world wind (speed and heading from `set_fire_air`) and the tier's rise.
+- The rise slows steadily to `rise_end_share` (0.4) of its start by the end of `life_s` (20 s): buoyancy fading with height. In a 2 m/s breeze that is 40 m of drift.
+- The puffs grow `grow_to` (4) times and fade out.
+- In calm air the plume goes straight up at `calm_rise_m_s` (0.8 m/s) at least.
+- On a still clear night it rises at `night_rise_m_s` (1.2 m/s) and stops at about `night_top_m` (12 m) by the end of its 20 s life.
+- The visibility box grew to 80 m to hold the longer drift.
+
+`test_fire_smoke.gd` checks each of these.
