@@ -666,7 +666,7 @@
 		},
 		"sewing_needle": {
 			"number": 49,
-			"name": "Sewing needle",
+			"name": "Bone - Needle",
 			"description": "A needle carved from bone. For sewing hide and cloth.",
 			"kind": "tool",
 			"tool_class": "needle",
@@ -680,10 +680,7 @@
 				]
 			],
 			"value": 8,
-			"future": true,
-			"look_alikes": [],
-			"retired": true,
-			"note": "Cut (Dave 25 Oct trim answer B: no sewing needle); number kept, never reused."
+			"look_alikes": []
 		},
 		"backpack": {
 			"number": 50,
@@ -875,7 +872,10 @@
 			"stack": 1,
 			"unstackable": true,
 			"value": 18,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"future": true,
+			"note": "Item system 10 Nov 2026: merged into Hide - Trousers (hide_trousers). Kept so old saves load; a load-time migration turns worn and stored leggings into trousers (Steve)."
 		},
 		"raw_meat": {
 			"number": 68,
@@ -3780,7 +3780,7 @@
 		"hide_trousers": {
 			"number": 306,
 			"name": "Hide - Trousers",
-			"description": "Hide sewn into trousers. Better than leggings.",
+			"description": "Hide sewn into trousers. Warm, and tough on rough ground.",
 			"kind": "clothing",
 			"slot": "legs",
 			"warmth": 0.18,
@@ -4455,7 +4455,10 @@
 			"tip": "wood",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"future": true,
+			"retired": true,
+			"note": "Item system 10 Nov 2026: fibre-fletched arrows are now made as Wooden - Arrow (recipe fibre_arrow); kept so arrows already made still shoot. Number kept, never reused."
 		},
 		"seaweed": {
 			"number": 355,
