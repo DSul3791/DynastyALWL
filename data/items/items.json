@@ -228,7 +228,7 @@
 		},
 		"seed_bundle": {
 			"number": 9,
-			"name": "Seeds",
+			"name": "Wild grain",
 			"description": "A bundle of seeds. Eat them, or plant them.",
 			"kind": "material",
 			"stack": 40,
@@ -367,7 +367,7 @@
 		},
 		"lumber": {
 			"number": 27,
-			"name": "Planks",
+			"name": "Plank",
 			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
 			"kind": "material",
 			"stack": 20,
@@ -527,7 +527,7 @@
 		},
 		"clay_pot": {
 			"number": 40,
-			"name": "Clay pot",
+			"name": "Clay - Pot",
 			"description": "A fired pot of clay. Holds three litres of water.",
 			"kind": "container",
 			"stack": 1,
@@ -687,7 +687,7 @@
 		},
 		"backpack": {
 			"number": 50,
-			"name": "Backpack",
+			"name": "Hide - Backpack",
 			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
 			"kind": "gear",
 			"stack": 1,
@@ -783,7 +783,7 @@
 		},
 		"grass_skirt": {
 			"number": 60,
-			"name": "Grass - Skirt",
+			"name": "Fibre - Skirt",
 			"description": "Woven grass hung from the waist. Barely warm, and it rots quickly.",
 			"kind": "clothing",
 			"slot": "legs",
@@ -795,7 +795,7 @@
 		},
 		"grass_cloak": {
 			"number": 61,
-			"name": "Grass - Cloak",
+			"name": "Fibre - Cloak",
 			"description": "Woven grass over the shoulders. Keeps a little wind off.",
 			"kind": "clothing",
 			"slot": "body",
@@ -936,7 +936,7 @@
 		},
 		"workbench": {
 			"number": 74,
-			"name": "Workbench",
+			"name": "Wooden - Workbench",
 			"description": "A camp bench. It counts as a workbench: stand near it to make the things that need one.",
 			"kind": "structure",
 			"stack": 1,
@@ -1087,7 +1087,7 @@
 		"vice_kit": {
 			"number": 83,
 			"retired": true,
-			"name": "Wooden vice",
+			"name": "Vice",
 			"description": "Two jaws of hardwood that hold work still. Set it beside a camp bench.",
 			"kind": "placeable",
 			"stack": 1,
@@ -1098,7 +1098,7 @@
 		},
 		"vice": {
 			"number": 84,
-			"name": "Wooden vice",
+			"name": "Vice",
 			"description": "A wooden vice. Beside a camp bench it raises the bench a level.",
 			"kind": "structure",
 			"stack": 1,
@@ -1138,7 +1138,7 @@
 		},
 		"stone_forge": {
 			"number": 88,
-			"name": "Stone forge",
+			"name": "Stone - Forge",
 			"description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.",
 			"kind": "structure",
 			"stack": 1,
@@ -1158,7 +1158,7 @@
 		},
 		"blacksmithy": {
 			"number": 90,
-			"name": "Blacksmith's forge",
+			"name": "Brick - Forge",
 			"description": "A dressed stone forge with a stepped hood and iron straps.",
 			"kind": "structure",
 			"stack": 1,
@@ -1177,7 +1177,7 @@
 		"large_forge_kit": {
 			"number": 92,
 			"future": true,
-			"name": "Large Forge",
+			"name": "Large forge",
 			"description": "A big arched forge with a riveted iron frame, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
@@ -1188,7 +1188,7 @@
 		"large_forge": {
 			"number": 93,
 			"future": true,
-			"name": "Large Forge",
+			"name": "Large forge",
 			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
 			"kind": "structure",
 			"stack": 1,
@@ -1198,7 +1198,7 @@
 		"master_forge_kit": {
 			"number": 94,
 			"future": true,
-			"name": "Master Forge",
+			"name": "Master forge",
 			"description": "An ornate black iron and gold forge set with red gems, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
@@ -1209,7 +1209,7 @@
 		"master_forge": {
 			"number": 95,
 			"future": true,
-			"name": "Master Forge",
+			"name": "Master forge",
 			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
 			"kind": "structure",
 			"stack": 1,
@@ -1218,7 +1218,7 @@
 		},
 		"log_oak": {
 			"number": 100,
-			"name": "Oak logs",
+			"name": "Oak log",
 			"description": "A full-size oak log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1242,7 +1242,7 @@
 		},
 		"beam_oak": {
 			"number": 102,
-			"name": "Oak beams",
+			"name": "Oak beam",
 			"description": "Heavy squared oak beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1253,7 +1253,7 @@
 		},
 		"log_beech": {
 			"number": 103,
-			"name": "Beech logs",
+			"name": "Beech log",
 			"description": "A full-size beech log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1277,7 +1277,7 @@
 		},
 		"beam_beech": {
 			"number": 105,
-			"name": "Beech beams",
+			"name": "Beech beam",
 			"description": "Heavy squared beech beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1288,7 +1288,7 @@
 		},
 		"log_birch": {
 			"number": 106,
-			"name": "Birch logs",
+			"name": "Birch log",
 			"description": "A full-size birch log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1312,7 +1312,7 @@
 		},
 		"beam_birch": {
 			"number": 108,
-			"name": "Birch beams",
+			"name": "Birch beam",
 			"description": "Heavy squared birch beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1323,7 +1323,7 @@
 		},
 		"log_scots_pine": {
 			"number": 109,
-			"name": "Scots pine logs",
+			"name": "Scots pine log",
 			"description": "A full-size scots pine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1347,7 +1347,7 @@
 		},
 		"beam_scots_pine": {
 			"number": 111,
-			"name": "Scots pine beams",
+			"name": "Scots pine beam",
 			"description": "Heavy squared scots pine beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1358,7 +1358,7 @@
 		},
 		"log_spruce": {
 			"number": 112,
-			"name": "Spruce logs",
+			"name": "Spruce log",
 			"description": "A full-size spruce log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1382,7 +1382,7 @@
 		},
 		"beam_spruce": {
 			"number": 114,
-			"name": "Spruce beams",
+			"name": "Spruce beam",
 			"description": "Heavy squared spruce beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1393,7 +1393,7 @@
 		},
 		"log_alder": {
 			"number": 115,
-			"name": "Alder logs",
+			"name": "Alder log",
 			"description": "A full-size alder log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1419,7 +1419,7 @@
 		},
 		"beam_alder": {
 			"number": 117,
-			"name": "Alder beams",
+			"name": "Alder beam",
 			"description": "Heavy squared alder beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1431,7 +1431,7 @@
 		},
 		"log_willow": {
 			"number": 118,
-			"name": "Willow logs",
+			"name": "Willow log",
 			"description": "A full-size willow log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1457,7 +1457,7 @@
 		},
 		"beam_willow": {
 			"number": 120,
-			"name": "Willow beams",
+			"name": "Willow beam",
 			"description": "Heavy squared willow beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1469,7 +1469,7 @@
 		},
 		"log_coconut_palm": {
 			"number": 121,
-			"name": "Coconut palm logs",
+			"name": "Coconut palm log",
 			"description": "A full-size coconut palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1495,7 +1495,7 @@
 		},
 		"beam_coconut_palm": {
 			"number": 123,
-			"name": "Coconut palm beams",
+			"name": "Coconut palm beam",
 			"description": "Heavy squared coconut palm beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1507,7 +1507,7 @@
 		},
 		"log_tropical_hardwood": {
 			"number": 124,
-			"name": "Tropical hardwood logs",
+			"name": "Tropical hardwood log",
 			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1531,7 +1531,7 @@
 		},
 		"beam_tropical_hardwood": {
 			"number": 126,
-			"name": "Tropical hardwood beams",
+			"name": "Tropical hardwood beam",
 			"description": "Heavy squared tropical hardwood beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1542,7 +1542,7 @@
 		},
 		"log_acacia": {
 			"number": 127,
-			"name": "Acacia logs",
+			"name": "Acacia log",
 			"description": "A full-size acacia log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1568,7 +1568,7 @@
 		},
 		"beam_acacia": {
 			"number": 129,
-			"name": "Acacia beams",
+			"name": "Acacia beam",
 			"description": "Heavy squared acacia beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1580,7 +1580,7 @@
 		},
 		"log_mangrove": {
 			"number": 130,
-			"name": "Mangrove logs",
+			"name": "Mangrove log",
 			"description": "A full-size mangrove log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1606,7 +1606,7 @@
 		},
 		"beam_mangrove": {
 			"number": 132,
-			"name": "Mangrove beams",
+			"name": "Mangrove beam",
 			"description": "Heavy squared mangrove beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1618,7 +1618,7 @@
 		},
 		"log_rowan": {
 			"number": 133,
-			"name": "Rowan logs",
+			"name": "Rowan log",
 			"description": "A full-size rowan log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1644,7 +1644,7 @@
 		},
 		"beam_rowan": {
 			"number": 135,
-			"name": "Rowan beams",
+			"name": "Rowan beam",
 			"description": "Heavy squared rowan beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1656,7 +1656,7 @@
 		},
 		"log_wild_apple": {
 			"number": 136,
-			"name": "Crab apple logs",
+			"name": "Crab apple log",
 			"description": "A full-size crab apple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1682,7 +1682,7 @@
 		},
 		"beam_wild_apple": {
 			"number": 138,
-			"name": "Crab apple beams",
+			"name": "Crab apple beam",
 			"description": "Heavy squared crab apple beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1694,7 +1694,7 @@
 		},
 		"log_wild_pear": {
 			"number": 139,
-			"name": "Wild pear logs",
+			"name": "Wild pear log",
 			"description": "A full-size wild pear log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1720,7 +1720,7 @@
 		},
 		"beam_wild_pear": {
 			"number": 141,
-			"name": "Wild pear beams",
+			"name": "Wild pear beam",
 			"description": "Heavy squared wild pear beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1732,7 +1732,7 @@
 		},
 		"log_wild_cherry": {
 			"number": 142,
-			"name": "Wild cherry logs",
+			"name": "Wild cherry log",
 			"description": "A full-size wild cherry log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1758,7 +1758,7 @@
 		},
 		"beam_wild_cherry": {
 			"number": 144,
-			"name": "Wild cherry beams",
+			"name": "Wild cherry beam",
 			"description": "Heavy squared wild cherry beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1770,7 +1770,7 @@
 		},
 		"log_sweet_chestnut": {
 			"number": 145,
-			"name": "Sweet chestnut logs",
+			"name": "Sweet chestnut log",
 			"description": "A full-size sweet chestnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1796,7 +1796,7 @@
 		},
 		"beam_sweet_chestnut": {
 			"number": 147,
-			"name": "Sweet chestnut beams",
+			"name": "Sweet chestnut beam",
 			"description": "Heavy squared sweet chestnut beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1808,7 +1808,7 @@
 		},
 		"log_walnut": {
 			"number": 148,
-			"name": "Walnut logs",
+			"name": "Walnut log",
 			"description": "A full-size walnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1832,7 +1832,7 @@
 		},
 		"beam_walnut": {
 			"number": 150,
-			"name": "Walnut beams",
+			"name": "Walnut beam",
 			"description": "Heavy squared walnut beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1843,7 +1843,7 @@
 		},
 		"log_date_palm": {
 			"number": 151,
-			"name": "Date palm logs",
+			"name": "Date palm log",
 			"description": "A full-size date palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1869,7 +1869,7 @@
 		},
 		"beam_date_palm": {
 			"number": 153,
-			"name": "Date palm beams",
+			"name": "Date palm beam",
 			"description": "Heavy squared date palm beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1881,7 +1881,7 @@
 		},
 		"log_mirrorbark": {
 			"number": 154,
-			"name": "Mirrorbark logs",
+			"name": "Mirrorbark log",
 			"description": "A full-size mirrorbark log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1907,7 +1907,7 @@
 		},
 		"beam_mirrorbark": {
 			"number": 156,
-			"name": "Mirrorbark beams",
+			"name": "Mirrorbark beam",
 			"description": "Heavy squared mirrorbark beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1919,7 +1919,7 @@
 		},
 		"log_wardpine": {
 			"number": 157,
-			"name": "Wardpine logs",
+			"name": "Wardpine log",
 			"description": "A full-size wardpine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1945,7 +1945,7 @@
 		},
 		"beam_wardpine": {
 			"number": 159,
-			"name": "Wardpine beams",
+			"name": "Wardpine beam",
 			"description": "Heavy squared wardpine beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1957,7 +1957,7 @@
 		},
 		"log_hearthwood": {
 			"number": 160,
-			"name": "Hearthwood logs",
+			"name": "Hearthwood log",
 			"description": "A full-size hearthwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1983,7 +1983,7 @@
 		},
 		"beam_hearthwood": {
 			"number": 162,
-			"name": "Hearthwood beams",
+			"name": "Hearthwood beam",
 			"description": "Heavy squared hearthwood beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -1995,7 +1995,7 @@
 		},
 		"log_everember": {
 			"number": 163,
-			"name": "Everember logs",
+			"name": "Everember log",
 			"description": "A full-size everember log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -2021,7 +2021,7 @@
 		},
 		"beam_everember": {
 			"number": 165,
-			"name": "Everember beams",
+			"name": "Everember beam",
 			"description": "Heavy squared everember beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -2033,7 +2033,7 @@
 		},
 		"log_witness_tree": {
 			"number": 166,
-			"name": "Witness tree logs",
+			"name": "Witness tree log",
 			"description": "A full-size witness tree log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -2059,7 +2059,7 @@
 		},
 		"beam_witness_tree": {
 			"number": 168,
-			"name": "Witness tree beams",
+			"name": "Witness tree beam",
 			"description": "Heavy squared witness tree beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -2071,7 +2071,7 @@
 		},
 		"log_balsam_fir": {
 			"number": 169,
-			"name": "Balsam fir logs",
+			"name": "Balsam fir log",
 			"description": "A full-size balsam fir log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -2097,7 +2097,7 @@
 		},
 		"beam_balsam_fir": {
 			"number": 171,
-			"name": "Balsam fir beams",
+			"name": "Balsam fir beam",
 			"description": "Heavy squared balsam fir beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -2109,7 +2109,7 @@
 		},
 		"log_maple": {
 			"number": 172,
-			"name": "Sugar maple logs",
+			"name": "Sugar maple log",
 			"description": "A full-size sugar maple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -2133,7 +2133,7 @@
 		},
 		"beam_maple": {
 			"number": 174,
-			"name": "Sugar maple beams",
+			"name": "Sugar maple beam",
 			"description": "Heavy squared sugar maple beams for building.",
 			"kind": "material",
 			"stack": 5,
@@ -2430,7 +2430,7 @@
 		"timber_prop_kit": {
 			"number": 204,
 			"retired": true,
-			"name": "Timber prop",
+			"name": "Wooden - Post",
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2440,7 +2440,7 @@
 		},
 		"timber_prop": {
 			"number": 205,
-			"name": "Timber prop",
+			"name": "Wooden - Post",
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"kind": "structure",
 			"stack": 1,
@@ -2452,7 +2452,7 @@
 		"timber_set_kit": {
 			"number": 206,
 			"retired": true,
-			"name": "Timber set",
+			"name": "Wooden - Beam",
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2462,7 +2462,7 @@
 		},
 		"timber_set": {
 			"number": 207,
-			"name": "Timber set",
+			"name": "Wooden - Beam",
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"kind": "structure",
 			"stack": 1,
@@ -2491,7 +2491,7 @@
 		},
 		"mortar": {
 			"number": 210,
-			"name": "Mortar",
+			"name": "Clay mortar",
 			"description": "A bucketful of sand and clay paste that binds stone blocks and bricks.",
 			"kind": "material",
 			"stack": 10,
@@ -3088,7 +3088,7 @@
 		"hand_saw": {
 			"number": 245,
 			"future": true,
-			"name": "Hand saw",
+			"name": "Iron - Saw",
 			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 planks by hand, slower than a mill.",
 			"kind": "tool",
 			"tool_class": "saw",
@@ -3137,7 +3137,7 @@
 		},
 		"rough_bed_kit": {
 			"number": 250,
-			"name": "Rough bed",
+			"name": "Thatch - Bed",
 			"description": "Sticks, branches and rough bedding lashed with twine. Set it under a roof and lie down to sleep.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3147,7 +3147,7 @@
 		},
 		"rough_bed": {
 			"number": 251,
-			"name": "Rough bed",
+			"name": "Thatch - Bed",
 			"description": "A low frame of sticks and branches with a heap of rough bedding, like a manger.",
 			"kind": "structure",
 			"stack": 1,
@@ -3314,7 +3314,7 @@
 		},
 		"quiver": {
 			"number": 272,
-			"name": "Quiver",
+			"name": "Hide - Quiver",
 			"description": "A hide tube worn on the back. Holds 40 arrows.",
 			"kind": "gear",
 			"slot": "back",
@@ -3327,7 +3327,7 @@
 		},
 		"oven": {
 			"number": 267,
-			"name": "Brick oven",
+			"name": "Oven",
 			"description": "A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides.",
 			"kind": "structure",
 			"stack": 1,
@@ -3544,7 +3544,7 @@
 		},
 		"hide_scraper": {
 			"number": 293,
-			"name": "Hide scraper",
+			"name": "Scraper",
 			"description": "A flint blade on a handle. Scrapes flesh and hair off a raw hide.",
 			"kind": "tool",
 			"tool_class": "scraper",
@@ -3660,7 +3660,7 @@
 		},
 		"sickle": {
 			"number": 298,
-			"name": "Sickle",
+			"name": "Stone - Sickle",
 			"description": "A curved flint blade on a short handle. Cuts grain and grass by the handful.",
 			"kind": "tool",
 			"tool_class": "sickle",
@@ -3685,7 +3685,7 @@
 		},
 		"scythe": {
 			"number": 299,
-			"name": "Scythe",
+			"name": "Iron - Scythe",
 			"description": "A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps.",
 			"kind": "tool",
 			"tool_class": "scythe",
@@ -3834,7 +3834,7 @@
 		},
 		"candle": {
 			"number": 311,
-			"name": "Candle",
+			"name": "Tallow - Candle",
 			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"kind": "tool",
 			"tool_class": "candle",
@@ -3891,7 +3891,7 @@
 		},
 		"plank_shield": {
 			"number": 314,
-			"name": "Plank - Shield",
+			"name": "Wooden - Shield",
 			"description": "Boards bound with hide. Sturdier than wicker.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -3956,7 +3956,7 @@
 		},
 		"bronze_shield": {
 			"number": 317,
-			"name": "Bronze - Kite shield",
+			"name": "Bronze - Shield",
 			"description": "A plank shield with a bronze rim and boss.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -4022,7 +4022,7 @@
 		},
 		"iron_shield": {
 			"number": 320,
-			"name": "Iron - Kite shield",
+			"name": "Iron - Shield",
 			"description": "Boards held by iron bands. Hard to break.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -4088,7 +4088,7 @@
 		},
 		"steel_shield": {
 			"number": 323,
-			"name": "Steel - Kite shield",
+			"name": "Steel - Shield",
 			"description": "A long steel-faced shield that covers shoulder to shin.",
 			"kind": "weapon",
 			"tool_class": "shield",
@@ -4147,7 +4147,7 @@
 		},
 		"gambeson": {
 			"number": 327,
-			"name": "Gambeson",
+			"name": "Fibre - Gambeson",
 			"description": "Quilted cloth padding. Cheap armour that soaks a blow.",
 			"kind": "clothing",
 			"slot": "body",
@@ -4172,7 +4172,7 @@
 		},
 		"mail_shirt": {
 			"number": 329,
-			"name": "Mail shirt",
+			"name": "Iron - Mail shirt",
 			"description": "Rings of iron riveted together. Heavy but sound.",
 			"kind": "clothing",
 			"slot": "body",
@@ -4198,7 +4198,7 @@
 		},
 		"plate_cuirass": {
 			"number": 331,
-			"name": "Plate cuirass",
+			"name": "Steel - Cuirass",
 			"description": "Shaped steel plates over a leather harness. The best body armour.",
 			"kind": "clothing",
 			"slot": "body",
@@ -4560,7 +4560,7 @@
 		},
 		"fibre_cloth": {
 			"number": 517,
-			"name": "Cloth",
+			"name": "Fibre cloth",
 			"description": "Plant fibre woven flat on a frame. Covers a bed, and wraps a canopy.",
 			"kind": "material",
 			"stack": 20,
@@ -5830,7 +5830,7 @@
 		"log_seat_kit": {
 			"number": 487,
 			"retired": true,
-			"name": "Log seat",
+			"name": "Log - Seat",
 			"description": "A log set on end with the top flattened. Sit on it by the fire.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5851,7 +5851,7 @@
 		},
 		"log_seat": {
 			"number": 502,
-			"name": "Log seat",
+			"name": "Log - Seat",
 			"description": "A log seat. Sit on it by the fire.",
 			"kind": "structure",
 			"stack": 1,
@@ -5915,7 +5915,7 @@
 		},
 		"straw_bed": {
 			"number": 509,
-			"name": "Straw bed",
+			"name": "Straw - Bed",
 			"description": "A bed with a heaped straw tick.",
 			"kind": "structure",
 			"stack": 1,
@@ -5924,7 +5924,7 @@
 		},
 		"feather_bed": {
 			"number": 510,
-			"name": "Feather bed",
+			"name": "Feather - Bed",
 			"description": "A bed with a feather tick and a blanket.",
 			"kind": "structure",
 			"stack": 1,
@@ -5996,7 +5996,7 @@
 		},
 		"antler_mount": {
 			"number": 516,
-			"name": "Antler mount",
+			"name": "Antler - Mount",
 			"description": "Antlers mounted on a board.",
 			"kind": "structure",
 			"stack": 1,
@@ -6062,7 +6062,7 @@
 		"straw_bed_kit": {
 			"number": 493,
 			"retired": true,
-			"name": "Straw bed",
+			"name": "Straw - Bed",
 			"description": "A frame stuffed with clean straw. Softer than a rough bed.",
 			"kind": "placeable",
 			"stack": 1,
@@ -6073,7 +6073,7 @@
 		"feather_bed_kit": {
 			"number": 494,
 			"retired": true,
-			"name": "Feather bed",
+			"name": "Feather - Bed",
 			"description": "A rough bed topped with feathers and a wool blanket.",
 			"kind": "placeable",
 			"stack": 1,
@@ -6139,7 +6139,7 @@
 		"antler_mount_kit": {
 			"number": 500,
 			"retired": true,
-			"name": "Antler mount",
+			"name": "Antler - Mount",
 			"description": "A pair of antlers on a plaque. A hunter's trophy.",
 			"kind": "placeable",
 			"stack": 1,
@@ -6463,7 +6463,7 @@
 			},
 			"spyglass": {
 				"number": 557,
-				"name": "Spyglass",
+				"name": "Wooden - Spyglass",
 				"description": "A wooden tube with a crystal lens. Hold it and right-click to see three times closer.",
 				"kind": "tool",
 				"tool_class": "spyglass",

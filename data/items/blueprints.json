@@ -18,12 +18,12 @@
 		"brick_window": {"category": "Walls and doors", "number": 63, "name": "Brick - Window", "structure": "brick_window", "cost": [["brick", 12], ["mortar", 3]], "station": "", "hammer": 1, "known": true},
 		"doorway_section": {"category": "Walls and doors", "number": 5, "name": "Wooden - Doorway", "structure": "doorway_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "doorway_section_kit"},
 		"window_section": {"category": "Walls and doors", "number": 6, "name": "Wooden - Window", "structure": "window_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "window_section_kit"},
-		"timber_set": {"category": "Stairs, ladders and supports", "number": 7, "name": "Timber set", "structure": "timber_set", "cost": [["lumber", 4], ["twine", 1], ["stick", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_set_kit"},
+		"timber_set": {"category": "Stairs, ladders and supports", "number": 7, "name": "Wooden - Beam", "structure": "timber_set", "cost": [["lumber", 4], ["twine", 1], ["stick", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_set_kit"},
 		"ladder": {"category": "Stairs, ladders and supports", "number": 8, "name": "Ladder", "structure": "ladder", "cost": [["lumber", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "ladder_kit"},
 		"stone_forge": {
 			"category": "Workshops and stations",
 			"number": 9,
-			"name": "Stone forge",
+			"name": "Stone - Forge",
 			"structure": "stone_forge",
 			"cost": [
 				[
@@ -47,7 +47,7 @@
 		"blacksmithy": {
 			"category": "Workshops and stations",
 			"number": 10,
-			"name": "Blacksmith's forge",
+			"name": "Brick - Forge",
 			"structure": "blacksmithy",
 			"cost": [
 				[
@@ -128,7 +128,7 @@
 		"oven": {
 			"category": "Workshops and stations",
 			"number": 14,
-			"name": "Brick oven",
+			"name": "Oven",
 			"structure": "oven",
 			"cost": [["brick", 24], ["clay", 10], ["stone", 8]],
 			"near": "clay_hearth",
@@ -145,7 +145,7 @@
 		"brick_floor": {"category": "Roofs and ceilings", "number": 21, "name": "Brick - Ceiling", "structure": "brick_floor", "cost": [["brick", 20], ["mortar", 4]], "station": "", "hammer": 1, "known": true, "recipe": "brick_floor_kit"},
 		"brick_roof": {"category": "Roofs and ceilings", "number": 22, "name": "Brick - Roof", "structure": "brick_roof", "cost": [["brick", 16], ["lumber", 6]], "station": "", "hammer": 1, "known": true, "recipe": "brick_roof_kit"},
 		"fireplace": {"category": "Lights and decoration", "number": 23, "name": "Fireplace", "structure": "fireplace", "cost": [["brick", 24], ["mortar", 4], ["clay", 6]], "station": "", "hammer": 1, "known": true, "recipe": "fireplace_kit"},
-		"rough_bed": {"category": "Furniture", "number": 24, "name": "Rough bed", "structure": "rough_bed", "cost": [["thatch", 10], ["stick", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "retired": true},
+		"rough_bed": {"category": "Furniture", "number": 24, "name": "Thatch - Bed", "structure": "rough_bed", "cost": [["thatch", 10], ["stick", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "retired": true},
 		"lean_to": {"category": "Storage and shelter", "number": 25, "name": "Lean-to", "structure": "lean_to", "cost": [["stick", 20], ["leaves", 60], ["twine", 6]], "station": "", "hammer": 1, "known": true, "recipe": "lean_to_kit"},
 		"chest": {"category": "Storage and shelter", "number": 26, "name": "Wicker - Chest", "structure": "chest", "cost": [["stick", 10], ["twine", 4]], "station": "", "hammer": 1, "known": true, "recipe": "chest_kit"},
 		"plank_chest": {"category": "Storage and shelter", "number": 27, "name": "Wooden - Chest", "structure": "plank_chest", "cost": [["lumber", 8], ["twine", 2], ["hinges", 2]], "station": "", "hammer": 1, "known": true, "recipe": "plank_chest_kit"},
@@ -154,26 +154,26 @@
 		"thatch_wall": {"category": "Walls and doors", "number": 30, "name": "Thatch - Wall", "structure": "thatch_wall", "cost": [["twine", 3], ["thatch", 20], ["stick", 6]], "station": "", "hammer": 1, "known": true, "recipe": "thatch_wall_kit"},
 		"thatch_roof": {"category": "Roofs and ceilings", "number": 31, "name": "Thatch - Roof", "structure": "thatch_roof", "cost": [["twine", 6], ["thatch", 30], ["stick", 12]], "station": "", "hammer": 1, "known": true, "recipe": "thatch_roof_kit"},
 		"thatch_doorway": {"category": "Walls and doors", "number": 32, "name": "Thatch - Doorway", "structure": "thatch_doorway", "cost": [["twine", 6], ["thatch", 25], ["stick", 12]], "station": "", "hammer": 1, "known": true, "recipe": "thatch_doorway_kit"},
-		"workbench": {"category": "Workshops and stations", "number": 33, "name": "Workbench", "structure": "workbench", "cost": [["stick", 16], ["twine", 6], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "workbench_kit"},
+		"workbench": {"category": "Workshops and stations", "number": 33, "name": "Wooden - Workbench", "structure": "workbench", "cost": [["stick", 16], ["twine", 6], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "workbench_kit"},
 		"tool_rack": {"category": "Workshops and stations", "number": 34, "name": "Tool rack", "structure": "tool_rack", "cost": [["stick", 10], ["twine", 4]], "station": "", "hammer": 1, "known": true, "recipe": "tool_rack_kit"},
-		"timber_prop": {"category": "Stairs, ladders and supports", "number": 35, "name": "Timber prop", "structure": "timber_prop", "cost": [["log", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_prop_kit"},
+		"timber_prop": {"category": "Stairs, ladders and supports", "number": 35, "name": "Wooden - Post", "structure": "timber_prop", "cost": [["log", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_prop_kit"},
 		"stairs_wood": {"category": "Stairs, ladders and supports", "number": 36, "name": "Wooden - Stairs", "structure": "stairs_wood", "cost": [["lumber", 8], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "stairs_wood_kit"},
 		"stone_floor": {"category": "Roofs and ceilings", "number": 37, "name": "Stone - Ceiling", "structure": "stone_floor", "cost": [["cobblestone", 16], ["mortar", 4]], "station": "", "hammer": 1, "known": true, "recipe": "stone_floor_kit"},
 		"stone_roof": {"category": "Roofs and ceilings", "number": 38, "name": "Stone - Roof", "structure": "stone_roof", "cost": [["stone_shingle", 20], ["lumber", 6]], "station": "", "hammer": 1, "known": true, "recipe": "stone_roof_kit"},
-		"log_seat": {"category": "Furniture", "number": 39, "name": "Log seat", "structure": "log_seat", "cost": [["log", 1]], "station": "", "hammer": 1, "known": true, "recipe": "log_seat_kit"},
+		"log_seat": {"category": "Furniture", "number": 39, "name": "Log - Seat", "structure": "log_seat", "cost": [["log", 1]], "station": "", "hammer": 1, "known": true, "recipe": "log_seat_kit"},
 		"stool": {"category": "Furniture", "number": 40, "name": "Stool", "structure": "stool", "cost": [["stick", 6], ["twine", 1], ["wooden_pin", 2]], "station": "", "hammer": 1, "known": true, "recipe": "stool_kit"},
 		"bench": {"category": "Furniture", "number": 41, "name": "Wooden - Bench", "structure": "bench", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "bench_kit"},
 		"chair": {"category": "Furniture", "number": 42, "name": "Wooden - Chair", "structure": "chair", "cost": [["lumber", 4], ["hide", 1], ["wooden_pin", 4]], "station": "", "hammer": 1, "known": true, "recipe": "chair_kit"},
 		"table": {"category": "Furniture", "number": 43, "name": "Wooden - Table", "structure": "table", "cost": [["lumber", 6], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "table_kit"},
 		"hide_rug": {"category": "Furniture", "number": 44, "name": "Hide - Rug", "structure": "hide_rug", "cost": [["hide", 3], ["sinew", 1]], "station": "", "hammer": 1, "known": true, "recipe": "hide_rug_kit"},
 		"wool_rug": {"category": "Furniture", "number": 45, "name": "Wool - Rug", "structure": "wool_rug", "cost": [["wool_cloth", 2], ["twine", 1]], "station": "", "hammer": 1, "known": false, "recipe": "wool_rug_kit", "locked": true},
-		"straw_bed": {"category": "Furniture", "number": 46, "name": "Straw bed", "structure": "straw_bed", "cost": [["straw", 12], ["stick", 6], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "straw_bed_kit"},
-		"feather_bed": {"category": "Furniture", "number": 47, "name": "Feather bed", "structure": "feather_bed", "cost": [["thatch", 10], ["feather", 20], ["down", 10], ["fibre_cloth", 2]], "station": "", "hammer": 1, "known": true, "recipe": "feather_bed_kit"},
+		"straw_bed": {"category": "Furniture", "number": 46, "name": "Straw - Bed", "structure": "straw_bed", "cost": [["straw", 12], ["stick", 6], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "straw_bed_kit"},
+		"feather_bed": {"category": "Furniture", "number": 47, "name": "Feather - Bed", "structure": "feather_bed", "cost": [["thatch", 10], ["feather", 20], ["down", 10], ["fibre_cloth", 2]], "station": "", "hammer": 1, "known": true, "recipe": "feather_bed_kit"},
 		"canopy_bed": {"category": "Furniture", "number": 48, "name": "Canopy bed", "structure": "canopy_bed", "cost": [["feather", 30], ["lumber", 8], ["fibre_cloth", 4]], "station": "", "hammer": 1, "known": true, "recipe": "canopy_bed_kit"},
 		"wall_torch": {"category": "Lights and decoration", "number": 49, "name": "Wall torch", "structure": "wall_torch", "cost": [["stick", 2], ["tallow", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_torch_kit"},
 		"chandelier": {"category": "Lights and decoration", "number": 50, "name": "Chandelier", "structure": "chandelier", "cost": [["lumber", 2], ["twine", 2], ["candle", 6]], "station": "", "hammer": 1, "known": true, "recipe": "chandelier_kit"},
 		"flower_pot": {"category": "Lights and decoration", "number": 51, "name": "Flower pot", "structure": "flower_pot", "cost": [["clay", 2], ["soil", 1]], "station": "", "hammer": 1, "known": true, "recipe": "flower_pot_kit"},
-		"antler_mount": {"category": "Lights and decoration", "number": 52, "name": "Antler mount", "structure": "antler_mount", "cost": [["antler", 2], ["lumber", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "antler_mount_kit"},
-		"vice": {"category": "Workshops and stations", "number": 53, "name": "Wooden vice", "structure": "vice", "cost": [["stick", 8], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "vice_kit"}
+		"antler_mount": {"category": "Lights and decoration", "number": 52, "name": "Antler - Mount", "structure": "antler_mount", "cost": [["antler", 2], ["lumber", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "antler_mount_kit"},
+		"vice": {"category": "Workshops and stations", "number": 53, "name": "Vice", "structure": "vice", "cost": [["stick", 8], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "vice_kit"}
 	}
 }
