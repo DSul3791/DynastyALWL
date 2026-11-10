@@ -4887,8 +4887,7 @@
 				"Used in Bronze ingot",
 				"Used in Copper - Pot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tin_ingot": {
 			"name": "Tin ingot",
@@ -4900,15 +4899,14 @@
 			"used_for": [
 				"Used in Bronze ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bronze_ingot": {
 			"name": "Bronze ingot",
 			"kind": "material",
 			"description": "Copper and tin melted together. Harder than copper.",
 			"how_to_get": [
-				"Craft at a forge: 1 Copper ingot, 1 Tin ingot"
+				"Craft at a forge: 3 Copper ingot, 1 Tin ingot"
 			],
 			"used_for": [
 				"Used in Bronze - Helm",
@@ -4918,8 +4916,7 @@
 				"Used in Bronze - Chisel",
 				"Used in Bronze - Scale shirt"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"flour": {
 			"name": "Flour",
@@ -5061,23 +5058,25 @@
 			"name": "Copper ore",
 			"kind": "material",
 			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a copper body with any pick"
+			],
 			"used_for": [
 				"Used in Copper ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tin_ore": {
 			"name": "Tin ore",
 			"kind": "material",
 			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a tin body with any pick"
+			],
 			"used_for": [
 				"Used in Tin ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_ore": {
 			"name": "Iron ore",
@@ -6870,7 +6869,7 @@
 				"Craft: 3 Bronze ingot, 2 Stick at a forge"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_axe": {
 			"name": "Bronze - Axe",
@@ -6890,7 +6889,7 @@
 				"Craft: 2 Bronze ingot, 1 Stick at a forge"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_knife": {
 			"name": "Bronze - Knife",
