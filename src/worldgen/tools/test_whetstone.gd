@@ -84,12 +84,13 @@ func _init() -> void:
 	check(inv.wear[slot] == 0 and inv.count_of(stone_n) == 0, "the real repair takes it from there")
 
 	# A tool with no edge is not honed; a worn-out whetstone hones nothing.
-	var axe: int = items.table.number_of("stone_axe")
-	items.action(1, Net.ACT_ADMIN_GIVE, axe, 0, 1, Vector3.ZERO)
-	var axe_slot: int = inv.numbers.find(axe)
-	inv.wear[axe_slot] = 800
-	items.action(1, Net.ACT_REPAIR, axe_slot, 0, 0, Vector3.ZERO)
-	check(inv.wear[axe_slot] == 800, "an axe not marked edged is not honed (and has no stick and twine here)")
+	var spade: int = items.table.number_of("wooden_spade")
+	check(not bool(items.table.entry("wooden_spade").get("edge", false)), "the wooden spade has no edge")
+	items.action(1, Net.ACT_ADMIN_GIVE, spade, 0, 1, Vector3.ZERO)
+	var spade_slot: int = inv.numbers.find(spade)
+	inv.wear[spade_slot] = 1800
+	items.action(1, Net.ACT_REPAIR, spade_slot, 0, 0, Vector3.ZERO)
+	check(inv.wear[spade_slot] == 1800, "a tool with no edge is not honed (and has no stick here for its repair)")
 	inv.wear[slot] = worn
 	inv.wear[whet_slot] = int(items.table.entry("whetstone").get("durability", 40))
 	items.action(1, Net.ACT_REPAIR, slot, 0, 0, Vector3.ZERO)
