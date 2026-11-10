@@ -236,18 +236,18 @@ func loaded_checks() -> void:
 # into it. there should be an arrow in that tree until I collect it or it fades out in 5 minutes"); the sway turns the whole view (BowAim.turn_of).
 func tree_checks() -> void:
 	# The trunk test: a level flight 1.5 m up meets a 0.3 m trunk 8 m ahead at its bark; passing beside it, over its top or after the segment misses.
-	var root: Vector3 = Vector3(0.0, 10.0, -8.0)
-	var t: float = BowAim.segment_trunk(Vector3(0.0, 11.5, 0.0), Vector3(0.0, 11.5, -10.0), root, 0.3, 12.0)
+	var trunk_foot: Vector3 = Vector3(0.0, 10.0, -8.0)
+	var t: float = BowAim.segment_trunk(Vector3(0.0, 11.5, 0.0), Vector3(0.0, 11.5, -10.0), trunk_foot, 0.3, 12.0)
 	check(absf(t - 0.77) < 0.001, "a level shot meets the trunk at its bark, 7.7 m out (%.3f)" % t)
-	check(BowAim.segment_trunk(Vector3(1.0, 11.5, 0.0), Vector3(1.0, 11.5, -10.0), root, 0.3, 12.0) < 0.0, "1 m to the side misses")
-	check(BowAim.segment_trunk(Vector3(0.0, 23.0, 0.0), Vector3(0.0, 23.0, -10.0), root, 0.3, 12.0) < 0.0, "over the top of a 12 m tree misses")
-	check(BowAim.segment_trunk(Vector3(0.0, 11.5, 0.0), Vector3(0.0, 11.5, -5.0), root, 0.3, 12.0) < 0.0, "a step that ends short of the trunk misses")
+	check(BowAim.segment_trunk(Vector3(1.0, 11.5, 0.0), Vector3(1.0, 11.5, -10.0), trunk_foot, 0.3, 12.0) < 0.0, "1 m to the side misses")
+	check(BowAim.segment_trunk(Vector3(0.0, 23.0, 0.0), Vector3(0.0, 23.0, -10.0), trunk_foot, 0.3, 12.0) < 0.0, "over the top of a 12 m tree misses")
+	check(BowAim.segment_trunk(Vector3(0.0, 11.5, 0.0), Vector3(0.0, 11.5, -5.0), trunk_foot, 0.3, 12.0) < 0.0, "a step that ends short of the trunk misses")
 
 	# The server: a full draw at the trunk 8 m ahead (Dave stood right in front of it) leaves one arrow stuck at the bark, for 5 minutes.
 	deer_at = Vector3(0.0, -100.0, 0.0)
 	var items = make("user://test_bow_tree")
 	items.trunks_near = func(point: Vector3, radius: float) -> Array:
-		return [[root, 0.3, 12.0]] if Vector2(point.x - root.x, point.z - root.z).length() <= radius else []
+		return [[trunk_foot, 0.3, 12.0]] if Vector2(point.x - trunk_foot.x, point.z - trunk_foot.z).length() <= radius else []
 	items._bow.cfg["break_chance"] = {}   # every tip unbreakable here: the check is where it ends, not the luck of it
 	items._bow.cfg["break_chance"]["stone"] = 0.0
 	var bow_no: int = items.table.number_of("wooden_bow")
@@ -266,7 +266,7 @@ func tree_checks() -> void:
 
 	if stuck.size() == 1:
 		var at: Vector3 = stuck[0]["pos"]
-		check(Vector2(at.x - root.x, at.z - root.z).length() < 0.31 and at.y > 11.0 and at.y < 12.0, "at the bark, about eye height (%s)" % str(at))
+		check(Vector2(at.x - trunk_foot.x, at.z - trunk_foot.z).length() < 0.31 and at.y > 11.0 and at.y < 12.0, "at the bark, about eye height (%s)" % str(at))
 		check(is_equal_approx(float(stuck[0]["left"]), 300.0) and float(items._bow.cfg.get("stuck_s", 0.0)) == 300.0, "it stays 5 minutes unless picked up (bow.json stuck_s)")
 		check(absf(float(stuck[0]["tilt"])) < 0.2 and absf(wrapf(float(stuck[0]["rot_y"]) - PI * 0.5, -PI, PI)) < 0.01, "it points along its flight (yaw %.2f, tilt %.2f)" % [float(stuck[0]["rot_y"]), float(stuck[0]["tilt"])])
 
