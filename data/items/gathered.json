@@ -25,7 +25,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Cactus",
+				"Barrel cactus",
 				"Prickly pear",
 				"Pilgrim's cup",
 				"Water mint"
@@ -241,7 +241,7 @@
 				"Comfrey",
 				"Wolfsbane",
 				"Gloomthistle",
-				"Alpine flowers"
+				"Mountain avens"
 			],
 			"familiarity": 50,
 			"description": "A long dark taproot, earthy and sweet when cooked. Dug from disturbed ground."
@@ -257,7 +257,7 @@
 				"Comfrey",
 				"Wolfsbane",
 				"Gloomthistle",
-				"Alpine flowers"
+				"Mountain avens"
 			],
 			"familiarity": 50,
 			"description": "Hooked seed heads of burdock that cling to cloth and fur. Pests, and a kind of fastener."
@@ -269,7 +269,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Cactus",
+				"Barrel cactus",
 				"Aloe"
 			],
 			"familiarity": 85,
@@ -295,7 +295,7 @@
 			"look_alikes": [
 				"Porcini",
 				"Fly agaric",
-				"Mushrooms"
+				"Field mushroom"
 			],
 			"familiarity": 55,
 			"description": "Golden funnel-shaped mushrooms with a fruity smell. A good find in the woods."
@@ -543,7 +543,7 @@
 			"stack": 20,
 			"look_alikes": [
 				"Heather",
-				"Alpine flowers",
+				"Mountain avens",
 				"Lavender",
 				"Owlpetal",
 				"Nightcrown",
@@ -559,7 +559,7 @@
 			"stack": 20,
 			"look_alikes": [
 				"Heather",
-				"Alpine flowers",
+				"Mountain avens",
 				"Lavender",
 				"Owlpetal",
 				"Nightcrown",
@@ -589,7 +589,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Fern",
+				"Bracken",
 				"Hushfern",
 				"Staunchmoss",
 				"Whisperfern"
@@ -744,7 +744,7 @@
 			"look_alikes": [
 				"Chanterelle",
 				"Porcini",
-				"Mushrooms",
+				"Field mushroom",
 				"Rimecap",
 				"Lumencap",
 				"Mirrorcap"
@@ -823,7 +823,7 @@
 			"stack": 20,
 			"look_alikes": [
 				"Burdock",
-				"Alpine flowers"
+				"Mountain avens"
 			],
 			"familiarity": 40,
 			"description": "Dark grey thistle fluff, soft and light. Fills pillows and burns quick."
@@ -835,7 +835,7 @@
 			"stack": 20,
 			"look_alikes": [
 				"Burdock",
-				"Alpine flowers"
+				"Mountain avens"
 			],
 			"familiarity": 40,
 			"description": "Spiny dark thistle heads. Handle with gloves."
@@ -861,7 +861,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Tropical hardwood",
+				"Mahogany",
 				"Mangrove"
 			],
 			"familiarity": 70,
@@ -1048,7 +1048,7 @@
 			"look_alikes": [
 				"Dwarf birch",
 				"Crowberry",
-				"Alpine flowers",
+				"Mountain avens",
 				"Lavender",
 				"Duskmallow"
 			],
@@ -1087,7 +1087,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Fern",
+				"Bracken",
 				"Staunchmoss",
 				"Whisperfern",
 				"Echo moss"
@@ -1145,7 +1145,7 @@
 				"Wild thyme",
 				"Truthsage",
 				"Heather",
-				"Alpine flowers"
+				"Mountain avens"
 			],
 			"familiarity": 90,
 			"description": "Purple flower spikes with a clean scent. Dried they sweeten linen."
@@ -1472,7 +1472,7 @@
 			"look_alikes": [
 				"Chanterelle",
 				"Fly agaric",
-				"Mushrooms"
+				"Field mushroom"
 			],
 			"familiarity": 55,
 			"description": "Fat brown-capped mushrooms with a thick pale stem. A fine meal."
@@ -1495,7 +1495,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Cactus",
+				"Barrel cactus",
 				"Aloe"
 			],
 			"familiarity": 85,
@@ -1603,7 +1603,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Stormreed",
 				"Tall grass",
 				"Tidecrown",
@@ -1859,7 +1859,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Fern",
+				"Bracken",
 				"Hushfern",
 				"Whisperfern",
 				"Echo moss"
@@ -1899,7 +1899,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Tall grass",
 				"Tidecrown",
@@ -1914,7 +1914,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Stormreed",
 				"Tidecrown",
@@ -2002,7 +2002,7 @@
 			"stack": 20,
 			"look_alikes": [
 				"Acacia",
-				"Tropical hardwood"
+				"Mahogany"
 			],
 			"familiarity": 65,
 			"description": "Bark rich in tannin. Used for tanning hides."
@@ -2015,7 +2015,7 @@
 			"look_alikes": [
 				"Dwarf birch",
 				"Crowberry",
-				"Alpine flowers",
+				"Mountain avens",
 				"Lavender",
 				"Duskmallow"
 			],
@@ -2077,7 +2077,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Stormreed",
 				"Tall grass",
@@ -2257,7 +2257,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Fern",
+				"Bracken",
 				"Hushfern",
 				"Staunchmoss",
 				"Echo moss"
@@ -2336,7 +2336,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Stormreed",
 				"Tall grass",
