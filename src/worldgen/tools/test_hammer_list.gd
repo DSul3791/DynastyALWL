@@ -47,6 +47,15 @@ func _init() -> void:
 	list.move(false, 1)
 	list.move(false, 1)
 	check(list.list_text(1).contains(">"), "the highlight shows in the text")
+	# The panel is a fixed 75% of the screen width and its text wraps (Dave 10 Nov 2026: the Repair line ran off both edges of the screen).
+	var hud_layer: CanvasLayer = CanvasLayer.new()
+	var shown = ListScript.new()
+	shown.setup(table, pack, hud_layer, "user://test_hammer_list_none.json")
+	shown.set_open(true, 1)
+	check(is_equal_approx(shown._panel.anchor_left, 0.125) and is_equal_approx(shown._panel.anchor_right, 0.875) and shown._panel.offset_left == 0.0 and shown._panel.offset_right == 0.0, "the hammer panel spans the middle 75% of the screen width")
+	check(shown._detail.autowrap_mode != TextServer.AUTOWRAP_OFF and shown._label.autowrap_mode != TextServer.AUTOWRAP_OFF, "the panel's lines wrap instead of widening it")
+	check(str(shown._detail.text).begins_with("then left click a worn piece"), "the open panel shows the long Repair text (%s)" % str(shown._detail.text).left(40))
+	hud_layer.free()
 	check(not list.list_text(1).contains("(short)"), "no \"(short)\" after a name the pack cannot cover (Dave 10 Nov 2026): the have/need line says it")
 	check(list.list_text(1).contains("Stone - Foundation") and list.list_text(1).contains("Wooden - Wall"), "building pieces read Tier - Item (Dave 10 Nov 2026)")
 	# A long list scrolls past the highlight (Dave 5 Nov 2026): 7 lines show, the highlighted one in the middle, blank lines pad the ends so the first and last entry can reach it.
