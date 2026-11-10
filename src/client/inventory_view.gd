@@ -88,7 +88,6 @@ var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
 var _hover: int = -1                   # pack slot under the mouse (quick keys act on it, else on the selected slot)
-var _chest_last: Array = []            # the last chest-screen slot the mouse was on (the Transfer button uses it)
 var _chest_hover: Array = []           # [chest side (bool), slot] under the mouse in the chest screen
 var _prompt: Label
 var _site_list: RichTextLabel   # under the prompt on a blueprint site: the materials it still needs, green when you have them to hand and red when not (Dave 5 Nov 2026)
@@ -518,10 +517,10 @@ func current_interaction() -> Dictionary:
 		if not found.has("point") or not view_direction.is_valid() or not aimed_at(found["point"]):
 			continue
 
-		var cos: float = aim_cos_of(found["point"])
+		var aim_cos: float = aim_cos_of(found["point"])
 
-		if cos > best_cos + 0.0001:
-			best_cos = cos
+		if aim_cos > best_cos + 0.0001:
+			best_cos = aim_cos
 			best = found
 
 	if not best.is_empty():
@@ -1181,10 +1180,10 @@ func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
 		var d: float = here.distance_to(_world[id]["pos"])
 
 		if view_direction.is_valid() and aimed_at(_world[id]["pos"]):
-			var cos: float = aim_cos_of(_world[id]["pos"])
+			var aim_cos: float = aim_cos_of(_world[id]["pos"])
 
-			if cos > best_cos:
-				best_cos = cos
+			if aim_cos > best_cos:
+				best_cos = aim_cos
 				best = id
 
 		elif best_cos < -1.0 and d < best_d:
@@ -4266,7 +4265,7 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 
 	var total: int = int(ceil(left))
 	var size: String = ", %s fire" % ["small", "medium", "large"][_fire_tier(state) - 1] if _lit_state(state) else ""
-	return "%s %02d:%02d:%02d Burn time%s" % [_item_label(number), total / 3600, (total / 60) % 60, total % 60, size]
+	return "%s %02d:%02d:%02d Burn time%s" % [_item_label(number), floori(float(total) / 3600.0), floori(float(total) / 60.0) % 60, total % 60, size]
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:
