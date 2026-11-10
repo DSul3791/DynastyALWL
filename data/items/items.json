@@ -9443,8 +9443,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"value": 30,
-				"look_alikes": [],
-				"future": true
+				"look_alikes": []
 			},
 			"knife": {
 				"number": 821,
