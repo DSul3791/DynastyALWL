@@ -1958,8 +1958,6 @@
 				"Used in Drying rack",
 				"Used in Sign",
 				"Used in Wicker - Basket",
-				"Used in Bronze - Chisel",
-				"Used in Iron - Chisel",
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
@@ -4873,7 +4871,7 @@
 			"kind": "material",
 			"description": "Copper and tin melted together. Harder than copper.",
 			"how_to_get": [
-				"Craft at a forge: 1 Copper ingot, 1 Tin ingot"
+				"Craft at a forge: 3 Copper ingot, 1 Tin ingot"
 			],
 			"used_for": [
 				"Used in Bronze - Helm",
@@ -5021,7 +5019,9 @@
 			"name": "Copper ore",
 			"kind": "material",
 			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a copper body with any pick"
+			],
 			"used_for": [
 				"Used in Copper ingot"
 			],
@@ -5031,7 +5031,9 @@
 			"name": "Tin ore",
 			"kind": "material",
 			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a tin body with any pick"
+			],
 			"used_for": [
 				"Used in Tin ingot"
 			],
@@ -9866,24 +9868,23 @@
 		"bronze_chisel": {
 			"name": "Bronze - Chisel",
 			"kind": "tool",
-			"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+			"description": "A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench.",
 			"how_to_get": [
-				"Craft at a forge: 1 Bronze ingot, 1 Stick"
+				"Craft at a forge: 1 Bronze ingot"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_chisel": {
 			"name": "Iron - Chisel",
 			"kind": "tool",
 			"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
 			"how_to_get": [
-				"Craft at a brick forge: 1 Iron ingot, 1 Stick"
+				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
@@ -9916,8 +9917,7 @@
 				"Craft at a stonecutters bench: 1 Stone block (keep Bronze - Chisel)"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"carved_stone_shingle": {
 			"name": "Carved stone shingle",
@@ -9927,8 +9927,7 @@
 				"Craft at a stonecutters bench: 1 Stone shingle (keep Bronze - Chisel)"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"meat_skewer": {
 			"name": "Meat skewer",
@@ -10848,7 +10847,7 @@
 				},
 				{
 					"title": "Bronze",
-					"text": "Copper and tin, smelted together in a Stone - Forge. Bronze makes the first real metal tools and weapons, and any metal hammer, bronze included, lets you build at every tier."
+					"text": "Three parts copper to one part tin, smelted together in a Stone - Forge. Bronze makes the first real metal tools and weapons, and any metal hammer, bronze included, lets you build at every tier."
 				},
 				{
 					"title": "Iron",

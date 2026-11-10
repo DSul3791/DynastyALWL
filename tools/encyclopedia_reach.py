@@ -93,6 +93,11 @@ class Reach:
     def has(self, iid):
         return iid in self.why
 
+    def fills(self, iid):
+        """A cost or need is met by the item itself or, for a group id (wood_species.json ingredient_groups), by any member."""
+        members = self.wood.get("ingredient_groups", {}).get(iid, [])
+        return self.has(iid) or (isinstance(members, list) and any(self.has(m) for m in members))
+
     def tool(self, tool_class, materials=None, min_tier=0):
         for iid, it in self.all.items():
             if it.get("tool_class") == tool_class and self.has(iid):
@@ -233,8 +238,11 @@ class Reach:
                 for k in ["doused_item", "relit_item"]:
                     if it.get(k):
                         changed |= g(it[k], "%s (%s)" % (k.split("_")[0], iid))
+        # A group head with no recipe of its own (plain Log, Vegetable, Fuel) stands for any member; one that is a real made item
+        # (Nails, Hinges: iron, made at the brick forge) is reached only by its own recipe, though a cost asking for it takes any member.
+        made = {r.get("gives", [""])[0] for r in self.recipes.values() if not r.get("retired")}
         for gid, members in self.wood.get("ingredient_groups", {}).items():
-            if gid != "note" and isinstance(members, list) and any(self.has(m) for m in members):
+            if gid != "note" and gid not in made and isinstance(members, list) and any(self.has(m) for m in members):
                 changed |= g(gid, "any member of the group")
         # Blueprints build structures (and their stations); a built structure's item and blocks count.
         hammer_tier = max([int(self.all[h].get("tier", 1) or 1) for h in self.all
@@ -249,7 +257,7 @@ class Reach:
                 continue
             if b.get("near") and self.station_level(b["near"]) < int(b.get("near_level", 1)):
                 continue
-            if all(self.has(c[0]) for c in b.get("cost", [])):
+            if all(self.fills(c[0]) for c in b.get("cost", [])):
                 self.built[kind] = "blueprint %s" % bid
                 changed = True
         for kind, d in self.structures.items():
@@ -282,7 +290,7 @@ class Reach:
             st = r.get("station", "")
             if st and self.station_level(st) < int(r.get("station_level", 1)):
                 continue
-            if all(self.has(row[0]) for lst in ["needs", "keeps"] for row in r.get(lst, [])):
+            if all(self.fills(row[0]) for lst in ["needs", "keeps"] for row in r.get(lst, [])):
                 changed |= g(gives, "recipe %s" % rid + (" at %s L%d" % (st, int(r.get("station_level", 1))) if st else ""))
         return changed
 
@@ -304,7 +312,7 @@ class Reach:
             if r.get("locked"):
                 out.append("recipe %s: locked" % rid)
                 continue
-            lack = [row[0] for lst in ["needs", "keeps"] for row in r.get(lst, []) if not self.has(row[0])]
+            lack = [row[0] for lst in ["needs", "keeps"] for row in r.get(lst, []) if not self.fills(row[0])]
             st = r.get("station", "")
             if st and self.station_level(st) < int(r.get("station_level", 1)):
                 lack.append("station %s L%d (have L%d)" % (st, int(r.get("station_level", 1)), self.station_level(st)))
@@ -318,7 +326,7 @@ class Reach:
                 if b.get("retired") or b.get("locked"):
                     out.append("blueprint %s: %s" % (bid, "retired" if b.get("retired") else "locked"))
                     continue
-                lack = [c[0] for c in b.get("cost", []) if not self.has(c[0])]
+                lack = [c[0] for c in b.get("cost", []) if not self.fills(c[0])]
                 for key, lvl in [("station", "station_level"), ("near", "near_level")]:
                     if b.get(key) and self.station_level(b[key]) < int(b.get(lvl, 1)):
                         lack.append("%s %s L%d" % (key, b[key], int(b.get(lvl, 1))))
