@@ -8712,6 +8712,35 @@
 			"craft_s": 8.0,
 			"known": false,
 			"locked": true
+		},
+		"leather_belt": {
+			"number": 392,
+			"name": "Leather - Belt",
+			"category": "Clothing",
+			"needs": [
+				[
+					"leather",
+					1
+				],
+				[
+					"toggle",
+					1
+				]
+			],
+			"gives": [
+				"leather_belt",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			],
+			"station": "workbench",
+			"station_level": 2
 		}
 	}
 }
