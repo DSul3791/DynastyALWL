@@ -188,6 +188,13 @@ func aim_checks() -> void:
 	var bow = BowScript.new()
 	check(bow.damage(8.0, 1.0, 100.0) > bow.damage(8.0, 1.0, 0.0), "the server's damage takes the skill multiplier")
 
+	# Each bow its own power and range (bow.json "bows"; Jamie #933): the longbow's arrow is faster, hits harder and flies further than the
+	# wooden bow's; a bow with no row shoots like the wooden bow.
+	check(is_equal_approx(bow.speed(1.0, "wooden_longbow"), 1.2 * bow.speed(1.0, "wooden_bow")) and is_equal_approx(bow.speed(1.0, "wooden_bow"), float(cfg["speed_max"])), "a longbow's arrow leaves 1.2 times as fast (%.0f m/s)" % bow.speed(1.0, "wooden_longbow"))
+	check(bow.damage(8.0, 1.0, 0.0, "wooden_longbow") > bow.damage(8.0, 1.0, 0.0, "wooden_bow") and is_equal_approx(bow.damage(8.0, 1.0, 0.0, "wooden_bow"), bow.damage(8.0, 1.0, 0.0)), "and hits harder")
+	check(bow.range_m("wooden_longbow") > bow.range_m("wooden_bow") and is_equal_approx(bow.range_m("no_such_bow"), float(cfg["range_m"])), "and flies further (%.0f m); a bow with no row is the wooden bow" % bow.range_m("wooden_longbow"))
+	check(is_equal_approx(BowAim.bow_speed_max(cfg, "wooden_longbow"), bow.speed(1.0, "wooden_longbow")), "the client's flight uses the same speed as the server's")
+
 	# The pull: none at no skill; with skill a zone near the aim draws it, a zone far off does not.
 	var eye: Vector3 = Vector3.ZERO
 	var points: Array = BowAim.zone_points(cfg, Vector3(0.0, -1.5, -30.0), 0.0)

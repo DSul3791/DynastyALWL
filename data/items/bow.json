@@ -12,6 +12,19 @@
 	"min_power": 0.5,
 	"speed_max": 45.0,
 	"range_m": 80.0,
+	"bows_note": "Each bow against the plain wooden bow (Jamie #933): speed_mult on the arrow's speed at full draw (speed_max), damage_mult on its damage, range_mult on its flight cap (range_m). A bow with no row shoots like the wooden bow. The longbow: a taller, heavier stave stores more energy, so its arrow leaves faster (about 54 m/s against 45, as a heavy self bow against a short one), hits harder (energy goes as speed squared, about 1.44; 1.4 here) and flies further (range_m 120). Estimates.",
+	"bows": {
+		"wooden_bow": {
+			"speed_mult": 1.0,
+			"damage_mult": 1.0,
+			"range_mult": 1.0
+		},
+		"wooden_longbow": {
+			"speed_mult": 1.2,
+			"damage_mult": 1.4,
+			"range_mult": 1.5
+		}
+	},
 	"pace_ms": 700,
 	"stuck_s": 300.0,
 	"stuck_note": "An arrow that hits a tree trunk sticks in it at the hit point (Dave 10 Nov 2026: \"there should be an arrow in that tree until I collect it or it fades out in 5 minutes\"): it stays stuck_s seconds unless picked up. It breaks at the arrow's break_chance, as one landing on the ground.",

@@ -30,6 +30,22 @@ static func curve(points: Array, x: float) -> float:
 	return float(points[points.size() - 1][1])
 
 
+# One bow's own numbers against the plain wooden bow (bow.json "bows", by item id; Jamie #933, the Wooden - Longbow): speed_mult on the arrow's
+# speed, damage_mult on its damage and range_mult on its flight cap. A bow with no row shoots like the wooden bow (all 1).
+static func bow_stats(cfg: Dictionary, bow_id: String) -> Dictionary:
+	var row: Dictionary = cfg.get("bows", {}).get(bow_id, {})
+	return {"speed_mult": float(row.get("speed_mult", 1.0)), "damage_mult": float(row.get("damage_mult", 1.0)), "range_mult": float(row.get("range_mult", 1.0))}
+
+
+# The arrow's speed (m/s) at full draw from this bow, and how far it may fly.
+static func bow_speed_max(cfg: Dictionary, bow_id: String) -> float:
+	return float(cfg.get("speed_max", 45.0)) * float(bow_stats(cfg, bow_id)["speed_mult"])
+
+
+static func bow_range_m(cfg: Dictionary, bow_id: String) -> float:
+	return float(cfg.get("range_m", 80.0)) * float(bow_stats(cfg, bow_id)["range_mult"])
+
+
 static func _aim(cfg: Dictionary) -> Dictionary:
 	return cfg.get("aim", {})
 
