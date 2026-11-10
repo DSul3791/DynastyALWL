@@ -733,6 +733,84 @@ LYING = rot_y(math.radians(35.0)) @ rot_z(math.radians(28.0))   # a bundle lying
 HEAP_VIEW = rot_x(math.radians(18.0))
 
 
+# ---------------------------------------------------------------- buildables and item system C4 (10 Nov 2026)
+BRONZE = (184, 132, 70)
+METALS = {"bronze": (BRONZE, (226, 176, 104)), "iron": (IRON, (150, 156, 166)), "steel": (STEEL, (248, 250, 255))}   # body, worked edge
+
+
+def hammer(material):
+    """A hammer of every tier in one layout, on the diagonal with its head big: the head tells them apart (a wooden mallet, a lashed
+    stone, a bronze, iron or steel head with a broad face and a wedge peen, the face's worked edge bright)."""
+    faces = rod((-1.2, 0, 0), (0.62, 0, 0), 0.085, WOOD, seed=100)
+
+    if material == "steel":
+        faces += rod((-1.2, 0, 0), (-0.75, 0, 0), 0.105, LEATHER, seed=101)                   # a leather grip wrap
+
+    if material == "wooden":
+        faces += rod((0.66, -0.5, 0), (0.66, 0.5, 0), 0.3, WOOD, end=WOOD_END, sides=8, seed=102)
+    elif material == "stone":
+        faces += blob((0.66, 0.02, 0.0), (0.3, 0.5, 0.27), STONE, seed=103, seg=8, rings=5, rough=0.12)
+        for y in (-0.13, 0.13):
+            faces += box((0.66, y, 0.0), (0.6, 0.07, 0.56), CORD)                              # the lashing, bound round the head
+    else:
+        metal, edge = METALS[material]
+        faces += box((0.66, 0.08, 0.0), (0.34, 0.8, 0.34), metal)
+        faces += box((0.66, 0.53, 0.0), (0.42, 0.12, 0.42), shade(metal, 1.08))               # the striking face
+        faces += box((0.66, 0.6, 0.0), (0.4, 0.02, 0.4), edge)
+        faces += point((0.66, -0.3, 0), (0.66, -0.72, 0), 0.34, 0.12, metal, back=0.0, roll=0.0)   # the peen
+    return faces
+
+
+def chisel(material):
+    """Tier - Chisel (the Stonecutter's bench): a turned wooden handle, a ferrule, a square shank and a flat blade with a bright edge."""
+    metal, edge = METALS[material]
+    faces = rod((-1.25, 0, 0), (-0.25, 0, 0), 0.14, WOOD, end=WOOD_END, sides=8, seed=110)
+    faces += rod((-0.3, 0, 0), (-0.12, 0, 0), 0.16, shade(metal, 0.85), sides=8, seed=111)
+    faces += rod((-0.12, 0, 0), (0.8, 0, 0), 0.08, metal, sides=4, seed=112)
+    faces += box((1.0, 0.0, 0.0), (0.42, 0.36, 0.08), metal)
+    faces += box((1.23, 0.0, 0.0), (0.06, 0.36, 0.09), edge)
+    return faces
+
+
+def horn_pane():
+    """Horn pane: a sheet of horn pressed flat and scraped thin, amber and a little uneven, lighter where it is thinnest, with streaks."""
+    amber = (206, 158, 88)
+    faces = box((0.0, 0.0, 0.0), (1.7, 0.06, 1.3), amber)
+    faces += box((0.05, 0.004, -0.02), (1.3, 0.06, 0.95), (232, 194, 126))
+    for k, z in enumerate((-0.32, 0.05, 0.38)):
+        faces += box((0.1 * (k - 1), 0.008, z), (1.1 - 0.2 * k, 0.06, 0.04), (184, 132, 70))
+    return faces
+
+
+def clay_pipe():
+    """Clay pipe: one fired length of round clay pipe, its collar at one end, both ends dark and open."""
+    clay, hollow = (186, 120, 78), (60, 40, 30)
+    faces = rod((-1.15, 0, 0), (0.75, 0, 0), 0.3, clay, end=hollow, sides=10, seed=120)
+    faces += rod((0.75, 0, 0), (1.2, 0, 0), 0.4, shade(clay, 1.06), end=hollow, sides=10, seed=121)
+    return faces
+
+
+def carved_stone_block():
+    """Carved stone block: a squared ashlar block, its faces dressed with a raised panel inside a tooled margin."""
+    stone = (184, 178, 166)
+    faces = box((0.0, 0.0, 0.0), (1.6, 0.9, 1.0), shade(stone, 0.92))
+    faces += box((0.0, 0.03, 0.03), (1.36, 0.7, 1.0), stone)                                  # the raised panel on the front
+    faces += box((0.0, 0.03, 0.0), (1.36, 0.9, 0.78), stone)                                  # and on the top
+    for k in range(5):
+        faces += box((-0.54 + 0.27 * k, 0.03, 0.54), (0.02, 0.62, 0.02), shade(stone, 0.86))  # tool marks
+    return faces
+
+
+def carved_stone_shingle():
+    """Carved stone shingle: three thin split stone shingles fanned, each with its nail hole near the top."""
+    slate = (132, 134, 136)
+    faces = []
+    for k in range(3):
+        faces += moved(box((0.0, 0.0, 0.0), (0.9, 0.08, 1.4), shade(slate, 0.92 + 0.06 * k)), rot_y(math.radians(-24.0 + 20.0 * k)), (0.25 * k - 0.25, 0.1 * k, 0.0))
+        faces += moved(box((0.0, 0.045, -0.5), (0.1, 0.01, 0.1), (52, 50, 50)), rot_y(math.radians(-24.0 + 20.0 * k)), (0.25 * k - 0.25, 0.1 * k, 0.0))
+    return faces
+
+
 def _pieces():
     return {
         "spear": (stone_spear, DIAGONAL),
@@ -770,6 +848,12 @@ def _pieces():
         "straw": (straw, HEAP_VIEW),
         "birch_bark": (birch_bark, LYING),
         "withies": (withies, HEAP_VIEW),
+        **{m + "_hammer": ((lambda m=m: hammer(m)), SPADE_VIEW) for m in ("wooden", "stone", "bronze", "iron", "steel")},
+        **{m + "_chisel": ((lambda m=m: chisel(m)), SPADE_VIEW) for m in ("bronze", "iron", "steel")},
+        "horn_pane": (horn_pane, rot_x(math.radians(40.0)) @ rot_y(math.radians(15.0))),
+        "clay_pipe": (clay_pipe, DIAGONAL),
+        "carved_stone_block": (carved_stone_block, rot_y(math.radians(-28.0))),
+        "carved_stone_shingle": (carved_stone_shingle, rot_x(math.radians(35.0))),
     }
 
 

@@ -14,6 +14,7 @@ import numpy as np
 from PIL import Image
 
 LEATHER = ((30, 16, 9), (94, 52, 28), (172, 110, 66))   # shadow, middle, light: tanned leather (Leather - Jerkin's warm brown, a little deeper)
+LAMP_OIL = ((36, 22, 6), (150, 112, 40), (236, 204, 128))   # lamp oil (B4): the oil bottle in a deeper amber, as basic_look draws it (#9a7a32)
 
 RECOLOURS = {
 	"leather_trousers": ("hide_trousers", LEATHER),
@@ -21,6 +22,7 @@ RECOLOURS = {
 	"leather_gloves": ("hide_gloves", LEATHER),
 	"leather_backpack": ("backpack", LEATHER),
 	"leather_quiver": ("quiver", LEATHER),
+	"lamp_oil": ("oil", LAMP_OIL),
 }
 NAMES = tuple(RECOLOURS)
 
