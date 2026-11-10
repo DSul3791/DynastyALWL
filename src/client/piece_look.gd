@@ -3295,3 +3295,184 @@ static func oil_press() -> Node3D:
 	_cyl(root, 0.1, 0.16, Vector3(0.0, 0.08, 0.5), _clay, 8, 0.08)                       # the pot under it
 	_solid(root, Vector3(1.2, 0.7, 1.2), Vector3(0.0, 0.35, 0.0))
 	return root
+
+
+# --- Item system C3 and C4 (item_system.md draft 7, Jamie's #936 and #938, 10 Nov 2026): first stores, racks and wall pieces, the Clay bloomery and the
+# Stonecutter's bench. Free-placed on the footprint in structures.json, standing on y = 0; racks and stands have their back at -Z, stations work from +Z.
+# Wall pieces (the Sign's board, the Tusk mount) hang like the Antler mount, at 1.9 m.
+
+# The Storage jar, 0.5 x 0.5: a tall fired clay jar swelling to its shoulder, a short neck, a blackened lid with a knob, and a twine tie under the lip.
+static func storage_jar() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.15, 0.32, Vector3(0.0, 0.16, 0.0), _clay, 10, 0.23)                    # the belly
+	_cyl(root, 0.23, 0.3, Vector3(0.0, 0.47, 0.0), _clay, 10, 0.11)                     # the shoulder
+	_cyl(root, 0.11, 0.08, Vector3(0.0, 0.66, 0.0), _clay, 8, 0.12)                     # the neck
+	_cyl(root, 0.125, 0.025, Vector3(0.0, 0.6, 0.0), _frame, 8)                         # the twine tie
+	_cyl(root, 0.135, 0.04, Vector3(0.0, 0.72, 0.0), _pot, 8)                           # the lid
+	_box(root, Vector3(0.06, 0.05, 0.06), Vector3(0.0, 0.765, 0.0), _pot)                # its knob
+	_solid(root, Vector3(0.44, 0.74, 0.44), Vector3(0.0, 0.37, 0.0))
+	return root
+
+
+# The Hide - Sack, 0.5 x 0.4: a hide bag slumped on the ground, gathered at the neck under a twine tie, the mouth flared above it.
+static func hide_sack() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var hide: StandardMaterial3D = _tone_mat(Color(0.56, 0.4, 0.26))
+	_cyl(root, 0.23, 0.34, Vector3(0.0, 0.17, 0.0), hide, 9, 0.2).scale = Vector3(1.0, 1.0, 0.82)
+	_dome(root, 0.2, Vector3(0.0, 0.34, 0.0), Vector3(1.0, 0.65, 0.82), hide, 9, 3)       # the shoulders
+	_cyl(root, 0.06, 0.1, Vector3(0.0, 0.5, 0.0), hide, 7)                              # the gathered neck
+	_cyl(root, 0.07, 0.03, Vector3(0.0, 0.5, 0.0), _frame, 7)                           # the tie
+	_cyl(root, 0.05, 0.08, Vector3(0.0, 0.58, 0.0), _tone_mat(Color(0.5, 0.35, 0.22)), 7, 0.1)   # the flared mouth
+	_solid(root, Vector3(0.46, 0.5, 0.36), Vector3(0.0, 0.25, 0.0))
+	return root
+
+
+# The Wicker - Basket, 0.6 x 0.6: a round basket of woven sticks widening to its rim, two darker twined bands, a thick rim, the dark inside, two rope handles.
+static func wicker_basket() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var wicker: StandardMaterial3D = _tone_mat(Color(0.62, 0.47, 0.27))
+	var band: StandardMaterial3D = _tone_mat(Color(0.44, 0.32, 0.18))
+	_cyl(root, 0.23, 0.4, Vector3(0.0, 0.2, 0.0), wicker, 8, 0.28)
+	_cyl(root, 0.247, 0.035, Vector3(0.0, 0.12, 0.0), band, 8, 0.252)                   # twined bands round the weave
+	_cyl(root, 0.267, 0.035, Vector3(0.0, 0.28, 0.0), band, 8, 0.272)
+	_cyl(root, 0.29, 0.04, Vector3(0.0, 0.41, 0.0), band, 8)                            # the rim
+	_cyl(root, 0.25, 0.01, Vector3(0.0, 0.425, 0.0), _pot, 8)                           # the inside, in shadow
+
+	for s in [-1.0, 1.0]:
+		_box(root, Vector3(0.03, 0.1, 0.12), Vector3(s * 0.28, 0.46, 0.0), _frame)        # the rope handles
+
+	_solid(root, Vector3(0.56, 0.43, 0.56), Vector3(0.0, 0.215, 0.0))
+	return root
+
+
+# The Weapon rack, 1.2 x 0.3, its back at -Z: two plank uprights on feet, a notched top rail and a footboard, holding two spears, a bow and a sword.
+static func weapon_rack() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var steel_edge: StandardMaterial3D = _tone_mat(Color(0.6, 0.62, 0.64))
+
+	for x in [-0.55, 0.55]:
+		_box(root, Vector3(0.08, 1.5, 0.08), Vector3(x, 0.75, -0.1), _planks)
+		_box(root, Vector3(0.1, 0.06, 0.3), Vector3(x, 0.03, 0.0), _frame)               # its foot
+
+	_box(root, Vector3(1.2, 0.08, 0.12), Vector3(0.0, 1.3, -0.06), _frame)               # the top rail
+	_box(root, Vector3(1.1, 0.06, 0.2), Vector3(0.0, 0.2, -0.04), _planks)               # the footboard
+
+	for x in [-0.38, -0.18]:                                                             # two spears, butts on the footboard
+		_rod(root, Vector3(x, 0.23, -0.02), Vector3(x, 1.44, -0.02), 0.03, _frame)
+		_box(root, Vector3(0.05, 0.14, 0.015), Vector3(x, 1.51, -0.02), steel_edge)
+
+	_rod(root, Vector3(0.08, 0.24, 0.0), Vector3(0.15, 0.8, 0.0), 0.03, _log)            # a bow, strung
+	_rod(root, Vector3(0.15, 0.8, 0.0), Vector3(0.08, 1.36, 0.0), 0.03, _log)
+	_rod(root, Vector3(0.08, 0.24, 0.0), Vector3(0.08, 1.36, 0.0), 0.008, _tone_mat(Color(0.8, 0.74, 0.6)))
+	_box(root, Vector3(0.045, 0.7, 0.012), Vector3(0.38, 0.62, 0.0), steel_edge)          # a sword, point down, its hilt over the rail
+	_box(root, Vector3(0.18, 0.03, 0.03), Vector3(0.38, 1.0, 0.0), _iron_mat())
+	_box(root, Vector3(0.03, 0.16, 0.03), Vector3(0.38, 1.1, 0.0), _tone_mat(Color(0.36, 0.22, 0.13)))
+	_box(root, Vector3(0.05, 0.04, 0.04), Vector3(0.38, 1.2, 0.0), _iron_mat())
+	_solid(root, Vector3(1.2, 1.5, 0.3), Vector3(0.0, 0.75, 0.0))
+	return root
+
+
+# The Armour stand, 0.6 x 0.6: a plank figure on a cross foot (a post, a shoulder bar and a block head) dressed in a leather jerkin and belt, a cap on its head.
+static func armour_stand() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var leather: StandardMaterial3D = _tone_mat(Color(0.45, 0.28, 0.16))
+	_box(root, Vector3(0.56, 0.06, 0.1), Vector3(0.0, 0.03, 0.0), _frame)                 # the cross foot
+	_box(root, Vector3(0.1, 0.06, 0.56), Vector3(0.0, 0.03, 0.0), _frame)
+	_box(root, Vector3(0.07, 1.5, 0.07), Vector3(0.0, 0.81, 0.0), _planks)                # the post
+	_box(root, Vector3(0.5, 0.06, 0.08), Vector3(0.0, 1.46, 0.0), _planks)                # the shoulder bar
+	_box(root, Vector3(0.14, 0.18, 0.14), Vector3(0.0, 1.62, 0.0), _planks)               # the head
+	_dome(root, 0.1, Vector3(0.0, 1.68, 0.0), Vector3(1.0, 0.9, 1.0), leather, 8, 3)      # a leather cap
+	_box(root, Vector3(0.44, 0.52, 0.2), Vector3(0.0, 1.18, 0.0), leather)                # the jerkin
+	_box(root, Vector3(0.16, 0.12, 0.22), Vector3(-0.2, 1.38, 0.0), leather)              # its shoulders
+	_box(root, Vector3(0.16, 0.12, 0.22), Vector3(0.2, 1.38, 0.0), leather)
+	_box(root, Vector3(0.02, 0.4, 0.01), Vector3(0.0, 1.2, 0.105), _tone_mat(Color(0.3, 0.18, 0.1)))   # the lacing down the front
+	_box(root, Vector3(0.46, 0.06, 0.22), Vector3(0.0, 0.94, 0.0), _frame)               # the belt
+	_box(root, Vector3(0.06, 0.06, 0.02), Vector3(0.0, 0.94, 0.115), _iron_mat())         # its buckle
+	_solid(root, Vector3(0.5, 1.75, 0.3), Vector3(0.0, 0.875, 0.0))
+	return root
+
+
+# The Sign, 0.6 x 0.1: a plank board on a stick driven into the ground, its far end cut to a point, three charcoal marks on its face.
+static func sign_post() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.035, 1.3, Vector3(0.0, 0.65, 0.0), _log, 6)                              # the stick
+	_box(root, Vector3(0.4, 0.24, 0.03), Vector3(0.02, 1.12, 0.03), _planks)              # the board
+	_box_rot(root, Vector3(0.15, 0.15, 0.03), Vector3(0.22, 1.12, 0.03), Vector3(0.0, 0.0, PI * 0.25), _planks)   # its point
+	_box(root, Vector3(0.04, 0.04, 0.035), Vector3(0.0, 1.12, 0.045), _frame)             # the peg through it
+
+	for k in 3:
+		_box(root, Vector3(0.08, 0.025, 0.005), Vector3(-0.1 + 0.1 * float(k), 1.12 + 0.03 * float(k % 2), 0.047), _pot)   # the marks
+
+	_solid(root, Vector3(0.1, 1.3, 0.1), Vector3(0.0, 0.65, 0.0))
+	return root
+
+
+# The Tusk - Mount, 0.44 wide, hung on a wall like the Antler mount: a plank shield under a dark top bar, two boar tusks curving out and up from a
+# hide-bound root between them.
+static func tusk_mount() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var ivory: StandardMaterial3D = _tone_mat(Color(0.88, 0.84, 0.72))
+	_box(root, Vector3(0.36, 0.28, 0.04), Vector3(0.0, 1.9, 0.02), _planks)
+	_box(root, Vector3(0.4, 0.04, 0.05), Vector3(0.0, 2.06, 0.022), _frame)
+
+	for s in [-1.0, 1.0]:
+		var at: Array = [Vector3(s * 0.04, 1.84, 0.06), Vector3(s * 0.13, 1.83, 0.1), Vector3(s * 0.19, 1.91, 0.12), Vector3(s * 0.17, 2.01, 0.12)]
+		for k in 3:
+			_rod(root, at[k], at[k + 1], 0.04 - 0.01 * float(k), ivory)
+
+	_box(root, Vector3(0.12, 0.06, 0.06), Vector3(0.0, 1.84, 0.06), _tone_mat(Color(0.5, 0.35, 0.22)))   # the binding
+	return root
+
+
+# The Clay bloomery, 1.2 x 1.2: a clay shaft furnace narrowing to a sooted mouth on a stone footing, a clay tuyere at the -X side with a hide bellows
+# behind it, the tapping arch at the front with slag run out before it, and a heap of charcoal at the +X front corner.
+static func clay_bloomery() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.46, 0.14, Vector3(0.0, 0.07, 0.0), _stone, 8)                            # the footing
+	_cyl(root, 0.4, 1.2, Vector3(0.0, 0.74, 0.0), _clay, 10, 0.24)                         # the shaft
+	_cyl(root, 0.26, 0.06, Vector3(0.0, 1.37, 0.0), _pot, 8, 0.24)                         # its sooted mouth
+	_cyl(root, 0.05, 0.3, Vector3(-0.47, 0.3, 0.0), _clay, 6).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the tuyere
+	_box(root, Vector3(0.2, 0.18, 0.3), Vector3(-0.48, 0.12, 0.0), _tone_mat(Color(0.5, 0.35, 0.22)))   # the bellows
+	_box(root, Vector3(0.24, 0.24, 0.06), Vector3(0.0, 0.26, 0.37), _pot)                  # the tapping arch
+	_box(root, Vector3(0.32, 0.05, 0.2), Vector3(0.0, 0.025, 0.52), _tone_mat(Color(0.16, 0.14, 0.13)))   # slag run out of it
+	_dome(root, 0.2, Vector3(0.36, 0.0, 0.36), Vector3(1.0, 0.7, 1.0), _tone_mat(Color(0.1, 0.09, 0.09)), 6, 2)   # charcoal
+	_solid(root, Vector3(1.0, 1.4, 1.0), Vector3(0.0, 0.7, 0.0))
+	return root
+
+
+# The Stonecutter's bench, 2.0 x 1.0: a thick stone slab on two stone blocks, a block being squared on it with a chisel and mallet beside it and a set
+# square laid flat, finished blocks stacked underneath and chips on the ground at the front.
+static func stonecutters_bench() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(1.9, 0.2, 0.9), Vector3(0.0, 0.7, 0.0), _stone)                    # the slab
+
+	for x in [-0.65, 0.65]:
+		_box(root, Vector3(0.45, 0.6, 0.8), Vector3(x, 0.3, 0.0), _stone)
+
+	_box(root, Vector3(0.5, 0.3, 0.36), Vector3(0.05, 0.95, 0.0), _flag)                  # the block being squared
+	_box(root, Vector3(0.3, 0.2, 0.3), Vector3(-0.58, 0.9, -0.12), _flag)                 # a finished one
+	_box_rot(root, Vector3(0.2, 0.025, 0.025), Vector3(0.48, 0.82, 0.22), Vector3(0.0, 0.5, 0.0), _iron_mat())   # the chisel
+	_box_rot(root, Vector3(0.03, 0.03, 0.3), Vector3(0.62, 0.83, -0.05), Vector3(0.0, 0.3, 0.0), _frame)        # the mallet's handle
+	_box_rot(root, Vector3(0.16, 0.11, 0.11), Vector3(0.66, 0.855, -0.2), Vector3(0.0, 0.3, 0.0), _planks)      # and its head
+	_box(root, Vector3(0.3, 0.012, 0.03), Vector3(-0.3, 0.806, 0.3), _iron_mat())         # the set square
+	_box(root, Vector3(0.03, 0.012, 0.2), Vector3(-0.44, 0.806, 0.21), _iron_mat())
+
+	for x in [-0.2, 0.2]:
+		_box(root, Vector3(0.36, 0.2, 0.3), Vector3(x, 0.1, 0.0), _flag)                  # finished blocks underneath
+
+	_box(root, Vector3(0.36, 0.2, 0.3), Vector3(0.0, 0.3, 0.0), _flag)
+
+	for k in 4:
+		_box_rot(root, Vector3(0.07, 0.04, 0.06), Vector3(-0.3 + 0.2 * float(k), 0.02, 0.44), Vector3(0.0, 0.7 * float(k), 0.0), _stone)   # chips
+
+	_solid(root, Vector3(2.0, 0.8, 1.0), Vector3(0.0, 0.4, 0.0))
+	return root
