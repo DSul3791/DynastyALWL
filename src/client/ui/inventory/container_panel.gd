@@ -88,7 +88,6 @@ func build() -> void:
 		# The info strip under the pack reads the chest well under the pointer too (redesign 4.1: one place to read about an item).
 		slot.mouse_entered.connect(func() -> void:
 			view._chest_hover = [true, i]
-			view._chest_last = [true, i]
 			view._pack_part.show_info())
 		slot.mouse_exited.connect(func() -> void:
 			view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover
