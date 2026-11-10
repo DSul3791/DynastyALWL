@@ -2,7 +2,7 @@
 
 Shapes are art_kit.glyph_shapes (unit square) so a painted ghost sits exactly where its placeholder did; on top of each, a few engraved
 detail lines (seams, rivets, laces) in a darker grey that the tint turns into a deeper cut. Holes ("-" ops) are left clear.
-Usage: python3 tools/paint_gear_ghosts.py assets/ui/inventory <out_dir> [preview.png]
+Usage: python3 tools/paint_gear_ghosts.py assets/ui/inventory [preview.png]   (the out folder, then an optional preview sheet on the slot colour)
 """
 import math
 import sys
