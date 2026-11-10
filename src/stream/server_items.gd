@@ -5359,6 +5359,9 @@ func _repair(peer: int, inv, slot: int) -> void:
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 	var costs: Array = entry.get("repair", [])
 
+	if bool(entry.get("edge", false)) and _hone(peer, inv, slot, entry):
+		return
+
 	if costs.is_empty():
 		return
 
@@ -5384,6 +5387,40 @@ func _repair(peer: int, inv, slot: int) -> void:
 
 	inv.wear[slot] = maxi(0, inv.wear[slot] - int(float(entry.get("durability", 0)) * float(_drops.get("tool_wear", {}).get("repair_restores", 0.5))))
 	practice(peer, "tool_care")
+
+
+# Whetstone hand repair (Part C plan 4; drops.json tool_wear.hone): R on an edged tool (items.json "edge": true) with a sound whetstone in the
+# pack hones it with no materials. It wins back hone.restores of its durability but never past hone.up_to of it; the whetstone wears and is
+# kept. False (and the real repair goes ahead) with no whetstone, or when the tool is already that sharp: past it, the haft and binding need mending.
+func _hone(peer: int, inv, slot: int, entry: Dictionary) -> bool:
+	var cfg: Dictionary = _drops.get("tool_wear", {}).get("hone", {})
+	var stone: int = table.number_of(str(cfg.get("item", "whetstone")))
+	var most: int = int(entry.get("durability", 0))
+
+	if cfg.is_empty() or stone == 0 or most <= 0:
+		return false
+
+	var sharpest: int = int(ceil(float(most) * (1.0 - float(cfg.get("up_to", 0.75)))))   # the least wear a hone leaves
+
+	if inv.wear[slot] <= sharpest:
+		return false
+
+	var stone_slot: int = -1
+
+	for s in inv.SLOTS:
+		if s != slot and inv.numbers[s] == stone and not _is_broken(stone, inv.wear[s]):
+			stone_slot = s
+			break
+
+	if stone_slot < 0:
+		return false
+
+	inv.wear[slot] = maxi(sharpest, inv.wear[slot] - int(float(most) * float(cfg.get("restores", 0.25))))
+	_wear_slot(peer, inv, stone_slot, "hone")
+	practice(peer, "tool_care")
+	_say(peer, str(cfg.get("say_hone", "")) % table.name_of(inv.numbers[slot]).to_lower())
+	_dirty = true
+	return true
 
 
 func _repair_text(costs: Array) -> String:

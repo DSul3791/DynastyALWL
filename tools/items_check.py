@@ -31,6 +31,7 @@ UNITS = [
     ("stations", "src/worldgen/tools/test_stations.gd"),
     ("bloomery bench", "src/worldgen/tools/test_bloomery_bench.gd"),
     ("fishing", "src/worldgen/tools/test_fishing.gd"),
+    ("whetstone", "src/worldgen/tools/test_whetstone.gd"),
     ("fish trap", "src/worldgen/tools/test_fish_trap.gd"),
     ("shore net", "src/worldgen/tools/test_shore_net.gd"),
     ("bed", "src/worldgen/tools/test_bed.gd"),
