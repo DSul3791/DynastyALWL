@@ -55,8 +55,8 @@ func _init() -> void:
 				elif c.a < 0.05:
 					clear += 1
 
-		var samples: int = (image.get_width() / 2) * (image.get_height() / 2)
-		check(solid > samples / 10 and clear > samples / 4, "%s.png: a silhouette on a clear ground (%d solid, %d clear of %d)" % [file, solid, clear, samples])
+		var samples: int = floori(image.get_width() * 0.5) * floori(image.get_height() * 0.5)
+		check(float(solid) > float(samples) * 0.1 and float(clear) > float(samples) * 0.25, "%s.png: a silhouette on a clear ground (%d solid, %d clear of %d)" % [file, solid, clear, samples])
 		check(not tinted, "%s.png is grey, so the game's tint gives its colour" % file)
 
 	print("test_gear_ghosts: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
