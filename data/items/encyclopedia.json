@@ -9969,7 +9969,7 @@
 				"Craft at a workbench: 4 Stick, 4 Leather strap, 2 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"fish_trap": {
 			"name": "Fish trap",

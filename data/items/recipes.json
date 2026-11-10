@@ -8505,9 +8505,8 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"station": "workbench",
-			"locked": true
+			"known": true,
+			"station": "workbench"
 		},
 		"fish_trap": {
 			"number": 390,
