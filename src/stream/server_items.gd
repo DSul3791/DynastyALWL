@@ -3031,6 +3031,13 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 		if layer > 0:
 			give(peer, layer, 1)
 
+	# digging.json finds: a small chance of something living in the soil (a worm in moist living soil), one per stroke at most.
+	for find in _dig_cfg.get("finds", []):
+		var found: int = table.number_of(str(find.get("item", "")))
+
+		if found > 0 and material in find.get("soils", []) and roll_chance(peer, _fate_rng, float(find.get("chance", 0.0))):
+			give(peer, found, 1)
+
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
 # it got. The fill operation calls this and fills only as many units as it got. fill_units_of is the same count without taking.
