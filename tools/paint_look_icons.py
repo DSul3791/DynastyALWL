@@ -155,6 +155,9 @@ ITEMS["engineered_window"] = ("engineered_window", WALL_VIEW)
 ITEMS["engineered_stairs"] = ("engineered_stairs", STAIR_VIEW)
 ITEMS["engineered_floor"] = ("engineered_floor", SLAB_VIEW)
 ITEMS["engineered_roof_corner"] = ("engineered_roof_corner", CORNER_VIEW)
+for _item, _look in (("roof_section", "roof"), ("log_roof", "log_roof"), ("stone_roof", "stone_roof"), ("brick_roof", "brick_roof"),
+        ("engineered_roof", "engineered_roof")):   # the pitched tier roofs (Kathleen, 10 Nov 2026), from the side like their corners
+    ITEMS[_item] = (_look, CORNER_VIEW)
 ITEMS["fortified_gate"] = ("fortified_gate", WALL_VIEW)
 ITEMS["fortified_wall_top"] = ("fortified_wall_top", WALL_VIEW)
 ITEMS["mixer"] = ("mixer", STATION_VIEW)
@@ -175,6 +178,9 @@ SHORTEN = {
     "wooden_lamp_post": (0.3, 0.8, 0.12), "iron_lamp_post": (0.35, 0.8, 0.12), "stone_lamp_post": (0.35, 0.8, 0.12), "thatch_scarecrow": (0.1, 1.2, 0.4),
     "armour_stand": (0.1, 0.95, 0.5),
 }
+for _item in ("roof_section", "log_roof", "stone_roof", "brick_roof", "engineered_roof", "thatch_roof_corner", "wooden_roof_corner", "log_roof_corner",
+        "stone_roof_corner", "brick_roof_corner", "engineered_roof_corner"):   # a roof on its posts: the posts shortened so the roof fills the icon
+    SHORTEN[_item] = (0.1, 0.6, 0.3)
 
 
 def _shortener(top, keep):
