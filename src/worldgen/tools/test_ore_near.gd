@@ -42,14 +42,33 @@ func _init() -> void:
 
 	check(data.ore_at(Vector3(1520.0, 100.0, 1500.0), 40.0, NAMES, 10.0) == "tin", "a boulder over the tin lens is tin, not the coal seam listed first or the ruby lens that boulders do not carry")
 	check(data.ore_at(Vector3(1700.0, 100.0, 1510.0), 40.0, NAMES, 10.0) == "copper", "over the copper pipe it is copper")
-	check(data.ore_at(Vector3(1600.0, 100.0, 1500.0), 100.0, NAMES, 10.0) == "tin", "with both in reach the nearer body wins: tin 50 m away before copper 80 m")
-	check(data.ore_at(Vector3(1650.0, 100.0, 1500.0), 100.0, NAMES, 10.0) == "copper", "and copper 30 m away before tin 100 m")
+	check(data.ore_at(Vector3(1600.0, 100.0, 1500.0), 100.0, NAMES, 10.0) == "tin", "with both in reach and the spot in neither, the nearer in its own size wins: tin 50 m from a 50 m lens before copper 80 m from a 20 m pipe")
+	check(data.ore_at(Vector3(1650.0, 100.0, 1500.0), 100.0, NAMES, 10.0) == "copper", "and copper 30 m from its pipe before tin 100 m from its lens")
 	check(data.ore_at(Vector3(1610.0, 100.0, 1500.0), 40.0, NAMES, 10.0) == "coal", "away from both, in the coal province, a seam 5 m under the ground shows as coal")
 	check(data.ore_at(Vector3(1610.0, 94.0, 1500.0), 40.0, NAMES, 10.0) == "coal", "where the ground cuts the seam it is coal too")
 	check(data.ore_at(Vector3(1610.0, 140.0, 1500.0), 40.0, NAMES, 10.0) == "", "on a hill with the seam 45 m down there is no coal")
 	check(data.ore_at(Vector3(1610.0, 80.0, 1500.0), 40.0, NAMES, 10.0) == "", "in a valley cut below the seam, with the next band 25 m further down, there is none")
 	check(data.ore_at(Vector3(1610.0, 0.0, 1500.0), 40.0, NAMES, 10.0) == "coal", "deeper down the next band shows again")
 	check(data.ore_at(Vector3(200.0, 100.0, 1500.0), 40.0, NAMES, 10.0) == "", "in the other province the coal seam is not there, and its flint is not a boulder ore")
+
+	# A wide tin halo listed first, with a small copper lens inside it (tile 3,4 has tin halo 552, about 920 m across, round copper halo 554 and lens 555):
+	# where the copper sits it is copper; elsewhere in the halo, tin.
+	var wide = TileDataScript.new()
+	wide.samples = 3
+	wide.spacing_m = 1000.0
+	wide.province = PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	wide.prov_datum = PackedFloat32Array([100.0])
+	wide.layer_offset = PackedInt32Array([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	wide.cover = PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	wide._load_ores([
+		{"shape": "halo", "resource": "tin", "center": [1000.0, 1000.0], "radius_a_m": 900.0, "radius_b_m": 700.0, "top_y": 95.0, "thickness_m": 10.0},
+		{"shape": "lens", "resource": "copper", "center": [1200.0, 90.0, 1000.0], "radius_a_m": 40.0, "radius_b_m": 30.0, "thickness_m": 4.0},
+		{"shape": "vein", "resource": "iron", "points": [[600.0, 600.0], [600.0, 1400.0]], "top_y": 95.0, "bottom_y": 0.0, "dip_deg": 70.0, "dip_side": 1, "width_m": 4.0},
+	], {"tin": 1, "copper": 2, "iron": 3}, {})
+	check(wide.ore_at(Vector3(1210.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "copper", "a small copper lens inside a wide tin halo is copper where it sits")
+	check(wide.ore_at(Vector3(1260.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "tin", "just outside the lens it is tin again")
+	check(wide.ore_at(Vector3(1000.0, 100.0, 1300.0), 40.0, NAMES, 10.0) == "tin", "and over the rest of the halo")
+	check(wide.ore_at(Vector3(601.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "iron", "a boulder on an iron vein's trace inside the halo is iron")
 
 	var sea = TileDataScript.new()
 	sea.placeholder = true
