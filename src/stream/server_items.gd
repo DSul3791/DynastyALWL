@@ -21,6 +21,7 @@ const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
 const DrinkRules := preload("res://src/shared/drink_rules.gd")
+const BogIron := preload("res://src/shared/bog_iron.gd")   # bog iron under fens and marshes (digging.json bog_iron)
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -178,6 +179,7 @@ var _holes: Array = []            # ice fishing holes: {pos, owner key, until ga
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var rock_near: Callable          # (position) -> the rocks.json name of the bedrock under a boulder there (TileTerrainData.bedrock_name_at), "" when unknown; set by the server scene (unset: no rock pieces)
 var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
+var bog_deposit_at: Callable     # (x, z, digging.json bog_iron) -> BogIron.deposit_at on the baked tile there ({} when none); set by the server scene (unset: no bog iron)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
@@ -317,6 +319,7 @@ var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player 
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
+var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left, game seconds it is counted to] (absent = untouched, full), saved in world_items.json "bog_iron"
 const BOULDER_KEY := 1 << 50
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
 const CAVE_ITEMS_MAX := 256
@@ -1448,7 +1451,7 @@ func save() -> void:
 	_save_craft_queues()
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION, "no_kits": true})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true})
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -3105,6 +3108,7 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 		if number > 0 and amount > 0:
 			give(peer, number, maxi(1, int(round(float(amount) * skill_factor(peer, "dig")))) * pieces)
 
+	_dig_bog_iron(peer, at, tier, pieces)
 	practice(peer, "dig")
 	var under: Array = _dig_cfg.get("under", {}).get(material, [])
 
@@ -3120,6 +3124,48 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 
 		if found > 0 and material in find.get("soils", []) and roll_chance(peer, _fate_rng, float(find.get("chance", 0.0))):
 			give(peer, found, 1)
+
+
+# Bog iron (digging.json bog_iron, Sonny s11): a dig on a deposit also brings up its ore, on top of the peat or mud. It is per_dig rolled like a
+# soil row, plus the spade tier's tier_extra, times the spade size's pieces, never more than is left; the deposit grows back one ore every
+# regrow_game_days (BogIron.regrown, worked out at the dig). The first dig that finds any says first_find once to that character.
+func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
+	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
+
+	if cfg.is_empty() or not bog_deposit_at.is_valid():
+		return
+
+	var deposit: Dictionary = bog_deposit_at.call(at.x, at.z, cfg)
+	var number: int = table.number_of(str(cfg.get("item", "iron_ore")))
+
+	if deposit.is_empty() or number <= 0:
+		return
+
+	var key: String = str(deposit["key"])
+	var size: int = int(deposit["size"])
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	var row: Array = BogIron.regrown(_bog_left.get(key, [size, now_s]), size, now_s, cfg)
+	var left: int = int(row[0])
+
+	if left <= 0:
+		_bog_left[key] = row
+		return
+
+	var per: Array = cfg.get("per_dig", [1, 2])
+	var extra: int = int(_dig_cfg.get("tier_extra", {}).get(str(tier), 0))
+	var amount: int = mini(maxi(1, int(round(float(roll_amount(peer, _fate_rng, int(per[0]), int(per[1]) + extra)) * skill_factor(peer, "dig")))) * pieces, left)
+	give(peer, number, amount)
+	_bog_left[key] = [left - amount, float(row[1])]
+	_dirty = true
+	var st: Dictionary = _goal_state_of(peer)   # the character's record: the line is said once, kept in hints_seen like a hint
+
+	if not st.is_empty():
+		if typeof(st.get("hints_seen", null)) != TYPE_DICTIONARY:
+			st["hints_seen"] = {}
+
+		if not st["hints_seen"].has("found_bog_iron") and str(cfg.get("first_find", "")) != "":
+			st["hints_seen"]["found_bog_iron"] = Time.get_unix_time_from_system()
+			_say(peer, str(cfg["first_find"]))
 
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
@@ -4539,6 +4585,12 @@ func _load_world_items() -> void:
 
 	for key in parsed.get("boulders", {}):
 		_boulder_left[int(key)] = int(parsed["boulders"][key])
+
+	for key in parsed.get("bog_iron", {}):
+		var bog_row: Variant = parsed["bog_iron"][key]
+
+		if typeof(bog_row) == TYPE_ARRAY and (bog_row as Array).size() >= 2:
+			_bog_left[str(key)] = [int(bog_row[0]), float(bog_row[1])]
 
 	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
 
