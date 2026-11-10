@@ -66,6 +66,21 @@ func _light_burn_checks(items, inv) -> void:
 	check(not bool(items._items[910002]["struct"].get("lit", false)), "it puts out the torch post")
 	check(not items._lit_fires().has(post_at), "and the put-out post keeps nothing off")
 	items.rain_now = func(): return 0.0
+	# A lantern's own candle (blueprints.json "spent", coordinator ruling 10 Nov 2026): it burns in the lantern from the start and is not given back.
+	items._structures["test_lantern"]["kit"] = "test_lantern_kit"
+	items._blueprints[99901] = {"number": 99901, "structure": "test_lantern", "cost": [["candle", 1], ["stick", 2]], "spent": [["candle", 1]], "hammer": 1}
+	items._blueprint_of_kit["test_lantern_kit"] = 99901
+	var built: Dictionary = {"number": items.table.number_of("chandelier"), "count": 1, "pos": Vector3(101.0, 5.0, 101.0), "left": 1.0e9, "struct": {"kind": "test_lantern", "yaw": 0.0}}
+	items._after_built(7, built, items._structures["test_lantern"])
+	check(bool(built["struct"].get("lit", false)) and is_equal_approx(float(built["struct"]["fuel_left"]), 3600.0), "a lantern built with its candle stands lit for a game day")
+	items._items[910003] = built
+	var candles: int = inv.count_of(items.table.number_of("candle"))
+	var sticks: int = inv.count_of(items.table.number_of("stick"))
+	items._take_down(7, inv, 910003)
+	check(not items._items.has(910003) and inv.count_of(items.table.number_of("candle")) == candles and inv.count_of(items.table.number_of("stick")) == sticks + 2, "taken down it gives the sticks back, not the burnt candle")
+	check(items._refund_blueprint(7, inv, items._blueprints[99901]) and inv.count_of(items.table.number_of("candle")) == candles + 1, "an unbuilt kit's refund still gives everything")
+	items._blueprints.erase(99901)
+	items._blueprint_of_kit.erase("test_lantern_kit")
 	items._items.erase(910001)
 	items._items.erase(910002)
 

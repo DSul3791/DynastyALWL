@@ -7059,13 +7059,25 @@ func _take_ground_stock(peer: int, number: int, want: int) -> int:
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
-func _refund_blueprint(peer: int, inv, row: Dictionary) -> bool:
+# A blueprint's materials back in the pack, all or nothing. `taken_down`: the piece stood, so what it burned is gone (blueprints.json "spent", [item,
+# count], also counted in "cost": a lantern's candle or lamp oil; coordinator ruling 10 Nov 2026) and only the rest comes back.
+func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false) -> bool:
 	var given: Array = []
 
 	for need in row["cost"]:
 		var number: int = table.number_of(str(need[0]))
-		var left: int = inv.add(number, int(need[1]))
-		given.append([number, int(need[1]) - left])
+		var count: int = int(need[1])
+
+		if taken_down:
+			for burnt in row.get("spent", []):
+				if str(burnt[0]) == str(need[0]):
+					count = maxi(count - int(burnt[1]), 0)
+
+		if count <= 0:
+			continue
+
+		var left: int = inv.add(number, count)
+		given.append([number, count - left])
 
 		if left > 0:
 			for put in given:
@@ -7192,6 +7204,12 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 # What a piece does once it stands: a support holds the ground, a lean-to is a place to rest, the goal list hears of it.
 func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 	var spot: Vector3 = entry["pos"]
+
+	if str(def.get("use", "")) == "light" and _blueprint_of_kit.has(str(def.get("kit", ""))):   # a lantern built with its candle or oil ("spent") stands lit on it
+		for burnt in _blueprints[int(_blueprint_of_kit[str(def["kit"])])].get("spent", []):
+			if str(burnt[0]) == str(def.get("fuel", "")) and int(burnt[1]) > 0:
+				entry["struct"]["lit"] = true
+				entry["struct"]["fuel_left"] = light_burn_s(def) * float(int(burnt[1]))
 
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
@@ -7717,7 +7735,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
+		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
 	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
 		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out
