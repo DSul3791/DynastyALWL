@@ -516,7 +516,13 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"twine_bark": {
 			"number": 24,
@@ -626,7 +632,7 @@
 		},
 		"sewing_needle": {
 			"number": 29,
-			"name": "Sewing needle",
+			"name": "Bone - Needle",
 			"category": "Tools",
 			"needs": [
 				[
@@ -639,9 +645,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
-			"locked": true,
-			"retired": true
+			"known": true
 		},
 		"backpack": {
 			"number": 30,
@@ -662,7 +666,13 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"energy_bar": {
 			"number": 31,
@@ -883,7 +893,13 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"hide_boots": {
 			"number": 40,
@@ -904,7 +920,13 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"hide_hood": {
 			"number": 41,
@@ -925,7 +947,13 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"hide_mittens": {
 			"number": 42,
@@ -946,7 +974,13 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"hide_leggings": {
 			"number": 43,
@@ -967,7 +1001,13 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"sinew_cord": {
 			"number": 44,
@@ -3688,7 +3728,13 @@
 			],
 			"gives": ["quiver", 1],
 			"craft_s": 6.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"cook_flatbread": {
 			"number": 174,
@@ -3989,7 +4035,13 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"hide_trousers": {
 			"number": 195,
@@ -4010,7 +4062,13 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"hide_gloves": {
 			"number": 196,
@@ -4031,7 +4089,13 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"clay_jug": {
 			"number": 197,
@@ -4423,7 +4487,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"leather_jerkin": {
 			"number": 214,
@@ -4446,7 +4516,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"bronze_helm": {
 			"number": 215,
@@ -5027,7 +5103,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"wool_trousers": {
 			"number": 238,
@@ -5050,7 +5132,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"wool_cap": {
 			"number": 239,
@@ -5069,7 +5157,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"wool_mittens": {
 			"number": 240,
@@ -5088,7 +5182,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"linen_shirt": {
 			"number": 241,
@@ -5111,7 +5211,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"fur_cloak": {
 			"number": 242,
@@ -5134,7 +5240,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"fur_hat": {
 			"number": 243,
@@ -5157,7 +5269,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"fur_boots": {
 			"number": 244,
@@ -5180,7 +5298,13 @@
 			"craft_s": 16.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"keeps": [
+				[
+					"sewing_needle",
+					1
+				]
+			]
 		},
 		"linen": {
 			"number": 245,

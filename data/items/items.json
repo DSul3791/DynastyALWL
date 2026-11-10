@@ -666,7 +666,7 @@
 		},
 		"sewing_needle": {
 			"number": 49,
-			"name": "Sewing needle",
+			"name": "Bone - Needle",
 			"description": "A needle carved from bone. For sewing hide and cloth.",
 			"kind": "tool",
 			"tool_class": "needle",
@@ -680,10 +680,7 @@
 				]
 			],
 			"value": 8,
-			"future": true,
-			"look_alikes": [],
-			"retired": true,
-			"note": "Cut (Dave 25 Oct trim answer B: no sewing needle); number kept, never reused."
+			"look_alikes": []
 		},
 		"backpack": {
 			"number": 50,

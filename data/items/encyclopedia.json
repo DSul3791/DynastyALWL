@@ -2579,7 +2579,7 @@
 			"kind": "container",
 			"description": "A sewn skin bag for carrying a drink.",
 			"how_to_get": [
-				"Craft: 2 Hide, 1 Twine"
+				"Craft: 2 Hide, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2668,7 +2668,8 @@
 				"Dropped by duck when worked with a knife"
 			],
 			"used_for": [
-				"Used in Bone - Arrow"
+				"Used in Bone - Arrow",
+				"Used in Bone - Needle"
 			],
 			"obtainable_now": true
 		},
@@ -2677,7 +2678,7 @@
 			"kind": "gear",
 			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
 			"how_to_get": [
-				"Craft: 4 Hide, 1 Rope"
+				"Craft: 4 Hide, 1 Rope (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2804,7 +2805,7 @@
 			"kind": "clothing",
 			"description": "A wrapped animal hide. Warm over the shoulders.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2814,7 +2815,7 @@
 			"kind": "clothing",
 			"description": "Hide stitched around the foot. Warm and tough.",
 			"how_to_get": [
-				"Craft: 2 Hide, 2 Twine"
+				"Craft: 2 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2824,7 +2825,7 @@
 			"kind": "clothing",
 			"description": "A close hood of hide with the hair turned in.",
 			"how_to_get": [
-				"Craft: 1 Hide, 1 Twine"
+				"Craft: 1 Hide, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2834,7 +2835,7 @@
 			"kind": "clothing",
 			"description": "Stitched hide mittens. Warm hands.",
 			"how_to_get": [
-				"Craft: 1 Hide, 1 Twine"
+				"Craft: 1 Hide, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2844,7 +2845,7 @@
 			"kind": "clothing",
 			"description": "Hide tied around each leg.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4475,7 +4476,7 @@
 			"kind": "gear",
 			"description": "A hide tube worn on the back. Holds 40 arrows.",
 			"how_to_get": [
-				"Craft: 2 Hide, 2 Twine"
+				"Craft: 2 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4883,7 +4884,7 @@
 			"kind": "clothing",
 			"description": "A sewn hide shirt with sleeves. Warmer than a cloak.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4893,7 +4894,7 @@
 			"kind": "clothing",
 			"description": "Hide sewn into trousers. Better than leggings.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4903,7 +4904,7 @@
 			"kind": "clothing",
 			"description": "Stitched hide gloves with fingers. For work and cold.",
 			"how_to_get": [
-				"Craft: 1 Hide, 2 Twine"
+				"Craft: 1 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5086,7 +5087,7 @@
 			"kind": "clothing",
 			"description": "A close leather cap. Better than bare hide.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Leather, 1 Leather strap"
+				"Craft at a workbench: 1 Leather, 1 Leather strap (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5097,7 +5098,7 @@
 			"kind": "clothing",
 			"description": "A stiff leather vest. Turns a glancing blow.",
 			"how_to_get": [
-				"Craft at a workbench: 2 Leather, 2 Leather strap"
+				"Craft at a workbench: 2 Leather, 2 Leather strap (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5558,7 +5559,7 @@
 			"kind": "clothing",
 			"description": "A woven wool shirt. Warm.",
 			"how_to_get": [
-				"Craft at a workbench: 2 Wool cloth, 1 Twine"
+				"Craft at a workbench: 2 Wool cloth, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5569,7 +5570,7 @@
 			"kind": "clothing",
 			"description": "Heavy woven wool trousers.",
 			"how_to_get": [
-				"Craft at a workbench: 2 Wool cloth, 1 Twine"
+				"Craft at a workbench: 2 Wool cloth, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5580,7 +5581,7 @@
 			"kind": "clothing",
 			"description": "A snug knitted wool cap.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Wool cloth"
+				"Craft at a workbench: 1 Wool cloth (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5591,7 +5592,7 @@
 			"kind": "clothing",
 			"description": "Thick wool mittens.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Wool cloth"
+				"Craft at a workbench: 1 Wool cloth (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5602,7 +5603,7 @@
 			"kind": "clothing",
 			"description": "A light linen shirt. Cool in summer heat.",
 			"how_to_get": [
-				"Craft at a workbench: 3 Linen, 1 Twine"
+				"Craft at a workbench: 3 Linen, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5613,7 +5614,7 @@
 			"kind": "clothing",
 			"description": "A heavy cloak of fur pelts. The warmest body cover.",
 			"how_to_get": [
-				"Craft at a workbench: 3 Fur, 2 Sinew"
+				"Craft at a workbench: 3 Fur, 2 Sinew (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5624,7 +5625,7 @@
 			"kind": "clothing",
 			"description": "A fur hat with ear flaps.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Fur, 1 Sinew"
+				"Craft at a workbench: 1 Fur, 1 Sinew (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5635,7 +5636,7 @@
 			"kind": "clothing",
 			"description": "Fur boots with the hair turned in.",
 			"how_to_get": [
-				"Craft at a workbench: 2 Fur, 1 Sinew"
+				"Craft at a workbench: 2 Fur, 1 Sinew (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -9118,6 +9119,38 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
+		},
+		"sewing_needle": {
+			"name": "Bone - Needle",
+			"kind": "tool",
+			"description": "A needle carved from bone. For sewing hide and cloth.",
+			"how_to_get": [
+				"Craft: 1 Bone"
+			],
+			"used_for": [
+				"Used in Fur - Boots",
+				"Used in Fur - Cloak",
+				"Used in Fur - Hat",
+				"Used in Hide - Backpack",
+				"Used in Hide - Boots",
+				"Used in Hide - Cloak",
+				"Used in Hide - Gloves",
+				"Used in Hide - Hood",
+				"Used in Hide - Leggings",
+				"Used in Hide - Mittens",
+				"Used in Hide - Quiver",
+				"Used in Hide - Trousers",
+				"Used in Hide - Tunic",
+				"Used in Leather - Cap",
+				"Used in Leather - Jerkin",
+				"Used in Linen - Shirt",
+				"Used in Waterskin",
+				"Used in Wool - Cap",
+				"Used in Wool - Mittens",
+				"Used in Wool - Trousers",
+				"Used in Wool - Tunic"
+			],
+			"obtainable_now": true
 		}
 	}
 }

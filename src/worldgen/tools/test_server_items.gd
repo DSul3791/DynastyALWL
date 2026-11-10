@@ -3127,6 +3127,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("stone"), 4)
 	bw.give(1, bw.table.number_of("twine"), 10)
 	bw.give(1, bw.table.number_of("hide"), 2)
+	bw.give(1, bw.table.number_of("sewing_needle"), 1)   # sewn things keep a Bone - Needle (item system, 10 Nov 2026); it stays for the hood below
 	bw._last_queue_act.clear()
 	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
 	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a workbench")
