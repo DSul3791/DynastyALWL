@@ -7833,7 +7833,7 @@
 			"kind": "placeable",
 			"description": "A heavy stone slab on stone feet. Seats two or three.",
 			"how_to_get": [
-				"Build with a hammer (press R): 10 Cobblestone, 2 Mortar"
+				"Build with a hammer (press R): 10 Cobblestone, 2 Clay mortar"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -7851,7 +7851,7 @@
 			"kind": "placeable",
 			"description": "A thick stone-footed table with a plank top.",
 			"how_to_get": [
-				"Build with a hammer (press R): 14 Cobblestone, 3 Mortar, 2 Planks"
+				"Build with a hammer (press R): 14 Cobblestone, 3 Clay mortar, 2 Plank"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -7869,7 +7869,7 @@
 			"kind": "placeable",
 			"description": "A timber bench bound with iron. Seats two or three.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Planks, 1 Iron ingot, 12 Nails"
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -7887,7 +7887,7 @@
 			"kind": "placeable",
 			"description": "An iron-bound chair with a hide seat.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Planks, 1 Iron ingot, 12 Nails, 1 Hide"
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails, 1 Hide"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -7905,7 +7905,7 @@
 			"kind": "placeable",
 			"description": "A plank table bound with iron.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Planks, 1 Iron ingot, 20 Nails"
+				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Nails"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -7923,7 +7923,7 @@
 			"kind": "placeable",
 			"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
 			"how_to_get": [
-				"Build with a hammer (press R): 20 Cobblestone, 4 Mortar, 6 Planks"
+				"Build with a hammer (press R): 20 Cobblestone, 4 Clay mortar, 6 Plank"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -7941,7 +7941,7 @@
 			"kind": "placeable",
 			"description": "Plank shelves to set against a wall. Holds 8 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Planks, 1 Twine"
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -7959,7 +7959,7 @@
 			"kind": "placeable",
 			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Planks, 12 Nails, 2 Hinges"
+				"Build with a hammer (press R): 6 Plank, 12 Nails, 2 Hinges"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -7977,7 +7977,7 @@
 			"kind": "placeable",
 			"description": "A hooped plank barrel. Holds 8 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Planks, 2 Twine, 8 Nails"
+				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Nails"
 			],
 			"used_for": [],
 			"obtainable_now": true
