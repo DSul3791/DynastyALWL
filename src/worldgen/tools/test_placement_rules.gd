@@ -27,6 +27,20 @@ func _init() -> void:
 	check(Rules.blocked(cfg, "bench_kit", Vector3(1.0, 10, 0), rows) == "", "furniture may stand beside a fire")
 	check(Rules.blocked(cfg, "campfire_kit", Vector3(1.5, 10, 0), rows) == "close" and Rules.blocked(cfg, "campfire_kit", Vector3(2.5, 10, 0), rows) == "", "a fire needs 2 m from another fire")
 	check(Rules.blocked(cfg, "campfire_kit", Vector3(2.2, 10, 0), [{"pos": Vector3(0, 10, 0), "state": 6}]) == "close", "a fire too near a structure is blocked")
+	# A fire on a foundation (Dave 10 Nov 2026): the foundation does not block it, a wall does, as on the server; the fire sits on its top.
+	var fire_base_state: int = int(cfg["structures"]["foundation_section"]["state"])
+	var fire_base_rows: Array = [{"pos": Vector3(0, 10, 0), "state": fire_base_state, "yaw": 0.0}]
+	check(Rules.blocked(cfg, "campfire_kit", Vector3(0.5, 10.3, 0.5), fire_base_rows) == "", "a fire on a foundation is free")
+	check(is_equal_approx(Rules.foundation_top(cfg, Vector3(0.5, 10.3, 0.5), fire_base_rows), 10.0 + float(cfg["structures"]["foundation_section"].get("top_m", 0.3))), "its top is the foundation's top")
+	check(is_nan(Rules.foundation_top(cfg, Vector3(3.0, 10.0, 0.0), fire_base_rows)), "off the 4 m footprint there is no top")
+	var wall_kind: String = ""
+
+	for kind in cfg["structures"]:
+		if str(cfg["structures"][kind].get("piece_kind", "")) == "wall" and not bool(cfg["structures"][kind].get("walkover", false)) and not bool(cfg["structures"][kind].get("gap_exempt", false)):
+			wall_kind = kind
+			break
+
+	check(wall_kind != "" and Rules.blocked(cfg, "campfire_kit", Vector3(0.5, 10.3, 0.5), fire_base_rows + [{"pos": Vector3(0, 10.3, 2.0), "state": int(cfg["structures"][wall_kind]["state"])}]) == "close", "a wall 1.6 m away still blocks the fire, as the server says (%s)" % wall_kind)
 
 	# A rough bed inside a lean-to is free (the server allows it); outside the box but within the gap it is red.
 	var lean_row: Array = [{"pos": Vector3(0, 10, 0), "state": 5, "yaw": 0.0}]

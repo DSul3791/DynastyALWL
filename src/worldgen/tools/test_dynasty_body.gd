@@ -29,6 +29,12 @@ func _init() -> void:
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, -4.0, 0), Basis.IDENTITY, false, 0.0, "jump", false, 0.3) == "fall", "dropping in the air: fall")
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "fall", false, 0.016) == "land", "back on the floor after a long fall: land")
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "land", false, 0.5) == "walk", "once the landing is over: the plain walk (no strafe clips on this body)")
+	# No jog since 10 Nov 2026 (the walk is 3.2 m/s): walking backwards on this body plays the gait in reverse; forwards it plays as is.
+	var back_clip: String = AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, 3.2), Basis.IDENTITY, true, 3.2, "walk", false, 0.5)
+	_check(AvatarDriverScript.backward_sign(body, back_clip) < 0.0, "walking backwards at 3.2 m/s: the %s clip plays in reverse" % back_clip)
+	var ahead_clip: String = AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -3.2), Basis.IDENTITY, true, 3.2, back_clip, false, 0.5)
+	_check(AvatarDriverScript.backward_sign(body, ahead_clip) > 0.0, "walking forwards: the %s clip plays forwards" % ahead_clip)
+	_check(AvatarDriverScript.choose_clip_moving(0, Vector2(0.0, 3.2), 0.0, false, "jog", false) == "walk_back" and AvatarDriverScript.choose_clip_moving(0, Vector2(3.2, 0.0), 0.0, false, "jog", false) == "strafe_right", "a generated body walking back or sideways at 3.2 m/s gets walk_back and strafe_right")
 	_check(body.animation_player.get_animation("crouch").loop_mode == Animation.LOOP_LINEAR, "crouch loops")
 	# Chop sound sync (1 Nov 2026): one swing is one blow, and the clip is the length of the game's swing so the blow lands at held_item's HIT_AT (the sound and the hit).
 	_check(absf(body.animation_player.get_animation("chop").length - 0.95) < 0.02, "chop clip is the 0.95 s swing (%.3f)" % body.animation_player.get_animation("chop").length)

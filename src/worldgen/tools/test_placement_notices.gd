@@ -135,6 +135,22 @@ func _init() -> void:
 	give("campfire_pot_kit", 1)
 	place("campfire_pot_kit", Vector3(-20.0, 10.0, -10.0))
 	check(said.has("The campfire pot hangs over a small fire. Lay a fire first."), "a pot with no fire near: told so (%s)" % str(said))
+	# A fire on a foundation (Dave 10 Nov 2026: "its green but when I press to place it says something is in the way"): it is laid on the top.
+	var base_at: Vector3 = Vector3(-10.0, 10.3, 20.0)   # a foundation standing 0.3 m proud of the 10 m ground
+	items._items[items._next_id] = {"number": items.table.number_of("foundation_section"), "count": 1, "pos": base_at, "left": 1.0e9, "wear": 0, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	items._next_id += 1
+	var fires_before: int = rows("campfire_kit")
+	give("campfire_kit", 1)
+	place("campfire_kit", Vector3(-9.5, 10.6, 20.5))
+	var laid: Dictionary = {}
+
+	for k in items._items:
+		if items._items[k].has("fire") and Vector2(items._items[k]["pos"].x + 9.5, items._items[k]["pos"].z - 20.5).length() < 0.1:
+			laid = items._items[k]
+
+	check(rows("campfire_kit") == fires_before + 1 and not said.has("Something is in the way."), "a fire on a foundation is laid (%s)" % str(said))
+	var top_m: float = float(items._structures["foundation_section"].get("top_m", 0.3))
+	check(not laid.is_empty() and absf(float(laid["pos"].y) - (base_at.y + top_m)) < 0.01, "on the foundation's top, %.2f m (%s)" % [base_at.y + top_m, str(laid.get("pos", "none"))])
 	print("placement notices: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

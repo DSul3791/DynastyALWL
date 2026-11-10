@@ -130,7 +130,6 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
-| 3 | `hit_swing` | generated | 3 | hit_sounds.gd: a tool swung through the air, hit or miss | 3 tool whooshes, 0.5 s |
 | 3 | `item_reject` | generated | 3 | item_sounds.gd: an action was refused (too far, no tool, pack full), a soft double knock | a soft refusal knock, 0.2 s |
 | 3 | `land_hard` | generated | 3 | landing_sounds.gd: landing from 5 m and more, heavy impact, gear rattle and a grunt | 3 hard landings, 0.9 s |
 | 3 | `land_thud` | generated | 3 | landing_sounds.gd: landing from 2.5 to 5 m, body weight and a breath knocked out | 3 landing thuds, 0.5 s |

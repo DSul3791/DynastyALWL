@@ -85,17 +85,19 @@ func _run() -> void:
 	var bottom: MeshInstance3D = bow.get_node("StringBottom")
 	check((bottom.transform * Vector3(0.0, -0.5, 0.0)).distance_to(Vector3(-BasicLook.BOW_HALF_M, 0.0, 0.0)) < 0.002, "the lower cord starts at the bottom nock")
 	check(bow.get_meta("nock") == nock, "the nock point is kept on the bow (meta nock)")
-	# The nocked arrow: its nock end on the string, the shaft crossing the grip on the bow's left side (mesh -y), in line with the string (Dave 10 Nov 2026).
+	# The nocked arrow: its nock end on the string, the shaft straight ahead (the bow's +z, the view's forward, so it points at the crosshair) along the stave's left
+	# side (mesh -y) (Dave 10 Nov 2026: "the bow and arrow should be adjusted so the arrow lines up with the crosshairs").
 	var arrow: MeshInstance3D = MeshInstance3D.new()
 	arrow.name = "NockedArrow"
 	bow.add_child(arrow)
-	var string_at: Vector3 = Vector3(HeldItem.BOW_NOCK_ABOVE_M, 0.0, -0.3)
+	var string_at: Vector3 = Vector3(HeldItem.BOW_NOCK_ABOVE_M, -HeldItem.BOW_ARROW_SIDE_M, -0.3)
 	HeldItem._place_nocked_arrow(bow, string_at, true)
 	var arrow_nock: Vector3 = arrow.transform * Vector3(-HeldItem.ARROW_NOCK_M, 0.0, 0.0)
 	var arrow_dir: Vector3 = arrow.transform.basis.x.normalized()
 	var at_grip: Vector3 = arrow_nock + arrow_dir * ((BasicLook.BOW_BRACE_M - arrow_nock.z) / arrow_dir.z)
 	check(arrow.visible and arrow_nock.distance_to(string_at) < 0.002, "the arrow's nock sits on the string")
-	check(at_grip.y < -0.01 and at_grip.y > -0.03 and absf(at_grip.x - HeldItem.BOW_NOCK_ABOVE_M) < 0.002, "the shaft crosses the grip on the bow's left side (%.3f)" % at_grip.y)
+	check(arrow_dir.distance_to(Vector3(0.0, 0.0, 1.0)) < 0.001, "the shaft points straight ahead, at the crosshair")
+	check(at_grip.y < -0.003 and at_grip.y > -0.01 and absf(at_grip.x - HeldItem.BOW_NOCK_ABOVE_M) < 0.002, "the shaft passes the grip on the bow's left side (%.3f)" % at_grip.y)
 	HeldItem._place_nocked_arrow(bow, string_at, false)
 	check(not arrow.visible, "no arrow in the pack: none on the string")
 

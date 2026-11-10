@@ -3253,6 +3253,13 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	var on_base: bool = bool(on_grid[2])
 	var lift: float = 0.0
 
+	if kit_id == "campfire_kit":   # a fire is laid on top of a foundation it is aimed at (Dave 10 Nov 2026), not on the ground under it
+		var base_top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
+
+		if not is_nan(base_top):
+			at.y = base_top
+			on_base = true
+
 	if not on_base and bool(_structure_of_kit(kit_id).get("foundation", false)):
 		lift = float(clampi(lift_steps, 0, PlacementRules.LIFT_MAX_STEPS)) * PlacementRules.LIFT_STEP_M   # the client sent the lifted height; the ground is checked below it
 		at.y -= lift
@@ -3308,7 +3315,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
-		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("gap_exempt", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("gap_exempt", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("foundation", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):   # a foundation is a floor the fire may stand on
 			_say(peer, "Something is in the way.")
 			return
 

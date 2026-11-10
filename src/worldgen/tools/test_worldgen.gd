@@ -2079,8 +2079,9 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			if sb["kind"] == FloraPlacerScript.KIND_PLANT:
 				continue
 
-			# Two members of one berry-shrub patch sit as close as the patch's own spacing says (the placer's patch mode, not the crown rule).
-			if not sa.has("stand") and (ids[a] >> 16) == (ids[b] >> 16) and (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE:
+			# Two members of one berry-shrub patch sit as close as the patch's own spacing says (the placer's patch mode, not the crown rule). Bank
+			# thickets (RIPARIAN_BASE numbers, Dave 10 Nov 2026) are patches too.
+			if not sa.has("stand") and (ids[a] >> 16) == (ids[b] >> 16) and _patch_number(ids[a] & 0xffff) and _patch_number(ids[b] & 0xffff):
 				continue
 
 			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and sa.has("stand") else 0.0
@@ -2296,3 +2297,8 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	_check(TileFileScript.read_section(path, table, "height")["ok"], "other sections still read after one is damaged")
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+# A patch member's item number: a stand or patch slot, or a bank thicket's (flora_placer _riparian_shrubs).
+static func _patch_number(number: int) -> bool:
+	return number >= FloraPlacerScript.STAND_BASE or (number >= FloraPlacerScript.RIPARIAN_BASE and number < FloraPlacerScript.SPRING_BASE)
