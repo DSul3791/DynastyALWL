@@ -608,6 +608,7 @@ func peer_left(peer: int) -> void:
 	_logout_peers.erase(peer)
 	_admin_mode_off.erase(peer)
 	spyglass.erase(peer)
+	spyglass_tier.erase(peer)
 	_chest_viewer.erase(peer)
 	_spot_saved_msec.erase(peer)
 	_station_said.erase(peer)
@@ -1161,10 +1162,14 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			_showroom_seed(peer, a == 1, at)
 
 	elif kind == Net.ACT_SPYGLASS:
-		if a != 1:
+		if a == 2:
+			_look_spyglass_item(peer, inv, count, b)
+		elif a != 1:
 			spyglass.erase(peer)
+			spyglass_tier.erase(peer)
 		elif not admin_ok.is_valid() or admin_ok.call(peer):
 			spyglass[peer] = maxi(b, 0)
+			spyglass_tier.erase(peer)
 		else:
 			spyglass[peer] = -1   # refused: the server scene tells the client once (animal_info id -1) and forgets it
 			_say(peer, "The spyglass is for admins.")
@@ -1211,6 +1216,42 @@ var dump_water: Callable                # set by the server: (x, z) -> String, w
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
 var spyglass: Dictionary = {}          # peer -> the animal id an admin watches through the spyglass (0 none, -1 refused: not an admin); absent when not looking (ACT_SPYGLASS)
+var spyglass_tier: Dictionary = {}     # peer -> the tier of the spyglass item looked through (absent: the admin glass, or not looking)
+var _spyglass_tiers: Dictionary = {}   # data/items/spyglass.json "tiers", read on the first look
+
+
+# ACT_SPYGLASS a = 2 (10 Nov 2026, data/items/spyglass.json): up to the eye through the spyglass item in pack slot `slot`. Needs no admin: the
+# item is checked (a spyglass, not broken), one use of it is worn per look, and the server sends animals out to the tier's radius
+# (spyglass_reach). The watched animal `watched` counts only for a tier with a readout. Refused: animal_info(-1) brings the client's glass down.
+func _look_spyglass_item(peer: int, inv, slot: int, watched: int) -> void:
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot])) if slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0 else {}
+
+	if str(entry.get("tool_class", "")) != "spyglass" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		spyglass[peer] = -1
+		spyglass_tier.erase(peer)
+		return
+
+	if _spyglass_tiers.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/spyglass.json")) if FileAccess.file_exists("res://data/items/spyglass.json") else null
+		_spyglass_tiers = parsed.get("tiers", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	var tier: int = int(entry.get("tier", 1))
+
+	if not spyglass_tier.has(peer):
+		_wear_slot(peer, inv, slot, "look")   # one use per look, not per resend
+
+	spyglass_tier[peer] = tier
+	spyglass[peer] = maxi(watched, 0) if bool(_spyglass_tiers.get(str(tier), {}).get("readout", false)) else 0
+
+
+# The animals sent to a player looking through a spyglass: [radius m, cap]. The admin glass uses animals.json "spyglass" (`admin_cfg`),
+# an item its tier's send_radius_m and cap; [-1, -1] when not looking (the normal send).
+func spyglass_reach(peer: int, admin_cfg: Dictionary) -> Array:
+	if not spyglass.has(peer) or int(spyglass[peer]) < 0:
+		return [-1.0, -1]
+
+	var cfg: Dictionary = _spyglass_tiers.get(str(spyglass_tier[peer]), {}) if spyglass_tier.has(peer) else admin_cfg
+	return [float(cfg.get("send_radius_m", 300.0)), int(cfg.get("cap", 60))]
 
 
 func tick(delta: float) -> void:

@@ -1,0 +1,6 @@
+{
+	"note": "Player spyglasses (docs/design/spyglass_design.md, tier 1 unparked 10 Nov 2026). Hold the spyglass item and hold the right mouse button to look through it; let go to lower it. Each look costs one use (tool_wear per_use spyglass.look, default 1). By the item's tier: zoom [min, max] (the wheel zooms between them, none when equal), send_radius_m and cap (the animals the server sends while looking; normally 120 m, nearest 30), blur_near_m (closer than this is soft: a fixed focus; 0 is sharp at any range, blur_near_transition_m how soft the edge is), readout (the watched animal's name, level and health, tier 3). The admin spyglass (Ctrl+L) stays as it was: 2x to 40x, 300 m, readout.",
+	"tiers": {
+		"1": {"zoom": [3.0, 3.0], "send_radius_m": 150.0, "cap": 40, "blur_near_m": 20.0, "blur_near_transition_m": 8.0, "blur_amount": 0.08, "readout": false}
+	}
+}

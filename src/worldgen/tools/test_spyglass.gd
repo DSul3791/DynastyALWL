@@ -2,11 +2,15 @@ extends SceneTree
 
 # The admin spyglass (Dave 9 Nov 2026, docs/design/spyglass_design.md): zoom range and field of view, the mouse scale, picking
 # the animal nearest the centre, the readout text, and the server side: rows out to the spyglass radius, info_of, a watched
-# animal kept living past the freeze line.
+# animal kept living past the freeze line. The player spyglass item (10 Nov 2026, data/items/spyglass.json): tier 1 at a fixed 3x with a near
+# blur and no readout; the server checks the item (no admin needed), wears one use per look and sends animals out to 150 m.
 #   godot --headless --path . --script res://src/worldgen/tools/test_spyglass.gd
 
 const Spyglass := preload("res://src/client/spyglass.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 
@@ -90,5 +94,66 @@ func _init() -> void:
 
 	check(far["pos"] != start, "watched through the spyglass it keeps living (moved %.1f m)" % far["pos"].distance_to(start))
 
+	item_checks()
 	print("test_spyglass: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
+
+
+# The player spyglass: the tier's view on the client, and the server's check, wear and reach.
+func item_checks() -> void:
+	var cfg: Dictionary = Spyglass.tier_config(1)
+	check(not cfg.is_empty() and float(cfg["send_radius_m"]) == 150.0 and float(cfg["blur_near_m"]) == 20.0, "spyglass.json tier 1: 150 m, soft closer than 20 m")
+	var glass = Spyglass.new()
+	glass.look_item(true, 1, cfg)
+	check(glass.active and is_equal_approx(glass.zoom, 3.0) and not glass.can_zoom() and not glass.has_readout(), "tier 1 looks at a fixed 3x with no readout")
+	glass.wheel(false)
+	check(is_equal_approx(glass.zoom, 3.0), "the wheel does not zoom tier 1")
+	glass.look_item(false, 1, cfg)
+	check(not glass.active and glass.tier == 0, "letting go lowers it")
+	check(glass.toggle() and glass.has_readout() and glass.can_zoom(), "the admin glass is as it was after an item look")
+	glass.toggle()
+
+	var dir: String = "user://test_spyglass_item"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_notice = func(_p, _t): pass
+	items.ground_height = func(_x, _z): return 0.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items.peer_connected_hello(1, "spy-key-00000001")
+	items.report_position(1, Vector3.ZERO)
+	var number: int = items.table.number_of("spyglass")
+	check(number != 0 and str(items.table.entry("spyglass").get("tool_class", "")) == "spyglass", "the spyglass item exists")
+	items.action(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO)
+	var slot: int = items.inventory_of(1).numbers.find(number)
+	items.admin_ok = func(_p): return false      # a player, not an admin
+
+	items.action(1, Net.ACT_SPYGLASS, 2, 0, slot, Vector3.ZERO)
+	check(int(items.spyglass.get(1, -9)) == 0 and int(items.spyglass_tier.get(1, 0)) == 1, "a player looks through a spyglass in the pack, no admin needed")
+	var reach: Array = items.spyglass_reach(1, {"send_radius_m": 300.0, "cap": 60})
+	check(float(reach[0]) == 150.0 and int(reach[1]) == int(cfg["cap"]), "the server sends animals out to the tier's 150 m")
+	check(items.inventory_of(1).wear[slot] == 1, "one look wears one use")
+	items.action(1, Net.ACT_SPYGLASS, 2, 77, slot, Vector3.ZERO)
+	check(items.inventory_of(1).wear[slot] == 1 and int(items.spyglass[1]) == 0, "a resend while looking costs nothing and watches nothing (tier 1 has no readout)")
+	items.action(1, Net.ACT_SPYGLASS, 0, 0, slot, Vector3.ZERO)
+	check(not items.spyglass.has(1) and not items.spyglass_tier.has(1) and float(items.spyglass_reach(1, {})[0]) < 0.0, "lowered: the normal send")
+	items.action(1, Net.ACT_SPYGLASS, 2, 0, slot, Vector3.ZERO)
+	check(items.inventory_of(1).wear[slot] == 2, "a new look wears another use")
+	items.action(1, Net.ACT_SPYGLASS, 0, 0, slot, Vector3.ZERO)
+
+	var other: int = (slot + 1) % items.inventory_of(1).SLOTS
+	items.action(1, Net.ACT_SPYGLASS, 2, 0, other, Vector3.ZERO)
+	check(int(items.spyglass.get(1, 0)) == -1 and not items.spyglass_tier.has(1), "no spyglass in that slot: refused")
+	items.spyglass.erase(1)
+	items.inventory_of(1).wear[slot] = 100000
+	items.action(1, Net.ACT_SPYGLASS, 2, 0, slot, Vector3.ZERO)
+	check(int(items.spyglass.get(1, 0)) == -1, "a broken spyglass is refused")
+	items.spyglass.erase(1)
+	items.action(1, Net.ACT_SPYGLASS, 1, 0, 0, Vector3.ZERO)
+	check(int(items.spyglass.get(1, 0)) == -1, "the admin glass is still refused to a player")

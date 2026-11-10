@@ -1492,6 +1492,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
+	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block
 	Probe.stop("welcome: held item", tq_held_item)
 	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
@@ -3432,6 +3433,7 @@ const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / 
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
 Ctrl+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+L or Esc to lower it)
+Spyglass in hand: hold the right mouse button to look through it (3x), let go to lower it
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
 I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
@@ -4006,10 +4008,39 @@ var _photo_saved: Dictionary = {}
 
 # Ctrl+L: the admin spyglass up or down (docs/design/spyglass_design.md). Not from the photo camera. The server is told (ACT_SPYGLASS) so it
 # sends animals out to 300 m and the watched one's readout; a player who is not an admin is refused and the glass comes down.
+# Ctrl+L or Esc while looking through a held spyglass item lowers that instead.
 func _toggle_spyglass() -> void:
+	if spyglass.active and spyglass.tier > 0:
+		_spyglass_item(false, -1, spyglass.tier)
+		return
+
 	if (photo.active or _animal_view_node == null) and not spyglass.active:
 		return
 
+	_spyglass_ready()
+	var on: bool = spyglass.toggle()
+	_spyglass_shown(on)
+	net.inventory_action.rpc_id(1, NetScript.ACT_SPYGLASS, 1 if on else 0, 0, 0, Vector3.ZERO)
+
+
+# The held spyglass item (held_item.spyglass_look, data/items/spyglass.json): right mouse down looks through it, up lowers it. `slot` is its
+# pack slot, `item_tier` its tier. The server checks the item, takes one use and sends animals out to the tier's radius (ACT_SPYGLASS a = 2).
+func _spyglass_item(on: bool, slot: int, item_tier: int) -> void:
+	if on == spyglass.active or (not on and spyglass.tier == 0):
+		return   # already so, or the admin glass is up: Ctrl+L owns that one
+
+	var cfg: Dictionary = SpyglassScript.tier_config(item_tier)
+
+	if on and (photo.active or _animal_view_node == null or cfg.is_empty()):
+		return
+
+	_spyglass_ready()
+	spyglass.look_item(on, item_tier, cfg)
+	_spyglass_shown(on)
+	net.inventory_action.rpc_id(1, NetScript.ACT_SPYGLASS, 2 if on else 0, 0, slot, Vector3.ZERO)
+
+
+func _spyglass_ready() -> void:
 	if _spyglass_overlay == null:
 		var layer: CanvasLayer = CanvasLayer.new()
 		layer.layer = 5
@@ -4018,14 +4049,27 @@ func _toggle_spyglass() -> void:
 		layer.add_child(_spyglass_overlay)
 		net.animal_info_received.connect(_on_animal_info)
 
-	var on: bool = spyglass.toggle()
+
+# The glass up or down: the vignette, more animals drawn, and a tier's fixed focus (closer than blur_near_m is soft).
+func _spyglass_shown(on: bool) -> void:
 	_spyglass_overlay.visible = on
+	_spyglass_overlay.text = ""
 	_animal_view_node.set("max_drawn", AnimalViewScript.SPYGLASS_DRAWN if on else AnimalViewScript.MAX_DRAWN)
 	_spyglass_sent_ms = Time.get_ticks_msec()
-	net.inventory_action.rpc_id(1, NetScript.ACT_SPYGLASS, 1 if on else 0, 0, 0, Vector3.ZERO)
+	var near_m: float = float(spyglass.tier_cfg.get("blur_near_m", 0.0))
+
+	if on and near_m > 0.0:
+		var focus: CameraAttributesPractical = CameraAttributesPractical.new()
+		focus.dof_blur_near_enabled = true
+		focus.dof_blur_near_distance = near_m
+		focus.dof_blur_near_transition = float(spyglass.tier_cfg.get("blur_near_transition_m", 8.0))
+		focus.dof_blur_amount = float(spyglass.tier_cfg.get("blur_amount", 0.08))
+		view_cam.attributes = focus
+	else:
+		view_cam.attributes = null
 
 
-# The server's readout for the watched animal; id -1: not an admin, the glass comes down.
+# The server's readout for the watched animal; id -1: refused (not an admin, or no spyglass in hand), the glass comes down.
 func _on_animal_info(id: int, info: Dictionary) -> void:
 	if id == -1 and spyglass.active:
 		_toggle_spyglass()
@@ -4037,6 +4081,13 @@ func _on_animal_info(id: int, info: Dictionary) -> void:
 func _update_spyglass() -> void:
 	if not spyglass.active or _spyglass_overlay == null:
 		return
+
+	if not spyglass.has_readout():
+		if _spyglass_overlay.text != "%.0fx" % spyglass.zoom:
+			_spyglass_overlay.text = "%.0fx" % spyglass.zoom
+			_spyglass_overlay.queue_redraw()
+
+		return   # a tier without a readout watches nothing: the server needs no word while it is up
 
 	var eye: Vector3 = view_cam.global_position
 	var forward: Vector3 = -view_cam.global_transform.basis.z

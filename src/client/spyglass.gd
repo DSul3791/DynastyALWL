@@ -6,6 +6,8 @@ extends RefCounted
 # sends its name, level, health and doings (animal_info, protocol 102), drawn under the dot. The server sends animals out to
 # despawn_m while an admin looks; a player who is not an admin is refused (animal_info id -1) and the view closes.
 # This file is the arithmetic and the overlay; terrain_client.gd sets the field of view and sends ACT_SPYGLASS.
+# The player spyglass (tier 1 from 10 Nov 2026, data/items/spyglass.json): held in hand, right mouse held looks through the same view with the
+# tier's zoom range, a fixed near blur and no readout (tier 3 will have one); the server checks the item and sends animals out to the tier's radius.
 
 const MIN_ZOOM := 2.0
 const MAX_ZOOM := 40.0
@@ -13,6 +15,7 @@ const START_ZOOM := 4.0
 const ZOOM_STEP := 1.25          # each wheel notch multiplies or divides the zoom
 const PICK_DEG := 3.0            # an animal within PICK_DEG / zoom degrees of the centre is watched
 const MAX_M := 320.0             # farther than the server ever sends (despawn_m 300 and a margin)
+const TIERS_PATH := "res://data/items/spyglass.json"
 
 # Wire animal states (server_animals.gd, server_wolves.gd, server_big_game.gd, server_thieves.gd) as words for the readout.
 const STATE_WORDS := {0: "grazing", 1: "moving", 2: "fleeing", 3: "alert", 6: "stalking", 7: "attacking", 8: "rolling in the grass", 9: "playing",
@@ -23,6 +26,39 @@ var active: bool = false
 var zoom: float = START_ZOOM
 var watched: int = 0              # the animal id nearest the centre (0 none)
 var info: Dictionary = {}         # the server's last animal_info for `watched`
+var tier: int = 0                 # 0 the admin spyglass (Ctrl+L), else the tier of the held spyglass item
+var tier_cfg: Dictionary = {}     # spyglass.json tiers[tier] while an item is looked through
+var zoom_min: float = MIN_ZOOM
+var zoom_max: float = MAX_ZOOM
+
+
+# The numbers of a spyglass item's tier (data/items/spyglass.json), {} for an unknown tier.
+static func tier_config(item_tier: int) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(TIERS_PATH)) if FileAccess.file_exists(TIERS_PATH) else null
+	return (parsed.get("tiers", {}) as Dictionary).get(str(item_tier), {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+
+
+# Up to the eye through a held spyglass item of `item_tier` (cfg: its tier_config), or down. The admin glass is toggle() below.
+func look_item(on: bool, item_tier: int, cfg: Dictionary) -> void:
+	active = on
+	watched = 0
+	info = {}
+	tier = item_tier if on else 0
+	tier_cfg = cfg if on else {}
+	var range_x: Array = cfg.get("zoom", [START_ZOOM, START_ZOOM]) if on else [MIN_ZOOM, MAX_ZOOM]
+	zoom_min = float(range_x[0])
+	zoom_max = float(range_x[range_x.size() - 1])
+	zoom = zoom_min if on else START_ZOOM
+
+
+# Whether the watched animal's readout is shown (the admin glass, or a tier with "readout").
+func has_readout() -> bool:
+	return tier == 0 or bool(tier_cfg.get("readout", false))
+
+
+# Whether the wheel zooms (the admin glass, or a tier with a zoom range).
+func can_zoom() -> bool:
+	return zoom_max > zoom_min + 0.001
 
 
 # Ctrl+L: into the spyglass or back out. Returns whether it is on.
@@ -30,6 +66,10 @@ func toggle() -> bool:
 	active = not active
 	watched = 0
 	info = {}
+	tier = 0
+	tier_cfg = {}
+	zoom_min = MIN_ZOOM
+	zoom_max = MAX_ZOOM
 
 	if active:
 		zoom = START_ZOOM
@@ -39,7 +79,7 @@ func toggle() -> bool:
 
 # One wheel notch: out (true, less zoom) or in.
 func wheel(out: bool) -> void:
-	zoom = clampf(zoom / ZOOM_STEP if out else zoom * ZOOM_STEP, MIN_ZOOM, MAX_ZOOM)
+	zoom = clampf(zoom / ZOOM_STEP if out else zoom * ZOOM_STEP, zoom_min, zoom_max)
 
 
 # The field of view (degrees) through the glass for a normal view of `base_deg`.
