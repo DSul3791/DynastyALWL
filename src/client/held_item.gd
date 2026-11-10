@@ -390,10 +390,11 @@ func _repair_here() -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 8.0)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
-	var id: int = _inv.structure_id_near(hit["position"]) if not hit.is_empty() else 0
+	# A blue blueprint site has no collider (it is walked through): with nothing hit, the point 4 m ahead finds it.
+	var id: int = _inv.structure_id_near(hit["position"] if not hit.is_empty() else from - _camera.global_transform.basis.z * 4.0)
 
 	if id == 0:
-		_inv._on_notice("Aim at the wall, floor, roof or station you want to repair")
+		_inv._on_notice("Aim at the wall, floor, roof or station you want to repair, or a blueprint to fill")
 		return
 
 	_arm_play("use", 0.6)
@@ -1701,7 +1702,7 @@ func _caption() -> String:
 		else:
 			text += "   (left click: build it with the materials in your pack; right click: the list)"
 	elif _hammer_tier() > 0 and blueprints.mode == "repair":
-		text += "   (Repair: left click a worn piece to mend it; right click: the menu)"
+		text += "   (Repair: left click a worn piece to mend it, or a blueprint to fill it from all around you; right click: the menu)"
 	elif _hammer_tier() > 0 and blueprints.mode == "save":
 		text += "   (Save building plan: left click a building to keep it; right click: the menu)"
 	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
