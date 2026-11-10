@@ -1425,7 +1425,7 @@ const SMOKE_CFG_PATH := "res://data/look/fire_smoke.json"
 const SMOKE_DEFAULTS := {"rise_m_s": [0.30, 0.39, 0.53], "amount": [90, 130, 190], "puff_m": [0.3, 0.4, 0.5], "grow_to": 8.0, "life_s": 20.0, "rise_end_share": 0.4,
 	"calm_rise_m_s": 0.8, "calm_mps": [0.3, 1.0], "night_rise_m_s": 1.2, "night_top_m": 12.0, "spread_deg": [8.0, 14.0], "alpha": 0.2, "near_grey": 0.3,
 	"far_grey": 0.74, "fade": [[0.0, 0.0], [0.05, 1.0], [0.3, 0.65], [0.7, 0.25], [1.0, 0.0]], "wind_start_share": 0.25, "waver_m": 0.6,
-	"grow_shape": [[0.0, 0.0], [1.0, 1.0]], "light_grey": 0.7, "fire_light": 0.45,
+	"grow_shape": [[0.0, 0.0], [1.0, 1.0]], "density": [1.0, 1.0, 1.0], "life_share": [1.0, 1.0, 1.0], "light_grey": 0.7, "fire_light": 0.45,
 	"coals": {"amount": 30, "puff_m": 0.15, "rise_m_s": 0.25, "density": 0.45, "grow_to": 6.0}}
 const COALS_TIER := 0                     # _campfire_smoke(COALS_TIER): the thin wisp off a bed of glowing coals (fire_smoke.json "coals")
 static var _smoke_cfg: Dictionary = {}
@@ -1489,10 +1489,11 @@ static func smoke_cfg() -> Dictionary:
 	return _smoke_cfg
 
 
-# A per-tier smoke number (rise_m_s, amount, puff_m, grow_to) for fire tier 1 to 3; COALS_TIER reads fire_smoke.json "coals".
+# A per-tier smoke number (rise_m_s, amount, puff_m, grow_to, density, life_share) for fire tier 1 to 3; COALS_TIER reads fire_smoke.json "coals".
 static func smoke_tier(key: String, tier: int) -> float:
 	if tier == COALS_TIER:
-		return float((smoke_cfg()["coals"] as Dictionary).get(key, smoke_cfg().get(key, 1.0)))
+		var top: Variant = smoke_cfg().get(key, 1.0)                  # a per-tier row the coals lack: the big fire's (density and life 1)
+		return float((smoke_cfg()["coals"] as Dictionary).get(key, top[(top as Array).size() - 1] if top is Array else top))
 
 	var row: Variant = smoke_cfg()[key]
 
@@ -1614,7 +1615,7 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 		var grow_tex: CurveTexture = CurveTexture.new()
 		grow_tex.curve = smoke_grow(smoke_tier("grow_to", tier))
 		material.scale_curve = grow_tex
-		var fade: Gradient = smoke_fade(smoke_tier("density", tier) if tier == COALS_TIER else 1.0)
+		var fade: Gradient = smoke_fade(smoke_tier("density", tier))
 		var fade_tex: GradientTexture1D = GradientTexture1D.new()
 		fade_tex.gradient = fade
 		material.color_ramp = fade_tex
@@ -1640,7 +1641,7 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 	var plume: GPUParticles3D = GPUParticles3D.new()
 	plume.name = "Smoke"
 	plume.amount = int(smoke_tier("amount", tier))
-	plume.lifetime = float(smoke_cfg()["life_s"])
+	plume.lifetime = float(smoke_cfg()["life_s"]) * smoke_tier("life_share", tier)   # a small fire's wisp is gone within a few metres
 	plume.preprocess = plume.lifetime               # already a plume when it comes into view
 	plume.process_material = _camp_smoke[tier]
 	plume.draw_pass_1 = _camp_smoke_mesh

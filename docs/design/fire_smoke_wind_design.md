@@ -113,6 +113,9 @@ Dave: "make fire smoke actually look and act more like fire smoke." The ruling a
 - **Narrow, then wide.** Puffs start at `puff_m` (0.6 to 0.8 m) and grow `grow_to` (8) times over their life. `grow_shape` puts 55% of
   that growth in the first fifth of the life, so near the fire the puffs swell into each other faster than the `spread_deg` cone (3 to 6
   degrees) scatters them. Each puff is soft right out to its rim. (10 Nov 2026: Dino's night shot showed a column of separate round puffs.)
+- **A small fire is a wisp.** The small tier has its own row in each per-tier list: 60 puffs of 0.3 m that grow 4 times, at half the density,
+  living 0.4 of the life (8 s), so the smoke is a hand or two wide at the flames and gone within a few metres. (10 Nov 2026: the one-rock-ring
+  fire laid a haze as wide as the lake.) `density` and `life_share` are per tier; medium and large keep 1.
 - **Grey, not orange.** The sun and moon light the smoke fully. A fire's or lamp's light is greyed (`light_grey` 0.7) and cut to `fire_light`
   (0.45), so the column over a fire reads as grey smoke lit from below.
 - **Dark and dense low, light and thin high.** The shader moves each puff from `near_grey` (0.3) to `far_grey` (0.62) as it ages (`INSTANCE_CUSTOM.y`).
