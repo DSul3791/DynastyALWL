@@ -1,0 +1,71 @@
+{
+	"note": "Growth along waterways (Dave 10 Nov 2026: \"lots of bushes on either side of the water also and they should thin out as they get further away. it should look like a real brook\"; docs/design/riparian_growth_design.md). Real banks grow in zones (USDA NRCS riparian planting zones: the toe at the water line with sedges and rushes, the bank with dense willow, alder and dogwood shrubs, the overbank with shrubs thinning among tall grass and herbs, then the transition into the surrounding cover over roughly 10 to 20 m). Bank shrubs grow in thickets like every other shrub (clumps of 4 or more, FloraLayout 14): one clump spot every clump_every_m, a clump of clump_count shrubs of one species within clump_radius_m. shrub_by_m: [metres from the water's edge, share] with straight lines between; a clump spot is kept shrub_chance x share of the time, so the bank (0.5 to 3 m) is thick with thickets, half as many by 6 m, a few by 10 m and none from reach_m. species: [flora table name, weight], patch shrubs only, the first ones that grow in the spot's biome. brook_half_m: a record brook (a drink channel sample, which has no drawn surface) counts as water this far either side of its sample centre; a lake or river sample is water to half the sample spacing, as before. dry_above_m: ground this high over the water is a dry bank (a gully side) and gets none. shrub_bank_clear_m: a shrub stands anywhere the ground is at least this much over the water beside it (it used to keep 4 m clear of any water sample, 8 m apart, so no bush ever stood on a bank). Grass (grass_view.gd): grows wherever the ground is not under the drawn water (grass_under_m below its blended surface), and brooks and spring heads count as water for the lush tall grass (NearWater, 6 m).",
+	"clump_every_m": 5.0,
+	"clump_count": [
+		5,
+		8
+	],
+	"clump_radius_m": 1.6,
+	"reach_m": 16.0,
+	"shrub_chance": 0.6,
+	"shrub_by_m": [
+		[
+			0.0,
+			0.35
+		],
+		[
+			0.5,
+			1.0
+		],
+		[
+			3.0,
+			1.0
+		],
+		[
+			6.0,
+			0.5
+		],
+		[
+			10.0,
+			0.18
+		],
+		[
+			16.0,
+			0.0
+		]
+	],
+	"species": [
+		[
+			"elder",
+			3
+		],
+		[
+			"raspberry",
+			1
+		],
+		[
+			"bramble",
+			2
+		],
+		[
+			"dwarf_birch",
+			2
+		],
+		[
+			"wild_rose",
+			1
+		],
+		[
+			"blackthorn",
+			1
+		],
+		[
+			"hawthorn",
+			1
+		]
+	],
+	"brook_half_m": 1.5,
+	"dry_above_m": 3.0,
+	"shrub_bank_clear_m": 0.15,
+	"grass_under_m": 0.05
+}

@@ -81,6 +81,7 @@ var _patch_seed: int = 0
 var _beach_id: int = -1                 # biome ids for the sand / dirt edge rules (see _edge_m)
 var _ocean_id: int = -1
 var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: every NPC marker
+var _riparian: Dictionary = {}          # data/water/riparian.json read for the placer (_riparian_rules): the bank shrubs by distance from the water
 var _cover: Dictionary = {}             # the spring cover rules (tile_rules runtime_flora.spring_cover, see _spring_cover); "species" holds the species Dictionaries in order
 var _spring_seed: int = 0
 
@@ -281,6 +282,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 		list.sort_custom(func(a, b): return a["id"] < b["id"])
 
 	_cover = _cover_rules(rules.get("spring_cover", {}))
+	_riparian = _riparian_rules()
 
 
 func species_of(id: int) -> Dictionary:
@@ -388,7 +390,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var edge_cache: Dictionary = {}     # 4 m cell -> edge distance (see _edge_m): a chunk asks about the same ground thousands of times
 	# Plants grow thicker by water (Dave 9 Nov 2026, docs/design/spring_heads_lower_design.md 2): the fresh water samples round the chunk, and W per
 	# WET_CELL_M cell (_wetness). Empty for a chunk with no fresh water within reach: then nothing below changes.
-	var wet: Dictionary = {} if trees_only else _wet_samples(data, origin)
+	var brooks: Dictionary = {}   # the wet samples that are record brooks (_wet_samples)
+	var wet: Dictionary = {} if trees_only else _wet_samples(data, origin, brooks)
 	var wet_cache: Dictionary = {}
 
 	if has_beach:
@@ -587,6 +590,7 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 	if not trees_only:
 		_spring_cover(origin, data, found)
+		_riparian_shrubs(chunk, origin, data, wet, brooks, found)
 
 	# Landmark trees first, then grown trees, young trees, shrubs and plants;
 	# within a tier by species and cell, so the result never changes.
@@ -595,6 +599,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var canopies: Dictionary = {}       # occupancy cell -> Array of [x, z, canopy radius, dense]
 
 	var clearings_here: bool = false
+	var kept: Array = []            # [id, position, height, yaw] of the items placed, in order
+	var bank_clumps: Dictionary = {}   # bank thicket (species << 16 | clump spot) -> members placed (_riparian_shrubs)
 
 	for c in _clearings:
 		clearings_here = clearings_here or (Vector2(origin.x + chunk_m * 0.5, origin.y + chunk_m * 0.5).distance_to(c[0]) < chunk_m * 0.75 + float(c[1]) + float(c[2]))
@@ -642,10 +648,28 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 				canopies[key].append([x, z, spacing_radius(item, height), 2 if item["dense"] else 1])
 
-		result["ids"].append((f[1] << 16) | f[2])
-		result["positions"].append(Vector3(x, f[4], z))
-		result["heights"].append(height)
-		result["yaws"].append(f[7])
+		kept.append([(f[1] << 16) | f[2], Vector3(x, f[4], z), height, f[7]])
+
+		if f[2] >= RIPARIAN_BASE and f[2] < SPRING_BASE:
+			@warning_ignore("integer_division")
+			var clump: int = (int(f[1]) << 16) | ((int(f[2]) - RIPARIAN_BASE) / RIPARIAN_CLUMP_MAX)
+			bank_clumps[clump] = int(bank_clumps.get(clump, 0)) + 1
+
+	# A bank thicket that lost members to the room rules keeps them only while 4 or more stand (every shrub grows in a clump of 4 or more).
+	for row in kept:
+		var number: int = int(row[0]) & 0xffff
+
+		if number >= RIPARIAN_BASE and number < SPRING_BASE:
+			@warning_ignore("integer_division")
+			var spot: int = (number - RIPARIAN_BASE) / RIPARIAN_CLUMP_MAX
+
+			if int(bank_clumps.get((int(row[0]) & ~0xffff) | spot, 0)) < RIPARIAN_CLUMP_MIN:
+				continue
+
+		result["ids"].append(row[0])
+		result["positions"].append(row[1])
+		result["heights"].append(row[2])
+		result["yaws"].append(row[3])
 
 	return result
 
@@ -978,9 +1002,12 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: boo
 	if not data.cave_openings.is_empty() and data.in_cave_opening(x, z):
 		return NAN
 
-	# Trees and shrubs never stand in water, only at its edge: no inland water
-	# at the spot or within a few meters around it.
-	if item["kind"] != KIND_PLANT and _near_water(data, x, z):
+	# Trees never stand in water, only at its edge: no inland water at the spot or within a few meters around it. A shrub stands on any bank
+	# whose ground is over the water beside it (Dave 10 Nov 2026: bushes on both banks; data/water/riparian.json shrub_bank_clear_m).
+	if item["kind"] == KIND_TREE and _near_water(data, x, z):
+		return NAN
+
+	if item["kind"] == KIND_SHRUB and _under_water(data, x, z):
 		return NAN
 
 	# A river's bed is bare (Dave 5 Nov 2026, x 53182 z 68505: "the grass is still there which means its not a riverbed"): no grass or plant other than reeds
@@ -1263,10 +1290,11 @@ const WET_MOISTURE := 50.0       # and its ground reads this much wetter (of 255
 # The fresh water samples (Vector2i sample -> its water level) within NearWater.REACH_M plus a sample of a chunk: rivers, lakes, brooks,
 # seasonal channels and ponds, marsh, and the live water (sim_snapshot: settled water and, on the server, a dug trench or pond once it holds
 # water). Not the sea. Empty when there is none: the chunk grows as it always did.
-func _wet_samples(data, origin: Vector2) -> Dictionary:
+# brooks gets the keys that are record brooks (narrow water: riparian.json brook_half_m either side).
+func _wet_samples(data, origin: Vector2, brooks: Dictionary = {}) -> Dictionary:
 	var out: Dictionary = {}
 	var sp: float = data.spacing_m
-	var reach: float = NearWater.REACH_M + sp
+	var reach: float = maxf(NearWater.REACH_M, float(_riparian.get("reach_m", 0.0)) + float(_riparian.get("brook_half_m", 0.0))) + sp   # the bank shrubs reach further
 	var sim: PackedFloat32Array = data.sim_snapshot()
 	var ocean: int = _ocean_water
 	var i0: int = maxi(int(floor((origin.x - reach - data.x0) / sp)), 0)
@@ -1293,7 +1321,223 @@ func _wet_samples(data, origin: Vector2) -> Dictionary:
 			if not is_nan(level):
 				out[Vector2i(i, j)] = level
 
+	# Record brooks (the drink channel samples: a brook the settled water may not draw, Dave 10 Nov 2026 "all brooks and water ways"): water at the
+	# ground there. A sample already wet keeps its level.
+	for k in data.drink_samples():
+		@warning_ignore("integer_division")
+		var at: Vector2i = Vector2i(k % data.samples, k / data.samples)
+
+		if at.x >= i0 and at.x <= i1 and at.y >= j0 and at.y <= j1 and not out.has(at) and data.water_class[k] != ocean:
+			out[at] = data.height_at(data.x0 + float(at.x) * sp, data.z0 + float(at.y) * sp)
+			brooks[at] = true
+
 	return out
+
+
+# The ground under the water beside it (the spot's own sample): a shrub does not stand there. A record brook sample is narrow and never counts.
+func _under_water(data, x: float, z: float) -> bool:
+	var k: int = data.nearest(x, z)
+	var level: float = data.water_surface[k] if data.water_class[k] > 1 else NAN
+	var sim_here: PackedFloat32Array = data.sim_snapshot()
+
+	if not sim_here.is_empty() and not is_nan(sim_here[k]):
+		level = sim_here[k] if is_nan(level) else maxf(level, sim_here[k])
+
+	return not is_nan(level) and data.height_at(x, z) < level + float(_riparian.get("shrub_bank_clear_m", 0.15))
+
+
+const RIPARIAN_BASE := 16384   # bank shrub item numbers (_riparian_shrubs): RIPARIAN_BASE + clump spot x RIPARIAN_CLUMP_MAX + shrub; patch shrubs leave the main grid numbers unused
+const RIPARIAN_CLUMP_MAX := 8
+const RIPARIAN_CLUMP_MIN := 4   # a bank thicket with fewer members standing is left out (the thicket rule, test_flora_density)
+const RIPARIAN_SPECIES_M := 15.0   # one species over a block this size, so neighbouring thickets match (a stretch of elder, then of bramble)
+const RIPARIAN_SEED := 104729
+
+
+# data/water/riparian.json for the placer: the curve, the species as [item, weight] (patch shrubs of the flora table only).
+func _riparian_rules() -> Dictionary:
+	var path: String = "res://data/water/riparian.json"
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+
+	var out: Dictionary = (parsed as Dictionary).duplicate(true)
+	var chosen: Array = []
+
+	for row in out.get("species", []):
+		for item in species:
+			if item["name"] == str(row[0]) and item.has("patch") and item["kind"] == KIND_SHRUB:
+				chosen.append([item, maxf(float(row[1]), 0.0)])
+
+	out["chosen"] = chosen
+	var spots: int = int(ceil(chunk_m / maxf(float(out.get("clump_every_m", 5.0)), 1.0)))
+
+	if RIPARIAN_BASE + spots * spots * RIPARIAN_CLUMP_MAX > SPRING_BASE:
+		push_error("flora_placer: riparian clump_every_m %s gives %d clump spots a chunk, over the %d numbers below SPRING_BASE; none placed" % [str(out.get("clump_every_m")), spots * spots, SPRING_BASE - RIPARIAN_BASE])
+		return {}
+
+	return out if not chosen.is_empty() else {}
+
+
+# A curve [[x, value], ...] at x, straight lines between, the end values beyond.
+static func _curve_at(points: Array, x: float) -> float:
+	if points.is_empty():
+		return 0.0
+
+	if x <= float(points[0][0]):
+		return float(points[0][1])
+
+	for n in range(1, points.size()):
+		if x <= float(points[n][0]):
+			return lerpf(float(points[n - 1][1]), float(points[n][1]), (x - float(points[n - 1][0])) / maxf(float(points[n][0]) - float(points[n - 1][0]), 0.0001))
+
+	return float(points[points.size() - 1][1])
+
+
+# Shrubs along the water (Dave 10 Nov 2026, docs/design/riparian_growth_design.md): thickets like every other shrub (clumps of clump_count,
+# FloraLayout 14), one clump spot every clump_every_m. A spot within reach_m of a fresh water sample's edge is kept shrub_chance x
+# shrub_by_m(distance) of the time: a clump of one species from the weighted list that grows in its biome, each shrub with the ground checks
+# (moisture as by water), none in a record brook's own channel, none on ground more than dry_above_m over the water (a gully side). Its own
+# numbers and draws.
+func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, brooks: Dictionary, found: Array) -> void:
+	if _riparian.is_empty() or wet.is_empty():
+		return
+
+	var spot: float = maxf(float(_riparian.get("clump_every_m", 5.0)), 1.0)
+	var spots: int = int(ceil(chunk_m / spot))
+	var reach: float = float(_riparian.get("reach_m", 16.0))
+	var sp: float = data.spacing_m
+	var brook_half: float = float(_riparian.get("brook_half_m", 1.5))
+	var best: Dictionary = {}      # spot index -> [distance from the water's edge, water level]
+	var channel: Dictionary = {}   # Vector2i (sp grid) -> Array of [a, b] brook channel lines near that square
+
+	for at in wet:
+		var brook: bool = brooks.has(at)
+
+		# Only the water's edge samples: inside a lake every spot's nearest water is an edge sample anyway, and a lake chunk stays quick.
+		if not brook and wet.has(at + Vector2i(1, 0)) and wet.has(at - Vector2i(1, 0)) and wet.has(at + Vector2i(0, 1)) and wet.has(at - Vector2i(0, 1)):
+			continue
+
+		var w: Vector2 = Vector2(data.x0 + float(at.x) * sp, data.z0 + float(at.y) * sp)
+		var half: float = brook_half if brook else sp * 0.5
+		# A record brook runs between its samples: the line to each brook neighbour is its channel.
+		var ends: Array = [w]
+
+		if brook:
+			for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(-1, -1), Vector2i(1, -1)]:
+				if brooks.has(at + step):
+					ends.append(w + Vector2(step) * sp * 0.5)   # to the midpoint: the neighbour draws the other half
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var near_key: Vector2i = Vector2i(floori(w.x / sp) + di, floori(w.y / sp) + dj)
+					var lines: Array = channel.get(near_key, [])
+
+					for n in range(ends.size()):
+						lines.append([w, ends[n]])
+
+					channel[near_key] = lines
+
+		var far: float = reach + half + (sp if brook else 0.0)
+		var i0: int = maxi(int(floor((w.x - far - origin.x) / spot)), 0)
+		var i1: int = mini(int(floor((w.x + far - origin.x) / spot)), spots - 1)
+		var j0: int = maxi(int(floor((w.y - far - origin.y) / spot)), 0)
+		var j1: int = mini(int(floor((w.y + far - origin.y) / spot)), spots - 1)
+
+		for j in range(j0, j1 + 1):
+			for i in range(i0, i1 + 1):
+				var p: Vector2 = Vector2(origin.x + (float(i) + 0.5) * spot, origin.y + (float(j) + 0.5) * spot)
+				var d: float = p.distance_to(w)
+
+				for n in range(1, ends.size()):
+					d = minf(d, p.distance_to(Geometry2D.get_closest_point_to_segment(p, w, ends[n])))
+
+				d = maxf(d - half, 0.0)
+				var index: int = j * spots + i
+
+				if d <= reach and (not best.has(index) or d < float(best[index][0])):
+					best[index] = [d, float(wet[at])]
+
+	var chance: float = float(_riparian.get("shrub_chance", 0.6))
+	var curve: Array = _riparian.get("shrub_by_m", [])
+	var dry: float = float(_riparian.get("dry_above_m", 3.0))
+	var counts: Array = _riparian.get("clump_count", [5, 8])
+	var radius: float = float(_riparian.get("clump_radius_m", 2.0))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+	for index in best:
+		rng.seed = _mix(data.flora_seed, chunk.x * 65536 + chunk.y, RIPARIAN_SEED, index)
+
+		if rng.randf() >= chance * _curve_at(curve, float(best[index][0])):
+			continue
+
+		var cx: float = origin.x + (float(index % spots) + rng.randf_range(0.3, 0.7)) * spot
+		@warning_ignore("integer_division")
+		var cz: float = origin.y + (float(index / spots) + rng.randf_range(0.3, 0.7)) * spot
+		var block: Vector2i = Vector2i(floori(cx / RIPARIAN_SPECIES_M), floori(cz / RIPARIAN_SPECIES_M))
+		var pick: float = float(_mix(data.flora_seed, block.x, block.y, RIPARIAN_SEED + 1) % 100003) / 100003.0
+		var biome: int = data.biome[data.nearest(cx, cz)]
+		var growing: Array = (_riparian["chosen"] as Array).filter(func(row): return (row[0]["per_biome"] as PackedFloat32Array)[biome] > 0.0)
+		var total: float = 0.0
+
+		for row in growing:
+			total += float(row[1])
+
+		if total <= 0.0:
+			continue
+
+		var item: Dictionary = growing[0][0]
+		var acc: float = 0.0
+
+		for row in growing:
+			acc += float(row[1]) / total
+
+			if pick < acc:
+				item = row[0]
+				break
+
+		var many: int = clampi(rng.randi_range(int(counts[0]), int(counts[1])), 1, RIPARIAN_CLUMP_MAX)
+		var taller: float = 1.0 + WET_TALLER * NearWater.growth_near_water(float(best[index][0]))
+		var members: Array = []
+
+		for n in range(many):
+			var turn: float = rng.randf() * TAU
+			var out: float = sqrt(rng.randf()) * radius
+			var size: float = rng.randf()
+			var yaw: float = rng.randf() * TAU
+			var x: float = cx + cos(turn) * out
+			var z: float = cz + sin(turn) * out
+
+			# Inside this chunk only (a chunk's items are packed relative to it), in the biome the species grows in, out of a brook's channel.
+			if x < origin.x or z < origin.y or x >= origin.x + chunk_m or z >= origin.y + chunk_m or _in_channel(channel, sp, x, z, brook_half):
+				continue
+
+			var k: int = data.nearest(x, z)
+
+			if (item["per_biome"] as PackedFloat32Array)[data.biome[k]] <= 0.0:
+				continue
+
+			var y: float = _ground_ok(item, data, k, x, z, false, 1.0)
+
+			if is_nan(y) or y - float(best[index][1]) > dry:
+				continue
+
+			var height: float = lerpf(item["height_min"], item["height_max"], size) * taller
+			members.append([_tier(item, height), int(item["id"]), RIPARIAN_BASE + int(index) * RIPARIAN_CLUMP_MAX + n, x, y, z, height, yaw, float(item["patch"]["spacing_m"])])
+
+		if members.size() >= RIPARIAN_CLUMP_MIN:
+			found.append_array(members)
+
+
+# Whether a point is in a record brook's channel (within half of one of its lines; channel from _riparian_shrubs).
+static func _in_channel(channel: Dictionary, sp: float, x: float, z: float, half: float) -> bool:
+	var p: Vector2 = Vector2(x, z)
+
+	for line in channel.get(Vector2i(floori(x / sp), floori(z / sp)), []):
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, line[0], line[1])) < half:
+			return true
+
+	return false
 
 
 # W at a spot (NearWater.growth_near_water): the distance to the nearest fresh water sample's edge (half a sample short of its centre) and the

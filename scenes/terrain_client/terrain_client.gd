@@ -1174,6 +1174,7 @@ func _welcome_body(info: Dictionary) -> void:
 	critters.name = "Critters"
 	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
+	grass.brook_spots = _brook_spots
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
@@ -2023,6 +2024,7 @@ const DRINK_REACH_M := 3.0   # vitals.json thirst.reach_m, the server's reach fo
 var _drink_chunks: Dictionary = {}   # chunk -> [cell keys (Array of Vector2i), springs PackedFloat32Array x, z], oldest first
 var _drink_cells: Dictionary = {}    # Vector2i world sample (cell_m grid) -> 1 + the brook's regime
 var _drink_cell_m: float = 8.0
+var _drink_heads: Dictionary = {}    # Vector2i cell (cell_m grid) -> PackedFloat32Array x, z of the spring heads in it, for the lush grass (_brook_spots)
 var _spring_heads = null   # SpringHeads: the damp patch, runnel and pebbles at each spring head of the drink points, made on the first that has any
 
 
@@ -2038,6 +2040,12 @@ func _on_drink_points(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, s
 
 	_drink_chunks[chunk] = [keys, springs]
 
+	for n in range(0, springs.size() - 1, 2):
+		var at: Vector2i = Vector2i(floori(springs[n] / _drink_cell_m), floori(springs[n + 1] / _drink_cell_m))
+		var heads_here: PackedFloat32Array = _drink_heads.get(at, PackedFloat32Array())
+		heads_here.append_array([springs[n], springs[n + 1]])
+		_drink_heads[at] = heads_here
+
 	if _spring_heads == null and not springs.is_empty():
 		_spring_heads = SpringHeadsScript.new()
 		_spring_heads.name = "SpringHeads"
@@ -2050,12 +2058,38 @@ func _on_drink_points(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, s
 		_forget_drink(_drink_chunks.keys()[0])
 
 
+# The record brooks and spring heads in a box, as (x, z, NAN) triples: grass_view grows lush grass by them (Dave 10 Nov 2026: "all brooks and
+# water ways"), where the settled water may draw nothing.
+func _brook_spots(x0: float, z0: float, x1: float, z1: float) -> PackedFloat32Array:
+	var out: PackedFloat32Array = PackedFloat32Array()
+
+	if _drink_cells.is_empty() and _drink_heads.is_empty():
+		return out
+
+	for j in range(floori(z0 / _drink_cell_m), floori(z1 / _drink_cell_m) + 2):
+		for i in range(floori(x0 / _drink_cell_m), floori(x1 / _drink_cell_m) + 2):
+			var at: Vector2i = Vector2i(i, j)
+
+			if _drink_cells.has(at):
+				out.append_array([float(i) * _drink_cell_m, float(j) * _drink_cell_m, NAN])
+
+			for n in range(0, (_drink_heads.get(at, PackedFloat32Array()) as PackedFloat32Array).size() - 1, 2):
+				out.append_array([_drink_heads[at][n], _drink_heads[at][n + 1], NAN])
+
+	return out
+
+
 func _forget_drink(chunk: Vector2i) -> void:
 	if not _drink_chunks.has(chunk):
 		return
 
 	for key in _drink_chunks[chunk][0]:
 		_drink_cells.erase(key)
+
+	var springs: PackedFloat32Array = _drink_chunks[chunk][1]
+
+	for n in range(0, springs.size() - 1, 2):
+		_drink_heads.erase(Vector2i(floori(springs[n] / _drink_cell_m), floori(springs[n + 1] / _drink_cell_m)))
 
 	_drink_chunks.erase(chunk)
 

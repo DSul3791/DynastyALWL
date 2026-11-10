@@ -53,6 +53,11 @@ func _initialize() -> void:
 	both.append_array([9.0, 3.0, 10.0])
 	check(is_equal_approx(GrassView.lush_near(both, Vector3(9.5, 10.2, 3.0)), GrassView.lush(0.5, 0.2)), "the nearest water's level is the one used")
 	check(GrassView.lush_near(PackedFloat32Array(), Vector3(0.0, 1.0, 0.0)) == 0.0, "no water round the cell: normal growth")
+	# A record brook or spring head (no level, Dave 10 Nov 2026): water brook_half_m round the spot, at any height.
+	var record: PackedFloat32Array = PackedFloat32Array([0.0, 0.0, NAN])
+	check(is_equal_approx(GrassView.lush_near(record, Vector3(1.0, 50.0, 0.0), 1.5), 1.0), "inside a record brook's half width: full")
+	check(is_equal_approx(GrassView.lush_near(record, Vector3(4.5, 50.0, 0.0), 1.5), GrassView.lush(3.0, NAN)), "3 m past its edge: the 3 m share")
+	check(GrassView.lush_near(record, Vector3(8.0, 50.0, 0.0), 1.5) == 0.0, "6.5 m past it: normal growth")
 
 	print("test_grass_lush: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
