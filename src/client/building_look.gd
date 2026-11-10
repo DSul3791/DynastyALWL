@@ -1406,17 +1406,16 @@ const EMBERS_BY_TIER := {1: 4, 2: 8, 3: 16}
 # Fire smoke (docs/design/fire_smoke_wind_design.md, Jamie's fire page #668; always on since Dave's 8 Nov ruling): campfires smoke, and the smoke and sparks follow the world wind.
 # The particle materials are shared, so weather_look.gd sets them once a second for every fire at once (set_fire_air).
 # Rise speeds from Jamie's Briggs table: 3.0 / 3.9 / 5.3 m above the flames at 10 m downwind in 1 m/s of wind (height there = 10 x w / u).
+# Every number is in data/look/fire_smoke.json (smoke_cfg). Dave 10 Nov 2026: the puffs hovered round the fire "like flies": the turbulence turned each
+# puff's velocity toward a random noise direction within a second, so the plume lost its rise and its wind. The puffs now keep the wind and rise,
+# slowing as they go (rise_end_share), and spread and fade; nothing steers them at random.
 static var _camp_smoke: Dictionary = {}           # tier -> ParticleProcessMaterial
 static var _camp_smoke_mesh: QuadMesh
-const CAMP_SMOKE_RISE := {1: 0.30, 2: 0.39, 3: 0.53}     # m/s
-const CAMP_SMOKE_AMOUNT := {1: 14, 2: 22, 3: 32}
-const CAMP_SMOKE_PUFF := {1: 0.5, 2: 0.7, 3: 0.9}       # the starting puff's size, metres; it grows 4 times
-const CAMP_SMOKE_LIFE := 16.0
+const SMOKE_CFG_PATH := "res://data/look/fire_smoke.json"
+const SMOKE_DEFAULTS := {"rise_m_s": [0.30, 0.39, 0.53], "amount": [14, 22, 32], "puff_m": [0.5, 0.7, 0.9], "grow_to": 4.0, "life_s": 20.0, "rise_end_share": 0.4,
+	"calm_rise_m_s": 0.8, "calm_mps": [0.3, 1.0], "night_rise_m_s": 1.2, "night_top_m": 12.0, "spread_deg": [8.0, 14.0]}
+static var _smoke_cfg: Dictionary = {}
 const FORGE_SMOKE_RISE := 0.7
-const CALM_RISE := 0.8                    # near calm the smoke goes up as a column at least this fast
-const CALM_MPS := [0.3, 1.0]              # from a calm to a breeze that bends it
-const NIGHT_RISE := 1.5                   # still clear night: up at this speed, stopping at NIGHT_TOP_M as the life ends, then spreading flat
-const NIGHT_TOP_M := 12.0
 const SPARK_PUSH := 0.6                   # sideways gravity per m/s of wind: about 1 m of carry per m/s over a spark's life
 const SPARK_LEAN_DEG := 60.0              # how far the sparks start downwind in a gale
 const SPARK_LEAN_MPS := [5.0, 10.0]
@@ -1441,18 +1440,52 @@ void fragment() {
 """
 
 
+# data/look/fire_smoke.json, read once; a key it lacks keeps SMOKE_DEFAULTS.
+static func smoke_cfg() -> Dictionary:
+	if _smoke_cfg.is_empty():
+		_smoke_cfg = SMOKE_DEFAULTS.duplicate(true)
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SMOKE_CFG_PATH)) if FileAccess.file_exists(SMOKE_CFG_PATH) else null
+
+		if typeof(parsed) == TYPE_DICTIONARY:
+			for key in SMOKE_DEFAULTS:
+				if parsed.has(key):
+					_smoke_cfg[key] = parsed[key]
+
+	return _smoke_cfg
+
+
+# A per-tier smoke number (rise_m_s, amount, puff_m) for fire tier 1 to 3.
+static func smoke_tier(key: String, tier: int) -> float:
+	var row: Array = smoke_cfg()[key]
+	return float(row[clampi(tier - 1, 0, row.size() - 1)])
+
+
 # The puffs' start velocity: the wind's speed along its heading (where it blows toward) and the plume's rise up. Near calm a column at least
-# CALM_RISE; on a still clear night NIGHT_RISE.
+# calm_rise_m_s; on a still clear night night_rise_m_s.
 static func plume_velocity(wind_ms: float, heading: float, rise: float, still_night: float) -> Vector3:
+	var cfg: Dictionary = smoke_cfg()
 	var u: float = maxf(wind_ms, 0.0)
-	var w: float = lerpf(maxf(rise, CALM_RISE), rise, smoothstep(float(CALM_MPS[0]), float(CALM_MPS[1]), u))
-	w = lerpf(w, NIGHT_RISE, clampf(still_night, 0.0, 1.0))
+	var w: float = lerpf(maxf(rise, float(cfg["calm_rise_m_s"])), rise, smoothstep(float(cfg["calm_mps"][0]), float(cfg["calm_mps"][1]), u))
+	w = lerpf(w, float(cfg["night_rise_m_s"]), clampf(still_night, 0.0, 1.0))
 	return Vector3(cos(heading) * u, w, sin(heading) * u)
 
 
-# On a still clear night the column slows to a stop at NIGHT_TOP_M as its life ends (and spreads there as the puffs grow).
-static func night_brake(still_night: float, life: float = CAMP_SMOKE_LIFE) -> float:
-	return -NIGHT_RISE / life * clampf(still_night, 0.0, 1.0)
+# On a still clear night the column slows to a stop at night_top_m as its life ends (and spreads there as the puffs grow).
+static func night_brake(still_night: float, life: float = -1.0) -> float:
+	var cfg: Dictionary = smoke_cfg()
+	return -float(cfg["night_rise_m_s"]) / (life if life > 0.0 else float(cfg["life_s"])) * clampf(still_night, 0.0, 1.0)
+
+
+# By day the rise slows as the smoke cools: from `rise` at the flames to rise_end_share of it at the end of the life (a steady downward pull).
+static func rise_brake(rise: float, life: float = -1.0) -> float:
+	var cfg: Dictionary = smoke_cfg()
+	return -rise * (1.0 - clampf(float(cfg["rise_end_share"]), 0.0, 1.0)) / (life if life > 0.0 else float(cfg["life_s"]))
+
+
+# The downward pull on the puffs: the day's slowing rise, giving way to the night's stop as the still clear night comes in.
+static func smoke_brake(velocity: Vector3, still_night: float) -> float:
+	var night: float = clampf(still_night, 0.0, 1.0)
+	return rise_brake(velocity.y) * (1.0 - night) + night_brake(night)
 
 
 static func spark_gravity(wind_ms: float, heading: float) -> Vector3:
@@ -1470,13 +1503,15 @@ static func _aim_smoke(material: ParticleProcessMaterial, velocity: Vector3, bra
 	material.initial_velocity_min = speed * 0.9
 	material.initial_velocity_max = speed * 1.1
 	material.gravity = Vector3(0.0, brake, 0.0)
-	material.spread = lerpf(8.0, 14.0, clampf(Vector2(velocity.x, velocity.z).length() / 3.0, 0.0, 1.0))
+	var cone: Array = smoke_cfg()["spread_deg"]
+	material.spread = lerpf(float(cone[0]), float(cone[1]), clampf(Vector2(velocity.x, velocity.z).length() / 3.0, 0.0, 1.0))
 
 
 # Once a second from weather_look.gd: the world wind in m/s, where it blows toward, and the still clear night share 0..1.
 static func set_fire_air(wind_ms: float, heading: float, still_night: float) -> void:
 	for tier in _camp_smoke:
-		_aim_smoke(_camp_smoke[tier], plume_velocity(wind_ms, heading, float(CAMP_SMOKE_RISE[tier]), still_night), night_brake(still_night))
+		var velocity: Vector3 = plume_velocity(wind_ms, heading, smoke_tier("rise_m_s", tier), still_night)
+		_aim_smoke(_camp_smoke[tier], velocity, smoke_brake(velocity, still_night))
 
 	if _smoke != null:
 		_aim_smoke(_smoke, plume_velocity(wind_ms, heading, FORGE_SMOKE_RISE, 0.0), 0.0)
@@ -1493,14 +1528,15 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 		var material: ParticleProcessMaterial = ParticleProcessMaterial.new()
 		material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
 		material.emission_sphere_radius = 0.15
-		material.turbulence_enabled = true
-		material.turbulence_noise_strength = 0.4
-		material.turbulence_noise_scale = 2.0
-		material.scale_min = float(CAMP_SMOKE_PUFF[tier]) * 0.8
-		material.scale_max = float(CAMP_SMOKE_PUFF[tier]) * 1.2
+		material.turbulence_enabled = false     # no random steering: it turned the plume into puffs wandering round the fire (Dave 10 Nov 2026)
+		material.damping_min = 0.0
+		material.damping_max = 0.0
+		material.scale_min = smoke_tier("puff_m", tier) * 0.8
+		material.scale_max = smoke_tier("puff_m", tier) * 1.2
 		var grow: Curve = Curve.new()
+		grow.max_value = maxf(0.5 * float(smoke_cfg()["grow_to"]), 1.0)
 		grow.add_point(Vector2(0.0, 0.5))
-		grow.add_point(Vector2(1.0, 2.0))
+		grow.add_point(Vector2(1.0, 0.5 * float(smoke_cfg()["grow_to"])))
 		var grow_tex: CurveTexture = CurveTexture.new()
 		grow_tex.curve = grow
 		material.scale_curve = grow_tex
@@ -1514,7 +1550,8 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 		material.color_ramp = fade_tex
 		material.angle_min = -180.0
 		material.angle_max = 180.0
-		_aim_smoke(material, plume_velocity(0.0, 0.0, float(CAMP_SMOKE_RISE[tier]), 0.0), 0.0)
+		var still: Vector3 = plume_velocity(0.0, 0.0, smoke_tier("rise_m_s", tier), 0.0)
+		_aim_smoke(material, still, smoke_brake(still, 0.0))
 		_camp_smoke[tier] = material
 
 	if _camp_smoke_mesh == null:
@@ -1528,13 +1565,13 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 
 	var plume: GPUParticles3D = GPUParticles3D.new()
 	plume.name = "Smoke"
-	plume.amount = int(CAMP_SMOKE_AMOUNT[tier])
-	plume.lifetime = CAMP_SMOKE_LIFE
-	plume.preprocess = CAMP_SMOKE_LIFE              # already a plume when it comes into view
+	plume.amount = int(smoke_tier("amount", tier))
+	plume.lifetime = float(smoke_cfg()["life_s"])
+	plume.preprocess = plume.lifetime               # already a plume when it comes into view
 	plume.process_material = _camp_smoke[tier]
 	plume.draw_pass_1 = _camp_smoke_mesh
 	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	plume.visibility_aabb = AABB(Vector3(-25.0, -2.0, -25.0), Vector3(50.0, 20.0, 50.0))
+	plume.visibility_aabb = AABB(Vector3(-40.0, -2.0, -40.0), Vector3(80.0, 24.0, 80.0))   # a long life downwind
 	return plume
 
 
@@ -1598,9 +1635,7 @@ static func _smoke_plume() -> GPUParticles3D:
 		_smoke.gravity = Vector3(0.25, 0.1, 0.0)
 		_smoke.damping_min = 0.1
 		_smoke.damping_max = 0.2
-		_smoke.turbulence_enabled = true
-		_smoke.turbulence_noise_strength = 0.5
-		_smoke.turbulence_noise_scale = 1.5
+		_smoke.turbulence_enabled = false     # as the campfire's: random steering made puffs hover instead of drifting with the wind (Dave 10 Nov 2026)
 		_smoke.scale_min = 0.5
 		_smoke.scale_max = 0.9
 		var grow: Curve = Curve.new()

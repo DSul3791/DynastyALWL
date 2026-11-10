@@ -2,11 +2,12 @@ extends SceneTree
 
 # The heartbeat (Dave 9 Nov 2026, docs/design/heartbeat_design.md): the Daggorath pulse always heard, 55 bpm at rest, faster with strain
 # and eased, played at pitch 1 every 60 / bpm seconds, louder in proportion; a muted bus plays nothing but keeps the beat; and the pulse
-# bar's colours and spread.
+# bar's colours and spread; passing out fades the whole HUD but the line (10 Nov).
 #   godot --headless --path . --script res://src/worldgen/tools/test_heartbeat.gd
 
 const BreathScript := preload("res://src/client/breath_sounds.gd")
 const PulseScript := preload("res://src/client/heart_pulse.gd")
+const HudFadeScript := preload("res://src/client/hud_fade.gd")
 
 var failures: int = 0
 
@@ -80,5 +81,55 @@ func _init() -> void:
 	check(absf(pulse.position.x + pulse.size.x * 0.5 - 960.0) < 0.01, "centred on the hotbar")
 	pulse.free()
 
+	_check_faint_hud()
 	print("test_heartbeat: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
+
+
+# Passing out (Dave 10 Nov 2026): the whole HUD fades with the faint's blackout, hotbar and all; only the heartbeat line (and the black itself) stays.
+func _check_faint_hud() -> void:
+	var cfg: Dictionary = BreathScript.load_heart().get("faint_hud", {})
+	check(float(cfg.get("gone_at_black", 0.0)) > 0.0 and float(cfg.get("fade_s", 0.0)) > 0.0, "heartbeat.json faint_hud: gone_at_black and fade_s set")
+	check(HudFadeScript.black_of(2, 0.3, false) == 1.0, "fainted: all black, whatever part of the faint is gone")
+	check(is_equal_approx(HudFadeScript.black_of(1, 0.4, false), 0.4) and is_equal_approx(HudFadeScript.black_of(3, 0.2, false), 0.2), "going down and waking: the black the server sends")
+	check(HudFadeScript.black_of(1, 0.0, false) == 0.0 and HudFadeScript.black_of(0, 0.7, false) == 0.0, "over-exerted with no black, or normal: the HUD stays")
+	check(HudFadeScript.black_of(0, 1.0, true) == 0.0 and HudFadeScript.black_of(1, 1.0, true) == 0.0, "asleep: the sleep fade keeps the HUD")
+	check(HudFadeScript.target(0.0, 0.5) == 1.0 and is_equal_approx(HudFadeScript.target(0.25, 0.5), 0.5) and HudFadeScript.target(0.6, 0.5) == 0.0, "the HUD is gone when the black reaches gone_at_black")
+
+	var layer: CanvasLayer = CanvasLayer.new()
+	get_root().add_child(layer)
+	var hotbar: HBoxContainer = HBoxContainer.new()
+	var vitals: Label = Label.new()
+	var line: Control = Control.new()
+	var black_rect: ColorRect = ColorRect.new()
+
+	for node in [hotbar, vitals, line, black_rect]:
+		layer.add_child(node)
+
+	var fade: Node = HudFadeScript.new()
+	fade.setup(layer, [line, black_rect], {"gone_at_black": 0.5, "fade_s": 0.8})
+	fade.step(0.1, 0.0)
+	check(hotbar.modulate.a == 1.0 and fade.shown == 1.0, "awake: nothing changes")
+
+	for _n in 4:
+		fade.step(0.1, 1.0)
+
+	check(absf(hotbar.modulate.a - 0.5) < 0.01 and absf(vitals.modulate.a - 0.5) < 0.01, "passing out: the hotbar and the rest half gone after 0.4 s of 0.8 (%.2f)" % hotbar.modulate.a)
+
+	for _n in 10:
+		fade.step(0.1, 1.0)
+
+	var late: Label = Label.new()
+	layer.add_child(late)
+	fade.step(0.1, 1.0)
+	check(hotbar.modulate.a == 0.0 and vitals.modulate.a == 0.0 and late.modulate.a == 0.0, "out: the whole HUD is gone, a line shown during the faint too")
+	check(line.modulate.a == 1.0 and black_rect.modulate.a == 1.0, "the heartbeat line and the black stay")
+	fade.step(0.1, 0.4)
+	check(fade.shown < 0.15, "waking: the HUD comes back as the black lifts, smoothly (%.2f at black 0.4)" % fade.shown)
+
+	for _n in 20:
+		fade.step(0.1, 0.0)
+
+	check(hotbar.modulate.a == 1.0 and vitals.modulate.a == 1.0 and late.modulate.a == 1.0, "awake again: all of it back")
+	layer.free()
+	fade.free()

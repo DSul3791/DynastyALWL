@@ -16,8 +16,10 @@ const CELL_M := 16.0
 const KIND_TREE := 0
 const SIZE_MIN := 0.3                     # tree size scale limits, as the placer's spacing (young trees small)
 const SIZE_MAX := 1.2
-# Dave 2026-10-30: only a tree big enough to stand under gives shelter. Young trees (size scale under this) give none, whatever their crown circle says.
-const SHELTER_MIN_SCALE := 0.8
+# Dave 2026-10-30: only a tree big enough to stand under gives shelter. Big enough is the tree's own height, not its share of its species' average
+# (Dave 10 Nov 2026: a 13 m oak gave none while a 6 m apple tree beside it did, since 0.8 of an oak's average is 15.6 m and of an apple's 5.6 m).
+# A tree this tall or taller carries its crown above head height; saplings and stunted ledge trees below it give none.
+const SHELTER_MIN_HEIGHT_M := 4.0
 # Dave 2026-10-21 (build 467, measured at a beech by the spawn: the rain edge sat 1.41 m inside the leaf edge): the sheltered
 # disc has radius crown_m (the table's spacing radius), twice the old crown_m / 2, which is about where the drawn leaves end.
 const SHELTER_RADIUS := 2.0
@@ -79,7 +81,7 @@ static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable)
 		var scale: float = clampf(height / maxf(float(row[2]), 0.1), SIZE_MIN, SIZE_MAX)
 		var p: Vector3 = positions[n]
 
-		if height / maxf(float(row[2]), 0.1) < SHELTER_MIN_SCALE:
+		if height < SHELTER_MIN_HEIGHT_M:
 			continue
 
 		trees.append([ids[n], p.x, p.z, minf(float(row[1]) * 0.5 * scale * SHELTER_RADIUS, RADIUS_CAP), p.y + height, row.size() > 3 and bool(row[3])])
