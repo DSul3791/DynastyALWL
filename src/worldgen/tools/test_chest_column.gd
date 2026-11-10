@@ -65,7 +65,6 @@ class FakeView:
 	var _pack_buttons: Array = []
 	var _pack_view: Array = []
 	var _chest_hover: Array = []
-	var _chest_last: Array = []
 	var _cooking_cfg: Dictionary = {}
 	var bulks: Array = []
 	var _pack_part: FakePack = FakePack.new()
@@ -131,7 +130,7 @@ func _initialize() -> void:
 	check(part.title() == "STORAGE CHEST", "the plate takes the container's name")
 	check(view._pack_view.size() == FakeStore.SLOTS and view._pack_buttons.is_empty(), "a chest shows every pack slot in place, in the Pack column")
 	first.mouse_entered.emit()
-	check(view._chest_hover == [true, 0] and view._chest_last == [true, 0], "the pointer over a chest well is the chest hover (the transfer key's target)")
+	check(view._chest_hover == [true, 0], "the pointer over a chest well is the chest hover (the transfer key's target)")
 	check(view._pack_part.shown == 1, "and the info strip under the pack is asked to show it")
 	part.fire_takes("stick")
 	check(not view._cooking_cfg.is_empty(), "a fire's rule reads cooking.json once")

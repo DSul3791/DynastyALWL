@@ -218,8 +218,7 @@ func _make_slot(index: int) -> Control:
 		show_info()
 
 		if view.chest_mode:
-			view._chest_hover = [false, index]
-			view._chest_last = [false, index])
+			view._chest_hover = [false, index])
 	slot.mouse_exited.connect(func() -> void:
 		view._hover = -1 if view._hover == index else view._hover
 		show_info()
