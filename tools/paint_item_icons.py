@@ -454,6 +454,15 @@ def carrot(seed):
     return faces
 
 
+def parsnip(seed):
+    """Parsnip (#940): the carrot's shape in cream, a little fatter at the shoulder, its leaves a paler green."""
+    faces = rod((STALK[0] + 0.1, -0.8, STALK[2]), (STALK[0] - 0.05, 0.2, STALK[2]), 0.25, (232, 216, 170), end=(242, 232, 200), taper=0.15,
+                seed=seed)
+    for k, d in enumerate(((-0.35, 1.0, 0.0), (0.0, 1.0, 0.15), (0.4, 1.0, -0.1))):
+        faces += leaf((STALK[0] - 0.05 + d[0] * 0.25, 0.48, STALK[2]), d, 0.62, 0.24, shade((120, 156, 74), 1.0 - 0.06 * k))
+    return faces
+
+
 def leaves(base, colour, n=3, length=0.7, width=0.22, spread=0.4, stem=None, seed=0):
     """A fan of leaves standing up out of a root, on stems when stem is a colour (beet's red stalks)."""
     faces = []
@@ -560,6 +569,7 @@ GRAINS = {
     "rye_seeds": ((150, 140, 116), (0.08, 0.03, 0.035), lambda: ear((172, 170, 126), 0.8, 0.085, 0.4, 43)),
     "flax_seeds": ((140, 86, 44), (0.06, 0.03, 0.045), lambda: flax_plant(44)),
     "carrot_seeds": ((168, 132, 92), (0.05, 0.025, 0.04), lambda: carrot(45)),
+    "parsnip_seeds": ((196, 170, 118), (0.07, 0.014, 0.06), lambda: parsnip(46)),   # flat papery seeds (#940)
 }
 
 
@@ -733,6 +743,338 @@ LYING = rot_y(math.radians(35.0)) @ rot_z(math.radians(28.0))   # a bundle lying
 HEAP_VIEW = rot_x(math.radians(18.0))
 
 
+# ---------------------------------------------------------------- buildables and item system C4 (10 Nov 2026)
+BRONZE = (184, 132, 70)
+METALS = {"bronze": (BRONZE, (226, 176, 104)), "iron": (IRON, (150, 156, 166)), "steel": (STEEL, (248, 250, 255))}   # body, worked edge
+
+
+def hammer(material):
+    """A hammer of every tier in one layout, on the diagonal with its head big: the head tells them apart (a wooden mallet, a lashed
+    stone, a bronze, iron or steel head with a broad face and a wedge peen, the face's worked edge bright)."""
+    faces = rod((-1.2, 0, 0), (0.62, 0, 0), 0.085, WOOD, seed=100)
+
+    if material == "steel":
+        faces += rod((-1.2, 0, 0), (-0.75, 0, 0), 0.105, LEATHER, seed=101)                   # a leather grip wrap
+
+    if material == "wooden":
+        faces += rod((0.66, -0.5, 0), (0.66, 0.5, 0), 0.3, WOOD, end=WOOD_END, sides=8, seed=102)
+    elif material == "stone":
+        faces += blob((0.66, 0.02, 0.0), (0.3, 0.5, 0.27), STONE, seed=103, seg=8, rings=5, rough=0.12)
+        for y in (-0.13, 0.13):
+            faces += box((0.66, y, 0.0), (0.6, 0.07, 0.56), CORD)                              # the lashing, bound round the head
+    else:
+        metal, edge = METALS[material]
+        faces += box((0.66, 0.08, 0.0), (0.34, 0.8, 0.34), metal)
+        faces += box((0.66, 0.53, 0.0), (0.42, 0.12, 0.42), shade(metal, 1.08))               # the striking face
+        faces += box((0.66, 0.6, 0.0), (0.4, 0.02, 0.4), edge)
+        faces += point((0.66, -0.3, 0), (0.66, -0.72, 0), 0.34, 0.12, metal, back=0.0, roll=0.0)   # the peen
+    return faces
+
+
+def chisel(material):
+    """Tier - Chisel (the Stonecutter's bench): a turned wooden handle, a ferrule, a square shank and a flat blade with a bright edge."""
+    metal, edge = METALS[material]
+    faces = rod((-1.25, 0, 0), (-0.25, 0, 0), 0.14, WOOD, end=WOOD_END, sides=8, seed=110)
+    faces += rod((-0.3, 0, 0), (-0.12, 0, 0), 0.16, shade(metal, 0.85), sides=8, seed=111)
+    faces += rod((-0.12, 0, 0), (0.8, 0, 0), 0.08, metal, sides=4, seed=112)
+    faces += box((1.0, 0.0, 0.0), (0.42, 0.36, 0.08), metal)
+    faces += box((1.23, 0.0, 0.0), (0.06, 0.36, 0.09), edge)
+    return faces
+
+
+def horn_pane():
+    """Horn pane: a sheet of horn pressed flat and scraped thin, amber and a little uneven, lighter where it is thinnest, with streaks."""
+    amber = (206, 158, 88)
+    faces = box((0.0, 0.0, 0.0), (1.7, 0.06, 1.3), amber)
+    faces += box((0.05, 0.004, -0.02), (1.3, 0.06, 0.95), (232, 194, 126))
+    for k, z in enumerate((-0.32, 0.05, 0.38)):
+        faces += box((0.1 * (k - 1), 0.008, z), (1.1 - 0.2 * k, 0.06, 0.04), (184, 132, 70))
+    return faces
+
+
+def clay_pipe():
+    """Clay pipe: one fired length of round clay pipe, its collar at one end, both ends dark and open."""
+    clay, hollow = (186, 120, 78), (60, 40, 30)
+    faces = rod((-1.15, 0, 0), (0.75, 0, 0), 0.3, clay, end=hollow, sides=10, seed=120)
+    faces += rod((0.75, 0, 0), (1.2, 0, 0), 0.4, shade(clay, 1.06), end=hollow, sides=10, seed=121)
+    return faces
+
+
+def carved_stone_block():
+    """Carved stone block: a squared ashlar block, its faces dressed with a raised panel inside a tooled margin."""
+    stone = (184, 178, 166)
+    faces = box((0.0, 0.0, 0.0), (1.6, 0.9, 1.0), shade(stone, 0.92))
+    faces += box((0.0, 0.03, 0.03), (1.36, 0.7, 1.0), stone)                                  # the raised panel on the front
+    faces += box((0.0, 0.03, 0.0), (1.36, 0.9, 0.78), stone)                                  # and on the top
+    for k in range(5):
+        faces += box((-0.54 + 0.27 * k, 0.03, 0.54), (0.02, 0.62, 0.02), shade(stone, 0.86))  # tool marks
+    return faces
+
+
+def carved_stone_shingle():
+    """Carved stone shingle: three thin split stone shingles fanned, each with its nail hole near the top."""
+    slate = (132, 134, 136)
+    faces = []
+    for k in range(3):
+        faces += moved(box((0.0, 0.0, 0.0), (0.9, 0.08, 1.4), shade(slate, 0.92 + 0.06 * k)), rot_y(math.radians(-24.0 + 20.0 * k)), (0.25 * k - 0.25, 0.1 * k, 0.0))
+        faces += moved(box((0.0, 0.045, -0.5), (0.1, 0.01, 0.1), (52, 50, 50)), rot_y(math.radians(-24.0 + 20.0 * k)), (0.25 * k - 0.25, 0.1 * k, 0.0))
+    return faces
+
+
+# ---------------------------------------------------------------- item system parts D and E (#940, #941, 10 Nov 2026)
+CLAY_RED = (186, 120, 78)
+MEAT = (150, 70, 46)
+
+
+def meat_skewer():
+    """Meat skewer: a green stick on the diagonal threaded with four roasted chunks of meat and wild garlic cloves between them."""
+    faces = rod((-1.3, 0, 0), (1.25, 0, 0), 0.05, (150, 112, 72), end=WOOD_END, taper=0.4, seed=200)
+    for k in range(4):
+        faces += blob((-0.7 + 0.45 * k, 0.0, 0.0), (0.2, 0.19, 0.19), shade(MEAT, 0.9 + 0.06 * (k % 2)), seed=201 + k, seg=7, rings=4, rough=0.2)
+    for k in range(3):
+        faces += blob((-0.47 + 0.45 * k, 0.0, 0.0), (0.07, 0.11, 0.1), (236, 228, 204), seed=210 + k, seg=6, rings=3, rough=0.1)
+    return faces
+
+
+def sausage():
+    """Sausage: a link of three sausages in their gut, curved, tied off with twine between them."""
+    faces = []
+    for k in range(3):
+        a0 = math.radians(-60.0 + 45.0 * k)
+        pts = [(1.0 * math.cos(a0 + t), 0.0, 1.0 * math.sin(a0 + t) - 0.4) for t in np.linspace(0.0, math.radians(38.0), 5)]
+        radii = [0.13, 0.2, 0.22, 0.2, 0.13]
+        faces += _path(pts, radii, [shade((156, 82, 62), 1.0 + 0.04 * (j % 2)) for j in range(5)], sides=8, seed=220 + k)
+    for k in range(4):
+        a = math.radians(-62.0 + 45.0 * k)
+        faces += blob((1.0 * math.cos(a), 0.0, 1.0 * math.sin(a) - 0.4), (0.07, 0.07, 0.07), CORD, seed=230 + k, seg=5, rings=3, rough=0.1)
+    return faces
+
+
+def mug(drink=None):
+    """Mug: a small fired clay cup with a loop handle, dark inside, or full of a drink."""
+    faces = rod((0, -0.62, 0), (0, 0.55, 0), 0.52, CLAY_RED, end=drink or (70, 46, 32), sides=12, seed=240)
+    faces += rod((0, 0.5, 0), (0, 0.6, 0), 0.56, shade(CLAY_RED, 1.08), end=drink or (70, 46, 32), sides=12, seed=241)   # the lip
+    handle = [(0.5 + 0.34 * math.sin(a), 0.3 * math.cos(a), 0.0) for a in np.linspace(0.0, math.pi, 7)]
+    faces += _path(handle, [0.1] * 7, [shade(CLAY_RED, 0.95)] * 7, sides=6, seed=242)
+    return faces
+
+
+def mortar_pestle():
+    """Mortar and pestle: a hollowed round stone with crushed green herb in it, the round-ended grinder leaning in it."""
+    stone = (160, 154, 144)
+    faces = rod((0, -0.6, 0), (0, 0.15, 0), 0.75, stone, end=(96, 120, 64), sides=12, seed=250)
+    faces += rod((0, 0.1, 0), (0, 0.22, 0), 0.82, shade(stone, 1.06), end=(96, 120, 64), sides=12, seed=251)
+    faces += rod((-0.1, 0.0, 0.1), (0.75, 1.0, -0.1), 0.15, shade(stone, 1.1), seed=252)
+    faces += blob((0.78, 1.02, -0.1), (0.2, 0.2, 0.2), shade(stone, 1.1), seed=253, seg=7, rings=4, rough=0.05)
+    return faces
+
+
+def herb_antidote():
+    """Herb antidote: a small stoppered clay flask of green cure, a plantain leaf laid against it."""
+    faces = blob((0.0, -0.25, 0.0), (0.5, 0.55, 0.5), CLAY_RED, seed=260, seg=10, rings=6, rough=0.02)
+    faces += rod((0, 0.2, 0), (0, 0.65, 0), 0.17, CLAY_RED, end=CLAY_RED, sides=8, seed=261)
+    faces += rod((0, 0.62, 0), (0, 0.85, 0), 0.15, (176, 140, 96), end=(196, 160, 112), sides=8, seed=262)     # the stopper
+    faces += box((0.0, -0.2, 0.47), (0.6, 0.3, 0.06), (110, 150, 80))                                          # a green band where it is marked
+    faces += leaf((0.55, -0.35, 0.35), (0.4, 1.0, 0.2), 1.0, 0.42, (96, 140, 62))
+    return faces
+
+
+def bonemeal():
+    """Bonemeal: a heap of pale ground bone with a broken bone end sticking out of it."""
+    faces = blob((0.0, -0.45, 0.0), (1.0, 0.42, 0.85), (230, 224, 204), seed=270, seg=12, rings=5, rough=0.06)
+    faces += rod((0.2, -0.1, 0.1), (0.9, 0.5, -0.1), 0.13, BONE, end=(214, 200, 168), seed=271)
+    faces += blob((0.95, 0.55, -0.1), (0.2, 0.17, 0.17), BONE, seed=272, seg=7, rings=4, rough=0.05)
+    return faces
+
+
+def sling():
+    """Sling: a hide pouch with a stone in it, its two cords laid out long and nearly straight to either side, a knot at one end and a
+    small finger loop at the other (curled cords read as claws at slot size)."""
+    faces = blob((0.0, 0.0, 0.0), (0.42, 0.12, 0.3), LEATHER, seed=280, seg=9, rings=4, rough=0.06)
+    faces += blob((0.0, 0.1, 0.0), (0.2, 0.17, 0.2), (150, 144, 134), seed=281, seg=7, rings=4, rough=0.03)
+    for side in (-1.0, 1.0):
+        pts = [(0.38 * side, 0.0, 0.0), (0.9 * side, -0.04, 0.02), (1.45 * side, -0.02, 0.0)]
+        faces += _path(pts, [0.065] * 3, [CORD] * 3, sides=6, seed=282)
+    faces += blob((-1.5, -0.02, 0.0), (0.12, 0.12, 0.12), CORD, seed=284, seg=6, rings=3)                   # the knot
+    loop = [(1.45 + 0.13 * (1.0 - math.cos(a)), 0.0, 0.13 * math.sin(a)) for a in np.linspace(0.0, 2.0 * math.pi, 9)]
+    faces += _path(loop, [0.055] * 9, [CORD] * 9, sides=6, seed=285)                                         # the finger loop
+    return faces
+
+
+def sling_stone():
+    """Sling stone: three smooth egg-sized river stones."""
+    faces = []
+    for k, (at, tone) in enumerate((((-0.45, -0.2, 0.25), 1.0), ((0.45, -0.25, 0.1), 0.9), ((0.0, 0.25, -0.25), 1.08))):
+        faces += blob(at, (0.46, 0.36, 0.38), shade((150, 140, 124), tone), seed=290 + k, seg=10, rings=6, rough=0.02)
+    return faces
+
+
+def whetstone():
+    """Whetstone: a fine flat bar of blue-grey stone, worn hollow and pale down its middle by honing."""
+    grey = (124, 132, 140)
+    faces = box((0.0, 0.0, 0.0), (2.0, 0.3, 0.62), grey)
+    faces += box((0.0, 0.006, 0.0), (1.5, 0.3, 0.3), (164, 172, 178))
+    return faces
+
+
+def fishing_spear():
+    """Fishing spear: a long shaft bound with twine where it splits into three sharpened, barbed prongs."""
+    faces = rod((-1.4, 0, 0), (0.45, 0, 0), 0.07, WOOD, seed=300)
+    faces += rod((0.3, 0, 0), (0.5, 0, 0), 0.1, CORD, sides=6, seed=301)
+    for k, spread in enumerate((-0.2, 0.0, 0.2)):
+        tip = (1.45, spread, 0.05 * (k - 1))
+        faces += rod((0.45, spread * 0.3, 0), tip, 0.045, WOOD, end=WOOD_END, taper=0.2, seed=302 + k)
+        faces += rod((1.2, spread * 0.85, 0.0), (1.08, spread * 0.85 + 0.07 * (1 if spread >= 0 else -1), 0.0), 0.025, WOOD, taper=0.2, seed=306 + k)   # its barb
+    return faces
+
+
+def fire_arrow():
+    """Fire arrow: the wooden arrow with a ball of pitch-soaked fibre bound behind its head, fanned three as every arrow."""
+    faces = arrows("wood", (FEATHER, FEATHER_BAND))
+    for k, angle in enumerate((-11.0, 0.0, 11.0)):
+        faces += moved(blob((0.68, 0.0, 0.0), (0.2, 0.12, 0.12), (52, 38, 26), seed=310 + k, seg=7, rings=4, rough=0.2),
+                       turn=rot_z(math.radians(angle)), shift=(0.0, 0.0, 0.12 * (k - 1)))
+    return faces
+
+
+def fishing_bait():
+    """Fishing bait: the bone hook with a cut piece of worm threaded on its bend."""
+    faces = hook()
+    pts = [(0.38 - 0.42 * math.cos(a), -0.35 - 0.42 * math.sin(a), 0.0) for a in np.linspace(0.3, 2.6, 6)]
+    faces += _path(pts, [0.13, 0.17, 0.18, 0.18, 0.17, 0.13], [(196, 116, 106), (184, 106, 98)] * 3, sides=7, seed=320)
+    return faces
+
+
+def bedroll():
+    """Bedroll: sewn hides rolled tight, the fur side showing in the spiral at the end, two leather straps round it."""
+    hide = (166, 124, 82)
+    faces = rod((-1.1, 0, 0), (1.1, 0, 0), 0.5, hide, end=(118, 86, 58), sides=12, seed=330)
+    faces += rod((1.1, 0, 0), (1.12, 0, 0), 0.33, (150, 108, 70), end=(150, 108, 70), sides=12, seed=331)       # the spiral, a ring in
+    faces += rod((1.12, 0, 0), (1.14, 0, 0), 0.16, (118, 86, 58), end=(118, 86, 58), sides=10, seed=332)
+    for x in (-0.6, 0.6):
+        faces += rod((x - 0.07, 0, 0), (x + 0.07, 0, 0), 0.53, LEATHER, sides=12, seed=333)
+    return faces
+
+
+def wooden_snowshoes():
+    """Wooden - Snowshoes: two bent-wood oval frames laced across with leather, one lying on the other, crossed a little."""
+    faces = []
+    for k, (turn, shift) in enumerate(((rot_y(math.radians(-14.0)), (-0.18, 0.0, 0.0)), (rot_y(math.radians(14.0)), (0.18, 0.12, 0.0)))):
+        ring = [(0.55 * math.sin(a), 0.0, -1.05 * math.cos(a)) for a in np.linspace(0.0, 2.0 * math.pi, 15)]
+        shoe = _path(ring, [0.06] * 15, [(170, 128, 80)] * 15, sides=6, seed=340 + k)
+        for z in np.linspace(-0.7, 0.7, 6):                                                    # the lacing across
+            w = 0.55 * math.sqrt(max(0.0, 1.0 - (z / 1.05) ** 2))
+            shoe += box((0.0, 0.0, z), (2.0 * w, 0.025, 0.035), LEATHER)
+        shoe += box((0.0, 0.0, 0.0), (0.035, 0.025, 1.6), LEATHER)
+        shoe += box((0.0, 0.03, -0.1), (0.4, 0.05, 0.12), shade(LEATHER, 0.85))              # the toe strap
+        faces += moved(shoe, turn, shift)
+    return faces
+
+
+def leather_belt():
+    """Leather - Belt (waist slot): the strap laid in a loop on its edge, its end running out through a bone toggle at the front."""
+    brown = (122, 74, 42)
+    faces = []
+    n = 18
+    for k in range(n):
+        a0, a1 = 2.0 * math.pi * k / n, 2.0 * math.pi * (k + 1) / n
+        p0 = np.array([0.95 * math.cos(a0), 0.0, 0.62 * math.sin(a0)])
+        p1 = np.array([0.95 * math.cos(a1), 0.0, 0.62 * math.sin(a1)])
+        mid, d = (p0 + p1) / 2.0, p1 - p0
+        faces += moved(box((0.0, 0.0, 0.0), (float(np.linalg.norm(d)) + 0.02, 0.34, 0.08), shade(brown, 0.94 + 0.08 * (k % 2))),
+                       rot_y(-math.atan2(d[2], d[0])), tuple(mid))
+    faces += moved(box((0.0, 0.0, 0.0), (0.7, 0.34, 0.08), shade(brown, 1.05)), rot_y(math.radians(-12.0)), (0.35, 0.02, 0.72))   # the end, out to the front
+    faces += rod((-0.02, -0.2, 0.68), (-0.02, 0.22, 0.68), 0.07, BONE, end=shade(BONE, 1.05), sides=7, seed=350)   # the toggle
+    return faces
+
+
+def pickled_vegetables():
+    """Pickled vegetables (#955): a squat lidded clay crock, a cloth tied over its mouth, a cut carrot and a beet laid against it."""
+    faces = rod((0, -0.7, 0), (0, 0.25, 0), 0.62, CLAY_RED, end=CLAY_RED, sides=12, taper=0.92, seed=360)
+    faces += rod((0, 0.22, 0), (0, 0.42, 0), 0.6, shade(CLAY_RED, 1.06), end=(214, 196, 150), sides=12, seed=361)   # the rim
+    faces += blob((0.0, 0.45, 0.0), (0.66, 0.14, 0.66), (214, 196, 150), seed=362, seg=12, rings=4, rough=0.05)     # the cloth over it
+    faces += rod((0, 0.28, 0), (0, 0.36, 0), 0.64, CORD, end=CORD, sides=12, seed=363)                               # its tie
+    faces += rod((0.55, -0.72, 0.62), (0.95, -0.55, 0.3), 0.15, (226, 120, 40), end=(240, 170, 90), taper=0.8, seed=364)   # a cut carrot
+    faces += blob((-0.6, -0.5, 0.62), (0.3, 0.3, 0.3), (150, 36, 60), seed=365, seg=8, rings=5, rough=0.04)          # a beet
+    return faces
+
+
+def copper_pot():
+    """Copper - Pot (#955): a hammered copper pot, wider than it is tall, its rolled rim bright, an iron bail handle arched over it."""
+    faces = rod((0, -0.75, 0), (0, 0.3, 0), 0.74, (206, 128, 64), end=(120, 72, 40), sides=14, taper=1.1, seed=370)
+    faces += rod((0, 0.27, 0), (0, 0.38, 0), 0.86, (236, 172, 106), end=(120, 72, 40), sides=14, seed=371)            # the rolled rim
+    bail = [(-0.86 * math.cos(a), 0.34 + 0.7 * math.sin(a), 0.0) for a in np.linspace(0.0, math.pi, 9)]
+    faces += _path(bail, [0.05] * 9, [(70, 72, 80)] * 9, sides=6, seed=372)                                            # the bail handle
+    return faces
+
+
+def _bowl(food, seed):
+    """A wooden bowl (the wooden_bowl's shape, drawn small and high), food heaped or poured in it."""
+    faces = rod((0, -0.55, 0), (0, 0.15, 0), 0.95, WOOD, end=food, sides=14, taper=1.25, seed=seed)
+    faces += rod((0, 0.12, 0), (0, 0.2, 0), 1.0, WOOD_END, end=food, sides=14, seed=seed + 1)
+    return faces
+
+
+def fish_soup():
+    """Fish soup (#955): a bowl of pale broth with a fish's tail and a chunk of its flesh standing out of it, green wild garlic floating."""
+    faces = _bowl((222, 182, 108), 380)
+    faces += rod((0.1, 0.18, -0.1), (0.45, 0.6, -0.25), 0.11, (140, 146, 156), taper=0.5, seed=382)                  # the fish's tail end
+    faces += point((0.42, 0.56, -0.24), (0.8, 1.0, -0.4), 0.62, 0.06, (128, 134, 146), back=0.85, roll=30.0)         # its tail fin
+    faces += blob((-0.35, 0.22, 0.2), (0.3, 0.15, 0.24), (240, 226, 204), seed=381, seg=7, rings=4, rough=0.15)
+    for k, (x, z) in enumerate(((0.35, 0.35), (-0.2, -0.4), (-0.55, -0.05))):
+        faces += leaf((x, 0.215, z), (1.0, 0.0, 0.6 * (k - 1)), 0.34, 0.12, (96, 150, 62))
+    return faces
+
+
+def meatballs():
+    """Meatballs (#955): six round browned balls heaped in a bowl, a little dark gravy round them."""
+    faces = _bowl((110, 62, 36), 390)
+    for k, (x, y, z) in enumerate(((-0.4, 0.3, 0.25), (0.35, 0.3, 0.3), (0.0, 0.3, -0.4), (-0.45, 0.3, -0.3), (0.45, 0.3, -0.25), (0.0, 0.55, 0.0))):
+        faces += blob((x, y, z), (0.3, 0.27, 0.3), shade((128, 70, 42), 0.92 + 0.05 * (k % 3)), seed=391 + k, seg=8, rings=5, rough=0.1)
+    return faces
+
+
+def claw_necklace():
+    """Claw - Necklace (#955): a cord laid in a loop, five big pale claws strung on its lower half, curving out, a bead between each."""
+    faces = []
+    ring = [(1.0 * math.cos(a), 0.0, 0.7 * math.sin(a)) for a in np.linspace(0.0, 2.0 * math.pi, 17)]
+    faces += _path(ring, [0.05] * 17, [CORD] * 17, sides=6, seed=400)
+    for k in range(5):
+        a = math.radians(35.0 + 27.5 * k)
+        at = np.array([1.0 * math.cos(a), 0.0, 0.7 * math.sin(a)])
+        out = np.array([math.cos(a), 0.0, math.sin(a)])
+        pts = [at, at + out * 0.3 + np.array([0.0, 0.05, 0.0]), at + out * 0.52 + np.array([0.06 * math.sin(a), 0.14, 0.0])]
+        faces += _path([tuple(p) for p in pts], [0.1, 0.07, 0.02], [(216, 200, 160), (226, 212, 176), (90, 70, 52)], sides=6, seed=401 + k)
+    for k in range(4):
+        a = math.radians(48.75 + 27.5 * k)
+        faces += blob((1.0 * math.cos(a), 0.0, 0.7 * math.sin(a)), (0.08, 0.08, 0.08), (150, 60, 40), seed=410 + k, seg=6, rings=3, rough=0.05)
+    return faces
+
+
+def bronze_scale_shirt():
+    """Bronze - Scale shirt (#955): a short-sleeved shirt laid flat, its body and sleeves covered in rows of overlapping bronze scales,
+    each row's lower edge bright, a leather collar at the neck."""
+    leather = (110, 70, 40)
+    faces = box((0.0, 0.0, 0.0), (1.1, 1.5, 0.12), leather)                                             # the leather under it
+    faces += moved(box((0.0, 0.0, 0.0), (0.7, 0.46, 0.12), leather), rot_z(math.radians(-28.0)), (0.72, 0.5, 0.0))
+    faces += moved(box((0.0, 0.0, 0.0), (0.7, 0.46, 0.12), leather), rot_z(math.radians(28.0)), (-0.72, 0.5, 0.0))
+    for row in range(6):                                                                                 # the scales, top row first
+        y = 0.6 - 0.24 * row
+        for col in range(5):
+            x = -0.44 + 0.22 * col + (0.11 if row % 2 else 0.0)
+            if abs(x) > 0.5:
+                continue
+            faces += moved(box((0.0, 0.0, 0.0), (0.2, 0.26, 0.04), shade(BRONZE, 0.94 + 0.05 * ((row + col) % 3))),
+                           rot_x(math.radians(-14.0)), (x, y, 0.09 + 0.012 * row))
+            faces += box((x, y - 0.12, 0.13 + 0.012 * row), (0.17, 0.035, 0.02), (232, 186, 116))       # its bright lower edge
+    for side in (-1.0, 1.0):                                                                             # the sleeves' scales
+        for k in range(2):
+            at = (side * (0.62 + 0.2 * k), 0.54 - 0.105 * k, 0.09)
+            faces += moved(box((0.0, 0.0, 0.0), (0.18, 0.34, 0.04), shade(BRONZE, 0.96 + 0.05 * k)), rot_z(math.radians(side * -28.0)), at)
+    faces += moved(box((0.0, 0.0, 0.0), (0.46, 0.12, 0.16), shade(leather, 0.85)), rot_x(0.0), (0.0, 0.76, 0.04))   # the collar
+    return faces
+
+
 def _pieces():
     return {
         "spear": (stone_spear, DIAGONAL),
@@ -770,6 +1112,35 @@ def _pieces():
         "straw": (straw, HEAP_VIEW),
         "birch_bark": (birch_bark, LYING),
         "withies": (withies, HEAP_VIEW),
+        **{m + "_hammer": ((lambda m=m: hammer(m)), SPADE_VIEW) for m in ("wooden", "stone", "bronze", "iron", "steel")},
+        **{m + "_chisel": ((lambda m=m: chisel(m)), SPADE_VIEW) for m in ("bronze", "iron", "steel")},
+        "horn_pane": (horn_pane, rot_x(math.radians(40.0)) @ rot_y(math.radians(15.0))),
+        "clay_pipe": (clay_pipe, DIAGONAL),
+        "carved_stone_block": (carved_stone_block, rot_y(math.radians(-28.0))),
+        "carved_stone_shingle": (carved_stone_shingle, rot_x(math.radians(35.0))),
+        "parsnip": (lambda: parsnip(46), rot_z(math.radians(-28.0))),
+        "meat_skewer": (meat_skewer, DIAGONAL),
+        "sausage": (sausage, rot_x(math.radians(40.0))),
+        "mug": (mug, rot_x(math.radians(14.0))),
+        "fruit_juice": (lambda: mug((150, 40, 64)), rot_x(math.radians(24.0))),
+        "mortar_pestle": (mortar_pestle, rot_x(math.radians(18.0))),
+        "herb_antidote": (herb_antidote, rot_y(math.radians(-20.0))),
+        "bonemeal": (bonemeal, rot_x(math.radians(14.0))),
+        "sling": (sling, rot_z(math.radians(24.0)) @ rot_x(math.radians(30.0))),
+        "sling_stone": (sling_stone, rot_x(math.radians(20.0))),
+        "whetstone": (whetstone, rot_y(math.radians(-25.0)) @ rot_x(math.radians(25.0))),
+        "fishing_spear": (fishing_spear, DIAGONAL),
+        "fire_arrow": (fire_arrow, DIAGONAL),
+        "fishing_bait": (fishing_bait, rot_y(math.radians(20.0)) @ rot_z(math.radians(-15.0))),
+        "bedroll": (bedroll, rot_y(math.radians(-30.0))),
+        "wooden_snowshoes": (wooden_snowshoes, rot_x(math.radians(45.0)) @ rot_y(math.radians(30.0))),
+        "leather_belt": (leather_belt, rot_x(math.radians(38.0))),
+        "pickled_vegetables": (pickled_vegetables, rot_x(math.radians(14.0))),
+        "copper_pot": (copper_pot, rot_x(math.radians(6.0))),
+        "fish_soup": (fish_soup, rot_x(math.radians(18.0))),
+        "meatballs": (meatballs, rot_x(math.radians(26.0))),
+        "claw_necklace": (claw_necklace, rot_x(math.radians(50.0))),
+        "bronze_scale_shirt": (bronze_scale_shirt, rot_y(math.radians(-15.0))),
     }
 
 
