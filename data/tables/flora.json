@@ -7,7 +7,7 @@
 		{
 			"id": 0,
 			"name": "oak",
-			"display": "Tan oak",
+			"display": "English oak",
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "oak",
