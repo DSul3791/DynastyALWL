@@ -4153,6 +4153,121 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.0
+  },
+  "bark_shingle": {
+   "shape": "chunk",
+   "color": "#6a4a32",
+   "size": 0.7
+  },
+  "wooden_shingle": {
+   "shape": "chunk",
+   "color": "#a07a4a",
+   "size": 0.6
+  },
+  "clay_roof_tile": {
+   "shape": "brick",
+   "color": "#b0583a",
+   "size": 1.0
+  },
+  "limestone": {
+   "shape": "chunk",
+   "color": "#d8d2bc",
+   "size": 1.0
+  },
+  "lime_powder": {
+   "shape": "pile",
+   "color": "#ece8dc",
+   "size": 1.0
+  },
+  "concrete": {
+   "shape": "pile",
+   "color": "#9c9a92",
+   "size": 1.0
+  },
+  "iron_band": {
+   "shape": "ingot",
+   "color": "#55585e",
+   "size": 0.6
+  },
+  "mixer_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_foundation_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_wall_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_window_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_stairs_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_floor_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_roof_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "engineered_roof_corner_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "fortified_foundation_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "fortified_wall_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "fortified_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "fortified_gate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "fortified_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "fortified_wall_top_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
   }
 
  }

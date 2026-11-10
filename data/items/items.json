@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 853,
+	"next_number": 892,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -1111,8 +1111,8 @@
 		"log_workbench_kit": {
 			"number": 85,
 			"retired": true,
-			"name": "Log workbench",
-			"description": "A heavy log bench with its own rack and vice, ready to set down.",
+			"name": "Carpenter's bench",
+			"description": "A pinned plank bench with its own rack and vice, ready to set down.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
@@ -1121,8 +1121,8 @@
 		},
 		"log_workbench": {
 			"number": 86,
-			"name": "Log - Workbench",
-			"description": "A log workbench with its own rack and vice. Stand near it to make the things that need a work table.",
+			"name": "Carpenter's bench",
+			"description": "A pinned plank bench with its own rack and vice. Stand near it to make the things that need a work table.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -2311,7 +2311,7 @@
 		},
 		"wall_section": {
 			"number": 193,
-			"name": "Wooden - Wall",
+			"name": "Refined - Wall",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "structure",
 			"stack": 1,
@@ -2333,7 +2333,7 @@
 		},
 		"floor_section": {
 			"number": 195,
-			"name": "Wooden - Ceiling",
+			"name": "Refined - Ceiling",
 			"description": "A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge.",
 			"kind": "structure",
 			"stack": 1,
@@ -2355,7 +2355,7 @@
 		},
 		"roof_section": {
 			"number": 197,
-			"name": "Wooden - Roof",
+			"name": "Refined - Roof",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"kind": "structure",
 			"stack": 1,
@@ -2377,7 +2377,7 @@
 		},
 		"foundation_section": {
 			"number": 199,
-			"name": "Stone - Foundation",
+			"name": "Sturdy - Foundation",
 			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"kind": "structure",
 			"stack": 1,
@@ -2399,7 +2399,7 @@
 		},
 		"doorway_section": {
 			"number": 201,
-			"name": "Wooden - Doorway",
+			"name": "Refined - Doorway",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "structure",
 			"stack": 1,
@@ -2421,7 +2421,7 @@
 		},
 		"window_section": {
 			"number": 203,
-			"name": "Wooden - Window",
+			"name": "Refined - Window",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"kind": "structure",
 			"stack": 1,
@@ -2443,7 +2443,7 @@
 		},
 		"timber_prop": {
 			"number": 205,
-			"name": "Wooden - Post",
+			"name": "Post",
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"kind": "structure",
 			"stack": 1,
@@ -2465,7 +2465,7 @@
 		},
 		"timber_set": {
 			"number": 207,
-			"name": "Wooden - Beam",
+			"name": "Beam",
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"kind": "structure",
 			"stack": 1,
@@ -3171,7 +3171,7 @@
 		},
 		"thatch_wall": {
 			"number": 253,
-			"name": "Thatch - Wall",
+			"name": "Crude - Wall",
 			"description": "A thatch wall.",
 			"kind": "structure",
 			"stack": 1,
@@ -3231,7 +3231,7 @@
 		},
 		"thatch_floor": {
 			"number": 262,
-			"name": "Thatch - Foundation",
+			"name": "Crude - Foundation",
 			"description": "A thatch foundation on stakes. Walls and roofs stand on it.",
 			"kind": "structure",
 			"stack": 1,
@@ -3251,7 +3251,7 @@
 		},
 		"thatch_roof": {
 			"number": 264,
-			"name": "Thatch - Roof",
+			"name": "Crude - Roof",
 			"description": "A thatch roof. It keeps the rain off.",
 			"kind": "structure",
 			"stack": 1,
@@ -3271,7 +3271,7 @@
 		},
 		"thatch_doorway": {
 			"number": 266,
-			"name": "Thatch - Doorway",
+			"name": "Crude - Doorway",
 			"description": "A thatch doorway with a hanging door.",
 			"kind": "structure",
 			"stack": 1,
@@ -5592,7 +5592,7 @@
 		},
 		"stairs_wood": {
 			"number": 463,
-			"name": "Wooden - Stairs",
+			"name": "Refined - Stairs",
 			"description": "A wooden flight of stairs, 2.4 m long.",
 			"kind": "structure",
 			"stack": 1,
@@ -5612,7 +5612,7 @@
 		},
 		"log_wall": {
 			"number": 465,
-			"name": "Log - Wall",
+			"name": "Rustic - Wall",
 			"description": "A log wall, two metres wide.",
 			"kind": "structure",
 			"stack": 1,
@@ -5632,7 +5632,7 @@
 		},
 		"log_floor": {
 			"number": 467,
-			"name": "Log - Ceiling",
+			"name": "Rustic - Ceiling",
 			"description": "A ceiling of laid logs.",
 			"kind": "structure",
 			"stack": 1,
@@ -5652,7 +5652,7 @@
 		},
 		"log_roof": {
 			"number": 469,
-			"name": "Log - Roof",
+			"name": "Rustic - Roof",
 			"description": "A log-framed thatch roof.",
 			"kind": "structure",
 			"stack": 1,
@@ -5672,7 +5672,7 @@
 		},
 		"stone_wall": {
 			"number": 471,
-			"name": "Stone - Wall",
+			"name": "Sturdy - Wall",
 			"description": "A stone wall, two metres wide.",
 			"kind": "structure",
 			"stack": 1,
@@ -5692,7 +5692,7 @@
 		},
 		"stone_floor": {
 			"number": 473,
-			"name": "Stone - Ceiling",
+			"name": "Sturdy - Ceiling",
 			"description": "A cobbled stone ceiling.",
 			"kind": "structure",
 			"stack": 1,
@@ -5712,7 +5712,7 @@
 		},
 		"stone_roof": {
 			"number": 475,
-			"name": "Stone - Roof",
+			"name": "Sturdy - Roof",
 			"description": "A stone-shingle roof.",
 			"kind": "structure",
 			"stack": 1,
@@ -5732,7 +5732,7 @@
 		},
 		"brick_wall": {
 			"number": 477,
-			"name": "Brick - Wall",
+			"name": "Superior - Wall",
 			"description": "A brick wall, two metres wide.",
 			"kind": "structure",
 			"stack": 1,
@@ -5752,7 +5752,7 @@
 		},
 		"brick_floor": {
 			"number": 479,
-			"name": "Brick - Ceiling",
+			"name": "Superior - Ceiling",
 			"description": "A brick ceiling.",
 			"kind": "structure",
 			"stack": 1,
@@ -5772,7 +5772,7 @@
 		},
 		"brick_roof": {
 			"number": 481,
-			"name": "Brick - Roof",
+			"name": "Superior - Roof",
 			"description": "A tiled brick roof.",
 			"kind": "structure",
 			"stack": 1,
@@ -5866,7 +5866,7 @@
 		},
 		"log_seat": {
 			"number": 502,
-			"name": "Log - Seat",
+			"name": "Seat",
 			"description": "A log seat. Sit on it by the fire.",
 			"kind": "structure",
 			"stack": 1,
@@ -6508,7 +6508,7 @@
 			},
 			"wood_foundation": {
 				"number": 559,
-				"name": "Wooden - Foundation",
+				"name": "Refined - Foundation",
 				"description": "A log and plank base, four metres square. Walls and ceilings snap onto it.",
 				"kind": "structure",
 				"stack": 1,
@@ -6530,7 +6530,7 @@
 			},
 			"log_foundation": {
 				"number": 563,
-				"name": "Log - Foundation",
+				"name": "Rustic - Foundation",
 				"description": "Log sills on stone footings, four metres square. Walls and ceilings snap onto it.",
 				"kind": "structure",
 				"stack": 1,
@@ -6552,7 +6552,7 @@
 			},
 			"brick_foundation": {
 				"number": 565,
-				"name": "Brick - Foundation",
+				"name": "Superior - Foundation",
 				"description": "A brick plinth, four metres square. Walls and ceilings snap onto it.",
 				"kind": "structure",
 				"stack": 1,
@@ -6574,7 +6574,7 @@
 			},
 			"log_doorway": {
 				"number": 567,
-				"name": "Log - Doorway",
+				"name": "Rustic - Doorway",
 				"description": "A log wall with a plank door, one metre wide and two high.",
 				"kind": "structure",
 				"stack": 1,
@@ -6596,7 +6596,7 @@
 			},
 			"stone_doorway": {
 				"number": 569,
-				"name": "Stone - Doorway",
+				"name": "Sturdy - Doorway",
 				"description": "A stone wall with a timber lintel and a door, one metre wide and two high.",
 				"kind": "structure",
 				"stack": 1,
@@ -6618,7 +6618,7 @@
 			},
 			"brick_doorway": {
 				"number": 571,
-				"name": "Brick - Doorway",
+				"name": "Superior - Doorway",
 				"description": "A brick wall with a timber door, one metre wide and two high.",
 				"kind": "structure",
 				"stack": 1,
@@ -6640,7 +6640,7 @@
 			},
 			"thatch_window": {
 				"number": 573,
-				"name": "Thatch - Window",
+				"name": "Crude - Window",
 				"description": "A thatch wall with an opening at chest height to see through.",
 				"kind": "structure",
 				"stack": 1,
@@ -6662,7 +6662,7 @@
 			},
 			"log_window": {
 				"number": 575,
-				"name": "Log - Window",
+				"name": "Rustic - Window",
 				"description": "A log wall with an opening at chest height to see through.",
 				"kind": "structure",
 				"stack": 1,
@@ -6684,7 +6684,7 @@
 			},
 			"stone_window": {
 				"number": 577,
-				"name": "Stone - Window",
+				"name": "Sturdy - Window",
 				"description": "A stone wall with a sill and an opening at chest height to see through.",
 				"kind": "structure",
 				"stack": 1,
@@ -6706,7 +6706,7 @@
 			},
 			"brick_window": {
 				"number": 579,
-				"name": "Brick - Window",
+				"name": "Superior - Window",
 				"description": "A brick wall with an arched opening at chest height to see through.",
 				"kind": "structure",
 				"stack": 1,
@@ -6780,7 +6780,7 @@
 			},
 			"thatch_fence": {
 				"number": 581,
-				"name": "Thatch - Fence",
+				"name": "Crude - Fence",
 				"description": "Stakes woven with sticks and lashed with twine, two metres long.",
 				"kind": "structure",
 				"stack": 1,
@@ -6802,7 +6802,7 @@
 			},
 			"thatch_gate": {
 				"number": 583,
-				"name": "Thatch - Gate",
+				"name": "Crude - Gate",
 				"description": "A woven hurdle hung on twine hinges. Opens like a door.",
 				"kind": "structure",
 				"stack": 1,
@@ -6824,7 +6824,7 @@
 			},
 			"wood_fence": {
 				"number": 585,
-				"name": "Wooden - Fence",
+				"name": "Refined - Fence",
 				"description": "A picket fence of planks, two metres long.",
 				"kind": "structure",
 				"stack": 1,
@@ -6846,7 +6846,7 @@
 			},
 			"wood_gate": {
 				"number": 587,
-				"name": "Wooden - Gate",
+				"name": "Refined - Gate",
 				"description": "A plank gate with a Z brace. Opens like a door.",
 				"kind": "structure",
 				"stack": 1,
@@ -6868,7 +6868,7 @@
 			},
 			"log_fence": {
 				"number": 589,
-				"name": "Log - Fence",
+				"name": "Rustic - Fence",
 				"description": "Split rails pegged into log posts, two metres long.",
 				"kind": "structure",
 				"stack": 1,
@@ -6890,7 +6890,7 @@
 			},
 			"log_gate": {
 				"number": 591,
-				"name": "Log - Gate",
+				"name": "Rustic - Gate",
 				"description": "A rail gate of split logs. Opens like a door.",
 				"kind": "structure",
 				"stack": 1,
@@ -6912,7 +6912,7 @@
 			},
 			"log_palisade": {
 				"number": 593,
-				"name": "Log - Palisade",
+				"name": "Palisade",
 				"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
 				"kind": "structure",
 				"stack": 1,
@@ -6934,7 +6934,7 @@
 			},
 			"log_palisade_gate": {
 				"number": 595,
-				"name": "Log - Palisade gate",
+				"name": "Palisade gate",
 				"description": "A palisade section that swings open like a door.",
 				"kind": "structure",
 				"stack": 1,
@@ -6956,7 +6956,7 @@
 			},
 			"stone_fence": {
 				"number": 597,
-				"name": "Stone - Fence",
+				"name": "Sturdy - Fence",
 				"description": "A low dry-stone wall with capstones, two metres long.",
 				"kind": "structure",
 				"stack": 1,
@@ -6978,7 +6978,7 @@
 			},
 			"stone_gate": {
 				"number": 599,
-				"name": "Stone - Gate",
+				"name": "Sturdy - Gate",
 				"description": "A timber gate between stone piers. Opens like a door.",
 				"kind": "structure",
 				"stack": 1,
@@ -7000,7 +7000,7 @@
 			},
 			"brick_fence": {
 				"number": 601,
-				"name": "Brick - Fence",
+				"name": "Superior - Fence",
 				"description": "A low brick wall on a stone plinth, two metres long.",
 				"kind": "structure",
 				"stack": 1,
@@ -7022,7 +7022,7 @@
 			},
 			"brick_gate": {
 				"number": 603,
-				"name": "Brick - Gate",
+				"name": "Superior - Gate",
 				"description": "A timber gate between brick piers. Opens like a door.",
 				"kind": "structure",
 				"stack": 1,
@@ -7088,7 +7088,7 @@
 			},
 			"thatch_pillar": {
 				"number": 609,
-				"name": "Thatch - Pillar",
+				"name": "Crude - Pillar",
 				"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7110,7 +7110,7 @@
 			},
 			"wooden_pillar": {
 				"number": 611,
-				"name": "Wooden - Pillar",
+				"name": "Refined - Pillar",
 				"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7132,7 +7132,7 @@
 			},
 			"log_pillar": {
 				"number": 613,
-				"name": "Log - Pillar",
+				"name": "Rustic - Pillar",
 				"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7154,7 +7154,7 @@
 			},
 			"stone_pillar": {
 				"number": 615,
-				"name": "Stone - Pillar",
+				"name": "Sturdy - Pillar",
 				"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7176,7 +7176,7 @@
 			},
 			"brick_pillar": {
 				"number": 617,
-				"name": "Brick - Pillar",
+				"name": "Superior - Pillar",
 				"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7198,7 +7198,7 @@
 			},
 			"thatch_roof_corner": {
 				"number": 619,
-				"name": "Thatch - Roof corner",
+				"name": "Crude - Roof corner",
 				"description": "The corner of a thatch roof, where two slopes meet.",
 				"kind": "structure",
 				"stack": 1,
@@ -7220,7 +7220,7 @@
 			},
 			"wooden_roof_corner": {
 				"number": 621,
-				"name": "Wooden - Roof corner",
+				"name": "Refined - Roof corner",
 				"description": "The corner of a wooden roof, where two slopes meet.",
 				"kind": "structure",
 				"stack": 1,
@@ -7242,7 +7242,7 @@
 			},
 			"log_roof_corner": {
 				"number": 623,
-				"name": "Log - Roof corner",
+				"name": "Rustic - Roof corner",
 				"description": "The corner of a log roof, where two slopes meet.",
 				"kind": "structure",
 				"stack": 1,
@@ -7264,7 +7264,7 @@
 			},
 			"stone_roof_corner": {
 				"number": 625,
-				"name": "Stone - Roof corner",
+				"name": "Sturdy - Roof corner",
 				"description": "The corner of a stone roof, where two slopes meet.",
 				"kind": "structure",
 				"stack": 1,
@@ -7286,7 +7286,7 @@
 			},
 			"brick_roof_corner": {
 				"number": 627,
-				"name": "Brick - Roof corner",
+				"name": "Superior - Roof corner",
 				"description": "The corner of a brick roof, where two slopes meet.",
 				"kind": "structure",
 				"stack": 1,
@@ -7476,7 +7476,7 @@
 			},
 			"wooden_shelf": {
 				"number": 645,
-				"name": "Wooden - Shelf",
+				"name": "Shelf",
 				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
 				"kind": "structure",
 				"stack": 1,
@@ -7497,7 +7497,7 @@
 			},
 			"wooden_cupboard": {
 				"number": 647,
-				"name": "Wooden - Cupboard",
+				"name": "Cupboard",
 				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
 				"kind": "structure",
 				"stack": 1,
@@ -7518,7 +7518,7 @@
 			},
 			"wooden_barrel": {
 				"number": 649,
-				"name": "Wooden - Barrel",
+				"name": "Barrel",
 				"description": "A hooped plank barrel. Holds 8 stacks.",
 				"kind": "structure",
 				"stack": 1,
@@ -7539,7 +7539,7 @@
 			},
 			"log_stairs": {
 				"number": 651,
-				"name": "Log - Stairs",
+				"name": "Rustic - Stairs",
 				"description": "A flight of hewn log steps up to the next ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7560,7 +7560,7 @@
 			},
 			"stone_stairs": {
 				"number": 653,
-				"name": "Stone - Stairs",
+				"name": "Sturdy - Stairs",
 				"description": "A flight of mortared stone steps up to the next ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7581,7 +7581,7 @@
 			},
 			"brick_stairs": {
 				"number": 655,
-				"name": "Brick - Stairs",
+				"name": "Superior - Stairs",
 				"description": "A flight of brick steps up to the next ceiling.",
 				"kind": "structure",
 				"stack": 1,
@@ -7644,7 +7644,7 @@
 			},
 			"double_doorway": {
 				"number": 661,
-				"name": "Wooden - Double doorway",
+				"name": "Refined - Double doorway",
 				"description": "A plank wall four metres wide with a pair of doors.",
 				"kind": "structure",
 				"stack": 1,
@@ -7814,7 +7814,7 @@
 			},
 			"wooden_torch_post": {
 				"number": 677,
-				"name": "Wooden - Torch post",
+				"name": "Torch post",
 				"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
 				"kind": "structure",
 				"stack": 1,
@@ -7835,7 +7835,7 @@
 			},
 			"stone_torch_pillar": {
 				"number": 679,
-				"name": "Stone - Torch pillar",
+				"name": "Torch pillar",
 				"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
 				"kind": "structure",
 				"stack": 1,
@@ -8066,7 +8066,7 @@
 			},
 			"wooden_planter_box": {
 				"number": 701,
-				"name": "Wooden - Planter box",
+				"name": "Planter box",
 				"description": "A plank window box of soil for herbs and flowers.",
 				"kind": "structure",
 				"stack": 1,
@@ -8108,7 +8108,7 @@
 			},
 			"wooden_trellis": {
 				"number": 705,
-				"name": "Wooden - Trellis",
+				"name": "Trellis",
 				"description": "A lattice of sticks to set beside a plot for climbing plants.",
 				"kind": "structure",
 				"stack": 1,
@@ -8129,7 +8129,7 @@
 			},
 			"wooden_compost_bin": {
 				"number": 707,
-				"name": "Wooden - Compost bin",
+				"name": "Compost bin",
 				"description": "A slatted bin that rots plant waste down into compost.",
 				"kind": "structure",
 				"stack": 1,
@@ -8171,7 +8171,7 @@
 			},
 			"wooden_cold_frame": {
 				"number": 711,
-				"name": "Wooden - Cold frame",
+				"name": "Cold frame",
 				"description": "A horn-paned box over a plot that keeps frost off seedlings.",
 				"kind": "structure",
 				"stack": 1,
@@ -8192,7 +8192,7 @@
 			},
 			"stone_well": {
 				"number": 713,
-				"name": "Stone - Well",
+				"name": "Well",
 				"description": "A stone well with a windlass and bucket. E draws ten litres.",
 				"kind": "structure",
 				"stack": 1,
@@ -8360,7 +8360,7 @@
 			},
 			"wooden_sluice": {
 				"number": 729,
-				"name": "Wooden - Sluice",
+				"name": "Sluice",
 				"description": "A flume with a gate. E opens or shuts it.",
 				"kind": "structure",
 				"stack": 1,
@@ -8621,7 +8621,7 @@
 			},
 			"stone_cistern": {
 				"number": 754,
-				"name": "Stone - Cistern",
+				"name": "Cistern",
 				"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
 				"kind": "structure",
 				"stack": 1,
@@ -8642,7 +8642,7 @@
 			},
 			"stone_raised_cistern": {
 				"number": 756,
-				"name": "Stone - Raised cistern",
+				"name": "Raised cistern",
 				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
 				"kind": "structure",
 				"stack": 1,
@@ -9777,7 +9777,7 @@
 			},
 			"wooden_crate": {
 				"number": 850,
-				"name": "Wooden - Crate",
+				"name": "Crate",
 				"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 				"kind": "structure",
 				"stack": 1,
@@ -9805,6 +9805,406 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 209."
+			},
+			"bark_shingle": {
+				"number": 853,
+				"name": "Bark shingle",
+				"description": "A flat slab of bark, peeled and pressed. Laid in rows it roofs a log cabin.",
+				"kind": "material",
+				"stack": 40,
+				"look_alikes": [],
+				"value": 1
+			},
+			"wooden_shingle": {
+				"number": 854,
+				"name": "Wooden shingle",
+				"description": "A thin split board, thicker at one end. Laid in rows it roofs a plank house.",
+				"kind": "material",
+				"stack": 40,
+				"look_alikes": [],
+				"value": 1
+			},
+			"clay_roof_tile": {
+				"number": 855,
+				"name": "Clay roof tile",
+				"description": "A curved tile of fired clay. Roofs a brick or concrete house and does not burn.",
+				"kind": "material",
+				"stack": 40,
+				"look_alikes": [],
+				"value": 2
+			},
+			"limestone": {
+				"number": 856,
+				"name": "Limestone",
+				"description": "A pale lump of soft rock. Burnt in a kiln it crumbles to lime.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2,
+				"future": true
+			},
+			"lime_powder": {
+				"number": 857,
+				"name": "Lime powder",
+				"description": "Burnt limestone ground to a white powder. The binder in concrete.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 4
+			},
+			"concrete": {
+				"number": 858,
+				"name": "Concrete",
+				"description": "Lime powder, sand and stone mixed wet. Sets hard as rock in a mould or a wall.",
+				"kind": "material",
+				"stack": 10,
+				"look_alikes": [],
+				"value": 5
+			},
+			"iron_band": {
+				"number": 859,
+				"name": "Iron band",
+				"description": "A flat iron strap with nail holes. Ties concrete walls and gates against a siege.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 16
+			},
+			"mixer_kit": {
+				"number": 860,
+				"retired": true,
+				"name": "Mixer",
+				"description": "A stone trough with a cranked wooden paddle. Mixes lime powder, sand, stone and water into concrete.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 108
+			},
+			"mixer": {
+				"number": 861,
+				"name": "Mixer",
+				"description": "A stone trough with a cranked wooden paddle. Mixes lime powder, sand, stone and water into concrete.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 210."
+			},
+			"engineered_foundation_kit": {
+				"number": 862,
+				"retired": true,
+				"name": "Engineered foundation",
+				"description": "A poured concrete slab on a stone footing, four metres square. Walls and ceilings snap onto it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 74
+			},
+			"engineered_foundation": {
+				"number": 863,
+				"name": "Engineered - Foundation",
+				"description": "A poured concrete slab on a stone footing, four metres square. Walls and ceilings snap onto it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 211."
+			},
+			"engineered_wall_kit": {
+				"number": 864,
+				"retired": true,
+				"name": "Engineered wall",
+				"description": "A poured concrete wall, two metres wide.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 55
+			},
+			"engineered_wall": {
+				"number": 865,
+				"name": "Engineered - Wall",
+				"description": "A poured concrete wall, two metres wide.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 212."
+			},
+			"engineered_doorway_kit": {
+				"number": 866,
+				"retired": true,
+				"name": "Engineered doorway",
+				"description": "A concrete wall with a plank door, two metres wide.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 60
+			},
+			"engineered_doorway": {
+				"number": 867,
+				"name": "Engineered - Doorway",
+				"description": "A concrete wall with a plank door, two metres wide.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 213."
+			},
+			"engineered_window_kit": {
+				"number": 868,
+				"retired": true,
+				"name": "Engineered window",
+				"description": "A concrete wall with a window opening, two metres wide.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 40
+			},
+			"engineered_window": {
+				"number": 869,
+				"name": "Engineered - Window",
+				"description": "A concrete wall with a window opening, two metres wide.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 215."
+			},
+			"engineered_pillar_kit": {
+				"number": 870,
+				"retired": true,
+				"name": "Engineered pillar",
+				"description": "A square concrete pillar to hold up a ceiling or a roof.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 25
+			},
+			"engineered_pillar": {
+				"number": 871,
+				"name": "Engineered - Pillar",
+				"description": "A square concrete pillar to hold up a ceiling or a roof.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 216."
+			},
+			"engineered_stairs_kit": {
+				"number": 872,
+				"retired": true,
+				"name": "Engineered stairs",
+				"description": "A flight of poured concrete steps up to the next storey.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 75
+			},
+			"engineered_stairs": {
+				"number": 873,
+				"name": "Engineered - Stairs",
+				"description": "A flight of poured concrete steps up to the next storey.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 217."
+			},
+			"engineered_floor_kit": {
+				"number": 874,
+				"retired": true,
+				"name": "Engineered ceiling",
+				"description": "A concrete slab cast over planks. A ceiling below and a floor above.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 76
+			},
+			"engineered_floor": {
+				"number": 875,
+				"name": "Engineered - Ceiling",
+				"description": "A concrete slab cast over planks. A ceiling below and a floor above.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 218."
+			},
+			"engineered_roof_kit": {
+				"number": 876,
+				"retired": true,
+				"name": "Engineered roof",
+				"description": "Clay roof tiles on planks over a concrete ring beam. Does not burn.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 95
+			},
+			"engineered_roof": {
+				"number": 877,
+				"name": "Engineered - Roof",
+				"description": "Clay roof tiles on planks over a concrete ring beam. Does not burn.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 219."
+			},
+			"engineered_roof_corner_kit": {
+				"number": 878,
+				"retired": true,
+				"name": "Engineered roof corner",
+				"description": "A clay tile roof corner over a concrete ring beam.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 64
+			},
+			"engineered_roof_corner": {
+				"number": 879,
+				"name": "Engineered - Roof corner",
+				"description": "A clay tile roof corner over a concrete ring beam.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 220."
+			},
+			"fortified_foundation_kit": {
+				"number": 880,
+				"retired": true,
+				"name": "Fortified foundation",
+				"description": "A concrete slab tied with iron bands, four metres square. The base of a fort.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 144
+			},
+			"fortified_foundation": {
+				"number": 881,
+				"name": "Fortified - Foundation",
+				"description": "A concrete slab tied with iron bands, four metres square. The base of a fort.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 221."
+			},
+			"fortified_wall_kit": {
+				"number": 882,
+				"retired": true,
+				"name": "Fortified wall",
+				"description": "A concrete wall banded with iron, two metres wide. Built to stand a siege.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 129
+			},
+			"fortified_wall": {
+				"number": 883,
+				"name": "Fortified - Wall",
+				"description": "A concrete wall banded with iron, two metres wide. Built to stand a siege.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 222."
+			},
+			"fortified_doorway_kit": {
+				"number": 884,
+				"retired": true,
+				"name": "Fortified doorway",
+				"description": "A banded concrete wall with a heavy iron-strapped door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 153
+			},
+			"fortified_doorway": {
+				"number": 885,
+				"name": "Fortified - Doorway",
+				"description": "A banded concrete wall with a heavy iron-strapped door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 223."
+			},
+			"fortified_gate_kit": {
+				"number": 886,
+				"retired": true,
+				"name": "Fortified gate",
+				"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 186
+			},
+			"fortified_gate": {
+				"number": 887,
+				"name": "Fortified - Gate",
+				"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 225."
+			},
+			"fortified_pillar_kit": {
+				"number": 888,
+				"retired": true,
+				"name": "Fortified pillar",
+				"description": "A concrete pillar bound with iron bands.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 67
+			},
+			"fortified_pillar": {
+				"number": 889,
+				"name": "Fortified - Pillar",
+				"description": "A concrete pillar bound with iron bands.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 227."
+			},
+			"fortified_wall_top_kit": {
+				"number": 890,
+				"retired": true,
+				"name": "Fortified wall top",
+				"description": "A crenellated concrete parapet with iron ties. Cover for whoever holds the wall.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 67
+			},
+			"fortified_wall_top": {
+				"number": 891,
+				"name": "Fortified - Wall top",
+				"description": "A crenellated concrete parapet with iron ties. Cover for whoever holds the wall.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 228."
 			}
 	}
 }

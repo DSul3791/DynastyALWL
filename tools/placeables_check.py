@@ -62,6 +62,8 @@ live_struct_of_bp = {row.get("structure") for row in bps.values() if not row.get
 for kind, d in structs.items():
     if not isinstance(d, dict) or not d.get("kit"):
         continue
+    if d.get("retired"):   # no longer built (10 Nov 2026 building tiers: Log - Bench, Table, Trough, Shelf); pieces already placed stay
+        continue
     kit = items.get(d["kit"])
     if kit is None:
         problems.append("structure %s has the unknown kit item %s" % (kind, d["kit"]))
