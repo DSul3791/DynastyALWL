@@ -1,5 +1,5 @@
 {
-	"_note": "The player's heartbeat (Dave 9 Nov 2026, docs/design/heartbeat_design.md): the Daggorath pulse, always heard. bpm is a straight line of the server's strain: rest_bpm at strain 0, faint_bpm at exertion.json faint_at, peak_bpm at the most over-exerted; the server's own rate (sleep, faint, waking) wins while it sends one. The volume goes in a straight line from rest_db at rest_bpm to peak_db at peak_bpm. The bar above the hotbar spreads to max_half_px each way on a beat in rise_s and eases back to min_half_px by the next; its colour is the last zone whose from_bpm the rate has reached.",
+	"_note": "The player's heartbeat (Dave 9 Nov 2026, docs/design/heartbeat_design.md): the Daggorath pulse, always heard. bpm is a straight line of the server's strain: rest_bpm at strain 0, faint_bpm at exertion.json faint_at, peak_bpm at the most over-exerted; the server's own rate (sleep, faint, waking) wins while it sends one. The volume goes in a straight line from rest_db at rest_bpm to peak_db at peak_bpm. The bar above the hotbar spreads to max_half_px each way on a beat in rise_s and eases back to min_half_px by the next; its colour is the last zone whose from_bpm the rate has reached. faint_hud (Dave 10 Nov 2026): passing out from over-exertion fades the whole HUD, hotbar and all, except this line; the HUD is gone when the faint's blackout reaches gone_at_black (0 to 1) and comes back as the black lifts on waking, never faster than fade_s seconds for the whole way (src/client/hud_fade.gd).",
 	"sound": "res://assets/audio/heartbeat/Daggorath_Style_Heartbeat_Pulse.wav",
 	"rest_bpm": 55.0,
 	"faint_bpm": 175.0,
@@ -7,6 +7,10 @@
 	"ease_bpm_per_s": 40.0,
 	"rest_db": -30.0,
 	"peak_db": -8.0,
+	"faint_hud": {
+		"gone_at_black": 0.5,
+		"fade_s": 0.8
+	},
 	"bar": {
 		"centre": [960.0, 940.0],
 		"min_half_px": 3.0,
