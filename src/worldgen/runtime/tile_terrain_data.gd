@@ -18,6 +18,7 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
+const ORE_FIRST_LAYER := 5   # ore codes (_load_ores): lens 0, halo 1, pipe 2, vein 3, placer 4 are compact bodies; layer 5 and scatter 6 cover a province
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
 const RIVER_CLASS := 3
 const RIVER_FILM_M := 0.05   # a painted river cell thinner than WetMeters is still drawn, this deep (riffles between pools)
@@ -781,6 +782,65 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 				continue
 
 		ores.append(entry)
+
+
+# The ore a boulder at `pos` (on the ground) is an outcrop of, among the bodies whose resource is a key of `names` (boulders.json ore items), or ""
+# (Jamie's tin check, 10 Nov 2026: the server took the first body whose box held the spot, and a layer or scatter body's box is the whole tile, so on
+# tile 3,4 every outcrop was coal and tin and copper never showed; elsewhere a gem or flint body that boulders do not carry came first and hid the rest).
+# The nearest compact body (lens, halo, pipe, vein, placer) within `reach` comes first; else a layer or scatter band of the province under the spot
+# whose band comes within `depth_m` below the bedrock surface there (a coal seam shows where it nears the ground, not over the whole province).
+func ore_at(pos: Vector3, reach: float, names: Dictionary, depth_m: float) -> String:
+	if placeholder:
+		return ""
+
+	var flat: Vector2 = Vector2(pos.x, pos.z)
+	var best: String = ""
+	var best_m: float = INF
+
+	for ore in ores:
+		var name: String = str(ore.get("resource", ""))
+
+		if int(ore["code"]) >= ORE_FIRST_LAYER or not names.has(name):
+			continue
+
+		var rect: Rect2 = ore["rect"]
+		var gap: Vector2 = Vector2(maxf(maxf(rect.position.x - flat.x, flat.x - rect.end.x), 0.0), maxf(maxf(rect.position.y - flat.y, flat.y - rect.end.y), 0.0))
+
+		if gap.length() <= reach and gap.length() < best_m:
+			best_m = gap.length()
+			best = name
+
+	if best != "" or province.is_empty():
+		return best
+
+	var p: int = int(province[nearest(pos.x, pos.z)])
+
+	if p >= prov_datum.size():
+		return ""
+
+	var top: float = prov_datum[p] + offset_at(pos.x, pos.z)
+	var bed: float = pos.y - cover_at(pos.x, pos.z)
+
+	for ore in ores:
+		var name: String = str(ore.get("resource", ""))
+
+		if int(ore["code"]) >= ORE_FIRST_LAYER and int(ore.get("province_index", -1)) == p and names.has(name) and _band_near(ore, top, bed, depth_m):
+			return name
+
+	return ""
+
+
+# Whether a band of a layer or scatter body (one every cycle_m from depth_below_datum_m under the province top `top`, until repeat_to_m) has rock
+# between `bed` - `depth_m` and the bedrock surface `bed`.
+static func _band_near(ore: Dictionary, top: float, bed: float, depth_m: float) -> bool:
+	var start: float = float(ore.get("depth_below_datum_m", 0.0))
+	var cycle: float = maxf(float(ore.get("cycle_m", 1.0e9)), 0.01)
+	var thickness: float = float(ore.get("thickness_m", 0.0))
+	var repeat_to: float = float(ore.get("repeat_to_m", start + 0.001))
+	# The first band whose bottom is at or below the bedrock surface: top - depth - thickness <= bed.
+	var n: int = maxi(ceili((top - bed - thickness - start) / cycle), 0)
+	var depth_top: float = start + float(n) * cycle
+	return depth_top < repeat_to and top - depth_top >= bed - depth_m
 
 
 # The goblin den node of each cave in one tile's list (parallel to it; -1 for none). A cave's own rule is goblin_den_node; on top of it the tile's
