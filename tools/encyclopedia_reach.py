@@ -117,8 +117,10 @@ class Reach:
         return best
 
     def seed(self):
+        twins = {it.get("doused_item") for it in self.all.values() if it.get("doused_item")}
         for iid in code_sources():
-            self.give(iid, "handed out by the code (CODE_SOURCES)")
+            if iid not in twins:   # a doused twin (torch_doused, the dark lanterns) comes only from its lit item, below
+                self.give(iid, "handed out by the code (CODE_SOURCES)")
         yields = {str(y) for e in self.flora for y in e.get("yields", [])}
         for iid in self.gathered:
             if iid in yields:
