@@ -6460,7 +6460,7 @@
 			"pitch": {
 				"number": 555,
 				"name": "Pitch",
-				"description": "Resin, pine pitch or animal fat: what a torch head burns.",
+				"description": "Resin, pine tar or animal fat: what a torch head burns.",
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],
@@ -9434,7 +9434,7 @@
 			},
 			"wooden_snowshoes": {
 				"number": 820,
-				"name": "Wooden - Snowshoes",
+				"name": "Snowshoes",
 				"description": "Bent-wood frames laced with leather. Spread your weight so you sink less in snow.",
 				"kind": "clothing",
 				"slot": "feet",

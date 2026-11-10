@@ -1104,7 +1104,7 @@
 			"obtainable_now": true
 		},
 		"pine_tar": {
-			"name": "Pine pitch",
+			"name": "Pine tar",
 			"kind": "material",
 			"description": "Thick black tar boiled from pine. Seals roofs and soaks wood against rot.",
 			"how_to_get": [
@@ -1995,7 +1995,7 @@
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
-				"Used in Wooden - Snowshoes",
+				"Used in Snowshoes",
 				"Used in Bird trap",
 				"Used in Fish trap"
 			],
@@ -2136,7 +2136,7 @@
 				"Used in Wicker - Basket",
 				"Used in Bedroll",
 				"Used in Sling",
-				"Used in Wooden - Snowshoes",
+				"Used in Snowshoes",
 				"Used in Bird trap",
 				"Used in Fish trap"
 			],
@@ -4246,7 +4246,7 @@
 			"kind": "material",
 			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
 			"how_to_get": [
-				"Craft at a campfire: 5 Pine pitch"
+				"Craft at a campfire: 5 Pine tar"
 			],
 			"used_for": [
 				"Planned: seals a flat roof and soaks logs against rot. Needs pine tar from a felled pine."
@@ -6250,7 +6250,7 @@
 				"Used in Leather - Gloves",
 				"Used in Leather - Quiver",
 				"Used in Leather - Trousers",
-				"Used in Wooden - Snowshoes"
+				"Used in Snowshoes"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -9958,7 +9958,7 @@
 			"obtainable_now": false
 		},
 		"wooden_snowshoes": {
-			"name": "Wooden - Snowshoes",
+			"name": "Snowshoes",
 			"kind": "clothing",
 			"description": "Bent-wood frames laced with leather. Spread your weight so you sink less in snow.",
 			"how_to_get": [
