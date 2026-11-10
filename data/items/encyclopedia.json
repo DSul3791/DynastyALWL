@@ -1995,7 +1995,9 @@
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
-				"Used in Wooden - Snowshoes"
+				"Used in Wooden - Snowshoes",
+				"Used in Bird trap",
+				"Used in Fish trap"
 			],
 			"obtainable_now": true
 		},
@@ -2133,7 +2135,9 @@
 				"Used in Wicker - Basket",
 				"Used in Bedroll",
 				"Used in Sling",
-				"Used in Wooden - Snowshoes"
+				"Used in Wooden - Snowshoes",
+				"Used in Bird trap",
+				"Used in Fish trap"
 			],
 			"obtainable_now": true
 		},
@@ -9949,6 +9953,42 @@
 			"how_to_get": [
 				"Craft at a workbench: 4 Stick, 4 Leather strap, 2 Twine"
 			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"fish_trap": {
+			"name": "Fish trap",
+			"kind": "placeable",
+			"description": "A cone of woven sticks set in the water. Fish swim in and cannot find the way out.",
+			"how_to_get": [
+				"Craft: 10 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"fish_trap_set": {
+			"name": "Fish trap",
+			"kind": "structure",
+			"description": "A fish trap set in the water.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bird_trap": {
+			"name": "Bird trap",
+			"kind": "placeable",
+			"description": "A stick cage propped on a trigger. A ground bird that steps in for the bait brings it down.",
+			"how_to_get": [
+				"Craft: 8 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bird_trap_set": {
+			"name": "Bird trap",
+			"kind": "structure",
+			"description": "A bird trap set on the ground.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
 		}

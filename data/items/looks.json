@@ -4068,6 +4068,18 @@
    "shape": "knife",
    "color": "#8a8a90",
    "size": 1.0
+  },
+  "fish_trap": {
+   "shape": "kit",
+   "color": "#8a7040",
+   "size": 0.7,
+   "placeholder": true
+  },
+  "bird_trap": {
+   "shape": "kit",
+   "color": "#8a7040",
+   "size": 0.7,
+   "placeholder": true
   }
 
  }

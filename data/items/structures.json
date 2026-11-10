@@ -709,7 +709,9 @@
 		"sign": {"kit": "sign_kit", "item": "sign", "state": 198, "footprint_x": 0.6, "footprint_z": 0.1, "cap_per_chunk": 12, "sound": "timber", "clears_grass": false, "gap_exempt": true, "look": "sign"},
 		"tusk_mount": {"kit": "tusk_mount_kit", "item": "tusk_mount", "state": 199, "footprint_x": 0.44, "footprint_z": 0.1, "cap_per_chunk": 12, "sound": "timber", "clears_grass": false, "gap_exempt": true, "comfort": "tusk_mount", "look": "tusk_mount"},
 		"clay_bloomery": {"kit": "clay_bloomery_kit", "item": "clay_bloomery", "state": 200, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "station": "clay_bloomery", "look": "clay_bloomery"},
-		"stonecutters_bench": {"kit": "stonecutters_bench_kit", "item": "stonecutters_bench", "state": 201, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "stone", "clears_grass": true, "station": "stonecutters_bench", "look": "stonecutters_bench"}
+		"stonecutters_bench": {"kit": "stonecutters_bench_kit", "item": "stonecutters_bench", "state": 201, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "stone", "clears_grass": true, "station": "stonecutters_bench", "look": "stonecutters_bench"},
+		"fish_trap_set": {"kit": "fish_trap", "item": "fish_trap_set", "state": 202, "footprint_x": 0.8, "footprint_z": 0.5, "cap_per_chunk": 6, "fish_trap": true, "min_water_m": 0.3, "slots": 2, "who": "anyone", "look": "fish_trap_set", "sound": "thump", "clears_grass": false},
+		"bird_trap_set": {"kit": "bird_trap", "item": "bird_trap_set", "state": 203, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "bird_trap_set", "sound": "thump", "clears_grass": false}
 	},
 	"campfire": {
 		"gap_m": 2.0,
