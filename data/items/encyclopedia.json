@@ -1932,7 +1932,6 @@
 				"Any species' log from a felled tree counts (oak log, pine log and the rest)"
 			],
 			"used_for": [
-				"Used in Chopping block",
 				"Used in Sturdy workbench",
 				"Used in Lumber",
 				"Used in Lumber by hand",
@@ -2173,7 +2172,7 @@
 			"kind": "placeable",
 			"description": "A log set on end. Split wooden blocks into firewood on it.",
 			"how_to_get": [
-				"Craft: 2 Log"
+				"Craft: 1 Large wooden block"
 			],
 			"used_for": [],
 			"obtainable_now": true

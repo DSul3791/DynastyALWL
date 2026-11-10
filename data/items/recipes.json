@@ -327,8 +327,8 @@
 			"category": "Workshops and stations",
 			"needs": [
 				[
-					"log",
-					2
+					"wooden_block_large",
+					1
 				]
 			],
 			"gives": [
@@ -7146,6 +7146,7 @@
 		},
 		"chopping_block_from_block": {
 			"number": 335,
+			"retired": true,
 			"name": "Chopping block",
 			"category": "Workshops and stations",
 			"needs": [

@@ -1,8 +1,8 @@
 extends SceneTree
 
-# Ingredient groups (guide finding F-16, Tyler 31 Oct 2026): a recipe that asks for the plain id `log` (chopping block, log workbench, rough plank, lumber ...) is
+# Ingredient groups (guide finding F-16, Tyler 31 Oct 2026): a recipe that asks for the plain id `log` (log workbench, rough plank, lumber ...) is
 # filled by any log_<species> the pack holds; `wooden_block` by a hard or a soft block; `firewood` by hard or soft. Before, nothing mapped log_oak to log, so
-# no player could make any of them. Checks the rule on the pack, then through the real server craft queue (a chopping block from two oak logs, a bowl from soft
+# no player could make any of them. Checks the rule on the pack, then through the real server craft queue (a chopping block from a large soft block, a bowl from soft
 # firewood, a hammer from a soft block), the partial-stack case, a group with nothing in the pack, and that the pack is unchanged when a craft is refused.
 #   godot --headless --path . --script res://src/worldgen/tools/test_ingredient_groups.gd
 
@@ -78,10 +78,9 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 120.0
 	var pack = items.inventory_of(1)
-	pack.add(items.table.number_of("log_oak"), 1)
-	pack.add(items.table.number_of("log_birch"), 1)
+	pack.add(items.table.number_of("wooden_block_soft_large"), 1)
 	queue_and_finish("chopping_block", 1)
-	check(count("chopping_block") == 1 and count("log_oak") == 0 and count("log_birch") == 0, "the server makes a chopping block (2 logs) from one oak and one birch log")
+	check(count("chopping_block") == 1 and count("wooden_block_soft_large") == 0, "a chopping block from one large softwood block (Dave 10 Nov 2026: one large block)")
 	pack.add(items.table.number_of("firewood_soft"), 1)
 	queue_and_finish("wooden_bowl", 1)
 	check(count("wooden_bowl") == 1 and count("firewood_soft") == 0, "a wooden bowl from soft firewood")
@@ -92,7 +91,7 @@ func _init() -> void:
 	check(count("wooden_hammer") == 1 and count("wooden_block_soft") == 0, "a wooden hammer from a soft block")
 	pack.add(items.table.number_of("log_spruce"), 1)
 	queue_and_finish("chopping_block", 1)
-	check(count("chopping_block") == 1 and count("log_spruce") == 1, "one log is not enough for a chopping block: nothing is taken and nothing is made")
+	check(count("chopping_block") == 1 and count("log_spruce") == 1, "a log is not a large block: no chopping block from it, nothing is taken and nothing is made")
 	print("ingredient groups: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

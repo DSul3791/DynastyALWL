@@ -126,10 +126,10 @@ func _init() -> void:
 	say(2)   # Goodbye
 	mark("met Hob")
 
-	# 3. Gather what lies about, craft a knife, an axe and a chopping block (a log lies at the camp), place the block.
+	# 3. Gather what lies about, craft a knife, an axe and a chopping block (a large wooden block lies at the camp), place the block.
 	var camp: Vector3 = Vector3(float(chair["x"]) + 1.0, 10.0, float(chair["z"]))
 
-	items.drop_in_world(table.number_of("log"), 2, camp + Vector3(0.5, 0.0, 0.5))
+	items.drop_in_world(table.number_of("wooden_block_large"), 1, camp + Vector3(0.5, 0.0, 0.5))
 
 	for n in range(4):
 		items.drop_in_world(table.number_of("stone"), 4, camp + Vector3(float(n) * 0.3, 0.0, 1.0))
@@ -140,7 +140,7 @@ func _init() -> void:
 		for id in items._items.keys():
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("stone") >= 14 and count("stick") >= 20 and count("log") == 2, "gathering fills the pack (%d stones, %d sticks, %d logs)" % [count("stone"), count("stick"), count("log")])
+	check(count("stone") >= 14 and count("stick") >= 20 and count("wooden_block_large") == 1, "gathering fills the pack (%d stones, %d sticks, %d large blocks)" % [count("stone"), count("stick"), count("wooden_block_large")])
 	craft(1, 5)   # twine is twisted by hand from fibre
 	craft(2, 1)
 	craft(6, 1)
