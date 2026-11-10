@@ -75,7 +75,7 @@
 		"stone_garden_plot": {"category": "Garden", "number": 120, "name": "Stone - Garden plot", "structure": "stone_garden_plot", "cost": [["cobblestone", 10], ["mortar", 2], ["soil", 6]], "station": "", "hammer": 1, "known": true},
 		"brick_garden_plot": {"category": "Garden", "number": 121, "name": "Brick - Garden plot", "structure": "brick_garden_plot", "cost": [["brick", 10], ["mortar", 2], ["soil", 6]], "station": "", "hammer": 1, "known": true},
 		"wooden_planter_box": {"category": "Garden", "number": 122, "name": "Planter box", "structure": "wooden_planter_box", "cost": [["lumber", 2], ["soil", 2]], "station": "", "hammer": 1, "known": true},
-		"stone_planter": {"category": "Garden", "number": 123, "name": "Planter", "structure": "stone_planter", "cost": [["cobblestone", 6], ["mortar", 1], ["soil", 3]], "station": "", "hammer": 1, "known": true},
+		"stone_planter": {"category": "Garden", "number": 123, "name": "Stone - Planter", "structure": "stone_planter", "cost": [["cobblestone", 6], ["mortar", 1], ["soil", 3]], "station": "", "hammer": 1, "known": true},
 		"wooden_trellis": {"category": "Garden", "number": 124, "name": "Trellis", "structure": "wooden_trellis", "cost": [["stick", 10], ["twine", 4]], "station": "", "hammer": 1, "known": true},
 		"wooden_compost_bin": {"category": "Garden", "number": 125, "name": "Compost bin", "structure": "wooden_compost_bin", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": false, "locked": true},
 		"thatch_scarecrow": {"category": "Garden", "number": 126, "name": "Thatch - Scarecrow", "structure": "thatch_scarecrow", "cost": [["stick", 6], ["thatch", 10], ["twine", 2]], "station": "", "hammer": 1, "known": true},

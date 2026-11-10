@@ -8087,7 +8087,7 @@
 			},
 			"stone_planter": {
 				"number": 703,
-				"name": "Planter",
+				"name": "Stone - Planter",
 				"description": "A big stone pot of soil for a herb or a small shrub.",
 				"kind": "structure",
 				"stack": 1,

@@ -2606,8 +2606,8 @@
 				"Used in Stone - Garden plot",
 				"Used in Thatch - Garden plot",
 				"Used in Wooden - Garden plot",
-				"Used in Planter",
-				"Used in Planter box"
+				"Used in Planter box",
+				"Used in Stone - Planter"
 			],
 			"obtainable_now": false
 		},
@@ -4121,7 +4121,6 @@
 				"Used in Root cellar",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Planter",
 				"Used in Raised cistern",
 				"Used in Sturdy - Ceiling",
 				"Used in Sturdy - Doorway",
@@ -4139,7 +4138,8 @@
 				"Used in Superior - Wall",
 				"Used in Superior - Window",
 				"Used in Torch pillar",
-				"Used in Well"
+				"Used in Well",
+				"Used in Stone - Planter"
 			],
 			"obtainable_now": true
 		},
@@ -4283,14 +4283,14 @@
 				"Used in Stonecutter's bench",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Planter",
 				"Used in Raised cistern",
 				"Used in Sturdy - Fence",
 				"Used in Sturdy - Gate",
 				"Used in Sturdy - Pillar",
 				"Used in Sturdy - Stairs",
 				"Used in Torch pillar",
-				"Used in Well"
+				"Used in Well",
+				"Used in Stone - Planter"
 			],
 			"obtainable_now": true
 		},
@@ -8921,7 +8921,7 @@
 			"obtainable_now": true
 		},
 		"stone_planter": {
-			"name": "Planter",
+			"name": "Stone - Planter",
 			"kind": "structure",
 			"description": "A big stone pot of soil for a herb or a small shrub.",
 			"how_to_get": [],
