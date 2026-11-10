@@ -200,6 +200,64 @@ def sewing_needle():
     return faces
 
 
+# ---------------------------------------------------------------- items that had no icon (10 Nov 2026)
+def charcoal():
+    """Charcoal: split sticks burnt black, in a heap, their ends grey with the wood's rings still in them (coal is a lump; this is wood)."""
+    faces = []
+    for k, (a, b) in enumerate((((-1.0, -0.2, 0.3), (0.7, -0.35, 0.5)), ((-0.6, -0.25, -0.45), (1.0, -0.2, -0.1)),
+                                ((-0.8, 0.12, 0.0), (0.8, 0.05, 0.25)), ((-0.3, 0.38, -0.2), (0.95, 0.3, 0.1)))):
+        faces += rod(a, b, 0.24 - 0.02 * k, (74, 68, 64), end=(138, 130, 122), sides=6, seed=40 + k)
+    for k, at in enumerate(((1.05, -0.45, 0.45), (-1.05, -0.4, -0.25))):                     # two broken bits
+        faces += blob(at, (0.18, 0.14, 0.16), (84, 78, 74), seed=46 + k, seg=6, rings=3, rough=0.2)
+    return faces
+
+
+def wool_cloth():
+    """Wool cloth: a bolt folded in three, cream, each fold edge a shade darker, tied round with a cord."""
+    cream = (226, 214, 186)
+    faces = []
+    for k in range(3):
+        faces += box((0.04 * k, -0.3 + 0.24 * k, -0.03 * k), (2.1, 0.22, 1.3), shade(cream, 1.0 - 0.05 * (2 - k)))
+        faces += box((1.06 + 0.04 * k, -0.3 + 0.24 * k, -0.03 * k), (0.06, 0.2, 1.28), shade(cream, 0.82))   # the fold
+    faces += box((-0.4, 0.06, -0.03), (0.12, 0.8, 1.36), CORD)
+    return faces
+
+
+def fur():
+    """Fur: a whole pelt laid flat, its outline the stretched skin (four leg corners, a neck, a tail), thick dark tufts over the top."""
+    brown = (128, 92, 58)
+    faces = blob((0.0, 0.0, 0.0), (1.0, 0.1, 0.62), brown, seed=50, seg=12, rings=5, rough=0.1)
+    for k, (x, z) in enumerate(((-0.72, 0.5), (0.68, 0.5), (-0.72, -0.5), (0.68, -0.5))):
+        faces += blob((x, -0.01, z), (0.36, 0.08, 0.3), brown, seed=52 + k, seg=8, rings=3, rough=0.1)   # the leg corners
+    faces += blob((1.08, -0.01, 0.0), (0.3, 0.08, 0.24), brown, seed=56, seg=8, rings=3, rough=0.1)       # the neck
+    faces += blob((-1.2, -0.01, 0.0), (0.36, 0.07, 0.11), shade(brown, 0.85), seed=57, seg=6, rings=3, rough=0.1)   # the tail
+    rng = np.random.default_rng(58)
+    for k in range(14):                                                                       # tufts of guard hair
+        faces += blob((rng.uniform(-0.8, 0.8), 0.08, rng.uniform(-0.45, 0.45)), (0.16, 0.05, 0.08), shade(brown, rng.uniform(0.7, 1.15)),
+                      seed=60 + k, seg=5, rings=2, rough=0.2)
+    return faces
+
+
+def crystal_lens():
+    """Crystal lens: a clear round lens ground convex on both faces, a thin rim."""
+    glass = (176, 212, 222)
+    faces = rod((-0.08, 0, 0), (0.08, 0, 0), 0.82, shade(glass, 0.85), end=glass, sides=16, seed=60)
+    for side in (-1.0, 1.0):
+        faces += blob((0.08 * side, 0.0, 0.0), (0.1, 0.74, 0.74), shade(glass, 1.12), seed=61, seg=14, rings=5, rough=0.0)
+    return faces
+
+
+def spyglass():
+    """Wooden - Spyglass: a turned wooden tube, a narrower draw tube out of it, bronze bands at the joins and ends, glass in the big end."""
+    bronze = (184, 132, 70)
+    faces = rod((-1.3, 0, 0), (0.35, 0, 0), 0.26, WOOD, end=WOOD_END, sides=10, seed=62)
+    faces += rod((0.35, 0, 0), (1.35, 0, 0), 0.19, shade(WOOD, 1.1), end=WOOD_END, sides=10, seed=63)
+    for x0, x1, r in ((-1.34, -1.12, 0.3), (0.22, 0.42, 0.29), (1.2, 1.38, 0.22)):
+        faces += rod((x0, 0, 0), (x1, 0, 0), r, bronze, end=shade(bronze, 1.15), sides=10, seed=64)
+    faces += blob((-1.36, 0.0, 0.0), (0.03, 0.22, 0.22), (176, 212, 222), seed=65, seg=10, rings=4, rough=0.0)   # the glass
+    return faces
+
+
 # ---------------------------------------------------------------- spades: one shape, four blades
 def spade(material):
     """A spade along x, blade at +x; the blade (big, face to the viewer) carries the material."""
@@ -596,6 +654,11 @@ def _pieces():
         "fibre_arrow": (lambda: arrows("wood", (FIBRE, None)), DIAGONAL),
         "stick": (stick, DIAGONAL),
         "sewing_needle": (sewing_needle, DIAGONAL),
+        "charcoal": (charcoal, HEAP_VIEW),
+        "wool_cloth": (wool_cloth, HEAP_VIEW),
+        "fur": (fur, rot_x(math.radians(50.0)) @ rot_y(math.radians(18.0))),
+        "crystal_lens": (crystal_lens, rot_y(math.radians(-40.0)) @ rot_z(math.radians(10.0))),
+        "spyglass": (spyglass, DIAGONAL),
         "wooden_spade": (lambda: spade("wood"), SPADE_VIEW),
         "stone_spade": (lambda: spade("stone"), SPADE_VIEW),
         "iron_spade": (lambda: spade("iron"), SPADE_VIEW),
