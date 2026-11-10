@@ -37,7 +37,7 @@
 		{
 			"id": "axe",
 			"trigger": "2_twine_1_stone_1_stick",
-			"text": "Craft a Stone axe: 1 stone, 1 stick, 2 twine.",
+			"text": "Craft a Stone - Axe: 1 stone, 1 stick, 2 twine.",
 			"goal": "axe"
 		},
 		{
@@ -115,13 +115,13 @@
 		{
 			"id": "spear",
 			"trigger": "workbench_placed",
-			"text": "Make a Wooden spear, then bind it with 2 twine.",
+			"text": "Make a Wooden - Spear, then bind it with 2 twine.",
 			"goal": "spear"
 		},
 		{
 			"id": "knife",
 			"trigger": "spear_made",
-			"text": "Craft a Stone knife, then work the animal you killed.",
+			"text": "Craft a Stone - Knife, then work the animal you killed.",
 			"goal": "knife"
 		},
 		{

@@ -47,8 +47,8 @@
 		},
 		{
 			"id": "axe",
-			"title": "Make a stone axe",
-			"hint": "1 stone, 1 stick and 2 twine make a stone axe. Put it on the hotbar to use it.",
+			"title": "Make a Stone - Axe",
+			"hint": "1 stone, 1 stick and 2 twine make a Stone - Axe. Put it on the hotbar to use it.",
 			"after": [
 				"twine"
 			],
@@ -81,8 +81,8 @@
 		},
 		{
 			"id": "hammer",
-			"title": "Make a wooden hammer",
-			"hint": "Cut a wooden block from a felled log, then make a wooden hammer: a wooden block, a stick and a twine. You build everything with it.",
+			"title": "Make a Wooden - Hammer",
+			"hint": "Cut a wooden block from a felled log, then make a Wooden - Hammer: a wooden block, a stick and a twine. You build everything with it.",
 			"after": [
 				"fell"
 			],
@@ -116,7 +116,7 @@
 		{
 			"id": "hoe",
 			"title": "Make a hoe",
-			"hint": "A hoe treads paths and breaks ground for beds. Craft one in the inventory (I): a wooden hoe is 2 sticks and a twine (keep a stone in your pack).",
+			"hint": "A hoe treads paths and breaks ground for beds. Craft one in the inventory (I): a Wooden - Hoe is 2 sticks and a twine (keep a stone in your pack).",
 			"after": [
 				"fire"
 			],
@@ -165,7 +165,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Hold your wooden hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
+			"hint": "Hold your Wooden - Hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
 			"after": [
 				"fire",
 				"hammer"
@@ -217,7 +217,7 @@
 		{
 			"id": "spear",
 			"title": "Make a spear",
-			"hint": "A wooden spear (1 stick, keep a stone) then 2 twine for a stone spear.",
+			"hint": "A Wooden - Spear (1 stick, keep a stone) then 2 twine for a Stone - Spear.",
 			"after": [
 				"twine"
 			],
@@ -231,7 +231,7 @@
 		},
 		{
 			"id": "knife",
-			"title": "Make a stone knife and work a kill",
+			"title": "Make a Stone - Knife and work a kill",
 			"hint": "2 stones and a stick make a knife. Strike a rabbit with the spear, then work the body with the knife.",
 			"after": [
 				"spear"

@@ -26,7 +26,7 @@
 		},
 		"stone_axe": {
 			"number": 2,
-			"name": "Stone axe",
+			"name": "Stone - Axe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -51,7 +51,7 @@
 		},
 		"wooden_spear": {
 			"number": 5,
-			"name": "Wooden spear",
+			"name": "Wooden - Spear",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -74,7 +74,7 @@
 		},
 		"spear": {
 			"number": 3,
-			"name": "Stone spear",
+			"name": "Stone - Spear",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -101,7 +101,7 @@
 		},
 		"stone_knife": {
 			"number": 6,
-			"name": "Stone knife",
+			"name": "Stone - Knife",
 			"category": "Tools",
 			"needs": [
 				[
@@ -252,7 +252,7 @@
 		},
 		"wooden_spade": {
 			"number": 12,
-			"name": "Wooden spade",
+			"name": "Wooden - Spade",
 			"category": "Tools",
 			"needs": [
 				[
@@ -386,7 +386,7 @@
 		},
 		"iron_pickaxe": {
 			"number": 18,
-			"name": "Iron pickaxe",
+			"name": "Iron - Pickaxe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -408,7 +408,7 @@
 		},
 		"steel_pickaxe": {
 			"number": 19,
-			"name": "Steel pickaxe",
+			"name": "Steel - Pickaxe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -542,7 +542,7 @@
 		},
 		"stone_spade": {
 			"number": 26,
-			"name": "Stone spade",
+			"name": "Stone - Spade",
 			"category": "Tools",
 			"needs": [
 				[
@@ -568,7 +568,7 @@
 		},
 		"iron_spade": {
 			"number": 27,
-			"name": "Iron spade",
+			"name": "Iron - Spade",
 			"category": "Tools",
 			"needs": [
 				[
@@ -590,7 +590,7 @@
 		},
 		"steel_spade": {
 			"number": 28,
-			"name": "Steel spade",
+			"name": "Steel - Spade",
 			"category": "Tools",
 			"needs": [
 				[
@@ -777,7 +777,7 @@
 		},
 		"grass_skirt": {
 			"number": 36,
-			"name": "Grass skirt",
+			"name": "Grass - Skirt",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -794,7 +794,7 @@
 		},
 		"grass_cloak": {
 			"number": 37,
-			"name": "Grass cloak",
+			"name": "Grass - Cloak",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -815,7 +815,7 @@
 		},
 		"fibre_sandals": {
 			"number": 38,
-			"name": "Fibre sandals",
+			"name": "Fibre - Sandals",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -836,7 +836,7 @@
 		},
 		"hide_cloak": {
 			"number": 39,
-			"name": "Hide cloak",
+			"name": "Hide - Cloak",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -857,7 +857,7 @@
 		},
 		"hide_boots": {
 			"number": 40,
-			"name": "Hide boots",
+			"name": "Hide - Boots",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -878,7 +878,7 @@
 		},
 		"hide_hood": {
 			"number": 41,
-			"name": "Hide hood",
+			"name": "Hide - Hood",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -899,7 +899,7 @@
 		},
 		"hide_mittens": {
 			"number": 42,
-			"name": "Hide mittens",
+			"name": "Hide - Mittens",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -920,7 +920,7 @@
 		},
 		"hide_leggings": {
 			"number": 43,
-			"name": "Hide leggings",
+			"name": "Hide - Leggings",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -3178,7 +3178,7 @@
 		},
 		"wooden_hoe": {
 			"number": 139,
-			"name": "Wooden hoe",
+			"name": "Wooden - Hoe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3205,7 +3205,7 @@
 		},
 		"stone_hoe": {
 			"number": 140,
-			"name": "Stone hoe",
+			"name": "Stone - Hoe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3231,7 +3231,7 @@
 		},
 		"iron_hoe": {
 			"number": 141,
-			"name": "Iron hoe",
+			"name": "Iron - Hoe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3253,7 +3253,7 @@
 		},
 		"steel_hoe": {
 			"number": 142,
-			"name": "Steel hoe",
+			"name": "Steel - Hoe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3488,7 +3488,7 @@
 		},
 		"wooden_hammer": {
 			"number": 161,
-			"name": "Wooden hammer",
+			"name": "Wooden - Hammer",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3513,7 +3513,7 @@
 		},
 		"stone_hammer": {
 			"number": 156,
-			"name": "Stone hammer",
+			"name": "Stone - Hammer",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3616,7 +3616,7 @@
 		},
 		"wooden_bow": {
 			"number": 170,
-			"name": "Wooden bow",
+			"name": "Wooden - Bow",
 			"category": "Weapons",
 			"needs": [
 				["stick", 2],
@@ -3629,7 +3629,7 @@
 		},
 		"wooden_arrow": {
 			"number": 171,
-			"name": "Wooden arrow",
+			"name": "Wooden - Arrow",
 			"category": "Tools",
 			"needs": [
 				["stick", 2],
@@ -3641,7 +3641,7 @@
 		},
 		"stone_arrow": {
 			"number": 172,
-			"name": "Stone arrow",
+			"name": "Stone - Arrow",
 			"category": "Tools",
 			"needs": [
 				["stick", 2],
@@ -3763,13 +3763,13 @@
 		"processed_hide": {"number": 179, "name": "Scraped hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
 		"hide_scraper": {"number": 180, "name": "Hide scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
-		"obsidian_knife": {"number": 182, "name": "Obsidian knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
-		"steel_striker": {"number": 183, "name": "Steel striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge"},
+		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge"},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "forge"},
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": true, "station": "forge"},
 		"stone_pickaxe": {
 			"number": 186,
-			"name": "Stone pickaxe",
+			"name": "Stone - Pickaxe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3843,7 +3843,7 @@
 		},
 		"wooden_club": {
 			"number": 189,
-			"name": "Wooden club",
+			"name": "Wooden - Club",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -3942,7 +3942,7 @@
 		},
 		"hide_tunic": {
 			"number": 194,
-			"name": "Hide tunic",
+			"name": "Hide - Tunic",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -3963,7 +3963,7 @@
 		},
 		"hide_trousers": {
 			"number": 195,
-			"name": "Hide trousers",
+			"name": "Hide - Trousers",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -3984,7 +3984,7 @@
 		},
 		"hide_gloves": {
 			"number": 196,
-			"name": "Hide gloves",
+			"name": "Hide - Gloves",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -4085,7 +4085,7 @@
 		},
 		"wicker_shield": {
 			"number": 201,
-			"name": "Wicker shield",
+			"name": "Wicker - Shield",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4106,7 +4106,7 @@
 		},
 		"stone_mace": {
 			"number": 202,
-			"name": "Stone mace",
+			"name": "Stone - Mace",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -4131,7 +4131,7 @@
 		},
 		"plank_shield": {
 			"number": 203,
-			"name": "Plank shield",
+			"name": "Plank - Shield",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4157,7 +4157,7 @@
 		},
 		"bronze_sword": {
 			"number": 204,
-			"name": "Bronze sword",
+			"name": "Bronze - Sword",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -4181,7 +4181,7 @@
 		},
 		"bronze_mace": {
 			"number": 205,
-			"name": "Bronze mace",
+			"name": "Bronze - Mace",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -4205,7 +4205,7 @@
 		},
 		"bronze_shield": {
 			"number": 206,
-			"name": "Bronze-rimmed shield",
+			"name": "Bronze - Kite shield",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4229,7 +4229,7 @@
 		},
 		"iron_sword": {
 			"number": 207,
-			"name": "Iron sword",
+			"name": "Iron - Sword",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -4253,7 +4253,7 @@
 		},
 		"iron_mace": {
 			"number": 208,
-			"name": "Iron mace",
+			"name": "Iron - Mace",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -4277,7 +4277,7 @@
 		},
 		"iron_shield": {
 			"number": 209,
-			"name": "Iron-banded shield",
+			"name": "Iron - Kite shield",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4301,7 +4301,7 @@
 		},
 		"steel_sword": {
 			"number": 210,
-			"name": "Steel sword",
+			"name": "Steel - Sword",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -4325,7 +4325,7 @@
 		},
 		"steel_mace": {
 			"number": 211,
-			"name": "Steel mace",
+			"name": "Steel - Mace",
 			"category": "Weapons",
 			"needs": [
 				[
@@ -4349,7 +4349,7 @@
 		},
 		"steel_shield": {
 			"number": 212,
-			"name": "Steel kite shield",
+			"name": "Steel - Kite shield",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4373,7 +4373,7 @@
 		},
 		"leather_cap": {
 			"number": 213,
-			"name": "Leather cap",
+			"name": "Leather - Cap",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -4394,7 +4394,7 @@
 		},
 		"leather_jerkin": {
 			"number": 214,
-			"name": "Leather jerkin",
+			"name": "Leather - Jerkin",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4416,7 +4416,7 @@
 		},
 		"bronze_helm": {
 			"number": 215,
-			"name": "Bronze helm",
+			"name": "Bronze - Helm",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4462,7 +4462,7 @@
 		},
 		"iron_helm": {
 			"number": 217,
-			"name": "Iron helm",
+			"name": "Iron - Helm",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4506,7 +4506,7 @@
 		},
 		"steel_helm": {
 			"number": 219,
-			"name": "Steel helm",
+			"name": "Steel - Helm",
 			"category": "Armour",
 			"needs": [
 				[
@@ -4711,7 +4711,7 @@
 		},
 		"bone_arrow": {
 			"number": 226,
-			"name": "Bone arrow",
+			"name": "Bone - Arrow",
 			"category": "Tools",
 			"needs": [
 				[
@@ -4736,7 +4736,7 @@
 		},
 		"stone_wedge": {
 			"number": 227,
-			"name": "Stone wedge",
+			"name": "Stone - Wedge",
 			"category": "Tools",
 			"needs": [
 				[
@@ -4757,7 +4757,7 @@
 		},
 		"fibre_arrow": {
 			"number": 228,
-			"name": "Fibre arrow",
+			"name": "Fibre - Arrow",
 			"category": "Tools",
 			"needs": [
 				[
@@ -4844,7 +4844,7 @@
 		},
 		"wooden_hammer_soft": {
 			"number": 232,
-			"name": "Wooden hammer (softwood)",
+			"name": "Wooden - Hammer (softwood)",
 			"category": "Tools",
 			"needs": [
 				[
@@ -4964,7 +4964,7 @@
 		},
 		"wool_tunic": {
 			"number": 237,
-			"name": "Wool tunic",
+			"name": "Wool - Tunic",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -4985,7 +4985,7 @@
 		},
 		"wool_trousers": {
 			"number": 238,
-			"name": "Wool trousers",
+			"name": "Wool - Trousers",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -5006,7 +5006,7 @@
 		},
 		"wool_cap": {
 			"number": 239,
-			"name": "Wool cap",
+			"name": "Wool - Cap",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -5023,7 +5023,7 @@
 		},
 		"wool_mittens": {
 			"number": 240,
-			"name": "Wool mittens",
+			"name": "Wool - Mittens",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -5040,7 +5040,7 @@
 		},
 		"linen_shirt": {
 			"number": 241,
-			"name": "Linen shirt",
+			"name": "Linen - Shirt",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -5061,7 +5061,7 @@
 		},
 		"fur_cloak": {
 			"number": 242,
-			"name": "Fur cloak",
+			"name": "Fur - Cloak",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -5082,7 +5082,7 @@
 		},
 		"fur_hat": {
 			"number": 243,
-			"name": "Fur hat",
+			"name": "Fur - Hat",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -5103,7 +5103,7 @@
 		},
 		"fur_boots": {
 			"number": 244,
-			"name": "Fur boots",
+			"name": "Fur - Boots",
 			"category": "Clothing",
 			"needs": [
 				[
@@ -6141,7 +6141,7 @@
 		},
 		"bronze_pickaxe": {
 			"number": 290,
-			"name": "Bronze pickaxe",
+			"name": "Bronze - Pickaxe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -6163,7 +6163,7 @@
 		},
 		"bronze_axe": {
 			"number": 291,
-			"name": "Bronze axe",
+			"name": "Bronze - Axe",
 			"category": "Tools",
 			"needs": [
 				[
@@ -6189,7 +6189,7 @@
 		},
 		"bronze_hammer": {
 			"number": 292,
-			"name": "Bronze hammer",
+			"name": "Bronze - Hammer",
 			"category": "Tools",
 			"needs": [
 				[
@@ -6211,7 +6211,7 @@
 		},
 		"bronze_knife": {
 			"number": 293,
-			"name": "Bronze knife",
+			"name": "Bronze - Knife",
 			"category": "Tools",
 			"needs": [
 				[

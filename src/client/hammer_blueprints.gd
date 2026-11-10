@@ -352,9 +352,10 @@ func list_text(hammer_tier: int, window: int = 0) -> String:
 	return "\n".join(lines)
 
 
+# No "(short)" after a name the pack cannot cover (Dave 10 Nov 2026): the have/need line under the menu and the red ghost already say so.
 func _line(list: Array, n: int) -> String:
 	var entry: Dictionary = list[n]
-	return "%s %s%s" % [">" if n == _cursor else " ", entry["name"], "" if bool(entry["can"]) else " (short)"]
+	return "%s %s" % [">" if n == _cursor else " ", entry["name"]]
 
 
 # The line under the menu: materials (have/need) of the highlighted blueprint or plan, or what the highlighted action does.

@@ -133,7 +133,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Sweet chestnut",
 				"Walnut",
 				"Witness tree",
@@ -350,7 +350,7 @@
 			"kind": "material",
 			"stack": 50,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Walnut",
 				"Witness tree",
@@ -727,7 +727,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Sweet chestnut",
 				"Witness tree",
@@ -979,7 +979,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Sweet chestnut",
 				"Walnut",
@@ -1997,7 +1997,7 @@
 		},
 		"tannin_bark": {
 			"number": 1145,
-			"name": "Tannin bark",
+			"name": "Tannin-rich bark",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
@@ -2106,7 +2106,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Walnut",
 				"Witness tree",
@@ -2176,7 +2176,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Sweet chestnut",
 				"Witness tree",
@@ -2191,7 +2191,7 @@
 			"kind": "material",
 			"stack": 50,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Sweet chestnut",
 				"Witness tree",
@@ -2364,7 +2364,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Sweet chestnut",
 				"Walnut",
@@ -2380,7 +2380,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
-				"Oak",
+				"Tan oak",
 				"Beech",
 				"Sweet chestnut",
 				"Walnut",

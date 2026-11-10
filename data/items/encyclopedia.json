@@ -1503,7 +1503,7 @@
 			"obtainable_now": true
 		},
 		"tannin_bark": {
-			"name": "Tannin bark",
+			"name": "Tannin-rich bark",
 			"kind": "material",
 			"description": "Bark rich in tannin. Used for tanning hides.",
 			"how_to_get": [
@@ -1529,10 +1529,10 @@
 			],
 			"used_for": [
 				"Used in Rough bed",
-				"Used in Thatch doorway",
-				"Used in Thatch foundation",
-				"Used in Thatch roof",
-				"Used in Thatch wall",
+				"Used in Thatch - Doorway",
+				"Used in Thatch - Foundation",
+				"Used in Thatch - Roof",
+				"Used in Thatch - Wall",
 				"Used in Tinder"
 			],
 			"obtainable_now": true
@@ -1867,12 +1867,12 @@
 			"used_for": [
 				"Used in Campfire",
 				"Used in Cobblestone",
-				"Used in Foundation",
+				"Used in Stone - Foundation",
 				"Used in Hand mill",
 				"Used in Rock pile",
 				"Used in Fishing net",
-				"Used in Stone arrow",
-				"Used in Stone axe"
+				"Used in Stone - Arrow",
+				"Used in Stone - Axe"
 			],
 			"obtainable_now": true
 		},
@@ -1890,13 +1890,13 @@
 			],
 			"used_for": [
 				"Used in Torch",
-				"Used in Bone arrow",
-				"Used in Bronze mace",
-				"Used in Bronze sword",
+				"Used in Bone - Arrow",
+				"Used in Bronze - Mace",
+				"Used in Bronze - Sword",
 				"Used in Workbench",
 				"Used in Campfire",
 				"Used in Campfire pot",
-				"Used in Fibre arrow"
+				"Used in Fibre - Arrow"
 			],
 			"obtainable_now": true
 		},
@@ -1916,10 +1916,10 @@
 				"Used in Torch",
 				"Used in Candle",
 				"Used in Compost",
-				"Used in Fibre arrow",
-				"Used in Fibre sandals",
-				"Used in Grass cloak",
-				"Used in Grass skirt",
+				"Used in Fibre - Arrow",
+				"Used in Fibre - Sandals",
+				"Used in Grass - Cloak",
+				"Used in Grass - Skirt",
 				"Used in Leaf bandage"
 			],
 			"obtainable_now": true
@@ -1956,16 +1956,16 @@
 				"Used in Bucket",
 				"Used in Workbench",
 				"Used in Campfire pot",
-				"Used in Wooden doorway",
-				"Used in Fibre sandals",
+				"Used in Wooden - Doorway",
+				"Used in Fibre - Sandals",
 				"Used in Fishing rod",
-				"Used in Ceiling section",
+				"Used in Wooden - Ceiling",
 				"Used in Gambeson"
 			],
 			"obtainable_now": true
 		},
 		"stone_axe": {
-			"name": "Stone axe",
+			"name": "Stone - Axe",
 			"kind": "tool",
 			"description": "A stone bound to a handle. Fells trees, breaks rock and works wood.",
 			"how_to_get": [
@@ -1975,11 +1975,11 @@
 			"obtainable_now": true
 		},
 		"spear": {
-			"name": "Stone spear",
+			"name": "Stone - Spear",
 			"kind": "weapon",
 			"description": "A stone point on a long shaft. Jab with it or throw it; it kills a rabbit in one blow.",
 			"how_to_get": [
-				"Craft: 1 Wooden spear, 2 Twine (keep Stone)"
+				"Craft: 1 Wooden - Spear, 2 Twine (keep Stone)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1997,19 +1997,19 @@
 			"obtainable_now": true
 		},
 		"wooden_spear": {
-			"name": "Wooden spear",
+			"name": "Wooden - Spear",
 			"kind": "weapon",
 			"description": "A sharpened stick. Jab with it or throw it.",
 			"how_to_get": [
 				"Craft: 1 Stick (keep Stone)"
 			],
 			"used_for": [
-				"Used in Stone spear"
+				"Used in Stone - Spear"
 			],
 			"obtainable_now": true
 		},
 		"stone_knife": {
-			"name": "Stone knife",
+			"name": "Stone - Knife",
 			"kind": "tool",
 			"description": "A flaked stone on a handle. Dresses a kill and cuts bark.",
 			"how_to_get": [
@@ -2121,14 +2121,14 @@
 			"obtainable_now": false
 		},
 		"wooden_spade": {
-			"name": "Wooden spade",
+			"name": "Wooden - Spade",
 			"kind": "tool",
 			"description": "A sharpened wooden blade. Digs roots and bulbs.",
 			"how_to_get": [
 				"Craft: 2 Stick (keep Stone)"
 			],
 			"used_for": [
-				"Used in Stone spade"
+				"Used in Stone - Spade"
 			],
 			"obtainable_now": true
 		},
@@ -2161,7 +2161,7 @@
 			"obtainable_now": true
 		},
 		"chest": {
-			"name": "Wicker chest",
+			"name": "Wicker - Chest",
 			"kind": "structure",
 			"description": "A woven chest for storing things.",
 			"how_to_get": [],
@@ -2210,18 +2210,18 @@
 			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
 			"how_to_get": [
 				"Craft at a saw mill: 1 Log",
-				"Craft at a workbench: 1 Log (keep Stone wedge)",
+				"Craft at a workbench: 1 Log (keep Stone - Wedge)",
 				"Craft: 1 Log (keep Hand saw)"
 			],
 			"used_for": [
-				"Used in Bronze-rimmed shield",
+				"Used in Bronze - Kite shield",
 				"Used in Bucket",
-				"Used in Wooden doorway",
+				"Used in Wooden - Doorway",
 				"Used in Fine board",
-				"Used in Ceiling section",
-				"Used in Iron-banded shield",
+				"Used in Wooden - Ceiling",
+				"Used in Iron - Kite shield",
 				"Used in Ladder",
-				"Used in Wooden chest"
+				"Used in Wooden - Chest"
 			],
 			"obtainable_now": true
 		},
@@ -2237,7 +2237,7 @@
 			"status": "planned"
 		},
 		"plank_chest": {
-			"name": "Wooden chest",
+			"name": "Wooden - Chest",
 			"kind": "structure",
 			"description": "A plank chest for storing more things.",
 			"how_to_get": [],
@@ -2253,13 +2253,13 @@
 			],
 			"used_for": [
 				"Used in Hinges",
-				"Used in Iron helm",
-				"Used in Iron hoe",
-				"Used in Iron mace",
-				"Used in Iron pickaxe",
-				"Used in Iron spade",
-				"Used in Iron sword",
-				"Used in Iron-banded shield"
+				"Used in Iron - Helm",
+				"Used in Iron - Hoe",
+				"Used in Iron - Mace",
+				"Used in Iron - Pickaxe",
+				"Used in Iron - Spade",
+				"Used in Iron - Sword",
+				"Used in Iron - Kite shield"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2273,19 +2273,19 @@
 			],
 			"used_for": [
 				"Used in Plate cuirass",
-				"Used in Steel helm",
-				"Used in Steel hoe",
-				"Used in Steel kite shield",
-				"Used in Steel mace",
-				"Used in Steel pickaxe",
-				"Used in Steel spade",
-				"Used in Steel striker"
+				"Used in Steel - Helm",
+				"Used in Steel - Hoe",
+				"Used in Steel - Kite shield",
+				"Used in Steel - Mace",
+				"Used in Steel - Pickaxe",
+				"Used in Steel - Spade",
+				"Used in Steel - Striker"
 			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
 		"iron_pickaxe": {
-			"name": "Iron pickaxe",
+			"name": "Iron - Pickaxe",
 			"kind": "tool",
 			"description": "An iron head on a hardwood handle. One blow breaks one stone off a boulder.",
 			"how_to_get": [
@@ -2296,7 +2296,7 @@
 			"status": "planned"
 		},
 		"steel_pickaxe": {
-			"name": "Steel pickaxe",
+			"name": "Steel - Pickaxe",
 			"kind": "tool",
 			"description": "A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest.",
 			"how_to_get": [
@@ -2327,7 +2327,7 @@
 				"Used in Brick",
 				"Used in Clay jug",
 				"Used in Clay pot",
-				"Used in Foundation",
+				"Used in Stone - Foundation",
 				"Used in Mortar",
 				"Used to build Stone forge",
 				"Used to build Brick oven",
@@ -2415,12 +2415,12 @@
 			],
 			"used_for": [
 				"Used in Backpack",
-				"Used in Fur boots",
-				"Used in Fur cloak",
-				"Used in Fur hat",
-				"Used in Hide boots",
-				"Used in Hide cloak",
-				"Used in Hide gloves",
+				"Used in Fur - Boots",
+				"Used in Fur - Cloak",
+				"Used in Fur - Hat",
+				"Used in Hide - Boots",
+				"Used in Hide - Cloak",
+				"Used in Hide - Gloves",
 				"Used in Hide glue"
 			],
 			"obtainable_now": true
@@ -2438,17 +2438,17 @@
 			"obtainable_now": true
 		},
 		"stone_spade": {
-			"name": "Stone spade",
+			"name": "Stone - Spade",
 			"kind": "tool",
 			"description": "A spade with a stone blade. Digs deeper and lasts longer than wood.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Wooden spade, 2 Stone, 1 Twine"
+				"Craft at a workbench: 1 Wooden - Spade, 2 Stone, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
 		"iron_spade": {
-			"name": "Iron spade",
+			"name": "Iron - Spade",
 			"kind": "tool",
 			"description": "A spade with an iron blade.",
 			"how_to_get": [
@@ -2459,7 +2459,7 @@
 			"status": "planned"
 		},
 		"steel_spade": {
-			"name": "Steel spade",
+			"name": "Steel - Spade",
 			"kind": "tool",
 			"description": "A spade with a steel blade.",
 			"how_to_get": [
@@ -2482,7 +2482,7 @@
 				"Dropped by duck when worked with a knife"
 			],
 			"used_for": [
-				"Used in Bone arrow"
+				"Used in Bone - Arrow"
 			],
 			"obtainable_now": true
 		},
@@ -2584,7 +2584,7 @@
 			"status": "planned"
 		},
 		"grass_skirt": {
-			"name": "Grass skirt",
+			"name": "Grass - Skirt",
 			"kind": "clothing",
 			"description": "Woven grass hung from the waist. Barely warm, and it rots quickly.",
 			"how_to_get": [
@@ -2594,7 +2594,7 @@
 			"obtainable_now": true
 		},
 		"grass_cloak": {
-			"name": "Grass cloak",
+			"name": "Grass - Cloak",
 			"kind": "clothing",
 			"description": "Woven grass over the shoulders. Keeps a little wind off.",
 			"how_to_get": [
@@ -2604,7 +2604,7 @@
 			"obtainable_now": true
 		},
 		"fibre_sandals": {
-			"name": "Fibre sandals",
+			"name": "Fibre - Sandals",
 			"kind": "clothing",
 			"description": "Twisted fibre soles tied to the foot.",
 			"how_to_get": [
@@ -2614,7 +2614,7 @@
 			"obtainable_now": true
 		},
 		"hide_cloak": {
-			"name": "Hide cloak",
+			"name": "Hide - Cloak",
 			"kind": "clothing",
 			"description": "A wrapped animal hide. Warm over the shoulders.",
 			"how_to_get": [
@@ -2624,7 +2624,7 @@
 			"obtainable_now": true
 		},
 		"hide_boots": {
-			"name": "Hide boots",
+			"name": "Hide - Boots",
 			"kind": "clothing",
 			"description": "Hide stitched around the foot. Warm and tough.",
 			"how_to_get": [
@@ -2634,7 +2634,7 @@
 			"obtainable_now": true
 		},
 		"hide_hood": {
-			"name": "Hide hood",
+			"name": "Hide - Hood",
 			"kind": "clothing",
 			"description": "A close hood of hide with the hair turned in.",
 			"how_to_get": [
@@ -2644,7 +2644,7 @@
 			"obtainable_now": true
 		},
 		"hide_mittens": {
-			"name": "Hide mittens",
+			"name": "Hide - Mittens",
 			"kind": "clothing",
 			"description": "Stitched hide mittens. Warm hands.",
 			"how_to_get": [
@@ -2654,7 +2654,7 @@
 			"obtainable_now": true
 		},
 		"hide_leggings": {
-			"name": "Hide leggings",
+			"name": "Hide - Leggings",
 			"kind": "clothing",
 			"description": "Hide tied around each leg.",
 			"how_to_get": [
@@ -2707,9 +2707,9 @@
 				"Dropped by moose when worked with a knife"
 			],
 			"used_for": [
-				"Used in Fur boots",
-				"Used in Fur cloak",
-				"Used in Fur hat",
+				"Used in Fur - Boots",
+				"Used in Fur - Cloak",
+				"Used in Fur - Hat",
 				"Used in Sinew cord"
 			],
 			"obtainable_now": true
@@ -2751,9 +2751,9 @@
 				"Dropped by pheasant when worked with a knife"
 			],
 			"used_for": [
-				"Used in Bone arrow",
-				"Used in Stone arrow",
-				"Used in Wooden arrow",
+				"Used in Bone - Arrow",
+				"Used in Stone - Arrow",
+				"Used in Wooden - Arrow",
 				"Fletching for arrows; quills and bedding come later."
 			],
 			"obtainable_now": true
@@ -3457,7 +3457,7 @@
 			"obtainable_now": true
 		},
 		"wall_section": {
-			"name": "Wooden wall",
+			"name": "Wooden - Wall",
 			"kind": "structure",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"how_to_get": [],
@@ -3475,7 +3475,7 @@
 			"obtainable_now": true
 		},
 		"floor_section": {
-			"name": "Ceiling section",
+			"name": "Wooden - Ceiling",
 			"kind": "structure",
 			"description": "A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge.",
 			"how_to_get": [],
@@ -3493,7 +3493,7 @@
 			"obtainable_now": true
 		},
 		"roof_section": {
-			"name": "Wooden roof",
+			"name": "Wooden - Roof",
 			"kind": "structure",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [],
@@ -3511,7 +3511,7 @@
 			"obtainable_now": true
 		},
 		"foundation_section": {
-			"name": "Foundation",
+			"name": "Stone - Foundation",
 			"kind": "structure",
 			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [],
@@ -3529,7 +3529,7 @@
 			"obtainable_now": true
 		},
 		"doorway_section": {
-			"name": "Wooden doorway",
+			"name": "Wooden - Doorway",
 			"kind": "structure",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"how_to_get": [],
@@ -3547,7 +3547,7 @@
 			"obtainable_now": true
 		},
 		"window_section": {
-			"name": "Wooden window",
+			"name": "Wooden - Window",
 			"kind": "structure",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"how_to_get": [],
@@ -3647,29 +3647,29 @@
 			"obtainable_now": false
 		},
 		"wooden_hoe": {
-			"name": "Wooden hoe",
+			"name": "Wooden - Hoe",
 			"kind": "tool",
 			"description": "A flat blade on a long handle. Paths the ground and tills beds.",
 			"how_to_get": [
 				"Craft: 2 Stick, 1 Twine (keep Stone)"
 			],
 			"used_for": [
-				"Used in Stone hoe"
+				"Used in Stone - Hoe"
 			],
 			"obtainable_now": true
 		},
 		"stone_hoe": {
-			"name": "Stone hoe",
+			"name": "Stone - Hoe",
 			"kind": "tool",
 			"description": "A hoe with a stone blade. Lasts longer than wood.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Wooden hoe, 2 Stone, 1 Twine"
+				"Craft at a workbench: 1 Wooden - Hoe, 2 Stone, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
 		"iron_hoe": {
-			"name": "Iron hoe",
+			"name": "Iron - Hoe",
 			"kind": "tool",
 			"description": "A hoe with an iron blade.",
 			"how_to_get": [
@@ -3680,7 +3680,7 @@
 			"status": "planned"
 		},
 		"steel_hoe": {
-			"name": "Steel hoe",
+			"name": "Steel - Hoe",
 			"kind": "tool",
 			"description": "A hoe with a steel blade.",
 			"how_to_get": [
@@ -3808,7 +3808,7 @@
 				"Strike a small log lying on the ground with an axe: 3 blocks"
 			],
 			"used_for": [
-				"Used in Wooden hammer"
+				"Used in Wooden - Hammer"
 			],
 			"obtainable_now": false
 		},
@@ -3830,7 +3830,7 @@
 				"Strike a small log lying on the ground with an axe: 3 blocks"
 			],
 			"used_for": [
-				"Used in Wooden hammer",
+				"Used in Wooden - Hammer",
 				"Split on a chopping block into soft firewood, or shaped into a wooden hammer."
 			],
 			"obtainable_now": false
@@ -3909,7 +3909,7 @@
 			"obtainable_now": true
 		},
 		"wooden_hammer": {
-			"name": "Wooden hammer",
+			"name": "Wooden - Hammer",
 			"kind": "tool",
 			"description": "A wooden head on a stick. The weakest hammer; it wears out fast. Nails and building still to come.",
 			"how_to_get": [
@@ -3920,7 +3920,7 @@
 			"obtainable_now": true
 		},
 		"stone_hammer": {
-			"name": "Stone hammer",
+			"name": "Stone - Hammer",
 			"kind": "tool",
 			"description": "A hafted stone hammer. Hold it to place big builds from blueprints.",
 			"how_to_get": [
@@ -3975,7 +3975,7 @@
 			"obtainable_now": true
 		},
 		"thatch_wall": {
-			"name": "Thatch wall",
+			"name": "Thatch - Wall",
 			"kind": "structure",
 			"description": "A thatch wall.",
 			"how_to_get": [],
@@ -4029,7 +4029,7 @@
 			"obtainable_now": true
 		},
 		"thatch_floor": {
-			"name": "Thatch foundation",
+			"name": "Thatch - Foundation",
 			"kind": "structure",
 			"description": "A thatch foundation on stakes. Walls and roofs stand on it.",
 			"how_to_get": [],
@@ -4047,7 +4047,7 @@
 			"obtainable_now": true
 		},
 		"thatch_roof": {
-			"name": "Thatch roof",
+			"name": "Thatch - Roof",
 			"kind": "structure",
 			"description": "A thatch roof. It keeps the rain off.",
 			"how_to_get": [],
@@ -4065,7 +4065,7 @@
 			"obtainable_now": true
 		},
 		"thatch_doorway": {
-			"name": "Thatch doorway",
+			"name": "Thatch - Doorway",
 			"kind": "structure",
 			"description": "A thatch doorway with a hanging door.",
 			"how_to_get": [],
@@ -4073,7 +4073,7 @@
 			"obtainable_now": false
 		},
 		"wooden_bow": {
-			"name": "Wooden bow",
+			"name": "Wooden - Bow",
 			"kind": "weapon",
 			"description": "A bow of bent wood and twine. Needs arrows.",
 			"how_to_get": [
@@ -4083,7 +4083,7 @@
 			"obtainable_now": true
 		},
 		"wooden_arrow": {
-			"name": "Wooden arrow",
+			"name": "Wooden - Arrow",
 			"kind": "material",
 			"description": "A hardened stick with feather fletching. Needs a bow.",
 			"how_to_get": [
@@ -4093,7 +4093,7 @@
 			"obtainable_now": true
 		},
 		"stone_arrow": {
-			"name": "Stone arrow",
+			"name": "Stone - Arrow",
 			"kind": "material",
 			"description": "An arrow with a flaked stone point. Hits harder than wood.",
 			"how_to_get": [
@@ -4209,7 +4209,7 @@
 			"description": "Black volcanic glass. Breaks into razor-sharp edges, and is prized.",
 			"how_to_get": [],
 			"used_for": [
-				"Used in Obsidian knife"
+				"Used in Obsidian - Knife"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4232,15 +4232,15 @@
 			"kind": "material",
 			"description": "Tanned hide: tough and supple.",
 			"how_to_get": [
-				"Craft at a campfire pot: 1 Scraped hide, 2 Tannin bark, 1 Water"
+				"Craft at a campfire pot: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
 			],
 			"used_for": [
 				"Used in Fine leather",
 				"Used in Gambeson",
 				"Used in Heavy leather",
-				"Used in Iron sword",
-				"Used in Leather cap",
-				"Used in Leather jerkin",
+				"Used in Iron - Sword",
+				"Used in Leather - Cap",
+				"Used in Leather - Jerkin",
 				"Used in Leather strap"
 			],
 			"obtainable_now": false,
@@ -4254,7 +4254,7 @@
 				"Craft at a campfire pot: 1 Leather, 1 Animal fat"
 			],
 			"used_for": [
-				"Used in Leather cap"
+				"Used in Leather - Cap"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4264,12 +4264,12 @@
 			"kind": "material",
 			"description": "Thick, stiff leather for armour and harness.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Leather, 2 Tannin bark"
+				"Craft at a campfire pot: 2 Leather, 2 Tannin-rich bark"
 			],
 			"used_for": [
 				"Used in Plate cuirass",
-				"Used in Steel helm",
-				"Used in Steel sword"
+				"Used in Steel - Helm",
+				"Used in Steel - Sword"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4284,7 +4284,7 @@
 			"used_for": [
 				"Used in Mail shirt",
 				"Used in Plate cuirass",
-				"Used in Steel helm"
+				"Used in Steel - Helm"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4323,10 +4323,10 @@
 				"Craft at a forge: 1 Copper ingot, 1 Tin ingot"
 			],
 			"used_for": [
-				"Used in Bronze helm",
-				"Used in Bronze mace",
-				"Used in Bronze sword",
-				"Used in Bronze-rimmed shield"
+				"Used in Bronze - Helm",
+				"Used in Bronze - Mace",
+				"Used in Bronze - Sword",
+				"Used in Bronze - Kite shield"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4384,7 +4384,7 @@
 			"status": "planned"
 		},
 		"steel_striker": {
-			"name": "Steel striker",
+			"name": "Steel - Striker",
 			"kind": "tool",
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"how_to_get": [
@@ -4406,7 +4406,7 @@
 			"status": "planned"
 		},
 		"obsidian_knife": {
-			"name": "Obsidian knife",
+			"name": "Obsidian - Knife",
 			"kind": "tool",
 			"description": "A razor-sharp black glass blade. Cuts better than flint, but chips more easily.",
 			"how_to_get": [
@@ -4417,7 +4417,7 @@
 			"status": "planned"
 		},
 		"stone_pickaxe": {
-			"name": "Stone pickaxe",
+			"name": "Stone - Pickaxe",
 			"kind": "tool",
 			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly.",
 			"how_to_get": [
@@ -4449,7 +4449,7 @@
 			"status": "planned"
 		},
 		"wooden_club": {
-			"name": "Wooden club",
+			"name": "Wooden - Club",
 			"kind": "weapon",
 			"description": "A stout length of hardwood, heavy at one end. Hits hard and needs no skill.",
 			"how_to_get": [
@@ -4503,7 +4503,7 @@
 			"status": "planned"
 		},
 		"hide_tunic": {
-			"name": "Hide tunic",
+			"name": "Hide - Tunic",
 			"kind": "clothing",
 			"description": "A sewn hide shirt with sleeves. Warmer than a cloak.",
 			"how_to_get": [
@@ -4513,7 +4513,7 @@
 			"obtainable_now": true
 		},
 		"hide_trousers": {
-			"name": "Hide trousers",
+			"name": "Hide - Trousers",
 			"kind": "clothing",
 			"description": "Hide sewn into trousers. Better than leggings.",
 			"how_to_get": [
@@ -4523,7 +4523,7 @@
 			"obtainable_now": true
 		},
 		"hide_gloves": {
-			"name": "Hide gloves",
+			"name": "Hide - Gloves",
 			"kind": "clothing",
 			"description": "Stitched hide gloves with fingers. For work and cold.",
 			"how_to_get": [
@@ -4574,7 +4574,7 @@
 			"obtainable_now": true
 		},
 		"wicker_shield": {
-			"name": "Wicker shield",
+			"name": "Wicker - Shield",
 			"kind": "weapon",
 			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
 			"how_to_get": [
@@ -4584,7 +4584,7 @@
 			"obtainable_now": true
 		},
 		"stone_mace": {
-			"name": "Stone mace",
+			"name": "Stone - Mace",
 			"kind": "weapon",
 			"description": "A heavy stone lashed to a stick. Cracks armour and bone.",
 			"how_to_get": [
@@ -4594,7 +4594,7 @@
 			"obtainable_now": true
 		},
 		"plank_shield": {
-			"name": "Plank shield",
+			"name": "Plank - Shield",
 			"kind": "weapon",
 			"description": "Boards bound with hide. Sturdier than wicker.",
 			"how_to_get": [
@@ -4605,7 +4605,7 @@
 			"status": "planned"
 		},
 		"bronze_sword": {
-			"name": "Bronze sword",
+			"name": "Bronze - Sword",
 			"kind": "weapon",
 			"description": "A bronze blade on a short grip. Quick and sharp.",
 			"how_to_get": [
@@ -4616,7 +4616,7 @@
 			"status": "planned"
 		},
 		"bronze_mace": {
-			"name": "Bronze mace",
+			"name": "Bronze - Mace",
 			"kind": "weapon",
 			"description": "A cast bronze head on a stout haft.",
 			"how_to_get": [
@@ -4627,7 +4627,7 @@
 			"status": "planned"
 		},
 		"bronze_shield": {
-			"name": "Bronze-rimmed shield",
+			"name": "Bronze - Kite shield",
 			"kind": "weapon",
 			"description": "A plank shield with a bronze rim and boss.",
 			"how_to_get": [
@@ -4638,7 +4638,7 @@
 			"status": "planned"
 		},
 		"iron_sword": {
-			"name": "Iron sword",
+			"name": "Iron - Sword",
 			"kind": "weapon",
 			"description": "A forged iron blade with a leather grip.",
 			"how_to_get": [
@@ -4649,7 +4649,7 @@
 			"status": "planned"
 		},
 		"iron_mace": {
-			"name": "Iron mace",
+			"name": "Iron - Mace",
 			"kind": "weapon",
 			"description": "A flanged iron head that breaks armour.",
 			"how_to_get": [
@@ -4660,7 +4660,7 @@
 			"status": "planned"
 		},
 		"iron_shield": {
-			"name": "Iron-banded shield",
+			"name": "Iron - Kite shield",
 			"kind": "weapon",
 			"description": "Boards held by iron bands. Hard to break.",
 			"how_to_get": [
@@ -4671,7 +4671,7 @@
 			"status": "planned"
 		},
 		"steel_sword": {
-			"name": "Steel sword",
+			"name": "Steel - Sword",
 			"kind": "weapon",
 			"description": "A tempered steel blade. Keeps its edge.",
 			"how_to_get": [
@@ -4682,7 +4682,7 @@
 			"status": "planned"
 		},
 		"steel_mace": {
-			"name": "Steel mace",
+			"name": "Steel - Mace",
 			"kind": "weapon",
 			"description": "A steel flanged head on a long haft.",
 			"how_to_get": [
@@ -4693,7 +4693,7 @@
 			"status": "planned"
 		},
 		"steel_shield": {
-			"name": "Steel kite shield",
+			"name": "Steel - Kite shield",
 			"kind": "weapon",
 			"description": "A long steel-faced shield that covers shoulder to shin.",
 			"how_to_get": [
@@ -4704,7 +4704,7 @@
 			"status": "planned"
 		},
 		"leather_cap": {
-			"name": "Leather cap",
+			"name": "Leather - Cap",
 			"kind": "clothing",
 			"description": "A close leather cap. Better than bare hide.",
 			"how_to_get": [
@@ -4715,7 +4715,7 @@
 			"status": "planned"
 		},
 		"leather_jerkin": {
-			"name": "Leather jerkin",
+			"name": "Leather - Jerkin",
 			"kind": "clothing",
 			"description": "A stiff leather vest. Turns a glancing blow.",
 			"how_to_get": [
@@ -4726,7 +4726,7 @@
 			"status": "planned"
 		},
 		"bronze_helm": {
-			"name": "Bronze helm",
+			"name": "Bronze - Helm",
 			"kind": "clothing",
 			"description": "A beaten bronze cap with a nose guard.",
 			"how_to_get": [
@@ -4748,7 +4748,7 @@
 			"status": "planned"
 		},
 		"iron_helm": {
-			"name": "Iron helm",
+			"name": "Iron - Helm",
 			"kind": "clothing",
 			"description": "A riveted iron helmet.",
 			"how_to_get": [
@@ -4770,7 +4770,7 @@
 			"status": "planned"
 		},
 		"steel_helm": {
-			"name": "Steel helm",
+			"name": "Steel - Helm",
 			"kind": "clothing",
 			"description": "A fitted steel helm with leather lining.",
 			"how_to_get": [
@@ -5012,7 +5012,7 @@
 			"obtainable_now": true
 		},
 		"bone_arrow": {
-			"name": "Bone arrow",
+			"name": "Bone - Arrow",
 			"kind": "material",
 			"description": "An arrow with a sharpened bone point.",
 			"how_to_get": [
@@ -5022,7 +5022,7 @@
 			"obtainable_now": true
 		},
 		"stone_wedge": {
-			"name": "Stone wedge",
+			"name": "Stone - Wedge",
 			"kind": "tool",
 			"description": "A flaked stone wedge. Driven into a log at a workbench, it splits two rough planks.",
 			"how_to_get": [
@@ -5034,7 +5034,7 @@
 			"obtainable_now": true
 		},
 		"fibre_arrow": {
-			"name": "Fibre arrow",
+			"name": "Fibre - Arrow",
 			"kind": "material",
 			"description": "A hardened stick with fibre fletching. Weak and short, but needs no feather.",
 			"how_to_get": [
@@ -5153,10 +5153,10 @@
 				"Dropped by wild sheep when worked with a knife"
 			],
 			"used_for": [
-				"Used in Wool cap",
-				"Used in Wool mittens",
-				"Used in Wool trousers",
-				"Used in Wool tunic"
+				"Used in Wool - Cap",
+				"Used in Wool - Mittens",
+				"Used in Wool - Trousers",
+				"Used in Wool - Tunic"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5169,13 +5169,13 @@
 				"Craft: 4 Flax"
 			],
 			"used_for": [
-				"Used in Linen shirt"
+				"Used in Linen - Shirt"
 			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
 		"wool_tunic": {
-			"name": "Wool tunic",
+			"name": "Wool - Tunic",
 			"kind": "clothing",
 			"description": "A woven wool shirt. Warm.",
 			"how_to_get": [
@@ -5186,7 +5186,7 @@
 			"status": "planned"
 		},
 		"wool_trousers": {
-			"name": "Wool trousers",
+			"name": "Wool - Trousers",
 			"kind": "clothing",
 			"description": "Heavy woven wool trousers.",
 			"how_to_get": [
@@ -5197,7 +5197,7 @@
 			"status": "planned"
 		},
 		"wool_cap": {
-			"name": "Wool cap",
+			"name": "Wool - Cap",
 			"kind": "clothing",
 			"description": "A snug knitted wool cap.",
 			"how_to_get": [
@@ -5208,7 +5208,7 @@
 			"status": "planned"
 		},
 		"wool_mittens": {
-			"name": "Wool mittens",
+			"name": "Wool - Mittens",
 			"kind": "clothing",
 			"description": "Thick wool mittens.",
 			"how_to_get": [
@@ -5219,7 +5219,7 @@
 			"status": "planned"
 		},
 		"linen_shirt": {
-			"name": "Linen shirt",
+			"name": "Linen - Shirt",
 			"kind": "clothing",
 			"description": "A light linen shirt. Cool in summer heat.",
 			"how_to_get": [
@@ -5230,7 +5230,7 @@
 			"status": "planned"
 		},
 		"fur_cloak": {
-			"name": "Fur cloak",
+			"name": "Fur - Cloak",
 			"kind": "clothing",
 			"description": "A heavy cloak of fur pelts. The warmest body cover.",
 			"how_to_get": [
@@ -5241,7 +5241,7 @@
 			"status": "planned"
 		},
 		"fur_hat": {
-			"name": "Fur hat",
+			"name": "Fur - Hat",
 			"kind": "clothing",
 			"description": "A fur hat with ear flaps.",
 			"how_to_get": [
@@ -5252,9 +5252,9 @@
 			"status": "planned"
 		},
 		"fur_boots": {
-			"name": "Fur boots",
+			"name": "Fur - Boots",
 			"kind": "clothing",
-			"description": "Hide boots lined with fur.",
+			"description": "Hide - Boots lined with fur.",
 			"how_to_get": [
 				"Craft: 2 Hide, 1 Sinew"
 			],
@@ -5709,10 +5709,10 @@
 			"kind": "material",
 			"description": "A strip of leather for straps, belts and harness.",
 			"how_to_get": [
-				"Craft: 1 Leather (keep Stone knife)"
+				"Craft: 1 Leather (keep Stone - Knife)"
 			],
 			"used_for": [
-				"Used in Leather jerkin",
+				"Used in Leather - Jerkin",
 				"Used in Gambeson"
 			],
 			"obtainable_now": false,
@@ -6173,7 +6173,7 @@
 			"obtainable_now": true
 		},
 		"bronze_pickaxe": {
-			"name": "Bronze pickaxe",
+			"name": "Bronze - Pickaxe",
 			"kind": "tool",
 			"description": "A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder.",
 			"how_to_get": [
@@ -6183,7 +6183,7 @@
 			"obtainable_now": false
 		},
 		"bronze_axe": {
-			"name": "Bronze axe",
+			"name": "Bronze - Axe",
 			"kind": "tool",
 			"description": "A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone.",
 			"how_to_get": [
@@ -6193,7 +6193,7 @@
 			"obtainable_now": false
 		},
 		"bronze_hammer": {
-			"name": "Bronze hammer",
+			"name": "Bronze - Hammer",
 			"kind": "tool",
 			"description": "A cast bronze head on a short haft. Hold it to place big builds from blueprints.",
 			"how_to_get": [
@@ -6203,7 +6203,7 @@
 			"obtainable_now": false
 		},
 		"bronze_knife": {
-			"name": "Bronze knife",
+			"name": "Bronze - Knife",
 			"kind": "tool",
 			"description": "A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark.",
 			"how_to_get": [
@@ -6223,7 +6223,7 @@
 			"obtainable_now": true
 		},
 		"stairs_wood": {
-			"name": "Wooden stairs",
+			"name": "Wooden - Stairs",
 			"kind": "structure",
 			"description": "A wooden flight of stairs, 2.4 m long.",
 			"how_to_get": [
@@ -6245,7 +6245,7 @@
 			"obtainable_now": true
 		},
 		"log_wall": {
-			"name": "Log wall",
+			"name": "Log - Wall",
 			"kind": "structure",
 			"description": "A log wall, two metres wide.",
 			"how_to_get": [
@@ -6267,7 +6267,7 @@
 			"obtainable_now": true
 		},
 		"log_floor": {
-			"name": "Log ceiling",
+			"name": "Log - Ceiling",
 			"kind": "structure",
 			"description": "A ceiling of laid logs.",
 			"how_to_get": [
@@ -6289,7 +6289,7 @@
 			"obtainable_now": true
 		},
 		"log_roof": {
-			"name": "Log roof",
+			"name": "Log - Roof",
 			"kind": "structure",
 			"description": "A log-framed thatch roof.",
 			"how_to_get": [
@@ -6309,7 +6309,7 @@
 			"obtainable_now": true
 		},
 		"stone_wall": {
-			"name": "Stone wall",
+			"name": "Stone - Wall",
 			"kind": "structure",
 			"description": "A stone wall, two metres wide.",
 			"how_to_get": [
@@ -6329,7 +6329,7 @@
 			"obtainable_now": true
 		},
 		"stone_floor": {
-			"name": "Stone ceiling",
+			"name": "Stone - Ceiling",
 			"kind": "structure",
 			"description": "A cobbled stone ceiling.",
 			"how_to_get": [
@@ -6349,7 +6349,7 @@
 			"obtainable_now": true
 		},
 		"stone_roof": {
-			"name": "Stone roof",
+			"name": "Stone - Roof",
 			"kind": "structure",
 			"description": "A stone-shingle roof.",
 			"how_to_get": [
@@ -6369,7 +6369,7 @@
 			"obtainable_now": true
 		},
 		"brick_wall": {
-			"name": "Brick wall",
+			"name": "Brick - Wall",
 			"kind": "structure",
 			"description": "A brick wall, two metres wide.",
 			"how_to_get": [
@@ -6389,7 +6389,7 @@
 			"obtainable_now": true
 		},
 		"brick_floor": {
-			"name": "Brick ceiling",
+			"name": "Brick - Ceiling",
 			"kind": "structure",
 			"description": "A brick ceiling.",
 			"how_to_get": [
@@ -6409,7 +6409,7 @@
 			"obtainable_now": true
 		},
 		"brick_roof": {
-			"name": "Brick roof",
+			"name": "Brick - Roof",
 			"kind": "structure",
 			"description": "A tiled brick roof.",
 			"how_to_get": [
@@ -6546,7 +6546,7 @@
 			"obtainable_now": true
 		},
 		"hide_rug": {
-			"name": "Hide rug",
+			"name": "Hide - Rug",
 			"kind": "structure",
 			"description": "A pelt on the floor.",
 			"how_to_get": [
@@ -6556,7 +6556,7 @@
 			"obtainable_now": true
 		},
 		"wool_rug": {
-			"name": "Wool rug",
+			"name": "Wool - Rug",
 			"kind": "structure",
 			"description": "A striped woven rug.",
 			"how_to_get": [
