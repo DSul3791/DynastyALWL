@@ -1765,7 +1765,9 @@
 				"Used in Stomach tea",
 				"Used in Willow bark tea",
 				"Used in Fruit juice",
-				"Used in Herb antidote"
+				"Used in Herb antidote",
+				"Used in Fish soup",
+				"Used in Pickled vegetables"
 			],
 			"obtainable_now": true
 		},
@@ -1831,7 +1833,8 @@
 				"Used in Mushroom skewer",
 				"Used in Mussel stew",
 				"Used in Rosemary joint",
-				"Used in Meat skewer"
+				"Used in Meat skewer",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -2138,7 +2141,8 @@
 				"Used in Sling",
 				"Used in Snowshoes",
 				"Used in Bird trap",
-				"Used in Fish trap"
+				"Used in Fish trap",
+				"Used in Claw - Necklace"
 			],
 			"obtainable_now": true
 		},
@@ -2589,7 +2593,8 @@
 				"Used in Smoker",
 				"Used in Storage jar",
 				"Used in Clay bloomery",
-				"Used in Mug"
+				"Used in Mug",
+				"Used in Preserving jar"
 			],
 			"obtainable_now": true
 		},
@@ -2956,7 +2961,8 @@
 				"Used in Rosemary joint",
 				"Used in Venison pie",
 				"Used in Meat skewer",
-				"Used in Sausage"
+				"Used in Sausage",
+				"Used in Meatballs"
 			],
 			"obtainable_now": true
 		},
@@ -3083,7 +3089,8 @@
 				"Used in Juniper trout",
 				"Used in Salted fish",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -3098,7 +3105,8 @@
 				"Used in Juniper trout",
 				"Used in Lamp oil",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -3111,7 +3119,8 @@
 				"Used in Herb fish",
 				"Used in Juniper trout",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -3124,7 +3133,8 @@
 				"Used in Smoked fish",
 				"Used in Herb fish",
 				"Used in Juniper trout",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -4005,7 +4015,8 @@
 				"Planned masonry: stone walls and floors with mortar (no blueprint uses it yet).",
 				"Used in Stone - Doorway",
 				"Used in Stone - Window",
-				"Used in Carved stone block"
+				"Used in Carved stone block",
+				"Used in Root cellar"
 			],
 			"obtainable_now": true
 		},
@@ -4075,7 +4086,8 @@
 				"Used in Stone - Trough",
 				"Used in Kiln",
 				"Used in Clay bloomery",
-				"Used in Brick - Forge"
+				"Used in Brick - Forge",
+				"Used in Root cellar"
 			],
 			"obtainable_now": true
 		},
@@ -4752,7 +4764,8 @@
 				"Used in Leather - Boots",
 				"Used in Leather - Gloves",
 				"Used in Leather - Quiver",
-				"Used in Leather - Trousers"
+				"Used in Leather - Trousers",
+				"Used in Bronze - Scale shirt"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4805,7 +4818,8 @@
 				"Craft at a forge: 3 Copper ore, 1 Fuel"
 			],
 			"used_for": [
-				"Used in Bronze ingot"
+				"Used in Bronze ingot",
+				"Used in Copper - Pot"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4835,7 +4849,8 @@
 				"Used in Bronze - Mace",
 				"Used in Bronze - Sword",
 				"Used in Bronze - Shield",
-				"Used in Bronze - Chisel"
+				"Used in Bronze - Chisel",
+				"Used in Bronze - Scale shirt"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4860,7 +4875,8 @@
 				"Used in Venison pie",
 				"Used in Flatbread",
 				"Used in Hearty pottage",
-				"Used in Honey loaf"
+				"Used in Honey loaf",
+				"Used in Meatballs"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5341,7 +5357,9 @@
 			"kind": "material",
 			"description": "A sweet orange root grown in a tilled bed.",
 			"how_to_get": [],
-			"used_for": [],
+			"used_for": [
+				"Used in Pickled vegetables"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
@@ -5363,7 +5381,8 @@
 			"how_to_get": [],
 			"used_for": [
 				"Used in Seal stew",
-				"Used in Turnip mash"
+				"Used in Turnip mash",
+				"Used in Pickled vegetables"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5498,7 +5517,8 @@
 				"Dropped by wolf when worked with a knife"
 			],
 			"used_for": [
-				"Sold to traders (worth 12 copper)"
+				"Sold to traders (worth 12 copper)",
+				"Used in Claw - Necklace"
 			],
 			"obtainable_now": true
 		},
@@ -5643,7 +5663,10 @@
 				"Used in Salted fish",
 				"Used in Sauerkraut",
 				"Used in Smoked fish",
-				"Used in Sausage"
+				"Used in Sausage",
+				"Used in Fish soup",
+				"Used in Meatballs",
+				"Used in Pickled vegetables"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5819,7 +5842,8 @@
 			"how_to_get": [],
 			"used_for": [
 				"Used in Cabbage stew",
-				"Used in Sauerkraut"
+				"Used in Sauerkraut",
+				"Used in Pickled vegetables"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5834,7 +5858,8 @@
 				"Used in Cactus fry",
 				"Used in Fish pie",
 				"Used in Onion roast",
-				"Used in Pea soup"
+				"Used in Pea soup",
+				"Used in Pickled vegetables"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5856,7 +5881,8 @@
 			"description": "A deep red root, sweet when roasted.",
 			"how_to_get": [],
 			"used_for": [
-				"Used in Beet roast"
+				"Used in Beet roast",
+				"Used in Pickled vegetables"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -6336,7 +6362,8 @@
 				"Used in Herb fish",
 				"Used in Juniper trout",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -6351,7 +6378,8 @@
 				"Used in Herb fish",
 				"Used in Juniper trout",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -6366,7 +6394,8 @@
 				"Used in Herb fish",
 				"Used in Juniper trout",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -6381,7 +6410,8 @@
 				"Used in Herb fish",
 				"Used in Juniper trout",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -6396,7 +6426,8 @@
 				"Used in Herb fish",
 				"Used in Juniper trout",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -6411,7 +6442,8 @@
 				"Used in Herb fish",
 				"Used in Juniper trout",
 				"Used in Smoked fish",
-				"Used in Fishing bait (fish)"
+				"Used in Fishing bait (fish)",
+				"Used in Fish soup"
 			],
 			"obtainable_now": true
 		},
@@ -6422,7 +6454,9 @@
 			"how_to_get": [
 				"Not yet obtainable"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Pickled vegetables"
+			],
 			"obtainable_now": false
 		},
 		"lettuce": {
@@ -9865,7 +9899,9 @@
 			"kind": "material",
 			"description": "A pale sweet root grown in a tilled bed. Frost makes it sweeter.",
 			"how_to_get": [],
-			"used_for": [],
+			"used_for": [
+				"Used in Pickled vegetables"
+			],
 			"obtainable_now": false
 		},
 		"parsnip_seeds": {
@@ -10017,6 +10053,171 @@
 			"name": "Anvil",
 			"kind": "structure",
 			"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"preserving_jar_kit": {
+			"name": "Preserving jar",
+			"kind": "placeable",
+			"description": "A wide-mouthed clay jar with a lid, for pickling and preserving.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"preserving_jar": {
+			"name": "Preserving jar",
+			"kind": "structure",
+			"description": "A wide-mouthed clay jar with a lid, for pickling and preserving.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"root_cellar_kit": {
+			"name": "Root cellar",
+			"kind": "placeable",
+			"description": "A stone-lined store dug into the ground. Cool all year, so food keeps far longer.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Stone block, 6 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"root_cellar": {
+			"name": "Root cellar",
+			"kind": "structure",
+			"description": "A stone-lined store dug into the ground. Cool all year, so food keeps far longer.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"pickled_vegetables": {
+			"name": "Pickled vegetables",
+			"kind": "food",
+			"description": "Roots and cabbage packed in salt brine. Sour, and keeps for months.",
+			"how_to_get": [
+				"Craft at a preserving jar: 3 Vegetable, 1 Salt, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"copper_pot": {
+			"name": "Copper - Pot",
+			"kind": "container",
+			"description": "A hammered copper pot. Holds three litres and cooks soups over a fire.",
+			"how_to_get": [
+				"Craft at a forge: 3 Copper ingot"
+			],
+			"used_for": [
+				"Used in Fish soup",
+				"Used in Meatballs"
+			],
+			"obtainable_now": false
+		},
+		"fish_soup": {
+			"name": "Fish soup",
+			"kind": "food",
+			"description": "Fish, wild garlic and salt simmered in a copper pot. Hot and filling.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Fish, 1 Wild garlic leaves, 1 Salt, 1 Water (keep Copper - Pot)"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"meatballs": {
+			"name": "Meatballs",
+			"kind": "food",
+			"description": "Minced meat rolled with flour and salt and cooked in a copper pot.",
+			"how_to_get": [
+				"Craft at a campfire pot: 3 Raw meat, 1 Flour, 1 Salt (keep Copper - Pot)"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bronze_scale_shirt": {
+			"name": "Bronze - Scale shirt",
+			"kind": "clothing",
+			"description": "Bronze scales laced over leather. Bronze body armour, lighter than mail.",
+			"how_to_get": [
+				"Craft at a forge: 4 Bronze ingot, 1 Leather"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"claw_necklace": {
+			"name": "Claw - Necklace",
+			"kind": "material",
+			"description": "Animal claws strung on a cord. Worn for luck and to show what you have hunted.",
+			"how_to_get": [
+				"Craft: 3 Claw, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"vegetable": {
+			"name": "Vegetable",
+			"kind": "material",
+			"description": "Any root or cabbage-type vegetable: carrot, beet, onion, turnip, cabbage, parsnip, radish.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Pickled vegetables"
+			],
+			"obtainable_now": false
+		},
+		"chicken_coop": {
+			"name": "Chicken coop",
+			"kind": "structure",
+			"description": "A thatched coop for four chickens. They lay eggs.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"fodder_trough": {
+			"name": "Fodder trough",
+			"kind": "structure",
+			"description": "A plank trough that holds fodder for penned animals.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"tub": {
+			"name": "Tub",
+			"kind": "structure",
+			"description": "A wooden bathtub filled from a bucket. Warm it with a fire close by.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"sap_tap": {
+			"name": "Sap tap",
+			"kind": "structure",
+			"description": "A wooden spout driven into a maple or birch to catch sap.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"cheese_press": {
+			"name": "Cheese press",
+			"kind": "structure",
+			"description": "A wooden press that squeezes curds into cheese.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"spinning_wheel": {
+			"name": "Spinning wheel",
+			"kind": "structure",
+			"description": "A treadle wheel that spins wool and flax into thread.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"loom": {
+			"name": "Loom",
+			"kind": "structure",
+			"description": "A wooden frame loom for weaving thread into cloth.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false

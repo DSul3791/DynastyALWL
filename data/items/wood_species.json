@@ -16,6 +16,7 @@
 		"mushrooms": ["porcini", "chanterelles", "morels", "puffball"],
 		"nuts": ["hazelnuts", "chestnuts", "walnuts", "beechnuts"],
 		"berries": ["raspberries", "blueberries", "blackberries", "strawberries", "cranberries", "cloudberries", "lingonberries", "crowberries"],
+		"vegetable": ["carrot", "beet", "onion", "turnip", "cabbage", "parsnip", "radish"],
 		"fruit": ["apple_early", "apple_summer", "apple_autumn", "apple_keeping", "apple_cooking", "wild_apples", "crab_apples", "pear_summer", "pear_autumn", "pear_winter", "wild_pears", "plums", "damsons", "cherries", "sour_cherries", "sloes", "prickly_pears", "raspberries", "blueberries", "blackberries", "strawberries", "cranberries", "cloudberries", "lingonberries", "crowberries"],
 		"fuel": ["charcoal", "coal"],
 		"pitch": ["resin", "pine_tar", "animal_fat"],
