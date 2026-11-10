@@ -90,12 +90,20 @@ ITEMS = {
 }
 
 
-def carried_lantern(iron):
-    """Wooden or Iron - Lantern (carried, B4): the hanging lantern's own body (piece_look _lantern) with a bail handle over it instead of a chain."""
+def carried_lantern(iron, dark=False):
+    """Wooden or Iron - Lantern (carried, B4): the hanging lantern's own body (piece_look _lantern) with a bail handle over it instead of a chain.
+    `dark` (the put-out twins, wooden_lantern_dark and iron_lantern_dark): the horn panes go dull brown with no candle behind them."""
     look_runtime.looks()
     rt = look_runtime
     root = rt.Node3D()
     rt._space["_lantern"](root, rt.Vector3(), iron)
+
+    if dark:
+        dull = rt._tone_mat(rt.Color(0.36, 0.28, 0.19))
+
+        for node in root.children:
+            if getattr(node, "material_override", None) is rt._horn:
+                node.material_override = dull
     frame = rt._iron if iron else rt._frame
     bail = [rt.Vector3(-0.1, 0.2, 0.0), rt.Vector3(-0.09, 0.36, 0.0), rt.Vector3(0.0, 0.42, 0.0), rt.Vector3(0.09, 0.36, 0.0), rt.Vector3(0.1, 0.2, 0.0)]
 
@@ -167,6 +175,8 @@ for _item in ("chicken_coop", "fodder_trough", "tub", "sap_tap", "cheese_press",
 ITEMS["tub"] = ("tub", STATION_VIEW @ rot_x(math.radians(22.0)))   # tipped toward the viewer so the water shows
 ITEMS["wooden_lantern"] = (lambda: carried_lantern(False), STATION_VIEW)
 ITEMS["iron_lantern"] = (lambda: carried_lantern(True), STATION_VIEW)
+ITEMS["wooden_lantern_dark"] = (lambda: carried_lantern(False, True), STATION_VIEW)   # the put-out twins (Steve, 892 and 893)
+ITEMS["iron_lantern_dark"] = (lambda: carried_lantern(True, True), STATION_VIEW)
 NAMES = tuple(ITEMS)
 LIFT = ()   # too dark to read on the slot: brightened after the render (as paint_structure_icons LIFT)
 
