@@ -70,7 +70,7 @@ func _init() -> void:
 	said.clear()
 	items.action(1, Net.ACT_REPAIR, slot, 0, 0, Vector3.ZERO)
 	check(inv.wear[slot] == worn - quarter and inv.wear[whet_slot] >= 1, "a hone wins back a quarter and wears the whetstone (%d)" % inv.wear[slot])
-	check(said.has(str(cfg["say_hone"]) % items.table.name_of(knife).to_lower()), "it says so (%s)" % str(said))
+	check(said.has(str(cfg["say_hone"]) % items.table.sentence_name(knife)), "it says so (%s)" % str(said))
 	items.action(1, Net.ACT_REPAIR, slot, 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_REPAIR, slot, 0, 0, Vector3.ZERO)
 	check(inv.wear[slot] == sharpest, "honing stops at three quarters of its durability (%d)" % inv.wear[slot])

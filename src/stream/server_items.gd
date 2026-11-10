@@ -5420,7 +5420,7 @@ func _hone(peer: int, inv, slot: int, entry: Dictionary) -> bool:
 	inv.wear[slot] = maxi(sharpest, inv.wear[slot] - int(float(most) * float(cfg.get("restores", 0.25))))
 	_wear_slot(peer, inv, stone_slot, "hone")
 	practice(peer, "tool_care")
-	_say(peer, str(cfg.get("say_hone", "")) % table.name_of(inv.numbers[slot]).to_lower())
+	_say(peer, str(cfg.get("say_hone", "")) % table.sentence_name(inv.numbers[slot]))
 	_dirty = true
 	return true
 
