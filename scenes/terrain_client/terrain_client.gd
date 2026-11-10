@@ -2039,9 +2039,9 @@ func _on_drink_points(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, s
 
 	for n in range(0, springs.size() - 1, 2):
 		var at: Vector2i = Vector2i(floori(springs[n] / _drink_cell_m), floori(springs[n + 1] / _drink_cell_m))
-		var held: PackedFloat32Array = _drink_heads.get(at, PackedFloat32Array())
-		held.append_array([springs[n], springs[n + 1]])
-		_drink_heads[at] = held
+		var heads_here: PackedFloat32Array = _drink_heads.get(at, PackedFloat32Array())
+		heads_here.append_array([springs[n], springs[n + 1]])
+		_drink_heads[at] = heads_here
 
 	if _spring_heads == null and not springs.is_empty():
 		_spring_heads = SpringHeadsScript.new()
