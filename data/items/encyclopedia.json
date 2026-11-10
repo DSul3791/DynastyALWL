@@ -4364,7 +4364,9 @@
 				"Used in Wooden - Chair",
 				"Used in Carpenter's bench",
 				"Used in Sturdy - Ceiling",
-				"Used in Superior - Ceiling"
+				"Used in Superior - Ceiling",
+				"Used in Engineered - Roof",
+				"Used in Engineered - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -10507,9 +10509,9 @@
 		"engineered_roof_kit": {
 			"name": "Engineered roof",
 			"kind": "placeable",
-			"description": "Clay roof tiles on planks over a concrete ring beam. Does not burn.",
+			"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 3 Concrete, 24 Clay roof tile"
+				"Build with a hammer (press R): 5 Plank, 24 Clay roof tile, 8 Wooden pin"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10517,7 +10519,7 @@
 		"engineered_roof": {
 			"name": "Engineered - Roof",
 			"kind": "structure",
-			"description": "Clay roof tiles on planks over a concrete ring beam. Does not burn.",
+			"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
@@ -10525,9 +10527,9 @@
 		"engineered_roof_corner_kit": {
 			"name": "Engineered roof corner",
 			"kind": "placeable",
-			"description": "A clay tile roof corner over a concrete ring beam.",
+			"description": "A clay tile roof corner on pinned plank rafters.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 2 Concrete, 15 Clay roof tile"
+				"Build with a hammer (press R): 3 Plank, 15 Clay roof tile, 5 Wooden pin"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10535,7 +10537,7 @@
 		"engineered_roof_corner": {
 			"name": "Engineered - Roof corner",
 			"kind": "structure",
-			"description": "A clay tile roof corner over a concrete ring beam.",
+			"description": "A clay tile roof corner on pinned plank rafters.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
@@ -10725,8 +10727,6 @@
 				"Used in Engineered - Doorway",
 				"Used in Engineered - Foundation",
 				"Used in Engineered - Pillar",
-				"Used in Engineered - Roof",
-				"Used in Engineered - Roof corner",
 				"Used in Engineered - Stairs",
 				"Used in Engineered - Wall",
 				"Used in Engineered - Window",
