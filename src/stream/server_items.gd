@@ -3547,26 +3547,40 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 	if id < 0:
 		return 1.0
 
-	var percent: int = wheel_percent(_items[id])
-	return 1.0 if percent < 0 else 1.0 / WaterFlowScript.wheel_share(float(_items[id]["struct"]["wheel_w"]), _water_flow_rules())
+	var watts: float = _wheel_watts(_items[id])
+	return 1.0 if watts < 0.0 else 1.0 / WaterFlowScript.wheel_share(watts, _water_flow_rules())
 
 
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
 # wheel (structures.json needs_running_water) or a blueprint site. The watts are worked out once per piece and kept on it ("wheel_w"). Sent on the
 # piece's world row ("wheel") so looking at a sawmill shows what its wheel gives.
 func wheel_percent(it: Dictionary) -> int:
+	var watts: float = _wheel_watts(it)
+	return -1 if watts < 0.0 else int(round(100.0 * WaterFlowScript.wheel_share(watts, _water_flow_rules())))
+
+
+# A placed wheel piece's watts, or -1 for a piece with no wheel. Kept on the piece ("wheel_w") only when the water answered (why ""): a mill first asked
+# before its tile's settled water is in memory (a saved mill sent at the join) reads "dry" and 0 W, and keeping that would saw at the floor share for
+# good (Sonny's review of #1009); it is asked again next time instead.
+func _wheel_watts(it: Dictionary) -> float:
 	if not it.has("struct") or it["struct"].has("site") or not water_wheel.is_valid():
-		return -1
+		return -1.0
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 	if not def.has("needs_running_water"):
-		return -1
+		return -1.0
 
-	if not it["struct"].has("wheel_w"):
-		it["struct"]["wheel_w"] = float(_wheel_at(def, it["pos"], float(it["struct"].get("yaw", 0.0))).get("w", 0.0))
+	if it["struct"].has("wheel_w"):
+		return float(it["struct"]["wheel_w"])
 
-	return int(round(100.0 * WaterFlowScript.wheel_share(float(it["struct"]["wheel_w"]), _water_flow_rules())))
+	var wheel: Dictionary = _wheel_at(def, it["pos"], float(it["struct"].get("yaw", 0.0)))
+	var watts: float = float(wheel.get("w", 0.0))
+
+	if str(wheel.get("why", "")) == "":
+		it["struct"]["wheel_w"] = watts
+
+	return watts
 
 
 # The admin showroom (Dave 2026-10-23): the rows of data/items/showroom.json laid out east and south of the spawn point as REAL world items

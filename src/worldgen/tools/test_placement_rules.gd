@@ -306,6 +306,15 @@ func _init() -> void:
 
 	check(saw_id >= 0 and items.wheel_percent(items._items[saw_id]) == 60, "the placed sawmill's wheel gives 60 %% at 600 W")
 	check(plain_id >= 0 and items.wheel_percent(items._items[plain_id]) == -1, "a foundation has no wheel share (-1)")
+	# A mill whose water is not answered yet (a saved mill sent at the join before its tile's water is read: "dry", 0 W) is not kept at that.
+	if saw_id >= 0:
+		var kept_w: float = float(items._items[saw_id]["struct"]["wheel_w"])
+		items._items[saw_id]["struct"].erase("wheel_w")
+		flows[0] = false
+		check(items.wheel_percent(items._items[saw_id]) == 15 and not items._items[saw_id]["struct"].has("wheel_w"), "a mill whose water does not answer shows the floor share and keeps nothing")
+		flows[0] = true
+		check(items.wheel_percent(items._items[saw_id]) == 60 and is_equal_approx(float(items._items[saw_id]["struct"].get("wheel_w", 0.0)), kept_w), "once the water answers it gives 60 %% and keeps its watts")
+
 	var sent_rows: Array = []
 	items.send_world_items = func(_p, added, _r): sent_rows.append_array(added)
 	items._known[2] = {}
