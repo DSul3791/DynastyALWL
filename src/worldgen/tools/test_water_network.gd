@@ -79,8 +79,9 @@ func _init() -> void:
 	pipes.pieces[2]["inlet"] = Vector3(0, 1.0, 0)
 	pipes.pieces[2]["outlet"] = Vector3(2, 0.5, 0)
 	pipes.pieces[3]["inlet"] = Vector3(2, 0.5, 0)
+	pipes.pieces[2]["cap_lpm"] = 100.0   # a narrow pipe, so its half cap is under the pump's 60 L/min
 	pipes.solve(2.0)
-	check(is_equal_approx(pipes.inflow_lpm(3), 120.0), "0.5 m of head below the spout gives half the cap (%.1f)" % pipes.inflow_lpm(3))
+	check(is_equal_approx(pipes.inflow_lpm(3), 50.0), "0.5 m of head below the spout gives half the cap: 50 of a 100 L/min pipe (%.1f)" % pipes.inflow_lpm(3))
 
 	var raised = Network.new()
 	raised.add(1, {"role": "tank", "inlet": Vector3(0, 4.0, 0), "outlet": Vector3(0, 2.0, 0), "litres_max": 2000.0})
