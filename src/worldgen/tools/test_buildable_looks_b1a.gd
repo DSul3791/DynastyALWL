@@ -105,7 +105,10 @@ func _run() -> void:
 		if mesh != null:
 			var box: AABB = mesh.get_aabb()
 			var stone: AABB = BasicLook.mesh_for("stone_hammer").get_aabb()
-			check(_near(box.size.x, stone.size.x, 0.06) and box.size.z < 0.25 and box.size.z > 0.1, "%s: the stone hammer's length, a head across it (%s)" % [item, box])
+			# The same haft as the stone hammer (its grip end and a hammer's length); the forged head across it is longer than the stone lump, so only its
+			# own span is checked (a cross-peen head about 15 cm, not a block).
+			check(_near(box.position.x, stone.position.x, 0.02) and box.size.x > 0.4 and box.size.x < 0.5 and box.size.z > 0.12 and box.size.z < 0.2,
+				"%s: the stone hammer's haft, a forged head across it (%s)" % [item, box])
 
 	print("test_buildable_looks_b1a: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
