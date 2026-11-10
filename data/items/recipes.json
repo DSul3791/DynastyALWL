@@ -2936,7 +2936,7 @@
 			"craft_s": 20.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 2
 		},
 		"brick": {
 			"number": 128,
@@ -3391,7 +3391,7 @@
 			"craft_s": 6.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 2
 		},
 		"tar": {
 			"number": 148,
@@ -3467,7 +3467,7 @@
 			"craft_s": 40.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 3
 		},
 		"saw_mill_kit": {
 			"number": 154,
@@ -3586,7 +3586,8 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"stone_adze": {
 			"number": 158,
@@ -3784,7 +3785,7 @@
 		"processed_hide": {"number": 179, "name": "Scraped hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
 		"hide_scraper": {"number": 180, "name": "Hide scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
-		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench", "station_level": 2},
 		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge", "station_level": 3},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "forge"},
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": true, "station": "forge"},
@@ -4183,7 +4184,8 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"bronze_sword": {
 			"number": 204,
@@ -4439,7 +4441,8 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"bronze_helm": {
 			"number": 215,
@@ -4484,7 +4487,8 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 2
 		},
 		"iron_helm": {
 			"number": 217,
@@ -7290,7 +7294,8 @@
 			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"station_level": 3
 		},
 		"wood_foundation_kit": {
 			"number": 345,
