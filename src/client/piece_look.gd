@@ -338,6 +338,21 @@ static func _materials() -> void:
 	_daub = _organic_material("daub", Color(0.74, 0.64, 0.48), 79, 0.5)
 
 
+static var _brick_skin: StandardMaterial3D
+
+
+# The brick walls' surface for a model drawn from someone else's mesh (the Brick - Forge, item system 10 Nov 2026: Dave's medium forge reskinned,
+# brick body, the hood shape and iron straps kept). Projected in world space, so the courses stay level and 22 by 7 cm whatever the model's own
+# axes (Dave's meshes are Z up) or the share of its size it is drawn at (data/stations/forge_sizes.json).
+static func brick_skin() -> StandardMaterial3D:
+	if _brick_skin == null:
+		_materials()
+		_brick_skin = _bricks.duplicate() as StandardMaterial3D
+		_brick_skin.uv1_world_triplanar = true
+
+	return _brick_skin
+
+
 # The surfaces a piece can be built in (BUILDING_PLAN.md): wood (the default), log, daub, stone (cut blocks), brick, thatch (a roof only).
 # `part` is "wall", "floor", "roof" or "frame"; a material that does not suit a part falls back to wood.
 static func skin(part: String, material: String) -> StandardMaterial3D:

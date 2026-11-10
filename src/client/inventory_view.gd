@@ -3087,10 +3087,28 @@ func _make_forge() -> Node3D:
 	return model if model != null else BuildingLook.stone_forge()
 
 
-# The Medium Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins.
+# The Brick - Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins, its cut stone
+# reskinned in brick (item system 10 Nov 2026: brick body, keep the hood and iron straps): every surface of the cut_stone material takes the
+# brick walls' surface; the iron, firebrick, charcoal and fire keep Dave's.
 func _make_smithy() -> Node3D:
 	var model: Node3D = _forge_glb("forge_medium")
-	return model if model != null else BuildingLook.masonry_forge()
+
+	if model == null:
+		return BuildingLook.masonry_forge()
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_node: MeshInstance3D = child
+
+		if mesh_node.mesh == null:
+			continue
+
+		for surface in mesh_node.mesh.get_surface_count():
+			var material: Material = mesh_node.mesh.surface_get_material(surface)
+
+			if material != null and material.resource_name == "cut_stone":
+				mesh_node.set_surface_override_material(surface, PieceLook.brick_skin())
+
+	return model
 
 
 # Large Forge (state 20) and Master Forge (state 21): Dave's models in assets/stations when present, else the Medium Forge scaled
