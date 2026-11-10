@@ -170,10 +170,10 @@ func _riparian_checks() -> void:
 		far += 1 if x >= 20.0 and x < 28.0 else 0
 
 	check(bad.is_empty(), "every bank shrub has its own number, none in the river or the brook, none past the reach (%s)" % str(bad.slice(0, 4)))
-	check(near >= 40 and near > far + 10, "thick on the bank, thinning further out (%d within 6 m of the edge, %d at 8 to 16 m; about 82 and 14 expected)" % [near, far])
+	check(near >= 40 and near > far + 10, "thick on the bank, thinning further out (%d within 6 m of the edge, %d at 8 to 16 m; about 76 and 15 expected)" % [near, far])
 	check(_clumped_share(found) >= 0.85, "they grow in thickets of 4 or more like every shrub (%.0f%%)" % (100.0 * _clumped_share(found)))
 	var near_brook: int = found.filter(func(f): return absf(float(f[3]) - 72.0) < 7.0 and float(f[5]) > 20.0 and float(f[5]) < 52.0).size()
-	check(near_brook >= 10, "a record brook's banks get shrubs too (%d)" % near_brook)
+	check(near_brook >= 6, "a record brook's banks get shrubs too (%d)" % near_brook)
 	var again: Array = []
 	placer._riparian_shrubs(Vector2i.ZERO, Vector2.ZERO, tile, wet, brooks, again)
 	check(str(again) == str(found), "the same chunk places the same shrubs")

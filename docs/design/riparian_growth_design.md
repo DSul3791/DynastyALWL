@@ -20,7 +20,7 @@ Riparian planting guides (USDA NRCS stream-bank zones) split a bank into four zo
 
 ## What the game does now
 
-Bank shrubs grow in thickets, like every other shrub in the game (clumps of 4 or more, FloraLayout 14). There is one clump spot every `clump_every_m` (5 m). A kept spot gets a clump of `clump_count` (5 to 8) shrubs of one species within `clump_radius_m` (2 m). How often a spot is kept (`shrub_chance` 0.6 × `shrub_by_m`):
+Bank shrubs grow in thickets, like every other shrub in the game (clumps of 4 or more, FloraLayout 14). There is one clump spot every `clump_every_m` (5 m). A kept spot gets a clump of `clump_count` (5 to 8) shrubs within `clump_radius_m` (1.6 m), all of one species. Neighbouring thickets share their species over 15 m blocks, so a bank runs from a stretch of elder to a stretch of bramble. A thicket stays inside its own chunk, and it is left out when fewer than 4 of its shrubs can stand: members fall out on the water, in a brook's channel, or where the room rules give their space to a tree or another shrub. How often a spot is kept (`shrub_chance` 0.6 × `shrub_by_m`):
 
 | Distance from the water's edge | Clump spots kept |
 |---|---|

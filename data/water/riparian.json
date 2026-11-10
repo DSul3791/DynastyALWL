@@ -5,7 +5,7 @@
 		5,
 		8
 	],
-	"clump_radius_m": 2.0,
+	"clump_radius_m": 1.6,
 	"reach_m": 16.0,
 	"shrub_chance": 0.6,
 	"shrub_by_m": [

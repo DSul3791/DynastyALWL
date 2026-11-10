@@ -599,6 +599,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var canopies: Dictionary = {}       # occupancy cell -> Array of [x, z, canopy radius, dense]
 
 	var clearings_here: bool = false
+	var kept: Array = []            # [id, position, height, yaw] of the items placed, in order
+	var bank_clumps: Dictionary = {}   # bank thicket (species << 16 | clump spot) -> members placed (_riparian_shrubs)
 
 	for c in _clearings:
 		clearings_here = clearings_here or (Vector2(origin.x + chunk_m * 0.5, origin.y + chunk_m * 0.5).distance_to(c[0]) < chunk_m * 0.75 + float(c[1]) + float(c[2]))
@@ -646,10 +648,28 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 				canopies[key].append([x, z, spacing_radius(item, height), 2 if item["dense"] else 1])
 
-		result["ids"].append((f[1] << 16) | f[2])
-		result["positions"].append(Vector3(x, f[4], z))
-		result["heights"].append(height)
-		result["yaws"].append(f[7])
+		kept.append([(f[1] << 16) | f[2], Vector3(x, f[4], z), height, f[7]])
+
+		if f[2] >= RIPARIAN_BASE and f[2] < SPRING_BASE:
+			@warning_ignore("integer_division")
+			var clump: int = (int(f[1]) << 16) | ((int(f[2]) - RIPARIAN_BASE) / RIPARIAN_CLUMP_MAX)
+			bank_clumps[clump] = int(bank_clumps.get(clump, 0)) + 1
+
+	# A bank thicket that lost members to the room rules keeps them only while 4 or more stand (every shrub grows in a clump of 4 or more).
+	for row in kept:
+		var number: int = int(row[0]) & 0xffff
+
+		if number >= RIPARIAN_BASE and number < SPRING_BASE:
+			@warning_ignore("integer_division")
+			var spot: int = (number - RIPARIAN_BASE) / RIPARIAN_CLUMP_MAX
+
+			if int(bank_clumps.get((int(row[0]) & ~0xffff) | spot, 0)) < RIPARIAN_CLUMP_MIN:
+				continue
+
+		result["ids"].append(row[0])
+		result["positions"].append(row[1])
+		result["heights"].append(row[2])
+		result["yaws"].append(row[3])
 
 	return result
 
@@ -1328,6 +1348,8 @@ func _under_water(data, x: float, z: float) -> bool:
 
 const RIPARIAN_BASE := 16384   # bank shrub item numbers (_riparian_shrubs): RIPARIAN_BASE + clump spot x RIPARIAN_CLUMP_MAX + shrub; patch shrubs leave the main grid numbers unused
 const RIPARIAN_CLUMP_MAX := 8
+const RIPARIAN_CLUMP_MIN := 4   # a bank thicket with fewer members standing is left out (the thicket rule, test_flora_density)
+const RIPARIAN_SPECIES_M := 15.0   # one species over a block this size, so neighbouring thickets match (a stretch of elder, then of bramble)
 const RIPARIAN_SEED := 104729
 
 
@@ -1452,7 +1474,8 @@ func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, b
 		var cx: float = origin.x + (float(index % spots) + rng.randf_range(0.3, 0.7)) * spot
 		@warning_ignore("integer_division")
 		var cz: float = origin.y + (float(index / spots) + rng.randf_range(0.3, 0.7)) * spot
-		var pick: float = rng.randf()
+		var block: Vector2i = Vector2i(floori(cx / RIPARIAN_SPECIES_M), floori(cz / RIPARIAN_SPECIES_M))
+		var pick: float = float(_mix(data.flora_seed, block.x, block.y, RIPARIAN_SEED + 1) % 100003) / 100003.0
 		var biome: int = data.biome[data.nearest(cx, cz)]
 		var growing: Array = (_riparian["chosen"] as Array).filter(func(row): return (row[0]["per_biome"] as PackedFloat32Array)[biome] > 0.0)
 		var total: float = 0.0
@@ -1475,6 +1498,7 @@ func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, b
 
 		var many: int = clampi(rng.randi_range(int(counts[0]), int(counts[1])), 1, RIPARIAN_CLUMP_MAX)
 		var taller: float = 1.0 + WET_TALLER * NearWater.growth_near_water(float(best[index][0]))
+		var members: Array = []
 
 		for n in range(many):
 			var turn: float = rng.randf() * TAU
@@ -1484,16 +1508,25 @@ func _riparian_shrubs(chunk: Vector2i, origin: Vector2, data, wet: Dictionary, b
 			var x: float = cx + cos(turn) * out
 			var z: float = cz + sin(turn) * out
 
-			if _in_channel(channel, sp, x, z, brook_half):
+			# Inside this chunk only (a chunk's items are packed relative to it), in the biome the species grows in, out of a brook's channel.
+			if x < origin.x or z < origin.y or x >= origin.x + chunk_m or z >= origin.y + chunk_m or _in_channel(channel, sp, x, z, brook_half):
 				continue
 
-			var y: float = _ground_ok(item, data, data.nearest(x, z), x, z, false, 1.0)
+			var k: int = data.nearest(x, z)
+
+			if (item["per_biome"] as PackedFloat32Array)[data.biome[k]] <= 0.0:
+				continue
+
+			var y: float = _ground_ok(item, data, k, x, z, false, 1.0)
 
 			if is_nan(y) or y - float(best[index][1]) > dry:
 				continue
 
 			var height: float = lerpf(item["height_min"], item["height_max"], size) * taller
-			found.append([_tier(item, height), int(item["id"]), RIPARIAN_BASE + int(index) * RIPARIAN_CLUMP_MAX + n, x, y, z, height, yaw, float(item["patch"]["spacing_m"])])
+			members.append([_tier(item, height), int(item["id"]), RIPARIAN_BASE + int(index) * RIPARIAN_CLUMP_MAX + n, x, y, z, height, yaw, float(item["patch"]["spacing_m"])])
+
+		if members.size() >= RIPARIAN_CLUMP_MIN:
+			found.append_array(members)
 
 
 # Whether a point is in a record brook's channel (within half of one of its lines; channel from _riparian_shrubs).
