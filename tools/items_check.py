@@ -34,6 +34,7 @@ UNITS = [
     ("fish trap", "src/worldgen/tools/test_fish_trap.gd"),
     ("shore net", "src/worldgen/tools/test_shore_net.gd"),
     ("bed", "src/worldgen/tools/test_bed.gd"),
+    ("bedroll", "src/worldgen/tools/test_bedroll.gd"),
     ("snow walk", "src/worldgen/tools/test_snow_walk.gd"),
     ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
     ("cold store", "src/worldgen/tools/test_cold_store.gd"),

@@ -9081,9 +9081,18 @@ func _sleep_quality(peer: int) -> float:
 		return float(_bed_cfg.get("quality", 1.0)) if on_good_bed(peer) else float(q.get("covered", 1.0))
 
 	if rain_now.is_valid() and float(rain_now.call()) >= float(_sleep_cfg.get("rain_wakes", 0.2)):
-		return -1.0
+		return -1.0   # a bedroll is not a roof
+
+	if _has_bedroll(peer):
+		return float(_sleep_cfg.get("bedroll", {}).get("open_dry", q.get("open_dry", 0.6)))
 
 	return float(q.get("open_dry", 0.6))
+
+
+# A Bedroll in the pack (sleep.json "bedroll", Part C plan 5): better sleep on open dry ground and a little warmth lying down. Not a bed: no
+# spawn point, and nothing that asks "on a good bed" counts it.
+func _has_bedroll(peer: int) -> bool:
+	return count_for(peer, str(_sleep_cfg.get("bedroll", {}).get("item", "bedroll"))) > 0
 
 
 # Who is where and under which key: for the NPC runner and the admin check.
@@ -10115,6 +10124,8 @@ func warmth_target(peer: int) -> float:
 
 	if on_good_bed(peer):
 		stress *= 1.0 - float(_bed_cfg.get("warmth_bonus", 0.0))
+	elif (_asleep.has(peer) or int(_stance.get(peer, 0)) == 3) and _has_bedroll(peer):
+		stress *= 1.0 - float(_sleep_cfg.get("bedroll", {}).get("warmth_bonus", 0.0))   # rolled up in it: half a bed's warmth
 	stress *= float(rested_tier(peer).get("cold_stress_mult", 1.0))   # Rested: the cold bites a little less
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 
