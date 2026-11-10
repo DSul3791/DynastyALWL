@@ -25,6 +25,10 @@ extends Node
 #                       look rig --cam left|right shows the body with the bow at its side
 #   --shot-draw         with a bow given (--shot-item=... bow): keep it up and drawing as if right were held, each frame (held_item rig_drawing), so the crosshair,
 #                       the sway and arrows loosed into trunks can be pictured (the rig cannot hold the mouse; Dino 10 Nov 2026)
+#   --shot-lit          with a torch or lantern given (--shot-give=wooden_lantern): its flame burns in every picture. Its fuel (candle, lamp oil) is given
+#                       too, a dark one is lit, first person keeps the arms on so the flame hangs in the drawn hand (with the arms off it sat on the hidden
+#                       body's hand, and a light under a hidden node gives no light: Dino's black lantern shots, 10 Nov 2026), the held light stays on beside a
+#                       fire light at Low, and each picture logs the flame's state
 #   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
@@ -43,6 +47,7 @@ var settle_s: float = 25.0
 var _index: int = -1
 var bow_drawing: bool = false   # --shot-draw
 var bow_sway: bool = false      # --shot-sway
+var shot_lit: bool = false      # --shot-lit
 var _placed: bool = false
 var _anchor_told_msec: int = 0        # when the kit-placing shot told the server where the player really is
 var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
@@ -237,6 +242,8 @@ func setup(owner_client, args: Array) -> void:
 			drop_settle_ms = int(argument.trim_prefix("--shot-drop-settle="))      # how long after a drop or place the picture waits (a slow first world build streams the item late)
 		elif argument == "--shot-light":
 			light_it = true      # with --shot-place: 6 s after the fire is placed, give plant fibre and light it, so a lit fire can be photographed
+		elif argument == "--shot-lit":
+			shot_lit = true      # the held torch or lantern burns in the pictures (see the header)
 		elif argument == "--shot-place":
 			place_it = true      # with --shot-give=ITEM --shot-drop: place the item (a campfire kit becomes a fire) at the drop spot instead of dropping it
 		elif argument.begins_with("--shot-fell="):
@@ -339,7 +346,7 @@ func _process(delta: float) -> void:
 		# No arms in the pictures, except a first-person bow shot: the bow is held in both hands of the arms (held_item.gd _pose_bow), and with the arms off it went
 		# to the hidden body's hand and the pictures showed no bow (Dino, 10 Nov 2026).
 		if client.held != null:
-			client.held.set_first_person(bow_pose != "" and float(shots[_index]["walk"]) < 0.0)
+			client.held.set_first_person((bow_pose != "" or shot_lit) and float(shots[_index]["walk"]) < 0.0)
 
 		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
 			client._avatar.visible = false
@@ -358,11 +365,15 @@ func _process(delta: float) -> void:
 		if bow_pose != "":
 			client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("stone_arrow"), 0, 10, Vector3.ZERO)   # arrows in the pack, so one is nocked
 
+		if shot_lit:
+			_give_flame_fuel()
+
 	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
 		client.held.bow_force = bow_pose
 		client.held.rig_drawing = bow_drawing
+		client.held.rig_lit = shot_lit
 		client.shot_sway = bow_sway
 
 	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
@@ -697,6 +708,9 @@ func _process(delta: float) -> void:
 			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
 
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
+
+	if shot_lit and client.held != null:
+		print("shot runner: lit %s" % _flame_state())
 
 	print("shot runner: " + client.wind_line(client.weather))
 
@@ -1978,3 +1992,30 @@ func _run_chop_strip() -> void:
 		print("shot runner: chop phase %d at %.2f s (swing t %.2f) saved" % [index, float(times[index]), held._swing_t])
 
 	_chop_state = 2
+
+
+# --shot-lit: two of the given torch's or lantern's fuel (items.json "fuel" on it or on its lit twin: candle, lamp oil), so a dark one can be lit and a
+# burnt-out one loads again. A torch has no fuel and gets none.
+func _give_flame_fuel() -> void:
+	var table = client.items.table
+	var entry: Dictionary = table.entry(give_item)
+	var fuel: String = str(entry.get("fuel", table.entry(str(entry.get("relit_item", ""))).get("fuel", "")))
+
+	if fuel != "" and table.number_of(fuel) != 0:
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(fuel), 0, 2, Vector3.ZERO)
+
+
+# --shot-lit: what is in the left and right hands, whether each burns (items.json "flame"), and whether its light is drawn (visible in the tree), so a dark
+# picture says why.
+func _flame_state() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for hand in [["left", client.held.off_id() if client.held.off_holding else "", client.held._off_model], ["right", client.held.held_id() if client.held.holding else "", client.held._model]]:
+		if str(hand[1]) == "":
+			continue
+
+		var model: Node3D = hand[2] as Node3D
+		var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D if model != null else null
+		parts.append("%s %s flame %s light %s" % [hand[0], hand[1], str(bool(client.items.table.entry(str(hand[1])).get("flame", false))), "none" if light == null else ("drawn" if light.is_visible_in_tree() else "hidden")])
+
+	return ", ".join(parts) if not parts.is_empty() else "nothing in hand"
