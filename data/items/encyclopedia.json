@@ -1,5 +1,5 @@
 {
-	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status: planned` (not obtainable in the game yet) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. `chapters` are player-facing reading pages (ore: Morgan, 10 Nov 2026, from Sonny's ground_resources.md); a section about something not in the game yet stays out until it is. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
+	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status` (planned: not obtainable in the game yet; retired: replaced by another item) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. `chapters` are player-facing reading pages (ore: Morgan, 10 Nov 2026, from Sonny's ground_resources.md); a section about something not in the game yet stays out until it is. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
 	"items": {
 		"acorns": {
 			"name": "Acorns",
@@ -532,7 +532,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"fiddleheads": {
 			"name": "Fiddleheads",
@@ -646,7 +646,7 @@
 				"Used in Forager's stew"
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"gum": {
 			"name": "Gum",
@@ -683,7 +683,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"hardwood": {
 			"name": "Hardwood",
@@ -692,7 +692,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"haws": {
 			"name": "Haws",
@@ -1634,7 +1634,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"tinder": {
 			"name": "Tinder",
@@ -1889,7 +1889,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"yarrow": {
 			"name": "Yarrow",
@@ -2840,7 +2840,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stomach_tea": {
 			"name": "Stomach tea",
@@ -2951,7 +2951,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"raw_meat": {
 			"name": "Raw meat",
@@ -4190,7 +4190,7 @@
 				"Retired (10 Nov 2026): the ladder takes Planks now. Kept for old saves."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"fine_board": {
 			"name": "Fine board",
@@ -4201,7 +4201,7 @@
 				"Retired (10 Nov 2026): Planks do its work. Kept for old saves."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"nails": {
 			"name": "Nails",
@@ -4926,7 +4926,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"hide_scraper": {
 			"name": "Scraper",
@@ -5599,7 +5599,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"seaweed": {
 			"name": "Seaweed",

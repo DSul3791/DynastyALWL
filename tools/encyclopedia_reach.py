@@ -24,7 +24,8 @@ An item is obtainable now when a player can get it today, starting with empty ha
 The "future" flag in items.json is NOT a source here (validate_items.gd counts future materials so it can check the
 recipe graph; that is a different question). The script lists items whose future flag disagrees with what it finds.
 
-status: "planned" when the item is not obtainable now, removed when it is; retired items are never obtainable.
+status: "planned" when the item is not obtainable now, "retired" when items.json retires it (a kit row excepted: it stands for its
+piece), removed when it is obtainable; retired items are never obtainable.
 """
 
 import json
@@ -341,11 +342,13 @@ def main(argv):
         if now != was:
             (on if now else off).append(iid)
         e["obtainable_now"] = now
+        it = reach.all.get(iid, {})
         if now:
             e.pop("status", None)
+        elif it.get("retired") and not iid.endswith("_kit"):
+            e["status"] = "retired"   # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming
         else:
             e["status"] = "planned"
-        it = reach.all.get(iid, {})
         if it.get("retired"):
             continue
         if now and it.get("future"):
