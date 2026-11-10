@@ -6941,8 +6941,14 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 	elif not bool(_head_under.get(peer, false)) and not bool(_swimming.get(peer, false)):
 		return   # water puts it out only when the server too sees the head under water or the player swimming
 
+	var flame_row: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+	if by_rain and not bool(flame_row.get("rain_douses", false)):
+		return   # a lantern burns on in the rain behind its horn panes
+
+	var word: String = FlameRules.flame_word(flame_row)
 	inv.numbers[slot] = table.number_of(into)
-	_say(peer, "The rain puts your torch out. Press its key to light it again." if by_rain else "The water puts your torch out. Press its key to light it again.")
+	_say(peer, ("The rain puts your %s out. Press its key to light it again." if by_rain else "The water puts your %s out. Press its key to light it again.") % word)
 
 
 # Whether a player is under cover from the rain (a crown, a roof, a cave): at the feet or at the eye, where the flame and the client's own test are
@@ -7027,8 +7033,11 @@ func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 		if fire.is_empty() or not fire_is_lit(int(fire["state"])):
 			return
 
+	var order_first: int = want - 1 if want >= 1 and want <= inv.SLOTS else -1
+
 	if bool(_swimming.get(peer, false)):
-		_say(peer, "It is too wet to light the torch in the water.")      # rain is the client's call: it sees caves and roofs (_flame_wet)
+		var asked: String = table.id_of(inv.numbers[order_first]) if order_first >= 0 else ""
+		_say(peer, "It is too wet to light the %s in the water." % FlameRules.flame_word(table.entry(asked)))      # rain is the client's call: it sees caves and roofs (_flame_wet)
 		return
 
 	var order: Array = range(inv.SLOTS)
@@ -7042,10 +7051,44 @@ func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 
 		var back: String = str(table.entry(table.id_of(inv.numbers[slot])).get("relit_item", ""))
 
-		if back != "" and table.number_of(back) > 0:
-			inv.numbers[slot] = table.number_of(back)
-			_say(peer, "You light your torch again.")
-			return
+		if back == "" or table.number_of(back) <= 0:
+			continue
+
+		var lit_row: Dictionary = table.entry(back)
+		var said: String = "You light your %s again." % FlameRules.flame_word(lit_row)
+
+		# A lantern whose candle or lamp oil burned out takes one more from the pack (buildables plan B4); with none it stays dark, and only the key of that
+		# lantern says so (E at a fire looks on for a torch).
+		if FlameRules.out_of_fuel(lit_row, inv.wear[slot]):
+			var fuel: int = table.number_of(str(lit_row["fuel"]))
+			var fuel_slot: int = _slot_holding(inv, fuel)
+
+			if fuel_slot < 0:
+				if slot == order_first:
+					_say(peer, "Your lantern is out of fuel. It takes %s." % table.name_of(fuel))
+					return
+
+				continue
+
+			inv.take_from_slot(fuel_slot, 1)
+			inv.wear[slot] = 0
+			said = "You put %s in your lantern and light it." % table.sentence_name(fuel)
+
+		inv.numbers[slot] = table.number_of(back)
+		_say(peer, said)
+		return
+
+
+# The first pack slot holding item `number`, or -1.
+func _slot_holding(inv, number: int) -> int:
+	if number <= 0:
+		return -1
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] == number and inv.counts[slot] > 0:
+			return slot
+
+	return -1
 
 
 # A torch in hand burns down (Dave 6 Nov 2026: about half an hour of real time). The client says once a second that it holds a burning torch; the server
@@ -7070,10 +7113,20 @@ func _torch_burn(peer: int, inv, slot: int) -> void:
 		return
 
 	var before: Array = _snapshot(inv)
+	_torch_seen.erase(peer)
+	var dark: int = table.number_of(str(entry["doused_item"]))
+
+	# A carried lantern (buildables plan B4) is not used up: its fuel is. It goes dark with its wear full, and its key loads the next candle or lamp oil.
+	if entry.has("fuel") and dark > 0:
+		inv.numbers[slot] = dark
+		inv.wear[slot] = int(ceil(burn_s * 10.0))
+		_say(peer, "Your lantern has burned its %s. Press its key with another in your pack to light it again." % table.sentence_name(table.number_of(str(entry["fuel"]))))
+		_send_changes(peer, inv, before)
+		return
+
 	inv.numbers[slot] = 0
 	inv.counts[slot] = 0
 	inv.wear[slot] = 0
-	_torch_seen.erase(peer)
 	_say(peer, "Your torch has burned down to nothing.")
 	_send_changes(peer, inv, before)
 

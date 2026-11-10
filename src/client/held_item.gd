@@ -16,6 +16,7 @@ const BuildingLook := preload("res://src/client/building_look.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
+const FlameRules := preload("res://src/shared/flame_rules.gd")
 const ArmsView := preload("res://src/client/character/arms_view.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 
@@ -105,6 +106,7 @@ var held_slot: int:                       # the pack slot that key points at (In
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
 const HOTBAR_SLOTS := 10
 var aiming: bool = false
+const LANTERN_BAIL_M := 0.18             # basic_look.gd "lantern": the bail's top is this far above the look's middle; the fist holds the bail, the lantern hangs below
 const TORCH_PLACE_M := 3.0                # how far the crosshair reaches to stick a torch in the ground or on a wall
 var off_key: int = -1                     # the hotbar key carried in the left hand (items with "offhand": true: torch, shield), -1 for none
 var off_slot: int:                        # the pack slot that key points at, -1 for none
@@ -324,14 +326,25 @@ func equip_toggle(slot: int) -> void:
 func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	var number: int = _key_number(slot)
 
-	if number == 0 or str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) == "":
+	var relit: String = str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) if number != 0 else ""
+
+	if relit == "":
 		return
 
 	if quiet:
 		return   # the same key again puts the torch away
 
-	if light_block_fn.is_valid() and str(light_block_fn.call()) != "":
-		_inv._on_notice("It is too wet to light the torch. Get out of the water and the rain, or into a cave or under cover.")
+	# A lantern (buildables plan B4) burns behind its horn panes, so only water stops it lighting; a torch needs to be out of the rain too. Out of fuel, the
+	# server loads a candle or lamp oil from the pack, or says there is none.
+	var lit_row: Dictionary = _inv.table.entry(relit)
+	var wet: String = str(light_block_fn.call()) if light_block_fn.is_valid() else ""
+
+	if wet == "water" or (wet == "rain" and bool(lit_row.get("rain_douses", false))):
+		if FlameRules.flame_word(lit_row) == "lantern":
+			_inv._on_notice("It is too wet to light the lantern. Get out of the water first.")
+		else:
+			_inv._on_notice("It is too wet to light the torch. Get out of the water and the rain, or into a cave or under cover.")
+
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))) + 1, 0, Vector3.ZERO)   # the pack slot plus one (0: the first doused torch)   # no fire needed (Dave 6 Nov 2026)
@@ -2266,17 +2279,22 @@ func _show_off_model(delta: float) -> void:
 			_off_model = null
 
 		if number != 0:
-			_off_model = _make_shield_model() if _off_class() == "shield" else _make_torch_model(_left_id())
+			_off_model = _make_shield_model() if _off_class() == "shield" else (_make_lantern_model(_left_id()) if _lantern_in_left() else _make_torch_model(_left_id()))
 			_mount_off_model()
 
 	if _off_model == null:
 		return
 
 	var flicker: OmniLight3D = _off_model.get_node_or_null("Light")
+	var lantern: bool = _lantern_in_left()
 
 	if flicker != null:
 		flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
-		flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
+		# A lantern's flame is behind horn: it barely flickers.
+		flicker.light_energy = (1.6 + 0.06 * sin(float(Time.get_ticks_msec()) * 0.011)) if lantern else 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
+
+	if lantern:
+		_hang_lantern()
 
 	if _off_class() == "torch" and not _first_person and _avatar_rig != null and _off_model.get_parent() == _avatar_rig.hand_mount_l:
 		_stand_torch_upright()
@@ -2287,6 +2305,27 @@ func _show_off_model(delta: float) -> void:
 
 
 var _off_rest: Vector3 = Vector3.ZERO
+
+
+# A carried lantern in the left hand (items.json tool_class "lantern", or "lantern_dark" when it is out).
+func _lantern_in_left() -> bool:
+	return _inv != null and _left_number() != 0 and _off_class().begins_with("lantern")
+
+
+# A lantern hangs straight down from the fist by its bail whatever the hand's angle (first person and third): the model sits at the hand mount, upright in
+# the world. In first person without arms it stays at its rest spot by the camera.
+func _hang_lantern() -> void:
+	if not _off_model.is_inside_tree():
+		return
+
+	if _off_model.get_parent() != _camera:
+		_off_model.position = Vector3.ZERO
+
+	_off_model.global_basis = Basis.IDENTITY
+	var fist: Node3D = _off_model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if fist != null and fist.visible:
+		_third_fist_on(_off_model)   # the fist stays on the hand mount, round the bail
 
 const TORCH_LEAN := 0.12      # third-person torch carry: the shaft leans this much forward and this much out to the left per metre up (about 7 degrees each)
 
@@ -2629,6 +2668,50 @@ func _make_other_model() -> Node3D:
 	head.position = Vector3(0.0, rod.height * 0.5 + (0.0 if tool_class == "spade" else 0.0), 0.0)
 	node.add_child(head)
 	return node
+
+
+# A lantern in the left hand (buildables plan B4): its look (basic_look.gd "lantern", Kathleen's) hanging from the bail, which is the model's origin. While it
+# burns its horn panes glow warm and it gives one light of the item's light_m (items.json: 8 m wooden, 14 m iron); a lantern that is out is the look alone.
+func _make_lantern_model(id: String) -> Node3D:
+	var row: Dictionary = _inv.table.entry(id)
+	var lantern: Node3D = Node3D.new()
+	var body: MeshInstance3D = MeshInstance3D.new()
+	body.mesh = BasicLook.mesh_for(id)
+	body.position = Vector3(0.0, -LANTERN_BAIL_M, 0.0)
+	body.layers = 2      # like the torch: its own light does not over-light it at arm's length
+	lantern.add_child(body)
+
+	if not bool(row.get("flame", false)):
+		return lantern
+
+	# The candle or oil flame seen through the horn: a thin warm shell just outside the look's horn box (0.15 x 0.17 x 0.15), the frame standing proud of it.
+	var horn_glow: MeshInstance3D = MeshInstance3D.new()
+	var shell: BoxMesh = BoxMesh.new()
+	shell.size = Vector3(0.152, 0.172, 0.152)
+	var glow: StandardMaterial3D = StandardMaterial3D.new()
+	glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	glow.albedo_color = Color(1.0, 0.65, 0.15, 0.45)
+	glow.emission_enabled = true
+	glow.emission = Color(1.0, 0.65, 0.15)
+	glow.emission_energy_multiplier = 0.6
+	shell.material = glow
+	horn_glow.mesh = shell
+	horn_glow.position = body.position
+	horn_glow.layers = 2
+	horn_glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	lantern.add_child(horn_glow)
+	var light: OmniLight3D = OmniLight3D.new()
+	light.name = "Light"
+	light.light_color = Color(1.0, 0.65, 0.3)
+	light.omni_range = float(row.get("light_m", 8.0))
+	light.shadow_enabled = false
+	light.light_volumetric_fog_energy = 0.0
+	light.light_cull_mask = 0xFFFFFFFD
+	light.position = body.position
+	lantern.add_child(light)
+	FireWeather.register(light)   # reach and halo follow fog and snow, as a torch's
+	return lantern
 
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).

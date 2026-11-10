@@ -117,5 +117,25 @@ func run() -> void:
 	_check(held.off_slot == 1 and held.off_id() == "torch", "another left-hand item replaces it")
 	view.inventory.numbers[1] = 0
 	_check(held.off_number() == 0, "an emptied slot leaves the left hand empty")
+
+	# A carried lantern (buildables plan B4): a made-up burning lantern hangs upright in the left hand with one light of its light_m; gone dark, it has none.
+	var lantern: Dictionary = {"id": "test_lantern", "number": 9998, "name": "Test lantern", "kind": "tool", "tool_class": "lantern", "offhand": true, "stack": 1, "flame": true, "light_m": 8.0, "fuel": "candle", "burn_s": 3600.0, "doused_item": "test_lantern_dark"}
+	var dark: Dictionary = {"id": "test_lantern_dark", "number": 9997, "name": "Test lantern", "kind": "tool", "tool_class": "lantern_dark", "offhand": true, "stack": 1, "relit_item": "test_lantern"}
+	table._by_id["test_lantern"] = lantern
+	table._by_number[9998] = lantern
+	table._by_id["test_lantern_dark"] = dark
+	table._by_number[9997] = dark
+	view.inventory.numbers[3] = 9998
+	view.keys[3] = 9998
+	held.press_slot(3)
+	_check(held.off_holding and held.off_id() == "test_lantern", "a lantern goes in the left hand")
+	held._process(0.1)
+	var lamp: OmniLight3D = held._off_model.get_node_or_null("Light") as OmniLight3D if held._off_model != null else null
+	_check(lamp != null and is_equal_approx(lamp.omni_range, 8.0), "the lantern gives one light of its light_m")
+	_check(held._off_model != null and held._off_model.is_inside_tree() and held._off_model.global_basis.y.dot(Vector3.UP) > 0.99, "it hangs upright from the fist")
+	view.inventory.numbers[3] = 9997
+	view.keys[3] = 9997   # the game's key follows the flame twin (Inventory._flame_twin); this stand-in view only finds the number it holds
+	held._process(0.1)
+	_check(held._off_model != null and held._off_model.get_node_or_null("Light") == null, "a dark lantern has no light")
 	print("offhand: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

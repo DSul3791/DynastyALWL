@@ -7065,7 +7065,8 @@ func _light_block() -> String:
 
 
 # A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,
-# so it asks the server to swap the torch for a doused one; a lantern (later) only goes out under water.
+# so it asks the server to swap the torch for a doused one; a carried lantern (buildables plan B4) only goes out under water. Both burn only in the hand
+# (ACT_TORCH_BURN): a torch down to nothing, a lantern through its candle or lamp oil.
 func _flame_wet(delta: float) -> void:
 	if held == null or items == null or items.inventory == null or net == null:
 		return
