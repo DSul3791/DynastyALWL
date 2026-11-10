@@ -36,7 +36,6 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
-const FIRE_USE_M := 4.5                 # a fire this near is a station the pack sorts for (station_use; the craft list's campfire reach too)
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
 var open: bool = false
@@ -2289,6 +2288,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	_slowest_row = ""
 	var t_mark: int = t_all
 
+	_forget_near()   # stations and logs may have come or gone
+
 	for id in removed:
 		_forget(id)
 
@@ -2935,7 +2936,19 @@ func _ask_stock() -> void:
 
 
 # The log on the shoulder plus log items lying within 3 m of the player (the server uses them for a craft that needs logs: server_items.gd _pull_nearby_logs).
+var _logs_memo: int = -1   # nearby_logs for this frame, -1 not worked out (cleared with station_near's memo)
+
+
 func nearby_logs() -> int:
+	_memo_frame()
+
+	if _logs_memo < 0:
+		_logs_memo = _nearby_logs_now()
+
+	return _logs_memo
+
+
+func _nearby_logs_now() -> int:
 	var total: int = 0   # the carried log is a pack item and counted with the pack
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 	var members: PackedInt32Array = table.group_members(table.number_of("log"))
@@ -3183,46 +3196,33 @@ func _lit_fire_near(pos: Vector3, r: float) -> bool:
 	return false
 
 
-# What the station you stand at can use (station_use.gd, Dave 10 Nov 2026): item number -> StationUse.FUEL or INPUT, for the pack's order and its
-# golden line. Every station here counts: a fire within FIRE_USE_M (any campfire state, lit, laid or cold), and each structure within its own
-# reach_m with its "station", the stations it stands in for ("also") and its own "fuel". {} with the pack shut or away from every station.
+# What the open station can use (station_use.gd, Dave 10 Nov 2026): item number -> StationUse.FUEL or INPUT, for the pack's order and its
+# golden line. Only while a station's own window is open (Dave 10 Nov 2026: "even when I open my inventory and Im not in the campfires
+# inventory the wood is still highlighted which it shouldnt be"): the container on screen is a fire (any campfire state) or a structure with a
+# "station", stations it stands in for ("also") or its own "fuel". {} with the pack open on its own, a plain chest open, or the window shut.
 func station_use() -> Dictionary:
-	if not open or not _player_position.is_valid():
+	if not open or not chest_mode or not _world.has(chest_id):
 		return {}
 
-	var here: Vector3 = _player_position.call()
+	var state: int = int(_world[chest_id]["state"])
 	var stations: Array = []
-	var fire: bool = false
+	var fire: bool = StructureLook.CAMPFIRE_STATES.has(state)
 	var fuels: Array = []
 
-	for id in _world:
-		var state: int = int(_world[id]["state"])
-
-		if state == 0:
-			continue
-
-		var away: float = here.distance_to(_world[id]["pos"])
-
-		if StructureLook.CAMPFIRE_STATES.has(state):
-			if away <= FIRE_USE_M:
-				fire = true
-
-				if not stations.has("campfire"):
-					stations.append("campfire")
-
-			continue
-
+	if fire:
+		stations.append("campfire")
+	else:
 		var def: Dictionary = _structure_by_state(state)
-
-		if def.is_empty() or away > float(def.get("reach_m", 3.0)):
-			continue
 
 		for station in [str(def.get("station", ""))] + (def.get("also", {}) as Dictionary).keys():
 			if str(station) != "" and not stations.has(str(station)):
 				stations.append(str(station))
 
-		if str(def.get("fuel", "")) != "" and not fuels.has(str(def["fuel"])):
+		if str(def.get("fuel", "")) != "":
 			fuels.append(str(def["fuel"]))
+
+	if stations.is_empty() and fuels.is_empty():
+		return {}
 
 	if (fire or not fuels.is_empty()) and _cooking_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
@@ -3233,7 +3233,34 @@ func station_use() -> Dictionary:
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
 # `reach_m` above a station's own reach widens it (the crafting reach: a station recipe whose station is that near moves you to it, Dave 10 Nov 2026).
+var _near_memo: Dictionary = {}     # "station|level|reach" -> station_near's answer, for one frame (cleared by _forget_near)
+var _near_memo_frame: int = -1
+
+
+# The craft list asked station_near several times per recipe, each a walk over every world row (stones, sticks, everything within 100 m):
+# opening the window, a click or D stalled 2 to 3 s (Dave 10 Nov 2026). Answers now hold for the frame; a world change or a refresh drops them.
+func _forget_near() -> void:
+	_near_memo.clear()
+	_logs_memo = -1
+
+
+func _memo_frame() -> void:
+	if Engine.get_process_frames() != _near_memo_frame:
+		_near_memo_frame = Engine.get_process_frames()
+		_forget_near()
+
+
 func station_near(station: String, level: int = 1, reach_m: float = 0.0) -> bool:
+	_memo_frame()
+	var key: String = "%s|%d|%.2f" % [station, level, reach_m]
+
+	if not _near_memo.has(key):
+		_near_memo[key] = _station_near_now(station, level, reach_m)
+
+	return bool(_near_memo[key])
+
+
+func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
 	if station == "campfire":   # a lit campfire (state 1) within reach, or a clay hearth or oven beside you ("also")
@@ -3299,16 +3326,22 @@ func seat_near(at: Vector3, reach: float) -> Dictionary:
 	return best
 
 
+var _def_by_state: Dictionary = {}   # structure state -> its structures.json row, built once (the craft list asks for every world row, per recipe)
+
+
 func _structure_by_state(state: int) -> Dictionary:
 	if _structures_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
 		_structures_cfg = parsed.get("structures", {}) if typeof(parsed) == TYPE_DICTIONARY else {"none": {}}
 
-	for kind in _structures_cfg:
-		if int(_structures_cfg[kind].get("state", -1)) == state:
-			return _structures_cfg[kind]
+	if _def_by_state.is_empty():
+		for kind in _structures_cfg:
+			var at: int = int(_structures_cfg[kind].get("state", -1))
 
-	return {}
+			if not _def_by_state.has(at):   # the first kind with a state wins, as the old loop did
+				_def_by_state[at] = _structures_cfg[kind]
+
+	return _def_by_state.get(state, {})
 
 
 func _make_chest() -> Node3D:
@@ -4700,6 +4733,7 @@ func _refresh() -> void:
 
 	_note_acquired()
 	_plan_cache.clear()
+	_forget_near()
 
 	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
 	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
