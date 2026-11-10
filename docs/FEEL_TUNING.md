@@ -4,7 +4,7 @@ One place to find every number that shapes how movement, tools and hits feel. Ch
 
 | Feel | File | Constant or function | Now |
 |---|---|---|---|
-| Walk bob (eye dip at each footfall) | `scenes/terrain_client/terrain_client.gd` | `BOB_M`, `SWAY_M`, `SWAY_DEG`, `STEP_M` (walk, jog, run) | 4 / 5.2 / 6.4 cm |
+| Walk bob (eye dip at each footfall) | `scenes/terrain_client/terrain_client.gd` | `BOB_M`, `SWAY_M`, `SWAY_DEG`, `STEP_M` (walk, run) | 5.2 / 6.4 cm |
 | Wider view at speed | same | `FOV_BASE`, `FOV_RUN_EXTRA` | 75, +5 degrees at a run |
 | Swimming head bob | same, `_update_bob` | inline: 1.8 to 3 cm rise and fall, 0.5 to 1 degree roll | |
 | Landing dip | `src/client/feel_kicks.gd` | `LAND_MIN_SPEED`, `LAND_DIP_M`, `LAND_MAX_M` | below 3 m/s none; up to 16 cm |

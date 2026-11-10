@@ -1844,7 +1844,7 @@ func move_cap() -> float:
 	return 0.0
 
 
-# On or within range_m (3 m) of a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
+# On or within range_m (3 m) of a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk" or "run") at a ground position, from data/path_speed.json; 1.0 off a path.
 func path_pace_factor(pos: Vector3, gait: String) -> float:
 	if _path_cells.is_empty():
 		return 1.0

@@ -10,7 +10,7 @@ Lines marked **[BLOCKED]** are places where this guide has to assume something t
 
 | Key | What it does |
 |---|---|
-| W A S D, mouse | Walk, look. Double-tap W jogs, Shift+W runs. C crouch, X sit, Z lie down |
+| W A S D, mouse | Walk, look. Shift+W runs. C crouch, X sit, Z lie down |
 | **E** | Gather. Tap = the nearest loose item in view (3 m) or the nearest pickable plant (2.5 m). **Hold E** = keeps taking one thing at a time, about 5 a second, from everything within 2 m |
 | I | Crafting and inventory screen: recipes left, pack right. Click a recipe, press Craft |
 | 1 to 9, 0 | Hotbar: hold what is in pack slot 1 to 10. **Tools must be on the hotbar to work** |
