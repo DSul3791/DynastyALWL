@@ -12,6 +12,10 @@ Morgan, 10 Nov 2026. Plan only, no code. Inputs: Jamie's hammer audit (`buildabl
 6. Water: the graph model is approved; river intake is accounting only; no change to the live water sim. Sonny confirms the details.
 7. Jamie commits this document as a docs-only PR.
 
+## Numbering (Jamie, 10 Nov)
+
+Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; recipes 346, 347), B1a (above), **B2 fences and gates** blueprints 64 to 77, items 580 to 607 (kit then piece), states 92 to 112 (each gate has an open twin state right after it), **B1c pillars and roof corners** blueprints 78 to 87, items 608 to 627, states 113 to 122. Ids follow Kathleen's look names (`wood_fence`, `wood_gate`, `wooden_pillar`, `wooden_roof_corner`). **Next free: item 628, recipe 348, blueprint 88, state 123.** B1b (stairs, railings, double/iron/steel doorways) takes numbers from there once Steve rules on railings. **Where a later batch table below shows other numbers, the batch is renumbered from this list when it is scheduled.**
+
 ## 1. Rulings this plan follows
 
 | Ruling | How it is applied |
@@ -69,9 +73,11 @@ Component and carried items (an item row and a recipe row each, no blueprint or 
 
 | Item | Recipe | Notes | Item / recipe |
 |---|---|---|---|
-| Bronze - Hammer | 1 bronze ingot, 1 stick, 1 twine | crafted at the forge (ruling 1) | 560 / 346 |
-| Iron - Hammer | 1 iron ingot, 1 stick, 1 twine | same | 561 / 347 |
-| Steel - Hammer | 1 steel ingot, 1 stick, 1 twine | same | 562 / 348 |
+| Bronze - Hammer | 1 bronze ingot, 1 stick, 1 twine | **already exists** as bronze_hammer, future; becomes playable | 460 / 292 (live) |
+| Iron - Hammer | 1 iron ingot, 1 stick, 1 twine | crafted at the forge, forge level 2 | 560 / 346 |
+| Steel - Hammer | 1 steel ingot, 1 stick, 1 twine | crafted at the forge, forge level 3 | 561 / 347 |
+
+All three are hammer tier 3 and future, like every iron and steel tool. Numbers confirmed by Jamie, 10 Nov.
 
 ### B1a. Foundations, doorways, windows, ceiling (finish the five live tiers)
 
@@ -79,17 +85,17 @@ Also removes the workbench-station requirement from existing hammer blueprints (
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Log - Foundation | 10 log, 6 stone, 2 twine | 4 x 4 x 0.3 | foundation anchors (8 wall, 4 ceiling, 5 roof); log sills on stone footings | 1 | 55 / 563 / 77 |
-| 2 | Brick - Foundation | 16 brick, 4 mortar, 4 stone | 4 x 4 x 0.3 | same anchors; brick plinth | 1 | 56 / 564 / 78 |
-| 3 | Log - Doorway | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; carries its plank-and-strap door | 1 | 57 / 565 / 79 |
-| 4 | Stone - Doorway | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber lintel and door | 1 | 58 / 566 / 80 |
-| 5 | Brick - Doorway | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber door | 1 | 59 / 567 / 81 |
-| 6 | Thatch - Window | 15 thatch, 8 stick, 3 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole (as Wooden - Window) | 1 | 60 / 568 / 82 |
-| 7 | Log - Window | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole | 1 | 61 / 569 / 83 |
-| 8 | Stone - Window | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, stone sill | 1 | 62 / 570 / 84 |
-| 9 | Brick - Window | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, brick arch | 1 | 63 / 571 / 85 |
+| 1 | Log - Foundation | 10 log, 6 stone, 2 twine | 4 x 4 x 0.3 | foundation anchors (8 wall, 4 ceiling, 5 roof); log sills on stone footings | 1 | 55 / 562/563 (kit / piece) / 79 |
+| 2 | Brick - Foundation | 16 brick, 4 mortar, 4 stone | 4 x 4 x 0.3 | same anchors; brick plinth | 1 | 56 / 564/565 (kit / piece) / 80 |
+| 3 | Log - Doorway | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; carries its plank-and-strap door | 1 | 57 / 566/567 (kit / piece) / 81 and 82 (open twin) |
+| 4 | Stone - Doorway | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber lintel and door | 1 | 58 / 568/569 (kit / piece) / 83 and 84 (open twin) |
+| 5 | Brick - Doorway | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber door | 1 | 59 / 570/571 (kit / piece) / 85 and 86 (open twin) |
+| 6 | Thatch - Window | 15 thatch, 8 stick, 3 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole (as Wooden - Window) | 1 | 60 / 572/573 (kit / piece) / 87 |
+| 7 | Log - Window | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole | 1 | 61 / 574/575 (kit / piece) / 88 |
+| 8 | Stone - Window | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, stone sill | 1 | 62 / 576/577 (kit / piece) / 89 |
+| 9 | Brick - Window | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, brick arch | 1 | 63 / 578/579 (kit / piece) / 90 |
 
-Reserves blueprints 55-63, items 563-571, states 77-85.
+**Numbers confirmed by Jamie, 10 Nov.** Blueprints 55 to 63, items 562 to 579 (each piece has a retired kit item, which the server keys placement on, then the piece item), states 79 to 90. Also state 91 is `thatch_doorway_open`, the fix for thatch doors turning wooden. `wood_foundation` moved to state 78, because 76 and 77 are the fire's coals and ash.
 
 ### B1b. Stairs, railings, extra doors
 
@@ -225,9 +231,9 @@ Nothing on the hammer touches water today except the held bucket. This batch is 
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Stone - Well | 30 cobblestone, 8 mortar, 4 lumber, 1 rope, 1 bucket | 1.6 x 1.6 x 1.1 | place where the water table is within 12 m; windlass and bucket: E draws 10 L; shared footprint with a pump on its cap | 1 | 129 / 641 / 151 |
-| 2 | Wooden - Hand pump | 6 lumber, 20 nails, 2 twine, 1 hide | 0.5 x 0.5 x 1.1 | old style lever pump on a bored shaft; place where the water table is within 7 m (suction limit); hold E: 2 L/s into a held container or the connected chain | 1 | 130 / 642 / 152 |
-| 3 | Iron - Hand pump | 6 iron ingot, 1 hide, 1 hinges | 0.5 x 0.5 x 1.1 | cast-iron pitcher pump: handle, spout, plinth; same rule, 3 L/s; hammer 3 | 3 | 131 / 643 / 153 |
+| 1 | Stone - Well | 30 cobblestone, 8 mortar, 4 lumber, 1 rope, 1 bucket | 1.6 x 1.6 x 1.1 | place where the water table is within 25 m (interim rule, section 6); windlass and bucket: E draws 10 L; shared footprint with a pump on its cap | 1 | 129 / 641 / 151 |
+| 2 | Wooden - Hand pump | 6 lumber, 20 nails, 2 twine, 1 hide | 0.5 x 0.5 x 1.1 | old style lever pump on a bored shaft; place where the water table is within 7 m (suction limit); hold E: 0.8 L/s cap into a held container, trough or channel under the spout (lifts only) | 1 | 130 / 642 / 152 |
+| 3 | Iron - Hand pump | 6 iron ingot, 1 hide, 1 hinges | 0.5 x 0.5 x 1.1 | cast-iron pitcher pump: handle, spout, plinth; same rule, 1.2 L/s cap; hammer 3 | 3 | 131 / 643 / 153 |
 | 4 | Log - Trough | 2 log, 1 twine | 1.6 x 0.5 x 0.5 | hollow log; holds 60 L; animals drink here | 1 | 132 / 644 / 154 |
 | 5 | Wooden - Trough | 4 lumber, 1 twine | 2.0 x 0.6 x 0.5 | holds 100 L; animals drink here; can sit at a channel end | 1 | 133 / 645 / 155 |
 | 6 | Wooden - Rain barrel | 4 lumber, 2 twine, 8 nails | 0.7 x 0.7 x 0.9 | holds 100 L; collects 20 L per game hour of rain within a roof's reach; same 100 L as the storage Wooden - Barrel (B3), one piece type | 1 | 134 / 646 / 156 |
@@ -245,17 +251,18 @@ Later water tier. Closed pipes can run level with the ground and carry more wate
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
 | 1 | Stone - Trough | 12 cobblestone, 3 mortar | 2.0 x 0.7 x 0.6 | holds 200 L; carved, never freezes through | 1 | 139 / 651 / 161 |
-| 2 | Stone - Channel | 8 cobblestone, 2 mortar | 2.0 x 0.5 x 0.3 | straight; 60 L/min at 2 percent fall | 1 | 140 / 652 / 162 |
+| 2 | Stone - Channel | 8 cobblestone, 2 mortar | 2.0 x 0.5 x 0.3 | straight; 300 L/min cap at 0.5 percent fall | 1 | 140 / 652 / 162 |
 | 3 | Stone - Channel corner | 8 cobblestone, 2 mortar | 2.0 x 2.0 x 0.3 | 90 degree turn | 1 | 141 / 653 / 163 |
 | 4 | Stone - Channel tee | 10 cobblestone, 2 mortar | 2.0 x 2.0 x 0.3 | split | 1 | 142 / 654 / 164 |
-| 5 | Clay - Pipe | 2 clay pipe | 2.0 x 0.3 x 0.3 | closed straight; 40 L/min; cracks in hard frost unless drained | 1 | 143 / 655 / 165 |
+| 5 | Clay - Pipe | 2 clay pipe | 2.0 x 0.3 x 0.3 | closed straight; 120 L/min; cracks in hard frost unless drained | 1 | 143 / 655 / 165 |
 | 6 | Clay - Pipe elbow | 2 clay pipe | 2.0 x 2.0 x 0.3 | 90 degrees | 1 | 144 / 656 / 166 |
 | 7 | Clay - Pipe tee | 3 clay pipe | 2.0 x 2.0 x 0.3 | split | 1 | 145 / 657 / 167 |
-| 8 | Iron - Pipe | 2 iron ingot | 2.0 x 0.2 x 0.2 | closed straight; 80 L/min; carries water uphill when a pump pushes (head); hammer 3 | 3 | 146 / 658 / 168 |
+| 8 | Iron - Pipe | 2 iron ingot | 2.0 x 0.2 x 0.2 | closed straight; 240 L/min; carries water uphill only when the deep-well force pump pushes (head); hammer 3 | 3 | 146 / 658 / 168 |
 | 9 | Iron - Pipe elbow | 2 iron ingot | 2.0 x 2.0 x 0.2 | hammer 3 | 3 | 147 / 659 / 169 |
 | 10 | Iron - Tap | 1 iron ingot, 1 hinges | 0.3 x 0.3 x 0.4 | shut-off at a pipe end or over a trough; E opens/closes; hammer 3 | 3 | 148 / 660 / 170 |
-| 11 | Iron - Deep-well pump | 8 iron ingot, 2 hide, 2 hinges, 12 nails | 0.8 x 0.8 x 1.6 | on a Stone - Well; lifts from up to 25 m; 2 L/s; two players or an animal can work it; hammer 3 | 3 | 149 / 661 / 171 |
-| 12 | Stone - Cistern | 24 cobblestone, 6 mortar | 2.0 x 2.0 x 1.0 | holds 2,000 L; filled by a pipe or rain barrel overflow | 1 | 150 / 662 / 172 |
+| 11 | Iron - Deep-well pump | 8 iron ingot, 2 hide, 2 hinges, 12 nails | 0.8 x 0.8 x 1.6 | on a Stone - Well; force pump: lifts from up to 25 m and pushes up to 10 m above its spout into an iron pipe; 1.0 L/s cap; two players or an ox for full rate; hammer 3 | 3 | 149 / 661 / 171 |
+| 13 | Stone - Raised cistern | 28 cobblestone, 8 mortar, 6 lumber | 2.0 x 2.0 x 3.0 | cistern on a stone plinth up to 10 m above ground; filled by the deep-well force pump through an iron pipe; feeds a gravity main from its rim overflow port | 1 | (to number) |
+| 12 | Stone - Cistern | 24 cobblestone, 6 mortar | 2.0 x 2.0 x 1.0 | holds 2,000 L; filled by a pipe or rain barrel overflow; has a rim overflow port | 1 | 150 / 662 / 172 |
 
 Reserves blueprints 139-150, items 651-662, states 161-172.
 
@@ -265,29 +272,32 @@ Component and carried items (an item row and a recipe row each, no blueprint or 
 |---|---|---|---|
 | Clay pipe | 3 clay -> 2 clay pipe | fire in the kiln/clay hearth like bricks | 663 / 353 |
 
-## 6. Water flow rules (proposal for Sonny and Steve to confirm)
+## 6. Water flow rules (approved: Sonny, 10 Nov 2026)
 
-The aim is a small, cheap system that fits an old machine, reads the watershed rebuild's results, and stays out of the 2 m live water sim. It is a **graph**, like a power grid, not a fluid simulation.
+Source of the amendments: `buildables/water_flow_rules_sonny.md`. The graph model is approved (lazy solving, 1.5 ms budget), river intake is **accounting only**, and nothing here changes the live water sim. The aim is a small graph, like a power grid, not a fluid simulation.
 
-**Pieces.** Sources (well, hand pump, deep-well pump, rain barrel, a river intake), tanks (troughs, barrels, cistern), conduits (channels, pipes, taps, sluices) and consumers (garden plots, animals drinking, players filling containers).
+**Pieces.** Sources (well, hand pump, deep-well pump, rain barrel, river intake), tanks (troughs, barrels, cisterns), conduits (channels, pipes, taps, sluices) and consumers (garden plots, animals drinking, players filling containers).
 
 **Rules.**
-1. **Ports.** Every conduit and tank has an inlet and an outlet with a ground height. Pieces snap end to end on the 2 m grid, so ports meet by construction; a trestle or plinth holds the piece at its height.
-2. **Gravity.** Water moves from a higher outlet to a lower or equal inlet. A level run trickles at 5 L/min. A fall of 2 percent or more gives full rate: wooden channel 30 L/min, stone channel 60, clay pipe 40, iron pipe 80. Uphill needs a pump head (below).
-3. **Pumps.** A hand pump runs only while a player holds E: 2 L/s (wooden), 3 L/s (iron), 2 L/s deep-well. It also gives 1.5 m of head, so it can fill a trough or a pipe raised up to 1.5 m. Hand pumps sit where the water table is within 7 m (the real suction limit); deeper needs the deep-well pump (up to 25 m) on a Stone - Well; a Stone - Well alone draws by bucket from up to 12 m.
-4. **Splits and gates.** A tee splits flow equally between open branches. A sluice or tap shuts a branch. Closed branches get nothing and the rest take it.
-5. **Tanks.** Troughs and barrels hold litres (60, 100, 200, 2,000). Full tanks stop taking water and the chain backs up; nothing overflows onto the ground in the first version.
-6. **Consumers.** A garden plot beside a channel or pipe outlet draws what it needs: 1 L restores about 4 percent moisture to a 2 x 2 plot. Animals drink from a trough at their normal rate (hook for MikeW). A held container fills from a trough, well or pump as it does from water now (500 ml per press).
-7. **Solving.** Server side and lazy: a network is re-solved only when a source starts or stops, a gate changes or a piece is added or taken away, in one downhill pass from the sources, splitting as above. A network is at most 64 pieces, at most 4 networks per chunk, and the budget is 1.5 ms per solve. Idle networks cost nothing (the lazy-resolution principle in `DESIGN_IDEAS.md` 3).
-8. **Persistence.** Only the litres in each tank are saved, on its structure row. Pipes hold no water; the graph is rebuilt from positions on load.
-9. **Frost** (later): open channels and troughs ice over below 0 C and stop; clay pipe cracks if frozen full, unless drained at a tap.
+1. **Ports and direction.** Every conduit and tank has an inlet and an outlet with a ground height. Pieces snap end to end on the 2 m grid. **Flow direction is fixed when a piece is placed** (an arrow on the ghost, inlet to outlet). A piece that would close a loop joins nothing, so every network is acyclic and the solve is one pass.
+2. **Open channels need a fall the whole way.** Full rate from **0.5 percent** (1 cm per 2 m piece), half rate from 0.1 percent, a level run trickles at 5 L/min. A snapped piece takes its inlet from the last outlet and sets its own outlet 1 cm lower by default, so players never fiddle with falls. Trestles stretch to the ground.
+3. **Closed pipes need only head end to end.** Water flows when the outlet is lower than the source's water surface (a tank level or a force pump's push). The route may rise and fall in between as long as every point stays below that surface. No siphon over a point above the source (needs priming). Full rate from 1 m of head, in proportion under that.
+4. **Conduit caps (game caps):** wooden channel 120 L/min, stone channel 300, clay pipe 120, iron pipe 240.
+5. **Pump rates come from effort:** Q (L/s) = P (W) / (9.81 H (m)), P about 40 W for a simple piston pump with one player (50 W for the iron hand pump), H = depth to the table plus 1 m to the spout. Caps: **Wooden - Hand pump 0.8 L/s, Iron - Hand pump 1.2 L/s, Iron - Deep-well pump 1.0 L/s** (two players 80 W, an ox or horse 150 W). Pumping from deep is honest work, about as hard as sawing.
+6. **Hand pumps lift, they cannot push.** Water starts at spout height (about 1 m) and runs by gravity from there. It pours into a held container, a trough beside it, or a channel whose inlet sits under the spout. **No 1.5 m of head.** Suction limit 7 m, minus 1 m per 1,000 m of height.
+7. **The deep-well pump is the force pump.** It pushes water up to **10 m above its spout** into an iron pipe, filling a raised cistern that feeds a town by gravity (B6b). It needs two players or an ox for full rate.
+8. **Wells go to 25 m**, so the deep pump has a reason to exist. Bucket draw time is about 4 s plus 1.5 s per metre for 10 L (22 s at 12 m, 42 s at 25 m). No drawdown in the first version.
+9. **Where wells and pumps may go (interim):** depth to the table is the ground height minus the level of the nearest fresh water within 200 m (river, lake or spring pool from the 8 m levels, never the sea). Beyond 200 m of fresh water, no well or pump. When Sonny's `depth_to_table_m` layer (16 m, `groundwater.npz`) reaches the tiles, wells and pumps read it directly and this rule goes. It overstates depth under slopes, so any spot it allows truly has water.
+10. **River intakes (accounting only).** A channel or pipe inlet below the river surface where the 8 m levels show water. Until reach low-flow discharges are in the tiles, cap each intake at **60 L/min** and allow **one intake per 50 m** of river. The live sim never sees it.
+11. **Splits and tanks.** A tee splits equally between open branches; a full tank downstream counts as a closed branch. **Every tank has a rim overflow port**: a full tank passes its inflow through it when something is connected, otherwise the chain backs up. Nothing spills onto the ground.
+12. **Solving.** Server side and lazy. Litres in a tank are worked out lazily: litres at the last event plus net rate times time since, computed only when read or saved. Events: a source starts or stops, a gate changes, a piece is added or taken away, **a tank becomes full or empty, a plot reaches full moisture.** The last two are scheduled, their times being known from the net rate. **Networks hold up to 256 pieces**, at most 4 per chunk, 1.5 ms solve budget (an estimate; measure on David4 with Steve's module).
+13. **Persistence.** Only the litres in each tank are saved. Pipes hold no water; the graph rebuilds from positions on load.
+14. **Frost (later):** open channels and troughs ice over below 0 C; clay pipe cracks if frozen full unless drained at a tap.
+15. **Plots and quality (hooks for Steve).** 1 L on a 2 x 2 plot is 0.25 mm. Plot loss follows the weather's evaporation: 12 to 20 L a day per plot in summer, less in cool weather, none in rain. Water is tagged by source: well, pump and rain are clean; river intake is river water; water standing in a trough or cistern for more than a few game days is still water. The sickness table is Steve's (`docs/water/springs_and_drinking_water.md`).
 
-**Where it touches the rebuild, for Sonny to answer.**
-- **Placement of wells and pumps.** `DESIGN_IDEAS.md` 4.9a already proposes a runtime "well water" value (depth to the water table from moisture, height above the nearest water and soil). The watershed record gives depth to the water table (rebuild C3, step R4/R6). Interim rule so B6 can start: within 30 m of fresh water and no more than 5 m above it, from the current baked water.
-- **River intakes.** A Wooden - Channel touching a river could take water as accounting only (N L/min against the reach's recorded low-flow discharge, capped at 5 percent), with no change to the live surface. Recommended, because it ties diversion to the same discharge numbers that size the rivers. If Sonny prefers a real draw from the 2 m sim, B6 would need his API first.
-- **Does anything here change the live sim?** Recommended: no.
+**Sonny still owes:** the `depth_to_table_m` layer and the reach low-flow discharge in the tiles, after the playtest.
 
-**For Steve.** A server `water_network` module (graph, solve, tank save); the plot-moisture hook on the tilled bed rows; the held-container fill from structures; the "hold E to pump" action and exertion cost (recommended: light, like chopping a few logs' worth of effort per minute). **For MikeW.** Animals drinking from troughs is the first livestock water use. **For Kathleen.** Her water look table (hollow-log trough, plank trough and flume on trestles, carved stone trough, cast-iron pitcher pump, iron pipe with elbows and tap) maps one to one onto B6a and B6b.
+**For Steve.** A server `water_network` module (graph, solve, tank save); the plot-moisture hook on the tilled bed rows; the held-container fill from structures; the "hold E to pump" action and its exertion cost.
 
 ## 7. Priority, PR order and owners
 
