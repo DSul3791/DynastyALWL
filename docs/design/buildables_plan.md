@@ -330,4 +330,14 @@ Per batch the work is the same: **Jamie** data rows and numbers; **Kathleen** lo
 
 Building pieces use the quality ladder **Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified** (rows above were renamed from Thatch, Log, Wooden, Stone, Brick on 10 Nov; ids unchanged). Furniture, stations and containers keep material words. Table of wall, ceiling and roof material per tier: wood_tier_note.md.
 
-**B7 (new, future numbering from Jamie):** roof coverings Bark shingle, Wooden shingle, Clay roof tile (Clay roof tile at the Kiln); re-point the roof blueprints to them (Rustic bark shingle, Refined wooden shakes, Sturdy Stone shingle, Superior and Engineered Clay roof tile). Concrete chain: Limestone, Lime powder, Concrete, Iron band, Mixer station. **Engineered rows:** Foundation, Wall, Doorway, Window, Pillar, Stairs, Ceiling (slab), Roof (clay tile on planks). **Fortified rows:** Foundation, Wall, Doorway, Gate, Pillar, Wall top. Placeholder blueprints and looks first; Kathleen makes real ones. Costs are first pass until Steve's hit-point rules.
+**B7 (on main from #966, #970 and #972):** roof coverings Bark shingle, Wooden shingle, Clay roof tile (Clay roof tile at the Kiln); re-point the roof blueprints to them (Rustic bark shingle, Refined wooden shakes, Sturdy Stone shingle, Superior and Engineered Clay roof tile). Concrete chain: Limestone, Lime powder, Concrete, Iron band, Mixer station. **Engineered rows:** Foundation, Wall, Doorway, Window, Pillar, Stairs, Ceiling (slab), Roof (clay tile on planks). **Fortified rows:** Foundation, Wall, Doorway, Gate, Pillar, Wall top. Placeholder blueprints and looks first; Kathleen makes real ones. Costs are first pass until Steve's hit-point rules.
+
+**B7 numbers (Jamie, 10 Nov; on main):**
+
+| Rows | Blueprints | Items (kit, piece) | States |
+|---|---|---|---|
+| Mixer (station "mixer", level 1) | 170 | 860-861 | 210 |
+| Engineered: Foundation, Wall, Doorway, Window, Pillar, Stairs, Ceiling, Roof, Roof corner | 171-179 | 862-879 | 211-220 (213 doorway, 214 its open twin) |
+| Fortified: Foundation, Wall, Doorway, Gate, Pillar, Wall top | 180-185 | 880-891 | 221-228 (223/224 doorway and open, 225/226 gate and open) |
+
+Materials: items 853 Bark shingle, 854 Wooden shingle, 855 Clay roof tile, 856 Limestone (broken from boulders on limestone, chalk or marble bedrock), 857 Lime powder, 858 Concrete, 859 Iron band; recipes 399-404 (Bark shingle, Wooden shingle, Clay roof tile, Lime powder, Concrete, Iron band). The Engineered roof is Clay roof tile on pinned plank rafters, no Concrete (#972). Retired: Log - Bench, Log - Table, Log - Trough, Log - Shelf. **Next free: item 892, recipe 405, blueprint 186, state 229. 180 live blueprints.**
