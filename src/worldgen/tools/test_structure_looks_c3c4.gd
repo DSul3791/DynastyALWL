@@ -8,6 +8,8 @@ extends SceneTree
 # is checked too, and is solid, and so are the Preserving jar and Root cellar (#955) and the B3b Log - Shelf, Iron - Chest and Wooden - Crate.
 # The seven-tier ladder's free-standing concrete pieces (10 Nov 2026) are checked too: the Engineered and Fortified pillars, the Fortified gate and wall
 # top, and the Mixer.
+# The C7 future placeholders (chicken coop, fodder trough, tub, sap tap, cheese press, spinning wheel, loom) have looks before their rows; their
+# sizes here are first guesses. The Carpenter's bench (the level-2 workbench rename) is 2.0 x 1.0 like the bench it replaces. The sap tap hangs on a tree (its back at Z = 0, given 0.3 m out from the bark) and is not solid.
 #   godot --headless --path . --script res://src/worldgen/tools/test_structure_looks_c3c4.gd
 
 const LookTable := preload("res://src/client/look_table.gd")
@@ -22,8 +24,11 @@ const SIZES := {
 	"log_shelf": Vector3(1.2, 1.25, 0.3), "iron_chest": Vector3(1.0, 0.65, 0.6), "wooden_crate": Vector3(0.8, 0.85, 0.8),
 	"engineered_pillar": Vector3(0.5, 2.6, 0.5), "fortified_pillar": Vector3(0.6, 2.6, 0.6), "fortified_gate": Vector3(2.0, 2.5, 0.3),
 	"fortified_wall_top": Vector3(2.0, 0.85, 0.4), "mixer": Vector3(1.2, 1.1, 0.8),
+	"chicken_coop": Vector3(1.6, 1.5, 1.2), "fodder_trough": Vector3(1.6, 0.6, 0.5), "tub": Vector3(1.4, 0.6, 0.8), "sap_tap": Vector3(0.3, 1.2, 0.6),
+	"cheese_press": Vector3(0.8, 1.4, 0.6), "spinning_wheel": Vector3(1.0, 1.1, 0.5), "loom": Vector3(1.6, 1.85, 0.8),
+	"carpenters_bench": Vector3(2.0, 1.1, 1.0),
 }
-const NOT_SOLID := ["tusk_mount", "fish_trap_set", "bird_trap_set"]   # hung on a wall, or a trap you can walk over (no blocks_walk)
+const NOT_SOLID := ["tusk_mount", "fish_trap_set", "bird_trap_set", "sap_tap"]   # hung on a wall, or a trap you can walk over (no blocks_walk)
 const LOW := {"fish_trap_set": 0.3, "bird_trap_set": 0.3}   # pieces lower than the usual 0.4 m: the traps lie on the ground
 
 var failures: int = 0
