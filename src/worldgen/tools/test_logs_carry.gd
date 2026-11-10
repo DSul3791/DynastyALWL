@@ -117,12 +117,18 @@ func _init() -> void:
 	craft("two_logs_test", 1)
 	check(count("chopping_block") == 0 and items.shoulder_of(1) == "log_oak" and count("log_oak") == 1, "one log is not enough for a two-log craft: the carried log stays")
 
-	# 3. A log 6 m away is not used.
+	# 3. Loose stock counts within CraftStock.LOOSE_STOCK_M, 12 m (Dave 10 Nov 2026: "or they are within 12m of you"): a log 6 m away is used where
+	# it lies (nobody carries it), one 14 m away is out of reach and stays.
 	reset()
 	items.give(1, oak, 1)
 	items.drop_in_world(birch, 1, Vector3(6.0, 10.0, 0.0))
 	craft("two_logs_test", 1)
-	check(count("chopping_block") == 0 and ground_logs() == 1, "a log lying 6 m away is out of reach and stays")
+	check(count("chopping_block") == 1 and ground_logs() == 0 and items.shoulder_of(1) == "", "a log lying 6 m away is used for the craft (block %d, %d on the ground)" % [count("chopping_block"), ground_logs()])
+	reset()
+	items.give(1, oak, 1)
+	items.drop_in_world(birch, 1, Vector3(14.0, 10.0, 0.0))
+	craft("two_logs_test", 1)
+	check(count("chopping_block") == 0 and ground_logs() == 1 and items.shoulder_of(1) == "log_oak", "a log lying 14 m away is out of reach and stays")
 
 	# 4. Ground logs only, a stack of 2 on the ground.
 	reset()
