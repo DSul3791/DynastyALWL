@@ -50,7 +50,7 @@ Dave: "I just stood right infront of a tree and shot an arrow and it did not hit
 
 Before this change the server's arrow stopped only at an animal, the ground or its range, so it flew through trunks.
 
-- **Server.** Each flight step asks `trunks_near` (terrain_server `_trunks_near`) for the standing trunks near the step. These come from the cached tree cells the hints use, and each trunk's radius is its collider's: the species trunk scaled by the tree's height. `BowAim.segment_trunk` finds where the step first meets a trunk's cylinder.
+- **Server.** Each flight step asks `trunks_near` (terrain_server `_arrow_trunks`) for the standing trunks near the step. These come from the cached tree cells the hints use, and each trunk's radius is its collider's: the species trunk scaled by the tree's height. `BowAim.segment_trunk` finds where the step first meets a trunk's cylinder.
 - **Breaking.** An arrow that hits a trunk breaks at its tip's `break_chance`, as on the ground.
 - **The stuck arrow.** Otherwise it becomes a loose arrow at the hit point. It is not let down to the ground. It points along its flight (`rot_y` and `tilt`), lasts `stuck_s` 300 s and never joins another arrow's pile.
 - **Saving.** A save writes it at the foot of the tree, lying.
