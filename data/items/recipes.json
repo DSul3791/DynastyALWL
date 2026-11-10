@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 363,
+	"next_number": 381,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -184,6 +184,12 @@
 			"known": true,
 			"identify": [
 				"plantain_leaves"
+			],
+			"keeps": [
+				[
+					"mortar_pestle",
+					1
+				]
 			]
 		},
 		"poultice_comfrey": {
@@ -204,6 +210,12 @@
 			"known": true,
 			"identify": [
 				"comfrey_leaves"
+			],
+			"keeps": [
+				[
+					"mortar_pestle",
+					1
+				]
 			]
 		},
 		"bandage_plantain": {
@@ -228,6 +240,12 @@
 			"known": true,
 			"identify": [
 				"plantain_leaves"
+			],
+			"keeps": [
+				[
+					"mortar_pestle",
+					1
+				]
 			]
 		},
 		"bandage_staunchmoss": {
@@ -2617,7 +2635,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "smoker",
 			"known": true
 		},
 		"cook_hunters_stew": {
@@ -5041,7 +5059,7 @@
 			],
 			"craft_s": 30.0,
 			"known": true,
-			"station": "campfire_pot"
+			"station": "tanning_rack"
 		},
 		"heavy_leather": {
 			"number": 235,
@@ -5063,7 +5081,7 @@
 			],
 			"craft_s": 40.0,
 			"known": true,
-			"station": "campfire_pot"
+			"station": "tanning_rack"
 		},
 		"fine_leather": {
 			"number": 236,
@@ -5894,7 +5912,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "drying_rack",
 			"known": true
 		},
 		"sea_salt": {
@@ -5952,7 +5970,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"station": "clay_hearth",
+			"station": "drying_rack",
 			"known": true
 		},
 		"cook_sauerkraut": {
@@ -6178,7 +6196,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "clay_hearth",
+			"station": "drying_rack",
 			"known": true
 		},
 		"cook_apple_sauce": {
@@ -6310,7 +6328,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "clay_hearth",
+			"station": "drying_rack",
 			"known": true
 		},
 		"cook_quince_paste": {
@@ -7877,6 +7895,410 @@
 			],
 			"craft_s": 10.0,
 			"known": true
+		},
+		"kiln_brick": {
+			"number": 363,
+			"name": "Brick",
+			"category": "Materials",
+			"needs": [
+				[
+					"clay",
+					2
+				]
+			],
+			"gives": [
+				"brick",
+				6
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "kiln"
+		},
+		"kiln_charcoal": {
+			"number": 364,
+			"name": "Charcoal",
+			"category": "Materials",
+			"needs": [
+				[
+					"firewood",
+					2
+				]
+			],
+			"gives": [
+				"charcoal",
+				2
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "kiln"
+		},
+		"press_lamp_oil_linseed": {
+			"number": 365,
+			"name": "Lamp oil (linseed)",
+			"category": "Materials",
+			"needs": [
+				[
+					"linseed",
+					4
+				]
+			],
+			"gives": [
+				"lamp_oil",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "oil_press"
+		},
+		"press_lamp_oil_walnuts": {
+			"number": 366,
+			"name": "Lamp oil (walnuts)",
+			"category": "Materials",
+			"needs": [
+				[
+					"walnuts",
+					4
+				]
+			],
+			"gives": [
+				"lamp_oil",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "oil_press"
+		},
+		"bloomery_iron": {
+			"number": 367,
+			"name": "Iron ingot (bloomery)",
+			"category": "Materials",
+			"needs": [
+				[
+					"iron_ore",
+					5
+				],
+				[
+					"fuel",
+					3
+				]
+			],
+			"gives": [
+				"iron_ingot",
+				1
+			],
+			"craft_s": 135.0,
+			"known": true,
+			"station": "clay_bloomery"
+		},
+		"bench_stone_block": {
+			"number": 368,
+			"name": "Stone block (bench)",
+			"category": "Materials",
+			"needs": [
+				[
+					"stone",
+					6
+				]
+			],
+			"gives": [
+				"cut_stone_block",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "stonecutters_bench",
+			"keeps": [
+				[
+					"bronze_chisel",
+					1
+				]
+			]
+		},
+		"carved_stone_block": {
+			"number": 369,
+			"name": "Carved stone block",
+			"category": "Materials",
+			"needs": [
+				[
+					"cut_stone_block",
+					1
+				]
+			],
+			"gives": [
+				"carved_stone_block",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "stonecutters_bench",
+			"keeps": [
+				[
+					"bronze_chisel",
+					1
+				]
+			]
+		},
+		"carved_stone_shingle": {
+			"number": 370,
+			"name": "Carved stone shingle",
+			"category": "Materials",
+			"needs": [
+				[
+					"stone_shingle",
+					1
+				]
+			],
+			"gives": [
+				"carved_stone_shingle",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "stonecutters_bench",
+			"keeps": [
+				[
+					"bronze_chisel",
+					1
+				]
+			]
+		},
+		"bronze_chisel": {
+			"number": 371,
+			"name": "Bronze - Chisel",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_chisel",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"station": "forge",
+			"locked": true
+		},
+		"iron_chisel": {
+			"number": 372,
+			"name": "Iron - Chisel",
+			"category": "Tools",
+			"needs": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"iron_chisel",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"station": "forge",
+			"station_level": 2,
+			"locked": true
+		},
+		"steel_chisel": {
+			"number": 373,
+			"name": "Steel - Chisel",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"steel_chisel",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"station": "forge",
+			"station_level": 3,
+			"locked": true
+		},
+		"cook_meat_skewer": {
+			"number": 374,
+			"name": "Meat skewer",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"raw_meat",
+					2
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"wild_garlic_leaves",
+					1
+				]
+			],
+			"gives": [
+				"meat_skewer",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_sausage": {
+			"number": 375,
+			"name": "Sausage",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"raw_meat",
+					2
+				],
+				[
+					"gut",
+					1
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"sausage",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"fruit_juice": {
+			"number": 376,
+			"name": "Fruit juice",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"fruit",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"fruit_juice",
+				1
+			],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"mortar_pestle": {
+			"number": 377,
+			"name": "Mortar and pestle",
+			"category": "Tools",
+			"needs": [
+				[
+					"stone",
+					2
+				]
+			],
+			"gives": [
+				"mortar_pestle",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"herb_antidote": {
+			"number": 378,
+			"name": "Herb antidote",
+			"category": "Medicine",
+			"needs": [
+				[
+					"plantain_leaves",
+					2
+				],
+				[
+					"comfrey_leaves",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"mortar_pestle",
+					1
+				]
+			],
+			"gives": [
+				"herb_antidote",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true,
+			"identify": [
+				"plantain_leaves",
+				"comfrey_leaves"
+			]
+		},
+		"bonemeal": {
+			"number": 379,
+			"name": "Bonemeal",
+			"category": "Materials",
+			"needs": [
+				[
+					"bone",
+					2
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"bonemeal",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"locked": true
+		},
+		"mug": {
+			"number": 380,
+			"name": "Mug",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"clay",
+					2
+				]
+			],
+			"gives": [
+				"mug",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire"
 		}
 	}
 }

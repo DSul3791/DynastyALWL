@@ -2145,6 +2145,19 @@
 			],
 			"grow_hours": 5,
 			"note": "ripe about 5 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"parsnip": {
+			"name": "Parsnip",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 10,
+			"note": "ripe about 10 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
 		}
 	},
 	"fish": {

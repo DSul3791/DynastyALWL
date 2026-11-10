@@ -500,6 +500,9 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 static func over_water(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, depth: Callable) -> bool:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var offsets: Array = [Vector2.ZERO]
+
+	if def.has("min_water_m"):
+		return false   # it is set down in the water on purpose (a fish trap): water_short says when there is too little
 	var block_m: float = FIRE_WATER_BLOCK_M if kit_id == "campfire_kit" else WATER_BLOCK_M
 
 	if def.is_empty():
@@ -521,6 +524,18 @@ static func over_water(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: floa
 	return false
 
 
+# True when a piece that stands in water (structures.json "min_water_m", the fish trap: item_system "only in water at least 0.3 m deep")
+# has less than that under its middle. `depth` is Callable(x, z) -> metres (NAN where unknown, which counts as dry).
+static func water_short(cfg: Dictionary, kit_id: String, spot: Vector3, depth: Callable) -> bool:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if not def.has("min_water_m"):
+		return false
+
+	var wet: float = float(depth.call(spot.x, spot.z))
+	return is_nan(wet) or wet < float(def["min_water_m"])
+
+
 # Why a spot is red in words (the ghost's caption; the server says it too when it refuses).
 static func reason_text(state: String) -> String:
 	match state:
@@ -532,6 +547,8 @@ static func reason_text(state: String) -> String:
 			return "the ground is too steep here"
 		"water":
 			return "you cannot build in water"
+		"shallow":
+			return "it needs deeper water"
 		"nofire":
 			return "the pot goes on a small fire: lay one first"
 		"taken":

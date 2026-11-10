@@ -62,7 +62,7 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
 const HELD_SPEAR_SCALE := 1.0
-const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
+const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const BowReticle := preload("res://src/client/bow_reticle.gd")
 const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
@@ -737,7 +737,12 @@ func _update_bow(delta: float) -> void:
 
 
 func _is_spear() -> bool:
-	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
+	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
+
+
+# The Fishing spear (Part C): held and jabbed like a spear, only at water, and never thrown.
+func _is_fish_spear() -> bool:
+	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "fish_spear"
 
 
 # Whether the pack holds an arrow the bow can shoot (the server's ammo list, data/items/bow.json), so a draw with
@@ -1180,7 +1185,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return false
 
 	if button == MOUSE_BUTTON_RIGHT:
-		aiming = pressed
+		aiming = pressed and not _is_fish_spear()
 		return true
 
 	if button == MOUSE_BUTTON_LEFT and pressed:
@@ -1190,7 +1195,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_jab_t = 0.0
 			_arm_play("jab", JAB_S)
 			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
-			_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+			if not _is_fish_spear():
+				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
@@ -1239,6 +1245,14 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_root.add_child(node)
 	node.global_position = _camera.global_position + direction * 0.8
 	_flights.append({"node": node, "vel": v, "age": 0.0, "arrow": true})
+
+	if bool(_inv.table.entry(_inv.table.id_of(arrow)).get("fire", false)) and _inv._lit_fire_near(_camera.global_position, float(_bow_cfg.get("fire_arrow", {}).get("light_m", 3.0))):
+		var glow: OmniLight3D = OmniLight3D.new()   # a burning fire arrow (Part C plan 6): a stand-in orange glow until Kathleen's flame look
+		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_energy = 1.6
+		glow.omni_range = 2.0
+		glow.shadow_enabled = false
+		node.add_child(glow)
 
 	if _sound == null:
 		return
@@ -1725,6 +1739,9 @@ func _update_blueprint() -> void:
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
+	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.water_short(_placement, kit, _blueprint_at, water_depth_at):
+		blueprint_state = "shallow"   # a fish trap off the water or in too little of it, as the server refuses
+
 	if blueprint_state == "":
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
@@ -1734,7 +1751,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 

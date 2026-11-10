@@ -146,7 +146,8 @@
 			],
 			"used_for": [
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -159,7 +160,8 @@
 			],
 			"used_for": [
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -247,7 +249,9 @@
 				"From a felled wild cherry",
 				"Harvested from wild cherry"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"cherry_wood": {
@@ -292,7 +296,8 @@
 			],
 			"used_for": [
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -317,7 +322,8 @@
 			],
 			"used_for": [
 				"Used in Comfrey poultice",
-				"Used in Herb salve"
+				"Used in Herb salve",
+				"Used in Herb antidote"
 			],
 			"obtainable_now": true
 		},
@@ -340,7 +346,8 @@
 			],
 			"used_for": [
 				"Used in Baked apples",
-				"Used in Fruit leather"
+				"Used in Fruit leather",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -354,7 +361,8 @@
 			"used_for": [
 				"Used in Fruit leather",
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -367,7 +375,8 @@
 			],
 			"used_for": [
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -888,7 +897,8 @@
 			],
 			"used_for": [
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -901,7 +911,8 @@
 			],
 			"used_for": [
 				"Used in Chestnut cakes",
-				"Used in Trail bread"
+				"Used in Trail bread",
+				"Used in Lamp oil (linseed)"
 			],
 			"obtainable_now": true
 		},
@@ -1115,7 +1126,8 @@
 			],
 			"used_for": [
 				"Used in Leaf bandage",
-				"Used in Plantain poultice"
+				"Used in Plantain poultice",
+				"Used in Herb antidote"
 			],
 			"obtainable_now": true
 		},
@@ -1160,7 +1172,8 @@
 				"Harvested from prickly pear"
 			],
 			"used_for": [
-				"Used in Cactus fry"
+				"Used in Cactus fry",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -1195,7 +1208,8 @@
 			],
 			"used_for": [
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -1388,7 +1402,9 @@
 			"how_to_get": [
 				"Picked from blackthorn in season"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"softwood": {
@@ -1496,7 +1512,8 @@
 			],
 			"used_for": [
 				"Used in Berry compote",
-				"Used in Dried berries"
+				"Used in Dried berries",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -1702,7 +1719,8 @@
 				"Harvested from walnut"
 			],
 			"used_for": [
-				"Used in Nut cake"
+				"Used in Nut cake",
+				"Used in Lamp oil (walnuts)"
 			],
 			"obtainable_now": true
 		},
@@ -1743,7 +1761,9 @@
 				"Used in Chamomile tea",
 				"Used in Herbal tea",
 				"Used in Stomach tea",
-				"Used in Willow bark tea"
+				"Used in Willow bark tea",
+				"Used in Fruit juice",
+				"Used in Herb antidote"
 			],
 			"obtainable_now": true
 		},
@@ -1808,7 +1828,8 @@
 				"Used in Hunter's stew",
 				"Used in Mushroom skewer",
 				"Used in Mussel stew",
-				"Used in Rosemary joint"
+				"Used in Rosemary joint",
+				"Used in Meat skewer"
 			],
 			"obtainable_now": true
 		},
@@ -1820,7 +1841,9 @@
 				"From a felled wild pear",
 				"Harvested from wild pear"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"willow_bark": {
@@ -1920,7 +1943,12 @@
 				"Used in Stone - Arrow",
 				"Used in Stone - Axe",
 				"Used in Brick - Foundation",
-				"Used in Log - Foundation"
+				"Used in Log - Foundation",
+				"Used in Oil press",
+				"Used in Smoker",
+				"Used in Clay bloomery",
+				"Used in Stone block (bench)",
+				"Used in Mortar and pestle"
 			],
 			"obtainable_now": true
 		},
@@ -1955,7 +1983,14 @@
 				"Used in Thatch - Garden plot",
 				"Used in Thatch - Scarecrow",
 				"Used in Wooden - Trellis",
-				"Used in Wooden - Arrow (fibre)"
+				"Used in Wooden - Arrow (fibre)",
+				"Used in Drying rack",
+				"Used in Sign",
+				"Used in Wicker - Basket",
+				"Used in Bronze - Chisel",
+				"Used in Iron - Chisel",
+				"Used in Steel - Chisel",
+				"Used in Meat skewer"
 			],
 			"obtainable_now": true
 		},
@@ -2011,7 +2046,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": true
 		},
@@ -2079,7 +2117,14 @@
 				"Used in Wooden - Trough",
 				"Used in Bone - Club",
 				"Used in Straw - Hat",
-				"Used in Wooden - Longbow"
+				"Used in Wooden - Longbow",
+				"Used in Drying rack",
+				"Used in Tanning rack",
+				"Used in Armour stand",
+				"Used in Hide - Sack",
+				"Used in Tusk - Mount",
+				"Used in Weapon rack",
+				"Used in Wicker - Basket"
 			],
 			"obtainable_now": true
 		},
@@ -2212,8 +2257,8 @@
 			"kind": "medicine",
 			"description": "Crushed herb leaves bound on a wound.",
 			"how_to_get": [
-				"Craft: 2 Comfrey leaves",
-				"Craft: 3 Plantain leaves"
+				"Craft: 3 Plantain leaves (keep Mortar and pestle)",
+				"Craft: 2 Comfrey leaves (keep Mortar and pestle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2223,7 +2268,7 @@
 			"kind": "medicine",
 			"description": "Leaves and fibre bound round a wound.",
 			"how_to_get": [
-				"Craft: 1 Plantain leaves, 2 Plant fibre",
+				"Craft: 1 Plantain leaves, 2 Plant fibre (keep Mortar and pestle)",
 				"Craft: 1 Staunchmoss, 2 Plant fibre"
 			],
 			"used_for": [],
@@ -2377,7 +2422,11 @@
 				"Used in Wooden - Hand pump",
 				"Used in Wooden - Sluice",
 				"Used in Wooden - Trough",
-				"Used in Stone - Raised cistern"
+				"Used in Stone - Raised cistern",
+				"Used in Armour stand",
+				"Used in Sign",
+				"Used in Tusk - Mount",
+				"Used in Weapon rack"
 			],
 			"obtainable_now": true
 		},
@@ -2405,7 +2454,8 @@
 			"kind": "material",
 			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
-				"Craft at a forge: 4 Iron ore, 1 Fuel"
+				"Craft at a forge: 4 Iron ore, 1 Fuel",
+				"Craft at a clay bloomery: 5 Iron ore, 3 Fuel"
 			],
 			"used_for": [
 				"Used in Hinges",
@@ -2435,7 +2485,8 @@
 				"Used in Iron - Deep-well pump",
 				"Used in Iron - Pipe",
 				"Used in Iron - Pipe elbow",
-				"Used in Iron - Tap"
+				"Used in Iron - Tap",
+				"Used in Iron - Chisel"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2457,7 +2508,8 @@
 				"Used in Steel - Spade",
 				"Used in Steel - Striker",
 				"Used in Steel - Hammer",
-				"Used in Steel - Doorway"
+				"Used in Steel - Doorway",
+				"Used in Steel - Chisel"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2516,7 +2568,12 @@
 				"Used to build Stone forge",
 				"Used to build Brick oven",
 				"Used to build Clay hearth",
-				"Used in Clay pipe"
+				"Used in Clay pipe",
+				"Used in Kiln",
+				"Used in Smoker",
+				"Used in Storage jar",
+				"Used in Clay bloomery",
+				"Used in Mug"
 			],
 			"obtainable_now": true
 		},
@@ -2610,7 +2667,8 @@
 				"Used in Iron - Chair",
 				"Used in Iron - Hand pump",
 				"Used in Wooden - Hand pump",
-				"Used in Iron - Deep-well pump"
+				"Used in Iron - Deep-well pump",
+				"Used in Hide - Sack"
 			],
 			"obtainable_now": true
 		},
@@ -2676,7 +2734,8 @@
 				"Used in Bone - Needle",
 				"Used in Bone - Club",
 				"Used in Hook",
-				"Used in Toggle"
+				"Used in Toggle",
+				"Used in Bonemeal"
 			],
 			"obtainable_now": true
 		},
@@ -2876,7 +2935,9 @@
 				"Used in Jerky",
 				"Used in Roast beast",
 				"Used in Rosemary joint",
-				"Used in Venison pie"
+				"Used in Venison pie",
+				"Used in Meat skewer",
+				"Used in Sausage"
 			],
 			"obtainable_now": true
 		},
@@ -3238,7 +3299,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3288,7 +3352,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3338,7 +3405,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3388,7 +3458,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3438,7 +3511,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3488,7 +3564,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3538,7 +3617,10 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3671,7 +3753,7 @@
 			"kind": "food",
 			"description": "Salted fish smoked over the fire. Lasts for weeks.",
 			"how_to_get": [
-				"Craft at a campfire: 1 Fish, 1 Salt"
+				"Craft at a smoker: 1 Fish, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3885,12 +3967,14 @@
 			"kind": "material",
 			"description": "A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar.",
 			"how_to_get": [
-				"Craft at a workbench: 8 Stone"
+				"Craft at a workbench: 8 Stone",
+				"Craft at a stonecutters bench: 6 Stone (keep Bronze - Chisel)"
 			],
 			"used_for": [
 				"Planned masonry: stone walls and floors with mortar (no blueprint uses it yet).",
 				"Used in Stone - Doorway",
-				"Used in Stone - Window"
+				"Used in Stone - Window",
+				"Used in Carved stone block"
 			],
 			"obtainable_now": true
 		},
@@ -3899,7 +3983,8 @@
 			"kind": "material",
 			"description": "A fired clay brick. Builds the clay hearth and the oven.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Clay"
+				"Craft at a campfire: 2 Clay",
+				"Craft at a kiln: 2 Clay"
 			],
 			"used_for": [
 				"Used to build Brick oven",
@@ -3913,7 +3998,8 @@
 				"Used in Brick - Pillar",
 				"Used in Brick - Roof corner",
 				"Used in Brick - Stairs",
-				"Used in Brick - Garden plot"
+				"Used in Brick - Garden plot",
+				"Used in Kiln"
 			],
 			"obtainable_now": true
 		},
@@ -3954,7 +4040,9 @@
 				"Used in Stone - Channel tee",
 				"Used in Stone - Cistern",
 				"Used in Stone - Raised cistern",
-				"Used in Stone - Trough"
+				"Used in Stone - Trough",
+				"Used in Kiln",
+				"Used in Clay bloomery"
 			],
 			"obtainable_now": true
 		},
@@ -4101,7 +4189,8 @@
 				"Used in Stone - Channel tee",
 				"Used in Stone - Cistern",
 				"Used in Stone - Raised cistern",
-				"Used in Stone - Trough"
+				"Used in Stone - Trough",
+				"Used in Stonecutter's bench"
 			],
 			"obtainable_now": true
 		},
@@ -4114,7 +4203,8 @@
 			],
 			"used_for": [
 				"Planned: a stone roof.",
-				"Used in Stone - Roof corner"
+				"Used in Stone - Roof corner",
+				"Used in Carved stone shingle"
 			],
 			"obtainable_now": true
 		},
@@ -4609,7 +4699,7 @@
 			"kind": "material",
 			"description": "Tanned hide: tough and supple.",
 			"how_to_get": [
-				"Craft at a campfire pot: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
+				"Craft at a tanning rack: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
 			],
 			"used_for": [
 				"Used in Fine leather",
@@ -4648,7 +4738,7 @@
 			"kind": "material",
 			"description": "Thick, stiff leather for armour and harness.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Leather, 2 Tannin-rich bark"
+				"Craft at a tanning rack: 2 Leather, 2 Tannin-rich bark"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -4709,7 +4799,8 @@
 				"Used in Bronze - Helm",
 				"Used in Bronze - Mace",
 				"Used in Bronze - Sword",
-				"Used in Bronze - Shield"
+				"Used in Bronze - Shield",
+				"Used in Bronze - Chisel"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4873,7 +4964,8 @@
 			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
 			"how_to_get": [],
 			"used_for": [
-				"Used in Iron ingot"
+				"Used in Iron ingot",
+				"Used in Iron ingot (bloomery)"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4887,7 +4979,8 @@
 				"Used in Copper ingot",
 				"Used in Iron ingot",
 				"Used in Steel ingot",
-				"Used in Tin ingot"
+				"Used in Tin ingot",
+				"Used in Iron ingot (bloomery)"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -5313,7 +5406,8 @@
 				"Used in Flour",
 				"Used in Oat flour",
 				"Used in Rye flour",
-				"Used in Wild grain flour"
+				"Used in Wild grain flour",
+				"Used in Bonemeal"
 			],
 			"obtainable_now": true
 		},
@@ -5350,7 +5444,8 @@
 				"Dropped by boar when worked with a knife"
 			],
 			"used_for": [
-				"Sold to traders (worth 20 copper)"
+				"Sold to traders (worth 20 copper)",
+				"Used in Tusk - Mount"
 			],
 			"obtainable_now": true
 		},
@@ -5510,7 +5605,8 @@
 				"Used in Rye flatbread",
 				"Used in Salted fish",
 				"Used in Sauerkraut",
-				"Used in Smoked fish"
+				"Used in Smoked fish",
+				"Used in Sausage"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -6004,7 +6100,7 @@
 			"kind": "food",
 			"description": "Salted meat strips dried over smoke. Keeps for weeks.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Raw meat, 1 Salt"
+				"Craft at a drying rack: 2 Raw meat, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -6026,7 +6122,7 @@
 			"kind": "food",
 			"description": "Berries dried by the fire. Sweet and long lasting.",
 			"how_to_get": [
-				"Craft at a clay hearth: 3 Berries"
+				"Craft at a drying rack: 3 Berries"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6322,7 +6418,9 @@
 			"how_to_get": [
 				"Picked from a fruit tree in July"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"apple_summer": {
@@ -6332,7 +6430,9 @@
 			"how_to_get": [
 				"Picked from a fruit tree in August"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"apple_autumn": {
@@ -6343,7 +6443,8 @@
 				"Picked from a fruit tree in September and October"
 			],
 			"used_for": [
-				"Used in Dried apples"
+				"Used in Dried apples",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -6354,7 +6455,9 @@
 			"how_to_get": [
 				"Picked from a fruit tree late in the year"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"apple_cooking": {
@@ -6366,7 +6469,8 @@
 			],
 			"used_for": [
 				"Used in Apple pie",
-				"Used in Apple sauce"
+				"Used in Apple sauce",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -6377,7 +6481,9 @@
 			"how_to_get": [
 				"Picked from a fruit tree in August"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"pear_autumn": {
@@ -6388,7 +6494,8 @@
 				"Picked from a fruit tree in September and October"
 			],
 			"used_for": [
-				"Used in Stewed pears"
+				"Used in Stewed pears",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -6399,7 +6506,9 @@
 			"how_to_get": [
 				"Picked from a fruit tree in November"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"sour_cherries": {
@@ -6409,7 +6518,9 @@
 			"how_to_get": [
 				"Picked from sour cherry"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"plums": {
@@ -6420,7 +6531,8 @@
 				"Picked from plum"
 			],
 			"used_for": [
-				"Used in Plum jam"
+				"Used in Plum jam",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -6432,7 +6544,8 @@
 				"Picked from damson"
 			],
 			"used_for": [
-				"Used in Preserved damsons"
+				"Used in Preserved damsons",
+				"Used in Fruit juice"
 			],
 			"obtainable_now": true
 		},
@@ -6525,7 +6638,7 @@
 			"kind": "food",
 			"description": "Autumn apples sliced and dried by the fire. Chewy and sweet, they keep for months.",
 			"how_to_get": [
-				"Craft: 3 Autumn apple at a clay hearth"
+				"Craft at a drying rack: 3 Autumn apple"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6585,7 +6698,7 @@
 			"kind": "food",
 			"description": "Figs dried until sticky and sweet. They last for months.",
 			"how_to_get": [
-				"Craft: 3 Figs at a clay hearth"
+				"Craft at a drying rack: 3 Figs"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -6876,7 +6989,9 @@
 			"how_to_get": [
 				"Picked from wild apple sweet"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Fruit juice"
+			],
 			"obtainable_now": true
 		},
 		"nettles": {
@@ -7260,13 +7375,15 @@
 			"kind": "material",
 			"description": "Firewood burned slow and starved of air. The best smelting fuel.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Firewood"
+				"Craft at a campfire: 2 Firewood",
+				"Craft at a kiln: 2 Firewood"
 			],
 			"used_for": [
 				"Used in Copper ingot",
 				"Used in Iron ingot",
 				"Used in Steel ingot",
-				"Used in Tin ingot"
+				"Used in Tin ingot",
+				"Used in Iron ingot (bloomery)"
 			],
 			"obtainable_now": true
 		},
@@ -8318,7 +8435,9 @@
 			"kind": "material",
 			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Herring"
+				"Craft at a campfire pot: 3 Herring",
+				"Craft at a oil press: 4 Linseed",
+				"Craft at a oil press: 4 Walnuts"
 			],
 			"used_for": [
 				"Used in Iron - Hanging lantern",
@@ -9196,7 +9315,9 @@
 			"how_to_get": [
 				"Dropped by boar, deer, wolf, moose, beaver, lynx, bear, mountain goat, wild sheep, reindeer, seal, horse, donkey, black bear, elk, bighorn, chamois, cow, goat, dog, buffalo, puma, pronghorn, warthog, hyena, wildebeest, lion, leopard, rhino, elephant, camel, kangaroo, mammoth and tiger when worked with a knife"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Sausage"
+			],
 			"obtainable_now": true
 		},
 		"toggle": {
@@ -9310,6 +9431,411 @@
 			],
 			"used_for": [],
 			"obtainable_now": false
+		},
+		"kiln_kit": {
+			"name": "Kiln",
+			"kind": "placeable",
+			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Brick, 8 Clay, 4 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"kiln": {
+			"name": "Kiln",
+			"kind": "structure",
+			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"tanning_rack_kit": {
+			"name": "Tanning rack",
+			"kind": "placeable",
+			"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Log, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tanning_rack": {
+			"name": "Tanning rack",
+			"kind": "structure",
+			"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"drying_rack_kit": {
+			"name": "Drying rack",
+			"kind": "placeable",
+			"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"drying_rack": {
+			"name": "Drying rack",
+			"kind": "structure",
+			"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"smoker_kit": {
+			"name": "Smoker",
+			"kind": "placeable",
+			"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 16 Stone, 6 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"smoker": {
+			"name": "Smoker",
+			"kind": "structure",
+			"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"oil_press_kit": {
+			"name": "Oil press",
+			"kind": "placeable",
+			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Stone, 4 Log"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"oil_press": {
+			"name": "Oil press",
+			"kind": "structure",
+			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"storage_jar_kit": {
+			"name": "Storage jar",
+			"kind": "placeable",
+			"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"storage_jar": {
+			"name": "Storage jar",
+			"kind": "structure",
+			"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"hide_sack_kit": {
+			"name": "Hide sack",
+			"kind": "placeable",
+			"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Hide, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_sack": {
+			"name": "Hide - Sack",
+			"kind": "structure",
+			"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wicker_basket_kit": {
+			"name": "Wicker basket",
+			"kind": "placeable",
+			"description": "A woven basket of sticks and twine. A first store for a camp.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wicker_basket": {
+			"name": "Wicker - Basket",
+			"kind": "structure",
+			"description": "A woven basket of sticks and twine. A first store for a camp.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"weapon_rack_kit": {
+			"name": "Weapon rack",
+			"kind": "placeable",
+			"description": "A plank rack against a wall for spears, bows and blades.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"weapon_rack": {
+			"name": "Weapon rack",
+			"kind": "structure",
+			"description": "A plank rack against a wall for spears, bows and blades.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"armour_stand_kit": {
+			"name": "Armour stand",
+			"kind": "placeable",
+			"description": "A plank figure to hang a set of armour and clothes on.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Plank, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"armour_stand": {
+			"name": "Armour stand",
+			"kind": "structure",
+			"description": "A plank figure to hang a set of armour and clothes on.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"sign_kit": {
+			"name": "Sign",
+			"kind": "placeable",
+			"description": "A plank board on a stick to mark a camp or a path.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sign": {
+			"name": "Sign",
+			"kind": "structure",
+			"description": "A plank board on a stick to mark a camp or a path.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"tusk_mount_kit": {
+			"name": "Tusk mount",
+			"kind": "placeable",
+			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Tusk, 1 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tusk_mount": {
+			"name": "Tusk - Mount",
+			"kind": "structure",
+			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_bloomery_kit": {
+			"name": "Clay bloomery",
+			"kind": "placeable",
+			"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Clay, 10 Stone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"clay_bloomery": {
+			"name": "Clay bloomery",
+			"kind": "structure",
+			"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stonecutters_bench_kit": {
+			"name": "Stonecutter's bench",
+			"kind": "placeable",
+			"description": "A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Cobblestone, 4 Log"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stonecutters_bench": {
+			"name": "Stonecutter's bench",
+			"kind": "structure",
+			"description": "A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bronze_chisel": {
+			"name": "Bronze - Chisel",
+			"kind": "tool",
+			"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+			"how_to_get": [
+				"Craft at a forge: 1 Bronze ingot, 1 Stick"
+			],
+			"used_for": [
+				"Used in Stone block (bench)",
+				"Used in Carved stone block",
+				"Used in Carved stone shingle"
+			],
+			"obtainable_now": false
+		},
+		"iron_chisel": {
+			"name": "Iron - Chisel",
+			"kind": "tool",
+			"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
+			"how_to_get": [
+				"Craft at a forge: 1 Iron ingot, 1 Stick"
+			],
+			"used_for": [
+				"Used in Stone block (bench)",
+				"Used in Carved stone block",
+				"Used in Carved stone shingle"
+			],
+			"obtainable_now": false
+		},
+		"steel_chisel": {
+			"name": "Steel - Chisel",
+			"kind": "tool",
+			"description": "A steel chisel. Cuts the hardest stone cleanly.",
+			"how_to_get": [
+				"Craft at a forge: 1 Steel ingot, 1 Stick"
+			],
+			"used_for": [
+				"Used in Stone block (bench)",
+				"Used in Carved stone block",
+				"Used in Carved stone shingle"
+			],
+			"obtainable_now": false
+		},
+		"carved_stone_block": {
+			"name": "Carved stone block",
+			"kind": "material",
+			"description": "A stone block dressed smooth and carved at the edges. For fine walls and doorways.",
+			"how_to_get": [
+				"Craft at a stonecutters bench: 1 Stone block (keep Bronze - Chisel)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"carved_stone_shingle": {
+			"name": "Carved stone shingle",
+			"kind": "material",
+			"description": "A stone shingle cut thin and even, so a roof lies tight.",
+			"how_to_get": [
+				"Craft at a stonecutters bench: 1 Stone shingle (keep Bronze - Chisel)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"meat_skewer": {
+			"name": "Meat skewer",
+			"kind": "food",
+			"description": "Chunks of meat and wild garlic roasted on a stick.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Raw meat, 1 Stick, 1 Wild garlic leaves"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sausage": {
+			"name": "Sausage",
+			"kind": "food",
+			"description": "Salted meat packed into gut and simmered. Keeps for weeks.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Raw meat, 1 Gut, 1 Salt"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fruit_juice": {
+			"name": "Fruit juice",
+			"kind": "food",
+			"description": "Fresh fruit crushed with a little water. Quenches thirst and gives a little strength.",
+			"how_to_get": [
+				"Craft: 3 Fruit, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"mortar_pestle": {
+			"name": "Mortar and pestle",
+			"kind": "tool",
+			"description": "A hollowed stone and a round grinder for crushing herbs into poultices and cures.",
+			"how_to_get": [
+				"Craft: 2 Stone"
+			],
+			"used_for": [
+				"Used in Plantain poultice",
+				"Used in Comfrey poultice",
+				"Used in Leaf bandage",
+				"Used in Herb antidote"
+			],
+			"obtainable_now": true
+		},
+		"herb_antidote": {
+			"name": "Herb antidote",
+			"kind": "medicine",
+			"description": "Plantain and comfrey ground into water. A cure for poison and a sick stomach.",
+			"how_to_get": [
+				"Craft: 2 Plantain leaves, 1 Comfrey leaves, 1 Water (keep Mortar and pestle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"bonemeal": {
+			"name": "Bonemeal",
+			"kind": "material",
+			"description": "Bone ground to a pale powder. Feeds a crop bed as well as compost.",
+			"how_to_get": [
+				"Craft: 2 Bone (keep Hand mill)"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"parsnip": {
+			"name": "Parsnip",
+			"kind": "material",
+			"description": "A pale sweet root grown in a tilled bed. Frost makes it sweeter.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"parsnip_seeds": {
+			"name": "Parsnip seeds",
+			"kind": "material",
+			"description": "Seeds for sowing parsnip. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"mug": {
+			"name": "Mug",
+			"kind": "container",
+			"description": "A small fired clay cup with a handle. Holds a drink.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
 		}
 	}
 }
