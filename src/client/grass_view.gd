@@ -287,6 +287,9 @@ var _trail_msec: int = 0
 var _trail_mult: float = 1.0
 var _flora
 var _tables
+var brook_spots: Callable = Callable()   # (x0, z0, x1, z1) -> PackedFloat32Array of (x, z, NAN): the record brooks and spring heads in the box (terrain_client)
+var _brook_half: float = 1.5             # data/water/riparian.json brook_half_m: a brook spot is water this far round it
+var _grass_under: float = 0.05           # riparian.json grass_under_m: grass grows to this far under the drawn water's surface
 var _soil_color: Dictionary = {}         # soil id -> Color
 var _meshes: Array = []                  # one card mesh per layer
 var _materials: Array = []               # one material per layer
@@ -340,6 +343,11 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	_terrain = terrain
 	_flora = flora
 	_tables = tables
+	var riparian: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/water/riparian.json")) if FileAccess.file_exists("res://data/water/riparian.json") else null
+
+	if typeof(riparian) == TYPE_DICTIONARY:
+		_brook_half = float(riparian.get("brook_half_m", _brook_half))
+		_grass_under = float(riparian.get("grass_under_m", _grass_under))
 
 	for entry in tables.get_entries("soils"):
 		var c: Array = entry["color"]
@@ -1692,6 +1700,11 @@ func _build(cell: Vector2i) -> int:
 			if not is_nan(level):
 				wet_spots.append_array([wx, wz, level])
 
+	# The record brooks and spring heads count as water too (Dave 10 Nov 2026: "all brooks and water ways"), with no level (NAN).
+	if brook_spots.is_valid():
+		var reach: float = LUSH_M + _brook_half
+		wet_spots.append_array(brook_spots.call(float(cell.x) * CELL_M - reach, float(cell.y) * CELL_M - reach, float(cell.x + 1) * CELL_M + reach, float(cell.y + 1) * CELL_M + reach))
+
 	Probe.stop("grass build: setup", t_setup)
 	var t_rays: int = Probe.start()
 	# All rays first, so a blade can be refused when ground drops away beside it (the rim of a hole, old or new).
@@ -1771,7 +1784,14 @@ func _build(cell: Vector2i) -> int:
 				_put_shore(buffers, counts, rng, point, spacing, water)
 				shore_us += Time.get_ticks_usec() - t0
 
-			if not is_nan(water) and point.y < water + 0.3:
+			# No grass under the drawn water: the blended surface where it is drawn, else the nearest wet corner's level. (It skipped up to an 8 m
+			# square from the water's highest corner + 0.3 m, so every bank had a bare strip: Dave 10 Nov 2026.)
+			var surface: float = _flora.water_surface_at(x, z)
+
+			if is_nan(surface):
+				surface = _flora.water_level_nearest(x, z)
+
+			if not is_nan(surface) and point.y < surface - _grass_under:
 				continue
 
 			if not cleared.is_empty() and _cleared_at(x, z):
@@ -1819,7 +1839,7 @@ func _build(cell: Vector2i) -> int:
 
 			# Wet ground (owner, 2026-10-20: the tall grass "needs to be thicker around water"; Dave 9 Nov 2026: all of it thicker and taller,
 			# back to normal 6 m from the water): 1 at the water's edge, 0 from LUSH_M.
-			var wet: float = lush(0.0, point.y - water) if not is_nan(water) else lush_near(wet_spots, point)
+			var wet: float = lush(0.0, point.y - surface) if not is_nan(surface) and point.y < surface + 0.3 else lush_near(wet_spots, point, _brook_half)
 
 			for layer in range(GRASS_LAYERS):
 				if layer == 0 and lod > 0:
@@ -1941,20 +1961,21 @@ static func lush(distance_m: float, above_m: float) -> float:
 
 
 # Lush growth at a ground point from the wet spots round its cell (x, z, water level triples): the nearest one sets the distance and the level.
-static func lush_near(wet_spots: PackedFloat32Array, point: Vector3) -> float:
+# A spot with no level (NAN) is a record brook or a spring head: water brook_half_m round it, at any height.
+static func lush_near(wet_spots: PackedFloat32Array, point: Vector3, brook_half: float = 0.0) -> float:
 	var best: float = INF
 	var level: float = NAN
 
 	for k in range(0, wet_spots.size(), 3):
 		var dx: float = wet_spots[k] - point.x
 		var dz: float = wet_spots[k + 1] - point.z
-		var d2: float = dx * dx + dz * dz
+		var d: float = sqrt(dx * dx + dz * dz) - (brook_half if is_nan(wet_spots[k + 2]) else 0.0)
 
-		if d2 < best:
-			best = d2
+		if d < best:
+			best = d
 			level = wet_spots[k + 2]
 
-	return lush(sqrt(best), point.y - level) if not is_nan(level) else 0.0
+	return lush(maxf(best, 0.0), point.y - level) if best < INF else 0.0
 
 
 # One ground sample at the water's edge (water is the surface level here or NAN): pebbles on the dry bank
