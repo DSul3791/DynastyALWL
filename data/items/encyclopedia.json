@@ -8500,7 +8500,7 @@
 			"kind": "placeable",
 			"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Planks, 2 Twine, 6 Soil"
+				"Build with a hammer (press R): 8 Plank, 2 Twine, 6 Soil"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8518,7 +8518,7 @@
 			"kind": "placeable",
 			"description": "A stone-edged raised bed, two metres square. Holds its water best.",
 			"how_to_get": [
-				"Build with a hammer (press R): 10 Cobblestone, 2 Mortar, 6 Soil"
+				"Build with a hammer (press R): 10 Cobblestone, 2 Clay mortar, 6 Soil"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8536,7 +8536,7 @@
 			"kind": "placeable",
 			"description": "A brick raised bed, two metres square. Holds its water best.",
 			"how_to_get": [
-				"Build with a hammer (press R): 10 Brick, 2 Mortar, 6 Soil"
+				"Build with a hammer (press R): 10 Brick, 2 Clay mortar, 6 Soil"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8554,7 +8554,7 @@
 			"kind": "placeable",
 			"description": "A plank window box of soil for herbs and flowers.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Planks, 2 Soil"
+				"Build with a hammer (press R): 2 Plank, 2 Soil"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8572,7 +8572,7 @@
 			"kind": "placeable",
 			"description": "A big stone pot of soil for a herb or a small shrub.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Cobblestone, 1 Mortar, 3 Soil"
+				"Build with a hammer (press R): 6 Cobblestone, 1 Clay mortar, 3 Soil"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8608,7 +8608,7 @@
 			"kind": "placeable",
 			"description": "A slatted bin that rots plant waste down into compost.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Planks, 1 Twine"
+				"Build with a hammer (press R): 4 Plank, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -8644,7 +8644,7 @@
 			"kind": "placeable",
 			"description": "A horn-paned box over a plot that keeps frost off seedlings.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Planks, 1 Twine, 4 Horn pane"
+				"Build with a hammer (press R): 3 Plank, 1 Twine, 4 Horn pane"
 			],
 			"used_for": [],
 			"obtainable_now": false
