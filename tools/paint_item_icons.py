@@ -259,6 +259,94 @@ def spyglass():
     return faces
 
 
+# ---------------------------------------------------------------- item system C1 (#933, 10 Nov 2026)
+def _path(points, radii, colours, sides=7, seed=0):
+    """A bent tube through points, its radius and colour per point (each segment tapers to the next)."""
+    faces = []
+    for k in range(len(points) - 1):
+        faces += rod(points[k], points[k + 1], radii[k], colours[k], sides=sides, taper=radii[k + 1] / radii[k], seed=seed + k)
+    return faces
+
+
+def horn():
+    """Horn: a hollow horn curling up to a dark tip, ridged, its open base toward the viewer."""
+    n = 9
+    pts = [(-1.0 + 1.9 * t - 0.25 * t * t, 0.9 * math.sin(math.pi * 0.85 * t) - 0.3, 0.2 * t) for t in np.linspace(0.0, 1.0, n)]
+    radii = [0.36 * (1.0 - t) + 0.035 for t in np.linspace(0.0, 1.0, n)]
+    cols = [tuple(int(a + (b - a) * t) for a, b in zip((206, 190, 158), (64, 52, 42))) for t in np.linspace(0.0, 1.0, n)]
+    faces = _path(pts, radii, cols, sides=9, seed=70)
+    faces += rod((-1.02, -0.3, 0.0), (-0.98, -0.3, 0.0), 0.3, (58, 46, 38), sides=9, seed=79)   # the hollow
+    return faces
+
+
+def gut():
+    """Gut: a cleaned length of intestine coiled flat, pale pink."""
+    pts = [(math.cos(a) * (0.95 - 0.07 * a), 0.06 * math.sin(a * 3.0), math.sin(a) * (0.95 - 0.07 * a)) for a in np.linspace(0.0, 4.2 * math.pi, 34)]
+    cols = [(214, 168, 150) if k % 2 == 0 else (198, 150, 134) for k in range(len(pts))]
+    return _path(pts, [0.12] * len(pts), cols, sides=6, seed=80)
+
+
+def toggle():
+    """Toggle: a short bone peg, round ends, a cut groove round its middle where the cord goes."""
+    faces = rod((-0.8, 0, 0), (-0.1, 0, 0), 0.22, BONE, seed=90) + rod((0.1, 0, 0), (0.8, 0, 0), 0.22, BONE, seed=91)
+    faces += rod((-0.1, 0, 0), (0.1, 0, 0), 0.15, shade(BONE, 0.7), seed=92)
+    for side in (-1.0, 1.0):
+        faces += blob((0.8 * side, 0, 0), (0.1, 0.22, 0.22), BONE, seed=93, seg=8, rings=3, rough=0.0)
+    faces += rod((0.0, 0.0, 0.0), (0.0, 0.62, 0.3), 0.04, CORD, sides=5, seed=94)          # the cord out of the groove
+    return faces
+
+
+def hook():
+    """Hook: a bone fish hook, a straight shank, the bend and the barbed point, a twine whipping at the eye."""
+    faces = rod((0.0, 1.1, 0), (0.0, -0.35, 0), 0.11, BONE, seed=100)
+    bend = [(0.38 - 0.38 * math.cos(a), -0.35 - 0.38 * math.sin(a), 0.0) for a in np.linspace(0.0, math.pi, 8)]
+    faces += _path(bend, [0.11] * 8, [BONE] * 8, sides=7, seed=101)
+    faces += rod((0.76, -0.35, 0), (0.76, 0.25, 0), 0.1, BONE, end=BONE, taper=0.1, seed=110)   # the point
+    faces += rod((0.76, 0.0, 0), (0.6, 0.12, 0), 0.05, BONE, taper=0.1, seed=111)             # the barb
+    faces += rod((0.0, 0.85, 0), (0.0, 1.1, 0), 0.14, CORD, sides=7, seed=112)
+    return faces
+
+
+def bone_club():
+    """Bone - Club: a heavy leg bone, its knuckle end the head, twine bound round the grip."""
+    faces = rod((-1.2, 0, 0), (0.95, 0, 0), 0.17, BONE, seed=120)
+    for k, z in enumerate((-0.17, 0.17)):
+        faces += blob((1.08, 0.02, z), (0.28, 0.27, 0.24), shade(BONE, 0.97 + 0.05 * k), seed=121 + k, seg=8, rings=4, rough=0.08)   # the knuckle
+    faces += blob((-1.28, 0, 0), (0.18, 0.22, 0.22), BONE, seed=123, seg=7, rings=3, rough=0.08)
+    faces += rod((-1.12, 0, 0), (-0.45, 0, 0), 0.2, CORD, sides=8, seed=124)                   # the grip binding
+    return faces
+
+
+def wooden_longbow():
+    """Wooden - Longbow: one tall stave bent in a shallow arc, thick at the leather grip and thin at the tips, a sinew string tip to tip."""
+    n = 11
+    pts = [(-1.65 + 3.3 * t, 0.5 * math.sin(math.pi * t), 0.0) for t in np.linspace(0.0, 1.0, n)]
+    radii = [0.06 + 0.07 * math.sin(math.pi * t) for t in np.linspace(0.0, 1.0, n)]
+    faces = _path(pts, radii, [WOOD] * n, sides=7, seed=130)
+    faces += rod((-0.18, 0.5, 0), (0.18, 0.5, 0), 0.15, LEATHER, sides=8, seed=141)            # the grip
+    faces += rod((-1.62, 0.02, 0), (1.62, 0.02, 0), 0.025, (232, 222, 196), sides=5, seed=142) # the string
+    return faces
+
+
+def straw_hat():
+    """Straw - Hat: a wide plaited brim, a round crown, a twine band."""
+    straw = (214, 184, 112)
+    faces = rod((0, -0.05, 0), (0, 0.05, 0), 1.25, straw, end=shade(straw, 1.08), sides=16, seed=150)
+    faces += rod((0, 0.05, 0), (0, 0.42, 0), 0.6, shade(straw, 0.95), end=straw, sides=14, taper=0.9, seed=151)
+    faces += blob((0, 0.42, 0), (0.54, 0.16, 0.54), straw, seed=152, seg=14, rings=4, rough=0.03)
+    faces += rod((0, 0.07, 0), (0, 0.18, 0), 0.62, CORD, sides=14, seed=153)                   # the band
+    return faces
+
+
+def worm():
+    """Worm: a fat earthworm in an S, ringed, the saddle band paler."""
+    n = 14
+    pts = [(-1.3 + 2.6 * t, 0.06 * math.sin(6.0 * t), 0.5 * math.sin(2.0 * math.pi * t)) for t in np.linspace(0.0, 1.0, n)]
+    radii = [0.06 + 0.08 * math.sin(math.pi * min(1.0, t * 1.15)) for t in np.linspace(0.0, 1.0, n)]
+    cols = [(226, 160, 150) if k in (4, 5) else ((190, 112, 104) if k % 2 == 0 else (176, 100, 94)) for k in range(n)]
+    return _path(pts, radii, cols, sides=7, seed=160)
+
+
 # ---------------------------------------------------------------- spades: one shape, four blades
 def spade(material):
     """A spade along x, blade at +x; the blade (big, face to the viewer) carries the material."""
@@ -660,6 +748,14 @@ def _pieces():
         "fur": (fur, rot_x(math.radians(50.0)) @ rot_y(math.radians(18.0))),
         "crystal_lens": (crystal_lens, rot_y(math.radians(-40.0)) @ rot_z(math.radians(10.0))),
         "spyglass": (spyglass, DIAGONAL),
+        "horn": (horn, rot_y(math.radians(20.0))),
+        "gut": (gut, rot_x(math.radians(48.0))),
+        "toggle": (toggle, DIAGONAL),
+        "hook": (hook, rot_y(math.radians(20.0)) @ rot_z(math.radians(-15.0))),
+        "bone_club": (bone_club, DIAGONAL),
+        "wooden_longbow": (wooden_longbow, rot_z(math.radians(42.0))),
+        "straw_hat": (straw_hat, rot_x(math.radians(28.0))),
+        "worm": (worm, rot_x(math.radians(50.0))),
         "wooden_spade": (lambda: spade("wood"), SPADE_VIEW),
         "stone_spade": (lambda: spade("stone"), SPADE_VIEW),
         "iron_spade": (lambda: spade("iron"), SPADE_VIEW),
