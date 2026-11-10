@@ -12,5 +12,7 @@
 	},
 	"repair_share": 0.5,
 	"good_condition": 0.98,
-	"ground_m": 6.0
+	"ground_m": 6.0,
+	"site_gather_m": 12.0,
+	"site_gather_note": "Dave 10 Nov 2026 ('craft from containers is always a mode people love in other games we are going to build it right in and make it better. it will even pick stuff up from the ground'): the hammer in Repair mode, left click on a blue blueprint site, pulls what it still needs from within site_gather_m of the builder: the pack first, then loose items on the ground and the builder's own containers (not ticked keep out; the crafting rule, craft_stock.gd), nearest first. Always on. Only what is still needed is taken."
 }

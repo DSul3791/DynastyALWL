@@ -195,7 +195,7 @@ func save_plan_near(structure_rows: Array, near: Vector3) -> Dictionary:
 
 # The menu: "Save building plan" first, then the blueprints, then the saved plans. Each entry: {kind, name, text, can, ...}.
 func entries(hammer_tier: int) -> Array:
-	var out: Array = [{"kind": "repair", "name": "Repair", "text": "then left click a worn piece: it is mended from materials on the ground nearby, in containers or in your pack", "can": true}, {"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
+	var out: Array = [{"kind": "repair", "name": "Repair", "text": "then left click a worn piece: it is mended from materials on the ground nearby, in containers or in your pack. Left click a blueprint: it takes what it still needs from your pack, the ground and your containers all around you", "can": true}, {"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
 
 	for row in rows(hammer_tier):
 		if category != "" and str(row["category"]) != category:

@@ -7029,6 +7029,10 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 		_say(peer, "You need a hammer in your hand bar to repair.")
 		return
 
+	if it["struct"].has("site"):
+		_gather_site(peer, inv, id)   # a blue blueprint: the hammer fills it from all around
+		return
+
 	var kind: String = str(it["struct"]["kind"])
 	var def: Dictionary = _structures.get(kind, {})
 	var piece_name: String = kind.replace("_", " ")
@@ -7258,6 +7262,99 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 		_say(peer, "Built.")
 	else:
 		_say(peer, "Deposited. Still needed: %s." % ", ".join(missing))
+
+
+# The hammer in Repair mode on a blueprint site (Dave 10 Nov 2026: "search the area around me for 12 meters. on the ground, in my inventory, in any containers
+# near me ... anything for materials that this blue print needs and pull those items and put them in the blueprint"; craft from containers, built in and
+# always on). Takes only what the site still needs: the pack first (any member of a group, a `log` need takes any log), then loose items on the ground and
+# the builder's own containers (CraftStock.owner_ok, not keep out) within building_wear.json site_gather_m of the builder, nearest first. One line says
+# what came and what is still missing; with nothing missing the piece is built.
+func _gather_site(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items[id]
+	var site: Dictionary = _site_of(it)
+	var here: Vector3 = _peer_pos[peer]
+	var reach: float = float(_wear_cfg.get("site_gather_m", CraftStock.CRAFT_REACH_M))
+	var key: String = str(_peer_key.get(peer, ""))
+	var sources: Array = []   # [distance, world id, is a container], nearest first
+
+	for sid in _items:
+		var s: Dictionary = _items[sid]
+		var d: float = (s["pos"] as Vector3).distance_to(here)
+
+		if d > reach:
+			continue
+
+		if _is_loose(s) or (s.has("scatter") and int(s.get("number", 0)) > 0):   # natural sticks and stones on the ground too
+			sources.append([d, sid, false])
+		elif _is_storage(s) and CraftStock.owner_ok(str(s["struct"].get("owner", "")), key) and not bool(s["struct"].get("keep_out", false)):
+			sources.append([d, sid, true])
+
+	sources.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	var have: Dictionary = site["have"]
+	var pulled: PackedStringArray = []
+
+	for need in _site_needs(site):
+		var left: int = int(need[1])
+
+		if left <= 0:
+			continue
+
+		var number: int = table.number_of(str(need[0]))
+		var fills: PackedInt32Array = inv.fills_of(number)
+		var put: int = mini(left, inv.count_fill(number))
+
+		if put > 0 and not inv.remove_fill(number, put):
+			put = 0
+
+		for src in sources:
+			if put >= left:
+				break
+
+			if bool(src[2]):
+				var box = _chests[int(_items[src[1]]["struct"]["uid"])]
+				var from_box: int = mini(left - put, box.count_fill(number))
+
+				if from_box > 0 and box.remove_fill(number, from_box):
+					put += from_box
+					_push_box(int(src[1]), box)
+			elif _items.has(src[1]) and fills.has(int(_items[src[1]]["number"])):
+				var g: Dictionary = _items[src[1]]
+				var from_ground: int = mini(left - put, int(g["count"]))
+				put += from_ground
+
+				if from_ground >= int(g["count"]):
+					if g.has("scatter"):
+						_taken[g["scatter"]] = true
+
+					_items.erase(src[1])
+				else:
+					g["count"] = int(g["count"]) - from_ground
+
+		if put > 0:
+			have[str(need[0])] = int(have.get(str(need[0]), 0)) + put
+			pulled.append("%d %s" % [put, _item_name_lower(str(need[0]))])
+
+	var missing: PackedStringArray = []
+
+	for need in _site_needs(site):
+		if int(need[1]) > 0:
+			missing.append("%d %s" % [int(need[1]), _item_name_lower(str(need[0]))])
+
+	if pulled.is_empty():
+		_say(peer, "Nothing within %d m that it needs. Still needed: %s." % [int(round(reach)), ", ".join(missing)])
+		return
+
+	_dirty = true
+
+	if missing.is_empty():
+		_finish_site(peer, id)
+		_say(peer, "Pulled %s. Built." % ", ".join(pulled))
+	else:
+		_say(peer, "Pulled %s. Still needed: %s." % [", ".join(pulled), ", ".join(missing)])
+
+
+func _item_name_lower(item_id: String) -> String:
+	return str(table.entry(item_id).get("name", item_id)).to_lower()
 
 
 # Every material is in: the site becomes the real piece.
