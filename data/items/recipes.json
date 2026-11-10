@@ -6111,7 +6111,7 @@
 		},
 		"tallow_candle": {
 			"number": 277,
-			"name": "Tallow candle",
+			"name": "Candle",
 			"category": "Containers and furniture",
 			"needs": [
 				[

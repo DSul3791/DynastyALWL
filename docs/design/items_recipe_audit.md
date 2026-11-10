@@ -145,7 +145,7 @@ Sorted by category, then tier. Inputs read "count name"; "keep" items are tools 
 | cook_salted_fish | Salted fish | T1 | campfire_pot | 1 Trout, 1 Sea salt | 1 Salted fish | 10.0 |  |  |
 | cook_sauerkraut | Sauerkraut | T1 | campfire_pot | 2 Cabbage, 1 Sea salt | 2 Sauerkraut | 12.0 |  |  |
 | cook_hazelnut_butter | Hazelnut butter | T1 | campfire_pot | 3 Hazelnuts | 1 Hazelnut butter | 8.0 |  |  |
-| tallow_candle | Tallow candle | T1 | hand | 1 Tallow, 1 Plant fibre | 3 Candle | 8.0 |  |  |
+| tallow_candle | Candle | T1 | hand | 1 Tallow, 1 Plant fibre | 3 Candle | 8.0 |  |  |
 | butter | Butter | T1 | hand | 3 Milk | 1 Butter | 20.0 | a | Milk has no source: no dairy animal is milked. No source in game: Milk. |
 | cheese | Cheese | T1 | campfire_pot | 4 Milk, 1 Sea salt | 1 Cheese | 30.0 | a | Milk has no source. No source in game: Milk. |
 | sea_salt | Sea salt | T1 | campfire_pot | 2 Sea water | 1 Sea salt | 20.0 | e | Common name: Salt. |
