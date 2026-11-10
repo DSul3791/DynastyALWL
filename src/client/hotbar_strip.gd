@@ -10,6 +10,7 @@ const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd"
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
+const BowAim := preload("res://src/shared/bow_aim.gd")
 # One control in and out of the inventory window (redesign section 9, v4): ten 76 px wells 10 apart at x 535 to 1385, y 964 to 1040
 # on the 1920 x 1080 canvas, on the stitched leather tray with brass end plates (art kit row 11a). Opening the window does not move it.
 const SLOT_UNIT := float(ArtKit.HOT) / ItemSlot.SLOT_PX
@@ -100,8 +101,8 @@ func _can_drop(_at: Vector2, data: Variant, _key: int) -> bool:
 func _drop(_at: Vector2, data: Variant, key: int) -> void:
 	var dragged: int = _items.key_number(int(data["key"])) if data.has("key") else _items.inventory.numbers[int(data["slot"])]
 
-	if _is_bow(_items.key_number(key)) and (HeldItem.BOW_AMMO as Array).has(_items.table.id_of(dragged)):
-		_items.load_bow(dragged)   # arrows dropped on the bow load it with that arrow (Dave 10 Nov 2026); they stay in the pack
+	if _is_bow(_items.key_number(key)) and _items.is_ammo_for(dragged, _items.key_number(key)):
+		_items.load_bow(dragged, _items.key_number(key))   # arrows dropped on the bow load it with that arrow (Dave 10 Nov 2026); they stay in the pack
 		refresh()
 		return
 
@@ -112,4 +113,4 @@ func _drop(_at: Vector2, data: Variant, key: int) -> void:
 
 
 func _is_bow(number: int) -> bool:
-	return number != 0 and str(_items.table.entry(_items.table.id_of(number)).get("weapon_class", "")) == "bow"
+	return number != 0 and BowAim.shoots(_items.table.entry(_items.table.id_of(number)))

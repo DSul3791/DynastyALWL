@@ -10,6 +10,7 @@ extends RefCounted
 
 const FlameRules := preload("res://src/shared/flame_rules.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
+const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
@@ -657,6 +658,7 @@ func peer_left(peer: int) -> void:
 	_last_drink.erase(peer)
 	_exertion.erase(peer)
 	_motion.erase(peer)
+	_snow_memo.erase(peer)
 	_work_until.erase(peer)
 	_vitals_sent.erase(peer)
 	_strain.erase(peer)
@@ -2138,21 +2140,23 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("weapon_class", "")) != "bow" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if not BowAim.shoots(entry) or _is_broken(inv.numbers[slot], inv.wear[slot]):
 		return
 
 	if _bow == null:
 		_bow = BowScript.new()
+
+	var bow_id: String = table.id_of(inv.numbers[slot])
 
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_last_shot.get(peer, -100000)) < int(_bow.cfg.get("pace_ms", 700)):
 		return
 
-	var ammo: int = _bow.ammo_slot(inv, table, loaded)
+	var ammo: int = _bow.ammo_slot(inv, table, loaded, bow_id)
 
 	if ammo < 0:
-		_say(peer, str(_bow.cfg.get("say_no_ammo", "")))
+		_say(peer, BowAim.say(_bow.cfg, bow_id, "say_no_ammo"))
 		return
 
 	_last_shot[peer] = now
@@ -2167,8 +2171,8 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	_wear_slot(peer, inv, slot, "strike")
 	var level: float = working_level(peer, "hunting")
 	var aim: Vector3 = BowAim.spread(direction, BowAim.spread_deg(_bow.cfg, level), LuckScript.low(_aim_rng.randf(), luck_of(peer), _luck_strength()), _aim_rng.randf())   # luck-exempt: the draws that luck nudges (how far out) and which way
-	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, level),
-		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power), "flown": 0.0, "age": 0.0})
+	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id),
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)))
@@ -2207,17 +2211,23 @@ func _arrow_fly(delta: float) -> void:
 					practice(int(ar["peer"]), "bow")
 					hit_number(int(ar["peer"]), at, float(ar["damage"]))
 
-			if not landed and trunks_near.is_valid():   # a tree trunk on the way: the arrow sticks in it (Dave 10 Nov 2026)
+			var at_foot: bool = false
+
+			if not landed and trunks_near.is_valid():   # a tree trunk on the way: the arrow sticks in it (Dave 10 Nov 2026); a sling stone drops at its foot
 				var into: float = _arrow_trunk(from, to)
 
 				if into >= 0.0:
 					landed = true
-					stuck = true
+					stuck = bool(ar.get("sticks", true))
+					at_foot = not stuck
 					at = from.lerp(to, into)
 
 			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
 
-			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(_bow.cfg.get("range_m", 80.0)) or float(ar["age"]) >= THROW_MAX_S * 2.0):
+			if at_foot and not is_nan(ground):
+				at.y = float(ground_height.call(at.x, at.z))
+
+			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
 				landed = true
 				at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
 
@@ -4339,7 +4349,7 @@ func _load_world_items() -> void:
 		if is_dead_kit(int(row[0])):
 			continue
 
-		if had_kits and row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING and str(row[9]) != "remains" and (_traps == null or str(row[9]) != str(_traps.cfg.get("kind", "snare_trap"))):
+		if had_kits and row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING and str(row[9]) != "remains" and (_traps == null or not _traps.is_kind(str(row[9]))):
 			continue
 
 		if row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING:
@@ -4373,7 +4383,7 @@ func _load_world_items() -> void:
 				if typeof(saved_site) == TYPE_DICTIONARY:
 					entry["struct"]["site"] = {"bp": int((saved_site as Dictionary).get("bp", 0)), "have": (saved_site as Dictionary).get("have", {})}
 
-			if row.size() > 12 and _traps != null and str(row[9]) == str(_traps.cfg.get("kind", "snare_trap")):
+			if row.size() > 12 and _traps != null and _traps.is_kind(str(row[9])):
 				entry["struct"]["owner"] = str(row[11])
 				entry["struct"]["seq"] = float(row[12])
 				_next_uid = maxi(_next_uid, int(row[12]) + 1)
@@ -7173,7 +7183,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
 				return
 
-	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot):
+	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot, str(def["kind"])):
 		return
 
 	var here_chunk: Vector2i = _chunk_of(spot)
@@ -9515,6 +9525,24 @@ func _effort_at_speed(speed: float) -> float:
 	return float(anchors[anchors.size() - 1][1])
 
 
+var _snow_memo: Dictionary = {}     # peer -> [the metre cell last asked about, whether its surface is snow]
+
+
+# Is the ground under `position` snow or glacial ice (snow_walk.json soils)? Asked once per metre cell the player enters.
+func _on_snow(peer: int, position: Vector3) -> bool:
+	if not ground_material.is_valid():
+		return false
+
+	var cell: Vector2i = Vector2i(floori(position.x), floori(position.z))
+	var memo: Array = _snow_memo.get(peer, [])
+
+	if memo.is_empty() or memo[0] != cell:
+		memo = [cell, SnowWalk.name_is_snow(str(ground_material.call(position.x, position.z)))]
+		_snow_memo[peer] = memo
+
+	return bool(memo[1])
+
+
 func _note_motion(peer: int, position: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
 	var last: Array = _motion.get(peer, [])
@@ -9527,6 +9555,8 @@ func _note_motion(peer: int, position: Vector3) -> void:
 
 		if _on_path(peer, position):
 			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
+
+		target *= SnowWalk.effort_mult(_on_snow(peer, position), SnowWalk.shod(worn_of(peer), table))   # snow is heavy going, snowshoes ease it (Part C plan 7)
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
@@ -11701,11 +11731,12 @@ func water_bed(peer: int, inv, bed_id: int) -> bool:
 	return true
 
 
-# Compost on the bed: +20 percent growth for this crop.
+# Compost on the bed: +20 percent growth for this crop. When the "fertiliser" ingredient group exists (Jamie, Part C: compost or bonemeal),
+# any of its members does; the pack's has/remove follow the group.
 func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {}) if not bed.is_empty() else {}
-	var compost: int = table.number_of("compost")
+	var compost: int = table.number_of("fertiliser") if table.number_of("fertiliser") > 0 else table.number_of("compost")
 
 	if crop.is_empty() or bool(crop["compost"]) or compost <= 0 or not inv.has(compost, 1):
 		return false

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 580,
+	"next_number": 770,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -666,7 +666,7 @@
 		},
 		"sewing_needle": {
 			"number": 49,
-			"name": "Sewing needle",
+			"name": "Bone - Needle",
 			"description": "A needle carved from bone. For sewing hide and cloth.",
 			"kind": "tool",
 			"tool_class": "needle",
@@ -680,10 +680,7 @@
 				]
 			],
 			"value": 8,
-			"future": true,
-			"look_alikes": [],
-			"retired": true,
-			"note": "Cut (Dave 25 Oct trim answer B: no sewing needle); number kept, never reused."
+			"look_alikes": []
 		},
 		"backpack": {
 			"number": 50,
@@ -875,7 +872,10 @@
 			"stack": 1,
 			"unstackable": true,
 			"value": 18,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"future": true,
+			"note": "Item system 10 Nov 2026: merged into Hide - Trousers (hide_trousers). Kept so old saves load; a load-time migration turns worn and stored leggings into trousers (Steve)."
 		},
 		"raw_meat": {
 			"number": 68,
@@ -3780,7 +3780,7 @@
 		"hide_trousers": {
 			"number": 306,
 			"name": "Hide - Trousers",
-			"description": "Hide sewn into trousers. Better than leggings.",
+			"description": "Hide sewn into trousers. Warm, and tough on rough ground.",
 			"kind": "clothing",
 			"slot": "legs",
 			"warmth": 0.18,
@@ -4455,7 +4455,10 @@
 			"tip": "wood",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"future": true,
+			"retired": true,
+			"note": "Item system 10 Nov 2026: fibre-fletched arrows are now made as Wooden - Arrow (recipe fibre_arrow); kept so arrows already made still shoot. Number kept, never reused."
 		},
 		"seaweed": {
 			"number": 355,
@@ -6751,6 +6754,2068 @@
 				"repair_station": "forge",
 				"look_alikes": [],
 				"value": 140
+			},
+			"thatch_fence_kit": {
+				"number": 580,
+				"retired": true,
+				"name": "Thatch fence",
+				"description": "Stakes woven with sticks and lashed with twine, two metres long.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"thatch_fence": {
+				"number": 581,
+				"name": "Thatch - Fence",
+				"description": "Stakes woven with sticks and lashed with twine, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "thatch",
+				"note": "Building piece: row state 92."
+			},
+			"thatch_gate_kit": {
+				"number": 582,
+				"retired": true,
+				"name": "Thatch gate",
+				"description": "A woven hurdle hung on twine hinges. Opens like a door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 23
+			},
+			"thatch_gate": {
+				"number": 583,
+				"name": "Thatch - Gate",
+				"description": "A woven hurdle hung on twine hinges. Opens like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "thatch",
+				"note": "Building piece: row state 93."
+			},
+			"wood_fence_kit": {
+				"number": 584,
+				"retired": true,
+				"name": "Wooden fence",
+				"description": "A picket fence of planks, two metres long.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"wood_fence": {
+				"number": 585,
+				"name": "Wooden - Fence",
+				"description": "A picket fence of planks, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "wood",
+				"note": "Building piece: row state 95."
+			},
+			"wood_gate_kit": {
+				"number": 586,
+				"retired": true,
+				"name": "Wooden gate",
+				"description": "A plank gate with a Z brace. Opens like a door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 29
+			},
+			"wood_gate": {
+				"number": 587,
+				"name": "Wooden - Gate",
+				"description": "A plank gate with a Z brace. Opens like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "wood",
+				"note": "Building piece: row state 96."
+			},
+			"log_fence_kit": {
+				"number": 588,
+				"retired": true,
+				"name": "Log fence",
+				"description": "Split rails pegged into log posts, two metres long.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 15
+			},
+			"log_fence": {
+				"number": 589,
+				"name": "Log - Fence",
+				"description": "Split rails pegged into log posts, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 98."
+			},
+			"log_gate_kit": {
+				"number": 590,
+				"retired": true,
+				"name": "Log gate",
+				"description": "A rail gate of split logs. Opens like a door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 22
+			},
+			"log_gate": {
+				"number": 591,
+				"name": "Log - Gate",
+				"description": "A rail gate of split logs. Opens like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 99."
+			},
+			"log_palisade_kit": {
+				"number": 592,
+				"retired": true,
+				"name": "Log palisade",
+				"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 30
+			},
+			"log_palisade": {
+				"number": 593,
+				"name": "Log - Palisade",
+				"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 101."
+			},
+			"log_palisade_gate_kit": {
+				"number": 594,
+				"retired": true,
+				"name": "Log palisade gate",
+				"description": "A palisade section that swings open like a door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 45
+			},
+			"log_palisade_gate": {
+				"number": 595,
+				"name": "Log - Palisade gate",
+				"description": "A palisade section that swings open like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 102."
+			},
+			"stone_fence_kit": {
+				"number": 596,
+				"retired": true,
+				"name": "Stone fence",
+				"description": "A low dry-stone wall with capstones, two metres long.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 30
+			},
+			"stone_fence": {
+				"number": 597,
+				"name": "Stone - Fence",
+				"description": "A low dry-stone wall with capstones, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 104."
+			},
+			"stone_gate_kit": {
+				"number": 598,
+				"retired": true,
+				"name": "Stone gate",
+				"description": "A timber gate between stone piers. Opens like a door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 46
+			},
+			"stone_gate": {
+				"number": 599,
+				"name": "Stone - Gate",
+				"description": "A timber gate between stone piers. Opens like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 105."
+			},
+			"brick_fence_kit": {
+				"number": 600,
+				"retired": true,
+				"name": "Brick fence",
+				"description": "A low brick wall on a stone plinth, two metres long.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 52
+			},
+			"brick_fence": {
+				"number": 601,
+				"name": "Brick - Fence",
+				"description": "A low brick wall on a stone plinth, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 107."
+			},
+			"brick_gate_kit": {
+				"number": 602,
+				"retired": true,
+				"name": "Brick gate",
+				"description": "A timber gate between brick piers. Opens like a door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 64
+			},
+			"brick_gate": {
+				"number": 603,
+				"name": "Brick - Gate",
+				"description": "A timber gate between brick piers. Opens like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 108."
+			},
+			"iron_fence_kit": {
+				"number": 604,
+				"retired": true,
+				"name": "Iron fence",
+				"description": "Iron railings on a brick plinth, two metres long.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 96
+			},
+			"iron_fence": {
+				"number": 605,
+				"name": "Iron - Fence",
+				"description": "Iron railings on a brick plinth, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "iron",
+				"note": "Building piece: row state 110."
+			},
+			"iron_gate_kit": {
+				"number": 606,
+				"retired": true,
+				"name": "Iron gate",
+				"description": "A wrought iron gate. Opens like a door.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 124
+			},
+			"iron_gate": {
+				"number": 607,
+				"name": "Iron - Gate",
+				"description": "A wrought iron gate. Opens like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "iron",
+				"note": "Building piece: row state 111."
+			},
+			"thatch_pillar_kit": {
+				"number": 608,
+				"retired": true,
+				"name": "Thatch pillar",
+				"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 12
+			},
+			"thatch_pillar": {
+				"number": 609,
+				"name": "Thatch - Pillar",
+				"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "thatch",
+				"note": "Building piece: row state 113."
+			},
+			"wooden_pillar_kit": {
+				"number": 610,
+				"retired": true,
+				"name": "Wooden pillar",
+				"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 19
+			},
+			"wooden_pillar": {
+				"number": 611,
+				"name": "Wooden - Pillar",
+				"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "wood",
+				"note": "Building piece: row state 114."
+			},
+			"log_pillar_kit": {
+				"number": 612,
+				"retired": true,
+				"name": "Log pillar",
+				"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 7
+			},
+			"log_pillar": {
+				"number": 613,
+				"name": "Log - Pillar",
+				"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 115."
+			},
+			"stone_pillar_kit": {
+				"number": 614,
+				"retired": true,
+				"name": "Stone pillar",
+				"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 36
+			},
+			"stone_pillar": {
+				"number": 615,
+				"name": "Stone - Pillar",
+				"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 116."
+			},
+			"brick_pillar_kit": {
+				"number": 616,
+				"retired": true,
+				"name": "Brick pillar",
+				"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 44
+			},
+			"brick_pillar": {
+				"number": 617,
+				"name": "Brick - Pillar",
+				"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 117."
+			},
+			"thatch_roof_corner_kit": {
+				"number": 618,
+				"retired": true,
+				"name": "Thatch roof corner",
+				"description": "The corner of a thatch roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 56
+			},
+			"thatch_roof_corner": {
+				"number": 619,
+				"name": "Thatch - Roof corner",
+				"description": "The corner of a thatch roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "thatch",
+				"note": "Building piece: row state 118."
+			},
+			"wooden_roof_corner_kit": {
+				"number": 620,
+				"retired": true,
+				"name": "Wooden roof corner",
+				"description": "The corner of a wooden roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 32
+			},
+			"wooden_roof_corner": {
+				"number": 621,
+				"name": "Wooden - Roof corner",
+				"description": "The corner of a wooden roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "wood",
+				"note": "Building piece: row state 119."
+			},
+			"log_roof_corner_kit": {
+				"number": 622,
+				"retired": true,
+				"name": "Log roof corner",
+				"description": "The corner of a log roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 42
+			},
+			"log_roof_corner": {
+				"number": 623,
+				"name": "Log - Roof corner",
+				"description": "The corner of a log roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 120."
+			},
+			"stone_roof_corner_kit": {
+				"number": 624,
+				"retired": true,
+				"name": "Stone roof corner",
+				"description": "The corner of a stone roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 56
+			},
+			"stone_roof_corner": {
+				"number": 625,
+				"name": "Stone - Roof corner",
+				"description": "The corner of a stone roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 121."
+			},
+			"brick_roof_corner_kit": {
+				"number": 626,
+				"retired": true,
+				"name": "Brick roof corner",
+				"description": "The corner of a brick roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 72
+			},
+			"brick_roof_corner": {
+				"number": 627,
+				"name": "Brick - Roof corner",
+				"description": "The corner of a brick roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 122."
+			},
+			"log_bench_kit": {
+				"number": 628,
+				"retired": true,
+				"name": "Log bench",
+				"description": "A split log on two stumps. Seats two or three.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 11
+			},
+			"log_bench": {
+				"number": 629,
+				"name": "Log - Bench",
+				"description": "A split log on two stumps. Seats two or three.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 123."
+			},
+			"log_table_kit": {
+				"number": 630,
+				"retired": true,
+				"name": "Log table",
+				"description": "A table with a hand-hewn log top.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"log_table": {
+				"number": 631,
+				"name": "Log - Table",
+				"description": "A table with a hand-hewn log top.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 124."
+			},
+			"stone_bench_kit": {
+				"number": 632,
+				"retired": true,
+				"name": "Stone bench",
+				"description": "A heavy stone slab on stone feet. Seats two or three.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 42
+			},
+			"stone_bench": {
+				"number": 633,
+				"name": "Stone - Bench",
+				"description": "A heavy stone slab on stone feet. Seats two or three.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 125."
+			},
+			"stone_table_kit": {
+				"number": 634,
+				"retired": true,
+				"name": "Stone table",
+				"description": "A thick stone-footed table with a plank top.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 76
+			},
+			"stone_table": {
+				"number": 635,
+				"name": "Stone - Table",
+				"description": "A thick stone-footed table with a plank top.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 126."
+			},
+			"iron_bench_kit": {
+				"number": 636,
+				"retired": true,
+				"name": "Iron bench",
+				"description": "A timber bench bound with iron. Seats two or three.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 74
+			},
+			"iron_bench": {
+				"number": 637,
+				"name": "Iron - Bench",
+				"description": "A timber bench bound with iron. Seats two or three.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 127."
+			},
+			"iron_chair_kit": {
+				"number": 638,
+				"retired": true,
+				"name": "Iron chair",
+				"description": "An iron-bound chair with a hide seat.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 77
+			},
+			"iron_chair": {
+				"number": 639,
+				"name": "Iron - Chair",
+				"description": "An iron-bound chair with a hide seat.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 128."
+			},
+			"iron_table_kit": {
+				"number": 640,
+				"retired": true,
+				"name": "Iron table",
+				"description": "A plank table bound with iron.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 98
+			},
+			"iron_table": {
+				"number": 641,
+				"name": "Iron - Table",
+				"description": "A plank table bound with iron.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 129."
+			},
+			"stone_workbench_kit": {
+				"number": 642,
+				"retired": true,
+				"name": "Stone workbench",
+				"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 132
+			},
+			"stone_workbench": {
+				"number": 643,
+				"name": "Stone - Workbench",
+				"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 130."
+			},
+			"wooden_shelf_kit": {
+				"number": 644,
+				"retired": true,
+				"name": "Wooden shelf",
+				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"wooden_shelf": {
+				"number": 645,
+				"name": "Wooden - Shelf",
+				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 131."
+			},
+			"wooden_cupboard_kit": {
+				"number": 646,
+				"retired": true,
+				"name": "Wooden cupboard",
+				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 64
+			},
+			"wooden_cupboard": {
+				"number": 647,
+				"name": "Wooden - Cupboard",
+				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 132."
+			},
+			"wooden_barrel_kit": {
+				"number": 648,
+				"retired": true,
+				"name": "Wooden barrel",
+				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 46
+			},
+			"wooden_barrel": {
+				"number": 649,
+				"name": "Wooden - Barrel",
+				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 133."
+			},
+			"log_stairs_kit": {
+				"number": 650,
+				"retired": true,
+				"name": "Log stairs",
+				"description": "A flight of hewn log steps up to the next ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 38
+			},
+			"log_stairs": {
+				"number": 651,
+				"name": "Log - Stairs",
+				"description": "A flight of hewn log steps up to the next ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 134."
+			},
+			"stone_stairs_kit": {
+				"number": 652,
+				"retired": true,
+				"name": "Stone stairs",
+				"description": "A flight of mortared stone steps up to the next ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 84
+			},
+			"stone_stairs": {
+				"number": 653,
+				"name": "Stone - Stairs",
+				"description": "A flight of mortared stone steps up to the next ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 135."
+			},
+			"brick_stairs_kit": {
+				"number": 654,
+				"retired": true,
+				"name": "Brick stairs",
+				"description": "A flight of brick steps up to the next ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 104
+			},
+			"brick_stairs": {
+				"number": 655,
+				"name": "Brick - Stairs",
+				"description": "A flight of brick steps up to the next ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 136."
+			},
+			"wooden_railing_kit": {
+				"number": 656,
+				"retired": true,
+				"name": "Wooden railing",
+				"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 19
+			},
+			"wooden_railing": {
+				"number": 657,
+				"name": "Wooden - Railing",
+				"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 137."
+			},
+			"iron_railing_kit": {
+				"number": 658,
+				"retired": true,
+				"name": "Iron railing",
+				"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 64
+			},
+			"iron_railing": {
+				"number": 659,
+				"name": "Iron - Railing",
+				"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 138."
+			},
+			"double_doorway_kit": {
+				"number": 660,
+				"retired": true,
+				"name": "Wooden double doorway",
+				"description": "A plank wall four metres wide with a pair of doors.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 58
+			},
+			"double_doorway": {
+				"number": 661,
+				"name": "Wooden - Double doorway",
+				"description": "A plank wall four metres wide with a pair of doors.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 139."
+			},
+			"iron_doorway_kit": {
+				"number": 662,
+				"retired": true,
+				"name": "Iron doorway",
+				"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 100
+			},
+			"iron_doorway": {
+				"number": 663,
+				"name": "Iron - Doorway",
+				"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 141."
+			},
+			"steel_doorway_kit": {
+				"number": 664,
+				"retired": true,
+				"name": "Steel doorway",
+				"description": "A wall with a steel door, one metre wide and two high.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 364
+			},
+			"steel_doorway": {
+				"number": 665,
+				"name": "Steel - Doorway",
+				"description": "A wall with a steel door, one metre wide and two high.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 143."
+			},
+			"horn_pane": {
+				"number": 666,
+				"name": "Horn pane",
+				"description": "A thin pane of scraped horn. Lets lantern light through.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 4
+			},
+			"lamp_oil": {
+				"number": 667,
+				"name": "Lamp oil",
+				"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
+				"kind": "material",
+				"stack": 10,
+				"look_alikes": [],
+				"value": 10
+			},
+			"wooden_lantern": {
+				"number": 668,
+				"name": "Wooden - Lantern",
+				"description": "A plank lantern with horn panes. Takes a candle; does not go out in the rain.",
+				"kind": "tool",
+				"stack": 1,
+				"light_m": 8.0,
+				"fuel": "candle",
+				"future": true,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 20
+			},
+			"iron_lantern": {
+				"number": 669,
+				"name": "Iron - Lantern",
+				"description": "An iron lantern with horn panes. Burns lamp oil; does not go out in the rain.",
+				"kind": "tool",
+				"stack": 1,
+				"light_m": 14.0,
+				"fuel": "lamp_oil",
+				"future": true,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 50
+			},
+			"wooden_hanging_lantern_kit": {
+				"number": 670,
+				"retired": true,
+				"name": "Wooden hanging lantern",
+				"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 19
+			},
+			"wooden_hanging_lantern": {
+				"number": 671,
+				"name": "Wooden - Hanging lantern",
+				"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 145."
+			},
+			"iron_hanging_lantern_kit": {
+				"number": 672,
+				"retired": true,
+				"name": "Iron hanging lantern",
+				"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 38
+			},
+			"iron_hanging_lantern": {
+				"number": 673,
+				"name": "Iron - Hanging lantern",
+				"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 146."
+			},
+			"iron_wall_lantern_kit": {
+				"number": 674,
+				"retired": true,
+				"name": "Iron wall lantern",
+				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 38
+			},
+			"iron_wall_lantern": {
+				"number": 675,
+				"name": "Iron - Wall lantern",
+				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 147."
+			},
+			"wooden_torch_post_kit": {
+				"number": 676,
+				"retired": true,
+				"name": "Wooden torch post",
+				"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 15
+			},
+			"wooden_torch_post": {
+				"number": 677,
+				"name": "Wooden - Torch post",
+				"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 148."
+			},
+			"stone_torch_pillar_kit": {
+				"number": 678,
+				"retired": true,
+				"name": "Stone torch pillar",
+				"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 74
+			},
+			"stone_torch_pillar": {
+				"number": 679,
+				"name": "Stone - Torch pillar",
+				"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 149."
+			},
+			"iron_torch_stand_kit": {
+				"number": 680,
+				"retired": true,
+				"name": "Iron torch stand",
+				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 68
+			},
+			"iron_torch_stand": {
+				"number": 681,
+				"name": "Iron - Torch stand",
+				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 150."
+			},
+			"wooden_lamp_post_kit": {
+				"number": 682,
+				"retired": true,
+				"name": "Wooden lamp post",
+				"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 50
+			},
+			"wooden_lamp_post": {
+				"number": 683,
+				"name": "Wooden - Lamp post",
+				"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 151."
+			},
+			"iron_lamp_post_kit": {
+				"number": 684,
+				"retired": true,
+				"name": "Iron lamp post",
+				"description": "An iron lantern on a tall iron post.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 170
+			},
+			"iron_lamp_post": {
+				"number": 685,
+				"name": "Iron - Lamp post",
+				"description": "An iron lantern on a tall iron post.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 152."
+			},
+			"stone_lamp_post_kit": {
+				"number": 686,
+				"retired": true,
+				"name": "Stone lamp post",
+				"description": "An iron lantern on a stone post.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 86
+			},
+			"stone_lamp_post": {
+				"number": 687,
+				"name": "Stone - Lamp post",
+				"description": "An iron lantern on a stone post.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 153."
+			},
+			"stone_brazier_kit": {
+				"number": 688,
+				"retired": true,
+				"name": "Stone brazier",
+				"description": "A stone fire bowl. Burns logs for light.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 54
+			},
+			"stone_brazier": {
+				"number": 689,
+				"name": "Stone - Brazier",
+				"description": "A stone fire bowl. Burns logs for light.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 154."
+			},
+			"iron_brazier_kit": {
+				"number": 690,
+				"retired": true,
+				"name": "Iron brazier",
+				"description": "An iron fire bowl on legs. Burns logs for light.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 90
+			},
+			"iron_brazier": {
+				"number": 691,
+				"name": "Iron - Brazier",
+				"description": "An iron fire bowl on legs. Burns logs for light.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 155."
+			},
+			"thatch_garden_plot_kit": {
+				"number": 692,
+				"retired": true,
+				"name": "Thatch garden plot",
+				"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 22
+			},
+			"thatch_garden_plot": {
+				"number": 693,
+				"name": "Thatch - Garden plot",
+				"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 156."
+			},
+			"wooden_garden_plot_kit": {
+				"number": 694,
+				"retired": true,
+				"name": "Wooden garden plot",
+				"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 76
+			},
+			"wooden_garden_plot": {
+				"number": 695,
+				"name": "Wooden - Garden plot",
+				"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 157."
+			},
+			"stone_garden_plot_kit": {
+				"number": 696,
+				"retired": true,
+				"name": "Stone garden plot",
+				"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 48
+			},
+			"stone_garden_plot": {
+				"number": 697,
+				"name": "Stone - Garden plot",
+				"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 158."
+			},
+			"brick_garden_plot_kit": {
+				"number": 698,
+				"retired": true,
+				"name": "Brick garden plot",
+				"description": "A brick raised bed, two metres square. Holds its water best.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 58
+			},
+			"brick_garden_plot": {
+				"number": 699,
+				"name": "Brick - Garden plot",
+				"description": "A brick raised bed, two metres square. Holds its water best.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 159."
+			},
+			"wooden_planter_box_kit": {
+				"number": 700,
+				"retired": true,
+				"name": "Wooden planter box",
+				"description": "A plank window box of soil for herbs and flowers.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"wooden_planter_box": {
+				"number": 701,
+				"name": "Wooden - Planter box",
+				"description": "A plank window box of soil for herbs and flowers.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 160."
+			},
+			"stone_planter_kit": {
+				"number": 702,
+				"retired": true,
+				"name": "Stone planter",
+				"description": "A big stone pot of soil for a herb or a small shrub.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"stone_planter": {
+				"number": 703,
+				"name": "Stone - Planter",
+				"description": "A big stone pot of soil for a herb or a small shrub.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 161."
+			},
+			"wooden_trellis_kit": {
+				"number": 704,
+				"retired": true,
+				"name": "Wooden trellis",
+				"description": "A lattice of sticks to set beside a plot for climbing plants.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 22
+			},
+			"wooden_trellis": {
+				"number": 705,
+				"name": "Wooden - Trellis",
+				"description": "A lattice of sticks to set beside a plot for climbing plants.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 162."
+			},
+			"wooden_compost_bin_kit": {
+				"number": 706,
+				"retired": true,
+				"name": "Wooden compost bin",
+				"description": "A slatted bin that rots plant waste down into compost.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 35
+			},
+			"wooden_compost_bin": {
+				"number": 707,
+				"name": "Wooden - Compost bin",
+				"description": "A slatted bin that rots plant waste down into compost.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 163."
+			},
+			"thatch_scarecrow_kit": {
+				"number": 708,
+				"retired": true,
+				"name": "Thatch scarecrow",
+				"description": "A straw figure on a pole to watch over the plots.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 32
+			},
+			"thatch_scarecrow": {
+				"number": 709,
+				"name": "Thatch - Scarecrow",
+				"description": "A straw figure on a pole to watch over the plots.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 164."
+			},
+			"wooden_cold_frame_kit": {
+				"number": 710,
+				"retired": true,
+				"name": "Wooden cold frame",
+				"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 43
+			},
+			"wooden_cold_frame": {
+				"number": 711,
+				"name": "Wooden - Cold frame",
+				"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 165."
+			},
+			"stone_well_kit": {
+				"number": 712,
+				"retired": true,
+				"name": "Stone well",
+				"description": "A stone well with a windlass and bucket. E draws ten litres.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 215
+			},
+			"stone_well": {
+				"number": 713,
+				"name": "Stone - Well",
+				"description": "A stone well with a windlass and bucket. E draws ten litres.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 166. Locked until Steve's water_network module lands."
+			},
+			"wooden_hand_pump_kit": {
+				"number": 714,
+				"retired": true,
+				"name": "Wooden hand pump",
+				"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 77
+			},
+			"wooden_hand_pump": {
+				"number": 715,
+				"name": "Wooden - Hand pump",
+				"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 167. Locked until Steve's water_network module lands."
+			},
+			"iron_hand_pump_kit": {
+				"number": 716,
+				"retired": true,
+				"name": "Iron hand pump",
+				"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 185
+			},
+			"iron_hand_pump": {
+				"number": 717,
+				"name": "Iron - Hand pump",
+				"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 168. Locked until Steve's water_network module lands."
+			},
+			"log_trough_kit": {
+				"number": 718,
+				"retired": true,
+				"name": "Log trough",
+				"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 11
+			},
+			"log_trough": {
+				"number": 719,
+				"name": "Log - Trough",
+				"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 169. Locked until Steve's water_network module lands."
+			},
+			"wooden_trough_kit": {
+				"number": 720,
+				"retired": true,
+				"name": "Wooden trough",
+				"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 35
+			},
+			"wooden_trough": {
+				"number": 721,
+				"name": "Wooden - Trough",
+				"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 170. Locked until Steve's water_network module lands."
+			},
+			"wooden_channel_kit": {
+				"number": 722,
+				"retired": true,
+				"name": "Wooden channel",
+				"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"wooden_channel": {
+				"number": 723,
+				"name": "Wooden - Channel",
+				"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 171. Locked until Steve's water_network module lands."
+			},
+			"wooden_channel_corner_kit": {
+				"number": 724,
+				"retired": true,
+				"name": "Wooden channel corner",
+				"description": "A flume that turns a quarter circle.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"wooden_channel_corner": {
+				"number": 725,
+				"name": "Wooden - Channel corner",
+				"description": "A flume that turns a quarter circle.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 172. Locked until Steve's water_network module lands."
+			},
+			"wooden_channel_tee_kit": {
+				"number": 726,
+				"retired": true,
+				"name": "Wooden channel tee",
+				"description": "A flume that splits its water two ways.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 35
+			},
+			"wooden_channel_tee": {
+				"number": 727,
+				"name": "Wooden - Channel tee",
+				"description": "A flume that splits its water two ways.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 173. Locked until Steve's water_network module lands."
+			},
+			"wooden_sluice_kit": {
+				"number": 728,
+				"retired": true,
+				"name": "Wooden sluice",
+				"description": "A flume with a gate. E opens or shuts it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"wooden_sluice": {
+				"number": 729,
+				"name": "Wooden - Sluice",
+				"description": "A flume with a gate. E opens or shuts it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 174. Locked until Steve's water_network module lands."
+			},
+			"clay_pipe": {
+				"number": 730,
+				"name": "Clay pipe",
+				"description": "A fired clay pipe section. Two make a length of closed water pipe.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2
+			},
+			"stone_trough_kit": {
+				"number": 731,
+				"retired": true,
+				"name": "Stone trough",
+				"description": "A carved stone trough that holds two hundred litres.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 54
+			},
+			"stone_trough": {
+				"number": 732,
+				"name": "Stone - Trough",
+				"description": "A carved stone trough that holds two hundred litres.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 175. Locked until Steve's water_network module lands."
+			},
+			"stone_channel_kit": {
+				"number": 733,
+				"retired": true,
+				"name": "Stone channel",
+				"description": "An open stone channel, two metres long. Carries more than a flume.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 36
+			},
+			"stone_channel": {
+				"number": 734,
+				"name": "Stone - Channel",
+				"description": "An open stone channel, two metres long. Carries more than a flume.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 176. Locked until Steve's water_network module lands."
+			},
+			"stone_channel_corner_kit": {
+				"number": 735,
+				"retired": true,
+				"name": "Stone channel corner",
+				"description": "A stone channel that turns a quarter circle.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 36
+			},
+			"stone_channel_corner": {
+				"number": 736,
+				"name": "Stone - Channel corner",
+				"description": "A stone channel that turns a quarter circle.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 177. Locked until Steve's water_network module lands."
+			},
+			"stone_channel_tee_kit": {
+				"number": 737,
+				"retired": true,
+				"name": "Stone channel tee",
+				"description": "A stone channel that splits its water two ways.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 42
+			},
+			"stone_channel_tee": {
+				"number": 738,
+				"name": "Stone - Channel tee",
+				"description": "A stone channel that splits its water two ways.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 178. Locked until Steve's water_network module lands."
+			},
+			"clay_pipe_run_kit": {
+				"number": 739,
+				"retired": true,
+				"name": "Clay pipe",
+				"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 4
+			},
+			"clay_pipe_run": {
+				"number": 740,
+				"name": "Clay - Pipe",
+				"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 179. Locked until Steve's water_network module lands."
+			},
+			"clay_pipe_elbow_kit": {
+				"number": 741,
+				"retired": true,
+				"name": "Clay pipe elbow",
+				"description": "A clay pipe that turns a quarter circle.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 4
+			},
+			"clay_pipe_elbow": {
+				"number": 742,
+				"name": "Clay - Pipe elbow",
+				"description": "A clay pipe that turns a quarter circle.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 180. Locked until Steve's water_network module lands."
+			},
+			"clay_pipe_tee_kit": {
+				"number": 743,
+				"retired": true,
+				"name": "Clay pipe tee",
+				"description": "A clay pipe that splits its water two ways.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 6
+			},
+			"clay_pipe_tee": {
+				"number": 744,
+				"name": "Clay - Pipe tee",
+				"description": "A clay pipe that splits its water two ways.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 181. Locked until Steve's water_network module lands."
+			},
+			"iron_pipe_kit": {
+				"number": 745,
+				"retired": true,
+				"name": "Iron pipe",
+				"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 60
+			},
+			"iron_pipe": {
+				"number": 746,
+				"name": "Iron - Pipe",
+				"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 182. Locked until Steve's water_network module lands."
+			},
+			"iron_pipe_elbow_kit": {
+				"number": 747,
+				"retired": true,
+				"name": "Iron pipe elbow",
+				"description": "An iron pipe that turns a quarter circle.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 60
+			},
+			"iron_pipe_elbow": {
+				"number": 748,
+				"name": "Iron - Pipe elbow",
+				"description": "An iron pipe that turns a quarter circle.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 183. Locked until Steve's water_network module lands."
+			},
+			"iron_tap_kit": {
+				"number": 749,
+				"retired": true,
+				"name": "Iron tap",
+				"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 32
+			},
+			"iron_tap": {
+				"number": 750,
+				"name": "Iron - Tap",
+				"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 184. Locked until Steve's water_network module lands."
+			},
+			"iron_deep_well_pump_kit": {
+				"number": 751,
+				"retired": true,
+				"name": "Iron deep-well pump",
+				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 262
+			},
+			"iron_deep_well_pump": {
+				"number": 752,
+				"name": "Iron - Deep-well pump",
+				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 185. Locked until Steve's water_network module lands."
+			},
+			"stone_cistern_kit": {
+				"number": 753,
+				"retired": true,
+				"name": "Stone cistern",
+				"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 108
+			},
+			"stone_cistern": {
+				"number": 754,
+				"name": "Stone - Cistern",
+				"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 186. Locked until Steve's water_network module lands."
+			},
+			"stone_raised_cistern_kit": {
+				"number": 755,
+				"retired": true,
+				"name": "Stone raised cistern",
+				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 180
+			},
+			"stone_raised_cistern": {
+				"number": 756,
+				"name": "Stone - Raised cistern",
+				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 187. Locked until Steve's water_network module lands."
+			},
+			"horn": {
+				"number": 757,
+				"name": "Horn",
+				"description": "A hollow horn from a goat, sheep or ox. Pressed thin it lets light through; carved, it holds a drink.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [
+					"Antler"
+				],
+				"value": 6
+			},
+			"gut": {
+				"number": 758,
+				"name": "Gut",
+				"description": "Cleaned intestine from a large kill. Casing for sausage, and strong cord when dried and twisted.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [
+					"Sinew"
+				],
+				"value": 3
+			},
+			"toggle": {
+				"number": 759,
+				"name": "Toggle",
+				"description": "A short bone peg with a groove. Fastens a belt or a cloak through a loop.",
+				"kind": "material",
+				"stack": 50,
+				"look_alikes": [
+					"Wooden pin"
+				],
+				"value": 1
+			},
+			"hook": {
+				"number": 760,
+				"name": "Hook",
+				"description": "A fish hook ground from bone. A fishing rod needs one.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2
+			},
+			"bone_club": {
+				"number": 761,
+				"name": "Bone - Club",
+				"description": "A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer.",
+				"kind": "weapon",
+				"weapon_class": "club",
+				"tier": 1,
+				"stack": 1,
+				"unstackable": true,
+				"damage": 8.0,
+				"durability": 450,
+				"look_alikes": [
+					"Wooden - Club"
+				],
+				"repair": [
+					[
+						"bone",
+						1
+					]
+				],
+				"value": 12
+			},
+			"leather_quiver": {
+				"number": 762,
+				"name": "Leather - Quiver",
+				"description": "A stiff leather tube worn on the back. Holds 60 arrows and keeps them dry.",
+				"kind": "gear",
+				"slot": "back",
+				"ammo_class": "arrow",
+				"ammo_capacity": 60,
+				"stack": 1,
+				"unstackable": true,
+				"value": 45,
+				"look_alikes": [
+					"Hide - Quiver"
+				]
+			},
+			"wooden_longbow": {
+				"number": 763,
+				"name": "Wooden - Longbow",
+				"description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.",
+				"kind": "weapon",
+				"weapon_class": "bow",
+				"tier": 2,
+				"durability": 600,
+				"repair": [
+					[
+						"sinew",
+						1
+					]
+				],
+				"stack": 1,
+				"unstackable": true,
+				"value": 50,
+				"look_alikes": [
+					"Wooden - Bow"
+				]
+			},
+			"leather_trousers": {
+				"number": 764,
+				"name": "Leather - Trousers",
+				"description": "Leather trousers laced with straps. Tougher than hide and better in the wet.",
+				"kind": "clothing",
+				"slot": "legs",
+				"warmth": 0.16,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Hide - Trousers"
+				],
+				"value": 55
+			},
+			"leather_boots": {
+				"number": 765,
+				"name": "Leather - Boots",
+				"description": "Leather boots with a strapped ankle. They keep the feet dry for longer.",
+				"kind": "clothing",
+				"slot": "feet",
+				"warmth": 0.13,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Hide - Boots"
+				],
+				"value": 40
+			},
+			"leather_gloves": {
+				"number": 766,
+				"name": "Leather - Gloves",
+				"description": "Leather gloves with fingers. For work, the bowstring and the cold.",
+				"kind": "clothing",
+				"slot": "hands",
+				"warmth": 0.09,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Hide - Gloves"
+				],
+				"value": 30
+			},
+			"leather_backpack": {
+				"number": 767,
+				"name": "Leather - Backpack",
+				"description": "A leather pack with a frame of straps. Worn on the back, it carries more than a hide pack.",
+				"kind": "gear",
+				"slot": "back",
+				"carry_bonus_kg": 18,
+				"stack": 1,
+				"unstackable": true,
+				"value": 90,
+				"look_alikes": [
+					"Hide - Backpack"
+				]
+			},
+			"straw_hat": {
+				"number": 768,
+				"name": "Straw - Hat",
+				"description": "A wide hat of plaited straw. Light, and it keeps sun and a little rain off.",
+				"kind": "clothing",
+				"slot": "head",
+				"warmth": 0.04,
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 10
+			},
+			"worm": {
+				"number": 769,
+				"name": "Worm",
+				"description": "A fat earthworm turned up by the spade in rich soil. Fish take it as bait.",
+				"kind": "material",
+				"stack": 50,
+				"look_alikes": [],
+				"value": 1,
+				"future": true,
+				"note": "Found when digging soil (Steve #931, digging.json finds); future until that lands."
 			}
 	}
 }

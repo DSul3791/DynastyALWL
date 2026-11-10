@@ -1482,7 +1482,8 @@
 				"Picked from tall grass (spring/summer/autumn)"
 			],
 			"used_for": [
-				"Used in Thatch - Bed"
+				"Used in Thatch - Bed",
+				"Used in Straw - Hat"
 			],
 			"obtainable_now": true
 		},
@@ -1571,7 +1572,10 @@
 				"Used in Thatch - Roof",
 				"Used in Thatch - Wall",
 				"Used in Tinder",
-				"Used in Thatch - Window"
+				"Used in Thatch - Window",
+				"Used in Log - Roof corner",
+				"Used in Thatch - Roof corner",
+				"Used in Thatch - Scarecrow"
 			],
 			"obtainable_now": true
 		},
@@ -1939,11 +1943,19 @@
 				"Used in Wooden - Workbench",
 				"Used in Campfire",
 				"Used in Campfire pot",
-				"Used in Fibre - Arrow",
 				"Used in Iron - Hammer",
 				"Used in Log - Workbench",
 				"Used in Steel - Hammer",
-				"Used in Thatch - Window"
+				"Used in Thatch - Window",
+				"Used in Thatch - Fence",
+				"Used in Thatch - Gate",
+				"Used in Thatch - Pillar",
+				"Used in Thatch - Roof corner",
+				"Used in Wooden - Roof corner",
+				"Used in Thatch - Garden plot",
+				"Used in Thatch - Scarecrow",
+				"Used in Wooden - Trellis",
+				"Used in Wooden - Arrow (fibre)"
 			],
 			"obtainable_now": true
 		},
@@ -1961,15 +1973,14 @@
 			],
 			"used_for": [
 				"Used in Torch",
-				"Used in Tallow - Candle",
 				"Used in Compost",
-				"Used in Fibre - Arrow",
 				"Used in Fibre - Sandals",
 				"Used in Fibre - Cloak",
 				"Used in Fibre - Skirt",
 				"Used in Leaf bandage",
 				"Used in Fibre cloth",
-				"Used in Fibre - Gambeson"
+				"Used in Fibre - Gambeson",
+				"Used in Wooden - Arrow (fibre)"
 			],
 			"obtainable_now": true
 		},
@@ -1989,7 +2000,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": true
 		},
@@ -2017,7 +2039,47 @@
 				"Used in Log - Workbench",
 				"Used in Thatch - Window",
 				"Used in Wooden - Bench",
-				"Used in Wooden - Table"
+				"Used in Wooden - Table",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Thatch - Fence",
+				"Used in Thatch - Gate",
+				"Used in Wooden - Fence",
+				"Used in Wooden - Gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Thatch - Pillar",
+				"Used in Thatch - Roof corner",
+				"Used in Wooden - Pillar",
+				"Used in Wooden - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Wooden - Barrel",
+				"Used in Wooden - Shelf",
+				"Used in Log - Stairs",
+				"Used in Wooden - Double doorway",
+				"Used in Wooden - Railing",
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lamp post",
+				"Used in Wooden - Lantern",
+				"Used in Wooden - Torch post",
+				"Used in Thatch - Garden plot",
+				"Used in Thatch - Scarecrow",
+				"Used in Wooden - Cold frame",
+				"Used in Wooden - Compost bin",
+				"Used in Wooden - Garden plot",
+				"Used in Wooden - Trellis",
+				"Used in Log - Trough",
+				"Used in Wooden - Channel",
+				"Used in Wooden - Channel corner",
+				"Used in Wooden - Channel tee",
+				"Used in Wooden - Hand pump",
+				"Used in Wooden - Trough",
+				"Used in Bone - Club",
+				"Used in Straw - Hat",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -2281,7 +2343,41 @@
 				"Used in Wooden - Foundation",
 				"Used in Wooden - Bench",
 				"Used in Wooden - Chair",
-				"Used in Wooden - Table"
+				"Used in Wooden - Table",
+				"Used in Brick - Gate",
+				"Used in Stone - Gate",
+				"Used in Wooden - Fence",
+				"Used in Wooden - Gate",
+				"Used in Brick - Roof corner",
+				"Used in Stone - Roof corner",
+				"Used in Wooden - Pillar",
+				"Used in Wooden - Roof corner",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table",
+				"Used in Stone - Table",
+				"Used in Stone - Workbench",
+				"Used in Wooden - Barrel",
+				"Used in Wooden - Cupboard",
+				"Used in Wooden - Shelf",
+				"Used in Iron - Doorway",
+				"Used in Wooden - Double doorway",
+				"Used in Wooden - Railing",
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lamp post",
+				"Used in Wooden - Lantern",
+				"Used in Wooden - Cold frame",
+				"Used in Wooden - Compost bin",
+				"Used in Wooden - Garden plot",
+				"Used in Wooden - Planter box",
+				"Used in Stone - Well",
+				"Used in Wooden - Channel",
+				"Used in Wooden - Channel corner",
+				"Used in Wooden - Channel tee",
+				"Used in Wooden - Hand pump",
+				"Used in Wooden - Sluice",
+				"Used in Wooden - Trough",
+				"Used in Stone - Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -2320,7 +2416,26 @@
 				"Used in Iron - Spade",
 				"Used in Iron - Sword",
 				"Used in Iron - Shield",
-				"Used in Iron - Hammer"
+				"Used in Iron - Hammer",
+				"Used in Iron - Fence",
+				"Used in Iron - Gate",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table",
+				"Used in Iron - Doorway",
+				"Used in Iron - Railing",
+				"Used in Iron - Brazier",
+				"Used in Iron - Hanging lantern",
+				"Used in Iron - Lamp post",
+				"Used in Iron - Lantern",
+				"Used in Iron - Torch stand",
+				"Used in Iron - Wall lantern",
+				"Used in Stone - Torch pillar",
+				"Used in Iron - Hand pump",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Pipe",
+				"Used in Iron - Pipe elbow",
+				"Used in Iron - Tap"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2341,7 +2456,8 @@
 				"Used in Steel - Pickaxe",
 				"Used in Steel - Spade",
 				"Used in Steel - Striker",
-				"Used in Steel - Hammer"
+				"Used in Steel - Hammer",
+				"Used in Steel - Doorway"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2374,7 +2490,13 @@
 			"description": "A shovelful of dark earth, dug from the ground.",
 			"how_to_get": [],
 			"used_for": [
-				"Dug earth. Dig and fill the ground with it."
+				"Dug earth. Dig and fill the ground with it.",
+				"Used in Brick - Garden plot",
+				"Used in Stone - Garden plot",
+				"Used in Stone - Planter",
+				"Used in Thatch - Garden plot",
+				"Used in Wooden - Garden plot",
+				"Used in Wooden - Planter box"
 			],
 			"obtainable_now": false
 		},
@@ -2393,7 +2515,8 @@
 				"Used in Clay mortar",
 				"Used to build Stone forge",
 				"Used to build Brick oven",
-				"Used to build Clay hearth"
+				"Used to build Clay hearth",
+				"Used in Clay pipe"
 			],
 			"obtainable_now": true
 		},
@@ -2450,7 +2573,9 @@
 			"how_to_get": [
 				"Craft: 6 Plank, 2 Twine"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Stone - Well"
+			],
 			"obtainable_now": true
 		},
 		"waterskin": {
@@ -2458,7 +2583,7 @@
 			"kind": "container",
 			"description": "A sewn skin bag for carrying a drink.",
 			"how_to_get": [
-				"Craft: 2 Hide, 1 Twine"
+				"Craft: 2 Hide, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2481,7 +2606,11 @@
 				"Used in Hide - Cloak",
 				"Used in Hide - Gloves",
 				"Used in Hide glue",
-				"Used in Wooden - Chair"
+				"Used in Wooden - Chair",
+				"Used in Iron - Chair",
+				"Used in Iron - Hand pump",
+				"Used in Wooden - Hand pump",
+				"Used in Iron - Deep-well pump"
 			],
 			"obtainable_now": true
 		},
@@ -2493,7 +2622,8 @@
 				"Craft: 4 Twine"
 			],
 			"used_for": [
-				"Used in Hide - Backpack"
+				"Used in Hide - Backpack",
+				"Used in Stone - Well"
 			],
 			"obtainable_now": true
 		},
@@ -2542,7 +2672,11 @@
 				"Dropped by duck when worked with a knife"
 			],
 			"used_for": [
-				"Used in Bone - Arrow"
+				"Used in Bone - Arrow",
+				"Used in Bone - Needle",
+				"Used in Bone - Club",
+				"Used in Hook",
+				"Used in Toggle"
 			],
 			"obtainable_now": true
 		},
@@ -2551,7 +2685,7 @@
 			"kind": "gear",
 			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
 			"how_to_get": [
-				"Craft: 4 Hide, 1 Rope"
+				"Craft: 4 Hide, 1 Rope (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2678,7 +2812,7 @@
 			"kind": "clothing",
 			"description": "A wrapped animal hide. Warm over the shoulders.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2688,7 +2822,7 @@
 			"kind": "clothing",
 			"description": "Hide stitched around the foot. Warm and tough.",
 			"how_to_get": [
-				"Craft: 2 Hide, 2 Twine"
+				"Craft: 2 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2698,7 +2832,7 @@
 			"kind": "clothing",
 			"description": "A close hood of hide with the hair turned in.",
 			"how_to_get": [
-				"Craft: 1 Hide, 1 Twine"
+				"Craft: 1 Hide, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2708,7 +2842,7 @@
 			"kind": "clothing",
 			"description": "Stitched hide mittens. Warm hands.",
 			"how_to_get": [
-				"Craft: 1 Hide, 1 Twine"
+				"Craft: 1 Hide, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2718,10 +2852,10 @@
 			"kind": "clothing",
 			"description": "Hide tied around each leg.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"No longer made: merged into Hide - Trousers (3 Hide, 2 Twine)"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false
 		},
 		"raw_meat": {
 			"name": "Raw meat",
@@ -2770,7 +2904,8 @@
 				"Used in Fur - Boots",
 				"Used in Fur - Cloak",
 				"Used in Fur - Hat",
-				"Used in Sinew cord"
+				"Used in Sinew cord",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -2788,7 +2923,6 @@
 			],
 			"used_for": [
 				"Used in Baked potato",
-				"Used in Tallow - Candle",
 				"Used in Egg and nettle fry",
 				"Used in Fine leather",
 				"Used in Hearty pottage",
@@ -2842,7 +2976,7 @@
 			"kind": "tool",
 			"description": "A stick, line and hook. Cast at water, then click again when something bites.",
 			"how_to_get": [
-				"Craft: 2 Stick, 2 Twine"
+				"Craft: 2 Stick, 2 Twine, 1 Hook"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2880,6 +3014,7 @@
 				"Used in Fish stew",
 				"Used in Herb fish",
 				"Used in Juniper trout",
+				"Used in Lamp oil",
 				"Used in Smoked fish"
 			],
 			"obtainable_now": true
@@ -3092,7 +3227,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3131,7 +3277,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3170,7 +3327,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3209,7 +3377,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3248,7 +3427,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3287,7 +3477,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3326,7 +3527,18 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Log - Pillar",
+				"Used in Log - Roof corner",
+				"Used in Log - Bench",
+				"Used in Log - Table",
+				"Used in Log - Stairs",
+				"Used in Wooden - Torch post",
+				"Used in Log - Trough"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3695,7 +3907,13 @@
 				"Built into the Clay hearth and the Brick oven (hammer blueprints); planned for brick walls and chimneys.",
 				"Used in Brick - Doorway",
 				"Used in Brick - Foundation",
-				"Used in Brick - Window"
+				"Used in Brick - Window",
+				"Used in Brick - Fence",
+				"Used in Brick - Gate",
+				"Used in Brick - Pillar",
+				"Used in Brick - Roof corner",
+				"Used in Brick - Stairs",
+				"Used in Brick - Garden plot"
 			],
 			"obtainable_now": true
 		},
@@ -3714,7 +3932,29 @@
 				"Used in Brick - Foundation",
 				"Used in Brick - Window",
 				"Used in Stone - Doorway",
-				"Used in Stone - Window"
+				"Used in Stone - Window",
+				"Used in Brick - Fence",
+				"Used in Brick - Gate",
+				"Used in Brick - Pillar",
+				"Used in Stone - Pillar",
+				"Used in Stone - Bench",
+				"Used in Stone - Table",
+				"Used in Stone - Workbench",
+				"Used in Brick - Stairs",
+				"Used in Stone - Stairs",
+				"Used in Stone - Brazier",
+				"Used in Stone - Lamp post",
+				"Used in Stone - Torch pillar",
+				"Used in Brick - Garden plot",
+				"Used in Stone - Garden plot",
+				"Used in Stone - Planter",
+				"Used in Stone - Well",
+				"Used in Stone - Channel",
+				"Used in Stone - Channel corner",
+				"Used in Stone - Channel tee",
+				"Used in Stone - Cistern",
+				"Used in Stone - Raised cistern",
+				"Used in Stone - Trough"
 			],
 			"obtainable_now": true
 		},
@@ -3819,7 +4059,17 @@
 			"used_for": [
 				"Used in Water wheel",
 				"Used to build Sawmill",
-				"Used to build Woodworking table"
+				"Used to build Woodworking table",
+				"Used in Iron - Fence",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table",
+				"Used in Wooden - Barrel",
+				"Used in Wooden - Cupboard",
+				"Used in Iron - Doorway",
+				"Used in Iron - Railing",
+				"Used in Wooden - Hand pump",
+				"Used in Iron - Deep-well pump"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3832,7 +4082,26 @@
 				"Craft at a workbench: 3 Stone"
 			],
 			"used_for": [
-				"Planned: a cobble floor and path."
+				"Planned: a cobble floor and path.",
+				"Used in Stone - Fence",
+				"Used in Stone - Gate",
+				"Used in Stone - Pillar",
+				"Used in Stone - Bench",
+				"Used in Stone - Table",
+				"Used in Stone - Workbench",
+				"Used in Stone - Stairs",
+				"Used in Stone - Brazier",
+				"Used in Stone - Lamp post",
+				"Used in Stone - Torch pillar",
+				"Used in Stone - Garden plot",
+				"Used in Stone - Planter",
+				"Used in Stone - Well",
+				"Used in Stone - Channel",
+				"Used in Stone - Channel corner",
+				"Used in Stone - Channel tee",
+				"Used in Stone - Cistern",
+				"Used in Stone - Raised cistern",
+				"Used in Stone - Trough"
 			],
 			"obtainable_now": true
 		},
@@ -3844,7 +4113,8 @@
 				"Craft at a workbench: 2 Stone"
 			],
 			"used_for": [
-				"Planned: a stone roof."
+				"Planned: a stone roof.",
+				"Used in Stone - Roof corner"
 			],
 			"obtainable_now": true
 		},
@@ -3869,7 +4139,20 @@
 				"Craft at a forge: 1 Iron ingot makes 20"
 			],
 			"used_for": [
-				"Planned: doors and chests. Made at a forge from an iron ingot."
+				"Planned: doors and chests. Made at a forge from an iron ingot.",
+				"Used in Brick - Gate",
+				"Used in Iron - Gate",
+				"Used in Log - Palisade gate",
+				"Used in Stone - Gate",
+				"Used in Wooden - Gate",
+				"Used in Wooden - Cupboard",
+				"Used in Iron - Doorway",
+				"Used in Steel - Doorway",
+				"Used in Wooden - Double doorway",
+				"Used in Iron - Hand pump",
+				"Used in Wooden - Sluice",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Tap"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4041,8 +4324,7 @@
 			"description": "Sticks, branches and rough bedding lashed with twine. Set it under a roof and lie down to sleep.",
 			"how_to_get": [
 				"Craft: 10 Thatch, 4 Stick, 2 Twine",
-				"Craft: 8 Bedding, 4 Stick, 2 Twine",
-				"Craft: 8 Straw, 4 Stick, 2 Twine"
+				"Craft: 8 Bedding, 4 Stick, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4180,7 +4462,9 @@
 			"kind": "material",
 			"description": "A hardened stick with feather fletching. Needs a bow.",
 			"how_to_get": [
-				"Craft: 2 Stick, 2 Feather"
+				"Craft: 2 Stick, 2 Feather",
+				"Craft: 2 Stick, 1 Quill",
+				"Craft: 2 Stick, 1 Plant fibre"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4200,7 +4484,7 @@
 			"kind": "gear",
 			"description": "A hide tube worn on the back. Holds 40 arrows.",
 			"how_to_get": [
-				"Craft: 2 Hide, 2 Twine"
+				"Craft: 2 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4338,7 +4622,12 @@
 				"Used in Bronze - Sword",
 				"Used in Iron - Helm",
 				"Used in Iron - Mail shirt",
-				"Used in Steel - Sword"
+				"Used in Steel - Sword",
+				"Used in Leather - Backpack",
+				"Used in Leather - Boots",
+				"Used in Leather - Gloves",
+				"Used in Leather - Quiver",
+				"Used in Leather - Trousers"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4608,7 +4897,7 @@
 			"kind": "clothing",
 			"description": "A sewn hide shirt with sleeves. Warmer than a cloak.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4616,9 +4905,9 @@
 		"hide_trousers": {
 			"name": "Hide - Trousers",
 			"kind": "clothing",
-			"description": "Hide sewn into trousers. Better than leggings.",
+			"description": "Hide sewn into trousers. Warm, and tough on rough ground.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine"
+				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4628,7 +4917,7 @@
 			"kind": "clothing",
 			"description": "Stitched hide gloves with fingers. For work and cold.",
 			"how_to_get": [
-				"Craft: 1 Hide, 2 Twine"
+				"Craft: 1 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4668,10 +4957,12 @@
 			"kind": "tool",
 			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"how_to_get": [
-				"Craft: 1 Animal fat, 1 Plant fibre",
 				"Craft: 1 Tallow, 1 Plant fibre"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lantern"
+			],
 			"obtainable_now": true
 		},
 		"wicker_shield": {
@@ -4809,7 +5100,7 @@
 			"kind": "clothing",
 			"description": "A close leather cap. Better than bare hide.",
 			"how_to_get": [
-				"Craft: 1 Leather, 1 Leather strap"
+				"Craft at a workbench: 1 Leather, 1 Leather strap (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4820,7 +5111,7 @@
 			"kind": "clothing",
 			"description": "A stiff leather vest. Turns a glancing blow.",
 			"how_to_get": [
-				"Craft at a workbench: 2 Leather, 2 Leather strap"
+				"Craft at a workbench: 2 Leather, 2 Leather strap (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5046,7 +5337,9 @@
 				"Dropped by moose when worked with a knife",
 				"Dropped by reindeer when worked with a knife"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Antler - Mount"
+			],
 			"obtainable_now": true
 		},
 		"tusk": {
@@ -5140,10 +5433,10 @@
 			"kind": "material",
 			"description": "A hardened stick with fibre fletching. Weak and short, but needs no feather.",
 			"how_to_get": [
-				"Craft: 2 Stick, 1 Plant fibre"
+				"No longer made: plant fibre fletching now makes Wooden - Arrow (2 Stick, 1 Plant fibre)"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false
 		},
 		"seaweed": {
 			"name": "Seaweed",
@@ -5279,7 +5572,7 @@
 			"kind": "clothing",
 			"description": "A woven wool shirt. Warm.",
 			"how_to_get": [
-				"Craft: 2 Wool cloth, 1 Twine"
+				"Craft at a workbench: 2 Wool cloth, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5290,7 +5583,7 @@
 			"kind": "clothing",
 			"description": "Heavy woven wool trousers.",
 			"how_to_get": [
-				"Craft: 2 Wool cloth, 1 Twine"
+				"Craft at a workbench: 2 Wool cloth, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5301,7 +5594,7 @@
 			"kind": "clothing",
 			"description": "A snug knitted wool cap.",
 			"how_to_get": [
-				"Craft: 1 Wool cloth"
+				"Craft at a workbench: 1 Wool cloth (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5312,7 +5605,7 @@
 			"kind": "clothing",
 			"description": "Thick wool mittens.",
 			"how_to_get": [
-				"Craft: 1 Wool cloth"
+				"Craft at a workbench: 1 Wool cloth (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5323,7 +5616,7 @@
 			"kind": "clothing",
 			"description": "A light linen shirt. Cool in summer heat.",
 			"how_to_get": [
-				"Craft: 3 Linen, 1 Twine"
+				"Craft at a workbench: 3 Linen, 1 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5334,7 +5627,7 @@
 			"kind": "clothing",
 			"description": "A heavy cloak of fur pelts. The warmest body cover.",
 			"how_to_get": [
-				"Craft: 3 Fur, 2 Sinew"
+				"Craft at a workbench: 3 Fur, 2 Sinew (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5345,7 +5638,7 @@
 			"kind": "clothing",
 			"description": "A fur hat with ear flaps.",
 			"how_to_get": [
-				"Craft: 1 Fur, 1 Sinew"
+				"Craft at a workbench: 1 Fur, 1 Sinew (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5356,7 +5649,7 @@
 			"kind": "clothing",
 			"description": "Fur boots with the hair turned in.",
 			"how_to_get": [
-				"Craft: 2 Fur, 1 Sinew"
+				"Craft at a workbench: 2 Fur, 1 Sinew (keep Bone - Needle)"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5790,7 +6083,10 @@
 			],
 			"used_for": [
 				"Used in Soap",
-				"Used in Tallow candle"
+				"Used in Tallow candle",
+				"Used in Iron - Torch stand",
+				"Used in Stone - Torch pillar",
+				"Used in Wooden - Torch post"
 			],
 			"obtainable_now": true
 		},
@@ -5809,13 +6105,18 @@
 			"kind": "material",
 			"description": "A strip of leather for straps, belts and harness.",
 			"how_to_get": [
-				"Craft: 1 Leather (keep Stone - Knife)"
+				"Craft at a workbench: 1 Leather (keep Stone - Knife)"
 			],
 			"used_for": [
 				"Used in Leather - Jerkin",
 				"Used in Bronze - Axe",
 				"Used in Leather - Cap",
-				"Used in Wooden - Spyglass"
+				"Used in Wooden - Spyglass",
+				"Used in Leather - Backpack",
+				"Used in Leather - Boots",
+				"Used in Leather - Gloves",
+				"Used in Leather - Quiver",
+				"Used in Leather - Trousers"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -6934,7 +7235,8 @@
 			"used_for": [
 				"Split on a chopping block: 4 firewood",
 				"Make a chopping block",
-				"Burn it in a fire"
+				"Burn it in a fire",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -6948,7 +7250,8 @@
 			"used_for": [
 				"Split on a chopping block: 4 firewood",
 				"Make a chopping block",
-				"Burn it in a fire"
+				"Burn it in a fire",
+				"Used in Wooden - Longbow"
 			],
 			"obtainable_now": true
 		},
@@ -6988,7 +7291,7 @@
 			"kind": "material",
 			"description": "A thick pelt with the hair on, from a wolf, fox or bear. The warmest thing to wear.",
 			"how_to_get": [
-				"Dropped by wolf, fox and bear when worked with a knife"
+				"Dropped by wolf, fox, bear, black bear, beaver, otter, mink, pine marten, lynx, seal and reindeer when worked with a knife"
 			],
 			"used_for": [
 				"Used in Fur - Boots",
@@ -7215,6 +7518,1795 @@
 			"description": "A forged steel head on a short haft. Hold it to place big builds from blueprints.",
 			"how_to_get": [
 				"Craft at a forge: 2 Steel ingot, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_fence_kit": {
+			"name": "Thatch fence",
+			"kind": "placeable",
+			"description": "Stakes woven with sticks and lashed with twine, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_fence": {
+			"name": "Thatch - Fence",
+			"kind": "structure",
+			"description": "Stakes woven with sticks and lashed with twine, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_gate_kit": {
+			"name": "Thatch gate",
+			"kind": "placeable",
+			"description": "A woven hurdle hung on twine hinges. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 14 Stick, 3 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_gate": {
+			"name": "Thatch - Gate",
+			"kind": "structure",
+			"description": "A woven hurdle hung on twine hinges. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wood_fence_kit": {
+			"name": "Wooden fence",
+			"kind": "placeable",
+			"description": "A picket fence of planks, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood_fence": {
+			"name": "Wooden - Fence",
+			"kind": "structure",
+			"description": "A picket fence of planks, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wood_gate_kit": {
+			"name": "Wooden gate",
+			"kind": "placeable",
+			"description": "A plank gate with a Z brace. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood_gate": {
+			"name": "Wooden - Gate",
+			"kind": "structure",
+			"description": "A plank gate with a Z brace. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_fence_kit": {
+			"name": "Log fence",
+			"kind": "placeable",
+			"description": "Split rails pegged into log posts, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_fence": {
+			"name": "Log - Fence",
+			"kind": "structure",
+			"description": "Split rails pegged into log posts, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_gate_kit": {
+			"name": "Log gate",
+			"kind": "placeable",
+			"description": "A rail gate of split logs. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_gate": {
+			"name": "Log - Gate",
+			"kind": "structure",
+			"description": "A rail gate of split logs. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_palisade_kit": {
+			"name": "Log palisade",
+			"kind": "placeable",
+			"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_palisade": {
+			"name": "Log - Palisade",
+			"kind": "structure",
+			"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_palisade_gate_kit": {
+			"name": "Log palisade gate",
+			"kind": "placeable",
+			"description": "A palisade section that swings open like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_palisade_gate": {
+			"name": "Log - Palisade gate",
+			"kind": "structure",
+			"description": "A palisade section that swings open like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_fence_kit": {
+			"name": "Stone fence",
+			"kind": "placeable",
+			"description": "A low dry-stone wall with capstones, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_fence": {
+			"name": "Stone - Fence",
+			"kind": "structure",
+			"description": "A low dry-stone wall with capstones, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_gate_kit": {
+			"name": "Stone gate",
+			"kind": "placeable",
+			"description": "A timber gate between stone piers. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_gate": {
+			"name": "Stone - Gate",
+			"kind": "structure",
+			"description": "A timber gate between stone piers. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_fence_kit": {
+			"name": "Brick fence",
+			"kind": "placeable",
+			"description": "A low brick wall on a stone plinth, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Brick, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_fence": {
+			"name": "Brick - Fence",
+			"kind": "structure",
+			"description": "A low brick wall on a stone plinth, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_gate_kit": {
+			"name": "Brick gate",
+			"kind": "placeable",
+			"description": "A timber gate between brick piers. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_gate": {
+			"name": "Brick - Gate",
+			"kind": "structure",
+			"description": "A timber gate between brick piers. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_fence_kit": {
+			"name": "Iron fence",
+			"kind": "placeable",
+			"description": "Iron railings on a brick plinth, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Iron ingot, 6 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_fence": {
+			"name": "Iron - Fence",
+			"kind": "structure",
+			"description": "Iron railings on a brick plinth, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_gate_kit": {
+			"name": "Iron gate",
+			"kind": "placeable",
+			"description": "A wrought iron gate. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Iron ingot, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_gate": {
+			"name": "Iron - Gate",
+			"kind": "structure",
+			"description": "A wrought iron gate. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_pillar_kit": {
+			"name": "Thatch pillar",
+			"kind": "placeable",
+			"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_pillar": {
+			"name": "Thatch - Pillar",
+			"kind": "structure",
+			"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_pillar_kit": {
+			"name": "Wooden pillar",
+			"kind": "placeable",
+			"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_pillar": {
+			"name": "Wooden - Pillar",
+			"kind": "structure",
+			"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_pillar_kit": {
+			"name": "Log pillar",
+			"kind": "placeable",
+			"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_pillar": {
+			"name": "Log - Pillar",
+			"kind": "structure",
+			"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_pillar_kit": {
+			"name": "Stone pillar",
+			"kind": "placeable",
+			"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_pillar": {
+			"name": "Stone - Pillar",
+			"kind": "structure",
+			"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_pillar_kit": {
+			"name": "Brick pillar",
+			"kind": "placeable",
+			"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Brick, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_pillar": {
+			"name": "Brick - Pillar",
+			"kind": "structure",
+			"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_roof_corner_kit": {
+			"name": "Thatch roof corner",
+			"kind": "placeable",
+			"description": "The corner of a thatch roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Twine, 18 Thatch, 8 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_roof_corner": {
+			"name": "Thatch - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a thatch roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_roof_corner_kit": {
+			"name": "Wooden roof corner",
+			"kind": "placeable",
+			"description": "The corner of a wooden roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 2 Twine, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_roof_corner": {
+			"name": "Wooden - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a wooden roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_roof_corner_kit": {
+			"name": "Log roof corner",
+			"kind": "placeable",
+			"description": "The corner of a log roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Log, 12 Thatch, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_roof_corner": {
+			"name": "Log - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a log roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_roof_corner_kit": {
+			"name": "Stone roof corner",
+			"kind": "placeable",
+			"description": "The corner of a stone roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Stone shingle, 4 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_roof_corner": {
+			"name": "Stone - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a stone roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_roof_corner_kit": {
+			"name": "Brick roof corner",
+			"kind": "placeable",
+			"description": "The corner of a brick roof, where two slopes meet.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Brick, 4 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_roof_corner": {
+			"name": "Brick - Roof corner",
+			"kind": "structure",
+			"description": "The corner of a brick roof, where two slopes meet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_bench_kit": {
+			"name": "Log bench",
+			"kind": "placeable",
+			"description": "A split log on two stumps. Seats two or three.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_bench": {
+			"name": "Log - Bench",
+			"kind": "structure",
+			"description": "A split log on two stumps. Seats two or three.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_table_kit": {
+			"name": "Log table",
+			"kind": "placeable",
+			"description": "A table with a hand-hewn log top.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_table": {
+			"name": "Log - Table",
+			"kind": "structure",
+			"description": "A table with a hand-hewn log top.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_bench_kit": {
+			"name": "Stone bench",
+			"kind": "placeable",
+			"description": "A heavy stone slab on stone feet. Seats two or three.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_bench": {
+			"name": "Stone - Bench",
+			"kind": "structure",
+			"description": "A heavy stone slab on stone feet. Seats two or three.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_table_kit": {
+			"name": "Stone table",
+			"kind": "placeable",
+			"description": "A thick stone-footed table with a plank top.",
+			"how_to_get": [
+				"Build with a hammer (press R): 14 Cobblestone, 3 Clay mortar, 2 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_table": {
+			"name": "Stone - Table",
+			"kind": "structure",
+			"description": "A thick stone-footed table with a plank top.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_bench_kit": {
+			"name": "Iron bench",
+			"kind": "placeable",
+			"description": "A timber bench bound with iron. Seats two or three.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_bench": {
+			"name": "Iron - Bench",
+			"kind": "structure",
+			"description": "A timber bench bound with iron. Seats two or three.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_chair_kit": {
+			"name": "Iron chair",
+			"kind": "placeable",
+			"description": "An iron-bound chair with a hide seat.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails, 1 Hide"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_chair": {
+			"name": "Iron - Chair",
+			"kind": "structure",
+			"description": "An iron-bound chair with a hide seat.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_table_kit": {
+			"name": "Iron table",
+			"kind": "placeable",
+			"description": "A plank table bound with iron.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_table": {
+			"name": "Iron - Table",
+			"kind": "structure",
+			"description": "A plank table bound with iron.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_workbench_kit": {
+			"name": "Stone workbench",
+			"kind": "placeable",
+			"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Cobblestone, 4 Clay mortar, 6 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_workbench": {
+			"name": "Stone - Workbench",
+			"kind": "structure",
+			"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_shelf_kit": {
+			"name": "Wooden shelf",
+			"kind": "placeable",
+			"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_shelf": {
+			"name": "Wooden - Shelf",
+			"kind": "structure",
+			"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_cupboard_kit": {
+			"name": "Wooden cupboard",
+			"kind": "placeable",
+			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 12 Nails, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_cupboard": {
+			"name": "Wooden - Cupboard",
+			"kind": "structure",
+			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_barrel_kit": {
+			"name": "Wooden barrel",
+			"kind": "placeable",
+			"description": "A hooped plank barrel. Holds 8 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_barrel": {
+			"name": "Wooden - Barrel",
+			"kind": "structure",
+			"description": "A hooped plank barrel. Holds 8 stacks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_stairs_kit": {
+			"name": "Log stairs",
+			"kind": "placeable",
+			"description": "A flight of hewn log steps up to the next ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_stairs": {
+			"name": "Log - Stairs",
+			"kind": "structure",
+			"description": "A flight of hewn log steps up to the next ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_stairs_kit": {
+			"name": "Stone stairs",
+			"kind": "placeable",
+			"description": "A flight of mortared stone steps up to the next ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Cobblestone, 4 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_stairs": {
+			"name": "Stone - Stairs",
+			"kind": "structure",
+			"description": "A flight of mortared stone steps up to the next ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_stairs_kit": {
+			"name": "Brick stairs",
+			"kind": "placeable",
+			"description": "A flight of brick steps up to the next ceiling.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Brick, 4 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_stairs": {
+			"name": "Brick - Stairs",
+			"kind": "structure",
+			"description": "A flight of brick steps up to the next ceiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_railing_kit": {
+			"name": "Wooden railing",
+			"kind": "placeable",
+			"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_railing": {
+			"name": "Wooden - Railing",
+			"kind": "structure",
+			"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_railing_kit": {
+			"name": "Iron railing",
+			"kind": "placeable",
+			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot, 4 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_railing": {
+			"name": "Iron - Railing",
+			"kind": "structure",
+			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"double_doorway_kit": {
+			"name": "Wooden double doorway",
+			"kind": "placeable",
+			"description": "A plank wall four metres wide with a pair of doors.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 2 Twine, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"double_doorway": {
+			"name": "Wooden - Double doorway",
+			"kind": "structure",
+			"description": "A plank wall four metres wide with a pair of doors.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_doorway_kit": {
+			"name": "Iron doorway",
+			"kind": "placeable",
+			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 2 Iron ingot, 12 Nails, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_doorway": {
+			"name": "Iron - Doorway",
+			"kind": "structure",
+			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"steel_doorway_kit": {
+			"name": "Steel doorway",
+			"kind": "placeable",
+			"description": "A wall with a steel door, one metre wide and two high.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Steel ingot, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"steel_doorway": {
+			"name": "Steel - Doorway",
+			"kind": "structure",
+			"description": "A wall with a steel door, one metre wide and two high.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"horn_pane": {
+			"name": "Horn pane",
+			"kind": "material",
+			"description": "A thin pane of scraped horn. Lets lantern light through.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Horn"
+			],
+			"used_for": [
+				"Used in Iron - Hanging lantern",
+				"Used in Iron - Lantern",
+				"Used in Iron - Wall lantern",
+				"Used in Wooden - Hanging lantern",
+				"Used in Wooden - Lantern",
+				"Used in Wooden - Cold frame"
+			],
+			"obtainable_now": true
+		},
+		"lamp_oil": {
+			"name": "Lamp oil",
+			"kind": "material",
+			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
+			"how_to_get": [
+				"Craft at a campfire pot: 3 Herring"
+			],
+			"used_for": [
+				"Used in Iron - Hanging lantern",
+				"Used in Iron - Lantern",
+				"Used in Iron - Wall lantern"
+			],
+			"obtainable_now": true
+		},
+		"wooden_lantern": {
+			"name": "Wooden - Lantern",
+			"kind": "tool",
+			"description": "A plank lantern with horn panes. Takes a candle; does not go out in the rain.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Plank, 1 Twine, 2 Horn pane, 1 Tallow - Candle"
+			],
+			"used_for": [
+				"Used in Wooden - Lamp post"
+			],
+			"obtainable_now": false
+		},
+		"iron_lantern": {
+			"name": "Iron - Lantern",
+			"kind": "tool",
+			"description": "An iron lantern with horn panes. Burns lamp oil; does not go out in the rain.",
+			"how_to_get": [
+				"Craft at a forge: 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
+			],
+			"used_for": [
+				"Used in Iron - Lamp post",
+				"Used in Stone - Lamp post"
+			],
+			"obtainable_now": false
+		},
+		"wooden_hanging_lantern_kit": {
+			"name": "Wooden hanging lantern",
+			"kind": "placeable",
+			"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Plank, 1 Twine, 2 Horn pane, 1 Tallow - Candle"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_hanging_lantern": {
+			"name": "Wooden - Hanging lantern",
+			"kind": "structure",
+			"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hanging_lantern_kit": {
+			"name": "Iron hanging lantern",
+			"kind": "placeable",
+			"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hanging_lantern": {
+			"name": "Iron - Hanging lantern",
+			"kind": "structure",
+			"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_wall_lantern_kit": {
+			"name": "Iron wall lantern",
+			"kind": "placeable",
+			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_wall_lantern": {
+			"name": "Iron - Wall lantern",
+			"kind": "structure",
+			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_torch_post_kit": {
+			"name": "Wooden torch post",
+			"kind": "placeable",
+			"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Log, 1 Twine, 2 Tallow"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_torch_post": {
+			"name": "Wooden - Torch post",
+			"kind": "structure",
+			"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_torch_pillar_kit": {
+			"name": "Stone torch pillar",
+			"kind": "placeable",
+			"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar, 1 Iron ingot, 2 Tallow"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_torch_pillar": {
+			"name": "Stone - Torch pillar",
+			"kind": "structure",
+			"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_torch_stand_kit": {
+			"name": "Iron torch stand",
+			"kind": "placeable",
+			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot, 2 Tallow"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_torch_stand": {
+			"name": "Iron - Torch stand",
+			"kind": "structure",
+			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_lamp_post_kit": {
+			"name": "Wooden lamp post",
+			"kind": "placeable",
+			"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 2 Twine, 1 Wooden - Lantern"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_lamp_post": {
+			"name": "Wooden - Lamp post",
+			"kind": "structure",
+			"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_lamp_post_kit": {
+			"name": "Iron lamp post",
+			"kind": "placeable",
+			"description": "An iron lantern on a tall iron post.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Iron ingot, 1 Iron - Lantern"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_lamp_post": {
+			"name": "Iron - Lamp post",
+			"kind": "structure",
+			"description": "An iron lantern on a tall iron post.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_lamp_post_kit": {
+			"name": "Stone lamp post",
+			"kind": "placeable",
+			"description": "An iron lantern on a stone post.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar, 1 Iron - Lantern"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_lamp_post": {
+			"name": "Stone - Lamp post",
+			"kind": "structure",
+			"description": "An iron lantern on a stone post.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_brazier_kit": {
+			"name": "Stone brazier",
+			"kind": "placeable",
+			"description": "A stone fire bowl. Burns logs for light.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Cobblestone, 3 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_brazier": {
+			"name": "Stone - Brazier",
+			"kind": "structure",
+			"description": "A stone fire bowl. Burns logs for light.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_brazier_kit": {
+			"name": "Iron brazier",
+			"kind": "placeable",
+			"description": "An iron fire bowl on legs. Burns logs for light.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_brazier": {
+			"name": "Iron - Brazier",
+			"kind": "structure",
+			"description": "An iron fire bowl on legs. Burns logs for light.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_garden_plot_kit": {
+			"name": "Thatch garden plot",
+			"kind": "placeable",
+			"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Stick, 2 Twine, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_garden_plot": {
+			"name": "Thatch - Garden plot",
+			"kind": "structure",
+			"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_garden_plot_kit": {
+			"name": "Wooden garden plot",
+			"kind": "placeable",
+			"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Plank, 2 Twine, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_garden_plot": {
+			"name": "Wooden - Garden plot",
+			"kind": "structure",
+			"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_garden_plot_kit": {
+			"name": "Stone garden plot",
+			"kind": "placeable",
+			"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone, 2 Clay mortar, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_garden_plot": {
+			"name": "Stone - Garden plot",
+			"kind": "structure",
+			"description": "A stone-edged raised bed, two metres square. Holds its water best.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_garden_plot_kit": {
+			"name": "Brick garden plot",
+			"kind": "placeable",
+			"description": "A brick raised bed, two metres square. Holds its water best.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Brick, 2 Clay mortar, 6 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_garden_plot": {
+			"name": "Brick - Garden plot",
+			"kind": "structure",
+			"description": "A brick raised bed, two metres square. Holds its water best.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_planter_box_kit": {
+			"name": "Wooden planter box",
+			"kind": "placeable",
+			"description": "A plank window box of soil for herbs and flowers.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 2 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_planter_box": {
+			"name": "Wooden - Planter box",
+			"kind": "structure",
+			"description": "A plank window box of soil for herbs and flowers.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_planter_kit": {
+			"name": "Stone planter",
+			"kind": "placeable",
+			"description": "A big stone pot of soil for a herb or a small shrub.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Cobblestone, 1 Clay mortar, 3 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_planter": {
+			"name": "Stone - Planter",
+			"kind": "structure",
+			"description": "A big stone pot of soil for a herb or a small shrub.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_trellis_kit": {
+			"name": "Wooden trellis",
+			"kind": "placeable",
+			"description": "A lattice of sticks to set beside a plot for climbing plants.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_trellis": {
+			"name": "Wooden - Trellis",
+			"kind": "structure",
+			"description": "A lattice of sticks to set beside a plot for climbing plants.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_compost_bin_kit": {
+			"name": "Wooden compost bin",
+			"kind": "placeable",
+			"description": "A slatted bin that rots plant waste down into compost.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_compost_bin": {
+			"name": "Wooden - Compost bin",
+			"kind": "structure",
+			"description": "A slatted bin that rots plant waste down into compost.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_scarecrow_kit": {
+			"name": "Thatch scarecrow",
+			"kind": "placeable",
+			"description": "A straw figure on a pole to watch over the plots.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Stick, 10 Thatch, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_scarecrow": {
+			"name": "Thatch - Scarecrow",
+			"kind": "structure",
+			"description": "A straw figure on a pole to watch over the plots.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_cold_frame_kit": {
+			"name": "Wooden cold frame",
+			"kind": "placeable",
+			"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine, 4 Horn pane"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_cold_frame": {
+			"name": "Wooden - Cold frame",
+			"kind": "structure",
+			"description": "A horn-paned box over a plot that keeps frost off seedlings.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_well_kit": {
+			"name": "Stone well",
+			"kind": "placeable",
+			"description": "A stone well with a windlass and bucket. E draws ten litres.",
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Cobblestone, 8 Clay mortar, 4 Plank, 1 Rope, 1 Bucket"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_well": {
+			"name": "Stone - Well",
+			"kind": "structure",
+			"description": "A stone well with a windlass and bucket. E draws ten litres.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_hand_pump_kit": {
+			"name": "Wooden hand pump",
+			"kind": "placeable",
+			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 20 Nails, 2 Twine, 1 Hide"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_hand_pump": {
+			"name": "Wooden - Hand pump",
+			"kind": "structure",
+			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hand_pump_kit": {
+			"name": "Iron hand pump",
+			"kind": "placeable",
+			"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Iron ingot, 1 Hide, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_hand_pump": {
+			"name": "Iron - Hand pump",
+			"kind": "structure",
+			"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_trough_kit": {
+			"name": "Log trough",
+			"kind": "placeable",
+			"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_trough": {
+			"name": "Log - Trough",
+			"kind": "structure",
+			"description": "A hollowed log that holds sixty litres. Animals drink from it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_trough_kit": {
+			"name": "Wooden trough",
+			"kind": "placeable",
+			"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_trough": {
+			"name": "Wooden - Trough",
+			"kind": "structure",
+			"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_kit": {
+			"name": "Wooden channel",
+			"kind": "placeable",
+			"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel": {
+			"name": "Wooden - Channel",
+			"kind": "structure",
+			"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_corner_kit": {
+			"name": "Wooden channel corner",
+			"kind": "placeable",
+			"description": "A flume that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_corner": {
+			"name": "Wooden - Channel corner",
+			"kind": "structure",
+			"description": "A flume that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_tee_kit": {
+			"name": "Wooden channel tee",
+			"kind": "placeable",
+			"description": "A flume that splits its water two ways.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_channel_tee": {
+			"name": "Wooden - Channel tee",
+			"kind": "structure",
+			"description": "A flume that splits its water two ways.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_sluice_kit": {
+			"name": "Wooden sluice",
+			"kind": "placeable",
+			"description": "A flume with a gate. E opens or shuts it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_sluice": {
+			"name": "Wooden - Sluice",
+			"kind": "structure",
+			"description": "A flume with a gate. E opens or shuts it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe": {
+			"name": "Clay pipe",
+			"kind": "material",
+			"description": "A fired clay pipe section. Two make a length of closed water pipe.",
+			"how_to_get": [
+				"Craft at a campfire: 3 Clay"
+			],
+			"used_for": [
+				"Used in Clay - Pipe",
+				"Used in Clay - Pipe elbow",
+				"Used in Clay - Pipe tee"
+			],
+			"obtainable_now": true
+		},
+		"stone_trough_kit": {
+			"name": "Stone trough",
+			"kind": "placeable",
+			"description": "A carved stone trough that holds two hundred litres.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Cobblestone, 3 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_trough": {
+			"name": "Stone - Trough",
+			"kind": "structure",
+			"description": "A carved stone trough that holds two hundred litres.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_kit": {
+			"name": "Stone channel",
+			"kind": "placeable",
+			"description": "An open stone channel, two metres long. Carries more than a flume.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel": {
+			"name": "Stone - Channel",
+			"kind": "structure",
+			"description": "An open stone channel, two metres long. Carries more than a flume.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_corner_kit": {
+			"name": "Stone channel corner",
+			"kind": "placeable",
+			"description": "A stone channel that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_corner": {
+			"name": "Stone - Channel corner",
+			"kind": "structure",
+			"description": "A stone channel that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_tee_kit": {
+			"name": "Stone channel tee",
+			"kind": "placeable",
+			"description": "A stone channel that splits its water two ways.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_channel_tee": {
+			"name": "Stone - Channel tee",
+			"kind": "structure",
+			"description": "A stone channel that splits its water two ways.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_run_kit": {
+			"name": "Clay pipe",
+			"kind": "placeable",
+			"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Clay pipe"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_run": {
+			"name": "Clay - Pipe",
+			"kind": "structure",
+			"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_elbow_kit": {
+			"name": "Clay pipe elbow",
+			"kind": "placeable",
+			"description": "A clay pipe that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Clay pipe"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_elbow": {
+			"name": "Clay - Pipe elbow",
+			"kind": "structure",
+			"description": "A clay pipe that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_tee_kit": {
+			"name": "Clay pipe tee",
+			"kind": "placeable",
+			"description": "A clay pipe that splits its water two ways.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Clay pipe"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_pipe_tee": {
+			"name": "Clay - Pipe tee",
+			"kind": "structure",
+			"description": "A clay pipe that splits its water two ways.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe_kit": {
+			"name": "Iron pipe",
+			"kind": "placeable",
+			"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe": {
+			"name": "Iron - Pipe",
+			"kind": "structure",
+			"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe_elbow_kit": {
+			"name": "Iron pipe elbow",
+			"kind": "placeable",
+			"description": "An iron pipe that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_pipe_elbow": {
+			"name": "Iron - Pipe elbow",
+			"kind": "structure",
+			"description": "An iron pipe that turns a quarter circle.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_tap_kit": {
+			"name": "Iron tap",
+			"kind": "placeable",
+			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Iron ingot, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_tap": {
+			"name": "Iron - Tap",
+			"kind": "structure",
+			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_deep_well_pump_kit": {
+			"name": "Iron deep-well pump",
+			"kind": "placeable",
+			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Iron ingot, 2 Hide, 2 Hinges, 12 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_deep_well_pump": {
+			"name": "Iron - Deep-well pump",
+			"kind": "structure",
+			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_cistern_kit": {
+			"name": "Stone cistern",
+			"kind": "placeable",
+			"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Cobblestone, 6 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_cistern": {
+			"name": "Stone - Cistern",
+			"kind": "structure",
+			"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_raised_cistern_kit": {
+			"name": "Stone raised cistern",
+			"kind": "placeable",
+			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"how_to_get": [
+				"Build with a hammer (press R): 28 Cobblestone, 8 Clay mortar, 6 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_raised_cistern": {
+			"name": "Stone - Raised cistern",
+			"kind": "structure",
+			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"sewing_needle": {
+			"name": "Bone - Needle",
+			"kind": "tool",
+			"description": "A needle carved from bone. For sewing hide and cloth.",
+			"how_to_get": [
+				"Craft: 1 Bone"
+			],
+			"used_for": [
+				"Used in Fur - Boots",
+				"Used in Fur - Cloak",
+				"Used in Fur - Hat",
+				"Used in Hide - Backpack",
+				"Used in Hide - Boots",
+				"Used in Hide - Cloak",
+				"Used in Hide - Gloves",
+				"Used in Hide - Hood",
+				"Used in Hide - Leggings",
+				"Used in Hide - Mittens",
+				"Used in Hide - Quiver",
+				"Used in Hide - Trousers",
+				"Used in Hide - Tunic",
+				"Used in Leather - Cap",
+				"Used in Leather - Jerkin",
+				"Used in Linen - Shirt",
+				"Used in Waterskin",
+				"Used in Wool - Cap",
+				"Used in Wool - Mittens",
+				"Used in Wool - Trousers",
+				"Used in Wool - Tunic",
+				"Used in Leather - Backpack",
+				"Used in Leather - Boots",
+				"Used in Leather - Gloves",
+				"Used in Leather - Quiver",
+				"Used in Leather - Trousers"
+			],
+			"obtainable_now": true
+		},
+		"horn": {
+			"name": "Horn",
+			"kind": "material",
+			"description": "A hollow horn from a goat, sheep or ox. Pressed thin it lets light through; carved, it holds a drink.",
+			"how_to_get": [
+				"Dropped by mountain goat, wild sheep, bighorn, chamois, cow, goat, buffalo, pronghorn, wildebeest and rhino when worked with a knife"
+			],
+			"used_for": [
+				"Used in Horn pane"
+			],
+			"obtainable_now": true
+		},
+		"gut": {
+			"name": "Gut",
+			"kind": "material",
+			"description": "Cleaned intestine from a large kill. Casing for sausage, and strong cord when dried and twisted.",
+			"how_to_get": [
+				"Dropped by boar, deer, wolf, moose, beaver, lynx, bear, mountain goat, wild sheep, reindeer, seal, horse, donkey, black bear, elk, bighorn, chamois, cow, goat, dog, buffalo, puma, pronghorn, warthog, hyena, wildebeest, lion, leopard, rhino, elephant, camel, kangaroo, mammoth and tiger when worked with a knife"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"toggle": {
+			"name": "Toggle",
+			"kind": "material",
+			"description": "A short bone peg with a groove. Fastens a belt or a cloak through a loop.",
+			"how_to_get": [
+				"Craft: 1 Bone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hook": {
+			"name": "Hook",
+			"kind": "material",
+			"description": "A fish hook ground from bone. A fishing rod needs one.",
+			"how_to_get": [
+				"Craft: 1 Bone"
+			],
+			"used_for": [
+				"Used in Fishing rod"
+			],
+			"obtainable_now": true
+		},
+		"bone_club": {
+			"name": "Bone - Club",
+			"kind": "weapon",
+			"description": "A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer.",
+			"how_to_get": [
+				"Craft: 2 Bone, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_quiver": {
+			"name": "Leather - Quiver",
+			"kind": "gear",
+			"description": "A stiff leather tube worn on the back. Holds 60 arrows and keeps them dry.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_longbow": {
+			"name": "Wooden - Longbow",
+			"kind": "weapon",
+			"description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Large wooden block, 1 Sinew, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_trousers": {
+			"name": "Leather - Trousers",
+			"kind": "clothing",
+			"description": "Leather trousers laced with straps. Tougher than hide and better in the wet.",
+			"how_to_get": [
+				"Craft at a workbench: 3 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_boots": {
+			"name": "Leather - Boots",
+			"kind": "clothing",
+			"description": "Leather boots with a strapped ankle. They keep the feet dry for longer.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_gloves": {
+			"name": "Leather - Gloves",
+			"kind": "clothing",
+			"description": "Leather gloves with fingers. For work, the bowstring and the cold.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Leather, 2 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_backpack": {
+			"name": "Leather - Backpack",
+			"kind": "gear",
+			"description": "A leather pack with a frame of straps. Worn on the back, it carries more than a hide pack.",
+			"how_to_get": [
+				"Craft at a workbench: 4 Leather, 4 Leather strap (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"straw_hat": {
+			"name": "Straw - Hat",
+			"kind": "clothing",
+			"description": "A wide hat of plaited straw. Light, and it keeps sun and a little rain off.",
+			"how_to_get": [
+				"Craft: 6 Straw, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"worm": {
+			"name": "Worm",
+			"kind": "material",
+			"description": "A fat earthworm turned up by the spade in rich soil. Fish take it as bait.",
+			"how_to_get": [
+				"Found now and then when digging loam, humus, silt or mud"
 			],
 			"used_for": [],
 			"obtainable_now": false

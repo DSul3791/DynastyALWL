@@ -622,7 +622,7 @@ func _bow_config() -> Dictionary:
 
 func _raise_bow() -> void:
 	if not has_arrow():
-		_inv._on_notice(str(_bow_config().get("say_no_ammo", "You have no arrows.")))
+		_inv._on_notice(BowAim.say(_bow_config(), held_id(), "say_no_ammo"))
 		return
 
 	_draw_t = 0.0
@@ -749,11 +749,12 @@ func has_arrow() -> bool:
 # The arrow the next shot takes, as the server picks it: the one the bow is loaded with while the pack holds it, else the first of BOW_AMMO there; 0 none.
 func arrow_to_shoot() -> int:
 	var loaded: int = int(_inv.bow_arrow)
+	var ammo: Array = BowAim.ammo_for(_bow_config(), held_id())
 
-	if loaded != 0 and _inv.inventory.count_of(loaded) > 0:
+	if loaded != 0 and _inv.inventory.count_of(loaded) > 0 and ammo.has(_inv.table.id_of(loaded)):
 		return loaded
 
-	for id in BOW_AMMO:
+	for id in ammo:
 		var number: int = _inv.table.number_of(id)
 
 		if number > 0 and _inv.inventory.count_of(number) > 0:   # 0 = not in the table (0 is also an empty slot)
@@ -778,7 +779,7 @@ func _look_spyglass(on: bool) -> void:
 
 
 func _is_bow() -> bool:
-	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "bow" and not _inv.is_broken(held_slot)
+	return BowAim.shoots(_inv.table.entry(held_id())) and not _inv.is_broken(held_slot)   # a bow or a sling
 
 
 func _is_placeable() -> bool:
@@ -1232,7 +1233,8 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
-	var v: Vector3 = direction * float(_bow_cfg.get("speed_max", 45.0)) * bow_power(draw_ms, _bow_cfg)
+	var bow_id: String = held_id()
+	var v: Vector3 = direction * BowAim.bow_speed_max(_bow_cfg, bow_id) * bow_power(draw_ms, _bow_cfg)
 	var node: Node3D = _make_arrow_model(arrow)
 	_root.add_child(node)
 	node.global_position = _camera.global_position + direction * 0.8
@@ -1244,7 +1246,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	var at: Vector3 = _camera.global_position
 	var flown: float = 0.0
 	var t: float = 0.0
-	var range_m: float = float(_bow_cfg.get("range_m", 80.0))
+	var range_m: float = BowAim.bow_range_m(_bow_cfg, bow_id)
 
 	var into_wood: bool = false
 
