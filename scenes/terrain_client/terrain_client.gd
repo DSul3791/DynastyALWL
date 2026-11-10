@@ -3904,6 +3904,15 @@ func _update_view(delta: float) -> void:
 	if view_cam == null or body == null:
 		return
 
+	# The drawn bow's sway turns the whole view, the aim with it (Dave 10 Nov 2026: "the whole screen should move like that but much less"):
+	# the eye camera goes back to the mouse's look each frame, then held_item turns it; the bow's cross stays in the middle.
+	if not photo.active and not shot_lock:
+		camera.rotation.x = pitch
+		camera.rotation.y = 0.0
+		var turn: Vector2 = held.bow_view_turn() if held != null else Vector2.ZERO
+		camera.rotation.y = -deg_to_rad(turn.x)
+		camera.rotation.x = pitch + deg_to_rad(turn.y)
+
 	if _avatar == null:
 		# Dave's PC log 4 Nov 2026: the first call waited for the body file still loading on a loader thread ("update view" 404 ms at the join).
 		# The body is made once the file is in; until then (a second or two, while the ground loads) there is no third-person body to draw.

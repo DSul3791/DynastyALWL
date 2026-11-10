@@ -480,6 +480,7 @@ func _ready() -> void:
 		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
 	items.trees_near = _trees_near
 	items.trees_near_cached = _trees_near_cached
+	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
@@ -1636,6 +1637,27 @@ var _tree_names: Dictionary = {}     # placer species id -> name, trees only (bu
 # player for an 8 m circle. Now a chunk the circle does not touch is skipped (not even listed), and a listed chunk keeps its trees in 16 m cells, so
 # a look reads only the cells under the circle.
 func _trees_near_cached(point: Vector3, radius: float) -> Array:
+	var found: Array = []
+
+	for tree in _cached_trees(point, radius):
+		found.append([tree[1], tree[2]])
+
+	return found
+
+
+# Standing tree trunks near a point for an arrow's flight (Dave 10 Nov 2026: an arrow shot at a tree must stick in it), from the same cached cells:
+# [root position, trunk radius m, height m] each. The radius is the collider's (flora_placer.collider_radius: the species trunk scaled by the tree's height).
+func _arrow_trunks(point: Vector3, radius: float) -> Array:
+	var found: Array = []
+
+	for tree in _cached_trees(point, radius):
+		found.append([tree[1], float(tree[3]), float(tree[4])])
+
+	return found
+
+
+# The cached standing trees within `radius` of a point (flat): [id, root position, species name, trunk radius, height] each, from chunks already made only.
+func _cached_trees(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
 	var reach: int = maxi(int(ceil(radius / size)), 1)
@@ -1671,6 +1693,7 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 				var cells: Dictionary = {}
 				var ids: PackedInt32Array = trees["ids"]
 				var positions: PackedVector3Array = trees["positions"]
+				var heights: Variant = trees.get("heights", [])
 
 				for n in range(ids.size()):
 					var tree_name: Variant = _tree_names.get(ids[n] >> 16)
@@ -1678,11 +1701,14 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 					if tree_name != null:
 						var at: Vector3 = positions[n]
 						var cell: Vector2i = Vector2i(int(floor(at.x / TREE_CELL_M)), int(floor(at.z / TREE_CELL_M)))
+						var species: Dictionary = flora.placer._by_id[ids[n] >> 16]
+						var tall: float = float(heights[n]) if n < heights.size() else float(species["height_min"])
+						var ref_height: float = maxf(0.5 * (float(species["height_min"]) + float(species["height_max"])), 0.1)
 
 						if not cells.has(cell):
 							cells[cell] = []
 
-						cells[cell].append([ids[n], at, tree_name])
+						cells[cell].append([ids[n], at, tree_name, float(species["trunk"]) * tall / ref_height, tall])
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
@@ -1709,7 +1735,7 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 							gone_read = true
 
 						if not gone.has(tree[0]):
-							found.append([tree[1], tree[2]])
+							found.append(tree)
 
 	return found
 

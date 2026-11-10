@@ -1,7 +1,7 @@
 extends Control
 
 # The bow's cross (Dave 10 Nov 2026: "a cross reticle in the middle of the screen showing where you are aiming"): drawn while the bow is up, at the
-# screen point the aim goes through (held_item.gd sets `point`: the middle of the screen, moved by the sway and the pull toward a vital zone).
+# middle of the screen (held_item.gd sets `point`). The sway and the pull toward a vital zone turn the whole view instead (Dave 10 Nov 2026).
 # A thin light cross with a dark edge so it reads on snow and on forest alike; a gap in the middle leaves the target clear.
 
 var point: Vector2 = Vector2.ZERO:

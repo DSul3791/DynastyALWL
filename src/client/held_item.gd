@@ -138,7 +138,7 @@ var _label: Label
 var _jab_t: float = -1.0
 var _bow_cfg: Dictionary = {}               # data/items/bow.json, read on the first shot (the arrow sound follows its flight)
 var _draw_t: float = -1.0                 # the bow up and drawing (Dave 10 Nov 2026: right mouse held): seconds since it went up, -1 when it is down
-var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the view turned by the sway and drawn to a vital zone (aim_direction)
+var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the middle of the view, which the sway and the pull turn (bow_view_turn)
 var _reticle = null                       # BowReticle: the cross while the bow is up
 var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
 var bow_force: String = ""                 # the shot runner's bow pose, "STATE[:DRAW]" (idle, raised, drawn; draw 0 to 1), "" = from play
@@ -638,6 +638,7 @@ func _lower_bow() -> void:
 
 # Left click with the bow up: the arrow goes along the aim (the server turns it by the skill's spread). Still holding right, the next arrow is drawn.
 func _loose() -> void:
+	_aim_dir = -_camera.global_transform.basis.z   # through the cross in the middle of the screen
 	var draw_ms: int = int(_draw_t * 1000.0)
 	var arrow: int = arrow_to_shoot()
 	_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, draw_ms, arrow, _aim_dir)
@@ -677,7 +678,8 @@ func bow_wobble() -> Vector2:
 	return BowAim.wobble_offset(BowAim.wobble_deg(cfg, _inv.skill_level_of("hunting"), drawn_s), _draw_t, float(cfg.get("aim", {}).get("wobble_hz", 0.6)))
 
 
-# Where the drawn bow points: the view turned by the sway, then drawn toward a vital zone of an animal near the aim by the skill's pull.
+# Where the sway and the pull would take the aim from the unturned view: the view turned by the sway, then drawn toward a vital zone of an
+# animal near the aim by the skill's pull. bow_view_turn turns the whole view this way, so the aim stays the middle of the screen.
 func aim_direction() -> Vector3:
 	var view: Basis = _camera.global_transform.basis
 	var aim: Vector3 = BowAim.turned(-view.z, view.x, view.y, bow_wobble())
@@ -688,6 +690,18 @@ func aim_direction() -> Vector3:
 			points.append_array(BowAim.zone_points(_bow_config(), row[0], float(row[1])))
 
 	return BowAim.assist(_bow_config(), _inv.skill_level_of("hunting"), _camera.global_position, aim, points)
+
+
+# How far the drawn bow turns the whole view (degrees: x to the right, y up), the sway and the pull together (Dave 10 Nov 2026: "the
+# crosshairs shouldnt move around like they do the whole screen should move like that but much less. it my aiming thats moving not just the
+# crosshairs"). The client scene sets the eye camera back to the mouse's look first, then turns it by this; the cross stays in the middle and the
+# arrow goes where it points. Zero with the bow down.
+func bow_view_turn() -> Vector2:
+	if _draw_t < 0.0 or _camera == null:
+		return Vector2.ZERO
+
+	var view: Basis = _camera.global_transform.basis
+	return BowAim.turn_of(aim_direction(), -view.z, view.x, view.y)
 
 
 # The view narrows a little as the bow comes up (bow.json aim.zoom_fov_share at full draw); 1 with the bow down. The client scene multiplies its field of view by it.
@@ -701,7 +715,7 @@ func _update_bow(delta: float) -> void:
 
 	if _draw_t >= 0.0:
 		_draw_t += delta
-		_aim_dir = aim_direction()
+		_aim_dir = -_camera.global_transform.basis.z   # the view is the aim: bow_view_turn already turned it
 
 	if _reticle == null and _hud_layer != null:
 		_reticle = BowReticle.new()
@@ -710,9 +724,7 @@ func _update_bow(delta: float) -> void:
 
 	if _reticle != null:
 		_reticle.visible = _draw_t >= 0.0
-
-		if _reticle.visible and not _camera.is_position_behind(_camera.global_position + _aim_dir * 30.0):
-			_reticle.point = _camera.unproject_position(_camera.global_position + _aim_dir * 30.0)
+		_reticle.point = _reticle.global_position + _reticle.size * 0.5   # always the middle of the screen: the view moves, not the cross
 
 
 func _is_spear() -> bool:
@@ -1201,6 +1213,17 @@ func _throw() -> void:
 # The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
 # speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
 # instead; the server's spread may turn the real arrow a little from this one.
+const ARROW_STUCK_SHOW_S := 1.5   # the flown arrow stays where it hit this long; the server's stuck arrow is drawn by then
+
+
+# The first solid thing (a tree trunk's collider, the ground, a wall) on a flight step, or {} (a physics ray, so it needs the world).
+func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
+	if _camera == null or not _camera.is_inside_tree() or from.distance_to(to) < 0.0001:
+		return {}
+
+	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
+
+
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
 	var v: Vector3 = direction * float(_bow_cfg.get("speed_max", 45.0)) * bow_power(draw_ms, _bow_cfg)
@@ -1217,9 +1240,19 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	var t: float = 0.0
 	var range_m: float = float(_bow_cfg.get("range_m", 80.0))
 
+	var into_wood: bool = false
+
 	while t < 6.0 and flown < range_m:
 		v.y -= THROW_GRAVITY * 0.05
 		flown += (v * 0.05).length()
+		var step_hit: Dictionary = _flight_hit(at, at + v * 0.05)
+
+		if not step_hit.is_empty() and absf(float((step_hit["normal"] as Vector3).y)) < 0.7:   # something upright, a trunk: the arrow thunks into wood
+			t += 0.05 * at.distance_to(step_hit["position"]) / maxf((v * 0.05).length(), 0.001)
+			at = step_hit["position"]
+			into_wood = true
+			break
+
 		at += v * 0.05
 		t += 0.05
 		var ground: float = _ground_below.call(at)
@@ -1228,7 +1261,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 			at.y = ground
 			break
 
-	_sound.spear.arrow(at, t, "wood" if _tree_near.is_valid() and _tree_near.call(at) else "soil")
+	_sound.spear.arrow(at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil")
 
 
 # The shot's power from the draw time, as the server works it out (bow.json): a draw under draw_min_ms is weak_power, then
@@ -1380,9 +1413,27 @@ func _process_body(delta: float) -> void:
 		_model.rotation.x = lerpf(_model.rotation.x, deg_to_rad(35.0) if aiming else 0.0, clampf(delta * 14.0, 0.0, 1.0))
 
 	for flight in _flights.duplicate():
+		if flight.has("stuck_left"):   # an arrow that hit something waits there until the server's stuck arrow is drawn
+			flight["stuck_left"] = float(flight["stuck_left"]) - delta
+
+			if float(flight["stuck_left"]) <= 0.0:
+				flight["node"].queue_free()
+				_flights.erase(flight)
+
+			continue
+
 		flight["vel"].y -= THROW_GRAVITY * delta
+		var was: Vector3 = flight["node"].global_position
 		flight["node"].global_position += flight["vel"] * delta
 		flight["age"] += delta
+
+		if bool(flight.get("arrow", false)):
+			var hit: Dictionary = _flight_hit(was, flight["node"].global_position)
+
+			if not hit.is_empty():   # a trunk or anything solid: the arrow stops in it, as the server's does (Dave 10 Nov 2026)
+				flight["node"].global_position = hit["position"]
+				flight["stuck_left"] = ARROW_STUCK_SHOW_S
+				continue
 
 		if bool(flight.get("arrow", false)) and (flight["vel"] as Vector3).length() > 0.1:
 			flight["node"].look_at(flight["node"].global_position + flight["vel"], Vector3.UP)   # an arrow points along its flight
