@@ -66,6 +66,20 @@ func _init() -> void:
 	var look: ShaderMaterial = plume.draw_pass_1.surface_get_material(0) as ShaderMaterial
 	_check(look != null and float(look.get_shader_parameter("near_grey")) < float(look.get_shader_parameter("far_grey")), "darker at the fire, lighter higher up")
 	_check(look != null and float(look.get_shader_parameter("waver_m")) > 0.0 and str(look.shader.code).find("INSTANCE_CUSTOM.y") >= 0, "the column wavers more the older the smoke")
+	# Dino's reshoot 10 Nov 2026 (separate round orange puffs at night): puffs swell into each other faster than the cone scatters them, and a
+	# fire's own light is greyed, so the column reads as grey smoke lit from below.
+	var early: float = (grow.sample(0.2) - grow.sample(0.0)) / maxf(grow.sample(1.0) - grow.sample(0.0), 0.001)
+	_check(early > 0.5, "most of a puff's growth comes early (%.0f%% by a fifth of its life)" % (early * 100.0))
+	var big_fire: Node3D = BuildingLook.fire(true, false, 3)
+	var big: ParticleProcessMaterial = (big_fire.get_node("Smoke") as GPUParticles3D).process_material as ParticleProcessMaterial
+	BuildingLook.set_fire_air(0.0, 0.0, 1.0)
+	var big_life: float = float(cfg["life_s"])
+	var at_2s: float = big.scale_min * grow.sample(2.0 / big_life)
+	var scatter_2s: float = tan(deg_to_rad(big.spread)) * big.initial_velocity_max * 2.0
+	_check(scatter_2s < 0.5 * at_2s, "on a still night the cone scatters a big fire's puffs %.2f m in 2 s; they are %.2f m wide by then" % [scatter_2s, at_2s])
+	big_fire.free()
+	var code: String = str(look.shader.code)
+	_check(code.find("void light()") >= 0 and code.find("LIGHT_IS_DIRECTIONAL") >= 0 and float(look.get_shader_parameter("fire_light")) < 1.0 and float(look.get_shader_parameter("light_grey")) > 0.0, "a fire's light greys and dims on the smoke; the sun and moon light it fully")
 	_check(BuildingLook.smoke_tier("amount", 3) > BuildingLook.smoke_tier("amount", 1) and BuildingLook.smoke_tier("rise_m_s", 3) > BuildingLook.smoke_tier("rise_m_s", 1), "a bigger fire smokes more and higher")
 	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
 	var up: Vector3 = mat.direction
