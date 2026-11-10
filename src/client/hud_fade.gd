@@ -1,5 +1,7 @@
 extends Node
 
+const Breath := preload("res://src/client/breath_sounds.gd")
+
 # Passing out (Dave 10 Nov 2026, docs/design/heartbeat_design.md "Passing out"): when the player faints from over-exertion the whole HUD fades
 # out, the hotbar and all, and only the heartbeat line stays: the one reminder that you are alive. It goes with the vision (the server's blackout,
 # strain_fade): gone when the black reaches faint_hud.gone_at_black, back as the black lifts on waking, never faster than faint_hud.fade_s for
@@ -21,6 +23,10 @@ var _applied: float = 1.0
 func setup(layer: CanvasLayer, keep: Array, cfg: Dictionary) -> void:
 	_layer = layer
 	_keep = keep
+
+	if cfg.is_empty():
+		cfg = Breath.load_heart().get("faint_hud", {})     # the heart controller not set up yet: read heartbeat.json
+
 	gone_at_black = maxf(float(cfg.get("gone_at_black", 0.5)), 0.01)
 	fade_s = maxf(float(cfg.get("fade_s", 0.8)), 0.01)
 

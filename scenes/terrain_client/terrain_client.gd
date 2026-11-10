@@ -1510,7 +1510,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.heart_pulse = heart_pulse
 	hud_fade = HudFadeScript.new()
 	add_child(hud_fade)
-	hud_fade.setup(layer, [heart_pulse, faint._rect], (sound.breath.heart if not sound.breath.heart.is_empty() else sound.breath.load_heart()).get("faint_hud", {}))
+	hud_fade.setup(layer, [heart_pulse, faint._rect], sound.breath.heart.get("faint_hud", {}))
 	pickup_feed = PickupFeedScript.new()
 	pickup_feed.setup(items, layer)
 
