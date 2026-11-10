@@ -77,7 +77,8 @@
 				]
 			],
 			"value": 20,
-			"material": "stone"
+			"material": "stone",
+			"edge": true
 		},
 		"spear": {
 			"number": 7,
@@ -102,7 +103,8 @@
 					1
 				]
 			],
-			"value": 25
+			"value": 25,
+			"edge": true
 		},
 		"campfire_kit": {
 			"number": 8,
@@ -157,7 +159,8 @@
 					1
 				]
 			],
-			"value": 12
+			"value": 12,
+			"edge": true
 		},
 		"torch": {
 			"number": 12,
@@ -3105,7 +3108,8 @@
 				]
 			],
 			"value": 70,
-			"look_alikes": []
+			"look_alikes": [],
+			"edge": true
 		},
 		"stone_adze": {
 			"number": 246,
@@ -3629,7 +3633,8 @@
 					1
 				]
 			],
-			"value": 60
+			"value": 60,
+			"edge": true
 		},
 		"stone_pickaxe": {
 			"number": 297,
@@ -3678,7 +3683,8 @@
 					1
 				]
 			],
-			"value": 18
+			"value": 18,
+			"edge": true
 		},
 		"scythe": {
 			"number": 299,
@@ -3704,7 +3710,8 @@
 				]
 			],
 			"value": 80,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"wooden_club": {
 			"number": 300,
@@ -3927,7 +3934,8 @@
 				]
 			],
 			"value": 70,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"bronze_mace": {
 			"number": 316,
@@ -3993,7 +4001,8 @@
 				]
 			],
 			"value": 120,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"iron_mace": {
 			"number": 319,
@@ -4059,7 +4068,8 @@
 				]
 			],
 			"value": 250,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"steel_mace": {
 			"number": 322,
@@ -5510,7 +5520,8 @@
 			],
 			"repair_station": "forge",
 			"look_alikes": [],
-			"value": 60
+			"value": 60,
+			"edge": true
 		},
 		"bronze_hammer": {
 			"number": 460,
@@ -5562,7 +5573,8 @@
 			],
 			"repair_station": "forge",
 			"look_alikes": [],
-			"value": 30
+			"value": 30,
+			"edge": true
 		},
 		"stairs_wood_kit": {
 			"number": 462,
@@ -9127,7 +9139,8 @@
 					]
 				],
 				"look_alikes": [],
-				"value": 40
+				"value": 40,
+				"edge": true
 			},
 			"iron_chisel": {
 				"number": 799,
@@ -9148,7 +9161,8 @@
 					]
 				],
 				"look_alikes": [],
-				"value": 60
+				"value": 60,
+				"edge": true
 			},
 			"steel_chisel": {
 				"number": 800,
@@ -9169,7 +9183,8 @@
 					]
 				],
 				"look_alikes": [],
-				"value": 80
+				"value": 80,
+				"edge": true
 			},
 			"carved_stone_block": {
 				"number": 801,
