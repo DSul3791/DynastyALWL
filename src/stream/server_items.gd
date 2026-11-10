@@ -9,6 +9,7 @@ extends RefCounted
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
 const FlameRules := preload("res://src/shared/flame_rules.gd")
+const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
@@ -1220,7 +1221,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
-var water_flow_runs: Callable           # set by the server: (a: Vector3, b: Vector3) -> bool, true when the 2 m span runs at least data/water_flow.json min_speed_m_s all along
+var water_wheel: Callable               # set by the server: (a: Vector3, b: Vector3) -> {"w": watts, "why": "" or dry/river/still/shallow, "along": bool}, a water wheel spanning a to b (WaterFlow.wheel)
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
@@ -3457,18 +3458,84 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 			_say(peer, "It needs a tall foundation (lifted %.1f m or more)." % lift_need)
 			return Vector3(spot.x, NAN, spot.z)
 
-	var water: Dictionary = def.get("needs_running_water", {})
+	if def.has("needs_running_water") and water_wheel.is_valid():
+		var wheel: Dictionary = _wheel_at(def, spot, yaw_deg)
+		var rules: Dictionary = _water_flow_rules()
+		var least: float = float(rules.get("min_power_w", 150.0))
+		var why: String = str(wheel.get("why", ""))
 
-	if not water.is_empty() and water_flow_runs.is_valid():
-		var turn: float = deg_to_rad(float(yaw_deg))
-		var from_local: Vector2 = Vector2(float(water["from"][0]), float(water["from"][1])).rotated(turn)
-		var to_local: Vector2 = Vector2(float(water["to"][0]), float(water["to"][1])).rotated(turn)
-
-		if not bool(water_flow_runs.call(Vector3(spot.x + from_local.x, spot.y, spot.z + from_local.y), Vector3(spot.x + to_local.x, spot.y, spot.z + to_local.y))):
-			_say(peer, "The wheel needs running water.")
+		if why != "" or float(wheel.get("w", 0.0)) < least:
+			_say(peer, WHEEL_SAYS.get(why, "") if why != "" else ("Turn the wheel across the current." if bool(wheel.get("along", false)) else "The wheel would give only %d W here; the saw needs %d W. Find faster or deeper water." % [int(round(float(wheel["w"]))), int(least)]))
 			return Vector3(spot.x, NAN, spot.z)
 
+		_say(peer, "The wheel would give %d %% (%d W)." % [int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), int(round(float(wheel["w"])))])
+
 	return spot
+
+
+const WHEEL_SAYS := {
+	"dry": "The wheel needs running water under all of it.",
+	"river": "The wheel must stand over a river.",
+	"still": "The water does not run here. The wheel needs a current.",
+	"shallow": "The water is too shallow for the wheel (0.4 m or more).",
+}
+
+
+# The water wheel of a station that needs running water (structures.json needs_running_water: its span's ends, offsets from the middle, turned
+# with the piece) standing at `spot` turned `yaw_deg`: WaterFlow.wheel's {"w", "why", "along"}.
+func _wheel_at(def: Dictionary, spot: Vector3, yaw_deg: float) -> Dictionary:
+	var water: Dictionary = def.get("needs_running_water", {})
+	var turn: float = deg_to_rad(yaw_deg)
+	var from_local: Vector2 = Vector2(float(water["from"][0]), float(water["from"][1])).rotated(turn)
+	var to_local: Vector2 = Vector2(float(water["to"][0]), float(water["to"][1])).rotated(turn)
+	return water_wheel.call(Vector3(spot.x + from_local.x, spot.y, spot.z + from_local.y), Vector3(spot.x + to_local.x, spot.y, spot.z + to_local.y))
+
+
+var _water_flow_cfg: Dictionary = {}
+var _wheel_stations: Dictionary = {}   # station name -> true when a structure serving it needs running water (the sawmill), filled on first ask
+
+
+func _wheel_station(station: String) -> bool:
+	if not _wheel_stations.has(station):
+		_wheel_stations[station] = false
+
+		for kind in _structures:
+			if str(_structures[kind].get("station", "")) == station and (_structures[kind] as Dictionary).has("needs_running_water"):
+				_wheel_stations[station] = true
+
+	return bool(_wheel_stations[station])
+
+
+func _water_flow_rules() -> Dictionary:
+	if _water_flow_cfg.is_empty():
+		_water_flow_cfg = WaterFlowScript.load_rules()
+
+	return _water_flow_cfg
+
+
+# How much slower a station recipe runs at a sawmill whose wheel gives less than full_power_w (Sonny section 10: craft time x full_power_w / P).
+# The wheel's watts are worked out once per placed sawmill and kept on it ("wheel_w"); 1.0 for every other station, or with no wheel callable.
+func _wheel_slow(peer: int, recipe: Dictionary) -> float:
+	var station: String = str(recipe.get("station", ""))
+
+	if station == "" or not water_wheel.is_valid() or not _wheel_station(station):
+		return 1.0
+
+	var id: int = serving_station(peer, station, int(recipe.get("station_level", 1)))
+
+	if id < 0:
+		return 1.0
+
+	var it: Dictionary = _items[id]
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if not def.has("needs_running_water"):
+		return 1.0
+
+	if not it["struct"].has("wheel_w"):
+		it["struct"]["wheel_w"] = float(_wheel_at(def, it["pos"], float(it["struct"].get("yaw", 0.0))).get("w", 0.0))
+
+	return 1.0 / WaterFlowScript.wheel_share(float(it["struct"]["wheel_w"]), _water_flow_rules())
 
 
 # The admin showroom (Dave 2026-10-23): the rows of data/items/showroom.json laid out east and south of the spawn point as REAL world items
@@ -14435,7 +14502,7 @@ func _craft_tick(spent: float) -> void:
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
-		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) / _pace_factor(peer, "craft"):
+		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) / _pace_factor(peer, "craft"):
 			continue
 
 		queue["elapsed"] = 0.0
@@ -14485,7 +14552,8 @@ func _sync_craft_queue(peer: int) -> void:
 	var left_ms: int = 0
 
 	if not entries.is_empty():
-		var craft_s: float = float(recipes.recipe(int(entries[0][0])).get("craft_s", 3.0))
+		var head_recipe: Dictionary = recipes.recipe(int(entries[0][0]))
+		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe)
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
 	send_craft_queue.call(peer, _pairs(entries), left_ms)

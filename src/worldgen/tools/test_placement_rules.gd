@@ -254,7 +254,8 @@ func _init() -> void:
 	# The sawmill needs a foundation lifted 0.5 m or more under it and running water at its wheel.
 	items.ground_height = func(_x, _z): return 10.0
 	var flows: Array = [true]
-	items.water_flow_runs = func(_a: Vector3, _b: Vector3) -> bool: return flows[0]
+	var watts: Array = [600.0]
+	items.water_wheel = func(_a: Vector3, _b: Vector3) -> Dictionary: return {"w": watts[0], "why": ""} if flows[0] else {"w": 0.0, "why": "still"}
 	items.report_position(2, Vector3(900.0, 10.0, 900.0))
 	var saw_kit: int = items.table.number_of("saw_mill_kit")
 	var saw_count = func() -> int:
@@ -278,10 +279,18 @@ func _init() -> void:
 	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
 	check(int(saw_count.call()) == 0, "a sawmill without running water at its wheel is refused")
 	flows[0] = true
+	watts[0] = 100.0
 	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
-	check(int(saw_count.call()) == 1, "a sawmill on a foundation lifted 0.6 m with running water is placed")
+	check(int(saw_count.call()) == 0, "a wheel giving under 150 W stalls the saw: refused")
+	watts[0] = 600.0
+	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
+	check(int(saw_count.call()) == 1, "a sawmill on a foundation lifted 0.6 m with a 600 W wheel is placed")
+	# The wheel's power sets the saw's speed: 600 W of the full 1000 W makes a sawmill recipe take 1/0.6 as long; other stations are untouched.
+	items.report_position(2, Vector3(900.0, 10.0, 910.0))
+	check(absf(items._wheel_slow(2, {"station": "saw_mill", "station_level": 1}) - 1.0 / 0.6) < 0.01, "at 600 W a sawmill recipe takes 1/0.6 as long")
+	check(is_equal_approx(items._wheel_slow(2, {"station": "workbench"}), 1.0) and is_equal_approx(items._wheel_slow(2, {}), 1.0), "other stations and hand crafts keep their time")
 	items.ground_height = Callable()
-	items.water_flow_runs = Callable()
+	items.water_wheel = Callable()
 	items.report_position(2, before_stations)
 
 	check(str(Rules.structure_of_kit(cfg, "wall_section_kit").get("variant_group", "x")) == "wall" and str(Rules.structure_of_kit(cfg, "doorway_section_kit").get("variant_group", "y")) == "wall" and str(Rules.structure_of_kit(cfg, "window_section_kit").get("variant_group", "z")) == "wall", "wall, doorway and window share a wheel group")
