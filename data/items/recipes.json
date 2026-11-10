@@ -1097,7 +1097,7 @@
 				],
 				[
 					"thatch",
-					40
+					30
 				],
 				[
 					"stick",
@@ -2983,7 +2983,7 @@
 			"category": "Shelter and building",
 			"needs": [
 				[
-					"rough_plank",
+					"lumber",
 					4
 				],
 				[
@@ -6401,7 +6401,7 @@
 					16
 				],
 				[
-					"sand",
+					"mortar",
 					4
 				]
 			],
@@ -6473,7 +6473,7 @@
 					20
 				],
 				[
-					"sand",
+					"mortar",
 					4
 				]
 			],
@@ -6959,8 +6959,8 @@
 			"category": "Containers and furniture",
 			"needs": [
 				[
-					"wool",
-					4
+					"wool_cloth",
+					2
 				],
 				[
 					"twine",
