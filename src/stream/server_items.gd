@@ -4347,7 +4347,7 @@ func _load_world_items() -> void:
 		if is_dead_kit(int(row[0])):
 			continue
 
-		if had_kits and row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING and str(row[9]) != "remains" and (_traps == null or str(row[9]) != str(_traps.cfg.get("kind", "snare_trap"))):
+		if had_kits and row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING and str(row[9]) != "remains" and (_traps == null or not _traps.is_kind(str(row[9]))):
 			continue
 
 		if row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING:
@@ -4381,7 +4381,7 @@ func _load_world_items() -> void:
 				if typeof(saved_site) == TYPE_DICTIONARY:
 					entry["struct"]["site"] = {"bp": int((saved_site as Dictionary).get("bp", 0)), "have": (saved_site as Dictionary).get("have", {})}
 
-			if row.size() > 12 and _traps != null and str(row[9]) == str(_traps.cfg.get("kind", "snare_trap")):
+			if row.size() > 12 and _traps != null and _traps.is_kind(str(row[9])):
 				entry["struct"]["owner"] = str(row[11])
 				entry["struct"]["seq"] = float(row[12])
 				_next_uid = maxi(_next_uid, int(row[12]) + 1)
@@ -7181,7 +7181,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
 				return
 
-	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot):
+	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot, str(def["kind"])):
 		return
 
 	var here_chunk: Vector2i = _chunk_of(spot)
@@ -11709,11 +11709,12 @@ func water_bed(peer: int, inv, bed_id: int) -> bool:
 	return true
 
 
-# Compost on the bed: +20 percent growth for this crop.
+# Compost on the bed: +20 percent growth for this crop. When the "fertiliser" ingredient group exists (Jamie, Part C: compost or bonemeal),
+# any of its members does; the pack's has/remove follow the group.
 func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {}) if not bed.is_empty() else {}
-	var compost: int = table.number_of("compost")
+	var compost: int = table.number_of("fertiliser") if table.number_of("fertiliser") > 0 else table.number_of("compost")
 
 	if crop.is_empty() or bool(crop["compost"]) or compost <= 0 or not inv.has(compost, 1):
 		return false
