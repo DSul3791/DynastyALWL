@@ -1378,16 +1378,16 @@
 			"category": "Workshops and stations",
 			"needs": [
 				[
+					"brick",
+					20
+				],
+				[
 					"stone",
-					30
-				],
-				[
-					"log",
 					10
 				],
 				[
-					"clay",
-					10
+					"mortar",
+					4
 				]
 			],
 			"gives": [

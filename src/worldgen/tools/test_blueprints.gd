@@ -88,7 +88,7 @@ func _init() -> void:
 		# A retired kit recipe can never be learned (the recipe table skips it), so a blueprint marked unknown could never be built (fireplace, Dino S-place 2 Nov).
 		check(bool(row.get("known", true)) or bool(row.get("locked", false)), "%s: known (or locked), since its kit recipe is retired and cannot be learned" % id)
 
-	check(live.size() == 162 and live.has("clay_bloomery") and live.has("storage_jar") and live.has("kiln") and live.has("oil_press") and live.has("stone_raised_cistern") and live.has("stone_well") and live.has("stone_garden_plot") and live.has("wooden_torch_post") and live.has("iron_brazier") and live.has("double_doorway") and live.has("wooden_railing") and live.has("stone_workbench") and live.has("wooden_barrel") and live.has("stone_pillar") and live.has("brick_roof_corner") and live.has("log_foundation") and live.has("brick_window") and live.has("thatch_fence") and live.has("iron_gate") and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
+	check(live.size() == 163 and live.has("iron_anvil") and live.has("clay_bloomery") and live.has("storage_jar") and live.has("kiln") and live.has("oil_press") and live.has("stone_raised_cistern") and live.has("stone_well") and live.has("stone_garden_plot") and live.has("wooden_torch_post") and live.has("iron_brazier") and live.has("double_doorway") and live.has("wooden_railing") and live.has("stone_workbench") and live.has("wooden_barrel") and live.has("stone_pillar") and live.has("brick_roof_corner") and live.has("log_foundation") and live.has("brick_window") and live.has("thatch_fence") and live.has("iron_gate") and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
 
 	# Dave 10 Nov 2026 (docs/design/buildables_plan.md): no hammer blueprint needs a workbench near.
 	check(live.values().all(func(r): return str(r.get("station", "")) != "workbench"), "no hammer blueprint needs a workbench")
@@ -129,12 +129,12 @@ func _init() -> void:
 	var smith: Dictionary = live["blacksmithy"]
 	items._blueprints[int(smith["number"])]["station"] = "workbench"
 	items._blueprints[int(smith["number"])]["station_level"] = 4
-	_give(1, "stone", 30)
-	_give(1, "log", 10)
-	_give(1, "clay", 10)
+	_give(1, "brick", 20)
+	_give(1, "stone", 10)
+	_give(1, "mortar", 4)
 	var smith_before: int = items.world_item_count()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(smith["number"]), 0, 0, Vector3(204.0, 10.0, 205.0))
-	check(items.world_item_count() == smith_before and _have(1, "stone") == 30, "a bench of too low a level places nothing and takes nothing")
+	check(items.world_item_count() == smith_before and _have(1, "brick") == 20 and _have(1, "stone") == 10, "a bench of too low a level places nothing and takes nothing")
 	items._blueprints[int(smith["number"])]["station"] = ""
 	items._blueprints[int(table_bp["number"])]["station"] = ""
 

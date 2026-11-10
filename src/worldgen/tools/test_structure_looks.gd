@@ -168,6 +168,7 @@ const GOLDEN := {
 	"stonecutters_bench": "stonecutters_bench",
 	"fish_trap_set": "fish_trap_set",
 	"bird_trap_set": "bird_trap_set",
+	"iron_anvil": "iron_anvil",
 	"thatch_roof": "thatch_roof",
 	"thatch_doorway": "thatch_doorway",
 	"rock_pile": "rock_pile",

@@ -1162,7 +1162,7 @@
 		"blacksmithy": {
 			"number": 90,
 			"name": "Brick - Forge",
-			"description": "A brick forge with a stepped hood and iron straps. Hot enough to smelt and work iron; set an anvil beside it for steel.",
+			"description": "A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
