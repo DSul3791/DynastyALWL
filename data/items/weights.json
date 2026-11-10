@@ -436,6 +436,8 @@
 		"roast_fish": 0.35,
 		"tool_rack_kit": 6.0,
 		"tool_rack": 6.0,
+		"anvil_kit": 30.0,
+		"anvil": 30.0,
 		"vice_kit": 9.0,
 		"vice": 9.0,
 		"log_workbench_kit": 30.0,

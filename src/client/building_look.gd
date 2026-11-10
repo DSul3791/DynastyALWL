@@ -1809,6 +1809,33 @@ static func vice() -> Node3D:
 	return root
 
 
+# Anvil, 0.7 x 0.95 x 0.6 m (recipe audit 10 Nov 2026): the Blacksmith's forge's own anvil on its iron-banded log stump (_anvil), standing alone,
+# with a hammer and tongs leaned against the stump.
+static func _anvil_mesh() -> ArrayMesh:
+	if _cache.has("anvil"):
+		return _cache["anvil"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 31
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_tube(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.62, 0.0), 0.3, 0.27, _tone(WOOD_DARK, rng, 0.08), 9, rng)
+	_tube(st, Vector3(0.0, 0.08, 0.0), Vector3(0.0, 0.14, 0.0), 0.31, 0.31, IRON, 9)
+	_tube(st, Vector3(0.0, 0.53, 0.0), Vector3(0.0, 0.58, 0.0), 0.28, 0.28, IRON, 9)
+	_anvil(st, Vector3(0.0, 0.62, 0.0), rng)
+	_tube(st, Vector3(-0.2, 0.0, 0.29), Vector3(-0.24, 0.5, 0.27), 0.016, 0.014, WOOD, 5, rng)          # a hammer leaned on the stump
+	_box(st, Vector3(-0.24, 0.53, 0.27), Vector3(0.12, 0.06, 0.06), IRON)
+	_tube(st, Vector3(0.18, 0.0, 0.3), Vector3(0.2, 0.46, 0.27), 0.009, 0.009, IRON, 4, rng)              # tongs
+	_tube(st, Vector3(0.23, 0.0, 0.3), Vector3(0.21, 0.46, 0.27), 0.009, 0.009, IRON, 4, rng)
+	return _finish_cached("anvil", st, _solid_material())
+
+
+static func anvil() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_anvil_mesh()))
+	return root
+
+
 # What a dead player leaves (age 0 fresh, 1 old): a leather pack slumped on the ground, a scatter of long bones and a few ribs, a rag of cloth.
 # Fresh remains are dark, old ones pale and weathered; four stages are cached.
 static func remains(age: float) -> Node3D:

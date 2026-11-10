@@ -2905,6 +2905,17 @@ func _station_label(r: Dictionary) -> String:
 	return str(r.get("station", "")).replace("_", " ")
 
 
+# The structures.json kind drawn by world-row state `state`, or "".
+func _kind_of_state(state: int) -> String:
+	_structure_by_state(-1)
+
+	for kind in _structures_cfg:
+		if int(_structures_cfg[kind].get("state", -1)) == state:
+			return str(kind)
+
+	return ""
+
+
 func _structure_kinds() -> Array:
 	_structure_by_state(-1)
 	return _structures_cfg.keys()
@@ -3096,11 +3107,13 @@ func station_near(station: String, level: int = 1) -> bool:
 
 func _addons_near(bench_id: int, station: String, reach: float) -> int:
 	var kinds: Dictionary = {}
+	var bench_kind: String = _kind_of_state(int(_world[bench_id]["state"]))
 
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+		var only: Array = def.get("addon_for", [])   # the anvil counts only beside a Blacksmith's forge (server_items.addon_fits)
 
-		if not def.is_empty() and str(def.get("addon_of", "")) == station and _world[bench_id]["pos"].distance_to(_world[id]["pos"]) <= reach:
+		if not def.is_empty() and str(def.get("addon_of", "")) == station and (only.is_empty() or only.has(bench_kind)) and _world[bench_id]["pos"].distance_to(_world[id]["pos"]) <= reach:
 			kinds[int(_world[id]["state"])] = true
 
 	return kinds.size()
@@ -3191,6 +3204,8 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return _make_rack()
 		"vice":
 			return _make_vice()
+		"anvil":
+			return BuildingLook.anvil()
 		"log_workbench":
 			return _make_log_bench()
 		"stone_forge":

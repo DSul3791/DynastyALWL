@@ -10241,10 +10241,12 @@ func station_level_of(it: Dictionary, def: Dictionary, station: String) -> int:
 	return int(def.get("also", {}).get(station, 0))
 
 
-# How many different add-on kinds (structures.json addon_of) stand within addon_reach_m of a station: each raises its level by one.
+# How many different add-on kinds (structures.json addon_of) stand within addon_reach_m of a station: each raises its level by one. An add-on
+# with "addon_for" counts only beside those station kinds (the anvil: the Blacksmith's forge, recipe audit 10 Nov 2026).
 func _addon_kinds(station_row: Dictionary, def: Dictionary, station: String) -> int:
 	var kinds: Dictionary = {}
 	var reach: float = float(def.get("addon_reach_m", 5.0))
+	var station_kind: String = str(station_row.get("struct", {}).get("kind", ""))
 
 	for id in _items:
 		var other: Dictionary = _items[id]
@@ -10254,10 +10256,18 @@ func _addon_kinds(station_row: Dictionary, def: Dictionary, station: String) -> 
 
 		var kind: String = str(other["struct"]["kind"])
 
-		if str(_structures.get(kind, {}).get("addon_of", "")) == station and station_row["pos"].distance_to(other["pos"]) <= reach:
+		var addon: Dictionary = _structures.get(kind, {})
+
+		if str(addon.get("addon_of", "")) == station and addon_fits(addon, station_kind) and station_row["pos"].distance_to(other["pos"]) <= reach:
 			kinds[kind] = true
 
 	return kinds.size()
+
+
+# Whether an add-on row counts for a station of kind `station_kind`: always, unless its "addon_for" names other kinds. Shared with the client.
+static func addon_fits(addon: Dictionary, station_kind: String) -> bool:
+	var only: Array = addon.get("addon_for", [])
+	return only.is_empty() or only.has(station_kind)
 
 
 # --- Fishing (data/items/fishing.json, Tyler's model: no fish entities, a roll per cast) ---

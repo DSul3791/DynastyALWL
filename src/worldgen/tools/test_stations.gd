@@ -115,6 +115,19 @@ func _init() -> void:
 		check(tiers.station_near(1, "forge", int(want[n][1])) or int(want[n][1]) == 0, "%s forge %d" % [kits[n], int(want[n][1])])
 		check(int(want[n][1]) == 0 or not tiers.station_near(1, "forge", int(want[n][1]) + 1), "%s forge capped" % kits[n])
 
+	# The anvil (recipe audit 10 Nov 2026): beside a Blacksmith's forge it raises it from forge 2 to 3; beside a stone forge it does nothing (addon_for).
+	var anvil: int = tiers.table.number_of("anvil_kit")
+	check(anvil > 0, "anvil_kit is an item")
+	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
+	check(tiers.station_near(1, "forge", 2) and not tiers.station_near(1, "forge", 3), "a bare Blacksmith's forge is forge 2")
+	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 2, Vector3.ZERO)
+	tiers.place_item(1, anvil, spots[2] + Vector3(0.0, 0.0, 2.5), 0)
+	check(tiers.station_near(1, "forge", 3) and not tiers.station_near(1, "forge", 4), "an anvil beside it makes forge 3")
+	tiers.report_position(1, spots[1] - Vector3(2.0, 0.0, 0.0))
+	tiers.place_item(1, anvil, spots[1] + Vector3(0.0, 0.0, 2.5), 0)
+	check(tiers.station_near(1, "forge", 1) and not tiers.station_near(1, "forge", 2), "an anvil beside a stone forge leaves it forge 1")
+	check(tiers.addon_fits({"addon_of": "forge"}, "stone_forge") and not tiers.addon_fits({"addon_for": ["blacksmithy"]}, "stone_forge"), "addon_for limits an add-on to its stations")
+
 	var steel: int = 0
 
 	for number in tiers.recipes.numbers():

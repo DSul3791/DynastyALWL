@@ -132,6 +132,21 @@
 			"sound": "timber",
 			"clears_grass": true
 		},
+		"anvil": {
+			"blocks_walk": true,
+			"kit": "anvil_kit",
+			"item": "anvil",
+			"state": 78,
+			"footprint_x": 0.7,
+			"footprint_z": 0.6,
+			"cap_per_chunk": 4,
+			"addon_of": "forge",
+			"addon_for": ["blacksmithy"],
+			"look": "anvil",
+			"sound": "foundation",
+			"clears_grass": true,
+			"note": "Recipe audit 10 Nov 2026: within the forge's addon_reach_m of a Blacksmith's forge it raises it from forge level 2 to 3. addon_for limits an add-on to those station kinds (none: every station of addon_of)."
+		},
 		"log_workbench": {
 			"blocks_walk": true,
 			"kit": "log_workbench_kit",
