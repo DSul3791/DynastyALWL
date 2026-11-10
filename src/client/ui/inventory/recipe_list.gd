@@ -90,14 +90,14 @@ func build(queue_root: Control) -> Control:
 
 
 func refresh() -> void:
-	# Recipes: makeable first, then the rest, each alphabetical.
+	# Recipes (Dave 10 Nov 2026, every tab): what the hands make now on top, then what a working station within 12 m makes now (a craft
+	# there moves you to it), both with the golden line; then the rest. Each group alphabetical (RecipeFilter.order_groups).
 	view._hover_recipe = 0
 
 	for child in view._recipe_list.get_children():
 		child.queue_free()
 
-	var can: Array = []
-	var cannot: Array = []
+	var rows: Array = []
 
 	for tab_name in _category_buttons:
 		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
@@ -108,31 +108,30 @@ func refresh() -> void:
 		if (not r["known"] and not view._free_craft()) or not _recipe_shown(r):
 			continue
 
-		(can if view._can_craft(number) and view._station_ok(r) else cannot).append(r)
+		rows.append(r)
 
-	# One alphabetical list, case-insensitive by display name (Dave 24 Oct); the green and grey colours say what can be made now.
-	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
-	var shown_recipes: Array = can + cannot
-	shown_recipes.sort_custom(by_name)
-	can.sort_custom(by_name)
-	cannot.sort_custom(by_name)
+	var groups: Array = RecipeFilter.order_groups(rows, func(r): return view._can_craft(int(r["number"])), func(r): return view.station_in_reach(r))
+	var ready_count: int = (groups[0] as Array).size() + (groups[1] as Array).size()
+	var shown_recipes: Array = groups[0] + groups[1] + groups[2]
 
 	if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
-		view._selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
+		view._selected_recipe = shown_recipes[0]["number"] if not shown_recipes.is_empty() else 0
 
-	for r in shown_recipes:
-		var makeable: bool = view._can_craft(r["number"]) and view._station_ok(r)
+	for k in shown_recipes.size():
+		var r: Dictionary = shown_recipes[k]
+		var ready: bool = k < ready_count
+		var makeable: bool = ready or (view._can_craft(r["number"]) and view._station_ok(r))
 		var entry: Button = Button.new()
 		# A row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line,
 		# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 226 px list ends in "...".
-		entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) else "")
+		entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) and not ready else "")
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		entry.clip_text = true
 		entry.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		entry.icon = InventoryLook.icon_for(view.table.id_of(int(r["gives"][0]))) if not (r["gives"] as Array).is_empty() else null
 		entry.expand_icon = false
 		entry.add_theme_constant_override("icon_max_width", 32)
-		entry.custom_minimum_size = Vector2(0.0, 64.0 if not view._station_ok(r) else 44.0)
+		entry.custom_minimum_size = Vector2(0.0, 64.0 if not view._station_ok(r) and not ready else 44.0)
 		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		entry.modulate = Color(0.55, 1.0, 0.55) if makeable else Color(0.55, 0.55, 0.55, 0.6)
 		entry.flat = r["number"] != view._selected_recipe
@@ -140,6 +139,12 @@ func refresh() -> void:
 
 		# Look doc section 9: a makeable row has the gold bar on its left; the others are dim and say what they still need.
 		InventoryLook.style_recipe_row(entry, makeable, r["number"] == view._selected_recipe, InventoryLook.unit_of(view))
+
+		if ready:
+			InventoryLook.glow_recipe_row(entry, ItemSlot.glow_cfg(), InventoryLook.unit_of(view))
+
+			if str(r.get("station", "")) != "" and not view.station_near(str(r["station"]), int(r.get("station_level", 1))):
+				entry.tooltip_text = "Crafting this takes you to the %s nearby" % view._station_label(r)
 
 		if not makeable and view._station_ok(r):
 			entry.tooltip_text = missing_text(r)

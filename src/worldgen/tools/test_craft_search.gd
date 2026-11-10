@@ -52,5 +52,20 @@ func _init() -> void:
 			broke += 1
 
 	check(broke == 0, "the name match still works with the table")
+	# The list's order (Dave 10 Nov 2026): makeable by hand first, then makeable at a working station within 12 m, then the rest; each alphabetical.
+	var rows: Array = [{"name": "bowl", "station": ""}, {"name": "Axe", "station": ""}, {"name": "pot", "station": "campfire"}, {"name": "Anvil", "station": "forge"},
+		{"name": "cord", "station": ""}, {"name": "Bread", "station": "oven"}, {"name": "arrow", "station": "workbench"}]
+	var can_make: Dictionary = {"bowl": true, "Axe": true, "pot": true, "Bread": true, "arrow": true}
+	var station_here: Dictionary = {"campfire": true, "oven": true}
+	var groups: Array = RecipeFilter.order_groups(rows, func(r): return can_make.has(r["name"]), func(r): return station_here.has(r["station"]))
+	var names: Array = []
+
+	for group in groups:
+		names.append((group as Array).map(func(r): return r["name"]))
+
+	check(names[0] == ["Axe", "bowl"], "by hand and makeable now: on top, alphabetical (%s)" % str(names[0]))
+	check(names[1] == ["Bread", "pot"], "a working station within 12 m: next, alphabetical (%s)" % str(names[1]))
+	check(names[2] == ["Anvil", "arrow", "cord"], "the rest under them, alphabetical: no station near, or not makeable (%s)" % str(names[2]))
+
 	print("test_craft_search: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
