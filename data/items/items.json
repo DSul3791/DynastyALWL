@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 770,
+	"next_number": 780,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -8816,6 +8816,111 @@
 				"value": 1,
 				"future": true,
 				"note": "Found when digging soil (Steve #931, digging.json finds); future until that lands."
+			},
+			"kiln_kit": {
+				"number": 770,
+				"retired": true,
+				"name": "Kiln",
+				"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 152
+			},
+			"kiln": {
+				"number": 771,
+				"name": "Kiln",
+				"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 188."
+			},
+			"tanning_rack_kit": {
+				"number": 772,
+				"retired": true,
+				"name": "Tanning rack",
+				"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 36
+			},
+			"tanning_rack": {
+				"number": 773,
+				"name": "Tanning rack",
+				"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 189."
+			},
+			"drying_rack_kit": {
+				"number": 774,
+				"retired": true,
+				"name": "Drying rack",
+				"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 20
+			},
+			"drying_rack": {
+				"number": 775,
+				"name": "Drying rack",
+				"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 190."
+			},
+			"smoker_kit": {
+				"number": 776,
+				"retired": true,
+				"name": "Smoker",
+				"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 22
+			},
+			"smoker": {
+				"number": 777,
+				"name": "Smoker",
+				"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 191."
+			},
+			"oil_press_kit": {
+				"number": 778,
+				"retired": true,
+				"name": "Oil press",
+				"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 28
+			},
+			"oil_press": {
+				"number": 779,
+				"name": "Oil press",
+				"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed station: row state 192."
 			}
 	}
 }
