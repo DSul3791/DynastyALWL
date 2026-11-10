@@ -700,7 +700,14 @@
 		"tanning_rack": {"kit": "tanning_rack_kit", "item": "tanning_rack", "state": 189, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 0.6, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "station": "tanning_rack", "look": "tanning_rack"},
 		"drying_rack": {"kit": "drying_rack_kit", "item": "drying_rack", "state": 190, "blocks_walk": true, "footprint_x": 1.6, "footprint_z": 0.6, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "station": "drying_rack", "look": "drying_rack"},
 		"smoker": {"kit": "smoker_kit", "item": "smoker", "state": 191, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "station": "smoker", "look": "smoker"},
-		"oil_press": {"kit": "oil_press_kit", "item": "oil_press", "state": 192, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "stone", "clears_grass": true, "station": "oil_press", "look": "oil_press"}
+		"oil_press": {"kit": "oil_press_kit", "item": "oil_press", "state": 192, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "stone", "clears_grass": true, "station": "oil_press", "look": "oil_press"},
+		"storage_jar": {"kit": "storage_jar_kit", "item": "storage_jar", "state": 193, "footprint_x": 0.5, "footprint_z": 0.5, "cap_per_chunk": 8, "slots": 4, "max_kg": 30, "who": "anyone", "sound": "thump", "clears_grass": true, "look": "storage_jar"},
+		"hide_sack": {"kit": "hide_sack_kit", "item": "hide_sack", "state": 194, "footprint_x": 0.5, "footprint_z": 0.4, "cap_per_chunk": 8, "slots": 6, "max_kg": 25, "who": "anyone", "sound": "thump", "clears_grass": true, "look": "hide_sack"},
+		"wicker_basket": {"kit": "wicker_basket_kit", "item": "wicker_basket", "state": 195, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 8, "slots": 6, "max_kg": 25, "who": "anyone", "sound": "timber", "clears_grass": true, "look": "wicker_basket"},
+		"weapon_rack": {"kit": "weapon_rack_kit", "item": "weapon_rack", "state": 196, "footprint_x": 1.2, "footprint_z": 0.3, "cap_per_chunk": 8, "slots": 6, "max_kg": 40, "who": "anyone", "sound": "timber", "clears_grass": true, "look": "weapon_rack"},
+		"armour_stand": {"kit": "armour_stand_kit", "item": "armour_stand", "state": 197, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 8, "slots": 6, "max_kg": 40, "who": "anyone", "sound": "timber", "clears_grass": true, "look": "armour_stand"},
+		"sign": {"kit": "sign_kit", "item": "sign", "state": 198, "footprint_x": 0.6, "footprint_z": 0.1, "cap_per_chunk": 12, "sound": "timber", "clears_grass": false, "gap_exempt": true, "look": "sign"},
+		"tusk_mount": {"kit": "tusk_mount_kit", "item": "tusk_mount", "state": 199, "footprint_x": 0.44, "footprint_z": 0.1, "cap_per_chunk": 12, "sound": "timber", "clears_grass": false, "gap_exempt": true, "comfort": "tusk_mount", "look": "tusk_mount"}
 	},
 	"campfire": {
 		"gap_m": 2.0,

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 780,
+	"next_number": 794,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -8921,6 +8921,153 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed station: row state 192."
+			},
+			"storage_jar_kit": {
+				"number": 780,
+				"retired": true,
+				"name": "Storage jar",
+				"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 8
+			},
+			"storage_jar": {
+				"number": 781,
+				"name": "Storage jar",
+				"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 193."
+			},
+			"hide_sack_kit": {
+				"number": 782,
+				"retired": true,
+				"name": "Hide sack",
+				"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 9
+			},
+			"hide_sack": {
+				"number": 783,
+				"name": "Hide - Sack",
+				"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 194."
+			},
+			"wicker_basket_kit": {
+				"number": 784,
+				"retired": true,
+				"name": "Wicker basket",
+				"description": "A woven basket of sticks and twine. A first store for a camp.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 20
+			},
+			"wicker_basket": {
+				"number": 785,
+				"name": "Wicker - Basket",
+				"description": "A woven basket of sticks and twine. A first store for a camp.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 195."
+			},
+			"weapon_rack_kit": {
+				"number": 786,
+				"retired": true,
+				"name": "Weapon rack",
+				"description": "A plank rack against a wall for spears, bows and blades.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 54
+			},
+			"weapon_rack": {
+				"number": 787,
+				"name": "Weapon rack",
+				"description": "A plank rack against a wall for spears, bows and blades.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 196."
+			},
+			"armour_stand_kit": {
+				"number": 788,
+				"retired": true,
+				"name": "Armour stand",
+				"description": "A plank figure to hang a set of armour and clothes on.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 70
+			},
+			"armour_stand": {
+				"number": 789,
+				"name": "Armour stand",
+				"description": "A plank figure to hang a set of armour and clothes on.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 197."
+			},
+			"sign_kit": {
+				"number": 790,
+				"retired": true,
+				"name": "Sign",
+				"description": "A plank board on a stick to mark a camp or a path.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 17
+			},
+			"sign": {
+				"number": 791,
+				"name": "Sign",
+				"description": "A plank board on a stick to mark a camp or a path.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 198."
+			},
+			"tusk_mount_kit": {
+				"number": 792,
+				"retired": true,
+				"name": "Tusk mount",
+				"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 51
+			},
+			"tusk_mount": {
+				"number": 793,
+				"name": "Tusk - Mount",
+				"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 199."
 			}
 	}
 }
