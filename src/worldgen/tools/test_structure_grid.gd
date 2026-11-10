@@ -1,7 +1,7 @@
 extends SceneTree
 
 # The server's solid footprints (src/stream/structure_grid.gd): a wall stops a point on it and a step through it, a turned wall is turned, a taken-down
-# wall is forgotten, and structures.json marks the walls and heavy stations "blocks_walk" (floors and doorways stay walkable).
+# wall is forgotten, and structures.json marks the walls, heavy stations and shut doors and gates "blocks_walk" (floors and open doorways stay walkable).
 #   godot --headless --path . --script res://src/worldgen/tools/test_structure_grid.gd
 
 const GridScript := preload("res://src/stream/structure_grid.gd")
@@ -39,8 +39,24 @@ func _init() -> void:
 	for solid in ["wall_section", "window_section", "thatch_wall", "log_wall", "stone_wall", "brick_wall", "stone_forge", "oven"]:
 		check(bool(kinds[solid].get("blocks_walk", false)), "%s blocks walkers" % solid)
 
-	for open in ["floor_section", "foundation_section", "doorway_section", "roof_section", "path_patch", "chest"]:
+	for open in ["floor_section", "foundation_section", "door_open", "roof_section", "path_patch", "chest"]:
 		check(not bool(kinds[open].get("blocks_walk", false)), "%s does not block walkers" % open)
+
+	# Doors and gates (Steve 10 Nov 2026): the shut one of each pair blocks, the open one ("_open", its toggle) does not, so a wolf cannot walk
+	# through a shut gate in a palisade nor a fox through the shut door of a hut.
+	var pairs: int = 0
+
+	for kind in kinds:
+		var row: Dictionary = kinds[kind]
+
+		if str(row.get("use", "")) != "door" or not row.has("toggle") or str(kind).ends_with("_open"):
+			continue
+
+		pairs += 1
+		var twin: String = str(row["toggle"])
+		check(bool(row.get("blocks_walk", false)) and not bool(kinds.get(twin, {}).get("blocks_walk", true)), "%s blocks walkers shut, %s does not" % [kind, twin])
+
+	check(pairs >= 18, "every door and gate pair is checked (%d)" % pairs)
 
 	print("test_structure_grid: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

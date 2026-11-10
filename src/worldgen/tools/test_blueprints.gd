@@ -45,6 +45,60 @@ func _ids_standing(kind: String) -> Array:
 	return found
 
 
+# The Fortified - Gate (Kathleen's shut and open looks, #989): it needs a metal hammer (tier 3, as every Fortified piece), E opens and shuts it
+# like the Palisade gate, and shut it stops animals (structures.json "blocks_walk" on the shut twin; the server grid forgets it open and takes
+# it back when it shuts). The Palisade gate does the same.
+func _fortified_gate_checks(live: Dictionary) -> void:
+	var gate_bp: Dictionary = live["fortified_gate"]
+	check(int(gate_bp.get("hammer", 1)) == 3 and int(live["log_palisade_gate"].get("hammer", 1)) == 1, "the Fortified gate needs a metal hammer (tier 3), the Palisade gate any hammer")
+	var notices: Array = []
+	items.send_notice = func(_p, text): notices.append(str(text))
+	var spot: Vector3 = Vector3(260.0, 10.0, 262.0)
+	items.report_position(1, Vector3(260.0, 10.0, 260.0))
+	_clear(1)
+	_give(1, "stone_hammer", 1)
+
+	for need in gate_bp["cost"]:
+		_give(1, str(need[0]), int(need[1]))
+
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(gate_bp["number"]), 0, 0, spot)
+	check(_ids_standing("fortified_gate").is_empty() and _have(1, "concrete") == 6, "a stone hammer cannot build the Fortified gate, and nothing is taken")
+	check(notices.size() > 0 and str(notices[-1]).contains("a bronze, iron or steel hammer"), "it says which hammers can (%s)" % (str(notices[-1]) if notices.size() > 0 else "nothing said"))
+	_give(1, "iron_hammer", 1)
+	check(items.inventory_of(1).numbers.find(items.table.number_of("stone_hammer")) < items.inventory_of(1).numbers.find(items.table.number_of("iron_hammer")), "the stone hammer sits before the iron one on the hotbar")
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(gate_bp["number"]), 0, 0, spot)
+	var gates: Array = _ids_standing("fortified_gate")
+	check(gates.size() == 1 and not items._items[gates[0]]["struct"].has("site") and _have(1, "concrete") == 0 and _have(1, "iron_band") == 0, "with an iron hammer on the hotbar (behind a stone one) the Fortified gate stands and its materials are taken")
+	items.send_notice = Callable()
+
+	if gates.size() != 1:
+		return
+
+	_gate_swings(gates[0], "fortified_gate", spot)
+	var palisade_spot: Vector3 = Vector3(266.0, 10.0, 262.0)
+	items.place_piece(1, "log_palisade_gate_kit", palisade_spot)
+	var palisades: Array = _ids_standing("log_palisade_gate")
+	check(palisades.size() == 1, "a Palisade gate stands")
+
+	if palisades.size() == 1:
+		_gate_swings(palisades[0], "log_palisade_gate", palisade_spot)
+
+
+# E opens the gate at `spot` (yaw 0: it runs along x) and shuts it again; a wolf's stride through it is stopped only while it is shut.
+func _gate_swings(gate_id: int, kind: String, spot: Vector3) -> void:
+	var through: Callable = func() -> bool: return items.structure_blocks_step(spot.x, spot.z - 1.0, spot.x, spot.z + 1.0, 0.3)
+	items.report_position(1, spot + Vector3(0.0, 0.0, -1.5))
+	check(through.call(), "%s: shut, it stops an animal" % kind)
+	items.action(1, Net.ACT_USE_STRUCT, gate_id, 0, 0, Vector3.ZERO)
+	check(str(items._items[gate_id]["struct"]["kind"]) == kind + "_open", "%s: E opens it" % kind)
+	check(not through.call(), "%s: open, an animal walks through" % kind)
+	OS.delay_msec(450)
+	items.action(1, Net.ACT_USE_STRUCT, gate_id, 0, 0, Vector3.ZERO)
+	check(str(items._items[gate_id]["struct"]["kind"]) == kind, "%s: E shuts it again" % kind)
+	check(through.call(), "%s: shut again, it stops an animal again" % kind)
+	OS.delay_msec(450)
+
+
 func _init() -> void:
 	var dir: String = "user://test_blueprints"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -145,6 +199,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
 	check(_ids_standing("woodworking_table").size() == 1 and _have(1, "lumber") == 12, "a row with hammer 2 refuses the wooden hammer")
 	items._blueprints[int(table_bp["number"])]["hammer"] = 1
+	_fortified_gate_checks(live)
 
 	# Take down: every material back, no kit.
 	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)

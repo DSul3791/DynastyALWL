@@ -7151,14 +7151,14 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 	if not bool(row.get("known", true)) or _structures.get(str(row["structure"]), {}).is_empty():
 		return false
 
-	var hammer: int = _tool_slot(inv, "hammer")
+	var hammer: int = _heaviest_hammer_slot(inv)
 
 	if hammer < 0:
 		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
 		return false
 
 	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
-		_say(peer, "This hammer is too light for that. A stone hammer or better.")
+		_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
 		return false
 
 	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"]), int(row.get("station_level", 1))):
@@ -7185,6 +7185,49 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 			return false
 
 	return true
+
+
+# The heaviest working hammer on the hotbar (-1 none): a stone hammer in key 1 does not hide the iron one in key 4 that the player holds
+# (the hammer panel lists rows by the hammer in hand).
+func _heaviest_hammer_slot(inv) -> int:
+	var best: int = -1
+
+	for slot in range(inv.SLOTS):
+		if not inv.on_hotbar(slot) or inv.numbers[slot] == 0 or _is_broken(inv.numbers[slot], inv.wear[slot]):
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+		if str(entry.get("tool_class", "")) == "hammer" and (best < 0 or int(entry.get("tier", 1)) > int(table.entry(table.id_of(inv.numbers[best])).get("tier", 1))):
+			best = slot
+
+	return best
+
+
+# The hammers heavy enough for a blueprint row's "hammer" tier, as said in a sentence, lightest first ("a stone hammer or better"; tier 3 is any
+# metal one: "a bronze, iron or steel hammer"). From items.json, so a new hammer is named without a code change.
+func _hammers_for(tier_needed: int) -> String:
+	var hammers: Array = []   # [tier, number, material] of every live hammer heavy enough
+
+	for id in table.ids():
+		var entry: Dictionary = table.entry(id)
+
+		if str(entry.get("tool_class", "")) == "hammer" and not bool(entry.get("retired", false)) and int(entry.get("tier", 1)) >= tier_needed:
+			hammers.append([int(entry.get("tier", 1)), int(entry.get("number", 0)), str(entry.get("material", id.trim_suffix("_hammer")))])
+
+	if hammers.is_empty():
+		return "a heavier hammer"
+
+	hammers.sort()
+	var lightest: int = int(hammers[0][0])
+	var words: Array = []
+
+	for row in hammers:
+		if int(row[0]) == lightest:
+			words.append(str(row[2]))
+
+	var listed: String = str(words[0]) if words.size() == 1 else ", ".join(words.slice(0, words.size() - 1)) + " or " + str(words[-1])
+	return "a %s hammer%s" % [listed, " or better" if int(hammers[-1][0]) > lightest else ""]
 
 
 # True when the pack and the ground stock beside the builder cannot cover the blueprint's materials: the click then sets down a blueprint site.
@@ -8004,6 +8047,7 @@ func _use_struct(peer: int, inv, id: int) -> void:
 		if now_ms - int(_last_use.get(peer, -100000)) >= int(def.get("use_pace_ms", 400)) and _structures.has(str(def.get("toggle", ""))):
 			_last_use[peer] = now_ms
 			it["struct"]["kind"] = str(def["toggle"])
+			_grid_add(id, it)   # a shut door or gate ("blocks_walk") stops animals again; the open one is forgotten by the grid itself (its kind changed)
 			_dirty = true
 
 		return
