@@ -1960,7 +1960,9 @@
 				"Used in Thatch - Scarecrow",
 				"Used in Wooden - Trellis",
 				"Used in Wooden - Arrow (fibre)",
-				"Used in Drying rack"
+				"Used in Drying rack",
+				"Used in Sign",
+				"Used in Wicker - Basket"
 			],
 			"obtainable_now": true
 		},
@@ -2088,7 +2090,12 @@
 				"Used in Straw - Hat",
 				"Used in Wooden - Longbow",
 				"Used in Drying rack",
-				"Used in Tanning rack"
+				"Used in Tanning rack",
+				"Used in Armour stand",
+				"Used in Hide - Sack",
+				"Used in Tusk - Mount",
+				"Used in Weapon rack",
+				"Used in Wicker - Basket"
 			],
 			"obtainable_now": true
 		},
@@ -2386,7 +2393,11 @@
 				"Used in Wooden - Hand pump",
 				"Used in Wooden - Sluice",
 				"Used in Wooden - Trough",
-				"Used in Stone - Raised cistern"
+				"Used in Stone - Raised cistern",
+				"Used in Armour stand",
+				"Used in Sign",
+				"Used in Tusk - Mount",
+				"Used in Weapon rack"
 			],
 			"obtainable_now": true
 		},
@@ -2527,7 +2538,8 @@
 				"Used to build Clay hearth",
 				"Used in Clay pipe",
 				"Used in Kiln",
-				"Used in Smoker"
+				"Used in Smoker",
+				"Used in Storage jar"
 			],
 			"obtainable_now": true
 		},
@@ -2621,7 +2633,8 @@
 				"Used in Iron - Chair",
 				"Used in Iron - Hand pump",
 				"Used in Wooden - Hand pump",
-				"Used in Iron - Deep-well pump"
+				"Used in Iron - Deep-well pump",
+				"Used in Hide - Sack"
 			],
 			"obtainable_now": true
 		},
@@ -5378,7 +5391,8 @@
 				"Dropped by boar when worked with a knife"
 			],
 			"used_for": [
-				"Sold to traders (worth 20 copper)"
+				"Sold to traders (worth 20 copper)",
+				"Used in Tusk - Mount"
 			],
 			"obtainable_now": true
 		},
@@ -9428,6 +9442,132 @@
 			"name": "Oil press",
 			"kind": "structure",
 			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"storage_jar_kit": {
+			"name": "Storage jar",
+			"kind": "placeable",
+			"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"storage_jar": {
+			"name": "Storage jar",
+			"kind": "structure",
+			"description": "A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"hide_sack_kit": {
+			"name": "Hide sack",
+			"kind": "placeable",
+			"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Hide, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_sack": {
+			"name": "Hide - Sack",
+			"kind": "structure",
+			"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wicker_basket_kit": {
+			"name": "Wicker basket",
+			"kind": "placeable",
+			"description": "A woven basket of sticks and twine. A first store for a camp.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wicker_basket": {
+			"name": "Wicker - Basket",
+			"kind": "structure",
+			"description": "A woven basket of sticks and twine. A first store for a camp.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"weapon_rack_kit": {
+			"name": "Weapon rack",
+			"kind": "placeable",
+			"description": "A plank rack against a wall for spears, bows and blades.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"weapon_rack": {
+			"name": "Weapon rack",
+			"kind": "structure",
+			"description": "A plank rack against a wall for spears, bows and blades.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"armour_stand_kit": {
+			"name": "Armour stand",
+			"kind": "placeable",
+			"description": "A plank figure to hang a set of armour and clothes on.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Plank, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"armour_stand": {
+			"name": "Armour stand",
+			"kind": "structure",
+			"description": "A plank figure to hang a set of armour and clothes on.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"sign_kit": {
+			"name": "Sign",
+			"kind": "placeable",
+			"description": "A plank board on a stick to mark a camp or a path.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Plank, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sign": {
+			"name": "Sign",
+			"kind": "structure",
+			"description": "A plank board on a stick to mark a camp or a path.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"tusk_mount_kit": {
+			"name": "Tusk mount",
+			"kind": "placeable",
+			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Tusk, 1 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tusk_mount": {
+			"name": "Tusk - Mount",
+			"kind": "structure",
+			"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
