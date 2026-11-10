@@ -1999,7 +1999,8 @@
 				"Used in Wooden - Doorway",
 				"Used in Fibre - Sandals",
 				"Used in Fishing rod",
-				"Used in Wooden - Ceiling"
+				"Used in Wooden - Ceiling",
+				"Used in Wooden - Foundation"
 			],
 			"obtainable_now": true
 		},
@@ -2259,7 +2260,8 @@
 				"Used in Wooden - Ceiling",
 				"Used in Iron - Kite shield",
 				"Used in Ladder",
-				"Used in Wooden - Chest"
+				"Used in Wooden - Chest",
+				"Used in Wooden - Foundation"
 			],
 			"obtainable_now": true
 		},
@@ -6954,6 +6956,24 @@
 			],
 			"used_for": [],
 			"obtainable_now": true
+		},
+		"wood_foundation_kit": {
+			"name": "Wooden foundation",
+			"kind": "placeable",
+			"description": "A log and plank base, four metres square. Walls and ceilings snap onto it.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Lumber, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood_foundation": {
+			"name": "Wooden - Foundation",
+			"kind": "structure",
+			"description": "A log and plank base, four metres square. Walls and ceilings snap onto it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
 		}
 	}
 }
