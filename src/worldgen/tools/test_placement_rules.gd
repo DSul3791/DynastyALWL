@@ -403,8 +403,41 @@ func _init() -> void:
 	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "a branch far away gives nothing")
 	_pillar_checks(cfg)
 	_fence_checks(cfg)
+	_railing_checks(cfg)
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Railings and the double doorway (the buildables plan, batch B1b, Morgan 10 Nov 2026): a railing stands on a foundation's edge anchors or the middle
+# of a ceiling cell's edge, on its top, the ceiling winning where one lies on the foundation; a 4 m wall piece spans two wall anchors of one run.
+# No railing or double doorway rows exist yet (Jamie's B1b batch), so test rows stand in.
+func _railing_checks(cfg: Dictionary) -> void:
+	var with: Dictionary = cfg.duplicate(true)
+	with["structures"]["test_railing"] = {"kit": "test_railing_kit", "item": "test_railing", "state": 9905, "piece": true, "piece_kind": "railing", "footprint_x": 2.0, "footprint_z": 0.1}
+	with["structures"]["test_double_door"] = {"kit": "test_double_door_kit", "item": "test_double_door", "state": 9906, "piece": true, "piece_kind": "wall", "footprint_x": 4.0, "footprint_z": 0.25}
+	var found: int = int(cfg["structures"]["foundation_section"]["state"])
+	var ceiling: int = int(cfg["structures"]["floor_section"]["state"])
+	var top: float = float(cfg["structures"]["foundation_section"].get("top_m", 0.3))
+	var base: Array = [{"pos": Vector3(100.0, 10.0, 100.0), "state": found, "yaw": 0.0}]
+	var edge: Array = Rules.snap(with, "test_railing_kit", Vector3(99.1, 10.3, 98.2), 0, base)
+	check(bool(edge[2]) and edge[0].is_equal_approx(Vector3(99.0, 10.0 + top, 98.0)) and int(edge[1]) == 0, "a railing stands on a foundation's edge (%s)" % str(edge))
+	var ceiling_rows: Array = [{"pos": Vector3(200.0, 12.6, 200.0), "state": ceiling, "yaw": 0.0}]
+	var ceiling_top: float = 12.6 + Rules.CEILING_TOP_M
+	var front: Array = Rules.snap(with, "test_railing_kit", Vector3(200.1, 12.7, 199.1), 0, ceiling_rows)
+	check(bool(front[2]) and front[0].is_equal_approx(Vector3(200.0, ceiling_top, 199.0)) and int(front[1]) == 0, "a railing stands on a ceiling's edge, on its top (%s)" % str(front))
+	var side: Array = Rules.snap(with, "test_railing_kit", Vector3(201.0, 12.7, 200.2), 0, ceiling_rows)
+	check(bool(side[2]) and side[0].is_equal_approx(Vector3(201.0, ceiling_top, 200.0)) and int(side[1]) == 90, "and turns along the side edge (%s)" % str(side))
+	var both: Array = base + [{"pos": Vector3(99.0, 10.0 + top, 99.0), "state": ceiling, "yaw": 0.0}]
+	var upper: Array = Rules.snap(with, "test_railing_kit", Vector3(99.0, 10.0 + top + Rules.CEILING_TOP_M, 98.1), 0, both)
+	check(bool(upper[2]) and is_equal_approx(upper[0].y, 10.0 + top + Rules.CEILING_TOP_M), "on a ceiling laid on a foundation the railing stands on the ceiling (%s)" % str(upper))
+	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(200.1, 12.7, 199.1), 0, ceiling_rows)[2]), "a wall never takes a ceiling's railing points")
+	check(Rules.span_anchors(cfg["structures"]["foundation_section"]["anchors"]["wall"], 4.0).size() == 4, "a 4 m piece has one spot on each side of a foundation")
+	var door: Array = Rules.snap(with, "test_double_door_kit", Vector3(100.3, 10.3, 97.9), 0, base)
+	check(bool(door[2]) and door[0].is_equal_approx(Vector3(100.0, 10.0 + top, 98.0)) and int(door[1]) == 0, "a double doorway spans the two wall cells of a side (%s)" % str(door))
+	var door_side: Array = Rules.snap(with, "test_double_door_kit", Vector3(97.9, 10.3, 100.4), 0, base)
+	check(bool(door_side[2]) and door_side[0].is_equal_approx(Vector3(98.0, 10.0 + top, 100.0)) and int(door_side[1]) == 90, "and the cells of a turned side (%s)" % str(door_side))
+	var narrow: Array = Rules.snap(cfg, "wall_section_kit", Vector3(100.3, 10.3, 97.9), 0, base)
+	check(bool(narrow[2]) and narrow[0].is_equal_approx(Vector3(101.0, 10.0 + top, 98.0)), "a 2 m wall at the same spot keeps its own cell (%s)" % str(narrow))
 
 
 # Fences (the buildables plan, batch B2, Morgan 10 Nov 2026): 2 m sections that turn in 45 degree steps, leave a standing section's end straight on
