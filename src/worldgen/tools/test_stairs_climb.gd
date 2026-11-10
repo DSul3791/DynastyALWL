@@ -70,7 +70,7 @@ func _initialize() -> void:
 	_check(step_limit >= 0.24, "the step-up limit (%.2f m) is above the riser (0.24 m)" % step_limit)
 	_check(best_y - 0.9 > 2.2, "the walker climbed the flight and stood at the top (highest feet y %.2f of 2.4)" % (best_y - 0.9))
 
-	# The game walking pace (terrain_client.gd WALK_SPEED 1.4 m/s; the jog is 3.2, the first leg above uses 3.0).
+	# A slow 1.4 m/s pace (the old walk; terrain_client.gd WALK_SPEED is 3.2 since 10 Nov 2026, the first leg above uses 3.0).
 	body.global_position = Vector3(0.05, 0.95, 3.5)
 	body.velocity = Vector3.ZERO
 	best_y = 0.0
@@ -82,6 +82,6 @@ func _initialize() -> void:
 		best_y = maxf(best_y, body.global_position.y)
 		await physics_frame
 
-	_check(best_y - 0.9 > 2.2, "an ordinary walker at the 1.4 m/s walking pace climbs it too (highest feet y %.2f)" % (best_y - 0.9))
+	_check(best_y - 0.9 > 2.2, "a slow walker at 1.4 m/s climbs it too (highest feet y %.2f)" % (best_y - 0.9))
 	print("stairs climb: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

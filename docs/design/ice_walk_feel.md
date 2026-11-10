@@ -7,7 +7,7 @@
 
 - **One band.** `ice_sounds.gd` knows one number, `weather.ice_cover` (the 3 m pond cover), and one threshold, `ICE_WALK` 0.5.
   - At or above it, steps on the pond use the "ice" surface (a tap and a hollow tock).
-  - A step cracks at 4, 8 or 14 % (walk, jog, run), or 35 % more on a hard landing.
+  - A step cracks at 4, 8 or 14 % (walk, jog, run), or 35 % more on a hard landing. The player has no jog since 10 Nov 2026 (walk 3.2 m/s and run only), so the middle column is only the push-off step of a jump.
   - The shore groans every 25 to 70 s.
   - Below 0.5 the ice is silent: the player wades through skim as through open water.
 - **Nothing for thin ice.** There is no break sound, nothing in the water to push through, no cold shock and no change in footing. Bare ice walks like a meadow.

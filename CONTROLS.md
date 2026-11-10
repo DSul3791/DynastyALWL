@@ -8,15 +8,14 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 |---|---|
 | Mouse | Look around |
 | Wheel (mouse) | Scroll out (wheel down) from first person to third person: the camera moves up and back a little at each step (1.6 m to 7 m behind, 0.4 m a step); in third person scrolling out pulls further, scrolling in comes closer and, past the nearest step, back to first person. The distance is remembered between sessions (`user://view.txt`); you always start in first person. The camera pulls in when a wall, the ground or a trunk is in the way. Works while flying. A plain placeholder body is drawn until there is a real character. Only while the mouse is captured (menus and the inventory keep their own scrolling) |
-| W A S D | Walk (1.4 m/s) |
-| Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
+| W A S D | Walk (3.2 m/s, the old jog speed; Dave 10 Nov 2026: no jog, two speeds) |
 | Shift + W | Run (9 m/s, BUG-011; the run animation, stride rate and footsteps keep the old 3 steps a second) |
 | B (held with a shield in the off hand) | Block with the shield while held |
 | Left click (hold) with a hoe | Does what the hoe is set to: Path (averages the ground about 2 m round, then treads a round brown patch, strong in the middle half metre and fading out by 1.25 m), Smooth, Grade line or Till. Repeats every 0.55 s while held |
 | Right click with a hoe | Opens a window to pick the hoe's mode (mouse wheel moves, left click chooses, right click closes) |
 | Shift + right click with a hoe | Sets grade point A, then B (stakes show). The moment B is set the ground along the line is levelled to the ramp between the two heights and a path is laid along it, by itself (about 2 stations a second, up to 40 m); a third click starts a new line |
 | Hold Shift + left click with a hoe | Grades the ground within 1.5 m of the A-B line toward a straight ramp (0.25 m per stroke, within 12 m of A, free; only the hoe wears) |
-| (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (9 m, BUG-011) than walking (3 m) |
+| (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when running (9 m, BUG-011) than walking (4.2 m, the old jog stride) |
 | Space | Jump (walking) or go up (flying); on a ladder, let go and drop back |
 | Ladder (W / S) | Walk up to a placed ladder facing it and hold W to grab on and climb (1.1 m/s); S climbs down and steps off at the bottom; at the top W steps you onto the edge |
 | Ctrl | Go down (flying) |
@@ -78,9 +77,9 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | ] | Admin test tool: give 10 each of stone, stick, plant fibre and log |
 
 Gait rules:
-- Minecraft style: double-tap W toggles jogging on, and Shift adds running while held.
-- Letting go of Shift drops back to jogging (if on) or walking. Only letting go of W drops back to walking.
-- Walking shows no label. Jogging shows "Jogging". Running shows "Running".
+- Two speeds (Dave 10 Nov 2026: "lets get rid of jogging"): W walks at 3.2 m/s, Shift held with W runs at 9 m/s.
+- Letting go of Shift drops back to walking.
+- No movement label shows for either.
 - Other status words (underwater, waiting for ground) still show.
 - Flying is an admin look-around tool (noclip). Shift multiplies flying speed.
 - Temporary admin compass (2026-10-19): a strip at the top of the screen scrolls as you turn, N, NE, E, SE, S, SW, W, NW with a tick every 10 degrees and the exact heading under the red pointer (north is -z, east is +x).
@@ -120,7 +119,7 @@ The one-window screen is the only inventory window; the old window and its `--ol
 - Dave's other two "things" from the old design (not yet given).
 - Potions, horses and dragons will move much faster than running; ground loading is built to keep up.
 
-- Carrying: no key; the inventory panel shows "Carrying x of y kg". Up to 80% of what you can carry nothing slows you; past that a heavy pack slows walking, jogging and running smoothly; flying is unaffected.
+- Carrying: no key; the inventory panel shows "Carrying x of y kg". Up to 80% of what you can carry nothing slows you; past that a heavy pack slows walking and running smoothly; flying is unaffected.
 - Rest (Ground adds the keys: C crouch, X sit, Z lie, all toggles; any movement key stands you up): sitting or lying brings exertion down to 0, lying fastest; standing under a heavy pack only rests it to about half. Over-exerted: about 10 percent slower (tunable over_speed_factor in exertion.json) but you can keep running and keep pushing until you black out. Past the faint threshold you black out smoothly, not in steps: right at the threshold it takes about 14 s and you lie down at the end, and the further over you push the faster it comes on (about 1.5 s a long way over). The heart beats about 175 bpm at the threshold and 200 at the peak of a blackout; there are no breathing noises. Then you wake slowly.
 - Picking a plant or shrub now removes it from the world (like a stone); out-of-season or empty plants show no prompt at all.
 | Text - / Text + (crafting screen, click) | Smaller or larger text on the crafting and inventory screen (small, medium (default), large, extra large); saved with the display settings. Esc > Settings > "Crafting screen text size" cycles it too. Craftable recipes are green, the rest greyed out |

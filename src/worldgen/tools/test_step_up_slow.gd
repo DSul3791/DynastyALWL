@@ -75,7 +75,7 @@ func _initialize() -> void:
 	# The pace multipliers can never stall a walker: none is near 0 in the data.
 	var path: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/path_speed.json"))
 	var exertion: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
-	_check(float(path["walk_factor"]) >= 0.5 and float(path["jog_factor"]) >= 0.5 and float(path["run_factor"]) >= 0.5, "path pace factors are not near 0")
+	_check(float(path["walk_factor"]) >= 0.5 and not path.has("jog_factor") and float(path["run_factor"]) >= 0.5, "path pace factors are not near 0")
 	_check(float(exertion["over_speed_factor"]) >= 0.5, "over-exerted pace factor is not near 0")
 	print("step up slow: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -1813,7 +1813,7 @@ func _to_burrow(a: Dictionary, away: Vector2, def: Dictionary) -> void:
 # How much each player rustles the undergrowth, sampled every senses.noise_sample_s (player positions arrive at the network rate, so
 # not per frame). Only a little (Dave 5 Nov 2026: legs brushing the bushes, not a lot, and it never means the animal hears you
 # outright): a player moving through bushes, ferns or tall grass (undergrowth) is sensed 1 + brush_noise_per_ms x speed farther,
-# so about 6 percent walking (1.4 m/s), 13 percent jogging and 36 percent running flat out (9 m/s); crouched, brush_crouch_share of
+# so about 13 percent walking (3.2 m/s, the walk since 10 Nov 2026; 6 percent at the old 1.4) and 36 percent running flat out (9 m/s); crouched, brush_crouch_share of
 # that. The hunting skill quietens it: the extra is divided by the square of the stalk factor (1.0 for a beginner, about 1.5 at
 # hunting 100, so a master makes under half the noise). A change in the player count resets the sample (the order may have changed).
 func _sample_noise(players: Array, delta: float) -> void:
