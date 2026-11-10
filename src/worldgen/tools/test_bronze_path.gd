@@ -7,7 +7,7 @@ extends SceneTree
 #   3. a Stone - Forge from its blueprint with a wooden hammer;
 #   4. charcoal at a lit campfire;
 #   5. copper and tin ingots smelted at the Stone - Forge;
-#   6. bronze ingots; 7. a Bronze - Pickaxe at the forge;
+#   6. bronze ingots; 7. a Bronze - Pickaxe at the forge (every amount read from the live recipes, so either bronze ratio passes);
 #   8. the bronze pick takes iron ore out of an iron outcrop, which the stone pick cannot.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bronze_path.gd
 
@@ -40,6 +40,20 @@ func have(id: String) -> int:
 
 func give(id: String, n: int) -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, n, Vector3.ZERO)
+
+
+# How many of item `id` the recipe `recipe_id` needs (0 when none), from the live recipe table.
+func need_of(recipe_id: String, id: String) -> int:
+	for need in items.recipes.recipe(recipe_number(recipe_id)).get("needs", []):
+		if int(need[0]) == items.table.number_of(id):
+			return int(need[1])
+
+	return 0
+
+
+func gives_of(recipe_id: String) -> int:
+	var gives: Array = items.recipes.recipe(recipe_number(recipe_id)).get("gives", [0, 1])
+	return maxi(int(gives[1]), 1) if gives.size() > 1 else 1
 
 
 func recipe_number(id: String) -> int:
@@ -102,11 +116,25 @@ func _init() -> void:
 	craft("stone_pickaxe", 1, 60)
 	check(have("stone_pickaxe") == 1, "1. a Stone - Pickaxe is made by hand")
 
-	# 2. Copper and tin ore from outcrops with the stone pick: 2 ingots of each at 3 ore an ingot.
-	pick_out("copper", "copper_ore", 6, 600)
-	check(have("copper_ore") >= 6, "2a. the stone pick takes 6 copper ore out of a copper outcrop (%d)" % have("copper_ore"))
-	pick_out("tin", "tin_ore", 6, 600)
-	check(have("tin_ore") >= 6, "2b. and 6 tin ore out of a tin outcrop (%d)" % have("tin_ore"))
+	# The amounts follow the live recipes, so the test holds at either bronze ratio (1 + 1 -> 2 before Jamie's #993, 3 + 1 -> 4 after).
+	var pick_bronze: int = need_of("bronze_pickaxe", "bronze_ingot")
+	var bronze_crafts: int = ceili(float(pick_bronze) / float(gives_of("bronze_ingot")))
+	var copper_ingots: int = bronze_crafts * need_of("bronze_ingot", "copper_ingot")
+	var tin_ingots: int = bronze_crafts * need_of("bronze_ingot", "tin_ingot")
+	var copper_smelts: int = ceili(float(copper_ingots) / float(gives_of("smelt_copper")))
+	var tin_smelts: int = ceili(float(tin_ingots) / float(gives_of("smelt_tin")))
+	var copper_ore_n: int = copper_smelts * need_of("smelt_copper", "copper_ore")
+	var tin_ore_n: int = tin_smelts * need_of("smelt_tin", "tin_ore")
+	var fuel_n: int = copper_smelts * need_of("smelt_copper", "fuel") + tin_smelts * need_of("smelt_tin", "fuel")
+	var charcoal_crafts: int = ceili(float(fuel_n) / float(gives_of("charcoal")))
+	print("plan: %d bronze ingots for the pick = %d bronze crafts = %d copper + %d tin ingots = %d copper ore + %d tin ore, %d fuel" % [pick_bronze, bronze_crafts, copper_ingots, tin_ingots, copper_ore_n, tin_ore_n, fuel_n])
+	check(pick_bronze > 0 and copper_ingots > 0 and tin_ingots > 0 and copper_ore_n > 0 and tin_ore_n > 0, "the recipes for the path are all there")
+
+	# 2. Copper and tin ore from outcrops with the stone pick.
+	pick_out("copper", "copper_ore", copper_ore_n, 1500)
+	check(have("copper_ore") >= copper_ore_n, "2a. the stone pick takes %d copper ore out of a copper outcrop (%d)" % [copper_ore_n, have("copper_ore")])
+	pick_out("tin", "tin_ore", tin_ore_n, 1500)
+	check(have("tin_ore") >= tin_ore_n, "2b. and %d tin ore out of a tin outcrop (%d)" % [tin_ore_n, have("tin_ore")])
 	pick_out("iron", "iron_ore", 1, 60)
 	check(have("iron_ore") == 0, "2c. it takes no iron ore out of an iron outcrop")
 
@@ -138,29 +166,25 @@ func _init() -> void:
 	check(forge_id >= 0, "3b. the Stone - Forge stands (a wooden hammer, %s)" % str(forge_bp["cost"]))
 	check(items.station_near(1, "forge", 1), "3c. it serves as a forge, level 1")
 
-	# 4. Charcoal at a lit campfire (2 firewood each); 4 fuel for 4 smelts.
+	# 4. Charcoal at a lit campfire, one fuel a smelt.
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": FIRE_AT, "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}
 	items._next_id += 1
-	give("firewood", 8)
-	craft("charcoal", 4, 400)
-	check(have("charcoal") == 4, "4. 8 firewood make 4 charcoal at the campfire (%d)" % have("charcoal"))
+	give("firewood", charcoal_crafts * need_of("charcoal", "firewood"))
+	craft("charcoal", charcoal_crafts, 120 * charcoal_crafts)
+	check(have("charcoal") >= fuel_n, "4. %d firewood make %d charcoal at the campfire (%d needed)" % [charcoal_crafts * need_of("charcoal", "firewood"), have("charcoal"), fuel_n])
 
 	# 5. Copper and tin ingots at the Stone - Forge, charcoal as the fuel.
-	craft("smelt_copper", 2, 400)
-	check(have("copper_ingot") == 2, "5a. 6 copper ore and 2 fuel make 2 copper ingots (%d)" % have("copper_ingot"))
-	craft("smelt_tin", 2, 400)
-	check(have("tin_ingot") == 2, "5b. 6 tin ore and 2 fuel make 2 tin ingots (%d)" % have("tin_ingot"))
-	check(have("charcoal") == 0, "5c. the 4 smelts burnt the 4 charcoal (%d left)" % have("charcoal"))
+	craft("smelt_copper", copper_smelts, 120 * copper_smelts)
+	check(have("copper_ingot") >= copper_ingots, "5a. %d copper ore make %d copper ingots (%d)" % [copper_ore_n, copper_ingots, have("copper_ingot")])
+	craft("smelt_tin", tin_smelts, 120 * tin_smelts)
+	check(have("tin_ingot") >= tin_ingots, "5b. %d tin ore make %d tin ingots (%d)" % [tin_ore_n, tin_ingots, have("tin_ingot")])
 
-	# 6. Bronze ingots: enough for the pick's 3, at whatever ratio the data has.
-	var bronze: Dictionary = items.recipes.recipe(recipe_number("bronze_ingot"))
-	var per_craft: int = int(bronze.get("gives", [0, 1])[1]) if not bronze.is_empty() else 1
-	var crafts: int = maxi(ceili(3.0 / float(maxi(per_craft, 1))), 1)
-	craft("bronze_ingot", crafts, 400)
-	check(have("bronze_ingot") >= 3, "6. %d bronze crafts make %d bronze ingots (3 needed)" % [crafts, have("bronze_ingot")])
+	# 6. Bronze ingots: enough for the pick.
+	craft("bronze_ingot", bronze_crafts, 120 * bronze_crafts)
+	check(have("bronze_ingot") >= pick_bronze, "6. %d bronze crafts make %d bronze ingots (%d needed)" % [bronze_crafts, have("bronze_ingot"), pick_bronze])
 
 	# 7. The Bronze - Pickaxe at the forge.
-	give("stick", 2)
+	give("stick", need_of("bronze_pickaxe", "stick"))
 	craft("bronze_pickaxe", 1, 200)
 	check(have("bronze_pickaxe") == 1, "7. a Bronze - Pickaxe is made at the Stone - Forge")
 	var inv = items.inventory_of(1)
