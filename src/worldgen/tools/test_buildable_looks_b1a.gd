@@ -82,7 +82,7 @@ func _run() -> void:
 			var look_name: String = look + ("_open" if open else "")
 			var node: Node3D = _build(look_name)
 			var box: AABB = _mesh_box(node)
-			check(box.position.x >= -1.04 and box.end.x <= 1.04 and box.position.y >= -0.01 and box.end.y <= 2.56 and box.end.y >= 2.3, "%s: in the 2 m by 2.4 m wall piece (%s)" % [look_name, box]
+			check(box.position.x >= -1.04 and box.end.x <= 1.04 and box.position.y >= -0.01 and box.end.y <= 2.56 and box.end.y >= 2.3, "%s: in the 2 m by 2.4 m wall piece (%s)" % [look_name, box])
 			check(_solid_at(node, Vector3(0.75, 1.0, 0.0)) and _solid_at(node, Vector3(-0.75, 1.0, 0.0)) and _solid_at(node, Vector3(0.0, 2.25, 0.0)), "%s: the wall either side of and over the gap is solid" % look_name)
 
 			if open:
