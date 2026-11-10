@@ -82,6 +82,7 @@ const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
+const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -4642,6 +4643,23 @@ func _room_to_rise(target: int) -> bool:
 	return get_viewport().world_3d.direct_space_state.intersect_shape(query, 1).is_empty()
 
 
+var _snow_pace_at_msec: int = -100000
+var _snow_pace_now: float = 1.0
+
+
+# The snow pace under the feet (SnowWalk): the voxel material the footsteps read, looked at four times a second.
+func _snow_pace() -> float:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _snow_pace_at_msec < 250 or sound == null or items == null:
+		return _snow_pace_now
+
+	_snow_pace_at_msec = now
+	var soil: int = sound._ground_under(body.global_position - Vector3(0.0, sound.FEET_M, 0.0))
+	_snow_pace_now = SnowWalkScript.pace_mult(SnowWalkScript.soil_is_snow(soil), SnowWalkScript.shod(items.worn, items.table))
+	return _snow_pace_now
+
+
 func _move_player(delta: float) -> void:
 	if menu_open or (cavein_death != null and cavein_death.active) or (death_screen != null and death_screen.active):
 		body.velocity = Vector3.ZERO
@@ -4701,6 +4719,8 @@ func _move_player(delta: float) -> void:
 
 		if stance.stance == StanceScript.STAND:
 			pace *= items.path_pace_factor(body.global_position, "run" if running else "walk")
+
+		pace *= _snow_pace()   # snow and glacial ice are slow going, snowshoes ease it (snow_walk.json, Part C plan 7)
 
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
