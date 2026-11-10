@@ -3581,9 +3581,9 @@
 			"status": "planned"
 		},
 		"log_tropical_hardwood": {
-			"name": "Tropical hardwood log",
+			"name": "Mahogany log",
 			"kind": "material",
-			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size mahogany log. Too big for the pack: carried alone on the shoulder.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3614,9 +3614,9 @@
 			"status": "planned"
 		},
 		"lumber_tropical_hardwood": {
-			"name": "Tropical hardwood lumber",
+			"name": "Mahogany lumber",
 			"kind": "material",
-			"description": "Sawn tropical hardwood boards.",
+			"description": "Sawn mahogany boards.",
 			"how_to_get": [],
 			"used_for": [
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
@@ -3625,9 +3625,9 @@
 			"status": "planned"
 		},
 		"beam_tropical_hardwood": {
-			"name": "Tropical hardwood beam",
+			"name": "Mahogany beam",
 			"kind": "material",
-			"description": "Heavy squared tropical hardwood beams for building.",
+			"description": "Heavy squared mahogany beams for building.",
 			"how_to_get": [],
 			"used_for": [
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
