@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Craft menu search (Dave 5 Nov 2026, by name only): a typed word matches the recipe's name or what it makes, never its ingredients or tools; any case, several words together,
+# Craft menu search (Dave 5 Nov 2026, by name only; 10 Nov the made item's own name and the Admin kits): a typed word matches the recipe's name or what it makes, never its ingredients or tools; any case, several words together,
 # inside the chosen category tab; an empty box shows everything.
 #   godot --headless --path . --script res://src/worldgen/tools/test_craft_search.gd
 
@@ -31,14 +31,22 @@ func _init() -> void:
 	var hide_n: int = table.number_of("hide")
 	var with_hide: Array = all.filter(func(r): return r["needs"].any(func(n): return int(n[0]) == hide_n))
 	var found: Array = all.filter(func(r): return RecipeFilter.shown(r, "", "hide", table))
-	check(found.all(func(r): return (str(r["name"]) + " " + table.name_of(int(r["number"]))).to_lower().contains("hide")), "typing 'hide' lists only recipes with hide in their name (%d of %d need one)" % [with_hide.size(), found.size()])
+	check(found.all(func(r): return (str(r["name"]) + " " + table.name_of(int(r["gives"][0]))).to_lower().contains("hide")), "typing 'hide' lists only recipes with hide in their name (%d of %d need one)" % [with_hide.size(), found.size()])
 	check(RecipeFilter.shown(recipes.recipe(1), "", "TWINE", table) and RecipeFilter.shown(recipes.recipe(1), "", "  twine ", table), "any case, spaces ignored")
 
 	# The result item matches; an ingredient does not.
 	var axe: Dictionary = recipes.recipe(2)
-	check(RecipeFilter.shown(axe, "", table.name_of(int(axe["number"])).to_lower(), table), "it matches the item it makes")
+	check(RecipeFilter.shown(axe, "", table.name_of(int(axe["gives"][0])).to_lower(), table), "it matches the item it makes")
 	var first_need: String = table.id_of(int(axe["needs"][0][0])).replace("_", " ")
-	check(not RecipeFilter.shown(axe, "", first_need, table) or (str(axe["name"]) + " " + table.name_of(int(axe["number"]))).to_lower().contains(first_need), "it does not match an ingredient by name (%s)" % first_need)
+	check(not RecipeFilter.shown(axe, "", first_need, table) or (str(axe["name"]) + " " + table.name_of(int(axe["gives"][0]))).to_lower().contains(first_need), "it does not match an ingredient by name (%s)" % first_need)
+
+	# Dave 10 Nov: "campfire" listed Beet roast, Cabbage stew and Plantain poultice (the recipe's own number was read as an item number, and items 255,
+	# 254 and 8 are the Campfire pots and the Campfire). Only what is called campfire may show.
+	var fire: Array = all.filter(func(r): return RecipeFilter.shown(r, "", "campfire", table))
+	var wrong: Array = fire.filter(func(r): return not (str(r["name"]) + " " + table.name_of(int(r["gives"][0]))).to_lower().contains("campfire"))
+	check(not fire.is_empty() and wrong.is_empty(), "typing 'campfire' lists only campfire things (%s)" % ", ".join(wrong.map(func(r): return str(r["name"]))))
+	check(fire.all(func(r): return not ["Beet roast", "Cabbage stew", "Plantain poultice"].has(str(r["name"]))), "Beet roast, Cabbage stew and Plantain poultice are gone")
+	check(RecipeFilter.matches("Rough bed", "") and not RecipeFilter.matches("Rough bed", "campfire") and RecipeFilter.matches("Campfire", "CAMP"), "the Admin kits follow the box by name")
 
 	# Several words must all match; a tab narrows first.
 	check(not RecipeFilter.shown(axe, "", "axe zzzzqq", table), "a word that matches nothing hides it")
