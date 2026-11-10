@@ -5,7 +5,7 @@ extends SceneTree
 # on y = 0, under the height given here), are solid where they stand (not the Tusk mount: it hangs on a wall like the Antler mount, so it is given
 # 0.3 m of depth out from the wall), and stay under the look table's triangle cap. Bounds only (no pictures). The set Fish trap and Bird trap (#941,
 # fish_trap_set and bird_trap_set) are checked here too; they are not solid. The Iron - Anvil (#950)
-# is checked too, and is solid, and so are the Preserving jar and Root cellar (#955).
+# is checked too, and is solid, and so are the Preserving jar and Root cellar (#955) and the B3b Log - Shelf, Iron - Chest and Wooden - Crate.
 #   godot --headless --path . --script res://src/worldgen/tools/test_structure_looks_c3c4.gd
 
 const LookTable := preload("res://src/client/look_table.gd")
@@ -17,6 +17,7 @@ const SIZES := {
 	"tusk_mount": Vector3(0.44, 2.15, 0.3), "clay_bloomery": Vector3(1.2, 1.45, 1.2), "stonecutters_bench": Vector3(2.0, 1.15, 1.0),
 	"fish_trap_set": Vector3(0.8, 0.45, 0.5), "bird_trap_set": Vector3(0.6, 0.4, 0.6),
 	"iron_anvil": Vector3(0.6, 0.85, 0.4), "preserving_jar": Vector3(0.5, 0.6, 0.5), "root_cellar": Vector3(2.0, 0.7, 2.0),
+	"log_shelf": Vector3(1.2, 1.25, 0.3), "iron_chest": Vector3(1.0, 0.65, 0.6), "wooden_crate": Vector3(0.8, 0.85, 0.8),
 }
 const NOT_SOLID := ["tusk_mount", "fish_trap_set", "bird_trap_set"]   # hung on a wall, or a trap you can walk over (no blocks_walk)
 const LOW := {"fish_trap_set": 0.3, "bird_trap_set": 0.3}   # pieces lower than the usual 0.4 m: the traps lie on the ground
