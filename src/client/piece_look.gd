@@ -2426,3 +2426,164 @@ static func gate(kind: String = "wood", open: bool = false) -> Node3D:
 		hinge.rotation = Vector3(0.0, -PI * 0.5, 0.0)
 
 	return root
+
+
+# --- Buildables B3 (buildables_plan.md, 10 Nov 2026): furniture tiers, work benches and storage. Free-placed, centred on the footprint, standing on y = 0.
+# Seats face -Z (the back of a chair at +Z, as chair()); shelves, cupboards and racks have their back at -Z and open toward +Z.
+
+# A bench of a tier, 2.0 x 0.4 x 0.45 like the wooden bench. "log": a split log seat, flat face up, on two pairs of splayed round legs. "stone": a stone
+# slab on two dressed blocks. "iron": a plank seat bound with iron straps on two iron frame ends.
+static func tier_bench(kind: String = "log") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	match kind:
+		"log":
+			_box(root, Vector3(2.0, 0.12, 0.36), Vector3(0.0, 0.39, 0.0), _log)
+			_box(root, Vector3(1.96, 0.02, 0.3), Vector3(0.0, 0.45, 0.0), _planks)
+			for x in [-0.75, 0.75]:
+				for z in [-0.09, 0.09]:
+					_cyl(root, 0.04, 0.38, Vector3(x, 0.19, z * 1.3), _log, 6).rotation = Vector3(-z * 1.4, 0.0, 0.08 * signf(x))
+		"stone":
+			_box(root, Vector3(2.0, 0.12, 0.4), Vector3(0.0, 0.39, 0.0), _flag)
+			for x in [-0.7, 0.7]:
+				_box(root, Vector3(0.3, 0.33, 0.34), Vector3(x, 0.165, 0.0), _stone)
+		_:
+			_box(root, Vector3(2.0, 0.06, 0.36), Vector3(0.0, 0.42, 0.0), _planks)
+			for x in [-0.8, -0.3, 0.3, 0.8]:
+				_box(root, Vector3(0.05, 0.065, 0.37), Vector3(x, 0.42, 0.0), _iron_mat())                 # straps round the seat
+			for x in [-0.82, 0.82]:
+				for z in [-0.15, 0.15]:
+					_box(root, Vector3(0.035, 0.39, 0.035), Vector3(x, 0.195, z), _iron_mat())
+				_box(root, Vector3(0.035, 0.035, 0.34), Vector3(x, 0.1, 0.0), _iron_mat())
+
+	_solid(root, Vector3(2.0, 0.45, 0.4), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# A table of a tier. "log": 1.4 x 0.7 x 0.8, a hand-hewn top of two split logs on crossed log trestles. "stone": 1.4 x 0.8 x 0.85, a thick plank top on two
+# stone pedestals. "iron": 1.4 x 0.7 x 0.8, a plank top in an iron frame on four iron legs with corner brackets.
+static func tier_table(kind: String = "log") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var high: float = 0.85 if kind == "stone" else 0.8
+	var deep: float = 0.8 if kind == "stone" else 0.7
+
+	match kind:
+		"log":
+			for z in [-0.175, 0.175]:
+				_box(root, Vector3(1.4, 0.1, 0.35), Vector3(0.0, 0.75, z), _log)
+				_box(root, Vector3(1.38, 0.02, 0.31), Vector3(0.0, 0.8 - 0.01, z), _planks)
+			for x in [-0.5, 0.5]:
+				for s in [-1.0, 1.0]:
+					_box_rot(root, Vector3(0.08, 0.86, 0.08), Vector3(x, 0.39, 0.0), Vector3(s * 0.55, 0.0, 0.0), _log)   # an X trestle
+		"stone":
+			_box(root, Vector3(1.4, 0.1, 0.8), Vector3(0.0, 0.8, 0.0), _planks)
+			_box(root, Vector3(1.42, 0.03, 0.82), Vector3(0.0, 0.74, 0.0), _frame)
+			for x in [-0.48, 0.48]:
+				_box(root, Vector3(0.3, 0.12, 0.6), Vector3(x, 0.06, 0.0), _flag)
+				_box(root, Vector3(0.22, 0.62, 0.44), Vector3(x, 0.43, 0.0), _stone)
+		_:
+			_box(root, Vector3(1.36, 0.05, 0.66), Vector3(0.0, 0.775, 0.0), _planks)
+			_box(root, Vector3(1.4, 0.06, 0.03), Vector3(0.0, 0.77, 0.335), _iron_mat())
+			_box(root, Vector3(1.4, 0.06, 0.03), Vector3(0.0, 0.77, -0.335), _iron_mat())
+			_box(root, Vector3(0.03, 0.06, 0.7), Vector3(0.685, 0.77, 0.0), _iron_mat())
+			_box(root, Vector3(0.03, 0.06, 0.7), Vector3(-0.685, 0.77, 0.0), _iron_mat())
+			for x in [-0.65, 0.65]:
+				for z in [-0.3, 0.3]:
+					_box(root, Vector3(0.04, 0.74, 0.04), Vector3(x, 0.37, z), _iron_mat())
+					_box_rot(root, Vector3(0.025, 0.2, 0.025), Vector3(x - signf(x) * 0.06, 0.68, z), Vector3(0.0, 0.0, signf(x) * 0.8), _iron_mat())   # a bracket
+
+	_solid(root, Vector3(1.4, high, deep), Vector3(0.0, high * 0.5, 0.0))
+	return root
+
+
+# An iron chair, 0.6 x 0.6 x 0.9, facing -Z: an iron frame, a stretched hide seat and a plank back between two iron uprights.
+static func iron_chair() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var hide: StandardMaterial3D = _tone_mat(Color(0.42, 0.29, 0.18))
+
+	for x in [-0.24, 0.24]:
+		for z in [-0.24, 0.24]:
+			_box(root, Vector3(0.035, 0.45, 0.035), Vector3(x, 0.225, z), _iron_mat())
+		_box(root, Vector3(0.035, 0.45, 0.035), Vector3(x, 0.675, 0.25), _iron_mat())          # the back uprights
+		_box(root, Vector3(0.035, 0.035, 0.5), Vector3(x, 0.15, 0.0), _iron_mat())
+
+	_box(root, Vector3(0.5, 0.03, 0.5), Vector3(0.0, 0.46, 0.0), _iron_mat())
+	_box(root, Vector3(0.46, 0.035, 0.46), Vector3(0.0, 0.47, 0.0), hide)
+	_box(root, Vector3(0.48, 0.22, 0.03), Vector3(0.0, 0.72, 0.25), _planks)
+	_box(root, Vector3(0.52, 0.03, 0.04), Vector3(0.0, 0.88, 0.25), _iron_mat())
+	_solid(root, Vector3(0.6, 0.48, 0.6), Vector3(0.0, 0.24, 0.0))
+	return root
+
+
+# A stone work bench, 2.0 x 1.0 x 0.9 (the work bench ladder is Wooden, Log, Stone): a flagstone top on two dressed stone piers, a plank shelf between
+# them and a tool board along the back (the tool rack and vice add-ons stand beside it).
+static func stone_workbench() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.1, 1.0), Vector3(0.0, 0.85, 0.0), _flag)
+
+	for x in [-0.75, 0.75]:
+		_box(root, Vector3(0.4, 0.8, 0.85), Vector3(x, 0.4, 0.0), _stone)
+
+	_box(root, Vector3(1.1, 0.05, 0.8), Vector3(0.0, 0.3, 0.0), _planks)
+	_box(root, Vector3(1.9, 0.2, 0.04), Vector3(0.0, 1.0, -0.47), _planks)       # the tool board
+
+	for k in 6:
+		_box(root, Vector3(0.03, 0.03, 0.08), Vector3(-0.75 + 0.3 * float(k), 1.04, -0.42), _frame)   # pegs
+
+	_solid(root, Vector3(2.0, 0.9, 1.0), Vector3(0.0, 0.45, 0.0))
+	return root
+
+
+# A wooden shelf, 1.2 x 0.3 x 1.2, its back at -Z: two side boards, four shelf boards and a back board.
+static func shelf() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.58, 0.58]:
+		_box(root, Vector3(0.04, 1.2, 0.3), Vector3(x, 0.6, 0.0), _planks)
+
+	for y in [0.04, 0.42, 0.8, 1.18]:
+		_box(root, Vector3(1.12, 0.03, 0.28), Vector3(0.0, y, 0.0), _planks)
+
+	_box(root, Vector3(1.12, 1.16, 0.02), Vector3(0.0, 0.6, -0.14), _frame)
+	_solid(root, Vector3(1.2, 1.2, 0.3), Vector3(0.0, 0.6, 0.0))
+	return root
+
+
+# A cupboard, 1.0 x 0.5 x 1.8, its back at -Z: a plank carcass on a plinth under a cornice, two doors on the front with iron hinges and handles.
+static func cupboard() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(1.0, 0.1, 0.5), Vector3(0.0, 0.05, 0.0), _frame)
+	_box(root, Vector3(0.96, 1.62, 0.46), Vector3(0.0, 0.91, 0.0), _planks)
+	_box(root, Vector3(1.0, 0.08, 0.5), Vector3(0.0, 1.76, 0.0), _frame)
+
+	for s in [-1.0, 1.0]:
+		_box(root, Vector3(0.45, 1.5, 0.03), Vector3(s * 0.235, 0.91, 0.235), _planks)        # a door
+		_box(root, Vector3(0.42, 0.06, 0.035), Vector3(s * 0.235, 0.45, 0.24), _frame)
+		_box(root, Vector3(0.42, 0.06, 0.035), Vector3(s * 0.235, 1.37, 0.24), _frame)
+		_box(root, Vector3(0.02, 0.12, 0.03), Vector3(s * 0.04, 0.95, 0.26), _iron_mat())     # its handle
+		for y in [0.4, 1.42]:
+			_box(root, Vector3(0.1, 0.04, 0.02), Vector3(s * 0.43, y, 0.255), _iron_mat())   # its hinges
+
+	_solid(root, Vector3(1.0, 1.8, 0.5), Vector3(0.0, 0.9, 0.0))
+	return root
+
+
+# A barrel, 0.7 m across and 0.9 m high: two tapering halves of staves meeting at a bulge, three iron hoops and a lid.
+static func barrel() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.3, 0.45, Vector3(0.0, 0.225, 0.0), _planks, 16, 0.35)
+	_cyl(root, 0.35, 0.45, Vector3(0.0, 0.675, 0.0), _planks, 16, 0.3)
+
+	for at in [[0.08, 0.31], [0.45, 0.352], [0.82, 0.31]]:
+		_cyl(root, float(at[1]) + 0.005, 0.05, Vector3(0.0, float(at[0]), 0.0), _iron_mat(), 16)
+
+	_cyl(root, 0.28, 0.02, Vector3(0.0, 0.89, 0.0), _frame, 16)
+	_solid(root, Vector3(0.6, 0.9, 0.6), Vector3(0.0, 0.45, 0.0))
+	return root

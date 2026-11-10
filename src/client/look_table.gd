@@ -124,6 +124,17 @@ const LOOKS := {
 	"log_palisade": {"builder": "fence", "args": ["palisade"]},
 	"log_palisade_gate": {"builder": "gate", "args": ["palisade", false]},
 	"log_palisade_gate_open": {"builder": "gate", "args": ["palisade", true]},
+	"log_bench": {"builder": "tier_bench", "args": ["log"]},
+	"log_table": {"builder": "tier_table", "args": ["log"]},
+	"stone_bench": {"builder": "tier_bench", "args": ["stone"]},
+	"stone_table": {"builder": "tier_table", "args": ["stone"]},
+	"iron_bench": {"builder": "tier_bench", "args": ["iron"]},
+	"iron_table": {"builder": "tier_table", "args": ["iron"]},
+	"iron_chair": {"builder": "iron_chair", "args": []},
+	"stone_workbench": {"builder": "stone_workbench", "args": []},
+	"wooden_shelf": {"builder": "shelf", "args": []},
+	"wooden_cupboard": {"builder": "cupboard", "args": []},
+	"wooden_barrel": {"builder": "barrel", "args": []},
 }
 
 static var _warned: Dictionary = {}
