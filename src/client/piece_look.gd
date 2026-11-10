@@ -35,7 +35,7 @@ const PREWARM := [
 	["blocks", [Color(0.33, 0.25, 0.17), 1, 41, 0.35]], ["blocks", [Color(0.5, 0.49, 0.46), 4, 53, 0.22]], ["blocks", [Color(0.07, 0.065, 0.06), 1, 61, 0.3]],
 	["blocks", [Color(0.58, 0.36, 0.24), 1, 91, 0.3]], ["blocks", [Color(0.1, 0.09, 0.085), 1, 97, 0.2]],
 	["blocks", [Color(0.62, 0.3, 0.2), 12, 101, 0.28]], ["blocks", [Color(0.3, 0.32, 0.35), 6, 103, 0.3]], ["blocks", [Color(0.7, 0.36, 0.2), 8, 107, 0.25]],
-	["blocks", [Color(0.52, 0.5, 0.46), 2, 109, 0.3]], ["blocks", [Color(0.62, 0.6, 0.55), 1, 113, 0.2]],
+	["blocks", [Color(0.52, 0.5, 0.46), 2, 109, 0.3]], ["blocks", [Color(0.62, 0.6, 0.55), 1, 113, 0.2]], ["blocks", [Color(0.6, 0.59, 0.56), 3, 127, 0.1]],
 	["masonry", [Color(0.52, 0.5, 0.46), Color(0.45, 0.38, 0.28), 26, 13, 61, 0.14]], ["masonry", [Color(0.62, 0.3, 0.2), Color(0.72, 0.7, 0.66), 28, 10, 67, 0.12]],
 	["organic", ["logs", Color(0.4, 0.28, 0.16), 73]], ["organic", ["daub", Color(0.74, 0.64, 0.48), 79]],
 	["straw", [Color(0.74, 0.6, 0.3), 83]], ["trod", []],
@@ -436,6 +436,9 @@ static func roof(mat: String = "wood") -> Node3D:
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), skin("roof", mat))
 
+	if mat == "wood":   # Refined: split wooden shakes over the boards
+		_shingle_courses(root, _tone_mat(Color(0.5, 0.37, 0.24)), 8, 2.56)
+
 	for x in [-1.16, 1.16]:
 		_box(root, Vector3(0.08, 0.2, 2.4), Vector3(x, 2.5, 0.0), _frame)       # edge timbers
 
@@ -447,6 +450,15 @@ static func roof(mat: String = "wood") -> Node3D:
 
 	_solid(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0))
 	return root
+
+
+# Roof cover (seven-tier ladder, 10 Nov 2026: each tier's roof is its own weatherproof cover, not its wall material): `rows` overlapping courses across
+# the 2.4 m roof square, from -Z up to +Z, each course tipped so its lower edge stands proud and shows a shadow line. Shingles, shakes, slates or tiles.
+static func _shingle_courses(root: Node3D, material: StandardMaterial3D, rows: int, y: float) -> void:
+	var step: float = 2.4 / float(rows)
+
+	for k in rows:
+		_box_rot(root, Vector3(2.4, 0.03, step + 0.06), Vector3(0.0, y + 0.012 * float(k % 2), -1.2 + step * (float(k) + 0.5)), Vector3(-0.08, 0.0, 0.0), material)
 
 
 # A foundation (Radar: 4 by 4 m, top 0.3 m above its spot, 2 m deep, solid; the other pieces click onto it): a fitted-stone course round a packed-earth top.
@@ -1292,6 +1304,7 @@ static var _slate: StandardMaterial3D
 static var _tile: StandardMaterial3D
 static var _flag: StandardMaterial3D
 static var _mortar: StandardMaterial3D
+static var _concrete: StandardMaterial3D      # Engineered and Fortified (seven-tier ladder): cast concrete, pale grey, board-form lines
 
 
 static func _tier_materials() -> void:
@@ -1305,6 +1318,7 @@ static func _tier_materials() -> void:
 	_tile = _blocks_material(Color(0.7, 0.36, 0.2), 8, 107, 0.25)        # clay roof tiles: orange-red courses
 	_flag = _blocks_material(Color(0.52, 0.5, 0.46), 2, 109, 0.3)        # flagstones: big slabs, wide joints
 	_mortar = _blocks_material(Color(0.62, 0.6, 0.55), 1, 113, 0.2)
+	_concrete = _blocks_material(Color(0.6, 0.59, 0.56), 3, 127, 0.1)
 
 
 # A straight flight of stairs 1 m wide and 2.4 m long (z) rising 2.4 m: ten treads of 0.24 m, two side stringers and a handrail on one side. Mesh runs from z = +1.2 (the foot,
@@ -1365,6 +1379,9 @@ static func tier_floor(kind: String = "stone") -> Node3D:
 			for ix in 2:
 				for iz in 2:
 					_box(root, Vector3(0.94, 0.04, 0.94), Vector3(-0.49 + 0.98 * float(ix), 0.12, -0.49 + 0.98 * float(iz)), _flag)
+		"concrete":
+			_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), _concrete)
+			_box(root, Vector3(2.0, 0.01, 0.02), Vector3(0.0, 0.125, 0.0), _pot)                # the cast joint across the slab
 		_:
 			_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), _brick)
 			_box(root, Vector3(2.0, 0.01, 0.03), Vector3(0.0, 0.125, 0.0), _mortar)
@@ -1379,15 +1396,19 @@ static func tier_roof(kind: String = "stone") -> Node3D:
 	var root: Node3D = Node3D.new()
 
 	match kind:
-		"log":
-			for k in 8:
-				_log_at(root, 2.4, 0.3, Vector3(0.0, 2.5, -1.05 + 0.3 * float(k)), true)
-		"stone":
+		"log":   # Rustic: bark shingles over round log rafters
+			for x in [-0.8, 0.0, 0.8]:
+				_log_along(root, 2.4, 0.2, Vector3(x, 2.42, 0.0), true)
+			_box(root, Vector3(2.4, 0.06, 2.4), Vector3(0.0, 2.55, 0.0), _log)
+			_shingle_courses(root, _tone_mat(Color(0.33, 0.27, 0.21)), 8, 2.58)
+		"stone":   # Sturdy: slate slabs
 			_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _slate)
-			_box(root, Vector3(2.46, 0.05, 0.1), Vector3(0.0, 2.58, 0.0), _mortar)
-		_:
+			_shingle_courses(root, _slate, 6, 2.56)
+			_box(root, Vector3(2.46, 0.05, 0.1), Vector3(0.0, 2.64, 0.0), _mortar)
+		_:   # Superior and Engineered: fired clay roof tiles with a ridge row
 			_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _tile)
-			_box(root, Vector3(2.46, 0.07, 0.14), Vector3(0.0, 2.6, 0.0), _tile)
+			_shingle_courses(root, _tile, 8, 2.56)
+			_box(root, Vector3(2.46, 0.07, 0.14), Vector3(0.0, 2.66, 0.0), _tile)
 
 	for x in [-1.1, 1.1]:
 		for z in [-1.1, 1.1]:
@@ -1812,12 +1833,22 @@ static func _log_along(parent: Node3D, length: float, thick: float, at: Vector3,
 	parent.add_child(mesh)
 
 
-# A log foundation: works like the stone foundation (the same body). Fitted stone footings from the ground up, round log sills along all four top edges
-# crossing at the corners, and a deck of split logs between them, flat faces up.
+# The Rustic - Foundation (Dave, 10 Nov 2026: a log cabin raised in the woods; logs only): the same 4 x 4 m body as the stone foundation, top 0.3 m up and 2 m
+# deep, built as a log frame: four log legs, criss-cross log bracing on every side, round log sills along the top edges crossing at the corners, and a deck
+# of whole logs laid across the top.
 static func log_foundation() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(4.0, 1.74, 4.0), Vector3(0.0, -0.83, 0.0), _stone)          # the stone footing, -1.7 to 0.04
+
+	for x in [-1.75, 1.75]:
+		for z in [-1.75, 1.75]:
+			_cyl(root, 0.17, 2.0, Vector3(x, -0.7, z), _log, 6)                      # the four log legs, from 1.7 m down to the deck
+
+	for side in [-1.0, 1.0]:                                                    # criss-cross log bracing on all four sides
+		_rod(root, Vector3(-1.7, -1.55, side * 1.78), Vector3(1.7, 0.0, side * 1.78), 0.14, _log)
+		_rod(root, Vector3(-1.7, 0.0, side * 1.78), Vector3(1.7, -1.55, side * 1.78), 0.14, _log)
+		_rod(root, Vector3(side * 1.78, -1.55, -1.7), Vector3(side * 1.78, 0.0, 1.7), 0.14, _log)
+		_rod(root, Vector3(side * 1.78, 0.0, -1.7), Vector3(side * 1.78, -1.55, 1.7), 0.14, _log)
 
 	for z in [-1.85, 1.85]:
 		_log_along(root, 4.0, 0.3, Vector3(0.0, 0.15, z), false)                 # sills along X
@@ -1825,10 +1856,8 @@ static func log_foundation() -> Node3D:
 	for x in [-1.85, 1.85]:
 		_log_along(root, 3.4, 0.28, Vector3(x, 0.14, 0.0), true)                 # and along Z, between them (the corner joint)
 
-	for k in 12:
-		var x: float = -1.54 + 0.28 * float(k)
-		_box(root, Vector3(0.26, 0.24, 3.4), Vector3(x, 0.15, 0.0), _log)          # split logs
-		_box(root, Vector3(0.22, 0.02, 3.36), Vector3(x, 0.28 + 0.004 * float(k % 3), 0.0), _planks)   # their flat split faces
+	for k in 12:   # the deck: logs laid across the top, hewn flat on top, their heights a little uneven
+		_box(root, Vector3(0.26, 0.24, 3.4), Vector3(-1.54 + 0.28 * float(k), 0.16 + 0.008 * float(k % 3), 0.0), _log)
 
 	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
 	return root
@@ -2054,8 +2083,9 @@ static func tier_stairs(kind: String = "stone") -> Node3D:
 			_box(root, Vector3(0.9, 0.02, 0.22), Vector3(0.0, top - 0.005, z), _planks)                 # the split face
 			_solid(root, Vector3(0.9, 0.24, 0.24), Vector3(0.0, top - 0.12, z))
 		else:
-			_box(root, Vector3(1.0, top - 0.04, 0.24), Vector3(0.0, (top - 0.04) * 0.5, z), _stone if kind == "stone" else _brick)
-			_box(root, Vector3(1.04, 0.04, 0.27), Vector3(0.0, top - 0.02, z - 0.015), _flag)            # the tread, its nose proud of the riser
+			var body: StandardMaterial3D = {"stone": _stone, "concrete": _concrete}.get(kind, _brick)
+			_box(root, Vector3(1.0, top - 0.04, 0.24), Vector3(0.0, (top - 0.04) * 0.5, z), body)
+			_box(root, Vector3(1.04, 0.04, 0.27), Vector3(0.0, top - 0.02, z - 0.015), _concrete if kind == "concrete" else _flag)   # the tread, its nose proud of the riser
 			_solid(root, Vector3(1.0, top, 0.24), Vector3(0.0, top * 0.5, z))
 
 	if kind == "log":
@@ -3635,6 +3665,198 @@ static func iron_chest() -> Node3D:
 	_box(root, Vector3(0.2, 0.16, 0.02), Vector3(0.0, 0.34, 0.305), _iron_mat())              # the lock plate
 	_box(root, Vector3(0.06, 0.12, 0.03), Vector3(0.0, 0.45, 0.31), dark)                     # the hasp
 	_solid(root, Vector3(1.0, 0.6, 0.6), Vector3(0.0, 0.3, 0.0))
+	return root
+
+
+# --- Engineered and Fortified (seven-tier ladder, Dave 10 Nov 2026): one cast-concrete model; Fortified adds iron bands. Engineered is a building tier
+# (foundation, wall, doorway, window, pillar, stairs, ceiling; its roof is clay tile, not concrete); Fortified is defensive (foundation, wall, doorway, gate,
+# pillar, wall top). Footprints copy the Superior twins; Fortified walls are 0.3 m deep and its pillar 0.6 m.
+
+# Iron bands round a box of `size` centred at `at`: one band per height in `ys`, each a hand proud of the face.
+static func _iron_bands(root: Node3D, size: Vector3, at: Vector3, ys: Array) -> void:
+	for y in ys:
+		_box(root, Vector3(size.x + 0.04, 0.09, size.z + 0.04), Vector3(at.x, float(y), at.z), _iron_mat())
+
+
+# A concrete foundation, 4 x 4 m, top 0.3 m up and 2 m deep like every foundation: a cast block on a wider footing at the ground line, a chamfered top edge
+# and the slab's cast joints. Banded (Fortified): iron bands round it and iron angle plates down the four corners.
+static func concrete_foundation(banded: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0), _concrete)
+	_box(root, Vector3(4.12, 0.2, 4.12), Vector3(0.0, -0.1, 0.0), _concrete)           # the footing at the ground line
+	_box(root, Vector3(4.04, 0.05, 4.04), Vector3(0.0, 0.28, 0.0), _flag)              # the chamfered top edge
+	_box(root, Vector3(4.0, 0.01, 0.03), Vector3(0.0, 0.306, 0.0), _pot)              # the cast joints
+	_box(root, Vector3(0.03, 0.01, 4.0), Vector3(0.0, 0.306, 0.0), _pot)
+
+	if banded:
+		_iron_bands(root, Vector3(4.12, 0.0, 4.12), Vector3.ZERO, [0.12, -0.5])
+
+		for x in [-2.04, 2.04]:
+			for z in [-2.04, 2.04]:
+				_box(root, Vector3(0.16, 0.6, 0.16), Vector3(x, 0.0, z), _iron_mat())   # angle plates on the corners
+
+	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
+	return root
+
+
+# A concrete wall, 2 m wide and 2.4 m high (0.25 m thick; banded 0.3): the cast body with two board-form tie lines across it and a cast coping on top.
+# Banded (Fortified): thicker, two iron bands across both faces and an iron strap up each end.
+static func concrete_wall(banded: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var thick: float = 0.3 if banded else 0.25
+	_box(root, Vector3(2.0, 2.3, thick), Vector3(0.0, 1.15, 0.0), _concrete)
+
+	for y in [0.78, 1.54]:
+		_box(root, Vector3(2.0, 0.02, thick + 0.01), Vector3(0.0, y, 0.0), _pot)           # board-form tie lines
+
+	_box(root, Vector3(2.04, 0.1, thick + 0.08), Vector3(0.0, 2.35, 0.0), _flag)          # the coping
+
+	if banded:
+		_iron_bands(root, Vector3(2.0, 0.0, thick), Vector3.ZERO, [0.5, 1.9])
+
+		for x in [-0.94, 0.94]:
+			_box(root, Vector3(0.1, 2.3, thick + 0.04), Vector3(x, 1.15, 0.0), _iron_mat())   # end straps
+
+	_solid(root, Vector3(2.0, 2.4, thick), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# A concrete wall with a one metre gap from `low` to `high` (a doorway from 0, a window from 0.9): the cast sides, a cast lintel over the gap (and a sill under
+# a window), the coping. A doorway hangs the plank door with iron straps; banded, the gap is framed in iron and the bands run either side of it.
+static func concrete_gap(banded: bool, low: float, high: float, open: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var thick: float = 0.3 if banded else 0.25
+
+	for x in [-0.75, 0.75]:
+		_box(root, Vector3(0.5, 2.3, thick), Vector3(x, 1.15, 0.0), _concrete)
+
+	_box(root, Vector3(1.0, 2.3 - high, thick), Vector3(0.0, (high + 2.3) * 0.5, 0.0), _concrete)
+	_box(root, Vector3(1.2, 0.18, thick + 0.04), Vector3(0.0, high + 0.09, 0.0), _flag)      # the cast lintel
+
+	if low > 0.0:
+		_box(root, Vector3(1.0, low, thick), Vector3(0.0, low * 0.5, 0.0), _concrete)
+		_box(root, Vector3(1.16, 0.06, thick + 0.1), Vector3(0.0, low - 0.03, 0.0), _flag)  # the sill
+
+	_box(root, Vector3(2.04, 0.1, thick + 0.08), Vector3(0.0, 2.35, 0.0), _flag)
+
+	if banded:
+		for x in [-0.75, 0.75]:
+			_iron_bands(root, Vector3(0.5, 0.0, thick), Vector3(x, 0.0, 0.0), [0.5, 1.9])
+		for x in [-0.52, 0.52]:
+			_box(root, Vector3(0.05, high, thick + 0.04), Vector3(x, high * 0.5, 0.0), _iron_mat())   # the iron frame round the gap
+
+	if low == 0.0:
+		_strap_door(root, open)
+
+	_gap_solids(root, low, high, thick)
+	return root
+
+
+static func engineered_doorway(open: bool = false) -> Node3D:
+	return concrete_gap(false, 0.0, 2.0, open)
+
+
+static func fortified_doorway(open: bool = false) -> Node3D:
+	return concrete_gap(true, 0.0, 2.0, open)
+
+
+static func engineered_window() -> Node3D:
+	return concrete_gap(false, 0.9, 1.7)
+
+
+# A concrete pillar, 2.6 m: a square cast column on a wider footing with a cap (0.5 m square; banded 0.6 m, with three iron bands).
+static func concrete_pillar(banded: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var w: float = 0.6 if banded else 0.5
+	_box(root, Vector3(w, 0.2, w), Vector3(0.0, 0.1, 0.0), _flag)
+	_box(root, Vector3(w - 0.1, 2.26, w - 0.1), Vector3(0.0, 1.33, 0.0), _concrete)
+	_box(root, Vector3(w, 0.14, w), Vector3(0.0, 2.53, 0.0), _flag)
+
+	if banded:
+		_iron_bands(root, Vector3(w - 0.1, 0.0, w - 0.1), Vector3.ZERO, [0.6, 1.3, 2.0])
+
+	_solid(root, Vector3(w, 2.6, w), Vector3(0.0, 1.3, 0.0))
+	return root
+
+
+# The Fortified - Gate, 2.0 x 0.3: two banded concrete piers 2.4 m high and between them a heavy plank leaf bound in iron, hung on the -X pier. Shut it closes
+# the gap; open it stands swung out to +Z.
+static func fortified_gate(open: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.8, 0.8]:
+		_box(root, Vector3(0.36, 2.4, 0.3), Vector3(x, 1.2, 0.0), _concrete)
+		_box(root, Vector3(0.4, 0.1, 0.32), Vector3(x, 2.45, 0.0), _flag)
+		_iron_bands(root, Vector3(0.32, 0.0, 0.3), Vector3(x, 0.0, 0.0), [0.5, 1.9])
+
+	var w: float = 1.22
+	var hinge: Node3D = Node3D.new()
+	hinge.position = Vector3(-w * 0.5, 0.0, 0.0)
+	root.add_child(hinge)
+	var leaf: Node3D = Node3D.new()
+	leaf.position = Vector3(w * 0.5, 0.0, 0.0)
+	hinge.add_child(leaf)
+	_box(leaf, Vector3(w, 2.2, 0.1), Vector3(0.0, 1.12, 0.0), _planks)
+
+	for y in [0.35, 1.12, 1.9]:
+		_box(leaf, Vector3(w, 0.1, 0.14), Vector3(0.0, y, 0.0), _iron_mat())                # the iron bands across the leaf
+
+	_solid(leaf, Vector3(w, 2.2, 0.1), Vector3(0.0, 1.12, 0.0))
+
+	for side in [-0.8, 0.8]:
+		_solid(root, Vector3(0.36, 2.4, 0.3), Vector3(side, 1.2, 0.0))
+
+	if open:
+		hinge.rotation = Vector3(0.0, -PI * 0.5, 0.0)
+
+	return root
+
+
+# The Fortified - Wall top (battlement), 2.0 x 0.4, 0.8 m: a banded concrete parapet course with three merlons and the two crenels between them, set on top
+# of a wall (for now placed like a fence; a wall-top snap is Steve's).
+static func fortified_wall_top() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.3, 0.4), Vector3(0.0, 0.15, 0.0), _concrete)
+
+	for x in [-0.75, 0.0, 0.75]:
+		_box(root, Vector3(0.5, 0.48, 0.36), Vector3(x, 0.54, 0.0), _concrete)                # a merlon
+		_box(root, Vector3(0.54, 0.05, 0.4), Vector3(x, 0.78, 0.0), _flag)                    # its cap
+
+	_iron_bands(root, Vector3(2.0, 0.0, 0.4), Vector3.ZERO, [0.18])
+	_solid(root, Vector3(2.0, 0.3, 0.4), Vector3(0.0, 0.15, 0.0))
+
+	for x in [-0.75, 0.0, 0.75]:
+		_solid(root, Vector3(0.5, 0.5, 0.36), Vector3(x, 0.55, 0.0))
+
+	return root
+
+
+# The Mixer (Engineered gate, 1.2 x 0.8): a plank mixing trough on four short legs, grey wet concrete in it, a long mixing hoe leaning in it, and a sack of
+# lime powder beside it.
+static func mixer() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.45, 0.45]:
+		for z in [-0.2, 0.2]:
+			_box(root, Vector3(0.07, 0.3, 0.07), Vector3(x - 0.1, 0.15, z), _frame)            # the legs
+
+	_box(root, Vector3(1.0, 0.06, 0.6), Vector3(-0.1, 0.33, 0.0), _planks)                    # the trough's floor
+	for z in [-0.28, 0.28]:
+		_box(root, Vector3(1.0, 0.3, 0.04), Vector3(-0.1, 0.48, z), _planks)                 # its sides
+	for x in [-0.58, 0.38]:
+		_box(root, Vector3(0.04, 0.3, 0.6), Vector3(x, 0.48, 0.0), _planks)                  # and ends
+	_box(root, Vector3(0.92, 0.04, 0.52), Vector3(-0.1, 0.52, 0.0), _concrete)               # the wet mix
+	_box_rot(root, Vector3(1.0, 0.035, 0.035), Vector3(-0.05, 0.75, 0.05), Vector3(0.0, 0.3, 0.5), _frame)   # the hoe's handle
+	_box_rot(root, Vector3(0.04, 0.12, 0.2), Vector3(-0.47, 0.56, 0.0), Vector3(0.0, 0.3, 0.0), _iron_mat())  # its blade, in the mix
+	_cyl(root, 0.13, 0.36, Vector3(0.48, 0.18, 0.1), _tone_mat(Color(0.82, 0.8, 0.74)), 8, 0.09)   # the lime sack
+	_solid(root, Vector3(1.0, 0.63, 0.6), Vector3(-0.1, 0.315, 0.0))
 	return root
 
 

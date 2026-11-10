@@ -418,6 +418,7 @@ PALETTE = {
     "_blocks": (168, 160, 148), "_flag": (182, 174, 160), "_mortar": (206, 196, 176), "_bricks": (170, 82, 54), "_brick": (170, 82, 54), "_tile": (186, 98, 62),
     "_slate": (104, 108, 112), "_thatch": (214, 182, 104), "_clay": (176, 132, 92), "_daub": (196, 172, 130), "_pot": (58, 52, 48), "_earth": (120, 92, 62),
     "_tar": (40, 38, 36), "_steel": (176, 182, 190), "_iron": (88, 88, 96), "_horn": (222, 178, 104), "_soil": (92, 66, 44), "_water": (86, 132, 150),
+    "_concrete": (176, 174, 166),
 }
 
 
@@ -544,6 +545,7 @@ def _noop(*_):
 _planks, _frame, _roof, _earth, _stone, _tar, _steel, _log, _thatch, _clay, _pot = (_mat(n) for n in ("_planks", "_frame", "_roof", "_earth", "_stone", "_tar", "_steel", "_log", "_thatch", "_clay", "_pot"))
 _blocks, _bricks, _logs, _daub, _brick, _slate, _tile, _flag, _mortar = (_mat(n) for n in ("_blocks", "_bricks", "_logs", "_daub", "_brick", "_slate", "_tile", "_flag", "_mortar"))
 _iron, _horn, _soil = _mat("_iron"), _mat("_horn"), _mat("_soil")
+_concrete = _mat("_concrete")
 
 RUNTIME = {
     "Vector3": Vector3, "Vector2": Vector2, "Color": Color, "Basis": Basis, "Node3D": Node3D, "MeshInstance3D": MeshInstance3D, "BoxMesh": BoxMesh,
@@ -557,7 +559,7 @@ RUNTIME = {
     "_iron_mat": lambda: _iron, "_horn_mat": lambda: _horn, "_soil_mat": lambda: _soil, "_still_water": lambda: _mat("_water"), "brick_skin": lambda: _bricks,
     "_planks": _planks, "_frame": _frame, "_roof": _roof, "_earth": _earth, "_stone": _stone, "_tar": _tar, "_steel": _steel, "_log": _log,
     "_thatch": _thatch, "_clay": _clay, "_pot": _pot, "_blocks": _blocks, "_bricks": _bricks, "_logs": _logs, "_daub": _daub, "_brick": _brick,
-    "_slate": _slate, "_tile": _tile, "_flag": _flag, "_mortar": _mortar, "_it": lambda v: range(v) if isinstance(v, int) else v,
+    "_slate": _slate, "_tile": _tile, "_flag": _flag, "_mortar": _mortar, "_concrete": _concrete, "_it": lambda v: range(v) if isinstance(v, int) else v,
     "skin": skin, "StandardMaterial3D": StandardMaterial3D, "RandomNumberGenerator": RandomNumberGenerator, "SurfaceTool": SurfaceTool,
 }
 OWN = {k for k in RUNTIME if k.startswith("_")} | {"skin", "prewarm", "finish_prewarm", "prewarm_done", "use_terrain_only_decals"}

@@ -146,6 +146,47 @@ func _init() -> void:
 	print("layout over 40 cells: %d tin outcrops, %d far, %d unknown" % [near_tin, far_ore, unknown])
 	check(near_tin > 0 and far_ore == 0 and unknown == 0, "outcrops appear only beside the ore body, never for an ore with no item (%d tin outcrops)" % near_tin)
 	check(not first.has(false), "the same cell gives the same outcrops every time")
+	# Limestone (Dave 10 Nov 2026, Concrete = Lime powder + Sand + Stone): a boulder of limestone, chalk or marble bedrock gives limestone pieces to any pick.
+	var lm = make("test_ore_lime", "stone_pickaxe")
+	outcrop(lm, "chalk")
+	blows(lm, 60)
+	var lime_n: int = lm.table.number_of("limestone")
+	check((lime_n > 0 and count(lm, "limestone") > 0) or (lime_n == 0 and count(lm, "stone") > 0), "a stone pick takes limestone from a chalk boulder (%d), stone when the item is missing" % count(lm, "limestone"))
+	var ra = make("test_ore_rock_layout", "stone_pickaxe")
+	ra._boulder_cfg["ore"]["boulder_share"] = 0.0
+	ra._boulder_cfg["ore"]["rock_boulder_share"] = 1.0
+	ra._boulder_cfg["max_chance"] = 1.0
+	ra._boulder_cfg["min_slope"] = 0.0
+	ra.rock_near = func(pos): return "limestone" if pos.x < 400.0 else "granite"
+	var lime_rocks: int = 0
+	var granite_rocks: int = 0
+
+	for cx in range(0, 40):
+		ra._items.clear()
+		ra._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+
+		for k in ra._items:
+			if ra._items[k].has("boulder"):
+				var rock_ore: String = str(ra._items[k]["boulder"].get("ore", ""))
+				lime_rocks += 1 if rock_ore == "limestone" else 0
+				granite_rocks += 1 if rock_ore != "" and rock_ore != "limestone" else 0
+
+	check(lime_rocks > 0 and granite_rocks == 0, "boulders over limestone are limestone (%d); over granite, plain" % lime_rocks)
+	ra._boulder_cfg["ore"]["boulder_share"] = 1.0
+	ra.ore_near = func(_pos, _reach, _names, _depth): return "tin"
+	var tin_first: bool = true
+	var tin_boulders: int = 0
+
+	for cx in range(0, 10):
+		ra._items.clear()
+		ra._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+
+		for k in ra._items:
+			if ra._items[k].has("boulder"):
+				tin_boulders += 1
+				tin_first = tin_first and str(ra._items[k]["boulder"].get("ore", "")) == "tin"
+
+	check(tin_first and tin_boulders > 0, "an ore body wins over the bedrock (%d boulders, all tin)" % tin_boulders)
 	print("ore: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 

@@ -404,6 +404,7 @@ func _init() -> void:
 	_pillar_checks(cfg)
 	_fence_checks(cfg)
 	_railing_checks(cfg)
+	_wall_top_checks(cfg)
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -504,3 +505,28 @@ func _pillar_checks(cfg: Dictionary) -> void:
 	check(Rules.blocked(with, "test_pillar_kit", next_free[0], ceiling_held) == "", "a free point is not blocked by the pillar beside it")
 	var wall: Array = Rules.snap(cfg, "wall_section_kit", Vector3(100.0, 10.0 + top + Rules.CEILING_TOP_M, 97.8), 0, both)
 	check(bool(wall[2]) and wall[0].is_equal_approx(Vector3(99.0, 10.0 + top, 98.0)) or bool(wall[2]) and wall[0].is_equal_approx(Vector3(101.0, 10.0 + top, 98.0)), "a wall still snaps to the foundation's edge anchor, never to a ceiling (%s)" % str(wall))
+
+
+# A wall top (Dave 10 Nov 2026: the Fortified battlement sits on top of a wall): it goes on the top of the nearest wall of any tier, turned as the
+# wall; one to a wall; with no wall near it is an ordinary piece on the grid. A test row stands in until Jamie's fortified_wall_top row is on main.
+func _wall_top_checks(cfg: Dictionary) -> void:
+	var with: Dictionary = cfg.duplicate(true)
+	with["structures"]["test_wall_top"] = {"kit": "test_wall_top_kit", "item": "test_wall_top", "state": 9902, "piece": true, "piece_kind": "wall_top", "footprint_x": 2.0, "footprint_z": 0.4}
+	var walls: Array = []
+
+	for kind in cfg["structures"]:
+		if str(cfg["structures"][kind].get("piece_kind", "")) == "wall" and float(cfg["structures"][kind].get("footprint_x", 2.0)) == 2.0:
+			walls.append(kind)
+
+	for kind in walls:
+		var row: Array = [{"pos": Vector3(300.0, 10.3, 300.0), "state": int(cfg["structures"][kind]["state"]), "yaw": 90.0}]
+		var crown: Array = Rules.snap(with, "test_wall_top_kit", Vector3(300.5, 12.6, 300.1), 0, row)
+		var high: float = float(cfg["structures"][kind].get("height_m", Rules.WALL_HEIGHT_M))
+		check(bool(crown[2]) and crown[0].is_equal_approx(Vector3(300.0, 10.3 + high, 300.0)) and int(crown[1]) == 90, "a wall top sits on a %s's top, turned as the wall (%s)" % [kind, str(crown)])
+
+	var wall_row: Dictionary = {"pos": Vector3(300.0, 10.3, 300.0), "state": int(cfg["structures"]["stone_wall"]["state"]), "yaw": 0.0}
+	var on_wall: Array = Rules.snap(with, "test_wall_top_kit", Vector3(300.2, 12.7, 300.0), 0, [wall_row])
+	check(Rules.blocked(with, "test_wall_top_kit", on_wall[0], [wall_row]) == "", "a bare wall takes a wall top")
+	check(Rules.blocked(with, "test_wall_top_kit", on_wall[0], [wall_row, {"pos": on_wall[0], "state": 9902, "yaw": 0.0}]) == "close", "one wall top to a wall")
+	var away: Array = Rules.snap(with, "test_wall_top_kit", Vector3(310.3, 10.0, 310.2), 0, [wall_row])
+	check(not bool(away[2]), "with no wall near it is placed like any piece (%s)" % str(away))

@@ -428,16 +428,8 @@ def plank_roof():
 
 
 def log_roof():
-    faces = []
-
-    for side in (1, -1):
-        turn, shift = _slope(side)
-
-        for i in range(6):            # logs laid down the slope, side by side along the ridge
-            log = moved(prism(0.16, RL + 0.25, 8, BARK, LOG_END, ring=LOG_RING, seed=80 + i + (6 if side < 0 else 0)), rot_y(math.pi / 2))
-            faces += moved(log, turn, shift + turn @ np.array([-RW / 2 + 0.17 + i * 0.33, 0.16, 0.1]))
-
-    return faces
+    """Rustic - Roof (seven-tier ladder, 10 Nov 2026): bark shingles over log rafters, grey-brown and rough, not the logs themselves."""
+    return roof((112, 92, 72), (70, 56, 42), 6, 6, seed=70, thick=0.07, base=BARK)
 
 
 def stone_roof():
@@ -1245,6 +1237,7 @@ def _pieces():
         "log_roof": (log_roof, ROOF_VIEW),
         "stone_roof": (stone_roof, ROOF_VIEW),
         "brick_roof": (brick_roof, ROOF_VIEW),
+        "engineered_roof": (brick_roof, ROOF_VIEW),   # Engineered roofs are clay tile over planks too: no concrete roof
         "thatch_roof": (thatch_roof, ROOF_VIEW),
         "stairs_wood": (stairs, rot_y(math.radians(-50.0))),
         "ladder": (ladder, LADDER_VIEW),

@@ -36,6 +36,9 @@ var x0: float = 0.0                # world position of sample (0, 0)
 var z0: float = 0.0
 var placeholder: bool = false      # no file: open ocean
 var placeholder_depth_m: float = -200.0
+var rock_names: Dictionary = {}     # rocks.json id -> name (bedrock_name_at), from load_file's rock_ids
+var limestone_id: int = -1          # rocks.json ids of limestone and marble (layered_rock turns deep fold-belt limestone to marble)
+var marble_id: int = -1
 var ground_springs: Array = []        # ground springs of a tile from the water record (sites "springs", design R6 as built): [Vector3 head, float m3_s, String cover, float dry_m3_s (its own dry-quarter base flow, Sonny #834; m3_s on tiles baked before it)] in the tile's order; flora_placer hides each with cover "bushes" under a clump of low shrubs
 
 var heights: PackedFloat32Array = PackedFloat32Array()
@@ -120,6 +123,7 @@ var cave_pool_shapes: PackedFloat32Array = PackedFloat32Array()   # BUG-008: per
 # Loads a tile file. `rock_ids` and `resource_ids` map names to table ids.
 # Returns "" or an error.
 func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Dictionary, rock_ids: Dictionary, resource_ids: Dictionary) -> String:
+	set_rock_ids(rock_ids)
 	tile = tile_coord
 	x0 = float(tile.x) * tile_size_m
 	z0 = float(tile.y) * tile_size_m
@@ -683,6 +687,33 @@ func layered_rock(p: int, depth: float, limestone: int, marble: int) -> int:
 		rock = marble
 
 	return rock
+
+
+# The rocks.json name -> id map: kept so bedrock_name_at can name the rock and layered_rock can turn limestone to marble.
+func set_rock_ids(rock_ids: Dictionary) -> void:
+	rock_names = {}
+
+	for rock_name in rock_ids:
+		rock_names[int(rock_ids[rock_name])] = str(rock_name)
+
+	limestone_id = int(rock_ids.get("limestone", -1))
+	marble_id = int(rock_ids.get("marble", -1))
+
+
+# The rock at the bedrock surface under a spot on the ground (rocks.json name: the layered rock of the province there, as a bare column of
+# ground shows it; intrusions and vents are not looked at), "" on a placeholder tile. A boulder's own rock (Dave 10 Nov 2026: limestone
+# for Lime powder and Concrete comes from boulders over limestone, chalk or marble; boulders.json ore "rocks").
+func bedrock_name_at(pos: Vector3) -> String:
+	if placeholder or province.is_empty():
+		return ""
+
+	var p: int = int(province[nearest(pos.x, pos.z)])
+
+	if p >= prov_datum.size():
+		return ""
+
+	var depth: float = prov_datum[p] + offset_at(pos.x, pos.z) - (pos.y - cover_at(pos.x, pos.z))
+	return str(rock_names.get(layered_rock(p, maxf(depth, 0.0), limestone_id, marble_id), ""))
 
 
 # Depth below `depth` at which the layered rock next changes (meters, > 0).

@@ -94,5 +94,26 @@ func _init() -> void:
 	sea.placeholder = true
 	check(sea.ore_at(Vector3(10.0, 0.0, 10.0), 40.0, NAMES, 10.0) == "", "open ocean has no ore")
 
+	# The rock at the bedrock surface (bedrock_name_at; Dave 10 Nov 2026, limestone for Concrete): one province, 20 m of limestone at the top of each
+	# 100 m cycle over granite; a fold belt turns limestone deeper than 300 m to marble.
+	var bed = TileDataScript.new()
+	bed.samples = 3
+	bed.spacing_m = 1000.0
+	bed.province = PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	bed.layer_offset = PackedInt32Array([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	bed.cover = PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	bed.prov_datum = PackedFloat32Array([100.0])
+	bed.prov_cycle = PackedFloat32Array([100.0])
+	bed.prov_repeat_to = PackedFloat32Array([1000.0])
+	bed.prov_marble_depth = PackedFloat32Array([300.0])
+	bed.prov_base = PackedInt32Array([5])
+	bed.prov_bottoms = [PackedFloat32Array([20.0])]
+	bed.prov_rocks = [PackedInt32Array([3])]
+	bed.set_rock_ids({"limestone": 3, "granite": 5, "marble": 9})
+	check(bed.bedrock_name_at(Vector3(500.0, 95.0, 500.0)) == "limestone", "5 m under the province top the bedrock is limestone")
+	check(bed.bedrock_name_at(Vector3(500.0, 50.0, 500.0)) == "granite", "50 m under it, below the limestone band, granite")
+	check(bed.bedrock_name_at(Vector3(500.0, -210.0, 500.0)) == "marble", "deep in the fold belt the limestone is marble")
+	check(TileDataScript.new().bedrock_name_at(Vector3.ZERO) == "", "a tile with no provinces names no rock")
+
 	print("ore near: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
