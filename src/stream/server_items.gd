@@ -10,6 +10,7 @@ extends RefCounted
 
 const FlameRules := preload("res://src/shared/flame_rules.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
+const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
@@ -657,6 +658,7 @@ func peer_left(peer: int) -> void:
 	_last_drink.erase(peer)
 	_exertion.erase(peer)
 	_motion.erase(peer)
+	_snow_memo.erase(peer)
 	_work_until.erase(peer)
 	_vitals_sent.erase(peer)
 	_strain.erase(peer)
@@ -9523,6 +9525,24 @@ func _effort_at_speed(speed: float) -> float:
 	return float(anchors[anchors.size() - 1][1])
 
 
+var _snow_memo: Dictionary = {}     # peer -> [the metre cell last asked about, whether its surface is snow]
+
+
+# Is the ground under `position` snow or glacial ice (snow_walk.json soils)? Asked once per metre cell the player enters.
+func _on_snow(peer: int, position: Vector3) -> bool:
+	if not ground_material.is_valid():
+		return false
+
+	var cell: Vector2i = Vector2i(floori(position.x), floori(position.z))
+	var memo: Array = _snow_memo.get(peer, [])
+
+	if memo.is_empty() or memo[0] != cell:
+		memo = [cell, SnowWalk.name_is_snow(str(ground_material.call(position.x, position.z)))]
+		_snow_memo[peer] = memo
+
+	return bool(memo[1])
+
+
 func _note_motion(peer: int, position: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
 	var last: Array = _motion.get(peer, [])
@@ -9535,6 +9555,8 @@ func _note_motion(peer: int, position: Vector3) -> void:
 
 		if _on_path(peer, position):
 			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
+
+		target *= SnowWalk.effort_mult(_on_snow(peer, position), SnowWalk.shod(worn_of(peer), table))   # snow is heavy going, snowshoes ease it (Part C plan 7)
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
