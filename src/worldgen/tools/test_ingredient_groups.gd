@@ -3,7 +3,7 @@ extends SceneTree
 # Ingredient groups (guide finding F-16, Tyler 31 Oct 2026): a recipe that asks for the plain id `log` (log workbench, rough plank, lumber ...) is
 # filled by any log_<species> the pack holds; `wooden_block` by a hard or a soft block; `firewood` by hard or soft. Before, nothing mapped log_oak to log, so
 # no player could make any of them. Checks the rule on the pack, then through the real server craft queue (a chopping block from a large soft block, a bowl from a soft
-# block, a hammer from a soft block), the partial-stack case, a group with nothing in the pack, and that the pack is unchanged when a craft is refused.
+# block, a hammer from a soft block), the partial-stack case, a group with nothing in the pack, that the pack is unchanged when a craft is refused, and that a kept tool may be a group.
 #   godot --headless --path . --script res://src/worldgen/tools/test_ingredient_groups.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -101,6 +101,18 @@ func _init() -> void:
 	pack.add(items.table.number_of("log_spruce"), 1)
 	queue_and_finish("chopping_block", 1)
 	check(count("chopping_block") == 1 and count("log_spruce") == 1, "a log is not a large block: no chopping block from it, nothing is taken and nothing is made")
+	# A kept tool may be a group too (the item review, 10 Nov 2026: "any hammer"): every check of a recipe's keeps fills it from the group's members,
+	# like its needs. A stand-in recipe keeps a plain log and makes a stick from a twine.
+	var keeper: Dictionary = {"number": 99950, "id": "test_keep_group", "name": "Test keep group", "needs": [[items.table.number_of("twine"), 1]], "keeps": [[items.table.number_of("log"), 1]], "gives": [items.table.number_of("stick"), 1], "craft_s": 1.0, "known": true, "station": ""}
+	items.recipes._by_number[99950] = keeper
+	var held = InventoryScript.new(items.table)
+	held.add(items.table.number_of("twine"), 1)
+	held.add(items.table.number_of("log_oak"), 1)
+	check(items.recipes.can_make(99950, held), "a recipe keeping a log can be made with an oak log in the pack")
+	check(items._pack_covers(held, keeper, 1), "the server's pack check agrees")
+	held.remove(items.table.number_of("log_oak"), 1)
+	check(not items.recipes.can_make(99950, held) and not items._pack_covers(held, keeper, 1), "and without any log it cannot")
+	items.recipes._by_number.erase(99950)
 	print("ingredient groups: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)
