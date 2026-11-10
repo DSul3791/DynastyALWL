@@ -2252,3 +2252,177 @@ static func roof_corner(kind: String = "wood") -> Node3D:
 	_dome(hip, 0.16, top_end, Vector3(1.0, 0.8, 1.0), _thatch, 8, 3)                    # the knot on the ridge end
 	_solid(hip, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
 	return hip
+
+
+# --- Buildables B2 (buildables_plan.md, 10 Nov 2026): fences and gates. A section is 2 m long along X with a post at each end (x = -1 and +1) that the next
+# section shares (placement_rules.gd fence_ends; sections turn in 45 degree steps). Every post and pier is eight-sided, so two sections meeting at 0, 45 or
+# 90 degrees draw the same post in the same place. A gate is the fence's two posts with a leaf between them on a hinge at the -X post; open, the leaf
+# stands swung a quarter turn out to +Z.
+
+const FENCE_SPEC := {
+	# kind: [height, post radius, depth]
+	"thatch": [1.0, 0.05, 0.2],
+	"wood": [1.1, 0.06, 0.15],
+	"log": [1.1, 0.1, 0.2],
+	"palisade": [2.6, 0.14, 0.4],
+	"stone": [1.0, 0.2, 0.4],
+	"stone_gate": [1.2, 0.2, 0.4],
+	"brick": [1.1, 0.15, 0.3],
+	"brick_gate": [1.2, 0.15, 0.3],
+	"iron": [1.4, 0.04, 0.1],
+}
+
+
+static func _post(root: Node3D, x: float, radius: float, height: float, material: StandardMaterial3D) -> void:
+	_cyl(root, radius, height, Vector3(x, height * 0.5, 0.0), material, 8)
+	_solid(root, Vector3(radius * 1.6, height, radius * 1.6), Vector3(x, height * 0.5, 0.0))
+
+
+# The posts or piers of a section, with their tops: a lashing (thatch), a peg (log), a point (palisade), a cap stone (stone, brick), a knob (iron).
+static func _fence_posts(root: Node3D, kind: String, height: float, radius: float) -> void:
+	for x in [-1.0, 1.0]:
+		match kind:
+			"thatch":
+				_post(root, x, radius, height + 0.05, _log)
+				_cyl(root, radius + 0.015, 0.05, Vector3(x, height - 0.1, 0.0), _frame, 8)
+			"wood":
+				_post(root, x, radius, height, _frame)
+				_cyl(root, radius + 0.01, 0.03, Vector3(x, height + 0.015, 0.0), _frame, 8, 0.02)
+			"log":
+				_post(root, x, radius, height, _log)
+				_cyl(root, radius - 0.02, 0.01, Vector3(x, height + 0.005, 0.0), _planks, 8)
+			"palisade":
+				_post(root, x, radius, height - 0.3, _log)
+				_cyl(root, radius, 0.3, Vector3(x, height - 0.15, 0.0), _log, 8, 0.0)
+			"stone":
+				_post(root, x, radius, height - 0.08, _stone)
+				_cyl(root, radius + 0.03, 0.08, Vector3(x, height - 0.04, 0.0), _flag, 8)
+			"brick":
+				_cyl(root, radius + 0.02, 0.16, Vector3(x, 0.08, 0.0), _flag, 8)
+				_post(root, x, radius, height - 0.06, _bricks)
+				_cyl(root, radius + 0.025, 0.06, Vector3(x, height - 0.03, 0.0), _mortar, 8)
+			_:
+				_post(root, x, radius, height - 0.05, _iron_mat())
+				_cyl(root, radius * 0.9, 0.06, Vector3(x, height - 0.03, 0.0), _iron_mat(), 8)
+
+
+# The fill between the posts, `w` m wide centred on x = 0, `height` high: the same for a fence and for a gate leaf (a gate adds its frame).
+static func _fence_fill(root: Node3D, kind: String, w: float, height: float, gate: bool) -> void:
+	match kind:
+		"thatch":
+			for k in 3:
+				_cyl(root, 0.025, height - 0.05, Vector3(lerpf(-w * 0.5 + 0.2, w * 0.5 - 0.2, float(k) / 2.0), (height - 0.05) * 0.5, 0.0), _log, 6)   # sails
+			for k in 7:
+				var y: float = 0.15 + 0.12 * float(k)
+				_box(root, Vector3(w, 0.05, 0.04), Vector3(0.0, y, 0.025 * (1.0 if k % 2 == 0 else -1.0)), _log)            # woven rods, in and out
+			if gate:
+				for y in [0.1, height - 0.08]:
+					_box(root, Vector3(w, 0.05, 0.06), Vector3(0.0, y, 0.0), _log)
+		"wood":
+			for y in [0.3, height - 0.25]:
+				_box(root, Vector3(w, 0.08, 0.04), Vector3(0.0, y, 0.04), _frame)                                             # rails
+			var pickets: int = int(floor(w / 0.15))
+			for k in pickets:
+				var x: float = -w * 0.5 + 0.075 + (w - 0.15) * float(k) / float(maxi(pickets - 1, 1))
+				_box(root, Vector3(0.08, height - 0.12, 0.025), Vector3(x, (height - 0.12) * 0.5 + 0.02, 0.0), _planks)
+				_box_rot(root, Vector3(0.057, 0.057, 0.025), Vector3(x, height - 0.1, 0.0), Vector3(0.0, 0.0, PI * 0.25), _planks)   # the pointed top
+			if gate:
+				var brace: float = atan2(height - 0.55, w - 0.1)
+				_box_rot(root, Vector3(sqrt(pow(w - 0.1, 2.0) + pow(height - 0.55, 2.0)), 0.07, 0.04), Vector3(0.0, height * 0.5 - 0.01, 0.04), Vector3(0.0, 0.0, brace), _frame)   # the Z brace
+		"log":
+			var rails: Array = [0.45, 0.9] if not gate else [0.2, 0.55, 0.9]
+			for y in rails:
+				_box(root, Vector3(w + (0.0 if gate else 0.12), 0.14, 0.1), Vector3(0.0, y, 0.0), _log)                       # split rails, into the posts
+				_box(root, Vector3(w, 0.02, 0.08), Vector3(0.0, y + 0.07, 0.0), _planks)
+			if gate:
+				for x in [-w * 0.5 + 0.06, w * 0.5 - 0.06]:
+					_box(root, Vector3(0.1, 0.95, 0.1), Vector3(x, 0.55, 0.0), _log)
+				_box_rot(root, Vector3(sqrt(pow(w - 0.12, 2.0) + 0.49), 0.1, 0.08), Vector3(0.0, 0.55, 0.06), Vector3(0.0, 0.0, atan2(0.7, w - 0.12)), _log)
+			else:
+				for x in [-0.94, 0.94]:
+					for y in rails:
+						_cyl(root, 0.02, 0.24, Vector3(x, y, 0.0), _frame, 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)          # the pegs through the posts
+		"palisade":
+			var stakes: int = int(round(w / 0.28))
+			for k in stakes:
+				var x: float = -w * 0.5 + w * (float(k) + 0.5) / float(stakes)
+				var top: float = height - 0.3 - 0.06 * float((k * 7) % 3)
+				_cyl(root, 0.13, top, Vector3(x, top * 0.5, 0.0), _log, 7)
+				_cyl(root, 0.13, 0.3, Vector3(x, top + 0.15, 0.0), _log, 7, 0.0)                                                # sharpened
+			for y in [0.6, 1.9]:
+				_box(root, Vector3(w + (0.0 if gate else 0.2), 0.12, 0.06), Vector3(0.0, y, -0.17), _frame)                   # rails on the inside
+			if gate:
+				_box_rot(root, Vector3(sqrt(pow(w - 0.2, 2.0) + 1.69), 0.12, 0.06), Vector3(0.0, 1.25, -0.17), Vector3(0.0, 0.0, atan2(1.3, w - 0.2)), _frame)
+		"stone":
+			if not gate:
+				_box(root, Vector3(w + 0.1, 0.6, 0.4), Vector3(0.0, 0.3, 0.0), _stone)                                         # the batter, wide at the foot
+				_box(root, Vector3(w + 0.1, 0.24, 0.32), Vector3(0.0, 0.72, 0.0), _stone)
+				var copes: int = int(floor(w / 0.17))
+				for k in copes:   # capstones on edge, each leaning a little
+					var x: float = -w * 0.5 + 0.085 + (w - 0.17) * float(k) / float(maxi(copes - 1, 1))
+					_box_rot(root, Vector3(0.12, 0.16, 0.36), Vector3(x, height - 0.09, 0.0), Vector3(0.0, 0.0, 0.08 * float((k * 5) % 3 - 1)), _stone if k % 2 == 0 else _flag)
+		"brick":
+			if not gate:
+				_box(root, Vector3(w + 0.1, 0.16, 0.3), Vector3(0.0, 0.08, 0.0), _flag)                                        # the stone plinth
+				_box(root, Vector3(w + 0.1, height - 0.26, 0.22), Vector3(0.0, 0.16 + (height - 0.26) * 0.5, 0.0), _bricks)
+				_box(root, Vector3(w + 0.1, 0.1, 0.28), Vector3(0.0, height - 0.05, 0.0), _mortar)                             # coping
+		_:
+			if not gate:
+				_box(root, Vector3(w + 0.06, 0.25, 0.1), Vector3(0.0, 0.125, 0.0), _brick)                                     # the brick plinth
+			var base: float = 0.05 if gate else 0.25
+			for y in [base + 0.12, height - 0.15]:
+				_box(root, Vector3(w, 0.03, 0.03), Vector3(0.0, y, 0.0), _iron_mat())
+			var bars: int = int(floor(w / 0.12))
+			for k in bars:
+				var x: float = -w * 0.5 + 0.06 + (w - 0.12) * float(k) / float(maxi(bars - 1, 1))
+				_box(root, Vector3(0.018, height - base - 0.08, 0.018), Vector3(x, base + (height - base - 0.08) * 0.5, 0.0), _iron_mat())
+				_box_rot(root, Vector3(0.03, 0.03, 0.018), Vector3(x, height - 0.07, 0.0), Vector3(0.0, 0.0, PI * 0.25), _iron_mat())   # spear tips
+
+	if kind in ["stone", "brick"] and gate:   # a timber gate between the piers: boards, two rails and a brace
+		var boards: int = int(floor(w / 0.16))
+		for k in boards:
+			_box(root, Vector3(0.15, height - 0.2, 0.04), Vector3(-w * 0.5 + 0.08 + (w - 0.16) * float(k) / float(maxi(boards - 1, 1)), (height - 0.2) * 0.5 + 0.05, 0.0), _planks)
+		for y in [0.3, height - 0.35]:
+			_box(root, Vector3(w, 0.1, 0.04), Vector3(0.0, y, 0.04), _frame)
+		_box_rot(root, Vector3(sqrt(pow(w - 0.1, 2.0) + pow(height - 0.75, 2.0)), 0.08, 0.04), Vector3(0.0, height * 0.5 - 0.02, 0.04), Vector3(0.0, 0.0, atan2(height - 0.75, w - 0.1)), _frame)
+
+
+# A fence section (B2): `kind` "thatch" (stake and wattle), "wood" (picket), "log" (split rail), "palisade" (sharpened stakes, 2.6 m), "stone" (dry-stone
+# wall with capstones on edge), "brick" (brick on a stone plinth), "iron" (railing on a brick plinth). Solid between the posts.
+static func fence(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var spec: Array = FENCE_SPEC[kind]
+	var height: float = spec[0]
+	var w: float = 2.0 - 2.0 * float(spec[1]) * 0.9
+	_fence_posts(root, kind, height, spec[1])
+	_fence_fill(root, kind, w, height, false)
+	_solid(root, Vector3(w, height, minf(float(spec[2]), 0.3)), Vector3(0.0, height * 0.5, 0.0))
+	return root
+
+
+# A gate (B2): the section's two posts (stone and brick: piers, 1.2 m) and a leaf hung on the -X post. Shut, it blocks the gap; open, it stands swung out to +Z.
+static func gate(kind: String = "wood", open: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var spec: Array = FENCE_SPEC.get(kind + "_gate", FENCE_SPEC[kind])
+	var height: float = spec[0]
+	var w: float = 2.0 - 2.0 * float(spec[1]) - 0.04
+	_fence_posts(root, kind, height, spec[1])
+	var hinge: Node3D = Node3D.new()
+	hinge.position = Vector3(-w * 0.5, 0.0, 0.0)
+	root.add_child(hinge)
+	var leaf: Node3D = Node3D.new()
+	leaf.position = Vector3(w * 0.5, 0.0, 0.0)
+	hinge.add_child(leaf)
+	_fence_fill(leaf, kind, w, height - (0.15 if kind in ["stone", "brick"] else 0.0), true)
+	_solid(leaf, Vector3(w, height, 0.08), Vector3(0.0, height * 0.5, 0.0))
+	var strap: StandardMaterial3D = _frame if kind == "thatch" else _iron_mat()
+
+	for y in [0.25, height - 0.3]:
+		_cyl(hinge, 0.03, 0.08, Vector3(0.0, y, 0.0), strap, 6)                                  # the hinges (twine loops on a thatch hurdle)
+
+	if open:
+		hinge.rotation = Vector3(0.0, -PI * 0.5, 0.0)
+
+	return root
