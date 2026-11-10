@@ -184,7 +184,10 @@ func _init() -> void:
 	rain[0] = 0.5
 	days(1)
 	check(int(items._crops[key]["age"]) == 1 and int(items._crops[key]["wet"]) == 1, "a rainy day is a wet day and the crop is a day older")
-	items._crops[key]["compost"] = true
+	var compost_no: int = items.table.number_of("compost")
+	items.inventory_of(1).add(compost_no, 1)
+	check(items.compost_bed(1, items.inventory_of(1), bed) and bool(items._crops[key]["compost"]) and items.inventory_of(1).count_of(compost_no) == 0, "compost on the bed is taken and marks the crop")
+	check(not items.compost_bed(1, items.inventory_of(1), bed), "a composted crop takes no more")
 	days(10)
 	check(absf(float(items._crops[key]["age"]) - (1.0 + 12.0)) < 0.01, "with compost each day is 1.2 days of growth (age %.1f after 11 days)" % float(items._crops[key]["age"]))
 	items._crops[key]["compost"] = false

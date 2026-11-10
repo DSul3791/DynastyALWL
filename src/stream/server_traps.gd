@@ -3,8 +3,10 @@ extends RefCounted
 # Snares (Steve 2026-10-25; data/animals/traps.json): a set snare_trap struct catches small game while the player is away. The
 # items module owns the records and calls tick(); the animals and trails come in through its hooks (animals_near, animal_snare,
 # trail_strength). A catch lays the species' carcass beside the snare, so the knife flow, parts and rot are the carcass module's.
+# Other trap kinds (traps.json "kinds", the Bird trap of Part C plan 3) work the same way with their own numbers laid over the snare's.
 
-var cfg: Dictionary = {}
+var cfg: Dictionary = {}           # the snare's numbers (traps.json top level)
+var kinds_cfg: Dictionary = {}     # struct kind -> the snare's numbers with that kind's laid over them
 var host = null                    # the items module (server_items.gd)
 var _acc: float = 0.0
 
@@ -13,21 +15,38 @@ func _init() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/traps.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
+	for kind in cfg.get("kinds", {}):
+		var own: Dictionary = cfg.duplicate(true)
+		own.erase("kinds")
+		own.merge(cfg["kinds"][kind], true)
+		own["kind"] = str(kind)
+		kinds_cfg[str(kind)] = own
+
 	if float(cfg.get("test_chance", 0.0)) > 0.0:
 		print("server traps: TEST CHANCE IS ON (%.2f a look, a rabbit is imagined beside every snare): for smoke runs only" % float(cfg["test_chance"]))
 
 
 func is_kind(kind: String) -> bool:
-	return kind == str(cfg.get("kind", "snare_trap"))
+	return kind == str(cfg.get("kind", "snare_trap")) or kinds_cfg.has(kind)
 
 
+# True for any set trap (a snare or another kind).
 func is_snare(it: Dictionary) -> bool:
-	return it.has("struct") and str(it["struct"].get("kind", "")) == str(cfg.get("kind", "snare_trap"))
+	return it.has("struct") and is_kind(str(it["struct"].get("kind", "")))
+
+
+# The numbers of a trap kind: the snare's own, or the kind's laid over them.
+func of(kind: String) -> Dictionary:
+	return kinds_cfg.get(kind, cfg)
+
+
+func _of_item(it: Dictionary) -> Dictionary:
+	return of(str(it.get("struct", {}).get("kind", "")))
 
 
 # The worn-trail curve: [[strength, factor], ...] read linearly between points.
-func trail_factor(strength: float) -> float:
-	var curve: Array = cfg.get("trail_factor", [[0.0, 1.0]])
+func trail_factor(strength: float, c: Dictionary = {}) -> float:
+	var curve: Array = (c if not c.is_empty() else cfg).get("trail_factor", [[0.0, 1.0]])
 
 	if strength <= float(curve[0][0]):
 		return float(curve[0][1])
@@ -41,27 +60,34 @@ func trail_factor(strength: float) -> float:
 	return float(curve[curve.size() - 1][1])
 
 
-func is_night() -> bool:
+func is_night(c: Dictionary = {}) -> bool:
+	var use: Dictionary = c if not c.is_empty() else cfg
 	var hour: float = fmod(host._now_game_s() / 3600.0, 24.0)
-	var from: float = float(cfg.get("night_from_hour", 20.0))
-	var to: float = float(cfg.get("night_to_hour", 5.0))
+	var from: float = float(use.get("night_from_hour", 20.0))
+	var to: float = float(use.get("night_to_hour", 5.0))
 	return hour >= from or hour < to
 
 
 # The weight of an animal for a snare at `at`: 0 when this species is never caught (deer and bigger) or a duck is away from water.
-func animal_weight(row: Dictionary) -> float:
-	var w: float = float(cfg.get("species_weight", {}).get(str(row["sp"]), 0.0))
+func animal_weight(row: Dictionary, c: Dictionary = {}) -> float:
+	var use: Dictionary = c if not c.is_empty() else cfg
+	var w: float = float(use.get("species_weight", {}).get(str(row["sp"]), 0.0))
 
-	if w > 0.0 and str(row["sp"]) == "duck" and bool(cfg.get("duck_needs_water", true)) and host.water_depth_at.is_valid() and float(host.water_depth_at.call(row["pos"])) <= 0.0:
+	if w > 0.0 and not host._carcass_cfg.get("species", {}).has(str(row["sp"])):
+		return 0.0   # no carcass row: a catch would leave nothing, so it is never caught
+
+	if w > 0.0 and str(row["sp"]) == "duck" and bool(use.get("duck_needs_water", true)) and host.water_depth_at.is_valid() and float(host.water_depth_at.call(row["pos"])) <= 0.0:
 		return 0.0
 
 	return w
 
 
 # The nearest catchable animal near a snare: its row, or {}.
-func lured(at: Vector3) -> Dictionary:
-	if float(cfg.get("test_chance", 0.0)) > 0.0:
-		return {"id": 0, "sp": "rabbit", "pos": at}   # the smoke knob: no animal needed, none is taken from the world
+func lured(at: Vector3, c: Dictionary = {}) -> Dictionary:
+	var use: Dictionary = c if not c.is_empty() else cfg
+
+	if float(use.get("test_chance", 0.0)) > 0.0:
+		return {"id": 0, "sp": str(use.get("test_species", "rabbit")), "pos": at}   # the smoke knob: no animal needed, none is taken from the world
 
 	if not host.animals_near.is_valid():
 		return {}
@@ -69,10 +95,10 @@ func lured(at: Vector3) -> Dictionary:
 	var best: Dictionary = {}
 	var best_d: float = 1.0e9
 
-	for row in host.animals_near.call(at, float(cfg.get("lure_m", 2.5))):
+	for row in host.animals_near.call(at, float(use.get("lure_m", 2.5))):
 		var d: float = Vector2(row["pos"].x - at.x, row["pos"].z - at.z).length()
 
-		if animal_weight(row) > 0.0 and d < best_d:
+		if animal_weight(row, use) > 0.0 and d < best_d:
 			best = row
 			best_d = d
 
@@ -82,53 +108,56 @@ func lured(at: Vector3) -> Dictionary:
 # Nothing inside lure_m: an animal of draw_species living within draw_m may wander over to the snare (its run or the bait), with
 # the chance a catch would have times draw_share. It then grazes at the snare until a later look catches it or something scares it off.
 func _draw(it: Dictionary, st: Dictionary) -> bool:
-	var reach: float = float(cfg.get("draw_m", 0.0))
+	var c: Dictionary = _of_item(it)
+	var reach: float = float(c.get("draw_m", 0.0))
 
 	if reach <= 0.0 or not host.animals_near.is_valid() or not host.animal_lure.is_valid():
 		return false
 
-	var kinds: Array = cfg.get("draw_species", [])
+	var kinds: Array = c.get("draw_species", [])
 	var best: Dictionary = {}
 	var best_d: float = 1.0e9
 
 	for row in host.animals_near.call(it["pos"], reach):
 		var d: float = Vector2(row["pos"].x - it["pos"].x, row["pos"].z - it["pos"].z).length()
 
-		if kinds.has(str(row["sp"])) and animal_weight(row) > 0.0 and d < best_d:
+		if kinds.has(str(row["sp"])) and animal_weight(row, c) > 0.0 and d < best_d:
 			best = row
 			best_d = d
 
-	if best.is_empty() or not host.fate(_owner_peer(st), "snare", chance_at(it["pos"], best, _bait_id(it["pos"]) >= 0) * float(cfg.get("draw_share", 1.0))):
+	if best.is_empty() or not host.fate(_owner_peer(st), "snare", chance_at(it["pos"], best, _bait_id(it["pos"], c) >= 0, c) * float(c.get("draw_share", 1.0))):
 		return false
 
 	return bool(host.animal_lure.call(int(best["id"]), it["pos"]))
 
 
-func _bait_id(at: Vector3) -> int:
-	for row in host.loose_food_near(at, float(cfg.get("bait_m", 1.0))):
+func _bait_id(at: Vector3, c: Dictionary = {}) -> int:
+	for row in host.loose_food_near(at, float((c if not c.is_empty() else cfg).get("bait_m", 1.0))):
 		return int(row[0])
 
 	return -1
 
 
 # The chance this look catches `row`, without the bait (see check_one): 0 for a snare that cannot catch.
-func chance_at(at: Vector3, row: Dictionary, baited: bool) -> float:
-	if float(cfg.get("test_chance", 0.0)) > 0.0:
-		return clampf(float(cfg["test_chance"]), 0.0, 1.0)
+func chance_at(at: Vector3, row: Dictionary, baited: bool, c: Dictionary = {}) -> float:
+	var use: Dictionary = c if not c.is_empty() else cfg
 
-	var p: float = float(cfg.get("base_chance", 0.3)) * animal_weight(row)
+	if float(use.get("test_chance", 0.0)) > 0.0:
+		return clampf(float(use["test_chance"]), 0.0, 1.0)
+
+	var p: float = float(use.get("base_chance", 0.3)) * animal_weight(row, use)
 
 	if host.trail_strength.is_valid():
-		p *= trail_factor(float(host.trail_strength.call(at.x, at.z)))
+		p *= trail_factor(float(host.trail_strength.call(at.x, at.z)), use)
 
 	if baited:
-		p *= float(cfg.get("bait_mult", 2.0))
+		p *= float(use.get("bait_mult", 2.0))
 
-	if is_night():
-		p *= float(cfg.get("night_mult", 1.0))
+	if is_night(use):
+		p *= float(use.get("night_mult", 1.0))
 
-	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(cfg.get("storm_rain", 0.6)):
-		p *= float(cfg.get("storm_mult", 1.0))
+	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(use.get("storm_rain", 0.6)):
+		p *= float(use.get("storm_mult", 1.0))
 
 	return clampf(p, 0.0, 1.0)
 
@@ -141,9 +170,10 @@ func _owner_peer(st: Dictionary) -> int:
 	return -1
 
 
-func _durability() -> int:
-	var d: int = int(host.table.entry(str(cfg.get("item", "snare"))).get("durability", 0))
-	return d if d > 0 else int(cfg.get("default_durability", 20))
+func _durability(c: Dictionary = {}) -> int:
+	var use: Dictionary = c if not c.is_empty() else cfg
+	var d: int = int(host.table.entry(str(use.get("item", "snare"))).get("durability", 0))
+	return d if d > 0 else int(use.get("default_durability", 20))
 
 
 func tick(delta: float) -> void:
@@ -183,19 +213,20 @@ func check_one(id: int) -> bool:
 		return false
 
 	var st: Dictionary = it["struct"]
+	var c: Dictionary = _of_item(it)
 
 	if float(st.get("quiet", 0.0)) > 0.0 or host._items.has(int(st.get("catch", 0))):
 		return false   # sprung: its carcass still lies there
 
-	var row: Dictionary = lured(it["pos"])
+	var row: Dictionary = lured(it["pos"], c)
 
 	if row.is_empty():
 		_draw(it, st)
 		return false
 
-	var bait: int = _bait_id(it["pos"])
+	var bait: int = _bait_id(it["pos"], c)
 
-	if not host.fate(_owner_peer(st), "snare", chance_at(it["pos"], row, bait >= 0)):
+	if not host.fate(_owner_peer(st), "snare", chance_at(it["pos"], row, bait >= 0, c)):
 		return false
 
 	if int(row["id"]) != 0 and (not host.animal_snare.is_valid() or not bool(host.animal_snare.call(int(row["id"])))):
@@ -209,39 +240,42 @@ func check_one(id: int) -> bool:
 		else:
 			host._items.erase(bait)
 
-	var spot: Vector3 = it["pos"] + Vector3(float(cfg.get("carcass_offset_m", 0.7)), 0.0, 0.0)
+	var spot: Vector3 = it["pos"] + Vector3(float(c.get("carcass_offset_m", 0.7)), 0.0, 0.0)
 	st["catch"] = host.make_carcass(str(row["sp"]), spot, _owner_peer(st))
-	st["quiet"] = float(cfg.get("avoid_s", 25.0))
-	it["wear"] = int(it.get("wear", 0)) + int(cfg.get("wear_per_catch", 1))
+	st["quiet"] = float(c.get("avoid_s", 25.0))
+	it["wear"] = int(it.get("wear", 0)) + int(c.get("wear_per_catch", 1))
 	host._dirty = true
 
-	if int(it["wear"]) >= _durability():
+	if int(it["wear"]) >= _durability(c):
 		host._items.erase(id)
 
 		if _owner_peer(st) >= 0:
-			host._say(_owner_peer(st), str(cfg.get("say_broke", "")))
+			host._say(_owner_peer(st), str(c.get("say_broke", "")))
 
 	return true
 
 
-# Before a snare goes down: false (with a word) on ground near a building or fire.
-func allow_place(peer: int, spot: Vector3) -> bool:
-	var gap: float = float(cfg.get("gap_m", 8.0))
+# Before a trap of `kind` goes down: false (with a word) on ground near a building or fire.
+func allow_place(peer: int, spot: Vector3, kind: String = "") -> bool:
+	var c: Dictionary = of(kind)
+	var gap: float = float(c.get("gap_m", 8.0))
 
 	for id in host._items:
 		var other: Dictionary = host._items[id]
 
 		if (other.has("fire") or (other.has("struct") and not is_snare(other) and str(other["struct"].get("kind", "")) != "carcass")) and Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length() < gap:
-			host._say(peer, str(cfg.get("say_near", "")))
+			host._say(peer, str(c.get("say_near", "")))
 			return false
 
 	return true
 
 
-# A snare has just been set by `peer`: stamps the owner and takes back the oldest when they have too many out.
+# A trap has just been set by `peer`: stamps the owner and takes back the oldest of that kind when they have too many out.
 func on_placed(peer: int, id: int) -> void:
 	var key: String = str(host._peer_key.get(peer, ""))
 	var st: Dictionary = host._items[id]["struct"]
+	var kind: String = str(st.get("kind", ""))
+	var c: Dictionary = of(kind)
 	st["owner"] = key
 	st["set_at"] = host._now_game_s()
 	st["seq"] = host._next_uid
@@ -251,20 +285,20 @@ func on_placed(peer: int, id: int) -> void:
 	for other_id in host._items:
 		var other: Dictionary = host._items[other_id]
 
-		if is_snare(other) and str(other["struct"].get("owner", "")) == key:
+		if is_snare(other) and str(other["struct"].get("kind", "")) == kind and str(other["struct"].get("owner", "")) == key:
 			mine.append(other_id)
 
-	if mine.size() <= int(cfg.get("per_player", 6)):
+	if mine.size() <= int(c.get("per_player", 6)):
 		return
 
 	mine.sort_custom(func(a, b): return float(host._items[a]["struct"].get("seq", 0)) < float(host._items[b]["struct"].get("seq", 0)))
 	var oldest: int = int(mine[0])
 	var back: Dictionary = host._items[oldest]
 	var inv = host.inventory_of(peer)
-	var number: int = host.table.number_of(str(cfg.get("item", "snare")))
+	var number: int = host.table.number_of(str(c.get("item", "snare")))
 
 	if number > 0 and inv != null:
 		inv.add(number, 1, int(back.get("wear", 0)))
 
 	host._items.erase(oldest)
-	host._say(peer, str(cfg.get("say_cap", "")))
+	host._say(peer, str(c.get("say_cap", "")))
