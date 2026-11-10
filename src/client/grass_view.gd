@@ -1702,8 +1702,8 @@ func _build(cell: Vector2i) -> int:
 
 	# The record brooks and spring heads count as water too (Dave 10 Nov 2026: "all brooks and water ways"), with no level (NAN).
 	if brook_spots.is_valid():
-		var reach: float = LUSH_M + _brook_half
-		wet_spots.append_array(brook_spots.call(float(cell.x) * CELL_M - reach, float(cell.y) * CELL_M - reach, float(cell.x + 1) * CELL_M + reach, float(cell.y + 1) * CELL_M + reach))
+		var brook_reach: float = LUSH_M + _brook_half
+		wet_spots.append_array(brook_spots.call(float(cell.x) * CELL_M - brook_reach, float(cell.y) * CELL_M - brook_reach, float(cell.x + 1) * CELL_M + brook_reach, float(cell.y + 1) * CELL_M + brook_reach))
 
 	Probe.stop("grass build: setup", t_setup)
 	var t_rays: int = Probe.start()
