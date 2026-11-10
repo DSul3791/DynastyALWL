@@ -329,6 +329,19 @@ func drawn_positions() -> Array:
 	return out
 
 
+# [[drawn position, heading], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these (BowAim.zone_points).
+func aim_rows(from: Vector3, range_m: float) -> Array:
+	var out: Array = []
+
+	for id in _bodies:
+		var at: Vector3 = (_bodies[id]["node"] as Node3D).global_position
+
+		if at.distance_to(from) <= range_m:
+			out.append([at, float(_bodies[id]["heading"])])
+
+	return out
+
+
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
 

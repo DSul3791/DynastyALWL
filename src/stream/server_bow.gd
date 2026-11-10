@@ -2,6 +2,8 @@ extends RefCounted
 
 # Bow rules (plan 4b, data/items/bow.json): the numbers of a shot. Pure: the arrow's flight is stepped by server_items (it owns the world), the hit test is a hook.
 
+const BowAim := preload("res://src/shared/bow_aim.gd")
+
 var cfg: Dictionary = {}
 
 
@@ -34,8 +36,9 @@ func speed(power_now: float) -> float:
 	return float(cfg.get("speed_max", 45.0)) * power_now
 
 
-func damage(arrow_damage: float, power_now: float, skill: float) -> float:
-	return arrow_damage * power_now * (1.0 + (skill - 1.0) * float(cfg.get("skill_share", 0.25)))
+# The bow skill (0..100) multiplies it by aim.damage_mult (Dave 10 Nov 2026).
+func damage(arrow_damage: float, power_now: float, level: float) -> float:
+	return arrow_damage * power_now * BowAim.damage_mult(cfg, level)
 
 
 # The chance the arrow does NOT survive its landing: by tip, worse when it hit an animal; in water it is lost water_loss of the time (the larger of the two).
@@ -51,8 +54,11 @@ func lost_chance(tip: String, hit_animal: bool, in_water: bool) -> float:
 	return base
 
 
-# The first ammo id of the data list that the pack holds: its slot, or -1.
-func ammo_slot(inv, table) -> int:
+# The arrow the bow is loaded with (`loaded`, an ammo item the pack holds) or else the first ammo id of the data list that the pack holds: its slot, or -1.
+func ammo_slot(inv, table, loaded: int = 0) -> int:
+	if loaded != 0 and is_ammo(table.id_of(loaded)) and inv.has(loaded, 1):
+		return inv.numbers.find(loaded)
+
 	for id in cfg.get("ammo", []):
 		var number: int = table.number_of(str(id))
 
@@ -60,3 +66,7 @@ func ammo_slot(inv, table) -> int:
 			return inv.numbers.find(number)
 
 	return -1
+
+
+func is_ammo(item_id: String) -> bool:
+	return (cfg.get("ammo", []) as Array).has(item_id)

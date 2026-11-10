@@ -1,6 +1,11 @@
 {
-	"note": "Bow shooting (plan 4b, tech/ACTION_PLANS/Steve_bow_shoot.md): ACT_SHOOT a = bow slot, b = draw time in ms (the client measures; the server clamps it and checks the pace), at = aim direction. A draw under draw_min_ms is a weak shot at weak_power; from draw_min_ms to draw_max_ms the power rises from min_power to 1. speed = speed_max x power (m/s), the arrow falls under gravity 9.8 and stops at range_m of flight, the ground, or the first animal on its path (hit_radius_m round its chest). damage = the arrow's damage x power x (1 + (bow skill - 1) x skill_share). Shot noise alarms animals within noise_m. A landed arrow is a world item again unless it breaks: break_chance by tip, x hit_break_mult when it hit an animal, lost water_loss of the time in water; luck applies (fate). The first ammo id in `ammo` found in the pack is shot. Quivers are not read yet: arrows are taken from the pack.",
-	"ammo": ["stone_arrow", "wooden_arrow", "bone_arrow"],
+	"note": "Bow shooting (plan 4b, tech/ACTION_PLANS/Steve_bow_shoot.md): ACT_SHOOT a = bow slot, b = draw time in ms (the client measures; the server clamps it and checks the pace), at = aim direction. A draw under draw_min_ms is a weak shot at weak_power; from draw_min_ms to draw_max_ms the power rises from min_power to 1. speed = speed_max x power (m/s), the arrow falls under gravity 9.8 and stops at range_m of flight, the ground, or the first animal on its path (hit_radius_m round its chest). damage = the arrow's damage x power x aim.damage_mult at the bow skill. Shot noise alarms animals within noise_m. A landed arrow is a world item again unless it breaks: break_chance by tip, x hit_break_mult when it hit an animal, lost water_loss of the time in water; luck applies (fate). ACT_SHOOT count = the arrow item the bow is loaded with (dragged onto the bow on the hotbar); 0 or one the pack lacks: the first id in `ammo` the pack holds. Quivers are not read yet: arrows are taken from the pack.",
+	"ammo": [
+		"stone_arrow",
+		"bone_arrow",
+		"wooden_arrow",
+		"fibre_arrow"
+	],
 	"draw_min_ms": 300,
 	"draw_max_ms": 1200,
 	"weak_power": 0.25,
@@ -12,11 +17,107 @@
 	"hit_radius_m": 0.6,
 	"chest_m": 0.5,
 	"noise_m": 40.0,
-	"skill_share": 0.25,
-	"break_chance": {"wood": 0.5, "stone": 0.35, "flint": 0.25, "bone": 0.3},
+	"break_chance": {
+		"wood": 0.5,
+		"stone": 0.35,
+		"flint": 0.25,
+		"bone": 0.3
+	},
 	"hit_break_mult": 1.5,
 	"water_loss": 0.5,
 	"say_no_ammo": "You have no arrows.",
 	"say_weak": "You loose it too soon; the arrow barely flies.",
-	"say_lost": "The arrow is gone."
+	"say_lost": "The arrow is gone.",
+	"aim_note": "Dave 10 Nov 2026 (the bow): hold the right mouse button to raise the bow and draw (draw time as above), left click looses, letting right go lowers it with no shot. Every curve is [[bow skill level 0..100 (the hunting skill's working level), value], ...], straight lines between. steady_s: how long the aim stays still once drawn; then the aim sways by wobble_deg_per_s more each second up to wobble_max_deg, at wobble_hz. pull: the share of the way the reticle is drawn to a vital zone (zones: metres forward of the animal's middle and up from its feet) within pull_cone_deg of the aim; no skill, no pull. spread_deg: the server turns each shot by up to this much at random (luck narrows it). damage_mult: the arrow's damage times this. zoom_fov_share: the view narrows to this share of the field of view while drawn. reticle_px: the cross's arm length.",
+	"aim": {
+		"steady_s": [
+			[
+				0,
+				2.0
+			],
+			[
+				50,
+				3.0
+			],
+			[
+				100,
+				4.5
+			]
+		],
+		"wobble_deg_per_s": [
+			[
+				0,
+				1.5
+			],
+			[
+				50,
+				0.8
+			],
+			[
+				100,
+				0.3
+			]
+		],
+		"wobble_max_deg": 4.0,
+		"wobble_hz": 0.6,
+		"pull": [
+			[
+				0,
+				0.0
+			],
+			[
+				10,
+				0.05
+			],
+			[
+				100,
+				0.6
+			]
+		],
+		"pull_cone_deg": 4.0,
+		"spread_deg": [
+			[
+				0,
+				2.5
+			],
+			[
+				50,
+				1.0
+			],
+			[
+				100,
+				0.2
+			]
+		],
+		"damage_mult": [
+			[
+				0,
+				1.0
+			],
+			[
+				50,
+				1.25
+			],
+			[
+				100,
+				1.6
+			]
+		],
+		"zones": [
+			{
+				"name": "head",
+				"fwd_m": 0.45,
+				"up_m": 0.8
+			},
+			{
+				"name": "heart",
+				"fwd_m": 0.15,
+				"up_m": 0.5
+			}
+		],
+		"zoom_fov_share": 0.85,
+		"reticle_px": 14
+	},
+	"say_load": "Your bow is loaded with %s.",
+	"say_not_ammo": "That is not an arrow this bow can shoot."
 }

@@ -9,6 +9,7 @@ const SLOTS := 10
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the same slot as the pack (look doc section 3)
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
+const HeldItem := preload("res://src/client/held_item.gd")
 # One control in and out of the inventory window (redesign section 9, v4): ten 76 px wells 10 apart at x 535 to 1385, y 964 to 1040
 # on the 1920 x 1080 canvas, on the stitched leather tray with brass end plates (art kit row 11a). Opening the window does not move it.
 const SLOT_UNIT := float(ArtKit.HOT) / ItemSlot.SLOT_PX
@@ -56,6 +57,10 @@ func refresh() -> void:
 		var slot: int = _items.key_slot(key)
 		var number: int = _items.inventory.numbers[slot] if slot >= 0 else _items.key_number(key)
 		var count: int = _items.inventory.counts[slot] if slot >= 0 else 0
+
+		if _is_bow(number) and _held != null:
+			count = _items.inventory.count_of(_held.arrow_to_shoot()) if _held.arrow_to_shoot() != 0 else 0   # a bow shows the arrows it will shoot
+
 		var dimmed: bool = slot < 0 and number != 0   # the key keeps its item while none is in the pack
 		var off_here: bool = _held != null and _held.off_holding and _held.off_key == key
 		var held_here: bool = (_held != null and _held.holding and _held.held_key == key) or off_here
@@ -93,7 +98,18 @@ func _can_drop(_at: Vector2, data: Variant, _key: int) -> bool:
 
 
 func _drop(_at: Vector2, data: Variant, key: int) -> void:
+	var dragged: int = _items.key_number(int(data["key"])) if data.has("key") else _items.inventory.numbers[int(data["slot"])]
+
+	if _is_bow(_items.key_number(key)) and (HeldItem.BOW_AMMO as Array).has(_items.table.id_of(dragged)):
+		_items.load_bow(dragged)   # arrows dropped on the bow load it with that arrow (Dave 10 Nov 2026); they stay in the pack
+		refresh()
+		return
+
 	if data.has("key"):
 		_items.swap_keys(int(data["key"]), key)
 	else:
 		_items.set_key_to_slot(key, int(data["slot"]))
+
+
+func _is_bow(number: int) -> bool:
+	return number != 0 and str(_items.table.entry(_items.table.id_of(number)).get("weapon_class", "")) == "bow"

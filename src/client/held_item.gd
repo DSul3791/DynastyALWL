@@ -22,7 +22,6 @@ const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar key is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
 const AIMED := Vector3(0.28, -0.12, -0.35)
-const BOW_FULL_DRAW_S := 1.2        # today's draw: the string is fully back after this long (data/items/bow.json draw_max_ms)
 const BOW_CANT_DEG := 10.0          # the raised bow's top tilts this far to the right
 const BOW_IDLE_LEAN_DEG := 30.0     # lowered at the side: the upper limb leans this far forward
 const BOW_DRAW_MAX_M := 0.7         # the nock point comes back at most this far from the braced string (a 28 inch draw)
@@ -63,7 +62,9 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
 const HELD_SPEAR_SCALE := 1.0
-const BOW_AMMO := ["stone_arrow", "wooden_arrow", "bone_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
+const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
+const BowAim := preload("res://src/shared/bow_aim.gd")
+const BowReticle := preload("res://src/client/bow_reticle.gd")
 const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
@@ -136,7 +137,10 @@ var _mounted: bool = false                # the model is in the hand: the arm an
 var _label: Label
 var _jab_t: float = -1.0
 var _bow_cfg: Dictionary = {}               # data/items/bow.json, read on the first shot (the arrow sound follows its flight)
-var _draw_t: float = -1.0                 # a bow being drawn: seconds since the left button went down, -1 when not
+var _draw_t: float = -1.0                 # the bow up and drawing (Dave 10 Nov 2026: right mouse held): seconds since it went up, -1 when it is down
+var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the view turned by the sway and drawn to a vital zone (aim_direction)
+var _reticle = null                       # BowReticle: the cross while the bow is up
+var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
 var bow_force: String = ""                 # the shot runner's bow pose, "STATE[:DRAW]" (idle, raised, drawn; draw 0 to 1), "" = from play
 var _bow_up: bool = false                  # the bow is raised or drawn: the arms come up to the camera pose
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
@@ -605,6 +609,112 @@ func _left_id() -> String:
 	return _inv.table.id_of(_left_number())
 
 
+func _bow_config() -> Dictionary:
+	if _bow_cfg.is_empty():
+		_bow_cfg = BowAim.load_config()
+
+		if _bow_cfg.is_empty():
+			_bow_cfg = {"speed_max": 45.0}
+
+	return _bow_cfg
+
+
+func _raise_bow() -> void:
+	if not has_arrow():
+		_inv._on_notice(str(_bow_config().get("say_no_ammo", "You have no arrows.")))
+		return
+
+	_draw_t = 0.0
+	_aim_dir = -_camera.global_transform.basis.z
+	_arm_play("use", 0.6)
+
+	if _sound != null:
+		_sound.slots.play("bow_draw", _camera.global_position - _camera.global_transform.basis.z * 0.6)   # the limbs flex and the string creaks as it is pulled (make_bow.py)
+
+
+func _lower_bow() -> void:
+	_draw_t = -1.0
+
+
+# Left click with the bow up: the arrow goes along the aim (the server turns it by the skill's spread). Still holding right, the next arrow is drawn.
+func _loose() -> void:
+	var draw_ms: int = int(_draw_t * 1000.0)
+	var arrow: int = arrow_to_shoot()
+	_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, draw_ms, arrow, _aim_dir)
+
+	if arrow != 0:
+		if _sound != null:
+			_sound.slots.play("bow_loose", _camera.global_position - _camera.global_transform.basis.z * 0.6)   # the twang and swish
+
+		_arrow_flight(draw_ms, _aim_dir, arrow)
+
+	_draw_t = 0.0 if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and has_arrow() else -1.0
+
+
+# "idle" (the bow down), "raised" (up at sight, the string coming back) or "drawn" (full draw); the arms pose follows it (Kathleen's _pose_bow).
+func bow_state() -> String:
+	if _draw_t < 0.0:
+		return "idle"
+
+	return "drawn" if bow_draw() >= 1.0 else "raised"
+
+
+# How far the string is back, 0 to 1 over bow.json draw_max_ms.
+func bow_draw() -> float:
+	if _draw_t < 0.0:
+		return 0.0
+
+	return clampf(_draw_t * 1000.0 / maxf(float(_bow_config().get("draw_max_ms", 1200)), 1.0), 0.0, 1.0)
+
+
+# The aim's sway now in degrees (x yaw, y pitch): still for the skill's steady_s at full draw, then growing (bow.json aim).
+func bow_wobble() -> Vector2:
+	if bow_state() != "drawn":
+		return Vector2.ZERO
+
+	var cfg: Dictionary = _bow_config()
+	var drawn_s: float = _draw_t - float(cfg.get("draw_max_ms", 1200)) / 1000.0
+	return BowAim.wobble_offset(BowAim.wobble_deg(cfg, _inv.skill_level_of("hunting"), drawn_s), _draw_t, float(cfg.get("aim", {}).get("wobble_hz", 0.6)))
+
+
+# Where the drawn bow points: the view turned by the sway, then drawn toward a vital zone of an animal near the aim by the skill's pull.
+func aim_direction() -> Vector3:
+	var view: Basis = _camera.global_transform.basis
+	var aim: Vector3 = BowAim.turned(-view.z, view.x, view.y, bow_wobble())
+	var points: Array = []
+
+	if animal_aim_rows.is_valid():
+		for row in animal_aim_rows.call():
+			points.append_array(BowAim.zone_points(_bow_config(), row[0], float(row[1])))
+
+	return BowAim.assist(_bow_config(), _inv.skill_level_of("hunting"), _camera.global_position, aim, points)
+
+
+# The view narrows a little as the bow comes up (bow.json aim.zoom_fov_share at full draw); 1 with the bow down. The client scene multiplies its field of view by it.
+func aim_fov_share() -> float:
+	return lerpf(1.0, float(_bow_config().get("aim", {}).get("zoom_fov_share", 0.85)), bow_draw())
+
+
+func _update_bow(delta: float) -> void:
+	if _draw_t >= 0.0 and (not _is_bow() or not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
+		_draw_t = -1.0   # the bow put away, or right let go outside the game window
+
+	if _draw_t >= 0.0:
+		_draw_t += delta
+		_aim_dir = aim_direction()
+
+	if _reticle == null and _hud_layer != null:
+		_reticle = BowReticle.new()
+		_reticle.arm_px = float(_bow_config().get("aim", {}).get("reticle_px", 14))
+		_hud_layer.add_child(_reticle)
+
+	if _reticle != null:
+		_reticle.visible = _draw_t >= 0.0
+
+		if _reticle.visible and not _camera.is_position_behind(_camera.global_position + _aim_dir * 30.0):
+			_reticle.point = _camera.unproject_position(_camera.global_position + _aim_dir * 30.0)
+
+
 func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
 
@@ -612,13 +722,23 @@ func _is_spear() -> bool:
 # Whether the pack holds an arrow the bow can shoot (the server's ammo list, data/items/bow.json), so a draw with
 # no arrow lets go silently instead of twanging.
 func has_arrow() -> bool:
+	return arrow_to_shoot() != 0
+
+
+# The arrow the next shot takes, as the server picks it: the one the bow is loaded with while the pack holds it, else the first of BOW_AMMO there; 0 none.
+func arrow_to_shoot() -> int:
+	var loaded: int = int(_inv.bow_arrow)
+
+	if loaded != 0 and _inv.inventory.count_of(loaded) > 0:
+		return loaded
+
 	for id in BOW_AMMO:
 		var number: int = _inv.table.number_of(id)
 
 		if number > 0 and _inv.inventory.count_of(number) > 0:   # 0 = not in the table (0 is also an empty slot)
-			return true
+			return number
 
-	return false
+	return 0
 
 
 # A spyglass item in hand (tool_class "spyglass", data/items/spyglass.json), not broken: right mouse held looks through it.
@@ -688,6 +808,18 @@ func is_holdable(number: int) -> bool:
 # Food and small things with a stage-one look (data/items/looks.json) are carried in the palm, drawn as they lie on the ground.
 func _is_look_item() -> bool:
 	return BasicLook.has_look(held_id()) and not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable()
+
+
+# An arrow in flight (Dave 10 Nov 2026: the shot showed nothing): the arrow's own look, its shaft (the look's x axis) turned to point along -Z,
+# the way look_at aims a node.
+func _make_arrow_model(arrow: int) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var shaft: MeshInstance3D = MeshInstance3D.new()
+	shaft.mesh = BasicLook.mesh_for(_inv.table.id_of(arrow))
+	shaft.rotation = Vector3(0.0, PI * 0.5, 0.0)
+	shaft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(shaft)
+	return root
 
 
 func _make_look_model() -> Node3D:
@@ -926,22 +1058,18 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return false
 
 	if _is_bow():
-		# The bow: hold the left button to draw, let go to loose the arrow along the view; the server clamps the draw time (data/items/bow.json).
-		if button == MOUSE_BUTTON_LEFT:
+		# Dave 10 Nov 2026: hold the right button to raise the bow to sight and draw; left click looses at the aim; letting right go lowers it, no shot.
+		if button == MOUSE_BUTTON_RIGHT:
 			if pressed:
-				_draw_t = 0.0
-				_arm_play("use", 0.6)
+				_raise_bow()
+			else:
+				_lower_bow()
 
-				if _sound != null:
-					_sound.slots.play("bow_draw", _camera.global_position - _camera.global_transform.basis.z * 0.6)   # the limbs flex and the string creaks as it is pulled (make_bow.py)
-			elif _draw_t >= 0.0:
-				_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, int(_draw_t * 1000.0), 0, -_camera.global_transform.basis.z)
+			return true
 
-				if _sound != null and has_arrow():
-					_sound.slots.play("bow_loose", _camera.global_position - _camera.global_transform.basis.z * 0.6)   # the twang and swish; with no arrow the server says so and nothing is loosed
-					_arrow_sound(int(_draw_t * 1000.0))
-
-				_draw_t = -1.0
+		if button == MOUSE_BUTTON_LEFT:
+			if pressed and _draw_t >= 0.0:
+				_loose()
 
 			return true
 
@@ -1070,15 +1198,20 @@ func _throw() -> void:
 		_sound.spear.throw(node.global_position, landing, THROW_SPEED, material)
 
 
-# The arrow's thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time, speed_max x power,
-# gravity, range_m) followed here only to place and time the sound. A hit on an animal thuds through hit_number instead.
-func _arrow_sound(draw_ms: int) -> void:
-	if _bow_cfg.is_empty():
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/bow.json"))
-		_bow_cfg = parsed if parsed is Dictionary else {"speed_max": 45.0}
-
-	var direction: Vector3 = -_camera.global_transform.basis.z
+# The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
+# speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
+# instead; the server's spread may turn the real arrow a little from this one.
+func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
+	_bow_config()
 	var v: Vector3 = direction * float(_bow_cfg.get("speed_max", 45.0)) * bow_power(draw_ms, _bow_cfg)
+	var node: Node3D = _make_arrow_model(arrow)
+	_root.add_child(node)
+	node.global_position = _camera.global_position + direction * 0.8
+	_flights.append({"node": node, "vel": v, "age": 0.0, "arrow": true})
+
+	if _sound == null:
+		return
+
 	var at: Vector3 = _camera.global_position
 	var flown: float = 0.0
 	var t: float = 0.0
@@ -1138,8 +1271,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_hang_net()
 
-	if _draw_t >= 0.0:
-		_draw_t = _draw_t + delta if _is_bow() else -1.0   # putting the bow away lets the draw go
+	_update_bow(delta)
 
 	if _spyglass_up and (not holding or not _is_spyglass() or not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
 		_look_spyglass(false)   # put away, broken, or the button let go while the mouse was elsewhere
@@ -1171,13 +1303,12 @@ func _process_body(delta: float) -> void:
 	if _inv != null:
 		_label.offset_bottom = -LABEL_ABOVE    # above the hotbar tray, which keeps its place at any text size (Dave, build 617: they overlapped)
 
-	# The bow's pose from today's draw (left button held: raised, then fully drawn at BOW_FULL_DRAW_S). Steve's bow rework replaces these two values with his
-	# bow_state() and bow_draw(); _pose_bow is the one entry point. The shot runner can set the pose (bow_force).
+	# The bow's pose from the draw (right button held: raised, then fully drawn over bow.json draw_max_ms): bow_state() and bow_draw(); _pose_bow is the one
+	# entry point. The shot runner can set the pose (bow_force).
 	# The arms are placed first, so the bow is put in the hands where they are this frame, not where they were the frame before (Dave, build 826: the bow sat
 	# "awkwardly shaking").
 	_place_arms(delta)
-	var pose_state: String = "idle" if _draw_t < 0.0 else ("drawn" if _draw_t >= BOW_FULL_DRAW_S else "raised")
-	_pose_bow(pose_state, clampf(_draw_t / BOW_FULL_DRAW_S, 0.0, 1.0) if _draw_t >= 0.0 else 0.0, delta)
+	_pose_bow(bow_state(), bow_draw(), delta)
 
 	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing() and not _bow_posing():
 		_arms.play("idle")
@@ -1252,6 +1383,9 @@ func _process_body(delta: float) -> void:
 		flight["vel"].y -= THROW_GRAVITY * delta
 		flight["node"].global_position += flight["vel"] * delta
 		flight["age"] += delta
+
+		if bool(flight.get("arrow", false)) and (flight["vel"] as Vector3).length() > 0.1:
+			flight["node"].look_at(flight["node"].global_position + flight["vel"], Vector3.UP)   # an arrow points along its flight
 		var ground: float = _ground_below.call(flight["node"].global_position)
 
 		if flight["age"] > 6.0 or (not is_nan(ground) and flight["node"].global_position.y <= ground):
@@ -1842,49 +1976,46 @@ func _other_tool_hint() -> String:
 	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
 
 
+# The line over the hotbar. Dave 10 Nov 2026: it does not name what is in hand ("it doesnt need to say wooden bow in hand. or anything"), so it
+# shows only a state the player has to know: the picked blueprint and why it is red, the hammer's mode, why a placement is red, and the
+# spade's or hoe's mode. Empty otherwise.
 func _caption() -> String:
-	var number: int = held_number()
-
-	if number == 0:
-		return _off_caption()
-
-	var text: String = _inv.table.name_of(number)
+	if held_number() == 0:
+		return ""
 
 	if _blueprinting():
 		var short: bool = not blueprints.can_afford(_hammer_tier())
-		text = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
+		var text: String = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
 
 		if PlacementRules.reason_text(blueprint_state) != "":
-			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
-		elif short and blueprints.plan_picked >= 0:
-			text += "   (red: not enough materials; right click: the list)"
-		elif short:
-			text += "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
-		else:
-			text += "   (left click: build it with the materials in your pack; right click: the list)"
-	elif _hammer_tier() > 0 and blueprints.mode == "repair":
-		text += "   (Repair: left click a worn piece to mend it, or a blueprint to fill it from all around you; right click: the menu)"
-	elif _hammer_tier() > 0 and blueprints.mode == "save":
-		text += "   (Save building plan: left click a building to keep it; right click: the menu)"
-	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
-		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
-	elif _is_placeable():
-		text += "   (left click: place; under a tree it keeps dry, in the open rain puts it out)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
-	elif _is_torch():
-		text += "   (lights the way while held)"
-	elif _is_axe():
-		text += "   (left click: swing)"
-	elif _is_spear():
-		text += "   (left click: jab; hold right click to aim, then left click to throw)"
-	elif _is_other_tool() and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
-		text += "   (%s; right click switches)" % ("Raise" if raise_mode else "Dig")
-	elif _is_other_tool() and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
-		text += "   (left click: %s; right click: choose what it does)" % _hoe_mode_name().to_lower()
-	elif _is_other_tool():
-		text += "   (in hand)"
+			return text + "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 
-	var off: String = _off_caption()
-	return text if off == "" else "%s\n%s" % [text, off]
+		if short and blueprints.plan_picked >= 0:
+			return text + "   (red: not enough materials; right click: the list)"
+
+		if short:
+			return text + "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
+
+		return text + "   (left click: build it with the materials in your pack; right click: the list)"
+
+	if _hammer_tier() > 0 and blueprints.mode == "repair":
+		return "Repair: left click a worn piece to mend it, or a blueprint to fill it from all around you; right click: the menu"
+
+	if _hammer_tier() > 0 and blueprints.mode == "save":
+		return "Save building plan: left click a building to keep it; right click: the menu"
+
+	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
+		return "Red: %s" % PlacementRules.reason_text(blueprint_state)
+
+	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", "")) if _is_other_tool() else ""
+
+	if tool_class == "spade":
+		return "%s (right click switches)" % ("Raise" if raise_mode else "Dig")
+
+	if tool_class == "hoe":
+		return "%s (right click: choose what it does)" % _hoe_mode_name()
+
+	return ""
 
 
 func _hoe_mode_name() -> String:
@@ -1893,19 +2024,6 @@ func _hoe_mode_name() -> String:
 			return str(mode["name"])
 
 	return "Path"
-
-
-# The left-hand line under the right-hand one.
-func _off_caption() -> String:
-	if off_number() == 0:
-		return ""
-
-	var text: String = "Left hand: %s" % _inv.table.name_of(off_number())
-
-	if _off_class() == "shield":
-		text += "   (hold B to block)"
-
-	return text
 
 
 func _show_model() -> void:

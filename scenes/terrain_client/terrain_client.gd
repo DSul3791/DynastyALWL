@@ -1491,6 +1491,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
 	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block
 	Probe.stop("welcome: held item", tq_held_item)
@@ -3938,7 +3939,7 @@ func _update_view(delta: float) -> void:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 		var want_extra: float = clampf((pace - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), 0.0, 1.0) * FOV_RUN_EXTRA if body.is_on_floor() and not swimming else 0.0
 		_fov_extra = lerpf(_fov_extra, want_extra, clampf(delta * 4.0, 0.0, 1.0))
-		view_cam.fov = spyglass.fov(FOV_BASE) if spyglass.active else FOV_BASE + _fov_extra * feel.intensity
+		view_cam.fov = spyglass.fov(FOV_BASE) if spyglass.active else (FOV_BASE + _fov_extra * feel.intensity) * (held.aim_fov_share() if held != null else 1.0)   # the drawn bow narrows the view a little
 
 	_avatar.visible = _view_now > 0.5
 
