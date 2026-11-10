@@ -901,7 +901,8 @@
 			],
 			"used_for": [
 				"Used in Chestnut cakes",
-				"Used in Trail bread"
+				"Used in Trail bread",
+				"Used in Lamp oil (linseed)"
 			],
 			"obtainable_now": true
 		},
@@ -1702,7 +1703,8 @@
 				"Harvested from walnut"
 			],
 			"used_for": [
-				"Used in Nut cake"
+				"Used in Nut cake",
+				"Used in Lamp oil (walnuts)"
 			],
 			"obtainable_now": true
 		},
@@ -1920,7 +1922,9 @@
 				"Used in Stone - Arrow",
 				"Used in Stone - Axe",
 				"Used in Brick - Foundation",
-				"Used in Log - Foundation"
+				"Used in Log - Foundation",
+				"Used in Oil press",
+				"Used in Smoker"
 			],
 			"obtainable_now": true
 		},
@@ -1955,7 +1959,8 @@
 				"Used in Thatch - Garden plot",
 				"Used in Thatch - Scarecrow",
 				"Used in Wooden - Trellis",
-				"Used in Wooden - Arrow (fibre)"
+				"Used in Wooden - Arrow (fibre)",
+				"Used in Drying rack"
 			],
 			"obtainable_now": true
 		},
@@ -2011,7 +2016,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": true
 		},
@@ -2079,7 +2086,9 @@
 				"Used in Wooden - Trough",
 				"Used in Bone - Club",
 				"Used in Straw - Hat",
-				"Used in Wooden - Longbow"
+				"Used in Wooden - Longbow",
+				"Used in Drying rack",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": true
 		},
@@ -2516,7 +2525,9 @@
 				"Used to build Stone forge",
 				"Used to build Brick oven",
 				"Used to build Clay hearth",
-				"Used in Clay pipe"
+				"Used in Clay pipe",
+				"Used in Kiln",
+				"Used in Smoker"
 			],
 			"obtainable_now": true
 		},
@@ -3238,7 +3249,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3288,7 +3301,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3338,7 +3353,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3388,7 +3405,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3438,7 +3457,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3488,7 +3509,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3538,7 +3561,9 @@
 				"Used in Log - Table",
 				"Used in Log - Stairs",
 				"Used in Wooden - Torch post",
-				"Used in Log - Trough"
+				"Used in Log - Trough",
+				"Used in Oil press",
+				"Used in Tanning rack"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3671,7 +3696,7 @@
 			"kind": "food",
 			"description": "Salted fish smoked over the fire. Lasts for weeks.",
 			"how_to_get": [
-				"Craft at a campfire: 1 Fish, 1 Salt"
+				"Craft at a smoker: 1 Fish, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3899,7 +3924,8 @@
 			"kind": "material",
 			"description": "A fired clay brick. Builds the clay hearth and the oven.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Clay"
+				"Craft at a campfire: 2 Clay",
+				"Craft at a kiln: 2 Clay"
 			],
 			"used_for": [
 				"Used to build Brick oven",
@@ -3913,7 +3939,8 @@
 				"Used in Brick - Pillar",
 				"Used in Brick - Roof corner",
 				"Used in Brick - Stairs",
-				"Used in Brick - Garden plot"
+				"Used in Brick - Garden plot",
+				"Used in Kiln"
 			],
 			"obtainable_now": true
 		},
@@ -3954,7 +3981,8 @@
 				"Used in Stone - Channel tee",
 				"Used in Stone - Cistern",
 				"Used in Stone - Raised cistern",
-				"Used in Stone - Trough"
+				"Used in Stone - Trough",
+				"Used in Kiln"
 			],
 			"obtainable_now": true
 		},
@@ -4609,7 +4637,7 @@
 			"kind": "material",
 			"description": "Tanned hide: tough and supple.",
 			"how_to_get": [
-				"Craft at a campfire pot: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
+				"Craft at a tanning rack: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
 			],
 			"used_for": [
 				"Used in Fine leather",
@@ -4648,7 +4676,7 @@
 			"kind": "material",
 			"description": "Thick, stiff leather for armour and harness.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Leather, 2 Tannin-rich bark"
+				"Craft at a tanning rack: 2 Leather, 2 Tannin-rich bark"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -6004,7 +6032,7 @@
 			"kind": "food",
 			"description": "Salted meat strips dried over smoke. Keeps for weeks.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Raw meat, 1 Salt"
+				"Craft at a drying rack: 2 Raw meat, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -6026,7 +6054,7 @@
 			"kind": "food",
 			"description": "Berries dried by the fire. Sweet and long lasting.",
 			"how_to_get": [
-				"Craft at a clay hearth: 3 Berries"
+				"Craft at a drying rack: 3 Berries"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6525,7 +6553,7 @@
 			"kind": "food",
 			"description": "Autumn apples sliced and dried by the fire. Chewy and sweet, they keep for months.",
 			"how_to_get": [
-				"Craft: 3 Autumn apple at a clay hearth"
+				"Craft at a drying rack: 3 Autumn apple"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6585,7 +6613,7 @@
 			"kind": "food",
 			"description": "Figs dried until sticky and sweet. They last for months.",
 			"how_to_get": [
-				"Craft: 3 Figs at a clay hearth"
+				"Craft at a drying rack: 3 Figs"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -7260,7 +7288,8 @@
 			"kind": "material",
 			"description": "Firewood burned slow and starved of air. The best smelting fuel.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Firewood"
+				"Craft at a campfire: 2 Firewood",
+				"Craft at a kiln: 2 Firewood"
 			],
 			"used_for": [
 				"Used in Copper ingot",
@@ -8318,7 +8347,9 @@
 			"kind": "material",
 			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Herring"
+				"Craft at a campfire pot: 3 Herring",
+				"Craft at a oil press: 4 Linseed",
+				"Craft at a oil press: 4 Walnuts"
 			],
 			"used_for": [
 				"Used in Iron - Hanging lantern",
@@ -9308,6 +9339,96 @@
 			"how_to_get": [
 				"Found now and then when digging loam, humus, silt or mud"
 			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"kiln_kit": {
+			"name": "Kiln",
+			"kind": "placeable",
+			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Brick, 8 Clay, 4 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"kiln": {
+			"name": "Kiln",
+			"kind": "structure",
+			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"tanning_rack_kit": {
+			"name": "Tanning rack",
+			"kind": "placeable",
+			"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Log, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tanning_rack": {
+			"name": "Tanning rack",
+			"kind": "structure",
+			"description": "A log frame to stretch scraped hides on while bark tannin turns them to leather.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"drying_rack_kit": {
+			"name": "Drying rack",
+			"kind": "placeable",
+			"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"drying_rack": {
+			"name": "Drying rack",
+			"kind": "structure",
+			"description": "A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"smoker_kit": {
+			"name": "Smoker",
+			"kind": "placeable",
+			"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 16 Stone, 6 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"smoker": {
+			"name": "Smoker",
+			"kind": "structure",
+			"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"oil_press_kit": {
+			"name": "Oil press",
+			"kind": "placeable",
+			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Stone, 4 Log"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"oil_press": {
+			"name": "Oil press",
+			"kind": "structure",
+			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
 		}

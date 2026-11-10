@@ -3883,6 +3883,31 @@
    "shape": "coil",
    "color": "#b07a6a",
    "size": 0.3
+  },
+  "kiln_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "tanning_rack_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "drying_rack_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "smoker_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "oil_press_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
   }
 
  }
