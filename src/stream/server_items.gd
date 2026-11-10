@@ -5042,7 +5042,13 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 			var left: int = mini(int(_boulder_left.get(key, total)), total)
 
 			if left > 0:
-				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": {"radius": radius, "yaw": float(hash(key) % 360), "total": total}}
+				var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": total}
+				var cave_ore: String = _boulder_ore(spot, key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
+
+				if cave_ore != "":
+					cave_row["ore"] = cave_ore
+
+				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
 				_next_id += 1
 
 			continue
