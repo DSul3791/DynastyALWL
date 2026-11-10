@@ -2999,7 +2999,7 @@ func _logs_cover(number: int) -> bool:
 			return false
 
 	for keep in r["keeps"]:
-		if not inventory.has(int(keep[0]), int(keep[1])):
+		if not inventory.has_fill(int(keep[0]), int(keep[1])):
 			return false
 
 	return uses_log
