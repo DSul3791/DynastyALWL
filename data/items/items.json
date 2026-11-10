@@ -7691,7 +7691,7 @@
 			"lamp_oil": {
 				"number": 667,
 				"name": "Lamp oil",
-				"description": "Rendered tallow in a stoppered pot. Burns three game days in an iron lantern.",
+				"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
 				"kind": "material",
 				"stack": 10,
 				"look_alikes": [],

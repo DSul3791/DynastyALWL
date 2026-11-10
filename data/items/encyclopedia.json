@@ -2960,6 +2960,7 @@
 				"Used in Fish stew",
 				"Used in Herb fish",
 				"Used in Juniper trout",
+				"Used in Lamp oil",
 				"Used in Smoked fish"
 			],
 			"obtainable_now": true
@@ -5992,7 +5993,6 @@
 				"Used in Soap",
 				"Used in Tallow candle",
 				"Used in Iron - Torch stand",
-				"Used in Lamp oil",
 				"Used in Stone - Torch pillar",
 				"Used in Wooden - Torch post"
 			],
@@ -8216,9 +8216,9 @@
 		"lamp_oil": {
 			"name": "Lamp oil",
 			"kind": "material",
-			"description": "Rendered tallow in a stoppered pot. Burns three game days in an iron lantern.",
+			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Tallow"
+				"Craft at a campfire pot: 3 Herring"
 			],
 			"used_for": [
 				"Used in Iron - Hanging lantern",
