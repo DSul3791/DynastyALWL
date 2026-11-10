@@ -2057,7 +2057,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": true
 		},
@@ -2468,7 +2469,7 @@
 			"kind": "material",
 			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
-				"Craft at a forge: 4 Iron ore, 1 Fuel",
+				"Craft at a brick forge: 4 Iron ore, 1 Fuel",
 				"Craft at a clay bloomery: 5 Iron ore, 3 Fuel"
 			],
 			"used_for": [
@@ -2500,7 +2501,8 @@
 				"Used in Iron - Pipe",
 				"Used in Iron - Pipe elbow",
 				"Used in Iron - Tap",
-				"Used in Iron - Chisel"
+				"Used in Iron - Chisel",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -2510,7 +2512,7 @@
 			"kind": "material",
 			"description": "A bar of steel. Placeholder until smelting exists.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot, 1 Fuel"
+				"Craft at a brick forge: 2 Iron ingot, 1 Fuel"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -2533,7 +2535,7 @@
 			"kind": "tool",
 			"description": "An iron head on a hardwood handle. One blow breaks one stone off a boulder.",
 			"how_to_get": [
-				"Craft at a forge: 3 Iron ingot, 2 Stick"
+				"Craft at a brick forge: 3 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2544,7 +2546,7 @@
 			"kind": "tool",
 			"description": "A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest.",
 			"how_to_get": [
-				"Craft at a forge: 3 Steel ingot, 2 Stick"
+				"Craft at a brick forge: 3 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2717,7 +2719,7 @@
 			"kind": "tool",
 			"description": "A spade with an iron blade.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot, 2 Stick"
+				"Craft at a brick forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2728,7 +2730,7 @@
 			"kind": "tool",
 			"description": "A spade with a steel blade.",
 			"how_to_get": [
-				"Craft at a forge: 2 Steel ingot, 2 Stick"
+				"Craft at a brick forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -3243,9 +3245,9 @@
 		"blacksmithy_kit": {
 			"name": "Brick - Forge",
 			"kind": "placeable",
-			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
+			"description": "A brick forge with a stepped hood and iron straps, ready to raise. Hot enough for iron.",
 			"how_to_get": [
-				"Build with a hammer (press R): 30 Stone, 10 Log, 10 Clay"
+				"Build with a hammer (press R): 20 Brick, 10 Stone, 4 Clay mortar"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -3253,7 +3255,7 @@
 		"blacksmithy": {
 			"name": "Brick - Forge",
 			"kind": "structure",
-			"description": "A dressed stone forge with a stepped hood and iron straps.",
+			"description": "A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
@@ -3324,7 +3326,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3377,7 +3380,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3430,7 +3434,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3483,7 +3488,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3536,7 +3542,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3589,7 +3596,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3642,7 +3650,8 @@
 				"Used in Log - Trough",
 				"Used in Oil press",
 				"Used in Tanning rack",
-				"Used in Stonecutter's bench"
+				"Used in Stonecutter's bench",
+				"Used in Anvil"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4021,7 +4030,8 @@
 				"Used in Brick - Roof corner",
 				"Used in Brick - Stairs",
 				"Used in Brick - Garden plot",
-				"Used in Kiln"
+				"Used in Kiln",
+				"Used in Brick - Forge"
 			],
 			"obtainable_now": true
 		},
@@ -4064,7 +4074,8 @@
 				"Used in Stone - Raised cistern",
 				"Used in Stone - Trough",
 				"Used in Kiln",
-				"Used in Clay bloomery"
+				"Used in Clay bloomery",
+				"Used in Brick - Forge"
 			],
 			"obtainable_now": true
 		},
@@ -4113,7 +4124,7 @@
 			"kind": "tool",
 			"description": "A hoe with an iron blade.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot, 2 Stick"
+				"Craft at a brick forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4124,7 +4135,7 @@
 			"kind": "tool",
 			"description": "A hoe with a steel blade.",
 			"how_to_get": [
-				"Craft at a forge: 2 Steel ingot, 2 Stick"
+				"Craft at a brick forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4164,7 +4175,7 @@
 			"kind": "material",
 			"description": "Small iron nails. Fix boards in builds.",
 			"how_to_get": [
-				"Craft at a forge: 1 Iron ingot"
+				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
 				"Used in Water wheel",
@@ -4248,7 +4259,7 @@
 			"kind": "material",
 			"description": "A pair of iron hinges for a door.",
 			"how_to_get": [
-				"Craft at a forge: 1 Iron ingot makes 20"
+				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
 				"Planned: doors and chests. Made at a forge from an iron ingot.",
@@ -4328,7 +4339,7 @@
 			"kind": "material",
 			"description": "A pair of iron saw blades for a sawmill frame.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot"
+				"Craft at a brick forge: 2 Iron ingot"
 			],
 			"used_for": [
 				"Used in Iron - Saw",
@@ -4776,7 +4787,7 @@
 			"kind": "material",
 			"description": "Small iron pins that hold layers of leather or metal together.",
 			"how_to_get": [
-				"Craft at a forge: 1 Iron ingot"
+				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
 				"Used in Iron - Mail shirt",
@@ -4890,7 +4901,7 @@
 			"kind": "tool",
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"how_to_get": [
-				"Craft at a forge: 1 Steel ingot"
+				"Craft at a brick forge: 1 Steel ingot"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4946,7 +4957,7 @@
 			"kind": "tool",
 			"description": "A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot, 2 Stick"
+				"Craft at a brick forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5153,7 +5164,7 @@
 			"kind": "weapon",
 			"description": "A forged iron blade with a leather grip.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot, 1 Leather"
+				"Craft at a brick forge: 2 Iron ingot, 1 Leather"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5164,7 +5175,7 @@
 			"kind": "weapon",
 			"description": "A flanged iron head that breaks armour.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot, 1 Stick"
+				"Craft at a brick forge: 2 Iron ingot, 1 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5175,7 +5186,7 @@
 			"kind": "weapon",
 			"description": "Boards held by iron bands. Hard to break.",
 			"how_to_get": [
-				"Craft at a forge: 2 Plank, 2 Iron ingot"
+				"Craft at a brick forge: 2 Plank, 2 Iron ingot"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5186,7 +5197,7 @@
 			"kind": "weapon",
 			"description": "A tempered steel blade. Keeps its edge.",
 			"how_to_get": [
-				"Craft at a forge: 2 Steel ingot, 1 Leather"
+				"Craft at a brick forge: 2 Steel ingot, 1 Leather"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5197,7 +5208,7 @@
 			"kind": "weapon",
 			"description": "A steel flanged head on a long haft.",
 			"how_to_get": [
-				"Craft at a forge: 2 Steel ingot, 1 Stick"
+				"Craft at a brick forge: 2 Steel ingot, 1 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5208,7 +5219,7 @@
 			"kind": "weapon",
 			"description": "A long steel-faced shield that covers shoulder to shin.",
 			"how_to_get": [
-				"Craft at a forge: 2 Plank, 2 Steel ingot"
+				"Craft at a brick forge: 2 Plank, 2 Steel ingot"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5263,7 +5274,7 @@
 			"kind": "clothing",
 			"description": "A riveted iron helmet.",
 			"how_to_get": [
-				"Craft at a forge: 3 Iron ingot, 1 Leather"
+				"Craft at a brick forge: 3 Iron ingot, 1 Leather"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5274,7 +5285,7 @@
 			"kind": "clothing",
 			"description": "Rings of iron riveted together. Heavy but sound.",
 			"how_to_get": [
-				"Craft at a forge: 2 Rivets, 2 Iron ingot, 1 Leather"
+				"Craft at a brick forge: 2 Rivets, 2 Iron ingot, 1 Leather"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5285,7 +5296,7 @@
 			"kind": "clothing",
 			"description": "A fitted steel helm with leather lining.",
 			"how_to_get": [
-				"Craft at a forge: 2 Steel ingot, 1 Heavy leather, 1 Rivets"
+				"Craft at a brick forge: 2 Steel ingot, 1 Heavy leather, 1 Rivets"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5296,7 +5307,7 @@
 			"kind": "clothing",
 			"description": "Shaped steel plates over a leather harness. The best body armour.",
 			"how_to_get": [
-				"Craft at a forge: 3 Steel ingot, 1 Heavy leather, 2 Rivets"
+				"Craft at a brick forge: 3 Steel ingot, 1 Heavy leather, 2 Rivets"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -7659,7 +7670,7 @@
 			"kind": "tool",
 			"description": "A forged iron head on a short haft. Hold it to place big builds from blueprints.",
 			"how_to_get": [
-				"Craft at a forge: 2 Iron ingot, 1 Stick"
+				"Craft at a brick forge: 2 Iron ingot, 1 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -7669,7 +7680,7 @@
 			"kind": "tool",
 			"description": "A forged steel head on a short haft. Hold it to place big builds from blueprints.",
 			"how_to_get": [
-				"Craft at a forge: 2 Steel ingot, 1 Stick"
+				"Craft at a brick forge: 2 Steel ingot, 1 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -8498,7 +8509,7 @@
 			"kind": "tool",
 			"description": "An iron lantern with horn panes. Burns lamp oil; does not go out in the rain.",
 			"how_to_get": [
-				"Craft at a forge: 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
+				"Craft at a brick forge: 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
 			],
 			"used_for": [
 				"Used in Iron - Lamp post",
@@ -9741,7 +9752,7 @@
 			"kind": "tool",
 			"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
 			"how_to_get": [
-				"Craft at a forge: 1 Iron ingot, 1 Stick"
+				"Craft at a brick forge: 1 Iron ingot, 1 Stick"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
@@ -9755,7 +9766,7 @@
 			"kind": "tool",
 			"description": "A steel chisel. Cuts the hardest stone cleanly.",
 			"how_to_get": [
-				"Craft at a forge: 1 Steel ingot, 1 Stick"
+				"Craft at a brick forge: 1 Steel ingot, 1 Stick"
 			],
 			"used_for": [
 				"Used in Stone block (bench)",
@@ -9988,6 +9999,24 @@
 			"name": "Bird trap",
 			"kind": "structure",
 			"description": "A bird trap set on the ground.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_anvil_kit": {
+			"name": "Anvil",
+			"kind": "placeable",
+			"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
+			"how_to_get": [
+				"Build with a hammer (press R): 5 Iron ingot, 1 Log"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"iron_anvil": {
+			"name": "Anvil",
+			"kind": "structure",
+			"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
