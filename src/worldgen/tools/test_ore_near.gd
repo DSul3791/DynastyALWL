@@ -70,6 +70,23 @@ func _init() -> void:
 	check(wide.ore_at(Vector3(1000.0, 100.0, 1300.0), 40.0, NAMES, 10.0) == "tin", "and over the rest of the halo")
 	check(wide.ore_at(Vector3(601.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "iron", "a boulder on an iron vein's trace inside the halo is iron")
 
+	# A vein or placer line reaches as far as a round body does (Sonny 10 Nov 2026): half its width plus the reach, not the whole of its box.
+	# A diagonal line's box holds corners hundreds of metres off the line.
+	var diagonal = TileDataScript.new()
+	diagonal.samples = 3
+	diagonal.spacing_m = 1000.0
+	diagonal.province = PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	diagonal.prov_datum = PackedFloat32Array([100.0])
+	diagonal.layer_offset = PackedInt32Array([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	diagonal.cover = PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	diagonal._load_ores([
+		{"shape": "vein", "resource": "iron", "points": [[600.0, 600.0], [1400.0, 1400.0]], "top_y": 95.0, "bottom_y": 0.0, "dip_deg": 70.0, "dip_side": 1, "width_m": 4.0},
+	], {"iron": 3}, {})
+	check(diagonal.ore_at(Vector3(1000.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "iron", "on a diagonal vein's trace it is iron")
+	check(diagonal.ore_at(Vector3(1028.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "iron", "about 20 m off it, within the 40 m reach, still iron")
+	check(diagonal.ore_at(Vector3(1100.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "", "about 71 m off it, past half its width plus the reach, nothing")
+	check(diagonal.ore_at(Vector3(1400.0, 100.0, 600.0), 40.0, NAMES, 10.0) == "", "nor in the far corner of its box, 566 m off the line")
+
 	# Rock salt (10 Nov 2026): an evaporite salt bed near the ground shows in boulders; a salt dome (a pipe) only where its top comes within
 	# depth_m of the bedrock surface, so one buried 80 m deep gives none.
 	var basin = TileDataScript.new()
