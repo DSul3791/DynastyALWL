@@ -1,6 +1,7 @@
 extends SceneTree
 
 # Snares (data/animals/traps.json, server_traps.gd): the catch rate on a worn trail and in open grass, small game only, the carcass, wear and breaking, sprung snares, the per-player cap, save and reload.
+# The Bird trap (traps.json kinds.bird_trap_set, Part C plan 3): ground birds only, flat trail factor, its own cap and words, saved like a snare.
 #   godot --headless --path . --script res://src/worldgen/tools/test_traps.gd      Prints "Test done: N pass, N fail".
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -50,10 +51,10 @@ func make(dir: String, wipe: bool):
 	return items
 
 
-func lay(items, at: Vector3) -> int:
+func lay(items, at: Vector3, kind: String = "snare_trap") -> int:
 	var id: int = items._next_id
 	items._next_id += 1
-	items._items[id] = {"number": 1, "count": 1, "pos": at, "left": 1.0e9, "wear": 0, "struct": {"kind": "snare_trap", "yaw": 0.0}}
+	items._items[id] = {"number": 1, "count": 1, "pos": at, "left": 1.0e9, "wear": 0, "struct": {"kind": kind, "yaw": 0.0}}
 	items._traps.on_placed(1, id)
 	return id
 
@@ -138,6 +139,8 @@ func _init() -> void:
 	items.animals_near = func(_point, _radius): return near
 	items.animal_lure = Callable()
 
+	bird_checks(items)
+
 	# A catch: the animal leaves the world, a carcass of its species lies by the snare, the snare wears and is sprung.
 	near = [rabbit]
 	base_up(items)
@@ -208,6 +211,7 @@ func _init() -> void:
 
 	# Saves and reloads: wear, owner and order survive.
 	var keep: int = mine[mine.size() - 1]
+	var bird_keep: int = lay(items, Vector3(500.0, 10.0, 500.0), "bird_trap_set")
 	items._items[keep]["wear"] = 3
 	items._dirty = true
 	items.save()
@@ -219,6 +223,13 @@ func _init() -> void:
 		if again._traps.is_snare(again._items[sid]) and (again._items[sid]["pos"] as Vector3).distance_to(items._items[keep]["pos"]) < 0.1:
 			found = sid
 
+	var bird_found: bool = false
+
+	for sid in again._items:
+		if str(again._items[sid].get("struct", {}).get("kind", "")) == "bird_trap_set" and (again._items[sid]["pos"] as Vector3).distance_to(items._items[bird_keep]["pos"]) < 0.1:
+			bird_found = str(again._items[sid]["struct"]["owner"]) == "trap-key-00000001"
+
+	check(bird_found, "a set bird trap saves and reloads with its owner")
 	check(found >= 0 and int(again._items[found].get("wear", 0)) == 3 and str(again._items[found]["struct"]["owner"]) == "trap-key-00000001" and float(again._items[found]["struct"]["seq"]) == float(items._items[keep]["struct"]["seq"]), "a set snare saves and reloads with its wear and owner")
 	# The smoke knob: off by default; on, a snare with no animal near catches an imagined rabbit and takes none from the world.
 	check(float(traps.cfg["test_chance"]) == 0.0, "the smoke knob is off in the data")
@@ -230,6 +241,66 @@ func _init() -> void:
 	traps.cfg["test_chance"] = 0.0
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
+
+
+# The Bird trap (Part C plan 3): traps.json kinds.bird_trap_set laid over the snare's numbers. Ground birds only; the snare no longer takes birds.
+func bird_checks(items) -> void:
+	var traps = items._traps
+	var bird_cfg: Dictionary = traps.of("bird_trap_set")
+	check(traps.is_kind("bird_trap_set") and traps.is_kind("snare_trap") and not traps.is_kind("chest"), "a bird trap is a trap kind")
+	check(float(bird_cfg["draw_m"]) == 60.0 and float(bird_cfg["base_chance"]) == float(traps.cfg["base_chance"]), "it has its own numbers over the snare's")
+	var pheasant: Dictionary = {"id": 31, "sp": "pheasant", "pos": Vector3(51.0, 10.0, 1.0)}
+	var grouse: Dictionary = {"id": 32, "sp": "grouse", "pos": Vector3(51.0, 10.0, 1.0)}
+	var duck: Dictionary = {"id": 33, "sp": "duck", "pos": Vector3(1.0, 10.0, 1.0)}
+	var rabbit: Dictionary = {"id": 34, "sp": "rabbit", "pos": Vector3(51.0, 10.0, 1.0)}
+	check(traps.animal_weight(pheasant) == 0.0 and traps.animal_weight(grouse) == 0.0 and traps.animal_weight(duck) == 0.0, "the snare takes no birds")
+	check(traps.animal_weight(pheasant, bird_cfg) > 0.0 and traps.animal_weight(grouse, bird_cfg) > 0.0, "the bird trap takes pheasant and grouse")
+	check(traps.animal_weight(rabbit, bird_cfg) == 0.0, "but no rabbit")
+	var bird: int = lay(items, Vector3(50.0, 10.0, 0.0), "bird_trap_set")
+	near = [rabbit]
+	check(catches(items, bird, 300) == 0, "a rabbit beside a bird trap is never caught")
+	near = [pheasant]
+	strength = 0.0
+	var open_ground: int = catches(items, bird, 2000)
+	check(absf(float(open_ground) / 2000.0 - float(bird_cfg["base_chance"])) < 0.04, "a bird trap catches at the data rate off any trail (%d of 2000)" % open_ground)
+	strength = 0.6
+	var day_p: float = traps.chance_at(Vector3.ZERO, pheasant, false, bird_cfg)
+	items.game_seconds = func(): return 23.0 * 3600.0
+	check(traps.chance_at(Vector3.ZERO, pheasant, false, bird_cfg) < day_p, "birds roost at night: less likely")
+	items.game_seconds = func(): return 12.0 * 3600.0
+	taken.clear()
+	traps.kinds_cfg["bird_trap_set"]["base_chance"] = 100.0
+	reset(items, bird)
+	check(traps.check_one(bird) and taken == [31], "a sure catch takes the pheasant")
+	var carcass: int = int(items._items[bird]["struct"]["catch"])
+	check(items._items.has(carcass) and str(items._items[carcass]["struct"]["species"]) == "pheasant", "a pheasant carcass lies by the bird trap")
+	items._items.erase(carcass)
+	traps.kinds_cfg["bird_trap_set"]["base_chance"] = float(traps.cfg["base_chance"])
+	near = [duck]
+	var snare: int = lay(items, Vector3(60.0, 10.0, 0.0))
+	check(catches(items, snare, 300) == 0, "a duck beside a snare is not caught")
+	near = []
+
+	# Its own words when refused, and its own cap.
+	var wall: int = items._next_id
+	items._items[items._next_id] = {"number": 1, "count": 1, "pos": Vector3(70.0, 10.0, 70.0), "left": 1.0e9, "struct": {"kind": "wall", "yaw": 0.0}}
+	items._next_id += 1
+	said.clear()
+	check(not traps.allow_place(1, Vector3(72.0, 10.0, 70.0), "bird_trap_set") and said.has(str(bird_cfg["say_near"])), "a bird trap near a building is refused in its own words")
+
+	var birds: Array = [bird]
+
+	for n in int(bird_cfg["per_player"]):
+		birds.append(lay(items, Vector3(-100.0 - 10.0 * n, 10.0, -100.0), "bird_trap_set"))
+
+	check(not items._items.has(bird) and items._items.has(birds[birds.size() - 1]), "past six bird traps the oldest bird trap is taken back")
+	check(items._items.has(snare) and said.has(str(bird_cfg["say_cap"])), "but no snare: each kind has its own cap, and its own words")
+
+	for sid in birds:
+		items._items.erase(sid)
+
+	items._items.erase(snare)
+	items._items.erase(wall)
 
 
 # Makes every look a sure thing (the chance is clamped to 1).

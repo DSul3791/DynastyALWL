@@ -9,6 +9,12 @@
 		"open_dry": 0.6
 	},
 	"rain_wakes": 0.2,
+	"bedroll": {
+		"note": "Part C plan 5 (10 Nov 2026): with a Bedroll (item) in the pack, sleep on open dry ground has quality open_dry instead of quality.open_dry, and lying down or asleep off a good bed cuts the cold stress by warmth_bonus (half a bed's). Under cover it adds nothing to sleep, since cover is already 1.0. Rain still stops sleep in the open. It is not a bed: no spawn point, not 'on a good bed'.",
+		"item": "bedroll",
+		"open_dry": 0.85,
+		"warmth_bonus": 0.05
+	},
 	"rested_s": 1.5,
 	"fade_in_s": 4.0,
 	"fade_out_s": 4.0,

@@ -447,6 +447,13 @@
 	"tool_wear": {
 		"note": "Tool wear tuning (job 74). Each use of a tool adds per_use[tool class][kind of work] to its wear (1 when not listed); the tool breaks at its items.json durability and a repair gives back repair_restores of that durability for the items.json repair materials. Kinds of work: gather (a plant yield that needs the tool), rock (stone from an outcrop), tree (one blow on a standing tree), trunk (one blow on a felled trunk), split (one log at the chopping block), dig (one spade dig of the ground). Read the sheet: /mnt/project-files/items/TOOL_WEAR.md (tools/tool_wear_sheet.py rewrites it from this data).",
 		"repair_restores": 0.5,
+		"hone": {
+			"note": "Whetstone hand repair (Part C plan 4, 10 Nov 2026): R on an edged tool (items.json edge: true) with a whetstone in the pack hones it with no materials, winning back restores of its durability but never past up_to of it. Each hone wears the whetstone like one use (per_use whetstone.hone, 1), and it is kept. Past up_to, or with no whetstone, R takes the tool's repair materials as before.",
+			"item": "whetstone",
+			"restores": 0.25,
+			"up_to": 0.75,
+			"say_hone": "You hone the %s."
+		},
 		"per_use": {
 			"axe": {
 				"gather": 1,

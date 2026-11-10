@@ -8,7 +8,7 @@ extends SceneTree
 
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 
-const NAMES := {"coal": "coal", "copper": "copper_ore", "tin": "tin_ore", "iron": "iron_ore"}
+const NAMES := {"coal": "coal", "copper": "copper_ore", "tin": "tin_ore", "iron": "iron_ore", "salt": "salt"}
 
 var failures: int = 0
 
@@ -69,6 +69,26 @@ func _init() -> void:
 	check(wide.ore_at(Vector3(1260.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "tin", "just outside the lens it is tin again")
 	check(wide.ore_at(Vector3(1000.0, 100.0, 1300.0), 40.0, NAMES, 10.0) == "tin", "and over the rest of the halo")
 	check(wide.ore_at(Vector3(601.0, 100.0, 1000.0), 40.0, NAMES, 10.0) == "iron", "a boulder on an iron vein's trace inside the halo is iron")
+
+	# Rock salt (10 Nov 2026): an evaporite salt bed near the ground shows in boulders; a salt dome (a pipe) only where its top comes within
+	# depth_m of the bedrock surface, so one buried 80 m deep gives none.
+	var basin = TileDataScript.new()
+	basin.samples = 3
+	basin.spacing_m = 1000.0
+	basin.province = PackedByteArray([0, 0, 0, 0, 0, 0, 1, 1, 1])
+	basin.prov_datum = PackedFloat32Array([100.0, 100.0])
+	basin.layer_offset = PackedInt32Array([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	basin.cover = PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0, 0])
+	basin.prov_index_of = {"p0": 0, "p1": 1}
+	basin._load_ores([
+		{"shape": "pipe", "resource": "salt", "center": [500.0, 500.0], "radius_m": 300.0, "top_y": 20.0, "bottom_y": -1400.0},
+		{"shape": "pipe", "resource": "salt", "center": [1500.0, 500.0], "radius_m": 300.0, "top_y": 95.0, "bottom_y": -1400.0},
+		{"shape": "layer", "resource": "salt", "province": "p1", "depth_below_datum_m": 4.0, "cycle_m": 1.0e9, "thickness_m": 8.0, "repeat_to_m": 5.0},
+	], {"salt": 10}, {})
+	check(basin.ore_at(Vector3(500.0, 100.0, 500.0), 40.0, NAMES, 10.0) == "", "over a salt dome buried 80 m deep there is no rock salt")
+	check(basin.ore_at(Vector3(1500.0, 100.0, 500.0), 40.0, NAMES, 10.0) == "salt", "over one whose top is 5 m down there is")
+	check(basin.ore_at(Vector3(1000.0, 100.0, 1900.0), 40.0, NAMES, 10.0) == "salt", "a salt bed 4 m under the ground shows as rock salt")
+	check(data.ore_at(Vector3(1700.0, 100.0, 1510.0), 40.0, NAMES, 10.0) == "copper", "a pipe reaching the ground still shows (the copper pipe, top 5 m down)")
 
 	var sea = TileDataScript.new()
 	sea.placeholder = true

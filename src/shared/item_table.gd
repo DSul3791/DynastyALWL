@@ -8,12 +8,14 @@ const PATH := "res://data/items/items.json"
 const COUNT_MAX := 65535
 const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material per flora yield (tools/gen_gathered_items.py)
 const GROUPS_PATH := "res://data/items/wood_species.json"   # "ingredient_groups": a plain id (log) that any listed item (log_oak ...) fills (guide finding F-16)
+const RENAMES_PATH := "res://data/items/renames.json"   # a retired item -> the item that took its place, swapped in when a save loads
 
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry
 var _spoil: Dictionary = {}
 var _spoil_loaded: bool = false
 var _groups: Dictionary = {}       # int number of a group id -> PackedInt32Array of the member item numbers (the group id itself first)
+var _renamed: Dictionary = {}      # int number of a retired item -> int number of the item that replaced it
 
 
 static func load_default():
@@ -21,7 +23,43 @@ static func load_default():
 	table.load_file(PATH)
 	table.load_file(GATHERED_PATH)
 	table.load_groups(GROUPS_PATH)
+	table.load_renames(RENAMES_PATH)
 	return table
+
+
+# Reads the renames: an old item id -> the id that replaced it (hide_leggings -> hide_trousers). A pair counts only while the old row is
+# "retired": true and the new row exists, so the swap waits for the retirement to land and stops if the new item goes away.
+func load_renames(path: String) -> void:
+	_renamed = {}
+
+	if not FileAccess.file_exists(path):
+		return
+
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+
+	if typeof(parsed) != TYPE_DICTIONARY or typeof(parsed.get("renames", {})) != TYPE_DICTIONARY:
+		return
+
+	var pairs: Dictionary = parsed.get("renames", {})
+
+	for old_id in pairs:
+		var new_id: String = str(pairs[old_id])
+
+		if _by_id.has(old_id) and _by_id.has(new_id) and old_id != new_id and bool(_by_id[old_id].get("retired", false)):
+			_renamed[number_of(old_id)] = number_of(new_id)
+
+
+# The item number a saved number stands for now: the replacement of a retired item (following a chain of renames), else the number itself.
+func current_number(number: int) -> int:
+	var now: int = number
+
+	for _hop in 8:
+		if not _renamed.has(now):
+			break
+
+		now = int(_renamed[now])
+
+	return now
 
 
 # Reads the ingredient groups: a recipe that asks for the group id (log) is filled by the group id itself or any member (log_oak ...).
@@ -86,6 +124,17 @@ func number_of(id: String) -> int:
 
 func id_of(number: int) -> String:
 	return String(_by_number.get(number, {}).get("id", ""))
+
+
+# An item's name inside a sentence: "Stone - Knife" (the UI label, item_system.md "Tier - Item") reads "stone knife" there
+# ("You hone the stone knife."). Labels, lists and tooltips keep name_of.
+func sentence_name(number: int) -> String:
+	return in_sentence(name_of(number))
+
+
+# Any name (an item's, a recipe's, a crop's) as it reads inside a sentence: lower case, the tier dash dropped.
+func in_sentence(text: String) -> String:
+	return text.replace(" - ", " ").to_lower()
 
 
 # 1 for an item marked "unstackable" in items.json (tools, kits, structures, containers, clothing, shoulder logs), else COUNT_MAX. The old "stack"

@@ -46,7 +46,7 @@ const EAT := {"crunch": ["eat_crunch", -15.0], "soft": ["eat_soft", -17.0], "dri
 const EAT_KINDS := {"roast_forage": "crunch", "tree_roots": "crunch", "seed_bundle": "crunch"}   # by item id; other food is soft
 # An item id ending in one of these is crunchy (nuts, roots, hard fruit); "sap" is drunk; poultices and bandages heal.
 const CRUNCHY := ["nuts", "roots", "bulbs", "apples", "pears", "acorns", "chestnuts", "walnuts", "hazelnuts", "beechnuts", "coconuts", "dates", "roast_forage"]
-const DRINKS := ["sap", "water"]
+const DRINKS := ["sap", "water", "juice"]
 const COOKING_DIR := "res://assets/audio/cooking/"
 const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
 const FUEL_WINDOW_MSEC := 1500

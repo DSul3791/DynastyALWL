@@ -122,7 +122,7 @@ func wanted_order(peer: int, npc_id: String) -> String:
 
 	for need in order["needs"]:
 		var number: int = items.table.number_of(str(need[0]))
-		words.append("%d %s" % [int(need[1]), items.table.name_of(number).to_lower()])
+		words.append("%d %s" % [int(need[1]), items.table.sentence_name(number)])
 
 		if items.count_for(peer, str(need[0])) < int(need[1]):
 			short = true
@@ -332,7 +332,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		items._gain_source = "trade"
 		items.give(peer, number, count)
 		items._gain_source = items.SRC_PICKUP
-		return "Bought %d %s for %s." % [count, items.table.name_of(number).to_lower(), items._coin_words(each * count)]
+		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(each * count)]
 
 	if a < 0 or a >= inv.SLOTS or inv.numbers[a] == 0:
 		return ""
@@ -368,7 +368,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		count = mini(count, buy_room(npc_id, item_id))
 
 		if count <= 0:
-			return "He has all the %s he wants today." % (items.table.name_of(number2).to_lower())
+			return "He has all the %s he wants today." % (items.table.sentence_name(number2))
 
 	var left_over: int = count % lot if lot > 1 else 0
 
@@ -376,7 +376,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		count -= count % lot
 
 		if count <= 0:
-			return "He buys %s %d at a time." % [items.table.name_of(number2).to_lower() + "s", lot]
+			return "He buys %s %d at a time." % [items.table.sentence_name(number2) + "s", lot]
 	var total: int = 0
 	var paid_for: int = 0
 	var base_demand: float = demand(npc_id, item_id)
@@ -430,8 +430,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
 	items._goal_event(peer, "sold")   # the starter goal "Sell to Hob"
-	var lot_note: String = " %d left, he buys %ss %d at a time." % [left_over, items.table.name_of(number2).to_lower(), lot] if left_over > 0 else ""
-	return "Sold %d %s for %s.%s" % [count, items.table.name_of(number2).to_lower(), items._coin_words(total), lot_note]
+	var lot_note: String = " %d left, he buys %ss %d at a time." % [left_over, items.table.sentence_name(number2), lot] if left_over > 0 else ""
+	return "Sold %d %s for %s.%s" % [count, items.table.sentence_name(number2), items._coin_words(total), lot_note]
 
 
 # kind 3, "Would you like to buy my extra stuff?" (Dave 2026-10-22): one click sells every pack stack of the kinds coins.json
@@ -494,7 +494,7 @@ func _repair_deal(peer: int, npc_id: String, inv, slot: int, pay_mult: float) ->
 	if items.coins_of(peer) < cost:
 		return "You cannot afford that."
 
-	var name_of: String = items.table.name_of(inv.numbers[slot]).to_lower()
+	var name_of: String = items.table.sentence_name(inv.numbers[slot])
 	items.take_coins(peer, cost)
 	var before: Array = items._snapshot(inv)
 	inv.wear[slot] = 0

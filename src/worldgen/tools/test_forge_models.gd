@@ -1,8 +1,11 @@
 extends SceneTree
 
 # Dave's four forge meshes as the game draws them (inventory_view._forge_glb): upright, centred, base on the ground, solid, the fire
-# opening toward +Z (the front of every building here) and the sizes agreeing with the placement footprints in structures.json.
+# opening toward +Z (the front of every building here) and the sizes agreeing with the placement footprints in structures.json; the medium
+# forge drawn as the Brick - Forge.
 #   godot --headless --path . --script res://src/worldgen/tools/test_forge_models.gd
+
+const PieceLook := preload("res://src/client/piece_look.gd")
 
 var failures: int = 0
 
@@ -52,6 +55,32 @@ func _init() -> void:
 				solid = c.get_child(0)
 
 		check(solid != null and (solid.shape as BoxShape3D).size.x > 2.0 * k, "%s is solid" % tier)
+
+	# The Brick - Forge (item system 10 Nov 2026): Dave's medium forge with its cut stone in the brick walls' surface, the iron straps and the
+	# rest as he made them.
+	var smithy: Node3D = view._make_smithy()
+	var bricked: int = 0
+	var kept_iron: bool = false
+
+	for child in smithy.find_children("*", "MeshInstance3D", true, false):
+		var mesh_node: MeshInstance3D = child
+
+		if mesh_node.mesh == null:
+			continue
+
+		for surface in mesh_node.mesh.get_surface_count():
+			var own: Material = mesh_node.mesh.surface_get_material(surface)
+			var drawn: Material = mesh_node.get_surface_override_material(surface)
+
+			if own != null and own.resource_name == "cut_stone":
+				check(drawn == PieceLook.brick_skin(), "the medium forge's cut stone is drawn in brick")
+				bricked += 1
+			elif own != null and own.resource_name == "iron":
+				kept_iron = drawn == null
+
+	check(bricked > 0 and kept_iron, "the Brick - Forge: a brick body (%d surfaces), its iron straps kept" % bricked)
+	check(PieceLook.brick_skin().uv1_world_triplanar, "its bricks are laid in world space, level whatever the model's own axes")
+	smithy.free()
 
 	print("forge models: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
