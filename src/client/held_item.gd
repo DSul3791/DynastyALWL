@@ -107,6 +107,16 @@ var holding: bool = true                  # false after the held slot's key is p
 const HOTBAR_SLOTS := 10
 var aiming: bool = false
 const LANTERN_BAIL_M := 0.18             # basic_look.gd "lantern": the bail's top is this far above the look's middle; the fist holds the bail, the lantern hangs below
+const HORN_FLAME_Y := -0.01                # the flame's height in the horn box (its middle is 0): the glow centres here
+const HORN_GLOW_SHADER := """shader_type spatial;
+render_mode unshaded, depth_draw_never, cull_back;
+varying float h;
+void vertex() { h = VERTEX.y; }
+void fragment() {
+	float g = exp(-pow((h - (-0.01)) / 0.055, 2.0));   // -0.01 = HORN_FLAME_Y
+	ALBEDO = mix(vec3(0.5, 0.27, 0.07), vec3(1.0, 0.74, 0.3), g);
+	ALPHA = 0.28 + 0.4 * g;
+}"""
 const TORCH_PLACE_M := 3.0                # how far the crosshair reaches to stick a torch in the ground or on a wall
 var off_key: int = -1                     # the hotbar key carried in the left hand (items with "offhand": true: torch, shield), -1 for none
 var off_slot: int:                        # the pack slot that key points at, -1 for none
@@ -143,6 +153,7 @@ var _draw_t: float = -1.0                 # the bow up and drawing (Dave 10 Nov 
 var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the middle of the view, which the sway and the pull turn (bow_view_turn)
 var _reticle = null                       # BowReticle: the cross while the bow is up
 var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
+var _horn_shader: Shader = null                 # HORN_GLOW_SHADER, made once
 var rig_drawing: bool = false              # the shot runner's --shot-draw (look rig only): the bow is held up and drawing as if right were held, so the crosshair, sway and loosed arrows can be pictured
 var rig_keep_dark: bool = false            # the shot runner (look rig only), given a dark torch or lantern without --shot-lit: selecting it does not light it
 var rig_lit: bool = false                  # the shot runner's --shot-lit (look rig only): the held flame's light stays on beside a fire light at Low
@@ -2741,22 +2752,44 @@ func _make_lantern_model(id: String) -> Node3D:
 		return lantern
 
 	# The candle or oil flame seen through the horn: a thin warm shell just outside the look's horn box (0.15 x 0.17 x 0.15), the frame standing proud of it.
+	# The horn glows brightest at the flame's height and dims toward its top and bottom corners (HORN_GLOW_SHADER), and the flame itself shows through it as
+	# a small bright core: a candle's narrow tongue in the wooden one, the wider oil flame in the iron one (Kathleen 10 Nov 2026: Dino's beach shots showed
+	# the pane as a flat amber card).
 	var horn_glow: MeshInstance3D = MeshInstance3D.new()
 	var shell: BoxMesh = BoxMesh.new()
 	shell.size = Vector3(0.152, 0.172, 0.152)
-	var glow: StandardMaterial3D = StandardMaterial3D.new()
-	glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	glow.albedo_color = Color(1.0, 0.65, 0.15, 0.45)
-	glow.emission_enabled = true
-	glow.emission = Color(1.0, 0.65, 0.15)
-	glow.emission_energy_multiplier = 0.6
+
+	if _horn_shader == null:
+		_horn_shader = Shader.new()
+		_horn_shader.code = HORN_GLOW_SHADER
+
+	var glow: ShaderMaterial = ShaderMaterial.new()
+	glow.shader = _horn_shader
 	shell.material = glow
 	horn_glow.mesh = shell
 	horn_glow.position = body.position
 	horn_glow.layers = 2
 	horn_glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	lantern.add_child(horn_glow)
+	var oil: bool = float(row.get("light_m", 8.0)) > 10.0      # the iron lamp burns oil: a wider, brighter flame than a candle
+	var core: MeshInstance3D = MeshInstance3D.new()
+	var tongue: SphereMesh = SphereMesh.new()
+	tongue.radius = 0.02 if oil else 0.014
+	tongue.height = 0.05 if oil else 0.045
+	tongue.radial_segments = 8
+	tongue.rings = 4
+	var hot: StandardMaterial3D = StandardMaterial3D.new()
+	hot.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hot.albedo_color = Color(1.0, 0.9, 0.6)
+	hot.emission_enabled = true
+	hot.emission = Color(1.0, 0.85, 0.5)
+	hot.emission_energy_multiplier = 2.0
+	tongue.material = hot
+	core.mesh = tongue
+	core.position = body.position + Vector3(0.0, HORN_FLAME_Y, 0.0)
+	core.layers = 2
+	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	lantern.add_child(core)
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
@@ -2767,6 +2800,18 @@ func _make_lantern_model(id: String) -> Node3D:
 	light.position = body.position
 	lantern.add_child(light)
 	FireWeather.register(light)   # reach and halo follow fog and snow, as a torch's
+	# As on the torch: a short warm light just above the bail, so the fist holding it is lit by the flame and not black. The flame below lights only the
+	# fist's underside, and first person sees its back (Dino's beach shot, 10 Nov 2026: the left hand grey-dark, the right one warm). Short enough not to reach the ground.
+	var hand_light: OmniLight3D = OmniLight3D.new()
+	hand_light.name = "HandLight"
+	hand_light.light_color = Color(1.0, 0.6, 0.28)
+	hand_light.omni_range = 0.6
+	hand_light.light_energy = 0.5
+	hand_light.shadow_enabled = false
+	hand_light.light_volumetric_fog_energy = 0.0
+	hand_light.light_cull_mask = 0xFFFFFFFD
+	hand_light.position = Vector3(0.0, 0.08, 0.1)
+	lantern.add_child(hand_light)
 	return lantern
 
 
