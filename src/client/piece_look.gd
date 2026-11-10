@@ -4341,3 +4341,69 @@ static func crate() -> Node3D:
 
 	_solid(root, Vector3(0.8, 0.8, 0.8), Vector3(0.0, 0.4, 0.0))
 	return root
+
+
+# --- Bog iron (water_flow_rules s11.3, Kathleen 10 Nov 2026; ships with Sonny's bog iron, #996). A deposit's 8 m sample shows a ground
+# stain of rust-orange mud, darker and redder at its heart and fading out at a ragged edge, with rust-brown lumps of ore half sunk in the core. "wet":
+# a skin of standing water over the core carries the iron-bacteria film, a dull oily sheen broken into flat plates. "dug": spade cuts into the core,
+# black peat in each, a dug-out lump beside each. The stain lies 1 to 2 cm above the ground so it reads from about 30 m; nothing is solid. Under 300
+# triangles in every state (the lumps are low five-sided domes). `ground` (x, z) -> the ground's height there above the patch's own origin, both in
+# the patch's frame: every rim point, lump and cut is lifted onto it, so the stain drapes over a gentle rise instead of sinking into it (#996 checks
+# no slope). Unset: flat ground.
+static func _on_ground(ground: Callable, p: Vector3) -> Vector3:
+	return p + Vector3(0.0, float(ground.call(p.x, p.z)), 0.0) if ground.is_valid() else p
+
+
+static func _blob(root: Node3D, radius: float, y: float, seed_value: int, material: StandardMaterial3D, sides: int = 18, ground: Callable = Callable()) -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rim: Array = []
+
+	for k in sides:
+		var a: float = TAU * float(k) / float(sides)
+		var r: float = radius * rng.randf_range(0.72, 1.08)
+		rim.append(_on_ground(ground, Vector3(cos(a) * r, y, sin(a) * r)))
+
+	var middle: Vector3 = _on_ground(ground, Vector3(0.0, y, 0.0))
+
+	for k in sides:
+		_tri_out(st, middle, rim[k], rim[(k + 1) % sides], Vector3.UP)
+
+	_mesh_of(root, st, material)
+
+
+static func bog_iron_patch(state: String = "dry", ground: Callable = Callable()) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rust: StandardMaterial3D = _tone_mat(Color(0.52, 0.3, 0.15))
+	var core: StandardMaterial3D = _tone_mat(Color(0.44, 0.21, 0.1))
+	var ore: StandardMaterial3D = _tone_mat(Color(0.26, 0.13, 0.07))
+	_blob(root, 3.9, 0.008, 811, _tone_mat(Color(0.42, 0.32, 0.21)), 18, ground)     # the faint outer stain, nearly the peat's own colour
+	_blob(root, 3.2, 0.012, 812, rust, 18, ground)
+	_blob(root, 1.9, 0.016, 813, core, 18, ground)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 814
+
+	for k in 7:
+		var a: float = rng.randf_range(0.0, TAU)
+		var r: float = rng.randf_range(0.2, 1.6)
+		_dome(root, rng.randf_range(0.11, 0.18), _on_ground(ground, Vector3(cos(a) * r, 0.01, sin(a) * r)), Vector3(1.3, 0.6, 1.0), ore, 5, 1)
+
+	if state == "wet":
+		_blob(root, 1.5, 0.03, 815, _still_water(), 14, ground)
+		var film: Array = [_tone_mat(Color(0.3, 0.32, 0.38)), _tone_mat(Color(0.27, 0.33, 0.31)), _tone_mat(Color(0.36, 0.33, 0.28))]
+
+		for k in 6:
+			var a: float = rng.randf_range(0.0, TAU)
+			var r: float = rng.randf_range(0.1, 1.0)
+			_box_rot(root, Vector3(rng.randf_range(0.25, 0.5), 0.004, rng.randf_range(0.2, 0.4)), _on_ground(ground, Vector3(cos(a) * r, 0.034, sin(a) * r)), Vector3(0.0, rng.randf_range(0.0, PI), 0.0), film[k % 3])
+	elif state == "dug":
+		var peat: StandardMaterial3D = _tone_mat(Color(0.14, 0.1, 0.07))
+
+		for at in [Vector3(-0.5, 0.0, 0.3), Vector3(0.45, 0.0, -0.2), Vector3(0.1, 0.0, 0.8)]:
+			var cut: Vector3 = _on_ground(ground, at)
+			_box_rot(root, Vector3(0.5, 0.02, 0.32), cut + Vector3(0.0, 0.012, 0.0), Vector3(0.0, rng.randf_range(-0.5, 0.5), 0.0), peat)   # the spade cut, black peat
+			_dome(root, 0.13, cut + Vector3(0.38, 0.01, 0.0), Vector3(1.2, 0.7, 1.0), ore, 5, 1)                                              # the lump it turned up
+
+	return root
