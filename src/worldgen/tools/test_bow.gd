@@ -389,8 +389,8 @@ func fire_checks() -> void:
 	items._items[laid + 1] = {"number": 1, "count": 1, "pos": Vector3(50.0, 10.0, 3.0), "left": 1000.0, "fire": {"state": 9, "burn_left": 300.0, "covered": false}}
 	items._items[laid + 2] = {"number": 1, "count": 1, "pos": Vector3(60.0, 10.0, 0.0), "left": 1000.0, "fire": {"state": 9, "burn_left": 0.0, "covered": false}}
 	items._next_id += 3
-	check(items._arrow_ignite(Vector3(50.3, 10.0, 0.2)) == "fire" and items.fire_is_lit(int(items._items[laid]["fire"]["state"])), "it lights a laid fire it falls beside")
-	check(not items.fire_is_lit(int(items._items[laid + 1]["fire"]["state"])), "but not one 3 m away")
+	check(items._arrow_ignite(Vector3(50.3, 10.0, 0.2)) == "fire" and ItemsScript.fire_is_lit(int(items._items[laid]["fire"]["state"])), "it lights a laid fire it falls beside")
+	check(not ItemsScript.fire_is_lit(int(items._items[laid + 1]["fire"]["state"])), "but not one 3 m away")
 	check(items._arrow_ignite(Vector3(60.0, 10.0, 0.0)) == "" and int(items._items[laid + 2]["fire"]["state"]) == 9, "a fire with no wood on it does not catch")
 	items._structures["test_torch_post"] = {"kit": "test_torch_post_kit", "item": "chandelier", "state": 9905, "use": "light", "lights": true, "fuel": "stick", "fuel_days": 0.5, "rain_douses": true, "gap_exempt": true, "cap_per_chunk": 12}
 	var post: int = items._next_id
