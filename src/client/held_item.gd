@@ -26,6 +26,9 @@ const BOW_FULL_DRAW_S := 1.2        # today's draw: the string is fully back aft
 const BOW_CANT_DEG := 10.0          # the raised bow's top tilts this far to the right
 const BOW_IDLE_LEAN_DEG := 30.0     # lowered at the side: the upper limb leans this far forward
 const BOW_DRAW_MAX_M := 0.7         # the nock point comes back at most this far from the braced string (a 28 inch draw)
+const BOW_NOCK_ABOVE_M := 0.03      # the arrow sits on the bow hand, this far above the middle of the grip; the string's nock point is level with it
+const BOW_ARROW_SIDE_M := 0.018     # the shaft passes the stave on its left side, this far from the bow's plane
+const ARROW_NOCK_M := 0.355         # the arrow mesh's nock end lies this far back from its origin (basic_look.gd "arrow")
 # First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
 # pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
 # (the rig's hand_mount_r: the rig's right is +X, see assets/character/README.md), grip at the mount origin, its business end tipped
@@ -1326,16 +1329,35 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 		_third_fist_on(_model).visible = true
 
 	var nock: Vector3 = Vector3.ZERO
+	var up_now: bool = state != "idle" and _first_person and _arms != null and _arms.hand_mount_r != null
 
-	if state != "idle" and _first_person and _arms != null and _arms.hand_mount_r != null:
-		# The string's middle is in the right hand: pulled back toward the archer only (never pushed past the brace), at most a full draw.
-		var pull: Vector3 = _model.global_transform.affine_inverse() * _arms.hand_mount_r.global_position
-		pull.z = clampf(pull.z, -BOW_DRAW_MAX_M, 0.0)
-		pull.x = clampf(pull.x, -0.2, 0.2)
-		pull.y = clampf(pull.y, -0.1, 0.1)
-		nock = pull
+	if up_now:
+		# The string's nock point is in the right hand, pulled straight back toward the archer (never pushed past the brace, at most a full draw). It stays in the
+		# bow's own plane, a little above the grip where the arrow sits (Dave: "the string should always be inline with the bow wooden part").
+		var pull: float = (_model.global_transform.affine_inverse() * _arms.hand_mount_r.global_position).z
+		nock = Vector3(BOW_NOCK_ABOVE_M, 0.0, clampf(pull, -BOW_DRAW_MAX_M, 0.0))
 
 	_set_bow_string(_model, nock)
+	_place_nocked_arrow(_model, nock, up_now and (_inv == null or has_arrow()))
+
+
+# The nocked arrow: its nock (the arrow mesh's back end, x = -ARROW_NOCK_M) on the string at `nock`, its shaft over the bow hand on the left side of the bow (mesh -y).
+static func _place_nocked_arrow(bow: Node3D, nock: Vector3, shown: bool) -> void:
+	var arrow: MeshInstance3D = bow.get_node_or_null("NockedArrow") as MeshInstance3D
+
+	if arrow == null:
+		return
+
+	arrow.visible = shown
+
+	if not shown:
+		return
+
+	var rest: Vector3 = Vector3(BOW_NOCK_ABOVE_M, -BOW_ARROW_SIDE_M, BasicLook.BOW_BRACE_M)   # where the shaft crosses the grip
+	var along: Vector3 = (rest - nock).normalized()
+	var side: Vector3 = Vector3.RIGHT.cross(along)
+	side = side.normalized() if side.length() > 0.001 else Vector3.UP
+	arrow.transform = Transform3D(Basis(along, side, along.cross(side)), nock + along * ARROW_NOCK_M)
 
 
 func _bow_posing() -> bool:
@@ -2294,8 +2316,8 @@ func _make_look_tool_model() -> Node3D:
 			var cord: MeshInstance3D = MeshInstance3D.new()
 			cord.name = cord_name
 			var line: CylinderMesh = CylinderMesh.new()
-			line.top_radius = 0.0016
-			line.bottom_radius = 0.0016
+			line.top_radius = BasicLook.BOW_STRING_R
+			line.bottom_radius = BasicLook.BOW_STRING_R
 			line.height = 1.0
 			line.radial_segments = 4
 			line.rings = 1
@@ -2308,6 +2330,14 @@ func _make_look_tool_model() -> Node3D:
 			node.add_child(cord)
 
 		_set_bow_string(node, Vector3.ZERO)
+		# The arrow on the string while the bow is up (shown only with an arrow in the pack): its nock on the string, its shaft over the left side of the bow,
+		# resting on the bow hand (Dave 10 Nov 2026: "you place the arrow over the left side and then draw back and sight along the arrow shaft").
+		var nocked: MeshInstance3D = MeshInstance3D.new()
+		nocked.name = "NockedArrow"
+		nocked.mesh = BasicLook.mesh_for("stone_arrow")
+		nocked.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		nocked.visible = false
+		node.add_child(nocked)
 
 	if shape == "arrow":
 		node.set_meta("held_pitch_deg", 30.0)

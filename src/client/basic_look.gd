@@ -8,6 +8,7 @@ extends RefCounted
 const LOOKS_PATH := "res://data/items/looks.json"
 const BOW_HALF_M := 0.85       # a self bow: nock to nock about the archer's height, 1.7 m (the "bow" shape; held_item.gd places the hands and the string by these)
 const BOW_BRACE_M := 0.16      # string to the back of the grip, braced
+const BOW_STRING_R := 0.0009   # a real bowstring is about 2 mm thick (Dave 10 Nov 2026: the string was "way too thick")
 
 static var _table: Dictionary = {}
 static var _loaded: bool = false
@@ -2157,7 +2158,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cone(parts, 0.009, 0.035, Vector3(end * (BOW_HALF_M + 0.012), 0.0, 0.0), Color(0.75, 0.7, 0.6))                  # a bone nock at each tip
 
 			if not bits.has("held"):
-				_cyl(parts, 0.0013, 2.0 * BOW_HALF_M, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.85, 0.82, 0.72))   # the string
+				_cyl(parts, BOW_STRING_R, 2.0 * BOW_HALF_M, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.85, 0.82, 0.72))   # the string
 		"arrow":
 			# An arrow (items 270 wooden, 271 stone-headed with bits ["stone"]), real size 0.7 m: a straight ash shaft, a nock at the back (-x), three feather vanes (one darker cock feather)
 			# and a point at +x: the wooden arrow is sharpened and fire-hardened, the stone arrow has a flaked leaf head lashed on with twine.

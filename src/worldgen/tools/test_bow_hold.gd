@@ -38,15 +38,15 @@ func _run() -> void:
 	var player: AnimationPlayer = arms.animation_player
 	check(player.has_animation("bow_idle") and player.has_animation("bow_draw"), "the arms have the bow clips")
 
-	for step in [[0.0, Vector3(-0.09, -0.07, -0.31)], [1.0, Vector3(-0.02, -0.12, -0.11)]]:
+	for step in [[0.0, Vector3(0.015, -0.10, -0.24)], [1.0, Vector3(0.015, -0.10, -0.10)]]:
 		player.play("bow_draw")
 		player.seek(float(step[0]) * player.get_animation("bow_draw").length * 0.999, true)
 		player.advance(0.0)
 		await process_frame
 		var left: Vector3 = _mount_at(arms, "l")
 		var right: Vector3 = _mount_at(arms, "r")
-		check(left.distance_to(Vector3(-0.10, -0.05, -0.46)) < 0.04, "draw %.0f: the left hand on the grip at arm's length (%.2f, %.2f, %.2f)" % [float(step[0]), left.x, left.y, left.z])
-		check(right.distance_to(step[1]) < 0.04, "draw %.0f: the right hand at (%.2f, %.2f, %.2f), wanted (%.2f, %.2f, %.2f)" % [float(step[0]), right.x, right.y, right.z, step[1].x, step[1].y, step[1].z])
+		check(left.distance_to(Vector3(0.015, -0.10, -0.40)) < 0.04, "draw %.0f: the left hand on the grip at arm's length (%.2f, %.2f, %.2f)" % [float(step[0]), left.x, left.y, left.z])
+		check(right.distance_to(step[1]) < 0.04 and absf(right.x - left.x) < 0.03 and absf(right.y - left.y) < 0.03, "draw %.0f: the right hand at (%.2f, %.2f, %.2f), wanted (%.2f, %.2f, %.2f)" % [float(step[0]), right.x, right.y, right.z, step[1].x, step[1].y, step[1].z])
 
 	# The string: two cords from the tips to the nock point.
 	var bow: Node3D = Node3D.new()
@@ -66,6 +66,19 @@ func _run() -> void:
 	var bottom: MeshInstance3D = bow.get_node("StringBottom")
 	check((bottom.transform * Vector3(0.0, -0.5, 0.0)).distance_to(Vector3(-BasicLook.BOW_HALF_M, 0.0, 0.0)) < 0.002, "the lower cord starts at the bottom nock")
 	check(bow.get_meta("nock") == nock, "the nock point is kept on the bow (meta nock)")
+	# The nocked arrow: its nock end on the string, the shaft crossing the grip on the bow's left side (mesh -y), in line with the string (Dave 10 Nov 2026).
+	var arrow: MeshInstance3D = MeshInstance3D.new()
+	arrow.name = "NockedArrow"
+	bow.add_child(arrow)
+	var string_at: Vector3 = Vector3(HeldItem.BOW_NOCK_ABOVE_M, 0.0, -0.3)
+	HeldItem._place_nocked_arrow(bow, string_at, true)
+	var arrow_nock: Vector3 = arrow.transform * Vector3(-HeldItem.ARROW_NOCK_M, 0.0, 0.0)
+	var arrow_dir: Vector3 = arrow.transform.basis.x.normalized()
+	var at_grip: Vector3 = arrow_nock + arrow_dir * ((BasicLook.BOW_BRACE_M - arrow_nock.z) / arrow_dir.z)
+	check(arrow.visible and arrow_nock.distance_to(string_at) < 0.002, "the arrow's nock sits on the string")
+	check(at_grip.y < -0.01 and at_grip.y > -0.03 and absf(at_grip.x - HeldItem.BOW_NOCK_ABOVE_M) < 0.002, "the shaft crosses the grip on the bow's left side (%.3f)" % at_grip.y)
+	HeldItem._place_nocked_arrow(bow, string_at, false)
+	check(not arrow.visible, "no arrow in the pack: none on the string")
 
 	print("test_bow_hold: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
