@@ -1084,7 +1084,7 @@
 			"status": "planned"
 		},
 		"pilgrims_cup_pitchers": {
-			"name": "Pilgrims cup pitchers",
+			"name": "Pilgrim's cup pitchers",
 			"kind": "material",
 			"description": "The cup-shaped leaves of the pilgrim's cup, holding rain. Pick one to drink from.",
 			"how_to_get": [
@@ -1094,7 +1094,7 @@
 			"obtainable_now": true
 		},
 		"pilgrims_cup_water": {
-			"name": "Pilgrims cup water",
+			"name": "Pilgrim's cup water",
 			"kind": "material",
 			"description": "Clear rainwater held in a pilgrim's cup leaf. Safe enough to drink.",
 			"how_to_get": [
@@ -1429,7 +1429,7 @@
 			"obtainable_now": true
 		},
 		"spines": {
-			"name": "Spines",
+			"name": "Cactus spines",
 			"kind": "material",
 			"description": "Long sharp cactus spines. Used as needles and pins.",
 			"how_to_get": [
@@ -1439,7 +1439,7 @@
 			"obtainable_now": true
 		},
 		"st_johns_wort": {
-			"name": "St johns wort",
+			"name": "St John's wort",
 			"kind": "material",
 			"description": "Yellow star flowers with dotted leaves. Steeped for a gentle remedy.",
 			"how_to_get": [
@@ -1560,7 +1560,7 @@
 			"obtainable_now": true
 		},
 		"tannin_bark": {
-			"name": "Tannin-rich bark",
+			"name": "Tanbark",
 			"kind": "material",
 			"description": "Bark rich in tannin. Used for tanning hides.",
 			"how_to_get": [
@@ -1949,7 +1949,7 @@
 				"Used in Oil press",
 				"Used in Smoker",
 				"Used in Clay bloomery",
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Mortar and pestle",
 				"Used in Whetstone",
 				"Used in Concrete",
@@ -4811,7 +4811,7 @@
 			"kind": "material",
 			"description": "Tanned hide: tough and supple.",
 			"how_to_get": [
-				"Craft at a tanning rack: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
+				"Craft at a tanning rack: 1 Scraped hide, 2 Tanbark, 1 Water"
 			],
 			"used_for": [
 				"Used in Fine leather",
@@ -4852,7 +4852,7 @@
 			"kind": "material",
 			"description": "Thick, stiff leather for armour and harness.",
 			"how_to_get": [
-				"Craft at a tanning rack: 2 Leather, 2 Tannin-rich bark"
+				"Craft at a tanning rack: 2 Leather, 2 Tanbark"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -9851,7 +9851,7 @@
 				"Craft at a forge: 1 Bronze ingot, 1 Stick"
 			],
 			"used_for": [
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
@@ -9865,7 +9865,7 @@
 				"Craft at a brick forge: 1 Iron ingot, 1 Stick"
 			],
 			"used_for": [
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
@@ -9879,7 +9879,7 @@
 				"Craft at a brick forge: 1 Steel ingot, 1 Stick"
 			],
 			"used_for": [
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
