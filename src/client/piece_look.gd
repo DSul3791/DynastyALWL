@@ -3592,3 +3592,72 @@ static func root_cellar() -> Node3D:
 	_box_rot(root, Vector3(0.14, 0.04, 0.04), Vector3(0.0, 0.47, 0.72), tilt, _iron_mat())  # the iron pull
 	_solid(root, Vector3(1.8, 0.46, 1.8), Vector3(0.0, 0.23, 0.0))
 	return root
+
+
+# The Log - Shelf (B3b, progression: the Log tier), 1.2 x 0.3 x 1.2, its back at -Z: two round log uprights with three split-log shelves lashed
+# across them, the lashing a twine wrap under each shelf end.
+static func log_shelf() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.52, 0.52]:
+		_cyl(root, 0.06, 1.2, Vector3(x, 0.6, -0.08), _log, 6)                                  # the uprights
+
+	for y in [0.2, 0.6, 1.0]:
+		_box(root, Vector3(1.2, 0.07, 0.28), Vector3(0.0, y, 0.0), _log)                        # a split-log shelf
+		for x in [-0.52, 0.52]:
+			_cyl(root, 0.075, 0.05, Vector3(x, y - 0.05, -0.08), _frame, 5)                       # its lashing
+
+	_solid(root, Vector3(1.2, 1.2, 0.3), Vector3(0.0, 0.6, 0.0))
+	return root
+
+
+# The Iron - Chest (B3b, item system: the iron age), 1.0 x 0.6: dark planks under iron, not the Wooden - Chest with straps: an iron plate over
+# the whole lid, three straps over it and down the sides, a band round the body, iron corners, and a big lock plate with its hasp at the front (+Z).
+static func iron_chest() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var dark: StandardMaterial3D = _tone_mat(Color(0.3, 0.2, 0.13))
+	_box(root, Vector3(0.98, 0.44, 0.58), Vector3(0.0, 0.22, 0.0), dark)
+	_box(root, Vector3(0.98, 0.12, 0.58), Vector3(0.0, 0.5, 0.0), dark)                       # the lid
+	_box(root, Vector3(1.0, 0.04, 0.6), Vector3(0.0, 0.58, 0.0), _iron_mat())                # its iron plate
+	_box(root, Vector3(1.0, 0.02, 0.6), Vector3(0.0, 0.44, 0.0), _iron_mat())                # the lid's seam
+
+	for x in [-0.36, 0.0, 0.36]:
+		_box(root, Vector3(0.07, 0.56, 0.6), Vector3(x, 0.28, 0.0), _iron_mat())              # straps over the top and down the sides
+
+	_box(root, Vector3(1.0, 0.06, 0.6), Vector3(0.0, 0.2, 0.0), _iron_mat())                 # the band round the body
+
+	for x in [-0.475, 0.475]:
+		for z in [-0.275, 0.275]:
+			_box(root, Vector3(0.05, 0.6, 0.05), Vector3(x, 0.3, z), _iron_mat())               # corners
+
+	_box(root, Vector3(0.2, 0.16, 0.02), Vector3(0.0, 0.34, 0.305), _iron_mat())              # the lock plate
+	_box(root, Vector3(0.06, 0.12, 0.03), Vector3(0.0, 0.45, 0.31), dark)                     # the hasp
+	_solid(root, Vector3(1.0, 0.6, 0.6), Vector3(0.0, 0.3, 0.0))
+	return root
+
+
+# The Wooden - Crate (B3b, item system: per buildables B3), a 0.8 m cube: plank sides with a frame along every edge and a diagonal brace on
+# each side.
+static func crate() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.76, 0.76, 0.76), Vector3(0.0, 0.4, 0.0), _planks)
+
+	for a in [Vector3(0.375, 0.0, 0.375), Vector3(-0.375, 0.0, 0.375), Vector3(0.375, 0.0, -0.375), Vector3(-0.375, 0.0, -0.375)]:
+		_box(root, Vector3(0.05, 0.8, 0.05), a + Vector3(0.0, 0.4, 0.0), _frame)                 # upright edges
+
+	for y in [0.025, 0.775]:
+		for z in [-0.375, 0.375]:
+			_box(root, Vector3(0.8, 0.05, 0.05), Vector3(0.0, y, z), _frame)
+		for x in [-0.375, 0.375]:
+			_box(root, Vector3(0.05, 0.05, 0.8), Vector3(x, y, 0.0), _frame)
+
+	for z in [-0.385, 0.385]:
+		_box_rot(root, Vector3(0.95, 0.05, 0.03), Vector3(0.0, 0.4, z), Vector3(0.0, 0.0, PI * 0.25), _frame)   # braces front and back
+	for x in [-0.385, 0.385]:
+		_box_rot(root, Vector3(0.03, 0.05, 0.95), Vector3(x, 0.4, 0.0), Vector3(PI * 0.25, 0.0, 0.0), _frame)   # and on the ends
+
+	_solid(root, Vector3(0.8, 0.8, 0.8), Vector3(0.0, 0.4, 0.0))
+	return root
