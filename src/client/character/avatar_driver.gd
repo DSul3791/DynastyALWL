@@ -53,7 +53,9 @@ static func choose_clip_moving(stance: int, velocity_local: Vector2, vertical: f
 	if stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
 		return "crouch_walk"
 
-	if stance == StanceScript.STAND and not carrying and pace > WALK_MIN_PACE and pace <= JOG_FROM:
+	# Up to a run (not only up to the old jog limit: since 10 Nov 2026 the walk is 3.2 m/s, Dave "lets get rid of jogging", so walking backwards or sideways is
+	# above JOG_FROM and played the forward jog).
+	if stance == StanceScript.STAND and not carrying and pace > WALK_MIN_PACE and pace <= RUN_FROM:
 		if forward < -0.5 * pace:
 			return "walk_back"
 
@@ -111,9 +113,12 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	if land_t > 0.0 and stance == StanceScript.STAND and not carrying:
 		return "land"
 
-	# The Dynasty body has the air clips but no walk_back or strafe clips: standing on the floor it gets the plain clip.
+	# The Dynasty body has the air clips but no walk_back or strafe clips: standing on the floor it gets the plain clip. Moving backwards (more back than
+	# sideways), the gait clip plays in reverse (meta `backward`, read by the client with backward_sign), so the feet step back instead of walking forward.
 	if dynasty and (on_floor or stance != StanceScript.STAND):
 		var plain: String = choose_clip(stance, pace, current, carrying)
+		var mine: Vector3 = basis.inverse() * velocity
+		avatar.set_meta("backward", stance == StanceScript.STAND and not carrying and pace > WALK_MIN_PACE and mine.z > 0.5 * pace)
 
 		# A torch in the left hand (Dave's torch carry infographic, 6 Nov 2026): standing still, walking, jogging or running, the same gait with the left arm up in
 		# the carry pose (dynasty_body.gd _torch_carry). The client sets the meta `torch_left` each frame.
@@ -191,6 +196,12 @@ static func crouch_walk_clip(velocity_local: Vector2) -> String:
 
 
 # The AnimationPlayer's speed scale that keeps the stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
+# -1 while the avatar's gait clip is played in reverse (walking backwards on a body without a walk_back clip: clip_for sets the meta), else 1. The client
+# multiplies the clip's speed_scale by it.
+static func backward_sign(avatar, clip: String) -> float:
+	return -1.0 if avatar != null and clip.trim_suffix("_torch") in ["walk", "jog", "run"] and bool(avatar.get_meta("backward", false)) else 1.0
+
+
 static func speed_scale(clip: String, pace: float) -> float:
 	if clip.ends_with("_torch") and not clip.begins_with("crouch_walk"):
 		clip = clip.trim_suffix("_torch")   # the torch carry gaits keep their gait's stride
@@ -199,10 +210,10 @@ static func speed_scale(clip: String, pace: float) -> float:
 		return 1.0
 
 	if clip == "walk_back":
-		return clampf(pace / 1.1, 0.5, 1.5)
+		return clampf(pace / 1.1, 0.5, 3.0)      # up to the 3.2 m/s walk (10 Nov 2026), so the feet keep up
 
 	if clip == "strafe_left" or clip == "strafe_right":
-		return clampf(pace / 1.3, 0.5, 1.6)
+		return clampf(pace / 1.3, 0.5, 2.6)
 
 	if clip.begins_with("crouch_walk"):   # includes the _torch variants
 		return clampf(pace / 0.9, 0.5, 1.6)

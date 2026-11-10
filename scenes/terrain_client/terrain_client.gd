@@ -3995,7 +3995,7 @@ func _update_view(delta: float) -> void:
 			_avatar.play(clip, 1.0, 0.25)
 
 		if _avatar.animation_player != null:
-			_avatar.animation_player.speed_scale = AvatarDriver.speed_scale(clip, pace)
+			_avatar.animation_player.speed_scale = AvatarDriver.speed_scale(clip, pace) * AvatarDriver.backward_sign(_avatar, clip)   # walking backwards plays the gait in reverse
 
 			if work != "" and clip == work and _avatar.animation_player.has_animation(work):
 				# The blow's impact frame is the sound and the hit (held_item.gd _strike): the clip runs the swing's length, whatever the tool or its speed.
