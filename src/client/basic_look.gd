@@ -136,6 +136,7 @@ const ART_OVERRIDES := {
 	"floor_section_kit": {"shape": "parcel", "color": "#a98350", "size": 1.0, "bits": ["planks"]},
 	"roof_section_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["planks"]},
 	"foundation_section_kit": {"shape": "parcel", "color": "#7d7a74", "size": 1.0, "bits": ["planks"]},
+	"wood_foundation_kit": {"shape": "parcel", "color": "#9a7a45", "size": 1.0, "bits": ["planks"]},
 	"doorway_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks", "door"]},
 	"window_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks", "window"]},
 	"saw_mill_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["sawmill"]},

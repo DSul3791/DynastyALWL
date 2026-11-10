@@ -1240,6 +1240,7 @@ def _pieces():
         "brick_floor": (brick_slab, SLAB_VIEW),
         "thatch_floor": (thatch_slab, SLAB_VIEW),
         "foundation_section": (foundation, SLAB_VIEW),
+        "wood_foundation": (plank_slab, SLAB_VIEW),
         "roof_section": (plank_roof, ROOF_VIEW),
         "log_roof": (log_roof, ROOF_VIEW),
         "stone_roof": (stone_roof, ROOF_VIEW),

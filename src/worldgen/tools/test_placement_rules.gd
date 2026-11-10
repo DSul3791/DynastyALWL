@@ -132,7 +132,7 @@ func _init() -> void:
 	check(bool(onto[2]) and onto[0].x == 50.0 and onto[0].z == 50.0 and onto[0].y > base_rows[0]["pos"].y + 1.9, "aiming at a foundation's middle stacks one on it (BUG-026)")
 	var thatch_base: Array = [{"pos": Vector3(50.0, 10.0, 50.0), "state": int(cfg["structures"]["thatch_floor"]["state"])}]
 	var on_thatch: Array = Rules.snap(cfg, "thatch_wall_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)
-	check(bool(on_thatch[2]) and is_equal_approx(on_thatch[0].y, 10.1), "a thatch wall snaps onto the thatch floor, the tier 1 foundation (%s)" % str(on_thatch))
+	check(bool(on_thatch[2]) and is_equal_approx(on_thatch[0].y, 10.3), "a thatch wall snaps onto the thatch floor top, 0.3 m up like the stone foundation (%s)" % str(on_thatch))
 	check(bool(Rules.snap(cfg, "thatch_roof_kit", Vector3(50.0, 10.0, 50.0), 0, thatch_base)[2]) and bool(Rules.snap(cfg, "thatch_doorway_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)[2]), "a thatch roof and doorway snap onto it too")
 	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
 
