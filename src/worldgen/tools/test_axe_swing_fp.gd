@@ -31,11 +31,19 @@ func _run() -> void:
 	var skeleton: Skeleton3D = arms.skeleton
 	var at: Dictionary = {}
 
+	# Start the clip once and let the player take it up (the first seek after play() can still show the previous clip), then sample each time with a seek
+	# that applies at once, read straight away.
+	player.play("swing_fp", 0.0)
+	player.seek(0.0, true)
+	player.advance(0.0)
+	await process_frame
+	await process_frame
+
 	for t in [0.36, 0.44, 0.5, 0.7]:
-		player.play("swing_fp")
 		player.seek(t, true)
 		player.advance(0.0)
 		await process_frame
+		player.seek(t, true)
 		var hand: Transform3D = skeleton.get_bone_global_pose(skeleton.find_bone("hand_r"))
 		at[t] = rig * (hand * Vector3(0.0, -0.07, 0.0))
 		print("  %.2f s: right hand (%.2f, %.2f, %.2f)" % [t, at[t].x, at[t].y, at[t].z])
