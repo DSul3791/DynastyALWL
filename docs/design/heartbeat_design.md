@@ -51,6 +51,20 @@ This change only touches the controller. Nothing new decides the heart rate.
 - **No heart.** When the heart is gone (the end of a faint), the line fades out, and it comes back with the first beat.
 - **Cost.** One tiny Control with a few draw_line calls a frame. Nothing is allocated per frame.
 
+## Passing out (Dave 10 Nov 2026, `src/client/hud_fade.gd`)
+
+Dave: "when I over exert myself and I pass out I want the entire hud except the heart beat indicator to fade out. the only reminder you have that you are alive is the heart beat". The hotbar fades too.
+
+- **What fades.** Every direct child of the HUD layer fades through its modulate alpha: the hotbar, the vitals, the compass, the status icons, notices and any open panel. That includes anything that appears during the faint.
+- **What stays.** The pulse line and the black picture itself stay. The line keeps its colours, so in a faint it is red at the faint rate.
+- **When.** The HUD follows the server's faint blackout (`strain_fade` in states 1, 2 and 3):
+  - It is fully gone when the black reaches `faint_hud.gone_at_black` (0.5), which is before the screen is fully black.
+  - It comes back as the black lifts on waking.
+  - It never moves faster than `faint_hud.fade_s` (0.8 s) for the whole way.
+- **Sleep.** Sleep blacks out the same picture, but the HUD stays: Dave asked for the faint only.
+- **Rule for HUD nodes.** A node placed straight on the HUD layer fades its own look with `self_modulate`, never `modulate`, so the two do not fight. inventory_view's auto-pickup and comfort labels were changed to follow this.
+- **Cost.** Nothing while awake. During a faint it is one alpha write per HUD node per frame.
+
 ## Settings: data/sound/heartbeat.json
 
 These are all settings, not flags:
@@ -58,6 +72,7 @@ These are all settings, not flags:
 - `rest_db`, `peak_db`
 - the bar's `centre`, `min_half_px`, `max_half_px`, `rise_s`, `thickness_px`
 - `zones`, as [from_bpm, colour]
+- `faint_hud.gone_at_black`, `faint_hud.fade_s`
 
 ## Tests (src/worldgen/tools/test_heartbeat.gd)
 
@@ -68,3 +83,4 @@ These are all settings, not flags:
 - The zone colours at 55, 120, 150 and 170 bpm.
 - The bar's spread: full shortly after a beat and back in by the next.
 - A muted bus plays nothing but still emits the beat.
+- Passing out: the hotbar and the rest of the HUD fade with the blackout, are gone at gone_at_black, and come back on waking; the line and the black stay; sleep keeps the HUD.
