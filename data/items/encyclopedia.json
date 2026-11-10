@@ -2820,7 +2820,7 @@
 			"obtainable_now": true
 		},
 		"workbench_kit": {
-			"name": "Workbench",
+			"name": "Wooden - Workbench",
 			"kind": "placeable",
 			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"how_to_get": [
@@ -3005,7 +3005,7 @@
 			"obtainable_now": false
 		},
 		"stone_forge_kit": {
-			"name": "Stone forge",
+			"name": "Stone - Forge",
 			"kind": "placeable",
 			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
 			"how_to_get": [
@@ -3023,7 +3023,7 @@
 			"obtainable_now": false
 		},
 		"blacksmithy_kit": {
-			"name": "Blacksmith's forge",
+			"name": "Brick - Forge",
 			"kind": "placeable",
 			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
 			"how_to_get": [
@@ -4214,7 +4214,7 @@
 			"obtainable_now": false
 		},
 		"oven_kit": {
-			"name": "Brick oven",
+			"name": "Oven",
 			"kind": "placeable",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
 			"how_to_get": [
