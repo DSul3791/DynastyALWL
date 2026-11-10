@@ -4518,7 +4518,7 @@
 		"sea_salt": {
 			"number": 360,
 			"name": "Salt",
-			"description": "Salt boiled out of sea water. Keeps meat and fish.",
+			"description": "Salt boiled out of sea water, broken from rock salt or dug from a salt flat. Keeps meat and fish.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -8826,8 +8826,7 @@
 				"stack": 50,
 				"look_alikes": [],
 				"value": 1,
-				"future": true,
-				"note": "Found when digging soil (Steve #931, digging.json finds); future until that lands."
+				"note": "Found when digging moist living soil (digging.json finds, Steve #931)."
 			},
 			"kiln_kit": {
 				"number": 770,
