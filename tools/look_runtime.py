@@ -551,7 +551,7 @@ RUNTIME = {
     "Vector3": Vector3, "Vector2": Vector2, "Color": Color, "Basis": Basis, "Node3D": Node3D, "MeshInstance3D": MeshInstance3D, "BoxMesh": BoxMesh,
     "CylinderMesh": CylinderMesh, "SphereMesh": SphereMesh, "TorusMesh": TorusMesh, "PI": math.pi, "TAU": 2 * math.pi, "INF": math.inf,
     "sqrt": math.sqrt, "sin": math.sin, "cos": math.cos, "tan": math.tan, "atan2": math.atan2, "atan": math.atan, "floor": math.floor, "ceil": math.ceil,
-    "absf": abs, "absi": abs, "abs": abs, "maxf": max, "minf": min, "maxi": max, "mini": min, "clampf": lambda v, a, b: max(a, min(b, v)),
+    "absf": abs, "floori": lambda v: int(math.floor(v)), "absi": abs, "abs": abs, "maxf": max, "minf": min, "maxi": max, "mini": min, "clampf": lambda v, a, b: max(a, min(b, v)),
     "clampi": lambda v, a, b: max(a, min(b, v)), "lerpf": lambda a, b, t: a + (b - a) * t, "signf": lambda v: (v > 0) - (v < 0), "sign": lambda v: (v > 0) - (v < 0),
     "deg_to_rad": math.radians, "fposmod": lambda a, b: a % b, "posmod": lambda a, b: a % b,
     "_box": _box, "_box_rot": _box_rot, "_solid": _solid, "_cyl": _cyl, "_dome": _dome, "_torus_at": _torus_at, "_rod": _rod, "_log_mesh": _log_mesh,

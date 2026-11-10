@@ -423,23 +423,6 @@ def roof(course_colour, dark, rows, cols, seed, thick=0.08, overlap=0.06, base=P
     return faces
 
 
-def plank_roof():
-    return roof(PLANK, PLANK_DARK, 5, 4, seed=71)
-
-
-def log_roof():
-    """Rustic - Roof (seven-tier ladder, 10 Nov 2026): bark shingles over log rafters, grey-brown and rough, not the logs themselves."""
-    return roof((112, 92, 72), (70, 56, 42), 6, 6, seed=70, thick=0.07, base=BARK)
-
-
-def stone_roof():
-    return roof(SLATE, shade(SLATE, 0.8), 6, 5, seed=72, thick=0.06, base=STONE_DARK)
-
-
-def brick_roof():
-    return roof(TILE, BRICK_DARK, 7, 7, seed=73, thick=0.07)
-
-
 def thatch_roof():
     return roof(STRAW, STRAW_DARK, 4, 12, seed=74, thick=0.18, overlap=0.1, base=BARK, straw=True)
 
@@ -1221,11 +1204,6 @@ def _pieces():
         "thatch_floor": (thatch_slab, SLAB_VIEW),
         "foundation_section": (foundation, SLAB_VIEW),
         "wood_foundation": (plank_slab, SLAB_VIEW),
-        "roof_section": (plank_roof, ROOF_VIEW),
-        "log_roof": (log_roof, ROOF_VIEW),
-        "stone_roof": (stone_roof, ROOF_VIEW),
-        "brick_roof": (brick_roof, ROOF_VIEW),
-        "engineered_roof": (brick_roof, ROOF_VIEW),   # Engineered roofs are clay tile over planks too: no concrete roof
         "thatch_roof": (thatch_roof, ROOF_VIEW),
         "stairs_wood": (stairs, rot_y(math.radians(-50.0))),
         "ladder": (ladder, LADDER_VIEW),
