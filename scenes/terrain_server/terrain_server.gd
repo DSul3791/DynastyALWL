@@ -301,6 +301,7 @@ func _ready() -> void:
 	items.cover_at = _cover_at
 	items.cave_air = func(pos): return _cave_air(pos)   # depth in from the mouth and the day swing, for the cave air blend (docs/design/cave_climate_design.md)
 	items.cave_mean_c = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y) if _in_cave(pos) else NAN   # cave air: the island's year mean at that height (#664)
+	items.year_mean_at = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y)   # a cold store: the ground below 2 m holds the year mean (item_system.md D1)
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()

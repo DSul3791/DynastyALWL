@@ -9,6 +9,12 @@
 		"health": 0,
 		"wet_ml": 0
 	},
+	"cold_store": {
+		"note": "A cold store (root cellar, item_system.md D1 from Sonny's review; structures.json rows with \"cold_store\": true and slots) sits at the site's year-mean air all year: the ground from about 2 m down holds it, and in a cave cell it is the cave air (5.5 C at cave 8002, #717). No ice. Its food ages at q10 to the power (temp_c - ref_c) / 10 of the pack's rate, never under min_mult and never above 1, and the season does not reach it. q10 3 is the usual rule for stored produce and food (spoilage about triples for each 10 C); ref_c 20 is a room, the pack's rate. So 10.7 C (temperate sea level) keeps food about 2.8 times as long, 5.5 C about 4.9 times, 0 C about 9 times (crops.json root cellar: spoilage x0.25). Estimates, the coordinator's call.",
+		"q10": 3.0,
+		"ref_c": 20.0,
+		"min_mult": 0.1
+	},
 	"place_mult": {
 		"pack": 1.0,
 		"chest": 0.8,

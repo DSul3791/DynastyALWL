@@ -36,6 +36,55 @@ func _count(items, kind: String) -> int:
 	return n
 
 
+# The light burn rule (buildables plan, batch B4): a light's fuel burns fuel_days game days (1 game day = 1 real hour), else fuel_s seconds; the
+# open rain puts out a light with rain_douses (a torch post) and never a lantern; a lit light with protect_m keeps wolves off like a held torch.
+# No lantern or torch post rows exist yet (Jamie's B4 batch), so stand-in rows are used.
+func _light_burn_checks(items, inv) -> void:
+	items._structures["test_lantern"] = {"kit": "test_lantern_kit", "item": "chandelier", "state": 9903, "use": "light", "lights": true, "fuel": "candle", "fuel_days": 1.0, "gap_exempt": true, "cap_per_chunk": 12}
+	items._structures["test_torch_post"] = {"kit": "test_torch_post_kit", "item": "chandelier", "state": 9904, "use": "light", "lights": true, "fuel": "stick", "fuel_days": 0.5, "rain_douses": true, "protect_m": 8.0, "gap_exempt": true, "cap_per_chunk": 12}
+	check(is_equal_approx(items.light_burn_s(items._structures["test_lantern"]), 3600.0), "a candle in a lantern burns one game day (an hour)")
+	check(is_equal_approx(items.light_burn_s(items._structures["chandelier"]), float(items._structures["chandelier"]["fuel_s"])), "a row with fuel_s keeps its seconds")
+	var lantern_at: Vector3 = Vector3(102.0, 5.0, 101.0)
+	var post_at: Vector3 = Vector3(102.0, 5.0, 99.0)
+	items._items[910001] = {"number": items.table.number_of("chandelier"), "count": 1, "pos": lantern_at, "left": 1.0e9, "struct": {"kind": "test_lantern", "yaw": 0.0}}
+	items._items[910002] = {"number": items.table.number_of("chandelier"), "count": 1, "pos": post_at, "left": 1.0e9, "struct": {"kind": "test_torch_post", "yaw": 0.0}}
+	items.rain_now = func(): return 0.0
+	items.action(7, Net.ACT_ADMIN_GIVE, items.table.number_of("candle"), 0, 1, Vector3.ZERO)
+	items.action(7, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 1, Vector3.ZERO)
+	items._light_fixture(7, inv, items._items[910001], items._structures["test_lantern"])
+	items._light_fixture(7, inv, items._items[910002], items._structures["test_torch_post"])
+	check(bool(items._items[910001]["struct"].get("lit", false)) and is_equal_approx(float(items._items[910001]["struct"]["fuel_left"]), 3600.0), "E with a candle lights the lantern for a game day")
+	check(bool(items._items[910002]["struct"].get("lit", false)) and is_equal_approx(float(items._items[910002]["struct"]["fuel_left"]), 1800.0), "a stick lights the torch post for half a game day")
+	check(items._lit_fires().has(post_at) and is_equal_approx(items.fire_protect_m(post_at), 8.0), "the lit torch post keeps wolves off 8 m")
+	check(not items._lit_fires().has(lantern_at), "a lantern with no protect_m does not")
+	items._lights_tick(600.0)
+	check(is_equal_approx(float(items._items[910001]["struct"]["fuel_left"]), 3000.0), "the fuel burns down in real seconds")
+	items.rain_now = func(): return 0.9
+	items.cover_at = func(_p): return 0.0
+	items._lights_tick(1.0)
+	check(bool(items._items[910001]["struct"].get("lit", false)), "the open rain does not put out a lantern")
+	check(not bool(items._items[910002]["struct"].get("lit", false)), "it puts out the torch post")
+	check(not items._lit_fires().has(post_at), "and the put-out post keeps nothing off")
+	items.rain_now = func(): return 0.0
+	# A lantern's own candle (blueprints.json "spent", coordinator ruling 10 Nov 2026): it burns in the lantern from the start and is not given back.
+	items._structures["test_lantern"]["kit"] = "test_lantern_kit"
+	items._blueprints[99901] = {"number": 99901, "structure": "test_lantern", "cost": [["candle", 1], ["stick", 2]], "spent": [["candle", 1]], "hammer": 1}
+	items._blueprint_of_kit["test_lantern_kit"] = 99901
+	var built: Dictionary = {"number": items.table.number_of("chandelier"), "count": 1, "pos": Vector3(101.0, 5.0, 101.0), "left": 1.0e9, "struct": {"kind": "test_lantern", "yaw": 0.0}}
+	items._after_built(7, built, items._structures["test_lantern"])
+	check(bool(built["struct"].get("lit", false)) and is_equal_approx(float(built["struct"]["fuel_left"]), 3600.0), "a lantern built with its candle stands lit for a game day")
+	items._items[910003] = built
+	var candles: int = inv.count_of(items.table.number_of("candle"))
+	var sticks: int = inv.count_of(items.table.number_of("stick"))
+	items._take_down(7, inv, 910003)
+	check(not items._items.has(910003) and inv.count_of(items.table.number_of("candle")) == candles and inv.count_of(items.table.number_of("stick")) == sticks + 2, "taken down it gives the sticks back, not the burnt candle")
+	check(items._refund_blueprint(7, inv, items._blueprints[99901]) and inv.count_of(items.table.number_of("candle")) == candles + 1, "an unbuilt kit's refund still gives everything")
+	items._blueprints.erase(99901)
+	items._blueprint_of_kit.erase("test_lantern_kit")
+	items._items.erase(910001)
+	items._items.erase(910002)
+
+
 func _init() -> void:
 	var table = ItemTableScript.load_default()
 	var torch: Dictionary = table.entry("torch")
@@ -168,5 +217,6 @@ func _init() -> void:
 	items.action(7, Net.ACT_TORCH_BURN, burning, 0, 0, Vector3.ZERO)
 	check(inv.numbers[burning] == 0, "after half an hour the torch is gone")
 
+	_light_burn_checks(items, inv)
 	print("torch douse tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -3302,6 +3302,61 @@
    "shape": "kit",
    "color": "#9a7a45",
    "size": 1.2
+  },
+  "log_foundation_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.2
+  },
+  "brick_foundation_kit": {
+   "shape": "kit",
+   "color": "#9a4a32",
+   "size": 1.2
+  },
+  "log_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "stone_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "brick_doorway_kit": {
+   "shape": "kit",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "thatch_window_kit": {
+   "shape": "kit",
+   "color": "#a88d5a",
+   "size": 1.0
+  },
+  "log_window_kit": {
+   "shape": "kit",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "stone_window_kit": {
+   "shape": "kit",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "brick_window_kit": {
+   "shape": "kit",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_hammer": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_hammer": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
 
  }

@@ -2377,6 +2377,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
 				node.add_child(fixture)
 				fixture_light = fixture.get_node_or_null("Light")
+				var light_m: float = float(_structure_by_state(state).get("light_m", 0.0))   # structures.json light_m: the reach of its light (buildables plan, batch B4)
+
+				if light_m > 0.0 and fixture_light is OmniLight3D:
+					(fixture_light as OmniLight3D).omni_range = light_m
+				elif light_m > 0.0 and fixture_light is SpotLight3D:
+					(fixture_light as SpotLight3D).spot_range = light_m
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw)}
 
@@ -2993,7 +2999,7 @@ func _logs_cover(number: int) -> bool:
 			return false
 
 	for keep in r["keeps"]:
-		if not inventory.has(int(keep[0]), int(keep[1])):
+		if not inventory.has_fill(int(keep[0]), int(keep[1])):
 			return false
 
 	return uses_log

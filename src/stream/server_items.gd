@@ -189,6 +189,7 @@ var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the s
 var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof or in a cave (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
 var cave_mean_c: Callable      # (position) -> the cave air (C): the island's year mean at the position's height when it is inside a cave, NAN outside one (unset: never in a cave)
+var year_mean_at: Callable     # (position) -> the year-mean air (C) at that spot and height (Climate.year_mean_c): a cold store's temperature
 var cave_air: Callable         # (position) -> {"deep_c", "depth_m", "kind", "day_part_c"} inside a cave, {} outside: the mouth blend (docs/design/cave_climate_design.md)
 
 var _dir: String = ""
@@ -461,6 +462,7 @@ func setup(item_table, store_dir: String) -> void:
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
+	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
 	_rebuild_supports()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -1435,7 +1437,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops})
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION, "no_kits": true})
 
@@ -6856,7 +6858,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 
 	if lit:
 		placed["struct"]["lit"] = true
-		placed["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0))
+		placed["struct"]["fuel_left"] = light_burn_s(def)
 
 	_items[_next_id] = placed
 	_grid_add(_next_id, placed)
@@ -7115,13 +7117,25 @@ func _take_ground_stock(peer: int, number: int, want: int) -> int:
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
-func _refund_blueprint(peer: int, inv, row: Dictionary) -> bool:
+# A blueprint's materials back in the pack, all or nothing. `taken_down`: the piece stood, so what it burned is gone (blueprints.json "spent", [item,
+# count], also counted in "cost": a lantern's candle or lamp oil; coordinator ruling 10 Nov 2026) and only the rest comes back.
+func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false) -> bool:
 	var given: Array = []
 
 	for need in row["cost"]:
 		var number: int = table.number_of(str(need[0]))
-		var left: int = inv.add(number, int(need[1]))
-		given.append([number, int(need[1]) - left])
+		var count: int = int(need[1])
+
+		if taken_down:
+			for burnt in row.get("spent", []):
+				if str(burnt[0]) == str(need[0]):
+					count = maxi(count - int(burnt[1]), 0)
+
+		if count <= 0:
+			continue
+
+		var left: int = inv.add(number, count)
+		given.append([number, count - left])
 
 		if left > 0:
 			for put in given:
@@ -7248,6 +7262,12 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 # What a piece does once it stands: a support holds the ground, a lean-to is a place to rest, the goal list hears of it.
 func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 	var spot: Vector3 = entry["pos"]
+
+	if str(def.get("use", "")) == "light" and _blueprint_of_kit.has(str(def.get("kit", ""))):   # a lantern built with its candle or oil ("spent") stands lit on it
+		for burnt in _blueprints[int(_blueprint_of_kit[str(def["kit"])])].get("spent", []):
+			if str(burnt[0]) == str(def.get("fuel", "")) and int(burnt[1]) > 0:
+				entry["struct"]["lit"] = true
+				entry["struct"]["fuel_left"] = light_burn_s(def) * float(int(burnt[1]))
 
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
@@ -7773,7 +7793,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
+		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
 	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
 		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out
@@ -8319,6 +8339,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_send_chest_info(peer, id)   # after the contents, so the client knows which container it is about
+		_say_cold_store(peer, id)
 
 	if kind == Net.ACT_CHEST_TAKE and str(_items.get(id, {}).get("struct", {}).get("kind", "")) == "remains":
 		_sync_remains(peer, false)
@@ -9876,6 +9897,9 @@ func _lit_fires() -> Array:
 	for row in _lit_rows():
 		found.append(row[0])
 
+	for row in _guard_rows():   # a lit torch post or other placed light with protect_m keeps them off too (buildables plan, batch B4)
+		found.append(row[0])
+
 	return found
 
 
@@ -9888,6 +9912,10 @@ func fire_protect_m(at: Vector3) -> float:
 	for row in _lit_rows():
 		if (row[0] as Vector3).is_equal_approx(at):
 			return float(((_cooking.get("fire_tiers", {}) as Dictionary).get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("protect_m", 10.0))
+
+	for row in _guard_rows():
+		if (row[0] as Vector3).is_equal_approx(at):
+			return float(row[1])
 
 	return 10.0
 
@@ -9906,6 +9934,7 @@ func _lit_rows() -> Array:
 
 	var found: Array = []
 	_coal_cache_rows = []
+	_guard_cache_rows = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -9914,6 +9943,8 @@ func _lit_rows() -> Array:
 			found.append([it["pos"], int(it["fire"]["state"])])
 		elif it.has("fire") and int(it["fire"]["state"]) == FIRE_STATE_COALS:
 			_coal_cache_rows.append(it["pos"])
+		elif it.has("struct") and bool(it["struct"].get("lit", false)) and float(_structures.get(str(it["struct"]["kind"]), {}).get("protect_m", 0.0)) > 0.0:
+			_guard_cache_rows.append([it["pos"], float(_structures[str(it["struct"]["kind"])]["protect_m"])])
 
 	if _in_vitals:
 		_lit_cache_rows = found
@@ -9924,6 +9955,14 @@ func _lit_rows() -> Array:
 
 # The positions of glowing coals (state 76): they warm coals.heat_c within coals.heat_m and keep nothing off. The same scan as _lit_rows.
 var _coal_cache_rows: Array = []
+var _guard_cache_rows: Array = []   # [position, protect_m] of every lit placed light whose structures.json row has protect_m (the same scan)
+
+
+func _guard_rows() -> Array:
+	if not (_in_vitals and _lit_valid):
+		_lit_rows()
+
+	return _guard_cache_rows
 
 
 func _coal_rows() -> Array:
@@ -10172,6 +10211,42 @@ func _spoil_units(place: String, base_units: float, season_mult: float) -> int:
 	return whole
 
 
+# The air inside a cold store (root cellar; item_system.md D1, Sonny): the ground from about 2 m down holds the site's year-mean air all year, so
+# the cellar sits at Climate.year_mean_c for its height; in a cave cell it is the cave air's year mean (cave_mean_c, 5.5 C at cave 8002, #717).
+# NAN when neither is known (a test without the callables): the store then spoils like a plain chest.
+func cold_store_c(pos: Vector3) -> float:
+	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
+
+	if not is_nan(cave_c):
+		return cave_c
+
+	return float(year_mean_at.call(pos)) if year_mean_at.is_valid() else NAN
+
+
+# On opening a cold store: how cool it is inside and how much longer food keeps there than in the pack.
+func _say_cold_store(peer: int, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not bool(_structures.get(str(it["struct"]["kind"]), {}).get("cold_store", false)):
+		return
+
+	var cold_c: float = cold_store_c(it["pos"])
+
+	if is_nan(cold_c):
+		return
+
+	var cold_mult: float = cold_store_mult(table.spoilage().get("cold_store", {}), cold_c)
+	_say(peer, "It is %d C in here all year. Food keeps about %d times as long as in a pack." % [roundi(cold_c), roundi(1.0 / cold_mult)])
+
+
+# How fast food spoils at `temp_c` against the pack's rate (spoilage.json cold_store): q10 for every 10 C below ref_c, never under min_mult and
+# never above 1 (a warm cellar is no worse than a pack).
+static func cold_store_mult(cold_cfg: Dictionary, temp_c: float) -> float:
+	var q10: float = float(cold_cfg.get("q10", 3.0))
+	var ref_c: float = float(cold_cfg.get("ref_c", 20.0))
+	return clampf(pow(q10, (temp_c - ref_c) / 10.0), float(cold_cfg.get("min_mult", 0.1)), 1.0)
+
+
 # Ages one inventory by `units`; true when anything changed.
 func _spoil_inventory(inv, units: int) -> bool:
 	var rotten: int = table.number_of(str(table.spoilage().get("rotten_item", "rotten_food")))
@@ -10228,15 +10303,29 @@ func _spoil_tick(spent: float) -> void:
 					_send_changes(peer, _inventories[key], before)
 
 	var kind_of_uid: Dictionary = {}
+	var pos_of_uid: Dictionary = {}
 
 	for id in _items:
 		if _items[id].has("struct") and _items[id]["struct"].has("uid"):
 			kind_of_uid[int(_items[id]["struct"]["uid"])] = str(_items[id]["struct"]["kind"])
+			pos_of_uid[int(_items[id]["struct"]["uid"])] = _items[id]["pos"]
 
 	var place_units: Dictionary = {}
 
 	for uid in _chests:
 		var kind: String = str(kind_of_uid.get(uid, "chest"))
+
+		# A cold store (root cellar, item_system.md D1) keeps the ground's year-round temperature, so the season does not reach it: its rate
+		# follows that temperature alone. Cellars at the same temperature share one running fraction.
+		if bool(_structures.get(kind, {}).get("cold_store", false)) and pos_of_uid.has(uid):
+			var cold_c: float = cold_store_c(pos_of_uid[uid])
+
+			if not is_nan(cold_c):
+				var cold_mult: float = cold_store_mult(cfg.get("cold_store", {}), cold_c)
+				kind = "cold@%.2f" % cold_mult
+
+				if not place_units.has(kind):
+					place_units[kind] = _spoil_units(kind, base * cold_mult, 1.0)
 
 		if not place_units.has(kind):
 			place_units[kind] = _spoil_units(kind, base, season_mult)
@@ -11424,15 +11513,20 @@ func take_nest(peer: int, inv) -> bool:
 
 
 # --- Farming (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026) ---
-# A hoe tills a metre of ground into a tilled bed (structure kind tilled_bed, state 47); a seed sown on it starts a crop (data/items/crops.json); a game day with rain
-# or with water poured on the bed counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
+# A hoe tills a metre of ground into a tilled bed (structure kind tilled_bed, state 47; a garden plot, "plot": true, works the same); a seed sown on it starts a
+# crop (data/items/crops.json); a game day that ends with the bed's moisture at wet_min_pct or more (plot_water.gd: rain and pours fill it, the weather dries it) counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
 # pauses growth (turnip excepted) and frost kills a seedling; compost speeds one crop cycle by 20 percent; E on a ripe crop gives its yields (half without the sickle
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (key "x,z" of the bed). The client side
 # (a hoe mode that sends ACT_TILL, a seed use that sends ACT_SOW, E on a crop that sends ACT_HARVEST, the stage looks) is not built: see PROTOCOL.md.
 const TILLED_STATE := 47
-var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "rained": game day it rained on, "poured": game day water was poured}
+var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured (one pour a day)}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
+var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
+var _plot_water: Dictionary = {}         # bed key "x,z" -> [moisture percent, game second it was worked out at]; saved in crops.json "plots"
+var _plots_at_s: float = -1.0e18         # game second of the last _plots_tick pass
+const PLOT_STEP_S := 3600.0              # plots are looked at once a game hour (150 real seconds)
+const PlotWater := preload("res://src/shared/plot_water.gd")
 
 
 func _crop_table() -> Dictionary:
@@ -11440,6 +11534,7 @@ func _crop_table() -> Dictionary:
 		_crops_loaded = true
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
 		_crops_cfg = (parsed.get("crops", {}) as Dictionary) if typeof(parsed) == TYPE_DICTIONARY else {}
+		_moisture_cfg = (parsed.get("moisture", {}) as Dictionary) if typeof(parsed) == TYPE_DICTIONARY else {}
 
 	return _crops_cfg
 
@@ -11458,7 +11553,51 @@ func _season() -> String:
 
 func _bed_at(id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
-	return it if (not it.is_empty() and it.has("struct") and str(it["struct"].get("kind", "")) == "tilled_bed") else {}
+	return it if (not it.is_empty() and it.has("struct") and _is_plot_kind(str(it["struct"].get("kind", "")))) else {}
+
+
+# A tilled bed, or a garden plot (structures.json "plot": true, buildables plan B5): it takes a seed, holds moisture and is tended the same way.
+func _is_plot_kind(kind: String) -> bool:
+	return kind == "tilled_bed" or bool(_structures.get(kind, {}).get("plot", false))
+
+
+# The bed's moisture now, 0 to 100 (plot_water.gd): start_pct for one not seen yet.
+func plot_moisture(pos: Vector3) -> float:
+	var row: Array = _plot_water.get(_bed_key(pos), [])
+	_crop_table()
+	return float(row[0]) if row.size() >= 2 else float(_moisture_cfg.get("start_pct", 50.0))
+
+
+# Every game hour (or at once when the clock jumped): each bed's moisture follows the weather since it was last worked out (rain fills it, the dry
+# weather's evaporation takes it, times the structure's moisture_factor); beds that are gone are forgotten.
+func _plots_tick() -> void:
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	if now_s - _plots_at_s < PLOT_STEP_S:
+		return
+
+	_plots_at_s = now_s
+	_crop_table()
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var rain: float = float(rain_now.call()) if rain_now.is_valid() else float(weather.get("rain", 0.0))
+	var seen: Dictionary = {}
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or not _is_plot_kind(str(it["struct"].get("kind", ""))):
+			continue
+
+		var key: String = _bed_key(it["pos"])
+		var row: Array = _plot_water.get(key, [float(_moisture_cfg.get("start_pct", 50.0)), now_s])
+		var factor: float = float(_structures.get(str(it["struct"]["kind"]), {}).get("moisture_factor", 1.0))
+		var dt_days: float = maxf(now_s - float(row[1]), 0.0) / PlotWater.DAY_S
+		_plot_water[key] = [PlotWater.step(_moisture_cfg, float(row[0]), dt_days, float(weather.get("temp_c", 15.0)), float(weather.get("wind", 0.0)), rain, factor), now_s]
+		seen[key] = true
+
+	for key in _plot_water.keys():
+		if not seen.has(key):
+			_plot_water.erase(key)
 
 
 # One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
@@ -11543,7 +11682,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
-	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "rained": -1, "poured": -1}
+	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
 	_dirty = true
 	return true
 
@@ -11563,6 +11702,8 @@ func water_bed(peer: int, inv, bed_id: int) -> bool:
 
 	inv.remove(water, 1)
 	crop["poured"] = _game_day()
+	var key: String = _bed_key(bed["pos"])
+	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"])), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]   # a bucket's worth (pour_pct)
 	_dirty = true
 	return true
 
@@ -11594,17 +11735,15 @@ func crop_stage(crop: Dictionary) -> int:
 	return stage
 
 
-# Looks at the clock once per game day: rain or poured water makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
+# Looks at the clock once per game day: a bed holding wet_min_pct of moisture (plot_water.gd: rain fills it, a pour adds to it, the weather dries it)
+# makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
 func _crops_tick() -> void:
+	_plots_tick()
+
 	if _crops.is_empty():
 		return
 
 	var today: int = _game_day()
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= 0.05
-
-	if raining:
-		for key in _crops:
-			_crops[key]["rained"] = today
 
 	for key in _crops.keys():
 		var crop: Dictionary = _crops[key]
@@ -11624,7 +11763,7 @@ func _crops_tick() -> void:
 
 			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0)
 
-			if int(crop["rained"]) >= int(crop["day"]) - 1 or int(crop["poured"]) >= int(crop["day"]) - 1:
+			if PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(key, [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0])):
 				crop["wet"] = int(crop["wet"]) + 1
 
 			_dirty = true
@@ -11674,7 +11813,7 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 # for comfort; the flag and the fuel left live on the placed row and burn down on the slow tick (not saved: a restart puts them out).
 func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
 	var fuel: int = table.number_of(str(def.get("fuel", "")))
-	var burn: float = float(def.get("fuel_s", 1800.0))
+	var burn: float = light_burn_s(def)
 	var left: float = float(it["struct"].get("fuel_left", 0.0)) if bool(it["struct"].get("lit", false)) else 0.0
 
 	if fuel <= 0 or not inv.has(fuel, 1):
@@ -11690,6 +11829,15 @@ func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
 	it["struct"]["fuel_left"] = left + burn
 	_dirty = true
 	_say(peer, "It burns.")
+
+
+# How long one of a light's fuel items burns (buildables plan, batch B4: burn times in game days): structures.json fuel_days game days
+# (BuildingWear.GAME_DAY_S, 1 game day = 1 real hour), else fuel_s seconds. A candle, lamp oil or tallow is just the row's "fuel" item.
+func light_burn_s(def: Dictionary, fallback_s: float = 1800.0) -> float:
+	if def.has("fuel_days"):
+		return float(def["fuel_days"]) * BuildingWear.GAME_DAY_S
+
+	return float(def.get("fuel_s", fallback_s))
 
 
 # The lit lights (and the fuel each has left) are saved beside the world items in lights.json as [x, y, z, fuel_left] and put back on the structures at those spots after a load.
@@ -12166,7 +12314,7 @@ func dev_place(spec: String) -> int:
 
 	if lit:
 		row["lit"] = true
-		row["fuel_left"] = float(def.get("fuel_s", 3600.0)) * 2.0
+		row["fuel_left"] = light_burn_s(def, 3600.0) * 2.0
 
 	var entry: Dictionary = {"number": table.number_of(str(def.get("item", name))), "count": 1, "pos": at, "left": 1.0e9, "struct": row}
 
@@ -13423,7 +13571,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 			return false
 
 	for keep in recipe["keeps"]:
-		if not inv.has(keep[0], keep[1]):
+		if not inv.has_fill(keep[0], keep[1]):
 			return false
 
 	return true
@@ -13593,7 +13741,7 @@ func _craft_tick(spent: float) -> void:
 		var tools_ok: bool = inv != null
 
 		for keep in recipe.get("keeps", []):
-			tools_ok = tools_ok and (free_entry or inv.has(keep[0], keep[1]))
+			tools_ok = tools_ok and (free_entry or inv.has_fill(keep[0], keep[1]))
 
 		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
 		var wears_tool: String = str(recipe.get("wears_tool", ""))
