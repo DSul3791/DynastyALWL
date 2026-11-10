@@ -126,7 +126,7 @@ func _init() -> void:
 	tiers.report_position(1, spots[1] - Vector3(2.0, 0.0, 0.0))
 	tiers.place_item(1, anvil, spots[1] + Vector3(0.0, 0.0, 2.5), 0)
 	check(tiers.station_near(1, "forge", 1) and not tiers.station_near(1, "forge", 2), "an anvil beside a stone forge leaves it forge 1")
-	check(tiers.addon_fits({"addon_of": "forge"}, "stone_forge") and not tiers.addon_fits({"addon_for": ["blacksmithy"]}, "stone_forge"), "addon_for limits an add-on to its stations")
+	check(ItemsScript.addon_fits({"addon_of": "forge"}, "stone_forge") and not ItemsScript.addon_fits({"addon_for": ["blacksmithy"]}, "stone_forge"), "addon_for limits an add-on to its stations")
 
 	var steel: int = 0
 
