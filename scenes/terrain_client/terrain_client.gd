@@ -250,6 +250,7 @@ var _z_slept: bool = false             # the hold already asked for sleep
 const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
 var _was_lying: bool = false
 var shot_lock: bool = false              # true while the shot runner takes pictures: mouse look is ignored so the pose it sets stays
+var shot_sway: bool = false              # the shot runner's --shot-sway: the drawn bow's sway still turns the camera under shot_lock (the rig's pitch stays the base)
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var running: bool = false             # Shift held with W
@@ -3941,7 +3942,7 @@ func _update_view(delta: float) -> void:
 
 	# The drawn bow's sway turns the whole view, the aim with it (Dave 10 Nov 2026: "the whole screen should move like that but much less"):
 	# the eye camera goes back to the mouse's look each frame, then held_item turns it; the bow's cross stays in the middle.
-	if not photo.active and not shot_lock:
+	if not photo.active and (not shot_lock or shot_sway):
 		camera.rotation.x = pitch
 		camera.rotation.y = 0.0
 		var turn: Vector2 = held.bow_view_turn() if held != null else Vector2.ZERO
