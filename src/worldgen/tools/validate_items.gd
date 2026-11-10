@@ -447,6 +447,20 @@ func _init() -> void:
 				if not soil_names.has(String(material)):
 					fail("digging.json finds %s: unknown ground material '%s'" % [find.get("item", ""), material])
 
+		# Bog iron (Sonny s11, src/shared/bog_iron.gd): a spade dig on a deposit under a fen, marsh, swamp or bog sample gives this item.
+		var bog: Dictionary = digging.get("bog_iron", {})
+
+		if not bog.is_empty():
+			want_item.call(String(bog.get("item", "")), "digging.json bog_iron")
+			obtainable[String(bog.get("item", ""))] = true
+
+			if float(bog.get("chance", 0.0)) <= 0.0 or float(bog.get("chance", 0.0)) * float(bog.get("edge_mult", 1.0)) > 1.0:
+				fail("digging.json bog_iron: chance x edge_mult must be above 0 and at most 1")
+
+			for cls in bog.get("classes", {}):
+				if not String(cls) in ["4", "6", "7", "8"]:
+					fail("digging.json bog_iron: class %s is not fen 7, marsh 4, swamp 6 or bog 8 (no iron under salt marsh, rivers, lakes, the sea or seasonal water)" % cls)
+
 	# Flora yields that the generated gathered items stand for (plain materials any gatherer may find in time).
 	var yields: Dictionary = {}
 

@@ -31,6 +31,7 @@ const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled
 const GATHER_REACH_M := 12.0              # a gather request for a chunk further than this from the player is ignored
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
+const BogIronScript := preload("res://src/shared/bog_iron.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -352,6 +353,8 @@ func _ready() -> void:
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).ore_at(pos, reach, names, depth_m)
 	items.rock_near = func(pos):   # the bedrock rock under a boulder (TileTerrainData.bedrock_name_at): limestone, chalk and marble give limestone pieces
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).bedrock_name_at(pos)
+	items.bog_deposit_at = func(x, z, cfg):   # bog iron under the baked tile's fens and marshes (BogIron.deposit_at; digging.json bog_iron)
+		return BogIronScript.deposit_at(generator.get_tile(generator.tile_of(x, z)), x, z, cfg)
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
 		var best: Vector2 = Vector2(INF, NAN)
 		var coords: Dictionary = {}
