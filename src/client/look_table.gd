@@ -215,6 +215,7 @@ const LOOKS := {
 	"cheese_press": {"builder": "cheese_press", "args": []},
 	"spinning_wheel": {"builder": "spinning_wheel", "args": []},
 	"loom": {"builder": "loom", "args": []},
+	"carpenters_bench": {"builder": "carpenters_bench", "args": []},
 	"wooden_channel": {"builder": "conduit", "args": ["wood", "straight"]},
 	"wooden_channel_corner": {"builder": "conduit", "args": ["wood", "corner"]},
 	"wooden_channel_tee": {"builder": "conduit", "args": ["wood", "tee"]},

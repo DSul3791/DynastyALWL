@@ -1193,12 +1193,19 @@ static func thatch_floor() -> Node3D:
 	return root
 
 
-# A wooden foundation (Dave 10 Nov 2026): works exactly like the stone foundation, the same body 4 m square and 2 m deep from 0.3 m above the spot,
-# built as a crib of stacked logs with boards laid across the top and a squared timber along every top edge.
+# The Refined - Foundation (Dave 10 Nov 2026): works exactly like the stone foundation, the same body 4 m square and 2 m deep from 0.3 m above the spot.
+# Seven-tier ladder: sawn planks, not logs (logs are the Rustic tier): closed in with boards on a squared-timber frame, a post at each corner and a rail
+# round the middle, boards laid across the top and a squared timber along every top edge.
 static func wood_foundation() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(3.96, 2.0, 3.96), Vector3(0.0, -0.7, 0.0), _logs)                # the log crib
+	_box(root, Vector3(3.96, 2.0, 3.96), Vector3(0.0, -0.7, 0.0), _planks)              # the boarded sides
+
+	for x in [-1.96, 1.96]:
+		for z in [-1.96, 1.96]:
+			_box(root, Vector3(0.16, 2.0, 0.16), Vector3(x, -0.7, z), _frame)            # the corner posts
+
+	_box(root, Vector3(4.0, 0.12, 4.0), Vector3(0.0, -0.6, 0.0), _frame)                 # the rail round the middle
 
 	for k in 8:
 		_box(root, Vector3(3.8, 0.05, 0.47), Vector3(0.0, 0.305, -1.75 + 0.5 * float(k)), _planks)
@@ -2579,6 +2586,37 @@ static func stone_workbench() -> Node3D:
 		_box(root, Vector3(0.03, 0.03, 0.08), Vector3(-0.75 + 0.3 * float(k), 1.04, -0.42), _frame)   # pegs
 
 	_solid(root, Vector3(2.0, 0.9, 1.0), Vector3(0.0, 0.45, 0.0))
+	return root
+
+
+# The Carpenter's bench (the level-2 workbench, replacing the Log - Workbench; seven-tier ladder 10 Nov 2026), 2.0 x 1.0: a thick top of sawn planks on
+# four squared legs joined by stretchers, a wooden leg vise with its screw and handle at the left end, a planing stop and a row of bench-dog holes, a
+# plane and a hand saw on the top, and boards stacked on the shelf underneath.
+static func carpenters_bench() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.12, 0.8), Vector3(0.0, 0.84, 0.0), _planks)                    # the top
+
+	for x in [-0.85, 0.85]:
+		for z in [-0.3, 0.3]:
+			_box(root, Vector3(0.12, 0.78, 0.12), Vector3(x, 0.39, z), _frame)               # the legs
+		_box(root, Vector3(0.1, 0.1, 0.6), Vector3(x, 0.2, 0.0), _frame)                    # the end stretchers
+
+	_box(root, Vector3(1.6, 0.04, 0.6), Vector3(0.0, 0.26, 0.0), _planks)                    # the shelf
+	_box(root, Vector3(1.4, 0.08, 0.5), Vector3(0.0, 0.32, 0.0), _planks)                    # boards stacked on it
+	_box(root, Vector3(0.14, 0.7, 0.08), Vector3(-0.85, 0.5, 0.44), _frame)                  # the leg vise's chop
+	_cyl(root, 0.03, 0.3, Vector3(-0.85, 0.7, 0.52), _frame, 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)   # its screw
+	_box(root, Vector3(0.3, 0.03, 0.03), Vector3(-0.85, 0.7, 0.62), _frame)                  # its handle
+	_box(root, Vector3(0.06, 0.04, 0.06), Vector3(0.9, 0.92, -0.25), _frame)                 # the planing stop
+
+	for k in 5:
+		_box(root, Vector3(0.03, 0.005, 0.03), Vector3(-0.5 + 0.3 * float(k), 0.902, 0.3), _pot)   # bench-dog holes
+
+	_box(root, Vector3(0.3, 0.08, 0.08), Vector3(0.2, 0.94, -0.1), _frame)                   # the plane
+	_box(root, Vector3(0.06, 0.03, 0.03), Vector3(0.2, 0.995, -0.1), _planks)                # its tote
+	_box_rot(root, Vector3(0.5, 0.005, 0.12), Vector3(-0.35, 0.905, -0.15), Vector3(0.0, 0.3, 0.0), _steel)   # the hand saw's blade
+	_box_rot(root, Vector3(0.12, 0.03, 0.08), Vector3(-0.08, 0.915, -0.23), Vector3(0.0, 0.3, 0.0), _frame)   # and its handle
+	_solid(root, Vector3(2.0, 0.9, 0.8), Vector3(0.0, 0.45, 0.0))
 	return root
 
 
