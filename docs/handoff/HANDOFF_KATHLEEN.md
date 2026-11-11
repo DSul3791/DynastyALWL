@@ -52,19 +52,61 @@ I own how things look: building pieces, items, icons, world resources (boulders,
 - Heavy moss on outcrops.
 - Rejected words for tiers and pieces: Wattle, Timber, Grand, Elegant, Solid, Robust, Stalwart. No "floor" in display names.
 
-## Next work (not started; ready to pick up)
-1. **Lantern horn glow, flame core and hand light.** Approved by the coordinator 10 Nov, but it isn't in a PR. It's commit `28596b75` on branch `claude/project-thread-rfqwpe`: cherry-pick it onto a fresh branch off main.
-   - `held_item._make_lantern_model` gets HORN_GLOW_SHADER: brightest at flame height, dimmer at the corners.
-   - A small bright flame core: narrow candle in wood, wider oil flame in iron.
-   - A 0.6 m HandLight.
-   - Then Dino takes one −55° first-person shot on the beach at 22:00 with `--give wooden_lantern --lit`.
-2. **`_show_bog` hookup.** Draw the bog patch in the world. #997 is merged, so the deposit rows exist: `[id, 0, left, pos, 229 BOG_STATE, {"key","total","wet"}]`, with ids counting down from 2e9.
-   - My draft is `bog_show.patch` in my scratchpad, which is lost with this session. Rewrite it from this description.
-   - In `inventory_view._note_bog`, call `_show_bog(id)`.
-   - The state is "wet" if wet, "dug" if left < total, else "dry". Rebuild only when the state changes.
-   - Yaw comes from a hash of the key. Use `PieceLook.bog_iron_patch(state, ground)`, where `ground` is `func(x, z)` returning the ground height under the patch (from `_ground_below`, with NAN treated as 0) minus the patch's own height.
-   - Store the node in `bogs[id]["node"]`; `_forget` already frees it.
-3. **Outcrop retake.** A tin outcrop in open sun at 11:00, from 10 m and 4 m, after #1019. Dino has the request. The last shot was in deep shade, before the moss fix.
+## Unfinished work (preserved, status noted)
+Nothing of mine is half-merged. No art PR is open. The two pieces below are written and approved but were not opened as PRs, because of the no-new-work rule. Both are saved:
+1. **Lantern horn glow, flame core and hand light.** Approved by the coordinator on 10 Nov. Not gated, and never run in Godot.
+   - Commit `28596b75`. It sits in the history of branch `claude/project-thread-rfqwpe` (reachable, not in the tree), and as a patch in `art/parked/lantern_horn.patch` (copy in `/mnt/project-files/kathleen/parked/`). It applies to main with `git apply -3`.
+   - What it does in `held_item._make_lantern_model`:
+     - `HORN_GLOW_SHADER` replaces the flat amber box; the glow is brightest at flame height and dims toward the corners.
+     - A small bright flame core: a narrow candle in the wooden lantern, a wider oil flame in the iron one.
+     - A 0.6 m `HandLight`, so the fist holding the bail isn't grey-dark in first person.
+   - Check: one first-person shot at −55° on the beach (52752, 67792) at 22:00, with `--give wooden_lantern --lit`.
+2. **`_show_bog` hookup**, which draws the bog patch in the world. `art/parked/bog_show.patch` (copy in `/mnt/project-files/kathleen/parked/`) applies cleanly to main bd3146aa now that #997 is in.
+   - `_note_bog` calls `_show_bog(id)`.
+   - State: "wet" if wet, "dug" if left < total, else "dry". The patch is rebuilt only when the state changes.
+   - Yaw comes from a hash of the key, and the stain drapes over the ground through `_ground_below`, with NAN treated as 0.
+   - Not gated, and never run in Godot.
+3. **Outcrop retake.** A tin outcrop in open sun at 11:00, from 10 m and 4 m, on main with #1019 (Dino has the ask).
+
+Sheet scripts used for approvals (run them with `tools/look_runtime.py` on the path) are in `/mnt/project-files/kathleen/parked/*_sheet.py`.
+
+## Outstanding bugs and risks (art)
+- The carried lantern pane reads as a flat amber card, and the left fist is grey-dark in first person. The fix is item 1 above.
+- The tin outcrop has only been seen in deep shade and before the moss fix (#1019). Its 10 m read is unconfirmed.
+- The bog patch can't be seen in game until item 2 lands.
+- The tier roofs and ceilings (#973) have never been shot in the world. They're checked only by offline sheets and the triangle tests.
+- From 1 Nov, still open: thatch seen from behind reads as paper triangles; cut logs are plain blocks; the stone axe head is pale and blocky.
+
+## Visual systems verified only by eye (no automated check)
+Headless tests prove that a look builds, fits its footprint and stays under its triangle cap. They don't prove it looks right or that a shader compiles. These are checked only by pictures:
+- Every look in `look_table.gd`: the sheets, plus Dino's rig shots where they exist (Fortified yes, roofs no).
+- The outcrop shader splice (`OUTCROP_GLSL` and the uniforms replaced into `BOULDER_SHADER`). A broken replace shows as flat grey or magenta boulders, and no test catches it. The 10 Nov shot showed 0 shader errors.
+- The lantern lights: their range, the cull mask (layer 2), whether a dark twin stays dark, and the hand light.
+- All item icons (the `paint_look_icons.py` output).
+- Roof hip corners lining up with the straight pieces, and the Fortified wall top over pillars (`kathleen/fortified_wall_top_joint.png`).
+
+## Important technical decisions
+- Tier roofs come from one data-driven builder (`ROOF_SPEC`), not one function per tier, so a new tier is one row.
+- Shingle and tile courses are real geometry, which is why the clay-tile roofs need the 350/400 caps. The coordinator chose raising the caps over trimming rows (#973 gate).
+- Outcrops change the shader material only (no new mesh or triangles), with one material per ore made once. The client reads `"ore"` straight from the row; Steve's `boulder_info` accessor (#1008) was closed as not needed.
+- The bog patch is drawn on the client from server rows (BOG_STATE 229), because the client has no water-class map.
+- Concrete foundations: the footing steps run down to the body's foot, so a dipped corner never shows a ledge.
+
+## Lessons and failed approaches (not written down elsewhere)
+- Never estimate triangles from `look_runtime.faces_of`: boxes come back as quads, and I under-counted the brick roofs (308) and corners (382), which failed the gate. Use `lr.triangles(root)`.
+- Bolt heads and brackets placed "on the face" stuck out past the footprint test's ±w/2+0.04 limit. Centre them on the face.
+- Rib and band clipping: the edge point is `a.lerp(b, da / (da - db))`. The first formula fanned the ribs.
+- Shadowed or tree-cover rig spots make a look unjudgeable. Shoot on the bare beach at (52752, 67792); 11:00 for day, 22:00 for night.
+- A "gap" under a building in a shot is usually an overhanging footing step seen at a dipped corner, not a float. Check the body depth before you call it a placement bug.
+- Moss on the shared boulder shader (0.65) swamps any tint. Any new per-kind boulder look needs its own mossiness.
+- First-person held items at the hip are out of frame above −45° pitch. Use −55°.
+- The rig selecting before the pack arrived left both hands empty. That's fixed in #1016; #1018 added the in-frame log line, so a missing model now says why.
+- `look_runtime.py` lacks some Godot API (`Vector3.DOWN`, `floori`, `Callable`). Add stand-ins to it, not workarounds in the look code.
+
+## Next steps I recommend
+1. Ship item 1 (lantern) and item 2 (`_show_bog`): each is one small look PR, gated by `test_look_table` plus the always set, then one rig shot each.
+2. A rig pass on the tier roofs and ceilings: `--looks` for the rows on the beach at 11:00, then fix whatever reads badly.
+3. Get Dave's answers on the art questions on the QA page before any new look work.
 
 ## Open questions for Dave (on the QA page)
 - Do the Fortified pieces look right?
