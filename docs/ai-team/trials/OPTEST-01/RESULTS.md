@@ -39,5 +39,8 @@ Not changed (recorded only): `HANDOFF_TEMPLATE.md` has no "answers" field; `DECI
 - Release criterion "simulate coordinator session replacement" (`AUDIT_MATRIX.md`): not run in this test.
 
 ## Needs Dave
-1. Go / no-go to merge the OS-fix PR into `main` (then fast-forward `dev`).
+1. Go / no-go to merge the OS-fix PR into `main` (then fast-forward `dev`). *Given 11 Nov 2026 18:56 UTC, conditional on the final commit passing the required checks.*
 2. Optional: protect `dev` like `main`.
+
+## Recorded limitation (Dave, 11 Nov 2026: record for future improvement; do not raise again without a practical recommended solution)
+`main` protection does not require an approving review for these PRs (#1032 was `clean` with no review), and AI sessions act through Dave's GitHub account, so "Dave's go before `main`" is process-enforced only. Master entry: `docs/ai-team/INSTALL_RECORD.md` (KNOWN LIMITATION).
