@@ -1,0 +1,2 @@
+Terrain client: welcome after 33102 ms; world Modular Island World; spawn (53296.0, 68.03883, 68080.0); cache user://terrain_cache/Modular Island World/v76_726130f9c7 (4096 MB)
+Terrain client: 2026-11-11T16:25:24 [+4.4 s] JOIN: ground ready after 0 retries, test drops 0, player (53296.0, 68.53883, 68080.0), viewer y 68.5
