@@ -23,7 +23,7 @@ for rel in required:
 agent_files = sorted((root/'.claude/agents').glob('*.md'))
 skill_files = sorted((root/'.claude/skills').glob('*/SKILL.md'))
 if len(agent_files) != 8: errors.append(f'EXPECTED 8 agent definitions, got {len(agent_files)}')
-if len(skill_files) != 7: errors.append(f'EXPECTED 7 skill definitions, got {len(skill_files)}')
+if len(skill_files) != 10: errors.append(f'EXPECTED 10 skill definitions, got {len(skill_files)}')
 
 def frontmatter(path):
     raw=path.read_text(encoding='utf-8')
@@ -87,10 +87,41 @@ for rel in ('CLAUDE.md', 'docs/ai-team/WORKFLOW.md','docs/ai-team/package/cowork
 if 'ff650afb' not in (root/'docs/ai-team/package/README_FIRST.md').read_text(encoding='utf-8'):
     errors.append('MISSING VERIFIED FINAL HANDOFF SHA IN README')
 
+# Cowork upload copies must match the repo skills byte for byte (one master: the repo SKILL.md).
+import zipfile
+for path in skill_files:
+    z=root/f'docs/ai-team/package/cowork/skill_uploads/{path.parent.name}.zip'
+    try:
+        same=zipfile.ZipFile(z).read(f'{path.parent.name}/skill.md')==path.read_bytes()
+    except (OSError, KeyError, zipfile.BadZipFile):
+        same=False
+    if not same: errors.append(f'COWORK SKILL ZIP MISSING OR STALE: {z.name}')
+
+# Ponytail v5.3.3 (docs/ai-team/PONYTAIL_INSTALL.md): one master text, ranked below the constitution,
+# vendored skills pinned to the reviewed upstream commit, and no third-party hooks or plugins enabled
+# in the shared settings without a reviewed change to this check.
+PONYTAIL_COMMIT='7801d061243d7b753bad0e0b3c057cd250b11755'
+rules=(root/'docs/PONYTAIL_RULES.md').read_text(encoding='utf-8')
+for term in (PONYTAIL_COMMIT,'CONSTITUTION.md','TEST_GATES.md','never overrides','NOT RUN'):
+    if term not in rules: errors.append(f'PONYTAIL_RULES MISSING: {term}')
+if not (root/'docs/ai-team/PONYTAIL_INSTALL.md').is_file(): errors.append('MISSING: docs/ai-team/PONYTAIL_INSTALL.md')
+for name in ('ponytail-review','ponytail-audit','ponytail-debt'):
+    p=root/f'.claude/skills/{name}/SKILL.md'
+    t=p.read_text(encoding='utf-8') if p.is_file() else ''
+    for term in (PONYTAIL_COMMIT[:8],'PONYTAIL_RULES.md'):
+        if term not in t: errors.append(f'PONYTAIL SKILL {name} MISSING: {term}')
+if not re.search(r'^skills:\n(?:\s+- .*\n)*?\s+- ponytail-review\n', (root/'.claude/agents/gate-reviewer.md').read_text(encoding='utf-8'), re.M):
+    errors.append('GATE REVIEWER DOES NOT PRELOAD ponytail-review')
+import json
+settings=json.loads((root/'.claude/settings.json').read_text(encoding='utf-8'))
+for key in ('hooks','enabledPlugins','extraKnownMarketplaces'):
+    if key in settings: errors.append(f'UNREVIEWED SETTINGS KEY {key}: review it, then update this check')
+
 if errors:
     print(f'FAIL: {len(errors)} package consistency findings')
     for e in errors: print(' -',e)
     sys.exit(1)
 print(f'PASS: {len(required)} core files, {len(agent_files)} Claude Code agents, {len(skill_files)} skills')
 print('PASS: frontmatter, known instruction collisions, authority markers, guardrail references')
+print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, no hooks/plugins in settings')
 print('LIMIT: static checks only; no Cowork, GitHub write, PC, Godot or live Claude evaluation.')

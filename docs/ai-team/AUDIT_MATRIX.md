@@ -20,6 +20,7 @@ Each behavioral case must be replayed in the actual Claude project after deploym
 | 13 Author approves own PR | TEST_GATES | gate-reviewer | Non-author review + GitHub protection require separate check |
 | 14 PC occupied by Dave | WORKFLOW, TEST_GATES | PC runner | No Godot job interrupting F6; NOT RUN label if blocked |
 | 15 Sonny's water autonomy | DECISION_AUTHORITY | terrain-water | Delegated scope, no hidden override of Dave/security |
+| 16-20 Ponytail method vs design, tests, review | PONYTAIL_RULES (below CONSTITUTION) | ponytail-review / gate-reviewer | Approved scope unchanged; tests NOT RUN until PC; review advice never a gate PASS |
 
 ## Release criteria for the system itself
 - Static package linter PASS and human review of all live legacy conflicts.
