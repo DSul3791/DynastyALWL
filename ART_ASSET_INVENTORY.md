@@ -2,6 +2,23 @@
 
 Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-10-30. **Inventory only: nothing was fixed, changed or baked.** Counts are rows/entries that exist in tables, files or code; anything I could not confirm is flagged `unconfirmed`.
 
+## Update 11 Nov 2026 (handoff; main bd3146aa)
+
+The tables below are the 30 Oct snapshot. Since then, these assets were added or changed. Stages use the same scale; 3 means checked in the real game by a look-rig shot.
+
+| Asset | Where | Stage | Evidence |
+|---|---|---|---|
+| Tier roofs (Rustic, Refined, Sturdy, Superior, Engineered) and hip corners | `piece_look.pitched_roof`, `ROOF_SPEC` (#973) | 2 | sheet `kathleen/roof_ladder_sheet.png`; no world shot yet |
+| Tier ceilings (joisted floors) | `piece_look.tier_floor` (#973) | 2 | sheet only |
+| Fortified wall, doorway, gate, pillar, foundation, wall top | `piece_look` concrete builders, banded (#989, #1017) | 3 | Dino world shots `fortified_world_*`, `fortified_beach_*` (10 Nov), reviewed |
+| Bog iron deposit patch (dry, wet, dug) | `piece_look.bog_iron_patch` (#1012) | 2 | sheet `kathleen/bog_iron_sheet.png`; not drawn in the world until `_show_bog` lands |
+| Outcrop boulders (8 ores and stones) | `inventory_view.OUTCROP_LOOK`, `_boulder_material` (#1015, #1019) | 2 | tin shot 10 Nov (shade, before the moss fix); retake pending |
+| Dark lantern icons | `tools/paint_look_icons.py` (#990) | 2 | icons only |
+| Carried lanterns, wooden and iron (Jamie #977) | `held_item._make_lantern_model` | 3 | Dino beach shots 10 Nov: light passes; flat amber pane, follow-up 28596b75 parked |
+| Roof icons (drawn from looks) | `paint_look_icons.py` CORNER_VIEW | 2 | replaces the flat painted roofs |
+
+The handoff and next work are in `docs/handoff/HANDOFF_KATHLEEN.md`. The tier look table is in `art/BUILDING_TIERS_LOOKS.md`.
+
 ## How to read this
 
 * **Quality stage** is my reading of the evidence in the repository. I could not run the game or look at renders, and the earlier art role's critique files (`art/CRITIQUES/`, `art/MODEL_INVENTORY.md`, `art/REFERENCE_PHOTOS.md`, `art/MODEL_PLAN.md`) are **not in this repository at all** (I searched file names and git history). So every stage comes from what the code builds, comments in the look scripts, `ART_DIRECTION.md`, and the archived Kathleen handoffs/action plans under `docs/archive/2026-10/`. No asset is rated 4: nothing in the repo says an asset is finished or photoreal.

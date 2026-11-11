@@ -1,5 +1,7 @@
 # Document map (Jamie, 1 Nov 2026; files added 2 to 5 Nov listed by MikeW, 5 Nov)
 
+> **STALE (Jamie, 11 Nov 2026):** the file-by-file list below dates from 1 to 5 Nov and has not been redone for the handoff. For which document is current and which is authoritative per topic, use Morgan's handoff audit `/mnt/project-files/handoffs/DOC_AUDIT_11Nov.md` and `/mnt/project-files/HANDOFF.md`. For items, recipes and buildings: `data/items/*.json` on main, then `docs/design/item_system.md`, `docs/design/progression.md`, `docs/design/buildables_plan.md`, and the shared `buildables/items_current.md`.
+
 Every markdown file in git outside `docs/archive/`, `.claude/` and `addons/`: **about 328 files** (120 of them the frozen `docs/mirror/`). Owner = who maintains it now (roles from `MODERATOR_QA_LOG.md`). Updated = date of the last commit that touched the file (not always a real content change).
 
 Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the named file, then archive the rest), **ARCHIVE** (to `docs/archive/YYYY-MM/`, with git mv), **review** (overlap seen, owner to decide).

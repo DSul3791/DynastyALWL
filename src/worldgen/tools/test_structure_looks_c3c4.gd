@@ -1,7 +1,7 @@
 extends SceneTree
 
-# Item system C3 and C4 (item_system.md draft 7, Jamie's #936 and #938, 10 Nov 2026): the Storage jar, Hide - Sack, Wicker - Basket, Weapon rack,
-# Armour stand, Sign, Tusk - Mount, Clay bloomery and Stonecutter's bench looks build inside their structures.json footprints (w x d, centred, standing
+# Item system C3 and C4 (item_system.md draft 7, Jamie's #936 and #938, 10 Nov 2026): the Storage jar, Hide - Sack, Basket, Weapon rack,
+# Armour stand, Sign, Tusk mount, Clay bloomery and Stonecutter's bench looks build inside their structures.json footprints (w x d, centred, standing
 # on y = 0, under the height given here), are solid where they stand (not the Tusk mount: it hangs on a wall like the Antler mount, so it is given
 # 0.3 m of depth out from the wall), and stay under the look table's triangle cap. Bounds only (no pictures). The set Fish trap and Bird trap (#941,
 # fish_trap_set and bird_trap_set) are checked here too; they are not solid. The Iron - Anvil (#950)

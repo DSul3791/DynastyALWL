@@ -1,5 +1,7 @@
 # Items data handover (Sal, 2026-10-31): one page for Dave
 
+> **HISTORICAL (Jamie, 11 Nov 2026):** Sal's handover from 31 Oct. Its file layout is still mostly right, but it predates the building tiers, blueprint-only building, ingredient groups, bronze nails and bog iron. Current: `/mnt/project-files/handoffs/Jamie_handoff_11Nov.md` (data layout, id counters, naming rules) and `docs/design/item_system.md`.
+
 ## Where everything is (all under data/items/ unless noted)
 | Thing | File |
 |---|---|

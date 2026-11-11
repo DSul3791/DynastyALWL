@@ -189,7 +189,7 @@ Everything sewn needs **Bone - Needle** (kept tool, section 3). Slots (Sonny C2)
 | Back and waist | Hide - Backpack (RENAME), Leather - Backpack (NEW), Leather - Belt (NEW, waist slot, fastened with **Toggle**, NEW, 1 Bone → 2), quiver (section 4) |
 | Jewellery | Silver - Ring, Gold - Ring (NEW-F, with their ore items), Bone - Necklace, **Claw - Necklace** (NEW-F; Claw is live, dropped by 14 species and has no use; replaces Amber, which is placed nowhere) |
 
-**Hide - Sack and Wicker - Basket are small placed storage** (early-tier chests, 6 slots; ruled). Hide - Pouch parked. Iron - Shears parked until a domestic sheep exists.
+**Hide - Sack and Basket are small placed storage** (early-tier chests, 6 slots; ruled). Hide - Pouch parked. Iron - Shears parked until a domestic sheep exists.
 
 **Fur supply (C4):** only fox, wolf, bear and black bear drop Fur. Add Fur to beaver, otter, mink, pine marten, lynx, seal and reindeer in `carcass.json` (Steve/Jamie), or six fur garments rest on four species.
 
@@ -207,7 +207,7 @@ Furniture B3, lights B4, garden B5 and water B6 rows are **not** repeated here. 
 | Canopy bed | RENAME (Canopy bed; one version, the top bed) | as live |
 | Bedroll | NEW | 3 Hide, 2 Twine, needle. Portable sleep: in the pack, open and dry, sleep quality 0.85 instead of 0.6 and a 0.05 warmth bonus; rain still stops sleep (code plan s5). |
 | Hide - Rug, Wool - Rug | HAVE / FUTURE | as live |
-| Antler - Mount | RENAME | as live. Tusk - Mount NEW now (Tusk is live, item 347). **Skull - Mount dropped.** |
+| Antler mount | RENAME | as live. Tusk mount NEW now (Tusk is live, item 347). **Skull - Mount dropped.** |
 | Weapon rack, Armour stand | NEW | 6 and 8 Planks, 2 Twine |
 | Tool rack | HAVE | as live (it is the workbench add-on) |
 | Flower pot | RENAME (absorbs Garden pot) | 2 Clay, 1 Soil |
@@ -230,7 +230,7 @@ Furniture B3, lights B4, garden B5 and water B6 rows are **not** repeated here. 
 | Brick - Forge | RENAME (Blacksmith's forge) | iron. **New cost (ruled): 20 Brick, 10 Stone, 4 Clay mortar. Kathleen reskins it: brick body, keep the hood and iron straps.** |
 | Anvil | NEW | **Brick - Forge add-on** (`addon_of: brick_forge`) within 5 m. 5 Iron ingot + 1 Log (as #883). **The bellows is dropped.** |
 | Large forge, Master forge | PARKED | The unpark is withdrawn; the anvil is the steel step. |
-| **Clay hearth** | **HAVE, stays** | **A cooking station (26 recipes; the Brick oven needs it near). Not a kiln.** |
+| **Clay hearth** | **HAVE, stays** | **A cooking station (26 recipes; the Oven needs it near). Not a kiln.** |
 | Kiln | NEW | One kiln (single version, plain name; supersedes draft 3's Clay - Kiln and Brick - Kiln). Hammer; 30 Brick, 8 Clay, 4 Clay mortar. **Brick yield doubles (2 Clay → 6 Brick; the campfire gives 3) and 2 Firewood → 2 Charcoal (campfire: 1).** Glass (Sand + Potash) and Potash are made here. **Pots stay at the campfire.** The campfire makes the first bricks, pots and charcoal. |
 | Oven | RENAME (Brick oven; single version, plain) | as live; still needs the Clay hearth near it |
 | Tanning rack | NEW | 6 Log, 4 Twine. **Move the live leather recipe here with the same inputs** (Scraped hide + 2 Tanbark + 1 Water; Heavy leather too) and remove the campfire-pot version. |
@@ -283,7 +283,7 @@ Merged or skipped: Jeweller's bench (jewellery at the forge), Mining bag, Trunk,
 | Wooden - Barrel, Wooden - Crate | per buildables B3 | one piece type; the Rain barrel is the B3 Wooden - Barrel |
 | Clay jug | HAVE (plain) | 2 L |
 | Clay - Pot, Copper - Pot | RENAME (Clay pot) / NEW-F | 3 L; the pot takes a tier word because it comes in two materials |
-| Hide - Sack, Wicker - Basket | NEW | small placed storage, 6 slots (early chests); Hide - Sack 2 Hide, 1 Twine, needle; Basket 8 Stick, 4 Twine |
+| Hide - Sack, Basket | NEW | small placed storage, 6 slots (early chests); Hide - Sack 2 Hide, 1 Twine, needle; Basket 8 Stick, 4 Twine |
 | Wooden bowl | HAVE (plain) | 0.3 L |
 | Mug | NEW | 2 Clay; `capacity_ml` 400 |
 | Cup, Plate, Spoon | NEW | 1 Wooden block each |
@@ -298,7 +298,7 @@ Merged or skipped: Jeweller's bench (jewellery at the forge), Mining bag, Trunk,
 | **Clay mortar** | RENAME (from Mortar). The live mortar is 2 Sand + 1 Clay, so name it for what it is. (Lime mortar dropped 10 Nov: lime powder is the concrete binder, section 17) A true lime mortar from kiln-burnt limestone (limestone is placed in the geology) can come later as a better one (B8). |
 | Copper, Tin, Bronze, Iron, Steel ingot | HAVE. **Bronze ratio:** live 1 Copper + 1 Tin → 2 Bronze is half tin (real bronze is about one part in ten). Use 3 Copper + 1 Tin → 4 Bronze; halves the tin needed. |
 | Silver ingot, Gold ingot | NEW-F; **no ore items exist** though the geology places both (silver veins 0.35, gold arcs 0.3, veins 0.65, placers). Add Silver ore and Gold ore items. |
-| Nails, Hinges, Rivets | HAVE. Iron smelting and working gain level 2. |
+| Nails, Hinges, Rivets | HAVE. Iron smelting and working gain level 2. **Bronze nails** (894) and **Bronze hinges** (895) are made at the Stone - Forge, 1 Bronze ingot → 100 or 20, and fill any nails or hinges cost through the `nails` and `hinges` ingredient groups (#1001); a taken-down piece gives back the bronze kind once #1004 lands. Iron band has no bronze stand-in. |
 | Linen thread, Wool yarn | NEW-F |
 | **Fibre cloth** | RENAME (from Cloth; made from 8 Plant fibre by hand). Banners and tapestries are better as Linen or Wool. |
 | Wool cloth (3 Wool), Linen (4 Flax → 2) | HAVE, by hand; those recipes go when yarn, thread, wheel and loom arrive |
@@ -337,7 +337,7 @@ Knife, saw, needle, axe, pick and hammer groups so a kept tool of any tier works
 - **Food:** keep ours. Add drinks: Mead, Ale, Cider (apples are everywhere), Wine (future). Hops future crop; mustard future; pepper skipped. Meat skewer and Sausage (campfire pot; Gut) NEW. Oat porridge future. Cheese is live now and moves to the press later.
 - **Medicine:** add Herb antidote. Pills skipped. Bandage, poultice, salve, splint stay.
 - **Transport (separate design doc):** Log - Raft, Wooden - Rowboat, Wooden - Sailboat, Wooden - Cart, Leather - Saddle as NEW-F placeholders. Snowshoes now: item id `wooden_snowshoes`, display name **Snowshoes** (single material, no tier word), worn in the feet slot with `snow_walk: true`; needs Steve's snow-walking rule first (code plan s7).
-- **Farming:** Chicken coop, **Fodder trough** (named so no one takes it for the B6a water troughs), Thatch - Scarecrow (buildables B5; the plan's name wins), Bonemeal (second fertiliser beside Compost; 2 Bone at the hand mill). Irrigation per the buildables plan.
+- **Farming:** Chicken coop, **Fodder trough** (named so no one takes it for the B6a water troughs), Scarecrow (buildables B5; the plan's name wins), Bonemeal (second fertiliser beside Compost; 2 Bone at the hand mill). Irrigation per the buildables plan.
 - **Water items against Sonny's rules and Steve's #912 (D3):** the bucket holds 8 L, so the well draw fills the held container (B6a's "E draws 10 L" becomes the container size). Plot store 100 L at 1% per litre: an 8 L bucket adds 8%. Glass bottle and Clay mug need `capacity_ml`. Filling a container at a trough, tap or cistern takes the network's quality tag. The water wheel and sawmill need moving water: a paddle over a river cell of the 8 m levels at least 0.3 m deep with at least 0.3 m/s (final numbers when scheduled).
 - **Hot stone (D2):** a 1 kg stone at about 80 C down to 35 C holds about 36 kJ. Against the body at 10 to 20 W that is 30 to 60 minutes. Proposal: a small warmth bonus fading to nothing over 1 game hour (75 to 150 real seconds), after 10 game minutes heating at a fire. Name **Hot stone** (plain). Dave's numbers.
 - **Trade:** coins stay. Gift trinkets arrive with jewellery.
@@ -361,7 +361,7 @@ Knife, saw, needle, axe, pick and hammer groups so a kept tool of any tier works
 | Rough bed / Straw bed / Feather bed | Thatch - Bed (thatch cost) / Straw - Bed / Feather - Bed |
 | Canopy bed | Canopy bed (unchanged) |
 | Log seat | Log - Seat |
-| Antler mount | Antler - Mount |
+| Antler mount | Antler mount (kept plain: one material, 10 Nov 2026) |
 | Flower pot | Flower pot |
 | Workbench / Sturdy workbench | Wooden - Workbench / Log - Workbench |
 | Planks | Plank |
@@ -415,7 +415,7 @@ Knife, saw, needle, axe, pick and hammer groups so a kept tool of any tier works
 
 **Draft 6 changes that reverse or adjust a coordinator ruling (from Sonny's re-check; all three reversals confirmed by the coordinator, 10 Nov 05:58):** (1) the **bellows is dropped** (it let a Brick forge reach steel with no anvil); (2) the **Clay bloomery** gives Iron ingot directly at 5 ore → 1 (no Iron bloom), because the earlier 2 → 1 beat the forge and the bloom would still need the Brick forge; (3) the Stonecutter's bench **does not gate Stone block**, the live 8-Stone workbench recipe stays; (4) **tier words dropped from every single-material item** (Fish trap, Drying rack, Tanning rack, Oil press, Smoker, Sap tap, Skep, Loom, Anvil, Sling, Bedroll and about 25 more) to apply your rule 1 uniformly, and the first spyglass is Wooden - Spyglass; (5) workbench recipes must be assigned to levels 2 to 5 or the Log and Stone benches gate nothing; (6) Soap keeps its trade-good role (no medicine use).
 
-**Known gaps (not decisions):** there is no iron on tile 3,4, so the Iron tier needs other tiles, bog iron or a re-bake. A lookup bug hides ore from boulders (Steve is fixing it, #913). **Tin answer (Jamie's check of #913):** from the temporary spawn, tin and copper are both within 500 m (tin 23%, copper 18% of spots, before the 0.4 boulder share), so the Bronze tier stands. **No coal within 4 km of either spawn** (granite and fold belt; coal lies only in basins), so early forge fuel is charcoal, which backs keeping charcoal at the campfire. **Risk:** the tile spawn has no ore within 1 km; this matters only if the spawn moves back.
+**Known gaps (not decisions):** rock iron is still not on the land of the starter tiles (both iron bodies there lie under the sea), so land iron is **bog iron** (live 11 Nov, #996 and #997: a spade digs Iron ore from fen, marsh, swamp and bog mud). The boulder ore lookup bug is fixed (#913). **Tin answer (Jamie's check of #913):** from the temporary spawn, tin and copper are both within 500 m (tin 23%, copper 18% of spots, before the 0.4 boulder share), so the Bronze tier stands. **No coal within 4 km of either spawn** (granite and fold belt; coal lies only in basins), so early forge fuel is charcoal, which backs keeping charcoal at the campfire. **Risk:** the tile spawn has no ore within 1 km; this matters only if the spawn moves back.
 
 **Open for Dave (only these two):**
 1. **Hot-stone numbers** (the estimate: warmth fading over 1 game hour after 10 game minutes heating).
@@ -423,13 +423,15 @@ Knife, saw, needle, axe, pick and hammer groups so a kept tool of any tier works
 
 ## 13. Numbering plan
 
-Jamie owns numbers; this is a reservation request. Items 628 to 756 and recipes 348 to 352 are taken by the buildables batches. **Next free: item 757, recipe 353, blueprint 150, state 188.**
+Jamie owns numbers. **Counters on main (11 Nov 2026, bd3146aa): next item 896, next gathered item 1177, next recipe 407, next blueprint 186, next structure state 230 (229 is BOG_STATE, the bog iron deposit row, in code only), protocol 106.** Read the `next_number` fields in items.json, gathered.json, recipes.json and blueprints.json before taking one; states have no counter, so take the highest `state` in structures.json plus one, skipping 229. The history below is the plan as it was reserved.
+
+History: items 628 to 756 and recipes 348 to 352 were taken by the buildables batches; this section then asked for item 757, recipe 353, blueprint 150, state 188.
 
 - **Items:** about 100 new items (tools and weapons about 50, clothing about 20, furniture/stations about 20, materials about 10). Request a block at **757**, size 110. Two NEW rows reuse existing ids and need no new number: Bone - Needle is `sewing_needle` 49; Standing torch is 543.
 - **Recipes:** from **353**, size 110.
 - **Blueprints and states:** stations only: Kiln, Tanning rack, Drying rack, Preserving jar, Oil press, Smoker, Root cellar, Sap tap, Skep, Anvil and a few more: about 15 blueprints from **150**, about 30 states from **188**. Furniture, lights, garden and water are in the buildables ranges.
 - Renames need no new numbers.
-- **Taken, building tier ladder (section 17; data PR #966, 10 Nov):** items **853 to 891** (Bark shingle 853, Wooden shingle 854, Clay roof tile 855, Limestone 856, Lime powder 857, Concrete 858, Iron band 859, Mixer kit and piece 860 and 861, then the Engineered and Fortified kits and pieces 862 to 891), recipes **399 to 404**, blueprints **170 to 185**, states **210 to 228**. Next free after it: item 892 (in the block) or 900, recipe 405, blueprint 186, state 229.
+- **Taken, building tier ladder (section 17; data PR #966, 10 Nov):** items **853 to 891** (Bark shingle 853, Wooden shingle 854, Clay roof tile 855, Limestone 856, Lime powder 857, Concrete 858, Iron band 859, Mixer kit and piece 860 and 861, then the Engineered and Fortified kits and pieces 862 to 891), recipes **399 to 404**, blueprints **170 to 185**, states **210 to 228**. Next free after it was item 892, recipe 405, blueprint 186, state 229. Since taken: 892 and 893 (dark lanterns, #977), 894 Bronze nails and 895 Bronze hinges with recipes 405 and 406 (#1001), state 229 (bog iron, #996).
 
 ## 14. Checks
 
@@ -441,10 +443,10 @@ Jamie owns numbers; this is a reservation request. Items 628 to 756 and recipes 
 
 ## 17. Building tier ladder: seven quality words (Dave, locked 10 Nov; supersedes every Thatch, Log, Wooden, Stone and Brick tier word on building pieces above)
 
-**Crude, Rustic, Refined, Sturdy, Superior, Engineered (future), Fortified (future).** Applies to building pieces only: Foundation, Wall, Doorway, Window, Ceiling, Roof, Roof corner, Stairs, Pillar, Fence, Gate (Double doorway follows Doorway). Metal pieces keep Iron and Steel. Furniture, stations, containers, tools and weapons keep material words (Wooden - Bench, Stone - Forge, Brick - Forge, Stone - Workbench, Stone - Axe). Palisade and Palisade gate are plain names. Single-material stone items (Well, Cistern, Raised cistern, Torch pillar, Brazier, Planter) drop the tier word. Workbench bodies: Wooden - Workbench (level 1), **Carpenter's bench** (level 2, replaces Log - Workbench), Stone - Workbench (level 3). Log - Bench, Table and Trough are dropped; Log - Seat becomes plain **Seat**. Rustic - Foundation is a 2 m cube log frame (four legs, criss-cross bracing, logs on top).
+**Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified** (all seven live on main, 11 Nov). Applies to building pieces only: Foundation, Wall, Doorway, Window, Ceiling, Roof, Roof corner, Stairs, Pillar, Fence, Gate (Double doorway follows Doorway). Metal pieces keep Iron and Steel. Furniture, stations, containers, tools and weapons keep material words (Wooden - Bench, Stone - Forge, Brick - Forge, Stone - Workbench, Stone - Axe). Palisade and Palisade gate are plain names. Single-material stone items (Well, Cistern, Raised cistern, Torch pillar, Brazier, Planter) drop the tier word. Workbench bodies: Wooden - Workbench (level 1), **Carpenter's bench** (level 2, replaces Log - Workbench), Stone - Workbench (level 3). Log - Bench, Table and Trough are dropped; Log - Seat becomes plain **Seat**. Rustic - Foundation is a 2 m cube log frame (four legs, criss-cross bracing, logs on top).
 
 **Wall, ceiling and roof by tier** (roof is a different material from the wall; no concrete roof): see wood_tier_note.md table. Roofs: Crude thatch, Rustic bark shingle, Refined wooden shakes, Sturdy stone slab, Superior and Engineered clay roof tile (unparks "roof tiles"); Fortified has no roof. Ceilings: plank joists Refined to Superior, log poles Rustic, concrete slab Engineered, none for Crude and Fortified.
 
-**New rows (future numbers from Jamie):** Bark shingle, Wooden shingle, Clay roof tile, Limestone, Lime powder, Concrete, Iron band, Mixer, and the Engineered and Fortified pieces. The earlier "Lime - Lime mortar" row is replaced: Lime powder, no lime mortar. Clay mortar stays the only mortar.
+**New rows (numbered and live: items 853 to 891, see section 13):** Bark shingle, Wooden shingle, Clay roof tile, Limestone, Lime powder, Concrete, Iron band, Mixer, and the Engineered and Fortified pieces. The earlier "Lime - Lime mortar" row is replaced: Lime powder, no lime mortar. Clay mortar stays the only mortar.
 
 **Roof tiles:** the master list parks "roof tiles"; this ruling unparks them as a Kiln product (Clay roof tile).

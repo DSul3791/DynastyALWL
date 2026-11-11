@@ -308,7 +308,7 @@
 		"chest_kit": {
 			"number": 22,
 			"retired": true,
-			"name": "Woven chest",
+			"name": "Wicker - Chest",
 			"description": "Woven sticks and twine. A chest to store things in.",
 			"kind": "placeable",
 			"stack": 1,
@@ -382,7 +382,7 @@
 			"number": 28,
 			"retired": true,
 			"future": true,
-			"name": "Plank chest",
+			"name": "Wooden - Chest",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"kind": "placeable",
 			"stack": 1,
@@ -626,7 +626,6 @@
 				]
 			],
 			"value": 90,
-			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge"
 		},
@@ -928,7 +927,7 @@
 		"workbench_kit": {
 			"number": 73,
 			"retired": true,
-			"name": "Camp bench",
+			"name": "Wooden - Workbench",
 			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"kind": "placeable",
 			"stack": 1,
@@ -1130,7 +1129,7 @@
 		"stone_forge_kit": {
 			"number": 87,
 			"retired": true,
-			"name": "Basic Forge",
+			"name": "Stone - Forge",
 			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
@@ -1150,7 +1149,7 @@
 		"blacksmithy_kit": {
 			"number": 89,
 			"retired": true,
-			"name": "Medium Forge",
+			"name": "Brick - Forge",
 			"description": "A brick forge with a stepped hood and iron straps, ready to raise. Hot enough for iron.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2292,7 +2291,7 @@
 		"wall_section_kit": {
 			"number": 192,
 			"retired": true,
-			"name": "Wall section",
+			"name": "Refined - Wall",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2314,7 +2313,7 @@
 		"floor_section_kit": {
 			"number": 194,
 			"retired": true,
-			"name": "Ceiling section",
+			"name": "Refined - Ceiling",
 			"description": "A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2336,7 +2335,7 @@
 		"roof_section_kit": {
 			"number": 196,
 			"retired": true,
-			"name": "Roof section",
+			"name": "Refined - Roof",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2358,7 +2357,7 @@
 		"foundation_section_kit": {
 			"number": 198,
 			"retired": true,
-			"name": "Foundation",
+			"name": "Sturdy - Foundation",
 			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2380,7 +2379,7 @@
 		"doorway_section_kit": {
 			"number": 200,
 			"retired": true,
-			"name": "Doorway",
+			"name": "Refined - Doorway",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2402,7 +2401,7 @@
 		"window_section_kit": {
 			"number": 202,
 			"retired": true,
-			"name": "Window wall",
+			"name": "Refined - Window",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2424,7 +2423,7 @@
 		"timber_prop_kit": {
 			"number": 204,
 			"retired": true,
-			"name": "Wooden - Post",
+			"name": "Post",
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2446,7 +2445,7 @@
 		"timber_set_kit": {
 			"number": 206,
 			"retired": true,
-			"name": "Wooden - Beam",
+			"name": "Beam",
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2793,7 +2792,6 @@
 			],
 			"value": 90,
 			"look_alikes": [],
-			"future": true,
 			"repair_station": "forge"
 		},
 		"steel_hoe": {
@@ -2877,7 +2875,7 @@
 		"nails": {
 			"number": 228,
 			"name": "Nails",
-			"description": "Small iron nails. Fix boards in builds.",
+			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 200,
@@ -2915,7 +2913,7 @@
 		"hinges": {
 			"number": 232,
 			"name": "Hinges",
-			"description": "A pair of iron hinges for a door.",
+			"description": "A pair of iron hinges for a door, a gate or a lid.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 40,
@@ -2974,7 +2972,6 @@
 		},
 		"water_wheel": {
 			"number": 239,
-			"future": true,
 			"name": "Water wheel",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"kind": "material",
@@ -3083,7 +3080,6 @@
 		},
 		"hand_saw": {
 			"number": 245,
-			"future": true,
 			"name": "Iron - Saw",
 			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 planks by hand, slower than a mill.",
 			"kind": "tool",
@@ -3154,7 +3150,7 @@
 		"thatch_wall_kit": {
 			"number": 252,
 			"retired": true,
-			"name": "Thatch wall",
+			"name": "Crude - Wall",
 			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3214,7 +3210,7 @@
 		"thatch_floor_kit": {
 			"number": 261,
 			"retired": true,
-			"name": "Thatch foundation",
+			"name": "Crude - Foundation",
 			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3234,7 +3230,7 @@
 		"thatch_roof_kit": {
 			"number": 263,
 			"retired": true,
-			"name": "Thatch roof",
+			"name": "Crude - Roof",
 			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3254,7 +3250,7 @@
 		"thatch_doorway_kit": {
 			"number": 265,
 			"retired": true,
-			"name": "Thatch doorway",
+			"name": "Crude - Doorway",
 			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3334,7 +3330,7 @@
 		"oven_kit": {
 			"number": 268,
 			"retired": true,
-			"name": "Basic Oven",
+			"name": "Oven",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3688,7 +3684,6 @@
 			"tier": 3,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"durability": 9000,
 			"look_alikes": [],
 			"repair": [
@@ -3746,7 +3741,7 @@
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
+			"description": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -3831,7 +3826,7 @@
 		"candle": {
 			"number": 311,
 			"name": "Candle",
-			"description": "A wick dipped in fat. A small steady light for indoors.",
+			"description": "A wick dipped in tallow. A small steady light, and what a wooden lantern burns.",
 			"kind": "tool",
 			"tool_class": "candle",
 			"tier": 1,
@@ -5505,7 +5500,7 @@
 		"stairs_wood_kit": {
 			"number": 462,
 			"retired": true,
-			"name": "Wooden stairs",
+			"name": "Refined - Stairs",
 			"description": "Planks and twine for a flight of stairs. Set it against a floor edge to climb up.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5525,7 +5520,7 @@
 		"log_wall_kit": {
 			"number": 464,
 			"retired": true,
-			"name": "Log wall",
+			"name": "Rustic - Wall",
 			"description": "Round logs lashed in a wall, two metres wide. Warm and sturdy.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5545,7 +5540,7 @@
 		"log_floor_kit": {
 			"number": 466,
 			"retired": true,
-			"name": "Log ceiling",
+			"name": "Rustic - Ceiling",
 			"description": "Logs laid side by side on a frame. A rough, strong ceiling.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5565,7 +5560,7 @@
 		"log_roof_kit": {
 			"number": 468,
 			"retired": true,
-			"name": "Log roof",
+			"name": "Rustic - Roof",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5585,7 +5580,7 @@
 		"stone_wall_kit": {
 			"number": 470,
 			"retired": true,
-			"name": "Stone wall",
+			"name": "Sturdy - Wall",
 			"description": "Cut stone laid in mortar, two metres wide. Fire proof and strong.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5605,7 +5600,7 @@
 		"stone_floor_kit": {
 			"number": 472,
 			"retired": true,
-			"name": "Stone ceiling",
+			"name": "Sturdy - Ceiling",
 			"description": "Cobbles bedded in sand. A hard dry ceiling.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5625,7 +5620,7 @@
 		"stone_roof_kit": {
 			"number": 474,
 			"retired": true,
-			"name": "Stone roof",
+			"name": "Sturdy - Roof",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5645,7 +5640,7 @@
 		"brick_wall_kit": {
 			"number": 476,
 			"retired": true,
-			"name": "Brick wall",
+			"name": "Superior - Wall",
 			"description": "Fired bricks laid in mortar, two metres wide.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5665,7 +5660,7 @@
 		"brick_floor_kit": {
 			"number": 478,
 			"retired": true,
-			"name": "Brick ceiling",
+			"name": "Superior - Ceiling",
 			"description": "Bricks laid on sand. A smooth hard ceiling.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5685,7 +5680,7 @@
 		"brick_roof_kit": {
 			"number": 480,
 			"retired": true,
-			"name": "Brick roof",
+			"name": "Superior - Roof",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5768,7 +5763,7 @@
 		"log_seat_kit": {
 			"number": 487,
 			"retired": true,
-			"name": "Log - Seat",
+			"name": "Seat",
 			"description": "A log set on end with the top flattened. Sit on it by the fire.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5934,7 +5929,7 @@
 		},
 		"antler_mount": {
 			"number": 516,
-			"name": "Antler - Mount",
+			"name": "Antler mount",
 			"description": "Antlers mounted on a board.",
 			"kind": "structure",
 			"stack": 1,
@@ -5944,7 +5939,7 @@
 		"bench_kit": {
 			"number": 488,
 			"retired": true,
-			"name": "Bench",
+			"name": "Wooden - Bench",
 			"description": "A plank seat on four legs. Seats you by the fire and adds comfort.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5955,7 +5950,7 @@
 		"chair_kit": {
 			"number": 489,
 			"retired": true,
-			"name": "Chair",
+			"name": "Wooden - Chair",
 			"description": "A plank chair with a hide seat. More comfortable than a bench.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5966,7 +5961,7 @@
 		"table_kit": {
 			"number": 490,
 			"retired": true,
-			"name": "Table",
+			"name": "Wooden - Table",
 			"description": "A plank table to eat and work at. Adds comfort to a camp.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5977,7 +5972,7 @@
 		"hide_rug_kit": {
 			"number": 491,
 			"retired": true,
-			"name": "Hide rug",
+			"name": "Hide - Rug",
 			"description": "A tanned hide spread on the floor. Warm underfoot.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5988,7 +5983,7 @@
 		"wool_rug_kit": {
 			"number": 492,
 			"retired": true,
-			"name": "Wool rug",
+			"name": "Wool - Rug",
 			"description": "A thick wool rug. Warmer and softer than hide.",
 			"kind": "placeable",
 			"stack": 1,
@@ -6044,7 +6039,7 @@
 		"chandelier_kit": {
 			"number": 497,
 			"retired": true,
-			"name": "Candle chandelier",
+			"name": "Chandelier",
 			"description": "A wooden hoop hung from a beam, with six candles. Light them first.",
 			"kind": "placeable",
 			"stack": 1,
@@ -6077,7 +6072,7 @@
 		"antler_mount_kit": {
 			"number": 500,
 			"retired": true,
-			"name": "Antler - Mount",
+			"name": "Antler mount",
 			"description": "A pair of antlers on a plaque. A hunter's trophy.",
 			"kind": "placeable",
 			"stack": 1,
@@ -6421,7 +6416,7 @@
 			"wood_foundation_kit": {
 				"number": 558,
 				"retired": true,
-				"name": "Wooden foundation",
+				"name": "Refined - Foundation",
 				"description": "A log and plank base, four metres square. Walls and ceilings snap onto it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6443,7 +6438,7 @@
 			"log_foundation_kit": {
 				"number": 562,
 				"retired": true,
-				"name": "Log foundation",
+				"name": "Rustic - Foundation",
 				"description": "Log sills on stone footings, four metres square. Walls and ceilings snap onto it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6465,7 +6460,7 @@
 			"brick_foundation_kit": {
 				"number": 564,
 				"retired": true,
-				"name": "Brick foundation",
+				"name": "Superior - Foundation",
 				"description": "A brick plinth, four metres square. Walls and ceilings snap onto it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6487,7 +6482,7 @@
 			"log_doorway_kit": {
 				"number": 566,
 				"retired": true,
-				"name": "Log doorway",
+				"name": "Rustic - Doorway",
 				"description": "A log wall with a plank door, one metre wide and two high.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6509,7 +6504,7 @@
 			"stone_doorway_kit": {
 				"number": 568,
 				"retired": true,
-				"name": "Stone doorway",
+				"name": "Sturdy - Doorway",
 				"description": "A stone wall with a timber lintel and a door, one metre wide and two high.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6531,7 +6526,7 @@
 			"brick_doorway_kit": {
 				"number": 570,
 				"retired": true,
-				"name": "Brick doorway",
+				"name": "Superior - Doorway",
 				"description": "A brick wall with a timber door, one metre wide and two high.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6553,7 +6548,7 @@
 			"thatch_window_kit": {
 				"number": 572,
 				"retired": true,
-				"name": "Thatch window",
+				"name": "Crude - Window",
 				"description": "A thatch wall with an opening at chest height to see through.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6575,7 +6570,7 @@
 			"log_window_kit": {
 				"number": 574,
 				"retired": true,
-				"name": "Log window",
+				"name": "Rustic - Window",
 				"description": "A log wall with an opening at chest height to see through.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6597,7 +6592,7 @@
 			"stone_window_kit": {
 				"number": 576,
 				"retired": true,
-				"name": "Stone window",
+				"name": "Sturdy - Window",
 				"description": "A stone wall with a sill and an opening at chest height to see through.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6619,7 +6614,7 @@
 			"brick_window_kit": {
 				"number": 578,
 				"retired": true,
-				"name": "Brick window",
+				"name": "Superior - Window",
 				"description": "A brick wall with an arched opening at chest height to see through.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6692,7 +6687,7 @@
 			"thatch_fence_kit": {
 				"number": 580,
 				"retired": true,
-				"name": "Thatch fence",
+				"name": "Crude - Fence",
 				"description": "Stakes woven with sticks and lashed with twine, two metres long.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6714,7 +6709,7 @@
 			"thatch_gate_kit": {
 				"number": 582,
 				"retired": true,
-				"name": "Thatch gate",
+				"name": "Crude - Gate",
 				"description": "A woven hurdle hung on twine hinges. Opens like a door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6736,7 +6731,7 @@
 			"wood_fence_kit": {
 				"number": 584,
 				"retired": true,
-				"name": "Wooden fence",
+				"name": "Refined - Fence",
 				"description": "A picket fence of planks, two metres long.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6758,7 +6753,7 @@
 			"wood_gate_kit": {
 				"number": 586,
 				"retired": true,
-				"name": "Wooden gate",
+				"name": "Refined - Gate",
 				"description": "A plank gate with a Z brace. Opens like a door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6780,7 +6775,7 @@
 			"log_fence_kit": {
 				"number": 588,
 				"retired": true,
-				"name": "Log fence",
+				"name": "Rustic - Fence",
 				"description": "Split rails pegged into log posts, two metres long.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6802,7 +6797,7 @@
 			"log_gate_kit": {
 				"number": 590,
 				"retired": true,
-				"name": "Log gate",
+				"name": "Rustic - Gate",
 				"description": "A rail gate of split logs. Opens like a door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6824,7 +6819,7 @@
 			"log_palisade_kit": {
 				"number": 592,
 				"retired": true,
-				"name": "Log palisade",
+				"name": "Palisade",
 				"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6846,7 +6841,7 @@
 			"log_palisade_gate_kit": {
 				"number": 594,
 				"retired": true,
-				"name": "Log palisade gate",
+				"name": "Palisade gate",
 				"description": "A palisade section that swings open like a door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6868,7 +6863,7 @@
 			"stone_fence_kit": {
 				"number": 596,
 				"retired": true,
-				"name": "Stone fence",
+				"name": "Sturdy - Fence",
 				"description": "A low dry-stone wall with capstones, two metres long.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6890,7 +6885,7 @@
 			"stone_gate_kit": {
 				"number": 598,
 				"retired": true,
-				"name": "Stone gate",
+				"name": "Sturdy - Gate",
 				"description": "A timber gate between stone piers. Opens like a door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6912,7 +6907,7 @@
 			"brick_fence_kit": {
 				"number": 600,
 				"retired": true,
-				"name": "Brick fence",
+				"name": "Superior - Fence",
 				"description": "A low brick wall on a stone plinth, two metres long.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6934,7 +6929,7 @@
 			"brick_gate_kit": {
 				"number": 602,
 				"retired": true,
-				"name": "Brick gate",
+				"name": "Superior - Gate",
 				"description": "A timber gate between brick piers. Opens like a door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6956,7 +6951,7 @@
 			"iron_fence_kit": {
 				"number": 604,
 				"retired": true,
-				"name": "Iron fence",
+				"name": "Iron - Fence",
 				"description": "Iron railings on a brick plinth, two metres long.",
 				"kind": "placeable",
 				"stack": 1,
@@ -6978,7 +6973,7 @@
 			"iron_gate_kit": {
 				"number": 606,
 				"retired": true,
-				"name": "Iron gate",
+				"name": "Iron - Gate",
 				"description": "A wrought iron gate. Opens like a door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7000,7 +6995,7 @@
 			"thatch_pillar_kit": {
 				"number": 608,
 				"retired": true,
-				"name": "Thatch pillar",
+				"name": "Crude - Pillar",
 				"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7022,7 +7017,7 @@
 			"wooden_pillar_kit": {
 				"number": 610,
 				"retired": true,
-				"name": "Wooden pillar",
+				"name": "Refined - Pillar",
 				"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7044,7 +7039,7 @@
 			"log_pillar_kit": {
 				"number": 612,
 				"retired": true,
-				"name": "Log pillar",
+				"name": "Rustic - Pillar",
 				"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7066,7 +7061,7 @@
 			"stone_pillar_kit": {
 				"number": 614,
 				"retired": true,
-				"name": "Stone pillar",
+				"name": "Sturdy - Pillar",
 				"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7088,7 +7083,7 @@
 			"brick_pillar_kit": {
 				"number": 616,
 				"retired": true,
-				"name": "Brick pillar",
+				"name": "Superior - Pillar",
 				"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7110,7 +7105,7 @@
 			"thatch_roof_corner_kit": {
 				"number": 618,
 				"retired": true,
-				"name": "Thatch roof corner",
+				"name": "Crude - Roof corner",
 				"description": "The corner of a thatch roof, where two slopes meet.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7132,7 +7127,7 @@
 			"wooden_roof_corner_kit": {
 				"number": 620,
 				"retired": true,
-				"name": "Wooden roof corner",
+				"name": "Refined - Roof corner",
 				"description": "The corner of a wooden roof, where two slopes meet.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7154,7 +7149,7 @@
 			"log_roof_corner_kit": {
 				"number": 622,
 				"retired": true,
-				"name": "Log roof corner",
+				"name": "Rustic - Roof corner",
 				"description": "The corner of a log roof, where two slopes meet.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7176,7 +7171,7 @@
 			"stone_roof_corner_kit": {
 				"number": 624,
 				"retired": true,
-				"name": "Stone roof corner",
+				"name": "Sturdy - Roof corner",
 				"description": "The corner of a stone roof, where two slopes meet.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7198,7 +7193,7 @@
 			"brick_roof_corner_kit": {
 				"number": 626,
 				"retired": true,
-				"name": "Brick roof corner",
+				"name": "Superior - Roof corner",
 				"description": "The corner of a brick roof, where two slopes meet.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7262,7 +7257,7 @@
 			"stone_bench_kit": {
 				"number": 632,
 				"retired": true,
-				"name": "Stone bench",
+				"name": "Stone - Bench",
 				"description": "A heavy stone slab on stone feet. Seats two or three.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7283,7 +7278,7 @@
 			"stone_table_kit": {
 				"number": 634,
 				"retired": true,
-				"name": "Stone table",
+				"name": "Stone - Table",
 				"description": "A thick stone-footed table with a plank top.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7304,7 +7299,7 @@
 			"iron_bench_kit": {
 				"number": 636,
 				"retired": true,
-				"name": "Iron bench",
+				"name": "Iron - Bench",
 				"description": "A timber bench bound with iron. Seats two or three.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7325,7 +7320,7 @@
 			"iron_chair_kit": {
 				"number": 638,
 				"retired": true,
-				"name": "Iron chair",
+				"name": "Iron - Chair",
 				"description": "An iron-bound chair with a hide seat.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7346,7 +7341,7 @@
 			"iron_table_kit": {
 				"number": 640,
 				"retired": true,
-				"name": "Iron table",
+				"name": "Iron - Table",
 				"description": "A plank table bound with iron.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7367,7 +7362,7 @@
 			"stone_workbench_kit": {
 				"number": 642,
 				"retired": true,
-				"name": "Stone workbench",
+				"name": "Stone - Workbench",
 				"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7388,7 +7383,7 @@
 			"wooden_shelf_kit": {
 				"number": 644,
 				"retired": true,
-				"name": "Wooden shelf",
+				"name": "Shelf",
 				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7409,7 +7404,7 @@
 			"wooden_cupboard_kit": {
 				"number": 646,
 				"retired": true,
-				"name": "Wooden cupboard",
+				"name": "Cupboard",
 				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7430,7 +7425,7 @@
 			"wooden_barrel_kit": {
 				"number": 648,
 				"retired": true,
-				"name": "Wooden barrel",
+				"name": "Barrel",
 				"description": "A hooped plank barrel. Holds 8 stacks.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7451,7 +7446,7 @@
 			"log_stairs_kit": {
 				"number": 650,
 				"retired": true,
-				"name": "Log stairs",
+				"name": "Rustic - Stairs",
 				"description": "A flight of hewn log steps up to the next ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7472,7 +7467,7 @@
 			"stone_stairs_kit": {
 				"number": 652,
 				"retired": true,
-				"name": "Stone stairs",
+				"name": "Sturdy - Stairs",
 				"description": "A flight of mortared stone steps up to the next ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7493,7 +7488,7 @@
 			"brick_stairs_kit": {
 				"number": 654,
 				"retired": true,
-				"name": "Brick stairs",
+				"name": "Superior - Stairs",
 				"description": "A flight of brick steps up to the next ceiling.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7514,7 +7509,7 @@
 			"wooden_railing_kit": {
 				"number": 656,
 				"retired": true,
-				"name": "Wooden railing",
+				"name": "Wooden - Railing",
 				"description": "A plank railing along a ceiling or foundation edge. Stops falls.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7535,7 +7530,7 @@
 			"iron_railing_kit": {
 				"number": 658,
 				"retired": true,
-				"name": "Iron railing",
+				"name": "Iron - Railing",
 				"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7556,7 +7551,7 @@
 			"double_doorway_kit": {
 				"number": 660,
 				"retired": true,
-				"name": "Wooden double doorway",
+				"name": "Refined - Double doorway",
 				"description": "A plank wall four metres wide with a pair of doors.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7577,7 +7572,7 @@
 			"iron_doorway_kit": {
 				"number": 662,
 				"retired": true,
-				"name": "Iron doorway",
+				"name": "Iron - Doorway",
 				"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7598,7 +7593,7 @@
 			"steel_doorway_kit": {
 				"number": 664,
 				"retired": true,
-				"name": "Steel doorway",
+				"name": "Steel - Doorway",
 				"description": "A wall with a steel door, one metre wide and two high.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7628,7 +7623,7 @@
 			"lamp_oil": {
 				"number": 667,
 				"name": "Lamp oil",
-				"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
+				"description": "Oil from herring, linseed or walnuts. Burns three game days in an iron lantern.",
 				"kind": "material",
 				"stack": 10,
 				"look_alikes": [],
@@ -7697,7 +7692,7 @@
 			"wooden_hanging_lantern_kit": {
 				"number": 670,
 				"retired": true,
-				"name": "Wooden hanging lantern",
+				"name": "Wooden - Hanging lantern",
 				"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7718,7 +7713,7 @@
 			"iron_hanging_lantern_kit": {
 				"number": 672,
 				"retired": true,
-				"name": "Iron hanging lantern",
+				"name": "Iron - Hanging lantern",
 				"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7739,7 +7734,7 @@
 			"iron_wall_lantern_kit": {
 				"number": 674,
 				"retired": true,
-				"name": "Iron wall lantern",
+				"name": "Wall lantern",
 				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7749,7 +7744,7 @@
 			},
 			"iron_wall_lantern": {
 				"number": 675,
-				"name": "Iron - Wall lantern",
+				"name": "Wall lantern",
 				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 				"kind": "structure",
 				"stack": 1,
@@ -7760,7 +7755,7 @@
 			"wooden_torch_post_kit": {
 				"number": 676,
 				"retired": true,
-				"name": "Wooden torch post",
+				"name": "Torch post",
 				"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7781,7 +7776,7 @@
 			"stone_torch_pillar_kit": {
 				"number": 678,
 				"retired": true,
-				"name": "Stone torch pillar",
+				"name": "Torch pillar",
 				"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7802,7 +7797,7 @@
 			"iron_torch_stand_kit": {
 				"number": 680,
 				"retired": true,
-				"name": "Iron torch stand",
+				"name": "Torch stand",
 				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7812,7 +7807,7 @@
 			},
 			"iron_torch_stand": {
 				"number": 681,
-				"name": "Iron - Torch stand",
+				"name": "Torch stand",
 				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 				"kind": "structure",
 				"stack": 1,
@@ -7823,7 +7818,7 @@
 			"wooden_lamp_post_kit": {
 				"number": 682,
 				"retired": true,
-				"name": "Wooden lamp post",
+				"name": "Wooden - Lamp post",
 				"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7844,7 +7839,7 @@
 			"iron_lamp_post_kit": {
 				"number": 684,
 				"retired": true,
-				"name": "Iron lamp post",
+				"name": "Iron - Lamp post",
 				"description": "An iron lantern on a tall iron post.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7865,7 +7860,7 @@
 			"stone_lamp_post_kit": {
 				"number": 686,
 				"retired": true,
-				"name": "Stone lamp post",
+				"name": "Stone - Lamp post",
 				"description": "An iron lantern on a stone post.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7886,7 +7881,7 @@
 			"stone_brazier_kit": {
 				"number": 688,
 				"retired": true,
-				"name": "Stone brazier",
+				"name": "Stone - Brazier",
 				"description": "A stone fire bowl. Burns logs for light.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7907,7 +7902,7 @@
 			"iron_brazier_kit": {
 				"number": 690,
 				"retired": true,
-				"name": "Iron brazier",
+				"name": "Iron - Brazier",
 				"description": "An iron fire bowl on legs. Burns logs for light.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7928,7 +7923,7 @@
 			"thatch_garden_plot_kit": {
 				"number": 692,
 				"retired": true,
-				"name": "Thatch garden plot",
+				"name": "Thatch - Garden plot",
 				"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7949,7 +7944,7 @@
 			"wooden_garden_plot_kit": {
 				"number": 694,
 				"retired": true,
-				"name": "Wooden garden plot",
+				"name": "Wooden - Garden plot",
 				"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7970,7 +7965,7 @@
 			"stone_garden_plot_kit": {
 				"number": 696,
 				"retired": true,
-				"name": "Stone garden plot",
+				"name": "Stone - Garden plot",
 				"description": "A stone-edged raised bed, two metres square. Holds its water best.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7991,7 +7986,7 @@
 			"brick_garden_plot_kit": {
 				"number": 698,
 				"retired": true,
-				"name": "Brick garden plot",
+				"name": "Brick - Garden plot",
 				"description": "A brick raised bed, two metres square. Holds its water best.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8012,7 +8007,7 @@
 			"wooden_planter_box_kit": {
 				"number": 700,
 				"retired": true,
-				"name": "Wooden planter box",
+				"name": "Planter box",
 				"description": "A plank window box of soil for herbs and flowers.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8033,7 +8028,7 @@
 			"stone_planter_kit": {
 				"number": 702,
 				"retired": true,
-				"name": "Stone planter",
+				"name": "Stone - Planter",
 				"description": "A big stone pot of soil for a herb or a small shrub.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8054,7 +8049,7 @@
 			"wooden_trellis_kit": {
 				"number": 704,
 				"retired": true,
-				"name": "Wooden trellis",
+				"name": "Trellis",
 				"description": "A lattice of sticks to set beside a plot for climbing plants.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8075,7 +8070,7 @@
 			"wooden_compost_bin_kit": {
 				"number": 706,
 				"retired": true,
-				"name": "Wooden compost bin",
+				"name": "Compost bin",
 				"description": "A slatted bin that rots plant waste down into compost.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8096,7 +8091,7 @@
 			"thatch_scarecrow_kit": {
 				"number": 708,
 				"retired": true,
-				"name": "Thatch scarecrow",
+				"name": "Scarecrow",
 				"description": "A straw figure on a pole to watch over the plots.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8106,7 +8101,7 @@
 			},
 			"thatch_scarecrow": {
 				"number": 709,
-				"name": "Thatch - Scarecrow",
+				"name": "Scarecrow",
 				"description": "A straw figure on a pole to watch over the plots.",
 				"kind": "structure",
 				"stack": 1,
@@ -8117,7 +8112,7 @@
 			"wooden_cold_frame_kit": {
 				"number": 710,
 				"retired": true,
-				"name": "Wooden cold frame",
+				"name": "Cold frame",
 				"description": "A horn-paned box over a plot that keeps frost off seedlings.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8138,7 +8133,7 @@
 			"stone_well_kit": {
 				"number": 712,
 				"retired": true,
-				"name": "Stone well",
+				"name": "Well",
 				"description": "A stone well with a windlass and bucket. E draws ten litres.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8159,7 +8154,7 @@
 			"wooden_hand_pump_kit": {
 				"number": 714,
 				"retired": true,
-				"name": "Wooden hand pump",
+				"name": "Wooden - Hand pump",
 				"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8180,7 +8175,7 @@
 			"iron_hand_pump_kit": {
 				"number": 716,
 				"retired": true,
-				"name": "Iron hand pump",
+				"name": "Iron - Hand pump",
 				"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8222,7 +8217,7 @@
 			"wooden_trough_kit": {
 				"number": 720,
 				"retired": true,
-				"name": "Wooden trough",
+				"name": "Wooden - Trough",
 				"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8243,7 +8238,7 @@
 			"wooden_channel_kit": {
 				"number": 722,
 				"retired": true,
-				"name": "Wooden channel",
+				"name": "Wooden - Channel",
 				"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8264,7 +8259,7 @@
 			"wooden_channel_corner_kit": {
 				"number": 724,
 				"retired": true,
-				"name": "Wooden channel corner",
+				"name": "Wooden - Channel corner",
 				"description": "A flume that turns a quarter circle.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8285,7 +8280,7 @@
 			"wooden_channel_tee_kit": {
 				"number": 726,
 				"retired": true,
-				"name": "Wooden channel tee",
+				"name": "Wooden - Channel tee",
 				"description": "A flume that splits its water two ways.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8306,7 +8301,7 @@
 			"wooden_sluice_kit": {
 				"number": 728,
 				"retired": true,
-				"name": "Wooden sluice",
+				"name": "Sluice",
 				"description": "A flume with a gate. E opens or shuts it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8336,7 +8331,7 @@
 			"stone_trough_kit": {
 				"number": 731,
 				"retired": true,
-				"name": "Stone trough",
+				"name": "Stone - Trough",
 				"description": "A carved stone trough that holds two hundred litres.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8357,7 +8352,7 @@
 			"stone_channel_kit": {
 				"number": 733,
 				"retired": true,
-				"name": "Stone channel",
+				"name": "Stone - Channel",
 				"description": "An open stone channel, two metres long. Carries more than a flume.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8378,7 +8373,7 @@
 			"stone_channel_corner_kit": {
 				"number": 735,
 				"retired": true,
-				"name": "Stone channel corner",
+				"name": "Stone - Channel corner",
 				"description": "A stone channel that turns a quarter circle.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8399,7 +8394,7 @@
 			"stone_channel_tee_kit": {
 				"number": 737,
 				"retired": true,
-				"name": "Stone channel tee",
+				"name": "Stone - Channel tee",
 				"description": "A stone channel that splits its water two ways.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8420,7 +8415,7 @@
 			"clay_pipe_run_kit": {
 				"number": 739,
 				"retired": true,
-				"name": "Clay pipe",
+				"name": "Clay - Pipe",
 				"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8441,7 +8436,7 @@
 			"clay_pipe_elbow_kit": {
 				"number": 741,
 				"retired": true,
-				"name": "Clay pipe elbow",
+				"name": "Clay - Pipe elbow",
 				"description": "A clay pipe that turns a quarter circle.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8462,7 +8457,7 @@
 			"clay_pipe_tee_kit": {
 				"number": 743,
 				"retired": true,
-				"name": "Clay pipe tee",
+				"name": "Clay - Pipe tee",
 				"description": "A clay pipe that splits its water two ways.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8483,7 +8478,7 @@
 			"iron_pipe_kit": {
 				"number": 745,
 				"retired": true,
-				"name": "Iron pipe",
+				"name": "Iron - Pipe",
 				"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8504,7 +8499,7 @@
 			"iron_pipe_elbow_kit": {
 				"number": 747,
 				"retired": true,
-				"name": "Iron pipe elbow",
+				"name": "Iron - Pipe elbow",
 				"description": "An iron pipe that turns a quarter circle.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8525,7 +8520,7 @@
 			"iron_tap_kit": {
 				"number": 749,
 				"retired": true,
-				"name": "Iron tap",
+				"name": "Tap",
 				"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8535,7 +8530,7 @@
 			},
 			"iron_tap": {
 				"number": 750,
-				"name": "Iron - Tap",
+				"name": "Tap",
 				"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 				"kind": "structure",
 				"stack": 1,
@@ -8546,7 +8541,7 @@
 			"iron_deep_well_pump_kit": {
 				"number": 751,
 				"retired": true,
-				"name": "Iron deep-well pump",
+				"name": "Deep-well pump",
 				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8556,7 +8551,7 @@
 			},
 			"iron_deep_well_pump": {
 				"number": 752,
-				"name": "Iron - Deep-well pump",
+				"name": "Deep-well pump",
 				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 				"kind": "structure",
 				"stack": 1,
@@ -8567,7 +8562,7 @@
 			"stone_cistern_kit": {
 				"number": 753,
 				"retired": true,
-				"name": "Stone cistern",
+				"name": "Cistern",
 				"description": "A stone tank that holds two thousand litres, with an overflow at the rim.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8588,7 +8583,7 @@
 			"stone_raised_cistern_kit": {
 				"number": 755,
 				"retired": true,
-				"name": "Stone raised cistern",
+				"name": "Raised cistern",
 				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8913,7 +8908,7 @@
 			"hide_sack_kit": {
 				"number": 782,
 				"retired": true,
-				"name": "Hide sack",
+				"name": "Hide - Sack",
 				"description": "A hide sack tied at the neck. A first store for a camp before there are planks for a chest.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8934,7 +8929,7 @@
 			"wicker_basket_kit": {
 				"number": 784,
 				"retired": true,
-				"name": "Wicker basket",
+				"name": "Basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8944,7 +8939,7 @@
 			},
 			"wicker_basket": {
 				"number": 785,
-				"name": "Wicker - Basket",
+				"name": "Basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "structure",
 				"stack": 1,
@@ -9028,7 +9023,7 @@
 			},
 			"tusk_mount": {
 				"number": 793,
-				"name": "Tusk - Mount",
+				"name": "Tusk mount",
 				"description": "A pair of boar tusks on a plank. Hang it on a wall for comfort.",
 				"kind": "structure",
 				"stack": 1,
@@ -9106,7 +9101,6 @@
 				"kind": "tool",
 				"stack": 1,
 				"unstackable": true,
-				"future": true,
 				"material": "iron",
 				"tool_class": "chisel",
 				"tier": 3,
@@ -9722,7 +9716,7 @@
 			"wooden_crate_kit": {
 				"number": 849,
 				"retired": true,
-				"name": "Wooden crate",
+				"name": "Crate",
 				"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9743,7 +9737,7 @@
 			"iron_chest_kit": {
 				"number": 851,
 				"retired": true,
-				"name": "Iron chest",
+				"name": "Iron - Chest",
 				"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9848,7 +9842,7 @@
 			"engineered_foundation_kit": {
 				"number": 862,
 				"retired": true,
-				"name": "Engineered foundation",
+				"name": "Engineered - Foundation",
 				"description": "A poured concrete slab on a stone footing, four metres square. Walls and ceilings snap onto it.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9869,7 +9863,7 @@
 			"engineered_wall_kit": {
 				"number": 864,
 				"retired": true,
-				"name": "Engineered wall",
+				"name": "Engineered - Wall",
 				"description": "A poured concrete wall, two metres wide.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9890,7 +9884,7 @@
 			"engineered_doorway_kit": {
 				"number": 866,
 				"retired": true,
-				"name": "Engineered doorway",
+				"name": "Engineered - Doorway",
 				"description": "A concrete wall with a plank door, two metres wide.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9911,7 +9905,7 @@
 			"engineered_window_kit": {
 				"number": 868,
 				"retired": true,
-				"name": "Engineered window",
+				"name": "Engineered - Window",
 				"description": "A concrete wall with a window opening, two metres wide.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9932,7 +9926,7 @@
 			"engineered_pillar_kit": {
 				"number": 870,
 				"retired": true,
-				"name": "Engineered pillar",
+				"name": "Engineered - Pillar",
 				"description": "A square concrete pillar to hold up a ceiling or a roof.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9953,7 +9947,7 @@
 			"engineered_stairs_kit": {
 				"number": 872,
 				"retired": true,
-				"name": "Engineered stairs",
+				"name": "Engineered - Stairs",
 				"description": "A flight of poured concrete steps up to the next storey.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9974,7 +9968,7 @@
 			"engineered_floor_kit": {
 				"number": 874,
 				"retired": true,
-				"name": "Engineered ceiling",
+				"name": "Engineered - Ceiling",
 				"description": "A concrete slab cast over planks. A ceiling below and a floor above.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9995,7 +9989,7 @@
 			"engineered_roof_kit": {
 				"number": 876,
 				"retired": true,
-				"name": "Engineered roof",
+				"name": "Engineered - Roof",
 				"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 				"kind": "placeable",
 				"stack": 1,
@@ -10016,7 +10010,7 @@
 			"engineered_roof_corner_kit": {
 				"number": 878,
 				"retired": true,
-				"name": "Engineered roof corner",
+				"name": "Engineered - Roof corner",
 				"description": "A clay tile roof corner on pinned plank rafters.",
 				"kind": "placeable",
 				"stack": 1,
@@ -10037,7 +10031,7 @@
 			"fortified_foundation_kit": {
 				"number": 880,
 				"retired": true,
-				"name": "Fortified foundation",
+				"name": "Fortified - Foundation",
 				"description": "A concrete slab tied with iron bands, four metres square. The base of a fort.",
 				"kind": "placeable",
 				"stack": 1,
@@ -10058,7 +10052,7 @@
 			"fortified_wall_kit": {
 				"number": 882,
 				"retired": true,
-				"name": "Fortified wall",
+				"name": "Fortified - Wall",
 				"description": "A concrete wall banded with iron, two metres wide. Built to stand a siege.",
 				"kind": "placeable",
 				"stack": 1,
@@ -10079,7 +10073,7 @@
 			"fortified_doorway_kit": {
 				"number": 884,
 				"retired": true,
-				"name": "Fortified doorway",
+				"name": "Fortified - Doorway",
 				"description": "A banded concrete wall with a heavy iron-strapped door.",
 				"kind": "placeable",
 				"stack": 1,
@@ -10100,7 +10094,7 @@
 			"fortified_gate_kit": {
 				"number": 886,
 				"retired": true,
-				"name": "Fortified gate",
+				"name": "Fortified - Gate",
 				"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
 				"kind": "placeable",
 				"stack": 1,
@@ -10121,7 +10115,7 @@
 			"fortified_pillar_kit": {
 				"number": 888,
 				"retired": true,
-				"name": "Fortified pillar",
+				"name": "Fortified - Pillar",
 				"description": "A concrete pillar bound with iron bands.",
 				"kind": "placeable",
 				"stack": 1,
@@ -10142,7 +10136,7 @@
 			"fortified_wall_top_kit": {
 				"number": 890,
 				"retired": true,
-				"name": "Fortified wall top",
+				"name": "Fortified - Wall top",
 				"description": "A crenellated concrete parapet with iron ties. Cover for whoever holds the wall.",
 				"kind": "placeable",
 				"stack": 1,
