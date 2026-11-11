@@ -1,6 +1,6 @@
 # Adding the animals we have models for (Dave 7 Nov 2026)
 
-Dave: "Add all the animals that we have models for." Source: the WildMesh 3D Ultimate Animal Pack (Realistic set, bought; model files are never committed, `/assets/animals/` is ignored; copy a kind's folder into `assets/animals/<kind>/` on a build machine). Species numbers are below 100; the next free number is kept in `KIND_OF_SPECIES` in `src/client/animal_view.gd`.
+Dave: "Add all the animals that we have models for." Source: a bought realistic animal model pack (decision 83: public docs do not name the vendor or pack; model files are never committed, `/assets/animals/` is ignored; copy a kind's folder into `assets/animals/<kind>/` on a build machine). Species numbers are below 100; the next free number is kept in `KIND_OF_SPECIES` in `src/client/animal_view.gd`.
 
 ## What a species needs (the donkey's recipe)
 `data/animals/animals.json` row (movement, habitat, biomes, defend, temperament); `models.json` row (scene, clips by role, materials, length_m); `data/animals/carcass.json` (look); `data/items/carcass.json` (parts); `data/items/seasons.json` (`game`); `data/animals/animal_sign.json`; a `<kind>_step` slot in `data/sound/batch1_slots.json`; a `KIND_OF_SPECIES` entry and a code-built stand-in in `animal_view.gd`; the kind added to the "newer species" lists in the six animal tests so their seeded counts stay as they were.
