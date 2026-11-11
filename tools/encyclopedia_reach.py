@@ -39,7 +39,7 @@ ENC = os.path.join(ITEMS, "encyclopedia.json")
 
 # World facts the data files cannot show. Each names who said so and when; remove a row when the world changes.
 ORE_NOT_IN_WORLD = {
-    "iron": "both iron bodies on the nine baked tiles lie under the sea (Sonny, 10 Nov 2026)",
+    "iron": "both iron bodies on the nine baked tiles lie under the sea (Sonny, 10 Nov 2026); land iron comes from bog iron (digging.json, #996)",
 }
 
 

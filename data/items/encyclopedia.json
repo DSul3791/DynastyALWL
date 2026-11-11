@@ -1,5 +1,5 @@
 {
-	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status` (planned: not obtainable in the game yet; retired: replaced by another item) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. `chapters` are player-facing reading pages (ore: Morgan, 10 Nov 2026, from Sonny's ground_resources.md); a section about something not in the game yet stays out until it is. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
+	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `obtainable_now` and `status` (planned: not obtainable in the game yet; retired: replaced by another item) are worked out from the real sources by tools/encyclopedia_reach.py (Jamie, 10 Nov 2026): rerun it after a data change, never hand-edit them. `chapters` are player-facing reading pages (ore: Morgan, 10 Nov 2026, from Sonny's ground_resources.md; lights and hardware: Jamie, 10 Nov 2026, reviewed by Morgan); a section about something not in the game yet stays out until it is. Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
 	"items": {
 		"acorns": {
 			"name": "Acorns",
@@ -2523,8 +2523,7 @@
 				"Used in Iron band",
 				"Used in Torch pillar"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_ingot": {
 			"name": "Steel ingot",
@@ -2557,8 +2556,7 @@
 				"Craft at a brick forge: 3 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_pickaxe": {
 			"name": "Steel - Pickaxe",
@@ -2744,8 +2742,7 @@
 				"Craft at a brick forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_spade": {
 			"name": "Steel - Spade",
@@ -4052,7 +4049,7 @@
 			"used_for": [
 				"Used to build Oven",
 				"Used to build Clay hearth",
-				"Built into the Clay hearth and the Oven (hammer blueprints); planned for brick walls and chimneys.",
+				"Built into the Superior pieces (walls, foundations, doorways and more), the Brick - Forge, the Kiln, the Clay hearth and the Oven.",
 				"Used in Brick - Garden plot",
 				"Used in Kiln",
 				"Used in Brick - Forge",
@@ -4163,8 +4160,7 @@
 				"Craft at a brick forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_hoe": {
 			"name": "Steel - Hoe",
@@ -4210,7 +4206,7 @@
 		"nails": {
 			"name": "Nails",
 			"kind": "material",
-			"description": "Small iron nails. Fix boards in builds.",
+			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -4231,8 +4227,7 @@
 				"Used in Crate",
 				"Used in Cupboard"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"cobblestone": {
 			"name": "Cobblestone",
@@ -4297,7 +4292,7 @@
 		"hinges": {
 			"name": "Hinges",
 			"kind": "material",
-			"description": "A pair of iron hinges for a door.",
+			"description": "A pair of iron hinges for a door, a gate or a lid.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -4320,8 +4315,7 @@
 				"Used in Sturdy - Gate",
 				"Used in Superior - Gate"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_pin": {
 			"name": "Wooden pin",
@@ -4393,8 +4387,7 @@
 				"Used in Iron - Saw",
 				"Used to build Sawmill"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"water_wheel": {
 			"name": "Water wheel",
@@ -4416,8 +4409,7 @@
 				"Build with a hammer (press R): 40 Plank, 100 Nails, 1 Saw blade, 1 Water wheel"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"saw_mill": {
 			"name": "Sawmill",
@@ -4425,8 +4417,7 @@
 			"description": "A water-driven sawmill. Stand near it to saw logs into planks.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"woodworking_table_kit": {
 			"name": "Woodworking table",
@@ -4487,8 +4478,7 @@
 			"used_for": [
 				"Used in Planks by hand"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"rough_bed_kit": {
 			"name": "Thatch - Bed",
@@ -4840,8 +4830,7 @@
 				"Used in Steel - Cuirass",
 				"Used in Steel - Helm"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"copper_ingot": {
 			"name": "Copper ingot",
@@ -5004,8 +4993,7 @@
 				"Craft at a brick forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_club": {
 			"name": "Wooden - Club",
@@ -5052,8 +5040,7 @@
 				"Used in Iron ingot",
 				"Used in Iron ingot (bloomery)"
 			],
-			"obtainable_now": true,
-			"status": "live"
+			"obtainable_now": true
 		},
 		"coal": {
 			"name": "Coal",
@@ -5132,7 +5119,7 @@
 		"candle": {
 			"name": "Candle",
 			"kind": "tool",
-			"description": "A wick dipped in fat. A small steady light for indoors.",
+			"description": "A wick dipped in tallow. A small steady light, and what a wooden lantern burns.",
 			"how_to_get": [
 				"Craft: 1 Tallow, 1 Plant fibre"
 			],
@@ -7682,8 +7669,7 @@
 				"Craft at a brick forge: 2 Iron ingot, 1 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_hammer": {
 			"name": "Steel - Hammer",
@@ -7920,8 +7906,7 @@
 				"Build with a hammer (press R): 3 Iron ingot, 6 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_fence": {
 			"name": "Iron - Fence",
@@ -7929,8 +7914,7 @@
 			"description": "Iron railings on a brick plinth, two metres long.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_gate_kit": {
 			"name": "Iron - Gate",
@@ -7940,8 +7924,7 @@
 				"Build with a hammer (press R): 4 Iron ingot, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_gate": {
 			"name": "Iron - Gate",
@@ -7949,8 +7932,7 @@
 			"description": "A wrought iron gate. Opens like a door.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"thatch_pillar_kit": {
 			"name": "Crude - Pillar",
@@ -8216,8 +8198,7 @@
 				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_bench": {
 			"name": "Iron - Bench",
@@ -8225,8 +8206,7 @@
 			"description": "A timber bench bound with iron. Seats two or three.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_chair_kit": {
 			"name": "Iron - Chair",
@@ -8236,8 +8216,7 @@
 				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails, 1 Hide"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_chair": {
 			"name": "Iron - Chair",
@@ -8245,8 +8224,7 @@
 			"description": "An iron-bound chair with a hide seat.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_table_kit": {
 			"name": "Iron - Table",
@@ -8256,8 +8234,7 @@
 				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_table": {
 			"name": "Iron - Table",
@@ -8265,8 +8242,7 @@
 			"description": "A plank table bound with iron.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_workbench_kit": {
 			"name": "Stone - Workbench",
@@ -8420,8 +8396,7 @@
 				"Build with a hammer (press R): 2 Iron ingot, 4 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_railing": {
 			"name": "Iron - Railing",
@@ -8429,8 +8404,7 @@
 			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"double_doorway_kit": {
 			"name": "Refined - Double doorway",
@@ -8458,8 +8432,7 @@
 				"Build with a hammer (press R): 3 Plank, 2 Iron ingot, 12 Nails, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_doorway": {
 			"name": "Iron - Doorway",
@@ -8467,8 +8440,7 @@
 			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_doorway_kit": {
 			"name": "Steel - Doorway",
@@ -8510,7 +8482,7 @@
 		"lamp_oil": {
 			"name": "Lamp oil",
 			"kind": "material",
-			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
+			"description": "Oil from herring, linseed or walnuts. Burns three game days in an iron lantern.",
 			"how_to_get": [
 				"Craft at a campfire pot: 3 Herring",
 				"Craft at an oil press: 4 Linseed",
@@ -8558,8 +8530,7 @@
 				"Used in Iron - Lamp post",
 				"Used in Stone - Lamp post"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_lantern_dark": {
 			"name": "Iron - Lantern",
@@ -8571,8 +8542,7 @@
 			"used_for": [
 				"Light it again with its key; a burned-out one takes Lamp oil from your pack"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_hanging_lantern_kit": {
 			"name": "Wooden - Hanging lantern",
@@ -8600,8 +8570,7 @@
 				"Build with a hammer (press R): 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_hanging_lantern": {
 			"name": "Iron - Hanging lantern",
@@ -8609,8 +8578,7 @@
 			"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_wall_lantern_kit": {
 			"name": "Wall lantern",
@@ -8620,8 +8588,7 @@
 				"Build with a hammer (press R): 1 Iron ingot, 2 Horn pane, 1 Lamp oil"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_wall_lantern": {
 			"name": "Wall lantern",
@@ -8629,8 +8596,7 @@
 			"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_torch_post_kit": {
 			"name": "Torch post",
@@ -8658,8 +8624,7 @@
 				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar, 1 Iron ingot, 2 Tallow"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_torch_pillar": {
 			"name": "Torch pillar",
@@ -8667,8 +8632,7 @@
 			"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_torch_stand_kit": {
 			"name": "Torch stand",
@@ -8678,8 +8642,7 @@
 				"Build with a hammer (press R): 2 Iron ingot, 2 Tallow"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_torch_stand": {
 			"name": "Torch stand",
@@ -8687,8 +8650,7 @@
 			"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_lamp_post_kit": {
 			"name": "Wooden - Lamp post",
@@ -8716,8 +8678,7 @@
 				"Build with a hammer (press R): 4 Iron ingot, 1 Iron - Lantern"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_lamp_post": {
 			"name": "Iron - Lamp post",
@@ -8725,8 +8686,7 @@
 			"description": "An iron lantern on a tall iron post.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_lamp_post_kit": {
 			"name": "Stone - Lamp post",
@@ -8736,8 +8696,7 @@
 				"Build with a hammer (press R): 8 Cobblestone, 2 Clay mortar, 1 Iron - Lantern"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_lamp_post": {
 			"name": "Stone - Lamp post",
@@ -8745,8 +8704,7 @@
 			"description": "An iron lantern on a stone post.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_brazier_kit": {
 			"name": "Stone - Brazier",
@@ -8774,8 +8732,7 @@
 				"Build with a hammer (press R): 3 Iron ingot"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_brazier": {
 			"name": "Iron - Brazier",
@@ -8783,8 +8740,7 @@
 			"description": "An iron fire bowl on legs. Burns logs for light.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"thatch_garden_plot_kit": {
 			"name": "Thatch - Garden plot",
@@ -9881,8 +9837,7 @@
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_chisel": {
 			"name": "Steel - Chisel",
@@ -10144,8 +10099,7 @@
 				"Build with a hammer (press R): 5 Iron ingot, 1 Log"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_anvil": {
 			"name": "Anvil",
@@ -10153,8 +10107,7 @@
 			"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"preserving_jar_kit": {
 			"name": "Preserving jar",
@@ -10390,8 +10343,7 @@
 				"Build with a hammer (press R): 8 Plank, 3 Iron ingot, 16 Nails, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_chest": {
 			"name": "Iron - Chest",
@@ -10399,8 +10351,7 @@
 			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"mixer_kit": {
 			"name": "Mixer",
@@ -10590,8 +10541,7 @@
 				"Build with a hammer (press R): 16 Concrete, 4 Iron band"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_foundation": {
 			"name": "Fortified - Foundation",
@@ -10599,8 +10549,7 @@
 			"description": "A concrete slab tied with iron bands, four metres square. The base of a fort.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_wall_kit": {
 			"name": "Fortified - Wall",
@@ -10610,8 +10559,7 @@
 				"Build with a hammer (press R): 13 Concrete, 4 Iron band"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_wall": {
 			"name": "Fortified - Wall",
@@ -10619,8 +10567,7 @@
 			"description": "A concrete wall banded with iron, two metres wide. Built to stand a siege.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_doorway_kit": {
 			"name": "Fortified - Doorway",
@@ -10630,8 +10577,7 @@
 				"Build with a hammer (press R): 9 Concrete, 5 Iron band, 3 Plank, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_doorway": {
 			"name": "Fortified - Doorway",
@@ -10639,8 +10585,7 @@
 			"description": "A banded concrete wall with a heavy iron-strapped door.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_gate_kit": {
 			"name": "Fortified - Gate",
@@ -10650,8 +10595,7 @@
 				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_gate": {
 			"name": "Fortified - Gate",
@@ -10659,8 +10603,7 @@
 			"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_pillar_kit": {
 			"name": "Fortified - Pillar",
@@ -10670,8 +10613,7 @@
 				"Build with a hammer (press R): 7 Concrete, 2 Iron band"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_pillar": {
 			"name": "Fortified - Pillar",
@@ -10679,8 +10621,7 @@
 			"description": "A concrete pillar bound with iron bands.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_wall_top_kit": {
 			"name": "Fortified - Wall top",
@@ -10690,8 +10631,7 @@
 				"Build with a hammer (press R): 7 Concrete, 2 Iron band"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fortified_wall_top": {
 			"name": "Fortified - Wall top",
@@ -10699,8 +10639,7 @@
 			"description": "A crenellated concrete parapet with iron ties. Cover for whoever holds the wall.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bark_shingle": {
 			"name": "Bark shingle",
@@ -10806,8 +10745,7 @@
 				"Used in Fortified - Wall",
 				"Used in Fortified - Wall top"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bronze_nails": {
 			"name": "Bronze nails",
@@ -10890,8 +10828,16 @@
 					"text": "Three parts copper to one part tin, smelted together in a Stone - Forge. Bronze makes the first real metal tools and weapons, and any metal hammer, bronze included, lets you build at every tier."
 				},
 				{
+					"title": "River placers",
+					"text": "Where rivers cut through ore-bearing hills, little bends and banks collect loose ore. Look for bright flecks in the boulders at a river bend and break them with a pick. Tin and copper turn up this way."
+				},
+				{
 					"title": "Iron",
-					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and you smelt it in a Brick - Forge (or slowly in a Clay bloomery). Iron is not found on the land near your first camp, and the deposits we know of lie out of easy reach, so expect to travel or to find another way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and you smelt it in a Brick - Forge (or slowly in a Clay bloomery). Iron rock is not found near your first camp, and the deposits we know of lie out of easy reach. Bog iron is the nearer way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+				},
+				{
+					"title": "Bog iron",
+					"text": "Some wet ground, low and boggy, builds up iron in its mud. Dig it out with a spade and smelt it like any iron ore. It is where the land near your camp can give you iron, and a dug patch fills again in time."
 				},
 				{
 					"title": "Coal and charcoal",
@@ -10916,6 +10862,46 @@
 				{
 					"title": "Caves",
 					"text": "Caves are cool, dark and quiet, and cave boulders can be outcrops too. Bring a torch. Wet ground and rockfall are real dangers, so watch your head."
+				}
+			]
+		},
+		"lights": {
+			"title": "Lights you carry",
+			"text": "Night is long and the dark is real. A light in your off hand lets you work, walk and keep your head. Each kind burns for a while and then needs feeding.",
+			"sections": [
+				{
+					"title": "Torch",
+					"text": "A stick, a twist of fibre and pitch. It throws a wide light, wider than a wooden lantern's, but it burns out in half a game day, and rain or water puts it out."
+				},
+				{
+					"title": "Wooden - Lantern",
+					"text": "A plank frame with two horn panes and a candle inside, made at a workbench. Its light is smaller than a torch's, but it keeps burning in the rain. A candle lasts one game day. When it burns down, the lantern goes dark. Light it again, and it takes a fresh candle from your pack. Water still puts it out, so do not wade with it."
+				},
+				{
+					"title": "Iron - Lantern",
+					"text": "Iron and horn panes, burning lamp oil, made at a brick forge. It throws more light than a torch, and well over a wooden lantern, and one fill of oil lasts three game days. Rain does not trouble it. It takes iron, and iron is hard to come by near your first camp."
+				},
+				{
+					"title": "Candle",
+					"text": "One tallow and one plant fibre make three candles, by hand. A candle gives a small, steady light for indoors and keeps a wooden lantern going."
+				},
+				{
+					"title": "Lamp oil",
+					"text": "Three herring in a stoppered campfire pot render one flask of oil. Once you have an oil press, four linseed or four walnuts do the same. Lamp oil feeds the iron lantern, and the iron hanging lanterns, wall lanterns and lamp posts too."
+				}
+			]
+		},
+		"hardware": {
+			"title": "Building and hardware",
+			"text": "Most early building needs nothing but wood, stone and twine. Gates, doors that swing, chests with lids, barrels and crates need hardware: nails to hold the boards and hinges to hang them.",
+			"sections": [
+				{
+					"title": "Bronze nails and Bronze hinges",
+					"text": "The first metal hardware. At a Stone - Forge, one bronze ingot makes a hundred nails or twenty hinges. Every gate, door, chest and cupboard that asks for nails or hinges takes bronze ones."
+				},
+				{
+					"title": "Nails and Hinges (iron)",
+					"text": "Iron does the same job, made at a brick forge from an iron ingot. Where a cost says nails or hinges, any kind will do. Iron bands for fortified walls have no bronze stand-in: those wait for iron."
 				}
 			]
 		}
