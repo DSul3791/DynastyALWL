@@ -11,7 +11,7 @@ Status keys: **HAVE** (live, name and recipe as live), **RENAME** (live, new dis
 3. **Wooden** means any worked wood (stick, block or plank). **Log** means whole logs. **Stone**, **Brick**, **Thatch**, **Fibre** (plant fibre; "Grass" is retired as a tier word), **Hide**, **Leather**, **Fur**, **Wool**, **Linen**, **Clay**, **Wicker**, **Bone**, **Flint**: one word per material.
 4. **Plurals:** what is gathered or used by the handful keeps its natural plural (Berries, Nails, Hinges, Seeds). What is counted one by one is singular (`Oak log`, `Oak beam`, `Feather`, `Stone`). Roughly 40 log and beam species rename to singular. **Planks becomes Plank** (ruled); Jamie gets the rename list.
 5. Generic recipe groups that players see are named **"Any torch fuel", "Any forge fuel", "Any firewood", "Any stuffing", "Any bedding", "Any fodder", "Any knife", "Any saw", "Any needle", "Any candle"**.
-6. Kits are hidden and keep the suffix ` kit`. Ids never change.
+6. Kits are hidden. Since #1003 (11 Nov) a kit row carries its piece's name (rule 7: kit and piece are one object in two states); the four log kits keep Log bench, Log table, Log trough and Log shelf. Ids never change.
 7. Two live items never share a display name **unless they are one object in two states** (lit and doused torch, carried and set snare, kit and piece). Those keep one name.
 8. Names are at most four words (`validate_items.gd`), sentence case after the dash, and never start with a verb.
 
@@ -19,7 +19,7 @@ Status keys: **HAVE** (live, name and recipe as live), **RENAME** (live, new dis
 
 | Family | Ladder (low to high) | Notes |
 |---|---|---|
-| Tools and weapons | Wooden, Stone, **Bronze, Iron, Steel** | **No copper tools.** Copper is an ingot for bronze, coins and fittings. Obsidian parked. |
+| Tools and weapons | Wooden, Stone, **Bronze, Iron, Steel** | Copper is an ingot for bronze, coins and fittings today. **Copper tools are a future option** on the backlog, not ruled out (decision 70, 11 Nov 2026). Obsidian parked. |
 | Hammer | Wooden (1), Stone (2), Bronze, Iron, Steel (3) | Any metal is tier 3 for building. |
 | Building | Thatch, Wooden, Log, Stone, Brick | One-storey Thatch; no Thatch ceiling. |
 | Armour (metal) | Bronze, Iron, Steel | |
@@ -176,7 +176,7 @@ Skipped: whip, pit trap, throwing stones and axes, guns, explosives.
 
 ## 5. Clothing and armour
 
-Everything sewn needs **Bone - Needle** (kept tool, section 3). Slots (Sonny C2): `clothing.json` has six: head, body, legs, feet, hands, back. A cloak cannot be worn over a tunic and a quiver cannot be worn with a pack today. **Ruled:** add slots **outer** (cloaks) and **waist** (belt, quiver). Steve codes it after buildables (it changes the `worn` save and protocol 40). **Fur - Coat is dropped** (same recipe and slot as the live Fur - Cloak).
+Everything sewn needs **Bone - Needle** (kept tool, section 3). Slots (Sonny C2): `clothing.json` had six (head, body, legs, feet, hands, back), so a cloak could not go over a tunic. **Done (#921, protocol 104):** slots **outer** (cloaks) and **waist** (belt, quiver) are live, eight in all. **Fur - Coat is dropped** (same recipe and slot as the live Fur - Cloak).
 
 | Slot | Names |
 |---|---|

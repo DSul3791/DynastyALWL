@@ -8,6 +8,7 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - Thinly discussed design = ask one short question with your recommendation. Technical details: decide yourself.
 - Questions for Dave: pickable answers on the `qa` branch, `questions/QUESTIONS.md`, posted with `tools/qa_post.py`; answers come back in `questions/ANSWERS.md` on `qa`. Check HANDOFF, the design docs and DECISIONS first. Never merge `qa` and `main` into each other.
 - Safe place: the game never says anything that might divide people. No labels for groups of players; describe the use, never who it is for.
+- **Decision 61 (11 Nov 2026, at Dave's request):** code that is replaced is deleted (the no-flags rule wins over the line below for code). Documents are archived, never deleted. Other unused files are moved aside to `proposed_removals/` as below.
 - NOTHING IS DELETED. Unused files move to `proposed_removals/<original path>` (add `.removed` to .gd, .tscn, .tres, .uid), with one line in `proposed_removals/REMOVALS.md` (who, date, why, replaced by). Dave approves removals. `tools/merge_check.py` fails the merge if a file vanished and isn't there.
 - Never commit crash reports, editor logs, temp DLLs or `.tile` files.
 - Usage: pace the weekly tokens evenly (resets Wed 03:00 Atlantic). Do the work directly; use the local Qwen model only for bulk reading. At the bedtime backup, ask Dave for the weekly percent and log it in `C:\GodotProjects\Claude_Usage_Log.md`.
