@@ -4362,7 +4362,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "interact") and items != null:
 			items.press_e()
 		elif KeyBindings.matches(event, "starter_items") and items != null:
-			items.admin_give_test_set()
+			if items.admin_craft:   # free items only while Admin mode is on (Dave 11 Nov 2026)
+				items.admin_give_test_set()
 		elif KeyBindings.matches(event, "jitter_test") and _jitter_test != null:
 			_jitter_test.next_spot()
 		elif KeyBindings.matches(event, "debug_details"):

@@ -1215,8 +1215,11 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 				_admin_mode_on[peer] = true
 			else:
 				_admin_mode_on.erase(peer)
+				_drop_free_crafts(peer)
 
 			_say(peer, "Admin mode %s." % ("on: crafting is free" if a == 1 else "off"))
+		else:
+			_say(peer, "Admin mode is for admins.")
 
 	elif kind == Net.ACT_DUMP_WATER:
 		if admin_ok.is_valid() and admin_ok.call(peer) and dump_water.is_valid():
@@ -12051,6 +12054,27 @@ var admin_mode_on: Callable             # (peer) -> bool, reads _admin_mode_on (
 
 func free_craft_for(peer: int) -> bool:
 	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))
+
+
+# Switching Admin mode off takes every queued free craft (empty needs, nothing deferred) off the queue at once; nothing was taken, so nothing is refunded.
+func _drop_free_crafts(peer: int) -> void:
+	var queue: Dictionary = _queue_of(peer)
+
+	if queue.is_empty():
+		return
+
+	var entries: Array = queue["entries"]
+	var kept: Array = entries.filter(func(e): return not ((e[2] as Array).is_empty() and (e.size() < 4 or (e[3] as Array).is_empty())))
+
+	if kept.size() == entries.size():
+		return
+
+	if kept.is_empty() or not is_same(kept[0], entries[0]):
+		queue["elapsed"] = 0.0
+
+	queue["entries"] = kept
+	_dirty = true
+	_sync_craft_queue(peer)
 
 
 # --- Gather from the sea edge (WATER_GATHER_SPEC.md; Tyler 31 Oct 2026) ---

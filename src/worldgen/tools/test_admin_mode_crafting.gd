@@ -126,8 +126,9 @@ func _init() -> void:
 	check(items.craft_queue_of(1).is_empty() and have("stick") == 10 and have("twine") == 5, "an unknown recipe is refused even with every ingredient in the pack")
 
 	# --- A non-admin cannot switch Admin mode on ---
+	said.clear()
 	admin_mode(true, 2)
-	check(not items.free_craft_for(2), "a non-admin's switch is refused by the server")
+	check(not items.free_craft_for(2) and heard("Admin mode is for admins"), "a non-admin's switch is refused by the server, and told so")
 
 	# --- Admin mode on: free, unknown, no station, the pack untouched ---
 	admin_mode(true)
@@ -140,26 +141,31 @@ func _init() -> void:
 	check(have("fish_trap") == 1 and have("cut_stone_block") == 3, "both are made free (%d trap, %d blocks)" % [have("fish_trap"), have("cut_stone_block")])
 	check(have("stick") == 10 and have("twine") == 5 and have("stone") == 0, "and nothing was taken from the pack")
 
-	# --- Switching off restores the rules at once, a queued free craft included ---
+	# --- Switching off restores the rules at once: queued free crafts leave the queue the moment it goes off ---
 	queue(CUT_STONE_BLOCK, 1)
+	queue(FISH_TRAP, 1)
+	check(items.craft_queue_of(1).size() == 2, "two free crafts wait in the queue")
 	admin_mode(false)
-	said.clear()
+	check(items.craft_queue_of(1).is_empty(), "switching Admin mode off empties the free crafts from the queue at once")
 	run_ticks(60.0)
-	check(have("cut_stone_block") == 3 and items.craft_queue_of(1).is_empty() and heard("Admin mode is off"), "a free craft still queued when Admin mode goes off is dropped, not made")
+	check(have("cut_stone_block") == 3 and have("fish_trap") == 1, "and neither is made")
 	queue(FISH_TRAP, 1)
 	check(items.craft_queue_of(1).is_empty() and have("stick") == 10, "the unknown recipe is refused again")
+	items.inventory_of(1).add(n("stone"), 8)
+	said.clear()
 	queue(CUT_STONE_BLOCK, 1)
-	check(items.craft_queue_of(1).is_empty(), "the station recipe is refused again away from the bench with no stone")
+	check(items.craft_queue_of(1).is_empty() and have("stone") == 8 and heard("nearby"), "the station recipe is refused again away from the bench, the stone kept")
 
 	# --- A new session starts off again, and a free craft left in the queue is not made ---
 	admin_mode(true)
-	queue(CUT_STONE_BLOCK, 1)
+	queue(FISH_TRAP, 1)
 	items.peer_left(1)
 	items.peer_connected_hello(1, KEY)
 	items.report_position(1, Vector3(0.0, 10.0, 200.0))
 	check(not items.free_craft_for(1), "logging in again starts with Admin mode off")
+	said.clear()
 	run_ticks(60.0)
-	check(have("cut_stone_block") == 3 and items.craft_queue_of(1).is_empty(), "the free craft queued last session is dropped at the next login")
+	check(have("fish_trap") == 1 and items.craft_queue_of(1).is_empty() and heard("Admin mode is off"), "the free craft queued last session is dropped at the next login, not made")
 
 	# --- Play as a new player switches it off too ---
 	admin_mode(true)
