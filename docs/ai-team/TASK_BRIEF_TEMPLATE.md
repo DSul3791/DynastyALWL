@@ -4,7 +4,7 @@
 - Priority / purpose:
 - Owner role and model/effort (verify availability):
 - Reviewer / integration authority:
-- Base SHA / feature branch / worktree:
+- Base SHA / feature branch / worktree (after `git fetch`; a fresh cloud clone's `origin/main` can be stale, compare with `git ls-remote origin main`):
 - Files/interfaces owned; other workers excluded:
 - Authoritative design docs and exact approved decisions:
 - Evidence or reproduction / expected outcome:
