@@ -46,6 +46,24 @@ func _init() -> void:
 	pack.add(table.number_of("lumber"), 1)
 	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]
 	check(bool(wall_now["can"]) and str(wall_now["text"]) == "plank 12/12, nails 60/60", "12 planks (lumber, shown as Plank since the item system renames 10 Nov 2026) and 60 nails cover the table (%s)" % str(wall_now["text"]))
+	# A group cost counts every member in the pack, as the server does (Inventory.count_fill): oak logs cover a blueprint asking for logs.
+	var log_row: Dictionary = {}
+
+	for book_row in list._book:
+		for need in book_row["cost"]:
+			if str(need[0]) == "log" and log_row.is_empty() and int(book_row.get("hammer", 1)) <= 1:
+				log_row = {"number": int(book_row["number"]), "count": int(need[1])}
+
+	pack.add(table.number_of("log_oak"), int(log_row.get("count", 0)))
+	var log_text: String = ""
+
+	for row in list.rows(1):
+		if int(row["number"]) == int(log_row.get("number", -1)):
+			log_text = str(row["text"])
+
+	var log_part: String = "%s %d/%d" % [table.in_sentence(str(table.entry("log").get("name", "log"))), int(log_row.get("count", 0)), int(log_row.get("count", 0))]
+	check(not log_row.is_empty() and log_text.contains(log_part), "oak logs in the pack count for a log cost (%s, wanted %s)" % [log_text, log_part])
+	pack.remove(table.number_of("log_oak"), int(log_row.get("count", 0)))
 
 	list.set_open(true, 1)
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")

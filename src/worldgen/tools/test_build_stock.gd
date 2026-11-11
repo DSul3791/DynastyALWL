@@ -110,6 +110,7 @@ func _init() -> void:
 	check(_on_ground("cut_stone_block") == blocks and _have("mortar") == mortar, "a refused wall takes nothing")
 
 	_check_site_gather(blocks, mortar, site3)
+	_check_group_stock(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, 40.0))
 
 	print("test_build_stock: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
@@ -170,3 +171,48 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "with nothing missing the wall is built")
 	check(said.size() == 1 and str(said[0]).ends_with("Built."), "and the line says so (%s)" % str(said))
 	check(_on_ground("cut_stone_block") == blocks + blocks - (blocks - 2 - half), "only what was missing came off the new stack (%d on the ground)" % _on_ground("cut_stone_block"))
+
+
+# A group cost (Jamie 10 Nov 2026: Bronze nails and Bronze hinges fill any blueprint asking for nails or hinges, through wood_species.json
+# ingredient_groups) is filled by any member: from the ground stock beside the builder and on a blueprint site's deposit, as from the pack. A stand-in
+# group here: clay fills mortar.
+func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector3) -> void:
+	var mortar_n: int = items.table.number_of("mortar")
+	var clay_n: int = items.table.number_of("clay")
+	items.table._groups[mortar_n] = PackedInt32Array([mortar_n, clay_n])
+	var block_n: int = items.table.number_of("cut_stone_block")
+	var inv = items.inventory_of(1)
+	inv.remove(block_n, inv.count_of(block_n))
+	inv.remove(mortar_n, inv.count_of(mortar_n))
+	inv.remove(clay_n, inv.count_of(clay_n))
+	var walls_before: int = _walls()
+	items.report_position(1, spot)
+	_give("cut_stone_block", blocks)
+	items.drop_in_world(clay_n, mortar, spot + Vector3(2.0, 0.0, 0.0))
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, spot + Vector3(0.0, 0.0, 3.0))
+	check(_walls() == walls_before + 1 and _on_ground("clay") == 0, "clay on the ground fills the wall's mortar (a group member in the ground stock)")
+	# A site that needs mortar takes clay from the pack and from the ground on a deposit.
+	var site_spot: Vector3 = spot + Vector3(12.0, 0.0, 0.0)
+	items.report_position(1, site_spot)
+	_give("cut_stone_block", blocks)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, site_spot + Vector3(0.0, 0.0, 3.0))
+	var site: int = _site_at(site_spot + Vector3(0.0, 0.0, 3.0))
+	check(site != 0, "with no mortar or clay to hand the wall is set down as a site")
+
+	if site == 0:
+		return
+
+	var view: Array = items._site_view(1, items._items[site])
+	_give("clay", 1)
+	items.drop_in_world(clay_n, mortar - 1, site_spot + Vector3(-2.0, 0.0, 0.0))
+	var view_after: Array = items._site_view(1, items._items[site])
+	var on_hand: int = 0
+
+	for row in view_after:
+		on_hand += int(row[2]) if str(row[0]) == "mortar" else 0
+
+	check(not view.is_empty() and on_hand == mortar, "the site's list counts clay in the pack and on the ground as mortar on hand (%d)" % on_hand)
+	items._deposit_site(1, inv, site)
+	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "the deposit takes the clay and the wall is built")
+	check(inv.count_of(clay_n) == 0 and _on_ground("clay") == 0, "all the clay went in")
+	items.table._groups.erase(mortar_n)
