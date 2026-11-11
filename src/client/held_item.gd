@@ -203,6 +203,9 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_tree_near = tree_near
 	_inv = inventory_view
 	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
+
+	if _inv.has_method("stock_fill"):
+		blueprints.stock_count = _inv.stock_fill   # the hammer list counts what a build draws on: the pack and the craft stock in reach
 	_net = terrain_net
 
 	if _net != null and _net.has_signal("wheel_share_received"):
@@ -1350,6 +1353,7 @@ func _process_body(delta: float) -> void:
 		_look_spyglass(false)   # put away, broken, or the button let go while the mouse was elsewhere
 
 	_update_blueprint()
+	_hammer_stock(delta)
 	_plan_step()
 	_hoe_repeat(delta)
 
@@ -1684,6 +1688,46 @@ func _say_why_not() -> void:
 		why = "Aim at the ground where it should go."
 
 	_inv._on_notice(why)
+
+
+# With the hammer's list open or a blueprint picked, the craft stock (what lies within 12 m, protocol 98) is looked at every HAMMER_STOCK_S, so the
+# list's counts and the ghost's colour follow the player as they walk; the list is redrawn with the newest counts at the same pace. It is asked
+# for only when the player has moved HAMMER_STOCK_MOVE_M since the last ask, the pack changed, or HAMMER_STOCK_IDLE_S passed (someone else's
+# stack or a chest may change): a player standing at a base asks once every few seconds, not every second.
+const HAMMER_STOCK_S := 1.0
+const HAMMER_STOCK_MOVE_M := 1.5
+const HAMMER_STOCK_IDLE_S := 5.0
+var _hammer_stock_age: float = HAMMER_STOCK_S
+var _hammer_stock_idle: float = 0.0
+var _hammer_stock_at: Vector3 = Vector3(INF, INF, INF)
+var _hammer_stock_pack: int = 0
+
+
+func _hammer_stock(delta: float) -> void:
+	if not holding or _hammer_tier() <= 0 or not (blueprints.is_open or blueprints.picked > 0) or not _inv.has_method("ask_stock_now"):
+		_hammer_stock_age = HAMMER_STOCK_S   # the first frame with the list open asks at once
+		_hammer_stock_at = Vector3(INF, INF, INF)
+		return
+
+	_hammer_stock_age += delta
+	_hammer_stock_idle += delta
+
+	if _hammer_stock_age < HAMMER_STOCK_S:
+		return
+
+	_hammer_stock_age = 0.0
+	blueprints.refresh(_hammer_tier())   # the counts the last answer brought
+	var here: Vector3 = _camera.global_position if _camera != null else Vector3.ZERO
+	var pack: int = hash([_inv.inventory.numbers, _inv.inventory.counts]) if _inv.inventory != null else 0
+	var moved: bool = not _hammer_stock_at.is_finite() or here.distance_to(_hammer_stock_at) >= HAMMER_STOCK_MOVE_M
+
+	if not moved and pack == _hammer_stock_pack and _hammer_stock_idle < HAMMER_STOCK_IDLE_S:
+		return
+
+	_hammer_stock_at = here
+	_hammer_stock_pack = pack
+	_hammer_stock_idle = 0.0
+	_inv.ask_stock_now()
 
 
 func _update_blueprint() -> void:

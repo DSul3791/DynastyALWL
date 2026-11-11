@@ -213,6 +213,9 @@ var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
+var _sync_grid: Dictionary = {}     # the last world sync's NEAR_M grid, cell -> [world ids] (at most SYNC_EVERY_S old); the hammer list's stock polls read it
+var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent (a hammer poll that would send the same is skipped)
+var _stock_poll_ms: Dictionary = {} # peer -> msec of the last hammer poll answered
 var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
@@ -620,6 +623,8 @@ func start_position_for(peer: int) -> Array:
 
 func peer_left(peer: int) -> void:
 	_bed_cache.erase(peer)
+	_stock_sig.erase(peer)
+	_stock_poll_ms.erase(peer)
 	_zone_sent.erase(peer)
 	_zone_cand.erase(peer)
 	_zone_pos.erase(peer)
@@ -1096,7 +1101,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_KEEP_OUT:
 		_set_keep_out(peer, a, b == 1)
 	elif kind == Net.ACT_CRAFT_STOCK:
-		_send_stock(peer)
+		_send_stock(peer, a == 1)   # a = 1: the hammer list's poll while walking (held_item.gd), answered cheaply and only when the stock changed
 	elif kind == Net.ACT_FAVOURITE:
 		if a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0:
 			inv.set_fav(a, b == 1)
@@ -4449,6 +4454,7 @@ func _sync_world_items() -> void:
 		grid[cell].append(id)
 
 	var t_scan: int = Time.get_ticks_usec()
+	_sync_grid = grid
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
@@ -7491,9 +7497,10 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		cost_rows.append([table.number_of(str(need[0])), int(need[1])])
 
 	_pull_nearby_logs(peer, inv, _log_need(cost_rows, 1))   # shoulder and ground logs count (F-16)
+	var stock: Dictionary = _stock_of(peer)
 
 	for need in row["cost"]:
-		if inv.count_fill(table.number_of(str(need[0]))) + _ground_stock_count(peer, table.number_of(str(need[0]))) < int(need[1]):
+		if _stock_have(inv, table.number_of(str(need[0])), stock) < int(need[1]):
 			if site_ok:
 				continue   # a blueprint site is set down anyway; the materials are deposited later (Dave 5 Nov 2026)
 
@@ -7546,22 +7553,32 @@ func _hammers_for(tier_needed: int) -> String:
 	return "a %s hammer%s" % [listed, " or better" if int(hammers[-1][0]) > lightest else ""]
 
 
-# True when the pack and the ground stock beside the builder cannot cover the blueprint's materials: the click then sets down a blueprint site.
+# True when the craft stock cannot cover the blueprint's materials: the click then sets down a blueprint site.
+# A blueprint draws on what a craft draws on (CraftStock, coordinator 10 Nov 2026): the pack, loose stacks within LOOSE_STOCK_M (12 m) and the
+# builder's own containers within CRAFT_REACH_M (12 m) that are not kept out. The hammer list counts the same stock (craft_stock, protocol 98), so it
+# never shows a piece as covered that the server would set down as a site.
 func _blueprint_short(peer: int, inv, row: Dictionary) -> bool:
+	var stock: Dictionary = _stock_of(peer)
+
 	for need in row["cost"]:
-		if inv.count_fill(table.number_of(str(need[0]))) + _ground_stock_count(peer, table.number_of(str(need[0]))) < int(need[1]):
+		if _stock_have(inv, table.number_of(str(need[0])), stock) < int(need[1]):
 			return true
 
 	return false
 
 
 func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
+	var stock: Dictionary = _stock_of(peer)
+
 	for need in row["cost"]:
 		var number: int = table.number_of(str(need[0]))
 		var left: int = int(need[1]) - _take_ground_stock(peer, number, int(need[1]))   # heavy stock laid on the ground beside the build goes first (Dave 2 Nov)
 
 		if left > 0:
-			inv.remove_fill(number, left)
+			_stock_take(inv, number, left, stock)   # then the pack, loose stacks within 12 m and the builder's own containers, nearest first
+
+	if peer >= 0:
+		_send_stock(peer)   # the hammer list's counts follow what was taken
 
 
 # Heavy building stock on the ground (Dave 2 Nov 2026: "we use the hammer to make blueprints on the spot"): a blueprint takes its materials from loose
@@ -7591,15 +7608,6 @@ func _ground_stock(peer: int, number: int) -> Array:
 
 	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
 	return out
-
-
-func _ground_stock_count(peer: int, number: int) -> int:
-	var total: int = 0
-
-	for row in _ground_stock(peer, number):
-		total += int(row[1])
-
-	return total
 
 
 # Takes up to `want` of `number` from the ground stock near the builder; returns how many it took.
@@ -14113,32 +14121,44 @@ func _is_loose(it: Dictionary) -> bool:
 
 # One pass over the world items for one craft request: {"boxes": [[world id, inventory, distance], ...] nearest first (_craft_boxes),
 # "near": [[world id, distance], ...] the loose items within CraftStock.LOOSE_STOCK_M, nearest first}. The stock functions below take it.
-func _stock_of(peer: int) -> Dictionary:
-	var boxes: Array = []
-	var near: Array = []
+# `from_grid`: look only at the records the last world sync filed in the grid cells within reach (the hammer list's poll, display only: up to
+# SYNC_EVERY_S old, so a stack dropped since then shows on the next poll). Taking (crafts, blueprints) always scans every record.
+func _stock_of(peer: int, from_grid: bool = false) -> Dictionary:
+	var stock: Dictionary = {"boxes": [], "near": []}
 
 	if not _peer_pos.has(peer):
-		return {"boxes": boxes, "near": near}
+		return stock
 
 	var key: String = str(_peer_key.get(peer, ""))
+	var here: Vector3 = _peer_pos[peer]
 
-	for sid in _items:
-		var s: Dictionary = _items[sid]
+	if from_grid and not _sync_grid.is_empty():
+		for sid in _stock_cells(here):
+			if _items.has(sid):   # not taken since the grid was filed
+				_stock_note(stock, sid, here, key)
+	else:
+		for sid in _items:
+			_stock_note(stock, sid, here, key)
 
-		if _is_loose(s):
-			var near_d: float = (s["pos"] as Vector3).distance_to(_peer_pos[peer])
+	(stock["boxes"] as Array).sort_custom(func(a, b): return float(a[2]) < float(b[2]))
+	(stock["near"] as Array).sort_custom(func(a, b): return float(a[1]) < float(b[1]))
+	return stock
 
-			if near_d <= CraftStock.LOOSE_STOCK_M:
-				near.append([sid, near_d])
-		elif _is_storage(s):
-			var box_d: float = (s["pos"] as Vector3).distance_to(_peer_pos[peer])
 
-			if CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, box_d):
-				boxes.append([sid, _chests[int(s["struct"]["uid"])], box_d])
+# Files one record into a craft stock when it lies in reach: a loose stack within LOOSE_STOCK_M, or the player's own storage container within
+# CRAFT_REACH_M (not kept out). The distance is checked first, so the far records (most of them) cost one subtraction.
+func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String) -> void:
+	var s: Dictionary = _items[sid]
+	var d: float = (s["pos"] as Vector3).distance_to(here)
 
-	boxes.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
-	near.sort_custom(func(a, b): return float(a[1]) < float(b[1]))
-	return {"boxes": boxes, "near": near}
+	if d > maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M):
+		return
+
+	if _is_loose(s):
+		if d <= CraftStock.LOOSE_STOCK_M:
+			(stock["near"] as Array).append([sid, d])
+	elif _is_storage(s) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d):
+		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d])
 
 
 # Loose stacks of an ingredient (or any member of its group: a `log` need takes any log) near the player: [[world id, count], ...], nearest first.
@@ -14235,14 +14255,41 @@ func _stock_covers(inv, recipe: Dictionary, times: int, stock: Dictionary) -> bo
 	return true
 
 
+# The world ids the last sync filed in the grid cells that a craft's reach around `here` touches (one to four NEAR_M cells).
+func _stock_cells(here: Vector3) -> Array:
+	var reach: float = maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M)
+	var lo: Vector2i = Vector2i(int(floor((here.x - reach) / NEAR_M)), int(floor((here.z - reach) / NEAR_M)))
+	var hi: Vector2i = Vector2i(int(floor((here.x + reach) / NEAR_M)), int(floor((here.z + reach) / NEAR_M)))
+	var out: Array = []
+
+	for cx in range(lo.x, hi.x + 1):
+		for cz in range(lo.y, hi.y + 1):
+			out.append_array(_sync_grid.get(Vector2i(cx, cz), []))
+
+	return out
+
+
+const STOCK_POLL_MS := 500   # a hammer poll is answered at most this often per player
+
+
 # What a craft may use besides the pack, sent to the player (protocol 98) when their crafting window opens (ACT_CRAFT_STOCK), after each craft
 # request and after a "keep out" change: item number -> count, the ground near them and their containers in reach. The client adds the pack.
-func _send_stock(peer: int) -> void:
+# `poll` (the hammer list while the player walks, ACT_CRAFT_STOCK a = 1): at most once per STOCK_POLL_MS, from the sync grid, and nothing is sent
+# when the stock is what this player was last sent (the client keeps the old counts).
+func _send_stock(peer: int, poll: bool = false) -> void:
 	if not send_craft_stock.is_valid() or not _peer_pos.has(peer):
 		return
 
+	var now_ms: int = Time.get_ticks_msec()
+
+	if poll and now_ms - int(_stock_poll_ms.get(peer, -STOCK_POLL_MS)) < STOCK_POLL_MS:
+		return
+
+	if poll:
+		_stock_poll_ms[peer] = now_ms
+
 	var counts: Dictionary = {}
-	var stock: Dictionary = _stock_of(peer)
+	var stock: Dictionary = _stock_of(peer, poll)
 
 	for row in stock["near"]:
 		var it: Dictionary = _items[int(row[0])]
@@ -14256,10 +14303,19 @@ func _send_stock(peer: int) -> void:
 	var numbers: PackedInt32Array = PackedInt32Array()
 	var amounts: PackedInt32Array = PackedInt32Array()
 
-	for number in counts:
+	var listed: Array = counts.keys()
+	listed.sort()   # one order whatever the scan order, so an unchanged stock hashes the same
+
+	for number in listed:
 		numbers.append(int(number))
 		amounts.append(int(counts[number]))
 
+	var sig: int = hash([numbers, amounts])
+
+	if poll and int(_stock_sig.get(peer, 0)) == sig:
+		return
+
+	_stock_sig[peer] = sig
 	send_craft_stock.call(peer, numbers, amounts)
 
 
