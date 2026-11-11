@@ -219,6 +219,7 @@
 			"recipe": "saw_mill_kit"
 		},
 		"woodworking_table": {
+			"retired": true,
 			"category": "Workshops and stations",
 			"number": 12,
 			"name": "Woodworking table",
