@@ -1,5 +1,5 @@
 # Project handoff: commands, setup, gotchas
-HEAD = see the daily branch `DailyDev_20261029` (tools/ship.sh rewrites this line; it is the October way into main).
+> **Read first (11 Nov 2026).** This repo file is the commands and setup sheet only. It is not the project handoff. The current state, roles and rules are in `docs/START_HERE.md` and `RULES.md`, and the team handoff is `HANDOFF.md` in the project's shared folder (`/mnt/project-files/HANDOFF.md`), which has the same file name as this one. Some lines below are from October and are out of date; they are marked *(stale)*. Dave's law: no tests and no bakes run in the cloud; the commands below run on Dave's PC or on the David4 test machine.
 **Current state, roles and rules: `docs/START_HERE.md`, `docs/handoff/` and `RULES.md`.** This file keeps only what does not change: where things are, commands, setup, gotchas. The 29 Oct state, the October working-rules copy and the 22 Oct "What this is" text are in `docs/archive/2026-11/HANDOFF_2026-10-29_state_and_rules_copy.md` and `docs/archive/2026-10/HANDOFF_FULL_2026-10-29.md`.
 
 ## Where things are
@@ -13,7 +13,7 @@ HEAD = see the daily branch `DailyDev_20261029` (tools/ship.sh rewrites this lin
 | `docs/archive/2026-11/GENERATOR_V2_PLAN.md` | Step-by-step plan for the world generator, with progress notes per step (archived 5 Nov 2026: done; current rules in `DESIGN_IDEAS.md`) |
 | `WORLD_FORMAT_SPEC.md` | Permanent file formats (tile file, Section 4b rivers and edge matching) |
 | `src/worldgen/` | The generator code; tools in `src/worldgen/tools/` |
-| `questions/` (branch `qa`, not in `main`) | Question page for Dave (QUESTIONS.md, ANSWERS.md, qa.html) |
+| `questions/` (branch `qa`, not in `main`) | *(stale)* Old question page for Dave. Decision 46 (11 Nov 2026): the QA artifact page is the only QA channel; these cards are being copied there and then retired |
 | `data/` | JSON tables (items, network, tunnels, flora, soils, rocks, tile rules) |
 | `src/` | admin, builder, client, debug, flora, server, shared, stream, water, worldgen |
 | `tools/` | check scripts (check_warnings.sh, check_controls.py, items_check.py, bots.sh, ...) |
@@ -39,13 +39,13 @@ godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0
 godot --path . -- --role=play                                                                  # host and play: starts a server in the background and joins it (the default role, so pressing Play in the editor does the same)
 ```
 
-Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/project-files/tiles/base_world/`; copy them into `worlds/base_world/tiles/` at the start of a session. Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile_3_4.tile` (about 9 MB, committed so every session has it; recommit it only after a rebake that changes it). The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
+Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/project-files/tiles/base_world/`; copy them into `worlds/base_world/tiles/` at the start of a session. *(stale: since the nine-tile bake, `.gitignore` tracks all nine tiles 2_3 to 4_5, so a fresh clone has them and no copy is needed.)* Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile_3_4.tile` (about 9 MB, committed so every session has it; recommit it only after a rebake that changes it). The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
 
 
 ## Setup a new session needs
-- (Cloud sessions only, October; local PC sessions skip these two lines.) Cloud engine: unpack `/mnt/project-files/engine/godot-4.7.2-voxel1.7-linux-headless.xz` with `xz -dc file > godot && chmod +x godot`.
+- *(stale: cloud tests and bakes are banned since 5 Nov 2026.)* (Cloud sessions only, October; local PC sessions skip these two lines.) Cloud engine: unpack `/mnt/project-files/engine/godot-4.7.2-voxel1.7-linux-headless.xz` with `xz -dc file > godot && chmod +x godot`.
 - Dave's PC: editor `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, project `C:\GodotProjects\DynastyALWL`; headless via `--script` only (a bare launch starts the game server). Ffmpeg is missing there (sound tools only).
-- Baked tiles (cloud copy): `/mnt/project-files/tiles/base_world/` into `worlds/base_world/tiles/`. Git ignores tiles except `tile_3_4.tile`.
+- *(stale)* Baked tiles (cloud copy): `/mnt/project-files/tiles/base_world/` into `worlds/base_world/tiles/`. Git ignores tiles except `tile_3_4.tile`. (Now all nine starter-area tiles are tracked in git.)
 - Python 3 for the check tools. No GitHub CLI in the cloud: use the GitHub tools.
 
 ## Gotchas (short)
