@@ -104,6 +104,8 @@ var reach_stock: Dictionary = {}        # item number -> count a craft may use b
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
+const BOG_STATE := 229                    # the world-item row state of a bog iron deposit (server_items._bog_rows_near)
+var bogs: Dictionary = {}                 # bog deposit world id -> {"pos", "left", "total", "wet", "key"}: kept apart from _world; Kathleen's _show_bog draws them
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
@@ -124,6 +126,7 @@ const OUTCROP_LOOK := {
 	"chalk": [Color(0.72, 0.71, 0.66), 0.75, Color(0.3, 0.3, 0.3), 0.03, 0.9, 0.0, 0.04],          # white, with dark flint bands
 	"marble": [Color(0.64, 0.64, 0.62), 0.7, Color(0.42, 0.43, 0.45), 0.05, 0.3, 0.1, 0.0],         # grey veining
 }
+const OUTCROP_MOSS := 0.2   # an outcrop is a weathered, freshly broken face: little moss (plain boulders 0.65), so the host rock and its veins show (Dino's tin shot, 10 Nov: moss hid the pale quartz)
 const OUTCROP_GLSL := """	vec3 rock = mix(stone, ore_tint, tint_share) * (0.85 + 0.3 * mottle);
 	if (vein_amount > 0.0) {
 		vec3 lp = world_pos - NODE_POSITION_WORLD;
@@ -2357,6 +2360,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_show_boulder(id, row)
 			continue
 
+		if state == BOG_STATE:
+			_note_bog(id, row)
+			continue
+
 		if _world.has(id):
 			_world[id]["count"] = row[2]
 			var t_a: int = Time.get_ticks_usec()
@@ -2655,6 +2662,19 @@ func placed_rows() -> Array:
 
 
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
+# A bog iron deposit the server says is in sight (Sonny's water rules section 11): its spot, the ore left and its full size, and whether it lies under
+# standing water. Kept, not drawn yet: Kathleen's look (_show_bog) builds on this entry and puts its node in "node".
+func _note_bog(id: int, row: Array) -> void:
+	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+	var entry: Dictionary = bogs.get(id, {})
+	entry["pos"] = row[3]
+	entry["left"] = int(row[2])
+	entry["total"] = maxi(int(extra.get("total", row[2])), 1)
+	entry["wet"] = bool(extra.get("wet", false))
+	entry["key"] = str(extra.get("key", ""))
+	bogs[id] = entry
+
+
 # Boulders (Dave 2026-10-21): server-owned lumps of rock a pick breaks into stones. Drawn with Art's boulder mesh scaled to the
 # radius the server sends and shrinking as stones come out; solid, so the strike ray hits them. Kept apart from _world so
 # nothing that walks the world items (gathering, fires, structures) mistakes one for something else.
@@ -2726,6 +2746,7 @@ func _boulder_material(ore: String) -> ShaderMaterial:
 		m.set_shader_parameter("vein_flat", look[4])
 		m.set_shader_parameter("halo_share", look[5])
 		m.set_shader_parameter("fleck_share", look[6])
+		m.set_shader_parameter("mossiness", OUTCROP_MOSS)
 		_outcrop_rock[ore] = m
 
 	return _outcrop_rock[ore]
@@ -2831,6 +2852,13 @@ func _forget(id: int) -> void:
 	if _boulders.has(id):
 		_boulders[id]["node"].queue_free()
 		_boulders.erase(id)
+		return
+
+	if bogs.has(id):
+		if bogs[id].get("node") is Node3D:
+			(bogs[id]["node"] as Node3D).queue_free()
+
+		bogs.erase(id)
 		return
 
 	if not _world.has(id):
