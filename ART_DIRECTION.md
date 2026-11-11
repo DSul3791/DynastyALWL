@@ -2,6 +2,8 @@
 
 What the world should look like, and how we get there on the minimum machine (GTX/RTX 1050-class, 8 GB RAM, 30 fps; ARCHITECTURE_BUDGET.md). Owned by the "Art direction" project thread. Started 2026-10-20 from the owner's target picture.
 
+**Master (decision 82, 11 Nov 2026):** Dave's own `art/Art_Direction.md` (2 Nov 2026: about 85% realism, 15% artistic exaggeration and storybook charm) is the authority on the look. Where this file disagrees with it, the master wins. Everything here is practice under it: how we have built things so far, not limits on what may be built.
+
 **Labels:** *[Decided]* owner decision, *[Proposed]* waiting on the owner, *[Measured]* seen in our build.
 
 ## 1. The target picture (owner, 2026-10-20)
@@ -81,7 +83,7 @@ Every step gets a before-and-after render (cloud software rendering, `cloud-rend
 
 ## 5. Realism over storybook
 
-**[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style is decided in section 10.
+*Under the master (decision 82): read "near-photoreal" as the 85% realism of `art/Art_Direction.md`, with its 15% exaggeration and charm; the master also says avoid bleak photorealism.* **[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style is decided in section 10.
 
 ## 6. Time of day (owner feedback on build 66, 2026-10-20)
 
@@ -106,7 +108,7 @@ Weather is set by the north-south zone, every zone has seasons, dry zones stay d
 
 ## 10. Character look (owner decision, 2026-10-20)
 
-**[Decided]** Characters are slightly stylised: heroic proportions and a hint of cartoon, not realistic, and lighter on older machines (a lower triangle and texture budget than the target picture's character, which was realistic). The world around them stays realistic. This unblocks character model work (Art queue item 7); the budget per character (triangles, bones, texture size, per tier) still goes through the asset budget table with Technical direction before any model is made.
+*Under the master (decision 82): `art/Art_Direction.md` governs characters (realistic anatomy with subtle exaggeration; never cartoon or overly stylised); the 20 Oct ruling below is the earlier wording, and section 54's open question still stands.* **[Decided]** Characters are slightly stylised: heroic proportions and a hint of cartoon, not realistic, and lighter on older machines (a lower triangle and texture budget than the target picture's character, which was realistic). The world around them stays realistic. This unblocks character model work (Art queue item 7); the budget per character (triangles, bones, texture size, per tier) still goes through the asset budget table with Technical direction before any model is made.
 
 ## 11. Forest floor objects (owner decision, 2026-10-20)
 
@@ -421,7 +423,7 @@ Every number below is already in the repo; this section only gathers it so one p
 - Trees and plants keep the height, crown and trunk in `flora.json`; a new model must stay within them (the placer reads them).
 
 **Model conventions.**
-- Built in code unless a hand-made model exists; imported models are glb with vertex colours (pickups) or textures (forges in `assets/stations`).
+- Built in code unless a hand-made model exists (practice, not a ban on imported or bought models; decision 82); imported models are glb with vertex colours (pickups) or textures (forges in `assets/stations`).
 - Trees: near model, mid model (decimated to about a third), far model, impostor. Budgets recorded in section 46: near up to about 4000 triangles, far up to about 800 for shrubs.
 - One shared mesh and material per kind of thing, vertex colours instead of texture files where possible, no per-frame work.
 - Orientation: front is +Z for placed buildings; the character faces -Z; held tools run handle to head and are turned to the hand mount by `held_item.gd`.
@@ -441,12 +443,14 @@ What shipped since section 54, what is practice now, and where the rest lives. H
 - Ground resources: bog iron deposit patch, dry, wet and dug (#1012; drawn in the world once the `_show_bog` hookup lands); outcrop boulders tinted and veined per ore (#1015), with little moss so the host rock shows (#1019).
 - Lanterns: dark-lantern icons (#990). The carried lanterns themselves are Jamie's #977; their lit pane is a flat amber box (see next work in the handoff).
 
-**Conventions that are now practice** (section 54 was *[Proposed]*; these are what the code actually does, no Dave ruling needed to keep them):
+**Conventions that are current practice** (under the master, decision 82; section 54 was *[Proposed]*. These describe what the code does today. They are not bans: change one with a reason, and say so in the PR. Imported models are allowed: "built in code" is how we have worked, not a limit, and Dave's forge glbs and the bought animals are imported.)
 - Pieces are built in code in `src/client/piece_look.gd` and registered in `src/client/look_table.gd` as `"key": {"builder": "fn", "args": [...]}`. Every look must build and stay under its triangle cap in `test_look_table.gd` (300 default, named dicts for the bigger ones); placed structures also meet `test_structure_looks*.gd` footprint and height caps.
 - Materials: one shared material per kind. `_tone_mat(Color)` caches a flat material per colour; `_blocks_material` draws a tiled courses texture once (brick, slate, clay tile, flagstone, mortar, concrete); `_iron_mat()` for all iron. No per-piece materials, no per-frame work.
 - Real geometry for anything that must read against the sky (shingle courses, merlons, ridges); textures only for flat faces.
 - World resources that need a distinct look but no new mesh get a per-kind duplicate of the shared shader material (outcrops: `inventory_view._boulder_material`).
 - Every look decision is checked in the real game by a look-rig shot (Dino runs them on the PC; `tools/look_rig.sh`), not only an offline render.
+
+**Held tools (decision 84, 11 Nov 2026):** held tools are life-size up to 1 m; longer ones are scaled down to 1 m (`HELD_LOOK_MAX_M` in `held_item.gd`; spears have their own scale). Dave may override this after he has looked.
 
 **Rejected looks (do not bring back).** A concrete roof (#972, Dave: "bandit concrete would not make a good roof"); flat painted roof icons (now drawn from the looks); a neon or glowing tell on ore outcrops (approved brief: readable from about 10 m, not a neon tell); heavy moss on outcrops (hid the tin host).
 
