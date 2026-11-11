@@ -1,7 +1,7 @@
 name: merge guard
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
   pull_request:
 jobs:
   merge-check:
@@ -21,3 +21,5 @@ jobs:
             export MERGE_CHECK_BASE="$BEFORE"
           fi
           python3 tools/merge_check.py
+      - name: AI team operating system static check (no Godot, no Claude run)
+        run: python3 -I tools/check_ai_team_package.py

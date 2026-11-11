@@ -1,6 +1,6 @@
 # Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026)
 
-Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating; roles are in `docs/START_HERE.md` and `MODERATOR_QA_LOG.md`. (The October team of the same names, with a Technical Director, was a different arrangement.) Work lands on the daily branch (`DailyDev_20261029`) through the moderator; `main` waits for Dave's go. The old files are in `docs/archive/2026-10/docs/mirror/tech/` for history. `docs/mirror/tech/BEST_PRACTICES.md` stays as the reference library of numbered entries (BP-xxx); look up the entry before anything new.
+Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating; roles are in `docs/START_HERE.md` and `MODERATOR_QA_LOG.md`. (The October team of the same names, with a Technical Director, was a different arrangement.) Since 11 Nov 2026 work follows the AI Team Operating System (`CLAUDE.md`, `docs/ai-team/`): task branches -> nightly `dev` -> gated `main`; `main` still waits for Dave's go. The old files are in `docs/archive/2026-10/docs/mirror/tech/` for history. `docs/mirror/tech/BEST_PRACTICES.md` stays as the reference library of numbered entries (BP-xxx); look up the entry before anything new.
 
 ## Dave
 - Dave decides design. He tests at his own pace; Claude never waits on him: park the job and take the next one.
@@ -14,10 +14,10 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - Usage: pace the weekly tokens evenly (resets Wed 03:00 Atlantic). Do the work directly; use the local Qwen model only for bulk reading. At the bedtime backup, ask Dave for the weekly percent and log it in `C:\GodotProjects\Claude_Usage_Log.md`.
 
 ## Git
-- `main` is the base for all code. It is protected: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until Dave has play-tested and says go.
-- Flow since 1 Nov 2026: each agent works on its own branch (`claude/<topic>` or its named branch) and pushes it; the moderator merges the pushes into the daily branch (`DailyDev_YYYYMMDD`); the full test pass runs; Dave play-tests. On Dave's go: backup, merge the daily into `main`, tests, new daily branch. Agents never merge to the daily or `main` themselves.
+- `main` is protected and stable: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until the full merge gate passes (`docs/ai-team/TEST_GATES.md`) and Dave says go; on his go, back up first as before. (This outranks the `WORKFLOW.md` line on routine promotions until Dave changes it.)
+- Flow since 11 Nov 2026 (Dave): each task works on its own branch (`claude/<task>`) cut from `dev`; reviewed branches are integrated into `dev`, fully committed every night for Dave's playtest; promotion to `main` is a reviewed PR. Agents never push to `main`. (The 1 Nov per-day integration branch and the 2 Nov rule against any daily branch are superseded; history in `docs/ai-team/KNOWN_CONFLICTS.md` #1-2.)
 - `tools/ship.sh` (pushes `ship/build-N`, merges the PR with `tools/pr_merge.sh`) is the October way into `main`; use it only for that last step, with Dave's go.
-- Before handing a branch to the moderator: `git fetch` and merge the daily into your branch, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check. Label each change RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
+- Before handing a branch to the coordinator: `git fetch` and merge `dev` into your branch, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check. Label each change RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
 - Build number: the HUD number lives in `src/shared/build.gd` and is raised only by `tools/ship.sh` at the last step into `main` (it also appends `docs/mirror/tech/BUILD_LOG.md`). Agents on branches do not touch it.
 - Bakes: never bake or commit tiles in the cloud. A `TERRAIN_VERSION` change ships only with a bake.
 
