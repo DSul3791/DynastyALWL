@@ -184,10 +184,10 @@ No lantern exists, only the held torch. Reference: a torch gives 12 m of light a
 |---|---|---|---|---|---|---|
 | 1 | Wooden - Hanging lantern | 1 lumber, 1 twine, 2 horn pane, 1 candle | 0.3 x 0.3 x 0.4 | hooks to a ceiling or wall beam; 8 m light; 1 candle burns 1 game day | 1 | 107 / 670-671 / 145 |
 | 2 | Iron - Hanging lantern | 1 iron ingot, 2 horn pane, 1 lamp oil | 0.3 x 0.3 x 0.4 | hooks to a ceiling or wall beam; 14 m; 1 lamp oil burns 3 game days; hammer 3 | 3 | 108 / 672-673 / 146 |
-| 3 | Iron - Wall lantern | 1 iron ingot, 2 horn pane, 1 lamp oil | 0.3 x 0.3 x 0.5 | bracket arm on a wall edge; 14 m; hammer 3 | 3 | 109 / 674-675 / 147 |
+| 3 | Wall lantern | 1 iron ingot, 2 horn pane, 1 lamp oil | 0.3 x 0.3 x 0.5 | bracket arm on a wall edge; 14 m; hammer 3 | 3 | 109 / 674-675 / 147 |
 | 4 | Wooden - Torch post | 1 log, 1 twine, 2 tallow | 0.3 x 0.3 x 2.2 | hammer-built standing torch with a pitch-soaked head; 12 m; burns out in the open rain like a torch | 1 | 110 / 676-677 / 148 |
 | 5 | Stone - Torch pillar | 8 cobblestone, 2 mortar, 1 iron ingot, 2 tallow | 0.5 x 0.5 x 2.0 | stone pillar with an iron bowl; 12 m; rain-shielded by the bowl hood; hammer 3 | 3 | 111 / 678-679 / 149 |
-| 6 | Iron - Torch stand | 2 iron ingot, 2 tallow | 0.3 x 0.3 x 1.8 | 12 m; hammer 3 | 3 | 112 / 680-681 / 150 |
+| 6 | Torch stand | 2 iron ingot, 2 tallow | 0.3 x 0.3 x 1.8 | 12 m; hammer 3 | 3 | 112 / 680-681 / 150 |
 | 7 | Wooden - Lamp post | 3 lumber, 2 twine, 1 Wooden - Lantern | 0.3 x 0.3 x 3.0 | lantern on a pole, hook arm; 10 m; candle lasts 1 game day | 1 | 113 / 682-683 / 151 |
 | 8 | Iron - Lamp post | 4 iron ingot, 1 Iron - Lantern | 0.3 x 0.3 x 3.4 | 16 m; oil lasts 3 game days; hammer 3 | 3 | 114 / 684-685 / 152 |
 | 9 | Stone - Lamp post | 8 cobblestone, 2 mortar, 1 Iron - Lantern | 0.5 x 0.5 x 3.0 | lantern on a stone post; 16 m; hammer 3 for the lantern | 3 | 115 / 686-687 / 153 |
@@ -219,7 +219,7 @@ Only the flower pot and the tilled bed exist. Plots are framed beds on the 2 m g
 | 6 | Stone - Planter | 6 cobblestone, 1 mortar, 3 soil | 0.8 x 0.8 x 0.6 | big pot: 1 dwarf shrub or herb | 1 | 123 / 702-703 / 161 |
 | 7 | Wooden - Trellis | 10 stick, 4 twine | 1.6 x 0.1 x 2.0 | climbing crops (beans, hops later); beside a plot | 1 | 124 / 704-705 / 162 |
 | 8 | Wooden - Compost bin | 4 lumber, 1 twine | 1.0 x 1.0 x 0.8 | takes plant waste and manure; yields Compost (item 345) after 3 game days | 1 | 125 / 706-707 / 163 |
-| 9 | Thatch - Scarecrow | 6 stick, 10 thatch, 2 twine | 0.6 x 0.6 x 2.0 | keeps crows off plots within 6 m (ties to the crow sign in the creature plan) | 1 | 126 / 708-709 / 164 |
+| 9 | Scarecrow | 6 stick, 10 thatch, 2 twine | 0.6 x 0.6 x 2.0 | keeps crows off plots within 6 m (ties to the crow sign in the creature plan) | 1 | 126 / 708-709 / 164 |
 | 10 | Wooden - Cold frame | 3 lumber, 1 twine, 4 horn pane | 1.0 x 1.0 x 0.5 | plot cover: protects seedlings from frost | 1 | 127 / 710-711 / 165 |
 
 Final: blueprints 118-127, items 692-711, states 156-165.
@@ -258,8 +258,8 @@ Later water tier. Closed pipes can run level with the ground and carry more wate
 | 7 | Clay - Pipe tee | 3 clay pipe | 2.0 x 2.0 x 0.3 | split | 1 | 143 / 743-744 / 181 |
 | 8 | Iron - Pipe | 2 iron ingot | 2.0 x 0.2 x 0.2 | closed straight; 240 L/min; carries water uphill only when the deep-well force pump pushes (head); hammer 3 | 3 | 144 / 745-746 / 182 |
 | 9 | Iron - Pipe elbow | 2 iron ingot | 2.0 x 2.0 x 0.2 | hammer 3 | 3 | 145 / 747-748 / 183 |
-| 10 | Iron - Tap | 1 iron ingot, 1 hinges | 0.3 x 0.3 x 0.4 | shut-off at a pipe end or over a trough; E opens/closes; hammer 3 | 3 | 146 / 749-750 / 184 |
-| 11 | Iron - Deep-well pump | 8 iron ingot, 2 hide, 2 hinges, 12 nails | 0.8 x 0.8 x 1.6 | on a Stone - Well; force pump: lifts from up to 25 m and pushes up to 10 m above its spout into an iron pipe; 1.0 L/s cap; two players or an ox for full rate; hammer 3 | 3 | 147 / 751-752 / 185 |
+| 10 | Tap | 1 iron ingot, 1 hinges | 0.3 x 0.3 x 0.4 | shut-off at a pipe end or over a trough; E opens/closes; hammer 3 | 3 | 146 / 749-750 / 184 |
+| 11 | Deep-well pump | 8 iron ingot, 2 hide, 2 hinges, 12 nails | 0.8 x 0.8 x 1.6 | on a Stone - Well; force pump: lifts from up to 25 m and pushes up to 10 m above its spout into an iron pipe; 1.0 L/s cap; two players or an ox for full rate; hammer 3 | 3 | 147 / 751-752 / 185 |
 | 13 | Stone - Raised cistern | 28 cobblestone, 8 mortar, 6 lumber | 2.0 x 2.0 x 3.0 | cistern on a stone plinth up to 10 m above ground; filled by the deep-well force pump through an iron pipe; feeds a gravity main from its rim overflow port | 1 | 149 / 755-756 / 187 |
 | 12 | Stone - Cistern | 24 cobblestone, 6 mortar | 2.0 x 2.0 x 1.0 | holds 2,000 L; filled by a pipe or rain barrel overflow; has a rim overflow port | 1 | 148 / 753-754 / 186 |
 
@@ -282,7 +282,7 @@ Source of the amendments: `buildables/water_flow_rules_sonny.md`. The graph mode
 2. **Open channels need a fall the whole way.** Full rate from **0.5 percent** (1 cm per 2 m piece), half rate from 0.1 percent, a level run trickles at 5 L/min. A snapped piece takes its inlet from the last outlet and sets its own outlet 1 cm lower by default, so players never fiddle with falls. Trestles stretch to the ground.
 3. **Closed pipes need only head end to end.** Water flows when the outlet is lower than the source's water surface (a tank level or a force pump's push). The route may rise and fall in between as long as every point stays below that surface. No siphon over a point above the source (needs priming). Full rate from 1 m of head, in proportion under that.
 4. **Conduit caps (game caps):** wooden channel 120 L/min, stone channel 300, clay pipe 120, iron pipe 240.
-5. **Pump rates come from effort:** Q (L/s) = P (W) / (9.81 H (m)), P about 40 W for a simple piston pump with one player (50 W for the iron hand pump), H = depth to the table plus 1 m to the spout. Caps: **Wooden - Hand pump 0.8 L/s, Iron - Hand pump 1.2 L/s, Iron - Deep-well pump 1.0 L/s** (two players 80 W, an ox or horse 150 W). Pumping from deep is honest work, about as hard as sawing.
+5. **Pump rates come from effort:** Q (L/s) = P (W) / (9.81 H (m)), P about 40 W for a simple piston pump with one player (50 W for the iron hand pump), H = depth to the table plus 1 m to the spout. Caps: **Wooden - Hand pump 0.8 L/s, Iron - Hand pump 1.2 L/s, Deep-well pump 1.0 L/s** (two players 80 W, an ox or horse 150 W). Pumping from deep is honest work, about as hard as sawing.
 6. **Hand pumps lift, they cannot push.** Water starts at spout height (about 1 m) and runs by gravity from there. It pours into a held container, a trough beside it, or a channel whose inlet sits under the spout. **No 1.5 m of head.** Suction limit 7 m, minus 1 m per 1,000 m of height.
 7. **The deep-well pump is the force pump.** It pushes water up to **10 m above its spout** into an iron pipe, filling a raised cistern that feeds a town by gravity (B6b). It needs two players or an ox for full rate.
 8. **Wells go to 25 m**, so the deep pump has a reason to exist. Bucket draw time is about 4 s plus 1.5 s per metre for 10 L (22 s at 12 m, 42 s at 25 m). No drawdown in the first version.

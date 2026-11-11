@@ -3599,7 +3599,7 @@ static func hide_sack() -> Node3D:
 	return root
 
 
-# The Wicker - Basket, 0.6 x 0.6: a round basket of woven sticks widening to its rim, two darker twined bands, a thick rim, the dark inside, two rope handles.
+# The Basket, 0.6 x 0.6: a round basket of woven sticks widening to its rim, two darker twined bands, a thick rim, the dark inside, two rope handles.
 static func wicker_basket() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -3683,7 +3683,7 @@ static func sign_post() -> Node3D:
 	return root
 
 
-# The Tusk - Mount, 0.44 wide, hung on a wall like the Antler mount: a plank shield under a dark top bar, two boar tusks curving out and up from a
+# The Tusk mount, 0.44 wide, hung on a wall like the Antler mount: a plank shield under a dark top bar, two boar tusks curving out and up from a
 # hide-bound root between them.
 static func tusk_mount() -> Node3D:
 	_tier_materials()

@@ -147,7 +147,7 @@ No wood-and-stone tier. Half-timber (planks and plaster) is at most a **Refined 
 
 | Today | New |
 |---|---|
-| Thatch - Foundation, Wall, Doorway, Window, Roof, Roof corner, Pillar, Fence, Gate, Garden plot, Scarecrow | **Crude -** the same piece (Thatch - Bed and Thatch - Scarecrow: plain names if only one material, see below) |
+| Thatch - Foundation, Wall, Doorway, Window, Roof, Roof corner, Pillar, Fence, Gate, Garden plot, Scarecrow | **Crude -** the same piece (Thatch - Bed and Scarecrow: plain names if only one material, see below) |
 | Log - Foundation, Wall, Doorway, Window, Ceiling, Roof, Roof corner, Stairs, Pillar, Fence, Gate | **Rustic -** the same piece |
 | Wooden - Foundation, Wall, Doorway, Window, Ceiling, Roof, Roof corner, Stairs, Pillar, Fence, Gate, Garden plot, Trough, Channel, Chair, Table, Bench | **Refined -** the same piece |
 | Stone -, Brick -, Iron -, Steel - rows | unchanged |
