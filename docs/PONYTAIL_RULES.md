@@ -41,7 +41,7 @@ Server-side validation of anything a client sends; error handling that prevents 
 - Every report or handoff ends with what was skipped or not checked, and any risk (one short line in messages to Dave).
 
 ## 5. Review commands (Claude Code skills in `.claude/skills/`)
-- `/ponytail-review`: the author runs it on their own diff before asking for review, and fixes or answers each finding. The `gate-reviewer` has it preloaded as its review method. Its findings are advice; the gate verdict stays PASS / FAIL / NOT RUN under `TEST_GATES.md`, and "Ship" never means merge approval.
+- `/ponytail-review`: the author runs it on their own diff before asking for review, and fixes or answers each finding. An investigation with no diff applies its method to the fix it proposes (callers, refusal and multiplayer cases, tests) and says so in the handoff. The `gate-reviewer` has it preloaded as its review method. Its findings are advice; the gate verdict stays PASS / FAIL / NOT RUN under `TEST_GATES.md`, and "Ship" never means merge approval.
 - `/ponytail-audit`: a report-only audit of a folder or system, run when the coordinator or Dave asks. Findings become backlog proposals, not edits.
 - `/ponytail-debt`: the `shortcut:` ledger, for handoffs and planning.
 - A "delete" or "yagni" finding about something an approved design names (an item, realism mechanic, hook for a planned stage) is not dead code: check it with the `decision-provenance` workflow before anything moves. The skills apply this rule; this file is its master.
