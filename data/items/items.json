@@ -626,7 +626,6 @@
 				]
 			],
 			"value": 90,
-			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge"
 		},
@@ -2793,7 +2792,6 @@
 			],
 			"value": 90,
 			"look_alikes": [],
-			"future": true,
 			"repair_station": "forge"
 		},
 		"steel_hoe": {
@@ -3082,7 +3080,6 @@
 		},
 		"hand_saw": {
 			"number": 245,
-			"future": true,
 			"name": "Iron - Saw",
 			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 planks by hand, slower than a mill.",
 			"kind": "tool",
@@ -3687,7 +3684,6 @@
 			"tier": 3,
 			"stack": 1,
 			"unstackable": true,
-			"future": true,
 			"durability": 9000,
 			"look_alikes": [],
 			"repair": [
@@ -3745,7 +3741,7 @@
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
+			"description": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -9105,7 +9101,6 @@
 				"kind": "tool",
 				"stack": 1,
 				"unstackable": true,
-				"future": true,
 				"material": "iron",
 				"tool_class": "chisel",
 				"tier": 3,

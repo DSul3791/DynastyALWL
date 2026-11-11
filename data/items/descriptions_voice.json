@@ -85,7 +85,7 @@
 		"flint": "A hard grey stone that sparks when struck. Common near rivers.",
 		"copper_ore": "A heavy lump streaked green and red. Smelts to copper in a forge.",
 		"tin_ore": "A dark, very heavy lump. Smelts to tin in a forge.",
-		"iron_ore": "A rusty brown lump. Smelts to iron with coal in a forge.",
+		"iron_ore": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
 		"coal": "A black lump that burns hot. Smelts iron and makes steel.",
 		"copper_ingot": "Smelted copper. Soft, but good for early tools.",
 		"iron_ingot": "A bar of smelted iron. Hard, for tools and nails.",
