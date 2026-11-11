@@ -42,6 +42,6 @@ Existing `.claude/settings.json` permissions (push to `main`, force push, delete
 - NOT VERIFIED: Cowork account skills; Library copies (`/mnt/project-files/START_HERE.md`, `HANDOFF.md`) — SYNC PENDING, they are not in this project's shared folder.
 
 ## Remaining steps for Dave (settings only Dave can change)
-1. ~~Protect `main`~~ done by Dave (observed protected 11 Nov 2026). Optional: protect `dev` the same way (still unprotected).
+1. GitHub > Settings > Branches: `main` is reported protected (11 Nov 2026, Dave says configured); confirm it requires a PR, the `merge-check` check and blocks force push (rules not readable from the cloud). Optional: protect `dev` the same way (still unprotected).
 2. Optional: paste `docs/ai-team/package/cowork/PROJECT_INSTRUCTIONS.txt` into the project instructions.
 3. Say when game development may resume.
