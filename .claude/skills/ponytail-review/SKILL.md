@@ -31,7 +31,7 @@ Review like the senior developer who will be paged when it breaks. Order: correc
 
 ## 4. Output
 Plain short sentences. Start `What this change does:` in two or three sentences, with the head SHA.
-Findings numbered across three groups, skip empty groups: **Must fix** (bug, security, data loss, breaks at expected load or a contract), **Should fix** (untested risky logic, real slowness, duplication, code that should not exist), **Nice to have**. Each finding: title (`path:line`), What this is, Problem, Fix, If we skip it.
+Findings numbered across three groups, skip empty groups: **Must fix** (bug, security, data loss, breaks at expected load or a contract, contradicts an approved design, realism requirement or name, a big change `RULES.md` "Code" needs approved without that approval, a test or evidence that `docs/PONYTAIL_RULES.md` section 4 or `TEST_GATES.md` requires is missing), **Should fix** (untested risky logic, real slowness, duplication, code that should not exist), **Nice to have**. Each finding: title (`path:line`), What this is, Problem, Fix, If we skip it.
 End with:
 - `Findings:` `none` or `fix <numbers> first`. This is advice to the author and gate; it is never a merge approval or a gate PASS.
 - `Lean: -<N> lines possible.` when lean findings exist.

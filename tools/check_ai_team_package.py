@@ -115,11 +115,12 @@ if not gate_fm or not re.search(r'^skills:\n(?:\s+- .*\n)*?\s+- ponytail-review$
     errors.append('GATE REVIEWER DOES NOT PRELOAD ponytail-review')
 import json
 settings=json.loads((root/'.claude/settings.json').read_text(encoding='utf-8'))
-for key in ('hooks','enabledPlugins','extraKnownMarketplaces'):
+for key in ('hooks','enabledPlugins','extraKnownMarketplaces','mcpServers','enableAllProjectMcpServers','enabledMcpjsonServers'):
     if key in settings: errors.append(f'UNREVIEWED SETTINGS KEY {key}: review it, then update this check')
 for path in agent_files+skill_files:
-    if re.search(r'^hooks:', re.match(r'\A---\n(.*?)\n---\n',path.read_text(encoding='utf-8'),re.S).group(1), re.M):
-        errors.append(f'UNREVIEWED hooks IN FRONTMATTER: {path.relative_to(root)}')
+    fm=re.match(r'\A---\n(.*?)\n---\n',path.read_text(encoding='utf-8'),re.S)
+    if fm and re.search(r'^(hooks|mcpServers):', fm.group(1), re.M):
+        errors.append(f'UNREVIEWED hooks/mcpServers IN FRONTMATTER: {path.relative_to(root)}')
 for rel in ('.mcp.json','.claude-plugin','hooks/hooks.json'):
     if (root/rel).exists(): errors.append(f'UNREVIEWED PLUGIN/MCP CONFIG: {rel}')
 
