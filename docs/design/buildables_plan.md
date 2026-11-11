@@ -50,7 +50,7 @@ Look families (Kathleen's four): Thatch family covers Thatch and Log (bark poles
 Other groups today: furniture is wood-only (log seat, stool, bench, chair, table, three beds, two rugs, two chests); lights are wall torch, chandelier, fireplace and the unbuilt standing/wedged torch; garden is the flower pot and the tilled bed (not on the hammer); water is nothing (only the held bucket). Total new: **96 blueprints, 8 component items, 3 hammers**.
 
 Existing rows that disagree with the rest (for Jamie to decide, not changed here):
-1. Sturdy - Ceiling, Sturdy - Roof, Refined - Stairs, Chair, Table, Bench, Wooden - Chest and others name a **workbench** as their station. The standing rule is that hammer blueprints never need a workbench. New rows here need none.
+1. Sturdy - Ceiling, Sturdy - Roof, Refined - Stairs, Chair, Table, Bench, Wooden - Chest and others name a **workbench** as their station. Building pieces are placed by hammer blueprint; crafted parts may need a station (decision 60, 11 Nov 2026, replacing the old "never a workbench" wording). New rows here name no station.
 2. The Wooden doorway and window cost less than the wall (3 against 4 lumber) while the Thatch doorway costs more than the thatch wall. New openings use about three quarters of their wall.
 3. Wooden costs have no nails; Dave's 22 Oct wood chain puts nails in anything built from wood. Costs here follow the live rows (lumber and twine); a nails pass is a separate balance task.
 4. All current walls are 2.0 x 0.25 m whatever the tier; the decided design had thick log and stone walls (0.4 to 0.6 m). Not changed here.
