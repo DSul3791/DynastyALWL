@@ -92,6 +92,32 @@ func group_members(number: int) -> PackedInt32Array:
 	return _groups.get(number, PackedInt32Array())
 
 
+# The one ranking of a group's members, "lowest" first (coordinator 10 Nov 2026): the lowest items.json "tier", then the lowest material on SPEND_MATERIALS,
+# then the lowest "value"; a member with none of these ranks last on that field, and a full tie keeps the group's own order (its own id first: plain logs for any log).
+# A cost spends its lowest member first (Inventory.remove_fill, the ground and container takes in server_items.gd) and a taken-down piece gives it back (_refund_number),
+# so Bronze nails go before iron Nails and come back as Bronze nails. [] when the number is not a group id.
+const SPEND_MATERIALS := ["wood", "bone", "stone", "flint", "obsidian", "copper", "tin", "bronze", "iron", "steel"]
+
+
+func spend_order(number: int) -> PackedInt32Array:
+	var members: PackedInt32Array = group_members(number)
+	var rows: Array = []
+
+	for i in members.size():
+		var row: Dictionary = entry(id_of(members[i]))
+		var material_rank: int = SPEND_MATERIALS.find(str(row.get("material", "")))
+		rows.append([int(row.get("tier", 99)), material_rank if material_rank >= 0 else 99, float(row.get("value", 1.0e9)), i])
+
+	var order: Array = range(members.size())
+	order.sort_custom(func(a, b): return rows[a] < rows[b])   # Array compares element by element; the group index last makes the order total
+	var out: PackedInt32Array = PackedInt32Array()
+
+	for i in order:
+		out.append(members[i])
+
+	return out
+
+
 func load_file(path: String) -> bool:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
