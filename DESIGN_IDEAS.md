@@ -1,5 +1,7 @@
 # Design Vision and Ideas
 
+> **Note (Jamie, 11 Nov 2026):** the item, building and progression decisions from 6 to 11 Nov are recorded in `docs/design/item_system.md`, `docs/design/progression.md`, `docs/design/buildables_plan.md` and `docs/design/wood_tier_note.md`, not here. That includes the seven building tiers, blueprint-only building, kit names, bronze nails and hinges, and bog iron. Where this file and those differ on items or buildings, those win. The vision sections here still stand.
+
 Record of the design brainstorming sessions from 2026-10-11 onward. This is a planning document. The world generator described in Section 14 is partly built; the game systems in Sections 5 to 13 are design only and no code exists for them yet.
 
 **Revision history:** versions 1 to 10 (11 to 16 Oct 2026) are kept in `docs/archive/2026-10/DESIGN_IDEAS_REVISION_HISTORY.md`. The numbered sections below are always the current rules.
