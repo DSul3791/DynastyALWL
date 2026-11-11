@@ -111,6 +111,7 @@ func _init() -> void:
 
 	_check_site_gather(blocks, mortar, site3)
 	_check_group_stock(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, 40.0))
+	_check_group_refund()
 
 	print("test_build_stock: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
@@ -216,3 +217,33 @@ func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector
 	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "the deposit takes the clay and the wall is built")
 	check(inv.count_of(clay_n) == 0 and _on_ground("clay") == 0, "all the clay went in")
 	items.table._groups.erase(mortar_n)
+
+
+# A group cost gives back its lowest member (coordinator 10 Nov 2026: a wall built with Bronze nails must not give back iron Nails), since which member
+# was paid in is not recorded: the lowest tier, then material, then value; a full tie keeps the group's own id (plain logs for any log).
+func _check_group_refund() -> void:
+	var t = items.table
+	check(items._refund_number(t.number_of("knife")) == t.number_of("stone_knife"), "a knife cost gives back the stone knife (tier 1)")
+	check(items._refund_number(t.number_of("wooden_block")) == t.number_of("wooden_block_soft"), "a wooden block cost gives back the cheaper softwood block")
+	check(items._refund_number(t.number_of("log")) == t.number_of("log"), "a log cost still gives back plain logs")
+	check(items._refund_number(t.number_of("mortar")) == t.number_of("mortar"), "a cost that is no group gives back itself")
+	# A stand-in pair like Nails and Bronze nails: the bronze member ranks below one with no material.
+	var nails_n: int = t.number_of("nails")
+	var bronze_n: int = t.number_of("bronze_ingot")
+	t._groups[nails_n] = PackedInt32Array([nails_n, bronze_n])
+	var bronze_entry: Dictionary = t.entry("bronze_ingot")
+	var had_material: bool = bronze_entry.has("material")
+	bronze_entry["material"] = "bronze"   # stands in for Bronze nails' material (the stand-in has none of its own)
+	check(items._refund_number(nails_n) == bronze_n, "a bronze member is given back before a member with no material")
+	var inv = items.inventory_of(1)
+	inv.remove(bronze_n, inv.count_of(bronze_n))
+	inv.remove(nails_n, inv.count_of(nails_n))
+	check(items._refund_blueprint(1, inv, {"cost": [["nails", 4]]}, true) and inv.count_of(bronze_n) == 4 and inv.count_of(nails_n) == 0, "a taken-down piece gives back the lowest member")
+	inv.remove(bronze_n, 4)
+	items._refund_entry(1, [0, 2, [[nails_n, 3]]])
+	check(inv.count_of(bronze_n) == 6 and inv.count_of(nails_n) == 0, "a cancelled craft gives back the lowest member too")
+	inv.remove(bronze_n, 6)
+	t._groups.erase(nails_n)
+
+	if not had_material:
+		bronze_entry.erase("material")

@@ -7644,6 +7644,7 @@ func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false
 		if count <= 0:
 			continue
 
+		number = _refund_number(number)   # a group cost gives back its lowest member (we do not record which member was used)
 		var left: int = inv.add(number, count)
 		given.append([number, count - left])
 
@@ -7984,6 +7985,37 @@ func _fills(number: int) -> PackedInt32Array:
 	return members if not members.is_empty() else PackedInt32Array([number])
 
 
+# What a group cost gives back when a piece or a site is taken down (coordinator 10 Nov 2026): the group's lowest member, since which member was
+# paid in is not recorded. A wall built with Bronze nails must not give back iron Nails, the scarce kind. Lowest means the lowest items.json "tier",
+# then the lowest material on REFUND_MATERIALS, then the lowest "value"; a member with none of these ranks last on that field, and a full tie keeps
+# the group's own order (its own id first: plain logs for any log).
+const REFUND_MATERIALS := ["wood", "bone", "stone", "flint", "obsidian", "copper", "tin", "bronze", "iron", "steel"]
+
+
+func _refund_number(number: int) -> int:
+	var best: int = number
+	var best_key: Array = []
+
+	for member in table.group_members(number):
+		var entry: Dictionary = table.entry(table.id_of(member))
+		var material_rank: int = REFUND_MATERIALS.find(str(entry.get("material", "")))
+		var key: Array = [int(entry.get("tier", 99)), material_rank if material_rank >= 0 else 99, float(entry.get("value", 1.0e9))]
+
+		if best_key.is_empty() or _rank_below(key, best_key):
+			best = member
+			best_key = key
+
+	return best
+
+
+static func _rank_below(a: Array, b: Array) -> bool:
+	for k in a.size():
+		if a[k] != b[k]:
+			return a[k] < b[k]
+
+	return false
+
+
 # [[item id, inventory], ...] of containers (chests) within reach of the player.
 func _boxes_near(peer: int) -> Array:
 	var out: Array = []
@@ -8225,7 +8257,7 @@ func _take_down_site(peer: int, _inv, id: int) -> void:
 		var count: int = int(_site_of(it)["have"][item_id])
 
 		if count > 0:
-			give(peer, table.number_of(str(item_id)), count)
+			give(peer, _refund_number(table.number_of(str(item_id))), count)
 
 	_items.erase(id)
 	_dirty = true
@@ -14752,7 +14784,7 @@ func _start_deferred(peer: int, head: Array) -> bool:
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
 	for need in entry[2]:
-		give(peer, int(need[0]), int(need[1]) * int(entry[1]))
+		give(peer, _refund_number(int(need[0])), int(need[1]) * int(entry[1]))   # a group ingredient gives back its lowest member, as a taken-down piece does
 
 
 func _cancel_craft(peer: int, index: int) -> void:
