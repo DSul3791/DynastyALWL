@@ -1,49 +1,81 @@
-# Handoff: Kathleen (art and looks), written 2026-11-01
+# Kathleen (art, animation, sound look) handoff, 11 Nov 2026
 
-> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+Main at handoff: bd3146aa (#1019). Copy in the repo: `docs/handoff/HANDOFF_KATHLEEN.md`. The older 1 Nov handoff is in `docs/archive/2026-11/HANDOFF_KATHLEEN_2026-11-01.md`.
 
-## Role
-I own the ART side of DynastyALWL (Godot 4.7, GDScript): the looks of items, tools, weapons, armour, food, kits, furniture, structures, fauna, flora model fixes. Not mine: item data, recipes and balance (Sal); server, structure and lit-fixture rules (Steve); tests and tooling (Tyler); flora and animal placement and density (MikeW); terrain and water mechanics (Sonny); all sound (Jason). Water and body looks are the art team's (you and Kathreen). Branch: `kathleen-art` (pushed to origin). Never merge into the daily branch (DailyDev_20261029) myself; the moderator does that. After a batch, send the moderator an "approved to merge" note (branch, commit, tests, risks).
+## Role and boundaries
+I own how things look: building pieces, items, icons, world resources (boulders, deposits), held items. Not mine: item data, names, recipes and yields (Jamie); server rules, rows and streaming (Steve); water and terrain (Sonny); design decisions (Morgan); gates (David4); merges (Tyler). Rig shots on Dave's PC are Dino's. Dave approves looks, and so does the coordinator, which has approval authority.
 
-## Method
-Research, block out, render several angles, give an honest 1 to 5 rating (5 = clearly real at 10 and 30 m), revise, check in the real game when possible, keep models cheap. Pictures and a README go in `art/CRITIQUES/<item>_<date>/`. Never hand Dave pictures in chat: every picture he should review is ONE card on the QA page (qa branch, worktree `C:/GodotProjects/DynastyALWL_qa`, pull first): copy the picture to `questions/img/<name>.png`, append to `questions/QUESTIONS.md` a block `## pic-<id> | Question?` / `Image: ...` / `Note: ...` / `- Yes` / `- No`, commit and `git push origin qa`.
+## How I work (keep this)
+1. Sheet first. Render a sheet offline with `tools/look_runtime.py` (a GDScript-to-Python transpiler: `lr.build(name)`, `lr.triangles(root)` gives the true Godot triangle count; use it, because `faces_of` returns boxes as quads and under-counts). Put the sheet in `/mnt/project-files/kathleen/` and get approval.
+2. Build in `src/client/piece_look.gd` and register it in `src/client/look_table.gd`. Keep each look under its cap in `src/worldgen/tools/test_look_table.gd` (default 300; add a named dict entry when a look is genuinely bigger, as was done for TILE_ROOFS and FORTIFIED). Placed structures also meet `test_structure_looks*.gd`: the footprint must stay within ±w/2+0.04, plus the height cap.
+3. Icons for pieces are drawn from their looks: add to `tools/paint_look_icons.py` ITEMS (SHORTEN for roofs), then run `import_item_icons.py --imports-only`, and update the counts in `docs/ui/item_icons.md`.
+4. Lint: zero new warnings. No integer division, no shadowed locals; cast `duplicate()` with `as`.
+5. One PR at a time on the branch, off main. Gate at David4 through the coordinator (no cloud Godot runs). Look-only PRs gate on `test_look_table` plus the always set.
+6. Check it in the real game with a look-rig shot (Dino):
+   - `tools/look_rig.sh --look NAME` gives four views of a look, and `--looks a,b,c` a row of them.
+   - `--pieces` takes structures by name.
+   - `--give ID --lit` shows a lit torch or lantern in hand. Without `--lit`, a dark twin stays dark.
+   - Also: `--cam first|left|right --dist M --pitch DEG --hour H --at X,Z --nograss`.
+   - The rig log prints the held model's on-screen spot (#1018).
+   - Good bare spot for buildings: beach sand at (52752, 67792), 616 m from spawn.
 
-## Done and pushed (kathleen-art, latest 38a51028; the daily 27dfe828 contains it up to 27833d45)
-- Lean-to: long roof (ridge 1.5 m at z 0.4, back at ground z -1.7, about 35 degrees), sloped roof collider, test `test_leanto_collider`.
-- Lit fixtures (fireplace, torch, chandelier) client look; fireplace front rated 4.5.
-- Tall-grass panicle tips and far cue (flora rated 4.5 at 10 m).
-- Meadow flowers round 3 (flora rated 4/5 at 10 m, 3.5 at 15 m); round apples (`_round_fruit`); crown variety (`_crown_variety`: colour spread, elliptical and leaning crowns, 1 in 8 dying, 1 in 20 mostly dead).
-- Fibre cloth look, chopping block, ten distinct kit looks (BasicLook ART_OVERRIDES), larger hands (ragdoll_body.gd).
-- Felled trunk, stump and log bark in the real game (27833d45): shader `lift` (vec3) in flora_view.gd BARK_SHADER, set to (3.0, 2.0, 1.3) in inventory_view.gd `_felled_bark`; softwood tint fallback. Cause was missing warm baked shading, not a missing material. QA card pic-felled-bark-after posted (stump and log block brown, rated 3.5).
-- QA cards posted: pic-orchard, pic-fibre-cloth, pic-kits, pic-hands, pic-meadow-flowers, pic-apples, pic-crown-variety, pic-fireplace-light, pic-orchard-real, pic-felled-bark-after, pic-hold-stone-axe.
+## Materials conventions
+- One shared material per kind.
+  - `_tone_mat(Color)` gives flat colours, cached per colour.
+  - `_blocks_material(base, blocks, seed, mottle)` draws a courses texture once: `_brick`, `_slate`, `_tile`, `_flag`, `_mortar` and `_concrete` in `_tier_materials()`.
+  - `_iron_mat()` is used for every iron part.
+- Real geometry for silhouettes against the sky, such as shingle rows, ridges, merlons and slits. Textures only on flat faces.
+- World resources that only need a distinct look reuse the shared mesh with a per-kind duplicate of the shader material, made once (outcrops: `inventory_view._boulder_material`, `OUTCROP_LOOK`, `OUTCROP_MOSS` 0.2).
+- Held flames: the light's cull mask leaves out layer 2 (the held model's own meshes), so the model isn't over-lit at arm's length. A torch has a short HandLight so the fist isn't black.
 
-## In flight / unfinished (exact next steps)
-1. Lying trunk after the final bark fix: NOT shot. `art/playthrough/rig.sh --item stone_axe --client-arg --shot-fell=flat --wait 120 --settle 20 --out <dir> --name fell` (wrap with `bash tools/godot_slot.sh ...`). The last run (art/CRITIQUES/nov1_checks/fell/) failed: every picture is the "Joining the game" screen (ground took 71 s). Rerun on a quiet machine, then card.
-2. Cut logs (`src/client/log_look.gd`) are still plain blocks; give them the bark shader on the sides and a pale cut face with ring (same lift). Stump side still reads smooth.
-3. Held stone axe card posted (rated 3): head is pale grey-white and blocky; consider a darker, chipped stone head. Held pose is stance (Sonny).
-4. Orchard and crown close-ups in game (eye height inside a crown gives a leaf wall; shoot from about 15 m north of the orchard at 53376,68506 yaw 180).
+## Approved looks (shipped)
+- **Tier ladder:** Crude, Rustic, Refined, Sturdy, Superior, Engineered and Fortified, with pitched roofs and hip corners per tier, and ceilings (#973, #989, #1017). The table is `art/BUILDING_TIERS_LOOKS.md`.
+  - Engineered roof is deep red clay tile on planks.
+  - Fortified has a banded concrete wall, iron door, gate with lintel and brace, and a battlement wall top.
+- **Bog iron deposit patch** (#1012): three ragged rust blobs and seven ore domes.
+  - Wet adds water and an oily film; dug adds peat cuts.
+  - An optional `ground` Callable drapes it over a rise.
+  - Triangles: dry 194, wet 280, dug 290.
+- **Outcrop boulders** (#1015, #1019): per-ore tint, streaks and flecks, with little moss.
+  - Tin: dark cassiterite veins in a pale quartz host.
+  - Copper: green malachite.
+  - Iron: rust.
+  - Coal: black seams.
+  - Salt: pale crusts.
+  - Limestone, chalk and marble: their own bedding.
+- **Dark lantern icons** (#990).
 
-## Open bugs and risks
-- Orchard fruit is sparse from eye height; crown variety rated 3 to 3.5, render only in some views.
-- Flame tips still pale cream (Tyler's code). Thatch seen from behind reads as paper triangles (idea: second offset layer).
-- Rig quirks: ground south of z about 68430 may be unloaded; rig shots take 4 to 10 minutes and need a quiet PC; `crash_reports/` is tracked after merges, do not commit changes to it (`git checkout -- crash_reports`). If a merge refuses because untracked `crash_reports/telemetry_client.log` would be overwritten, move the folder away first.
+## Rejected looks (do not bring back)
+- A concrete roof: #972, and Dave said "bandit concrete would not make a good roof".
+- Flat painted roof icons.
+- A neon or glowing ore tell; the brief is to read from about 10 m.
+- Heavy moss on outcrops.
+- Rejected words for tiers and pieces: Wattle, Timber, Grand, Elegant, Solid, Robust, Stalwart. No "floor" in display names.
 
-## Tests (run from the repo root, headless, the voxel build `C:/GodotInstaller/godot.windows.editor.x86_64.exe` (the standard exe is `Godot_v4.7.2-stable_win64_console.exe`))
-`godot --headless --path . --script res://src/worldgen/tools/<name>.gd` for: test_leanto_collider, test_item_looks, test_look_table, test_structure_looks, test_tool_looks, test_flora_budget (0 over budget; 27 at ceiling), test_fruit_share, test_season_fruit, test_trunk_cutting. All passed on 2026-10-31 after the daily merge. Heavy Godot jobs (rig, renders) through `tools/godot_slot.sh`, at most 3 at once. Offline photography: `tools/shot_node.gd` with view scripts (piece_view, leanto_scene, flora_model_view --variants=N, item_sheet, lit_view, fruit_close, trunk_view).
+## Next work (not started; ready to pick up)
+1. **Lantern horn glow, flame core and hand light.** Approved by the coordinator 10 Nov, but it isn't in a PR. It's commit `28596b75` on branch `claude/project-thread-rfqwpe`: cherry-pick it onto a fresh branch off main.
+   - `held_item._make_lantern_model` gets HORN_GLOW_SHADER: brightest at flame height, dimmer at the corners.
+   - A small bright flame core: narrow candle in wood, wider oil flame in iron.
+   - A 0.6 m HandLight.
+   - Then Dino takes one −55° first-person shot on the beach at 22:00 with `--give wooden_lantern --lit`.
+2. **`_show_bog` hookup.** Draw the bog patch in the world. #997 is merged, so the deposit rows exist: `[id, 0, left, pos, 229 BOG_STATE, {"key","total","wet"}]`, with ids counting down from 2e9.
+   - My draft is `bog_show.patch` in my scratchpad, which is lost with this session. Rewrite it from this description.
+   - In `inventory_view._note_bog`, call `_show_bog(id)`.
+   - The state is "wet" if wet, "dug" if left < total, else "dry". Rebuild only when the state changes.
+   - Yaw comes from a hash of the key. Use `PieceLook.bog_iron_patch(state, ground)`, where `ground` is `func(x, z)` returning the ground height under the patch (from `_ground_below`, with NAN treated as 0) minus the patch's own height.
+   - Store the node in `bogs[id]["node"]`; `_forget` already frees it.
+3. **Outcrop retake.** A tin outcrop in open sun at 11:00, from 10 m and 4 m, after #1019. Dino has the request. The last shot was in deep shade, before the moss fix.
 
-## Read first
-`art/ITEM_ART_STATUS.md` (queued checks), `art/ART_TASKS.md`, `art/CRITIQUES/*/README.md` (ratings and reasoning per item), `art/playthrough/RIG_PLACE.md`, `src/client/basic_look.gd` (ART_OVERRIDES), `src/client/building_look.gd`, `src/flora/tree_builder.gd`, `src/flora/flora_view.gd` (shaders), `art/CRITIQUES/kits_2026-10-31/README.md` (stance notes for Sonny).
+## Open questions for Dave (on the QA page)
+- Do the Fortified pieces look right?
+- Do the tier roofs look right?
+- Is the outcrop tell strong enough?
+- Is the bog patch right?
+- Should the lantern follow-up ship?
+- Character stylisation (ART_DIRECTION.md s54).
 
-## Decisions from Dave not to re-litigate
-Pictures only via QA cards, one item per card. Crab apples are green, orchard apples round and red. Trees must not all look the same (variety). The lean-to has a long sloped roof. Never merge to main; I do not merge to the daily.
-
-## Skipped or not verified
-Not seen in the real game: long-roof lean-to with bed, the ten kits, larger hands, fibre cloth, white (yarrow, chamomile) and pink (valerian) meadow drifts, the lying trunk after the final fix. Not modelled: log cabin set piece, woven texture on fibre cloth, furniture rows in structures.json (Tyler/Sal).
-
-## Next tasks I would have done
-Cut-log bark look; stump bark ridges; darker stone axe head; real-game pass for lean-to, kits, hands, fibre cloth (one card each); then fix the worst three pictures in `art/playthrough` rated 1 to 3.
-
-## Update 2026-11-01: stump rule from Dave
-Chopping a stump still in the ground just chops it up: it disappears and gives firewood and kindling, no fallen log. Models therefore now UNNEEDED: felled-stump and chopped-pieces models (the stump_chop / stump_gone pictures of `--shot-fell`, any "chopped stump" look). `_make_felled(false, ...)` (the standing stump) is still used. The felled-trunk look only matters for trees that really fall. Do not spend more shots on stump chopping.
-Firewood and kindling looks exist but are plain: `data/items/looks.json` firewood (bundle #8a5e36), firewood_soft (bundle #9a7a4a), kindling (bundle #a8845a, size 0.6); the world drop of firewood is a split stick in inventory_view.gd (~line 2533). They have not been checked in game or improved; this is item 6 of SCOPE_KATHLEEN.md.
-Stopped on Dave's order: the lying-trunk shot (`--shot-fell=flat`) was killed mid-run; no tests were running. To re-run after RESTART: the fell shot, then the tests listed above.
+## Gotchas
+- `tools/look_runtime.py` lacks some Godot API; add what you need: `floori`, `Vector3(0,-1,0)` for DOWN, and a `Callable` stand-in.
+- Godot front faces are clockwise. `_tri_out(st, a, b, c, out)` fixes the winding toward `out`.
+- A failed shader compile draws flat grey or magenta. Check every `String.replace` target exists exactly once in the source shader.
+- Force push and amend are blocked on the branch. After a merge: `git checkout -B <branch> origin/main && git merge -s ours origin/<branch>`, then push.

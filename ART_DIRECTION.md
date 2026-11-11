@@ -431,3 +431,23 @@ Every number below is already in the repo; this section only gathers it so one p
 **Critiques.** One folder per review: `art/CRITIQUES/<topic>_<date>/CRITIQUE.md` with the pictures beside it and a table: species or item, picture, flaw, severity 1 to 3, action. First one: `art/CRITIQUES/trees_2026-10-30/`.
 
 **Open decision needing Dave (from the player-character plan, 2026-10-30).** Dave wants a stronger stylisation for characters than section 10 says ("slightly stylised"): "fantasy fun realistic", cartoon fused with a hyper-real world, a simple stylised human with a simple face, hair and hands instead of the featureless ragdoll. Sections 5 and 10 would be updated when Dave approves; the character plan is in CHARACTER_DESIGN_VISION.md on branch sonny-character.
+
+## 55. State at the 11 Nov 2026 handoff (Kathleen; main bd3146aa)
+
+What shipped since section 54, what is practice now, and where the rest lives. Handoff notes for the next art owner: `docs/handoff/HANDOFF_KATHLEEN.md`.
+
+**Shipped looks (10 to 11 Nov, all on main).**
+- Building tiers: pitched roofs per tier with hip corners and ceilings (#973), the Fortified set (#989), footing without a ledge (#1017). The as-built table is `art/BUILDING_TIERS_LOOKS.md`.
+- Ground resources: bog iron deposit patch, dry, wet and dug (#1012; drawn in the world once the `_show_bog` hookup lands); outcrop boulders tinted and veined per ore (#1015), with little moss so the host rock shows (#1019).
+- Lanterns: dark-lantern icons (#990). The carried lanterns themselves are Jamie's #977; their lit pane is a flat amber box (see next work in the handoff).
+
+**Conventions that are now practice** (section 54 was *[Proposed]*; these are what the code actually does, no Dave ruling needed to keep them):
+- Pieces are built in code in `src/client/piece_look.gd` and registered in `src/client/look_table.gd` as `"key": {"builder": "fn", "args": [...]}`. Every look must build and stay under its triangle cap in `test_look_table.gd` (300 default, named dicts for the bigger ones); placed structures also meet `test_structure_looks*.gd` footprint and height caps.
+- Materials: one shared material per kind. `_tone_mat(Color)` caches a flat material per colour; `_blocks_material` draws a tiled courses texture once (brick, slate, clay tile, flagstone, mortar, concrete); `_iron_mat()` for all iron. No per-piece materials, no per-frame work.
+- Real geometry for anything that must read against the sky (shingle courses, merlons, ridges); textures only for flat faces.
+- World resources that need a distinct look but no new mesh get a per-kind duplicate of the shared shader material (outcrops: `inventory_view._boulder_material`).
+- Every look decision is checked in the real game by a look-rig shot (Dino runs them on the PC; `tools/look_rig.sh`), not only an offline render.
+
+**Rejected looks (do not bring back).** A concrete roof (#972, Dave: "bandit concrete would not make a good roof"); flat painted roof icons (now drawn from the looks); a neon or glowing tell on ore outcrops (approved brief: readable from about 10 m, not a neon tell); heavy moss on outcrops (hid the tin host).
+
+**Open for Dave (also on the QA page):** whether the Fortified looks, the tier roofs, the outcrop tell and the bog patch are what he wants, and section 54's character stylisation.
