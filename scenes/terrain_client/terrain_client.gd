@@ -1347,6 +1347,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.name = "Animals"
 	add_child(animal_view)
 	_animal_view_node = animal_view
+	animal_view.torch_light = func() -> Array: return held.held_light() if held != null else []      # eye shine in the player's own torchlight
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:

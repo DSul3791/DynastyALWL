@@ -819,6 +819,21 @@ func holding_torch() -> bool:
 	return holding and _is_torch()
 
 
+# The light the player carries (a lit torch in either hand): [world position, range in metres], or [] with none. Animal eye shine
+# reads it (animal_view.gd torch_light; only the player's own light makes eyes shine, docs/design/EYE_SHINE_AND_WET.md).
+func held_light() -> Array:
+	for model in [_model, _off_model]:
+		if model == null or not is_instance_valid(model) or not (model as Node3D).is_inside_tree():
+			continue
+
+		var light: OmniLight3D = (model as Node3D).get_node_or_null("Light") as OmniLight3D
+
+		if light != null and light.visible and light.is_visible_in_tree():
+			return [light.global_position, light.omni_range]
+
+	return []
+
+
 func _is_torch() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
 
