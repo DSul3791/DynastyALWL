@@ -34,7 +34,8 @@ Existing `.claude/settings.json` permissions (push to `main`, force push, delete
 ## Validation evidence
 - PASS: `python3 -I tools/check_ai_team_package.py` (19 core files, 8 agents, 7 skills, frontmatter, entry-point pointers, superseded rules). Negative check: the old `main` versions of `docs/START_HERE.md` and `RULES.md` contain the superseded strings the checker now rejects.
 - PASS: the same check added to CI (`.github/workflows/merge_check.yml`), which also now runs on pushes to `dev`. Static only, no Godot.
-- NOT RUN: live agent behaviour (`EVALUATION_CASES.md`), Phase 4 smoke trial, any Godot test (none allowed in the cloud; development paused).
+- PASS (observed live, 11 Nov 2026, Claude Code project thread on this branch): all 8 `.claude/agents` appeared as agent types and all 7 `.claude/skills` appeared as skills without any account upload. One live trial: `gate-reviewer` reviewed head `4fc1cbdd` read-only (tools Read/Grep/Glob only, as its allowlist says) and returned PASS with one real finding (WORKFLOW vs RULES on Dave's go), fixed in `379ea4fd`.
+- NOT RUN: the other live agent cases (`EVALUATION_CASES.md`), Phase 4 smoke trial, any Godot test (none allowed in the cloud; development paused).
 - NOT VERIFIED: GitHub branch protection / required checks on `main` and `dev` (repository settings are not readable from this session); Cowork account skills; Library copies (`/mnt/project-files/START_HERE.md`, `HANDOFF.md`) — SYNC PENDING, they are not in this project's shared folder.
 
 ## Remaining steps for Dave (settings only Dave can change)
