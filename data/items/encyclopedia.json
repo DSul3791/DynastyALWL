@@ -10828,8 +10828,16 @@
 					"text": "Three parts copper to one part tin, smelted together in a Stone - Forge. Bronze makes the first real metal tools and weapons, and any metal hammer, bronze included, lets you build at every tier."
 				},
 				{
+					"title": "River placers",
+					"text": "Where rivers cut through ore-bearing hills, little bends and banks collect loose ore. Look for bright flecks in the boulders at a river bend and break them with a pick. Tin and copper turn up this way."
+				},
+				{
 					"title": "Iron",
-					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and you smelt it in a Brick - Forge (or slowly in a Clay bloomery). Iron is not found on the land near your first camp, and the deposits we know of lie out of easy reach, so expect to travel or to find another way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and you smelt it in a Brick - Forge (or slowly in a Clay bloomery). Iron rock is not found near your first camp, and the deposits we know of lie out of easy reach. Bog iron is the nearer way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+				},
+				{
+					"title": "Bog iron",
+					"text": "Some wet ground, low and boggy, builds up iron in its mud. Dig it out with a spade and smelt it like any iron ore. It is where the land near your camp can give you iron, and a dug patch fills again in time."
 				},
 				{
 					"title": "Coal and charcoal",
