@@ -268,9 +268,9 @@ func chosen_quantity() -> int:
 
 
 # The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
-# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) .
+# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) and Admin mode is on (Dave 11 Nov 2026).
 func _add_admin_builds() -> void:
-	if AdminScript.check_enabled():
+	if AdminScript.check_enabled() or not view.admin_craft:
 		return
 
 	var typed: String = view._recipe_search.text if view._recipe_search != null else ""

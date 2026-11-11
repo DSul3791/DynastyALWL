@@ -61,7 +61,6 @@ func _init() -> void:
 	items.peer_connected_hello(1, "lumber000001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
-	items._admin_mode_off[1] = true   # play by the rules: no free crafting
 	items.admin_mode_on = func(_p): return false
 	give("stone", 8)   # the wedge (2 stones) and the bench kit (pace pass: 20 sticks, 6 twine, 4 stones, 60 s)
 	give("stick", 30)

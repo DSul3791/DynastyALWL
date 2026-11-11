@@ -46,7 +46,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_NEW_PLAYER, 0, 0, 0, Vector3.ZERO)
 	check(items._inventories["new-key-0000001"].is_empty(), "the pack is empty")
 	check(float(items._vitals["new-key-0000001"]["fed"]) > 1000.0, "vitals are fresh")
-	check(items._admin_mode_off.has(1) and not items.admin_mode_on.call(1), "Admin mode is off")
+	check(not items._admin_mode_on.has(1) and not items.admin_mode_on.call(1), "Admin mode is off")
 	check(bool(items._characters["new-key-0000001"]["new_player"]), "the character is flagged")
 	check(items.worn_of(1).all(func(n): return n == 0), "nothing is worn")
 
@@ -60,7 +60,7 @@ func _init() -> void:
 	var again = make(dir)
 	again._load_characters()
 	again.peer_connected_hello(1, "new-key-0000001")
-	check(again._admin_mode_off.has(1), "login of a flagged character starts with Admin mode off")
+	check(not again._admin_mode_on.has(1) and not again.free_craft_for(1), "login of a flagged character starts with Admin mode off")
 
 	var table = ItemTableScript.load_default()
 	var recipes = RecipeScript.load_default(table)

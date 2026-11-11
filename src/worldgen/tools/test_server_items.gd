@@ -145,12 +145,12 @@ func _init() -> void:
 
 	items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0))
 	items.admin_ok = func(p: int) -> bool: return p == 7
-	check(items.free_craft_for(7) and not items.free_craft_for(9), "admin mode is on by default for an admin only")
-	items.action(7, Net.ACT_ADMIN_MODE, 0, 0, 0, Vector3.ZERO)
-	check(not items.free_craft_for(7), "an admin can switch it off")
+	check(not items.free_craft_for(7) and not items.free_craft_for(9), "admin mode is off by default, even for an admin (Dave 11 Nov 2026)")
 	items.action(9, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
 	items.action(7, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
-	check(items.free_craft_for(7), "and on again")
+	check(items.free_craft_for(7) and not items.free_craft_for(9), "an admin can switch it on, a non-admin cannot")
+	items.action(7, Net.ACT_ADMIN_MODE, 0, 0, 0, Vector3.ZERO)
+	check(not items.free_craft_for(7), "and off again")
 	items.admin_ok = Callable()
 
 	# Loose things let go in the air come down to the ground (Dave 2026-10-23, mined soil floating over the hole).
@@ -2456,6 +2456,7 @@ func _init() -> void:
 	ad.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	ad.peer_connected_hello(1, "adminkey0001")
 	ad.admin_ok = func(_p): return true
+	ad.action(1, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)   # off by default: switched on as in Esc > Admin
 	ad._last_queue_act.clear()
 	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)   # the iron pickaxe: not known, needs a forge and iron
 	check(ad.craft_queue_of(1) == [[18, 1]], "an admin queues a locked recipe with nothing in the pack")

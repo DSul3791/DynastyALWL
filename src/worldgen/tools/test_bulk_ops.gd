@@ -143,7 +143,6 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.report_position(2, Vector3(0.0, 10.0, 40.0))
 	items.admin_mode_on = func(_p): return false
-	items._admin_mode_off[1] = true
 	clay = items.table.number_of("clay")
 	stone = items.table.number_of("stone")
 	stick = items.table.number_of("stick")

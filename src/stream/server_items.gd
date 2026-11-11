@@ -420,7 +420,7 @@ var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its it
 
 
 func setup(item_table, store_dir: String) -> void:
-	admin_mode_on = func(peer: int) -> bool: return not _admin_mode_off.has(peer)
+	admin_mode_on = func(peer: int) -> bool: return _admin_mode_on.has(peer)
 	table = item_table
 	_traps = TrapsScript.new()
 	_traps.host = self
@@ -542,9 +542,6 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	if bool(_characters[key].get("dead", false)) and send_final_death.is_valid():
 		send_final_death.call(peer, "")   # already dead: the death screen again
 
-	if bool(_characters[key].get("new_player", false)):
-		_admin_mode_off[peer] = true   # a character that started over as a new player logs in with Admin mode off
-
 	_vitals_sent.erase(peer)
 	_sync_vitals(peer, true)
 	_sync_energy(peer, true)
@@ -632,7 +629,7 @@ func peer_left(peer: int) -> void:
 	_vent_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
-	_admin_mode_off.erase(peer)
+	_admin_mode_on.erase(peer)   # Admin mode never outlives a session: every login starts with it off
 	spyglass.erase(peer)
 	spyglass_tier.erase(peer)
 	_chest_viewer.erase(peer)
@@ -1215,9 +1212,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_ADMIN_MODE:
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			if a == 1:
-				_admin_mode_off.erase(peer)
+				_admin_mode_on[peer] = true
 			else:
-				_admin_mode_off[peer] = true
+				_admin_mode_on.erase(peer)
 
 			_say(peer, "Admin mode %s." % ("on: crafting is free" if a == 1 else "off"))
 
@@ -8997,7 +8994,7 @@ func _become_new_player(peer: int) -> void:
 	_vitals[key] = _new_vitals()
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
-	_admin_mode_off[peer] = true
+	_admin_mode_on.erase(peer)
 	_known[peer] = {}
 	send_full.call(peer, _inventories[key].to_bytes())
 	_send_favs(peer, _inventories[key])
@@ -12045,14 +12042,15 @@ func _station_name(station: String) -> String:
 	return station.replace("_", " ")
 
 
-# Admin mode (Dave 2026-10-23, on by default): an admin with the mode on crafts anything in the list free and unlimited, locked or
-# not, with no station and no ingredients (the queue entry carries an empty needs list, which the tick reads as a free craft).
-var _admin_mode_off: Dictionary = {}    # peer -> true when that admin switched Admin mode off (ON by default for admins; resets at login)
-var admin_mode_on: Callable             # (peer) -> bool, set by the server from the Esc > Admin settings switch; unset means on
+# Admin mode (Dave 2026-10-23; OFF by default since Dave 11 Nov 2026): an admin who switched it on in Esc > Admin crafts anything in the
+# list free and unlimited, locked or not, with no station and no ingredients (the queue entry carries an empty needs list, which the tick
+# reads as a free craft). Every session starts with it off, and switching it off stops free crafting at once, queued free crafts included.
+var _admin_mode_on: Dictionary = {}     # peer -> true while that admin has Admin mode switched on this session
+var admin_mode_on: Callable             # (peer) -> bool, reads _admin_mode_on (tests replace it); unset means off
 
 
 func free_craft_for(peer: int) -> bool:
-	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and (not admin_mode_on.is_valid() or bool(admin_mode_on.call(peer)))
+	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))
 
 
 # --- Gather from the sea edge (WATER_GATHER_SPEC.md; Tyler 31 Oct 2026) ---
@@ -14898,6 +14896,15 @@ func _craft_tick(spent: float) -> void:
 
 		# A station recipe only runs while you are near its station; step away and it waits (nothing is lost, cancel refunds).
 		var free_entry: bool = (head[2] as Array).is_empty() and (head.size() < 4 or (head[3] as Array).is_empty())   # an admin-mode craft: no station, no kept tool
+
+		# Admin mode is off now (switched off, a new session, a new player): a free craft still queued is dropped, never made free.
+		if free_entry and not free_craft_for(peer):
+			queue["entries"].remove_at(0)
+			queue["elapsed"] = 0.0
+			_say(peer, "%s was cancelled: Admin mode is off" % str(recipe.get("name", "A free craft")))
+			_dirty = true
+			_sync_craft_queue(peer)
+			continue
 
 		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:

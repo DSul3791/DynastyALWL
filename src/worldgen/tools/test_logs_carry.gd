@@ -90,7 +90,6 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
 	items.admin_mode_on = func(_p): return false
-	items._admin_mode_off[1] = true
 	var oak: int = items.table.number_of("log_oak")
 	var birch: int = items.table.number_of("log_birch")
 	# A hand recipe that needs 2 plain logs, as the chopping block did before Dave's 10 Nov ruling (it now takes one large wooden block): the carry rules need a two-log craft.
