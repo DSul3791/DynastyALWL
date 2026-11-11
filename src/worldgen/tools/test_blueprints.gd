@@ -203,7 +203,9 @@ func _init() -> void:
 
 	# Take down: every material back, no kit.
 	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
-	check(_ids_standing("woodworking_table").is_empty() and _have(1, "lumber") == 24 and _have(1, "nails") == 120 and _have(1, "woodworking_table_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d)" % [_have(1, "lumber"), _have(1, "nails")])
+	# The nails cost is a group (nails, bronze_nails): a take-down gives back the group's lowest member, Bronze nails (#1004), so the 60 nails paid
+	# come back as 60 bronze nails and the 60 refused at the hammer-2 row stay as nails.
+	check(_ids_standing("woodworking_table").is_empty() and _have(1, "lumber") == 24 and _have(1, "nails") == 60 and _have(1, "bronze_nails") == 60 and _have(1, "woodworking_table_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, bronze nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "bronze_nails")])
 
 	# Takedown into a full pack keeps the blueprint piece.
 	_clear(1)
