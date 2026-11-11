@@ -5045,14 +5045,16 @@
 		"iron_ore": {
 			"name": "Iron ore",
 			"kind": "material",
-			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
-			"how_to_get": [],
+			"description": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
+			"how_to_get": [
+				"Dig with a spade in fen or marsh mud, most often at its edge. Bog iron grows back slowly."
+			],
 			"used_for": [
 				"Used in Iron ingot",
 				"Used in Iron ingot (bloomery)"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true,
+			"status": "live"
 		},
 		"coal": {
 			"name": "Coal",

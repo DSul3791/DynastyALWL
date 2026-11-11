@@ -3745,7 +3745,7 @@
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
+			"description": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
