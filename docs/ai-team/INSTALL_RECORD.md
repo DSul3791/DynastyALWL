@@ -25,6 +25,7 @@ Existing `.claude/settings.json` permissions (push to `main`, force push, delete
 |---|---|
 | 1 | `docs/START_HERE.md` branch rule replaced by task branch -> `dev` -> gated `main`; old 2 Nov rule named as superseded. |
 | 2 | `RULES.md` Git section reconciled to `dev`; "Dave says go" before `main` kept. Decision 61 text untouched. |
+| - | Gate review found `WORKFLOW.md` lets routine gated promotions to `main` skip Dave; annotated that Dave's go stays required until he changes it (`RULES.md`). |
 | 3 | `docs/DOC_MAP.md` banner points to the AI team docs; the file list stays STALE (a full refresh is documentation work for later). |
 | 4-8 | Not changed: they touch roles, machines, QA links and design provenance, which need the Library handoff files (not reachable from this project) or Dave. Open, carried forward. |
 | 9 | Re-verified: `main` = `ff650afb811088720ea3f046fbac128588a76821` before install. |

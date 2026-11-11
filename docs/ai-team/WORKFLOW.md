@@ -4,7 +4,7 @@
 ## Branches
 - `feature/<task-id>-<short-scope>` (or agreed `claude/<task-id>`): single job, isolated worktree; owns only assigned paths. No unreviewed worker edits to someone else's branch.
 - `dev`: shared integration, **fully committed** nightly playable candidate for Dave. It is allowed to contain known noncritical defects. Does not require full stable-release gate, but must pass the **dev playtest gate**.
-- `main`: last fully verified stable milestone. Protected PR merges only on exact SHA with complete main gate. Nightly main merge is NOT required, and Dave need not manually approve routine gated promotions after activation unless a specific protected decision does require it.
+- `main`: last fully verified stable milestone. Protected PR merges only on exact SHA with complete main gate. Nightly main merge is NOT required, and Dave need not manually approve routine gated promotions after activation unless a specific protected decision does require it. *(Install note, 11 Nov 2026: until Dave says otherwise, `RULES.md` keeps "Dave says go" before every `main` merge; his explicit direction outranks this line, see `CONSTITUTION.md` precedence.)*
 
 ## Daily rhythm
 **Morning:** Dave approved the *daily backup concept*. Before enabling unattended backups, obtain one-time approval for exact source paths, destination (prefer a different physical drive), retention, verification method, and allowed schedule. Then run that authorized backup automatically each day without asking Dave again, logging a restore manifest. Do not silently expand scope, delete older backups outside approved retention, or modify his PC checkout. Update task queue from overnight playtest and highest-priority backlog. Resume from clean task sessions.

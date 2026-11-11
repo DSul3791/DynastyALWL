@@ -14,7 +14,7 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - Usage: pace the weekly tokens evenly (resets Wed 03:00 Atlantic). Do the work directly; use the local Qwen model only for bulk reading. At the bedtime backup, ask Dave for the weekly percent and log it in `C:\GodotProjects\Claude_Usage_Log.md`.
 
 ## Git
-- `main` is protected and stable: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until the full merge gate passes (`docs/ai-team/TEST_GATES.md`) and Dave says go.
+- `main` is protected and stable: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until the full merge gate passes (`docs/ai-team/TEST_GATES.md`) and Dave says go; on his go, back up first as before. (This outranks the `WORKFLOW.md` line on routine promotions until Dave changes it.)
 - Flow since 11 Nov 2026 (Dave): each task works on its own branch (`claude/<task>`) cut from `dev`; reviewed branches are integrated into `dev`, fully committed every night for Dave's playtest; promotion to `main` is a reviewed PR. Agents never push to `main`. (The 1 Nov per-day integration branch and the 2 Nov rule against any daily branch are superseded; history in `docs/ai-team/KNOWN_CONFLICTS.md` #1-2.)
 - `tools/ship.sh` (pushes `ship/build-N`, merges the PR with `tools/pr_merge.sh`) is the October way into `main`; use it only for that last step, with Dave's go.
 - Before handing a branch to the coordinator: `git fetch` and merge `dev` into your branch, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check. Label each change RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
