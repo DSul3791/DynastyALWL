@@ -19,15 +19,15 @@ Review like the senior developer who will be paged when it breaks. Order: correc
 2. **Risk:** trusting client input, data loss (swallowed errors, writes in the wrong order, the water record or baked tiles touched), security.
 3. **Scale:** fine for one player, wrong for many: per-frame or per-entity work that grows, lists that only grow, work every peer repeats, O(n^2) on entities, disk reads in a frame, oversized network messages.
 4. **Missing test:** risky new logic or a bug fix with no test that fails when it breaks. One good test, not coverage. Note where it must run (PC lane), never run heavy Godot in the cloud.
-5. **Speed:** big slowdowns are problems; small hot-loop wins are suggestions.
+5. **Speed:** anything that can break the `ARCHITECTURE_BUDGET.md` frame budget at the Low tier is a problem; small hot-loop wins are suggestions.
 6. **Lean:** dead code, reuse (name the existing helper path), Godot built-in that already does it, a new dependency for a few lines, an abstraction with one use, near-copies, a function doing unrelated jobs.
 7. **Fit:** the change contradicts an approved design, realism requirement, name (e.g. Foundation/Ceiling) or contract. Cite the source.
 
 ## 3. Check before you report
-- Every finding needs a concrete case: "this input or situation leads to this wrong result". No case, no finding. Re-read the lines and confirm.
+- Every finding needs a concrete case: "this input or situation leads to this wrong result". No case, no finding; a scale or speed risk that needs a PC measurement is reported as `unmeasured risk` with the situation that triggers it. Re-read the lines and confirm.
 - A `shortcut:` (or older `ponytail:`) comment naming its limit is a decision, unless the expected load already crosses it.
-- Something an approved design names is never "dead" or "yagni" by itself: say so and route it to `decision-provenance`.
-- Propose the smallest fix that works; prefer fixes that delete code. Never propose cutting an approved feature, realism or a gate. No style taste, no vague worries.
+- Approved-design items are not dead code (`docs/PONYTAIL_RULES.md` section 5).
+- Propose the smallest fix that works; prefer fixes that remove code (replaced code is deleted; other unused files go to `proposed_removals/`). Never propose cutting an approved feature, realism or a gate. No style taste, no vague worries.
 
 ## 4. Output
 Plain short sentences. Start `What this change does:` in two or three sentences, with the head SHA.

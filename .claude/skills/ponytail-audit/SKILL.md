@@ -18,11 +18,11 @@ Audit like the senior developer who just inherited the code. Order: correct, saf
 Same six kinds as `ponytail-review` (bug, risk, scale, missing test, speed, lean) plus **fit**: code that contradicts an approved design, name or contract. For lean: dead code, two helpers doing one job (name both paths), a Godot built-in or installed addon that already does it, one-implementation abstractions, near-copies, functions mixing jobs.
 
 ## 3. Check before you report
-- Every finding needs a concrete case. No case, no finding.
+- Every finding needs a concrete case (or `unmeasured risk` with its trigger, for scale/speed). No case, no finding.
 - Before calling code unused, grep the whole tree, including tests, scenes (`.tscn`), data JSON, tools, string and dynamic references (`call`, `get_node`, signals by name).
-- Something an approved design names is never dead or yagni by itself; mark it `provenance check` instead.
+- Approved-design items are not dead code (`docs/PONYTAIL_RULES.md` section 5); mark them `provenance check`.
 - A `shortcut:` comment naming its limit is a decision unless the expected load crosses it.
-- Smallest fix; prefer deletion (replaced code is deleted, documents archived). Never propose cutting an approved feature, realism or a gate.
+- Smallest fix; prefer removing code (replaced code is deleted; other unused files go to `proposed_removals/` for Dave; documents archived). Never propose cutting an approved feature, realism or a gate.
 
 ## 4. Output
 Plain short sentences. Start `What this area does:` and the load assumed. Findings numbered across **Must fix**, **Should fix**, **Nice to have**; at most 20, say how many smaller ones were left out. Each finding: title (`path:line`), What this is, Problem, Fix, If we skip it.

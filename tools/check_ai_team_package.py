@@ -110,12 +110,18 @@ for name in ('ponytail-review','ponytail-audit','ponytail-debt'):
     t=p.read_text(encoding='utf-8') if p.is_file() else ''
     for term in (PONYTAIL_COMMIT[:8],'PONYTAIL_RULES.md'):
         if term not in t: errors.append(f'PONYTAIL SKILL {name} MISSING: {term}')
-if not re.search(r'^skills:\n(?:\s+- .*\n)*?\s+- ponytail-review\n', (root/'.claude/agents/gate-reviewer.md').read_text(encoding='utf-8'), re.M):
+gate_fm=re.match(r'\A---\n(.*?)\n---\n',(root/'.claude/agents/gate-reviewer.md').read_text(encoding='utf-8'),re.S)
+if not gate_fm or not re.search(r'^skills:\n(?:\s+- .*\n)*?\s+- ponytail-review$', gate_fm.group(1)+'', re.M):
     errors.append('GATE REVIEWER DOES NOT PRELOAD ponytail-review')
 import json
 settings=json.loads((root/'.claude/settings.json').read_text(encoding='utf-8'))
 for key in ('hooks','enabledPlugins','extraKnownMarketplaces'):
     if key in settings: errors.append(f'UNREVIEWED SETTINGS KEY {key}: review it, then update this check')
+for path in agent_files+skill_files:
+    if re.search(r'^hooks:', re.match(r'\A---\n(.*?)\n---\n',path.read_text(encoding='utf-8'),re.S).group(1), re.M):
+        errors.append(f'UNREVIEWED hooks IN FRONTMATTER: {path.relative_to(root)}')
+for rel in ('.mcp.json','.claude-plugin','hooks/hooks.json'):
+    if (root/rel).exists(): errors.append(f'UNREVIEWED PLUGIN/MCP CONFIG: {rel}')
 
 if errors:
     print(f'FAIL: {len(errors)} package consistency findings')
@@ -123,5 +129,5 @@ if errors:
     sys.exit(1)
 print(f'PASS: {len(required)} core files, {len(agent_files)} Claude Code agents, {len(skill_files)} skills')
 print('PASS: frontmatter, known instruction collisions, authority markers, guardrail references')
-print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, no hooks/plugins in settings')
+print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, no hooks/plugins/MCP in shared settings, agent or skill frontmatter')
 print('LIMIT: static checks only; no Cowork, GitHub write, PC, Godot or live Claude evaluation.')

@@ -10,5 +10,5 @@ From the repo root: `git grep -nE '(#|//|/[*]) ?(shortcut|ponytail):'` (GDScript
 
 ## Output
 One row per marker, grouped by file: `<file>:<line>, <what was simplified>. limit: <the limit>. revisit: <the trigger>.` Tag rows with no revisit trigger `no-trigger`. Owner if needed: `git blame -L<line>,<line>`.
-End with `<N> markers, <M> with no trigger.` and the SHA scanned. Nothing found: `No shortcut debt.`
+End with `<N> markers, <M> with no trigger.`, the SHA scanned and `Not checked:` untracked files and markers outside comment syntax (JSON, `.tscn`). Nothing found: `No shortcut debt.`
 To keep it, write the ledger only where the task brief says (for example the task handoff).
