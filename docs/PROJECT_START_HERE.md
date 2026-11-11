@@ -126,9 +126,10 @@ HISTORICAL (bannered): design/EARLY_GAME_*, FIRST_HOUR_WALKTHROUGH.md, CRAFTING_
 | docs/START_HERE.md | Commands and working rules for agents in the repo | CURRENT, Jamie |
 | docs/design/item_system.md, progression.md, buildables_plan.md, wood_tier_note.md | MASTER copies of the item system, progression, buildables and wood tier design | CURRENT, Morgan and Jamie |
 | HANDOFF.md (repo root) | The commands sheet only (not the project handoff); PR #1028 marks it | CURRENT, Jamie |
+| docs/PROJECT_START_HERE.md, docs/FINAL_HANDOFF_REPORT_11Nov.md | Repo copies of this index and the final report (PR #1029, head 7b1770da, open until Dave's click; the Library files are the originals) | CURRENT once merged, Jamie |
 | PROTOCOL.md | Wire format of client-server messages; check it before adding a protocol number | CURRENT, Steve |
 | RULES.md, CONTROLS.md, ART_DIRECTION.md, art/Art_Direction.md | Working rules; controls; art practice (ART_DIRECTION.md) under Dave's master art/Art_Direction.md | CURRENT |
-| docs/DOC_MAP.md | Repo doc map: status of every repo document (refresh queued, Jamie) | CURRENT, Jamie |
+| docs/DOC_MAP.md | Repo doc map: status of every repo document; marked STALE at its top until its refresh is done (queued, Jamie) | STALE, Jamie |
 | DESIGN_REJECTED.md (repo root) | Ideas Dave rejected; the seven rejected name words are to be added (decision 49, queued) | CURRENT, Jamie |
 | docs/archive/ | Archived (retired) documents, by month | HISTORICAL |
 | ARCHITECTURE_BUDGET.md, DESIGN_PRINCIPLES.md, DESIGN_IDEAS.md, BIG_PICTURE.md and about 60 more .md files at the repo root, plus docs/*.md (water, flora, fauna, items handovers) | Older design and spec documents; which are current is in docs/DOC_MAP.md and handoffs/DOC_AUDIT_11Nov.md | MIXED; check DOC_MAP before trusting one |
