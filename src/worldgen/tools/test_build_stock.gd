@@ -111,6 +111,7 @@ func _init() -> void:
 
 	_check_site_gather(blocks, mortar, site3)
 	_check_group_stock(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, 40.0))
+	_check_spend_lowest(here + Vector3(0.0, 0.0, 120.0))   # before the refund check, which swaps the real nails group for a stand-in and erases it
 	_check_group_refund()
 	_check_chest_build(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, -60.0))
 
@@ -248,6 +249,92 @@ func _check_group_refund() -> void:
 
 	if not had_material:
 		bronze_entry.erase("material")
+
+
+# A group cost spends its lowest member first, by the ranking the refund gives back (DEVTEST-01: iron Nails were spent before Bronze nails, then a taken-down
+# piece gave Bronze nails back). Real nails group: Bronze nails (material bronze) rank below Nails (iron). Within each source (ground stock, pack, a chest, a
+# site gather) the lowest goes first; which source goes first is unchanged (ground within BUILD_STOCK_M, then the pack, then the chests).
+func _check_spend_lowest(spot: Vector3) -> void:
+	var t = items.table
+	var nails_n: int = t.number_of("nails")
+	var bronze_n: int = t.number_of("bronze_nails")
+	var inv = items.inventory_of(1)
+	check(t.group_members(nails_n).has(bronze_n) and t.spend_order(nails_n)[0] == bronze_n and items._refund_number(nails_n) == bronze_n, "the real nails group ranks Bronze nails lowest, and the refund agrees")
+	items.report_position(1, spot)
+	inv.remove(nails_n, inv.count_of(nails_n))
+	inv.remove(bronze_n, inv.count_of(bronze_n))
+
+	# Pack only: 3 iron and 2 bronze, a cost of 4 takes the 2 bronze first, then 2 iron; the lowest alone short, the rest from the next member.
+	inv.add(nails_n, 3)
+	inv.add(bronze_n, 2)
+	items._pay_blueprint(inv, {"cost": [["nails", 4]]}, 1)
+	check(inv.count_of(bronze_n) == 0 and inv.count_of(nails_n) == 1, "pack: 4 nails take both Bronze nails first, then 2 iron (%d bronze, %d iron left)" % [inv.count_of(bronze_n), inv.count_of(nails_n)])
+	inv.add(bronze_n, 3)
+	items._pay_blueprint(inv, {"cost": [["nails", 2]]}, 1)
+	check(inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 1, "pack: the lowest alone covers a cost of 2 (%d bronze, %d iron left)" % [inv.count_of(bronze_n), inv.count_of(nails_n)])
+	items._pay_blueprint(inv, {"cost": [["bronze_nails", 1]]}, 1)
+	check(inv.count_of(bronze_n) == 0 and inv.count_of(nails_n) == 1, "an exact-id cost (bronze_nails) spends only that item")
+	items._pay_blueprint(inv, {"cost": [["nails", 1]]}, 1)
+	check(inv.count_of(nails_n) == 0, "the last iron nail is spent when it is all there is")
+	check(not inv.remove_fill(nails_n, 1), "nothing left: a group cost is refused with no change")
+	inv.add(bronze_n, 1)
+	inv.add(nails_n, 1)
+	check(not inv.remove_fill(nails_n, 3) and inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 1 and items._blueprint_short(1, inv, {"cost": [["nails", 3]]}), "a total that is too small refuses and changes nothing")
+	inv.remove(bronze_n, 1)
+	inv.remove(nails_n, 1)
+
+	# Ground stock first (one source), the pack next, each lowest first: 2 iron and 1 bronze on the ground, 5 iron and 5 bronze in the pack, a cost of 4.
+	items.drop_in_world(nails_n, 2, spot + Vector3(1.0, 0.0, 0.0))
+	items.drop_in_world(bronze_n, 1, spot + Vector3(2.0, 0.0, 0.0))
+	inv.add(nails_n, 5)
+	inv.add(bronze_n, 5)
+	items._pay_blueprint(inv, {"cost": [["nails", 4]]}, 1)
+	check(_on_ground("nails") == 0 and _on_ground("bronze_nails") == 0 and inv.count_of(bronze_n) == 4 and inv.count_of(nails_n) == 5, "the ground stock is spent before the pack: its bronze, then its iron, then 1 pack bronze (%d bronze, %d iron in the pack)" % [inv.count_of(bronze_n), inv.count_of(nails_n)])
+	# A ground stack nearer than the lowest one: the lowest still goes first (iron 1 m away, bronze 3 m away, a cost of 3 takes both bronze and 1 iron).
+	inv.remove(nails_n, inv.count_of(nails_n))
+	inv.remove(bronze_n, inv.count_of(bronze_n))
+	items.drop_in_world(nails_n, 5, spot + Vector3(1.0, 0.0, 0.0))
+	items.drop_in_world(bronze_n, 2, spot + Vector3(3.0, 0.0, 0.0))
+	items._pay_blueprint(inv, {"cost": [["nails", 3]]}, 1)
+	check(_on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "on the ground the lowest member goes first, not the nearest (%d iron, %d bronze left)" % [_on_ground("nails"), _on_ground("bronze_nails")])
+	check(items._ground_take(nails_n, 9, spot, items.BUILD_STOCK_M) == 4 and _on_ground("nails") == 0, "a take of more than lies there takes what is there")
+	items.drop_in_world(nails_n, 3, spot + Vector3(1.0, 0.0, 0.0))
+	items.drop_in_world(bronze_n, 2, spot + Vector3(3.0, 0.0, 0.0))
+	items._ground_take(nails_n, 3, spot, items.BUILD_STOCK_M)
+	check(_on_ground("bronze_nails") == 0 and _on_ground("nails") == 2, "a deposit or repair take (_ground_take) spends the lowest first too (%d iron, %d bronze left)" % [_on_ground("nails"), _on_ground("bronze_nails")])
+	items._ground_take(nails_n, 9, spot, items.BUILD_STOCK_M)
+
+	# Loose stacks 6 to 9 m away (past the 4 m ground stock, inside the 12 m craft stock): iron nearer, bronze farther, a cost of 3 takes the 2 bronze, then 1 iron.
+	items.drop_in_world(nails_n, 5, spot + Vector3(0.0, 0.0, 6.0))
+	items.drop_in_world(bronze_n, 2, spot + Vector3(0.0, 0.0, 9.0))
+	items._pay_blueprint(inv, {"cost": [["nails", 3]]}, 1)
+	check(_on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "craft stock on the ground (4 to 12 m): the lowest member first (%d iron, %d bronze left)" % [_on_ground("nails"), _on_ground("bronze_nails")])
+	items._ground_take(nails_n, 9, spot, 12.0)
+
+	# A chest: the pack holds nothing, the chest 3 iron and 2 bronze, a cost of 3.
+	var chest: int = items.dev_place("chest@%s,%s,0" % [str(spot.x + 9.0), str(spot.z)])
+	items._items[chest]["struct"]["owner"] = str(items._peer_key[1])
+	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
+	box.add(nails_n, 3)
+	box.add(bronze_n, 2)
+	items._pay_blueprint(inv, {"cost": [["nails", 3]]}, 1)
+	check(box.count_of(bronze_n) == 0 and box.count_of(nails_n) == 2, "a chest: the bronze first, then iron (%d bronze, %d iron left)" % [box.count_of(bronze_n), box.count_of(nails_n)])
+	box.remove(nails_n, box.count_of(nails_n))
+
+	# A blueprint site's gather (hammer repair mode): iron 2 m away, bronze 8 m away, the barrel needs 8 nails: all 6 bronze first, then 2 iron.
+	var barrel: int = int(JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"]["wooden_barrel"]["number"])
+	var site_spot: Vector3 = spot + Vector3(0.0, 0.0, -40.0)
+	items.report_position(1, site_spot)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, barrel, 0, 0, site_spot + Vector3(0.0, 0.0, 3.0))
+	var site: int = _site_at(site_spot + Vector3(0.0, 0.0, 3.0))
+	check(site != 0, "a barrel with nothing to hand is set down as a site")
+
+	if site != 0:
+		items.drop_in_world(nails_n, 6, site_spot + Vector3(2.0, 0.0, 0.0))
+		items.drop_in_world(bronze_n, 6, site_spot + Vector3(8.0, 0.0, 0.0))
+		items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
+		var have: Dictionary = items._site_of(items._items[site])["have"]
+		check(int(have.get("nails", 0)) == 8 and _on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "a site gather takes the lowest first from the ground (%d iron, %d bronze left; site %s)" % [_on_ground("nails"), _on_ground("bronze_nails"), str(have)])
 
 
 # A blueprint draws on what a craft draws on (CraftStock, coordinator 10 Nov 2026): the pack, loose stacks within 12 m and the builder's own containers

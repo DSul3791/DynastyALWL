@@ -149,14 +149,16 @@ func has_fill(number: int, count: int) -> bool:
 	return count_fill(number) >= count
 
 
-# Takes `count` for an ingredient: the id itself first, then the group members in the order of the group. False and no change if the pack holds too few.
+# Takes `count` for an ingredient: the group's lowest member first (ItemTable.spend_order: tier, material, value; own id first on a tie), then the next.
+# False and no change if the pack holds too few. An id that is no group is taken as itself.
 func remove_fill(number: int, count: int) -> bool:
 	if count <= 0 or not has_fill(number, count):
 		return false
 
 	var left: int = count
+	var spend: PackedInt32Array = table.spend_order(number) if table != null and table.has_method("spend_order") else PackedInt32Array()
 
-	for fill in fills_of(number):
+	for fill in (spend if not spend.is_empty() else fills_of(number)):
 		if left > 0:
 			var taken: int = mini(left, count_of(fill))
 

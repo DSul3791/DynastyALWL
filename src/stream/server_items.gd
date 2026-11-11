@@ -7607,7 +7607,7 @@ func _ground_stock(peer: int, number: int) -> Array:
 			out.append([id, int(it["count"]), d])
 
 	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
-	return out
+	return _spend_sorted(out, number, func(row): return int(_items[int(row[0])]["number"]))
 
 
 # Takes up to `want` of `number` from the ground stock near the builder; returns how many it took.
@@ -7964,16 +7964,19 @@ func _ground_count(number: int, at: Vector3, radius: float) -> int:
 func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 	var taken: int = 0
 	var fills: PackedInt32Array = _fills(number)
+	var stacks: Array = []
 
 	for gid in _items.keys():
+		var g: Dictionary = _items[gid]
+
+		if fills.has(int(g.get("number", 0))) and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
+			stacks.append(gid)
+
+	for gid in _spend_sorted(stacks, number, func(id): return int(_items[id]["number"])):
 		if taken >= want:
 			break
 
 		var g: Dictionary = _items[gid]
-
-		if not fills.has(int(g.get("number", 0))) or g.has("struct") or g.has("fire") or g.has("tree") or (g["pos"] as Vector3).distance_to(at) > radius:
-			continue
-
 		var take: int = mini(int(g["count"]), want - taken)
 
 		if take >= int(g["count"]):
@@ -7994,34 +7997,34 @@ func _fills(number: int) -> PackedInt32Array:
 
 
 # What a group cost gives back when a piece or a site is taken down (coordinator 10 Nov 2026): the group's lowest member, since which member was
-# paid in is not recorded. A wall built with Bronze nails must not give back iron Nails, the scarce kind. Lowest means the lowest items.json "tier",
-# then the lowest material on REFUND_MATERIALS, then the lowest "value"; a member with none of these ranks last on that field, and a full tie keeps
-# the group's own order (its own id first: plain logs for any log).
-const REFUND_MATERIALS := ["wood", "bone", "stone", "flint", "obsidian", "copper", "tin", "bronze", "iron", "steel"]
-
-
+# paid in is not recorded. A wall built with Bronze nails must not give back iron Nails, the scarce kind. "Lowest" is ItemTable.spend_order, the same
+# ranking a cost spends by (Inventory.remove_fill, _spend_sorted): a cost uses up its lowest member first and gives that member back.
 func _refund_number(number: int) -> int:
-	var best: int = number
-	var best_key: Array = []
-
-	for member in table.group_members(number):
-		var entry: Dictionary = table.entry(table.id_of(member))
-		var material_rank: int = REFUND_MATERIALS.find(str(entry.get("material", "")))
-		var key: Array = [int(entry.get("tier", 99)), material_rank if material_rank >= 0 else 99, float(entry.get("value", 1.0e9))]
-
-		if best_key.is_empty() or _rank_below(key, best_key):
-			best = member
-			best_key = key
-
-	return best
+	var order: PackedInt32Array = table.spend_order(number)
+	return order[0] if not order.is_empty() else number
 
 
-static func _rank_below(a: Array, b: Array) -> bool:
-	for k in a.size():
-		if a[k] != b[k]:
-			return a[k] < b[k]
+# Loose stacks of a group ingredient in the order they are spent: the lowest member first (ItemTable.spend_order), the order `rows` came in kept within a
+# member (nearest first). `member_of` gives a row's item number, or 0 for a row that is not a stack of the ingredient (a chest in _gather_site): it keeps its place.
+func _spend_sorted(rows: Array, number: int, member_of: Callable) -> Array:
+	var order: PackedInt32Array = table.spend_order(number)
+	var at: Array = []
+	var keyed: Array = []
 
-	return false
+	for i in rows.size():
+		var member: int = int(member_of.call(rows[i]))
+
+		if member > 0:
+			at.append(i)
+			keyed.append([order.find(member), at.size(), rows[i]])
+
+	keyed.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	var out: Array = rows.duplicate()
+
+	for j in at.size():
+		out[at[j]] = keyed[j][2]
+
+	return out
 
 
 # [[item id, inventory], ...] of containers (chests) within reach of the player.
@@ -8194,7 +8197,7 @@ func _gather_site(peer: int, inv, id: int) -> void:
 		if put > 0 and not inv.remove_fill(number, put):
 			put = 0
 
-		for src in sources:
+		for src in _spend_sorted(sources, number, func(s): return int(_items[s[1]]["number"]) if not bool(s[2]) and _items.has(s[1]) and fills.has(int(_items[s[1]]["number"])) else 0):
 			if put >= left:
 				break
 
@@ -14201,7 +14204,7 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary) -> int:
 		return 0
 
 	var boxes: Array = stock.get("boxes", [])
-	var ground: Array = _craft_ground(stock, number, inv)
+	var ground: Array = _spend_sorted(_craft_ground(stock, number, inv), number, func(stack): return int(_items[int(stack[0])]["number"]))
 	var have: Array = [inv.count_fill(number)]
 
 	for row in ground:
