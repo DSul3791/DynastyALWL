@@ -96,6 +96,10 @@ A fire row (state 1, 8, 9, 40, 41) carries extra {"burn": seconds of fuel left},
 
 0 item, 1 lit fire, 2 out fire (retired in 19, old saves map to 8 or 9), 3 felled trunk, 4 stump, 5 lean-to, 6 chest, 7 chopping block, 8 empty laid fire (ashes), 9 loaded unlit fire. 10 boulder (27), 13 camp bench (41); see the notes by version for any later state.
 
+Structure states are the structures.json `state` numbers (the highest used is 228 on 11 Nov 2026). State **229 is not a structure**: it is a bog iron deposit row (`BOG_STATE`, #997), `[id, 0, ore left, the sample on the ground, 229, {"key": "gi,gj", "total": size, "wet": bool}]`, with ids counting down from 2,000,000,000. No structure may take 229, and test_bog_rows checks that. The next free structure state is 230.
+
+A placed sawmill's row (a structure whose structures.json row has `needs_running_water`) carries an extra key, `"wheel": percent`. That is its water wheel's share of full saw speed (server_items.wheel_percent, the same rule `_wheel_slow` uses; #1009). The look-at prompt shows it as "(the wheel gives 60 %)". There was no version bump, because older clients ignore the key.
+
 ## Save formats
 
 Every server item file (inventories, world_items, tree_states, chests, vitals, craft_queues) is written atomically (.tmp then rename) and the file it replaces is first copied to `<name>.prev`. A file that does not parse is set aside as `.bad` and the `.prev` copy (one save interval old, 30 s) is restored in its place; a file from a newer version is set aside as `.bad` and not replaced by the old copy. Drilled by src/worldgen/tools/test_persistence_drills.gd.
