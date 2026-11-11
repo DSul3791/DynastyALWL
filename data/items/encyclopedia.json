@@ -2020,7 +2020,6 @@
 				"Any species' log from a felled tree counts (oak log, pine log and the rest)"
 			],
 			"used_for": [
-				"Used to build Blacksmith's forge",
 				"Used in Hand-split planks",
 				"Used in Plank",
 				"Used in Planks by hand",
@@ -2600,8 +2599,8 @@
 				"Used in Clay jug",
 				"Used in Clay - Pot",
 				"Used in Clay mortar",
-				"Used to build Stone forge",
-				"Used to build Brick oven",
+				"Used to build Stone - Forge",
+				"Used to build Oven",
 				"Used to build Clay hearth",
 				"Used in Clay pipe",
 				"Used in Kiln",
@@ -4051,9 +4050,9 @@
 				"Craft at a kiln: 2 Clay"
 			],
 			"used_for": [
-				"Used to build Brick oven",
+				"Used to build Oven",
 				"Used to build Clay hearth",
-				"Built into the Clay hearth and the Brick oven (hammer blueprints); planned for brick walls and chimneys.",
+				"Built into the Clay hearth and the Oven (hammer blueprints); planned for brick walls and chimneys.",
 				"Used in Brick - Garden plot",
 				"Used in Kiln",
 				"Used in Brick - Forge",
