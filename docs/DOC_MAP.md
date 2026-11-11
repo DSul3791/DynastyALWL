@@ -151,7 +151,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/ISLAND_FAUNA_20261103.md` | MikeW | Starter island fauna (frogs, ducks, gulls, seals by water), 3 Nov | 11-04 | keep |
 | `docs/ITEMS_HANDOVER.md` | Sal | Items data handover (Sal, 2026-10-31): one page for Dave | 10-31 | keep (now holds \"Needs code\") |
 | `docs/BLUEPRINT_SITES.md` | Sal | Blueprint sites: placing without the materials, E to deposit (Dave 5 Nov 2026) | 11-05 | keep |
-| `docs/PONYTAIL_RULES.md` | moderator | Ponytail rules (for the Dynasty water build) | 10-31 | keep (Dave's rule for water) |
+| `docs/PONYTAIL_RULES.md` | AI team | Ponytail engineering method for all code (v5.3.3; record `docs/ai-team/PONYTAIL_INSTALL.md`) | 11-11 | keep (Dave, 11 Nov 2026: whole coding team) |
 | `docs/SEASONS_DATA.md` | MikeW | Season data for the looks (flora session, 2026-10-31) | 10-31 | keep |
 | `docs/SPAWN_BEAUTY_CHECK.md` | MikeW | Spawn-area beauty check (flora session, 2026-10-31) | 10-31 | keep |
 | `docs/TYLER_NEXT_TASKS.md` | Tyler | Tyler's self-assigned tasks (standing instruction from Dave, 1 Nov 2026) | 11-01 | keep (Tyler's one task list) |

@@ -18,6 +18,8 @@
 | `README_FIRST.md`, `REVISION_AND_AUDIT_LOG.md`, `cowork/` | `docs/ai-team/package/` (package-only files kept out of the repo root) |
 | `tools/check_ai_team_package.py` | `tools/` (paths adjusted to the layout above; also now fails if `docs/START_HERE.md` or `RULES.md` revive a superseded branch rule) |
 
+*Later change (11 Nov 2026): Ponytail v5.3.3 added three skills (10 in total), five agent edits and checker rules; see `PONYTAIL_INSTALL.md`. The evidence lines below are for the v1.0 install SHAs.*
+
 Existing `.claude/settings.json` permissions (push to `main`, force push, deletes denied) are unchanged.
 
 ## Legacy conflicts (`KNOWN_CONFLICTS.md`) — resolution at install

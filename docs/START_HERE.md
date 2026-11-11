@@ -36,7 +36,7 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 - Max 3 heavy Godot jobs at once on this PC: run them through `tools/godot_slot.sh` (`run_tests.sh`/`run_one_test.sh` do it themselves). Never start a Godot run without a timeout (hung headless scripts have held all slots); never kill Godot processes blindly (one may be Dave's editor).
 - Deleting (decision 61, 11 Nov 2026; Dave's no-flags rule wins): **code that is replaced is deleted**, with no flags and no dead paths left behind. **Documents are archived, never deleted** (`docs/archive/YYYY-MM/`, `git mv`). Other unused files on disk are moved aside to `proposed_removals/`, not deleted.
 - Dave decides design; reversible choices are decided and logged in `MODERATOR_QA_LOG.md`. Questions for Dave go on the QA page (Morgan; link in `/mnt/project-files/HANDOFF.md`): pickable answers, one item per card. Never wait for Dave: take the next job.
-- Rules in full: `RULES.md`, `docs/PONYTAIL_RULES.md` (water), `CONTROLS.md` (update on any input change). Wire format: `PROTOCOL.md`.
+- Rules in full: `RULES.md`, `docs/PONYTAIL_RULES.md` (engineering method for all code, Ponytail v5.3.3), `CONTROLS.md` (update on any input change). Wire format: `PROTOCOL.md`.
 
 ## Two Godot builds (do not mix up)
 | Build | Path | Use |
