@@ -3,7 +3,7 @@
 **Status: MIXED — read approvals carefully.**
 - **APPROVED [D12]:** 7 new cooking-equipment concepts, 16 uncooked/prepared intermediates, and the Food Preparation Table workflow.
 - **OWNER-APPROVED PRESERVATION WORKFLOW:** prepare once; either finish at a suitable existing station OR allow sealed prepared jars/bottles to **mature passively** by elapsed game time. The **complete preservation additions roster is NOT yet approved**.
-- **OWNER-DIRECTED SERVING PLATTER FUNCTION:** a generic reusable platter lets a prepared food-board inventory item be displayed on a table and eaten from. **The revised P15-v2 list of 15 board recipes is PROPOSED, not owner-approved.**
+- **OWNER-DIRECTED SERVING PLATTER FUNCTION:** a generic reusable platter lets a prepared food-board inventory item be displayed on a table and eaten from. **Dave approved nine boards [D15]** (8 ADD, plus Ploughman's Board as FUTURE) and one Serving Platter. The earlier 20- and 15-board lists are superseded.
 - **No implementation authorization** for any part of this companion document. The authoritative catalog of approved item statuses remains [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md).
 
 ## 1. Cooking: approved two-stage design [D12]
