@@ -577,8 +577,9 @@ static func _branch(acc: Acc, from: Vector3, to: Vector3, r0: float, r1: float, 
 		acc.tri(a + 1, a + sides + 2, a + sides + 1)
 
 
-# A clump of leaves: crossed cards at `at`; normals point away from `crown_center`.
-static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_center: Vector3, size: float, shade: float, cards: int) -> void:
+# A clump of leaves: crossed cards at `at`; normals point away from `crown_center`. `flat`: how steeply the last card of a three-card clump stands
+# (its up axis is the level side plus flat x up: 1.1 about 48 degrees, 0.3 about 17 degrees, nearly level, so it covers the view from below).
+static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_center: Vector3, size: float, shade: float, cards: int, flat: float = 1.1) -> void:
 	var out: Vector3 = (at - crown_center)
 	out = out.normalized() if out.length() > 0.01 else Vector3.UP
 	var color: Color = Color(shade, shade, shade, rng.randf_range(0.5, 1.0))
@@ -594,9 +595,32 @@ static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_cent
 			# One card more flat than upright, so a clump has body from above.
 			up = Vector3(-right.z, 0.0, right.x)
 			right = Vector3(cos(turn), 0.0, sin(turn))
-			up = (up + Vector3.UP * 1.1).normalized()
+			up = (up + Vector3.UP * flat).normalized()
 
 		acc.card(at, right, (up + right * tilt * 0.25).normalized(), size * 0.5, size * 0.5, (out * 0.8 + Vector3.UP * 0.2).normalized(), color)
+
+
+# Crown core (TEST-007, Dave's playtest 12 Nov 2026: seen from underneath, the middle and upper canopy had large gaps). The limb-built hardwood crowns
+# (maple, beech, oak, sweet chestnut, walnut) hang their leaf clumps on the limb tips, and the limbs spread out to the crown's shell, so nothing filled the
+# upper middle over the trunk: looking up from under the tree the sky showed straight through it (an oak let through about nine tenths of the sky
+# overhead, a maple or beech up to a third or more for some variants). This adds `count` clumps under the top of the crown's egg (centre `center`,
+# `crown_w` wide, topping out at `h`), spread over `reach` of its width, each with one card laid nearly flat. Near models only (the far model is seen from
+# afar, where the shell covers it); its own random stream, so the rest of the tree is built exactly as before. About 40 cards on a 700 to 900 card maple or beech crown (6 percent), 66 on an oak's 560.
+static func _crown_core(leaves: Acc, center: Vector3, crown_w: float, h: float, count: int, reach: float, far: bool) -> void:
+	if far:
+		return
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash([int(round(h * 100.0)), int(round(crown_w * 100.0)), int(round(center.x * 100.0)), int(round(center.z * 100.0)), "crown core"])
+	var half_h: float = (h - center.y) * 1.02
+	var phase: float = rng.randf() * TAU
+
+	for i in range(count):
+		phase += 2.4   # golden-angle turn: an even spread over the disc
+		var r: float = crown_w * reach * sqrt((float(i) + 0.5) / float(count))
+		var y: float = center.y + half_h * sqrt(maxf(1.0 - pow(r / crown_w, 2.0), 0.0)) * rng.randf_range(0.4, 0.8)
+		var at: Vector3 = Vector3(center.x + cos(phase) * r, minf(y, h * 0.97), center.z + sin(phase) * r)
+		_clump(leaves, rng, at, center, crown_w * 0.36 * rng.randf_range(0.9, 1.1), 0.8 * rng.randf_range(0.92, 1.06), 3, 0.3)
 
 
 static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
@@ -1007,6 +1031,9 @@ static func _maple(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerato
 	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 		_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3))
 
+	if not bare:
+		_crown_core(leaves, center, crown_w, h, 14, 0.65, far)
+
 
 # One limb of a maple: a tube, then two or three smaller limbs from its end that
 # spread and turn up toward the light, until the last twigs carry the leaves.
@@ -1389,6 +1416,9 @@ static func _oak(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator,
 	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 		_oak_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.35))
 
+	if not bare:
+		_crown_core(leaves, center, crown_w, h, 22, 0.8, far)   # the oak's wide, flat-reaching dome is the most open: more clumps, spread wider
+
 
 # Sweet chestnut from the owner's photos (2026-10-18, young and mature in four
 # seasons): a thick trunk with deep furrows that spiral up it, a broad rounded
@@ -1447,6 +1477,9 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 
 		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 			_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, tint))
+
+		if not bare:
+			_crown_core(leaves, center, crown_w, h, 14, 0.65, far)
 
 	if far or bare:
 		return
@@ -1987,6 +2020,9 @@ static func _beech(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 
 	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 		_maple_limb(smooth, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_BEECH))
+
+	if not bare:
+		_crown_core(leaves, center, crown_w, h, 14, 0.65, far)
 
 
 static func _beech_young(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool, bare: bool) -> void:

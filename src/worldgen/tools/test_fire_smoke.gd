@@ -20,7 +20,8 @@ static func _height_at(v: Vector3, x: float) -> float:
 	return x * v.y / maxf(Vector2(v.x, v.z).length(), 0.001)
 
 
-func _init() -> void:
+func _initialize() -> void:
+	await process_frame          # the root takes children only once the tree is running (the nearest-fires cap below needs fires in the tree)
 	var small_1: Vector3 = BuildingLook.plume_velocity(1.0, 0.0, BuildingLook.smoke_tier("rise_m_s", 1), 0.0)
 	var large_1: Vector3 = BuildingLook.plume_velocity(1.0, 0.0, BuildingLook.smoke_tier("rise_m_s", 3), 0.0)
 	_check(absf(_height_at(small_1, 10.0) - 3.0) < 0.1 and absf(_height_at(large_1, 10.0) - 5.3) < 0.1, "1 m/s: smoke 3.0 m (small) and 5.3 m (large) up at 10 m downwind (Jamie's Briggs table)")
@@ -118,5 +119,90 @@ func _init() -> void:
 	_check(wisp != null and wisp.amount < int(BuildingLook.smoke_tier("amount", 1)) and wisp_ramp.sample(0.05).a < ramp.sample(0.05).a, "glowing coals give a thin wisp, less than any fire")
 	embers.free()
 
+	_check_tall()
 	print("test_fire_smoke: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
+
+
+# The height and downwind carry of a tall-plume puff at `share` of its life, from the shared material as set_fire_air leaves it.
+static func _tall_at(mat: ParticleProcessMaterial, life: float, share: float) -> Vector2:
+	var v: Vector3 = mat.direction * (mat.initial_velocity_min + mat.initial_velocity_max) * 0.5
+	var t: float = life * share
+	return Vector2(v.x * t + 0.5 * mat.gravity.x * t * t, v.y * t + 0.5 * mat.gravity.y * t * t)
+
+
+# TEST-011 (Dave's playtest 12 Nov 2026): "Campfire smoke looks good near the fire but disappears around tree-canopy height. Smoke should rise above
+# surrounding trees, gradually spread, and dissipate naturally", be seen from a distance, "with appropriate performance limits".
+func _check_tall() -> void:
+	var cfg: Dictionary = BuildingLook.smoke_cfg()
+	var near_top: float = 0.0
+	var near_probe: Node3D = BuildingLook.fire(true, false, 2)
+	var near_plume: GPUParticles3D = near_probe.get_node("Smoke") as GPUParticles3D
+	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
+	near_top = _tall_at(near_plume.process_material as ParticleProcessMaterial, near_plume.lifetime, 0.5).y
+	_check(near_top < 12.0, "before: the near plume has thinned to a third by %.1f m in a calm, under the crowns" % near_top)
+
+	for tier in [1, 2, 3]:
+		var lit: Node3D = BuildingLook.fire(true, false, tier)
+		var tall: GPUParticles3D = lit.get_node_or_null("TallSmoke") as GPUParticles3D
+		_check(tall != null and tall.amount == int(BuildingLook.tall_tier("amount", tier)) and tall.amount <= 60, "a lit fire (tier %d) has a tall plume of %d puffs (tens, not hundreds)" % [tier, tall.amount if tall != null else 0])
+		lit.free()
+
+	var probe: Node3D = BuildingLook.fire(true, false, 2)
+	var plume: GPUParticles3D = probe.get_node("TallSmoke") as GPUParticles3D
+	var mat: ParticleProcessMaterial = plume.process_material as ParticleProcessMaterial
+	var life: float = plume.lifetime
+	var ramp: Gradient = (mat.color_ramp as GradientTexture1D).gradient
+	_check(ramp.sample(0.03).a < 0.01 and ramp.sample(0.2).a > 0.5 and ramp.sample(1.0).a < 0.01, "unseen as it leaves the fire (the near plume is the smoke there), then thick, then gone")
+	_check(not mat.turbulence_enabled and mat.damping_max == 0.0, "no turbulence or damping steals its rise")
+	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
+	var calm: Vector2 = _tall_at(mat, life, 0.7)
+	_check(calm.y >= 35.0 and absf(calm.x) < 0.01, "calm: still a fifth as thick at %.0f m straight up, over the tallest crowns about it" % calm.y)
+	BuildingLook.set_fire_air(2.0, 0.0, 0.0)
+	var breeze: Vector2 = _tall_at(mat, life, 0.7)
+	_check(breeze.y >= 25.0 and breeze.x > 20.0, "a 2 m/s breeze: %.0f m up and %.0f m downwind, bent over but above the canopy" % [breeze.y, breeze.x])
+	_check(_tall_at(mat, life, 1.0).y > breeze.y, "and still rising slowly as it fades")
+	BuildingLook.set_fire_air(0.2, 0.0, 1.0)
+	var night_top: float = _tall_at(mat, life, 1.0).y
+	var night_end_v: float = (mat.direction * mat.initial_velocity_max).y + mat.gravity.y * life
+	_check(absf(night_top - BuildingLook.tall_tier("night_top_m", 2)) < 3.5 and night_end_v < 0.15, "a still clear night: it stops at about %.0f m and spreads there" % night_top)
+	var grow: Curve = (mat.scale_curve as CurveTexture).curve
+	_check(grow.sample(1.0) / grow.sample(0.0) >= 5.0 and mat.scale_max * grow.sample(1.0) >= 8.0, "it spreads: each puff %.0f m wide by the end" % (mat.scale_max * grow.sample(1.0)))
+	_check(plume.preprocess == life and float(plume.fixed_fps) * life <= 30.0 * float(cfg["life_s"]) + 0.5, "warm start no dearer than the near plume's (%d steps)" % int(float(plume.fixed_fps) * life))
+	var box: AABB = plume.visibility_aabb
+	_check(box.end.y >= calm.y + 10.0 and box.size.x >= 2.0 * breeze.x, "its cull box holds the column (%.0f m high, %.0f m wide)" % [box.end.y, box.size.x])
+	probe.free()
+
+	# The cap: only the nearest max_fires lit fires draw the tall plume, the next nearest when one goes out.
+	BuildingLook._tall_plumes = []
+	var camera: Camera3D = Camera3D.new()
+	root.add_child(camera)
+	camera.current = true
+	var fires: Array = []
+	var cap: int = int(BuildingLook.tall_tier("max_fires", 1))
+
+	for k in range(cap + 3):
+		var f: Node3D = BuildingLook.fire(true, false, 2)
+		root.add_child(f)
+		f.global_position = Vector3(10.0 * float(k + 1), 0.0, 0.0)
+		fires.append(f)
+
+	BuildingLook.set_fire_air(1.0, 0.0, 0.0)
+	var shown: int = 0
+
+	for f in fires:
+		shown += 1 if (f.get_node("TallSmoke") as GPUParticles3D).visible else 0
+
+	_check(cap >= 3 and cap <= 8 and shown == cap, "%d fires: the %d nearest draw a tall plume (%d)" % [fires.size(), cap, shown])
+	_check(not (fires[fires.size() - 1].get_node("TallSmoke") as GPUParticles3D).visible, "the farthest does not")
+	fires[0].free()
+	fires.remove_at(0)
+	BuildingLook.set_fire_air(1.0, 0.0, 0.0)
+	_check((fires[cap - 1].get_node("TallSmoke") as GPUParticles3D).visible and BuildingLook._tall_plumes.size() == fires.size(), "one goes out: the next nearest takes its place, and the freed one is dropped")
+
+	for f in fires:
+		f.free()
+
+	camera.free()
+	near_probe.free()
+

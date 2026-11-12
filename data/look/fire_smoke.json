@@ -99,5 +99,66 @@
 		1.0,
 		1.0
 	],
-	"_note_small": "Steve 10 Nov 2026, after Dino's reshoot on 9f728854 (plume_small_day: the one-rock-ring fire laid a haze as wide as the lake). The small tier only, by its own row in each per-tier list: puffs 0.3 m (a hand or two wide at the flame, 0.15 m at the start), growing 4 times not 8, half the density, living 0.6 of life_s (12 s), and 90 puffs: a thin wisp that climbs two or three metres before it thins out (0.4 and 60 were near-invisible by day on 75f0e27e). density and life_share are per tier (1, 1 for medium and large; the coals keep their own density and a full life). Rise and wind are unchanged (Jamie's Briggs heights); medium and large are as #958."
+	"_note_small": "Steve 10 Nov 2026, after Dino's reshoot on 9f728854 (plume_small_day: the one-rock-ring fire laid a haze as wide as the lake). The small tier only, by its own row in each per-tier list: puffs 0.3 m (a hand or two wide at the flame, 0.15 m at the start), growing 4 times not 8, half the density, living 0.6 of life_s (12 s), and 90 puffs: a thin wisp that climbs two or three metres before it thins out (0.4 and 60 were near-invisible by day on 75f0e27e). density and life_share are per tier (1, 1 for medium and large; the coals keep their own density and a full life). Rise and wind are unchanged (Jamie's Briggs heights); medium and large are as #958.",
+	"tall": {
+		"amount": [
+			24,
+			36,
+			48
+		],
+		"life_s": 60.0,
+		"rise_m_s": [
+			0.8,
+			1.0,
+			1.2
+		],
+		"calm_rise_m_s": 1.3,
+		"rise_end_share": 0.45,
+		"puff_m": [
+			1.2,
+			1.6,
+			2.0
+		],
+		"grow_to": 10.0,
+		"alpha": 0.2,
+		"near_grey": 0.55,
+		"far_grey": 0.78,
+		"waver_m": 2.0,
+		"spread_deg": [
+			4.0,
+			8.0
+		],
+		"night_top_m": 30.0,
+		"fade": [
+			[
+				0.0,
+				0.0
+			],
+			[
+				0.06,
+				0.0
+			],
+			[
+				0.15,
+				0.8
+			],
+			[
+				0.35,
+				0.6
+			],
+			[
+				0.7,
+				0.25
+			],
+			[
+				1.0,
+				0.0
+			]
+		],
+		"max_fires": 6,
+		"fixed_fps": 10,
+		"view_wide_m": 400.0,
+		"view_high_m": 80.0
+	},
+	"_note_tall": "TEST-011, Dave's playtest 12 Nov 2026 ('Campfire smoke looks good near the fire but disappears around tree-canopy height. Smoke should rise above surrounding trees, gradually spread, and dissipate naturally... visible from a reasonable distance, including from nearby hills'). The near plume above lives life_s (20 s) and slows as it rises, so it thinned out by about 7 to 11 m in a calm and 5 m in a breeze, under the crowns (15 to 35 m). tall: a second, sparse plume on every lit campfire. Its puffs leave the flames with the near plume but are unseen for their first 6% of life (fade), then carry the column on: rise_m_s by tier in a breeze (at least calm_rise_m_s in a calm), slowing to rise_end_share by the end of life_s (60 s: about 50 m up in a calm, 35 to 45 m in a breeze, drifting downwind), growing grow_to times from half of puff_m (about 8 m wide by the end) and fading. On a still clear night it stops at night_top_m and spreads flat. Lighter than the near plume (near_grey to far_grey), alpha per puff. Limits: amount puffs per fire (tens), stepped at fixed_fps (interpolated; the warm start is life_s x fixed_fps steps), and only the max_fires lit fires nearest the camera draw it. view_wide_m and view_high_m: the box the engine culls it by. A fire is only drawn while the server sends it (within 100 m, server_items.gd NEAR_M), so the tall plume is seen from that far at most."
 }
