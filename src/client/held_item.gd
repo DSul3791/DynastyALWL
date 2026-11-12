@@ -1673,6 +1673,7 @@ func _say_why_not() -> void:
 		"steep": "The ground is too steep there.",
 		"water": "You cannot build in water.",
 		"nofire": "Lay a small fire first: the pot hangs over it.",
+		"notable": "Set it on a table.",
 		"taken": "That fire already has a pot.",
 		"far": "Too far to place that. Step closer.",
 	}.get(blueprint_state, ""))
@@ -1782,7 +1783,8 @@ func _update_blueprint() -> void:
 	if hit.is_empty():
 		return
 
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", "")) == "fire" else _inv.foundation_rows())
+	var attach: String = str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", ""))
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if attach == "fire" else (_inv.surface_rows() if attach == "table" else _inv.foundation_rows()))
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
@@ -1793,6 +1795,9 @@ func _update_blueprint() -> void:
 	var on_base: bool = bool(on_grid[2])
 	_ghost_on_base = on_base
 	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows() + _inv.foundation_rows())   # the building pieces too, as the server sees them
+
+	if attach == "table" and not on_base:
+		blueprint_state = "notable"   # a Serving Platter only goes on a table top (catalog phase 8)
 
 	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at
@@ -1820,7 +1825,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
+	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 

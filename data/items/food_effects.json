@@ -85,7 +85,15 @@
 		"fruit_juice": {"group": "beverage", "tier": 1},
 		"meatballs": {"group": "main", "tier": 2, "hearty": true},
 		"smoked_meat": {"group": "main", "tier": 1, "hearty": true},
-		"dried_mushrooms": {"group": "fruit_veg", "tier": 1}
+		"dried_mushrooms": {"group": "fruit_veg", "tier": 1},
+		"seafood_platter": {"group": "main", "tier": 3},
+		"roast_platter": {"group": "main", "tier": 3, "hearty": true},
+		"mixed_grill_platter": {"group": "main", "tier": 3, "hearty": true},
+		"charcuterie_board": {"group": "main", "tier": 3, "hearty": true},
+		"harvest_platter": {"group": "fruit_veg", "tier": 3},
+		"tavern_supper_board": {"group": "main", "tier": 3, "hearty": true, "xp": "all"},
+		"breakfast_platter": {"group": "main", "tier": 3, "hearty": true},
+		"dessert_platter": {"group": "dessert", "tier": 3}
 
 	}
 }

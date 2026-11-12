@@ -15674,10 +15674,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Roast Platter",
@@ -15689,10 +15693,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Mixed Grill Platter",
@@ -15704,10 +15712,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Charcuterie Board",
@@ -15719,10 +15731,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Harvest Platter",
@@ -15734,10 +15750,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Tavern Supper Board",
@@ -15749,10 +15769,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Breakfast Platter",
@@ -15764,10 +15788,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Dessert Platter",
@@ -15779,10 +15807,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "test_food_effects",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
    "key": "new:Serving Platter",
@@ -15794,10 +15826,13 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_serving_platter",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T16 (phase 8): recipe 658 (2 Wooden block, knife kept, like the Wooden bowl); kind placeable; structure state 280 on a table top, one-slot board container, E eats a portion; look NOT visually complete"
   },
   {
    "key": "new:Ploughman's Board",

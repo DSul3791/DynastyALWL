@@ -57,6 +57,10 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 	if str(def.get("attach_to", "")) == "fire":
 		return [pot_spot(spot, rows), yaw_deg, false]
 
+	if str(def.get("attach_to", "")) == "table":   # a Serving Platter: onto the table top under it (rows with yaw: the tables near)
+		var top: Vector3 = table_spot(cfg, def, spot, rows)
+		return [spot if is_nan(top.y) else top, yaw_deg, not is_nan(top.y)]
+
 	if def.is_empty() or not bool(def.get("piece", false)):
 		return [spot, yaw_deg, false]
 
@@ -409,6 +413,40 @@ static func pot_spot(spot: Vector3, rows: Array) -> Vector3:
 	return best
 
 
+# A piece that sits on a table top (structures.json attach_to "table", attach_kinds {table kind: top height in m}; the Serving Platter,
+# master s3.15): the spot moves onto the nearest such table whose top (its footprint, TABLE_MARGIN_M wider) lies under it, kept inside the
+# top's edge. rows: [{pos, state, yaw degrees}]. NAN y when no table is there. The server (server_items _place_structure) and the ghost share it.
+const TABLE_MARGIN_M := 0.3
+
+
+static func table_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, rows: Array) -> Vector3:
+	var kinds: Dictionary = def.get("attach_kinds", {})
+	var best: Vector3 = Vector3(spot.x, NAN, spot.z)
+	var best_d: float = INF
+
+	for row in rows:
+		var table_def: Dictionary = structure_of_state(cfg, int(row["state"]))
+		var kind: String = str(table_def.get("kind", ""))
+
+		if not kinds.has(kind):
+			continue
+
+		var at: Vector3 = row["pos"]
+		var yaw: float = deg_to_rad(float(row.get("yaw", 0.0)))
+		var local: Vector2 = Vector2(spot.x - at.x, spot.z - at.z).rotated(yaw)
+		var half: Vector2 = Vector2(float(table_def.get("footprint_x", 1.0)), float(table_def.get("footprint_z", 1.0))) * 0.5
+
+		if absf(local.x) > half.x + TABLE_MARGIN_M or absf(local.y) > half.y + TABLE_MARGIN_M or local.length() >= best_d:
+			continue
+
+		var inner: Vector2 = Vector2(maxf(half.x - float(def.get("footprint_x", 0.5)) * 0.5, 0.0), maxf(half.y - float(def.get("footprint_z", 0.35)) * 0.5, 0.0))
+		var on_top: Vector2 = Vector2(clampf(local.x, -inner.x, inner.x), clampf(local.y, -inner.y, inner.y)).rotated(-yaw)
+		best = Vector3(at.x + on_top.x, at.y + float(kinds[kind]), at.z + on_top.y)
+		best_d = local.length()
+
+	return best
+
+
 static func structure_of_state(cfg: Dictionary, state: int) -> Dictionary:
 	for kind in cfg.get("structures", {}):
 		var def: Dictionary = cfg["structures"][kind]
@@ -591,6 +629,8 @@ static func reason_text(state: String) -> String:
 			return "it needs deeper water"
 		"nofire":
 			return "the pot goes on a small fire: lay one first"
+		"notable":
+			return "set it on a table"
 		"taken":
 			return "that fire already has a pot"
 		"far":

@@ -262,6 +262,9 @@ func _data_checks(cfg: Dictionary) -> void:
 		if str(prof["group"]) == "beverage":
 			tier = mini(tier, 2)
 
+		if (items._structures.get("serving_platter", {}).get("takes", []) as Array).has(out):
+			tier = 3   # a food board is tier 3 whatever its dishes (master s3.16 [D17]: "T3 4+ kinds and boards")
+
 		if out != "energy_bar" and int(prof["tier"]) != tier:
 			wrong.append("%s %d (chain %d)" % [out, int(prof["tier"]), tier])
 

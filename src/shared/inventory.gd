@@ -51,6 +51,9 @@ func _mergeable(number: int, wear_a: int, wear_b: int) -> bool:
 	if life == 0:
 		return true
 
+	if (table.spoilage().get("exact_age", []) as Array).has(table.id_of(number)):
+		return wear_a == wear_b   # a food board (master s3.15) joins only its own age: a fresh board never extends an old one
+
 	# A sealed food (item_table.gd ready_units) never joins across its ready age, and a Maturing batch joins only its own age, so batches sealed
 	# at different times stay apart and none ripens early by averaging (master s3.14 [D14]).
 	var ready: int = table.ready_units(number) if table.has_method("ready_units") else 0

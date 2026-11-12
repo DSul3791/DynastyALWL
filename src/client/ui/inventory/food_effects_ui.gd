@@ -99,7 +99,9 @@ func _add_button(text: String, slot: int, number: int, answer: int) -> void:
 	button.pressed.connect(func() -> void:
 		_ask_panel.visible = false
 
-		if answer >= 0 and slot < view.inventory.SLOTS and view.inventory.numbers[slot] == number:   # the food is still where it was asked about
+		if answer >= 0 and slot < 0:   # asked at a placed Serving Platter (minus its world id): the answer goes back as E on it
+			view.net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, -slot, answer, 0, Vector3.ZERO)
+		elif answer >= 0 and slot < view.inventory.SLOTS and view.inventory.numbers[slot] == number:   # the food is still where it was asked about
 			view.net.inventory_action.rpc_id(1, Net.ACT_EAT, slot, answer, 0, Vector3.ZERO)
 
 		view._storage_ui._release_mouse())

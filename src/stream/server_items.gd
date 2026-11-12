@@ -1062,7 +1062,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
 		_chest_action(peer, inv, kind, a, b, count)
 	elif kind == Net.ACT_USE_STRUCT:
-		_use_struct(peer, inv, a)
+		_use_struct(peer, inv, a, b)
 	elif kind == Net.ACT_EAT:
 		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
 		_eat(peer, inv, a, b)
@@ -4577,6 +4577,9 @@ func _sync_world_items() -> void:
 				if it.has("struct") and bool(it["struct"].get("lit", false)):
 					signature += 7      # a fixture lit or put out is sent again (the client draws or drops its flame)
 
+				if it.has("struct") and it["struct"].has("uid") and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "serve" and _chests.has(int(it["struct"]["uid"])):
+					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
+
 				var site_view: Array = []
 
 				if it.has("struct") and it["struct"].has("site"):
@@ -4598,6 +4601,13 @@ func _sync_world_items() -> void:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") else {}))))])
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
+
+					if it.has("struct") and it["struct"].has("uid") and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "serve":
+						var plate = _chests.get(int(it["struct"]["uid"]))
+
+						if plate != null and plate.numbers[0] != 0:
+							(added[added.size() - 1][5] as Dictionary)["board"] = int(plate.numbers[0])   # a Serving Platter: its board and portions left
+							(added[added.size() - 1][5] as Dictionary)["portions"] = int(plate.counts[0])
 
 					if it.has("struct") and not it["struct"].has("site"):
 						var wheel: int = wheel_percent(it)
@@ -7973,6 +7983,18 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
 				return
 
+	if str(def.get("attach_to", "")) == "table":   # a Serving Platter goes on a table top (master s3.15), one to a spot
+		spot = PlacementRules.table_spot(_structures_cfg, def, spot, _surface_rows(def))
+
+		if is_nan(spot.y):
+			_say(peer, "Set it on a table.")
+			return
+
+		for pid in _items:
+			if _items[pid].has("struct") and str(_items[pid]["struct"]["kind"]) == str(def["kind"]) and (_items[pid]["pos"] as Vector3).distance_to(spot) < PLATTER_APART_M:
+				_say(peer, "There is a platter there already.")
+				return
+
 	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot, str(def["kind"])):
 		return
 
@@ -8632,6 +8654,13 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "It is locked.")   # only the owner or a player with access takes a locked container down (s3.13 locked-crate movement rule)
 		return
 
+	if str(def.get("use", "")) == "serve" and not _platter_return(peer, inv, it, def):
+		return
+
+	if _platter_on(it):
+		_say(peer, "Take the platter off it first.")   # a table never leaves a platter floating
+		return
+
 	if not _struct_empty(id):
 		_say(peer, "Empty it first.")
 		return
@@ -8665,7 +8694,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 # E at a chopping block: one log becomes firewood; the axe wears one use. The server checks the reach,
 # a log in the pack, a usable axe on the hotbar and the pace.
-func _use_struct(peer: int, inv, id: int) -> void:
+func _use_struct(peer: int, inv, id: int, choice: int = 0) -> void:
 	var it: Dictionary = _items.get(id, {})
 
 	if it.has("fire"):
@@ -8682,6 +8711,10 @@ func _use_struct(peer: int, inv, id: int) -> void:
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 	if _peer_pos[peer].distance_to(it["pos"]) > float(def.get("use_reach_m", 3.0)):
+		return
+
+	if str(def.get("use", "")) == "serve":   # a placed Serving Platter (master s3.15): E eats one portion of its board
+		_serve(peer, id, choice)
 		return
 
 	if _water_kind.has(id) and _is_pumpable(_water.pieces[id]):   # a well or pump: E starts working it, E again stops
@@ -8800,6 +8833,91 @@ func _chop_loose_log(peer: int, inv, id: int) -> void:
 	drop_in_world(table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
 	practice(peer, "split_log")
 	_dirty = true
+
+
+# --- Serving platters (master s3.15 [D15]; catalog Phase 8) ---
+# A placed Serving Platter is a one-slot container on a table top that takes only food boards (structures.json serving_platter). Its owner
+# sets a board on it (the stack moves into the platter) and takes it back; anyone eats a portion with E, exactly as from the pack (one food
+# of the board's group, Phase 7). Picking the platter up gives back the board's portions, then the platter. Nothing is ever copied: every
+# portion is a count moved or eaten.
+const PLATTER_APART_M := 0.35
+
+
+func _surface_rows(def: Dictionary) -> Array:
+	var rows: Array = []
+	var kinds: Dictionary = def.get("attach_kinds", {})
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and kinds.has(str(it["struct"]["kind"])) and not it["struct"].has("site"):
+			rows.append({"pos": it["pos"], "state": int(_structures[str(it["struct"]["kind"])]["state"]), "yaw": float(it["struct"]["yaw"])})
+
+	return rows
+
+
+# A placed Serving Platter stands on this table (within its footprint, TABLE_MARGIN_M wider, as PlacementRules.table_spot put it).
+func _platter_on(table_it: Dictionary) -> bool:
+	var kind: String = str(table_it.get("struct", {}).get("kind", ""))
+	var reach: float = Vector2(float(_structures.get(kind, {}).get("footprint_x", 1.0)), float(_structures.get(kind, {}).get("footprint_z", 1.0))).length() * 0.5 + PlacementRules.TABLE_MARGIN_M
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and (_structures.get(str(it["struct"]["kind"]), {}).get("attach_kinds", {}) as Dictionary).has(kind) and Vector2(it["pos"].x - table_it["pos"].x, it["pos"].z - table_it["pos"].z).length() <= reach and it["pos"].y > table_it["pos"].y:
+			return true
+
+	return false
+
+
+func _platter_mine(peer: int, it: Dictionary) -> bool:
+	if it.is_empty() or not it.has("struct") or str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) != "serve":
+		return true
+
+	var owner: String = str(it["struct"].get("owner", ""))
+	return owner == "" or owner == str(_peer_key.get(peer, ""))
+
+
+# Before the platter itself comes up: its board goes back into the pack whole, or nothing moves.
+func _platter_return(peer: int, inv, it: Dictionary, def: Dictionary) -> bool:
+	if not _platter_mine(peer, it):
+		_say(peer, "Only the one who set out this platter takes it up.")
+		return false
+
+	var plate = _chests.get(int(it["struct"].get("uid", 0)))
+
+	if plate == null or plate.numbers[0] == 0:
+		return true
+
+	var probe = InventoryScript.new(table)
+	probe.from_json_array(inv.to_json_array())
+
+	if _fit(peer, inv, plate.numbers[0], plate.counts[0]) < plate.counts[0] or probe.add(plate.numbers[0], plate.counts[0], plate.wear[0]) > 0 or probe.add(table.number_of(str(def.get("kit", ""))), 1) > 0:
+		_say(peer, "No room in your pack for the board and the platter.")
+		return false
+
+	var before: Array = _snapshot(inv)
+	inv.add(plate.numbers[0], plate.counts[0], plate.wear[0])
+	plate.take_from_slot(0, plate.counts[0])
+	_send_changes(peer, inv, before)
+	_dirty = true
+	return true
+
+
+# E on a placed platter: one portion of its board, eaten by this player as from the pack; the question (food_ask) names the platter.
+func _serve(peer: int, id: int, choice: int) -> void:
+	var plate = _chests.get(int(_items[id]["struct"].get("uid", 0)))
+
+	if plate == null or plate.numbers[0] == 0:
+		_say(peer, "The platter is empty.")
+		return
+
+	var before: int = plate.counts[0]
+	_eat(peer, plate, 0, choice, id)
+
+	if plate.numbers[0] == 0 or plate.counts[0] != before:
+		_push_box(id, plate)
+		_dirty = true
 
 
 func _struct_empty(id: int) -> bool:
@@ -9098,6 +9216,10 @@ func _chest_of(peer: int, id: int):
 
 	if not _may_access(peer, it):
 		_send_lock_info(peer, id)   # locked to this player: no contents, the client asks for the code (open, put, take, Take all and Store all all come here)
+		return null
+
+	if not _platter_mine(peer, it):   # a Serving Platter opens to its owner only (set a board out, take it back); everyone else eats with E
+		_say(peer, "Only the one who set out this platter puts a board on it or takes it back. Press E to eat a portion.")
 		return null
 
 	var chest = _chests.get(int(it["struct"]["uid"]))
@@ -14797,7 +14919,7 @@ func _is_storage(it: Dictionary) -> bool:
 		return false
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
-	return int(def.get("slots", 0)) > 0 and not bool(def.get("take_only", false))
+	return int(def.get("slots", 0)) > 0 and not bool(def.get("take_only", false)) and str(def.get("use", "")) != "serve"   # a Serving Platter is a table display: no crafting stock, no storage views
 
 
 # The containers a craft or a blueprint site may use: [[world id, inventory, distance], ...], nearest first.
@@ -16661,8 +16783,9 @@ func _drink_from_container(peer: int, inv, slot: int, v: Dictionary) -> void:
 
 
 # `choice` (ACT_EAT b): the answer to the food-effect question (food_effects.gd plan): 0 none yet, a group index to replace, DECLINE to eat for calories only.
-func _eat(peer: int, inv, slot: int, choice: int = 0) -> void:
+func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 	var v: Dictionary = vitals_of(peer)
+	var ask_slot: int = -platter if platter > 0 else slot   # food_ask: a pack slot, or minus the world id of the platter eaten from
 
 	if v.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
 		return
@@ -16717,7 +16840,7 @@ func _eat(peer: int, inv, slot: int, choice: int = 0) -> void:
 				_say(peer, "Your health is fine")
 				return
 
-			if _food_asked(peer, slot, item_id, step):
+			if _food_asked(peer, ask_slot, item_id, step):
 				return
 
 			_last_eat[peer] = now   # a medicinal tea while well: its Beverage effect only (s3.16 [D17]), never refused
@@ -16726,7 +16849,7 @@ func _eat(peer: int, inv, slot: int, choice: int = 0) -> void:
 			_food_apply(peer, item_id, step)
 			return
 
-		if _food_asked(peer, slot, item_id, step):
+		if _food_asked(peer, ask_slot, item_id, step):
 			return
 
 		_last_eat[peer] = now
@@ -16752,7 +16875,7 @@ func _eat(peer: int, inv, slot: int, choice: int = 0) -> void:
 	var aid: Dictionary = VitalsRules.energy_aid(item_id, _vitals_cfg)
 
 	if not aid.is_empty():
-		if not _food_asked(peer, slot, item_id, step):
+		if not _food_asked(peer, ask_slot, item_id, step):
 			_use_energy_aid(peer, inv, slot, v, aid, step)
 
 		return
@@ -16798,7 +16921,7 @@ func _eat(peer: int, inv, slot: int, choice: int = 0) -> void:
 		_say(peer, "You are not hurt.")
 		return
 
-	if _food_asked(peer, slot, item_id, step):
+	if _food_asked(peer, ask_slot, item_id, step):
 		return
 
 	_last_eat[peer] = now
