@@ -538,6 +538,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	_join_hotbar(peer, key)
+	FoodEffects.resume(_food_of(peer), _now_game_s())   # and run on from where they stopped
 
 	if str(_characters[key].get("shoulder", "")) != "":   # before 1 Nov 2026 the large log was kept apart from the pack: it moves into the pack (kept aside while the pack is full)
 		var legacy: int = table.number_of(str(_characters[key]["shoulder"]))
@@ -629,6 +630,7 @@ func start_position_for(peer: int) -> Array:
 
 
 func peer_left(peer: int) -> void:
+	FoodEffects.pause(_food_of(peer), _now_game_s())   # food effects are kept through logout (master s3.16): the timers stop
 	_bed_cache.erase(peer)
 	_stock_sig.erase(peer)
 	_stock_poll_ms.erase(peer)
@@ -4577,7 +4579,7 @@ func _sync_world_items() -> void:
 				if it.has("struct") and bool(it["struct"].get("lit", false)):
 					signature += 7      # a fixture lit or put out is sent again (the client draws or drops its flame)
 
-				if it.has("struct") and it["struct"].has("uid") and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "serve" and _chests.has(int(it["struct"]["uid"])):
+				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
 
 				var site_view: Array = []
@@ -4602,7 +4604,7 @@ func _sync_world_items() -> void:
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 
-					if it.has("struct") and it["struct"].has("uid") and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "serve":
+					if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid"):
 						var plate = _chests.get(int(it["struct"]["uid"]))
 
 						if plate != null and plate.numbers[0] != 0:
@@ -8841,6 +8843,19 @@ func _chop_loose_log(peer: int, inv, id: int) -> void:
 # of the board's group, Phase 7). Picking the platter up gives back the board's portions, then the platter. Nothing is ever copied: every
 # portion is a count moved or eaten.
 const PLATTER_APART_M := 0.35
+var _serve_kinds_cache: Dictionary = {}
+
+
+# The structure kinds that serve (structures.json use "serve"), read once: the world-item sync asks for every row.
+func _serve_kinds() -> Dictionary:
+	if _serve_kinds_cache.is_empty():
+		_serve_kinds_cache = {"": false}
+
+		for kind in _structures:
+			if str(_structures[kind].get("use", "")) == "serve":
+				_serve_kinds_cache[kind] = true
+
+	return _serve_kinds_cache
 
 
 func _surface_rows(def: Dictionary) -> Array:
@@ -8856,15 +8871,15 @@ func _surface_rows(def: Dictionary) -> Array:
 	return rows
 
 
-# A placed Serving Platter stands on this table (within its footprint, TABLE_MARGIN_M wider, as PlacementRules.table_spot put it).
+# A placed Serving Platter stands on this table (over its turned top, as PlacementRules.table_spot put it; a neighbouring table is not this one).
 func _platter_on(table_it: Dictionary) -> bool:
 	var kind: String = str(table_it.get("struct", {}).get("kind", ""))
-	var reach: float = Vector2(float(_structures.get(kind, {}).get("footprint_x", 1.0)), float(_structures.get(kind, {}).get("footprint_z", 1.0))).length() * 0.5 + PlacementRules.TABLE_MARGIN_M
+	var table_def: Dictionary = _structures.get(kind, {})
 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and (_structures.get(str(it["struct"]["kind"]), {}).get("attach_kinds", {}) as Dictionary).has(kind) and Vector2(it["pos"].x - table_it["pos"].x, it["pos"].z - table_it["pos"].z).length() <= reach and it["pos"].y > table_it["pos"].y:
+		if it.has("struct") and _serve_kinds().has(str(it["struct"]["kind"])) and (_structures[str(it["struct"]["kind"])].get("attach_kinds", {}) as Dictionary).has(kind) and it["pos"].y > table_it["pos"].y and PlacementRules.over_table(table_def, table_it["pos"], float(table_it["struct"].get("yaw", 0.0)), it["pos"]):
 			return true
 
 	return false
@@ -17008,12 +17023,19 @@ func _sync_food(peer: int, force: bool) -> void:
 		return
 
 	var now_s: float = _now_game_s()
-	var on: Dictionary = FoodEffects.live(_food_of(peer), now_s)
+	var on: Dictionary = FoodEffects.running(_food_of(peer), now_s)
 	var rows: Array = []
 
 	for group in _food_cfg.get("order", []):
-		if on.has(group):
-			rows.append([FoodEffects.group_index(str(group), _food_cfg), table.number_of(str(on[group]["id"])), int(on[group]["t"]), int(ceil((float(on[group]["until"]) - now_s) / GAME_RATE / 60.0))])
+		if not on.has(group) or float(on[group].get("until", 0.0)) <= now_s:
+			continue
+
+		var off: bool = bool(on[group].get("off", false))
+
+		if off and float(FoodEffects.tier_row(str(group), int(on[group]["t"]), _food_cfg).get("xp", 0.0)) >= 0.0:
+			continue   # a replaced entry shows only while its penalty runs (a dessert's XP -5 %)
+
+		rows.append([FoodEffects.group_index(str(group), _food_cfg), table.number_of(str(on[group]["id"])), int(on[group]["t"]), int(ceil((float(on[group]["until"]) - now_s) / GAME_RATE / 60.0)), 1 if off else 0])
 
 	if force or _food_sent.get(peer, null) != rows:
 		_food_sent[peer] = rows

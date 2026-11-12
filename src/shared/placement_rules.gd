@@ -436,7 +436,7 @@ static func table_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, rows: Ar
 		var local: Vector2 = Vector2(spot.x - at.x, spot.z - at.z).rotated(yaw)
 		var half: Vector2 = Vector2(float(table_def.get("footprint_x", 1.0)), float(table_def.get("footprint_z", 1.0))) * 0.5
 
-		if absf(local.x) > half.x + TABLE_MARGIN_M or absf(local.y) > half.y + TABLE_MARGIN_M or local.length() >= best_d:
+		if not over_table(table_def, at, float(row.get("yaw", 0.0)), spot) or local.length() >= best_d:
 			continue
 
 		var inner: Vector2 = Vector2(maxf(half.x - float(def.get("footprint_x", 0.5)) * 0.5, 0.0), maxf(half.y - float(def.get("footprint_z", 0.35)) * 0.5, 0.0))
@@ -445,6 +445,22 @@ static func table_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, rows: Ar
 		best_d = local.length()
 
 	return best
+
+
+# Whether `spot` lies over a table's top: inside its turned footprint, TABLE_MARGIN_M wider (table_spot; a table with a platter on it stays up).
+static func over_table(table_def: Dictionary, at: Vector3, yaw_deg: float, spot: Vector3) -> bool:
+	var local: Vector2 = Vector2(spot.x - at.x, spot.z - at.z).rotated(deg_to_rad(yaw_deg))
+	return absf(local.x) <= float(table_def.get("footprint_x", 1.0)) * 0.5 + TABLE_MARGIN_M and absf(local.y) <= float(table_def.get("footprint_z", 1.0)) * 0.5 + TABLE_MARGIN_M
+
+
+# The structure states a table-top piece of `kit_id` may sit on (its attach_kinds), for the ghost's rows.
+static func attach_states(cfg: Dictionary, kit_id: String) -> Dictionary:
+	var out: Dictionary = {}
+
+	for kind in structure_of_kit(cfg, kit_id).get("attach_kinds", {}):
+		out[int(cfg.get("structures", {}).get(kind, {}).get("state", -1))] = true
+
+	return out
 
 
 static func structure_of_state(cfg: Dictionary, state: int) -> Dictionary:

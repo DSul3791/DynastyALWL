@@ -2708,12 +2708,12 @@ func _note_platter(id: int, row: Array, state: int) -> void:
 	_world[id]["portions"] = int(extra.get("portions", 0))
 
 
-# The table tops a Serving Platter's ghost may snap to: every placed structure with its turn, as the server's _surface_rows.
-func surface_rows() -> Array:
+# The table tops a Serving Platter's ghost may snap to: the placed structures of `states` (its attach_kinds) with their turn, as the server's _surface_rows.
+func surface_rows(states: Dictionary) -> Array:
 	var rows: Array = []
 
 	for id in _world:
-		if int(_world[id]["state"]) >= 5 and _world[id].has("yaw"):
+		if states.has(int(_world[id]["state"])) and _world[id].has("yaw") and _world[id].get("site") == null:
 			rows.append({"pos": _world[id]["pos"], "state": int(_world[id]["state"]), "yaw": float(_world[id]["yaw"])})
 
 	return rows

@@ -229,6 +229,14 @@ func _init() -> void:
 	said.clear()
 	items.action(1, Net.ACT_PICKUP, prep, 0, 0, Vector3.ZERO)
 	check(items._items.has(prep) and said.has("Take the platter off it first."), "4m. the table cannot be taken down from under the platter")
+	var beside: int = items._next_id   # a second table end to end with it, 1.5 m on: the platter (0.45 m from the first's middle) is 1.05 m from its middle
+	items._items[beside] = {"number": num("food_preparation_table"), "count": 1, "pos": items._items[prep]["pos"] + Vector3(1.5, 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "food_preparation_table", "yaw": 0.0}}
+	items._grid_add(beside, items._items[beside])
+	items._next_id += 1
+	check(not items._platter_on(items._items[beside]) and items._platter_on(items._items[prep]), "4m2. the platter stands on its own table, not on the one beside it (the turned footprint, not a radius)")
+	items._items[beside]["struct"]["yaw"] = 90.0
+	check(not items._platter_on(items._items[beside]), "4m3. nor on the neighbour turned a quarter")
+	items._items.erase(beside)
 	items.action(2, Net.ACT_CHEST_OPEN, platter, 0, 0, Vector3.ZERO)
 	items.action(2, Net.ACT_BULK, 0, 0, 0, Vector3.ZERO)
 	check(on_plate(platter) == made - eaten, "4n. nor can another player open it and Take all")

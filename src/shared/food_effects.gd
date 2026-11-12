@@ -2,7 +2,10 @@ extends RefCounted
 
 # Temporary food effects (data/items/food_effects.json; master DYNASTY_MASTER_ITEMS.md s3.16 [D16, D17]; Mission 001 phase 7).
 # Shared so the server (the rules) and the client (the HUD lines and the replace question) read the same table.
-# A character's effects are {group: {"id": item id, "t": tier, "until": game seconds}}; at most cfg.slots groups are live.
+# A character's effects are {group: {"id": item id, "t": tier, "until": game seconds}}; at most cfg.slots groups are live. An entry replaced
+# through the fourth-group question stays as {"off": true, ...} until its own end: it holds no slot and gives no benefit, but it still locks
+# that group's instant energy (a swap cannot refill energy) and a dessert's XP penalty keeps running. While its character is logged out each
+# entry keeps "left" (game seconds) instead of "until" (pause and resume below: master s3.16 "kept through logout").
 
 const PATH := "res://data/items/food_effects.json"
 const DECLINE := 9   # ACT_EAT b: the player declined the question, eat for calories only
@@ -38,14 +41,66 @@ static func tier_row(group: String, tier: int, cfg: Dictionary) -> Dictionary:
 	return tiers[clampi(tier, 1, tiers.size()) - 1] if not tiers.is_empty() else {}
 
 
+# The entries that hold a slot now.
 static func live(effects: Dictionary, now_s: float) -> Dictionary:
 	var out: Dictionary = {}
 
 	for group in effects:
-		if typeof(effects[group]) == TYPE_DICTIONARY and float(effects[group].get("until", 0.0)) > now_s:
+		if typeof(effects[group]) == TYPE_DICTIONARY and not bool(effects[group].get("off", false)) and float(effects[group].get("until", 0.0)) > now_s:
 			out[group] = effects[group]
 
 	return out
+
+
+# Every entry still running, replaced ones too.
+static func running(effects: Dictionary, now_s: float) -> Dictionary:
+	var out: Dictionary = {}
+
+	for group in effects:
+		if typeof(effects[group]) == TYPE_DICTIONARY and _end(effects[group]) > now_s:
+			out[group] = effects[group]
+
+	return out
+
+
+# An entry's end: its own timer, or the lock it carries from a replaced entry of its group, whichever is later.
+static func _end(entry: Dictionary) -> float:
+	return maxf(float(entry.get("until", 0.0)), float(entry.get("lock", 0.0)))
+
+
+# Logout: each timer stops with the time it has left (server_items peer_left).
+static func pause(effects: Dictionary, now_s: float) -> void:
+	for group in effects.keys():
+		var entry: Variant = effects[group]
+
+		if typeof(entry) != TYPE_DICTIONARY or not entry.has("until"):
+			continue
+
+		if _end(entry) <= now_s:
+			effects.erase(group)
+			continue
+
+		entry["left"] = maxf(float(entry["until"]) - now_s, 0.0)
+		entry["lock_left"] = maxf(float(entry.get("lock", 0.0)) - now_s, 0.0)
+		entry.erase("until")
+		entry.erase("lock")
+
+
+# Login: the timers run on from where they stopped (server_items peer_connected_hello).
+static func resume(effects: Dictionary, now_s: float) -> void:
+	for group in effects.keys():
+		var entry: Variant = effects[group]
+
+		if typeof(entry) != TYPE_DICTIONARY or not entry.has("left"):
+			continue
+
+		entry["until"] = now_s + float(entry["left"])
+
+		if float(entry.get("lock_left", 0.0)) > 0.0:
+			entry["lock"] = now_s + float(entry["lock_left"])
+
+		entry.erase("left")
+		entry.erase("lock_left")
 
 
 # The XP change food gives now: the single best bonus minus the dessert penalty (s3.16 combination rules). `skills_only`:
@@ -54,11 +109,16 @@ static func live(effects: Dictionary, now_s: float) -> Dictionary:
 static func xp_bonus(effects: Dictionary, now_s: float, cfg: Dictionary, skills_only: bool) -> float:
 	var best: float = 0.0
 	var penalty: float = 0.0
-	var on: Dictionary = live(effects, now_s)
+	var on: Dictionary = running(effects, now_s)
 
 	for group in on:
 		var row: Dictionary = tier_row(str(group), int(on[group].get("t", 1)), cfg)
-		penalty -= minf(float(row.get("xp", 0.0)), 0.0)
+
+		if float(on[group].get("until", 0.0)) > now_s:
+			penalty -= minf(float(row.get("xp", 0.0)), 0.0)   # a dessert's penalty runs to its own end, replaced or not
+
+		if bool(on[group].get("off", false)) or float(on[group].get("until", 0.0)) <= now_s:
+			continue   # a replaced entry gives no bonus
 
 		if str(profile(str(on[group].get("id", "")), cfg).get("xp", "")) == "all":
 			best = maxf(best, float(row.get("all_xp", 0.0)))
@@ -98,7 +158,8 @@ static func strongest(effects: Dictionary, now_s: float, cfg: Dictionary, field:
 
 
 # What eating `item_id` does to the slots, given the player's answer `choice` (0 none yet, a group index to replace, DECLINE):
-# {} touches no slot; {"ask": [group indexes]} must ask first; {"group": g, "fresh": the slot was empty or had run out, "drop": a group to clear}.
+# {} touches no slot; {"ask": [group indexes]} must ask first; {"group": g, "fresh": the group has nothing running (a replaced entry still
+# counts until its own end), "drop": a group to clear}.
 static func plan(effects: Dictionary, now_s: float, item_id: String, choice: int, cfg: Dictionary) -> Dictionary:
 	var prof: Dictionary = profile(item_id, cfg)
 
@@ -114,13 +175,15 @@ static func plan(effects: Dictionary, now_s: float, item_id: String, choice: int
 
 		return {"group": group, "fresh": false, "drop": ""}
 
+	var fresh: bool = not running(effects, now_s).has(group)
+
 	if on.size() < int(cfg.get("slots", 3)):
-		return {"group": group, "fresh": true, "drop": ""}
+		return {"group": group, "fresh": fresh, "drop": ""}
 
 	var drop: String = group_at(choice, cfg)
 
 	if on.has(drop):
-		return {"group": group, "fresh": true, "drop": drop}
+		return {"group": group, "fresh": fresh, "drop": drop}
 
 	var groups: Array = []
 
@@ -131,17 +194,24 @@ static func plan(effects: Dictionary, now_s: float, item_id: String, choice: int
 	return {"ask": groups}
 
 
-# Fills the planned slot (replacing, never stacking) and drops run-out or replaced entries.
+# Fills the planned slot (replacing, never stacking), turns a replaced slot off (it runs to its end) and forgets run-out entries.
 static func apply(effects: Dictionary, now_s: float, item_id: String, step: Dictionary, cfg: Dictionary) -> void:
-	var on: Dictionary = live(effects, now_s)
+	var on: Dictionary = running(effects, now_s)
 
 	for group in effects.keys():
-		if not on.has(group) or group == str(step.get("drop", "")):
+		if not on.has(group):
 			effects.erase(group)
+		elif group == str(step.get("drop", "")):
+			effects[group]["off"] = true
 
 	var prof: Dictionary = profile(item_id, cfg)
 	var group: String = str(step["group"])
-	effects[group] = {"id": item_id, "t": int(prof["tier"]), "until": now_s + float(tier_row(group, int(prof["tier"]), cfg).get("h", 1.0)) * 3600.0}
+	var entry: Dictionary = {"id": item_id, "t": int(prof["tier"]), "until": now_s + float(tier_row(group, int(prof["tier"]), cfg).get("h", 1.0)) * 3600.0}
+
+	if on.has(group) and _end(on[group]) > float(entry["until"]):
+		entry["lock"] = _end(on[group])   # the group's instant energy stays locked until the earlier entry would have ended
+
+	effects[group] = entry
 
 
 # One line for the HUD and the tooltip: what the effect does, e.g. "Fitness XP +15 %".

@@ -198,6 +198,30 @@ func _init() -> void:
 	items.action(1, Net.ACT_EAT, items.inventory_of(1).numbers.find(stew_n), 0, 0, Vector3.ZERO)
 	check(items.inventory_of(1).count_of(stew_n) == full_before and not live().has("main"), "a full stomach still refuses food, and no slot is filled")
 
+	# A swap through the question never refills energy or drops a penalty (review round 1): Nut cake and Herbal tea alternated three times.
+	items._characters[KEY]["food"] = {}
+	eat("hunters_stew")
+	eat("flatbread")
+	eat("herbal_tea")   # Main meal, Bread and grains, Beverage: three slots
+	items.vitals_of(1)["energy"] = 40.0
+	var rises: int = 0
+	var last_energy: float = 40.0
+
+	for k in 3:
+		for pair in [["energy_bar", "beverage"], ["herbal_tea", "dessert"]]:
+			check(eat(str(pair[0]), gi(str(pair[1]))), "swap %d: %s replaces the %s" % [k + 1, pair[0], pair[1]])
+			rises += 1 if items.energy_of(1) > last_energy + 0.01 else 0
+			last_energy = items.energy_of(1)
+
+	check(rises == 1 and items.energy_of(1) == 52.0, "energy rises once in three swaps (%d rises, %.0f energy): a replaced slot keeps its instant energy locked to its own end" % [rises, items.energy_of(1)])
+	check(not live().has("dessert") and absf(items.fitness_xp_mult(1) - 1.10) < 0.0001, "the Nut cake replaced by tea: no slot, but its XP -5 %% keeps running (+15 %% stew - 5 %% = x%.2f)" % items.fitness_xp_mult(1))
+	food_rows.clear()
+	items._sync_food(1, true)
+	var shown: Array = (food_rows[0] as Array).filter(func(r): return int(r[0]) == gi("dessert"))
+	check(shown.size() == 1 and int(shown[0][4]) == 1 and (food_rows[0] as Array).size() == 4, "the HUD shows the replaced dessert's penalty with its time left, marked replaced (%s)" % str(food_rows[0]))
+	clock[0] += 3601.0
+	check(absf(items.fitness_xp_mult(1) - 1.15) < 0.0001, "at the dessert's own end the penalty stops")
+
 	# Save, load and the wire.
 	eat("hunters_stew")
 	var saved_until: float = float(live()["main"]["until"])
@@ -208,10 +232,20 @@ func _init() -> void:
 	food_rows.clear()
 	again._sync_food(1, true)
 	var rows: Array = food_rows[0]
-	check(rows.size() == 2 and rows == bytes_to_var(var_to_bytes(rows)) and int(rows[0][0]) == gi("main") and int(rows[0][1]) == stew_n and int(rows[0][2]) == 2, "the HUD rows (group, item, tier, minutes) survive the wire encoding (%s)" % str(rows))
+	check(rows.size() == 3 and rows == bytes_to_var(var_to_bytes(rows)) and int(rows[0][0]) == gi("main") and int(rows[0][1]) == stew_n and int(rows[0][2]) == 2, "the HUD rows (group, item, tier, minutes) survive the wire encoding (%s)" % str(rows))
 	var methods: Array = (Net as Script).get_script_method_list().map(func(m): return str(m["name"]))
 	check(methods.has("food_effects") and methods.has("food_ask") and Net.PROTOCOL_VERSION >= 110, "protocol 110 carries food_effects and food_ask")
 	check(asks.size() > 0 and typeof(asks[0][2]) == TYPE_PACKED_INT32_ARRAY, "the question's groups go as a PackedInt32Array")
+
+	# Kept through logout (master s3.16): the timers stop while the player is away and run on at the next login.
+	var left_before: float = float(FoodEffects.live(again._food_of(1), clock[0])["main"]["until"]) - clock[0]
+	again.peer_left(1)
+	clock[0] += 20.0 * 3600.0   # 20 game hours away: longer than any effect
+	again._save_characters()
+	again._finish_writer()
+	again = make(dir)
+	var back: Dictionary = FoodEffects.live(again._food_of(1), clock[0])
+	check(back.has("main") and absf(float(back["main"]["until"]) - clock[0] - left_before) < 0.5, "after 20 game hours logged out (and a restart) the stew has the same %.0f game s left" % left_before)
 
 	# Death clears every effect.
 	check(again.kill(1, "test"), "the character dies")

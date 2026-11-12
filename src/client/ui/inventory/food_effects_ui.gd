@@ -38,7 +38,8 @@ func lines() -> PackedStringArray:
 	for row in rows:
 		var group: String = FoodEffects.group_at(int(row[0]), cfg)
 		var item_id: String = view.table.id_of(int(row[1]))
-		out.append("%s (%s): %s, %d min" % [FoodEffects.group_name(group, cfg), view.table.name_of(int(row[1])), FoodEffects.describe(group, int(row[2]), item_id, cfg), int(row[3])])
+		var replaced: bool = row.size() > 4 and int(row[4]) == 1   # a replaced dessert: only its XP penalty still runs
+		out.append("%s (%s)%s: %s, %d min" % [FoodEffects.group_name(group, cfg), view.table.name_of(int(row[1])), ", replaced" if replaced else "", FoodEffects.describe(group, int(row[2]), item_id, cfg), int(row[3])])
 
 	return out
 

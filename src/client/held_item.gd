@@ -1784,7 +1784,7 @@ func _update_blueprint() -> void:
 		return
 
 	var attach: String = str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", ""))
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if attach == "fire" else (_inv.surface_rows() if attach == "table" else _inv.foundation_rows()))
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()))
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
