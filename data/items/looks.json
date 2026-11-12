@@ -4097,6 +4097,76 @@
    "color": "#8a8a90",
    "size": 1.0
   },
+  "axe": {
+   "shape": "axe",
+   "color": "#8a8a90",
+   "size": 1.0
+  },
+  "saw": {
+   "shape": "saw",
+   "color": "#8a8a90",
+   "size": 1.0
+  },
+  "iron_axe": {
+   "shape": "axe",
+   "color": "#6c6f75",
+   "size": 1.6,
+   "bits": ["metal"]
+  },
+  "steel_axe": {
+   "shape": "axe",
+   "color": "#9aa3ad",
+   "size": 1.6,
+   "bits": ["metal", "steel"]
+  },
+  "iron_knife": {
+   "shape": "knife",
+   "color": "#6c6f75",
+   "size": 1.35,
+   "bits": ["metal"]
+  },
+  "steel_knife": {
+   "shape": "knife",
+   "color": "#9aa3ad",
+   "size": 1.35,
+   "bits": ["metal", "steel"]
+  },
+  "steel_saw": {
+   "shape": "saw",
+   "color": "#9aa3ad",
+   "size": 1.0,
+   "bits": ["metal", "steel"]
+  },
+  "bronze_sickle": {
+   "shape": "sickle",
+   "color": "#b5803a",
+   "size": 1.0,
+   "bits": ["bronze"]
+  },
+  "iron_sickle": {
+   "shape": "sickle",
+   "color": "#6c6f75",
+   "size": 1.0,
+   "bits": ["metal"]
+  },
+  "steel_sickle": {
+   "shape": "sickle",
+   "color": "#9aa3ad",
+   "size": 1.0,
+   "bits": ["metal", "steel"]
+  },
+  "bronze_scythe": {
+   "shape": "scythe",
+   "color": "#b5803a",
+   "size": 1.0,
+   "bits": ["bronze"]
+  },
+  "steel_scythe": {
+   "shape": "scythe",
+   "color": "#9aa3ad",
+   "size": 1.0,
+   "bits": ["metal", "steel"]
+  },
   "fish_trap": {
    "shape": "kit",
    "color": "#8a7040",

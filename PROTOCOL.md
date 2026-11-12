@@ -31,7 +31,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | world_items | server to client | reliable | added: Array, removed: PackedInt32Array | 10 |
 | animals | server to client | unreliable | rows: Array (id, species number, position, heading, state) | 48 |
 | reject | server to client | reliable | reason: int (0 too far, 1 no tool, 2 pack full, 3 other) | 23 |
-| craft_queue | server to client | reliable | entries: Array of [recipe number, crafts left], head first; left_ms: int (time left on the head craft) | 22 |
+| craft_queue | server to client | reliable | entries: Array of [recipe number, crafts left], head first, with a third value, the variant (SmithingRules code), on a Tempered or +1/+2 craft (catalog Phase 2c; an older client reads the first two); left_ms: int (time left on the head craft) | 22 |
 | strain | server to client | reliable | strain_pm: int, state: int, fade_pm: int, stance: int | 20 |
 | breath | server to client | reliable | deciseconds: int (air left in tenths of a second under water; -1 = head above the surface, symbol hides). Sent when the air changes by half a second while diving, once on surfacing | 32 |
 | vitals | server to client | reliable | hunger: int, health: int, weight_dkg: int | 18 |
@@ -66,7 +66,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 10 | ACT_SPLIT | a = slot, count = how many go to the first empty slot | 13 |
 | 11 | ACT_FUEL | a = fire world id: burn one stick (or a log) in the fire | 13 |
 | 12 | ACT_COOK | a = fire world id: roast one raw forage item at the fire | 13 |
-| 13 | ACT_REPAIR | a = slot of a worn or broken tool: spend its repair materials, win back half its durability | 13 |
+| 13 | ACT_REPAIR | a = slot of a worn, broken or dull tool: a dull edge tool (items.json edge) is sharpened (at a grindstone beside you, or on a whetstone from the pack with water at hand; a timed job, then the other dull edge tools; data/items/smithing.json); otherwise its repair materials are spent at its repair_station and its wear goes back to 0 (up to its current maximum durability). A row with no repair is never mended | 13 |
 | 14 | ACT_CHEST_OPEN | a = chest world id: the server answers with chest_contents | 15 |
 | 15 | ACT_CHEST_PUT | a = pack slot, b = chest world id, count = how many to put in | 15 |
 | 16 | ACT_CHEST_TAKE | a = chest slot, b = chest world id, count = how many to take out | 15 |
@@ -74,7 +74,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 18 | ACT_EAT | a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json) | 18 |
 | 19 | ACT_LIGHT | a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json) | 19 |
 | 20 | ACT_STANCE | a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain() | 21 |
-| 21 | ACT_CRAFT_QUEUE | a = recipe number, count = how many (1 to 20); the server takes the ingredients now and crafts in order, screen open or not; max 10 entries per player | 22 |
+| 21 | ACT_CRAFT_QUEUE | a = recipe number, b = variant (0 plain; bit 0 Tempered, bits 1-2 craftsmanship +1/+2: SmithingRules, catalog Phase 2c), count = how many (1 to 20); the server takes the ingredients now and crafts in order, screen open or not; max 10 entries per player. The server refuses a variant the stations beside the player do not allow; an older client sends b = 0 | 22 |
 | 22 | ACT_CRAFT_CANCEL | a = queue entry index as last sent; cancels it, the server hands back the ingredients of its unfinished crafts | 22 |
 | 24 | ACT_DRINK | a = pack slot of a water container in hand, or -1 (before protocol 31 it had no argument): with a container that has room, E at the water fills it by thirst.fill_ml (500) per press; otherwise drinks one mouthful (thirst.drink_ml) from water within thirst.reach_m of the player's feet; refused with reject(0) when no water is near, paced by drink_pace_ms | 31 |
 | 26 | ACT_SLEEP | a = 1 fall asleep, 0 wake. Needs the player lying (stance 3), not fainted, and no rain reaching them (open ground, rain over 0.2); otherwise ignored (a notice says why). Sleep ends on any stance change, a fall hit, rain on an open sleeper, or 10 s of zero exertion. The server tells everyone with strain(): bit 4 (+4) of the stance field = asleep | 29 |

@@ -6,6 +6,7 @@ extends RefCounted
 
 const Net := preload("res://src/stream/terrain_net.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -71,6 +72,9 @@ func rebuild() -> void:
 func queue_text(index: int) -> String:
 	var entry: Array = view.craft_entries[index]
 	var text: String = str(view.recipes.recipe(int(entry[0])).get("name", "?"))
+
+	if entry.size() > 2 and int(entry[2]) != 0:   # a Tempered or +1/+2 craft (catalog Phase 2c)
+		text += " (%s)" % SmithingRules.label(int(entry[2]))
 
 	if int(entry[1]) > 1:
 		text += "  x%d" % int(entry[1])

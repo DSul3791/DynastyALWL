@@ -189,8 +189,8 @@ func show_info() -> void:
 	if int(entry.get("capacity_ml", 0)) > 0:
 		item_facts.append(["Holds", view._litres(int(entry.get("capacity_ml", 0)))])
 		item_facts.append(["Filled", view._litres(wear)])
-	elif int(entry.get("durability", 0)) > 0:
-		item_facts.append(["Condition", "%d %%" % int(round(100.0 * clampf(1.0 - float(wear) / float(entry["durability"]), 0.0, 1.0)))])
+	elif store.max_durability(slot) > 0:
+		item_facts.append(["Condition", "%d %%" % int(round(100.0 * clampf(1.0 - float(wear) / float(store.max_durability(slot)), 0.0, 1.0)))])
 
 	var kcal: int = VitalsRules.food_value(item_id, view._vitals_cfg)
 
@@ -202,8 +202,8 @@ func show_info() -> void:
 
 	var inst_facts: Array = []
 
-	for line in view.inst_lines(store.inst_of(slot)):
-		inst_facts.append(["", line])   # Tempered and filled magical slots (catalog Phase 1b), first so the one-line row never cuts them
+	for line in view.inst_lines(store.inst_of(slot), number):
+		inst_facts.append(["", line])   # sharpness and filled magical slots (catalog Phase 1b, 2c), first so the one-line row never cuts them
 
 	info.show_item(InventoryLook.icon_for(item_id), view.inst_label(number, store.inst_of(slot)), str(entry.get("description", "")), inst_facts + item_facts)
 
@@ -303,7 +303,7 @@ func _refresh_look_slot(i: int, filter: String) -> void:
 	var slot = view._buttons[i]
 	var number: int = view.inventory.numbers[i]
 	# No floating tooltip on a pack well: the info strip under the grid shows the slot under the pointer (redesign 4.1 and 11.3).
-	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], "")
+	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], "", view.inventory.max_durability(i))
 	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
 	slot.set_favourite(view.inventory.is_fav(i))
 	slot.set_station_glow(number != 0 and station.has(number))   # the station here can use it (Dave 10 Nov 2026)

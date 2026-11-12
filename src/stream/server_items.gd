@@ -21,6 +21,7 @@ const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
 const DrinkRules := preload("res://src/shared/drink_rules.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # durability, sharpening, craftsmanship and Tempered (catalog Phase 2c)
 const BogIron := preload("res://src/shared/bog_iron.gd")   # bog iron under fens and marshes (digging.json bog_iron)
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
@@ -675,6 +676,8 @@ func peer_left(peer: int) -> void:
 	_exertion.erase(peer)
 	_motion.erase(peer)
 	_snow_memo.erase(peer)
+	_sharpening.erase(peer)   # a sharpening job is not saved: it stops on quit
+	_variant_seen.erase(peer)
 	_work_until.erase(peer)
 	_vitals_sent.erase(peer)
 	_strain.erase(peer)
@@ -1172,7 +1175,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			_last_queue_act[peer] = now
 
 			if kind == Net.ACT_CRAFT_QUEUE:
-				_queue_craft(peer, inv, a, count)
+				_queue_craft(peer, inv, a, count, b)
 			else:
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
@@ -1263,7 +1266,7 @@ var _spyglass_tiers: Dictionary = {}   # data/items/spyglass.json "tiers", read 
 func _look_spyglass_item(peer: int, inv, slot: int, watched: int) -> void:
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot])) if slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0 else {}
 
-	if str(entry.get("tool_class", "")) != "spyglass" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if str(entry.get("tool_class", "")) != "spyglass" or _is_broken(inv, slot):
 		spyglass[peer] = -1
 		spyglass_tier.erase(peer)
 		return
@@ -1312,6 +1315,7 @@ func tick(delta: float) -> void:
 		_vitals_tick(spent)
 		_slow_mark("vitals", t0)
 		_craft_tick(spent)
+		_sharpen_tick(spent)
 		_slow_mark("craft", t0)
 		_auto_split()
 		_slow_mark("auto-split", t0)
@@ -2059,7 +2063,7 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("kind", "")) != "weapon" or _is_broken(inv.numbers[slot], inv.wear[slot]) or float(entry.get("damage", 0.0)) <= 0.0:
+	if str(entry.get("kind", "")) != "weapon" or _is_broken(inv, slot) or float(entry.get("damage", 0.0)) <= 0.0:
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -2069,10 +2073,11 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	_last_strike[peer] = now
 	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
-	var hit: bool = bool(hit_animal.call(peer, eye, direction, JAB_REACH_M, float(entry["damage"])))
+	var damage: float = float(entry["damage"]) + SmithingRules.damage_bonus(inv.inst[slot])   # a +2 weapon strikes two harder (master s2.9 item 4)
+	var hit: bool = bool(hit_animal.call(peer, eye, direction, JAB_REACH_M, damage))
 
 	if hit:
-		hit_number(peer, eye + direction.normalized() * minf(JAB_REACH_M, 1.5), float(entry["damage"]))
+		hit_number(peer, eye + direction.normalized() * minf(JAB_REACH_M, 1.5), damage)
 		_wear_slot(peer, inv, slot, "strike")
 
 
@@ -2153,7 +2158,7 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if str(table.entry(table.id_of(inv.numbers[slot])).get("kind", "")) != "weapon":
 		return
 
-	if _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if _is_broken(inv, slot):
 		return
 
 	_last_throw[peer] = now
@@ -2172,7 +2177,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if not BowAim.shoots(entry) or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if not BowAim.shoots(entry) or _is_broken(inv, slot):
 		return
 
 	if _bow == null:
@@ -2398,7 +2403,7 @@ func _fly(delta: float) -> void:
 				var at: Vector3 = hit["at"]
 				hit_number(int(flight["peer"]), at, throw_damage)
 				var below: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
-				drop_in_world(int(flight["number"]), 1, Vector3(at.x, below if not is_nan(below) else at.y, at.z), int(flight.get("wear", 0)), 0.0, NAN, NAN, "", flight.get("inst", {}))
+				_land_thrown(flight, Vector3(at.x, below if not is_nan(below) else at.y, at.z))
 				_flights.erase(flight)
 				continue
 
@@ -2410,8 +2415,22 @@ func _fly(delta: float) -> void:
 			if not is_nan(ground):
 				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
 
-			drop_in_world(int(flight["number"]), 1, spot, int(flight.get("wear", 0)), 0.0, NAN, NAN, "", flight.get("inst", {}))
+			_land_thrown(flight, spot)
 			_flights.erase(flight)
+
+
+# A thrown weapon lands as a pickup, unless the throw broke a disposable one (the Javelin): that one is gone (master s2.2 rule 2).
+func _land_thrown(flight: Dictionary, at: Vector3) -> void:
+	var entry: Dictionary = table.entry(table.id_of(int(flight["number"])))
+	var most: int = SmithingRules.max_of(entry, flight.get("inst", {}))
+
+	if SmithingRules.disposable(entry) and int(flight.get("wear", 0)) >= most:
+		if flight.has("peer"):
+			_say(int(flight["peer"]), "Your %s broke and is gone." % table.sentence_name(int(flight["number"])))
+
+		return
+
+	drop_in_world(int(flight["number"]), 1, at, int(flight.get("wear", 0)), 0.0, NAN, NAN, "", flight.get("inst", {}))
 
 
 # The stone axe used as a pick (Dave: no stone pickaxe): a blow on bare rock gives a stone. The
@@ -5233,7 +5252,7 @@ func _boulder_tool(inv) -> Array:
 	var tools: Dictionary = _boulder_cfg.get("tools", {})
 
 	for slot in range(inv.SLOTS):
-		if not inv.on_hotbar(slot) or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		if not inv.on_hotbar(slot) or _is_broken(inv, slot):
 			continue
 
 		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -5642,7 +5661,7 @@ func _has_tool(inv, tool_class: String) -> bool:
 # The pack slot of a usable (not broken) tool of this class that a hotbar key points at (inventory step 4: keys hold items, not slots), or -1.
 func _tool_slot(inv, tool_class: String) -> int:
 	for slot in range(inv.SLOTS):
-		if inv.on_hotbar(slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv.numbers[slot], inv.wear[slot]):
+		if inv.on_hotbar(slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv, slot):
 			return slot
 
 	return -1
@@ -5656,21 +5675,21 @@ func _say_tool_missing(peer: int, inv, tool_class: String) -> void:
 		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
 			found = slot
 
-			if not _is_broken(inv.numbers[slot], inv.wear[slot]):
+			if not _is_broken(inv, slot):
 				break
 
 	if found < 0:
 		_say(peer, "You need a %s for that." % tool_class)
-	elif _is_broken(inv.numbers[found], inv.wear[found]):
-		_say(peer, "Your %s is worn out. Repair it (R in the inventory) with %s." % [table.sentence_name(inv.numbers[found]), _repair_text(table.entry(table.id_of(inv.numbers[found])).get("repair", []))])
+	elif _is_broken(inv, found):
+		_say(peer, "Your %s is broken. %s" % [table.sentence_name(inv.numbers[found]), _repair_hint(table.entry(table.id_of(inv.numbers[found])))])
 	else:
 		_say(peer, "Put your %s on the hotbar: select it in the inventory and press E." % table.sentence_name(inv.numbers[found]))
 
 
-# Worn out: durability is the number of uses a tool lasts (items.json); items without it never wear.
-func _is_broken(number: int, item_wear: int) -> bool:
-	var durability: int = int(table.entry(table.id_of(number)).get("durability", 0))
-	return durability > 0 and item_wear >= durability
+# Broken: its wear has reached its current maximum durability (the instance's max_d, else items.json durability); items without it never wear.
+func _is_broken(inv, slot: int) -> bool:
+	var most: int = inv.max_durability(slot)
+	return most > 0 and inv.wear[slot] >= most
 
 
 # One use spent on the first usable tool of this class on the hotbar; tells the player when it breaks.
@@ -5680,10 +5699,11 @@ func _wear_tool(peer: int, inv, tool_class: String, use: String = "") -> void:
 
 
 func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
-	if slot < 0 or int(table.entry(table.id_of(inv.numbers[slot])).get("durability", 0)) <= 0:
+	if slot < 0 or inv.max_durability(slot) <= 0:
 		return
 
-	var tool_class: String = str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", ""))
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var tool_class: String = str(entry.get("tool_class", ""))
 
 	var work_cfg: Dictionary = _exertion_cfg.get("tool_effort", {})
 	_work_until[peer] = Time.get_ticks_msec() + int(float(_exertion_cfg.get("work_s", 2.5)) * 1000.0)
@@ -5694,31 +5714,67 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	var wear_now: float = float(maxi(1, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))) / skill_factor(peer, "tool_care") + float(_wear_carry.get(peer, 0.0))
 	var whole: int = int(floor(wear_now + 0.001))
 	_wear_carry[peer] = wear_now - float(whole)
+	var dull_at: int = SmithingRules.dull_at(entry, inv.inst[slot])
+
+	# An edge dulls with the work it does (smithing.json dull_share); fully dull, it wears dull_wear_mult times as fast (master s2.2 rules 6-8).
+	if dull_at > 0 and whole > 0:
+		var item_inst: Dictionary = inv.inst[slot].duplicate()
+
+		if int(item_inst.get("sharp", 0)) >= dull_at:
+			whole *= maxi(int(SmithingRules.cfg().get("dull_wear_mult", 2)), 1)
+		else:
+			item_inst["sharp"] = mini(int(item_inst.get("sharp", 0)) + whole, dull_at)
+			inv.inst[slot] = item_inst
+
 	inv.wear[slot] += whole
 	_dirty = true
 
-	if _is_broken(inv.numbers[slot], inv.wear[slot]):
-		_say(peer, "Your %s broke. Repair it with new materials." % table.sentence_name(inv.numbers[slot]))
+	if _is_broken(inv, slot):
+		_tool_broke(peer, inv, slot, entry)
 
 	_send_changes(peer, inv, before)
 
 
-# Repair (ACT_REPAIR): the slot's tool, worn or broken, takes the repair materials from items.json
-# ("repair": [[item, count], ...]) and wins back half its durability.
+# A tool at its maximum: stone, wooden and primitive tools are gone (master s2.2 rules 1-3); a metal tool stays in its slot, unusable,
+# until it is repaired (rule 4). The caller sends the slot change.
+func _tool_broke(peer: int, inv, slot: int, entry: Dictionary) -> void:
+	var item_name: String = table.sentence_name(inv.numbers[slot])
+
+	if SmithingRules.disposable(entry):
+		inv.clear_slot(slot)
+		_say(peer, "Your %s broke and is gone." % item_name)
+	else:
+		_say(peer, "Your %s broke. %s" % [item_name, _repair_hint(entry)])
+
+
+# Repair (ACT_REPAIR, R on a slot). A dull edge tool that is not broken is sharpened (_start_sharpen); otherwise, or when sharpening cannot start
+# here but its repair station is beside you, the tool takes its items.json repair materials at its repair_station and its wear goes back to 0:
+# up to its current maximum, which only sharpening lowers (master s2.2 rule 5). A disposable row (no repair) is never mended.
 func _repair(peer: int, inv, slot: int) -> void:
-	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or inv.wear[slot] <= 0:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var bench: String = str(entry.get("repair_station", ""))
+
+	if inv.sharpness_used(slot) > 0 and SmithingRules.dull_at(entry, inv.inst[slot]) > 0 and not _is_broken(inv, slot):
+		var why: String = _start_sharpen(peer, inv, slot)
+
+		if why == "":
+			return
+
+		if inv.wear[slot] <= 0 or (bench != "" and not station_near(peer, bench)):
+			_say(peer, why)
+			return
+
+	if inv.wear[slot] <= 0:
+		return
+
 	var costs: Array = entry.get("repair", [])
 
-	if bool(entry.get("edge", false)) and _hone(peer, inv, slot, entry):
-		return
-
 	if costs.is_empty():
+		_say(peer, "Your %s cannot be mended. Make a new one." % table.sentence_name(inv.numbers[slot]))
 		return
-
-	var bench: String = str(entry.get("repair_station", ""))
 
 	if bench != "" and not station_near(peer, bench):
 		_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
@@ -5738,42 +5794,164 @@ func _repair(peer: int, inv, slot: int) -> void:
 	for cost in costs:
 		inv.remove(table.number_of(str(cost[0])), int(cost[1]))
 
-	inv.wear[slot] = maxi(0, inv.wear[slot] - int(float(entry.get("durability", 0)) * float(_drops.get("tool_wear", {}).get("repair_restores", 0.5))))
+	inv.wear[slot] = 0
 	practice(peer, "tool_care")
 
 
-# Whetstone hand repair (Part C plan 4; drops.json tool_wear.hone): R on an edged tool (items.json "edge": true) with a sound whetstone in the
-# pack hones it with no materials. It wins back hone.restores of its durability but never past hone.up_to of it; the whetstone wears and is
-# kept. False (and the real repair goes ahead) with no whetstone, or when the tool is already that sharp: past it, the haft and binding need mending.
-func _hone(peer: int, inv, slot: int, entry: Dictionary) -> bool:
-	var cfg: Dictionary = _drops.get("tool_wear", {}).get("hone", {})
-	var stone: int = table.number_of(str(cfg.get("item", "whetstone")))
-	var most: int = int(entry.get("durability", 0))
+# What to do with a broken tool: where and with what it is repaired, or that a disposable one is made anew.
+func _repair_hint(entry: Dictionary) -> String:
+	var costs: Array = entry.get("repair", [])
 
-	if cfg.is_empty() or stone == 0 or most <= 0:
-		return false
+	if costs.is_empty():
+		return "Make a new one."
 
-	var sharpest: int = int(ceil(float(most) * (1.0 - float(cfg.get("up_to", 0.75)))))   # the least wear a hone leaves
+	var bench: String = str(entry.get("repair_station", ""))
+	return "Repair it%s with %s (R in the inventory)." % [(" at a %s" % _station_name(bench).to_lower()) if bench != "" else "", _repair_text(costs)]
 
-	if inv.wear[slot] <= sharpest:
-		return false
 
-	var stone_slot: int = -1
+# --- Sharpening (master s2.2 rules 6-8, s4 item 2; data/items/smithing.json). A timed job per player, not saved: it stops on quit. ---
+var _sharpening: Dictionary = {}   # peer -> {slot, number, how ("whetstone" or "grindstone"), pos (where it started), done (work seconds), need (seconds for this tool), sharp (sharpness used at its start)}
+
+
+# Sharpens the dull edge tool in `slot`, at a grindstone beside you or else on a whetstone from the pack with water at hand; the other dull edge
+# tools follow one after another (_sharpen_tick). "" when it started, else why not.
+func _start_sharpen(peer: int, inv, slot: int) -> String:
+	if _sharpening.has(peer):
+		return "" if int(_sharpening[peer]["slot"]) == slot else "You are already sharpening."
+
+	var how: String = "grindstone" if station_near(peer, _grindstone_station()) else "whetstone"
+	var why: String = _sharpen_block(peer, inv, how)
+
+	if why != "":
+		return why
+
+	_begin_sharpen(peer, inv, slot, how, _peer_pos[peer])
+	_say(peer, "You start sharpening the %s %s." % [table.sentence_name(inv.numbers[slot]), "at the grindstone" if how == "grindstone" else "on your whetstone"])
+	return ""
+
+
+func _grindstone_station() -> String:
+	return str(SmithingRules.cfg().get("grindstone", {}).get("station", "grindstone"))
+
+
+func _begin_sharpen(peer: int, inv, slot: int, how: String, pos: Vector3) -> void:
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	_sharpening[peer] = {"slot": slot, "number": inv.numbers[slot], "how": how, "pos": pos, "done": 0.0, "need": SmithingRules.sharpen_s(entry, inv.inst[slot], how), "sharp": inv.sharpness_used(slot)}
+
+
+# Why sharpening cannot go on now ("" when it can): the grindstone is out of reach, or no sound whetstone, or no water at hand for it.
+func _sharpen_block(peer: int, inv, how: String) -> String:
+	if how == "grindstone":
+		return "" if station_near(peer, _grindstone_station()) else "You walked away from the grindstone."
+
+	if _whetstone_slot(inv) < 0:
+		return "You need a whetstone or a grindstone to sharpen it."
+
+	if not _water_at_hand(peer, inv):
+		return "A whetstone needs water: carry some in a container, or stay by the water."
+
+	return ""
+
+
+func _whetstone_slot(inv) -> int:
+	var stone: int = table.number_of(str(SmithingRules.cfg().get("whetstone", {}).get("item", "whetstone")))
 
 	for s in inv.SLOTS:
-		if s != slot and inv.numbers[s] == stone and not _is_broken(stone, inv.wear[s]):
-			stone_slot = s
-			break
+		if stone != 0 and inv.numbers[s] == stone and not _is_broken(inv, s):
+			return s
 
-	if stone_slot < 0:
-		return false
+	return -1
 
-	inv.wear[slot] = maxi(sharpest, inv.wear[slot] - int(float(most) * float(cfg.get("restores", 0.25))))
-	_wear_slot(peer, inv, stone_slot, "hone")
+
+# A filled water container in the pack, or drinkable water within the thirst reach (a tank, the settled water, a spring or brook of the record).
+func _water_at_hand(peer: int, inv) -> bool:
+	for s in inv.SLOTS:
+		if _container_cap(inv.numbers[s]) > 0 and inv.wear[s] > 0:
+			return true
+
+	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
+	var reach: float = float(thirst.get("reach_m", 3.0))
+	var pos: Vector3 = _peer_pos[peer]
+	return _tank_near(pos, reach) >= 0 or (water_near.is_valid() and bool(water_near.call(pos, reach))) or _record_water_near(peer, thirst)
+
+
+# Every slow tick: each job's work goes on (seat_speed times faster sitting on a seat at a whetstone); a finished tool gets its sharpness back and
+# the next dull edge tool starts. Walking move_m away from a whetstone, leaving the grindstone, or losing the water or whetstone stops it, and what
+# was done so far counts in proportion.
+func _sharpen_tick(spent: float) -> void:
+	for peer in _sharpening.keys():
+		var job: Dictionary = _sharpening[peer]
+		var inv = inventory_of(peer)
+
+		if inv == null or not _peer_pos.has(peer):
+			_sharpening.erase(peer)
+			continue
+
+		var slot: int = int(job["slot"])
+
+		if inv.numbers[slot] != int(job["number"]) or _is_broken(inv, slot):   # the tool left the slot or broke: on to the next one
+			_next_sharpen(peer, inv, job)
+			continue
+
+		var how: String = str(job["how"])
+		var whet: Dictionary = SmithingRules.cfg().get("whetstone", {})
+		var why: String = _sharpen_block(peer, inv, how)
+		var here: Vector3 = _peer_pos[peer]
+
+		if why == "" and how == "whetstone" and Vector2(here.x - job["pos"].x, here.z - job["pos"].z).length() > float(whet.get("move_m", 1.5)):
+			why = "You moved away."
+
+		if why != "":
+			_apply_sharpen(peer, inv, job)
+			_sharpening.erase(peer)
+			_say(peer, "You stop sharpening. %s" % why)
+			continue
+
+		var speed: float = float(whet.get("seat_speed", 1.5)) if how == "whetstone" and int(_stance.get(peer, 0)) == 2 and _seat_near(here) else 1.0
+		job["done"] = float(job["done"]) + spent * speed
+
+		if float(job["done"]) >= float(job["need"]):
+			_apply_sharpen(peer, inv, job)
+			_next_sharpen(peer, inv, job)
+
+
+# The job's work so far restores that share of the sharpness it started with, and lowers the tool's maximum durability in proportion
+# (SmithingRules.sharpen_loss); the whetstone wears one use per tool.
+func _apply_sharpen(peer: int, inv, job: Dictionary) -> void:
+	var slot: int = int(job["slot"])
+	var share: float = clampf(float(job["done"]) / float(job["need"]), 0.0, 1.0) if float(job["need"]) > 0.0 else 1.0
+	var restored: int = mini(int(round(float(job["sharp"]) * share)), inv.sharpness_used(slot))
+
+	if restored <= 0 or inv.numbers[slot] != int(job["number"]):
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var before: Array = _snapshot(inv)
+	var item_inst: Dictionary = inv.inst[slot].duplicate()
+	item_inst["max_d"] = maxi(SmithingRules.max_of(entry, item_inst) - SmithingRules.sharpen_loss(entry, item_inst, restored), 1)
+	item_inst["sharp"] = inv.sharpness_used(slot) - restored
+	inv.inst[slot] = InventoryScript.clean_inst(item_inst)
 	practice(peer, "tool_care")
-	_say(peer, str(cfg.get("say_hone", "")) % table.sentence_name(inv.numbers[slot]))
 	_dirty = true
-	return true
+
+	if _is_broken(inv, slot):   # the lower maximum reached its wear: it breaks as a use would break it
+		_tool_broke(peer, inv, slot, entry)
+
+	_send_changes(peer, inv, before)
+
+	if str(job["how"]) == "whetstone":
+		_wear_slot(peer, inv, _whetstone_slot(inv), "sharpen")
+
+
+func _next_sharpen(peer: int, inv, job: Dictionary) -> void:
+	for s in inv.SLOTS:
+		if inv.numbers[s] != 0 and inv.sharpness_used(s) > 0 and not _is_broken(inv, s) and SmithingRules.dull_at(table.entry(table.id_of(inv.numbers[s])), inv.inst[s]) > 0:
+			_begin_sharpen(peer, inv, s, str(job["how"]), job["pos"])
+			_say(peer, "You sharpen the %s next." % table.sentence_name(inv.numbers[s]))
+			return
+
+	_sharpening.erase(peer)
+	_say(peer, "Your tools are sharp.")
 
 
 func _repair_text(costs: Array) -> String:
@@ -7584,7 +7762,7 @@ func _heaviest_hammer_slot(inv) -> int:
 	var best: int = -1
 
 	for slot in range(inv.SLOTS):
-		if not inv.on_hotbar(slot) or inv.numbers[slot] == 0 or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		if not inv.on_hotbar(slot) or inv.numbers[slot] == 0 or _is_broken(inv, slot):
 			continue
 
 		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -11760,7 +11938,7 @@ func _fish_species(cell: Vector2i, hit: Dictionary = {}) -> String:
 func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	var cfg: Dictionary = _fishing_data()
 
-	if cfg.has("none") or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if cfg.has("none") or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or _is_broken(inv, slot):
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -11828,7 +12006,7 @@ func _net_cast(peer: int, inv, slot: int, cancel: bool, at: Vector3) -> void:
 
 		return
 
-	if cfg.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if cfg.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or _is_broken(inv, slot):
 		return
 
 	if str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) != "net" or not state.is_empty():
@@ -12042,7 +12220,7 @@ func _cut_hole(peer: int, inv, slot: int) -> void:
 	if cfg.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or not _peer_key.has(peer):
 		return
 
-	if not str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["axe", "pick"] or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if not str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["axe", "pick"] or _is_broken(inv, slot):
 		_reject(peer, 1)
 		return
 
@@ -14916,7 +15094,9 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 	return moved
 
 
-func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
+# `variant` (SmithingRules code, 0 plain): Tempered and/or craftsmanship +1/+2, refused unless the stations beside the player allow it for this
+# recipe (craft_variants); its needs are scaled up and it takes longer (smithing.json).
+func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0) -> void:
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
@@ -14934,6 +15114,15 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		if far_id >= 0 and (free or _stock_covers(inv, recipe, 1, _stock_of(peer))):
 			_step_to_station(peer, far_id)
 
+	# The server decides what may be made here; the client's choice is only a request (master s2.7 items 5-6, s4 item 15).
+	if variant != 0:
+		if not craft_variants(peer, recipe).has(variant):
+			_say(peer, "That cannot be made %s here" % (SmithingRules.label(variant) if SmithingRules.valid(variant) else "that way"))
+			return
+
+		recipe = recipe.duplicate()
+		recipe["needs"] = SmithingRules.scaled_needs(recipe["needs"], variant)
+
 	if free:
 		var line: Array = queue["entries"]
 
@@ -14941,7 +15130,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 			_say(peer, "The crafting queue is full")
 			return
 
-		line.append([recipe_number, clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), []])
+		line.append([recipe_number, clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), []] if variant == 0 else [recipe_number, clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), [], [], 0, variant])
 		_dirty = true
 		_sync_craft_queue(peer)
 		return
@@ -14954,8 +15143,9 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		_pull_nearby_logs(peer, inv, _log_need(recipe["needs"], clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), group_id), group_id)
 	var stock: Dictionary = _stock_of(peer)   # the ground near the player and their own containers in reach count too (step 2): pack first, then the ground, then the nearest
 
-	# Short of a part the stock could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct).
-	if not _stock_covers(inv, recipe, count, stock):
+	# Short of a part the stock could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct). The planner
+	# knows only plain recipes, so a variant must be covered as it is.
+	if variant == 0 and not _stock_covers(inv, recipe, count, stock):
 		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock)
 
 		if outcome == 1:
@@ -14963,7 +15153,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 			return
 
 	var entries: Array = queue["entries"]
-	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty() and (entries[entries.size() - 1].size() < 5 or int(entries[entries.size() - 1][4]) == 0)
+	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty() and (entries[entries.size() - 1].size() < 5 or int(entries[entries.size() - 1][4]) == 0) and _variant_of(entries[entries.size() - 1]) == variant
 
 	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
 		_say(peer, "The crafting queue is full")
@@ -14997,11 +15187,71 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	else:
 		var needs: Array = recipe["needs"].duplicate(true)
 		_hold_insts(needs, held)
-		entries.append([recipe_number, taken, needs])
+		entries.append([recipe_number, taken, needs] if variant == 0 else [recipe_number, taken, needs, [], 0, variant])
 
 	_dirty = true
 	_sync_craft_queue(peer)
 	_send_stock(peer)
+
+
+const VARIANT_CHECK_MS := 1000
+var _variant_seen: Dictionary = {}   # peer -> [ms, recipe number, variant, allowed]: the station scan for a running variant craft, at most once a second
+
+
+# Is the variant still allowed beside this player (craft_variants), worked out at most once a second per player for the craft queue.
+func _variant_here(peer: int, recipe: Dictionary, variant: int) -> bool:
+	var now: int = Time.get_ticks_msec()
+	var seen: Array = _variant_seen.get(peer, [])
+
+	if seen.is_empty() or now - int(seen[0]) >= VARIANT_CHECK_MS or int(seen[1]) != int(recipe.get("number", -1)) or int(seen[2]) != variant:
+		seen = [now, int(recipe.get("number", -1)), variant, craft_variants(peer, recipe).has(variant)]
+		_variant_seen[peer] = seen
+
+	return bool(seen[3])
+
+
+# A queue entry's variant: [recipe, count, needs, parts, chain, variant]; shorter entries are plain.
+func _variant_of(entry: Array) -> int:
+	return int(entry[5]) if entry.size() > 5 else 0
+
+
+# The variant codes this recipe's output may be made as beside this player now (SmithingRules.variants): Tempered needs the temper add-on
+# (the Quenching trough) beside a Smithy or Master smithy that serves the recipe, +1/+2 a Master smithy that serves it.
+func craft_variants(peer: int, recipe: Dictionary) -> Array:
+	var gives: Array = recipe.get("gives", [0, 0])
+	var made_id: String = table.id_of(int(gives[0])) if not gives.is_empty() else ""
+	var station: String = str(recipe.get("station", ""))
+	var level: int = int(recipe.get("station_level", 1))
+	var c: Dictionary = SmithingRules.cfg()
+	var master: bool = false
+	var trough: bool = false
+
+	if station != "" and made_id != "":
+		var master_id: int = serving_station(peer, str(c.get("craft", {}).get("station", "master_smithy")))
+		master = master_id >= 0 and _station_serves(master_id, station, level)
+		var smithy_id: int = serving_station(peer, str(c.get("temper", {}).get("station", "brick_forge")))
+		trough = smithy_id >= 0 and _station_serves(smithy_id, station, level) and _addon_beside(smithy_id, str(c.get("temper", {}).get("addon", "")))
+
+	return SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)
+
+
+func _station_serves(id: int, station: String, level: int) -> bool:
+	var it: Dictionary = _items[id]
+	return station_level_of(it, _structures.get(str(it["struct"]["kind"]), {}), station) >= level
+
+
+# Is a structure of this kind standing within the station's addon_reach_m?
+func _addon_beside(id: int, kind: String) -> bool:
+	var row: Dictionary = _items[id]
+	var reach: float = float(_structures.get(str(row["struct"]["kind"]), {}).get("addon_reach_m", 5.0))
+
+	for other_id in _items:
+		var other: Dictionary = _items[other_id]
+
+		if other.has("struct") and str(other["struct"]["kind"]) == kind and row["pos"].distance_to(other["pos"]) <= reach:
+			return true
+
+	return false
 
 
 # Does the pack hold everything `times` crafts of a recipe need (kept tools once)?
@@ -15212,12 +15462,22 @@ func _craft_tick(spent: float) -> void:
 
 			continue
 
+		var variant: int = _variant_of(head)
+
+		# A Tempered or +1/+2 craft runs only beside the stations that allow it; walk away and it waits, as for a station.
+		if variant != 0 and not free_entry and not _variant_here(peer, recipe, variant):
+			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
+				_station_said[peer] = Time.get_ticks_msec()
+				_say(peer, "Your %s %s waits: go back to the smithy that makes it" % [SmithingRules.label(variant), str(recipe.get("name", "craft"))])
+
+			continue
+
 		if head.size() > 3 and not (head[3] as Array).is_empty() and not _start_deferred(peer, head):
 			continue
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
-		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) / _pace_factor(peer, "craft"):
+		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft"):
 			continue
 
 		queue["elapsed"] = 0.0
@@ -15241,7 +15501,7 @@ func _craft_tick(spent: float) -> void:
 			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
 		else:
 			_gain_source = SRC_CRAFT
-			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
+			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]), SmithingRules.made_inst(table.entry(table.id_of(int(recipe["gives"][0]))), variant))
 			_gain_source = SRC_PICKUP
 			_goal_made(peer, int(recipe["gives"][0]))
 
@@ -15268,7 +15528,7 @@ func _sync_craft_queue(peer: int) -> void:
 
 	if not entries.is_empty():
 		var head_recipe: Dictionary = recipes.recipe(int(entries[0][0]))
-		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe)
+		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe) * SmithingRules.time_mult(_variant_of(entries[0]))
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
 	send_craft_queue.call(peer, _pairs(entries), left_ms)
@@ -15277,8 +15537,8 @@ func _sync_craft_queue(peer: int) -> void:
 func _pairs(entries: Array) -> Array:
 	var out: Array = []
 
-	for entry in entries:
-		out.append([int(entry[0]), int(entry[1])])
+	for entry in entries:   # a variant craft (catalog Phase 2c) adds its SmithingRules code: [recipe, count, variant]
+		out.append([int(entry[0]), int(entry[1])] if _variant_of(entry) == 0 else [int(entry[0]), int(entry[1]), _variant_of(entry)])
 
 	return out
 
@@ -15324,7 +15584,12 @@ func _load_craft_queues() -> void:
 			for need in entry[3] if entry.size() > 3 else []:
 				parts.append([int(need[0]), int(need[1])])
 
-			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs, parts, int(entry[4]) if entry.size() > 4 else 0])
+			var loaded: Array = [int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs, parts, int(entry[4]) if entry.size() > 4 else 0]
+
+			if entry.size() > 5 and SmithingRules.valid(int(entry[5])) and int(entry[5]) != 0:
+				loaded.append(int(entry[5]))   # the variant (SmithingRules code)
+
+			entries.append(loaded)
 
 		_craft_queues[str(key)] = {"entries": entries, "elapsed": float(row.get("elapsed", 0.0))}
 

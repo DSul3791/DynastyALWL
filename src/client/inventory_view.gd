@@ -30,6 +30,7 @@ const StructureLook := preload("res://src/shared/structure_look.gd")
 const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # sharpness, Tempered and craftsmanship (catalog Phase 2c)
 const CharacterScreenScript := preload("res://src/client/character_screen.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -1346,14 +1347,15 @@ func show_notice(text: String) -> void:
 	_on_notice(text)
 
 
-# Condition of the item in a slot: 1.0 new down to 0.0 broken; 1.0 for items that do not wear.
+# Condition of the item in a slot: 1.0 new down to 0.0 broken, against its current maximum durability (the instance's max_d, else the row's);
+# 1.0 for items that do not wear.
 func condition(slot: int) -> float:
-	var durability: int = int(table.entry(table.id_of(inventory.numbers[slot])).get("durability", 0))
+	var durability: int = inventory.max_durability(slot)
 	return 1.0 if durability <= 0 else clampf(1.0 - float(inventory.wear[slot]) / float(durability), 0.0, 1.0)
 
 
 func is_broken(slot: int) -> bool:
-	return inventory.numbers[slot] != 0 and int(table.entry(table.id_of(inventory.numbers[slot])).get("durability", 0)) > 0 and condition(slot) <= 0.0
+	return inventory.numbers[slot] != 0 and inventory.max_durability(slot) > 0 and condition(slot) <= 0.0
 
 
 # Is a tool of this class on the hotbar (a key points at it), the way the server checks it?
@@ -1602,6 +1604,9 @@ func _on_full(bytes: PackedByteArray) -> void:
 
 
 # Protocol 106: a count byte, 9 bytes per changed slot (slot, u32 number, u16 count, u16 wear), then the instance data of those slots (Inventory.inst_bytes).
+const DISPOSABLE_BREAK_WEAR := 10   # one heavy use: rock wear 5 (drops.json tool_wear) x dull_wear_mult 2 (smithing.json)
+
+
 func _on_slots(bytes: PackedByteArray) -> void:
 	var n: int = mini(bytes[0], floori(float(bytes.size() - 1) / 9.0)) if not bytes.is_empty() else 0
 	var insts: Dictionary = InventoryScript.inst_from_bytes(bytes, 1 + n * 9)
@@ -1614,6 +1619,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			var was_broken: bool = is_broken(slot)
 			var was_wear: int = inventory.wear[slot]
 			var was_number: int = inventory.numbers[slot]
+			var was_most: int = inventory.max_durability(slot)
 			inventory.numbers[slot] = bytes.decode_u32(at + 1)
 			inventory.counts[slot] = bytes.decode_u16(at + 5)
 			inventory.wear[slot] = bytes.decode_u16(at + 7)
@@ -1624,6 +1630,9 @@ func _on_slots(bytes: PackedByteArray) -> void:
 					tool_event.call("broke")
 				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
 					tool_event.call("repaired")
+			elif tool_event.is_valid() and was_number != 0 and inventory.numbers[slot] == 0 and SmithingRules.disposable(table.entry(table.id_of(was_number))) and was_wear + DISPOSABLE_BREAK_WEAR >= was_most:
+				# shortcut: a disposable tool that leaves its slot within one heavy use of its end is taken as broken (the server clears it at zero); dropping one that worn plays the break sound too, revisit if that is heard in play
+				tool_event.call("broke")
 
 	_queue_refresh()
 	_container_part.refresh()
@@ -3454,6 +3463,62 @@ func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 	return false
 
 
+# The variant codes the recipe card offers here (SmithingRules.variants; the server checks again): +1/+2 beside a Master smithy that serves the
+# recipe, Tempered with the temper add-on (the Quenching trough) beside a Smithy or Master smithy that serves it.
+func craft_variants(r: Dictionary) -> Array:
+	var gives: Array = r.get("gives", [0, 0])
+	var made_id: String = table.id_of(int(gives[0])) if not gives.is_empty() else ""
+	var station: String = str(r.get("station", ""))
+
+	if station == "" or made_id == "":
+		return [0]
+
+	_memo_frame()   # the card asks several times a refresh; the world walk runs once a frame per recipe, like station_near
+	var key: String = "variants|%d" % int(r.get("number", 0))
+
+	if not _near_memo.has(key):
+		var level: int = int(r.get("station_level", 1))
+		var c: Dictionary = SmithingRules.cfg()
+		# As the server: the nearest Master smithy and the nearest Smithy within reach (ServerItems.serving_station), each serving the recipe.
+		var master_id: int = _nearest_serving(str(c.get("craft", {}).get("station", "master_smithy")))
+		var smithy_id: int = _nearest_serving(str(c.get("temper", {}).get("station", "brick_forge")))
+		var master: bool = master_id >= 0 and _def_serves(_structure_by_state(int(_world[master_id]["state"])), station, level)
+		var trough: bool = false
+
+		if smithy_id >= 0 and _def_serves(_structure_by_state(int(_world[smithy_id]["state"])), station, level):
+			var addon_state: int = int(_structures_cfg.get(str(c.get("temper", {}).get("addon", "")), {}).get("state", -2))
+			var reach: float = float(_structure_by_state(int(_world[smithy_id]["state"])).get("addon_reach_m", 5.0))
+
+			for other in _world:
+				if int(_world[other]["state"]) == addon_state and _world[smithy_id]["pos"].distance_to(_world[other]["pos"]) <= reach:
+					trough = true
+
+		_near_memo[key] = SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)
+
+	return _near_memo[key]
+
+
+# The world id of the nearest placed structure within its reach that serves `station` (its own or "also"), or -1.
+func _nearest_serving(station: String) -> int:
+	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
+	var best: int = -1
+	var best_d: float = INF
+
+	for id in _world:
+		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+		var d: float = here.distance_to(_world[id]["pos"])
+
+		if not def.is_empty() and d <= float(def.get("reach_m", 3.0)) + 1.0 and d < best_d and _def_serves(def, station, 1):
+			best = int(id)
+			best_d = d
+
+	return best
+
+
+func _def_serves(def: Dictionary, station: String, level: int) -> bool:
+	return (str(def.get("station", "")) == station and int(def.get("station_level", 1)) >= level) or int(def.get("also", {}).get(station, 0)) >= level
+
+
 func _addons_near(bench_id: int, station: String, reach: float) -> int:
 	var kinds: Dictionary = {}
 
@@ -4746,7 +4811,8 @@ func quick_key(event: InputEventKey) -> bool:
 	return false
 
 
-func _start_craft(number: int, count: int = 1) -> void:
+# `variant`: the SmithingRules code chosen on the recipe card (0 plain); the server checks it again.
+func _start_craft(number: int, count: int = 1, variant: int = 0) -> void:
 	if not _can_craft(number):
 		return
 
@@ -4755,7 +4821,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.sentence_name(item))
 			return
 
-	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, 0, count, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, variant, count, Vector3.ZERO)
 
 
 func _on_reject(reason: int) -> void:
@@ -4778,7 +4844,7 @@ func _on_craft_queue(entries: Array, left_ms: int) -> void:
 
 
 func _repair_selected() -> void:
-	if _selected < 0 or inventory.wear[_selected] <= 0:
+	if _selected < 0 or (inventory.wear[_selected] <= 0 and inventory.sharpness_used(_selected) <= 0):   # R also sharpens a dull edge tool
 		return
 
 	net.inventory_action.rpc_id(1, Net.ACT_REPAIR, _selected, 0, 0, Vector3.ZERO)
@@ -4806,18 +4872,19 @@ func _item_label(number: int) -> String:
 	return item_name
 
 
-# An item's name with its craftsmanship after it ("Steel - Axe +2"; master s2.9: the name shows the instance's enhancements).
+# An item's name with its enhancements ("Tempered Steel - Axe +2"; master s2.9 item 5: the name shows the instance's actual enhancements).
 func inst_label(number: int, item_inst: Dictionary) -> String:
 	var craft: int = int(item_inst.get("craft", 0))
-	return _item_label(number) + (" +%d" % craft if craft > 0 else "")
+	return ("Tempered " if int(item_inst.get("temper", 0)) == 1 else "") + _item_label(number) + (" +%d" % craft if craft > 0 else "")
 
 
-# The instance lines of a tooltip: Tempered and each filled magical slot; empty slots stay hidden (master s2.9 item 1).
-func inst_lines(item_inst: Dictionary) -> PackedStringArray:
+# The instance lines of a tooltip: the edge's sharpness, and each filled magical slot; empty slots stay hidden (master s2.9 item 1).
+func inst_lines(item_inst: Dictionary, number: int = 0) -> PackedStringArray:
 	var out: PackedStringArray = PackedStringArray()
+	var entry: Dictionary = table.entry(table.id_of(number)) if number != 0 else {}
 
-	if int(item_inst.get("temper", 0)) == 1:
-		out.append("Tempered")
+	if SmithingRules.dull_at(entry, item_inst) > 0:
+		out.append("Sharpness %d %%%s" % [int(round(SmithingRules.sharpness(entry, item_inst) * 100.0)), " (dull: it wears faster; R sharpens it)" if SmithingRules.is_dull(entry, item_inst) else ""])
 
 	for effect in item_inst.get("magic", []):
 		if str(effect) != "":
@@ -4839,7 +4906,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 
 	var text: String = "%s x%d\n%s, %s" % [item_name, count, str(entry.get("kind", "item")), "does not stack" if table.stack_of(number) <= 1 else "stacks without limit (weight is your limit)"]
 
-	for line in inst_lines(item_inst):
+	for line in inst_lines(item_inst, number):
 		text += "\n" + line
 
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
@@ -4890,13 +4957,17 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 	text += "\nKeys: Split (S), Drop (D), Use (E)"
 
 	if int(entry.get("durability", 0)) > 0:
-		text += "\nlasts %d uses; repair: " % int(entry["durability"])
-		var parts: PackedStringArray = PackedStringArray()
+		text += "\nlasts %d uses; " % SmithingRules.max_of(entry, item_inst)
 
-		for cost in entry.get("repair", []):
-			parts.append("%d %s" % [int(cost[1]), table.cost_sentence(table.number_of(str(cost[0])))])
+		if SmithingRules.disposable(entry):
+			text += "cannot be mended: it is gone when it breaks"
+		else:
+			var parts: PackedStringArray = PackedStringArray()
 
-		text += ", ".join(parts)
+			for cost in entry.get("repair", []):
+				parts.append("%d %s" % [int(cost[1]), table.cost_sentence(table.number_of(str(cost[0])))])
+
+			text += "repair: " + ", ".join(parts)
 
 	return text
 

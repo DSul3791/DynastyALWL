@@ -99,7 +99,7 @@ func _init() -> void:
 	check(again._learned_of(1).has("900") and not again._learned_of(1).has("901"), "the learned recipes are saved with the character and known after a restart")
 	check(again.recipe_known_for(1, again.recipes.recipe(2)) and not again.recipe_known_for(1, again.recipes.recipe(901)), "a recipe that is known in the table is known to all, an unknown one only to who learned it")
 	var wheel: Dictionary = again.recipes.recipe(19)   # was the water wheel (153), unlocked 31 Oct 2026 when nails and lumber became obtainable; the steel pickaxe still needs forge level 2
-	check(str(wheel.get("id", "")) == "steel_pickaxe" and bool(wheel.get("locked", false)) and not bool(wheel.get("known", false)), "the real steel pickaxe recipe is locked (no forge level 2 chain yet)")
+	check(str(wheel.get("id", "")) == "steel_pickaxe" and not bool(wheel.get("locked", false)) and bool(wheel.get("known", false)), "the real steel pickaxe recipe is known (Mission 001 phase 2c: Steel ingots from the Blast furnace gate it)")
 	var rug: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"] as Dictionary).get("wool_rug", {})
 	var rug_locked: bool = bool(rug.get("locked", false)) and not bool(rug.get("known", true))
 	check(rug_locked, "the wool rug blueprint stays locked until sheep or goats exist (no wool source on the island)")
