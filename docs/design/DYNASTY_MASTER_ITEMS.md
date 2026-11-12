@@ -6,7 +6,7 @@ Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 7).** Existing rows: KEEP 506, UPDATE 54, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 24 (18 tools and stations, 6 furniture grades in s3.5). No number or id is reused.
+**Totals (Draft 8).** Existing rows: KEEP 506, UPDATE 54, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 24 (18 tools and stations, 6 furniture grades in s3.5). No number or id is reused.
 
 ## 1. Sources and labels
 
