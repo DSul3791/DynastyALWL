@@ -1169,6 +1169,54 @@ func _init() -> void:
 			if row.has("fabric") and not fabrics.has(String(row["fabric"])):
 				fail("items.json: '%s' fabric '%s' is not a warmth.json layers fabric" % [id, row["fabric"]])
 
+	# Armour and damage modes (catalog Phase 4b, data/items/protection.json): every protect names known modes with shares 0..1 and a cover 0..1 on
+	# a worn slot; every live row that does damage (a weapon or its ammunition) names its damage mode; the attack modes and slot shares are sane.
+	var protection: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/protection.json"))
+
+	if typeof(protection) != TYPE_DICTIONARY or (protection.get("modes", []) as Array).is_empty():
+		fail("protection.json is not an object with modes")
+	else:
+		var modes: Array = protection["modes"]
+		var shares: Dictionary = protection.get("slots", {})
+		var share_sum: float = 0.0
+
+		for slot in shares:
+			share_sum += float(shares[slot])
+
+			if typeof(clothing_cfg) == TYPE_DICTIONARY and not (clothing_cfg.get("slots", []) as Array).has(slot):
+				fail("protection.json slots: '%s' is not a clothing.json slot" % slot)
+
+		if absf(share_sum - 1.0) > 0.001:
+			fail("protection.json slots: the shares add up to %.3f, not 1" % share_sum)
+
+		for key in ["layer_keep", "slot_cap", "cap"]:
+			if float(protection.get(key, -1.0)) <= 0.0 or float(protection.get(key, -1.0)) > 1.0:
+				fail("protection.json %s must be above 0 and at most 1" % key)
+
+		for cause in protection.get("attack_modes", {}):
+			if cause != "note" and not modes.has(String(protection["attack_modes"][cause])):
+				fail("protection.json attack_modes.%s: '%s' is not a mode" % [cause, protection["attack_modes"][cause]])
+
+		if not modes.has(String(protection.get("default_mode", ""))):
+			fail("protection.json default_mode is not a mode")
+
+		for id in items_file.get("items", {}):
+			var row: Dictionary = items_file["items"][id]
+
+			if row.has("protect"):
+				if String(row.get("slot", "")) == "" or float(row.get("cover", -1.0)) <= 0.0 or float(row.get("cover", -1.0)) > 1.0:
+					fail("items.json: '%s' has protect but no worn slot or no cover above 0 and at most 1" % id)
+
+				for mode in row["protect"]:
+					if not modes.has(mode) or float(row["protect"][mode]) < 0.0 or float(row["protect"][mode]) > 1.0:
+						fail("items.json: '%s' protect %s is not a mode with a share 0..1" % [id, mode])
+
+			if float(row.get("damage", 0.0)) > 0.0 and not bool(row.get("retired", false)) and not bool(row.get("future", false)) and not modes.has(String(row.get("damage_mode", ""))):
+				fail("items.json: '%s' does damage but has no damage_mode of %s" % [id, str(modes)])
+
+			if float(row.get("pen", 0.0)) < 0.0 or float(row.get("pen", 0.0)) >= 1.0:
+				fail("items.json: '%s' pen must be 0 or more and below 1" % id)
+
 	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).
 	if FileAccess.file_exists("res://data/npcs/outfits.json") and FileAccess.file_exists("res://data/items/worn.json"):
 		var outfits: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/outfits.json"))

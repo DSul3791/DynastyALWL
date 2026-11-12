@@ -296,6 +296,7 @@ var _skills_sent: Dictionary = {}   # peer -> the rows last sent
 var _skills_send_in: Dictionary = {}   # peer -> msec before which no skills message goes out
 var _last_practice: Dictionary = {}   # peer -> {skill: msec of its last counted success}
 var _warmth_cfg: Dictionary = {}    # data/items/warmth.json
+var _protection_cfg: Dictionary = {}   # data/items/protection.json: armour by damage mode (catalog Phase 4b)
 var send_zone: Callable = Callable()        # (peer, biome id): tells the client which biome it stands in (protocol 76; ambience slots read it)
 var zone_at: Callable = Callable()          # (position Vector3) -> biome id from the tile biome map, -1 when unknown; set by the server scene
 var zone_clock: Callable = Callable()       # () -> msec; tests set it, the game uses Time.get_ticks_msec
@@ -454,6 +455,8 @@ func setup(item_table, store_dir: String) -> void:
 	_energy_cfg = energy_parsed if typeof(energy_parsed) == TYPE_DICTIONARY else {}
 	var warmth_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
 	_warmth_cfg = warmth_parsed if typeof(warmth_parsed) == TYPE_DICTIONARY else {}
+	var protection_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/protection.json"))
+	_protection_cfg = protection_parsed if typeof(protection_parsed) == TYPE_DICTIONARY else {}
 	var sick_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sickness.json"))
 	_sick_cfg = sick_parsed if typeof(sick_parsed) == TYPE_DICTIONARY else {}
 	var carcass_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/carcass.json"))
@@ -2082,7 +2085,8 @@ func hit_number(peer: int, at: Vector3, amount: float) -> void:
 		send_hit_number.call(peer, at, maxi(1, int(round(amount))))
 
 
-# One jab with a weapon (items.json "damage"): hits the animal in front within JAB_REACH_M through the animal hook.
+# One jab with a weapon (items.json "damage"): hits the animal in front within its reach_m (else JAB_REACH_M) through the animal hook, at most
+# once per its recover_ms (else STRIKE_COOLDOWN_MS).
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
 		return
@@ -2094,16 +2098,17 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_strike.get(peer, -100000)) < STRIKE_COOLDOWN_MS:
+	if now - int(_last_strike.get(peer, -100000)) < int(entry.get("recover_ms", STRIKE_COOLDOWN_MS)):   # a greatsword recovers slower than a shortsword
 		return
 
 	_last_strike[peer] = now
 	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
-	var damage: float = float(entry["damage"]) + SmithingRules.damage_bonus(inv.inst[slot])   # a +2 weapon strikes two harder (master s2.9 item 4)
-	var hit: bool = bool(hit_animal.call(peer, eye, direction, JAB_REACH_M, damage))
+	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
+	var reach: float = float(entry.get("reach_m", JAB_REACH_M))   # a pike reaches further than a sword
+	var hit: bool = bool(hit_animal.call(peer, eye, direction, reach, damage))
 
 	if hit:
-		hit_number(peer, eye + direction.normalized() * minf(JAB_REACH_M, 1.5), damage)
+		hit_number(peer, eye + direction.normalized() * minf(reach, 1.5), damage)
 		_wear_slot(peer, inv, slot, "strike")
 
 
@@ -2213,7 +2218,12 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_shot.get(peer, -100000)) < int(_bow.cfg.get("pace_ms", 700)):
+	if now - int(_last_shot.get(peer, -100000)) < BowAim.pace_ms(_bow.cfg, bow_id):
+		var wait_line: String = BowAim.say(_bow.cfg, bow_id, "say_not_spanned")   # a crossbow says it is not spanned yet; a bow stays silent
+
+		if wait_line != "":
+			_say(peer, wait_line)
+
 		return
 
 	var ammo: int = _bow.ammo_slot(inv, table, loaded, bow_id)
@@ -2226,7 +2236,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var arrow: Dictionary = table.entry(table.id_of(inv.numbers[ammo]))
 	var number: int = inv.numbers[ammo]
 	var shot_inst: Dictionary = inv.take_from_slot(ammo, 1)["inst"]
-	var power: float = _bow.power(draw_ms)
+	var power: float = 1.0 if BowAim.full_power(_bow.cfg, bow_id) else _bow.power(draw_ms)
 
 	if power <= float(_bow.cfg.get("weak_power", 0.25)):
 		_say(peer, str(_bow.cfg.get("say_weak", "")))
@@ -9520,6 +9530,9 @@ func effort_of(peer: int) -> float:
 
 		level += float(_layers_cfg().get("heat_effort", 0.5)) * float(_overheat.get(peer, 0.0))   # too warmly dressed for the heat is work too
 
+	# Armour past effort_free_kg is work on the move (protection.json): plate tires; clothing and light leather never make a walk non-restful.
+	level += float(_moving.get(peer, 0.0)) * float(_protection_cfg.get("effort_per_kg", 0.0)) * maxf(_armour_kg(peer) - float(_protection_cfg.get("effort_free_kg", 0.0)), 0.0)
+
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
 		level += float(_moving.get(peer, 0.0)) * float(_carry_cfg.get("load_effort", 0.45)) * pow(_load_ratio(peer), float(_carry_cfg.get("load_effort_power", 1.5)))
@@ -10219,15 +10232,20 @@ func take_all_meat(peer: int) -> int:
 	return total
 
 
-# Wolf bites (data/animals/animals.json "wolves"). Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling
-# injury; the pack then backs off). Lethal (a player already maimed): health can reach zero and the character dies.
-# Returns "hurt", "maimed" or "dead".
-func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0) -> String:
+# An attack on a player: wolf bites (data/animals/animals.json "wolves"), big game and goblin charges. Never a fall, cold, hunger or sickness,
+# which take health directly. Worn armour stops its share first (protection_of in the attack's damage mode: `mode`, else protection.json
+# attack_modes by the cause, else its default_mode; `pen` is a weapon's armour penetration), and every piece that protects wears by the hit.
+# Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling injury; the pack then backs off). Lethal (a player already
+# maimed): health can reach zero and the character dies. Returns "hurt", "maimed" or "dead".
+func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0, mode: String = "", pen: float = 0.0) -> String:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty():
 		return "hurt"
 
+	var stopped: float = protection_of(peer, mode if mode != "" else attack_mode(cause), pen)
+	_wear_armour(peer, amount)
+	amount *= 1.0 - stopped
 	var before: float = float(v["health"])
 	v["health"] = before - amount
 
@@ -10249,6 +10267,99 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 
 	_sync_vitals(peer, false)
 	return "hurt"
+
+
+# The damage mode of an attack by its cause (an animal species or "wolves"; protection.json attack_modes, else default_mode).
+func attack_mode(cause: String) -> String:
+	return str(_protection_cfg.get("attack_modes", {}).get(cause, _protection_cfg.get("default_mode", "blunt")))
+
+
+# One blow of a weapon row (items.json damage, damage_mode, pen): its damage with the craftsmanship bonus (master s2.9 item 4), its damage mode
+# and its armour penetration. A blow on a player goes through hurt_player with this mode and pen.
+static func weapon_blow(entry: Dictionary, item_inst: Dictionary) -> Dictionary:
+	return {"damage": float(entry.get("damage", 0.0)) + SmithingRules.damage_bonus(item_inst), "mode": str(entry.get("damage_mode", "blunt")), "pen": float(entry.get("pen", 0.0))}
+
+
+# The share of a hit in `mode` the worn pieces stop (master s3.7 rules 1-3; data/items/protection.json): per slot, each sound piece's
+# protect[mode] x cover x (1 - pen), layered largest first with diminishing returns (_layered at layer_keep) and capped at slot_cap; the slots
+# weighted by where blows land (slots); the whole capped at cap, so no outfit is immune. A broken piece stops nothing.
+func protection_of(peer: int, mode: String, pen: float = 0.0) -> float:
+	var by_slot: Dictionary = {}
+
+	for piece in worn_slots_of(peer):
+		if int(piece[0]) <= 0:
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(int(piece[0])))
+		var stop: float = float(entry.get("protect", {}).get(mode, 0.0)) * float(entry.get("cover", 1.0)) * clampf(1.0 - pen, 0.0, 1.0)
+		var most: int = SmithingRules.max_of(entry, piece[3])
+
+		if stop <= 0.0 or (most > 0 and int(piece[2]) >= most):
+			continue
+
+		var slot: String = str(entry.get("slot", ""))
+
+		if not by_slot.has(slot):
+			by_slot[slot] = []
+
+		by_slot[slot].append(stop)
+
+	var total: float = 0.0
+
+	for slot in by_slot:
+		total += float(_protection_cfg.get("slots", {}).get(slot, 0.0)) * minf(_layered(by_slot[slot], float(_protection_cfg.get("layer_keep", 0.5))), float(_protection_cfg.get("slot_cap", 0.85)))
+
+	return clampf(total, 0.0, float(_protection_cfg.get("cap", 0.75)))
+
+
+# A hit wears every worn piece that protects and has a durability by its damage x wear_per_damage x the piece's cover (at least 1). A piece that
+# breaks stays worn and protects nothing until it is taken off and mended at its repair_station (master s3.7 rule 4); a disposable one is gone.
+func _wear_armour(peer: int, amount: float) -> void:
+	var worn: Array = worn_slots_of(peer)
+	var changed: bool = false
+	var gone: bool = false
+
+	for i in worn.size():
+		var number: int = int(worn[i][0])
+		var entry: Dictionary = table.entry(table.id_of(number)) if number > 0 else {}
+		var most: int = SmithingRules.max_of(entry, worn[i][3]) if number > 0 else 0
+
+		if most <= 0 or (entry.get("protect", {}) as Dictionary).is_empty() or int(worn[i][2]) >= most:
+			continue
+
+		worn[i][2] = mini(int(worn[i][2]) + maxi(1, int(round(amount * float(_protection_cfg.get("wear_per_damage", 1.0)) * float(entry.get("cover", 1.0))))), most)
+		changed = true
+
+		if int(worn[i][2]) >= most:
+			if SmithingRules.disposable(entry):
+				_say(peer, "Your %s broke and is gone." % table.sentence_name(number))
+				worn[i] = [0, 0, 0, {}]
+				gone = true
+			else:
+				_say(peer, "Your %s broke. %s" % [table.sentence_name(number), _repair_hint(entry)])
+
+	if changed:
+		_characters[_peer_key[peer]]["worn"] = worn
+		_dirty = true
+
+	if gone:
+		_sync_worn(peer, true)
+
+
+# Kilograms of armour worn (weights.json; pieces with protect and a durability): its weight is work on the move (effort_of).
+func _armour_kg(peer: int) -> float:
+	var total: float = 0.0
+
+	if _carry_cfg.is_empty():
+		return total
+
+	for number in worn_of(peer):
+		var entry: Dictionary = table.entry(table.id_of(number)) if number > 0 else {}
+
+		if entry.has("protect") and int(entry.get("durability", 0)) > 0:
+			total += CarryRules.weight_of(table.id_of(number), _carry_cfg)
+
+	return total
 
 
 # For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
@@ -10994,11 +11105,14 @@ func _fabric(entry: Dictionary) -> Dictionary:
 
 
 # One slot's layers with diminishing returns (master s3.7 rule 1, s3.8 design 2: never full stacking): largest first, each further one
-# counts layer_keep times the one before. The protection of Phase 4b is meant to combine through here too.
-func _layered(values: Array) -> float:
+# counts `keep` times the one before (warmth.json layers layer_keep unless given; armour passes protection.json layer_keep).
+func _layered(values: Array, keep: float = -1.0) -> float:
 	values.sort()
 	values.reverse()
-	var keep: float = float(_layers_cfg().get("layer_keep", 0.6))
+
+	if keep < 0.0:
+		keep = float(_layers_cfg().get("layer_keep", 0.6))
+
 	var share: float = 1.0
 	var total: float = 0.0
 

@@ -5,7 +5,10 @@
 		"bone_arrow",
 		"wooden_arrow",
 		"fibre_arrow",
-		"fire_arrow"
+		"fire_arrow",
+		"bronze_arrow",
+		"iron_arrow",
+		"steel_arrow"
 	],
 	"draw_min_ms": 300,
 	"draw_max_ms": 1200,
@@ -13,7 +16,7 @@
 	"min_power": 0.5,
 	"speed_max": 45.0,
 	"range_m": 80.0,
-	"bows_note": "Each bow against the plain wooden bow (Jamie #933): speed_mult on the arrow's speed at full draw (speed_max), damage_mult on its damage, range_mult on its flight cap (range_m). A bow with no row shoots like the wooden bow. The longbow: a taller, heavier stave stores more energy, so its arrow leaves faster (about 54 m/s against 45, as a heavy self bow against a short one), hits harder (energy goes as speed squared, about 1.44; 1.4 here) and flies further (range_m 120). Estimates. The sling (item_system.md: 1 Hide, 1 Twine; ammo Sling stone) is drawn and loosed like a bow: its stone leaves at about 32 m/s (a hand sling), reaches 60 m and hits a little softer than an arrow; it takes only sling stones (its own ammo list), never sticks in a trunk (it drops at the foot), and says its own lines. A sling stone's tip is stone_shot (break_chance 0.05).",
+	"bows_note": "Each bow against the plain wooden bow (Jamie #933): speed_mult on the arrow's speed at full draw (speed_max), damage_mult on its damage, range_mult on its flight cap (range_m). A bow with no row shoots like the wooden bow. The longbow: a taller, heavier stave stores more energy, so its arrow leaves faster (about 54 m/s against 45, as a heavy self bow against a short one), hits harder (energy goes as speed squared, about 1.44; 1.4 here) and flies further (range_m 120). Estimates. The sling (item_system.md: 1 Hide, 1 Twine; ammo Sling stone) is drawn and loosed like a bow: its stone leaves at about 32 m/s (a hand sling), reaches 60 m and hits a little softer than an arrow; it takes only sling stones (its own ammo list), never sticks in a trunk (it drops at the foot), and says its own lines. A sling stone's tip is stone_shot (break_chance 0.05). Crossbows (M001-T14, master s3.6; estimates, s5 tuning): drawn and loosed like a bow, but they take only bolts (their own ammo list); pace_ms on a bow row is its own reload time between shots (the Light crossbow spans by hand in 2.5 s, the Heavy in 5 s), else the bows' pace_ms; loosed inside it, a crossbow says it is not spanned yet (say_not_spanned). A crossbow is spanned before it is loosed, so it shoots at full power whatever the draw time (full_power). Metal arrowheads and bolts break less often than wood (break_chance by tip).",
 	"bows": {
 		"wooden_bow": {
 			"speed_mult": 1.0,
@@ -25,6 +28,8 @@
 			"damage_mult": 1.4,
 			"range_mult": 1.5
 		},
+		"light_crossbow": {"full_power": true, "say_not_spanned": "Your crossbow is not spanned yet.", "speed_mult": 1.2, "damage_mult": 1.3, "range_mult": 1.2, "pace_ms": 2500, "ammo": ["wooden_bolt", "iron_bolt"], "say_no_ammo": "You have no bolts.", "say_load": "Your crossbow is loaded with %s.", "say_not_ammo": "That is not a bolt this crossbow can shoot."},
+		"heavy_crossbow": {"full_power": true, "say_not_spanned": "Your crossbow is not spanned yet.", "speed_mult": 1.5, "damage_mult": 1.8, "range_mult": 1.5, "pace_ms": 5000, "ammo": ["wooden_bolt", "iron_bolt"], "say_no_ammo": "You have no bolts.", "say_load": "Your crossbow is loaded with %s.", "say_not_ammo": "That is not a bolt this crossbow can shoot."},
 		"sling": {
 			"speed_mult": 0.7,
 			"damage_mult": 0.8,
@@ -57,7 +62,10 @@
 		"stone": 0.35,
 		"flint": 0.25,
 		"bone": 0.3,
-		"stone_shot": 0.05
+		"stone_shot": 0.05,
+		"bronze": 0.2,
+		"iron": 0.15,
+		"steel": 0.12
 	},
 	"hit_break_mult": 1.5,
 	"water_loss": 0.5,
