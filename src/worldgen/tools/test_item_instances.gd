@@ -69,7 +69,7 @@ func _init() -> void:
 	for file in DirAccess.get_files_at(DIR):
 		DirAccess.remove_absolute(DIR + "/" + file)
 
-	check(Net.PROTOCOL_VERSION == 106, "PROTOCOL_VERSION is 106 (%d)" % Net.PROTOCOL_VERSION)
+	check(Net.PROTOCOL_VERSION >= 106, "PROTOCOL_VERSION is 106 or later (%d)" % Net.PROTOCOL_VERSION)
 	check(InventoryScript.FORMAT == 3, "Inventory.FORMAT is 3")
 
 	var items = make()

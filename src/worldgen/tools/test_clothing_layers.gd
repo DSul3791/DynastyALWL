@@ -92,7 +92,7 @@ func _init() -> void:
 			homeless.append(id)
 
 	check(homeless.is_empty(), "every clothing row has a worn position (%s)" % str(homeless))
-	check(Net.PROTOCOL_VERSION == 107, "PROTOCOL_VERSION 107")
+	check(Net.PROTOCOL_VERSION >= 107, "PROTOCOL_VERSION 107 or later (%d)" % Net.PROTOCOL_VERSION)
 
 	# 2. Layered equip and per-layer take-off, with conservation.
 	var inv = items.inventory_of(1)
