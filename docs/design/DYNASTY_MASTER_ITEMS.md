@@ -1,17 +1,18 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 8 — PREVIOUS RECONCILIATION SCOPE ONLY; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D5], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 9 — TOOLS, WOOD, STATIONS, FURNITURE AND WEAPONS RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D6], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 8, previously reviewed scope ONLY; not final master catalog totals).** Existing rows: KEEP 506, UPDATE 54, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 24 (18 tools and stations, 6 furniture grades in s3.5). No number or id is reused.
+**Totals (Draft 9, reviewed categories only; not final).** Existing rows: KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 53 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6) and 2 new FUTURE rows (Steel bolt, Iron - Lance). No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
 | Tag | Source | Weight |
 |---|---|---|
+| **[D6]** | Dave, 12 Nov 2026 (PR #1035 comment 01:49Z): Weapons Proposal 2 approved in full, with his Poison Arrow addition; category approval only | Explicit Dave category decision |
 | **[D5]** | Dave's later furniture clarification: Bronze and Iron nails are already sufficient; do not invent a separate luxury-nail ladder or insist on Iron nails for every Fine/Ornate recipe. Rustic furniture may be just Hardwood Boards plus nails; fancy furniture uses **more Hardwood Boards and more nails**, and **cloth/leather only where suitable** (such as upholstered seats, cushions, padded furnishings) | **Latest explicit Dave furniture rule; supersedes overcomplicated fastener requirements** |
 | **[C7]** | ChatGPT's delegated confirmation of Draft 7: Tempered outputs are steel, per-item-instance, with no duplicate item IDs; furniture family scope in s3.5 accepted (four-grade chests/chairs/tables, two-grade benches, others single where appropriate) | **Confirmed catalog design, not implementation approval** |
 | **[D4]** | Dave, 11 Nov Atlantic / 12 Nov UTC: Quenching Trough is a Smithy upgrade permitting better products (not an independent workstation); no Hardwood Board/Plank substitution; wooden furniture may use Crude, Rustic, Nice, Fancy grades, basic pieces using fewer Hardwood Boards and fancy pieces requiring more Hardwood Boards and better nails | **Explicit Dave rule; supersedes ChatGPT's earlier guesses** |
@@ -246,7 +247,57 @@ Existing rows are reused for grades wherever one fits, so only 6 rows are new.
 - Furniture needs no station; every row stays a hammer blueprint.
 - Every material named exists and is sourced today: Hardwood Board (ADD), Wooden pin 233 (recipe 150), Twine 5, `nails` 228/894, `hinges` 232/895, Leather 283 (Tanning rack), Wool cloth 548 (Loom), Iron band 859 (Smithy), Feathers, Fibre cloth 517.
 
-Food, medicine, coins and most gear and placeables are not touched by any decision and stay KEEP (Appendix A).
+### 3.6 Weapons and ammunition [D6] (category approved by Dave, 12 Nov 2026)
+
+Dave approved ChatGPT's Weapons Proposal 2 in full, plus his own Poison Arrow request (PR #1035 comment of 12 Nov 01:49Z). This is approval of the category only, not of the whole catalog. All metal weapon rows stay FUTURE until their metal is live in game. Balance numbers (damage, reach, speed, stamina, armour penetration, reload) are not set here (s5).
+
+**Roles every weapon row carries:** one or two hands, and whether a torch or shield can be held with it; reach; recovery and stamina; armour penetration; for ranged weapons, reload time and the space they need. Durability, repair, sharpening, Tempered, craftsmanship and enchantments follow s2.2, 2.7 and 2.9 unchanged. Bronze weapons are made at the Stone - Forge or the Smithy, iron and steel weapons at the Smithy, and wooden weapons at hand or at the workbench like today's bows.
+
+**Existing weapon rows (21 KEEP or UPDATE; ids unchanged):**
+
+| # | id | Name | Status | Change |
+|---|---|---|---|---|
+| 10, 7 | wooden_spear, spear | Wooden - Spear, Stone - Spear | KEEP / UPDATE | Stone - Spear: disposable (s2.2); recipe 3 should **consume** its Stone head, not keep it (defect). |
+| 300, 761, 313 | wooden_club, bone_club, stone_mace | Wooden - Club, Bone - Club, Stone - Mace | KEEP / KEEP / UPDATE | Stone - Mace disposable (s2.2). |
+| 295 | javelin | Javelin | UPDATE | Disposable, recoverable when unbroken (s2.2). Fix the defect of `stack: 5` alongside `unstackable: true`; one javelin per slot. |
+| 816 | fishing_spear | Fishing spear | KEEP | |
+| 813 | sling | Sling | KEEP | Throws ordinary Stones; no sling ammunition item. |
+| 269 | wooden_bow | Wooden - Bow → **Shortbow** | UPDATE | Rename only. |
+| 763 | wooden_longbow | Wooden - Longbow → **Longbow** | UPDATE | Rename only. |
+| 315, 318, 321 | bronze/iron/steel_sword | Swords | FUTURE | The versatile one-handed sword. Steel - Sword's description ("A tempered steel blade") is a defect: Tempered is optional (2.7 item 5). |
+| 316, 319, 322 | bronze/iron/steel_mace | Maces | FUTURE | |
+| 312, 314 | wicker_shield, plank_shield | Wicker - Shield, Wooden - Shield | KEEP | |
+| 317, 320, 323 | bronze/iron/steel_shield | Metal shields | FUTURE | Bronze - Shield (recipe 206) needs Planks, which do not exist before the first Iron Hand Saw: defect. Rework it as a bronze-reinforced shield on a pre-saw base (Wicker or hide). |
+
+**Dual-use tools (cross-listed, not duplicated):** Stone, Bronze, Iron and Steel Axes and Knives are also the hand-axe and dagger weapons. Iron and Steel Axe and Knife are already among the 18 tool ADD rows in s3.1, so they are not counted again. No separate Handaxe or Dagger rows.
+
+**New weapon rows (24 ADD):**
+
+| Group | New rows |
+|---|---|
+| Swords | Iron - Shortsword, Steel - Shortsword, Iron - Greatsword, Steel - Greatsword, Steel - Rapier, Steel - Scimitar |
+| Axes and heavy | Iron - Battleaxe, Steel - Battleaxe, Iron - Greataxe, Steel - Greataxe, Iron - Warhammer, Steel - Warhammer, Steel - Maul |
+| Spears, staves and polearms | Quarterstaff, Bronze - Spear, Iron - Spear, Steel - Spear, Iron - Pike, Iron - Halberd, Steel - Halberd, Iron - Trident |
+| Ranged and defence | Light crossbow, Heavy crossbow, Iron - Buckler |
+
+**Ammunition:**
+
+| Rows | Status | Note |
+|---|---|---|
+| Wooden - Arrow 270, Stone - Arrow 271, Bone - Arrow 352, Fire arrow 817 | KEEP | |
+| Bronze - Arrow, Iron - Arrow, Steel - Arrow | ADD ×3 | Arrowheads at the bronze or iron smithies. |
+| Wooden bolt, Iron bolt | ADD ×2 | For the crossbows. |
+| Steel bolt | FUTURE (new row) | |
+
+**Other future rows:** Iron - Lance, with horses and mounted combat (FUTURE, new row).
+
+**Poison arrows [D6].** A poison preparation is applied to an existing Wooden, Bone, Bronze, Iron or Steel Arrow. The arrow keeps its physical properties and adds poison over time, set by the poison's strength and the target's resistance. The coating is used up on impact; a recovered arrow comes back unpoisoned. **No poisoned-arrow item rows.** The coating is not an enchantment. It is a stack-level state: poisoned arrows of one base and one poison stack only with each other. The poison itself is designed in the later medicine and alchemy review.
+
+**Left out on purpose:** Greatclub, Light hammer, Sickle as a weapon, Flail, Morningstar, Glaive, War pick, Dart, Hand crossbow, Blowgun, Whip, Net as a weapon, firearms, Recurve bow, Iron-shod staff, material-tiered Javelins, Throwing knives. Sickles stay harvesting tools and nets fishing gear.
+
+**Counts for this category:** 21 existing weapons (2 renamed); 4 existing arrows kept; 29 ADD rows (24 weapons, 3 arrows, 2 bolts); 2 new FUTURE rows (Steel bolt, Iron - Lance); 0 retired. With the 8 cross-listed tools and the poison-arrow rule, this is the 65-entry roster Dave approved.
+
+Categories not yet reviewed (armour, clothing, backpacks and carrying gear, saddles and saddlebags, carts, wagons and carriages, cooking, food preservation) keep today's rows until their category review; food, medicine and coins are untouched so far (Appendix A).
 
 ## 4. Implementation details (follow from the decisions; no new design)
 
@@ -327,7 +378,8 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 | 34 | Name rule for grades | decision 71 (a tier word only where several versions exist); four-word check | "Grade - Object" fits | PASS | The grade word replaces the material word, as in "Stone - Axe". No clash with live names; "Fine board" 227 is retired. |
 | 35 | Draft 6 claims | s6 rows 20, 21 and the Draft 6 readiness line | Withdrawn where [D4] changes them | DONE | Substitution analysis and its code list withdrawn; the durability-only Quenching Trough effect withdrawn. |
 | 36 | Tempered scope | steel rows 34, 47, 224, 294, 321, 322, 323, 330, 331, 561, 800 and the new steel tools; `edge` flags | Only eligible steel; sharpness benefit only on edged rows; no stacking | PASS | Striker excluded; sharpness benefit limited to `edge: true` rows; durability adds, never multiplies (s4 item 15). |
-| 37 | Counts and Appendix A | status per row vs s3 tables; Appendix A generator overrides | Totals agree | PASS | KEEP 506, UPDATE 54, RETIRE 23, FUTURE 53, already retired 253 (889); ADD 24. Every s3 UPDATE, RETIRE and FUTURE row carries the same status in Appendix A. |
+| 37 | Counts and Appendix A | status per row vs s3 tables; Appendix A generator overrides | Totals agree | PASS | KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889); ADD 53 and 2 new FUTURE rows (Draft 9). Every s3 UPDATE, RETIRE and FUTURE row carries the same status in Appendix A. |
+| 38 | Weapons category [D6] | 21 weapon rows 7–816, arrows 270, 271, 352, 817; recipes 3, 170–172, 181, 201, 206, 226, 228, 336, 357, 381, 385 | Approved roster matches the data; no duplicates with tool ADDs | PASS / 4 defects recorded | All 21 ids exist (the 9 metal weapons are FUTURE). Iron and Steel Axe and Knife are counted once (s3.1). Defects recorded for implementation: recipe 3 keeps its Stone, Javelin `stack` 5 with `unstackable`, Bronze - Shield needs pre-saw Planks, Steel - Sword description. Recipes 228 and 336 give Wooden - Arrow, not the retired Fibre arrow 354. |
 
 ## 7. JSON change list (none made; all wait for Dave's approval of this catalog)
 
@@ -342,6 +394,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 9. **Enhancements:** per-instance slot data and the eligibility in 2.9 (code and save format, no item rows).
 10. **Furniture (s3.5):** 14 blueprint cost changes and 8 renames; 6 new item, blueprint and structure rows; `comfort.json` grade kinds and the best-one rule; `slots` per chest grade; looks.
 11. **Tempered [C7]:** confirmed per-instance steel quality, not duplicate item rows; Quenching Trough must be a Smithy add-on (s4 item 15).
+12. **Weapons [D6] (s3.6):** renames of 269 and 763; 29 new item rows with recipes (bronze at `forge`, iron and steel at the Smithy, wooden at hand or workbench); FUTURE rows for Steel bolt and Iron - Lance; fix recipe 3 (consume the Stone), Javelin 295 `stack` 1, Bronze - Shield recipe 206 without Planks, Steel - Sword 321 description; a stack-level poison state on arrows (no new rows).
 
 ## 8. Remaining issues and readiness
 
@@ -354,11 +407,11 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: weapons and ammunition; armour; clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. The user is currently reviewing WEAPONS first. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: armour; clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is now approved by Dave and reconciled in s3.6 [D6]; ARMOUR is next (ChatGPT drafting for Dave). Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
-Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 53, KEEP 506, RETIRE 23, RETIRED 253, UPDATE 54.
+Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 53, KEEP 504, RETIRE 23, RETIRED 253, UPDATE 56.
 `RETIRED` = already retired before this document (kept only for its number). `Made at` is the station of the first live recipe that gives the item (`hand` = no station; L = station level); blank = not crafted (gathered, dropped, built from a blueprint, or a group placeholder). Purpose is the live tooltip description. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
 
 ### A.tool (54 rows)
@@ -417,25 +470,25 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 
 | # | id | Name | Tier | Made at | Status | Purpose / note |
 |---|---|---|---|---|---|---|
-| 7 | `spear` | Stone - Spear | t2 | hand | UPDATE | **DECIDED: disposable (s2.2).** A stone point on a long shaft. Jab with it or throw it; it kills a rabbit in one blow. |
+| 7 | `spear` | Stone - Spear | t2 | hand | UPDATE | **DECIDED: disposable; [D6]: recipe 3 consumes its Stone (s3.6).** A stone point on a long shaft. Jab with it or throw it; it kills a rabbit in one blow. |
 | 10 | `wooden_spear` | Wooden - Spear | t1 | hand | KEEP | A sharpened stick. Jab with it or throw it. |
-| 269 | `wooden_bow` | Wooden - Bow | t1 | workbench | KEEP | A bow of bent wood and twine. Needs arrows. |
-| 295 | `javelin` | Javelin | t2 | workbench | UPDATE | **DECIDED: disposable; recoverable if unbroken (s2.2).** A light, balanced throwing spear. Flies farther and straighter than a plain spear. |
+| 269 | `wooden_bow` | Wooden - Bow | t1 | workbench | UPDATE | **APPROVED [D6]: rename Shortbow (s3.6).** A bow of bent wood and twine. Needs arrows. |
+| 295 | `javelin` | Javelin | t2 | workbench | UPDATE | **DECIDED: disposable, recoverable; [D6]: stack 1 (s3.6).** A light, balanced throwing spear. Flies farther and straighter than a plain spear. |
 | 300 | `wooden_club` | Wooden - Club | t1 | hand | KEEP | A stout length of hardwood, heavy at one end. Hits hard and needs no skill. |
 | 312 | `wicker_shield` | Wicker - Shield | t1 | hand | KEEP | Sticks woven tight with fibre. Light, and good for a few hits. |
 | 313 | `stone_mace` | Stone - Mace | t2 | hand | UPDATE | **DECIDED: disposable (s2.2).** A heavy stone lashed to a stick. Cracks armour and bone. |
 | 314 | `plank_shield` | Wooden - Shield | t2 | workbench L2 | KEEP | Boards bound with hide. Sturdier than wicker. |
 | 315 | `bronze_sword` | Bronze - Sword | t3 | forge | FUTURE | A bronze blade on a short grip. Quick and sharp. |
 | 316 | `bronze_mace` | Bronze - Mace | t3 | forge | FUTURE | A cast bronze head on a stout haft. |
-| 317 | `bronze_shield` | Bronze - Shield | t3 | forge | FUTURE | A plank shield with a bronze rim and boss. |
+| 317 | `bronze_shield` | Bronze - Shield | t3 | forge | FUTURE | **APPROVED [D6]: rework without pre-saw Planks (s3.6).** A plank shield with a bronze rim and boss. |
 | 318 | `iron_sword` | Iron - Sword | t4 | brick_forge L2 | FUTURE | A forged iron blade with a leather grip. |
 | 319 | `iron_mace` | Iron - Mace | t4 | brick_forge L2 | FUTURE | A flanged iron head that breaks armour. |
 | 320 | `iron_shield` | Iron - Shield | t4 | brick_forge L2 | FUTURE | Boards held by iron bands. Hard to break. |
-| 321 | `steel_sword` | Steel - Sword | t5 | brick_forge L3 | FUTURE | A tempered steel blade. Keeps its edge. |
+| 321 | `steel_sword` | Steel - Sword | t5 | brick_forge L3 | FUTURE | **APPROVED [D6]: description must not say tempered (s3.6).** A tempered steel blade. Keeps its edge. |
 | 322 | `steel_mace` | Steel - Mace | t5 | brick_forge L3 | FUTURE | A steel flanged head on a long haft. |
 | 323 | `steel_shield` | Steel - Shield | t5 | brick_forge L3 | FUTURE | A long steel-faced shield that covers shoulder to shin. |
 | 761 | `bone_club` | Bone - Club | t1 | hand | KEEP | A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer. |
-| 763 | `wooden_longbow` | Wooden - Longbow | t2 | workbench L2 | KEEP | A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows. |
+| 763 | `wooden_longbow` | Wooden - Longbow | t2 | workbench L2 | UPDATE | **APPROVED [D6]: rename Longbow (s3.6).** A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows. |
 | 813 | `sling` | Sling | t1 | hand | KEEP | A hide pouch on two cords. Whirl it and let go to throw a stone fast and far. |
 | 816 | `fishing_spear` | Fishing spear | t1 | hand | KEEP | A long stick split and sharpened into barbed prongs. Stab fish in the shallows. |
 
