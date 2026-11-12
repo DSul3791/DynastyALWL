@@ -8,7 +8,7 @@ Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (
 
 Layout: s1 sources and labels; s2 design decisions; s3 approved catalog categories and clearly marked pending preservation/platter proposals; s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 16, reviewed categories only; not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 165 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10, 13 vehicles and parts in s3.11, 7 cooking equipment and 16 prepared foods in s3.12, 16 storage pieces in s3.13) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Vehicles add 10 blueprints and 10 structure states but no kit items. Storage layouts (Woodshed, Materials yard, Storehouse) and the Ship Captain's Table are not rows. Food preservation and the serving platters are **NOT YET COUNTED** because their specific ADD rosters are pending owner approval; only their owner-approved workflows/concepts are recorded in s3.14–3.15. Cross-listed rows are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 16, reviewed categories only; not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 165 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10, 13 vehicles and parts in s3.11, 7 cooking equipment and 16 prepared foods in s3.12, 16 storage pieces in s3.13) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Vehicles add 10 blueprints and 10 structure states but no kit items. Storage layouts (Woodshed, Materials yard, Storehouse) and the Ship Captain's Table are not rows. Food preservation and the serving platters are **NOT YET COUNTED** because their specific ADD rosters are pending owner approval; only their owner-approved workflows/concepts and streamlined review rosters [P14-v2] (5 proposed ADD) and [P15-v2] (14 proposed ADD plus 2 FUTURE) are recorded in s3.14–3.15. Cross-listed rows are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
@@ -845,18 +845,21 @@ The griddle, spit, grate, pan and cauldron should be **equipment or compatible a
 
 **Existing 7 equipment/stations:** Drying Rack #775; Smoker #777; Preserving Jar #830; Root Cellar #832; Storage Jar #781; Barrel #649; Cheese Press #844 (**existing FUTURE**). Existing preserved foods kept under existing IDs: Jerky #406, Salted Fish #407, Smoked Fish #185, Dried Berries #408, Dried Apples #450, Dried Figs #456, Fruit Leather #184, Sauerkraut #409, Pickled Vegetables #834 (**existing FUTURE**), Plum Jam #453 and Preserved Damsons #455, plus dairy/other food already in database as applicable.
 
-**PROPOSED roster [P14] — DO NOT COUNT OR IMPLEMENT YET:**
+**Current simplified proposal [P14-v2] — NOT APPROVED; supersedes the previous 12-item proposal:**
 
-| Kind | Original proposal | Status after owner simplification |
+| Status | New proposal | Why it stays |
 |---|---|---|
-| Station | Curing Tub | **Recommended OMIT** as redundant with Preserving Jar and one-step process; exact roster not yet owner-approved |
-| Station | Butter Churn | Proposed ADD, dairy system gated |
-| Building | Granary | Proposed ADD, bulk dry grain / seeds, cross-list [D13] storage |
-| Prepared/new food | Prepared Meat Strips | Proposed ADD before appropriate drying/smoking |
-| Preserved foods | Salted Meat; Smoked Meat; Dried Mushrooms; Dried Herbs; Cured Olives; Salted Butter; Hard Cheese; Smoked Sausage | 8 proposed ADD candidates; dairy/animals gated as necessary |
-| Extra suggestion | Dried Fish | Suggested for possible ADD; separate from existing Salted Fish / Smoked Fish only if function is distinct |
+| PENDING ADD | **Sealable Preserve Jar** | One universal small portable reusable sealed jar, distinct from existing **placed** Preserving Jar #830 and Storage Jar #781; enables hundreds of actual sealed, maturing portions from Food Preparation Table; return empty jar after use |
+| PENDING ADD | **Smoked Meat** | A substantial smoked-meat product distinct from existing Jerky #406 |
+| PENDING ADD | **Dried Mushrooms** | Long-lived ingredients for soups/travel, existing Drying Rack |
+| PENDING ADD | **Dried Herbs** | Long-lived cooking ingredients, existing Drying Rack |
+| PENDING ADD | **Cured Olives** | Existing bitter Olives #445 become edible after sealed brine maturation |
 
-The original 3 new equipment + 9 new foods **=12** proposal was **never accepted as the final item roster**, and changes to that roster were subsequently discussed. Reconcile the 9 foods plus Dried Fish, omit redundant Curing Tub unless Dave reapproves, and present a revised full list **before counting any new preservation rows**. Existing Cheese Press, Preserving Jar, Smoker, Drying Rack and storage are not new additions. Brewing/alcohol and modern canning are out of this category.
+**Recommended current ADD total: 5 (1 jar + 4 foods), 0 new preservation workstations. All five remain pending Dave's category approval.** Existing Sauerkraut #409, Pickled Vegetables #834 (future), dried foods, jerky and fish variants keep original IDs; no duplicate `Maturing X` food IDs if a compact per-batch state is feasible. Reuse current spoilage clock where viable without creating more UI clicks; if the backend demands conversion rows, that implementation tradeoff is **not** an approved exception to this 5-row list.
+
+**Merge/omit to honor Dave's simplification:** Curing Tub (use Food Prep Table/placed Preserving Jar), Butter Churn (dairy already FUTURE, table/dairy design later), Granary **as separate item** (make as building layout from approved bins/jars/Storage Sign [D13]), Prepared Meat Strips (unnecessary extra generic step), Salted Meat (existing Jerky), Smoked Sausage (existing Sausage and new Smoked Meat), Dried Fish (existing Smoked/Salted Fish), Salted Butter and Hard Cheese (existing Butter #417 / Cheese #418 FUTURE). Preserve future Cheese Press #844, not an ADD. Basic dried fruit requires no prep-table intermediary if already ready for the rack.
+
+**Jars at scale:** table crafts e.g. 200 sealed maturing portions only with 200 real refillable jars and real recipe ingredients; each batch inherits maturity/expiry through transport, stacking, save/load and storage zones; on ready time it becomes edible automatically, without per-jar busywork. Heat-processed jam still must be heated appropriately. No separate 200 UI timers, no indefinite jar duplication. Proposed sealed-jar container behavior is documented in the companion.
 
 **Detailed owner process, options, test plan:** [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md) §§2,4–5. The owner-approved WORKFLOW is decided; precise station item roster, recipes and capacities remain pending owner approval.
 
@@ -864,20 +867,27 @@ The original 3 new equipment + 9 new foods **=12** proposal was **never accepted
 
 **Owner-directed mechanic [D15]:** One **reusable Serving Platter** is the physical object used to place prepared board/platter meals from player inventory onto a compatible dining table. The player crafts **prepared food boards at the Food Preparation Table**, using actual already-prepared/cooked foods, then places the board using the Serving Platter; the correct food arrangement appears automatically. Players and future NPC diners **eat portions of the REAL food**, visible portions diminish, leftovers and container remain recoverable, and spoilage runs normally. Boards are functional usable food rather than unclickable decorative mesh. A shared platter carrier design is preferred to 20 different platter furniture types.
 
-**20 platter recipes suggested in ChatGPT proposal [P15], NOT YET APPROVED as a final roster:**
+**Current simplified proposal [P15-v2] — 15 named prepared platter recipes, NOT YET OWNER-APPROVED:**
 
-| # | Proposed prepared food-board item | # | Proposed prepared food-board item |
-|---|---|---|---|
-| 1 | Seafood Platter | 11 | Ploughman's Board |
-| 2 | Fisherman's Platter | 12 | Bread & Cheese Board |
-| 3 | Smoked Fish Board | 13 | Harvest Platter |
-| 4 | Coastal Feast | 14 | Tavern Supper Board |
-| 5 | Roast Beef Platter | 15 | Breakfast Platter |
-| 6 | Sunday Roast Platter | 16 | Traveller's Board |
-| 7 | Hunter's Feast | 17 | Orchard Fruit Platter |
-| 8 | Mixed Grill Platter | 18 | Sweet Treats Board |
-| 9 | Sausage Supper | 19 | Dessert Platter |
-| 10 | Charcuterie Board | 20 | Grand Banquet Platter |
+| Proposed type | Proposed platter/board | Distinction |
+|---|---|---|
+| PENDING ADD | Seafood Platter | Freshly cooked shellfish, crab, fish |
+| PENDING ADD | Fisherman's Board | Salted/smoked fish and bread (absorbs Smoked Fish Board) |
+| PENDING ADD | Roast Dinner Platter | Rosemary Joint, potatoes and vegetables (renamed Sunday Roast) |
+| PENDING FUTURE | **Roast Beef Platter** | Requires genuine beef item/species source; cannot relabel existing generic roast |
+| PENDING ADD | Hunter's Feast | Roast Beast and mushrooms / foraged sides |
+| PENDING ADD | Mixed Grill Platter | Sausages, skewers, grilled meat (absorbs Sausage Supper) |
+| PENDING ADD | **Charcuterie Board** | Preserved meats, sausage, fruit; optional future cheese |
+| PENDING FUTURE | **Ploughman's Board** | Cheese #418 and Pickled Vegetables #834 are both future, with bread/apple |
+| PENDING ADD | Harvest Platter | Seasonal vegetables, roots, mushrooms |
+| PENDING ADD | Tavern Supper Board | Savoury pie, bread, vegetables |
+| PENDING ADD | Breakfast Platter | Eggs, oatcakes, sausage |
+| PENDING ADD | Traveller's Board | Trail bread, jerky, dried fruit, nuts |
+| PENDING ADD | Orchard Fruit Platter | Apples, pears, plums |
+| PENDING ADD | Dessert Board | Pie, honey loaf and other sweet foods (absorbs Sweet Treats) |
+| PENDING ADD | Grand Banquet Platter | Large roast, bread, sides — meaningful ingredient cost |
+
+**13 current-ingredient board ADD proposals + 2 future-ingredient board FUTURE proposals + 1 reusable physical Serving Platter ADD proposal = 16 proposed total definitions. NONE are counted as owner-approved yet.** Five proposed names are intentionally consolidated: Smoked Fish Board → Fisherman's, Coastal Feast → Seafood, Sausage Supper → Mixed Grill, Bread & Cheese → Ploughman's, Sweet Treats → Dessert. Single reusable carrier with food-specific visuals and edible portions; no 15 duplicate wooden platter objects. Each approved named dish would be a tangible Food Preparation Table output. The 15-recipes/16-definitions default is safer for today's ID-driven item data than adding a new polymorphic variable-name item framework just to save ID rows.
 
 **No silent item or ingredient invention.** Existing `roast_meat` #69, `roast_joint` #275 and `feast_roast` #191 are generic roast-meat foods, not species-labeled beef; `cheese` #418 and `pickled_vegetables` #834 remain marked FUTURE in baseline. Gating future livestock/cheese/pickles or relabeling meat to Beef is not approved by merely listing these platters. Use actual ingredients and suitable cooking maturity/freshness. Serving Platter may be one proposed ADD and named boards twenty proposed food ADD, but **neither 1 nor 20 belongs in the current approved ADD total** pending Dave's final roster approval, item counts and duplicate audit.
 
@@ -1007,7 +1017,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are owner-approved and reconciled in s3.11 [D11] (13 ADD items, NO Wheelbarrow). COOKING AND FOOD PREPARATION is owner-approved and reconciled in s3.12 [D12] (23 new ADD items). STORAGE AND WAREHOUSING is owner-approved and reconciled in s3.13 [D13] (16 ADD definitions incl. Warehouse Crate, Warehouse Desk, optional Storage Sign; direct locked/unlocked crate access; moving loaded crates reconnects through actual location to warehouse desks and, when ships exist, ship captain tables). FOOD PRESERVATION workflow is owner-approved in s3.14 [D14] but its final new-item/recipe list is pending review [P14]. Functional Serving Platter placement is owner-directed in s3.15 [D15], but the exact 20 prepared board recipes and 1 carrier item roster are proposed and NOT yet approved [P15]. Companion design docs [STORAGE_WAREHOUSING_DESIGN.md](STORAGE_WAREHOUSING_DESIGN.md) and [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md) contain detailed interactions, security and tests; this master remains the source of truth for approval and item IDs. Review these two pending rosters before final catalog sign-off. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are owner-approved and reconciled in s3.11 [D11] (13 ADD items, NO Wheelbarrow). COOKING AND FOOD PREPARATION is owner-approved and reconciled in s3.12 [D12] (23 new ADD items). STORAGE AND WAREHOUSING is owner-approved and reconciled in s3.13 [D13] (16 ADD definitions incl. Warehouse Crate, Warehouse Desk, optional Storage Sign; direct locked/unlocked crate access; moving loaded crates reconnects through actual location to warehouse desks and, when ships exist, ship captain tables). FOOD PRESERVATION workflow is owner-approved in s3.14 [D14] but its final new-item/recipe list is pending review [P14]. Functional Serving Platter placement is owner-directed in s3.15 [D15], but the refined list of 15 prepared board recipes and 1 carrier item remains proposed and NOT yet approved [P15-v2]. Companion design docs [STORAGE_WAREHOUSING_DESIGN.md](STORAGE_WAREHOUSING_DESIGN.md) and [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md) contain detailed interactions, security and tests; this master remains the source of truth for approval and item IDs. Review these two pending rosters before final catalog sign-off. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
