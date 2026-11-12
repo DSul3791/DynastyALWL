@@ -105,7 +105,7 @@ Colour is never the only signal. A missing ingredient also shows its count in re
 ## 9. Recipes and crafting feedback
 
 - **Craftable recipe row:** a warm gold bar on its left edge, with full-colour icons. **Not craftable:** icons at 70 % desaturation and 60 % opacity, a red missing count, and the "Makes 5 twine first" helper as a small wooden button on the row.
-- **Materials from a chest** (call 1): the ingredient shows a tiny chest mark, like Dragonwilds' "linked" marker. A chest with "keep out" ticked shows a small lock on its name plate.
+- **Materials from a chest** (call 1): the ingredient shows a tiny chest mark, like Dragonwilds' "linked" marker. A chest with "keep out" ticked shows a small lock on its name plate. ("Keep out" only excludes a chest from crafting; the four-digit code lock in s14 is a separate setting and needs a different icon.)
 - **Click to craft:**
   - the recipe icon presses in by 2 px;
   - a gold ring fills round it as the queue works;
@@ -163,7 +163,7 @@ Dino's shots on Dave's PC, each at the small and large text sizes:
 
 **Approved food UI [D12]:** Food Preparation Table is a recipe UI for making tangible uncooked/prepared food items, which are then finished at correct cooking stations. Kitchen knives/board/rolling pin are built into the visible table model, not required inventory tools. For simple foods use cooking stations directly.
 
-**Owner-approved boards [D15] and pending preservation [P14]:** The Food Preparation Table handles straightforward **preservation batches**, including real sealed jars that mature automatically. The **preservation NEW ITEM roster is NOT approved yet**. A functional generic reusable Serving Platter presents **the nine OWNER-APPROVED edible boards** on existing dining tables, where real servings disappear as diners eat. Previous lists of 15 or 20 are superseded. Do not invent gameplay JSON or models yet.
+**Owner-approved boards [D15] and pending preservation [P14-v2]:** The Food Preparation Table handles straightforward **preservation batches**, including real sealed jars that mature automatically. The **preservation NEW ITEM roster is NOT approved yet**. A functional generic reusable Serving Platter presents **the nine OWNER-APPROVED edible boards** on existing dining tables, where real servings disappear as diners eat. Previous lists of 15 or 20 are superseded. Do not invent gameplay JSON or models yet.
 
 **Future food-benefit UI [D16]:** Display **three compact active-food effect slots**, each with the primary food group, food identity, main bonus and separate expiry countdown. Active foods must belong to **different groups** (Main Meals, Breads & Grains, Fruit & Vegetables, Desserts, Beverages, names provisional); food from an occupied group replaces that effect, while eating a fourth distinct group should offer a simple replace-one choice. Explicitly show temporary Fitness/skill XP boosts, no XP bonus from ordinary grain/bread, and any dessert XP downside; overlapping XP modifiers don't compound. Normal hunger and calories are separate from effect slots. **Percentages/durations are not yet owner-approved**.
 
