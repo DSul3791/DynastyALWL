@@ -218,8 +218,8 @@
 			"sound": "",
 			"clears_grass": false
 		},
-		"large_forge": {"blocks_walk": true, "kit": "large_forge", "item": "large_forge", "state": 20, "footprint_x": 2.8, "footprint_z": 2.0, "cap_per_chunk": 1, "station": "blast_furnace", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"smelter": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800},
-		"master_forge": {"blocks_walk": true, "kit": "master_forge", "item": "master_forge", "state": 21, "footprint_x": 3.9, "footprint_z": 2.6, "cap_per_chunk": 1, "station": "master_smithy", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"brick_forge": 2, "forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800},
+		"large_forge": {"blocks_walk": true, "kit": "large_forge_kit", "item": "large_forge", "state": 20, "footprint_x": 2.8, "footprint_z": 2.0, "cap_per_chunk": 1, "station": "blast_furnace", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"smelter": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800},
+		"master_forge": {"blocks_walk": true, "kit": "master_forge_kit", "item": "master_forge", "state": 21, "footprint_x": 3.9, "footprint_z": 2.6, "cap_per_chunk": 1, "station": "master_smithy", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"brick_forge": 2, "forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800},
 		"wall_section": {
 			"blocks_walk": true,
 			"kit": "wall_section_kit",

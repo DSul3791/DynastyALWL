@@ -2486,7 +2486,7 @@
 			"kind": "material",
 			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
-				"Craft at a brick forge: 4 Iron ore, 1 Fuel",
+				"Craft at a smelter: 4 Iron ore, 5 Fuel",
 				"Craft at a clay bloomery: 5 Iron ore, 3 Fuel"
 			],
 			"used_for": [
@@ -2530,7 +2530,7 @@
 			"kind": "material",
 			"description": "A bar of steel. Placeholder until smelting exists.",
 			"how_to_get": [
-				"Craft at a brick forge: 2 Iron ingot, 1 Fuel"
+				"Craft at a blast furnace: 2 Iron ingot, 5 Fuel"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -4837,7 +4837,7 @@
 			"kind": "material",
 			"description": "Smelted copper. Soft, but good for early tools.",
 			"how_to_get": [
-				"Craft at a forge: 3 Copper ore, 1 Fuel"
+				"Craft at a smelter: 3 Copper ore, 5 Fuel"
 			],
 			"used_for": [
 				"Used in Bronze ingot",
@@ -4850,7 +4850,7 @@
 			"kind": "material",
 			"description": "Smelted tin. Mixed with copper it makes bronze.",
 			"how_to_get": [
-				"Craft at a forge: 3 Tin ore, 1 Fuel"
+				"Craft at a smelter: 3 Tin ore, 5 Fuel"
 			],
 			"used_for": [
 				"Used in Bronze ingot"

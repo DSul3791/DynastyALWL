@@ -100,7 +100,7 @@ func _init() -> void:
 	tiers.peer_connected_hello(1, "tier-key-000001")
 	tiers.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0), Vector3(600.0, 10.0, 0.0), Vector3(800.0, 10.0, 0.0)]
-	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge", "master_forge"]
+	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
 	# [workbench, forge, brick_forge]. The Smithy (Brick - Forge) is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
 	# level-1 forge for bronze (also). Mission 001 phase 2b: the Blast furnace is its own body (blast_furnace, no forge work) and the Master smithy
 	# a smithy too (brick_forge 2, forge 1) with its own master_smithy body. The smithies must burn to craft: the player carries charcoal to fire them.
