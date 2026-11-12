@@ -16,7 +16,8 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const Carts := preload("res://src/stream/server_carts.gd")
 const DIR := "user://test_handcart"
 const RAMP_X := 40.0      # east of this the ground climbs 0.8 m per metre (too steep for a cart)
-const WATER_Z := 120.0    # north of this the water is 1 m deep
+const WATER_Z := 120.0    # from here to z 160 the water is 1 m deep
+const CREEP_Z := 190.0    # north of this the ground steepens a little at a time: 0.01 x^2 (grade 0.02 x, slope_max 0.36 at x 18)
 
 var failures: int = 0
 var items
@@ -26,6 +27,7 @@ var moved: Dictionary = {}     # peer -> items_moved messages received
 var views: Dictionary = {}     # peer -> the last storage_view [id, {number: total}, containers]
 var said: Dictionary = {}      # peer -> the last notice
 var keys: Dictionary = {1: "cartowner01", 2: "cartguest02", 3: "cartthird03"}
+const TRUNK := Vector3(-30.0, 10.0, 60.0)   # one tree stands here (trunks_near)
 var stone: int = 0
 var food: int = 0
 
@@ -37,8 +39,26 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-func ground(x: float, _z: float) -> float:
+func ground(x: float, z: float) -> float:
+	if z > CREEP_Z:
+		return 10.0 + 0.01 * maxf(x, 0.0) * maxf(x, 0.0)
+
 	return 10.0 + maxf(x - RAMP_X, 0.0) * 0.8
+
+
+# terrain_server._floor_below's walk (5 cm steps down to the first solid point) over the stand-in ground with no digs, so the per-report cost
+# printed at the end includes it.
+func floor_below(from: Vector3) -> float:
+	var surface: float = ground(from.x, from.z)
+	var y: float = from.y + 0.05
+
+	for step in range(480):
+		if y < surface:
+			return y + 0.05
+
+		y -= 0.05
+
+	return NAN
 
 
 func make_server():
@@ -63,8 +83,10 @@ func make_server():
 	s.send_cart_pull = func(p, id, pace): pulls[p] = [id, pace]
 	s.send_items_moved = func(p, _ids, _at, _yaws): moved[p] = int(moved.get(p, 0)) + 1
 	s.ground_height = func(x, z): return ground(x, z)
-	s.water_depth_at = func(pos: Vector3) -> float: return 1.0 if pos.z > WATER_Z else 0.0
+	s.water_depth_at = func(pos: Vector3) -> float: return 1.0 if pos.z > WATER_Z and pos.z < 160.0 else 0.0
 	s.unix_now = func(): return clock[0]
+	s.trunks_near = func(point: Vector3, radius: float) -> Array: return [[TRUNK, 0.3, 12.0]] if Vector2(point.x - TRUNK.x, point.z - TRUNK.z).length() <= radius else []
+	s.floor_below = floor_below
 	s.setup(ItemTableScript.load_default(), DIR)
 	s.admin_mode_on = func(_p): return false
 	return s
@@ -258,7 +280,7 @@ func _init() -> void:
 	cart_act(2, Carts.OP_LOAD, crate)
 	check(int(items._items[crate]["struct"].get("on", 0)) == cart_uid, "after entering the code, that player may lift it on")
 	cart_act(2, Carts.OP_UNLOAD, crate)
-	check(not items._items[crate]["struct"].has("on") and absf(float(items._items[crate]["pos"].y) - 10.0) < 0.01, "and set it down again, on the ground")
+	check(not items._items[crate]["struct"].has("on") and absf(float(items._items[crate]["pos"].y) - 10.0) < 0.06, "and set it down again, on the ground")
 
 	# --- 5. Lifting on: desk A drops it; one handle; a stranger cannot pull a cart with a locked crate on it ---
 	var food_wear_0: int = box(crate).wear[1]
@@ -268,6 +290,8 @@ func _init() -> void:
 	items.report_position(3, Vector3(16.0, 10.0, 5.0))
 	cart_act(3, Carts.OP_GRAB, cart)
 	check(pulling(3) == 0, "a stranger cannot take the handle of a cart carrying a locked crate")
+	cart_act(3, Carts.OP_UNLOAD, crate)
+	check(int(items._items[crate]["struct"].get("on", 0)) == cart_uid, "nor set the locked crate down off it")
 	items._sync_world_items()   # the players near learn of the cart (items_moved goes to those who know it)
 	cart_act(1, Carts.OP_GRAB, cart)
 	check(pulling(1) == cart and int(pulls.get(1, [0, 0])[0]) == cart and int(pulls[1][1]) > 0 and int(pulls[1][1]) <= 32, "the owner takes the handle; the pace is sent (%.1f m/s)" % (float(pulls.get(1, [0, 0])[1]) / 10.0))
@@ -320,7 +344,7 @@ func _init() -> void:
 	items.report_position(1, Vector3(16.5, 10.0, 92.0))
 	cart_act(1, Carts.OP_UNLOAD, crate)
 	var down: Vector3 = items._items[crate]["pos"]
-	check(not items._items[crate]["struct"].has("on") and absf(down.y - 10.0) < 0.01 and down.distance_to(items._items[cart]["pos"]) < 2.6, "the crate is set down beside the cart at B")
+	check(not items._items[crate]["struct"].has("on") and absf(down.y - 10.0) < 0.06 and down.distance_to(items._items[cart]["pos"]) < 2.6, "the crate is set down beside the cart at B")
 	check(int(view_totals(1, desk_b)[1].get(stone, 0)) == 5 and int(views[1][1].get(food, 0)) == 4, "desk B lists it (5 stones, 4 raw meat)")
 	items.report_position(1, Vector3(20.0, 10.0, 1.0))
 	check(int(view_totals(1, desk_a)[1].get(stone, 0)) == 0, "desk A does not")
@@ -360,6 +384,49 @@ func _init() -> void:
 	walk(1, parked + Vector3(0.0, 0.0, -12.0))
 	check((items._items[cart]["pos"] as Vector3).distance_to(parked) < 0.01, "the cart stays parked where it was")
 
+	# --- 9b. Pace per elapsed time: reports sent with no time passing move the cart nowhere ---
+	items.report_position(1, parked + Vector3(0.0, 0.0, -1.7))
+	cart_act(1, Carts.OP_GRAB, cart)
+
+	for i in 50:
+		items.report_position(1, parked + Vector3(0.0, 0.0, -2.5))   # 0.8 m past the hitch, clock standing still
+
+	check((items._items[cart]["pos"] as Vector3).distance_to(parked) < 0.03, "fifty reports in no time move it nowhere (%.3f m)" % (items._items[cart]["pos"] as Vector3).distance_to(parked))
+
+	# --- 9c. Death while pulling: the cart stays where its puller fell ---
+	walk(1, parked + Vector3(0.0, 0.0, -6.0), 0.4)
+	var fell: Vector3 = items._items[cart]["pos"]
+	check(pulling(1) == cart and items.kill(1, "test"), "the puller dies with the handle in hand")
+	check(pulling(1) == 0 and items._carts.pulls.is_empty(), "death lets go of the handle")
+	items.report_position(1, fell + Vector3(0.0, 0.0, -4.0))
+	check((items._items[cart]["pos"] as Vector3).distance_to(fell) < 0.01, "the cart stays where they fell")
+	join(1, fell + Vector3(0.0, 0.0, -1.7))
+	parked = fell
+
+	# --- 9d. Walls and trees: the cart does not pass, the handle slips ---
+	var wall: int = items.dev_place("log_wall@%f,%f,90" % [parked.x, parked.z - 6.0])   # a wall across the way south
+	check(wall != 0 and items.structure_blocks(parked.x, parked.z - 6.0, 0.0), "a log wall stands across the way")
+	cart_act(1, Carts.OP_GRAB, cart)
+	walk(1, parked + Vector3(0.0, 0.0, -12.0), 0.4)
+	check(pulling(1) == 0 and (items._items[cart]["pos"] as Vector3).z > parked.z - 6.0 and str(said.get(1, "")) == "The handcart will not fit through there.", "a wall stops the cart (cart at z %.1f, wall at %.1f)" % [(items._items[cart]["pos"] as Vector3).z, parked.z - 6.0])
+	items._items.erase(wall)
+	items._items[cart]["pos"] = Vector3(TRUNK.x + 5.0, 10.0, TRUNK.z)   # (moved by hand beside the tree)
+	items.report_position(1, Vector3(TRUNK.x + 3.3, 10.0, TRUNK.z))
+	cart_act(1, Carts.OP_GRAB, cart)
+	walk(1, Vector3(TRUNK.x - 6.0, 10.0, TRUNK.z), 0.4)
+	check(pulling(1) == 0 and (items._items[cart]["pos"] as Vector3).x > TRUNK.x + 0.8 and str(said.get(1, "")) == "The handcart will not fit through there.", "a tree trunk stops it (cart at x %.1f, trunk at %.1f)" % [(items._items[cart]["pos"] as Vector3).x, TRUNK.x])
+
+	# --- 9e. A slope that steepens a little at a time: the cart does not creep up past slope_max ---
+	items._items[cart]["pos"] = Vector3(0.0, 10.0, 230.0)
+	items._items[cart]["struct"]["yaw"] = 90.0
+	items.report_position(1, Vector3(1.7, 10.0, 230.0))
+	cart_act(1, Carts.OP_GRAB, cart)
+	walk(1, Vector3(30.0, 10.0, 230.0), 0.1)   # slowly: 0.5 m/s, every step a little steeper than the last
+	var cx: float = (items._items[cart]["pos"] as Vector3).x
+	check(pulling(1) == 0 and cx <= 18.0 + 0.6 and str(said.get(1, "")) == "Too steep for the handcart.", "walked slowly up a steepening slope, it stops where the grade reaches slope_max (cart at x %.2f, grade %.2f)" % [cx, items._carts._grade(items._items[cart]["pos"], Vector2(1.0, 0.0))])
+	items._items[cart]["pos"] = parked
+	items._items[cart]["struct"]["yaw"] = 0.0
+
 	# --- 10. Payload: a crate too heavy for the cart stays down ---
 	var heavy: int = items.dev_place("warehouse_crate@%f,%f" % [parked.x + 2.0, parked.z])
 	box(heavy).add(stone, 200)
@@ -373,7 +440,21 @@ func _init() -> void:
 	check(items._items[heavy]["struct"].has("on"), "empty, it goes on")
 	check(items._carts.room_kg(heavy) < float(def["max_kg"]) - 120.0, "the payload counts the cart's store and the crate's own wood (%.0f kg left)" % items._carts.room_kg(heavy))
 
+	# --- 10b. A crate locked after the grab stops a puller without access ---
+	items._items[heavy]["struct"]["owner"] = keys[1]
+	items.report_position(2, parked + Vector3(0.0, 0.0, -1.7))
+	cart_act(2, Carts.OP_GRAB, cart)
+	check(pulling(2) == cart, "another player takes the handle while the crate on it is open")
+	items.report_position(1, items._items[heavy]["pos"] + Vector3(1.0, 0.0, 0.0))
+	act(1, Net.ACT_CHEST_LOCK, heavy, items.LOCK_SET, 1234)
+	var before_lock: Vector3 = items._items[cart]["pos"]
+	walk(2, parked + Vector3(0.0, 0.0, -4.0), 0.4)
+	check(pulling(2) == 0 and (items._items[cart]["pos"] as Vector3).distance_to(before_lock) < 0.01, "its owner locks it: at the next step the handle is let go and the cart does not move")
+	act(1, Net.ACT_CHEST_LOCK, heavy, items.LOCK_CLEAR)
+	items._items[heavy]["struct"]["owner"] = ""
+
 	# --- 11. Taking a loaded cart down: nothing lost ---
+	items.report_position(1, items._items[cart]["pos"] + Vector3(1.0, 0.0, 0.0))
 	var cargo_stone: int = box(cart).count_of(stone)
 	items._items[heavy]["struct"]["owner"] = keys[2]
 	items._items[heavy]["struct"]["lock"] = {"salt": "", "hash": "", "ok": [], "allow": [], "tries": {}}   # locked by player 2 (owner only)
@@ -394,10 +475,26 @@ func _init() -> void:
 	for s in inv.SLOTS:
 		inv.clear_slot(s)
 
+	var bag_n: int = items.table.number_of("fibre_shoulder_bag")
+	var bag_inst: Dictionary = {"bag": [[stone, 3, 0]]}
+	box(cart).add(bag_n, 1, 0, bag_inst)   # a Phase 5 bag with its contents in the cart's store
+	var birch: int = items.table.number_of("log_birch")
+	box(cart).add(birch, 1)
+	box(cart).add(birch, 1)
+	act(1, Net.ACT_PICKUP, cart)
+	check(items._items.has(cart) and box(cart).count_of(birch) == 2, "two large logs in its store: it does not come apart (one large log at a time)")
+	box(cart).remove(birch, 1)
 	act(1, Net.ACT_PICKUP, cart)
 	check(not items._items.has(cart), "the loaded cart comes apart")
+	var bag_slot: int = -1
+
+	for s in inv.SLOTS:
+		if inv.numbers[s] == bag_n:
+			bag_slot = s
+
+	check(bag_slot >= 0 and JSON.stringify(inv.inst_of(bag_slot)) == JSON.stringify(bag_inst) and items.shoulder_of(1) == "log_birch", "the bag comes out with its 3 stones inside, the large log onto the shoulder")
 	check(have(1, "raw_meat") == 4 and have(1, "wooden_cart_wheel") == 2 and have(1, "axle") == 1 and have(1, "lumber") == 6 and have(1, "wooden_pin") == 12, "its cargo and every part are in the pack (4 raw meat, 2 wheels, 1 axle, 6 Planks, 12 pins)")
-	check(items._items.has(heavy) and not items._items[heavy]["struct"].has("on") and absf(float(items._items[heavy]["pos"].y) - 10.0) < 0.01 and items._chests.has(int(items._items[heavy]["struct"]["uid"])), "the crate on it is set down whole")
+	check(items._items.has(heavy) and not items._items[heavy]["struct"].has("on") and absf(float(items._items[heavy]["pos"].y) - 10.0) < 0.06 and items._chests.has(int(items._items[heavy]["struct"]["uid"])), "the crate on it is set down whole")
 
 	# --- 12. The cost of a pulled cart ---
 	print("cart follow: %d reports, %.1f us each (only a pulled cart costs anything: one dictionary look-up per report otherwise)" % [items._carts.follows, float(items._carts.follow_usec) / maxf(float(items._carts.follows), 1.0)])

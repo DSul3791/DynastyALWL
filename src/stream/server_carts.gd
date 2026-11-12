@@ -206,7 +206,9 @@ func _follow(peer: int, id: int) -> void:
 	var here: Vector3 = host._peer_pos[peer]
 	var from: Vector3 = cart["pos"]
 	var now: float = host._unix()
-	var dt: float = clampf(now - float(rec["t"]), 0.0, 1.0)
+	var pace: float = float(rec["cap"]) * float(v.get("pace_slack", 1.3))
+	# The cart may travel pace x elapsed time, not a fixed bit per report: a client sending reports faster gets no further (at most half a second saved up).
+	rec["budget"] = minf(float(rec.get("budget", 0.0)) + pace * clampf(now - float(rec["t"]), 0.0, 1.0), pace * 0.5)
 	rec["t"] = now
 	var hitch: float = float(v.get("hitch_m", 1.7))
 	var away: Vector2 = Vector2(from.x - here.x, from.z - here.z)
@@ -215,42 +217,45 @@ func _follow(peer: int, id: int) -> void:
 		release(peer, str(rec["why"]) if str(rec["why"]) != "" else "You lose hold of the handcart.")
 		return
 
+	for rider in rec["riders"]:   # a crate locked after the grab stops a player who may not open it (s3.13: only the owner or a player with access moves it)
+		if host._items.has(rider) and not host._may_access(peer, host._items[rider]):
+			release(peer, "A locked crate rides on it: only its owner or a player with access may move it.")
+			return
+
 	var goal: Vector2 = Vector2(here.x, here.z) + (away.normalized() if away.length() > 0.01 else Vector2(0.0, -1.0)) * hitch
 	var step: Vector2 = goal - Vector2(from.x, from.z)
 
-	if step.length() < 0.02:
-		return
-
-	var most: float = float(rec["cap"]) * float(v.get("pace_slack", 1.3)) * dt + 0.02   # the cart goes no faster than its pace: a puller who runs on loses the handle
-
-	if step.length() > most:
-		step = step.normalized() * most
+	if step.length() > float(rec["budget"]):
+		step = step.normalized() * float(rec["budget"])   # the cart goes no faster than its pace: a puller who runs on loses the handle
 
 	if step.length() < 0.02:
 		return
 
 	var to: Vector3 = Vector3(from.x + step.x, from.y, from.z + step.y)
 	var heading: Vector2 = Vector2(here.x - to.x, here.z - to.z).normalized()
-	var why: String = _blocked(to, heading, v, id)
+	var why: String = _blocked(from, to, heading, v)
 
 	if why != "":
 		rec["why"] = why
 		return
 
 	rec["why"] = ""
-	to.y = float(host.ground_height.call(to.x, to.z))
+	rec["budget"] = float(rec["budget"]) - step.length()
+	to.y = _rest_y(to, from.y)
 	_move(id, cart, to, rad_to_deg(atan2(heading.x, heading.y)), rec["riders"])
 	_note_pace(id, cart, v, _grade(to, heading))
 
 
-# Why the cart cannot stand at `to` heading `heading` ("" when it can): no ground, too steep, deep water, a wall or a tree in the way.
-func _blocked(to: Vector3, heading: Vector2, v: Dictionary, id: int) -> String:
+# Why the cart cannot go from `from` to `to` heading `heading` ("" when it can): no ground, too steep, deep water, a wall or a tree in the way.
+func _blocked(from: Vector3, to: Vector3, heading: Vector2, v: Dictionary) -> String:
 	if not host.ground_height.is_valid() or is_nan(float(host.ground_height.call(to.x, to.z))):
 		return "The handcart cannot go there."
 
 	var grade: float = _grade(to, heading)
 
-	if grade > float(v.get("slope_max", 0.36)) and grade > _grade(host._items[id]["pos"], heading) + 0.01:   # a cart left on a steep spot may still come off it
+	# Over slope_max a step must be less steep than where the cart stands: a cart left on a steep spot may come off it, but never creeps up a
+	# ramp that steepens a little at a time.
+	if grade > float(v.get("slope_max", 0.36)) and grade >= _grade(from, heading):
 		return "Too steep for the handcart."
 
 	if host.water_depth_at.is_valid() and float(host.water_depth_at.call(Vector3(to.x, float(host.ground_height.call(to.x, to.z)), to.z))) > float(v.get("water_max_m", 0.5)):
@@ -258,7 +263,7 @@ func _blocked(to: Vector3, heading: Vector2, v: Dictionary, id: int) -> String:
 
 	var fit: float = float(v.get("fit_m", 0.6))
 
-	if host.structure_blocks(to.x, to.z, fit):
+	if host.structure_blocks(to.x, to.z, fit) or host.structure_blocks_step(from.x, from.z, to.x, to.z, fit):   # the step too: a thin wall is never jumped
 		return "The handcart will not fit through there."
 
 	if host.trunks_near.is_valid():
@@ -267,6 +272,22 @@ func _blocked(to: Vector3, heading: Vector2, v: Dictionary, id: int) -> String:
 				return "The handcart will not fit through there."
 
 	return ""
+
+
+# The height the cart rests at: the ground with its digs and fills (floor_below, as a dropped item comes to rest), from a metre over the
+# generated surface or where the cart stood; the generated surface when that is not known.
+# shortcut: floor_below steps down 5 cm at a time through the edits near it, one call per moving report; measured only with stand-ins (see
+# T17_RESULTS.md); revisit with a cached column height if the slow-action line shows pulled carts.
+func _rest_y(at: Vector3, was_y: float) -> float:
+	var surface: float = float(host.ground_height.call(at.x, at.z))
+
+	if host.floor_below.is_valid():
+		var rest: float = float(host.floor_below.call(Vector3(at.x, maxf(surface, was_y) + 1.0, at.z)))
+
+		if not is_nan(rest):
+			return rest
+
+	return surface
 
 
 # The ground's rise over run along the heading, across one metre of the cart's length (0 where the ground is unknown).
@@ -425,7 +446,7 @@ func _unload(peer: int, crate_id: int) -> void:
 	var spot: Vector3 = set_down_spot(cart_id, crate_id, false)
 
 	if is_nan(spot.y):
-		host._say(peer, "There is no room to set it down here.")
+		host._say(peer, "Too many of these stand here already." if _chunk_full(crate_id, crate["pos"]) else "There is no room to set it down here.")
 		return
 
 	_set_down(crate, spot)
@@ -438,8 +459,24 @@ func _set_down(crate: Dictionary, spot: Vector3) -> void:
 	host._dirty = true
 
 
-# Ground beside the cart for a crate: to its sides, then behind and before it; the first with ground, shallow water and nothing standing within the
-# crate's half size. `anywhere`: when nothing is free, the cart's own spot (it is being taken down, so its place comes free). NAN y when none.
+# True when the crate's kind already stands its structures.json cap_per_chunk times in the chunk of `at` (placement's rule; riding crates are not counted).
+func _chunk_full(crate_id: int, at: Vector3) -> bool:
+	var kind: String = str(host._items[crate_id]["struct"]["kind"])
+	var chunk: Vector2i = host._chunk_of(at)
+	var standing: int = 0
+
+	for id in host._items:
+		var it: Dictionary = host._items[id]
+
+		if id != crate_id and it.has("struct") and not it["struct"].has("on") and str(it["struct"]["kind"]) == kind and host._chunk_of(it["pos"]) == chunk:
+			standing += 1
+
+	return standing >= int(host._structures.get(kind, {}).get("cap_per_chunk", 1000000))
+
+
+# Ground beside the cart for a crate: to its sides, then behind and before it; the first with ground, shallow water, no wall between it and the
+# cart, nothing standing within the crate's half size and room under the kind's cap_per_chunk. `anywhere`: when nothing is free, the cart's own spot
+# (it is being taken down, so its place comes free; the cap is not asked then, so nothing is ever lost). NAN y when none.
 func set_down_spot(cart_id: int, crate_id: int, anywhere: bool) -> Vector3:
 	var cart: Dictionary = host._items.get(cart_id, {})
 
@@ -456,7 +493,7 @@ func set_down_spot(cart_id: int, crate_id: int, anywhere: bool) -> Vector3:
 		var at: Vector3 = cart["pos"] + turn * local
 		var y: float = float(host.ground_height.call(at.x, at.z)) if host.ground_height.is_valid() else NAN
 
-		if is_nan(y) or (host.water_depth_at.is_valid() and float(host.water_depth_at.call(Vector3(at.x, y, at.z))) > float(v.get("water_max_m", 0.5))) or host.structure_blocks(at.x, at.z, half):
+		if is_nan(y) or (host.water_depth_at.is_valid() and float(host.water_depth_at.call(Vector3(at.x, y, at.z))) > float(v.get("water_max_m", 0.5))) or host.structure_blocks(at.x, at.z, half) or host.structure_blocks_step(cart["pos"].x, cart["pos"].z, at.x, at.z, 0.1) or _chunk_full(crate_id, at):
 			continue
 
 		var clear: bool = true
@@ -469,7 +506,7 @@ func set_down_spot(cart_id: int, crate_id: int, anywhere: bool) -> Vector3:
 				break
 
 		if clear:
-			return Vector3(at.x, y, at.z)
+			return Vector3(at.x, _rest_y(Vector3(at.x, y, at.z), cart["pos"].y), at.z)
 
 	if anywhere:
 		var y0: float = float(host.ground_height.call(cart["pos"].x, cart["pos"].z)) if host.ground_height.is_valid() else cart["pos"].y
@@ -497,6 +534,16 @@ func dismantle(peer: int, inv, id: int) -> void:
 	var row: Dictionary = host._blueprints.get(int(host._blueprint_of_kit.get(str(host._structures[str(cart["struct"]["kind"])].get("kit", "")), -1)), {})
 
 	if row.is_empty():
+		return
+
+	var logs: int = 0
+
+	for slot in (box.SLOTS if box != null else 0):
+		if host.is_shoulder_item(box.numbers[slot]):
+			logs += box.counts[slot]
+
+	if logs > 1 or (logs == 1 and host.shoulder_of(peer) != ""):   # one large log at a time, on the shoulder
+		host._say(peer, "Take the large logs off the handcart first: you can carry only one.")
 		return
 
 	var cargo_kg: float = CarryRules.carried_kg(box, host.table, host._carry_cfg) if box != null and not host._carry_cfg.is_empty() else 0.0

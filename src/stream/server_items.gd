@@ -11847,15 +11847,18 @@ func _spoil_tick(spent: float) -> void:
 
 	var kind_of_uid: Dictionary = {}
 	var pos_of_uid: Dictionary = {}
+	var riding: Array = []   # crates on a cart, found in the same pass (no second pass when none ride)
 
 	for id in _items:
 		if _items[id].has("struct") and _items[id]["struct"].has("uid"):
 			kind_of_uid[int(_items[id]["struct"]["uid"])] = str(_items[id]["struct"]["kind"])
 			pos_of_uid[int(_items[id]["struct"]["uid"])] = _items[id]["pos"]
 
-	for id in _items:
-		if _items[id].has("struct") and _items[id]["struct"].has("on") and _items[id]["struct"].has("uid"):
-			kind_of_uid[int(_items[id]["struct"]["uid"])] = _carts.place_kind(_items[id], kind_of_uid)   # a crate on a cart ages at the cart's place_mult (s3.13: in transit)
+			if _items[id]["struct"].has("on"):
+				riding.append(id)
+
+	for id in riding:
+		kind_of_uid[int(_items[id]["struct"]["uid"])] = _carts.place_kind(_items[id], kind_of_uid)   # a crate on a cart ages at the cart's place_mult (s3.13: in transit)
 
 	var place_units: Dictionary = {}
 
@@ -11990,6 +11993,7 @@ func kill(peer: int, cause: String) -> bool:
 
 	_characters[key].erase("rested")   # death ends the Rested buff
 	_rest_credit.erase(peer)
+	_carts.release(peer, "")   # a cart in hand stays where they fell
 	var pos: Vector3 = _peer_pos[peer]
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
