@@ -27,7 +27,7 @@ The real buying limits exist and do replenish (no new restriction was invented):
 
 Fix:
 - `dialogue_view.gd`: a reply line in the trade window shows the server's latest notice while the window is open.
-- `server_trade.gd`: a spent purse says Dave's words, "I've bought all I can for now. Come back in a little while."; the board limit says "He has all the planks he wants for now. Come back in a little while."; a trader out of reach says "Hob has walked off. Close this window and find them to trade." instead of nothing.
+- `server_trade.gd`: the "Would you like to buy my extra stuff?" button says the refusal too, not "no extra stuff" (gate review finding 1); a spent purse says Dave's words, "I've bought all I can for now. Come back in a little while."; the board limit says "He has all the planks he wants for now. Come back in a little while."; a trader out of reach says "Hob has walked off. Close this window and find them to trade." instead of nothing.
 
 Not changed (would be new behaviour, Dave's call): Hob still keeps his hours while a player trades.
 
@@ -47,7 +47,7 @@ Fix (rewards unchanged): one notice per goal, "Goal done: Light a fire. You earn
 
 ## Tests
 
-Selector (`tools/tests_for_diff.py origin/dev HEAD`): 171 fast, 3 timing, 1 pictures, wide because `server_items.gd` and `terrain_client.gd` are touched. Proposed scoped dev plan (needs gate-reviewer agreement, TEST_GATES.md): `test_trade`, `test_trade_buy_rules`, `test_coin_icons`, `test_goals`, `test_earn_loop`, `test_first_town`, `test_dialogue`, `test_carrying`, `test_cooking_route`, the `always` set, and the PC start-up/world-load smoke. Deferred: the rest of the selection, to the next `tools/release_check.sh` run.
+Selector (`tools/tests_for_diff.py origin/dev HEAD`): 171 fast, 3 timing, 1 pictures, wide because `server_items.gd` and `terrain_client.gd` are touched. The review commit also touches a comment in `terrain_net.gd`, which selects all fast and timing tests (path rule); it is comment-only. Scoped dev plan, agreed by the gate reviewer with three additions (TEST_GATES.md): `tools/local_check.sh` (parse check; the client edits have no headless test), `test_trade`, `test_trade_buy_rules`, `test_coin_icons`, `test_goals`, `test_mission001_walkthrough`, `test_wanted_order`, `test_earn_loop`, `test_first_town`, `test_dialogue`, `test_carrying`, `test_cooking_route`, the `always` set, and the PC start-up/world-load smoke through the client welcome (which builds the trade window). Deferred: the rest of the selection, to the next `tools/release_check.sh` run.
 
 Results: see the PR.
 
