@@ -1,6 +1,6 @@
 # M001-T14 results: Phase 4b weapons, armour and clothing rows; protection by damage mode
 
-Branch `m001/p4b`, base `dd903d971`. Code under test: **`9915c54c5`** (`d6ccf01db` the change, `9915c54c5` the client arrow-list mirror; the commit after it adds only this file). Machine: Dave's PC, clone `E:\Software\godotDev\m001_p4b`, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, headless, through `tools/run_tests.sh` / `tools/run_one_test.sh` (slot lock, 3 jobs). Engineer: systems-engineer agent, 12 Nov 2026. Not pushed.
+Branch `m001/p4b`, base `dd903d971`. Code under test (round 2, after review): **`b98d3265a`**, the merge of dev `7ef057c18` (Phases 6 and 9) into this branch; review fixes in `17c2550b3`. Round 1 code: `9915c54c5` (`d6ccf01db` the change, `9915c54c5` the client arrow-list mirror). The commit after `b98d3265a` changes only this file. Machine: Dave's PC, clone `E:\Software\godotDev\m001_p4b`, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, headless, through `tools/run_tests.sh` / `tools/run_one_test.sh` (slot lock, 3 jobs). Engineer: systems-engineer agent, 12 Nov 2026. Not pushed.
 
 ## What went live
 - **77 Phase 4b ledger rows** (all IMPLEMENTED - UNVERIFIED, tests `test_armour`, `validate_items`): 24 weapon + 5 ammunition ADD rows (920-948), 14 armour ADD (951-964), 17 clothing ADD (965-981), the Q1 FUTURE rows 315-323, 326, 328-331, 838, and the renames 269 Shortbow, 763 Longbow (ids kept). Steel bolt 949, Iron - Lance 950 and Riding - Boots stay FUTURE.
@@ -15,8 +15,8 @@ Branch `m001/p4b`, base `dd903d971`. Code under test: **`9915c54c5`** (`d6ccf01d
 - Examples (test): gambeson+mail+breastplate+cloak stops slash 0.318, pierce 0.218, blunt 0.225, projectile 0.255; full steel kit slash 0.745 (cap 0.75). Steel sword 22 / mace 20 bare; through mail 17.16 / 19.04. Wolf bite 8 through gambeson+mail: 6.72.
 - Applied in `server_items.hurt_player` (wolves, big game, goblins); mode from `attack_modes` by species (bites/tusks pierce, claws slash, default blunt), or a passed weapon mode and pen. Falls, cold, hunger, sickness untouched.
 - Weapons carry `damage_mode`, `pen`, `reach_m`, `recover_ms` (read by `_strike`); `weapon_blow()` gives damage+mode+pen. Ammunition is projectile.
-- Wear: each hit adds round(damage x cover) to every protecting piece with durability; broken stays worn, stops nothing; mended off the body at its making station (leather 400, gambeson 300, bronze 800, iron 1500, steel 2500). Tempered steel armour: max_d x1.25 only, no edge or sharpness.
-- Trade-offs: worn kg x 0.01 effort while moving (16 kg plate +0.16); heat from warmth/fabric (gambeson 0.24 heat load, plate 0.04). Crossbows shoot bolts only, reload 2.5 s / 5 s (`bow.json` pace_ms per row).
+- Wear: each hit adds round(damage x cover) to every protecting piece with durability (wearing all pieces, not one by hit location, is s5 tuning, recorded in protection.json); broken stays worn, stops nothing; mended off the body at its making station (leather 400, gambeson 300, bronze 800, iron 1500, steel 2500). Tempered steel armour: max_d x1.25 only, no edge or sharpness.
+- Trade-offs (round 2): only armour (pieces with protect and a durability) past `effort_free_kg` 8 kg costs effort on the move, 0.01 per kg, so walking (0.5) stays under rest_effort 0.52 in hide, wool or light leather (3.2 kg); mail over a gambeson (8.4 kg) is at the line; a full steel kit (41 kg) makes walking 0.83. Heat from warmth/fabric (gambeson 0.24 heat load, plate 0.04). Crossbows shoot bolts only, reload 2.5 s / 5 s (`bow.json` pace_ms per row); a release inside the reload says "Your crossbow is not spanned yet." (`say_not_spanned`); every crossbow shot is full power whatever the draw time (`full_power`, server and the client's flight prediction). Steel - Rapier has no penetration, matching its text "poor against armour" (warhammer 0.35, maul 0.2).
 
 ## Tests
 | Run at | Result | Log |
@@ -32,10 +32,23 @@ Branch `m001/p4b`, base `dd903d971`. Code under test: **`9915c54c5`** (`d6ccf01d
 
 (`scratchpad` = `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad`.)
 
+## Round 2 (review FAIL fixes and dev merge)
+- Fixed: (1) armour-only effort past effort_free_kg (above), with tests: bare, full hide, full wool and light leather walks stay at or under rest_effort; a full steel kit is above it; (2) rapier pen removed; (3) crossbow not-spanned notice; (4) crossbow full power; (5) wear-all-pieces recorded as s5 tuning; (6) client `BOW_AMMO` is a mirror of bow.json's bows-wide `ammo` list (test_slot_sounds); crossbow bolts come from their own row through `BowAim.ammo_for`, which the client already uses for looks and sounds, so no bolts were added there.
+- Phase 5 note: Phase 5's `carried_kg_of` (clone m001_p5, `9d47c66cc`) adds worn bags' contents (`_worn_bags_kg`), not worn clothing or armour weight; armour weight here is effort only, so there is no double count at merge. If Phase 5 later counts worn clothing weight in the load, drop or lower `effort_per_kg` then.
+- Merge of dev `7ef057c18`: conflicts only in items.json (Meatballs from phase 6, Bronze - Scale shirt from 4b) and recipes.json (note from phase 6, next_number 561; Meatballs 396 from phase 6, Bronze - Scale shirt 397 from 4b; recipe blocks 430-477 and 500-560 both kept; 526 recipes, numbers unique). Protocol stays 108 (not bumped here).
+
+| Run at `b98d3265a` | Result | Log |
+|---|---|---|
+| `test_armour` after the fixes (at `17c2550b3`) | PASS | `scratchpad/t14/r3` |
+| `tests_for_diff.py 7ef057c18 HEAD` (194 fast + 4 timing), `run_tests.sh --jobs 3`, no edits during the run | **198 pass, 0 fail** | `scratchpad/t14/full3`, `scratchpad/t14/full3.log` |
+| `validate_items` | PASS (0 errors, 124 warnings) | `scratchpad/t14/v4` |
+| `merge_check.py` (base `7ef057c18`), `catalog_ledger.py --check` | all clear (carry_audit warning as at base); exit 0 | |
+
 ## Placeholders (NOT visually complete)
 60 rows in `look_placeholders.json` now read "phase 4b, live: grey placeholder chunk"; armour and clothing worn looks are the T11 `worn.json` placeholder rows.
 
 ## Not done, risks
+- Gambeson + mail (8.4 kg) walks at 0.504, just under rest_effort: any heavier padding layer tips it; tune effort_free_kg in playtest.
 - No PvP or armed NPC exists: weapon modes and pen only matter on player hits through `hurt_player`; in play today only animal/goblin attack modes act.
 - Two-handedness, dexterity (fur mittens, gauntlets) and noise: no existing system reads them; not added.
 - Worn weight is not counted in the pack carry limit (Phase 5 owns carrying); only as effort.
