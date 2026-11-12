@@ -452,6 +452,7 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 	var buys: Array = _shops[npc_id].get("buys", [])
 	var before_coins: int = items.coins_of(peer)
 	var sold: int = 0
+	var refused: String = ""
 
 	for slot in range(inv.SLOTS):
 		if inv.numbers[slot] == 0:
@@ -467,12 +468,15 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 			continue
 
 		var number_before: int = inv.counts[slot]
+		var said: String = deal(peer, npc_id, 1, slot, 999)
 
-		if deal(peer, npc_id, 1, slot, 999) != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
+		if said != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
 			sold += 1
+		elif said == PURSE_EMPTY_SAY or said.contains("Come back in a little while"):
+			refused = said
 
-	if sold == 0:
-		return "You have no extra stuff he will buy."
+	if sold == 0:   # a spent purse or a day's limit is said as itself, not as "nothing to sell" (TEST-003)
+		return refused if refused != "" else "You have no extra stuff he will buy."
 
 	return "Sold %d kinds of extra stuff for %s." % [sold, items._coin_words(items.coins_of(peer) - before_coins)]
 

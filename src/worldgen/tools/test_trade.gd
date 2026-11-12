@@ -174,6 +174,9 @@ func _init() -> void:
 	trade._refresh("hob")["purse"] = 0.0
 	var broke_msg: String = trade.deal(1, "hob", 1, sell_axe, 1)
 	check(broke_msg == trade.PURSE_EMPTY_SAY and inv_r.count_of(items.table.number_of("stone_axe")) >= 1, "a spent purse buys nothing and says to come back later (%s)" % broke_msg)
+	items.give_to(1, "stone", 30)
+	var extras_broke: String = trade.deal(1, "hob", 3, 0, 1)
+	check(extras_broke == trade.PURSE_EMPTY_SAY, "the extra-stuff button also says the purse is spent (%s)" % extras_broke)
 	gclock[0] += 86400.0
 	check(trade.purse_of("hob") == 100, "one game day later (an hour of play) his purse has 100 copper again (%d)" % trade.purse_of("hob"))
 	check(trade.deal(1, "hob", 1, sell_axe, 1).begins_with("Sold"), "and he buys again")
