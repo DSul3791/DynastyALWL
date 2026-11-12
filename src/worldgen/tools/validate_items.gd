@@ -202,11 +202,18 @@ func _init() -> void:
 		if not trees.has(str(key_wood)):
 			fail("wood_species.json: key wood %s is not a tree in flora.json" % key_wood)
 
-		for prefix in ["log_", "lumber_", "beam_"]:
-			var key_item: Dictionary = items_file.get("items", {}).get(prefix + str(key_wood), {})
+		# Mission 001 (master s2.3 item 6): species lumber and beams are retired; a key wood keeps its live log, and its class's sawn product
+		# (Plank for softwood, Hardwood board for hardwood) is live.
+		var key_log: Dictionary = items_file.get("items", {}).get("log_" + str(key_wood), {})
 
-			if key_item.is_empty() or bool(key_item.get("retired", false)):
-				fail("wood_species.json: key wood %s needs a live %s%s item" % [key_wood, prefix, key_wood])
+		if key_log.is_empty() or bool(key_log.get("retired", false)):
+			fail("wood_species.json: key wood %s needs a live log_%s item" % [key_wood, key_wood])
+
+		var sawn: String = "hardwood_board" if String(wood_file.get("species", {}).get(String(key_wood), {}).get("class", "")) == "hardwood" else "lumber"
+		var sawn_item: Dictionary = items_file.get("items", {}).get(sawn, {})
+
+		if sawn_item.is_empty() or bool(sawn_item.get("retired", false)) or bool(sawn_item.get("future", false)):
+			fail("wood_species.json: key wood %s needs its live sawn product %s" % [key_wood, sawn])
 
 	var retired_ids: Array = []
 
@@ -684,8 +691,31 @@ func _init() -> void:
 		if int(mill_recipe.get("gives", ["", 0])[1]) != int(mill_row.get("lumber_per_log", -1)) or absf(float(mill_recipe.get("craft_s", 0.0)) - float(mill_row.get("craft_s", -1.0))) > 0.001:
 			fail("recipes.json: lumber does not match hand_saw_balance.sawmill")
 
-		if int(saw_row.get("lumber_per_log", 0)) >= int(mill_row.get("lumber_per_log", 0)) or float(saw_row.get("craft_s", 0.0)) <= float(mill_row.get("craft_s", 0.0)):
-			fail("recipes.json: the hand saw must give less and take longer than the sawmill")
+		# Master s2.3 item 1 (Dave [D1]): the hand saw gives what the sawmill gives, much more slowly; Hardwood boards follow the same rule.
+		if int(saw_row.get("lumber_per_log", 0)) != int(mill_row.get("lumber_per_log", 0)) or float(saw_row.get("craft_s", 0.0)) <= float(mill_row.get("craft_s", 0.0)):
+			fail("recipes.json: the hand saw must give what the sawmill gives and take longer")
+
+		for pair in [["hardwood_board", mill_row], ["hardwood_board_by_hand", saw_row]]:
+			var board_recipe: Dictionary = recipes_file["recipes"].get(String(pair[0]), {})
+
+			if board_recipe.is_empty() or int(board_recipe["gives"][1]) != int(pair[1].get("boards_per_log", -1)) or absf(float(board_recipe.get("craft_s", 0.0)) - float(pair[1].get("craft_s", -1.0))) > 0.001:
+				fail("recipes.json: %s does not match hand_saw_balance" % pair[0])
+
+	# No substitution [D4]: Planks come only from softwood logs and Hardwood boards only from hardwood logs, and no group mixes the two.
+	var wood_groups: Dictionary = wood_file.get("ingredient_groups", {})
+	var soft_logs: Array = [String("log_spruce")] + Array(wood_groups.get("log_spruce", []))
+	var hard_logs: Array = [String("log_oak")] + Array(wood_groups.get("log_oak", []))
+
+	for id in soft_logs:
+		if hard_logs.has(id):
+			fail("wood_species.json: %s is both a softwood and a hardwood log" % id)
+
+	for gid in wood_groups:
+		if typeof(wood_groups[gid]) == TYPE_ARRAY:
+			var members: Array = [String(gid)] + Array(wood_groups[gid])
+
+			if members.has("lumber") and members.has("hardwood_board"):
+				fail("wood_species.json: group %s mixes Planks and Hardwood boards" % gid)
 
 	for rid in recipes_file["recipes"]:
 		var wt: String = String(recipes_file["recipes"][rid].get("wears_tool", ""))

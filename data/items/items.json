@@ -1230,6 +1230,7 @@
 			"value": 48
 		},
 		"lumber_oak": {
+			"retired": true,
 			"number": 101,
 			"name": "Oak lumber",
 			"description": "Sawn oak boards.",
@@ -1241,6 +1242,7 @@
 			"future": true
 		},
 		"beam_oak": {
+			"retired": true,
 			"number": 102,
 			"name": "Oak beam",
 			"description": "Heavy squared oak beams for building.",
@@ -1264,6 +1266,7 @@
 			"value": 48
 		},
 		"lumber_beech": {
+			"retired": true,
 			"number": 104,
 			"name": "Beech lumber",
 			"description": "Sawn beech boards.",
@@ -1275,6 +1278,7 @@
 			"future": true
 		},
 		"beam_beech": {
+			"retired": true,
 			"number": 105,
 			"name": "Beech beam",
 			"description": "Heavy squared beech beams for building.",
@@ -1298,6 +1302,7 @@
 			"value": 24
 		},
 		"lumber_birch": {
+			"retired": true,
 			"number": 107,
 			"name": "Birch lumber",
 			"description": "Sawn birch boards.",
@@ -1309,6 +1314,7 @@
 			"future": true
 		},
 		"beam_birch": {
+			"retired": true,
 			"number": 108,
 			"name": "Birch beam",
 			"description": "Heavy squared birch beams for building.",
@@ -1332,6 +1338,7 @@
 			"value": 32
 		},
 		"lumber_scots_pine": {
+			"retired": true,
 			"number": 110,
 			"name": "Scots pine lumber",
 			"description": "Sawn scots pine boards.",
@@ -1343,6 +1350,7 @@
 			"future": true
 		},
 		"beam_scots_pine": {
+			"retired": true,
 			"number": 111,
 			"name": "Scots pine beam",
 			"description": "Heavy squared scots pine beams for building.",
@@ -1366,6 +1374,7 @@
 			"value": 32
 		},
 		"lumber_spruce": {
+			"retired": true,
 			"number": 113,
 			"name": "Spruce lumber",
 			"description": "Sawn spruce boards.",
@@ -1377,6 +1386,7 @@
 			"future": true
 		},
 		"beam_spruce": {
+			"retired": true,
 			"number": 114,
 			"name": "Spruce beam",
 			"description": "Heavy squared spruce beams for building.",
@@ -1514,6 +1524,7 @@
 			"value": 48
 		},
 		"lumber_tropical_hardwood": {
+			"retired": true,
 			"number": 125,
 			"name": "Mahogany lumber",
 			"description": "Sawn mahogany boards.",
@@ -1525,6 +1536,7 @@
 			"future": true
 		},
 		"beam_tropical_hardwood": {
+			"retired": true,
 			"number": 126,
 			"name": "Mahogany beam",
 			"description": "Heavy squared mahogany beams for building.",
@@ -1814,6 +1826,7 @@
 			"value": 48
 		},
 		"lumber_walnut": {
+			"retired": true,
 			"number": 149,
 			"name": "Walnut lumber",
 			"description": "Sawn walnut boards.",
@@ -1825,6 +1838,7 @@
 			"future": true
 		},
 		"beam_walnut": {
+			"retired": true,
 			"number": 150,
 			"name": "Walnut beam",
 			"description": "Heavy squared walnut beams for building.",
@@ -2114,6 +2128,7 @@
 			"value": 48
 		},
 		"lumber_maple": {
+			"retired": true,
 			"number": 173,
 			"name": "Sugar maple lumber",
 			"description": "Sawn sugar maple boards.",
@@ -2125,6 +2140,7 @@
 			"future": true
 		},
 		"beam_maple": {
+			"retired": true,
 			"number": 174,
 			"name": "Sugar maple beam",
 			"description": "Heavy squared sugar maple beams for building.",
@@ -10304,7 +10320,6 @@
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],
-				"future": true,
 				"value": 12
 			},
 			"smelter": {

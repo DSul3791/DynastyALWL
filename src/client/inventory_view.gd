@@ -3569,7 +3569,7 @@ func _site_lines(site: Array) -> String:
 			continue
 
 		var colour: String = "#55ee66" if int(line[2]) >= need else "#ff5555"
-		lines.append("[color=%s]%d %s  (%d to hand)[/color]" % [colour, need, table.sentence_name(table.number_of(str(line[0]))), int(line[2])])
+		lines.append("[color=%s]%d %s  (%d to hand)[/color]" % [colour, need, table.cost_sentence(table.number_of(str(line[0]))), int(line[2])])
 
 	return "[center]%s[/center]" % "\n".join(lines)
 
@@ -4856,7 +4856,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 		var parts: PackedStringArray = PackedStringArray()
 
 		for cost in entry.get("repair", []):
-			parts.append("%d %s" % [int(cost[1]), table.sentence_name(table.number_of(str(cost[0])))])
+			parts.append("%d %s" % [int(cost[1]), table.cost_sentence(table.number_of(str(cost[0])))])
 
 		text += ", ".join(parts)
 

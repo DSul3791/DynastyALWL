@@ -385,10 +385,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "plank_chest_kit",
@@ -1421,10 +1425,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_oak",
@@ -1435,10 +1443,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "log_beech",
@@ -1463,10 +1475,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_beech",
@@ -1477,10 +1493,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "log_birch",
@@ -1505,10 +1525,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_birch",
@@ -1519,10 +1543,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "log_scots_pine",
@@ -1547,10 +1575,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_scots_pine",
@@ -1561,10 +1593,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "log_spruce",
@@ -1589,10 +1625,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_spruce",
@@ -1603,10 +1643,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "log_alder",
@@ -1757,10 +1801,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_tropical_hardwood",
@@ -1771,10 +1819,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "log_acacia",
@@ -2093,10 +2145,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_walnut",
@@ -2107,10 +2163,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "log_date_palm",
@@ -2429,10 +2489,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "beam_maple",
@@ -2443,10 +2507,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "berry_compote",
@@ -12637,10 +12705,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_lumber_route",
+    "test_trade_buy_rules"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T05 (phase 2a)"
   },
   {
    "key": "new:Smelter",

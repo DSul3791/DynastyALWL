@@ -493,7 +493,7 @@ func _stats_of(entry: Dictionary) -> Array:
 	var mends: PackedStringArray = PackedStringArray()
 
 	for cost in entry.get("repair", []):
-		mends.append(view.table.sentence_name(view.table.number_of(str(cost[0]))))
+		mends.append(view.table.cost_sentence(view.table.number_of(str(cost[0]))))
 
 	if not mends.is_empty():
 		stats.append(["Mends with", ", ".join(mends)])
@@ -561,7 +561,7 @@ func missing_text(r: Dictionary) -> String:
 		var have: int = view.stock_fill(int(need[0]))
 
 		if have < int(need[1]):
-			short.append("%s %d / %d" % [view.table.sentence_name(int(need[0])), have, int(need[1])])
+			short.append("%s %d / %d" % [view.table.cost_sentence(int(need[0])), have, int(need[1])])
 
 	if short.is_empty():
 		return ""
@@ -578,7 +578,7 @@ func _need_well(number: int, need: int, have: int, kept: bool) -> Control:
 	var slot = InventoryLook.make_slot(view, -1)
 	slot.set_unit(NEED_PX / ItemSlot.SLOT_PX)
 	slot.focus_mode = Control.FOCUS_NONE
-	InventoryLook.show_stack(view, slot, number, 1, 0, view.table.name_of(number))
+	InventoryLook.show_stack(view, slot, number, 1, 0, view.table.cost_name(number))
 	slot.set_greyed(have < need)
 	box.add_child(slot)
 	var in_pack: int = view.inventory.count_fill(number) if view.inventory != null else 0
@@ -588,7 +588,7 @@ func _need_well(number: int, need: int, have: int, kept: bool) -> Control:
 		mark.position = Vector2(NEED_PX - 26.0, 4.0)
 		slot.add_child(mark)
 
-	var item_name: Label = _text(view._item_label(number), 18, ArtKit.CREAM)
+	var item_name: Label = _text(view.table.cost_name(number) if view.table.has_group_label(number) else view._item_label(number), 18, ArtKit.CREAM)
 	item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	item_name.clip_text = true
 	item_name.custom_minimum_size = Vector2(NEED_PX, 0.0)
