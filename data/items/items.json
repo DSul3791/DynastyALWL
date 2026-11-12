@@ -10749,7 +10749,7 @@
 			},
 			"wooden_bolt": {
 				"number": 947,
-				"name": "Wooden bolt",
+				"name": "Wooden - Bolt",
 				"description": "A short wooden bolt for a crossbow.",
 				"kind": "material",
 				"stack": 20,
@@ -10759,7 +10759,7 @@
 			},
 			"iron_bolt": {
 				"number": 948,
-				"name": "Iron bolt",
+				"name": "Iron - Bolt",
 				"description": "A short bolt with an iron head, for a crossbow.",
 				"kind": "material",
 				"stack": 20,
@@ -10769,7 +10769,7 @@
 			},
 			"steel_bolt": {
 				"number": 949,
-				"name": "Steel bolt",
+				"name": "Steel - Bolt",
 				"description": "A short bolt with a steel head, for a crossbow.",
 				"kind": "material",
 				"stack": 20,

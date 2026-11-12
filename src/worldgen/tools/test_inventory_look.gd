@@ -20,6 +20,15 @@ class FakeTable:
 	func sentence_name(number: int) -> String:
 		return in_sentence(name_of(number))
 
+	func cost_name(number: int) -> String:   # no labelled groups here (ItemTable.cost_name)
+		return name_of(number)
+
+	func cost_sentence(number: int) -> String:
+		return in_sentence(cost_name(number))
+
+	func has_group_label(_number: int) -> bool:
+		return false
+
 	func in_sentence(text: String) -> String:
 		return text.replace(" - ", " ").to_lower()
 

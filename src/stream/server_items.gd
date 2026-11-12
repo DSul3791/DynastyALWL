@@ -9970,6 +9970,25 @@ func take_from(peer: int, id: String, count: int) -> bool:
 	return ok
 
 
+# Group-aware count and take for an NPC's ask (Mission 001 phase 2a): Hob's "firewood" is met by Hard or Soft firewood, since a plain Log now
+# chops into softwood (master s4 item 3). The literal count_for / take_from stay for everything else.
+func count_fill_for(peer: int, id: String) -> int:
+	var inv = inventory_of(peer)
+	return inv.count_fill(table.number_of(id)) if inv != null and table.number_of(id) > 0 else 0
+
+
+func take_fill_from(peer: int, id: String, count: int) -> bool:
+	var inv = inventory_of(peer)
+
+	if inv == null or table.number_of(id) <= 0:
+		return false
+
+	var before: Array = _snapshot(inv)
+	var ok: bool = inv.remove_fill(table.number_of(id), count)
+	_send_changes(peer, inv, before)
+	return ok
+
+
 func peer_ids() -> Array:
 	return _peer_pos.keys()
 
