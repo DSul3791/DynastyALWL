@@ -99,7 +99,7 @@ func _init() -> void:
 	check(pack().numbers.slice(0, 10).count(axe) == 1 and pack().numbers.slice(10, 30).count(axe) == 1, "a second axe stays in the backpack")
 
 	# 2. Moving into the hotbar takes it out of the backpack, and moving it back reverses it (TEST-008).
-	var stone_slot: int = 12
+	var stone_slot: int = pack().free_bag_slot()   # the first free backpack slot (the second axe is in 12)
 	pack().numbers[stone_slot] = stone
 	pack().counts[stone_slot] = 5
 	items.action(1, Net.ACT_MOVE, stone_slot, 4, 0, Vector3.ZERO)
@@ -144,13 +144,16 @@ func _init() -> void:
 	again.inventory_of(1).clear_slot(5)
 	again.inventory_of(1).numbers[15] = stone
 	again.inventory_of(1).counts[15] = 5
-	again._characters["hotbarkeys01"]["hotbar"] = [axe, 0, 0, 0, 0, stone, 0, 0, 0, 0]
+	var clay_at: int = again.inventory_of(1).numbers.find(clay)
+	again._characters["hotbarkeys01"]["hotbar"] = [axe, 0, clay, 0, 0, stone, 0, 0, 0, 0]   # clay was in the backpack; an old pack also kept key items in slots 0 to 9
+	again._dirty = true
 	again.save()
 	again._finish_writer()
 	var third = make_items(dir)
 	third.peer_connected_hello(1, "hotbarkeys01")
 	var old = third.inventory_of(1)
 	check(old.numbers[5] == stone and old.counts[5] == 5 and old.numbers[15] == 0 and old.numbers[0] == axe and old.count_of(stone) == 5, "key 6's stones move into hotbar slot 5; the axe already in slot 0 stays")
+	check(clay_at >= 0 and old.numbers[2] == clay and old.count_of(clay) == 3, "key 3's clay moves into hotbar slot 2")
 	check(not third._characters["hotbarkeys01"].has("hotbar"), "the old key list is dropped after the move")
 
 	# 7. Admin give still fills from slot 0 (tests and the admin tool); the item is still in one place.

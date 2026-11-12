@@ -433,6 +433,8 @@ func _machine_key() -> String:
 
 
 func toggle() -> void:
+	hotbar_hover = -1   # a hover left over from the last time the window was open never acts on a hotbar slot
+
 	if chest_mode:
 		_close_chest()
 		return

@@ -75,7 +75,7 @@ func _init() -> void:
 	feed.give(9, feed.table.number_of("stick"), 3)
 	check(gains == [[9, "stick", 3, "harvest"]], "a give is reported as a harvest gain (%s)" % str(gains))
 	gains.clear()
-	feed.action(9, Net.ACT_MOVE, 0, 20, 0, Vector3.ZERO)
+	feed.action(9, Net.ACT_MOVE, feed.inventory_of(9).numbers.find(feed.table.number_of("stick")), 20, 0, Vector3.ZERO)
 	check(gains.is_empty(), "moving a stack reports no gain (%s)" % str(gains))
 
 	# Money and reputation: coins pay into the purse as copper, richest coin first in the feed; reputation ranks and discounts.

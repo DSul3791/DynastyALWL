@@ -16446,10 +16446,12 @@ func _adopt_pointer_hotbar(key: String) -> void:
 
 	for k in mini((saved as Array).size(), inv.hotbar_slots):
 		var number: int = table.current_number(int(saved[k]))
-		var at: int = inv.numbers.slice(inv.hotbar_slots).find(number) if number > 0 else -1
 
-		if at >= 0 and inv.numbers[k] != number:
-			inv.move(inv.hotbar_slots + at, k)
+		if number > 0 and inv.numbers[k] != number:
+			var at: int = inv.numbers.find(number, k + 1)   # anywhere after this key (the old pack filled from slot 0), so a key already placed is never disturbed
+
+			if at >= 0:
+				inv.move(at, k)
 
 
 # A tool or weapon newly in the pack (picked up, crafted, taken from a chest; its kind was not in the pack before) that landed in the
