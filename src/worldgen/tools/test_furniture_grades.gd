@@ -158,8 +158,17 @@ func _place_checks() -> void:
 				var box = items._chest_of(1, piece)
 				check(box != null and int(box.usable) == int(items._structures[id]["slots"]), "%s: opens with %d slots" % [id, int(items._structures[id]["slots"])])
 
+			# Taking it down gives back its boards and every other material (a group cost, nails or hinges, as any member), and never a Plank.
+			items.action(1, Net.ACT_PICKUP, piece, 0, 0, Vector3.ZERO)
+			var back: bool = not items._items.has(piece) and _have("lumber") == boards
 
-# Comfort: each graded family (chair, table, bench) counts once, at its best grade; families and ungraded kinds still add up.
+			for row in bp["cost"]:
+				back = back and items.inventory_of(1).count_fill(items.table.number_of(str(row[0]))) == int(row[1])
+
+			check(back, "%s: taken down it gives back %s and no Plank (Planks %d, boards %d)" % [id, str(bp["cost"]), _have("lumber") - boards, _have("hardwood_board")])
+
+
+# Comfort: each graded family (chair, table, bench, board chest) counts once, at its best grade; families and ungraded kinds still add up.
 func _comfort_checks() -> void:
 	for family in ["Chair", "Table", "Bench"]:
 		var points: Array = FAMILIES[family].map(func(k): return int(items._comfort_kind(str(items._structures[k].get("comfort", k))).get("points", 0)))
@@ -170,6 +179,8 @@ func _comfort_checks() -> void:
 
 		check(ok, "%s comfort rises by grade %s" % [family, str(points)])
 
+	var chest_kinds: Array = FAMILIES["Chest"].map(func(k): return items._comfort_kind(str(items._structures[k].get("comfort", k))))
+	check(chest_kinds.all(func(k): return int(k.get("points", 0)) == 1 and str(k.get("family", "")) == "chest"), "every board chest grade keeps today's storage comfort 1, in one chest family")
 	check(int(items._comfort_kind("chair")["points"]) == 2 and int(items._comfort_kind("table")["points"]) == 2 and int(items._comfort_kind("bench")["points"]) == 1, "today's points stay: Rustic chair 2, Rustic table 2, Crude bench 1")
 	var pts: Callable = func(k: String) -> int: return int(items._comfort_kind(k)["points"])
 	var level: Callable = func() -> int: return int(items.comfort_at(1, true)["level"])
@@ -178,6 +189,14 @@ func _comfort_checks() -> void:
 	add_struct("bench", Vector3(1.0, 10.0, 2.0))
 	add_struct("chair", Vector3(2.0, 10.0, 2.0))
 	check(level.call() == 1 + pts.call("bench") + pts.call("chair"), "a Crude bench and a Rustic chair both count, as today (%d)" % level.call())
+	items._items.clear()
+
+	for kind in FAMILIES["Chest"]:
+		add_struct(kind, Vector3(-2.0 - float(items._items.size()), 10.0, 2.0))
+
+	check(level.call() == 2, "four board chest grades count once, 1 point (%d)" % level.call())
+	add_struct("chest", Vector3(-2.0, 10.0, -3.0))
+	check(level.call() == 3, "the Wicker chest still counts beside them, as today (%d)" % level.call())
 	items._items.clear()
 	var ornate_chair: int = 0
 

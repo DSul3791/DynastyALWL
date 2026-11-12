@@ -24,7 +24,7 @@ So a camp can have its lean-to or only a big tree; the comfort items need not be
 | rug | hide rug 1, wool rug 2 (both count) | future |
 | fire (LIT only) | campfire 1, clay hearth 2, fireplace 4 | campfire and hearth live, fireplace future |
 | light (LIT only) | wall torch 1, candle chandelier 3 | future |
-| storage | chest 1, plank chest 1 | live |
+| storage | wicker chest 1; board chests (Crude, Rustic, Fine, Ornate) 1, counted once as one family | live |
 | door, window | a doorway piece 1, a window wall 1 | live |
 | decor | flower pot 1, antler mount 1 | future |
 A kind counts once however many you place. A sensible camp: shelter 1 + straw bed 2 + bench 1 + workbench 1 + lit campfire 1 + chest 1 = **7**. A fine house: shelter 1 + canopy bed 5 + chair 2 + table 2 + rugs 3 + fireplace 4 + chandelier 3 + wall torch 1 + chest 1 + door 1 + window 1 + pot 1 = capped at **20**. The sum of everything is 39, so the cap of 20 matters. The existing rough bed (comfort 1 in bed.json) is the starting point: a bare lean-to with a rough bed is comfort 2 (shelter + bed) and just earns the buff.
