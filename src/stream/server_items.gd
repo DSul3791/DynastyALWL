@@ -12676,7 +12676,7 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if not it.has("struct"):
+		if not it.has("struct") or it["struct"].has("site"):   # a blueprint site is not built yet: it serves as nothing (docs/BLUEPRINT_SITES.md)
 			continue
 
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
@@ -12824,7 +12824,7 @@ func _cold_station_near(peer: int, station: String) -> bool:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct"):
+		if it.has("struct") and not it["struct"].has("site"):
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)) and station_level_of(it, def, station) > 0 and _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
@@ -12880,7 +12880,7 @@ func _addon_kinds(station_row: Dictionary, def: Dictionary, station: String) -> 
 	for id in _items:
 		var other: Dictionary = _items[id]
 
-		if not other.has("struct"):
+		if not other.has("struct") or other["struct"].has("site"):
 			continue
 
 		var kind: String = str(other["struct"]["kind"])
@@ -16762,7 +16762,7 @@ func _addon_beside(id: int, kind: String) -> bool:
 	for other_id in _items:
 		var other: Dictionary = _items[other_id]
 
-		if other.has("struct") and str(other["struct"]["kind"]) == kind and row["pos"].distance_to(other["pos"]) <= reach:
+		if other.has("struct") and not other["struct"].has("site") and str(other["struct"]["kind"]) == kind and row["pos"].distance_to(other["pos"]) <= reach:
 			return true
 
 	return false

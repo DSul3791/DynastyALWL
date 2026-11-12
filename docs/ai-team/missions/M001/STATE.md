@@ -55,10 +55,8 @@ Clones on Dave's PC (`git clone --shared` of his checkout; each has the `.godot`
 | `c2fc59a73` | #1041 | Phase 6 cooking and preservation, Phase 9 storage and locks | full suite 352/353 (flora timeout), smoke PASS |
 | `aa0ce7d2d` | #1042 | Phase 4b weapons, armour, clothing, protection | affected plan 198/198, smoke PASS |
 
-## In flight (12 Nov)
-- T15 Phase 5 carrying: branch `m001/p5` (clone m001_p5): review round 1 FAIL (a dropped full bag despawned in 20 min) → fixes and merge with dev in progress.
-- T16 Phases 7 then 8 (food effects, platters): branch `m001/p7` (clone m001_p7), engineer working.
-- Next: Phase 10 Handcart and movable loaded crates (after 5 and 9), then the final integrated walkthrough audit and mission report.
+## Status (12 Nov, evening)
+Phases 0-10 and 1b functionally complete in dev; every in-scope ledger row TESTED - ACCEPTED (automated + review) or RETIRED - MIGRATION VERIFIED; final report `MISSION_REPORT.md`. Open before MISSION COMPLETE: in-game visual/UI/two-client checks (NOT RUN) and final art (placeholders). Later dev checkpoints: `d21a4bcaa` (#1043 Phase 5), `81f7fee01` (#1044 Phases 7-8), `746a36883` (#1045 Phase 10), `0b19357cf` (#1046 Phase 2 remainders), then the walkthrough PR.
 
 ## AI team evaluation notes (mission section 13)
 - Planned vs accepted: every task so far needed at least one review round; 6 of 13 reviewed tasks had a first-round FAIL (T05 evidence, T06/T10 correctness, T11 fire heat, T12 batch loss, T13 evidence, T14 walking strain, T15 bag despawn). Every FAIL was a real defect or a real evidence gap; no review round was wasted.

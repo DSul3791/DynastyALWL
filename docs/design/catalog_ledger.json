@@ -91,13 +91,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair or edge, tier 2; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -109,13 +110,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair or edge; recipe 3 uses up its stone; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -169,13 +171,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair or edge, material stone, tier 2; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -285,13 +288,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair, tier 1; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -373,12 +377,13 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_station_storage",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T18 (Phase 2 remainders): a firewood station (s2.4): F opens it on the Craft tab, Soft or Hard firewood and a quantity (recipes 720, 721, chop: the hand-chop yield of the log taken, 12 from a species log, 6 from a plain Log) from logs in reach (pack, ground, own containers, station stores; CraftStock 12 m); its own input (logs only, refuses Planks) and output; E still splits a block by hand"
   },
   {
@@ -390,12 +395,13 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_station_storage",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T18 (Phase 2 remainders): renamed Hard firewood (s3.2); group costs read Firewood (group label); burns 2x soft firewood (cooking.json fuel)"
   },
   {
@@ -407,13 +413,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -439,14 +446,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -486,14 +494,15 @@
    "section": null,
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "switched on by s3.3 (Blast Furnace steel); M001-T06 (phase 2b)"
   },
   {
@@ -505,14 +514,15 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
     "test_tool_care",
-    "test_whetstone"
+    "test_whetstone",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 4, edge, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -524,13 +534,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, edge, repair at brick_forge; recipe 19 known; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -682,12 +693,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): retired with recipe 26; nothing live needs it"
   },
   {
@@ -699,13 +711,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -717,13 +730,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -749,13 +763,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -767,12 +782,13 @@
    "section": "3.4",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 10 (organized volume), contents per instance, back:base"
   },
   {
@@ -784,16 +800,17 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
     "test_blueprints",
     "test_food_effects",
-    "test_server_items"
+    "test_server_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): recipe 31 moved to the Food preparation table. M001-T16 (phase 7, s7 item 22): a tier 2 Dessert (food_effects.json), energy_aids energy 12 with no fitness cost, tooltip without the fitness wording"
   },
   {
@@ -1309,14 +1326,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_station_storage",
     "test_bronze_path",
     "test_stations",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b), verified by M001-T18: iron-free cost (24 stone, 10 clay, 2 hide), forge recipes bronze and copper work only, no smelting (Smelter), not an iron station (test_stations caps brick_forge at 0)"
   },
   {
@@ -1342,14 +1360,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -1389,14 +1408,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -1422,14 +1442,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b); masterwork +1/+2 lands in 2c"
   },
   {
@@ -1511,13 +1532,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1529,13 +1551,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1561,13 +1584,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1579,13 +1603,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1611,13 +1636,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1629,13 +1655,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1661,13 +1688,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1679,13 +1707,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1711,13 +1740,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1729,13 +1759,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1887,13 +1918,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -1905,13 +1937,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -2231,13 +2264,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -2249,13 +2283,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -2575,13 +2610,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -2593,13 +2629,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -3255,13 +3292,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair, tier 1; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -3273,13 +3311,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -3291,13 +3330,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -3309,13 +3349,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -3453,12 +3494,13 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_station_storage",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T18 (Phase 2 remainders): renamed Hardwood block (s3.2); group costs read Wooden block"
   },
   {
@@ -3484,12 +3526,13 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_station_storage",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T18 (Phase 2 remainders): renamed Soft firewood (s3.2); value 1 -> 2 (s5, coordinator decision)"
   },
   {
@@ -3515,14 +3558,15 @@
    "section": "3.2",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -3562,14 +3606,15 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -3595,13 +3640,14 @@
    "section": "3.2",
    "phase": "0",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "test_blueprints",
     "test_hammer_list",
-    "test_placement_rules"
+    "test_placement_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "retired at 159b566 (M001-T02); accepted_commit set at the dev merge"
   },
   {
@@ -3613,13 +3659,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -3631,15 +3678,16 @@
    "section": "3.1",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_bronze_path",
     "test_iron_saw_route",
     "test_stations",
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b); M001-T09: tier 4, repair 1 Iron ingot and 1 Stick at brick_forge, group saw (recipes 159, 408)"
   },
   {
@@ -3665,13 +3713,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -3921,12 +3970,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; rename only"
   },
   {
@@ -3966,12 +4016,13 @@
    "section": "3.4",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): waist:quiver (hip, coexists with a pack; no belt needed, takes a belt point on one), 40 arrows, bow draws from it first; description"
   },
   {
@@ -4263,13 +4314,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -4295,13 +4347,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair, stack 1 (pick-up of a surviving throw is code); M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -4327,13 +4380,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -4345,12 +4399,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): retired with recipe 187; nothing live needs it"
   },
   {
@@ -4362,13 +4417,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -4562,13 +4618,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): no repair; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -4594,12 +4651,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -4611,12 +4669,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -4628,12 +4687,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; offhand shield on a wicker base (no Planks), durability and repair at the forge"
   },
   {
@@ -4645,12 +4705,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -4662,12 +4723,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -4679,12 +4741,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; offhand shield, durability and repair at the Smithy"
   },
   {
@@ -4696,12 +4759,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -4713,12 +4777,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -4730,12 +4795,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; offhand shield, durability and repair at the Smithy"
   },
   {
@@ -4775,12 +4841,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -4806,12 +4873,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -4823,12 +4891,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -4840,12 +4909,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -4857,12 +4927,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -5168,14 +5239,15 @@
    "section": "3.2",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -6643,14 +6715,15 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
     "test_tool_care",
-    "test_whetstone"
+    "test_whetstone",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 3, edge, repair at forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -6662,14 +6735,15 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
     "test_tool_care",
-    "test_whetstone"
+    "test_whetstone",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 3, repair at forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -6681,13 +6755,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 3, repair at forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -6699,14 +6774,15 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
     "test_tool_care",
-    "test_whetstone"
+    "test_whetstone",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 3, repair at forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -7306,15 +7382,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -7326,15 +7403,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -7346,15 +7424,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -7422,14 +7501,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -7903,15 +7983,16 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_bronze_path",
     "test_iron_saw_route",
     "test_station_storage",
     "test_stations",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b); M001-T18: stack 100 (s5), the Kiln batch; value 0.15 unchanged"
   },
   {
@@ -8091,13 +8172,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -8109,13 +8191,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -9177,15 +9260,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -9211,15 +9295,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -9245,15 +9330,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -9307,14 +9393,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -9340,14 +9427,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -9373,14 +9461,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -10960,12 +11049,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): waist:quiver, 60 arrows; description"
   },
   {
@@ -10977,12 +11067,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; rename only"
   },
   {
@@ -11036,12 +11127,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 15, back:base"
   },
   {
@@ -11095,12 +11187,13 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_station_storage",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T18 (Phase 2 remainders): batch (s2.6): up to 6 logs (6 input slots), 100 Charcoal a log, E lights and puts out keeping contents, self-burns when done, kilns.json; log_s 300 and self_burn_s 150 real s are placeholders for Dave (s5); recipe 364 retired"
   },
   {
@@ -11154,11 +11247,12 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
-    "test_textile_route"
+    "test_textile_route",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T07: the hide drying step = recipe 179 (scraped hide) moves to the Drying rack (mission lead decision, STATE.md)"
   },
   {
@@ -11324,14 +11418,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -11357,14 +11452,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -11446,14 +11542,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -11493,13 +11590,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 3, repair at forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -11511,13 +11609,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -11529,13 +11628,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_tool_care"
+    "test_tool_care",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; recipe 373 known; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
@@ -11743,12 +11843,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_whetstone",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T10 (phase 2c), verified by M001-T18: portable sharpening (s2.2 rule 7) with accessible water, tools one after another"
   },
   {
@@ -11802,12 +11903,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): strapped to a worn pack (back:roll, needs back:base); still works from the pack"
   },
   {
@@ -11917,14 +12019,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "RETIRED - MIGRATION VERIFIED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -12062,14 +12165,15 @@
    "section": null,
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live with Uncooked meatballs (s3.12 DELEGATED); recipe 396 at the Campfire pot without the Copper pot, 471 with the pan"
   },
   {
@@ -12081,12 +12185,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -12196,14 +12301,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_textile_route",
     "test_server_items",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T07 (phase 2b): state 245, blueprint 207; recipes 245, 334, 342 moved here; own Loom look"
   },
   {
@@ -12285,14 +12391,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -12907,12 +13014,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -12925,12 +13033,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -12943,12 +13052,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -12961,12 +13071,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -12979,12 +13090,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -12997,12 +13109,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -13015,12 +13128,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -13033,12 +13147,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -13051,12 +13166,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -13069,12 +13185,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
@@ -13087,13 +13204,14 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_tool_ladder",
     "validate_items",
-    "test_whetstone"
+    "test_whetstone",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T09: structure state 246, blueprint 208 (stone, logs), station grindstone; M001-T10 code: sharpening at the grindstone, faster than a whetstone, no water (test_whetstone)"
   },
   {
@@ -13106,13 +13224,14 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_lumber_route",
-    "test_trade_buy_rules"
+    "test_trade_buy_rules",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T05 (phase 2a)"
   },
   {
@@ -13125,14 +13244,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T06 (phase 2b)"
   },
   {
@@ -13145,14 +13265,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "Smithy add-ons, not stations; M001-T06 (phase 2b)"
   },
   {
@@ -13165,14 +13286,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_iron_saw_route",
     "test_stations",
     "test_bronze_path",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "Smithy add-ons, not stations; M001-T06 (phase 2b); stands as a Smithy add-on; its Tempered output lands in 2c"
   },
   {
@@ -13185,14 +13307,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_textile_route",
     "test_server_items",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T07 (phase 2b): state 243, blueprint 205; recipes 278, 392, 356, 361, 213, 214, 358, 359, 360 moved here (no station level); look borrowed (carpenters_bench), NOT visually complete"
   },
   {
@@ -13205,14 +13328,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_textile_route",
     "test_server_items",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T07 (phase 2b): state 244, blueprint 206; recipes 216, 237-244 moved here (no station level); look borrowed (table), NOT visually complete"
   },
   {
@@ -13225,14 +13349,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_textile_route",
     "test_server_items",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T07 (phase 2b): hand recipe 409 (2 plant fibre -> 1 Thread, value-neutral at value 2); replaces Twine in needle recipes 23, 39-42, 173, 194-196, 237, 238, 241, 388; no model yet"
   },
   {
@@ -13245,14 +13370,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -13265,14 +13391,15 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -13285,15 +13412,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -13306,15 +13434,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -13327,15 +13456,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -13348,15 +13478,16 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_furniture_grades",
     "test_blueprints",
     "test_hammer_list",
-    "test_comfort"
+    "test_comfort",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": ""
   },
   {
@@ -13369,12 +13500,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13387,12 +13519,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13405,12 +13538,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13423,12 +13557,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13441,12 +13576,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13459,12 +13595,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13477,12 +13614,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13495,12 +13633,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13513,12 +13652,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13531,12 +13671,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13549,12 +13690,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13567,12 +13709,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13585,12 +13728,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13603,12 +13747,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13621,12 +13766,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13639,12 +13785,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13657,12 +13804,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13675,12 +13823,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13693,12 +13842,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13711,12 +13861,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13729,12 +13880,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
@@ -13747,12 +13899,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; shoots bolts with its own reload (bow.json)"
   },
   {
@@ -13765,12 +13918,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; shoots bolts with its own reload (bow.json)"
   },
   {
@@ -13783,12 +13937,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; offhand shield, durability and repair at the Smithy"
   },
   {
@@ -13801,12 +13956,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
@@ -13819,12 +13975,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
@@ -13837,12 +13994,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
@@ -13855,12 +14013,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
@@ -13873,12 +14032,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
@@ -13921,12 +14081,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -13939,12 +14100,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -13957,12 +14119,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -13975,12 +14138,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -13993,12 +14157,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14011,12 +14176,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14029,12 +14195,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14047,12 +14214,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14065,12 +14233,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14083,12 +14252,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14101,12 +14271,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14119,12 +14290,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14137,12 +14309,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14155,12 +14328,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14173,12 +14347,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14191,12 +14366,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14209,12 +14385,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14227,12 +14404,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14245,12 +14423,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14263,12 +14442,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14281,12 +14461,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14299,12 +14480,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14317,12 +14499,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14335,12 +14518,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14353,12 +14537,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14371,12 +14556,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14389,12 +14575,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14407,12 +14594,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14425,12 +14613,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
@@ -14443,12 +14632,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14461,12 +14651,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_armour",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
@@ -14479,12 +14670,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; shoulder:base, 4 slots, any; recipe 600 by hand; worn look placeholder"
   },
   {
@@ -14497,12 +14689,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; back:base, 10 slots, any; recipe 601 by hand (wet-weather penalty not modelled); worn look placeholder"
   },
   {
@@ -14515,12 +14708,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; shoulder:base, 6 slots, small items; recipe 602 Leatherworking table; worn look placeholder"
   },
   {
@@ -14533,12 +14727,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; waist:pouch (needs a belt), 4 slots, small items, quick use from the hotbar (clothing.json quick); recipes 603 by hand (hide), 604 Leatherworking table; worn look placeholder"
   },
   {
@@ -14551,12 +14746,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; waist:tools (needs a belt), 6 slots, small tools; recipes 605 Tailor's table, 606 Leatherworking table; worn look placeholder"
   },
   {
@@ -14569,12 +14765,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; back:base, 20 slots, any; recipe 607 Tailor's table; loaded_effort 0.15 (movement cost when loaded); worn look placeholder"
   },
   {
@@ -14587,12 +14784,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; back:base, 4 slots, awkward loads incl. large logs; recipe 608 Carpenter's bench; worn_speed_mult 0.85 (walk, run, sprint, ladder climb, strike and bow pace) and loaded_effort 0.25; worn look placeholder"
   },
   {
@@ -14605,12 +14803,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; waist:scabbard (needs a belt), 1 sword, drawn by its hotbar key (clothing.json quick); recipe 609 Leatherworking table; worn look placeholder"
   },
   {
@@ -14623,12 +14822,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_carrying",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T15 (phase 5): live; strap:base, 6 slots, small food and medicine, no strength bonus, quick use from the hotbar (clothing.json quick); recipe 610 Leatherworking table; worn look placeholder"
   },
   {
@@ -14956,14 +15156,15 @@
    "section": "3.11",
    "phase": "10",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_handcart",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T17: hammer blueprint 250, structure state 290, the first movable world entity (server_carts.gd); placeholder look (NOT visually complete)"
   },
   {
@@ -14976,12 +15177,13 @@
    "section": "3.11",
    "phase": "10",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
-    "test_handcart"
+    "test_handcart",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T17: recipe 700 at the Carpenter's bench; grey placeholder look"
   },
   {
@@ -14994,12 +15196,13 @@
    "section": "3.11",
    "phase": "10",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
-    "test_handcart"
+    "test_handcart",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T17: recipe 701 at the Carpenter's bench; implementation name Axle (s3.11 DELEGATED); grey placeholder look"
   },
   {
@@ -15162,14 +15365,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): state 250, blueprint 210 (3 log, 2 twine, like the Log - Table); station food_preparation_table; 17 prep recipes, Nut cake 31 and Fruit juice 376 made here; borrows the table look"
   },
   {
@@ -15182,14 +15386,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): kept equipment (kind tool), recipe 465 at the campfire (4 clay); used at campfire for the flatbreads, oat and chestnut cakes, crab cakes, banana fritters and egg dishes"
   },
   {
@@ -15202,14 +15407,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): kept equipment (kind tool), recipe 466 by hand (4 stick, 2 twine); Roast joint at a campfire"
   },
   {
@@ -15222,14 +15428,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): kept equipment (kind tool), recipe 467 at the Smithy (2 iron); grills sausages, and meat and mushroom skewers two batches at once"
   },
   {
@@ -15242,14 +15449,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): kept equipment, recipe 468 at the Smithy (2 iron, 1 stick); meatballs, crab cakes, fritters and egg dishes at a campfire"
   },
   {
@@ -15262,14 +15470,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): kept equipment, recipe 469 at the Smithy (5 iron); seven stews three batches at once at the Campfire pot"
   },
   {
@@ -15282,14 +15491,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): state 251, blueprint 211 (4 Iron band, Smithy-made); addon_of fireplace; serves campfire_pot only while a lit Fireplace stands within attach_m 2.5 (new attach code in serving_station); borrows the tool rack look"
   },
   {
@@ -15302,14 +15512,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15322,14 +15533,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15342,14 +15554,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15362,14 +15575,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15382,14 +15596,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15402,14 +15617,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15422,14 +15638,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15442,14 +15659,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15462,14 +15680,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15482,14 +15701,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15502,14 +15722,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15522,14 +15743,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15542,14 +15764,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15562,14 +15785,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15582,14 +15806,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): live; prepared at the Food preparation table, cooked into the existing dish (gen_dishes.py prepared/also_cook); grey placeholder look"
   },
   {
@@ -15602,14 +15827,15 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): prep recipe 470; Meatballs 837 live with it (Campfire pot 396 or the pan 471)"
   },
   {
@@ -15622,14 +15848,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15642,14 +15869,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15662,14 +15890,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15682,14 +15911,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15702,14 +15932,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15722,14 +15953,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15742,14 +15974,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15762,14 +15995,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15782,14 +16016,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15802,14 +16037,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15822,14 +16058,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15842,14 +16079,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15862,14 +16100,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
@@ -15882,14 +16121,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "view over nearby containers, 8 m (M001-T13)"
   },
   {
@@ -15902,15 +16142,16 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_blueprints",
     "test_hammer_list",
     "test_handcart",
     "test_storage_locks",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "rows and locks in phase 9 (M001-T13); loaded-crate movement on the Handcart in phase 10 (M001-T17: lifted with contents, lock and owner, ages at the cart's rate, views by location)"
   },
   {
@@ -15923,14 +16164,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "view over nearby containers, 16 m, outranks a sign (M001-T13); loaded-crate movement in phase 10"
   },
   {
@@ -15943,14 +16185,15 @@
    "section": "3.14",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): recipe 472 at the Smoker (2 raw meat, 1 salt -> 1); 1000 kcal, 0.6 kg, 480 h (Jerky 500 kcal, 0.3 kg)"
   },
   {
@@ -15963,14 +16206,15 @@
    "section": "3.14",
    "phase": "6",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T12 (phase 6): recipes 473-476 at the Drying rack (3 porcini, chanterelles, morels or puffball -> 1); outside the mushrooms group; extra Uncooked mushroom skewers recipe 477"
   },
   {
@@ -15983,13 +16227,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16002,13 +16247,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16021,13 +16267,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16040,13 +16287,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16059,13 +16307,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16078,13 +16327,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16097,13 +16347,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16116,13 +16367,14 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
     "test_food_effects",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): live, recipe 650-657 at the Food preparation table from cooked dishes; portions = stack count; shelf life of the shortest-lived dish; tier 3 food (food_effects.json); look NOT visually complete"
   },
   {
@@ -16135,12 +16387,13 @@
    "section": "3.15",
    "phase": "8",
    "depends": [],
-   "state": "IMPLEMENTED - UNVERIFIED",
+   "state": "TESTED - ACCEPTED",
    "tests": [
     "test_serving_platter",
-    "validate_items"
+    "validate_items",
+    "test_mission001_walkthrough"
    ],
-   "accepted_commit": null,
+   "accepted_commit": "aa8113c33",
    "note": "M001-T16 (phase 8): recipe 658 (2 Wooden block, knife kept, like the Wooden bowl); kind placeable; structure state 280 on a table top, one-slot board container, E eats a portion; look NOT visually complete"
   },
   {
@@ -16158,5 +16411,6 @@
    "accepted_commit": null,
    "note": "gated: dairy (Cheese #418) and Pickled Vegetables #834 are FUTURE"
   }
- ]
+ ],
+ "acceptance_note": "Mission 001 (12 Nov 2026): TESTED - ACCEPTED means implemented, independently reviewed and passing automated server-side tests (per-phase tests, the integrated walkthrough test_mission001_walkthrough, full suite 358/360 with 2 known flakes at aa8113c33). NOT included: in-game visual, UI and two-client checks, which were not run, and final art: most new pieces use marked placeholder looks. RETIRED - MIGRATION VERIFIED: retired with numbers kept and tests passing; Dave ruled no old-save migration is needed (new game)."
 }
