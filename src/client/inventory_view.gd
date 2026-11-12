@@ -222,7 +222,7 @@ var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
-var equip_requested: Callable = Callable()   # (hotbar key) -> hold what that key points at, or put it away (the client wires it to the held item)
+var equip_requested: Callable = Callable()   # (hotbar key) -> hold what is in that key's slot, or put it away (the client wires it to the held item)
 var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -1 for empty hands
 var hotbar_strip                              # HotbarStrip, set by the client
 var heart_pulse                               # HeartPulse (the line over the hotbar), set by the client
@@ -1423,7 +1423,7 @@ func is_broken(slot: int) -> bool:
 	return inventory.numbers[slot] != 0 and inventory.max_durability(slot) > 0 and condition(slot) <= 0.0
 
 
-# Is a tool of this class on the hotbar (a key points at it), the way the server checks it?
+# Is a tool of this class in a hotbar slot, the way the server checks it?
 func has_tool_class(tool_class: String) -> bool:
 	for slot in range(inventory.SLOTS):
 		if inventory.on_hotbar(slot) and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
@@ -4936,7 +4936,7 @@ func quick_key(event: InputEventKey) -> bool:
 	if _storage_ui.is_open():
 		return true   # the lock or storage window has the keys (its code and search fields)
 
-	var slot: int = _hover if _hover >= 0 else _selected
+	var slot: int = _hover if _hover >= 0 else (key_slot(hotbar_hover) if hotbar_hover >= 0 else _selected)   # a hotbar box is a pack slot too (TEST-008)
 
 	if KeyBindings.matches(event, "use_item"):
 		if hotbar_hover >= 0 and _hover < 0:
@@ -6070,7 +6070,7 @@ func run_eat_test(client) -> void:
 	var axe_slot: int = inventory.numbers.find(axe)
 
 	if int(held_slot_now.call()) == axe_slot:
-		equip_requested.call(int(held_key_now.call()))   # the saved hotbar key can point at it: start with empty hands
+		equip_requested.call(int(held_key_now.call()))   # the saved hotbar key can be its slot: start with empty hands
 
 	eat_slot(axe_slot)
 	await get_tree().create_timer(0.5).timeout

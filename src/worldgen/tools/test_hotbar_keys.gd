@@ -113,7 +113,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_MOVE, 1, bag_axe, 0, Vector3.ZERO)
 
 	# 3. A hotbar slot whose item is gone is empty, not a dimmed reminder (TEST-006): dropped, sold (the trade clears the slot) or used up.
-	items.action(1, Net.ACT_DROP, 1, 1, 0, Vector3(1.0, 10.0, 0.0))
+	items.action(1, Net.ACT_DROP, 1, 0, 1, Vector3(1.0, 10.0, 0.0))
 	check(pack().numbers[1] == 0 and pack().key_slot(1) == -1, "the knife dropped from key 2 leaves key 2 empty")
 	pack().numbers[3] = stone
 	pack().counts[3] = 2
@@ -132,18 +132,29 @@ func _init() -> void:
 	items.action(1, Net.ACT_BULK, 3, 1, 0, Vector3.ZERO)
 	check(pack().numbers.slice(0, 10) == bar, "Sort leaves the hotbar as it was")
 
-	# 6. Saved with the pack and back after a restart; the character keeps no "hotbar" (an old one is ignored).
-	items._characters["hotbarkeys01"]["hotbar"] = [stone, 0, 0, 0, 0, 0, 0, 0, 0, 0]   # as a pointer-hotbar save had
+	# 6. Saved with the pack and back after a restart; the character keeps no "hotbar".
 	var saved: PackedInt32Array = pack().numbers.duplicate()
 	items.save()
 	items._finish_writer()
 	var again = make_items(dir)
 	again.peer_connected_hello(1, "hotbarkeys01")
 	check(again.inventory_of(1).numbers == saved and again.inventory_of(1).hotbar_slots == 10, "the hotbar and backpack slots load back as they were, as a pack")
-	check(not again._characters["hotbarkeys01"].has("hotbar") and again.inventory_of(1).key_slot(0) == 0 and again.inventory_of(1).numbers[0] == axe, "an old saved \"hotbar\" is not read: key 1 is the axe in slot 0")
+
+	# 6b. A pointer-hotbar save (characters.json "hotbar", protocol 100 to 111): each key's item moves into its hotbar slot once, then the list is gone.
+	again.inventory_of(1).clear_slot(5)
+	again.inventory_of(1).numbers[15] = stone
+	again.inventory_of(1).counts[15] = 5
+	again._characters["hotbarkeys01"]["hotbar"] = [axe, 0, 0, 0, 0, stone, 0, 0, 0, 0]
+	again.save()
+	again._finish_writer()
+	var third = make_items(dir)
+	third.peer_connected_hello(1, "hotbarkeys01")
+	var old = third.inventory_of(1)
+	check(old.numbers[5] == stone and old.counts[5] == 5 and old.numbers[15] == 0 and old.numbers[0] == axe and old.count_of(stone) == 5, "key 6's stones move into hotbar slot 5; the axe already in slot 0 stays")
+	check(not third._characters["hotbarkeys01"].has("hotbar"), "the old key list is dropped after the move")
 
 	# 7. Admin give still fills from slot 0 (tests and the admin tool); the item is still in one place.
-	items = again
+	items = third
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
 	empty_pack()

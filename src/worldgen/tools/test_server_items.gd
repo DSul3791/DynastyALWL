@@ -1315,8 +1315,8 @@ func _init() -> void:
 	wr._last_mine.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "with no axe a blow on rock does nothing")
-	wr.inventory_of(1).add(axe_n, 1, ceili(durability * 0.5))   # a fresh half-worn axe in slot 0 (= durability - durability / 2, as the checks below expect)
-	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
+	wr.inventory_of(1).add(axe_n, 1, ceili(durability * 0.5))   # a fresh half-worn axe in the backpack (= durability - durability / 2, as the checks below expect)
+	wr.action(1, Net.ACT_DROP, wr.inventory_of(1).numbers.find(axe_n), 0, 1, Vector3(0.5, 10.0, 0.0))
 	var dropped: int = 0
 
 	for k in wr._items:

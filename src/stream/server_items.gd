@@ -539,6 +539,10 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	_known[peer] = {}
+
+	if _characters.has(key):
+		_adopt_pointer_hotbar(key)   # before the pack is sent
+
 	send_full.call(peer, _inventories[key].to_bytes())
 	_send_favs(peer, _inventories[key])
 
@@ -5474,7 +5478,7 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 	return rock if rocks.has(rock) else ""
 
 
-# The blows a stone takes from the best tool a hotbar key points at (items.json material, boulders.json tools), as [slot, blows], or [].
+# The blows a stone takes from the best tool in a hotbar slot (items.json material, boulders.json tools), as [slot, blows], or [].
 func _boulder_tool(inv) -> Array:
 	var best: Array = []
 	var tools: Dictionary = _boulder_cfg.get("tools", {})
@@ -5886,7 +5890,7 @@ func _has_tool(inv, tool_class: String) -> bool:
 	return _tool_slot(inv, tool_class) >= 0
 
 
-# The pack slot of a usable (not broken) tool of this class that a hotbar key points at (inventory step 4: keys hold items, not slots), or -1.
+# The pack slot of a usable (not broken) tool of this class in a hotbar slot (pack slots 0 to 9), or -1.
 func _tool_slot(inv, tool_class: String) -> int:
 	for slot in range(inv.SLOTS):
 		if inv.on_hotbar(slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv, slot):
@@ -7108,12 +7112,12 @@ func peers_near(position: Vector3, radius: float) -> Array:
 	return out
 
 
-# Splits `count` off a stack into the first empty slot (the stack keeps at least one).
+# Splits `count` off a stack into the first empty slot, the backpack's first in a pack (the stack keeps at least one).
 func _split(inv, slot: int, count: int) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or count < 1 or count >= inv.counts[slot]:
 		return
 
-	for target in range(inv.SLOTS):
+	for target in range(inv.bag_from, inv.SLOTS) + range(0, inv.bag_from):
 		if inv.numbers[target] == 0:
 			inv.numbers[target] = inv.numbers[slot]
 			inv.inst[target] = inv.inst[slot].duplicate(true)   # each unit of an instance stack carries it, so both halves keep it
@@ -16428,14 +16432,36 @@ func _autofills(number: int) -> bool:
 	return number > 0 and str(table.entry(table.id_of(number)).get("kind", "")) in ["tool", "weapon"]
 
 
+# A character saved under the pointer hotbar (8 Nov to 12 Nov 2026) kept its keys as item numbers in characters.json "hotbar": each key's item
+# moves from the backpack into its hotbar slot once (swapping with what is there), so a playtest world keeps its hotbar; then the key list is dropped.
+func _adopt_pointer_hotbar(key: String) -> void:
+	var saved: Variant = _characters[key].get("hotbar", null)
+	_characters[key].erase("hotbar")
+
+	if not saved is Array:
+		return
+
+	var inv = _inventories[key]
+	_dirty = true
+
+	for k in mini((saved as Array).size(), inv.hotbar_slots):
+		var number: int = table.current_number(int(saved[k]))
+		var at: int = inv.numbers.slice(inv.hotbar_slots).find(number) if number > 0 else -1
+
+		if at >= 0 and inv.numbers[k] != number:
+			inv.move(inv.hotbar_slots + at, k)
+
+
 # A tool or weapon newly in the pack (picked up, crafted, taken from a chest; its kind was not in the pack before) that landed in the
 # backpack moves into the first empty hotbar slot. `before` is the pack's item numbers before the change.
 func _hotbar_autofill(inv, before: PackedInt32Array) -> void:
+	var moved: Array = []
+
 	for slot in range(inv.hotbar_slots, inv.SLOTS):
 		var number: int = inv.numbers[slot]
 
-		if number == 0 or before.has(number) or not _autofills(number):
-			continue
+		if number == 0 or before.has(number) or moved.has(number) or not _autofills(number):
+			continue   # one of a new kind goes up; a second one that came in the same change stays in the backpack
 
 		var empty_key: int = inv.numbers.slice(0, inv.hotbar_slots).find(0)
 
@@ -16443,6 +16469,7 @@ func _hotbar_autofill(inv, before: PackedInt32Array) -> void:
 			return
 
 		inv.move(slot, empty_key)
+		moved.append(number)
 
 
 # --- Bulk buttons (docs/design/INVENTORY_CRAFTING_REPORT.md step 3; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 23) ---
@@ -18066,6 +18093,9 @@ func _load_characters() -> void:
 			"hints_seen": parsed["players"][key].get("hints_seen", {}) if typeof(parsed["players"][key].get("hints_seen", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
+
+		if typeof(parsed["players"][key].get("hotbar", null)) == TYPE_ARRAY:   # a pointer-hotbar save (protocol 100 to 111): its keys move into the hotbar slots once at the join
+			_characters[str(key)]["hotbar"] = parsed["players"][key]["hotbar"]
 
 		if bool(parsed["players"][key].get("dead", false)):   # real death (death.json real_death): a dead character stays dead across a restart
 			_characters[str(key)]["dead"] = true

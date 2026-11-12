@@ -292,7 +292,7 @@ func _init() -> void:
 	check(done.size() == 5 and int(done[1]) == 3 and ids_of_done() == [sort_chest], "bulk_done: Sort, with the chest's id")
 	var heavy_first: Callable = func(inv, i: int) -> Variant: return -CarryRules.weight_of(items.table.id_of(inv.numbers[i]), items._carry_cfg) * float(inv.counts[i])
 	bulk(3, 3)
-	check(in_order(pack(), 0, pack().SLOTS, true, heavy_first) and pack().numbers[11] == flint, "Sort by weight, heaviest first, round the favourite")
+	check(in_order(pack(), 10, pack().SLOTS, true, heavy_first) and pack().numbers[11] == flint, "Sort by weight, heaviest first, round the favourite")
 
 	print("bulk ops: %s" % ("all passed" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)
