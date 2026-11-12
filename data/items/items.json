@@ -10244,7 +10244,7 @@
 				"look_alikes": [],
 				"value": 12
 			},
-			"smelter": {"number": 908, "name": "Smelter", "description": "A squat stone and clay furnace. Smelts copper, tin and bog iron ore into ingots, and copper and tin into bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b)."},
+			"smelter": {"number": 908, "name": "Smelter", "description": "A stone and clay furnace. Smelts ore into copper, tin and iron ingots, and alloys bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b)."},
 			"bellows": {"number": 909, "name": "Bellows", "description": "Leather bellows for a smithy. It heats faster and burns less fuel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
 			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
 			"leatherworking_table": {
