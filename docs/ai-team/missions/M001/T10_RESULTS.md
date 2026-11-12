@@ -41,3 +41,30 @@ No new failures against base.
 - Wear travels as u16: rows above 65535 (steel spades, and Tempered/+2 maxima) show wrong bars on the client (pre-existing for the 81000 rows).
 - Craft queue on the client shows no variant; the Craft button is enabled from the plain needs (the server refuses a short variant). Clothing/armour variants: only durability, value (and damage for weapons); no warmth or weight effect. NPC grindstone use not built. Recipe card UI not checked in game.
 - `test_item_instances` pre-existing failure (above) should be fixed by its owner.
+
+## Integration onto T09 and review fixes (branch `m001/int3`, clone `E:\Software\godotDev\m001_int`)
+Base: dev `b62db1e7c` + T09 `0539f99b3` + T10 `eb3d50d89`, merged by the mission lead at `99155ebae`. Code under test: **`471c5d001`** (`bbd4e0a3d` integration, `471c5d001` review fixes; the commit after it adds only this section). Same PC, voxel build, slot scripts.
+
+| Change | Where |
+|---|---|
+| Test stand-ins removed; tests read T09's live rows (disposable Stone - Axe and Javelin, edged pickaxes, known steel recipes, the Grindstone structure 246). `test_tool_care` section 7 breaks and repairs every Phase 2c tool or weapon row of the ledger (32 rows). `test_server_items`' wear section follows the disposable Stone - Axe; `test_trade` asserts the live row. | tests |
+| `validate_items` agrees with the code: disposable rows need no repair (T09); a `repair_station` must be a live structure's station and needs repair materials; an `edge` needs a repairable row; `smithing.json`'s whetstone, stations, temper add-on and three cost factors must exist; every "Steel - " weapon or clothing row must be in `temper.include`. | `validate_items.gd` |
+| Tier ranks (Wooden 1 .. Steel 5): T10 code reads no tier (`_hammers_for` is T09's). | none |
+| Ledger: the 30 phase 2c rows waiting on T10 (all but the Kiln) are IMPLEMENTED - UNVERIFIED with `test_tool_care` / `test_whetstone`. | `catalog_ledger.json` |
+| Review MUST: Tempered now reads `smithing.json temper.include` (the s3.6/s3.7 steel weapon and armour rows, which carry no material: Steel - Cuirass `plate_cuirass` and 19 others) besides `material: steel` for tools; the `steel_` prefix rule is gone (it took the s3.10 Steel - Plate barding, outside s4 item 15). Ammunition (stacks), the Striker and the barding are never eligible. | `smithing.json`, `smithing_rules.gd` |
+| Sharpening that lowers `max_d` to the wear breaks the tool as a use does (`_tool_broke`: disposable gone, metal stays broken). | `server_items.gd` |
+| A running variant craft re-checks its stations at most once a real second per player (`_variant_here`), not every 0.25 s tick. | `server_items.gd` |
+| Client: the recipe card's wells, Short line and Craft button use the chosen variant's scaled needs (no parts plan for variants, as the server); Lasts shows the variant's maximum; `craft_variants` is memoised per frame and uses the nearest Smithy / Master smithy, as the server does; the craft queue carries the variant (`[recipe, count, variant]`, PROTOCOL.md) and shows it with its longer time; a disposable tool that vanishes at its end plays the break sound (a `shortcut:` heuristic: within 10 wear of its end). | client |
+
+| Run at `471c5d001` | Result |
+|---|---|
+| `tests_for_diff.py origin/dev HEAD` plan (338 fast + 8 timing), `run_tests.sh --jobs 3` | 344 pass, 2 fail |
+| `test_flora_density` (300 s timeout under load), rerun alone 600 s | PASS (392 s) |
+| `test_npc_view`: prints `test_npc_view: PASS`, then exit 139 at quit (known flake, T04 record; loads no T10 file), rerun alone | same: PASS printed, segfault at quit |
+| `test_tool_care` (130 checks), `test_whetstone` (24 checks) | PASS |
+| `validate_items` | PASS (0 errors, 163 warnings) |
+| `merge_check.py`, `check_look_names.py` | clear |
+| `catalog_ledger.py --check` | exit 0 (IMPLEMENTED - UNVERIFIED 100, IN DEVELOPMENT 1: the Kiln) |
+| warnings in the new or changed T10 scripts | none new (server_items and test_server_items warnings are older lines) |
+
+Decision recorded: R starts sharpening, then the sequence runs on by itself (mission lead, review). Still open: wear on the wire is u16 (maxima above 65535 show wrong bars; older for the 81000 spades); the craftsmanship damage bonus is melee only (thrown and bow damage unchanged); the recipe card and queue are not checked visually in game.
