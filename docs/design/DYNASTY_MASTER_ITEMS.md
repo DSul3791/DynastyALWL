@@ -1,17 +1,18 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 15 — ALL CATEGORIES EXCEPT FOOD PRESERVATION RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D12], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 15 BASELINE PLUS OWNER-APPROVED STORAGE AND WAREHOUSE SYSTEM [D13] RECORDED; FOOD PRESERVATION AND SERVING-PLATTER ROSTER STILL PENDING FINAL REVIEW. THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D13], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 15, reviewed categories only; not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 149 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10, 13 vehicles and parts in s3.11, 7 cooking equipment and 16 prepared foods in s3.12) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Vehicles add 10 blueprints and 10 structure states but no kit items. Cross-listed rows (dual-use tools, shields, protective clothing, containers, troughs, harnesses, cook stations and utensils) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 15 previously audited baseline BEFORE 16 new [D13] storage/warehouse ADD definitions; combined totals pending reconciliation, not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 149 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10, 13 vehicles and parts in s3.11, 7 cooking equipment and 16 prepared foods in s3.12) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Vehicles add 10 blueprints and 10 structure states but no kit items. Cross-listed rows (dual-use tools, shields, protective clothing, containers, troughs, harnesses, cook stations and utensils) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
 | Tag | Source | Weight |
 |---|---|---|
+| **[D13]** | Dave approved the attractive storage system (14 furniture/yard/ledger objects) and added Warehouse Crates and Warehouse Desks for linked bulk freight across warehouses and future ships; crates remain directly openable/manageable unless locked, and any linked desk obeys each crate's lock/permissions | **Owner-approved storage category only; NOT whole-catalog or runtime authorization** |
 | **[D12]** | Dave approved full revised Cooking Proposal 2: Food Preparation Table (built-in knives/cutting board/rolling pin), 6 other cookware/attachments, 16 tangible prepared food intermediates and prepare→cook where food needs assembling; no personal inventory knife prep | **Owner-approved cooking category; NOT implementation permission** |
 | **[D11]** | Dave approved ten carts/wagons/carriages and three reusable wheel/axle items; specifically removed Wheelbarrow as redundant with Handcart; paired animals remain one draft unit as in [D10] | **Approved vehicle category; NOT game implementation or complete-catalog approval** |
 | **[D10]** | Dave approved 20 horse-tack items: original 18 plus Double Heavy Draft Harness and Double Ox Yoke; yoked animals move as one logical controller in fixed formation, with individual stamina/health and combined hauling | **Approved animal-tack category and technical rule; NOT approval of vehicles or implementation** |
@@ -739,6 +740,77 @@ The griddle, spit, grate, pan and cauldron should be **equipment or compatible a
 
 **Next owner category pending review:** Food Preservation (drying, smoking, salting, fermentation, pickling, dairy preservation, cold storage and spoilage). Do not preemptively mark preservation items approved.
 
+### 3.13 Storage, warehouse crates and consolidated inventory [D13] — OWNER APPROVED (DESIGN ONLY)
+
+**Owner authority:** Dave explicitly approved ChatGPT's complete attractive/useful **Storage System — Proposal 1** ("I like it") and added the mandatory **warehouse crate + warehouse management desk + moving loaded crates to ships and other warehouses** concept. He then specified: "you can also just open a crate and see its inventory and manipulate it unless its locked". These latest owner rulings supersede any wording suggesting that a central interface is the *exclusive* way to open containers. **This is approval of storage-category design and these mechanics only; full master catalog and implementation are still NOT approved.**
+
+**Existing KEEP / UPDATE, stable IDs, do NOT duplicate:**
+
+| Existing item (row number) | Existing function/capacity (baseline) | Approved storage integration |
+|---|---|---|
+| Wicker - Chest #23 | 12 slots / 40 kg | Early general chest, direct access and optional zone grouping |
+| Wooden - Chest #29 | 20 slots / 150 kg | General household storage |
+| Iron - Chest #852 | 30 slots / 250 kg | Secure higher-capacity chest; lock support where authorized |
+| Crate #850 | 10 slots / 80 kg | Remains useful; enable sensible stacking, movable per-instance inventory, warehouse linking; distinct from new heavy **Warehouse Crate** only where freight role warrants |
+| Barrel #649 | 8 slots / 60 kg | Attractive bulk goods, grain/liquid compatibility according to storage rules |
+| Cupboard #647 | 16 slots / 60 kg | Household pantry and general supplies |
+| Wooden - Shelf #645 | 8 slots / 30 kg | Visible shelf storage |
+| Log - Shelf #848 | 6 slots / 30 kg | Primitive shelf |
+| Hide - Sack #783; Basket #785 | 6 slots / 25 kg each | Early camp storage |
+| Storage Jar #781 | 4 slots / 30 kg | Dry food, grains, oils and jars subject to real container rules |
+| Weapon Rack #787; Armour Stand #789 | 6 slots / 40 kg each | Visibly display compatible weapons, armour and outfits |
+| Root Cellar #832 | 12 slots / 120 kg; cold storage | Cold/seasonal foods; coordinate approved preservation methods later |
+
+**Existing cross-reference, NO duplicate:** Rock Pile item #235 is a physical 45-stone pile, not a universal storage chest. Tool Rack #82 is primarily a Workbench upgrade, NOT an inventory container; do not silently reinterpret it as the new Tool Cabinet. Existing Jar/Barrel/Crate storage should not be retired or replaced by attractive future variants.
+
+**Sixteen approved ADD definitions (14 from Storage Proposal 1 plus two warehouse-specific additions):**
+
+| Family | ADD item | Distinct functionality |
+|---|---|---|
+| Household (1/6) | Large Wooden Chest | Larger general-purpose chest with genuine cost/footprint/capacity trade-off vs #29 |
+| Household (2/6) | Wardrobe | Clothes, cloaks, boots, gear outfits in visible/tidy household furniture |
+| Household (3/6) | Dresser | Small personal belongings and everyday items; not an infinite furniture container |
+| Household (4/6) | Bookcase | Books, maps, scrolls and documents, visual occupancy |
+| Household (5/6) | Apothecary Cabinet | Herbs, tonics, remedies and appropriate medical supplies |
+| Household (6/6) | Bottle & Jar Rack | Stored vessels/preserves visible on shelves, appropriate size/contents |
+| Workshop (1/2) | Tool Cabinet | Real tools and repair equipment; distinct from existing tool-rack workstation upgrade |
+| Workshop (2/2) | Open Storage Bin | Loose stone, clay, ore, charcoal or similar materials, realistic contained bulk |
+| Bulk (1/5) | Firewood Rack | Visibly stacked, drying/protected burn fuel |
+| Bulk (2/5) | Log Rack | Whole logs, substantial bulk and physical limits |
+| Bulk (3/5) | Lumber Rack | Planks, Hardwood Boards and beams without confusing them as interchangeable |
+| Bulk (4/5) | Mason's Pallet | Stone blocks, bricks and heavy masonry |
+| Bulk (5/5) | Ore & Metal Rack | Ore, ingots and worked metal, safe heavy loading |
+| Zones (1/1) | Storage Sign / Ledger | Designates a physical local storage zone and provides a combined search/deposit/withdraw interface, NOT added capacity |
+| Warehouse (1/2) | **Warehouse Crate** | Sturdy, stackable, movable **freight crate with persistent individual inventory**, suitable for loading **while full** onto a cart, wagon or ship; distinct from basic #850 by stronger cargo/secure-transfer role, not an arbitrary material grade |
+| Warehouse (2/2) | **Warehouse Desk** | Physical warehouse management table/desk; connected inventory interface for nearby crates assigned to the warehouse's valid local storage area |
+
+**Building arrangements/layouts, NOT additional master item IDs:** Woodshed (Log/Firewood/Lumber racks), Materials Yard (Ore/Metal Rack/Mason's Pallets/Bins), Storehouse (Crates, Barrels, Shelves + Warehouse Desk/Storage Sign). Other attractive warehouse rooms, armouries, workshops, pantries and stables can be built from actual pieces; no "storehouse object" that magically creates capacity. Existing Root Cellar retained. Granary is a **food preservation proposal not yet approved**, not silently added here.
+
+**Mandatory direct crate access — explicit latest owner correction:**
+- Every existing **Crate #850** and newly designed **Warehouse Crate** remains a normal independently interactive physical inventory container. Standing at an accessible crate and opening it lets the player view, insert, withdraw, rearrange and transfer its contents directly, unless that crate is **locked** or their access is otherwise forbidden by valid in-game rules.
+- An **unlocked** crate is directly accessible to nearby players; a **locked** crate rejects unauthorized access. Owner/key/permission rules, when built, apply consistently to direct crate UI, Storage Sign, Warehouse Desk and Ship Captain's Table. No desk, reattachment, stacking, moving or network operation can bypass individual crate locks. Authorized users can access their locked crates through approved interfaces; unauthorized users cannot view private contents (even aggregated) or withdraw items.
+- The warehouse interface is **optional convenience**, NOT required to open/manage an individual accessible crate. It can show totals, location and search/filter of contents to which the interacting player has access. Capacity and contents remain in the actual crates, not the desk.
+
+**Loaded freight mobility and adaptive local connections — mandatory owner mechanic:**
+1. A warehouse can contain many stackable Warehouse Crates, each with unique persistent ID, true item inventory, locked/unlocked state, ownership/access data, physical size/mass, and contents condition/spoilage. A crate remains *the same crate* when transported; moving it never converts inventory into a separate remote ledger or duplicates an item.
+2. When player physically moves a loaded crate using suitable cart/wagon or future ship mechanics, the full crate and contents travel as cargo. Include contents weight and dimensions, safe stacking height/clearance/load limits and collisions. Crates do **not** teleport via ledgers.
+3. In a warehouse, qualifying crates physically within the warehouse's designated zone automatically become visible in **that Warehouse Desk**. On loading into a ship's actual cargo hold, they can automatically connect to that ship's **Captain's Table** (future ship-control/storage interface, **NOT an approved separate ADD item yet**). On unloading into a different warehouse, the new warehouse's desk connects to them. **Binding is location-derived** and revocable, not a destructive one-time assignment. Each crate belongs to **at most one active desk/ledger context at a time**, with an explicit unambiguous locality/ownership priority when areas overlap; no stale access through prior desk after crate departs.
+4. Transfers are real transactions over physical container inventories, respect per-crate locks/permissions, cargo limits, time progression, multiplayer atomicity, server authority and persistence. Moving a crate does not auto-unlock, reset spoilage, duplicate contents or allow a client to remotely withdraw it from its previous warehouse.
+5. A ship captain's table is a planned **ship feature**; ship mechanics, hull cargo holds, route/pathfinding, and table item/blueprint owner category remain **FUTURE and not implicitly approved** by this storage category. Reuse the Warehouse Desk/Storage Sign aggregation logic for ship storage when ship systems are approved.
+
+**Unified storage rules and presentation:**
+- Storage Sign creates a **local area view** of permitted physical containers/racks/barrels/bins; Warehouse Desk provides a warehouse-oriented view of crate freight and may also include eligible area containers. Do NOT make two incompatible inventory backends. Avoid a pointless second remote container inventory inside the desk/sign.
+- Quick-deposit matching stacks, withdraw, search, filters, totals and human-understandable category names; existing station storage sourcing/nearby range [D1] must not be replaced by network-wide virtual storage. Crafting access is physical/local and permission-aware.
+- Organize by physical bulk: rocks/ore/logs/boards require appropriate racks, pallet, bins, crate payloads with genuine mass, volume and shape; chest/wardrobe/bottle rack for suitable goods. No infinite capacity via stacking or ledger.
+- Visible fullness changes for log racks/wood racks/shelves/weapon racks/wardrobes/crates using modest visual fill states; not one individually rendered object per resource item. Real item counts and quality/spoilage remain in storage records, not appearance.
+- Several crates can be stacked within supported footprint, loading/height/weight constraints; access to their individual inventory must remain possible when accessible, otherwise safely use authorized warehouse desk. No clipping into ceilings or unlimited support.
+- Existing `Crate #850` should also be usable with warehouse linking and simple stacking when appropriate; the **new Warehouse Crate** must earn its separate ID through meaningful sturdy shipping, stacking/handling and locking utility, not duplicating everything old crate already does.
+- Material sourcing: basic storage before iron, stronger materials and hardware as necessary for heavy transport. Craft rates, storage slots, capacity/height numbers are **TBD for tuning**, not invented now.
+
+**Count and scope:** **14 originally proposed additions + 2 warehouse-specific = 16 ADD catalog definitions**, **3 build-layout arrangements, not items**, and **1 shared unified-storage capability**, **NOT extra inventory item(s)**. Existing stored objects retained and updated as needed. Ship Captain's Table is a future ship-system **cross-reference, not counted as a 17th new current storage item**.
+
+**Pending category status:** Food Preservation's earlier 12 ADD proposal is NOT fully approved; Dave approved the simplified two-route process with passive jar maturation but final preservation roster and totals need a revised owner review. The Serving Platter and 20 prepared-platter recipes have been proposed and discussed separately, but exact complete recipe roster is NOT approved as an ADD count yet. **No code/gameplay JSON, no merge or authorization to implement any category, and the complete master catalog remains unapproved.**
+
 ## 4. Implementation details (follow from the decisions; no new design)
 
 1. **Repair data:** `repair_station` on each metal tool names its crafting station type (today 26 rows say `forge`; bronze tools: `forge`, which the Smithy also provides; iron and steel: the Smithy); `drops.json tool_wear.repair_restores` (0.5) becomes "restore up to the remaining maximum"; stone, wooden and primitive rows lose `repair`; code removes a disposable tool at zero, drops a surviving thrown Javelin as a pickup, and keeps a broken metal tool in its slot.
@@ -859,7 +931,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are owner-approved and reconciled in s3.11 [D11] (13 ADD items, NO Wheelbarrow). COOKING AND FOOD PREPARATION is owner-approved and reconciled in s3.12 [D12] (23 new ADD items). FOOD PRESERVATION is next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are owner-approved and reconciled in s3.11 [D11] (13 ADD items, NO Wheelbarrow). COOKING AND FOOD PREPARATION is owner-approved and reconciled in s3.12 [D12] (23 new ADD items). STORAGE AND WAREHOUSING is owner-approved in s3.13 [D13] (16 ADD definitions incl. Warehouse Crate, Warehouse Desk, optional Storage Sign; direct locked/unlocked crate access; moving loaded crates reconnects through actual location to warehouse desks and, when ships exist, ship captain tables). FOOD PRESERVATION requires revised complete-category review; the proposed Serving Platter and 20 platter recipes also remain pending exact-owner approval. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
