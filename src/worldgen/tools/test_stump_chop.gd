@@ -4,6 +4,7 @@ extends SceneTree
 # firewood and kindling in the pack.
 #   godot --headless --path . --script res://src/worldgen/tools/test_stump_chop.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -36,7 +37,7 @@ func _init() -> void:
 
 	for n in range(20):
 		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
 	var stump_id: int = 0
 
@@ -53,7 +54,7 @@ func _init() -> void:
 
 	while w._items.has(stump_id) and guard < 30:
 		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_PROCESS, stump_id, 0, 0, HeldTool.at_axe(w))
 		guard += 1
 
 	check(not w._items.has(stump_id), "the stump is gone after the last blow (%d blows)" % guard)

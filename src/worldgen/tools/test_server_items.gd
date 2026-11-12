@@ -3,6 +3,7 @@ extends SceneTree
 # Server item rules without a network: validation, caps, despawn, save and reload.
 #   godot --headless --path . --script res://src/worldgen/tools/test_server_items.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const FloraLayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -1113,19 +1114,19 @@ func _init() -> void:
 	w.send_notice = func(peer, text): notices.append(text)
 	w.peer_connected_hello(1, "abcdef123456")
 	w.report_position(1, Vector3(8.0, 10.0, 0.0))
-	w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+	w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 	check(felled_log.is_empty() and w.inventory_of(1).count_of(w.table.number_of("stone_axe")) == 0, "no axe, no chopping")
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 
 	for n in range(3):
 		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
 	check(felled_log.is_empty(), "a tree does not fall at the first blows")
 
 	for n in range(10):
 		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
 	check(felled_log == [7], "enough blows fell it once")
 	var trunks: int = 0
@@ -1149,9 +1150,18 @@ func _init() -> void:
 	var sticks: int = w.table.number_of("stick")
 	var logs: int = w.table.number_of("log")
 	var apple: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)   # kept for the non-key wood test below
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+	# TEST-013 (Dave 12 Nov 2026): the axe in hand does the wood work. With the axe on the hotbar, a held pickaxe does nothing to the trunk.
+	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
+	var pick_at: Vector3 = Vector3(float(w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe")) + 1), 0.0, 0.0)
+	var axe_wear: int = int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1])
+	var sticks_before: int = w.inventory_of(1).count_of(sticks)
+	w._last_process.clear()
+	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, pick_at)
+	check(w.inventory_of(1).count_of(sticks) == sticks_before and int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear, "a pickaxe in hand does not work a trunk, nor wear the axe on the hotbar")
+	w._last_process.clear()
+	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 	check(w.inventory_of(1).count_of(sticks) >= 1 and w.inventory_of(1).count_of(w.table.number_of("leaves")) >= 1, "first blows take branches and leaves")
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 	check(w.inventory_of(1).count_of(sticks) <= 3 or true, "pace limit applies")
 	var guard: int = 0
 
@@ -1160,7 +1170,7 @@ func _init() -> void:
 			w.report_position(1, w.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
 
 		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 		guard += 1
 
 	var oak_logs: int = 0
@@ -1181,7 +1191,7 @@ func _init() -> void:
 	while w._items.has(apple_id) and apple_guard < 100:
 		w.report_position(1, w.cut_line_point(apple_id))
 		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, apple_id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_PROCESS, apple_id, 0, 0, HeldTool.at_axe(w))
 		apple_guard += 1
 
 	var plain_logs: int = 0
@@ -1203,7 +1213,7 @@ func _init() -> void:
 
 	w.report_position(1, Vector3(100.0, 10.0, 0.0))
 	w._last_hit.clear()
-	w.action(1, Net.ACT_HIT, 8, 0, 0, Vector3.ZERO)
+	w.action(1, Net.ACT_HIT, 8, 0, 0, HeldTool.at_axe(w))
 	check(felled_log == [7] and standing.has(8), "too far to chop")
 	w.save()
 	var w2 = make("user://test_server_items_f")
@@ -1541,7 +1551,7 @@ func _init() -> void:
 			lying = k
 
 	cb._last_process.clear()
-	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
+	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(cb))
 	check(not cb._items.has(lying) and loose_of.call(soft_block_n) == 3, "a plain log chopped on the ground makes 3 softwood blocks (%d)" % loose_of.call(soft_block_n))
 
 	# A softwood log chops to softwood blocks, and those split to softwood firewood (wood_species.json class_items).
@@ -1555,7 +1565,7 @@ func _init() -> void:
 			spruce_lying = k
 
 	cb._last_process.clear()
-	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, Vector3.ZERO)
+	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, HeldTool.at_axe(cb))
 	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 3, "a spruce log chopped on the ground makes 3 large softwood blocks (%d)" % loose_of.call(soft_n))
 	cb.action(1, Net.ACT_ADMIN_GIVE, soft_n, 0, 1, Vector3.ZERO)
 	cb.inventory_of(1).remove(block_n, cb.inventory_of(1).count_of(block_n))

@@ -54,7 +54,7 @@ Fix:
 
 Effect for a Stone - Axe (900 durability) vs Stone - Pickaxe (4500) on rock: axe 6 blows and 30 wear per stone (about 30 stones a life), pick 3 blows and 3 wear (about 1500).
 
-Trees: only an axe fells a tree (a pick is refused). Open: the tree blow still uses the first axe on the hotbar even when a pick is held, so swinging a held pick at a tree with an axe on the hotbar fells it with that axe. Same fix shape as boulders (send the held slot); left out here because twelve tree tests send the old message. Follow-up for the coordinator.
+Wood (second PR, protocol 113): only an axe works wood (a pick is refused), but every tree, trunk, stump and loose-log blow used the first axe on the hotbar, so a held pick with an axe on the hotbar still chopped. Now the client sends the held slot + 1 in at.x of the tree ACT_HIT and the wood ACT_PROCESS; the server (`_held_tool`) uses and wears only that slot when it is an axe on the hotbar. Not changed: the chopping block (split at a structure) and swinging at bare rock ground (`_mine`, which still needs an axe on the hotbar; reported, not in this fix). Tests: 40 tree/trunk/stump/log calls in 11 tests send the axe slot through `src/worldgen/tools/held_tool.gd`; `test_server_items.gd` adds "a pickaxe in hand does not work a trunk, nor wear the axe on the hotbar".
 
 Tests: `test_server_items.gd` boulder block (held axe with an iron pick on the hotbar: 6 blows a stone, 5 wear a blow, pick untouched; a stone or an empty slot in hand refused), `test_ore.gd`, `test_flint.gd`, `test_bronze_path.gd` updated to send the slot.
 

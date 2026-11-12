@@ -1085,7 +1085,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a, count)
 	elif kind == Net.ACT_HIT:
-		_hit(peer, inv, a, Vector2i(b, count))
+		_hit(peer, inv, a, Vector2i(b, count), int(at.x) - 1)   # a tree blow's at.x is the held pack slot + 1 (protocol 113)
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
 		_chest_action(peer, inv, kind, a, b, count)
 	elif kind == Net.ACT_USE_STRUCT:
@@ -1137,7 +1137,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_SPLIT:
 		_split(inv, a, count)
 	elif kind == Net.ACT_PROCESS:
-		_process_trunk(peer, inv, a)
+		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 113)
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_CHEST_CLOSE:
@@ -5744,7 +5744,7 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 
 # One axe blow on a standing tree. Enough blows fell it: the standing tree is removed, and a trunk
 # and a stump lie there (records in _items with a "tree" entry, saved in tree_states.json).
-func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
+func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void:
 	if chunk.x == Net.HIT_BOULDER:
 		_hit_boulder(peer, inv, tree_id, chunk.y - 1)   # a boulder blow's count is the held pack slot plus one
 		return
@@ -5757,7 +5757,9 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
 		return
 
-	if not _has_tool(inv, "axe"):
+	var axe: int = _held_tool(inv, held_slot, "axe")
+
+	if axe < 0:
 		_reject(peer, 1)
 		return
 
@@ -5774,7 +5776,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 		return
 
 	_last_hit[peer] = now
-	_wear_tool(peer, inv, "axe", "tree")
+	_wear_slot(peer, inv, axe, "tree")
 	var key: String = "%d,%d,%d" % [chunk.x, chunk.y, tree_id]
 	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
 
@@ -5881,6 +5883,15 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	_next_id += 1
 	_dirty = true
 	_sync_in = 0.0   # bug 6: the trunk goes out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
+
+
+# The held pack slot when it is a usable tool of this class on the hotbar, else -1 (TEST-013, Dave 12 Nov 2026: the tool in hand does the work,
+# not whichever one of the class sits on the hotbar).
+func _held_tool(inv, slot: int, tool_class: String) -> int:
+	if slot < 0 or slot >= inv.SLOTS or not inv.on_hotbar(slot) or _is_broken(inv, slot):
+		return -1
+
+	return slot if str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class else -1
 
 
 func _has_tool(inv, tool_class: String) -> bool:
@@ -6286,22 +6297,24 @@ func _load_trees() -> void:
 # One axe blow on a felled trunk (drops.json "trunk"): branches and leaves first, then logs with some
 # bark and now and then seeds. The server checks the axe, the pace and that the player stands at the
 # trunk (distance to its line). The trunk is used up when its logs are gone; the stump stays.
-func _process_trunk(peer: int, inv, id: int) -> void:
+func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
 	if str(it.get("struct", {}).get("kind", "")) == "carcass":
 		_process_carcass(peer, inv, id)
 		return
 
+	var axe: int = _held_tool(inv, held_slot, "axe")   # wood is worked with the axe in hand (TEST-013)
+
 	if not it.is_empty() and not it.has("tree") and not it.has("struct"):
-		_chop_loose_log(peer, inv, id)
+		_chop_loose_log(peer, inv, id, axe)
 		return
 
 	if not it.is_empty() and it.has("tree") and int(it["tree"]["state"]) == 4:
-		_chop_stump(peer, inv, id)
+		_chop_stump(peer, inv, id, axe)
 		return
 
-	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
+	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer) or axe < 0:
 		return
 
 	var tree: Dictionary = it["tree"]
@@ -6331,7 +6344,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		return
 
 	_last_process[peer] = now
-	_wear_tool(peer, inv, "axe", "trunk")
+	_wear_slot(peer, inv, axe, "trunk")
 	practice(peer, "work_trunk")
 	tree["landed"] = true   # the client draws it lying from now on (a shorter trunk is not felled again)
 
@@ -6405,10 +6418,10 @@ func _stump_final_rows(cfg: Dictionary, radius: float) -> Array:
 
 # One axe blow on a stump (drops.json "stump"): a few blows (more for a thick one) chop it up for kindling and firewood, then it is gone and its record
 # is freed. The blow count is saved with the stump, so a half-chopped stump stays half-chopped across a restart; the pace and skill rules are the trunk's.
-func _chop_stump(peer: int, inv, id: int) -> void:
+func _chop_stump(peer: int, inv, id: int, axe: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 4 or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
+	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 4 or not _peer_pos.has(peer) or axe < 0:
 		return
 
 	var tree: Dictionary = it["tree"]
@@ -6423,7 +6436,7 @@ func _chop_stump(peer: int, inv, id: int) -> void:
 		return
 
 	_last_process[peer] = now
-	_wear_tool(peer, inv, "axe", "trunk")
+	_wear_slot(peer, inv, axe, "trunk")
 	practice(peer, "work_trunk")
 	var needed: int = clampi(int(ceil(float(cfg.get("blows_base", 3)) + float(tree["radius"]) * float(cfg.get("blows_per_radius_m", 15)))), int(cfg.get("blows_min", 3)), int(cfg.get("blows_max", 14)))
 	var blows: int = int(tree.get("blows", 0)) + 1
@@ -9021,10 +9034,10 @@ func _drop_firewood_beside(block: Dictionary, count: int, wood_id: String = "fir
 
 # A log lying on the ground, struck with an axe, falls apart into wooden blocks: 3 per log (Dave 4 Nov 2026, BUG-014), small blocks from a short log,
 # large blocks from a large shoulder log.
-func _chop_loose_log(peer: int, inv, id: int) -> void:
+func _chop_loose_log(peer: int, inv, id: int, axe: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or it.has("struct") or it.has("tree") or it.has("fire") or it.has("scatter") or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
+	if it.is_empty() or it.has("struct") or it.has("tree") or it.has("fire") or it.has("scatter") or not _peer_pos.has(peer) or axe < 0:
 		return
 
 	var item_id: String = table.id_of(int(it["number"]))
@@ -9050,7 +9063,7 @@ func _chop_loose_log(peer: int, inv, id: int) -> void:
 	else:
 		_items.erase(id)
 
-	_wear_tool(peer, inv, "axe", "split")
+	_wear_slot(peer, inv, axe, "split")
 	drop_in_world(table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
 	practice(peer, "split_log")
 	_dirty = true

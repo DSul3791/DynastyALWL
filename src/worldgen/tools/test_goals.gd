@@ -6,6 +6,7 @@ extends SceneTree
 # are saved with the character and still done after a restart, and goals_state lists locked / open / done.
 #   godot --headless --path . --script res://src/worldgen/tools/test_goals.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -110,7 +111,7 @@ func _init() -> void:
 			break
 
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	check(standing.is_empty() and done("fell") and count("kindling") >= 3, "felling a tree completes the fell goal and gives kindling")
 

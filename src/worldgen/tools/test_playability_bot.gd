@@ -8,6 +8,7 @@ extends SceneTree
 # What it cannot see: the real terrain (whether sticks lie within reach of the spawn is the world-alive metrics tool's job) and the client's hands.
 #   godot --headless --path . --script res://src/worldgen/tools/test_playability_bot.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -244,7 +245,7 @@ func _init() -> void:
 			break
 
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	need(standing.is_empty(), "the tree did not fall to 200 axe blows")
 	if halted:
@@ -272,7 +273,7 @@ func _init() -> void:
 			items.report_position(1, items.cut_line_point(trunk_id))   # the player walks to the cut line (the server says "Walk along the trunk" otherwise)
 
 		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(items))
 		guard += 1
 		items.tick(1.0)
 

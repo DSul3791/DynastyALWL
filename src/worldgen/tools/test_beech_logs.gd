@@ -4,6 +4,7 @@ extends SceneTree
 # by the cut line, sticks and bark still go to the pack, the last cut removes the trunk, a partly cut trunk survives a restart, and a big tree's logs are not lost to the drop cap.
 #   godot --headless --path . --script res://src/worldgen/tools/test_beech_logs.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -55,7 +56,7 @@ func _init() -> void:
 
 	for n in range(20):
 		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
 	var trunk_id: int = 0
 
@@ -76,7 +77,7 @@ func _init() -> void:
 
 	for n in range(3):
 		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 
 	check(w.inventory_of(1).count_of(stick) >= 1, "branch blows give sticks to the pack")
 	check(loose_logs(w, log_n).is_empty() and w.shoulder_of(1) == "", "no log yet")
@@ -85,7 +86,7 @@ func _init() -> void:
 	notices.clear()
 	var before_blows: int = int(tree["blows"])
 	w._last_process.clear()
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 	check(int(tree["blows"]) == before_blows and notices.has("Walk along the trunk to the cut line."), "standing far from the cut line the blow does not count and the player is told")
 
 	# A log on the shoulder never blocks the chopping.
@@ -96,7 +97,7 @@ func _init() -> void:
 
 	for n in range(3):
 		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 
 	check(loose_logs(w, log_n).size() == 1, "the cut drops one log on the ground, not into the pack (loose logs: %d)" % loose_logs(w, log_n).size())
 	check(w.shoulder_of(1) == "log_beech" and w.inventory_of(1).count_of(log_n) == 1, "the carried log (a pack item) is unchanged and the cut log did not join it")
@@ -119,7 +120,7 @@ func _init() -> void:
 	while w._items.has(trunk_id) and guard < 80:
 		w.report_position(1, w.cut_line_point(trunk_id))
 		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 		guard += 1
 
 	check(not w._items.has(trunk_id), "the last cut removes the trunk")

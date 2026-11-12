@@ -1907,19 +1907,19 @@ func _strike() -> void:
 
 	if log_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # wood work: the axe in hand (protocol 113)
 	elif boulder_id != 0:
 		_sound.hits.hit(_hit_tool(), "stone", hit["position"], 1.0)   # a boulder is stone whatever the ground under it
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, held_slot + 1, Vector3.ZERO)   # the tool in hand does the work (TEST-013)
 	elif trunk_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif stump_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif not tree.is_empty():
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif not shrub.is_empty():
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 0.7)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(1.0 if _tool_class() == "pick" else 0.0, 0.0, 0.0))
