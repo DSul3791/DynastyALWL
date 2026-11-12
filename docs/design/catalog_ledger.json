@@ -379,7 +379,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T18 (Phase 2 remainders): a firewood station (s2.4): F opens it on the Craft tab, Soft or Hard firewood and a quantity (recipes 720, 721) from logs in reach (pack, ground, own containers, station stores; CraftStock 12 m); its own input (logs only, refuses Planks) and output; E still splits a block by hand"
+   "note": "M001-T18 (Phase 2 remainders): a firewood station (s2.4): F opens it on the Craft tab, Soft or Hard firewood and a quantity (recipes 720, 721, chop: the hand-chop yield of the log taken, 12 from a species log, 6 from a plain Log) from logs in reach (pack, ground, own containers, station stores; CraftStock 12 m); its own input (logs only, refuses Planks) and output; E still splits a block by hand"
   },
   {
    "key": "firewood",
@@ -3490,7 +3490,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T18 (Phase 2 remainders): renamed Soft firewood (s3.2)"
+   "note": "M001-T18 (Phase 2 remainders): renamed Soft firewood (s3.2); value 1 -> 2 (s5, coordinator decision)"
   },
   {
    "key": "wooden_block_soft",
@@ -7912,7 +7912,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T06 (phase 2b); M001-T18: stack 100 (s5), the Kiln batch"
+   "note": "M001-T06 (phase 2b); M001-T18: stack 100 (s5), the Kiln batch; value 0.15 unchanged"
   },
   {
    "key": "wool_cloth",
@@ -11101,7 +11101,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T18 (Phase 2 remainders): batch (s2.6): up to 6 logs, 100 Charcoal a log, one every 3 s (log_s 300 real s), self-burns 1 per 150 s when done, E lights and puts out keeping contents, kilns.json; recipe 364 retired"
+   "note": "M001-T18 (Phase 2 remainders): batch (s2.6): up to 6 logs (6 input slots), 100 Charcoal a log, E lights and puts out keeping contents, self-burns when done, kilns.json; log_s 300 and self_burn_s 150 real s are placeholders for Dave (s5); recipe 364 retired"
   },
   {
    "key": "tanning_rack_kit",

@@ -16,15 +16,20 @@ Branch `m001/t18` (clone `E:\Software\godotDev\m001_p18`), base `d037e9b13`. Bri
 ## Numbers (s5 tuning, playtest)
 | What | Value |
 |---|---|
-| Station stores, input / output slots | Smelter 4/4, Stone - Forge 4/4, Smithy 6/6, Blast furnace 6/6, Master smithy 6/6, Kiln 2/8, Sawmill 4/6 (logs), Chopping block 2/6 (logs), Loom, Tailor's table, Leatherworking table, Food preparation table 4/4 |
+| Station stores, input / output slots | Smelter 4/4, Stone - Forge 4/4, Smithy 6/6, Blast furnace 6/6, Master smithy 6/6, Kiln 6/8 (a 3 m species log is one a slot), Sawmill 4/6 (logs), Chopping block 4/6 (logs), Loom, Tailor's table, Leatherworking table, Food preparation table 4/4 |
 | Sourcing radius | the existing CraftStock 12 m for every station (one constant) |
-| Kiln | 6 logs a batch, 100 Charcoal a log, `log_s` 300 real s a log (one piece every 3 s; 30 min a full batch), self-burn one Charcoal per 150 real s (= its 3600 game-s fuel time, Q2) |
+| Kiln | 6 logs a batch, 100 Charcoal a log. **Placeholders for Dave** (master s5: "kiln burn time and self-consumption rate (Dave: not to be invented now)"): `log_s` 300 real s a log (one piece every 3 s; 30 min a full batch), `self_burn_s` 150 real s a Charcoal once done (= its 3600 game-s fuel time, Q2); structures.json `note_kiln` says so |
 | Charcoal stack | 20 -> 100 (s5 "Charcoal stack size": a 600 batch is 6 slots, not 30) |
-| Values (review round 1) | Hard firewood 2 -> 4, Soft firewood 1 -> 3 (6 from a 48 or 32 species log keep the economy guard's 40 %), Charcoal 0.15 -> 0.3 (recipe 341 still keeps 40 %; it still truncates to 0, so Hob does not buy it, Q2) |
-| Chopping block | 6 firewood a log, 12 s a log |
+| Values (round 2, coordinator decision) | Hard firewood 2 (base), Soft firewood 1 -> 2, Charcoal 0.15 (base): 12 firewood from a 48 or 32 species log keep the unchanged economy guard's 40 %, and recipe 341 still does. (Round 1's 4 / 3 / 0.3 are withdrawn.) |
+| Chopping block | what the hand chop gives for the log taken (structures.json chopping_block): 12 from a 3 m species (shoulder) log, 6 from a plain Log; 12 s a log |
 | Hammer reach x (Wooden..Steel) | 1.0, 1.25, 1.5, 2.0, 2.5: the 12 m stock becomes 12, 15, 18, 24, 30 m |
 
-## Evidence after review round 1 (code under test **`af0787249`**)
+## Evidence after review round 2 and the dev merge (code under test **`58868eb41`**)
+Round 2 (review FAIL, two must-fix): `_start_deferred` now takes a chain's deferred parts through the craft stock, so queueing the missing parts works at an owned station (test: Bronze ingots from ores at the player's Smelter, the copper and tin ingots waiting in its output); the Kiln input is 6 slots, tested with Oak logs; the Chopping block yields the hand-chop numbers per log (`chop` recipes, `_chop_yield`; a cancel refunds only the logs not yet chopped); repair sourcing takes only the player's own containers and station stores, not kept out; storage-view lists and takes reach station output slots; kilns.json values are clamped on load; new tests for take-down refused (contents, a part-burnt log), the Kiln pausing on a full output, the blueprint pay path with a steel hammer at 21 m and the repair filter (`test_station_storage` 55 checks); stale texts (CONTROLS, encyclopedia, ITEM_GLOSSARY) fixed.
+Merged dev `746a36883` through `m001/p10` `ad2ec78eb` (Phase 10 Handcart, protocol 111): conflicts only in recipes.json (next_number 722 kept, recipes 700/701 and 720/721 both kept) and the world-row signature (the cart/crate movement term and the station fill term both kept; a cart's store has no `out_slots`, so it is not a station and carries no `fill`).
+Clean run at `58868eb41` (HEAD the same before and after, no tracked changes): full plan `python3 tools/tests_for_diff.py ad2ec78eb HEAD` (218 fast + 4 timing) **222 PASS, 0 FAIL**; `validate_items` PASS (0 errors, 114 warnings); look names all 238 drawable; `merge_check.py` clear; ledger `--check` exit 0. Logs: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\t18\run5\`. Not run: the art status pages (`ART_ASSET_INVENTORY.md`, `art/ITEM_ART_STATUS.md`) still say Softwood firewood (Kathleen's pages, left for her).
+
+## Evidence after review round 1 (code under test `af0787249`)
 The mission lead asked for no gate change: the `test_economy_guard` exemption is reverted (the file is identical to base `d037e9b13`) and the values were retuned instead (Numbers). Clean run, HEAD the same before and after, no tracked changes: full plan `d037e9b13..HEAD` (217 fast + 4 timing) **221 PASS, 0 FAIL** (test_economy_guard, test_station_storage, test_trade, test_first_town among them); `validate_items` PASS (0 errors); look names all drawable; `merge_check.py` clear; ledger `--check` exit 0. Logs: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\t18\run4\`. Risk: Hob sells firewood at twice the old price, and a plain Log (value 4) now chops into 18 copper of soft firewood (the guard values a group by its key item, Softwood log 32); Hob buys at a fraction of value, so check it in playtest.
 
 ## Evidence round 0 (Dave's PC, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, guarded runner, 3 jobs)
@@ -40,11 +45,11 @@ Code under test: **`0d0df273f`** (the commit after it changes only this file and
 
 ## Decisions taken from the documents (for review)
 - **Products of a guest's craft go to the guest's pack**, an owner's stay in the station (s2.5 "authorized workstations"); otherwise a guest's sword would land in a store the owner can empty.
-- **Economy guard:** chopping a species log (value 32/48) into 6 firewood failed the guard's "never lose money" rule. Round 0 skipped that check for chopping-block recipes; the mission lead ruled that a gate change, so round 1 reverts it and raises the firewood and charcoal values (s5 tuning) instead.
+- **Economy guard:** chopping a species log (value 32/48) into 6 firewood failed the guard's "never lose money" rule. Round 0 skipped that check for chopping-block recipes; the mission lead ruled that a gate change, so round 1 reverts it and raises the firewood and charcoal values (s5 tuning) instead. Round 2 (coordinator decision): the Chopping block yields what the hand chop yields (12 from a species log, 6 from a plain Log), Hard firewood stays 2, Soft firewood 1 -> 2, Charcoal stays 0.15; the guard is unchanged.
 - **Recipe 364 retired**: the batch replaces the kiln craft (s4 item 8 "as a batch").
 
 ## Not done / known limits
-- Hard firewood at the chopping block comes only from Hardwood logs: the Hardwood block's id keys the any-block group, so a recipe cannot ask for it alone. Blocks are still split by hand (E); hand-split firewood still drops beside the block (kept as it was).
+- The Chopping block takes logs, not blocks: the Hardwood block's id keys the any-block group, so a recipe cannot ask for it alone. Blocks are still split by hand (E); hand-split firewood still drops beside the block (kept as it was).
 - One sourcing radius for every station (CraftStock 12 m); no per-station radius until NPC operators.
 - The Smithy is still fired from the pack, not from its own store or a nearby Kiln.
 - Stations are not lockable (Phase 9 data): anyone may open an owner's station store, as with an unlocked chest.
