@@ -67,11 +67,11 @@ func _init() -> void:
 	# The list counts what a build draws on, the pack and the craft stock in reach (held_item.gd sets stock_count to InventoryView.stock_fill).
 	pack.remove(table.number_of("nails"), pack.count_of(table.number_of("nails")))
 	var nails_n: int = table.number_of("nails")
-	var in_chest: Dictionary = {nails_n: 60}
+	var in_chest: Dictionary = {nails_n: 8}
 	list.stock_count = func(number: int) -> int:
 		return pack.count_fill(number) + int(in_chest.get(number, 0))
 	var stocked: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Crate")[0]
-	check(bool(stocked["can"]) and str(stocked["text"]) == "plank 12/12, nails 60/60", "60 nails in a chest in reach cover the table with none in the pack (%s)" % str(stocked["text"]))
+	check(bool(stocked["can"]) and str(stocked["text"]) == "plank 5/5, nails 8/8", "8 nails in a chest in reach cover the crate with none in the pack (%s)" % str(stocked["text"]))
 	list.stock_count = Callable()
 	pack.add(nails_n, 60)
 
@@ -123,6 +123,6 @@ func _init() -> void:
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 133 and strict_list.rows(2).size() == 134, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 132 and strict_list.rows(2).size() == 133, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
