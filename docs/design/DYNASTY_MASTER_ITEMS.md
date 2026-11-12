@@ -1,10 +1,10 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 4 FOR DAVE'S APPROVAL (12 Nov 2026). Documentation only.** Nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code is changed by this document. The item catalog stays frozen until Dave approves this finished catalog.
+**Status: DRAFT 4 FOR DAVE'S APPROVAL (12 Nov 2026). Documentation only.** **Dave: the questions for you are in section 8, with a "Dave's answer" line under each.** Nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code is changed by this document. The item catalog stays frozen until Dave approves this finished catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4`. Open PR #1036 retires the Woodworking table separately.
 
-Layout: s1 sources; **s2 approved design decisions**; s3 the catalog (KEEP / UPDATE / ADD / RETIRE / FUTURE by row); **s4 implementation details** (how approved decisions land in data and code; no design content); **s5 balancing numbers still to set**; s6 cross-check results; s7 JSON change list; **s8 the only decisions still needing Dave**; Appendix A the full 889-row catalog.
+Layout: s1 sources; **s2 approved design decisions**; s3 the catalog (KEEP / UPDATE / ADD / RETIRE / FUTURE by row); **s4 implementation details** (how approved decisions land in data and code; no design content); **s5 balancing numbers still to set**; s6 cross-check results; s7 JSON change list; **s8 the only decisions still needing Dave, with a space for his answer under each**; Appendix A the full 889-row catalog.
 
 ## 1. Sources
 
@@ -220,29 +220,55 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 
 ## 8. Decisions still needing Dave
 
-Only these are open. Each has a recommendation.
+Only these are open. Each has a recommendation. **Dave: write your answer on the "Dave's answer" line under each question** (for example "Agree", "Alternative (a)", or your own wording). Edit this file on the PR branch in GitHub, or reply in a PR comment with the item numbers.
 
 1. **Durability class of wooden tools, the Bone - Needle, stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper.** Dave's rules cover stone tools and metal tools only.
    **Recommend:** stone and flint weapons and the Scraper are disposable like stone tools; wooden tools are disposable too (they are as cheap as stone ones); the Bone - Needle breaks and is repaired by hand with a Bone, like a metal tool at its crafting place, since it is "the one reusable needle".
    *Consequences:* early tools are simple to replace; one rule for all primitive tools. *Alternative:* wooden tools keep today's stick repair.
+
+   **Dave's answer:** _
+
 2. **Bronze working needs an iron-built Smithy.** The Smithy costs Iron ingots, so if all metalworking moves there, bronze tools come after iron, against the Stone, Bronze, Iron, Steel ladders.
    **Recommend:** keep the Stone - Forge (88) as the bronze-working smithy (bronze tools only, no smelting, no iron in its cost); the Smithy works bronze, iron and steel.
    *Consequences:* bronze stays a real step before iron; one extra station stays in the game. *Alternatives:* (a) bronze tools crafted at the Smelter; (b) accept bronze as a parallel tier reachable after first iron, and retire the Stone - Forge.
+
+   **Dave's answer:** _
+
 3. **Station ids.** **Recommend:** the Brick - Forge row (90, `blacksmithy`) becomes the Smithy with its new cost; the never-obtainable Master forge rows (94/95) become the Master Smithy; the never-obtainable Large forge rows (92/93) become the Blast Furnace; retire the Anvil (827). No saves to migrate.
    *Consequences:* no new numbers for four stations; old descriptions and looks are rewritten. *Alternative:* new rows for all, leaving 90 and 92–95 retired or future.
+
+   **Dave's answer:** _
+
 4. **What the Bellows and the Quenching Trough improve.** **Recommend:** Bellows: faster Smithy crafting and less fuel; Quenching Trough: metal tools and weapons made at that Smithy get higher maximum durability. Neither gates recipes.
    *Consequences:* real reasons to build both, no new progression gates. *Alternative:* each add-on raises the Smithy's station level (the live add-on model) and gates advanced recipes (steel or weapon work).
+
+   **Dave's answer:** _
+
 5. **Hardwood board uses.** **Recommend:** these live blueprints switch their Planks to Hardwood boards: Wooden - Chest 27, Barrel 98, Crate 168, Wooden - Chair 42, Wooden - Table 43, Shelf 96, Cupboard 97, Canopy bed 48; carts, wagons and carriages use them when built. Building pieces and rough items keep Planks. Retire the future species lumber and beam rows (101–174).
    *Consequences:* fine furniture needs hardwood trees and a saw. *Alternative:* a recipe may take either (an ingredient group of Plank and Hardwood board).
+
+   **Dave's answer:** _
+
 6. **Leather clothing and hide garments.** Leather goods go to the Leatherworking Table and clothing to the Tailor's Table (approved), but leather clothing fits both, and hide garments are sewn by hand today.
    **Recommend:** Leatherworking Table: leather straps, belt, quiver, backpack and all leather garments (cap, jerkin, trousers, boots, gloves). Tailor's Table: wool, linen, fibre-cloth and fur garments (216, 237–244). Hide garments (39–42, 194–196) stay by hand with the needle for day one.
    *Alternative:* all garments at the Tailor's Table; hide garments also move.
+
+   **Dave's answer:** _
+
 7. **Log length.** Felled logs are 2.44 m; Dave's yields are per 3 m log. **Recommend:** make felled logs 3 m.
    *Consequences:* heavier logs (weights.json), fewer logs per trunk. *Alternative:* keep 2.44 m and treat the yields as per log regardless of length.
+
+   **Dave's answer:** _
+
 8. **Enhancement replacement and destruction (awaiting Dave), eligibility, stackables.** **Recommend:** physical craftsmanship is fixed when crafted and cannot be replaced; a new magical enchantment may replace one in a chosen slot, destroying the old effect with nothing returned; eligible items are tools, weapons, armour, clothing and gear (single-instance items); stackables and consumables (food, ammunition, materials) are not eligible.
    *Alternatives:* enhancements removable by a wizard for a cost; or every enhancement permanent; or enhanced stacks split from plain ones.
+
+   **Dave's answer:** _
+
 9. **Thread and numbers.** **Recommend:** Twine serves as the thread for needle repairs (no new item); the balancing numbers in s5 are proposed by the item-data and systems roles in the implementation PR and tuned in playtest.
    *Alternative:* a Thread item (from flax or wool) before the Loom lands.
+
+   **Dave's answer:** _
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
