@@ -150,7 +150,7 @@ const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slo
 const ACT_DRINK := 24         # a = pack slot of a water container in hand, or -1: with a container that has room, fill it from the water at the player's feet; otherwise drink a mouthful (the server checks water within reach)
 const ACT_FALL := 23          # a = the drop in centimetres the client landed from (only sent from the sound threshold, 6 m); the server decides the damage
 const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
-const ACT_CRAFT_QUEUE := 21  # a = recipe number, count = how many (1 to 20): queue crafts; ingredients are taken now
+const ACT_CRAFT_QUEUE := 21  # a = recipe number, b = variant (0 plain; SmithingRules: Tempered, +1, +2), count = how many (1 to 20): queue crafts; ingredients are taken now
 const ACT_SLEEP := 26      # a = 1 fall asleep (lying, held Z for 3 s), 0 wake; the sleeping flag comes back as bit 4 of the strain() stance
 const ACT_FILL := 27       # at = the ground point under the crosshair: one spade fill (spends a shovelful of soil, sand, gravel, clay or stone from the pack)
 const ACT_DIG := 25        # at = the ground point under the crosshair: one spade dig (server checks spade, reach, pace; DIGGING_DESIGN.md)
@@ -165,7 +165,7 @@ const ACT_ICEHOLE := 31   # a = slot of an axe or pick: one blow at the ice unde
 const ACT_FISH := 30      # a = slot of a fishing rod, at = where the cast lands (water): cast the line, and click again when it bites
 const ACT_WEAR := 28      # a = pack slot: put on the clothing or gear in it (the piece it replaces goes to the pack)
 const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots): take that piece off into the pack
-const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
+const ACT_REPAIR := 13    # a = slot of a worn, broken or dull tool: sharpen a dull edge, else repair at its repair_station to its current maximum
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
 const ACT_GATHER_EDGE := 54  # at = the player's spot: take sea water into a container, or the tide-line node of the cell (data/items/shore_nodes.json)

@@ -11,6 +11,7 @@ const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd"
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TAB_PX := 48.0                       # the category tabs: a column of 48 px glyph tabs (redesign 4.3)
 const LIST_PX := 226.0                     # the recipe list's width (196 cut about 47 of 338 names at text scale 1.2; 226 cuts about 11, 9 Nov 2026)
 const CARD_ICON_PX := 96.0                 # the made item's well on the recipe card
@@ -24,6 +25,7 @@ var _detail: VBoxContainer                # the chosen recipe: its needs, the qu
 var _footer: VBoxContainer                # under it, never scrolled away: the brass Craft button and Pin
 var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
 var _qty: int = 1                         # the last quantity chosen, kept between refreshes
+var _variant: int = 0                     # the variant chosen on the card (SmithingRules code: Tempered, +1, +2), kept between refreshes
 const CRAFT_HOLD_MS := 400                 # a press this long on a recipe row is a hold: make as many as the stock allows (decisions row 24)
 var _press_msec: int = 0                  # when the recipe row was pressed
 
@@ -255,7 +257,12 @@ func craft_selected() -> void:
 	if view._selected_recipe == 0:
 		return
 
-	view._start_craft(view._selected_recipe, chosen_quantity())
+	view._start_craft(view._selected_recipe, chosen_quantity(), chosen_variant())
+
+
+# The variant chosen on the card when the stations here still allow it, else plain.
+func chosen_variant() -> int:
+	return _variant if view.craft_variants(view.recipes.recipe(view._selected_recipe)).has(_variant) else 0
 
 
 # The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
@@ -390,6 +397,27 @@ func _refresh_detail() -> void:
 	_quantity.value_changed.connect(func(v): _qty = int(v))
 	_quantity.get_line_edit().add_theme_font_size_override("font_size", view._px(view.BODY_PX - 8))
 	row.add_child(_quantity)
+	# Make as (catalog Phase 2c): the variants the stations beside you allow, Plain first, each with what it costs over the plain craft.
+	var variants: Array = view.craft_variants(r)
+
+	if variants.size() > 1:
+		var as_row: HBoxContainer = HBoxContainer.new()
+		as_row.add_theme_constant_override("separation", 12)
+		_detail.add_child(as_row)
+		as_row.add_child(_text("Make as", 18, ArtKit.CREAM))
+		var pick: OptionButton = OptionButton.new()
+		pick.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 8))
+
+		for code in variants:
+			var mats: float = float(SmithingRules.cfg().get("craft", {}).get("materials", [1.0, 1.0, 1.0])[SmithingRules.craft_in(code)])
+			pick.add_item("%s%s" % [SmithingRules.label(code), "" if code == 0 else "  (x%s materials, x%s time)" % [str(snappedf(mats, 0.1)), str(snappedf(SmithingRules.time_mult(code), 0.1))]], code)
+
+		pick.select(maxi(variants.find(chosen_variant()), 0))
+		pick.item_selected.connect(func(index: int) -> void:
+			_variant = pick.get_item_id(index)
+			view._refresh())
+		as_row.add_child(pick)
+
 	var short: String = missing_text(r)
 
 	if short != "":
@@ -421,7 +449,7 @@ func _refresh_detail() -> void:
 
 	# The Craft button: cast brass, the word engraved; dim when the recipe cannot be made here now.
 	var make: Button = Button.new()
-	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
+	make.text = "Craft  (%.0f s)" % (float(r["craft_s"]) * SmithingRules.time_mult(chosen_variant()))
 	make.disabled = not (view._can_craft(view._selected_recipe) and view._station_ok(r))
 	make.custom_minimum_size = Vector2(0.0, 58.0)
 	make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
