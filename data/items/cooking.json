@@ -120,7 +120,7 @@
 		"wooden_block_large": 86400.0,
 		"wooden_block_soft_large": 43200.0,
 		"driftwood": 2880.0,
-		"charcoal": 36000.0
+		"charcoal": 3600.0
 	},
 	"fuel_class": {
 		"log_oak": "log",

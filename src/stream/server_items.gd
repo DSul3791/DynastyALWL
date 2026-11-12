@@ -3677,7 +3677,7 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 	if id < 0:
 		return 1.0
 
-	var slow: float = 1.0 / _addon_factor(_items[id], _structures.get(str(_items[id]["struct"]["kind"]), {}), "craft_speed")
+	var slow: float = 1.0 / _speed_factor(id)
 
 	if not wheel:
 		return slow
@@ -3687,6 +3687,18 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 
 
 var _speed_addons: Dictionary = {}   # station -> true when some add-on of it carries craft_speed (worked out once)
+var _speed_cache: Dictionary = {}    # station world id -> [ms when worked out, craft_speed factor]: the add-on scan runs at most every 5 s per station
+
+
+func _speed_factor(id: int) -> float:
+	var now: int = Time.get_ticks_msec()
+	var row: Array = _speed_cache.get(id, [])
+
+	if row.is_empty() or now - int(row[0]) > 5000:
+		row = [now, _addon_factor(_items[id], _structures.get(str(_items[id]["struct"]["kind"]), {}), "craft_speed")]
+		_speed_cache[id] = row
+
+	return float(row[1])
 
 
 func _speed_addon_station(station: String) -> bool:
@@ -11397,6 +11409,8 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 	var here: Vector3 = _peer_pos[peer]
 	var best: int = -1
 	var best_d: float = INF
+	var cold: int = -1          # the nearest cold station that the crafter's fuel could fire (used only when no burning one serves)
+	var cold_d: float = INF
 
 	if station == "campfire":   # dishes are cooked at a lit campfire (data/items/dishes.json); a clay hearth or an oven beside you cooks them too ("also" in structures.json)
 		for id in _items:
@@ -11426,19 +11440,31 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			# A station that must be burning to craft (the Smithy, Blast furnace and Master smithy, master s4 item 10): a cold one serves while the crafter
 			# carries its fuel, and the craft itself (light_it) fires it from the pack. Without fuel the craft waits and nothing is lost.
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
-				var fuel_n: int = table.number_of(str(def.get("fuel", "fuel")))
-				var inv_l = inventory_of(peer)
+				if d < cold_d:
+					cold = int(id)
+					cold_d = d
 
-				if fuel_n <= 0 or inv_l == null or not inv_l.has_fill(fuel_n, 1):
-					continue
-
-				if light_it:
-					_fire_station(peer, inv_l, it, def, fuel_n)
+				continue
 
 			best = int(id)
 			best_d = d
 
-	return best
+	if best >= 0 or cold < 0:
+		return best
+
+	# No burning station serves: the nearest cold one does while the crafter carries its fuel, and only the craft itself (light_it) fires it.
+	var cold_it: Dictionary = _items[cold]
+	var cold_def: Dictionary = _structures.get(str(cold_it["struct"]["kind"]), {})
+	var fuel_n: int = table.number_of(str(cold_def.get("fuel", "fuel")))
+	var inv_l = inventory_of(peer)
+
+	if fuel_n <= 0 or inv_l == null or not inv_l.has_fill(fuel_n, 1):
+		return -1
+
+	if light_it:
+		_fire_station(peer, inv_l, cold_it, cold_def, fuel_n)
+
+	return cold
 
 
 var _step_cfg: Dictionary = {}   # data/items/station_step.json, read on the first step
@@ -13182,7 +13208,9 @@ func _apply_lit_rows(rows: Array) -> void:
 		for id in _items:
 			var it: Dictionary = _items[id]
 
-			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and str(_structures.get(str(it["struct"].get("kind", "")), {}).get("use", "")) == "light":
+			var lit_def: Dictionary = _structures.get(str(it["struct"].get("kind", "")), {}) if it.has("struct") else {}
+
+			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and (str(lit_def.get("use", "")) == "light" or bool(lit_def.get("craft_needs_lit", false))):
 				it["struct"]["lit"] = true
 				it["struct"]["fuel_left"] = float(row[3])
 				break

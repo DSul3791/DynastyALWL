@@ -7032,7 +7032,7 @@
 			"craft_s": 8.0,
 			"known": true
 		},
-		"charcoal": {"number": 341, "name": "Charcoal", "category": "Materials", "needs": [["firewood", 2]], "gives": ["charcoal", 20], "craft_s": 30.0, "known": true, "station": "campfire"},
+		"charcoal": {"number": 341, "name": "Charcoal", "category": "Materials", "needs": [["firewood", 2]], "gives": ["charcoal", 12], "craft_s": 30.0, "known": true, "station": "campfire"},
 		"wool_cloth": {
 			"number": 342,
 			"name": "Wool cloth",

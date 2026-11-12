@@ -125,6 +125,11 @@ func _init() -> void:
 	var smelts: int = ceili(float(smithy_iron + saw_iron) / float(gives_of("smelt_iron")))
 	var ore_n: int = smelts * need_of("smelt_iron", "iron_ore")
 	var fuel_n: int = smelts * need_of("smelt_iron", "fuel") + 4   # and a few to fire the Smithy
+	# The pre-saw stations take only what the wilderness gives and the route makes (master s4 item 10): no Planks, no nails, no bought metal.
+	for st in ["smelter", "blacksmithy", "stone_forge"]:
+		var ids: Array = blueprint_of(st).get("cost", []).map(func(c): return str(c[0]))
+		check(not ids.is_empty() and ids.all(func(c): return c in ["stone", "clay", "log", "iron_ingot", "hide"]), "the %s costs only stone, clay, logs, hide and route iron (%s)" % [st, str(ids)])
+
 	check(smithy_iron > 0 and saw_iron > 0 and ore_n > 0, "the Smithy costs Iron ingots (%d) and the saw is made of iron (%d): %d ore to dig" % [smithy_iron, saw_iron, ore_n])
 
 	# 1. Bog iron with a wooden spade.
@@ -174,7 +179,7 @@ func _init() -> void:
 	items.inventory_of(1).remove(items.table.number_of("charcoal"), charcoal_n)
 	items.give(1, items.table.number_of("stick"), need_of("hand_saw", "stick"))
 	craft("hand_saw", 1, 60)
-	check(have("hand_saw") == 0 and not bool(items._items[smithy_id]["struct"].get("lit", false)), "4b. a cold Smithy and no fuel: no saw, nothing taken (%d ingots)" % have("iron_ingot"))
+	check(have("hand_saw") == 0 and have("iron_ingot") == iron_before - smithy_iron and not bool(items._items[smithy_id]["struct"].get("lit", false)), "4b. a cold Smithy and no fuel: no saw, nothing taken (%d ingots)" % have("iron_ingot"))
 	items.inventory_of(1).add(items.table.number_of("charcoal"), charcoal_n)
 
 	# 5. The Iron - Saw at the burning Smithy.
