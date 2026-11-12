@@ -2275,6 +2275,13 @@ var _open_asked_msec: int = -100000
 var _craft_first: bool = false   # the window being asked for is a station's: it opens on the Craft tab, its store one tab away
 
 
+# A station store's row (master s2.5): its fill (server_items._store_fill) and, for a Kiln, whether it burns; kept when the row is sent again.
+func _note_store(id: int, row: Array) -> void:
+	if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("fill"):
+		_world[id]["fill"] = int(row[5]["fill"])
+		_world[id]["lit"] = bool(row[5].get("lit", false))
+
+
 # A station store's fill for the look-at line (server_items._store_fill: 0 empty, 1 to 4 quarters), "" for anything else.
 func _fill_note(id: int) -> String:
 	if not _world.has(id) or not _world[id].has("fill"):
@@ -2468,6 +2475,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					BuildingLook.coals_glow(_world[id]["light"], float(row[5]["glow"]))   # the coals dim as their time runs down
 
 				_note_platter(id, row, state)
+				_note_store(id, row)
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
 				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
@@ -2529,9 +2537,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("wheel"):
 				_world[id]["wheel"] = int(row[5]["wheel"])   # a sawmill's water wheel share in percent (server_items.wheel_percent)
 
-			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("fill"):
-				_world[id]["fill"] = int(row[5]["fill"])   # a station store's fill (server_items._store_fill)
-				_world[id]["lit"] = bool(row[5].get("lit", false))   # a Kiln: E lights it or puts it out
+			_note_store(id, row)
 
 			_note_platter(id, row, state)
 

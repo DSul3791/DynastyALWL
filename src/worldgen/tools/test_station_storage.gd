@@ -269,6 +269,8 @@ func _init() -> void:
 		act(1, Net.ACT_CHEST_PUT, slot_of(1, log_n), kiln, 1)
 
 	check(in_count(kiln, log_n) == batch and pack(1, log_n) == 1, "the Kiln takes %d logs and refuses the next" % batch)
+	act(1, Net.ACT_BULK, ItemsScript.BULK_STACK_NEARBY, 0)
+	check(in_count(kiln, log_n) == batch and pack(1, log_n) == 1, "Stack to nearby does not push a log past the Kiln's %d either" % batch)
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("stick")) if slot_of(1, n("stick")) >= 0 else 0, kiln, 1)
 	check(box(kiln).count_of(n("stick")) == 0, "the Kiln takes logs only")
 	act(1, Net.ACT_CHEST_CLOSE, 0)

@@ -7913,7 +7913,7 @@ func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
 			_stock_take(inv, number, left, stock, [], true)   # then the pack, loose stacks within 12 m and the builder's own containers, nearest first
 
 	if peer >= 0:
-		_send_stock(peer)   # the hammer list's counts follow what was taken
+		_send_stock(peer, false, true)   # the hammer list's counts follow what was taken
 
 
 # Heavy building stock on the ground (Dave 2 Nov 2026: "we use the hammer to make blueprints on the spot"): a blueprint takes its materials from loose
@@ -8994,6 +8994,16 @@ func _kiln_logs(it: Dictionary, box, def: Dictionary) -> int:
 	return logs
 
 
+# How many of `amount` logs a Kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything else.
+func _kiln_room(id: int, box, amount: int) -> int:
+	var def: Dictionary = _structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {})
+
+	if int(def.get("batch_logs", 0)) <= 0 or box == null:
+		return amount
+
+	return clampi(int(def["batch_logs"]) - _kiln_logs(_items[id], box, def), 0, amount)
+
+
 # E on a Kiln: lights it while it holds wood, puts it out when it burns.
 func _kiln_use(peer: int, it: Dictionary, def: Dictionary) -> void:
 	var box = _chests.get(int(it["struct"].get("uid", 0)))
@@ -9604,13 +9614,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 	var held_inst: Dictionary = inv.inst_of(a)
 	var amount: int = mini(count, inv.counts[a])
 	var max_kg: float = float(_structures.get(kind, {}).get("max_kg", 0.0))
-	var batch: int = int(_structures.get(kind, {}).get("batch_logs", 0))
-
-	if batch > 0 and id >= 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
-		amount = clampi(batch - _kiln_logs(_items[id], chest, _structures[kind]), 0, amount)
+	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
+		amount = _kiln_room(id, chest, amount)
 
 		if amount == 0:
-			_say(peer, "The kiln holds %d logs." % batch)
+			_say(peer, "The kiln holds %d logs." % int(_structures[kind]["batch_logs"]))
 			_reject(peer, 3)
 			return 0
 
@@ -15743,7 +15751,7 @@ const STOCK_POLL_MS := 500   # a hammer poll is answered at most this often per 
 # request and after a "keep out" change: item number -> count, the ground near them and their containers in reach. The client adds the pack.
 # `poll` (the hammer list while the player walks, ACT_CRAFT_STOCK a = 1): at most once per STOCK_POLL_MS, from the sync grid, and nothing is sent
 # when the stock is what this player was last sent (the client keeps the old counts).
-func _send_stock(peer: int, poll: bool = false) -> void:
+func _send_stock(peer: int, poll: bool = false, building: bool = false) -> void:
 	if not send_craft_stock.is_valid() or not _peer_pos.has(peer):
 		return
 
@@ -15756,7 +15764,7 @@ func _send_stock(peer: int, poll: bool = false) -> void:
 		_stock_poll_ms[peer] = now_ms
 
 	var counts: Dictionary = {}
-	var stock: Dictionary = _stock_of(peer, poll, _hammer_x(peer) if poll else 1.0)   # the hammer list's poll counts what that hammer reaches (master s2.1)
+	var stock: Dictionary = _stock_of(peer, poll, _hammer_x(peer) if poll or building else 1.0)   # the hammer list counts what that hammer reaches (master s2.1)
 
 	for row in stock["near"]:
 		var it: Dictionary = _items[int(row[0])]
@@ -16413,6 +16421,7 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 func _box_room(sid: int, number: int, amount: int) -> int:
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
+	amount = _kiln_room(sid, box, amount)
 
 	if max_kg <= 0.0 or _carry_cfg.is_empty() or box == null:
 		return amount
