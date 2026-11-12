@@ -1,6 +1,6 @@
 # M001-T11 results: Phase 4a clothing and armour layering model
 
-Branch `m001/p4a-layers`, base `dev` `b62db1e7c`. Code under test: **`31421c218`** (round 2, after the mission lead decisions; the commit after it changes only this file). Round 1 code: `65ff75603`. Machine: Dave's PC `ManlandRyzen5`, clone `E:\Software\godotDev\m001_p4a`, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, headless, through `tools/run_tests.sh` / `tools/run_one_test.sh` (slot lock, 3 jobs). Engineer: systems-engineer agent, 12 Nov 2026.
+Branch `m001/p4a-layers`, base `dev` `b62db1e7c`. Code under test: **`169ee26ff`** (round 3, review fixes; the commit after it changes only this file). Round 2 code: `31421c218`, round 1: `65ff75603`. Machine: Dave's PC `ManlandRyzen5`, clone `E:\Software\godotDev\m001_p4a`, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, headless, through `tools/run_tests.sh` / `tools/run_one_test.sh` (slot lock, 3 jobs). Engineer: systems-engineer agent, 12 Nov 2026.
 
 ## Layer data model
 - `items.json`: every clothing and armour row (33 live or retired, 32 inactive Phase 1 rows) has `wear_layer` beside `slot`, from the merged layer model (master s3.8), and a `fabric`. The three cloaks move from `slot: outer` to `slot: body, wear_layer: outer` (the model: `outer` is the body's outer layer). The inactive rows 951-981 and 1188 gain their `slot` too (they had none); Linen and Wool - Dress carry `spans: ["legs"]`. Gear rows (packs, quivers, belt) need no `wear_layer`: a row without one takes its slot's first layer. No row switched on, no row added.
@@ -57,6 +57,9 @@ Branch `m001/p4a-layers`, base `dev` `b62db1e7c`. Code under test: **`31421c218`
 | **Round 2 at `31421c218`** (padding under mail, Tab screen Dress line): `test_clothing_layers` (38 checks, adds mail over gambeson and a scale shirt swap) | PASS |
 | Round 2: `validate_items` | PASS |
 | Round 2: `tests_for_diff.py 65f370dd2 HEAD` plan (337 fast + 8 timing), `run_tests.sh --jobs 3` | 343 pass, 2 fail: `test_npc_view` exit 139 after PASS and `test_flora_density` 300 s timeout, the same two known failures as round 1 (both passed on rerun there) |
+| **Round 3 at `169ee26ff`** (fire heat excluded from the heat load; review notes): `test_clothing_layers` (40 checks, adds "hide outfit at a lit fire on a cold night: no heat load" and its hot-day positive control) | PASS |
+| Round 3: `validate_items`, `test_item_instances`, `test_clothing_slots`, `test_you_column`, and every test reading the warmth target or exertion: `test_warmth`, `test_body_weather`, `test_bedroll`, `test_cave_climate`, `test_cave_shelter`, `test_comfort`, `test_fire_coals`, `test_sickness`, `test_water_pieces`, `test_goals`, `test_server_items` | 16 PASS |
+| Round 3: full plan | NOT RUN (the change is in `warmth_target` and test/doc text; round 2's full plan at `31421c218` is the latest) |
 | In-game visual and multiplayer check | NOT RUN |
 
 No new failures against base.
