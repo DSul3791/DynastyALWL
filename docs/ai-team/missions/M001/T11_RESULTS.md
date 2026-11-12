@@ -1,0 +1,55 @@
+# M001-T11 results: Phase 4a clothing and armour layering model
+
+Branch `m001/p4a-layers`, base `dev` `b62db1e7c`. Code under test: **`65ff75603`** (the commit after it adds only this file and the brief). Machine: Dave's PC `ManlandRyzen5`, clone `E:\Software\godotDev\m001_p4a`, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, headless, through `tools/run_tests.sh` / `tools/run_one_test.sh` (slot lock, 3 jobs). Engineer: systems-engineer agent, 12 Nov 2026.
+
+## Layer data model
+- `items.json`: every clothing and armour row (33 live or retired, 32 inactive Phase 1 rows) has `wear_layer` beside `slot`, from the merged layer model (master s3.8), and a `fabric`. The three cloaks move from `slot: outer` to `slot: body, wear_layer: outer` (the model: `outer` is the body's outer layer). The inactive rows 951-981 and 1188 gain their `slot` too (they had none); Linen and Wool - Dress carry `spans: ["legs"]`. Gear rows (packs, quivers, belt) need no `wear_layer`: a row without one takes its slot's first layer. No row switched on, no row added.
+- `clothing.json`: `slots` = the body slots an item may name (head, body, legs, feet, hands, back, waist, **neck** new); `layers` per slot inside to outside (head base/mail/rigid; neck base; body base/padding/rigid/over/outer; legs base/mail/rigid; hands base/rigid; feet socks/footwear/over; back, waist base); `worn` = the 19 worn positions `"slot:layer"`, **append-only**, the first eight being the old eight slots (head:base, body:base, legs:base, feet:footwear, hands:base, back:base, body:outer, waist:base). `worn_labels` for the Tab screen.
+- Hats (Straw, Fur, Broad-brim) are head `rigid`, so no hat goes over a helm (master table). Mail shirt, Bronze scale shirt, Jerkin, Gambeson, Mail hauberk share body `padding` ("padding or mail"), so a Gambeson and a Mail shirt are not worn together, as the table puts them in one layer.
+- **Strap and quiver slots not added (brief item 2):** no Mission 001 item uses them before Phase 5, which designs the belt attachment points (s3.9 recommended carry model). They will be appended to `worn` then; nothing here blocks them. Only `neck` (Wool - Scarf 981) was added.
+
+## Behaviour (server `src/stream/server_items.gd`)
+- ACT_WEAR: the piece goes to its own position. Every worn piece sharing a position with it comes off into the pack (`_covers`: its own position plus `spans`, so a Dress takes off the tunic and trousers, and trousers take off a Dress). Each needs a free pack slot (worn pieces never stack; the slot the new piece leaves counts): without room nothing moves and the player is told. ACT_UNWEAR a = a worn position; each layer comes off on its own (an inner layer may come off under an outer one).
+- A coat and a cloak are both body outer: one position, never both.
+- Old saves: `_clean_worn` reads any worn list by position; an old 8-column list lands each piece in its slot's base layer and the outer column in body outer. A piece whose own layer is another (a helm saved in the head column) moves to its own position when free; one that fits nowhere is left off with a warning (as before; no old-save migration needed, new game).
+
+## Warmth formula and numbers (`warmth.json layers`; s5 tuning, recorded in master s5)
+- Per body slot, the worn pieces' warmth sorted largest first: `slot = w1 + k w2 + k^2 w3 ...`, `layer_keep` k = **0.6**. Slots add up, capped at `max_insulation` 0.85. Example: Hide tunic 0.24 + Gambeson 0.3 + Hide cloak 0.3 = 0.566 (sum 0.84). A full hide outfit (hood, tunic, cloak, trousers, boots, gloves) is 0.974, still capped at 0.85 as before; the camp goal `worn_warmth` uses the same dry layered sum.
+- Fabric fields (`layers.fabrics`): `wet_keep` (share of warmth kept soaked through, linear in soak, before the body_703 wind strip), `breath`, `rain_shed`. plant 0.3/0.9/0.2, hide 0.4/0.3/0.2, leather 0.6/0.3/0.3, wool 0.75/0.5/0.1, linen 0.4/1.0/0, fur 0.5/0.1/0.3, oilcloth 0.9/0.1/0.7, padded 0.4/0.2/0, metal 1.0/0.6/0. Snowshoes have none (neutral).
+- Heat: in air that feels warmer than `comfort_c`, heat load = layered `warmth x (1 - breath)` (capped 0.85); exertion += `heat_effort` **0.5** x load x min((feels - comfort_c) / `heat_span_c` **10**, 1). Fur cloak at 30 C: load 0.38, +0.19 exertion; linen shirt 0.
+- Rain: the best body piece's `rain_shed` slows soaking and lowers the soak ceiling: an hour of rain soaks a bare body to 1.0, under an Oilcloth - Cloak to 0.3.
+- Protection hook (Phase 4b): `_layered(values)` is the per-slot diminishing sum to reuse; no protection values exist yet.
+
+## Wire and save (protocol 107)
+- `worn(numbers, insts)`: one number per worn position (19), the instance block keyed by position index; shape unchanged from 106. `PROTOCOL_VERSION` 107, `PROTOCOL.md` table row and note, `terrain_net.gd` history and ACT_WEAR / ACT_UNWEAR comments.
+- `characters.json worn`: one slot array `[number, 1, wear, inst]` per position. Older lists (8 columns, bare numbers or slot arrays) load as above.
+
+## Client
+- Tab screen (`character_screen.gd`): every worn layer on its own line with its own Take off, grouped by slot, "nothing" for a bare slot.
+- You column (`you_column.gd`): each well shows its slot's outermost worn layer; the Outer well is body:outer and the Body well what is under it. Neck has no well (no live neck item until 4b); it shows on the Tab screen.
+- Tooltip: "Worn on the body, outer layer." Avatar colours: only body and legs base and feet footwear tint the body's own garment (a cloak now in the body slot does not recolour the tunic).
+- Visual: `worn_look` draws every worn piece it has a row for, as before. **Placeholders, NOT visually complete:** 32 `worn.json` rows for the inactive Phase 1 rows (`"placeholder": true`, an existing builder and a colour): iron_brigandine, iron_breastplate, iron_mail_hauberk, steel_half_plate, steel_plate_harness, iron_mail_coif, iron_gauntlets, steel_gauntlets, bronze_greaves, iron_mail_chausses, iron_greaves, steel_greaves, iron_sabatons, steel_sabatons, linen_trousers, linen_skirt, linen_dress, wool_dress, wool_cloak, wool_coat, wool_robe, oilcloth_cloak, linen_apron, leather_apron, tabard, linen_headwrap, leather_broad_brim_hat, fur_mittens, leather_shoes, wool_socks, wool_scarf (drawn as a belt), riding_boots. Pieces of the same visual `layer` worn together in one slot (Hide tunic and Gambeson are both layer 2) may overlap: the art pass sets offsets.
+
+## Tests
+| Run | Result |
+|---|---|
+| New `test_clothing_layers` (36 checks: model and positions, layered equip and per-layer take-off with conservation, same-layer swap, coat vs cloak, Dress span both ways, full-pack refusal of wear and take-off and the one-for-one swap, layered warmth numbers, camp goal, wet hide vs wool, fur heat load and exertion, linen none, cool air none, oilcloth rain, wire numbers and position-keyed instance data, save and reload of 5 layers with wear and data, old 8-column list incl. a helm in the head column, an old characters.json) at `65ff75603` | PASS |
+| `tests_for_diff.py b62db1e7c HEAD` plan (337 fast + 8 timing), `run_tests.sh --jobs 3` at `c1109bb1e` | 342 pass, 3 fail |
+| `test_item_instances`: pinned `PROTOCOL_VERSION == 106`; now `>= 106` (as test_bulk_ops / test_hotbar_keys), rerun at `65ff75603` | PASS (77 checks) |
+| `test_npc_view`: exit 139 after printing PASS (the exit-race segfault T04 recorded at base `159b566`, 2 of 4 runs); rerun at `65ff75603` | 1 crash, 1 PASS. It loads worn.json (only placeholder rows added, no NPC outfit uses them) |
+| `test_flora_density`: 300 s timeout under 3-job load (timing lane, as in T04); rerun alone, 600 s limit | PASS (417 s) |
+| `test_clothing_slots`, `test_you_column`, `test_warmth`, `test_save_compat`, `test_persistence_drills` (updated to the position contract) | PASS in the plan run |
+| `validate_items` (run explicitly; plus a positive control: a bogus wear_layer is caught) | PASS at `65ff75603` |
+| `check_look_names.py`, `catalog_ledger.py --check`, `merge_check.py` (base `b62db1e7c`) | PASS, PASS, all clear (its carry_audit warning is the same at base) |
+| `check_warnings.sh` full: server_items.gd 9 (none in the changed lines; baseline file stale at 8), other changed files 0 new | PASS for this diff |
+| In-game visual and multiplayer check | NOT RUN |
+
+No new failures against base.
+
+## Not done, risks for the reviewer
+- No in-game visual check of the Tab screen, You column or layered looks (PC playtest).
+- A Dress leaves the legs line "Legs: nothing" on the Tab screen (it fills legs base without a record entry there).
+- The heat load has no message: a player overdressed in heat tires faster without being told why.
+- Taking off an inner layer under an outer one is allowed (no dressing order).
+- `PROTOCOL_VERSION` 107 may collide with another branch bumping in parallel (2c): renumber at merge.
+- `items.json` edits are inside clothing rows only; `server_items.gd` edits are the clothing/warmth section, `effort_of`, `_update_soak`, `warmth_target` and `_worn_warmth` (2c edits tool wear code).
