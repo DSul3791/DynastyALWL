@@ -22,7 +22,7 @@ Read-only gate reviewer on `66b918e7c`. Finding 1 (remains held the dead charact
 ## Revision 2 (Dave 20:09: the world as before anyone played)
 - Code: `drop_world_made` and the saved `world_rows` key; `reset_world` restores natural content; `server_flora.restore_all`; the server wires goblin piles, gifts and thief loot to `drop_world_made`.
 - `test_reset_world` (extended: den pile kept, felled trunk gone and trees restored, scatter re-laid, picked, boulder, bog and plant marks cleared, saplings gone, all held after a restart): PASS.
-- Real server, throwaway store `E:\Software\godotDeveset01_store_c` (seed adds a den pile, picked scatter, a mined boulder and two flora removals): reset then `--check` RESET_STORE_OK (world_piles 1, felled_chunks 0, taken 0), plain restart then `--check` RESET_STORE_OK again.
+- Real server, throwaway store `E:\Software\godotDev\reset01_store_c` (seed adds a den pile, picked scatter, a mined boulder and two flora removals): reset then `--check` RESET_STORE_OK (world_piles 1, felled_chunks 0, taken 0), plain restart then `--check` RESET_STORE_OK again.
 - Focused existing tests, 32 PASS: test_felled_stays_gone, test_trunk_cutting, test_stump_chop, test_fell_autosplit, test_fruit_tree, test_shrub_work, test_flora_near_water, test_bog_iron, test_bog_rows, test_shore_gather, test_nests, test_goblin_den_life, test_goblin_stealing, test_goblin_friendship, test_thieves, test_items_persistence, test_save_compat, test_persistence_drills, test_server_items, test_ground_ops, test_death, test_real_death, test_mission001_walkthrough, test_dev_place, test_placement_rules, test_storage_locks, test_handcart, test_farming, test_skills, test_new_player, test_test_flag, test_reset_world.
 
 ## Limitations (open)
