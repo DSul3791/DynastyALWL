@@ -1,6 +1,6 @@
 # Food and storage cross-document audit, 12 November 2026
 
-**Status: DOCUMENTATION AUDIT ONLY.** Written by Claude on PR #1035 for `CLAUDE_FOOD_STORAGE_HANDOFF.md` and Dave's 12 Nov consolidation request.
+**Status: DOCUMENTATION AUDIT ONLY. Its s5 questions were all resolved by Dave's [D17] decisions (12 Nov 04:49Z); see the master catalog and `CATALOG_FINAL_AUDIT_2026-11-12.md`. Kept as the record of rounds 1 to 4.** Written by Claude on PR #1035 for `CLAUDE_FOOD_STORAGE_HANDOFF.md` and Dave's 12 Nov consolidation request.
 
 - Data and code were read only, from `dev` `7f8aabf4`: `data/items/*.json`, `inventory.gd`, `recipe_table.gd`, `craft_stock.gd`, `src/stream/server_items.gd`, `PROTOCOL.md` and `tools/gen_dishes.py`.
 - No game file was changed and no Godot test was run. Every scenario is a design walkthrough.
@@ -82,7 +82,7 @@ These are recorded in the master with "for ChatGPT". None removes approved funct
 | 200 jars of sauerkraut | Needs the [P14-v2] jar, 200 jars, cabbage and salt. That is about 20 stacks, and a batch-size mechanic. Maturing until `ready_age`, then Ready. | Consistent, **if the jar is approved**. |
 | Roast Platter eaten portion by portion | Each portion removes one from the stack and refreshes the Main Meal effect without stacking it. Leftovers keep their age. | Consistent with recommendation 7. |
 
-## 4. Suggested tuning sheet — Claude's proposal, NOT owner-approved
+## 4. Suggested tuning sheet (accepted by Dave as initial playtest values [D17]; master s3.16 is now authoritative)
 
 Times are in game hours (1 game hour = 2.5 real minutes). Tier follows the existing `dishes.json` count of ingredient kinds:
 - T1: 1–2 kinds.
@@ -112,7 +112,7 @@ The hooks reuse existing multiplier fields (`regen_mult`, `exhaustion_mult`, `hu
   - Eating can still be refused at the stomach cap.
 - **Timers:** saved with the character, kept through logout, cleared on death.
 
-## 5. Decisions still open for Dave
+## 5. Decisions that were open for Dave (all resolved by [D17])
 
 1. **Preservation roster [P14-v2].**
    - *Recommendation:* approve three rows: Sealable Preserve Jar, Smoked Meat and Dried Mushrooms.
