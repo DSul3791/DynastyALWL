@@ -1083,11 +1083,59 @@ func _init() -> void:
 				elif worn_source.find("\t\t\"%s\":" % String(rows[id].get("builder", ""))) < 0:
 					fail("worn.json: '%s' names an unknown builder '%s'" % [id, rows[id].get("builder", "")])
 
+			var body_slots: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/clothing.json"))
+			var slot_names: Array = body_slots.get("slots", []) if typeof(body_slots) == TYPE_DICTIONARY else []
+
 			for id in items_file.get("items", {}):
 				var slot: String = String(items_file["items"][id].get("slot", ""))
 
-				if slot in ["head", "body", "legs", "feet", "hands", "back", "outer", "waist"] and not rows.has(id):
+				if slot in slot_names and not rows.has(id):
 					fail("items.json: '%s' has body slot '%s' but no worn.json row" % [id, slot])
+
+	# Clothing layers (M001-T11, data/items/clothing.json): every item slot is a body slot; every clothing row names a wear_layer of its slot; spans
+	# name other slots that have that layer; every fabric is a warmth.json layers fabric; the worn positions are each a slot's layer, once.
+	var clothing_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/clothing.json"))
+	var warmth_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
+
+	if typeof(clothing_cfg) != TYPE_DICTIONARY or typeof(warmth_cfg) != TYPE_DICTIONARY:
+		fail("clothing.json or warmth.json is not an object")
+	else:
+		var layers: Dictionary = clothing_cfg.get("layers", {})
+		var places: Array = clothing_cfg.get("worn", [])
+		var fabrics: Dictionary = warmth_cfg.get("layers", {}).get("fabrics", {})
+
+		for slot in clothing_cfg.get("slots", []):
+			for layer in layers.get(slot, []):
+				if places.count("%s:%s" % [slot, layer]) != 1:
+					fail("clothing.json: worn must list %s:%s once" % [slot, layer])
+
+		if places.size() != Dictionary(layers).values().reduce(func(n, list): return n + (list as Array).size(), 0):
+			fail("clothing.json: worn lists a position that is no slot's layer")
+
+		for id in items_file.get("items", {}):
+			var row: Dictionary = items_file["items"][id]
+			var slot: String = String(row.get("slot", ""))
+
+			if slot == "":
+				continue
+
+			if not layers.has(slot):
+				fail("items.json: '%s' has slot '%s', not a clothing.json slot" % [id, slot])
+				continue
+
+			var layer: String = String(row.get("wear_layer", layers[slot][0]))
+
+			if String(row.get("kind", "")) == "clothing" and not row.has("wear_layer"):
+				fail("items.json: clothing '%s' has no wear_layer" % id)
+			elif not (layers[slot] as Array).has(layer):
+				fail("items.json: '%s' wear_layer '%s' is not a layer of %s" % [id, layer, slot])
+
+			for other in row.get("spans", []):
+				if not (layers.get(other, []) as Array).has(layer) or other == slot:
+					fail("items.json: '%s' spans '%s', which has no %s layer" % [id, other, layer])
+
+			if row.has("fabric") and not fabrics.has(String(row["fabric"])):
+				fail("items.json: '%s' fabric '%s' is not a warmth.json layers fabric" % [id, row["fabric"]])
 
 	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).
 	if FileAccess.file_exists("res://data/npcs/outfits.json") and FileAccess.file_exists("res://data/items/worn.json"):
