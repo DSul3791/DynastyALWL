@@ -37,7 +37,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 108  # 108 (12 Nov 2026): storage locks and views (catalog Phase 9): ACT_CHEST_LOCK, ACT_VIEW_OPEN, ACT_VIEW_TAKE, ACT_VIEW_PUT, chest_lock, storage_view; world_items.json version 2. 107 (12 Nov 2026): clothing layers (catalog Phase 4a, M001-T11): worn carries one entry per worn position (clothing.json worn, "slot:layer", 20 today; the first eight are the old eight slots), and ACT_UNWEAR a is a worn position. 106 (12 Nov 2026): item instances (catalog Phase 1b): Inventory.FORMAT 3 and inventory_slots carry per-slot instance data after the slots, worn gains its pieces' instance data. 105 (10 Nov 2026): wheel_share (the sawmill ghost asks the server what its water wheel would give: ACT_WHEEL_ASK; water rules section 10). 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 110  # 110 (12 Nov 2026): temporary food effects (catalog Phase 7): food_effects, food_ask, ACT_EAT b (the answer). 108 (12 Nov 2026): storage locks and views (catalog Phase 9): ACT_CHEST_LOCK, ACT_VIEW_OPEN, ACT_VIEW_TAKE, ACT_VIEW_PUT, chest_lock, storage_view; world_items.json version 2. 107 (12 Nov 2026): clothing layers (catalog Phase 4a, M001-T11): worn carries one entry per worn position (clothing.json worn, "slot:layer", 20 today; the first eight are the old eight slots), and ACT_UNWEAR a is a worn position. 106 (12 Nov 2026): item instances (catalog Phase 1b): Inventory.FORMAT 3 and inventory_slots carry per-slot instance data after the slots, worn gains its pieces' instance data. 105 (10 Nov 2026): wheel_share (the sawmill ghost asks the server what its water wheel would give: ACT_WHEEL_ASK; water rules section 10). 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -123,6 +123,8 @@ signal animal_hit_received(id: int, zone: int)   # MikeW's hunt_feedback connect
 signal animal_hit_point_received(id: int, zone: int, at: Vector3)   # the same hit with its point, for later blood marks
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal training_received(percent: int)
+signal food_effects_received(rows: Array)
+signal food_ask_received(slot: int, number: int, groups: PackedInt32Array)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
@@ -158,7 +160,7 @@ const ACT_FILL := 27       # at = the ground point under the crosshair: one spad
 const ACT_DIG := 25        # at = the ground point under the crosshair: one spade dig (server checks spade, reach, pace; DIGGING_DESIGN.md)
 const ACT_STANCE := 20     # a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain()
 const ACT_LIGHT := 19      # a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json)
-const ACT_EAT := 18        # a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json)
+const ACT_EAT := 18        # a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json); b = the answer to food_ask (protocol 110), 0 none
 const ACT_USE_STRUCT := 17  # a = structure world id: use it (a chopping block splits one log into firewood)
 const ACT_CHEST_OPEN := 14 # a = chest world id: the server answers with chest_contents
 const ACT_CHEST_PUT := 15  # a = pack slot, b = chest world id, count = how many to put in
@@ -524,6 +526,20 @@ func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, f
 @rpc("authority", "call_remote", "reliable")
 func training(percent: int) -> void:
 	training_received.emit(percent)
+
+
+# Temporary food effects (protocol 110, data/items/food_effects.json, master s3.16): [[group index, item number, tier, real minutes left], ...]
+# in food_effects.json order; at hello, after eating, and when a whole minute or the set changes.
+@rpc("authority", "call_remote", "reliable")
+func food_effects(rows: Array) -> void:
+	food_effects_received.emit(rows)
+
+
+# The question before eating (protocol 110): the food in pack `slot` (item `number`) would replace one of `groups` (group indexes).
+# The client answers with ACT_EAT a = slot, b = the group to replace, or FoodEffects.DECLINE (9) to eat for calories only.
+@rpc("authority", "call_remote", "reliable")
+func food_ask(slot: int, number: int, groups: PackedInt32Array) -> void:
+	food_ask_received.emit(slot, number, groups)
 
 
 # The character died (protocol 34): what killed them, and where they come back. The server has already moved the pack onto

@@ -171,6 +171,8 @@ var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
 var send_training: Callable     # (peer, today's training in percent of a fitness point) (protocol 92, Dave: fitness feedback on the Tab screen)
+var send_food: Callable         # (peer, rows [[group index, item number, tier, real minutes left], ...]): the live food effects (protocol 110)
+var send_food_ask: Callable     # (peer, pack slot, item number, group indexes): the replace question before eating (protocol 110)
 var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
 var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | pond | sea_shallow | sea_mid | sea_deep | "", "depth"} (server_fish_water.gd; optional)
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
@@ -240,6 +242,7 @@ var _chest_viewer: Dictionary = {}   # peer -> world id of the container they la
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
 var _vitals_cfg: Dictionary = {}
+var _food_cfg: Dictionary = {}      # data/items/food_effects.json
 var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
@@ -359,6 +362,7 @@ const BowScript := preload("res://src/stream/server_bow.gd")
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const TrapsScript := preload("res://src/stream/server_traps.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+const FoodEffects := preload("res://src/shared/food_effects.gd")   # temporary food effects in three group slots (catalog Phase 7)
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
 var _slow_in: float = 0.0
@@ -443,6 +447,7 @@ func setup(item_table, store_dir: String) -> void:
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
+	_food_cfg = FoodEffects.load_config()
 	_luck_cfg = LuckScript.load_config()
 	_fitness_cfg = _load_fitness_config()
 	var energy_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/energy.json"))
@@ -555,6 +560,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_limp(peer, true)
 	_sync_worn(peer, true)
 	_sync_skills(peer, true)
+	_sync_food(peer, true)
 	sync_purse(peer)
 	sync_reputation(peer)
 	sync_shoulder(peer)
@@ -634,6 +640,7 @@ func peer_left(peer: int) -> void:
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
 	_admin_mode_on.erase(peer)   # Admin mode never outlives a session: every login starts with it off
+	_food_sent.erase(peer)
 	spyglass.erase(peer)
 	spyglass_tier.erase(peer)
 	_chest_viewer.erase(peer)
@@ -1058,7 +1065,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_use_struct(peer, inv, a)
 	elif kind == Net.ACT_EAT:
 		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
-		_eat(peer, inv, a)
+		_eat(peer, inv, a, b)
 
 		if float(vitals_of(peer).get("fed", 0.0)) > fed_before:
 			_goal_event(peer, "ate_food")
@@ -1869,7 +1876,12 @@ func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
 	last[skill] = now
 	_last_practice[peer] = last
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
-	var d: float = difficulty * float(def.get("difficulty", 1.0)) * float(rested_tier(peer).get("skill_gain_mult", 1.0))   # Rested: skills come a little faster
+	var base: float = difficulty * float(def.get("difficulty", 1.0))
+	var d: float = base * skill_xp_mult(peer)   # Rested and food (s3.16), added once and capped
+
+	if base >= float(system.get("trivial_below", 0.2)):
+		d = maxf(d, float(system.get("trivial_below", 0.2)))   # a dessert penalty never turns real work into trivial work (no XP at all)
+
 	var gained: float = SkillWeb.practice(_skills_cfg, skill, attributes_of(peer), records, d, now_s)
 
 	if gained > 0.0:
@@ -9437,7 +9449,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 	var hours: float = game_s / 3600.0
 	var drain: Dictionary = _energy_cfg.get("drain_per_game_day", {})
 	var rec: Dictionary = _energy_cfg.get("recover_per_game_hour", {})
-	e -= (float(drain.get("rest", 12.0)) + float(drain.get("work", 42.0)) * exertion_of(peer)) * game_s / 86400.0 * float(rested_tier(peer).get("exhaustion_mult", 1.0))   # Rested: slower exhaustion
+	e -= (float(drain.get("rest", 12.0)) + float(drain.get("work", 42.0)) * exertion_of(peer)) * game_s / 86400.0 * minf(float(rested_tier(peer).get("exhaustion_mult", 1.0)), food_mult(peer, "exhaustion_mult"))   # Rested or Bread and grains, the larger, never both
 	var stance: int = int(_stance.get(peer, 0))
 
 	if _forced_sleep(peer):
@@ -9477,16 +9489,19 @@ func _sync_energy(peer: int, force: bool) -> void:
 		send_energy.call(peer, pct)
 
 
-# An energy supplement (vitals.json energy_aids): energy at once, a cost to fitness training.
-func _use_energy_aid(peer: int, inv, slot: int, v: Dictionary, aid: Dictionary) -> void:
-	if float(v.get("energy", 100.0)) >= 99.0:
-		_say(peer, "You are not tired")
-		return
-
+# An energy supplement (vitals.json energy_aids; master s3.16 [D17]): no permanent cost and never refused. Its energy comes at once only
+# when its food group's slot is newly filled or had run out (step "fresh"), so it cannot stand in for sleep.
+func _use_energy_aid(peer: int, inv, slot: int, v: Dictionary, aid: Dictionary, step: Dictionary) -> void:
+	var item_id: String = table.id_of(inv.numbers[slot])
 	_last_eat[peer] = Time.get_ticks_msec()
 	inv.take_from_slot(slot, 1)
-	v["energy"] = minf(float(v.get("energy", 100.0)) + float(aid.get("energy", 0)), 100.0)
-	_fitness_cost(peer, float(aid.get("fitness", 0.0)))
+
+	if FoodEffects.profile(item_id, _food_cfg).is_empty() or bool(step.get("fresh", false)):   # a declined question (step {}) gives no energy either
+		v["energy"] = minf(float(v.get("energy", 100.0)) + float(aid.get("energy", 0)), 100.0)
+	else:
+		_say(peer, "It does not lift you again so soon.")
+
+	_food_apply(peer, item_id, step, false)
 	_sync_energy(peer, true)
 	_dirty = true
 
@@ -10524,7 +10539,7 @@ func _vitals_tick(spent: float) -> void:
 			_dirty = _dirty or float(crow["grace_s"]) <= 0.0
 
 		var burn_per_day: float = float(_vitals_cfg.get("rest_kcal_per_kg_day", 22)) * float(v["weight"]) + float(_vitals_cfg.get("work_kcal_day", 1500)) * exertion_of(peer)
-		var drain_mult: float = _drain_mult(peer) * float(rested_tier(peer).get("hunger_thirst_mult", 1.0))   # Rested: a little less hunger and thirst
+		var drain_mult: float = _drain_mult(peer) * minf(float(rested_tier(peer).get("hunger_thirst_mult", 1.0)), food_mult(peer, "hunger_thirst_mult"))   # Rested or a Beverage, the larger, never both
 		var burn: float = burn_per_day * game_s / 86400.0 * drain_mult
 		v["fed"] = float(v["fed"]) - burn
 
@@ -10554,6 +10569,8 @@ func _vitals_tick(spent: float) -> void:
 
 			if not rested.is_empty():   # the Rested buff: the larger of the two, never the product (comfort spec)
 				regen = maxf(regen, float(_vitals_cfg.get("health_regen_per_s", 0.05)) * float(rested.get("regen_mult", 1.0)))
+
+			regen = maxf(regen, float(_vitals_cfg.get("health_regen_per_s", 0.05)) * food_mult(peer, "regen_mult"))   # food the same way: the larger, never the product
 
 			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
@@ -11579,6 +11596,8 @@ func kill(peer: int, cause: String) -> bool:
 		return false
 
 	_characters[key].erase("rested")   # death ends the Rested buff
+	_characters[key].erase("food")     # and every food effect (s3.16)
+	_sync_food(peer, true)
 	_rest_credit.erase(peer)
 	var pos: Vector3 = _peer_pos[peer]
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
@@ -13924,6 +13943,8 @@ var _rested_told: Dictionary = {}       # peer -> true while "You feel rested" i
 
 func _comfort_tick(spent: float = 0.0) -> void:
 	for peer in _peer_key.keys():
+		_sync_food(peer, false)
+
 		if not _peer_pos.has(peer):
 			continue
 
@@ -16639,7 +16660,8 @@ func _drink_from_container(peer: int, inv, slot: int, v: Dictionary) -> void:
 	_dirty = true
 
 
-func _eat(peer: int, inv, slot: int) -> void:
+# `choice` (ACT_EAT b): the answer to the food-effect question (food_effects.gd plan): 0 none yet, a group index to replace, DECLINE to eat for calories only.
+func _eat(peer: int, inv, slot: int, choice: int = 0) -> void:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
@@ -16687,10 +16709,24 @@ func _eat(peer: int, inv, slot: int) -> void:
 		return
 
 	var cure: Dictionary = VitalsRules.medicine(item_id, _vitals_cfg)
+	var step: Dictionary = FoodEffects.plan(_food_of(peer), _now_game_s(), item_id, choice, _food_cfg)
 
 	if not cure.is_empty():
 		if float(v.get("sick", 0.0)) <= 0.0:
-			_say(peer, "Your health is fine")
+			if FoodEffects.profile(item_id, _food_cfg).is_empty() or choice == FoodEffects.DECLINE:
+				_say(peer, "Your health is fine")
+				return
+
+			if _food_asked(peer, slot, item_id, step):
+				return
+
+			_last_eat[peer] = now   # a medicinal tea while well: its Beverage effect only (s3.16 [D17]), never refused
+			_warm_bite(v, item_id)
+			inv.take_from_slot(slot, 1)
+			_food_apply(peer, item_id, step)
+			return
+
+		if _food_asked(peer, slot, item_id, step):
 			return
 
 		_last_eat[peer] = now
@@ -16709,13 +16745,16 @@ func _eat(peer: int, inv, slot: int) -> void:
 		v["sick"] = maxf(float(v["sick"]) - float(cure.get("cure_h", 12.0)) * 3600.0 * strength, 0.0)
 		_say(peer, str(_sick_cfg.get("say_medicine", "")))
 		_sync_sick(peer, true)
+		_food_apply(peer, item_id, step)
 		_dirty = true
 		return
 
 	var aid: Dictionary = VitalsRules.energy_aid(item_id, _vitals_cfg)
 
 	if not aid.is_empty():
-		_use_energy_aid(peer, inv, slot, v, aid)
+		if not _food_asked(peer, slot, item_id, step):
+			_use_energy_aid(peer, inv, slot, v, aid, step)
+
 		return
 
 	# A splint (vitals.json limp "cure_items") sets the leg and ends a limp at once.
@@ -16759,6 +16798,9 @@ func _eat(peer: int, inv, slot: int) -> void:
 		_say(peer, "You are not hurt.")
 		return
 
+	if _food_asked(peer, slot, item_id, step):
+		return
+
 	_last_eat[peer] = now
 	_warm_bite(v, item_id)
 	kcal = int(round(float(kcal) * (0.5 + 0.5 * table.freshness(inv.numbers[slot], inv.wear[slot]))))   # stale food feeds less
@@ -16774,7 +16816,85 @@ func _eat(peer: int, inv, slot: int) -> void:
 	_raw_sickness(peer, item_id)
 	v["wet"] = minf(float(v["wet"]) + float(ml), wet_cap)
 	v["health"] = clampf(float(v["health"]) + float(heal), 0.0, float(_vitals_cfg.get("health_max", 100)))
+	_food_apply(peer, item_id, step)
 	_sync_vitals(peer, true)
+
+
+# --- Temporary food effects (master s3.16 [D16, D17], data/items/food_effects.json, src/shared/food_effects.gd; catalog Phase 7) ---
+# Up to three groups at once, each on its own game-clock timer, saved in characters.json "food" and cleared by death. XP bonuses
+# are read where XP is earned (the Fitness tick, skill practice), so nothing is ever paid back for food eaten after the effort.
+
+func _food_of(peer: int) -> Dictionary:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if not _characters.has(key):
+		return {}
+
+	if typeof(_characters[key].get("food", null)) != TYPE_DICTIONARY:
+		_characters[key]["food"] = {}
+
+	return _characters[key]["food"]
+
+
+# True when the player must answer first: the question goes to the client (food_ask) and nothing is eaten.
+func _food_asked(peer: int, slot: int, item_id: String, step: Dictionary) -> bool:
+	if not step.has("ask"):
+		return false
+
+	if send_food_ask.is_valid():
+		send_food_ask.call(peer, slot, table.number_of(item_id), PackedInt32Array(step["ask"]))
+
+	return true
+
+
+# The eaten food takes its slot; a Dessert newly filling its slot gives its energy at once (energy aids do that themselves: `instant` false).
+func _food_apply(peer: int, item_id: String, step: Dictionary, instant: bool = true) -> void:
+	if not step.has("group"):
+		return
+
+	var group: String = str(step["group"])
+	FoodEffects.apply(_food_of(peer), _now_game_s(), item_id, step, _food_cfg)
+	var energy: float = float(FoodEffects.tier_row(group, int(FoodEffects.profile(item_id, _food_cfg)["tier"]), _food_cfg).get("energy", 0.0))
+
+	if instant and energy > 0.0 and bool(step["fresh"]):
+		var v: Dictionary = vitals_of(peer)
+		v["energy"] = minf(float(v.get("energy", 100.0)) + energy, 100.0)
+		_sync_energy(peer, true)
+
+	_dirty = true
+	_sync_food(peer, true)
+
+
+func fitness_xp_mult(peer: int) -> float:
+	return FoodEffects.fitness_mult(_food_of(peer), _now_game_s(), _food_cfg)
+
+
+func skill_xp_mult(peer: int) -> float:
+	return FoodEffects.skill_mult(_food_of(peer), _now_game_s(), _food_cfg, float(rested_tier(peer).get("skill_gain_mult", 1.0)))
+
+
+func food_mult(peer: int, field: String) -> float:
+	return FoodEffects.strongest(_food_of(peer), _now_game_s(), _food_cfg, field)
+
+
+var _food_sent: Dictionary = {}   # peer -> the rows last sent
+
+
+func _sync_food(peer: int, force: bool) -> void:
+	if not send_food.is_valid() or not _characters.has(str(_peer_key.get(peer, ""))):
+		return
+
+	var now_s: float = _now_game_s()
+	var on: Dictionary = FoodEffects.live(_food_of(peer), now_s)
+	var rows: Array = []
+
+	for group in _food_cfg.get("order", []):
+		if on.has(group):
+			rows.append([FoodEffects.group_index(str(group), _food_cfg), table.number_of(str(on[group]["id"])), int(on[group]["t"]), int(ceil((float(on[group]["until"]) - now_s) / GAME_RATE / 60.0))])
+
+	if force or _food_sent.get(peer, null) != rows:
+		_food_sent[peer] = rows
+		send_food.call(peer, rows)
 
 
 # --- Luck (job 77) ---
@@ -16884,7 +17004,7 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 		row["xp_day"] = today
 
 	if effort > float(cfg.get("min_effort", 0.1)):
-		var xp_per_tick: float = float(cfg.get("xp_base", 1.0)) + float(cfg.get("xp_per_effort", 2.0)) * minf(effort, float(cfg.get("max_effort", 1.1)))
+		var xp_per_tick: float = (float(cfg.get("xp_base", 1.0)) + float(cfg.get("xp_per_effort", 2.0)) * minf(effort, float(cfg.get("max_effort", 1.1)))) * fitness_xp_mult(peer)   # food: at the tick it is earned, never at the payout
 		var pending: float = float(row.get("xp_today", 0.0)) + xp_per_tick * spent / maxf(float(cfg.get("tick_s", 10.0)), 1.0)
 		row["xp_today"] = minf(pending, float(cfg.get("max_gain", 10)) * float(cfg.get("xp_per_point", 1000.0)))
 		_dirty = true
@@ -16929,22 +17049,6 @@ func set_fitness(peer: int, value: int) -> void:
 	_dirty = true
 	_vitals_sent.erase(peer)
 	_sync_vitals(peer, true)
-
-
-# Energy supplements wear the body down (Dave 2026-10-21): training points lost, down to energy.json fitness_max_loss under the base.
-func _fitness_cost(peer: int, points: float) -> void:
-	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
-
-	if row.is_empty() or points <= 0.0:
-		return
-
-	var before: int = fitness_of(peer)
-	row["train"] = maxf(float(row.get("train", 0.0)) - points, -float(_energy_cfg.get("fitness_max_loss", 3.0)))
-	_dirty = true
-
-	if fitness_of(peer) != before:
-		_vitals_sent.erase(peer)
-		_sync_vitals(peer, true)
 
 
 # Protocol 37 skill records become web records (data/items/skills.json "migration"): once, with a copy of the old file kept as
@@ -16996,6 +17100,7 @@ func _load_characters() -> void:
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
 			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
 			"rested": parsed["players"][key].get("rested", {}) if typeof(parsed["players"][key].get("rested", {})) == TYPE_DICTIONARY else {},
+			"food": parsed["players"][key].get("food", {}) if typeof(parsed["players"][key].get("food", {})) == TYPE_DICTIONARY else {},   # food effects {group: {id, t, until game s}}
 			"spawn_bed": parsed["players"][key].get("spawn_bed", []) if typeof(parsed["players"][key].get("spawn_bed", [])) == TYPE_ARRAY and (parsed["players"][key].get("spawn_bed", []) as Array).size() == 3 else [],
 			"goals_done": parsed["players"][key].get("goals_done", {}) if typeof(parsed["players"][key].get("goals_done", {})) == TYPE_DICTIONARY else {},   # starter goals finished
 			"goal_counts": parsed["players"][key].get("goal_counts", {}) if typeof(parsed["players"][key].get("goal_counts", {})) == TYPE_DICTIONARY else {},

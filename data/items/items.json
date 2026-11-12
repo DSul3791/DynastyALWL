@@ -647,7 +647,7 @@
 		"energy_bar": {
 			"number": 51,
 			"name": "Nut cake",
-			"description": "Nuts pressed with honey into a cake. Quick energy that wears on your fitness.",
+			"description": "Nuts pressed with honey into a cake. Quick energy; a sweet slows what you learn for a while.",
 			"kind": "food",
 			"stack": 20,
 			"value": 6,

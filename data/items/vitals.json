@@ -203,20 +203,16 @@
 	},
 	"energy_aids": {
 		"energy_bar": {
-			"energy": 25,
-			"fitness": 0.25
+			"energy": 12
 		},
 		"herbal_tea": {
-			"energy": 12,
-			"fitness": 0.1
+			"energy": 12
 		},
 		"nettle_tea": {
-			"energy": 8,
-			"fitness": 0.1
+			"energy": 8
 		},
 		"magic_tonic": {
-			"energy": 50,
-			"fitness": 0.5
+			"energy": 50
 		}
 	},
 	"heal": {

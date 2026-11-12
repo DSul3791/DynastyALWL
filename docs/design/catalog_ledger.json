@@ -775,15 +775,17 @@
    "section": "3.12",
    "phase": "6",
    "depends": [],
-   "state": "IN DEVELOPMENT",
+   "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
     "validate_items",
     "test_cooking_route",
     "test_dishes",
-    "test_blueprints"
+    "test_blueprints",
+    "test_food_effects",
+    "test_server_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T12 (phase 6): recipe 31 moved to the Food preparation table. The [D17] tooltip and energy-aid change (s7 item 22) is phase 7: not done here"
+   "note": "M001-T12 (phase 6): recipe 31 moved to the Food preparation table. M001-T16 (phase 7, s7 item 22): a tier 2 Dessert (food_effects.json), energy_aids energy 12 with no fitness cost, tooltip without the fitness wording"
   },
   {
    "key": "herbal_tea",

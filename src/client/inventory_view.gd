@@ -55,6 +55,8 @@ const RecipeListScript := preload("res://src/client/ui/inventory/recipe_list.gd"
 const PackGridScript := preload("res://src/client/ui/inventory/pack_grid.gd")
 const ContainerPanelScript := preload("res://src/client/ui/inventory/container_panel.gd")
 const StorageDialogsScript := preload("res://src/client/ui/inventory/storage_dialogs.gd")   # the code lock and the Storage sign / Warehouse desk windows (catalog phase 9)
+const FoodEffectsScript := preload("res://src/shared/food_effects.gd")
+const FoodEffectsUIScript := preload("res://src/client/ui/inventory/food_effects_ui.gd")   # the food effect HUD lines and the replace question (catalog phase 7)
 const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the window's look (steps B and C)
 const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
@@ -65,6 +67,7 @@ var _recipe_part: RecipeListScript             # the Make column: search, tabs, 
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
 var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store, in the Craft column under its Chest tab
 var _storage_ui: StorageDialogsScript          # the code-lock window and the storage-view window
+var _food_ui: FoodEffectsUIScript              # the food effect lines and the replace question
 var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
 var _pinned_part: PinnedRecipeScript           # the pinned recipe's checklist card
 
@@ -74,6 +77,7 @@ func _init() -> void:
 	_pack_part = PackGridScript.new(self)
 	_container_part = ContainerPanelScript.new(self)
 	_storage_ui = StorageDialogsScript.new(self)
+	_food_ui = FoodEffectsUIScript.new(self)
 	_queue_part = CraftQueueScript.new(self)
 	_pinned_part = PinnedRecipeScript.new(self)
 
@@ -272,6 +276,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.chest_info_received.connect(_on_chest_info)
 	net.chest_lock_received.connect(_storage_ui.on_lock)
 	net.storage_view_received.connect(_storage_ui.on_view)
+	net.food_effects_received.connect(_food_ui.on_effects)
+	net.food_ask_received.connect(_food_ui.on_ask)
 	net.craft_stock_received.connect(_on_craft_stock)
 	net.favourites_received.connect(_on_favourites)
 	net.bulk_done_received.connect(_on_bulk_done)
@@ -467,6 +473,10 @@ func close() -> void:
 	if _storage_ui.is_open():
 		_storage_ui.close()
 		return   # Esc shuts the lock or storage window first
+
+	if _food_ui.is_open():
+		_food_ui.close()
+		return
 
 	if dialogue_open and dialogue_close.is_valid():
 		dialogue_close.call()
@@ -4791,7 +4801,7 @@ var dialogue_close: Callable = Callable()
 
 
 func screen_open() -> bool:
-	return open or chest_mode or character_open() or dialogue_open or _storage_ui.is_open()
+	return open or chest_mode or character_open() or dialogue_open or _storage_ui.is_open() or _food_ui.is_open()
 
 
 const CHEST_KEYS := [["take_all", 0], ["store_all", 1], ["stack_nearby", 2], ["sort_both", 3]]    # action id, Net.ACT_BULK kind
@@ -4997,6 +5007,12 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 
 	if not cure.is_empty():
 		text += "\nTakes away %d hours of ill health  (right click when held, or Eat / use)" % int(cure.get("cure_h", 0))
+
+	var food_fx: Dictionary = FoodEffectsScript.profile(table.id_of(number), _food_ui.cfg)
+
+	if not food_fx.is_empty():   # its food effect (catalog phase 7): one group slot, refreshed by the same group, never stacked
+		var fx_group: String = str(food_fx["group"])
+		text += "\n%s, tier %d: %s for %s game hours" % [FoodEffectsScript.group_name(fx_group, _food_ui.cfg), int(food_fx["tier"]), FoodEffectsScript.describe(fx_group, int(food_fx["tier"]), table.id_of(number), _food_ui.cfg), str(FoodEffectsScript.tier_row(fx_group, int(food_fx["tier"]), _food_ui.cfg).get("h", 0))]
 
 	if table.shelf_units(number) > 0:
 		var f: float = table.freshness(number, fill_ml)
