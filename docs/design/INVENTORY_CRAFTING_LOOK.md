@@ -147,3 +147,22 @@ Dino's shots on Dave's PC, each at the small and large text sizes:
 4. hovering a greyed recipe whose wood sits in a nearby chest;
 5. mid-craft with the ring filling;
 6. the hotbar with the window closed.
+
+## 14. Later owner-approved storage/food UI extensions (design only)
+
+**Supersession notice:** This UI art/layout document is dated 8 Nov 2026. Later item decisions and permission rules are recorded in [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md) §§3.12–3.15 and elaborated in [STORAGE_WAREHOUSING_DESIGN.md](STORAGE_WAREHOUSING_DESIGN.md) and [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md). The master catalog remains the authority for approved and proposed item status.
+
+**Approved storage UI [D13]:**
+- Opening an accessible crate/chest nearby still uses the familiar pack-and-container interface; the player can see and manipulate its own real inventory, with no forced visit to a desk.
+- A Warehouse Desk or Storage Sign is an optional **combined view over multiple local physical containers**. Search, deposit, withdraw, remaining room and per-container location must show **only crates that this interacting player has permission to use**. The UI does not create an extra shared pool or magically move crates.
+- An owner may open/manage their **own locked crates from an in-range Warehouse Desk** without entering a code. A desk owner does **not** gain rights to other players' containers by owning the desk.
+- Crates and chests may have optional **owner-assigned 4-digit codes** (allow `0000`). Unauthorized users can submit the right code for that individual locked container, including through a desk, without making it public. Hide secrets and other players' private contents.
+- After wrong code attempt #1/#2/#3/#4, show lockout countdown **10/20/30/40 seconds**, then +10s per additional consecutive failure; success resets the player's streak for that container. Use the same player+container state in both direct and desk views. The owner bypasses code entry.
+- Moving the *loaded* same crate from one warehouse to cart/wagon to future ship to another warehouse changes the local aggregated view automatically; the old desk immediately loses the moved crate. Future ship **Captain's Table** is a planned view on the same storage system, **not an approved ship item yet**.
+- Use compatible dark-walnut/gold/cream styling from §§1–13; add a clear container breadcrumb, lock status/owner access, filtering and noncolour status indicators. No functional UI change has been implemented.
+
+**Approved food UI [D12]:** Food Preparation Table is a recipe UI for making tangible uncooked/prepared food items, which are then finished at correct cooking stations. Kitchen knives/board/rolling pin are built into the visible table model, not required inventory tools. For simple foods use cooking stations directly.
+
+**Owner-directed but item-roster-pending UI:** The same Food Preparation Table handles straightforward **preservation batches**, including sealed jars that mature on a timestamp automatically. A functional generic Serving Platter supports prepared food-board inventory items displayed on existing dining tables and actually eaten portion by portion. Exact new preservation items and the proposed 20-board list are **not owner-approved**. Do not wire/invent their runtime inventory, recipes or models yet.
+
+This section records **future look/interaction intent only**. No gameplay code, data schema, or merge has been authorized by its presence.
