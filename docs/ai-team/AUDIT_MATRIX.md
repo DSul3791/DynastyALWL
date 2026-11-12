@@ -1,5 +1,5 @@
 # AI Operating System — cross-policy acceptance matrix
-**Status: STAGING REVIEW.** Written checks below are design checks, not evidence that Claude workers passed them.
+**Status: IN FORCE as a check list (12 Nov 2026).** Written checks below are design checks, not evidence that Claude workers passed them.
 
 Each behavioral case must be replayed in the actual Claude project after deployment. The gate is **PASS only when observed**, otherwise NOT RUN or FAIL. Log exact transcript/task identifier and resulting artifacts to project Library and GitHub (with a designated master).
 

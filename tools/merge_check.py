@@ -105,19 +105,25 @@ for f in sh("git", "ls-files", "-o", "--exclude-standard").splitlines():
         bad("new script without .uid: %s (commit its .uid)" % f)
 
 
-# 7. Dave's rule (25 Oct 2026): nothing is deleted. A model, image, sound, art, design, scene, resource or code file that was in BASE and
-#    is gone from the tree must be present under proposed_removals/ (scripts, scenes, resources with ".removed" added) with a line in REMOVALS.md.
-KEEP_EXT = (".glb", ".gltf", ".obj", ".fbx", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".tga", ".exr", ".hdr", ".dds", ".ogg", ".wav", ".mp3",
-            ".tscn", ".tres", ".gd", ".gdshader", ".shader", ".md")
-KEEP_DIRS = ("art/", "assets/", "design/", "docs/", "items/", "src/", "scenes/", "worlds/", "data/")
-SKIP_PREFIX = ("proposed_removals/", "docs/mirror/", "docs/archive/", "questions/", "evidence/", "results/")
+# 7. Deletions (Decision 61 as clarified by Dave, 12 Nov 2026; rules and their source in tools/deletion_rules.py):
+#    replaced code may be deleted once nothing in the game uses it; documents are archived, never deleted; other files go
+#    to proposed_removals/ with a REMOVALS.md line. Tests: tools/test_deletion_rules.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import deletion_rules
 if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
-    for f in sh("git", "diff", "--name-only", "--diff-filter=D", BASE).splitlines():
-        if f.startswith(SKIP_PREFIX) or not (f.endswith(KEEP_EXT) and f.startswith(KEEP_DIRS)):
-            continue
-        suffix = ".removed" if f.endswith((".gd", ".tscn", ".tres", ".uid")) else ""
-        if not (os.path.isfile("proposed_removals/" + f + suffix) or os.path.isfile("proposed_removals/" + f)):
-            bad("deleted without approval (Dave's rule): %s (move it to proposed_removals/%s%s and add a line to proposed_removals/REMOVALS.md)" % (f, f, suffix))
+    _deleted = sh("git", "diff", "--name-only", "--diff-filter=D", BASE).splitlines()
+    _added = sh("git", "diff", "--name-only", "--diff-filter=AR", BASE).splitlines()
+    _game = {}
+    for f in (sh("git", "ls-files").splitlines() if _deleted else []):   # read game files only when something was deleted
+        if (f.endswith(deletion_rules.GAME_EXT) or f == "project.godot") and os.path.isfile(f):
+            try:
+                _game[f] = open(f, encoding="utf-8", errors="ignore").read()
+            except OSError:
+                pass
+    _removals = open("proposed_removals/REMOVALS.md", encoding="utf-8").read() if os.path.isfile("proposed_removals/REMOVALS.md") else ""
+    for msg in deletion_rules.deletion_problems(_deleted, _added, os.path.isfile, lambda p: sh("git", "show", BASE + ":" + p),
+                                                _game, _removals):
+        bad(msg)
     # looks: a look entry that was in BASE must still be in data/items/looks.json
     try:
         old = json.loads(sh("git", "show", BASE + ":data/items/looks.json"))["items"]

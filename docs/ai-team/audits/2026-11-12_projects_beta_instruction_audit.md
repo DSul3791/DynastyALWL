@@ -249,3 +249,5 @@ Independent read-only reviewer plus live observations in this project's cloud th
 | F16 static checker | VERIFIED | No |
 
 Other corrections: path is `docs/ai-team/package/cowork/`; support.claude.com 9517075 covers claude.ai chat Projects, not the Beta; reddit sources UNVERIFIABLE from the cloud (blocked); the repo has no `.claude/rules/`. Rule files cited are identical at `b9eb2929` and dev `33c5601`.
+
+**Resolution (12 Nov 2026):** Dave approved four rulings the same evening (project instructions with `dev` as base, Decision 61 clarification, retirement of the three-task rule, lifting the general freeze), recorded verbatim in `docs/ai-team/DECISION_AUTHORITY.md`. The repair (doc changes, the deletion check in `tools/deletion_rules.py` with `tools/test_deletion_rules.py`) is in the same PR as this report. Fresh-thread verification is tracked in that PR.

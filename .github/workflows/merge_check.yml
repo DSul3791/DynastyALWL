@@ -21,5 +21,7 @@ jobs:
             export MERGE_CHECK_BASE="$BEFORE"
           fi
           python3 tools/merge_check.py
+      - name: Deletion rule tests (Decision 61, no Godot)
+        run: python3 -I tools/test_deletion_rules.py
       - name: AI team operating system static check (no Godot, no Claude run)
         run: python3 -I tools/check_ai_team_package.py

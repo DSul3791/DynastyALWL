@@ -1,5 +1,5 @@
 # Identified legacy conflicts — verify before editing
-**Status: UNRESOLVED IN REPO — do not silently supersede. Not yet remediated in GitHub. Source reads from current default branch on 11 Nov 2026.**
+**Status: PARTLY RESOLVED (12 Nov 2026).** Resolved: #1, #2, #9, #10 (install, `INSTALL_RECORD.md`); #3 banner only (the DOC_MAP file list is still STALE), #2's deletion half and #7 (Dave's 12 Nov rulings, `DECISION_AUTHORITY.md`). Open: #4, #5, #6, #8. Original text below kept for history (source reads from the default branch on 11 Nov 2026).
 
 1. `docs/START_HERE.md` (Rules section): 'There is NO daily branch (Dave, 2 Nov 2026)' and `claude/<agent>-YYYYMMDD` -> direct main PR. **Superseded by Dave's later approval of committed nightly dev and gated main.** Preserve old decision as historical; update this active entry when installing.
 2. `RULES.md` (Git section): old `DailyDev_YYYYMMDD` daily branch and 'main until Dave says go' plus inconsistent 'nothing deleted' next to decision 61. Reconcile to new `dev` workflow and approved replaced-code deletion/archive-doc policy. Do not assume every line is still current.

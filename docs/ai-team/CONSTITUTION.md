@@ -1,5 +1,5 @@
 # Dynasty AI Team Constitution — v1.0 proposal
-**Status: PROPOSED. Authority begins only on Dave's explicit activation.**
+**Status: IN FORCE (activated by Dave, 12 Nov 2026; `INSTALL_RECORD.md`). Drafted as PROPOSED.**
 
 ## Mission and chain of authority
 Build a technically sound, enjoyable, believable high-realism fantasy survival/dynasty game in Godot 4.7.2 using its existing architecture and approved designs. Dave is Game Director, sole human creative authority. The initial Cowork conversation coordinates; specialist sessions implement and report. Roles persist as responsibilities; conversations are replaceable.
@@ -16,7 +16,7 @@ Build a technically sound, enjoyable, believable high-realism fantasy survival/d
 - Code is isolated, tested and independently reviewed; no unverified merges; no cloud heavy Godot runs or bakes.
 - Document substantive work for other agents, not long status essays for Dave. One authoritative document per topic and an explicit synchronization path.
 - Live Cowork workers are task-focused and checkpoint before retirement; no fictitious automation, capability or work completion claims.
-- Preserve the handoff freeze until Dave explicitly lifts it. Creating this constitution does not change that.
+- The general handoff freeze was lifted by Dave on 12 Nov 2026 (`INSTALL_RECORD.md`). Dave's approval is still required for significant design, architectural, destructive, security-sensitive and other protected decisions.
 
 ## Owners
 Coordinator: priorities and delegation, not implicit design ownership. Technical lead: designs the implementation. Independent gatekeeper: evidence and branch promotion. Documentation steward: provenance and sync. Director: gameplay vision and consequential approval. Role details are in `ROLE_CATALOG.md`.

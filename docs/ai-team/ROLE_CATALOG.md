@@ -1,5 +1,5 @@
 # Permanent roles, temporary sessions
-**Status: PROPOSED. Cowork coordinator remains the human-facing root chat.**
+**Status: IN FORCE (activated by Dave, 12 Nov 2026; `INSTALL_RECORD.md`). Drafted as PROPOSED.** The project conversation (coordinator) remains the human-facing root chat.
 
 | Role | Existing name | Scope | Default model guidance |
 |---|---|---|---|
