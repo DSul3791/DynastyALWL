@@ -1,5 +1,5 @@
 # Ponytail v5.3.3 — install record
-**Status: INSTALLED and in force (PR #1031 merged 11 Nov 2026, merge commit `b03ac553` on `main`; configuration only; game development freeze unchanged).** Authoritative method text: `docs/PONYTAIL_RULES.md`. This file records what was installed, where it works, what was left out and how to undo it.
+**Status: INSTALLED and in force (PR #1031 merged 11 Nov 2026, merge commit `b03ac553` on `main`; configuration only; the game development freeze it left unchanged was lifted by Dave on 12 Nov 2026).** Authoritative method text: `docs/PONYTAIL_RULES.md`. This file records what was installed, where it works, what was left out and how to undo it.
 
 ## Brief (AI paraphrase of Dave's instruction; verbatim in the project thread "Integrate Ponytail into AI team", 11 Nov 2026 17:59 UTC)
 Integrate Ponytail v5.3.3 into the AI Team OS; apply its philosophy across the coding team; it must never override approved designs, realism, architecture decisions or engineering standards; review installers and hooks before enabling; no competing rulebook; keep model assignments and workflow; iterate reviews; independent review; separate branch and PR; document rollback; no game development.
