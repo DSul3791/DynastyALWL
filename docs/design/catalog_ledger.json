@@ -14272,7 +14272,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T15 (phase 5): live; waist:pouch (needs a belt), 4 slots, small items; recipes 603 by hand (hide), 604 Leatherworking table; worn look placeholder"
+   "note": "M001-T15 (phase 5): live; waist:pouch (needs a belt), 4 slots, small items, quick use from the hotbar (clothing.json quick); recipes 603 by hand (hide), 604 Leatherworking table; worn look placeholder"
   },
   {
    "key": "new:Tool roll",
@@ -14308,7 +14308,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T15 (phase 5): live; back:base, 20 slots, any; recipe 607 Tailor's table; worn look placeholder"
+   "note": "M001-T15 (phase 5): live; back:base, 20 slots, any; recipe 607 Tailor's table; loaded_effort 0.15 (movement cost when loaded); worn look placeholder"
   },
   {
    "key": "new:Wooden - Pack frame",
@@ -14326,7 +14326,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T15 (phase 5): live; back:base, 4 slots, awkward loads incl. large logs; recipe 608 Carpenter's bench (movement penalty not modelled); worn look placeholder"
+   "note": "M001-T15 (phase 5): live; back:base, 4 slots, awkward loads incl. large logs; recipe 608 Carpenter's bench; worn_speed_mult 0.85 (walk, run, sprint, ladder climb, strike and bow pace) and loaded_effort 0.25; worn look placeholder"
   },
   {
    "key": "new:Weapon scabbard",
@@ -14344,7 +14344,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T15 (phase 5): live; waist:scabbard (needs a belt), 1 sword; recipe 609 Leatherworking table (draw from it not modelled); worn look placeholder"
+   "note": "M001-T15 (phase 5): live; waist:scabbard (needs a belt), 1 sword, drawn by its hotbar key (clothing.json quick); recipe 609 Leatherworking table; worn look placeholder"
   },
   {
    "key": "new:Utility bandolier",
@@ -14362,7 +14362,7 @@
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T15 (phase 5): live; strap:base, 6 slots, small food and medicine, no strength bonus; recipe 610 Leatherworking table; worn look placeholder"
+   "note": "M001-T15 (phase 5): live; strap:base, 6 slots, small food and medicine, no strength bonus, quick use from the hotbar (clothing.json quick); recipe 610 Leatherworking table; worn look placeholder"
   },
   {
    "key": "new:Rope Halter",

@@ -13,6 +13,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const BagRules := preload("res://src/shared/bag_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const TradeScript := preload("res://src/stream/server_trade.gd")
 
 const DIR := "user://test_carrying"
 const KEY := "carrying001"
@@ -351,6 +352,89 @@ func _init() -> void:
 	check(int(held(back, 1, "back:base").get(n.call("log_oak"), 0)) == 1 and inv1.count_of(n.call("log_oak")) == 0, "the log on the shoulder goes onto the pack frame")
 	back.action(1, Net.ACT_CHEST_TAKE, 0, -1 - place(back, "back:base"), 1, Vector3.ZERO)
 	check(held(back, 1, "back:base").is_empty() and inv1.count_of(n.call("log_oak")) == 1, "and comes back to the shoulder")
+	inv1.clear_slot(inv1.numbers.find(n.call("log_oak")))
+
+	# 13. Movement (master s3.9 rule 2 and table): the frame slows every gait; a loaded rucksack or frame is work to move with.
+	check(is_equal_approx(CarryRules.worn_speed_mult(back.worn_of(1), table), 0.85), "the worn pack frame slows the walk (x%.2f)" % CarryRules.worn_speed_mult(back.worn_of(1), table))
+	check(back._loaded_bag_effort(1) == 0.0, "an empty frame adds no effort")
+	give(back, 1, "stone", 10)
+	back.action(1, Net.ACT_CHEST_PUT, inv1.numbers.find(stone), -1 - place(back, "back:base"), 10, Vector3.ZERO)
+	var frame_effort: float = back._loaded_bag_effort(1)
+	check(frame_effort > 0.0 and frame_effort <= 0.25, "10 kg on the frame adds effort (%.3f of its 0.25)" % frame_effort)
+
+	# 14. Wolves smell meat in a worn bag and in a bag carried in the pack, and take it from both.
+	give(back, 1, "raw_meat", 2)
+	back.action(1, Net.ACT_CHEST_PUT, inv1.numbers.find(n.call("raw_meat")), -1 - place(back, "back:base"), 2, Vector3.ZERO)
+	check(inv1.count_of(n.call("raw_meat")) == 0 and back.carried_count(1, "raw_meat") == 2, "meat in the worn frame still counts as carried")
+
+	# 15. Swapping one worn bag for another: the full one goes to the pack whole, the new one is worn empty.
+	give(back, 1, "travellers_rucksack")
+	wear(back, 1, "travellers_rucksack")
+	var frame_at: int = inv1.numbers.find(n.call("wooden_pack_frame"))
+	check(back.worn_of(1)[place(back, "back:base")] == n.call("travellers_rucksack") and held(back, 1, "back:base").is_empty() and frame_at >= 0 and rows_count(inv1.inst_of(frame_at).get("bag", [])) == {stone: 10, n.call("raw_meat"): 2}, "a rucksack put on over a full frame: the frame goes to the pack with its load")
+	check(is_equal_approx(CarryRules.worn_speed_mult(back.worn_of(1), table), 1.0) and back._loaded_bag_effort(1) == 0.0, "the frame in the pack no longer slows the walk; the empty rucksack adds no effort")
+	check(back.carried_count(1, "raw_meat") == 2 and back.take_all_meat(1) == 2 and back.carried_count(1, "raw_meat") == 0 and rows_count(back.inventory_of(1).inst_of(frame_at).get("bag", [])) == {stone: 10}, "wolves take the meat out of the frame in the pack and leave the stones")
+
+	# 16. Bulk buttons with a worn bag open: Store all stops at the quiver's 40, Take all empties it.
+	var quiver_at: int = -1 - place(back, "waist:quiver")
+	give(back, 1, "wooden_arrow", 20)
+	give(back, 1, "stone", 3)
+	back.action(1, Net.ACT_CHEST_OPEN, quiver_at, 0, 0, Vector3.ZERO)
+	back.action(1, Net.ACT_BULK, 1, 0, 0, Vector3.ZERO)
+	check(int(held(back, 1, "waist:quiver").get(arrow, 0)) == 40 and inv1.count_of(arrow) == 19 and not held(back, 1, "waist:quiver").has(stone) and inv1.count_of(stone) == 3, "Store all fills the quiver to its 40 arrows and leaves the stones")
+	back.action(1, Net.ACT_BULK, 0, 0, 0, Vector3.ZERO)
+	check(held(back, 1, "waist:quiver").is_empty() and inv1.count_of(arrow) == 59, "Take all empties the quiver into the pack")
+
+	# 17. Quick use (master s3.9 rule 5): a hotbar key's item in the worn pouch is found there and drawn to the pack in one take.
+	var berries_key: int = 3
+	back.inventory_of(1).hotbar[berries_key] = berries
+	var worn_insts: Dictionary = {}
+	var slots_now: Array = back.worn_slots_of(1)
+
+	for i in slots_now.size():
+		if not (slots_now[i][3] as Dictionary).is_empty():
+			worn_insts[i] = slots_now[i][3]
+
+	var quick: Array = back._clothing_cfg().get("quick", []).map(func(at: String) -> int: return place(back, at))
+	var found: Array = BagRules.quick_take(worn_insts, quick, berries)
+	check(found.size() == 2 and int(found[0]) == place(back, "waist:pouch"), "the key's berries are found in the worn pouch (%s)" % str(found))
+	var in_pouch: int = int(held(back, 1, "waist:pouch").get(berries, 0))
+
+	if found.size() == 2:
+		back.action(1, Net.ACT_CHEST_TAKE, int(found[1]), -1 - int(found[0]), 1, Vector3.ZERO)
+
+	check(int(held(back, 1, "waist:pouch").get(berries, 0)) == in_pouch - 1 and back.inventory_of(1).key_slot(berries_key) >= 0, "one comes to the pack, so the key now holds it")
+	check(BagRules.quick_take(worn_insts, quick, n.call("wooden_arrow")).is_empty(), "the quiver is not a quick-use bag (the bow draws from it itself)")
+
+	# 18. A dropped bag that holds anything never despawns; an empty one does.
+	back.action(1, Net.ACT_DROP, frame_at, 0, 1, Vector3(2.0, 10.0, 0.0))
+	give(back, 1, "fibre_shoulder_bag")
+	back.action(1, Net.ACT_DROP, inv1.numbers.find(n.call("fibre_shoulder_bag")), 0, 1, Vector3(2.0, 10.0, 1.0))
+	back._expire_items(100000.0)
+	var lying: Dictionary = {}
+
+	for id in back._items:
+		lying[int(back._items[id].get("number", 0))] = true
+
+	check(lying.has(n.call("wooden_pack_frame")) and lying.has(n.call("backpack")) and not lying.has(n.call("fibre_shoulder_bag")), "after the despawn time the full frame and pack still lie there; the empty shoulder bag is gone")
+
+	# 19. A trader never buys a bag with something in it; empty, it sells.
+	var trade = TradeScript.new()
+	var trade_dir: String = DIR + "_trade"
+	DirAccess.make_dir_recursive_absolute(trade_dir)
+	trade.items = back
+	trade.npcs = {"npcs": {"hob": {"dormant": false, "placed": true, "pos": Vector3(1.0, 10.0, 0.0)}}}
+	trade.setup(trade_dir)
+	trade.now = func(): return 1000.0
+	trade.game_seconds = func(): return 0.0
+	trade.send_shop = func(_a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l): pass
+	(trade._shops["hob"]["buys"] as Array).append("gear")
+	give(back, 1, "belt_pouch")
+	var spare: int = inv1.numbers.find(n.call("belt_pouch"))
+	inv1.inst[spare] = {"bag": [[berries, 2, 0]]}
+	check(trade.deal(1, "hob", 1, spare, 1) == "Empty the bag first." and rows_count(inv1.inst_of(spare).get("bag", [])) == {berries: 2}, "a trader will not buy a bag that holds something")
+	inv1.inst[spare] = {}
+	check(trade.deal(1, "hob", 1, spare, 1).begins_with("Sold") and inv1.count_of(n.call("belt_pouch")) == 0, "an empty one sells")
 
 	print("test_carrying: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

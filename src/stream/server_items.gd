@@ -2077,7 +2077,7 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_strike.get(peer, -100000)) < STRIKE_COOLDOWN_MS:
+	if now - int(_last_strike.get(peer, -100000)) < STRIKE_COOLDOWN_MS / CarryRules.worn_speed_mult(worn_of(peer), table):   # a pack frame fights slower (master s3.9 rule 2)
 		return
 
 	_last_strike[peer] = now
@@ -2196,7 +2196,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_shot.get(peer, -100000)) < int(_bow.cfg.get("pace_ms", 700)):
+	if now - int(_last_shot.get(peer, -100000)) < float(_bow.cfg.get("pace_ms", 700)) / CarryRules.worn_speed_mult(worn_of(peer), table):
 		return
 
 	var source = _worn_quiver(peer)   # a worn quiver first (master s3.9 rule 4), then the pack
@@ -3944,8 +3944,8 @@ func _fires(delta: float) -> void:
 # Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage (_fire_expire).
 func _expire_items(spent: float) -> void:
 	for id in _items.keys():
-		if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
-			continue
+		if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8 or _items[id].get("inst", {}).has("bag"):
+			continue   # a dropped bag that holds anything never despawns, so its contents are never lost (master s3.9 rule 3); empty, it ages as any item
 
 		_items[id]["left"] -= spent
 
@@ -9124,6 +9124,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 	if kind == Net.ACT_CHEST_PUT and a == -1:   # slot -1 was the log on the shoulder: it is now the pack slot that holds it
 		a = _shoulder_slot(peer)
 
+	var bag_no: String = _bag_refusal(peer, id, inv.numbers[a]) if kind == Net.ACT_CHEST_PUT and id < 0 and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 else ""   # what a worn bag will not take
 	var fire_refuses: bool = kind == Net.ACT_CHEST_PUT and _items.get(id, {}).has("fire") and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and not _fire_takes(table.id_of(inv.numbers[a]))
 
 	if fire_refuses:
@@ -9131,8 +9132,8 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		_reject(peer, 3)
 	elif kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
 		_reject(peer, 3)
-	elif kind == Net.ACT_CHEST_PUT and id < 0 and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and _bag_refusal(peer, id, inv.numbers[a]) != "":
-		_say(peer, _bag_refusal(peer, id, inv.numbers[a]))
+	elif bag_no != "":
+		_say(peer, bag_no)
 		_reject(peer, 3)
 	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
 		var number: int = inv.numbers[a]
@@ -9258,6 +9259,22 @@ func _worn_bags_kg(peer: int) -> float:
 	return total
 
 
+# A worn bag whose items.json row has loaded_effort (Traveller's rucksack, Wooden - Pack frame; master s3.9 rule 2 and table: movement cost when
+# loaded) is work to move with even under the free load: loaded_effort x its load as a share of the free carry (CarryRules.comfort_kg), at most 1.
+func _loaded_bag_effort(peer: int) -> float:
+	var extra: float = 0.0
+	var free_kg: float = maxf(CarryRules.comfort_kg(_carry_body(peer), _carry_cfg), 1.0)
+
+	for raw in _characters.get(_peer_key.get(peer, ""), {}).get("worn", []):
+		if typeof(raw) == TYPE_ARRAY and (raw as Array).size() > 3 and typeof(raw[3]) == TYPE_DICTIONARY and raw[3].has("bag"):
+			var effort: float = float(table.entry(table.id_of(int(raw[0]))).get("loaded_effort", 0.0))
+
+			if effort > 0.0:
+				extra += effort * minf(CarryRules.bag_kg(raw[3], table, _carry_cfg) / free_kg, 1.0)
+
+	return extra
+
+
 # Migration rule 10 (CATALOG_SAVE_MIGRATION.md): a player over the carry limit is slowed (the client's walk), never stripped, and told once.
 func _carry_notice(peer: int) -> void:
 	if _carry_cfg.is_empty():
@@ -9343,6 +9360,7 @@ func effort_of(peer: int) -> float:
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
 		level += float(_moving.get(peer, 0.0)) * float(_carry_cfg.get("load_effort", 0.45)) * pow(_load_ratio(peer), float(_carry_cfg.get("load_effort_power", 1.5)))
+		level += float(_moving.get(peer, 0.0)) * _loaded_bag_effort(peer)
 
 	return level
 
@@ -9934,7 +9952,7 @@ func wolf_info() -> Array:
 		var v: Dictionary = vitals_of(peer)
 		out.append({"peer": peer, "pos": _peer_pos[peer], "stance": int(_stance.get(peer, 0)),
 			"hp": float(v.get("health", 100.0)) / maxf(float(_vitals_cfg.get("health_max", 100)), 1.0),
-			"meat": count_for(peer, "raw_meat") > 0, "meat_cooked": count_for(peer, "roast_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
+			"meat": carried_count(peer, "raw_meat") > 0, "meat_cooked": carried_count(peer, "roast_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
 
 	return out
 
@@ -10024,7 +10042,7 @@ func lit_fire_near(point: Vector3, r: float) -> bool:
 	return false
 
 
-# Wolves steal: every raw and roast meat leaves the pack. Returns how many pieces went.
+# Wolves steal: every raw and roast meat leaves the pack and the bags carried in it or worn (they smell it there too). Returns how many pieces went.
 func take_all_meat(peer: int) -> int:
 	var total: int = 0
 
@@ -10034,7 +10052,72 @@ func take_all_meat(peer: int) -> int:
 		if n > 0 and take_from(peer, id, n):
 			total += n
 
+		total += _take_from_bags(peer, table.number_of(id))
+
 	return total
+
+
+# How many of an item a player carries: the pack, the bags in it and the worn bags (catalog Phase 5).
+func carried_count(peer: int, id: String) -> int:
+	var inv = inventory_of(peer)
+	var number: int = table.number_of(id)
+
+	if inv == null or number <= 0:
+		return 0
+
+	var total: int = inv.count_of(number)
+
+	for slot in inv.SLOTS:
+		total += _rows_count(inv.inst_of(slot).get("bag", []), number)
+
+	for raw in _characters.get(_peer_key.get(peer, ""), {}).get("worn", []):
+		if typeof(raw) == TYPE_ARRAY and (raw as Array).size() > 3 and typeof(raw[3]) == TYPE_DICTIONARY:
+			total += _rows_count(raw[3].get("bag", []), number)
+
+	return total
+
+
+static func _rows_count(rows: Array, number: int) -> int:
+	var total: int = 0
+
+	for row in rows:
+		total += int(row[1]) if int(row[0]) == number else 0
+
+	return total
+
+
+# Takes every unit of an item out of the bags a player carries (in the pack and worn); returns how many. Outside an action, so it writes back itself.
+func _take_from_bags(peer: int, number: int) -> int:
+	var inv = inventory_of(peer)
+
+	if inv == null or number <= 0:
+		return 0
+
+	var taken: int = 0
+	var before: Array = _snapshot(inv)
+
+	for slot in inv.SLOTS:
+		var held: int = _rows_count(inv.inst_of(slot).get("bag", []), number)
+
+		if held > 0:
+			var bag = BagRules.open(table, inv.numbers[slot], inv.inst[slot])
+			bag.remove(number, held)
+			inv.inst[slot] = BagRules.store(bag, inv.inst[slot])
+			taken += held
+
+	_send_changes(peer, inv, before)
+
+	for place in worn_of(peer).size():
+		var bag = _worn_bag(peer, place)
+		var held: int = bag.count_of(number) if bag != null else 0
+
+		if held > 0:
+			bag.remove(number, held)
+			taken += held
+
+		_end_bag_edit(peer)
+
+	return taken
 
 
 # Wolf bites (data/animals/animals.json "wolves"). Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling

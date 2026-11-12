@@ -18,6 +18,7 @@ var view            # the InventoryView that owns this part (src/client/inventor
 var root: Control   # the top control this part built
 var _keep_out: CheckBox   # the open container's "keep out" tick
 var _lock: Control        # the lock beside the tick while the container is kept out
+var opened_bag: int = 0   # the item number of the worn bag the screen last showed (0 for a chest), so a bag swapped in its place is asked for again
 
 
 func _init(owner_view) -> void:
@@ -188,7 +189,16 @@ func refresh() -> void:
 	if not view.chest_mode or view._chest_panel == null:
 		return
 
-	var capacity: int = BagRules.slots_of(view.table, container_number()) if view.chest_id < 0 else int(view.table.entry(view.table.id_of(container_number())).get("slots", view.inventory.SLOTS))
+	var capacity: int = int(view.table.entry(view.table.id_of(container_number())).get("slots", view.inventory.SLOTS))
+	opened_bag = container_number() if view.chest_id < 0 else 0
+
+	if view.chest_id < 0:   # a bag shows its own slots, and any filled one past them (bag_slots lowered in the data: BagRules.open shows those too)
+		capacity = BagRules.slots_of(view.table, opened_bag)
+
+		for i in range(view.inventory.SLOTS - 1, capacity - 1, -1):
+			if view.chest_inv.numbers[i] != 0:
+				capacity = i + 1
+				break
 	var fire: bool = is_fire()
 
 	if view.chest_id < 0 and view.chest_tab and view._frame != null and is_instance_valid(view._frame):

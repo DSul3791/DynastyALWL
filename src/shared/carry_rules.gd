@@ -57,6 +57,18 @@ static func bag_kg(item_inst: Dictionary, table, cfg: Dictionary) -> float:
 	return total
 
 
+# The walk, run and sprint multiplier of what is worn: the product of the worn pieces' items.json worn_speed_mult (the Wooden - Pack frame's
+# restriction, master s3.9 rule 2), 1 for none.
+static func worn_speed_mult(numbers, table) -> float:
+	var mult: float = 1.0
+
+	for number in numbers:
+		if int(number) > 0:
+			mult *= clampf(float(table.entry(table.id_of(int(number))).get("worn_speed_mult", 1.0)), 0.1, 1.0)
+
+	return mult
+
+
 # The most a body carries (the server refuses to pick up more).
 static func cap_kg(body_kg: float, cfg: Dictionary) -> float:
 	return body_kg * float(cfg.get("carry_kg_per_body_kg", 0.7))
