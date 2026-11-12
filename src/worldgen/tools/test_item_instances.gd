@@ -387,6 +387,8 @@ func _init() -> void:
 	inv.counts[old_at] = 6
 	inv.wear[old_at] = old_age
 	inv.add(nectar, 5)
+	items._items[items._next_id] = {"number": table.number_of("food_preparation_table"), "count": 1, "pos": Vector3(1.5, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "food_preparation_table", "yaw": 0.0}}   # Nut cake is made at the table (Mission 001 phase 6)
+	items._next_id += 1
 	items._last_queue_act.erase(1)
 	items.action(1, Net.ACT_CRAFT_QUEUE, 31, 0, 5, Vector3.ZERO)
 	var food_queue: Array = items._queue_of(1).get("entries", [])

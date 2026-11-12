@@ -191,7 +191,7 @@ func _init() -> void:
 	# A cooked food starts as old as its stalest input (s3.14 crafted age): half-spoiled dough bakes into half-spoiled bread.
 	var inv = items.inventory_of(1)
 	inv.remove(num("flatbread"), have("flatbread"))
-	inv.add(num("unbaked_flatbread"), dough, items.table.shelf_units(num("unbaked_flatbread")) / 2)
+	inv.add(num("unbaked_flatbread"), dough, int(items.table.shelf_units(num("unbaked_flatbread")) * 0.5))
 	craft("cook_flatbread", 1, 30)
 	var bread_slot: int = slots_of("flatbread")[0] if not slots_of("flatbread").is_empty() else -1
 	check(bread_slot >= 0 and absf(items.table.freshness(num("flatbread"), inv.wear[bread_slot]) - 0.5) < 0.03, "2e. bread from half-fresh dough is half fresh (%.2f)" % (items.table.freshness(num("flatbread"), inv.wear[bread_slot]) if bread_slot >= 0 else -1.0))
