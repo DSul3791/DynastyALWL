@@ -135,7 +135,7 @@ func refresh() -> void:
 
 		# STUB(step 3d): the left hand shows its silhouette until the game has an off-hand item (a shield or torch held in the left).
 		var slot = wells[gear]
-		InventoryLook.show_stack(view, slot, number, 1, 0, view.table.name_of(number) if number != 0 else str(gear).capitalize())
+		InventoryLook.show_stack(view, slot, number, 1, 0, view.inst_label(number, view.worn_inst.get(at, {})) if number != 0 else str(gear).capitalize())
 		(slot.get_node("Ghost") as Control).visible = number == 0
 
 	var worn_sign: int = hash(view.worn)

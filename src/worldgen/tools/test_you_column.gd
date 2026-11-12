@@ -53,6 +53,11 @@ class FakeView:
 	func _item_label(number: int) -> String:
 		return table.name_of(number)
 
+	var worn_inst: Dictionary = {}   # protocol 106: the worn pieces' instance data (none here)
+
+	func inst_label(number: int, _item_inst: Dictionary) -> String:
+		return table.name_of(number)
+
 var failures: int = 0
 
 

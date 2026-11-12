@@ -34,7 +34,7 @@ func make(dir: String):
 	items.send_warmth = func(_p, _w): count("warmth", 4)
 	items.send_sick = func(_p, _h): count("sick", 4)
 	items.send_skills = func(_p, _a, r): count("skills", 8 + 12 * r.size())
-	items.send_worn = func(_p, n): count("worn", 4 * n.size())
+	items.send_worn = func(_p, n, x): count("worn", 4 * n.size() + x.size())
 	items.send_remains = func(_p, r): count("remains", 16 * r.size())
 	items.send_died = func(_p, _c, _s): count("died", 16)
 	items.weather_now = func(): return {"temp_c": 4.0, "wind": 0.4, "rain": 0.2, "snow": 0.0, "cloud": 0.6, "season": "autumn"}

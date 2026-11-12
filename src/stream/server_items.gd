@@ -266,7 +266,7 @@ var _sick_cfg: Dictionary = {}      # data/items/sickness.json
 var send_thought: Callable          # (peer, line id, text, kind): the inner voice
 var send_remains: Callable          # (peer, rows [[position Vector3, seconds left], ...]): the owner's remains that still hold gear
 var _remains_sent: Dictionary = {}
-var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per body slot in clothing.json order)
+var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per body slot in clothing.json order, PackedByteArray instance data: Inventory.inst_bytes)
 var _worn_sent: Dictionary = {}
 var _fishing: Dictionary = {}         # peer -> {phase "wait" or "bite", at msec, spot, cell, bites}
 var _fish_stock: Dictionary = {}      # cell key -> [fish left, unix time of the last count]
@@ -777,7 +777,7 @@ func inventory_of(peer: int):
 
 # Puts items in a player's inventory. Whatever does not fit lies on the ground at their feet.
 # Returns how many went into the inventory. For harvesting and crafting.
-func give(peer: int, number: int, count: int) -> int:
+func give(peer: int, number: int, count: int, item_inst: Dictionary = {}) -> int:
 	var inv = inventory_of(peer)
 
 	if inv == null or number <= 0 or count <= 0 or table.id_of(number) == "":
@@ -788,7 +788,7 @@ func give(peer: int, number: int, count: int) -> int:
 
 	var before: Array = _snapshot(inv)
 	var fits: int = _fit(peer, inv, number, count)
-	var left: int = inv.add(number, fits) + (count - fits)
+	var left: int = inv.add(number, fits, 0, item_inst) + (count - fits)
 	var was_src: String = _gain_source
 	_gain_source = SRC_GATHER if was_src == SRC_PICKUP else was_src
 	_send_changes(peer, inv, before)
@@ -796,7 +796,7 @@ func give(peer: int, number: int, count: int) -> int:
 	_dirty = true
 
 	if left > 0:
-		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO))
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), 0, 0.0, NAN, NAN, "", item_inst)
 
 	return count - left
 
@@ -924,7 +924,7 @@ func take(peer: int, number: int, count: int) -> bool:
 const LOG_MESH_RADIUS_M := 0.25   # the drawn species log's mean radius (inventory_view _mesh_for: 0.28 and 0.22 at its ends)
 
 
-func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN, by: String = "") -> bool:
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN, by: String = "", item_inst: Dictionary = {}) -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -932,9 +932,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	# "dropped" and last far longer (Dave 2026-10-22: a drop was refused with nothing in sight, the chunk was full of stumps and trunks).
 	position = _settled(position)
 
-	# Same kind within MERGE_M joins the item already lying there (stackables without wear only), so a heap grows as one ground item
+	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item
 	# and never meets the crowd limit. The merge runs before the limit check.
-	if item_wear == 0 and table.stack_of(number) > 1:
+	if item_wear == 0 and item_inst.is_empty() and table.stack_of(number) > 1:
 		for id in (_drop_scope if _drop_scoped else _items.keys()):
 			if not _items.has(id):
 				continue
@@ -944,7 +944,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 			if near.has("scatter") or near.has("showroom") or near.has("struct") or near.has("fire") or near.has("tree") or near.has("boulder") or near.has("tilt"):   # an arrow in a tree stays one arrow
 				continue
 
-			if int(near["number"]) != number or int(near.get("wear", 0)) != 0 or int(near["count"]) >= PILE_CAP:
+			if int(near["number"]) != number or int(near.get("wear", 0)) != 0 or near.has("inst") or int(near["count"]) >= PILE_CAP:
 				continue
 
 			if Vector2(near["pos"].x - position.x, near["pos"].z - position.z).length() <= MERGE_M and absf(near["pos"].y - position.y) <= 2.0:
@@ -987,6 +987,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if not is_nan(rot_y):
 		_items[_next_id]["rot_y"] = rot_y
 
+	if not item_inst.is_empty():
+		_items[_next_id]["inst"] = item_inst.duplicate(true)
+
 	if by != "":
 		_items[_next_id]["by"] = by   # who dropped it (goblin gifts; kept while the server runs, not saved)
 
@@ -1000,7 +1003,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	_dirty = true
 
 	if count > first:
-		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth, by)   # over the cap: the rest starts a second pile beside it
+		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth, by, item_inst)   # over the cap: the rest starts a second pile beside it
 
 	return true
 
@@ -1439,6 +1442,9 @@ func save() -> void:
 
 			if it.has("girth"):
 				row.append(float(it["girth"]))   # a split log's thickness against the drawn log
+
+		if not it.has("fire") and it.has("inst"):
+			row.append(it["inst"])   # the instance data, always the last value of a loose row (a Dictionary: rot_y and girth are floats)
 
 		if it.has("fire"):
 			var wood: Dictionary = _fire_wood(it["fire"])
@@ -2023,7 +2029,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var amount: int = mini(count, inv.counts[slot])
 
-	if not drop_in_world(number, amount, spot, inv.wear[slot], 0.0, NAN, NAN, key_of(peer)):
+	if not drop_in_world(number, amount, spot, inv.wear[slot], 0.0, NAN, NAN, key_of(peer), inv.inst_of(slot)):
 		_say(peer, "Too many dropped things already lie within a few steps. Pick some up or move a little way off.")
 		return
 
@@ -2149,8 +2155,8 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	_last_throw[peer] = now
 	var number: int = inv.numbers[slot]
 	var spent: int = inv.wear[slot] + 1
-	inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "wear": spent, "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	var thrown: Dictionary = inv.take_from_slot(slot, 1)
+	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
@@ -2385,7 +2391,7 @@ func _fly(delta: float) -> void:
 				var at: Vector3 = hit["at"]
 				hit_number(int(flight["peer"]), at, throw_damage)
 				var below: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
-				drop_in_world(int(flight["number"]), 1, Vector3(at.x, below if not is_nan(below) else at.y, at.z), int(flight.get("wear", 0)))
+				drop_in_world(int(flight["number"]), 1, Vector3(at.x, below if not is_nan(below) else at.y, at.z), int(flight.get("wear", 0)), 0.0, NAN, NAN, "", flight.get("inst", {}))
 				_flights.erase(flight)
 				continue
 
@@ -2397,7 +2403,7 @@ func _fly(delta: float) -> void:
 			if not is_nan(ground):
 				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
 
-			drop_in_world(int(flight["number"]), 1, spot, int(flight.get("wear", 0)))
+			drop_in_world(int(flight["number"]), 1, spot, int(flight.get("wear", 0)), 0.0, NAN, NAN, "", flight.get("inst", {}))
 			_flights.erase(flight)
 
 
@@ -4340,7 +4346,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 
 	var batch: int = int((_batch_cfg.get("batch", {}) as Dictionary).get(table.id_of(int(it["number"])), 0))
 
-	if batch > 0 and int(it.get("wear", 0)) == 0:
+	if batch > 0 and int(it.get("wear", 0)) == 0 and not it.has("inst"):
 		_pickup_batch(peer, inv, id, batch)
 		return
 
@@ -4358,7 +4364,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		_reject(peer, 2)
 		return
 
-	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0))) + (want - fits)
+	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {})) + (want - fits)
 	_take_from(id, int(it["count"]) - left)
 
 
@@ -4405,7 +4411,7 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 	for other_id in _items:
 		var other: Dictionary = _items[other_id]
 
-		if other_id == id or int(other.get("number", 0)) != number or int(other.get("wear", 0)) != 0:
+		if other_id == id or int(other.get("number", 0)) != number or int(other.get("wear", 0)) != 0 or other.has("inst"):
 			continue
 
 		if other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree") or other.has("boulder"):
@@ -4538,21 +4544,28 @@ func _sync_world_items() -> void:
 
 
 func _send_changes(peer: int, inv, before: Array) -> void:
-	var out: PackedByteArray = PackedByteArray()
+	var out: PackedByteArray = PackedByteArray([0])
+	var insts: Dictionary = {}
 
 	if not _gain_quiet and send_received.is_valid():
 		_report_gains(peer, inv, before)
 
+	# Protocol 106: a count byte, 9 bytes per changed slot (slot, u32 number, u16 count, u16 wear), then the instance data of those that have one.
 	for i in inv.SLOTS:
-		if inv.numbers[i] != before[0][i] or inv.counts[i] != before[1][i] or inv.wear[i] != before[2][i]:
+		if inv.numbers[i] != before[0][i] or inv.counts[i] != before[1][i] or inv.wear[i] != before[2][i] or inv.inst_of(i) != (before[4][i] if before.size() > 4 else {}):
 			var at: int = out.size()
 			out.resize(at + 9)
 			out[at] = i
 			out.encode_u32(at + 1, inv.numbers[i])
 			out.encode_u16(at + 5, inv.counts[i])
 			out.encode_u16(at + 7, mini(inv.wear[i], 65535))
+			out[0] += 1
 
-	if not out.is_empty():
+			if not inv.inst_of(i).is_empty():
+				insts[i] = inv.inst[i]
+
+	if out[0] > 0:
+		out.append_array(inv.inst_bytes(insts))
 		send_slots.call(peer, out)
 
 	if before.size() > 3 and inv.fav_flags() != before[3]:
@@ -4590,7 +4603,12 @@ func _report_gains(peer: int, inv, before: Array) -> void:
 
 
 func _snapshot(inv) -> Array:
-	return [inv.numbers.duplicate(), inv.counts.duplicate(), inv.wear.duplicate(), inv.fav_flags()]
+	var insts: Array = []
+
+	for i in inv.SLOTS:
+		insts.append(inv.inst_of(i).duplicate(true))
+
+	return [inv.numbers.duplicate(), inv.counts.duplicate(), inv.wear.duplicate(), inv.fav_flags(), insts]
 
 
 func _chunk_of(p: Vector3) -> Vector2i:
@@ -4725,6 +4743,9 @@ func _load_world_items() -> void:
 
 		if row.size() > 8:
 			entry["wear"] = int(row[8])
+
+		if row.size() > 9 and int(row[6]) == 0 and typeof(row[row.size() - 1]) == TYPE_DICTIONARY and not InventoryScript.clean_inst(row[row.size() - 1]).is_empty():
+			entry["inst"] = InventoryScript.clean_inst(row[row.size() - 1])
 
 		if row.size() > 9 and int(row[6]) == 0 and typeof(row[9]) == TYPE_FLOAT:
 			entry["rot_y"] = float(row[9])
@@ -6645,6 +6666,7 @@ func _split(inv, slot: int, count: int) -> void:
 	for target in range(inv.SLOTS):
 		if inv.numbers[target] == 0:
 			inv.numbers[target] = inv.numbers[slot]
+			inv.inst[target] = inv.inst[slot].duplicate(true)   # each unit of an instance stack carries it, so both halves keep it
 			inv.counts[target] = count
 			inv.counts[slot] -= count
 			inv.set_fav(target, inv.is_fav(slot))   # both halves of a favourite stay favourites
@@ -7393,9 +7415,7 @@ func _torch_burn(peer: int, inv, slot: int) -> void:
 		_send_changes(peer, inv, before)
 		return
 
-	inv.numbers[slot] = 0
-	inv.counts[slot] = 0
-	inv.wear[slot] = 0
+	inv.clear_slot(slot)
 	_say(peer, "Your torch has burned down to nothing.")
 	_send_changes(peer, inv, before)
 
@@ -8871,6 +8891,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
 		var number: int = inv.numbers[a]
 		var held_wear: int = inv.wear[a]
+		var held_inst: Dictionary = inv.inst_of(a)
 		var amount: int = mini(count, inv.counts[a])
 		var max_kg: float = float(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
 
@@ -8884,12 +8905,13 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 				_say(peer, "It is too heavy for the chest")
 				_reject(peer, 2)
 
-		var left: int = chest.add(number, amount, held_wear) if amount > 0 else 0
+		var left: int = chest.add(number, amount, held_wear, held_inst) if amount > 0 else 0
 		inv.take_from_slot(a, amount - left)
 		_dirty = true
 	elif kind == Net.ACT_CHEST_TAKE and a >= 0 and a < chest.SLOTS and chest.numbers[a] != 0 and count > 0:
 		var number: int = chest.numbers[a]
 		var held_wear: int = chest.wear[a]
+		var held_inst: Dictionary = chest.inst_of(a)
 		var amount: int = mini(count, chest.counts[a])
 
 		if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
@@ -8900,7 +8922,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 				_dirty = true
 		else:
 			amount = _fit(peer, inv, number, amount)
-			var left: int = inv.add(number, amount, held_wear)
+			var left: int = inv.add(number, amount, held_wear, held_inst)
 			chest.take_from_slot(a, amount - left)
 			_dirty = true
 
@@ -8938,9 +8960,7 @@ func is_dead_kit(number: int) -> bool:
 func _strip_dead_kits(inv) -> void:
 	for slot in inv.SLOTS:
 		if is_dead_kit(inv.numbers[slot]):
-			inv.numbers[slot] = 0
-			inv.counts[slot] = 0
-			inv.wear[slot] = 0
+			inv.clear_slot(slot)
 
 
 func _load_chests() -> void:
@@ -9685,8 +9705,8 @@ func stealable_near(centre: Vector3, r: float) -> Array:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("scatter") or it.has("showroom") or int(it["count"]) <= 0:
-			continue
+		if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("scatter") or it.has("showroom") or it.has("inst") or int(it["count"]) <= 0:
+			continue   # an item with instance data is never stolen: a goblin's loot keeps only the item number, so it would lose it
 
 		if Vector2(it["pos"].x - centre.x, it["pos"].z - centre.z).length() > r:
 			continue
@@ -10373,14 +10393,38 @@ func _clothing_slots() -> Array:
 
 # The item numbers a character wears, one per body slot; old saves have none.
 func worn_of(peer: int) -> Array:
+	var out: Array = []
+
+	for entry in worn_slots_of(peer):
+		out.append(int(entry[0]))
+
+	return out
+
+
+# What a character wears as slot arrays [number, 1, wear, inst], one per body slot ([0, 0, 0, {}] for nothing; catalog Phase 1b).
+func worn_slots_of(peer: int) -> Array:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
 	var list: Array = row.get("worn", [])
 	var out: Array = []
 
 	for i in _clothing_slots().size():
-		out.append(int(list[i]) if i < list.size() else 0)
+		out.append(_worn_entry(list[i] if i < list.size() else 0))
 
 	return out
+
+
+# One worn slot from the record or a save: a slot array, or an old bare item number, which reads as [number, 1, 0, {}]. The inst is taken as it
+# is (the record is clean; _clean_worn cleans a save's), since worn_of runs on every carry and warmth check.
+static func _worn_entry(raw: Variant) -> Array:
+	var whole: bool = typeof(raw) == TYPE_ARRAY and not (raw as Array).is_empty()
+	var row: Array = raw if whole else [raw]
+	var number: int = int(row[0]) if typeof(row[0]) == TYPE_INT or typeof(row[0]) == TYPE_FLOAT else 0
+
+	if number <= 0:
+		return [0, 0, 0, {}]
+
+	var used: int = int(row[2]) if row.size() > 2 and (typeof(row[2]) == TYPE_INT or typeof(row[2]) == TYPE_FLOAT) else 0
+	return [number, 1, maxi(used, 0), row[3] if row.size() > 3 and typeof(row[3]) == TYPE_DICTIONARY else {}]
 
 
 func _clean_worn(raw: Variant) -> Array:
@@ -10388,8 +10432,10 @@ func _clean_worn(raw: Variant) -> Array:
 	var slots: Array = _clothing_slots()
 
 	for i in slots.size():
-		var number: int = table.current_number(int(raw[i])) if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0   # worn Hide leggings come back as Hide trousers
-		out.append(number if number > 0 and table.id_of(number) != "" and str(table.entry(table.id_of(number)).get("slot", "")) == str(slots[i]) else 0)
+		var entry: Array = _worn_entry(raw[i] if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0)
+		var number: int = table.current_number(int(entry[0]))   # worn Hide leggings come back as Hide trousers
+		var fits: bool = number > 0 and table.id_of(number) != "" and str(table.entry(table.id_of(number)).get("slot", "")) == str(slots[i])
+		out.append([number, 1, int(entry[2]), InventoryScript.clean_inst(entry[3])] if fits else [0, 0, 0, {}])
 
 	return out
 
@@ -10433,32 +10479,32 @@ func _wear(peer: int, inv, slot: int) -> void:
 		_say(peer, "You cannot wear that.")
 		return
 
-	var worn: Array = worn_of(peer)
-	var old: int = int(worn[place])
-	inv.take_from_slot(slot, 1)
+	var worn: Array = worn_slots_of(peer)
+	var old: Array = worn[place]
+	var piece: Dictionary = inv.take_from_slot(slot, 1)
 
-	if old > 0 and inv.add(old, 1) > 0:
-		inv.add(number, 1)
+	if int(old[0]) > 0 and inv.add(int(old[0]), 1, int(old[2]), old[3]) > 0:
+		inv.add(number, 1, int(piece["wear"]), piece["inst"])
 		_reject(peer, 0)
 		return
 
-	worn[place] = number
+	worn[place] = [number, 1, int(piece["wear"]), piece["inst"]]
 	_characters[_peer_key[peer]]["worn"] = worn
 	_dirty = true
 	_sync_worn(peer, true)
 
 
 func _unwear(peer: int, inv, place: int) -> void:
-	var worn: Array = worn_of(peer)
+	var worn: Array = worn_slots_of(peer)
 
-	if place < 0 or place >= worn.size() or int(worn[place]) == 0 or not _characters.has(_peer_key.get(peer, "")):
+	if place < 0 or place >= worn.size() or int(worn[place][0]) == 0 or not _characters.has(_peer_key.get(peer, "")):
 		return
 
-	if inv.add(int(worn[place]), 1) > 0:
+	if inv.add(int(worn[place][0]), 1, int(worn[place][2]), worn[place][3]) > 0:
 		_reject(peer, 0)
 		return
 
-	worn[place] = 0
+	worn[place] = [0, 0, 0, {}]
 	_characters[_peer_key[peer]]["worn"] = worn
 	_dirty = true
 	_sync_worn(peer, true)
@@ -10468,11 +10514,20 @@ func _sync_worn(peer: int, force: bool) -> void:
 	if not send_worn.is_valid() or not _peer_key.has(peer):
 		return
 
-	var numbers: PackedInt32Array = PackedInt32Array(worn_of(peer))
+	var numbers: PackedInt32Array = PackedInt32Array()
+	var insts: Dictionary = {}
 
-	if force or _worn_sent.get(peer, PackedInt32Array()) != numbers:
-		_worn_sent[peer] = numbers
-		send_worn.call(peer, numbers)
+	for entry in worn_slots_of(peer):
+		if not (entry[3] as Dictionary).is_empty():
+			insts[numbers.size()] = entry[3]
+
+		numbers.append(int(entry[0]))
+
+	var extra: PackedByteArray = InventoryScript.inst_bytes(insts)   # protocol 106: the worn pieces' instance data, as inventory bytes carry it
+
+	if force or _worn_sent.get(peer, []) != [numbers, extra]:
+		_worn_sent[peer] = [numbers, extra]
+		send_worn.call(peer, numbers, extra)
 
 
 func _sync_sick(peer: int, force: bool) -> void:
@@ -14221,7 +14276,7 @@ func _stock_have(inv, number: int, stock: Dictionary) -> int:
 
 
 # Takes up to `want` of an ingredient: the pack first, then the ground near the player, then the containers nearest first. Returns how many it took.
-func _stock_take(inv, number: int, want: int, stock: Dictionary) -> int:
+func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Array = []) -> int:
 	if inv == null or want <= 0:
 		return 0
 
@@ -14238,7 +14293,7 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary) -> int:
 	var plan: Array = CraftStock.take_plan(want, have)
 	var took: int = 0
 
-	if int(plan[0]) > 0 and inv.remove_fill(number, int(plan[0])):
+	if int(plan[0]) > 0 and inv.remove_fill(number, int(plan[0]), taken_inst):
 		took += int(plan[0])
 
 	for i in ground.size():
@@ -14247,6 +14302,9 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary) -> int:
 
 		if share <= 0 or it.is_empty():
 			continue
+
+		for _k in (share if it.has("inst") else 0):
+			taken_inst.append([int(it["number"]), it["inst"].duplicate(true)])
 
 		if int(it["count"]) > share:
 			it["count"] = int(it["count"]) - share
@@ -14259,7 +14317,7 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary) -> int:
 	for i in boxes.size():
 		var share: int = int(plan[1 + ground.size() + i])
 
-		if share > 0 and boxes[i][1].remove_fill(number, share):
+		if share > 0 and boxes[i][1].remove_fill(number, share, taken_inst):
 			took += share
 			_push_box(int(boxes[i][0]), boxes[i][1])   # whoever has that chest open sees it go
 			_dirty = true
@@ -14594,8 +14652,8 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 	for slot in range(BULK_FIXED_SLOTS, inv.SLOTS):
 		var number: int = inv.numbers[slot]
 
-		if number == 0 or inv.is_fav(slot) or is_shoulder_item(number):
-			continue
+		if number == 0 or inv.is_fav(slot) or is_shoulder_item(number) or not inv.inst_of(slot).is_empty():
+			continue   # an instance never stacks, so Stack to nearby leaves it
 
 		var moved_here: bool = false
 
@@ -14637,7 +14695,7 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 		open_slots.append(i)
 
 		if inv.numbers[i] != 0:
-			stacks.append([inv.numbers[i], inv.counts[i], inv.wear[i], i])
+			stacks.append([inv.numbers[i], inv.counts[i], inv.wear[i], i, inv.inst_of(i)])
 
 	var cfg: Dictionary = _carry_cfg
 	var order_key: Callable = func(row: Array) -> Variant:
@@ -14673,13 +14731,12 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 			inv.numbers[slot] = int(row[0])
 			inv.counts[slot] = int(row[1])
 			inv.wear[slot] = int(row[2])
+			inv.inst[slot] = row[4]
 
 			if int(row[3]) != slot:
 				moved += 1
 		else:
-			inv.numbers[slot] = 0
-			inv.counts[slot] = 0
-			inv.wear[slot] = 0
+			inv.clear_slot(slot)
 
 		inv.fav[slot] = 0
 
@@ -14739,13 +14796,17 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		return
 
 	var taken: int = 0
+	var held: Array = []   # per need, the instance units taken (a cancel gives them back as they were)
+
+	for need in recipe["needs"]:
+		held.append([])
 
 	for n in range(clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)):
 		if not _stock_covers(inv, recipe, 1, stock):
 			break
 
-		for need in recipe["needs"]:
-			_stock_take(inv, int(need[0]), int(need[1]), stock)
+		for k in recipe["needs"].size():
+			_stock_take(inv, int(recipe["needs"][k][0]), int(recipe["needs"][k][1]), stock, held[k])
 
 		taken += 1
 
@@ -14758,8 +14819,11 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 
 	if merge:
 		entries[entries.size() - 1][1] = mini(int(entries[entries.size() - 1][1]) + taken, CRAFT_QUEUE_MAX_COUNT)
+		_hold_insts(entries[entries.size() - 1][2], held)
 	else:
-		entries.append([recipe_number, taken, recipe["needs"].duplicate(true)])
+		var needs: Array = recipe["needs"].duplicate(true)
+		_hold_insts(needs, held)
+		entries.append([recipe_number, taken, needs])
 
 	_dirty = true
 	_sync_craft_queue(peer)
@@ -14823,10 +14887,15 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 			chain = maxi(chain, int(entry[4]) + 1)
 
 	for step in steps:
-		for need in step["take"]:
-			_stock_take(inv, int(need[0]), int(need[1]) * int(step["count"]), stock)
+		var take: Array = (step["take"] as Array).duplicate(true)
+		var held: Array = []
 
-		entries.append([int(step["recipe"]), int(step["count"]), (step["take"] as Array).duplicate(true), (step["deferred"] as Array).duplicate(true), chain])
+		for need in take:
+			held.append([])
+			_stock_take(inv, int(need[0]), int(need[1]) * int(step["count"]), stock, held[held.size() - 1])
+
+		_hold_insts(take, held)
+		entries.append([int(step["recipe"]), int(step["count"]), take, (step["deferred"] as Array).duplicate(true), chain])
 
 	_dirty = true
 	_sync_craft_queue(peer)
@@ -14846,16 +14915,22 @@ func _start_deferred(peer: int, head: Array) -> bool:
 			return false
 
 	for need in head[3]:
-		inv.remove_fill(need[0], int(need[1]) * times)
+		var held: Array = []
+		inv.remove_fill(need[0], int(need[1]) * times, held)
 		var merged: bool = false
 
 		for have in head[2]:
 			if int(have[0]) == int(need[0]):
 				have[1] = int(have[1]) + int(need[1])
+
+				if not merged:
+					_hold_insts([have], [held])
+
 				merged = true
 
 		if not merged:
 			head[2].append([int(need[0]), int(need[1])])
+			_hold_insts([head[2][head[2].size() - 1]], [held])
 
 	head[3] = []
 	_dirty = true
@@ -14865,7 +14940,25 @@ func _start_deferred(peer: int, head: Array) -> bool:
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
 	for need in entry[2]:
-		give(peer, _refund_number(int(need[0])), int(need[1]) * int(entry[1]))   # a group ingredient gives back its lowest member, as a taken-down piece does
+		var left: int = int(need[1]) * int(entry[1])
+
+		# Instance units go back first and as they were (a finished craft used the plain ones first, as Inventory.remove takes them).
+		for unit in (need[2] if need.size() > 2 else []):
+			if left > 0:
+				give(peer, int(unit[0]), 1, unit[1])
+				left -= 1
+
+		give(peer, _refund_number(int(need[0])), left)   # a group ingredient gives back its lowest member, as a taken-down piece does
+
+
+# Keeps the instance units a craft took on its ingredient rows: row k gains a third value, the list of [item number, inst] taken for it.
+func _hold_insts(rows: Array, held: Array) -> void:
+	for k in mini(rows.size(), held.size()):
+		if not (held[k] as Array).is_empty():
+			if rows[k].size() < 3:
+				rows[k].append([])
+
+			rows[k][2].append_array(held[k])
 
 
 func _cancel_craft(peer: int, index: int) -> void:
@@ -15036,7 +15129,13 @@ func _load_craft_queues() -> void:
 			var needs: Array = []
 
 			for need in entry[2] if entry.size() > 2 else []:
-				needs.append([int(need[0]), int(need[1])])
+				var units: Array = []
+
+				for unit in (need[2] if need.size() > 2 and typeof(need[2]) == TYPE_ARRAY else []):
+					if typeof(unit) == TYPE_ARRAY and (unit as Array).size() == 2:
+						units.append([int(unit[0]), InventoryScript.clean_inst(unit[1])])   # instance units the craft took (_hold_insts)
+
+				needs.append([int(need[0]), int(need[1]), units] if not units.is_empty() else [int(need[0]), int(need[1])])
 
 			var parts: Array = []
 

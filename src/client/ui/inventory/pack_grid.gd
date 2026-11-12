@@ -200,7 +200,12 @@ func show_info() -> void:
 	if view.table.shelf_units(number) > 0:
 		item_facts.append(["Fresh", "%d %%" % int(view.table.freshness(number, wear) * 100.0)])
 
-	info.show_item(InventoryLook.icon_for(item_id), view._item_label(number), str(entry.get("description", "")), item_facts)
+	var inst_facts: Array = []
+
+	for line in view.inst_lines(store.inst_of(slot)):
+		inst_facts.append(["", line])   # Tempered and filled magical slots (catalog Phase 1b), first so the one-line row never cuts them
+
+	info.show_item(InventoryLook.icon_for(item_id), view.inst_label(number, store.inst_of(slot)), str(entry.get("description", "")), inst_facts + item_facts)
 
 
 # One pack slot (item_slot.gd), keeping slot `index` wherever the sort puts it. Click selects and moves, shift-click moves the stack into the open

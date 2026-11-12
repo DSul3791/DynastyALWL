@@ -391,7 +391,7 @@ func _refresh_shop() -> void:
 			_sell_all_total += each * items.inventory.counts[slot]
 
 		var number2: int = items.inventory.numbers[slot]
-		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot]) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true, each, "  each")
+		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true, each, "  each")
 
 	if bool(_shop_repairs):
 		for slot in items.inventory.numbers.size():
@@ -399,7 +399,7 @@ func _refresh_shop() -> void:
 
 			if cost > 0:
 				var number3: int = items.inventory.numbers[slot]
-				_shop_row(_shop_sell_box, "Mend %s  -" % items.table.name_of(number3), items._tooltip(number3, 1, items.inventory.wear[slot]) + "\nThe smith mends it as new for %s." % items.coin_text(cost), slot, 2, items.purse_copper >= cost, cost)
+				_shop_row(_shop_sell_box, "Mend %s  -" % items.table.name_of(number3), items._tooltip(number3, 1, items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe smith mends it as new for %s." % items.coin_text(cost), slot, 2, items.purse_copper >= cost, cost)
 
 	_update_sell_all()
 

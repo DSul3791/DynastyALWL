@@ -420,9 +420,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	inv.counts[a] -= count
 
 	if inv.counts[a] <= 0:
-		inv.numbers[a] = 0
-		inv.counts[a] = 0
-		inv.wear[a] = 0
+		inv.clear_slot(a)
 
 	items._gain_quiet = true
 	items._send_changes(peer, inv, before)
