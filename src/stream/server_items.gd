@@ -17337,7 +17337,7 @@ func _sync_craft_queue(peer: int) -> void:
 
 	if not entries.is_empty():
 		var head_recipe: Dictionary = recipes.recipe(int(entries[0][0]))
-		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe) * SmithingRules.time_mult(_variant_of(entries[0]))
+		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe) * SmithingRules.time_mult(_variant_of(entries[0])) / _pace_factor(peer, "craft")   # as _craft_tick times it (skill, rest, cold)
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
 	send_craft_queue.call(peer, _pairs(entries), left_ms)

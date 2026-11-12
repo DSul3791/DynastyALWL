@@ -1,16 +1,15 @@
 extends SceneTree
 
-# The pointer hotbar and craft clicks (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 24, 8 Nov 2026).
+# The pointer hotbar and craft queue requests (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 24, 8 Nov 2026).
 # Keys 1 to 9 and 0 hold item numbers, not pack slots: sorting and moving never change them. A key points at the pack slot holding its item (an unbroken one
 # first). A tool or weapon new in the pack goes on the first empty key, unless a key already holds it; food and materials do not. A key whose item has run
 # out keeps it, dimmed, and the next one comes back to it. ACT_HOTBAR_SET puts any item on a key (one key per item). "On the hotbar" for tools means a key
 # points at it. The keys are saved with the character; a character saved before them gets the items of its old slots 1 to 10, once. The pack fills from
-# slot 1. Craft clicks: 1, shift 5 (or fewer), held as many as the stock allows, each one queue request.
+# slot 1. A craft of several is one queue request (the click rule of row 24 (7) was replaced on 12 Nov 2026: test_craft_click.gd).
 #   godot --headless --path . --script res://src/worldgen/tools/test_hotbar_keys.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
-const InventoryView := preload("res://src/client/inventory_view.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 
@@ -167,9 +166,6 @@ func _init() -> void:
 	again.peer_connected_hello(1, "hotbarkeys01")
 	check(Array(again.inventory_of(1).hotbar)[0] == knife, "only once: the next join keeps the keys")
 
-	# 8. Craft clicks: 1, shift 5 (or fewer), held all the stock makes; none makeable asks once, as before.
-	check(InventoryView.click_count(12, false, false) == 1 and InventoryView.click_count(12, true, false) == 5 and InventoryView.click_count(3, true, false) == 3, "click 1, shift-click 5, or 3 when only 3 can be made")
-	check(InventoryView.click_count(12, false, true) == 12 and InventoryView.click_count(12, true, true) == 12 and InventoryView.click_count(0, true, true) == 1, "held makes all 12; with none makeable a click asks for one as before")
 	var pot_recipe: int = 0
 
 	for k in items.recipes.numbers():
@@ -182,9 +178,9 @@ func _init() -> void:
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 5, Vector3.ZERO)
 	var queued: Array = items.craft_queue_of(1)
-	check(pot_recipe > 0 and queued.size() == 1 and int(queued[0][1]) == 5, "shift-click's five pots go in one queue request (%s)" % str(queued))
+	check(pot_recipe > 0 and queued.size() == 1 and int(queued[0][1]) == 5, "five pots (the Craft button's quantity) go in one queue request (%s)" % str(queued))
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
-	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why each click is one request")
+	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why a craft of several is one request")
 
 	# 9. A torch and the same torch put out are one item to a key (items.json doused_item / relit_item): rain turns the slot into the doused torch while
 	# the key keeps the burning torch's number, and pressing the key must still find it to light it again (the eat run's torch_doused, 9 Nov 2026).
