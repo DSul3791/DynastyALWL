@@ -150,7 +150,7 @@ Dino's shots on Dave's PC, each at the small and large text sizes:
 
 ## 14. Later owner-approved storage/food UI extensions (design only)
 
-**Supersession notice:** This UI art/layout document is dated 8 Nov 2026. Later item decisions and permission rules are recorded in [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md) §§3.12–3.15 and elaborated in [STORAGE_WAREHOUSING_DESIGN.md](STORAGE_WAREHOUSING_DESIGN.md) and [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md). The master catalog remains the authority for approved and proposed item status.
+**Supersession notice:** This UI art/layout document is dated 8 Nov 2026. Later item decisions and permission rules are recorded in [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md) §§3.12–3.16 and elaborated in [STORAGE_WAREHOUSING_DESIGN.md](STORAGE_WAREHOUSING_DESIGN.md) and [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md). The master catalog remains the authority for approved and proposed item status.
 
 **Approved storage UI [D13]:**
 - Opening an accessible crate/chest nearby still uses the familiar pack-and-container interface; the player can see and manipulate its own real inventory, with no forced visit to a desk.
@@ -163,6 +163,10 @@ Dino's shots on Dave's PC, each at the small and large text sizes:
 
 **Approved food UI [D12]:** Food Preparation Table is a recipe UI for making tangible uncooked/prepared food items, which are then finished at correct cooking stations. Kitchen knives/board/rolling pin are built into the visible table model, not required inventory tools. For simple foods use cooking stations directly.
 
-**Owner-directed but item-roster-pending UI:** The same Food Preparation Table handles straightforward **preservation batches**, including sealed jars that mature on a timestamp automatically. A functional generic Serving Platter supports prepared food-board inventory items displayed on existing dining tables and actually eaten portion by portion. Exact new preservation items and the proposed 20-board list are **not owner-approved**. Do not wire/invent their runtime inventory, recipes or models yet.
+**Owner-approved boards [D15] and pending preservation [P14]:** The Food Preparation Table handles straightforward **preservation batches**, including real sealed jars that mature automatically. The **preservation NEW ITEM roster is NOT approved yet**. A functional generic reusable Serving Platter presents **the nine OWNER-APPROVED edible boards** on existing dining tables, where real servings disappear as diners eat. Previous lists of 15 or 20 are superseded. Do not invent gameplay JSON or models yet.
+
+**Future food-benefit UI [D16]:** Display **three compact active-food effect slots**, each with the primary food group, food identity, main bonus and separate expiry countdown. Active foods must belong to **different groups** (Main Meals, Breads & Grains, Fruit & Vegetables, Desserts, Beverages, names provisional); food from an occupied group replaces that effect, while eating a fourth distinct group should offer a simple replace-one choice. Explicitly show temporary Fitness/skill XP boosts, no XP bonus from ordinary grain/bread, and any dessert XP downside; overlapping XP modifiers don't compound. Normal hunger and calories are separate from effect slots. **Percentages/durations are not yet owner-approved**.
+
+**Learned food tips [P17 — proposed future content]:** NPC conversations or readable guides may reveal effective role-oriented combinations to a knowledge journal, using actual available foods and effects. No mandatory book gate, class restriction or secret extra buff. Avoid displaying unavailable coffee/mana/spell skill functionality.
 
 This section records **future look/interaction intent only**. No gameplay code, data schema, or merge has been authorized by its presence.
