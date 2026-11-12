@@ -13991,10 +13991,12 @@ func goals_state(peer: int) -> Array:
 # shoulder or the ground move into the pack at that moment and are used up by the craft like any ingredient (a craft that is refused takes nothing). The player is told
 # "Using nearby logs". Ground logs go with the same authority as a pickup (removed on the server, the clients see them vanish).
 const LOG_NEAR_M := 3.0
+# The log groups a craft can draw nearby logs for: any log, and since Mission 001 phase 2a the Softwood and Hardwood logs of the saw recipes.
+const LOG_GROUP_IDS := ["log", "log_spruce", "log_oak"]
 
 
-func _log_need(rows: Array, times: int) -> int:
-	var log_n: int = table.number_of("log")
+func _log_need(rows: Array, times: int, group_id: String = "log") -> int:
+	var log_n: int = table.number_of(group_id)
 	var total: int = 0
 
 	for need in rows:
@@ -14005,13 +14007,13 @@ func _log_need(rows: Array, times: int) -> int:
 
 
 # Log items lying on the ground within reach of the player: [[world id, count], ...], nearest first.
-func _ground_logs_near(peer: int) -> Array:
+func _ground_logs_near(peer: int, group_id: String = "log") -> Array:
 	var out: Array = []
 
 	if not _peer_pos.has(peer):
 		return out
 
-	var members: PackedInt32Array = table.group_members(table.number_of("log"))
+	var members: PackedInt32Array = table.group_members(table.number_of(group_id))
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -14029,29 +14031,29 @@ func _ground_logs_near(peer: int) -> Array:
 
 
 # How many logs the shoulder and the ground near the player offer.
-func logs_near_count(peer: int) -> int:
+func logs_near_count(peer: int, group_id: String = "log") -> int:
 	var total: int = 0   # the carried log is a pack item and counted with the pack
 
-	for row in _ground_logs_near(peer):
+	for row in _ground_logs_near(peer, group_id):
 		total += int(row[1])
 
 	return total
 
 
 # Moves up to `want` logs (shoulder first, then the ground) into the pack when the pack plus those logs can cover `want`; returns how many moved. Takes nothing when they cannot.
-func _pull_nearby_logs(peer: int, inv, want: int) -> int:
+func _pull_nearby_logs(peer: int, inv, want: int, group_id: String = "log") -> int:
 	if want <= 0 or inv == null or not _peer_pos.has(peer):
 		return 0
 
-	var log_n: int = table.number_of("log")
+	var log_n: int = table.number_of(group_id)
 
-	if inv.count_fill(log_n) + logs_near_count(peer) < want:
+	if inv.count_fill(log_n) + logs_near_count(peer, group_id) < want:
 		return 0
 
 	var moved: int = 0
 	var key: String = str(_peer_key.get(peer, ""))
 
-	for row in _ground_logs_near(peer):
+	for row in _ground_logs_near(peer, group_id):
 		if moved >= want:
 			break
 
@@ -14739,7 +14741,8 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		_say(peer, "That needs a %s nearby" % _station_name(str(recipe["station"])))
 		return
 
-	_pull_nearby_logs(peer, inv, _log_need(recipe["needs"], clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)))   # shoulder and ground logs count (F-16)
+	for group_id in LOG_GROUP_IDS:   # shoulder and ground logs count (F-16), for any log and for the Softwood and Hardwood logs of the saws
+		_pull_nearby_logs(peer, inv, _log_need(recipe["needs"], clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), group_id), group_id)
 	var stock: Dictionary = _stock_of(peer)   # the ground near the player and their own containers in reach count too (step 2): pack first, then the ground, then the nearest
 
 	# Short of a part the stock could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct).

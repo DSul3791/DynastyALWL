@@ -26,13 +26,18 @@ Updated: 2026-11-12 (UTC). Mission lead: Claude Code thread session on Dave's PC
 | Limitations (actual) | Subagents run only while this session is active: no unattended progress between sessions. Cowork workers are not used. The clone shares objects with Dave's checkout (`--shared`): do not run `git gc --prune` there while it exists. |
 
 ## Task queue
-| Task | Phase | Owner | Branch @ head | Status | Review | Next action |
+Clones on Dave's PC (`git clone --shared` of his checkout; each has the `.godot` cache, untracked `.import` files and `worlds/` data copied in for tests): `E:\Software\godotDev\<clone>`.
+
+| Task | Phase | Owner | Branch (clone) @ head | Status | Review | Next action |
 |---|---|---|---|---|---|---|
-| M001-T00 PR #1035 docs into `dev` | 0 | mission lead | merged `e314789` | DONE | gate-reviewer PASS WITH NOTES on `0707384` | — |
-| M001-T01 plan, ledger, state | 0 | mission lead | `claude/project-thread-e3pz0o` | review fixes applied | gate-reviewer PASS WITH NOTES on `159b566`; findings 1–6 fixed | PR into `dev` with T02 and T03 |
-| M001-T02 Woodworking table retirement (from PR #1036) | 0 | mission lead | same | tests PASS | same review: no live dependency left, expectations right | merge with T01; close PR #1036 as carried |
-| M001-T03 Phase 1 rows (180, numbers 896–1075) | 1 | item-data agent | `m001/p1-rows` @ `8911012a6` (clone `E:\Software\godotDev\m001_p1`) | implemented, static checks PASS | pending | PC tests (validate_items, item looks), review |
-| M001-T04 Phase 1b instance data | 1b | systems-engineer agent | `m001/p1b-instances` (clone `m001_p1b`), brief `T04_BRIEF.md` | in development | pending | agent report |
+| T00 PR #1035 docs into `dev` | 0 | mission lead | merged `e314789` | DONE | PASS WITH NOTES on `0707384` | — |
+| T01 plan, ledger, state | 0 | mission lead | `m001/p2b-metal` (m001_p2b) | fixes applied | PASS WITH NOTES on `159b566`; 5 should-fix fixed; ledger phase bug found by me and fixed (`1bfc5d2`) | dev PR with T02–T05 |
+| T02 Woodworking table retired (from PR #1036) | 0 | mission lead | same | tests PASS | same review | dev PR; close #1036 as carried |
+| T03 Phase 1 rows (180 inactive; numbers 896–999 and 1177–1252) | 1 | item-data agent | same | PASS on PC (validate_items) | PASS WITH NOTES; bolt names and weight note fixed; 76 rows renumbered off gathered.json's 1000–1176 | dev PR |
+| T05 Phase 2a wood | 2a | mission lead | same | PASS on PC | FAIL on evidence then 4 should-fix: wedge recipe softwood-only, tropical hardwood species row, nearby logs for the saw groups, runtime yield test; all fixed | rerun at final head, dev PR |
+| T04 Phase 1b instance data | 1b | systems-engineer agent | `m001/p1b-instances` (m001_p1b) | review fixes in progress | PASS WITH NOTES (opus reviewer): 7 findings sent back to the engineer | merge after fixes and rerun |
+| T08 Phase 3 furniture | 3 | systems-engineer agent | `m001/p3-furniture` (m001_p3), brief `T08_BRIEF.md` | in development | pending | states 230–235, blueprints 186–191 reserved |
+| T06 Phase 2b metal and stations | 2b | mission lead | `m001/p2b-metal` | not started | — | after the dev PR; states 240+, blueprints 200+ |
 
 ## Evidence so far
 - T02 at `159b566` (voxel build, this PC): `tools/run_tests.sh` over the 205 tests `tests_for_diff.py` picks: 201 PASS, 4 FAIL (audio `.import` files missing from the clone); after copying the untracked `.import` files from Dave's checkout, the 4 PASS (`scratchpad/t02b`). Total 205/205.
@@ -55,3 +60,6 @@ None open. Q1 (existing FUTURE rows) was decided under the 05:42 direction: see 
 | 12 Nov | Review of T01 found 5 should-fix items (ledger phase mapping, 2a/2b saw dependency, Q1 over-reach on Copper pot and Fish soup, records not updated, `--check` gaps); all fixed before merge. |
 | 12 Nov | Fresh clones lack untracked `.import` files and `worlds/` data: 4 audio tests failed until copied. Copy both into every test clone. |
 | 12 Nov | Smoke run left its terrain server alive (see Evidence). |
+| 12 Nov | T03 took numbers 1000–1075, already used by gathered.json (one shared number space): caught by validate_items on the PC, renumbered; validate_items now checks the shared space. `run_tests.sh` does not run the plan's `checks` lane (validate_items), so run it explicitly. |
+| 12 Nov | A patch of mine set every ledger row's phase to 2b (an operator-precedence slip); found when reading the merged ledger, fixed, and `--check` now guards phases. |
+| 12 Nov | T05 review caught a transitional hardwood→Plank route (wedge recipe) and a missing species row; fixed before merge. |

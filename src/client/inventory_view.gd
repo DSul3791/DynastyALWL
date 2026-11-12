@@ -3085,10 +3085,10 @@ func nearby_logs() -> int:
 	return _logs_memo
 
 
-func _nearby_logs_now() -> int:
+func _nearby_logs_now(group_id: String = "log") -> int:
 	var total: int = 0   # the carried log is a pack item and counted with the pack
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
-	var members: PackedInt32Array = table.group_members(table.number_of("log"))
+	var members: PackedInt32Array = table.group_members(table.number_of(group_id))
 
 	for id in _world:
 		var entry: Dictionary = _world[id]
@@ -3108,11 +3108,17 @@ func _logs_cover(number: int) -> bool:
 		return false
 
 	var uses_log: bool = false
+	var soft_n: int = table.number_of("log_spruce")
+	var hard_n: int = table.number_of("log_oak")
 
 	for need in r["needs"]:
 		if int(need[0]) == log_n:
 			uses_log = true
 			if inventory.count_fill(log_n) + nearby_logs() < int(need[1]):
+				return false
+		elif int(need[0]) > 0 and (int(need[0]) == soft_n or int(need[0]) == hard_n):   # the saw recipes' Softwood and Hardwood logs (Mission 001 phase 2a)
+			uses_log = true
+			if inventory.count_fill(int(need[0])) + _nearby_logs_now("log_spruce" if int(need[0]) == soft_n else "log_oak") < int(need[1]):
 				return false
 		elif not inventory.has_fill(int(need[0]), int(need[1])):
 			return false

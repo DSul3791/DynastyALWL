@@ -140,7 +140,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("workbench_kit"), 0, 1, Vector3.ZERO)
 	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
 	items.inventory_of(1).add(items.table.number_of("stone_wedge"), 1)
-	items.give(1, oak, 1)
+	items.give(1, items.table.number_of("log_spruce"), 1)   # hand-split planks take a softwood log (Mission 001 phase 2a)
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 2 and items.shoulder_of(1) == "", "planks from the shoulder log at the workbench (%d planks)" % count("lumber"))
 
@@ -160,6 +160,13 @@ func _init() -> void:
 	items.inventory_of(1).numbers[0] = items.inventory_of(1).numbers[hammer_slot] if hammer_slot > 0 else items.inventory_of(1).numbers[0]
 	var ok: bool = items._can_blueprint(1, items.inventory_of(1), row)
 	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 3 and ground_logs() == 0 and items.shoulder_of(1) == "log_birch", "a blueprint costing 3 logs is covered by a shoulder log and two ground logs")
+
+	# 8. Mission 001 phase 2a: the saw recipes take a Hardwood log (log_oak group) lying on the ground beside the player, like a plain-log recipe.
+	reset()
+	items.give(1, items.table.number_of("hand_saw"), 1)   # a new tool goes on a hotbar key, where the saw recipes look for it
+	items.drop_in_world(birch, 1, Vector3(0.5, 10.0, 0.5))
+	craft("hardwood_board_by_hand", 1)
+	check(count("hardwood_board") == 4 and ground_logs() == 0, "a birch log on the ground saws into 4 Hardwood boards (%d boards, %d on the ground, %d in the pack)" % [count("hardwood_board"), ground_logs(), count("log_birch")])
 	print("logs carry: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

@@ -719,6 +719,17 @@ func _init() -> void:
 		if hard_logs.has(id):
 			fail("wood_species.json: %s is both a softwood and a hardwood log" % id)
 
+	# Each log group's species chop and burn as their class (a species with no row takes the default class, softwood).
+	var species_rows: Dictionary = wood_file.get("species", {})
+
+	for pair in [[soft_logs, "softwood"], [hard_logs, "hardwood"]]:
+		for id in pair[0]:
+			var sp: String = String(id).trim_prefix("log_") if String(id) != "log" else ""
+			var cls: String = String(species_rows.get(sp, wood_file.get("default", {})).get("class", ""))
+
+			if cls != String(pair[1]):
+				fail("wood_species.json: %s is in the %s log group but its class is %s" % [id, pair[1], cls])
+
 	for gid in wood_groups:
 		if typeof(wood_groups[gid]) == TYPE_ARRAY:
 			var members: Array = [String(gid)] + Array(wood_groups[gid])

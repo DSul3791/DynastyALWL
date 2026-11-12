@@ -119,6 +119,13 @@
 			"best_use": "baskets, twine, light frames",
 			"hits_to_fell": 5
 		},
+		"tropical_hardwood": {
+			"class": "hardwood",
+			"burn": 5,
+			"board": "fine",
+			"best_use": "Hardwood boards (Mission 001 phase 2a: it is in the Hardwood log group, so it chops and burns as hardwood too)",
+			"hits_to_fell": 10
+		},
 		"scots_pine": {
 			"class": "softwood",
 			"burn": 2,
