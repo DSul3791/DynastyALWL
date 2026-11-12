@@ -989,6 +989,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 			if int(near["number"]) != number or int(near.get("wear", 0)) != 0 or near.has("inst") or int(near["count"]) >= PILE_CAP:
 				continue
 
+			if near.has("world") != _laying_world:
+				continue   # a server pile and a player's pile never merge: the world reset keeps the one and takes the other
+
 			if Vector2(near["pos"].x - position.x, near["pos"].z - position.z).length() <= MERGE_M and absf(near["pos"].y - position.y) <= 2.0:
 				var room: int = PILE_CAP - int(near["count"])
 				var added: int = mini(count, room)
@@ -2051,11 +2054,16 @@ func tree_row_count() -> int:
 
 
 # drop_in_world for what the server itself puts down (a goblin den pile or gift, a thief's dropped loot): the new piles are marked "world"
-# (saved as world_items.json "world_rows") so the world reset keeps them as world content. A piece that joins a pile already lying there
-# takes that pile's mark.
+# (saved as world_items.json "world_rows") so the world reset keeps them as world content. Server and player piles never merge (drop_in_world).
+# Piles saved before 13 Nov 2026 carry no mark and count as player-made (the first reset takes them once).
+var _laying_world: bool = false
+
+
 func drop_world_made(number: int, count: int, position: Vector3, lifetime_s: float = 0.0, by: String = "") -> bool:
 	var first_new: int = _next_id
+	_laying_world = true
 	var laid: bool = drop_in_world(number, count, position, 0, lifetime_s, NAN, NAN, by)
+	_laying_world = false
 
 	for id in range(first_new, _next_id):
 		if _items.has(id):

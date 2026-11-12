@@ -74,6 +74,16 @@ func world_piles(items) -> int:
 	return items._items.values().filter(func(it): return it.has("world")).size()
 
 
+func world_count(items) -> int:
+	var n: int = 0
+
+	for it in items._items.values():
+		if it.has("world"):
+			n += int(it["count"])
+
+	return n
+
+
 func count_kind(items, kind: String) -> int:
 	return items._items.values().filter(func(it): return it.has("struct") and str(it["struct"]["kind"]) == kind).size()
 
@@ -143,6 +153,9 @@ func _init() -> void:
 
 	# A den pile the server laid (kept), far away.
 	check(items.drop_world_made(stone, 3, Vector3(-1500.0, 10.0, 800.0), 604800.0), "the server lays a den pile")
+	check(items.drop_in_world(stone, 20, Vector3(-1500.2, 10.0, 800.0)), "a player's stones dropped on the den pile")
+	check(items.drop_in_world(stick, 2, Vector3(-1490.0, 10.0, 800.0)) and items.drop_world_made(stick, 1, Vector3(-1490.1, 10.0, 800.0)), "a server stick laid on a player's sticks")
+	check(world_piles(items) == 2, "server and player piles never merge (%d server piles)" % world_piles(items))
 	# Natural content players used up (restored): a laid scatter stone and boulder (laid out again from the seed), a picked-scatter mark,
 	# a mined boulder, bog iron, a picked plant, a bare bush, a felled trunk, a sapling.
 	items._items[900001] = {"number": stone, "count": 1, "pos": Vector3(60.0, 10.0, 0.0), "left": 1.0e9, "scatter": 4242}
@@ -159,7 +172,7 @@ func _init() -> void:
 	items.save()
 	items._finish_writer()
 	var before: int = player_rows(items)
-	check(before == 12, "12 player rows before the reset (2 drops, 10 placed), got %d" % before)
+	check(before == 14, "14 player rows before the reset (4 drops, 10 placed), got %d" % before)
 	var stones_before: int = inv.count_of(stone)
 	var sticks_before: int = inv.count_of(stick)
 
@@ -179,7 +192,7 @@ func _init() -> void:
 	check(not items._items.has(900001) and not items._items.has(900002) and items._cells_done.is_empty(), "the scatter is taken up to be laid out again from the seed")
 	check(not items._items.has(900003) and flora_restores == 1, "the felled trunk goes and the felled trees stand again")
 	check(items._taken.is_empty() and items._boulder_left.is_empty() and items._bog_left.is_empty() and items._picked.is_empty() and items._stripped.is_empty() and items._saplings.is_empty(), "picked scatter, boulders, bog iron and plants are restored, saplings go")
-	check(world_piles(items) == 1, "the den pile the server laid stays")
+	check(world_piles(items) == 2 and world_count(items) == 4, "the server's den pile (3 stones) and stick stay, the player's stones and sticks on them go")
 	check(inv.count_of(stone) == stones_before and inv.count_of(stick) == sticks_before, "the pack is kept")
 	check(progress_kept(items) and is_equal_approx(float(items.vitals_of(1)["hunger"]), 42.0), "character row and vitals are kept")
 	check(count_kind(items, "remains") == 1, "the dead character's remains (pack and purse) are kept")
@@ -205,7 +218,7 @@ func _init() -> void:
 	check(inv2.count_of(stone) == stones_before and inv2.count_of(stick) == sticks_before, "the pack is kept over the restart")
 	check(progress_kept(again), "skills, fitness, learned recipes and coins are kept over the restart")
 	check(again._taken.is_empty() and again._boulder_left.is_empty() and again._bog_left.is_empty() and again._picked.is_empty() and again._saplings.is_empty(), "nothing used up comes back as used up after the restart")
-	check(world_piles(again) == 1, "the den pile is still the server's after the restart")
+	check(world_piles(again) == 2 and world_count(again) == 4, "the server's piles are still the server's after the restart")
 
 	print("test_reset_world: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
