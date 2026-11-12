@@ -33,6 +33,7 @@ const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # sharpness, Tempered and craftsmanship (catalog Phase 2c)
 const CharacterScreenScript := preload("res://src/client/character_screen.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const BagRules := preload("res://src/shared/bag_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
@@ -1734,7 +1735,12 @@ func carried_kg() -> float:
 	if _carry_cfg.is_empty():
 		return 0.0
 
-	return CarryRules.carried_kg(inventory, table, _carry_cfg)   # the large log is a pack item: its weight is already in
+	var kg: float = CarryRules.carried_kg(inventory, table, _carry_cfg)   # the large log is a pack item: its weight is already in
+
+	for at in worn_inst:   # and what the worn bags hold, as the server counts it (catalog Phase 5)
+		kg += CarryRules.bag_kg(worn_inst[at], table, _carry_cfg)
+
+	return kg
 
 
 # Q or D with nothing selected: lay the log on your shoulder down in front of you.
@@ -1755,7 +1761,12 @@ var limp_share: float = 1.0   # server: a crippling injury slows the walker (pro
 
 
 func speed_factor() -> float:
-	return (CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0) * limp_share
+	return (CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0) * limp_share * worn_speed()
+
+
+# What the worn pieces leave of every gait and of climbing (items.json worn_speed_mult: the pack frame, master s3.9 rule 2).
+func worn_speed() -> float:
+	return CarryRules.worn_speed_mult(worn, table)
 
 
 # The purse as words, cheapest coin first: "4 copper, 3 bronze, 2 silver" (copper = items.json value unit). Used where only text fits
@@ -4542,6 +4553,11 @@ func _on_worn(numbers: PackedInt32Array, insts: PackedByteArray = PackedByteArra
 
 	worn = numbers
 
+	if chest_mode and chest_id < 0 and BagRules.slots_of(table, _container_part.container_number()) <= 0:
+		_close_chest()   # the open bag was taken off
+	elif chest_mode and chest_id < 0 and _container_part.container_number() != _container_part.opened_bag:
+		_ask_open(chest_id)   # another bag was put on in its place: show what that one holds
+
 	if worn_event.is_valid():
 		worn_event.call(changed, ids)
 
@@ -4580,15 +4596,42 @@ func worn_top(slot: String, skip: Array = []) -> int:
 	return -1
 
 
-# The body weight the carry limit is worked out from: the real weight plus what a worn pack adds (the server does the same).
+# The body weight the carry limit is worked out from (the server does the same): a pack adds room, never strength (catalog Phase 5).
 func carry_body_kg() -> float:
-	var bonus: float = 0.0
+	return weight_kg
 
-	for number in worn:
-		if number > 0:
-			bonus += float(table.entry(table.id_of(number)).get("carry_bonus_kg", 0.0))
 
-	return weight_kg + bonus / maxf(float(_carry_cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
+# Opens the bag worn at a worn position beside the pack (the container screen); the server answers with its contents.
+func open_bag(place: int) -> void:
+	if place >= 0 and place < worn.size() and BagRules.slots_of(table, int(worn[place])) > 0:
+		_ask_open(-1 - place)
+
+
+# A hotbar key whose item is not in the pack but in a worn quick-use bag (clothing.json quick: belt pouch, bandolier, scabbard) draws one into
+# the pack, so the key holds it without opening anything (master s3.9 rule 5; the server takes it as ACT_CHEST_TAKE from that bag).
+func draw_from_quick_bag(key: int) -> void:
+	if inventory == null or key < 0 or key >= inventory.hotbar.size() or key_slot(key) >= 0:
+		return
+
+	var quick: Array = clothing_cfg.get("quick", []).map(func(at: String) -> int: return worn_places().find(at))
+	var found: Array = BagRules.quick_take(worn_inst, quick, inventory.hotbar[key])
+
+	if not found.is_empty():
+		net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, int(found[1]), -1 - int(found[0]), 1, Vector3.ZERO)
+
+
+# Arrows (item number -> count) in the worn quiver, which the bow draws from first (the server's _worn_quiver).
+func quiver_counts() -> Dictionary:
+	var out: Dictionary = {}
+
+	for at in worn_inst:
+		if at < worn.size() and str(table.entry(table.id_of(int(worn[at]))).get("bag_takes", "")) == "arrow":
+			for row in worn_inst[at].get("bag", []):
+				out[int(row[0])] = int(out.get(int(row[0]), 0)) + int(row[1])
+
+			return out
+
+	return out
 
 
 func _on_remains_marks(rows: Array) -> void:
@@ -5023,8 +5066,9 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 		if float(entry.get("warmth", 0.0)) > 0.0:
 			text += " Keeps %d%% of your body heat in." % int(round(float(entry["warmth"]) * 100.0))
 
-		if float(entry.get("carry_bonus_kg", 0.0)) > 0.0:
-			text += " Lets you carry %.0f kg more." % float(entry["carry_bonus_kg"])
+		if BagRules.slots_of(table, number) > 0:
+			var held: int = (item_inst.get("bag", []) as Array).filter(func(row: Array) -> bool: return int(row[0]) != 0).size()
+			text += " Holds %d slots of its own (%d in use); open it from the Tab screen or its gear well. Its load still counts toward what you can carry." % [BagRules.slots_of(table, number), held]
 
 	if _raw_sick_hours(table.id_of(number)) > 0.0:
 		text += "\nEaten raw it ruins your health for a day. Cook it at a fire first."

@@ -23,20 +23,50 @@ static func weight_of(item_id: String, cfg: Dictionary) -> float:
 	return float(cfg.get("default_kg", 0.1))
 
 
-# Kilograms an inventory holds.
+# Kilograms an inventory holds, with what each bag in it holds (catalog Phase 5).
 static func carried_kg(inventory, table, cfg: Dictionary) -> float:
 	var total: float = 0.0
 
 	for slot in range(inventory.usable):
 		if inventory.numbers[slot] != 0:
-			var id: String = table.id_of(inventory.numbers[slot])
-			total += weight_of(id, cfg) * float(inventory.counts[slot])
-
-			# A container carries its water in the wear field (millilitres); a litre weighs a kilogram.
-			if int(table.entry(id).get("capacity_ml", 0)) > 0:
-				total += float(inventory.wear[slot]) / 1000.0
+			total += _stack_kg(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], table, cfg) + bag_kg(inventory.inst[slot], table, cfg)
 
 	return total
+
+
+static func _stack_kg(number: int, count: int, wear: int, table, cfg: Dictionary) -> float:
+	var id: String = table.id_of(number)
+	var kg: float = weight_of(id, cfg) * float(count)
+
+	# A container carries its water in the wear field (millilitres); a litre weighs a kilogram.
+	if int(table.entry(id).get("capacity_ml", 0)) > 0:
+		kg += float(wear) / 1000.0
+
+	return kg
+
+
+# Kilograms of what a bag holds (its instance data's `bag` rows, src/shared/bag_rules.gd): a bag adds room, never strength (master s3.9 rule 2),
+# so its load counts in full wherever the bag is, worn or in the pack.
+static func bag_kg(item_inst: Dictionary, table, cfg: Dictionary) -> float:
+	var total: float = 0.0
+
+	for row in item_inst.get("bag", []):
+		if int(row[0]) != 0:
+			total += _stack_kg(int(row[0]), int(row[1]), int(row[2]), table, cfg)
+
+	return total
+
+
+# The walk, run and sprint multiplier of what is worn: the product of the worn pieces' items.json worn_speed_mult (the Wooden - Pack frame's
+# restriction, master s3.9 rule 2), 1 for none.
+static func worn_speed_mult(numbers, table) -> float:
+	var mult: float = 1.0
+
+	for number in numbers:
+		if int(number) > 0:
+			mult *= clampf(float(table.entry(table.id_of(int(number))).get("worn_speed_mult", 1.0)), 0.1, 1.0)
+
+	return mult
 
 
 # The most a body carries (the server refuses to pick up more).

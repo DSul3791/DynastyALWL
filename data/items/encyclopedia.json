@@ -2780,7 +2780,7 @@
 		"backpack": {
 			"name": "Hide - Backpack",
 			"kind": "gear",
-			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
+			"description": "A hide pack worn on the back. It holds more in order, but its load still weighs on you.",
 			"how_to_get": [
 				"Craft: 4 Hide, 1 Rope (keep Bone - Needle)"
 			],
@@ -4646,7 +4646,7 @@
 		"quiver": {
 			"name": "Hide - Quiver",
 			"kind": "gear",
-			"description": "A hide tube worn on the back. Holds 40 arrows.",
+			"description": "A hide tube worn at the hip, beside a pack. Holds 40 arrows.",
 			"how_to_get": [
 				"Craft: 2 Hide, 2 Twine (keep Bone - Needle)"
 			],
@@ -9480,7 +9480,7 @@
 		"leather_quiver": {
 			"name": "Leather - Quiver",
 			"kind": "gear",
-			"description": "A stiff leather tube worn on the back. Holds 60 arrows and keeps them dry.",
+			"description": "A stiff leather tube worn at the hip, beside a pack. Holds 60 arrows and keeps them dry.",
 			"how_to_get": [
 				"Craft at a workbench: 2 Leather, 2 Leather strap (keep Bone - Needle)"
 			],
@@ -9530,7 +9530,7 @@
 		"leather_backpack": {
 			"name": "Leather - Backpack",
 			"kind": "gear",
-			"description": "A leather pack with a frame of straps. Worn on the back, it carries more than a hide pack.",
+			"description": "A leather pack worn on the back. Holds more than a hide pack and sheds a little rain.",
 			"how_to_get": [
 				"Craft at a workbench: 4 Leather, 4 Leather strap (keep Bone - Needle)"
 			],
@@ -10034,7 +10034,7 @@
 		"bedroll": {
 			"name": "Bedroll",
 			"kind": "gear",
-			"description": "Hides sewn into a roll to sleep on. Better rest in the open, but it is not a bed.",
+			"description": "A hide roll to sleep on, strapped to a worn pack. Better rest in the open, but not a bed.",
 			"how_to_get": [
 				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],

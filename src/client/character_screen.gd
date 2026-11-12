@@ -564,6 +564,17 @@ func _add_worn_line(label: String, i: int, number: int) -> void:
 		off.pressed.connect(func() -> void: _items.net.inventory_action.rpc_id(1, Net.ACT_UNWEAR, i, 0, 0, Vector3.ZERO))
 		line.add_child(off)
 
+		if int(_items.table.entry(_items.table.id_of(number)).get("bag_slots", 0)) > 0:   # a worn bag opens beside the pack (catalog Phase 5)
+			var bag: Button = Button.new()
+			bag.text = "Open"
+			bag.add_theme_font_size_override("font_size", BODY_PX)
+			bag.pressed.connect(func() -> void:
+				if open:
+					toggle()
+
+				_items.open_bag(i))
+			line.add_child(bag)
+
 	_remains_box.add_child(line)
 
 

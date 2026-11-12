@@ -20,6 +20,7 @@ const CAPTION := "Live character, as equipped"
 var view                            # the InventoryView (src/client/inventory_view.gd)
 var root: Control
 var wells: Dictionary = {}          # gear slot name -> its ItemSlot
+var well_at: Dictionary = {}        # gear slot name -> the worn position it shows (-1 none): a click on a worn bag opens it
 var preview: SubViewport
 var holder: SubViewportContainer    # the preview's frame; shown only while the window is open, so the preview renders only then
 var rig: Node3D
@@ -69,6 +70,9 @@ func _gear_column(names: Array) -> Control:
 			var side: float = 52.0
 			ArtKit.draw_glyph(ghost, glyph, Rect2(ghost.size * 0.5 - Vector2(side, side) * 0.5, Vector2(side, side)), ArtKit.GHOST, ArtKit.WELL))
 		slot.add_child(ghost)
+		slot.clicked.connect(func(button: int, _shift: bool) -> void:
+			if button == MOUSE_BUTTON_LEFT:
+				view.open_bag(int(well_at.get(gear, -1))))
 		column.add_child(slot)
 		wells[gear] = slot
 
@@ -127,6 +131,11 @@ func refresh() -> void:
 		# A well shows its slot's outermost worn layer (protocol 107); the Outer well is the body's outer layer, so Body shows what is under it.
 		# Every layer, each with its own Take off, is on the Tab screen (character_screen.gd).
 		var at: int = view.worn_places().find("body:outer") if gear == "outer" else view.worn_top(gear, ["outer"] if gear == "body" else [])
+
+		if (gear == "back" or gear == "waist") and view.worn_places().find(gear + ":base") >= 0 and view.worn_places().find(gear + ":base") < view.worn.size() and view.worn[view.worn_places().find(gear + ":base")] != 0:
+			at = view.worn_places().find(gear + ":base")   # the pack and the belt themselves, not the bedroll or a pouch on them (Tab lists those)
+
+		well_at[gear] = at
 
 		if at >= 0 and at < view.worn.size():
 			number = view.worn[at]
