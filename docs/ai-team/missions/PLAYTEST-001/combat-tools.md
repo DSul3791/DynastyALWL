@@ -64,6 +64,8 @@ Dave to check: look at a boulder (it says Rock); with both on the hotbar, hold t
 
 Gate review 1 (independent gate-reviewer agent) of d7c936e: FAIL on gate rules: (1) the protocol change needs Dave's approval (RULES.md "Big changes need Dave's approval first: ... the network protocol"; Class C in DECISION_AUTHORITY.md); asked on the thread, pending; (2) no Godot run yet. Code findings 3 (third-person facing from the skeleton, wrong for the fallback body), 4 (first-person spear in view at rest), 5 (eating with a log on the shoulder) and 9 (stale comment) fixed. The boulder and wood changes share one bump (112).
 
+Gate review 2 (32530ba): no new must-fix. Done: checks that an axe only on the hotbar (nothing in hand) chops no tree, trunk, stump or log; a "You need an axe in hand to work wood." line when wood is struck without one; comment provenance quotes Dave's notes; FELLING_DESIGN.md network line updated. Follow-up (reported, not in this PR): `_mine` (swinging at bare rock ground) still needs and wears the first axe on the hotbar, so a held pick there wears the axe.
+
 ## Test evidence
 
 | Check | Ran | Result |

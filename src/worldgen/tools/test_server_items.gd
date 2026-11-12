@@ -1118,6 +1118,12 @@ func _init() -> void:
 	check(felled_log.is_empty() and w.inventory_of(1).count_of(w.table.number_of("stone_axe")) == 0, "no axe, no chopping")
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 
+	for n in range(20):   # TEST-013: the axe on the hotbar but nothing in hand fells nothing, however many blows
+		w._last_hit.clear()
+		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+
+	check(felled_log.is_empty(), "an axe on the hotbar but not in hand: the tree is not chopped")
+
 	for n in range(3):
 		w._last_hit.clear()
 		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
@@ -1550,6 +1556,9 @@ func _init() -> void:
 		if int(cb._items[k]["number"]) == cb.table.number_of("log") and not cb._items[k].has("struct"):
 			lying = k
 
+	cb._last_process.clear()
+	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
+	check(cb._items.has(lying), "nothing in hand (the axe only on the hotbar): the log is not chopped (TEST-013)")
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(cb))
 	check(not cb._items.has(lying) and loose_of.call(soft_block_n) == 3, "a plain log chopped on the ground makes 3 softwood blocks (%d)" % loose_of.call(soft_block_n))

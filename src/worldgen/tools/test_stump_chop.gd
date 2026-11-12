@@ -50,6 +50,9 @@ func _init() -> void:
 	var firewood_n: int = w.table.number_of("firewood_oak") if w.table.number_of("firewood_oak") > 0 else w.table.number_of("firewood")
 	var kindling_n: int = w.table.number_of("kindling")
 	w.report_position(1, w._items[stump_id]["pos"] + Vector3(1.0, 0.0, 0.0))
+	w._last_process.clear()
+	w.action(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
+	check(int(w._items[stump_id]["tree"].get("blows", 0)) == 0, "nothing in hand (the axe only on the hotbar): the stump is not chopped (TEST-013)")
 	var guard: int = 0
 
 	while w._items.has(stump_id) and guard < 30:

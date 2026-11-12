@@ -5885,8 +5885,9 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	_sync_in = 0.0   # bug 6: the trunk goes out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
 
 
-# The held pack slot when it is a usable tool of this class on the hotbar, else -1 (TEST-013, Dave 12 Nov 2026: the tool in hand does the work,
-# not whichever one of the class sits on the hotbar).
+# The held pack slot when it is a usable tool of this class on the hotbar, else -1: the tool in hand does the work, not whichever one of the
+# class sits on the hotbar (TEST-013 playtest repair; Dave's playtest notes 12 Nov 2026: "Axes cut wood faster with less durability loss",
+# "Using an inappropriate tool should be less efficient where it is permitted").
 func _held_tool(inv, slot: int, tool_class: String) -> int:
 	if slot < 0 or slot >= inv.SLOTS or not inv.on_hotbar(slot) or _is_broken(inv, slot):
 		return -1
@@ -6306,6 +6307,12 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 
 	var axe: int = _held_tool(inv, held_slot, "axe")   # wood is worked with the axe in hand (TEST-013)
 
+	if axe < 0:
+		if not it.is_empty() and (it.has("tree") or (not it.has("struct") and (table.id_of(int(it["number"])) == "log" or is_shoulder_item(int(it["number"]))))):
+			_say(peer, "You need an axe in hand to work wood.")   # a pick or nothing held: the wood sound played, so say why nothing came of it
+
+		return
+
 	if not it.is_empty() and not it.has("tree") and not it.has("struct"):
 		_chop_loose_log(peer, inv, id, axe)
 		return
@@ -6314,7 +6321,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 		_chop_stump(peer, inv, id, axe)
 		return
 
-	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer) or axe < 0:
+	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer):
 		return
 
 	var tree: Dictionary = it["tree"]
@@ -6418,10 +6425,10 @@ func _stump_final_rows(cfg: Dictionary, radius: float) -> Array:
 
 # One axe blow on a stump (drops.json "stump"): a few blows (more for a thick one) chop it up for kindling and firewood, then it is gone and its record
 # is freed. The blow count is saved with the stump, so a half-chopped stump stays half-chopped across a restart; the pace and skill rules are the trunk's.
-func _chop_stump(peer: int, inv, id: int, axe: int) -> void:
+func _chop_stump(peer: int, inv, id: int, axe: int) -> void:   # `axe`: the usable axe in hand (checked by _process_trunk)
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 4 or not _peer_pos.has(peer) or axe < 0:
+	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 4 or not _peer_pos.has(peer):
 		return
 
 	var tree: Dictionary = it["tree"]
@@ -9034,10 +9041,10 @@ func _drop_firewood_beside(block: Dictionary, count: int, wood_id: String = "fir
 
 # A log lying on the ground, struck with an axe, falls apart into wooden blocks: 3 per log (Dave 4 Nov 2026, BUG-014), small blocks from a short log,
 # large blocks from a large shoulder log.
-func _chop_loose_log(peer: int, inv, id: int, axe: int) -> void:
+func _chop_loose_log(peer: int, inv, id: int, axe: int) -> void:   # `axe`: the usable axe in hand (checked by _process_trunk)
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or it.has("struct") or it.has("tree") or it.has("fire") or it.has("scatter") or not _peer_pos.has(peer) or axe < 0:
+	if it.is_empty() or it.has("struct") or it.has("tree") or it.has("fire") or it.has("scatter") or not _peer_pos.has(peer):
 		return
 
 	var item_id: String = table.id_of(int(it["number"]))
