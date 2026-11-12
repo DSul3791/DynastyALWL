@@ -48,16 +48,23 @@ def _covers(cell, path):
     return False
 
 
-def replacement_for(path, removals_text, head_exists):
-    """The declared, existing replacement of deleted code file path, or None."""
+def _split_ledger(removals_text):
+    """(the Replaced code section, everything else) of REMOVALS.md."""
     if REPLACED_HEADING not in removals_text:
-        return None
-    section = removals_text.split(REPLACED_HEADING, 1)[1].split("\n## ", 1)[0]
+        return "", removals_text
+    before, rest = removals_text.split(REPLACED_HEADING, 1)
+    section, sep, after = rest.partition("\n## ")
+    return section, before + (sep + after if sep else "")
+
+
+def replacement_for(path, removals_text, head_exists, changed):
+    """The declared replacement of deleted code file path: a code file that exists and is added or changed in this diff."""
+    section, _ = _split_ledger(removals_text)
     for cells in _rows(section):
         if len(cells) >= 2 and cells[0] == path:
             for repl in re.split(r",\s*", cells[1]):
                 repl = repl.strip().strip("`")
-                if repl and head_exists(repl):
+                if repl.endswith(CODE_EXT) and repl in changed and head_exists(repl):
                     return repl
     return None
 
@@ -83,24 +90,25 @@ def _live_use(path, base_text, base_uid, use_files):
     return None
 
 
-def deletion_problems(deleted, added, head_exists, base_read, head_read, use_files, removals_text):
+def deletion_problems(deleted, added, head_exists, base_read, head_read, use_files, removals_text, modified=()):
     """Problems for files deleted since BASE.
     deleted: paths in BASE gone from HEAD; added: paths in HEAD not in BASE; head_exists(p) -> bool;
     base_read(p) / head_read(p) -> text of p at BASE / HEAD ('' if absent); use_files: {path: text} of HEAD files with USE_EXT;
-    removals_text: HEAD proposed_removals/REMOVALS.md ('' if absent)."""
+    removals_text: HEAD proposed_removals/REMOVALS.md ('' if absent); modified: paths changed in both BASE and HEAD."""
     out = []
     archived = [a for a in added if a.startswith(ARCHIVE)]
-    ledger = _rows(removals_text.split(REPLACED_HEADING, 1)[0])
+    ledger = _rows(_split_ledger(removals_text)[1])
+    changed = set(added) | set(modified)
     for f in sorted(deleted):
         if f.startswith(ARCHIVE):
             out.append("historical document deleted: %s (nothing in docs/archive/ is deleted; restore it)" % f)
             continue
-        is_doc = f.endswith(DOC_EXT) and ("/" not in f or f.startswith(KEEP_DIRS))
+        is_doc = f.endswith(DOC_EXT)   # every document: root rulebooks, agents and skills, tools notes
         if f.startswith(SKIP_PREFIX) or not (is_doc or (f.endswith(KEEP_EXT) and f.startswith(KEEP_DIRS))):
             continue
         if is_doc:
             old = base_read(f)
-            ok = any(a.endswith("/" + f) or (os.path.basename(a) == os.path.basename(f) and head_read(a) == old)
+            ok = any(("/" in f and a.endswith("/" + f)) or (os.path.basename(a) == os.path.basename(f) and head_read(a) == old)
                      for a in archived)
             if not ok:
                 out.append("document deleted instead of archived: %s (git mv it to docs/archive/YYYY-MM/%s; documents are never "
@@ -112,7 +120,7 @@ def deletion_problems(deleted, added, head_exists, base_read, head_read, use_fil
                 out.append("deleted code is still used: %s (by %s). Replaced code is deleted only once nothing uses it "
                            "(Decision 61, Dave 12 Nov 2026)" % (f, user))
                 continue
-            if replacement_for(f, removals_text, head_exists):
+            if replacement_for(f, removals_text, head_exists, changed):
                 continue
             # No declared replacement: it is an "other unused file" and takes the proposed-removal route below.
         suffix = ".removed" if f.endswith((".gd", ".tscn", ".tres")) else ""

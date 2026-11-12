@@ -113,6 +113,7 @@ import deletion_rules
 if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
     _deleted = sh("git", "diff", "--name-only", "--diff-filter=D", BASE).splitlines()
     _added = sh("git", "diff", "--name-only", "--diff-filter=AR", BASE).splitlines()
+    _modified = sh("git", "diff", "--name-only", "--diff-filter=M", BASE).splitlines()
     _game = {}
     for f in (sh("git", "ls-files").splitlines() if _deleted else []):   # read game files only when something was deleted
         if f.endswith(deletion_rules.USE_EXT) and os.path.isfile(f):
@@ -127,7 +128,7 @@ if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
         except OSError:
             return ""
     for msg in deletion_rules.deletion_problems(_deleted, _added, os.path.isfile, lambda p: sh("git", "show", BASE + ":" + p),
-                                                _head_read, _game, _removals):
+                                                _head_read, _game, _removals, _modified):
         bad(msg)
     # looks: a look entry that was in BASE must still be in data/items/looks.json
     try:
