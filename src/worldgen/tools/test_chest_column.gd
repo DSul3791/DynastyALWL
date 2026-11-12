@@ -45,6 +45,9 @@ class FakeStore:
 	func inst_of(_slot: int) -> Dictionary:   # protocol 106: no instance data here
 		return {}
 
+	func max_durability(_slot: int) -> int:   # catalog Phase 2c: 0 = the row's durability
+		return 0
+
 
 class FakePack:
 	var shown: int = 0

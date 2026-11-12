@@ -139,7 +139,7 @@ func _init() -> void:
 	run(full_s * 0.5)
 	items.report_position(1, HERE + Vector3(3.0, 0.0, 0.0))
 	run(1.0)
-	check(not items._sharpening.has(1) and absi(inv.sharpness_used(slot) - at / 2) <= 2 and inv.max_durability(slot) < max_was and inv.max_durability(slot) > max_was - loss, "moving away stops it half done: half the sharpness back (%d of %d used), part of the cost (%d)" % [inv.sharpness_used(slot), at, max_was - inv.max_durability(slot)])
+	check(not items._sharpening.has(1) and absf(float(inv.sharpness_used(slot)) - float(at) * 0.5) <= 2.0 and inv.max_durability(slot) < max_was and inv.max_durability(slot) > max_was - loss, "moving away stops it half done: half the sharpness back (%d of %d used), part of the cost (%d)" % [inv.sharpness_used(slot), at, max_was - inv.max_durability(slot)])
 	items.report_position(1, HERE)
 
 	# The water going stops it too.

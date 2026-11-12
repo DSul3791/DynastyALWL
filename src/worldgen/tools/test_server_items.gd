@@ -1323,7 +1323,7 @@ func _init() -> void:
 	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("twine"), 0, 1, Vector3.ZERO)
 	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
 	check(wr.inventory_of(1).wear[0] == 0 and wr.inventory_of(1).count_of(wr.table.number_of("twine")) == 0, "a repair spends materials and restores it to its maximum (catalog Phase 2c)")
-	wr.inventory_of(1).wear[0] = durability - durability / 2
+	wr.inventory_of(1).wear[0] = ceili(durability * 0.5)   # = durability - durability / 2, as the checks below expect
 	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
 	var dropped: int = 0
 
