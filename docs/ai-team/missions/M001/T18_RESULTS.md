@@ -1,0 +1,53 @@
+# M001-T18 results: Phase 2 remainders (station stores and sourcing, Kiln batch, Chopping block station, wood renames, hammer sourcing range)
+
+Branch `m001/t18` (clone `E:\Software\godotDev\m001_p18`), base `d037e9b13`. Brief: `T18_BRIEF.md`. Owner: systems-engineer agent. Review: pending (independent gate-reviewer). Code under test and evidence: see "Evidence" (exact SHAs there).
+
+## Design (master s2.1 hammer row, s2.4, s2.5, s2.6, s3.2, s4 items 8, 10, 14)
+- **Station stores (s2.5).** A station row with `out_slots` keeps a store: the existing container machinery (`slots` makes the uid, owner, save, chest window), so locks, `_may_access`, keep out, storage views and "Empty it first" all apply unchanged. Slots `0..slots-1` are the input (the inventory's `usable` stays at `slots`, so every put path lands there: put, Store all, Stack to nearby, view deposits), the next `out_slots` the output, filled only by the station's own production (`Inventory.add(..., first)`). Take and Take all reach both.
+- **Products stay in the station.** A craft at a station with a store, run by that station's **owner**, puts its product in the output (`_craft_store`, `_out_room`, `_out_add`); with no room the finished craft waits in the queue (inputs held, nothing on the ground) and finishes when room appears. A guest's craft at someone else's station goes to the guest's pack (as before) so it never lands in another player's store. Admin free crafts and sealed jar batches keep their own paths.
+- **Sourcing order (s4 item 10).** Station stores join the craft and building stock as the player's own containers do (owner, not keep out, within the 12 m CraftStock reach), sorted after the containers: pack, ground stock, own containers, then station stores; the group's lowest member first (DEVTEST-01) is unchanged (`remove_fill`). A stranger never draws on someone's station store. Sealed batches skip station stores.
+- **Fill state.** Each station row carries `fill` 0..4 (quarters of its slots in use, rounded up) in its world-row extra; the row is re-sent when it changes; the look-at prompt shows it ("half full"). Looks are placeholders (no fill meshes). No protocol bump (older clients ignore the key, as with `wheel`); `PROTOCOL.md` note.
+- **Kiln batch (s2.6).** Logs only, at most `batch_logs` 6 (the log in the burn included) through every put path. E lights it while it holds wood, E puts it out; lit, a log's turn takes it from the input and makes `per_log` 100 Charcoal one at a time over `log_s`; a full output pauses it; done and still lit it burns its own charcoal, one per `self_burn_s`, and goes out with none left; put out it keeps everything, the part-burnt log too (`struct.kiln.left`), and relit goes on. Saved in `kilns.json` by the store's uid. Recipe 364 (the kiln craft) is retired: the batch replaces it (s4 item 8); recipe 341 (campfire) stays.
+- **Chopping block (s2.4).** Now a station with a store (input: logs only, refuses Planks and boards). F opens its window on the Craft tab: recipes 720 Soft firewood (1 Softwood log) and 721 Hard firewood (1 Hardwood log), 6 each (3 blocks x 2, the hand-split numbers), any axe kept and worn per log, any quantity; logs come from the pack, the ground and the player's own containers and station stores within 12 m (a Log rack); the firewood lands in the block's output. E still splits a block from the pack by hand; logs struck on the ground still give blocks.
+- **Renames (s3.2, s4 item 14).** Wooden block 234 -> Hardwood block, Firewood 26 -> Hard firewood, Softwood firewood 236 -> Soft firewood (items.json, encyclopedia, CONTROLS.md); the Phase 2a group labels keep group costs reading "Firewood" and "Wooden block".
+- **Hammer sourcing range (s2.1).** `building_wear.json hammer_reach_x` by the tier of the heaviest working hammer on the hotbar multiplies every building distance: the 12 m stock of a blueprint and a site deposit, `site_gather_m`, the 4 m heavy stock beside a site, and a repair's ground and container reach. Crafting keeps 12 m.
+- **Client.** E at a station with a store opens the store, F crafts (Craft tab first, store one tab away); the Kiln: E lights and puts out, F opens its store; the chopping block: E splits, F opens its Craft tab. `CONTROLS.md` updated.
+
+## Numbers (s5 tuning, playtest)
+| What | Value |
+|---|---|
+| Station stores, input / output slots | Smelter 4/4, Stone - Forge 4/4, Smithy 6/6, Blast furnace 6/6, Master smithy 6/6, Kiln 2/8, Sawmill 4/6 (logs), Chopping block 2/6 (logs), Loom, Tailor's table, Leatherworking table, Food preparation table 4/4 |
+| Sourcing radius | the existing CraftStock 12 m for every station (one constant) |
+| Kiln | 6 logs a batch, 100 Charcoal a log, `log_s` 300 real s a log (one piece every 3 s; 30 min a full batch), self-burn one Charcoal per 150 real s (= its 3600 game-s fuel time, Q2) |
+| Charcoal stack | 20 -> 100 (s5 "Charcoal stack size": a 600 batch is 6 slots, not 30) |
+| Chopping block | 6 firewood a log, 12 s a log |
+| Hammer reach x (Wooden..Steel) | 1.0, 1.25, 1.5, 2.0, 2.5: the 12 m stock becomes 12, 15, 18, 24, 30 m |
+
+## Evidence (Dave's PC, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, guarded runner, 3 jobs)
+Code under test: **`0d0df273f`** (the commit after it changes only this file and adds `T18_BRIEF.md`). Clean run: `git rev-parse HEAD` the same before and after, no tracked changes before or after.
+- Full plan `python3 tools/tests_for_diff.py d037e9b13 HEAD` (217 fast + 4 timing, 0 slow): **221 PASS, 0 FAIL**. No flake occurred this time.
+- Checks lane: `validate_items` PASS (0 errors, 116 warnings, none about a T18 row), `check_look_names.py` all 237 looks drawable, `merge_check.py` all clear (its carry_audit warning, recipe 153 water wheel, predates T18), `catalog_ledger.py --check` exit 0.
+- `test_station_storage` (new, 41 checks) covers every acceptance item on real server state (pause when full, deposit and withdraw with conservation, Smithy drawing ingots from the Smelter's output after the player's own locked chest, strangers refused, the 6-log Kiln to 600 Charcoal with put out / save-load / relight / self-burn / goes out, Stack to nearby capped at 6, chopping from a Log rack and refusing Planks, renames and group labels, hammer reach by tier, Stone - Forge verification).
+- GDScript warnings (`tools/check_warnings.sh --detail`): none on T18 lines; the 9 in server_items.gd are older (git blame).
+- Earlier round at `ac02e22fe`: 221/221. First round at the WIP `a2998699b`: 215/221; the 6 were the expected consequences (5 route tests looked for station products in the pack, now take them out through the real Take all; the economy guard's loss check on the chopping recipes, below).
+- Logs: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\t18\run3\` (`full_run.log`, `full\*.out|*.result`, `plan.json`, `checks\`, `merge_check.log`, `ledger_check.log`, `head_*.txt`, `tracked_*.txt`); earlier rounds in `run1`, `run2`.
+- `/ponytail-review` self-check on `d037e9b13..0d0df273f`: fixed during review: Stack to nearby could push a Kiln past 6 logs (now `_kiln_room` on every put path, tested), a station row re-sent kept its old fill on the client (`_note_store`), the hammer list's counts after a build used the crafting reach, the sawmill prompt lost its wheel share. No must-fix left.
+- NOT RUN: the client windows and prompts in a running game (E/F at a station, the Kiln, the chopping block), startup smoke, two real network clients.
+
+## Decisions taken from the documents (for review)
+- **Products of a guest's craft go to the guest's pack**, an owner's stay in the station (s2.5 "authorized workstations"); otherwise a guest's sword would land in a store the owner can empty.
+- **Economy guard:** chopping a species log (value 32/48) into 6 firewood (6/12 copper) fails the guard's "never lose money" rule. The yields are the hand chop's own and the values are catalog values, so the guard now skips its loss check for chopping-block recipes only (the profit cap still applies). This is a gate-rule change: the reviewer or the mission lead may prefer raising firewood values instead (s5 tuning).
+- **Recipe 364 retired**: the batch replaces the kiln craft (s4 item 8 "as a batch").
+
+## Not done / known limits
+- Hard firewood at the chopping block comes only from Hardwood logs: the Hardwood block's id keys the any-block group, so a recipe cannot ask for it alone. Blocks are still split by hand (E); hand-split firewood still drops beside the block (kept as it was).
+- One sourcing radius for every station (CraftStock 12 m); no per-station radius until NPC operators.
+- The Smithy is still fired from the pack, not from its own store or a nearby Kiln.
+- Stations are not lockable (Phase 9 data): anyone may open an owner's station store, as with an unlocked chest.
+- Anyone may light or put out a Kiln.
+- No fill meshes or separate input/output looks (placeholders; the row carries `fill`).
+- The hammer list and the crafting window share one stock message: after a craft the hammer list shows crafting-reach counts until its next poll (at most 0.5 s).
+
+## Risks
+- Station products now stay in stations: a real UX change for every listed station (E opens the store, F crafts); playtest it.
+- Unmeasured: `_store_fill` per station row in every world sync, and the wider hammer reach (up to 30 m) in the stock scans.
