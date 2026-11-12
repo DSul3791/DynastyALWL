@@ -1,6 +1,6 @@
 # M001-T13 results: Phase 9 storage rows, code locks, Storage sign and Warehouse desk
 
-Branch `m001/p9` (clone `E:\Software\godotDev\m001_p9`), base `f3d0d2ac0`. Code under test: `be3d8c9df` (this results commit adds only this file). Brief: `T13_BRIEF.md`. Owner: systems-engineer agent. Review: pending (independent gate-reviewer).
+Branch `m001/p9` (clone `E:\Software\godotDev\m001_p9`), base `f3d0d2ac0`. Code under test: **`60f9b4027`** (round-1 review fixes `0bfec1b95` merged with dev via `m001/p4a-layers` `dd903d971`, whose tree equals dev `fefee0aa2`; the commit after it changes only this file). The first evidence block below is round 0 at `be3d8c9df`. Brief: `T13_BRIEF.md`. Owner: systems-engineer agent. Review: pending (independent gate-reviewer).
 
 ## What went live
 - **Sixteen s3.13 rows** (items 1225-1240): `future` removed, `slots` on the item rows, structure rows (states 260-275), hammer blueprints 220-235 (`next_number` 236), `spoilage.json place_mult` for the 14 containers. Category "Storage and shelter".
@@ -61,6 +61,12 @@ place_mult: 0.6 closed furniture and crates, 0.8 open shelves and tool cabinet, 
 - Movable loaded crates, cargo ageing in transit (Phase 10).
 - The owner cannot name players to let in (the server knows only character keys, not names): "let in the player beside it" and a count of others with access.
 - No client UI test; the windows were not opened in a running game.
+
+## Evidence at `60f9b4027` (clean run: no edits during it; `git rev-parse HEAD` the same before and after, no tracked changes; voxel build, guarded runner, 3 jobs)
+- Plan `python3 tools/tests_for_diff.py dd903d971 HEAD` (dev's tree; `fefee0aa2` itself is not in this clone): 340 fast + 8 timing. `run_tests.sh --jobs 3`: **347 PASS, 1 FAIL** of 348. The one: `test_flora_density` timed out at 300 s under full-run load (known flake; loads no T13 file). `test_npc_view` passed this time.
+- `validate_items` PASS, `test_storage_locks` PASS (76 checks, including the round-1 tests; its Stack-to-nearby check fails with the `_box_takes` line removed: negative control run at `0bfec1b95`'s working tree, then restored), `merge_check.py` all clear (its carry_audit warning, recipe 153 water wheel, predates T13), `catalog_ledger.py --check` exit 0.
+- Logs: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\p9\run_60f9b4027ull_run.log` (summary), `...ull\*.out` and `*.result` per test, `...\checks\` (validate_items, test_storage_locks), `...\merge_check.log`, `...\ledger_check.log`, `...\head.txt` (head before and after), `...\plan.json`.
+- Merge: conflicts only in `PROTOCOL.md` and `terrain_net.gd`'s PROTOCOL_VERSION line (both notes kept, 108 then 107). `test_blueprints` and `test_hammer_list` counts were unchanged by dev (4a adds no blueprints); `test_item_instances` keeps `>= 106`.
 
 ## Review round 1 (FAIL on evidence; code PASS WITH NOTES) and the fixes
 - A damaged or unusable lock row on a container with an owner now loads **fail-closed**: an empty-code lock only the owner passes (no code can match); the owner sets a new code or takes the lock off. An ownerless container with a damaged row loads unlocked (nobody could ever open it otherwise). Test: `test_storage_locks` section 13.
