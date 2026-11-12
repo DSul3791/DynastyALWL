@@ -8,6 +8,13 @@
 4. Dev reviewer checks contract compliance, no unapproved data schema migration, and no known critical regression. Changed visual/audio content is explicitly marked 'not visually checked' unless evidence exists.
 5. Every skipped/blocked gate, newly introduced serious defect, and known issue appears in short dev release notes and machine-readable test evidence. If critical smoke fails, do NOT announce dev playable. If smoke test could not run because Dave is playing or local access is unavailable, say `DEV COMMITTED — PLAYABILITY UNVERIFIED` and offer the last known green SHA. Never label NOT RUN as PASS.
 
+## Risk-based test selection for dev
+Before an expensive PC run, use `tools/tests_for_diff.py <base_sha> <head_sha>` (or `--paths`) and read its selected lanes **and** `why` explanations. Start with a test for the new behavior, affected callers/contracts, persistence and security where relevant, then required integration and startup checks. Do not automatically add `--all` or `--full` for routine `dev` changes.
+
+The selector is deliberately conservative: for example, any `src/stream/terrain_net.gd` edit selects all fast tests. A wide selection is a **review trigger**, not proof that every selected test is essential for this specific `dev` change. Inspect the actual diff and affected consumers. If a smaller set appears safe, the coordinator may choose a **dev-only** scoped plan after an independent gate reviewer accepts the evidence and confirms no critical affected check is missing. Record the original selection and reasons, the tests run/deferred, rationale, residual risk, exact SHA and where the broader run belongs. If the risk cannot be bounded, keep the selector's full plan or report the `dev` candidate as unverified.
+
+Never bypass required CI, weaken security/data-integrity or multiplayer checks, alter test-lane rules just to avoid a run, or relax the `main` promotion gate. Distinguish machine test runtime from Claude token cost; retain full test artifacts but send concise summaries. Reuse earlier results only where the same code, environment and checked behavior still apply.
+
 ## main promotion gate (stronger)
 All required CI on exact proposed merge SHA green; required suite including correct voxel build and environment-specific tests completed; independent human/AI non-author review recorded; game launch/world load and affected visuals/interaction verified on PC; no known severe regressions; material contract/architecture changes are specifically approved; actual GitHub branch rules require checks/reviews. After merge verify new main exact SHA and tag. If GitHub 'merge queue' changes commit SHA, rerun/verify checks for the actual candidate per branch settings.
 
