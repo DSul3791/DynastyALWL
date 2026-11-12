@@ -131,7 +131,9 @@ def section_texts(text: str) -> dict:
 SECTION_BY_HAND = {"bronze_chisel": "3.1", "plank_chest": "3.5", "chair": "3.5", "canopy_bed": "3.5",
                    "iron_bench": "3.5", "iron_chair": "3.5", "iron_table": "3.5", "wooden_shelf": "3.5",
                    "wooden_cupboard": "3.5", "wooden_barrel": "3.5", "weapon_rack": "3.5", "armour_stand": "3.5",
-                   "iron_chest": "3.5"}
+                   "iron_chest": "3.5", "bench": "3.5", "table": "3.5"}
+# Plan phase overrides inside a section (the s3 section alone gives the wrong increment).
+PHASE_BY_HAND = {"hand_saw": "2b", "saw_blade": "2b", "stone_wedge": "2b"}
 
 
 def phase_of_existing(row: dict, sections: dict):
@@ -195,6 +197,8 @@ def check(ledger: dict) -> list:
             errors.append("%s: unknown state %r" % (e["key"], e["state"]))
         if e["state"] == "TESTED - ACCEPTED" and not e["accepted_commit"]:
             errors.append("%s: accepted with no accepted_commit" % e["key"])
+        if e["state"] in ("NO CHANGE", "RETIRED BEFORE CATALOG") and e["phase"] is not None:
+            errors.append("%s: %s but has phase %s" % (e["key"], e["state"], e["phase"]))
         if e["catalog"] in ("UPDATE", "RETIRE") and e["phase"] is None:
             errors.append("%s (%s): no phase; name its s3 section by hand" % (e["key"], e["catalog"]))
     for k, n in EXPECT.items():
