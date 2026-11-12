@@ -15537,12 +15537,19 @@ func _goals_check(peer: int) -> void:
 			if reward.has("item"):
 				give(peer, table.number_of(str(reward["item"][0])), int(reward["item"][1]))
 
-			_say(peer, "Goal done: %s" % str(goal.get("title", id)))
+			# One notice for the goal, its reward and the next hint: two lines in a row left only the second on screen, so a goal's coins
+			# looked like they came from the tree or plant being worked (playtest 12 Nov 2026 TEST-009).
+			var line: String = "Goal done: %s." % str(goal.get("title", id))
+
+			if reward.has("coin_copper"):
+				line += " You earn %s." % _coin_words(int(reward["coin_copper"]))
 
 			for next in _goals_data():
 				if not st["goals_done"].has(str(next["id"])) and (next.get("after", []) as Array).has(id) and _goal_open(st, next):
-					_say(peer, "Next: %s. %s" % [str(next.get("title", "")), str(next.get("hint", ""))])
+					line += " Next: %s. %s" % [str(next.get("title", "")), str(next.get("hint", ""))]
 					break
+
+			_say(peer, line)
 
 
 func _goals_tick() -> void:

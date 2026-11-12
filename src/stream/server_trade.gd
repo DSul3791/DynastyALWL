@@ -7,6 +7,7 @@ extends RefCounted
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TALK_RANGE_M := 4.5
+const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
 
 var items                       # ServerItems
 var npcs                        # ServerNpcs
@@ -284,8 +285,11 @@ func _near(peer: int, npc_id: String) -> bool:
 
 # kind 0 buy: a = index into the shop's stock list as opened; kind 1 sell: a = pack slot. Returns a short text for the player.
 func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
-	if not has_shop(npc_id) or not _near(peer, npc_id):
+	if not has_shop(npc_id):
 		return ""
+
+	if not _near(peer, npc_id):   # he keeps his hours (meals, bed, rain shelter) and walks off with the window still open: say so (playtest 12 Nov 2026 TEST-003)
+		return "%s has walked off. Close this window and find them to trade." % str(npcs.npcs.get(npc_id, {}).get("name", "The trader"))
 
 	count = clampi(count, 1, 999)
 	var inv = items.inventory_of(peer)
@@ -374,7 +378,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		count = mini(count, buy_room(npc_id, item_id))
 
 		if count <= 0:
-			return "He has all the %s he wants today." % (items.table.sentence_name(number2))
+			return "He has all the %s he wants for now. Come back in a little while." % (items.table.sentence_name(number2))
 
 	var left_over: int = count % lot if lot > 1 else 0
 
@@ -406,8 +410,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	paid_for -= paid_for % lot
 
-	if paid_for <= 0:
-		return "He cannot pay for that just now." if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
+	if paid_for <= 0:   # his purse is spent (it refills purse_regen_per_day a game day, one real hour)
+		return PURSE_EMPTY_SAY if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
 
 	count = paid_for
 	st2["purse"] = float(st2["purse"]) - float(total)

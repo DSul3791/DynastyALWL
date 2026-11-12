@@ -41,6 +41,7 @@ var _sell_all_slots: Array = []             # pack slots the button would sell
 var _sell_all_total: int = 0
 var _shop_purse: RichTextLabel
 var _shop_title_label: Label
+var _shop_reply: Label                      # the trader's last answer ("Sold ...", "I've bought all I can ..."): the notice line sits behind this window (TEST-003)
 var _name: Label = null
 var _text: Label = null
 var _choices: VBoxContainer = null
@@ -58,6 +59,7 @@ func setup(net_ref, items_ref, npc_view_ref, layer: CanvasLayer, player_pos: Cal
 	net.shop_received.connect(_on_shop)
 	net.purse_received.connect(func(_c): _refresh_shop())
 	net.inventory_slots_received.connect(func(_b): _refresh_shop())
+	net.notice_received.connect(_on_notice)
 	items.register_interactable("npc", 25, _probe)
 	items.dialogue_key = _key
 	items.dialogue_close = close
@@ -190,6 +192,9 @@ func close() -> void:
 	_shop_npc = ""
 	_sell_all_result = []
 
+	if _shop_reply != null:
+		_shop_reply.text = ""
+
 	if items != null and items.dialogue_open:
 		items.dialogue_open = false
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -229,6 +234,11 @@ func _build_shop(layer: CanvasLayer) -> void:
 	close_button.add_theme_font_size_override("font_size", SHOP_PX)
 	close_button.pressed.connect(close)
 	head.add_child(close_button)
+	_shop_reply = Label.new()
+	_shop_reply.add_theme_font_size_override("font_size", SHOP_PX)
+	_shop_reply.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	_shop_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(_shop_reply)
 	var columns: HBoxContainer = HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 20)
@@ -410,6 +420,12 @@ func _refresh_shop() -> void:
 		none.text = "Nothing in your pack that this trader will buy."
 		none.add_theme_font_size_override("font_size", SHOP_PX - 4)
 		_shop_sell_box.add_child(none)
+
+
+# While the trade window is open, the server's notices (the trader's answers to each deal) are shown in it.
+func _on_notice(text: String) -> void:
+	if _shop_reply != null and _shop_panel != null and _shop_panel.visible:
+		_shop_reply.text = text
 
 
 func _update_sell_all() -> void:
