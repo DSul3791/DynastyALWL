@@ -20,10 +20,14 @@ Branch `m001/t18` (clone `E:\Software\godotDev\m001_p18`), base `d037e9b13`. Bri
 | Sourcing radius | the existing CraftStock 12 m for every station (one constant) |
 | Kiln | 6 logs a batch, 100 Charcoal a log, `log_s` 300 real s a log (one piece every 3 s; 30 min a full batch), self-burn one Charcoal per 150 real s (= its 3600 game-s fuel time, Q2) |
 | Charcoal stack | 20 -> 100 (s5 "Charcoal stack size": a 600 batch is 6 slots, not 30) |
+| Values (review round 1) | Hard firewood 2 -> 4, Soft firewood 1 -> 3 (6 from a 48 or 32 species log keep the economy guard's 40 %), Charcoal 0.15 -> 0.3 (recipe 341 still keeps 40 %; it still truncates to 0, so Hob does not buy it, Q2) |
 | Chopping block | 6 firewood a log, 12 s a log |
 | Hammer reach x (Wooden..Steel) | 1.0, 1.25, 1.5, 2.0, 2.5: the 12 m stock becomes 12, 15, 18, 24, 30 m |
 
-## Evidence (Dave's PC, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, guarded runner, 3 jobs)
+## Evidence after review round 1 (code under test **`af0787249`**)
+The mission lead asked for no gate change: the `test_economy_guard` exemption is reverted (the file is identical to base `d037e9b13`) and the values were retuned instead (Numbers). Clean run, HEAD the same before and after, no tracked changes: full plan `d037e9b13..HEAD` (217 fast + 4 timing) **221 PASS, 0 FAIL** (test_economy_guard, test_station_storage, test_trade, test_first_town among them); `validate_items` PASS (0 errors); look names all drawable; `merge_check.py` clear; ledger `--check` exit 0. Logs: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\t18\run4\`. Risk: Hob sells firewood at twice the old price, and a plain Log (value 4) now chops into 18 copper of soft firewood (the guard values a group by its key item, Softwood log 32); Hob buys at a fraction of value, so check it in playtest.
+
+## Evidence round 0 (Dave's PC, voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, guarded runner, 3 jobs)
 Code under test: **`0d0df273f`** (the commit after it changes only this file and adds `T18_BRIEF.md`). Clean run: `git rev-parse HEAD` the same before and after, no tracked changes before or after.
 - Full plan `python3 tools/tests_for_diff.py d037e9b13 HEAD` (217 fast + 4 timing, 0 slow): **221 PASS, 0 FAIL**. No flake occurred this time.
 - Checks lane: `validate_items` PASS (0 errors, 116 warnings, none about a T18 row), `check_look_names.py` all 237 looks drawable, `merge_check.py` all clear (its carry_audit warning, recipe 153 water wheel, predates T18), `catalog_ledger.py --check` exit 0.
@@ -36,7 +40,7 @@ Code under test: **`0d0df273f`** (the commit after it changes only this file and
 
 ## Decisions taken from the documents (for review)
 - **Products of a guest's craft go to the guest's pack**, an owner's stay in the station (s2.5 "authorized workstations"); otherwise a guest's sword would land in a store the owner can empty.
-- **Economy guard:** chopping a species log (value 32/48) into 6 firewood (6/12 copper) fails the guard's "never lose money" rule. The yields are the hand chop's own and the values are catalog values, so the guard now skips its loss check for chopping-block recipes only (the profit cap still applies). This is a gate-rule change: the reviewer or the mission lead may prefer raising firewood values instead (s5 tuning).
+- **Economy guard:** chopping a species log (value 32/48) into 6 firewood failed the guard's "never lose money" rule. Round 0 skipped that check for chopping-block recipes; the mission lead ruled that a gate change, so round 1 reverts it and raises the firewood and charcoal values (s5 tuning) instead.
 - **Recipe 364 retired**: the batch replaces the kiln craft (s4 item 8 "as a batch").
 
 ## Not done / known limits
