@@ -114,13 +114,14 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 | 245 | hand_saw | Iron - Saw | UPDATE | Crafted at the burning Smithy from iron and wood (recipe 157); sawmill yields, slower; sharpening. |
 | 299 | scythe | Iron - Scythe | UPDATE | Break, repair, sharpening. |
 | 798, 799 / 800 | bronze/iron_chisel / steel_chisel | Chisels | UPDATE / FUTURE | Break, repair, sharpening; sculpture only. |
-| 19, 221, 247 | wooden_spade, wooden_hoe, wooden_hammer | Wooden tools | KEEP | Durability class: s8 item 1. |
-| 49 | sewing_needle | Bone - Needle | KEEP | The one reusable needle (27 live recipes keep it). Durability class: s8 item 1. |
+| 19, 221, 247 | wooden_spade, wooden_hoe, wooden_hammer | Wooden tools | UPDATE (PROPOSED, s8 item 1) | Disposable on breakage: remove `repair`. |
+| 49 | sewing_needle | Bone - Needle | UPDATE (PROPOSED, s8 item 1) | The one reusable needle (27 live recipes keep it). Not repaired: remove `repair` (1 Bone); a broken needle is replaced by crafting a new one (recipe 29). |
 | 815 | whetstone | Whetstone | UPDATE | Portable sharpening (2.2). |
 | new | | Iron - Axe, Steel - Axe, Iron - Knife, Steel - Knife, Steel - Saw, Bronze - Sickle, Iron - Sickle, Steel - Sickle, Bronze - Scythe, Steel - Scythe | ADD | Recipes at the Smithy; new knives join group `knife`. |
 | new | | Grindstone | ADD | Stationary sharpening; NPC-operable. |
+| new | | Thread | ADD (PROPOSED, s8 item 9) | Consumed in small amounts for sewing and portable repairs; hand-craftable from plant fibre (later spun wool; Spinning wheel faster). Recipe and amounts s5. |
 | 296 | obsidian_knife | Obsidian - Knife | FUTURE | Not in the ladder; stays parked (no change). |
-| 293 | hide_scraper | Scraper | KEEP | Durability class: s8 item 1. |
+| 293 | hide_scraper | Scraper | UPDATE (PROPOSED, s8 item 1) | Disposable on breakage: remove `repair`. Stone - Spear 7, Stone - Mace 313, Javelin 295 likewise; a thrown Javelin that survives is picked up again. |
 | 807, 344, 75, 260, 557, 12/542, 311, 668/669/892/893, 294 | | Mortar and pestle, Hand mill, Fishing rod, Fishing net, Wooden - Spyglass, Torch, Candle, lanterns, Steel - Striker (future) | KEEP | Unaffected. |
 
 ### 3.2 Wood
@@ -142,7 +143,7 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 | 238 | saw_blade | Saw blade | RETIRE | Recipe 152 retires. |
 | 239 | water_wheel | Water wheel | KEEP | Sawmill part. |
 | 353 | stone_wedge | Stone - Wedge | RETIRE | Recipes 227, 230 retire. |
-| 101–174 | lumber_*, beam_* | Species lumber and beams (future) | RETIRE (RECOMMENDED) | Superseded by Plank and Hardwood board with no sizes; s8 item 5. |
+| 101–174 | lumber_*, beam_* | Species lumber and beams (future) | RETIRE (PROPOSED, s8 item 5) | Superseded by Plank and Hardwood board with no sizes. Species `log_*` rows stay. Audit references first (`wood_species.json retired_to`, `shops.json` Hob buy rules list `lumber_oak`, `beam_oak` and others). |
 | 243 | woodworking_table | Woodworking table | RETIRE | **In open PR #1036** (item 243, blueprint 12, structure state 35). Not repeated here. Carpenter's bench 86 stays. |
 | 205, 207 | timber_prop, timber_set | Post, Beam | KEEP | Building pieces. |
 
@@ -155,8 +156,8 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 | 90 or new | blacksmithy | Smithy | UPDATE or ADD | Blueprint: stones, clay, logs, Iron ingots; built-in tools; must be burning to craft. Metalworking recipes move here. Id choice: s8 item 3. |
 | new | | Bellows, Quenching Trough | ADD | Smithy add-ons. Effects: s8 item 4. |
 | 94/95 or new | (master_forge) | Master Smithy | UPDATE or ADD | Prestige workshop, masterwork +1/+2. Id choice: s8 item 3. |
-| 827 | iron_anvil | Anvil | RETIRE (RECOMMENDED) | The Smithy has a built-in anvil and steel moves to the Blast Furnace. s8 item 3. |
-| 88 | stone_forge | Stone - Forge | UNRESOLVED | s8 item 2 (bronze before iron). |
+| 827 | iron_anvil | Anvil | RETIRE (PROPOSED, s8 item 3) | The Smithy has a built-in anvil and steel moves to the Blast Furnace. |
+| 88 | stone_forge | Stone - Forge | UPDATE (PROPOSED, s8 item 2) | Kept as the bronze smithy: shapes bronze items; no smelting; no iron in its cost (live cost 24 Stone, 10 Clay, 2 Hide qualifies). Its smelting recipes go to the Smelter. |
 | 795 | clay_bloomery | Clay bloomery | RETIRE | Structure state 200, blueprint 162, recipe 367 retire. |
 | 771 | kiln | Kiln | UPDATE | Batch charcoal from logs (2.6); bricks, roof tiles, lime stay. |
 | 547 | charcoal | Charcoal | UPDATE | 100 per log at the kiln; also a fire byproduct; can replace wood as fuel. |
@@ -216,11 +217,32 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 5. Add items, blueprints (from 186) and structure states (from 230) for Smelter, Blast Furnace, Smithy, Bellows, Quenching Trough, Master Smithy, Grindstone, Leatherworking Table, Tailor's Table, Loom, and the Chopping Block station; capacity fields on every station.
 6. Add the tools in 3.1 with Smithy recipes; extend the `knife` group; add a `saw` group.
 7. Recipe station moves (s4 item 10); chisel off recipe 368.
-8. After s8: Anvil, Stone - Forge, id reuse, species lumber, tables' recipe lists, thread, log length, tier renumbering.
+8. After Dave approves s8 (all PROPOSED): wooden tools, needle, scraper and stone weapons lose `repair`; Stone - Forge kept for bronze; rows 90, 92/93, 94/95 renamed, Anvil 827 retired; Hardwood boards in blueprints 98, 97, 48; species lumber and beams 101–174 retired; recipes moved to the Leatherworking Table and Tailor's Table; Thread item added and swapped for Twine in the 13 sewing recipes that use it; `log_length_m` 3.0 with weights; tier renumbering; enhancement data per item 8.
 
 ## 8. Decisions still needing Dave
 
+<<<<<<< HEAD
 **ChatGPT has entered design responses to all nine questions under Dave's delegated review process. These are proposed decisions for the catalog, not authorization to implement game data.** Dave can change any response using its optional override line. Dave explicitly answered question 8: enchantments are forever, with no replacement or removal. Remaining details of eligibility and stackables are proposals, not newly approved decisions. After that, Claude should reconcile the catalog's other sections against these responses, expose any true contradictions, and await Dave's final approval. No changes to game JSON or gameplay.
+=======
+### 8.0 Reconciliation of the section 8 answers (Claude, 12 Nov)
+
+The answers below were entered by ChatGPT under Dave's delegated review process. Sections 3, 4 and 7 now carry them as **PROPOSED (s8 item N)** until Dave approves the catalog; item 8 also needs his explicit confirmation. Effects and contradictions found:
+
+| Item | Effect on the catalog | Contradiction or knock-on to note |
+|---|---|---|
+| 1 | Wooden tools, Scraper, Stone - Spear, Stone - Mace, Javelin: remove `repair` (disposable). Bone - Needle: remove `repair`, replace by crafting (recipe 29, 1 Bone). | None. Bows, shields and other wooden weapons keep their own durability values, as the answer says. |
+| 2 | Stone - Forge 88 kept for bronze shaping only; bronze recipes (204–206, 215, 290–293, 371, 394, 397, 405, 406) stay at station `forge`; the Smithy also gets them; smelting 185, 190, 191 leaves it. | The answer says a "stone/clay/wood" cost; the live cost is 24 Stone, 10 Clay, 2 Hide (no wood). Either is iron-free; keep the live cost unless Dave changes it. |
+| 3 | Rows 90, 92/93, 94/95 renamed and re-costed; Anvil 827 retired. | Every reference changes with the renames (blueprints 10 and 164, structure rows, looks, tests); listed in s4 item 13. |
+| 4 | Bellows: faster heating and metalworking, less fuel. Quenching Trough: optional, better maximum durability or edge retention on eligible forged items. No recipe gates. | "Edge retention" means slower sharpness loss: a second per-instance effect beside maximum durability. Numbers s5. |
+| 5 | Hardwood boards in blueprints Barrel 98, Cupboard 97, Canopy bed 48 (and carts, wagons, carriages when built). Planks stay in Crate 168, Wooden - Chest 27, Wooden - Chair 42, Wooden - Table 43, Shelf 96. | The "Hardwood Chest for later" is **not added** (catalog freeze); it needs its own approval if wanted. |
+| 6 | Leatherworking Table: 278, 392, 173 and 356 (quivers), 30 and 361 (backpacks), 213, 214, 358, 359, 360 (leather garments). Tailor's Table: 216, 237–244 and cloth items. Hide garments 39–42, 194–196 stay by hand. | "Consumed Thread" replaces Twine in sewing: 13 live needle recipes use Twine today (23, 39–42, 173, 194–196, 237, 238, 241, 388). Swapping them to Thread is a recipe change that follows from item 9; noted in s7. |
+| 7 | `drops.json log_length_m` 2.44 → 3.0; log dimensions, segmentation (`max_logs`, `blows_per_log`), `weights.json` log masses and tests change together. | None. |
+| 8 | Not applied beyond a note: awaits Dave. | Consistent with s2.9 items 1 to 5. |
+| 9 | Add a Thread item, hand-craftable from plant fibre (later wool); consumed by sewing and portable repairs. | Conflicts with nothing approved, but it is a new item and a new ingredient in about 13 recipes (item 6), so it needs Dave's approval with the catalog. Twine stays for binding. |
+
+
+**ChatGPT has entered design responses to all nine questions under Dave's delegated review process. These are proposed decisions for the catalog, not authorization to implement game data.** Dave can change any response using its optional override line. Question 8 (magical effect replacement) explicitly awaits Dave's confirmation. After that, Claude should reconcile the catalog's other sections against these responses, expose any true contradictions, and await Dave's final approval. No changes to game JSON or gameplay.
+>>>>>>> a8d804a (DYNASTY_MASTER_ITEMS.md: reconcile sections 3 and 7 with the section 8 answers (8.0))
 
 1. **Durability class of wooden tools, the Bone - Needle, stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper.** Dave's rules cover stone tools and metal tools only.
    **Recommend:** stone and flint weapons and the Scraper are disposable like stone tools; wooden tools are disposable too (they are as cheap as stone ones); the Bone - Needle breaks and is repaired by hand with a Bone, like a metal tool at its crafting place, since it is "the one reusable needle".
