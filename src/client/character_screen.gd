@@ -527,6 +527,12 @@ func _add_worn_lines() -> void:
 	_remains_box.add_child(_label("Wearing", TITLE_PX - 6))
 	var labels: Dictionary = _items.clothing_cfg.get("worn_labels", {})
 	var slot_labels: Dictionary = _items.clothing_cfg.get("labels", {})
+	var covered: Dictionary = {}   # slot -> the piece that also fills it (a Dress covers the legs)
+
+	for i in mini(places.size(), _items.worn.size()):
+		if int(_items.worn[i]) > 0:
+			for other in _items.table.entry(_items.table.id_of(int(_items.worn[i]))).get("spans", []):
+				covered[str(other)] = int(_items.worn[i])
 
 	for slot in _items.clothing_slots():
 		var shown: int = 0
@@ -539,7 +545,9 @@ func _add_worn_lines() -> void:
 				_add_worn_line(str(labels.get(places[i], places[i])), i, number)
 				shown += 1
 
-		if shown == 0:
+		if shown == 0 and covered.has(slot):
+			_remains_box.add_child(_label("%s: covered by %s" % [slot_labels.get(slot, slot), _items.table.name_of(int(covered[slot]))], BODY_PX))
+		elif shown == 0:
 			_add_worn_line(str(slot_labels.get(slot, slot)), -1, 0)
 
 

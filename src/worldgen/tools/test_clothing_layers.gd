@@ -84,7 +84,7 @@ func _init() -> void:
 
 	# 1. The model: the first eight positions are the old eight slots, every clothing row has its own position.
 	check(places.slice(0, 8) == ["head:base", "body:base", "legs:base", "feet:footwear", "hands:base", "back:base", "body:outer", "waist:base"], "the first eight positions are the old slots (%s)" % str(places.slice(0, 8)))
-	check(places.size() == 19 and places.has("neck:base") and items._clothing_slots().has("neck") and not items._clothing_slots().has("outer"), "neck is a slot and outer is the body's outer layer (%d positions)" % places.size())
+	check(places.size() == 20 and places.back() == "body:mail" and places.has("neck:base") and items._clothing_slots().has("neck") and not items._clothing_slots().has("outer"), "neck is a slot and outer is the body's outer layer (%d positions)" % places.size())
 	var homeless: Array = []
 
 	for id in items.table.ids():
@@ -104,6 +104,11 @@ func _init() -> void:
 	check(items.worn_of(1)[at(items, "body:base")] == n(items, "hide_tunic") and items.worn_of(1)[at(items, "body:padding")] == n(items, "gambeson") and items.worn_of(1)[at(items, "body:outer")] == n(items, "hide_cloak"), "tunic, gambeson and cloak worn on the body together")
 	check(items.worn_of(1)[at(items, "head:base")] == n(items, "hide_hood") and items.worn_of(1)[at(items, "head:rigid")] == n(items, "iron_helm"), "a hood under a helm")
 	check(["hide_tunic", "gambeson", "hide_cloak", "hide_hood", "iron_helm"].all(func(id): return owned(items, id) == 1 and inv.count_of(n(items, id)) == 0), "each worn once, none left in the pack")
+	wear(items, "mail_shirt")
+	check(items.worn_of(1)[at(items, "body:mail")] == n(items, "mail_shirt") and items.worn_of(1)[at(items, "body:padding")] == n(items, "gambeson"), "mail goes on over the gambeson (padding under mail, s3.7 rule 1)")
+	wear(items, "bronze_scale_shirt")
+	check(items.worn_of(1)[at(items, "body:mail")] == n(items, "bronze_scale_shirt") and inv.count_of(n(items, "mail_shirt")) == 1 and owned(items, "mail_shirt") == 1, "a scale shirt swaps the mail shirt back to the pack")
+	items.action(1, Net.ACT_UNWEAR, at(items, "body:mail"), 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_UNWEAR, at(items, "body:padding"), 0, 0, Vector3.ZERO)
 	check(items.worn_of(1)[at(items, "body:padding")] == 0 and inv.count_of(n(items, "gambeson")) == 1 and items.worn_of(1)[at(items, "body:base")] == n(items, "hide_tunic") and items.worn_of(1)[at(items, "body:outer")] == n(items, "hide_cloak"), "the gambeson comes off on its own, the tunic and cloak stay")
 

@@ -4,14 +4,14 @@
 	"layers": {
 		"head": ["base", "mail", "rigid"],
 		"neck": ["base"],
-		"body": ["base", "padding", "rigid", "over", "outer"],
+		"body": ["base", "padding", "mail", "rigid", "over", "outer"],
 		"legs": ["base", "mail", "rigid"],
 		"hands": ["base", "rigid"],
 		"feet": ["socks", "footwear", "over"],
 		"back": ["base"],
 		"waist": ["base"]
 	},
-	"worn": ["head:base", "body:base", "legs:base", "feet:footwear", "hands:base", "back:base", "body:outer", "waist:base", "neck:base", "head:mail", "head:rigid", "body:padding", "body:rigid", "body:over", "legs:mail", "legs:rigid", "hands:rigid", "feet:socks", "feet:over"],
+	"worn": ["head:base", "body:base", "legs:base", "feet:footwear", "hands:base", "back:base", "body:outer", "waist:base", "neck:base", "head:mail", "head:rigid", "body:padding", "body:rigid", "body:over", "legs:mail", "legs:rigid", "hands:rigid", "feet:socks", "feet:over", "body:mail"],
 	"labels": {"head": "Head", "body": "Body", "legs": "Legs", "feet": "Feet", "hands": "Hands", "back": "Back", "waist": "Waist", "neck": "Neck"},
-	"worn_labels": {"head:base": "Head", "body:base": "Body", "legs:base": "Legs", "feet:footwear": "Feet", "hands:base": "Hands", "back:base": "Back", "body:outer": "Outer", "waist:base": "Waist", "neck:base": "Neck", "head:mail": "Head, mail", "head:rigid": "Head, helm or hat", "body:padding": "Body, padding or mail", "body:rigid": "Body, plate", "body:over": "Body, over", "legs:mail": "Legs, mail", "legs:rigid": "Legs, greaves", "hands:rigid": "Hands, gauntlets", "feet:socks": "Feet, socks", "feet:over": "Feet, over"}
+	"worn_labels": {"head:base": "Head", "body:base": "Body", "legs:base": "Legs", "feet:footwear": "Feet", "hands:base": "Hands", "back:base": "Back", "body:outer": "Outer", "waist:base": "Waist", "neck:base": "Neck", "head:mail": "Head, mail", "head:rigid": "Head, helm or hat", "body:padding": "Body, padding", "body:mail": "Body, mail", "body:rigid": "Body, plate", "body:over": "Body, over", "legs:mail": "Legs, mail", "legs:rigid": "Legs, greaves", "hands:rigid": "Hands, gauntlets", "feet:socks": "Feet, socks", "feet:over": "Feet, over"}
 }
