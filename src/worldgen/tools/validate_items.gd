@@ -313,8 +313,12 @@ func _init() -> void:
 		if ["tool", "weapon", "placeable", "structure", "container", "clothing", "gear"].has(String(item.get("kind", ""))) and not bool(item.get("unstackable", false)):
 			fail("items.json: '%s' is a %s and must be \"unstackable\": true" % [id, item.get("kind", "")])
 
-		if item.has("durability") and (int(item["durability"]) < 1 or item.get("repair", []).is_empty()):
-			fail("items.json: '%s' has durability but no repair materials" % id)
+		if item.has("durability") and int(item["durability"]) < 1:
+			fail("items.json: '%s' has a durability below 1" % id)
+
+		# Master s2.2: stone, wooden and primitive gear is disposable (no repair); a metal tool is repaired at the station type that makes it.
+		if String(item.get("kind", "")) == "tool" and ["bronze", "iron", "steel"].has(String(item.get("material", ""))) and item.has("durability") and not bool(item.get("retired", false)) and (item.get("repair", []).is_empty() or String(item.get("repair_station", "")) == ""):
+			fail("items.json: metal tool '%s' needs repair materials and a repair_station" % id)
 
 		for row in item.get("repair", []):
 			want_item.call(String(row[0]), "items.json %s repair" % id)
@@ -742,7 +746,8 @@ func _init() -> void:
 		var wt_ok: bool = wt == ""
 
 		for row in recipes_file["recipes"][rid].get("keeps", []):
-			wt_ok = wt_ok or String(items_file["items"].get(String(row[0]), {}).get("tool_class", "")) == wt
+			for kept in [String(row[0])] + Array(wood_file.get("ingredient_groups", {}).get(String(row[0]), [])):   # a kept group (saw) counts by its members
+				wt_ok = wt_ok or String(items_file["items"].get(kept, {}).get("tool_class", "")) == wt
 
 		if not wt_ok:
 			fail("recipe '%s': wears_tool '%s' is not the tool_class of any kept tool" % [rid, wt])

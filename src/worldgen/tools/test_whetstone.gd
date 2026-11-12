@@ -45,6 +45,7 @@ func _init() -> void:
 		items.table._by_number[99991] = row
 
 	items.table._by_id["stone_knife"]["edge"] = true
+	items.table._by_id["stone_knife"]["repair"] = [["stone", 1], ["twine", 1]]   # the hone and repair mechanism on a test row: the live Stone - Knife is disposable (master s2.2, Mission 001 phase 2c)
 	var knife: int = items.table.number_of("stone_knife")
 	var stone_n: int = items.table.number_of("stone")
 	var twine_n: int = items.table.number_of("twine")

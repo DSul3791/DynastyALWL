@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 410,
+	"next_number": 420,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -84,9 +84,7 @@
 				[
 					"twine",
 					2
-				]
-			],
-			"keeps": [
+				],
 				[
 					"stone",
 					1
@@ -429,7 +427,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_pickaxe": {"number": 19, "name": "Steel - Pickaxe", "category": "Tools", "needs": [["steel_ingot", 3], ["stick", 2]], "gives": ["steel_pickaxe", 1], "craft_s": 12.0, "known": false, "locked": true, "station": "brick_forge"},
+		"steel_pickaxe": {"number": 19, "name": "Steel - Pickaxe", "category": "Tools", "needs": [["steel_ingot", 3], ["stick", 2]], "gives": ["steel_pickaxe", 1], "craft_s": 12.0, "known": true, "station": "brick_forge"},
 		"wooden_bowl": {
 			"number": 20,
 			"name": "Wooden bowl",
@@ -448,7 +446,7 @@
 			"known": true,
 			"keeps": [
 				[
-					"stone_knife",
+					"knife",
 					1
 				]
 			]
@@ -577,7 +575,8 @@
 			],
 			"craft_s": 8.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"iron_spade": {
 			"number": 27,
@@ -3591,7 +3590,7 @@
 			],
 			"keeps": [
 				[
-					"hand_saw",
+					"saw",
 					1
 				]
 			],
@@ -3807,7 +3806,8 @@
 			],
 			"craft_s": 6.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"scythe": {
 			"number": 188,
@@ -4488,7 +4488,7 @@
 			"name": "Small wooden blocks",
 			"category": "Materials",
 			"needs": [["wooden_block_large", 1]],
-			"keeps": [["stone_axe", 1]],
+			"keeps": [["axe", 1]],
 			"gives": ["wooden_block", 4],
 			"craft_s": 4.0,
 			"known": true
@@ -4498,7 +4498,7 @@
 			"name": "Small softwood blocks",
 			"category": "Materials",
 			"needs": [["wooden_block_soft_large", 1]],
-			"keeps": [["stone_axe", 1]],
+			"keeps": [["axe", 1]],
 			"gives": ["wooden_block_soft", 4],
 			"craft_s": 4.0,
 			"known": true
@@ -5769,7 +5769,7 @@
 			],
 			"keeps": [
 				[
-					"stone_knife",
+					"knife",
 					1
 				]
 			],
@@ -7085,7 +7085,7 @@
 			],
 			"keeps": [
 				[
-					"stone_knife",
+					"knife",
 					1
 				]
 			],
@@ -7665,7 +7665,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_chisel": {"number": 373, "name": "Steel - Chisel", "category": "Tools", "needs": [["steel_ingot", 1], ["stick", 1]], "gives": ["steel_chisel", 1], "craft_s": 20.0, "known": false, "station": "brick_forge", "locked": true},
+		"steel_chisel": {"number": 373, "name": "Steel - Chisel", "category": "Tools", "needs": [["steel_ingot", 1], ["stick", 1]], "gives": ["steel_chisel", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
 		"cook_meat_skewer": {
 			"number": 374,
 			"name": "Meat skewer",
@@ -8421,7 +8421,7 @@
 			"name": "Hardwood boards by hand",
 			"category": "Materials",
 			"needs": [["log_oak", 1]],
-			"keeps": [["hand_saw", 1]],
+			"keeps": [["saw", 1]],
 			"wears_tool": "saw",
 			"gives": ["hardwood_board", 4],
 			"craft_s": 24.0,
@@ -8443,6 +8443,237 @@
 			],
 			"craft_s": 2.0,
 			"known": true
+		},
+		"iron_axe": {
+			"number": 410,
+			"name": "Iron - Axe",
+			"category": "Tools",
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"leather_strap",
+					1
+				]
+			],
+			"gives": [
+				"iron_axe",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "brick_forge",
+			"station_level": 2
+		},
+		"steel_axe": {
+			"number": 411,
+			"name": "Steel - Axe",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"leather_strap",
+					1
+				]
+			],
+			"gives": [
+				"steel_axe",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "brick_forge"
+		},
+		"iron_knife": {
+			"number": 412,
+			"name": "Iron - Knife",
+			"category": "Tools",
+			"needs": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"iron_knife",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "brick_forge",
+			"station_level": 2
+		},
+		"steel_knife": {
+			"number": 413,
+			"name": "Steel - Knife",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"steel_knife",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "brick_forge"
+		},
+		"steel_saw": {
+			"number": 414,
+			"name": "Steel - Saw",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"steel_saw",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "brick_forge"
+		},
+		"bronze_sickle": {
+			"number": 415,
+			"name": "Bronze - Sickle",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_sickle",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "forge"
+		},
+		"iron_sickle": {
+			"number": 416,
+			"name": "Iron - Sickle",
+			"category": "Tools",
+			"needs": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"iron_sickle",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "brick_forge",
+			"station_level": 2
+		},
+		"steel_sickle": {
+			"number": 417,
+			"name": "Steel - Sickle",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"steel_sickle",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "brick_forge"
+		},
+		"bronze_scythe": {
+			"number": 418,
+			"name": "Bronze - Scythe",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"bronze_scythe",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "forge"
+		},
+		"steel_scythe": {
+			"number": 419,
+			"name": "Steel - Scythe",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"steel_scythe",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "brick_forge"
 		}
 	}
 }

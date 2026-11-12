@@ -85,7 +85,7 @@ func _init() -> void:
 	var stick_before: int = crafter.count_of(table.number_of("stick"))
 	check(recipes.craft(3, crafter) and crafter.count_of(table.number_of("spear")) == 1, "stone spear made")
 	check(crafter.count_of(table.number_of("twine")) == twine_before - 2 and crafter.count_of(table.number_of("wooden_spear")) == 0, "stone spear used the wooden spear and 2 twine")
-	check(crafter.count_of(table.number_of("stone")) == stone_before and crafter.count_of(table.number_of("stick")) == stick_before, "the stone spear (recipe 3: wooden spear + 2 twine) takes no stone and no stick")
+	check(crafter.count_of(table.number_of("stone")) == stone_before - 1 and crafter.count_of(table.number_of("stick")) == stick_before, "the stone spear (recipe 3: wooden spear + 2 twine + its stone head, master s3.6) takes one stone and no stick")
 	crafter.add(table.number_of("stone"), 1)
 	check(recipes.craft(2, crafter) and crafter.count_of(table.number_of("stone_axe")) == 1, "stone axe made")
 	var packed = Inventory.new(table)

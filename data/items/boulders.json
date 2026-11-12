@@ -12,7 +12,9 @@
 		},
 		"axe": {
 			"stone": 3,
-			"bronze": 2
+			"bronze": 2,
+			"iron": 1,
+			"steel": 1
 		}
 	},
 	"radius_min": 0.3,

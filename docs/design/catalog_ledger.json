@@ -91,10 +91,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair or edge, tier 2; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "spear",
@@ -105,10 +108,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair or edge; recipe 3 uses up its stone; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "campfire_kit",
@@ -161,10 +167,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair or edge, material stone, tier 2; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "torch",
@@ -273,10 +282,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair, tier 1; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "lean_to_kit",
@@ -483,10 +495,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 4, edge, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "steel_pickaxe",
@@ -497,10 +512,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, edge, repair at brick_forge; recipe 19 known; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "soil",
@@ -651,10 +669,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): retired with recipe 26; nothing live needs it"
   },
   {
    "key": "iron_spade",
@@ -665,10 +686,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "steel_spade",
@@ -679,10 +703,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "bone",
@@ -707,10 +734,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "backpack",
@@ -3194,10 +3224,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair, tier 1; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "stone_hoe",
@@ -3208,10 +3241,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "iron_hoe",
@@ -3222,10 +3258,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "steel_hoe",
@@ -3236,10 +3275,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "path_patch",
@@ -3530,10 +3572,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "hand_saw",
@@ -3546,13 +3591,14 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
+    "test_bronze_path",
     "test_iron_saw_route",
     "test_stations",
-    "test_bronze_path",
+    "test_tool_ladder",
     "validate_items"
    ],
    "accepted_commit": null,
-   "note": "M001-T06 (phase 2b)"
+   "note": "M001-T06 (phase 2b); M001-T09: tier 4, repair 1 Iron ingot and 1 Stick at brick_forge, group saw (recipes 159, 408)"
   },
   {
    "key": "stone_adze",
@@ -3577,10 +3623,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "rough_bed_kit",
@@ -4165,10 +4214,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "steel_striker",
@@ -4182,7 +4234,7 @@
    "state": "FUTURE-GATED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09: tier 4 -> 5 by material rank (s4 item 13); row stays FUTURE"
   },
   {
    "key": "javelin",
@@ -4193,10 +4245,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair, stack 1 (pick-up of a surviving throw is code); break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "obsidian_knife",
@@ -4221,10 +4276,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "sickle",
@@ -4235,10 +4293,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): retired with recipe 187; nothing live needs it"
   },
   {
    "key": "scythe",
@@ -4249,10 +4310,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "wooden_club",
@@ -4445,10 +4509,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): no repair; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "plank_shield",
@@ -4518,7 +4585,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "iron_mace",
@@ -4532,7 +4599,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "iron_shield",
@@ -4546,7 +4613,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "steel_sword",
@@ -4560,7 +4627,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "steel_mace",
@@ -4574,7 +4641,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "steel_shield",
@@ -4588,7 +4655,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "leather_cap",
@@ -6480,10 +6547,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 3, edge, repair at forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "bronze_axe",
@@ -6494,10 +6564,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 3, repair at forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "bronze_hammer",
@@ -6508,10 +6581,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 3, repair at forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "bronze_knife",
@@ -6522,10 +6598,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 3, repair at forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "stairs_wood_kit",
@@ -7908,10 +7987,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "steel_hammer",
@@ -7922,10 +8004,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "log_foundation_kit",
@@ -11290,10 +11375,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 3, repair at forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "iron_chisel",
@@ -11304,10 +11392,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "steel_chisel",
@@ -11318,10 +11409,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09 data (phase 2c): live, tier 5, repair at brick_forge; recipe 373 known; break, repair-to-maximum and sharpening behaviour is M001-T10 code"
   },
   {
    "key": "carved_stone_block",
@@ -12678,10 +12772,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Steel - Axe",
@@ -12693,10 +12790,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Iron - Knife",
@@ -12708,10 +12808,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Steel - Knife",
@@ -12723,10 +12826,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Steel - Saw",
@@ -12738,10 +12844,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Bronze - Sickle",
@@ -12753,10 +12862,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Iron - Sickle",
@@ -12768,10 +12880,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Steel - Sickle",
@@ -12783,10 +12898,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Bronze - Scythe",
@@ -12798,10 +12916,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Steel - Scythe",
@@ -12813,10 +12934,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09 (phase 2c): live with its recipe (410-419); sharpening is M001-T10 code"
   },
   {
    "key": "new:Grindstone",
@@ -12828,10 +12952,13 @@
    "section": "3.1",
    "phase": "2c",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IN DEVELOPMENT",
+   "tests": [
+    "test_tool_ladder",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09: structure state 246, blueprint 208 (stone, logs), station grindstone; what it does is M001-T10 code"
   },
   {
    "key": "new:Hardwood board",
