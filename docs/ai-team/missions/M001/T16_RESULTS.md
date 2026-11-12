@@ -37,3 +37,44 @@ Fixed before the commit: a declined question on an energy aid still gave its ene
 ### Risks
 - Every existing food now carries an effect: players who eat a weaker food in the same group get a question, which old habits (spamming E) will meet.
 - A Fitness or skill change elsewhere that bypasses `_train_fitness` or `practice` would bypass the food hook.
+
+## Phase 8: food boards and the Serving Platter
+
+**Code head under test: `69c230020`** (on top of the Phase 7 results `07fe6f0e6`; this section is committed on top, docs only).
+
+### What went live
+- **Eight boards** (1243-1250) lose `future`; recipes 650-657 at the Food preparation table from cooked dishes only (master s3.15 table, live rows). A board's stack count is its portions; food (kcal) and weight per portion are the dishes' sums over the portions (no free food); shelf life is the shortest-lived dish (`spoilage.json`), and the crafted age is the stalest input's (Phase 6 rule). Boards join only at the very same age (`spoilage.json exact_age`, `Inventory._mergeable`). Each portion is one food of its group (Phase 7): tier 3; Dessert platter Dessert, Harvest platter Fruit and vegetables, the other six Main meals (s3.16 DELEGATED); hearty where red meat; the Tavern supper board (dishes from three groups) is the balanced board (all-skill XP +10 % instead of Fitness +20 %).
+- **Ploughman's board** 1252 stays FUTURE (cheese and pickles FUTURE), no recipe.
+- **Serving Platter** 1251: recipe 658 by hand, 2 Wooden block with the knife kept (s3.15 RECOMMEND: like the Wooden bowl); kind `container` -> `placeable` (the client places only `placeable` kits). Structure `serving_platter`, **state 280**: a one-slot container (`takes` the eight boards, `max_kg` 10), `attach_to` "table" with `attach_kinds` {table, crude, ornate, Food preparation 0.73 m; stone 0.85; iron 0.8}. `PlacementRules.table_spot` (shared by the server and the ghost) moves the spot onto the nearest table top under it and inside its edge; refused off a table ("Set it on a table."), one to a spot (0.35 m), a table with a platter on it cannot be taken down.
+- Use: the owner opens it (E when empty) and puts a board on it (the stack moves); anyone eats a portion with E (`ACT_USE_STRUCT`, through the same `_eat` as the pack, so stomach cap, freshness and the food question apply; the question names the platter, slot = minus its world id, answered with `ACT_USE_STRUCT b`). Only the owner opens it, takes the board back or picks it up; picking up gives the portions back first (all or nothing), then the platter. Not crafting stock and not in storage views (`_is_storage`). Spoils at `place_mult` 1.0. Its world row carries `board` and `portions` (the prompt "Press E to eat from the roast platter, 3 left").
+- Protocol stays **110** (the same unmerged version): state 280, row extra, `ACT_USE_STRUCT b`. PROTOCOL.md rows and note.
+
+### Numbers (s5 tuning: "portions per board" is open; chosen: one portion per dish)
+| Board | Dishes | Portions | kcal each | kg each | Shelf h | Value each |
+|---|---|---|---|---|---|---|
+| seafood_platter | 2 roast_fish, 2 roast_shellfish, 1 crab_cakes | 5 | 516 | 0.26 | 24 | 10 |
+| roast_platter | 1 roast_meat, 1 roast_joint, 1 roast_roots, 1 onion_roast | 4 | 537 | 0.33 | 48 | 14 |
+| mixed_grill_platter | 2 sausage, 2 meat_skewer, 1 garlic_meat | 5 | 744 | 0.30 | 48 | 26 |
+| charcuterie_board | 2 jerky, 1 sausage, 1 smoked_meat, 1 sauerkraut | 5 | 604 | 0.36 | 360 | 17 |
+| harvest_platter | 1 roast_roots, 1 beet_roast, 1 onion_roast, 1 mushroom_skewer | 4 | 422 | 0.30 | 48 | 9 |
+| tavern_supper_board | 1 venison_pie, 1 fish_pie, 1 flatbread, 1 roast_roots | 4 | 642 | 0.30 | 72 | 14 |
+| breakfast_platter | 2 boiled_egg, 2 oat_cakes, 1 sausage | 5 | 504 | 0.20 | 120 | 14 |
+| dessert_platter | 1 apple_pie, 1 honey_loaf, 1 baked_apples, 1 berry_compote | 4 | 522 | 0.30 | 72 | 14 |
+Platter value 6 (two blocks are 6), weight 0.6 kg. Board values are the dishes' values over the portions (the Phase 1 placeholders 35-60 a piece would have let a board sell above its dishes).
+
+### Evidence (Dave's PC, voxel build, at `69c230020`, no edits during the run)
+- `python3 tools/tests_for_diff.py 7ef057c18 HEAD` (343 fast, 8 timing) through `tools/run_tests.sh --jobs 3`: **349 PASS, 2 FAIL**, both the known flakes: `test_flora_density` timed out after 300 s (checks ok up to the timeout), `test_npc_view` exit 139 at quit after printing PASS. Wall 950 s. Plan `C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/p8_plan.json`, log `C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/p8_suite.log`, per-test output `C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/p8_suite/`.
+- Checks lane at the same head: `validate_items` PASS, 0 errors, 136 warnings (`C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/p8_checks/validate_items.out`); `check_look_names.py` 237 drawable; `merge_check.py` all clear (one carry-audit warning, at base); `catalog_ledger.py --check` pass (the eight boards and the platter IMPLEMENTED - UNVERIFIED, the Ploughman's board FUTURE-GATED).
+- `test_serving_platter` (new, 51 checks): the data (live, at the table, from cooked foods, portions, kcal, shortest shelf, tier and group), a board made at a table from real dishes (spent once) with the stalest dish's age, boards of other ages kept apart, a portion from the pack is one tier 3 Main meal that refreshes without stacking, the platter refused off a table and snapped onto the top, one to a spot, boards only, the owner sets the board out, a stranger can neither take, open-and-Take-all nor pick it up, two players eat half, the food question at the platter, every portion counted, the table not taken from under it, save and reload (portions, age, owner), the world row's board and portions, picked up whole with its age.
+
+### Self-review (`/ponytail-review` method, diff `07fe6f0e6..69c230020`)
+Fixed before the commit: a stranger could open the platter and Take all (the owner check moved into `_chest_of`, which every open, put, take and bulk action passes); taking the table down left the platter floating; boards still averaged ages within the 10 % merge gap (exact-age rule added). Left: `_platter_on` and `_surface_rows` walk every world record, only on a placement or a table take-down (unmeasured, small).
+
+### Not done / not checked
+- Looks: the platter is a flat placeholder board, the same full or empty; the boards are grey placeholders (NOT visually complete; the row data for fullness is there). The ghost on a table and the E prompt are NOT RUN in a real client.
+- NPC diners (s3.15: FUTURE, no NPC hunger). Encyclopedia text for the new recipes.
+
+### Risks
+- Recipe `next_number` 478 -> 659 (above this task's block 650-658): Phases 4b and 5 will conflict on that line.
+- A platter's owner is the placer; a platter left by a player who never returns stays theirs (no expiry).
+- Table heights are read from the looks by eye (0.73 / 0.8 / 0.85 m), not measured in game.
