@@ -130,7 +130,7 @@ func craft(peer: int, id: String, times: int, seconds: int) -> void:
 		items.tick(1.0)
 
 
-func burn(id: int, seconds: float) -> void:
+func burn(_id: int, seconds: float) -> void:
 	var t: float = 0.0
 
 	while t < seconds - 0.001:
