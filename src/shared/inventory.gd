@@ -110,8 +110,8 @@ func has(number: int, count: int) -> bool:
 
 
 # Take `count` of an item (from the last slots first, plain stacks before instances). False and no change if there is not enough.
-# Each part taken from a slot with instance data or wear (age, water, use) is appended to `taken` as [number, inst, wear, count], so a refund
-# can give it back as it was (the craft queue); plain unworn units need no row.
+# Each part taken from a slot is appended to `taken` as [number, inst, wear, count], in the order taken, so a refund can give back as it
+# was what is still owed (the craft queue).
 func remove(number: int, count: int, taken: Array = []) -> bool:
 	if count <= 0 or not has(number, count):
 		return false
@@ -123,8 +123,7 @@ func remove(number: int, count: int, taken: Array = []) -> bool:
 			if left > 0 and numbers[i] == number and inst[i].is_empty() == plain:
 				var take: int = mini(left, counts[i])
 
-				if not plain or wear[i] != 0:
-					taken.append([number, inst[i].duplicate(true), wear[i], take])
+				taken.append([number, inst[i].duplicate(true), wear[i], take])
 
 				counts[i] -= take
 				left -= take
