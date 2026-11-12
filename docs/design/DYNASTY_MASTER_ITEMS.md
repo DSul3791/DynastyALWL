@@ -1,348 +1,414 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 2 FOR DAVE'S REVIEW (11 Nov 2026). Documentation only.** Nothing in `data/items/*.json`, `data/npcs/*.json` or the game code has been changed. The item catalog is frozen (Dave, 11 Nov 2026): this document reconciles and flags; it does not add, remove, rename or redesign anything by itself. No JSON or gameplay change follows from it until Dave approves this corrected catalog.
+**Status: DRAFT 3 FOR DAVE'S REVIEW (12 Nov 2026). Documentation only.** Nothing in `data/items/*.json`, `data/npcs/*.json` or the game code is changed by this document. The item catalog is frozen (Dave, 11 Nov 2026): no game-data or gameplay change follows from it until Dave approves this revised catalog.
 
-Draft 2 applies the review on PR #1035 (review 5866741315, posted from Dave's account `DSul3791`, 11 Nov 2026 23:31Z), which transcribes Dave's 11 Nov design conversation. That conversation itself was not available to this session, so the review is the recorded source for those decisions (**SOURCE: PR #1035 review**; verbatim conversation unverified).
+Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4`. Separately, open PR #1036 retires the Woodworking table (s4.4).
 
-Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (identical to `main` for `data/items/`).
+## 1. Sources and decision labels
 
-## 1. Authority and decision labels
-
-Every decision below carries one label:
-
-- **APPROVED**: Dave's decision. Source either **[B]** Dave's brief "Master Items Catalog — Reconciliation Assignment" (11 Nov 2026) or **[R]** the PR #1035 review of Dave's 11 Nov design conversation, or an older Dave ruling cited by name.
-- **RECOMMENDED**: this document's (or the review's) proposal. Needs Dave's sign-off before any data change.
-- **UNRESOLVED**: no decision and no recommendation yet; Dave decides.
-
-| Rank | Source | Use |
+| Tag | Source | Weight |
 |---|---|---|
-| 1 | Dave, 11 Nov 2026: brief [B] and design conversation as transcribed in review [R] | APPROVED; wins over everything below |
-| 2 | Older Dave words: `ITEM_DECISION_LOG.md` (rows "Dave"), `docs/mirror/design/ITEM_TRIM_DECISIONS.md`, decisions quoted in `docs/FINAL_HANDOFF_REPORT_11Nov.md` s7 (61, 69, 70, 71, 73) | APPROVED where rank 1 is silent |
-| 3 | Agent-written plans: `docs/design/item_system.md` draft 7 (coordinator rulings 10 Nov), `buildables_plan.md`, `progression.md`, `wood_tier_note.md` | Intended design only where they agree with ranks 1 and 2 |
-| 4 | `data/items/*.json` | Implementation truth: what exists. Ids and numbers are preserved |
+| **[D]** | Dave, "Final Design Decisions and Master Items Reconciliation", project chat, 12 Nov 2026 00:15Z | Newest. Wins over everything else. |
+| **[B]** | Dave, "Master Items Catalog — Reconciliation Assignment", 11 Nov 2026 | Approved. |
+| **[R]** | Review 5866741315 on PR #1035, posted from Dave's account 11 Nov 2026 23:31Z, transcribing his 11 Nov design conversation | Not yet confirmed by Dave as his. Where [R] and [D] differ, [D] wins. |
+| older Dave | `ITEM_DECISION_LOG.md` (rows "Dave"), `ITEM_TRIM_DECISIONS.md`, decisions quoted in `docs/FINAL_HANDOFF_REPORT_11Nov.md` s7 (61, 69, 70, 71, 73) | Approved where the above are silent. |
+| agent plans | `docs/design/item_system.md` draft 7 (coordinator rulings 10 Nov), `buildables_plan.md`, `progression.md`, `wood_tier_note.md` | Intended design only where consistent with Dave. |
+| data | `data/items/*.json` | What exists. Ids and numbers preserved. |
 
-`design/decisions_pending.md` (85 decisions, old Library) was not readable from this session; only the decisions quoted in the final handoff report are used (**SOURCE UNVERIFIED** for the rest).
+Labels on every decision:
+- **APPROVED**: from [D], [B] or older Dave words.
+- **PENDING CONFIRMATION**: rests only on [R]. Treat as approved once Dave confirms the review was his (Q1).
+- **RECOMMENDED**: this document's proposal; needs Dave's sign-off.
+- **UNRESOLVED**: no decision; Dave decides. No rule is invented for these.
 
-### 1.1 Older rulings superseded by Dave's 11 Nov decisions
+`design/decisions_pending.md` (old Library) was not readable here: **SOURCE UNVERIFIED** for anything in it not quoted in the final handoff report.
 
-| Older ruling (source) | Dave, 11 Nov 2026 | Result |
+### 1.1 Older rulings superseded
+
+| Older ruling (source) | Now | Label |
 |---|---|---|
-| Bellows dropped (item_system.md s2, s6, s12; coordinator 10 Nov) | Bellows is a Smithy upgrade [B][R] | Superseded |
-| Clay bloomery 5 ore → 1 ingot (item_system.md s6; live item 795, recipe 367) | No Clay Bloomery [B]; matches Dave's 30 Oct "no bloomery" | Superseded; retire |
-| Large forge and Master forge parked; "the anvil is the steel step" (item_system.md s2, s6, s11) | Smelter + Blast Furnace (steel) + Smithy (forge, anvil, bench built in) + distinct Master Smithy [B][R] | Superseded |
-| "One forge model, upgraded in tiers" (Dave 25 Oct) | Separate Smelter, Blast Furnace, Smithy, Master Smithy [B] | Superseded by Dave's newer decision |
-| Stone - Wedge kept; wedge lumber route (item_system.md s3; moderator QA) | Stone Wedge retired [B]; bootstrap without the wedge [R] | Superseded |
-| Stone - Spade, Stone - Sickle kept (item_system.md s3) | Both retired [B][R] | Superseded |
-| Bronze Spade, Bronze Hoe, Bronze Saw, Iron Needle planned NEW-F (item_system.md s3) | Not in the approved ladders [R] | Dropped |
-| Whetstone hone: +25 %, never above 75 %, then material repair (`drops.json tool_wear.hone`, Part C plan) | Whetstone + water sharpens to 100 % automatically, costing max durability [R] | Superseded |
-| Grindstone skipped (item_system.md s6 C7) | Grindstone is a faster, NPC-operable sharpener [R] | Superseded |
-| Stonecutter's bench needs a kept chisel (item_system.md s6; recipes 368–370) | Chisels are sculpture tools, not mandatory for stone construction [R] | Superseded for construction (s3.4) |
-| Names at most four words (`validate_items.gd`, item_system.md s1 rule 8) | Dynamic enhanced names are not bound by the four-word rule [R] | Superseded for dynamic names only |
+| Bellows dropped (item_system.md; coordinator 10 Nov) | Bellows is a Smithy upgrade [B] | APPROVED |
+| Clay bloomery (item_system.md; live 795) | Retire; no save migration needed [B][D] | APPROVED |
+| Large forge, Master forge parked; anvil is the steel step (item_system.md) | Smelter, Blast Furnace (steel), Smithy with built-in tools, separate prestige Master Smithy [B][D] | APPROVED |
+| One forge model upgraded in tiers (Dave 25 Oct) | Separate Smelter, Blast Furnace, Smithy, Master Smithy [B][D] | APPROVED (newer Dave) |
+| Stone wedge lumber route | No wedge [B][D] | APPROVED |
+| Saw blade as a part of the saw and sawmill (live 238) | No saw-blade intermediates; no Saw Blade ingredient for the hand saw [D] | APPROVED |
+| Hand saw half the sawmill's yield (`recipes.json hand_saw_balance`) | Same yields as the sawmill, much slower [D] | APPROVED |
+| Hone +25 %, cap 75 % (`drops.json tool_wear.hone`) | Sharpening restores sharpness to 100 % and permanently lowers maximum durability [D] | APPROVED |
+| Grindstone skipped (item_system.md) | Stationary grindstone, separate from the portable whetstone [D] | APPROVED |
+| Repair anywhere, restores 50 % (`tool_wear.repair_restores`) | Metal tools repaired at their crafting station type, up to the remaining maximum [D] | APPROVED |
+| Kiln: 2 Firewood → 2 Charcoal (recipe 364) | Kiln: 100 Charcoal per 3 m log, batches of about six logs [D] | APPROVED |
+| Planned Bronze Saw, Bronze Spade, Bronze Hoe, Iron Needle (item_system.md) | No Bronze Saw [D]; the rest dropped by [R] | APPROVED (saw) / PENDING CONFIRMATION (others) |
+| Chisel needed at the Stonecutter's bench | Chisels for sculpture only [R] | PENDING CONFIRMATION |
 
 ## 2. Status keys and id rules
 
-- **KEEP**: stays as in data. **UPDATE**: same id and number; a field, name, recipe or station changes. **ADD**: new row, number taken from `next_number` at implementation time (none reserved here). **RETIRE**: `"retired": true`; row and number stay forever, never reused. **FUTURE**: in data or planned, not obtainable yet.
-- Never reuse a retired id or number. The retired `fine_board` (227) and `rough_plank` (226) are **not** revived. `sewing_needle` (49) was revived before this rule and stays live.
-- Reusing an existing *future* (never obtainable) id for a new station is reasonable but needs implementation and migration review [R]; each such case is marked RECOMMENDED.
+- **KEEP** stays as in data. **UPDATE** same id and number; a field, name, recipe or station changes. **ADD** new row; number from `next_number` at implementation (none reserved here). **RETIRE** `"retired": true`; row and number stay. **FUTURE** in data or planned, not obtainable yet.
+- Stable ids and numbers are kept and never reused, even retired ones (`fine_board` 227, `rough_plank` 226 stay retired). No save-game migration is needed for retirements: Dynasty has never been publicly released or played by other players [D].
+- Reusing an existing never-obtainable (future) id for a new station is RECOMMENDED only case by case, with implementation review.
 
-## 3. Hand tools
+## 3. Tools
 
-### 3.1 Approved tool ladders [R]
+### 3.1 Durability, repair and sharpening [D]
 
-| Family | Approved ladder | Role [R] |
+APPROVED:
+1. **Stone tools are disposable** and disappear at zero durability: Stone - Axe 6, Stone - Knife 11, Stone - Pickaxe 297, Stone - Hammer 244, Stone - Hoe 222 (Stone - Spade 45 is retired; Stone - Sickle 298 per s3.3).
+2. **Metal tools break at zero durability** and stay in the inventory, unusable.
+3. A broken metal tool is **repaired at the same type of workstation where it was crafted**, with appropriate materials. A repair restores durability **only up to the tool's remaining maximum**.
+4. **Sharpening** restores sharpness to 100 % and **permanently lowers maximum durability**.
+5. **Portable whetstone sharpening** and **stationary grindstones** stay separate mechanics.
+
+PENDING CONFIRMATION [R]: sharpening applies to metal axes, pickaxes and knives, and to other metal edged tools where it fits; whetstone use needs accessible water, sharpens the player's eligible tools automatically one after another, up to five real minutes for a fully dull tool, using nearby seating; the grindstone is faster and NPC-operable; blade sharpening is not applied to hammers, hoes or spades.
+
+What the live data must change: `repair` lists come off stone tools and `edge: true` comes off them; `repair_station` on each metal tool names its crafting station type (today 26 rows say `forge`); `tool_wear.repair_restores` 0.5 and `tool_wear.hone` are replaced; tools gain per-instance **sharpness** and **current maximum durability** beside wear (code). Exact materials, rates and amounts: UNRESOLVED (Q7).
+
+UNRESOLVED (Q2): wooden tools (spade, hoe, hammer), the Bone - Needle, stone and flint weapons (Stone - Spear 7, Stone - Mace 313, Javelin 295) and the flint Scraper 293 are neither stone tools nor metal tools in [D]. Until decided they keep today's data.
+
+### 3.2 Tool ladders and roles
+
+Ladders and roles are PENDING CONFIRMATION [R] except where marked. Approved by [D]: hand saws come in **Iron and Steel**; stone tools are disposable.
+
+| Family | Ladder | Role |
 |---|---|---|
-| Axe | Stone, Bronze, Iron, Steel | Fells and works wood. Sharpened (metal). |
-| Pickaxe | Stone, Bronze, Iron, Steel | Mines. Sharpened (metal). |
-| Spade | Wooden, Iron, Steel (no Stone, no Bronze) | Digs. |
-| Hammer | Wooden, Stone, Bronze, Iron, Steel | Builds. Better hammers gain **only** a longer automatic material-sourcing range and more durability (range numbers provisional). Any metal hammer builds any tier (decision 73). |
-| Hoe | Wooden, Stone, Iron, Steel (no Bronze) | Six modes: Flatten, Smooth (slope-preserving averaging), Pathen, Survey a Road (two stakes, pathfinding), Create Garden Plot, Plant. |
-| Knife | Stone, Bronze, Iron, Steel | A weapon too. Harvests a carcass by repeated attacks, giving resources progressively. Sharpened (metal). |
-| Hand saw | Iron, Steel (no Bronze) | Hand sawing, intentionally slow. Metal edged. |
-| Sickle | Bronze, Iron, Steel (Stone retired) | Portable, precise harvesting. Metal edged. |
-| Scythe | Bronze, Iron, Steel | Large-area harvesting. Metal edged. |
-| Chisel | Bronze, Iron, Steel | Optional sculpture and art; not required for stone construction. Metal edged. |
-| Sewing needle | One reusable needle (no tiers) | Sewing; with thread, portable simple repairs. |
+| Axe | Stone, Bronze, Iron, Steel | Fells; chops logs into blocks and blocks into firewood [D]. |
+| Pickaxe | Stone, Bronze, Iron, Steel | Mines. |
+| Spade | Wooden, Iron, Steel (Stone retired [B]) | Digs. |
+| Hammer | Wooden, Stone, Bronze, Iron, Steel | Builds; better hammers gain only sourcing range and durability. Any metal hammer builds any tier (decision 73). Not needed for smithing: the Smithy has built-in tools [D]. |
+| Hoe | Wooden, Stone, Iron, Steel | Six modes: Flatten, Smooth, Pathen, Survey a Road, Create Garden Plot, Plant. |
+| Knife | Stone, Bronze, Iron, Steel | Weapon too; harvests carcasses progressively by repeated attacks. |
+| Hand saw | **Iron, Steel** [D] | Same yields as the sawmill, much slower [D]. |
+| Sickle | Bronze, Iron, Steel (Stone retired) | Precise portable harvesting. |
+| Scythe | Bronze, Iron, Steel | Large-area harvesting. |
+| Chisel | Bronze, Iron, Steel | Sculpture and art only. |
+| Sewing needle | one reusable needle | Sewing; with thread, portable simple repairs. |
 
-### 3.2 Maintenance [B][R]
-
-- **Stone tools are disposable** (APPROVED): no repair; a stone tool that wears out vanishes. Applies to Stone - Axe 6, Stone - Knife 11, Stone - Pickaxe 297, Stone - Hammer 244, Stone - Hoe 222. (Stone - Spade 45 and Stone - Sickle 298 are retired.)
-- **Metal axes, pickaxes and knives are sharpened** (APPROVED); other metal edged tools (saws, sickles, scythes, chisels) follow the same design where applicable (APPROVED as a principle; per-tool fit is an implementation detail).
-- **Sharpening behaviour** (APPROVED): with a portable **Whetstone** and accessible water, the player's eligible tools are sharpened automatically, one after another, to 100 % sharpness. A fully dull tool takes up to five real minutes. Sharpening permanently uses up maximum durability in proportion to the sharpening done. The player uses nearby seating where there is some. A **Grindstone** is a faster alternative an NPC can operate.
-- This replaces the live hone rule (`drops.json tool_wear.hone`: R on an `edge: true` tool, +25 %, cap 75 %). It implies two per-instance values per sharpened tool, **sharpness** and **maximum durability**, beside today's wear. Exact rates and numbers are UNRESOLVED.
-- **Non-edged metal tools** (spades, hoes, hammers): a separate maintenance decision is needed; blade sharpening is not applied to them (APPROVED principle). Their repair treatment is UNRESOLVED (U3).
-- Wooden tools, stone and flint weapons (Stone - Spear 7, Stone - Mace 313, javelin) and the flint Scraper 293 are not named by either rule: UNRESOLVED (U4).
-
-### 3.3 Family tables
-
-`tN` = the live `tier` field. Live stations: `hand`; `workbench` with level; `forge` = Stone - Forge; `brick_forge` = Brick - Forge (L2 iron, L3 steel with the Anvil). Recipe stations for new rows follow s5 and are not set here.
+### 3.3 Tool rows
 
 | Family | # | id | Name | Live tier / station | Status | Label | Notes |
 |---|---|---|---|---|---|---|---|
-| **Axe** | 6 | stone_axe | Stone - Axe | stone t1, hand | UPDATE | APPROVED | Disposable: drop `repair`. |
-| | 459 | bronze_axe | Bronze - Axe | bronze t2, forge | UPDATE | APPROVED | Sharpening per 3.2. |
-| | — | new | Iron - Axe | | ADD | APPROVED | |
-| | — | new | Steel - Axe | | ADD | APPROVED | |
-| **Pickaxe** | 297 | stone_pickaxe | Stone - Pickaxe | stone t2, hand | UPDATE | APPROVED | Disposable. |
-| | 458 | bronze_pickaxe | Bronze - Pickaxe | bronze t2, forge | UPDATE | APPROVED | Gains sharpening (no `edge` today). |
-| | 33 | iron_pickaxe | Iron - Pickaxe | iron t2, brick_forge L2 | UPDATE | APPROVED | Gains sharpening. |
-| | 34 | steel_pickaxe | Steel - Pickaxe | steel t3, brick_forge L3 (locked) | FUTURE → UPDATE | APPROVED | Gains sharpening when live. |
-| **Spade** | 19 | wooden_spade | Wooden - Spade | hand | KEEP | APPROVED | |
-| | 45 | stone_spade | Stone - Spade | stone t2, workbench | RETIRE | APPROVED [B] | Recipe 26 retires. Saved-game handling U1. |
-| | 46 | iron_spade | Iron - Spade | iron t3, brick_forge L2 | KEEP | APPROVED | Maintenance U3. |
-| | 47 | steel_spade | Steel - Spade | steel t4, brick_forge L3 | FUTURE | APPROVED | |
-| | 213–220 | spade sizes | | | RETIRED (already) | | |
-| **Hammer** | 247 | wooden_hammer | Wooden - Hammer | wood t1, hand | KEEP | APPROVED | Role: sourcing range + durability only. |
+| Axe | 6 | stone_axe | Stone - Axe | stone t1, hand | UPDATE | APPROVED | Disposable. |
+| | 459 | bronze_axe | Bronze - Axe | bronze t2, forge | UPDATE | APPROVED | Breaks and repairs at its crafting station; sharpening. |
+| | — | new | Iron - Axe, Steel - Axe | | ADD | PENDING CONFIRMATION | |
+| Pickaxe | 297 | stone_pickaxe | Stone - Pickaxe | stone t2, hand | UPDATE | APPROVED | Disposable. |
+| | 458, 33 | bronze_pickaxe, iron_pickaxe | Bronze, Iron - Pickaxe | t2, forge / brick_forge L2 | UPDATE | APPROVED | Metal repair rule. Sharpening PENDING CONFIRMATION. |
+| | 34 | steel_pickaxe | Steel - Pickaxe | t3 (locked) | FUTURE | APPROVED | |
+| Spade | 19 | wooden_spade | Wooden - Spade | hand | KEEP | Q2 | |
+| | 45 | stone_spade | Stone - Spade | stone t2, workbench | RETIRE | APPROVED [B] | Recipe 26 retires. |
+| | 46, 47 | iron_spade, steel_spade | Iron, Steel - Spade | t3 / t4 (future) | UPDATE / FUTURE | APPROVED | Metal repair rule. |
+| Hammer | 247 | wooden_hammer | Wooden - Hammer | hand | KEEP | Q2 | |
 | | 244 | stone_hammer | Stone - Hammer | stone t2, hand | UPDATE | APPROVED | Disposable. |
-| | 460 | bronze_hammer | Bronze - Hammer | bronze t3, forge | KEEP | APPROVED | |
-| | 560 | iron_hammer | Iron - Hammer | iron t3, brick_forge L2 | KEEP | APPROVED | |
-| | 561 | steel_hammer | Steel - Hammer | steel t3, brick_forge L3 | FUTURE | APPROVED | |
-| **Hoe** | 221 | wooden_hoe | Wooden - Hoe | hand | KEEP | APPROVED | Six modes (3.1) are a code feature. |
+| | 460, 560, 561 | bronze/iron/steel_hammer | Bronze, Iron, Steel - Hammer | t3 | UPDATE / FUTURE | APPROVED | Metal repair rule. |
+| Hoe | 221 | wooden_hoe | Wooden - Hoe | hand | KEEP | Q2 | |
 | | 222 | stone_hoe | Stone - Hoe | stone t2, workbench | UPDATE | APPROVED | Disposable. |
-| | 223 | iron_hoe | Iron - Hoe | iron t3, brick_forge L2 | KEEP | APPROVED | |
-| | 224 | steel_hoe | Steel - Hoe | steel t4, brick_forge L3 | FUTURE | APPROVED | |
-| **Knife** | 11 | stone_knife | Stone - Knife | t1, hand | UPDATE | APPROVED | Disposable. Group `knife` (821). |
-| | 461 | bronze_knife | Bronze - Knife | bronze t2, forge | UPDATE | APPROVED | Sharpening. Weapon role and carcass harvesting are code features. |
-| | — | new | Iron - Knife, Steel - Knife | | ADD | APPROVED | Must join group `knife`. |
-| | 296 | obsidian_knife | Obsidian - Knife | obsidian t2 | FUTURE | — | Not in the approved ladder; stays parked as today (no change). |
-| **Hand saw** | 245 | hand_saw | Iron - Saw | iron t3, workbench L2 | UPDATE | APPROVED | Sharpening; its odd repair (1 Twine, 1 Stick) is replaced by the metal maintenance rule. |
-| | — | new | Steel - Saw | | ADD | APPROVED | A `saw` group then lets either saw do hand sawing (RECOMMENDED). |
-| **Sickle** | 298 | sickle | Stone - Sickle | stone t1, workbench | RETIRE | APPROVED [R] | Recipe 187 retires. Generic id `sickle` stays with the retired row; the new rows take new ids. |
-| | — | new | Bronze - Sickle, Iron - Sickle, Steel - Sickle | | ADD | APPROVED | |
-| **Scythe** | — | new | Bronze - Scythe | | ADD | APPROVED [R] | Missing from draft 1. |
-| | 299 | scythe | Iron - Scythe | iron t3, brick_forge L2 | KEEP | APPROVED | Sharpening. |
-| | — | new | Steel - Scythe | | ADD | APPROVED | |
-| **Chisel** | 798 | bronze_chisel | Bronze - Chisel | bronze t2, forge | KEEP | APPROVED | Sculpture tool (3.4). |
-| | 799 | iron_chisel | Iron - Chisel | iron t3, brick_forge L2 | KEEP | APPROVED | |
-| | 800 | steel_chisel | Steel - Chisel | steel t4, brick_forge L3 (locked) | FUTURE | APPROVED | |
-| **Needle** | 49 | sewing_needle | Bone - Needle | hand | KEEP | APPROVED | The one reusable needle. Kept by 27 live recipes. |
+| | 223, 224 | iron_hoe, steel_hoe | Iron, Steel - Hoe | t3 / t4 (future) | UPDATE / FUTURE | APPROVED | Metal repair rule. |
+| Knife | 11 | stone_knife | Stone - Knife | t1, hand | UPDATE | APPROVED | Disposable. Group `knife` (821). |
+| | 461 | bronze_knife | Bronze - Knife | t2, forge | UPDATE | APPROVED | Metal repair rule; sharpening. |
+| | — | new | Iron - Knife, Steel - Knife | | ADD | PENDING CONFIRMATION | Join group `knife`. |
+| | 296 | obsidian_knife | Obsidian - Knife | future | FUTURE | — | Parked, unchanged. |
+| Hand saw | 245 | hand_saw | Iron - Saw | t3, workbench L2 | UPDATE | APPROVED [D] | Crafted at a burning Smithy from iron and wood, no Saw blade (s5.1). Metal repair rule. |
+| | — | new | Steel - Saw | | ADD | APPROVED [D] | A `saw` group lets either saw do hand sawing (RECOMMENDED). |
+| Sickle | 298 | sickle | Stone - Sickle | t1, workbench | RETIRE | PENDING CONFIRMATION | Recipe 187 retires. New sickles take new ids. |
+| | — | new | Bronze, Iron, Steel - Sickle | | ADD | PENDING CONFIRMATION | |
+| Scythe | — | new | Bronze - Scythe, Steel - Scythe | | ADD | PENDING CONFIRMATION | |
+| | 299 | scythe | Iron - Scythe | t3, brick_forge L2 | UPDATE | APPROVED | Metal repair rule. |
+| Chisel | 798, 799, 800 | bronze/iron/steel_chisel | Bronze, Iron, Steel - Chisel | t2/t3/t4 (steel future) | UPDATE / FUTURE | APPROVED | Metal repair rule. Sculpture-only role PENDING CONFIRMATION (s3.5). |
+| Needle | 49 | sewing_needle | Bone - Needle | hand | KEEP | APPROVED | One reusable needle; kept by 27 live recipes. Durability class Q2. |
+| Sharpening | 815 | whetstone | Whetstone | hand | UPDATE | APPROVED | Portable sharpening per 3.1. |
+| | — | new | Grindstone | | ADD | APPROVED [D] | Stationary sharpening. Cost and speed Q7. Its blueprint must not need Planks before the Iron - Saw (RECOMMENDED). |
 
-### 3.4 Chisels and stone construction
+Unaffected tools (KEEP): Scraper 293 (Q2), Mortar and pestle 807, Hand mill 344, Fishing rod 75, Fishing net 260, Wooden - Spyglass 557, Torch 12/542, Candle 311, lanterns 668/669/892/893. FUTURE: Steel - Striker 294.
 
-Chisels are not mandatory for stone construction (APPROVED [R]). Today: plain Stone block is made at any workbench from 8 Stone (recipe 127, no chisel), so stone building is not gated. The Stonecutter's bench recipes all keep a chisel: 368 `bench_stone_block` (Stone block from 6 Stone), 369 `carved_stone_block`, 370 `carved_stone_shingle`. RECOMMENDED: drop the chisel from 368 (it is construction); keep it on 369 and 370 only if carved stone counts as sculpture or ornament. Dave confirms (U9).
+### 3.4 Thread
 
-### 3.5 Other tools
+[D] and [R] mention needle and thread for portable repairs. No thread item is live (Linen thread, Wool yarn are item_system NEW-F only). UNRESOLVED (Q10): use Twine, or add a thread item.
 
-| # | id | Name | Status | Label | Notes |
-|---|---|---|---|---|---|
-| 815 | whetstone | Whetstone | UPDATE | APPROVED | Portable sharpener with water (3.2). Its own wear and `repair` (1 Stone) need re-checking against the new rule. |
-| — | new | Grindstone | ADD | APPROVED [R] | Faster sharpener, NPC-operable. Placed or carried, cost and speed UNRESOLVED (U2). |
-| — | (thread) | thread for needle repairs | ADD or reuse | RECOMMENDED | "Needle and thread for portable simple repairs" [R]: no thread item is live (Linen thread and Wool yarn are item_system NEW-F only). RECOMMENDED: use Twine until a thread item is approved. U8. |
-| 293 | hide_scraper | Scraper | KEEP | — | U4 (flint). |
-| 807, 344, 75, 260, 557, 12/542, 311, 668/669/892/893 | | Mortar and pestle, Hand mill, Fishing rod, Fishing net, Wooden - Spyglass, Torch, Candle, lanterns | KEEP | — | Unaffected. |
-| 294 | steel_striker | Steel - Striker | FUTURE | — | Unaffected. |
+### 3.5 Chisels and stone construction
 
-## 4. Wood: Logs, Planks, Hardwood boards and sawing [B][R]
+PENDING CONFIRMATION [R]: chisels are not required for stone construction. Live: Stone block from 8 Stone at any workbench (recipe 127, no chisel). The Stonecutter's bench recipes 368 `bench_stone_block`, 369 `carved_stone_block`, 370 `carved_stone_shingle` keep a chisel. RECOMMENDED: drop the chisel from 368; keep it on 369 and 370 only if carved stone counts as ornament (Q11).
 
-APPROVED: **basic Logs → Planks; hardwood species Logs → Hardwood boards**, by hand saw (intentionally slow) or the **waterwheel-powered vertical reciprocating sawmill**. No board sizes and no extra Fine board step. Hardwood boards are for fine furniture and construction, chests, barrels, carts, wagons and carriages.
+## 4. Wood
 
-| # | id | Name | Status | Label | Notes |
-|---|---|---|---|---|---|
-| 4 | log | Log | KEEP | APPROVED | Basic log; also the group `log`. |
-| 100, 103, 106, 124, 148, 172 | log_oak, log_beech, log_birch, log_tropical_hardwood, log_walnut, log_maple | Oak, Beech, Birch, Mahogany, Walnut, Sugar maple log | KEEP | APPROVED | Hardwood species logs (`wood_species.json` class hardwood) → Hardwood boards. |
-| 109, 112 | log_scots_pine, log_spruce | Scots pine, Spruce log | KEEP | RECOMMENDED | Softwood species: treat as basic Logs → Planks. |
-| 27 | lumber | Plank | KEEP | APPROVED | Display name stays singular "Plank" (naming rule). Used by 9 live recipes and 69 live blueprints. |
-| — | new | Hardwood board | ADD | APPROVED | New id and number (not `fine_board` 227). Yields, times and which recipes and blueprints switch from Plank to it: UNRESOLVED (U5, U6). |
-| 245 | hand_saw | Iron - Saw | KEEP | APPROVED | Recipe 159 `lumber_by_hand` (1 log → 2 Plank, 24 s). Gains a hardwood-board recipe. |
-| 241 | saw_mill | Sawmill | KEEP | APPROVED | Already waterwheel-driven (`structures.json saw_mill.needs_running_water`); recipe 16 (1 log → 4 Plank, 6 s). Gains a hardwood-board recipe. Description may add "vertical reciprocating" (optional). |
-| 238, 239 | saw_blade, water_wheel | Saw blade, Water wheel | KEEP | APPROVED | Sawmill parts. |
-| 101–174 | lumber_*, beam_* (species) | species lumber and beams | FUTURE → RETIRE | RECOMMENDED | Superseded by one Hardwood board with no sizes [R]; retire rather than reuse. Dave confirms (U6). |
-| 226, 227 | rough_plank, fine_board | | RETIRED (already) | | Never reused. |
-| 353 | stone_wedge | Stone - Wedge | RETIRE | APPROVED [B] | Recipes 227 `stone_wedge` and 230 `lumber_wedge` retire. |
-| 243 | woodworking_table | Woodworking table | RETIRE | RECOMMENDED [R] | Live structure (state 35) and blueprint 12, but no live recipe; redundant with the Carpenter's bench. Dave signs off (U7). |
-
-### 4.1 First-Plank bootstrap (RECOMMENDED [R])
-
-Without the wedge, and with no Bronze Saw (APPROVED), the first Planks come from:
-1. **Buying Planks at the starter-town lumbermill.** No shop sells Planks today (`data/npcs/shops.json` has only Hob, who *buys* boards: Dave 2 Nov). Needs a new seller row (and the lumbermill as a place or NPC): RECOMMENDED, Dave signs off.
-2. **In the wilderness: dig bog iron → Smelter → Iron ingot → Saw blade → Iron - Saw.** Constraint (APPROVED principle [R]): **nothing on the Smelter/Smithy path may cost Planks.** Checked today: Stone - Forge (24 Stone, 10 Clay, 2 Hide) and Brick - Forge (20 Brick, 10 Stone, 4 Clay mortar) need no Planks; the Iron - Saw needs workbench level 2, which the Wooden - Workbench (Sticks, Twine, Stone) plus a Vice (Sticks, Stone) or Tool rack (Sticks, Twine) reaches without Planks. The new Smelter, Smithy, Bellows and Quenching Trough blueprints must keep to this.
-
-## 5. Metalworking stations [B][R]
-
-APPROVED design: a dedicated **Smelter** smelts copper, tin and bog iron to ingots (copper, tin, iron) and makes bronze alloy. The **Blast Furnace** is its advanced, high-capacity tier and makes steel. The ordinary **Smithy** already contains a forge, an anvil and a bench, with **Bellows** and **Quenching Trough** as nearby upgrades. A distinct, ornate **Master Smithy** makes special or masterwork items with +1 or +2 physical craftsmanship (s7). Wizard enchantments are separate from both. **No Clay Bloomery.**
-
-| Station | Existing row | Status | Label | Notes |
-|---|---|---|---|---|
-| Smelter | none | ADD | APPROVED | Takes recipes 190 `smelt_copper`, 191 `smelt_tin`, 192 `smelt_iron`, 185 `bronze_ingot`. Cost, fuel and throughput UNRESOLVED (U5). No Planks in its cost (4.1). |
-| Blast Furnace | none; future Large forge 92/93 could carry it | ADD | APPROVED | Takes 193 `smelt_steel` (locked today). Reusing the `large_forge` id: RECOMMENDED only after migration review; otherwise a new row and Large forge stays FUTURE. |
-| Smithy | Brick - Forge 90 (`blacksmithy`, station `brick_forge`) | UPDATE | RECOMMENDED | Proposed: the Brick - Forge becomes the Smithy (rename; id stays). Takes the metalworking recipes: bronze working (204–206, 215, 290–293, 371, 394, 397, 405, 406, today at `forge`) and iron and steel working (18, 19, 27, 28, 141, 142, 145, 149, 152, 183, 184, 188, 207–212, 217–220, 346, 347, 351, 372, 373, 404, today at `brick_forge`). Migration of station ids and levels UNRESOLVED (U10). |
-| Bellows | none | ADD | APPROVED | Add-on of the Smithy (`addon_of`), within reach. What it improves UNRESOLVED (U11). Reverses the 10 Nov drop. |
-| Quenching Trough | none | ADD | APPROVED | Add-on of the Smithy. What it improves UNRESOLVED (U11). Not the water troughs (B6a) or the Fodder trough. |
-| Master Smithy | future Master forge 94/95 (ornate description fits) | UPDATE or ADD | RECOMMENDED | Rename the never-obtainable `master_forge` rows to Master Smithy, after migration review. Gives masterwork +1/+2 physical craftsmanship. |
-| Anvil | 827 `iron_anvil` (`addon_of: brick_forge`, the steel step today) | RETIRE or KEEP | UNRESOLVED | The Smithy already contains an anvil [R], and steel moves to the Blast Furnace, so a separate Anvil add-on has no job. RECOMMENDED: retire it, with placed anvils handled per U1. |
-| Stone - Forge | 88 `stone_forge` (station `forge`: smelts copper and tin, makes bronze and bronze tools) | UNRESOLVED | UNRESOLVED | Its smelting goes to the Smelter and its bronze working to the Smithy. Retire, rename, or keep as an early Smithy: U10. Old forge roles are not treated as approved [R]. |
-| Clay bloomery | 795, structure state 200, blueprint 162, recipe 367 | RETIRE | APPROVED [B] | Placed bloomeries in saves: U1. |
-| Large forge | 92/93 | FUTURE | — | See Blast Furnace. |
-
-`repair_station: "forge"` on 26 metal tools and weapons names the old station; it changes with the maintenance rule and U10.
-
-## 6. Leather and textile stations [B][R]
-
-APPROVED: **Tanning** and **drying** for hides and leather; a **Leatherworking Table** for leather goods; a **Tailor's Table** for clothing; the **Loom** for weaving. Needle and thread give portable simple repairs; repair at a workstation is also supported. Full production does not need an extra needle tier.
-
-| Station | Existing row | Status | Label | Notes |
-|---|---|---|---|---|
-| Tanning rack | 773 (state 189, blueprint 151) | KEEP | APPROVED | Recipes 234 `leather`, 235 `heavy_leather`. |
-| Drying rack | 775 (state 190, blueprint 152) | UPDATE | APPROVED | Gains the hide/leather drying step (today it dries food only: 268, 270, 282, 288). Which recipe and inputs: UNRESOLVED (U5). Food drying stays. |
-| Leatherworking Table | none | ADD | APPROVED | Matches Dave's 30 Oct "leather working table early". Takes leather goods now at `workbench` L2/L3: 213 leather cap, 214 jerkin, 356 quiver, 358 trousers, 359 boots, 360 gloves, 361 backpack, 392 belt; and 278 `leather_strap` (RECOMMENDED). Exact list and levels: U10. |
-| Tailor's Table | none | ADD | APPROVED | Takes clothing: 216 gambeson, 237–241 wool and linen, 242–244 fur; and hide garments now sewn by hand (39–42, 194–196) (RECOMMENDED; whether hand sewing stays: U10). |
-| Loom | 846 (future) | FUTURE → ADD blueprint and state | APPROVED | Weaving. The hand cloth recipes (245 `linen`, 334 `fibre_cloth`, 342 `wool_cloth`) move or go when it lands (item_system s6). |
-| Spinning wheel | 845 (future) | FUTURE | — | Not in Dave's list; unchanged. |
-| Repairs | — | — | APPROVED | Clothing and leather repair with needle and thread anywhere, or at these stations. Amounts UNRESOLVED (U5). |
-
-## 7. Universal item enhancements [B][R]
+### 4.1 Wood processing [D]
 
 APPROVED:
-1. **Every item schema supports one physical slot and two magical slots**, hidden when empty. Effects belong to the **individual item instance**, not the item type.
-2. **Physical craftsmanship** improves what suits the item type: weight, durability, sharpness, damage, efficiency or value. Where numeric, the most is **+2 physical**. The Master Smithy makes masterwork (+1/+2). Masterwork stations for other crafts are not defined.
-3. **Magical slots** carry separate supernatural effects (wizard enchantments, separate from smithing).
-4. **Physical and magical modifiers are calculated separately and add where they affect the same statistic.** Example: **Mighty Steel Sword +4** = +2 physical damage + 2 magical damage. **Light Flaming Steel Sword of Might +2** shows three distinct effects.
-5. **Names are assembled dynamically** from the actual enhancements (for example "Light Hammer"); they are not bound by the static four-word rule in `validate_items.gd`.
+- A **3 m softwood log** saws into **6 large, rougher Planks**. A **3 m hardwood log** saws into **4 smaller, smoother Hardwood Boards**.
+- **Iron and Steel Hand Saws** give the **same yields as sawmills**, much more slowly.
+- An **axe** chops a softwood log into **Softwood Blocks**, then blocks into **Soft Firewood**; a hardwood log into **Hardwood Blocks**, then **Hard Firewood**.
+- **Hard Firewood** gives the same heat as soft firewood but burns significantly longer.
+- **Logs can stay whole** for construction or charcoal.
+- **No** stone wedges, bronze saws, saw-blade intermediates or unnecessary wood-processing stations.
 
-Implementation notes (not decisions): enhancements are per-instance save data like tool wear, so they need no `items.json` rows; saves and the network protocol change; the static name rule must exempt dynamic names; `items.json` needs no per-item slot field if every item has the same three slots.
+PENDING CONFIRMATION [R]: Hardwood Boards are for fine furniture and construction, chests, barrels, carts, wagons and carriages; no board sizes and no Fine board step; the sawmill is vertical reciprocating.
 
-UNRESOLVED (U12): removing or replacing an enhancement; how enhancements work with stackable items and consumables (food, ammunition, materials); the word order and wording table for names; what items fill magical slots (Dave 30 Oct: the magic system gets its own pass later).
+### 4.2 Wood rows
+
+| # | id | Name | Status | Label | Notes |
+|---|---|---|---|---|---|
+| 4 | log | Log | KEEP | APPROVED | Whole log for building and charcoal; also group `log`. Its wood class is undefined (Q3). |
+| 100, 103, 106, 124, 148, 172 | log_oak, log_beech, log_birch, log_tropical_hardwood, log_walnut, log_maple | species logs | KEEP | APPROVED | Hardwood class (`wood_species.json`) → Hardwood Boards, Hardwood Blocks. |
+| 109, 112 | log_scots_pine, log_spruce | Scots pine, Spruce log | KEEP | APPROVED | Softwood → Planks, Softwood Blocks. |
+| 27 | lumber | Plank | UPDATE | APPROVED | 6 per softwood log by saw or sawmill (today 4 at the sawmill, 2 by hand). Display name stays singular "Plank". |
+| — | new | Hardwood board | ADD | APPROVED [B][D] | 4 per hardwood log by saw or sawmill. New id; not `fine_board` 227. Uses Q6. |
+| 234 | wooden_block | Wooden block | UPDATE | RECOMMENDED | Rename to **Hardwood block** (Dave's word, singular per naming rule). |
+| 237 | wooden_block_soft | Softwood block | KEEP | APPROVED | Already Dave's name. |
+| 540, 541 | wooden_block_large, wooden_block_soft_large | Large wooden / softwood block | KEEP | UNRESOLVED | Not in Dave's chain (log → block → firewood). Keep, fold into blocks, or retire: Q4. The live chopping block recipe 15 is made from 540. |
+| 26 | firewood | Firewood | UPDATE | RECOMMENDED | Rename to **Hard firewood**. Burns longer at the same heat (APPROVED). |
+| 236 | firewood_soft | Softwood firewood | UPDATE | RECOMMENDED | Rename to **Soft firewood**. |
+| 241 | saw_mill | Sawmill | UPDATE | APPROVED | Waterwheel-driven (live `needs_running_water`). Recipe 16 becomes 6 Planks per softwood log; add 4 Hardwood boards per hardwood log. Blueprint 11 drops the Saw blade (cost Q7). |
+| 245 | hand_saw | Iron - Saw | UPDATE | APPROVED | Recipe 159 `lumber_by_hand` becomes 6 Planks per softwood log, much slower than the sawmill; add a hardwood board recipe. `hand_saw_balance` and `validate_items` check change with it. |
+| 238 | saw_blade | Saw blade | RETIRE | APPROVED [D] | No saw-blade intermediates. Recipe 152 retires; removed from recipe 157 and blueprint 11. |
+| 239 | water_wheel | Water wheel | KEEP | APPROVED | Sawmill part (not a wood-processing intermediate). |
+| 353 | stone_wedge | Stone - Wedge | RETIRE | APPROVED | Recipes 227 and 230 retire. |
+| 101–174 | lumber_*, beam_* | species lumber and beams | FUTURE → RETIRE | RECOMMENDED | Superseded by Plank and Hardwood board. Q6. |
+| 205, 207 | timber_prop, timber_set | Post, Beam | KEEP | — | Building pieces. |
+| 226, 227 | rough_plank, fine_board | | RETIRED (already) | | Never reused. |
+
+**Log length conflict (Q3):** `drops.json` gives felled logs `log_length_m` 2.44; Dave's yields are per 3 m log. Either the log becomes 3 m or yields scale.
+
+### 4.3 Chopping Block [D]
+
+APPROVED: the Chopping Block (25 `chopping_block`, a carried, placeable log on end) **is not retired**. It becomes an **optional firewood-production workstation**:
+- Players still chop wood by hand anywhere.
+- Open it, choose Soft or Hard firewood and a quantity.
+- It sources eligible raw wood from storage within a configurable circular radius, and may take logs through the block stage into firewood.
+- It **never** consumes finished planks, boards or other crafted wood products.
+- It has its own input and output capacities. An NPC woodcutter can run it later.
+- Look: a chopping stump, an embedded axe, and a firewood pile that grows and shrinks with its inventory.
+
+Status UPDATE. Today it is `kind: placeable` with no structure row or station; it needs a station row, storage and the new look (code and art). Recipe 15 (from a Large wooden block) stays unless Q4 changes the large block. Its kit 24 stays retired.
+
+### 4.4 Woodworking table
+
+APPROVED [D]: retire it; the Carpenter's bench (86 `log_workbench`) stays. **Handled in PR #1036**, which is **open and not merged** as of 12 Nov 2026 (head `322b435e`, base `dev`, mergeable). It sets `"retired": true` on item 243, blueprint 12 and structure `woodworking_table` (state 35). This catalog does not duplicate that change; it lists 243 as RETIRE (PR #1036).
+
+## 5. Metalworking
+
+### 5.1 Wilderness route to the first Iron Hand Saw [D]
+
+APPROVED, with no purchases: (1) find bog iron; (2) gather stone and clay and build a **Smelter**; (3) gather kindling, sticks and firewood; (4) make charcoal; (5) smelt bog iron into Iron ingots; (6) build a **Smithy** from stones, clay, logs and Iron ingots; (7) craft an **Iron Hand Saw at the burning Smithy** from iron and wood.
+
+The Smithy has its own built-in blacksmithing tools: no player-held smithing hammer and no Saw blade are required. Consequences for the data:
+- The Smelter blueprint uses stone and clay only; the Smithy blueprint uses stone, clay, logs and Iron ingots; neither uses Planks. Amounts Q7.
+- Step 4 before any kiln: the live campfire recipe 341 (2 Firewood → 1 Charcoal) is the charcoal source today. RECOMMENDED: keep it until the charcoal byproduct (s5.3) exists (Q5).
+- The Smithy must be lit ("burning") to craft: a fuel state on the station (code).
+- Recipe 157 `hand_saw`: UPDATE to the Smithy, iron and wood, no Saw blade, no workbench. Exact inputs Q7.
+
+### 5.2 Stations [B][D]
+
+APPROVED: the **Smelter** handles basic ores and bronze; the **Blast Furnace** handles advanced smelting and steel; the **Smithy** has built-in tools, with **Bellows** and **Quenching Trough** upgrades; the **Master Smithy** is a separate prestige workshop. **No Clay Bloomery.**
+
+| Station | Existing row | Status | Label | Notes |
+|---|---|---|---|---|
+| Smelter | none | ADD | APPROVED | Takes 190 `smelt_copper`, 191 `smelt_tin`, 192 `smelt_iron` (bog iron and ore), 185 `bronze_ingot`. |
+| Blast Furnace | none (future Large forge 92/93) | ADD | APPROVED | Takes 193 `smelt_steel` and advanced smelting. Reuse of `large_forge`: RECOMMENDED only after review (Q8). |
+| Smithy | Brick - Forge 90 (`blacksmithy`) | UPDATE or ADD | RECOMMENDED | Rename and re-cost the Brick - Forge (today 20 Brick, 10 Stone, 4 Clay mortar, which does not match Dave's stones, clay, logs, iron) or add a new row (Q8). Takes the metalworking recipes now at `forge` (204–206, 215, 290–293, 371, 394, 397, 405, 406) and `brick_forge` (18, 19, 27, 28, 141, 142, 145, 149, 183, 184, 188, 207–212, 217–220, 346, 347, 351, 372, 373, 404). Station levels Q8. |
+| Bellows | none | ADD | APPROVED | Smithy add-on (`addon_of`). Effect Q9. |
+| Quenching Trough | none | ADD | APPROVED | Smithy add-on. Effect Q9. |
+| Master Smithy | future Master forge 94/95 | UPDATE or ADD | RECOMMENDED | Rename the never-obtainable `master_forge` rows (Q8). Masterwork +1/+2 physical craftsmanship PENDING CONFIRMATION [R]. |
+| Anvil | 827 `iron_anvil` (`addon_of: brick_forge`) | RETIRE | RECOMMENDED | The Smithy has built-in tools and steel moves to the Blast Furnace, so the add-on has no job (Q8). |
+| Stone - Forge | 88 `stone_forge` | UNRESOLVED | UNRESOLVED | Its smelting goes to the Smelter, its bronze working to the Smithy. Retire, rename or keep (Q8). |
+| Clay bloomery | 795; state 200; blueprint 162; recipe 367 | RETIRE | APPROVED | No migration needed [D]. |
+| Large forge | 92/93 | FUTURE | — | See Blast Furnace. |
+
+### 5.3 Charcoal, fuel and kilns [D]
+
+APPROVED:
+- Any wood-burning fire or workstation may give a small **charcoal byproduct**.
+- **Charcoal can replace wood as fuel** and burns longer. **Coal** (mined, 304) and **Charcoal** (547) stay distinct items.
+- A **Kiln** turns **3 m logs into charcoal at 100 Charcoal per log**; a basic kiln holds **about six logs**, up to **600 Charcoal per batch**. Production is gradual, as a batch.
+- If it keeps burning after conversion it slowly **burns its own charcoal**. It can be put out and relit like a fire; putting it out **keeps the contents**.
+- Players take charcoal out, or nearby authorized workstations draw it from the kiln.
+- Larger kiln tiers can hold more. **No exact times or fuel rates are set** (UNRESOLVED by design).
+
+| Row | Status | Label | Notes |
+|---|---|---|---|
+| 771 Kiln | UPDATE | APPROVED | Batch charcoal from logs; storage per s5.4. Bricks, roof tiles and lime stay (363, 401, 402). |
+| Recipe 364 `kiln_charcoal` (2 Firewood → 2) | UPDATE | APPROVED | Becomes logs → 100 Charcoal each, batch. |
+| Recipe 341 `charcoal` at the campfire (2 Firewood → 1) | KEEP for now | RECOMMENDED | Bootstrap charcoal (5.1) until the byproduct exists (Q5). |
+| 547 Charcoal | UPDATE | APPROVED | At 100 per log, smelting fuel amounts (`fuel` 1 to 3 per smelt today) need rescaling (Q7). RECOMMENDED: add Charcoal to the `firewood` fire-fuel group so it can stand in for wood. |
+| 304 Coal | KEEP | APPROVED | Distinct mined fuel; group `fuel`. |
+| Larger kilns | FUTURE | APPROVED | Not specified; nothing added. |
+
+### 5.4 Universal workstation storage [D]
+
+APPROVED for every workstation where practical (Smelters, Blast Furnaces, Smithies, Kilns, Sawmills, Chopping Blocks, Looms, Tailor's Tables and others): configurable storage capacity; input and output capacities may differ; finished products stay in the station, nothing drops on the ground; a full output pauses production; nearby authorized workstations draw ingredients from station inventories and other accessible storage within sourcing range; players deposit and withdraw; world-visible inventory responds to actual quantities with efficient fill levels and grouped meshes; inputs and outputs look different.
+
+This is a code and art system, not item rows. Data changes: each station's `structures.json` row gains capacity fields (names and numbers Q7). Today crafting pulls from pack, nearby ground stock and containers ("spend the lowest group member first", DEVTEST-01); station inventories join that sourcing.
+
+## 6. Leather and textile stations [B][D]
+
+APPROVED: tanning, drying, leatherworking, tailoring and weaving stations [B]; Looms and Tailor's Tables named in [D]. PENDING CONFIRMATION [R]: tanning and drying are for hides and leather; the Leatherworking Table is for leather goods and the Tailor's Table for clothing; workstation repair as well as needle-and-thread repair; no extra needle tier.
+
+| Station | Existing row | Status | Label | Notes |
+|---|---|---|---|---|
+| Tanning rack | 773 | KEEP | APPROVED | Recipes 234, 235. |
+| Drying rack | 775 | UPDATE | PENDING CONFIRMATION | Adds hide drying (today food only: 268, 270, 282, 288). Recipe Q7. |
+| Leatherworking Table | none | ADD | APPROVED | Candidate recipes now at `workbench` L2/L3: 213, 214, 356, 358–361, 392, and 278 `leather_strap` (Q12). |
+| Tailor's Table | none | ADD | APPROVED | Candidate recipes: 216, 237–244 at `workbench`; hide garments sewn by hand 39–42, 194–196 (Q12). |
+| Loom | 846 (future) | FUTURE → blueprint and state | APPROVED | Weaving; hand cloth recipes 245, 334, 342 move or go when it lands. |
+| Spinning wheel | 845 (future) | FUTURE | — | Not in Dave's lists. |
+
+## 7. Item enhancements
+
+APPROVED [B][D]:
+1. **At least three enhancement slots per eligible item instance**: one physical craftsmanship slot and two magical slots. Empty slots are hidden [B].
+2. Craftsmanship and magical effects **coexist**; physical and magical numeric bonuses are calculated separately and **can add together** on the same statistic.
+3. The **display name reflects the actual enhancements**, rather than always using generic +1 labels.
+4. Enhancements belong to **individual item instances**, not item definitions.
+
+PENDING CONFIRMATION [R]: physical craftsmanship improves weight, durability, sharpness, damage, efficiency or value by item type, at most +2 where numeric; the Master Smithy makes +1/+2 masterwork; wizard enchantments are separate; examples "Mighty Steel Sword +4" and "Light Flaming Steel Sword of Might +2"; dynamic names are exempt from the four-word rule in `validate_items.gd`.
+
+**Awaiting Dave's explicit approval [D]: whether physical and magical enhancements can be replaced, and the replacement and destruction rules.** Not settled here; no rule is proposed.
+
+UNRESOLVED (Q13): which items are eligible; how enhancements work with stackables and consumables; the naming wording table (and whether a "+N" suffix stays alongside descriptive words, given [D] point 3).
+
+Data note: per-instance save data, like wear and sharpness; no `items.json` rows for slots; saves and the network protocol change.
 
 ## 8. Findings
 
-### 8.1 Missing items (APPROVED to add)
-Iron and Steel Axe; Iron and Steel Knife; Steel Saw; Bronze, Iron and Steel Sickle; Bronze and Steel Scythe; Hardwood board; Grindstone; Smelter; Blast Furnace; Bellows; Quenching Trough; Master Smithy (or rename of 94/95); Leatherworking Table; Tailor's Table; Loom blueprint and state. RECOMMENDED: a thread item (or Twine), and a starter-town Plank seller.
+### 8.1 Items to add
+APPROVED: Hardwood board; Steel - Saw; Grindstone; Smelter; Blast Furnace; Bellows; Quenching Trough; Leatherworking Table; Tailor's Table; Loom blueprint and state; Master Smithy (or rename of 94/95); Smithy (or rename of 90). PENDING CONFIRMATION: Iron and Steel Axe, Iron and Steel Knife, Bronze/Iron/Steel Sickle, Bronze and Steel Scythe. UNRESOLVED: a thread item (Q10).
 
-### 8.2 Obsolete items
-APPROVED to retire: Stone - Spade 45, Stone - Wedge 353, Stone - Sickle 298, Clay bloomery 795. RECOMMENDED to retire: Woodworking table 243, Anvil 827, species lumber and beams (future rows 101–174). UNRESOLVED: Stone - Forge 88.
+### 8.2 Items to retire
+APPROVED: Stone - Spade 45, Stone - Wedge 353, Saw blade 238, Clay bloomery 795, Woodworking table 243 (in PR #1036). PENDING CONFIRMATION: Stone - Sickle 298. RECOMMENDED: Anvil 827, species lumber and beams 101–174. UNRESOLVED: Stone - Forge 88, large blocks 540/541.
 
-### 8.3 Duplicate functions
-- Iron smelting at the Clay bloomery (367) and the Brick - Forge (192): resolved by the retirement and the Smelter.
-- Smelting and smithing in one body today (Stone - Forge, Brick - Forge) versus the approved Smelter / Smithy split.
-- The Anvil add-on versus the anvil built into the Smithy.
-- Woodworking table versus Carpenter's bench.
-- Plank by hand twice (hand saw 159 and wedge 230): the wedge route goes.
-- Leather and cloth goods at the workbench versus the new tables.
-- Species lumber rows versus one Hardwood board.
+### 8.3 Items to update
+APPROVED: stone tools 6, 11, 222, 244, 297 (disposable); metal tools (repair at crafting station, sharpening, per-instance maximum); Whetstone 815; Plank 27; Sawmill 241; Iron - Saw 245; Chopping block 25; Kiln 771; Charcoal 547; Drying rack 775 (pending). RECOMMENDED: renames of 234, 26, 236; Brick - Forge 90 → Smithy; Master forge 94/95 → Master Smithy.
 
-### 8.4 Conflicting recipes and data
-- **C1** No Plank before iron once the wedge goes: answered by 4.1 (RECOMMENDED).
-- **C2** Stone tools have `repair` and `edge: true` (honed); both contradict disposable stone tools (APPROVED fix: remove both).
-- **C3** The live hone rule (25 %, 75 % cap) contradicts approved sharpening (s3.2).
-- **C4** `edge: true` is on bronze axe and knife, saw, scythe and chisels, but not on pickaxes, which are approved for sharpening: the eligibility flag must change.
-- **C5** `tier` numbers disagree across families (Bronze and Iron Pickaxe both t2; Iron Spade t3; Steel Hammer t3 but Steel Spade t4; no tier on wooden spade and hoe). `digging.json tier_extra` reads the spade tier. Pre-existing; for the catalog pass.
-- **C6** Iron - Saw repairs with Twine and a Stick, unlike every other iron tool (replaced by the metal rule).
-- **C7** Stonecutter's bench recipes need a chisel for construction blocks (3.4).
-- **C8** Brick - Forge and Anvil descriptions say the anvil is for steel; steel moves to the Blast Furnace.
-- **C9** No shop sells Planks (4.1).
+### 8.4 Duplicate functions
+Smelting at the Clay bloomery and the forge (resolved); smelting and smithing in one body today versus the Smelter/Smithy split; Anvil add-on versus the Smithy's built-in tools; Woodworking table versus Carpenter's bench (PR #1036); Plank by hand twice (wedge goes); Saw blade as an intermediate (goes); species lumber versus Plank and Hardwood board; leather and cloth goods at the workbench versus the new tables; Large blocks versus blocks (Q4).
+
+### 8.5 Conflicting recipes and data
+- **C1** Stone tools carry `repair` and `edge: true`.
+- **C2** `tool_wear.repair_restores` 0.5 and the hone rule (25 %, 75 % cap) contradict [D].
+- **C3** `repair_station: "forge"` on iron and steel tools names the Stone - Forge station.
+- **C4** Iron - Saw recipe 157 needs a Saw blade and a level 2 workbench; [D] puts it at the Smithy with no blade.
+- **C5** Hand saw gives half the sawmill's yield (`hand_saw_balance`, checked by `validate_items`); [D] says the same yield.
+- **C6** Sawmill gives 4 Planks per log; [D] says 6 (softwood) and 4 Hardwood boards (hardwood).
+- **C7** Felled logs are 2.44 m (`drops.json`); [D] yields are per 3 m log.
+- **C8** Kiln charcoal is 2 Firewood → 2; [D] says 100 per log. All smelting `fuel` amounts are on the old scale.
+- **C9** Brick - Forge costs bricks; [D]'s Smithy costs stones, clay, logs and iron.
+- **C10** `tier` numbers disagree across families (Bronze and Iron Pickaxe both t2; Steel Hammer t3 vs Steel Spade t4). Pre-existing; catalog pass.
+- **C11** Stonecutter's bench recipes need a chisel for construction blocks (pending, s3.5).
+- **C12** Brick - Forge and Anvil descriptions call the anvil the steel step.
 
 ## 9. Affected recipes, blueprints and workstations
 
 | File | Rows | Change | Label |
 |---|---|---|---|
-| items.json | 45, 298, 353, 795 | RETIRE | APPROVED |
-| items.json | 6, 11, 222, 244, 297 | remove `repair` and `edge` (disposable) | APPROVED |
-| items.json | 33, 34, 458, 459, 461, 245, 299, 798–800 | sharpening eligibility; replace material repair per the metal rule | APPROVED (numbers U5) |
-| items.json | 815 | Whetstone role | APPROVED |
-| items.json | new rows in 8.1 | ADD | APPROVED |
-| items.json | 90, 94/95, 92/93, 88, 827, 243, 101–174 | rename, reuse or retire | RECOMMENDED / UNRESOLVED |
-| recipes.json | 26, 187, 227, 230, 367 | RETIRE | APPROVED |
-| recipes.json | new: tool recipes (8.1), Hardwood board by saw and sawmill, hide drying, Grindstone | ADD | APPROVED (amounts U5) |
-| recipes.json | 185, 190–193 → Smelter / Blast Furnace; metalworking rows (s5) → Smithy; leather and clothing rows (s6) → tables; 368 drop chisel | station moves | RECOMMENDED (U9, U10) |
+| items.json | 45, 238, 353, 795 | RETIRE | APPROVED |
+| items.json | 243 | RETIRE | APPROVED, in PR #1036 |
+| items.json | 298 | RETIRE | PENDING CONFIRMATION |
+| items.json | 6, 11, 222, 244, 297 | remove `repair`, `edge`; disappear at zero | APPROVED |
+| items.json | all metal tools | `repair_station` = crafting station type; repair up to remaining max; sharpness | APPROVED |
+| items.json | 27, 241, 245, 25, 771, 547, 815 | per s4, s5 | APPROVED |
+| items.json | 234, 26, 236; 90, 94/95, 92/93, 827, 88, 540/541, 101–174 | rename, reuse or retire | RECOMMENDED / UNRESOLVED |
+| items.json | new rows (8.1) | ADD | APPROVED / PENDING CONFIRMATION |
+| recipes.json | 26, 152, 227, 230, 367 | RETIRE | APPROVED |
+| recipes.json | 187 | RETIRE | PENDING CONFIRMATION |
+| recipes.json | 16, 159 (6 Planks per softwood log), new hardwood board recipes (4 per hardwood log), `hand_saw_balance` | UPDATE / ADD | APPROVED |
+| recipes.json | 157 `hand_saw` → Smithy, iron and wood | UPDATE | APPROVED (inputs Q7) |
+| recipes.json | 364 → logs, 100 Charcoal each, batch | UPDATE | APPROVED |
+| recipes.json | 185, 190–192 → Smelter; 193 → Blast Furnace | station move | APPROVED |
+| recipes.json | metalworking rows (s5.2) → Smithy; leather and clothing rows (s6) → tables; 368 chisel | station move | RECOMMENDED |
+| recipes.json | axe chopping of logs into blocks and blocks into firewood | check against live split rules (`tool_wear` split, recipes 339, 340, drops) | APPROVED behaviour |
 | blueprints.json | 162 | RETIRE | APPROVED |
-| blueprints.json | new: Smelter, Blast Furnace, Bellows, Quenching Trough, Master Smithy, Leatherworking Table, Tailor's Table, Loom, Grindstone (if placed) | ADD (no Planks on the Smelter/Smithy path) | APPROVED (costs U5) |
-| blueprints.json | 9, 10, 12, 164 | rename or retire with their stations | RECOMMENDED / UNRESOLVED |
-| structures.json | `clay_bloomery` (state 200) | RETIRE | APPROVED |
-| structures.json | new states from 230; `addon_of` the Smithy for Bellows and Quenching Trough | ADD | APPROVED |
-| structures.json | `blacksmithy`, `master_forge`, `large_forge`, `stone_forge`, `iron_anvil`, `woodworking_table` | migrate | RECOMMENDED / UNRESOLVED |
-| wood_species.json `ingredient_groups` | `knife` + iron and steel knives; new `saw` group | ADD members | APPROVED / RECOMMENDED |
-| drops.json `tool_wear.hone` | replace with the approved sharpening rule | UPDATE | APPROVED |
-| data/npcs/shops.json | Plank seller at the starter-town lumbermill | ADD | RECOMMENDED |
+| blueprints.json | 12 | RETIRE | APPROVED, in PR #1036 |
+| blueprints.json | 11 Sawmill | drop `saw_blade` from cost | APPROVED (replacement cost Q7) |
+| blueprints.json | 10, 9, 164 | Smithy re-cost or new row; Stone - Forge; Anvil | RECOMMENDED / UNRESOLVED |
+| blueprints.json | new: Smelter (stone, clay), Smithy (stone, clay, logs, iron), Blast Furnace, Bellows, Quenching Trough, Master Smithy, Grindstone, Leatherworking Table, Tailor's Table, Loom, Chopping block station | ADD | APPROVED (amounts Q7) |
+| structures.json | `clay_bloomery` (200) | RETIRE | APPROVED |
+| structures.json | `woodworking_table` (35) | RETIRE | APPROVED, in PR #1036 |
+| structures.json | new states from 230; `addon_of` the Smithy for Bellows and Quenching Trough; capacity fields on every station (s5.4) | ADD / UPDATE | APPROVED |
+| structures.json | `blacksmithy`, `master_forge`, `large_forge`, `stone_forge`, `iron_anvil` | migrate | RECOMMENDED / UNRESOLVED |
+| drops.json | `tool_wear.repair_restores`, `tool_wear.hone`; `log_length_m` | replace / reconcile | APPROVED / Q3 |
+| wood_species.json groups | `knife` + new knives; new `saw`; Charcoal in `firewood` | ADD members | PENDING / RECOMMENDED |
 
-Workstations affected: Smelter, Blast Furnace, Smithy, Bellows, Quenching Trough, Master Smithy, Stone - Forge, Brick - Forge, Anvil, Clay bloomery, Large forge, Master forge, Sawmill, Woodworking table, Carpenter's bench, workbenches (recipes leave them), Stonecutter's bench, Tanning rack, Drying rack, Leatherworking Table, Tailor's Table, Loom, Grindstone.
+## 10. JSON changes proposed (none made; all wait for Dave's approval of this catalog)
 
-## 10. JSON changes required (only after Dave approves this catalog)
+1. Retire items 45, 238, 353, 795 (and 298 once confirmed); retire recipes 26, 152, 227, 230, 367 (and 187); retire blueprint 162 and structure `clay_bloomery`. Woodworking table rows are in PR #1036.
+2. Stone tools 6, 11, 222, 244, 297: remove `repair` and `edge`; code removes them at zero durability.
+3. Metal tools: `repair_station` = their crafting station type; replace `tool_wear.repair_restores` and `tool_wear.hone` with the approved repair and sharpening rules; per-instance sharpness and maximum durability in code.
+4. Plank 6 per softwood log and Hardwood board 4 per hardwood log, for both the sawmill and the hand saws (recipes 16, 159, new ones; `hand_saw_balance`; `validate_items` check).
+5. Recipe 157: Iron - Saw at the burning Smithy from iron and wood; add Steel - Saw. Sawmill blueprint 11 without the Saw blade.
+6. Kiln recipe 364 → logs, 100 Charcoal each, batch; kiln storage and burn state in code.
+7. Add the stations in 8.1 with blueprints (Smelter: stone, clay; Smithy: stone, clay, logs, iron) and structure states from 230; station storage fields on every station.
+8. Chopping block 25: station row, storage, radius, firewood choice, never uses crafted wood.
+9. Matching `weights.json`, `looks.json`, `look_placeholders.json`, descriptions, encyclopedia rows.
+10. Pending or recommended, only after Dave says yes: tool additions in 8.1 marked pending, Stone - Sickle retirement, renames (234, 26, 236, 90, 94/95), Anvil, species lumber, Charcoal in `firewood`, recipe moves to the Smithy and tables, chisel on 368, drying rack hide recipe.
 
-APPROVED, ready when the item-data role takes numbers:
-1. `items.json`: `"retired": true` on 45 `stone_spade`, 298 `sickle`, 353 `stone_wedge`, 795 `clay_bloomery`.
-2. `recipes.json`: `"retired": true` on 26 `stone_spade`, 187 `sickle`, 227 `stone_wedge`, 230 `lumber_wedge`, 367 `bloomery_iron`.
-3. `blueprints.json`: `"retired": true` on 162 `clay_bloomery`. `structures.json`: retire the `clay_bloomery` row (state 200 never reused).
-4. `items.json`: remove `repair` and `edge` from 6, 11, 222, 244, 297; code removes a worn-out disposable tool (today a broken tool stays in its slot).
-5. `items.json` and `recipes.json`: add the tools in 8.1 (Iron/Steel Axe, Iron/Steel Knife, Steel Saw, Bronze/Iron/Steel Sickle, Bronze/Steel Scythe) with recipes at the Smithy; add Hardwood board with sawmill and hand-saw recipes; add Grindstone.
-6. `items.json`, `structures.json`, `blueprints.json`: add Smelter, Blast Furnace, Bellows, Quenching Trough, Leatherworking Table, Tailor's Table, Loom blueprint and state; new structure states from 230, blueprints from 186. Matching rows in `weights.json`, `looks.json`, `look_placeholders.json`, descriptions and encyclopedia.
-7. `drops.json`: replace `tool_wear.hone` with the sharpening rule (rates U5); items gain the per-instance sharpness and maximum-durability values in code.
-8. Save format and protocol: per-instance enhancement slots and sharpness (code).
+Files that change with the retirements (not touched here): `weights.json`, `looks.json`, `showroom.json`, `design_names.json`, `descriptions_voice.json`, `encyclopedia.json`; tests `test_server_items.gd`, `test_tool_looks.gd`, `test_stations.gd`, `test_lumber_route.gd`, `test_logs_carry.gd`, `test_bloomery_bench.gd`, `test_blueprints.gd`, `test_structure_looks*.gd`, `test_whetstone.gd`; client `basic_look.gd`, `piece_look.gd`, `look_table.gd`; `tools/gen_looks.py` and icon painters. Run `tools/items_check.py` on the authorized PC after any data change.
 
-RECOMMENDED or UNRESOLVED (wait for Dave): Smithy and Master Smithy renames and id reuse, Blast Furnace id, Anvil, Stone - Forge, Woodworking table, species lumber, recipe station moves, chisel on 368, thread item, Plank seller, all costs and yields.
+## 11. Remaining questions for Dave
 
-Files that reference the rows being retired and must change with them (code and tests untouched by this document): `weights.json`, `looks.json`, `showroom.json`, `design_names.json`, `descriptions_voice.json`, `encyclopedia.json`; tests `test_server_items.gd`, `test_tool_looks.gd`, `test_stations.gd` (stone spade), `test_lumber_route.gd`, `test_logs_carry.gd` (wedge), `test_bloomery_bench.gd`, `test_blueprints.gd`, `test_structure_looks*.gd` (bloomery), `test_whetstone.gd` (hone rule); client `basic_look.gd`, `piece_look.gd`, `look_table.gd`; `tools/gen_looks.py` and the icon painters. Run `tools/items_check.py` (validate_items, stations, save_compat) on the authorized PC after the data change.
+1. **Q1 Review:** was the 11 Nov review on PR #1035 yours? If yes, everything marked PENDING CONFIRMATION becomes approved (tool ladders, Stone Sickle retirement, tool roles, sharpening details, chisel role, textile table roles, enhancement details).
+2. **Q2 Other tools:** do wooden tools, the Bone - Needle, stone and flint weapons and the flint Scraper disappear at zero like stone tools, break and repair like metal tools, or something else?
+3. **Q3 Logs:** is the plain Log softwood or hardwood (or does every log carry a species)? Should felled logs become 3 m (today 2.44 m)?
+4. **Q4 Large blocks:** keep Large wooden and Large softwood blocks (540, 541), fold them into blocks, or retire them?
+5. **Q5 First charcoal:** keep the campfire charcoal recipe until the byproduct exists?
+6. **Q6 Hardwood boards:** which recipes and blueprints switch from Plank to Hardwood board; retire the species lumber and beam rows?
+7. **Q7 Numbers:** all costs, times, capacities, repair materials, sharpening rates, the hand-saw inputs, the sawmill's cost without a Saw blade, and smelting fuel at 100 Charcoal per log.
+8. **Q8 Station ids:** Brick - Forge → Smithy (re-costed) or a new row; Master forge → Master Smithy; Large forge → Blast Furnace; retire the Anvil; what happens to the Stone - Forge.
+9. **Q9 Smithy upgrades:** what do the Bellows and the Quenching Trough improve?
+10. **Q10 Thread:** Twine or a new thread item for needle repairs?
+11. **Q11 Carved stone:** keep the chisel on carved stone (ornament) and drop it from plain blocks?
+12. **Q12 Recipe moves:** which recipes move to the Leatherworking Table and Tailor's Table; does hand sewing of hide garments stay?
+13. **Q13 Enhancements:** replacement and destruction rules (awaiting you), eligibility, stackables and consumables, and the name wording.
 
-## 11. Still needing Dave
-
-The basic design is approved; these are the remaining sign-offs.
-
-1. **U1 Saved worlds:** what happens to Stone Spades, Stone Sickles, Stone Wedges and placed Clay bloomeries (and Anvils, if retired) that players already have?
-2. **U2 Grindstone:** placed or carried, its cost, and how much faster it is.
-3. **U3 Non-edged metal tools** (spades, hoes, hammers): how are they maintained?
-4. **U4 Edge cases of "stone tools":** do wooden tools, stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper also vanish when worn out?
-5. **U5 Numbers:** yields, throughput, sharpening rates and all resource costs (sawmill and hand-saw board yields, smelter, blast furnace, new stations, hide drying, repairs).
-6. **U6 Hardwood board uses:** which existing recipes and blueprints switch from Plank to Hardwood board; retire the species lumber and beam rows (recommended)?
-7. **U7 Woodworking table:** retire (recommended, redundant with the Carpenter's bench)?
-8. **U8 Thread:** use Twine for needle repairs, or add a thread item?
-9. **U9 Carved stone:** is it sculpture (keeps the chisel) or construction (chisel dropped)?
-10. **U10 Migration:** station ids, levels and names (Brick - Forge → Smithy, Master forge → Master Smithy, Large forge → Blast Furnace, Stone - Forge, Anvil), and which recipes move to the Smithy, Leatherworking Table and Tailor's Table; does hand sewing of hide garments stay?
-11. **U11 Smithy upgrades:** what exactly do the Bellows and the Quenching Trough improve?
-12. **U12 Enhancements:** removing or replacing them, stackables and consumables, and the name wording table.
-13. **Bootstrap (RECOMMENDED, needs sign-off):** starter-town lumbermill sells Planks; wilderness route via bog iron → Smelter → Iron - Saw, with no Planks on that path.
-
-Also for the catalog pass (pre-existing): tier numbering across families (C5).
+Pre-existing, for the catalog pass: tier numbering across families (C10).
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
-Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 70, KEEP 544, RETIRE 6, RETIRED 253, UPDATE 16.
+Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 70, KEEP 528, RETIRE 7, RETIRED 253, UPDATE 31.
 `RETIRED` = already retired before this document (kept only for its number). `Made at` is the station of the first live recipe that gives the item (`hand` = no station; L = station level); blank = not crafted (gathered, dropped, built from a blueprint, or a group placeholder). Purpose is the live tooltip description. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
 
 ### A.tool (54 rows)
 
 | # | id | Name | Tier | Made at | Status | Purpose / note |
 |---|---|---|---|---|---|---|
-| 6 | `stone_axe` | Stone - Axe | stone t1 | hand | UPDATE | **APPROVED: disposable stone tool (s3.2).** A stone bound to a handle. Fells trees, breaks rock and works wood. |
-| 11 | `stone_knife` | Stone - Knife | t1 | hand | UPDATE | **APPROVED: disposable stone tool (s3.2).** A flaked stone on a handle. Dresses a kill and cuts bark. |
+| 6 | `stone_axe` | Stone - Axe | stone t1 | hand | UPDATE | **APPROVED: disposable stone tool (s3.1).** A stone bound to a handle. Fells trees, breaks rock and works wood. |
+| 11 | `stone_knife` | Stone - Knife | t1 | hand | UPDATE | **APPROVED: disposable stone tool (s3.1).** A flaked stone on a handle. Dresses a kill and cuts bark. |
 | 12 | `torch` | Torch | t1 | hand | KEEP | A stick wrapped in fibre and dipped in pitch. Lights your way after dark. |
 | 19 | `wooden_spade` | Wooden - Spade |  | hand | KEEP | A sharpened wooden blade. Digs roots and bulbs. |
-| 33 | `iron_pickaxe` | Iron - Pickaxe | iron t2 | brick_forge L2 | UPDATE | **APPROVED: sharpening (s3.2).** An iron head on a hardwood handle. One blow breaks one stone off a boulder. |
-| 34 | `steel_pickaxe` | Steel - Pickaxe | steel t3 | brick_forge L3 | FUTURE | **APPROVED: sharpening when live (s3.2).** A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest. |
+| 33 | `iron_pickaxe` | Iron - Pickaxe | iron t2 | brick_forge L2 | UPDATE | **APPROVED: metal repair rule (s3.1).** An iron head on a hardwood handle. One blow breaks one stone off a boulder. |
+| 34 | `steel_pickaxe` | Steel - Pickaxe | steel t3 | brick_forge L3 | FUTURE | **APPROVED: metal repair rule (s3.1) when live.** A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest. |
 | 45 | `stone_spade` | Stone - Spade | stone t2 | workbench | RETIRE | **APPROVED: Stone Spade retired.** A spade with a stone blade. Digs deeper and lasts longer than wood. |
-| 46 | `iron_spade` | Iron - Spade | iron t3 | brick_forge L2 | KEEP | A spade with an iron blade. |
-| 47 | `steel_spade` | Steel - Spade | steel t4 | brick_forge L3 | FUTURE | A spade with a steel blade. |
+| 46 | `iron_spade` | Iron - Spade | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal repair rule (s3.1).** A spade with an iron blade. |
+| 47 | `steel_spade` | Steel - Spade | steel t4 | brick_forge L3 | FUTURE | **APPROVED: metal repair rule (s3.1) when live.** A spade with a steel blade. |
 | 49 | `sewing_needle` | Bone - Needle |  | hand | KEEP | **APPROVED: the one reusable needle.** A needle carved from bone. For sewing hide and cloth. |
 | 75 | `fishing_rod` | Fishing rod |  | hand | KEEP | A stick, line and hook. Cast at water, then click again when something bites. |
 | 221 | `wooden_hoe` | Wooden - Hoe |  | hand | KEEP | A flat blade on a long handle. Paths the ground and tills beds. |
-| 222 | `stone_hoe` | Stone - Hoe | stone t2 | workbench | UPDATE | **APPROVED: disposable stone tool (s3.2).** A hoe with a stone blade. Lasts longer than wood. |
-| 223 | `iron_hoe` | Iron - Hoe | iron t3 | brick_forge L2 | KEEP | A hoe with an iron blade. |
-| 224 | `steel_hoe` | Steel - Hoe | steel t4 | brick_forge L3 | FUTURE | A hoe with a steel blade. |
-| 244 | `stone_hammer` | Stone - Hammer | stone t2 | hand | UPDATE | **APPROVED: disposable stone tool (s3.2).** A hafted stone hammer. Hold it to place big builds from blueprints. |
-| 245 | `hand_saw` | Iron - Saw | iron t3 | workbench L2 | UPDATE | **APPROVED: sharpening; hand sawing (s3.2, s4).** A bow saw. Keep it on the hotbar to saw a log into 2 planks by hand, slower than a mill. |
+| 222 | `stone_hoe` | Stone - Hoe | stone t2 | workbench | UPDATE | **APPROVED: disposable stone tool (s3.1).** A hoe with a stone blade. Lasts longer than wood. |
+| 223 | `iron_hoe` | Iron - Hoe | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal repair rule (s3.1).** A hoe with an iron blade. |
+| 224 | `steel_hoe` | Steel - Hoe | steel t4 | brick_forge L3 | FUTURE | **APPROVED: metal repair rule (s3.1) when live.** A hoe with a steel blade. |
+| 244 | `stone_hammer` | Stone - Hammer | stone t2 | hand | UPDATE | **APPROVED: disposable stone tool (s3.1).** A hafted stone hammer. Hold it to place big builds from blueprints. |
+| 245 | `hand_saw` | Iron - Saw | iron t3 | workbench L2 | UPDATE | **APPROVED: Smithy recipe, sawmill yields (s4.2, s5.1).** A bow saw. Keep it on the hotbar to saw a log into 2 planks by hand, slower than a mill. |
 | 247 | `wooden_hammer` | Wooden - Hammer | wood t1 | hand | KEEP | A wooden head on a stick. The weakest hammer; it wears out fast. |
 | 260 | `shore_net` | Fishing net |  | hand | KEEP | A weighted twine net. Throw it on water, pull it back; a bigger school fills it more. |
 | 293 | `hide_scraper` | Scraper | t1 | workbench | KEEP | A flint blade on a handle. Scrapes flesh and hair off a raw hide. |
 | 294 | `steel_striker` | Steel - Striker | t4 | brick_forge L3 | FUTURE | A strip of hard steel. Strike flint on it for a shower of sparks. |
 | 296 | `obsidian_knife` | Obsidian - Knife | obsidian t2 | workbench | FUTURE | A razor-sharp black glass blade. Cuts better than flint, but chips more easily. |
-| 297 | `stone_pickaxe` | Stone - Pickaxe | stone t2 | hand | UPDATE | **APPROVED: disposable stone tool (s3.2).** A heavy stone head on a haft. Breaks boulders and ore, slowly. |
-| 298 | `sickle` | Stone - Sickle | stone t1 | workbench | RETIRE | **APPROVED: Stone Sickle retired.** A curved flint blade on a short handle. Cuts grain and grass by the handful. |
-| 299 | `scythe` | Iron - Scythe | iron t3 | brick_forge L2 | KEEP | **APPROVED: sharpening (s3.2).** A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps. |
+| 297 | `stone_pickaxe` | Stone - Pickaxe | stone t2 | hand | UPDATE | **APPROVED: disposable stone tool (s3.1).** A heavy stone head on a haft. Breaks boulders and ore, slowly. |
+| 298 | `sickle` | Stone - Sickle | stone t1 | workbench | RETIRE | **PENDING CONFIRMATION: Stone Sickle retired (s3.3).** A curved flint blade on a short handle. Cuts grain and grass by the handful. |
+| 299 | `scythe` | Iron - Scythe | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal repair rule (s3.1).** A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps. |
 | 311 | `candle` | Candle | t1 | hand | KEEP | A wick dipped in tallow. A small steady light, and what a wooden lantern burns. |
 | 344 | `quern` | Hand mill |  | hand | KEEP | Two flat stones for grinding grain by hand. Slow but steady. |
 | 353 | `stone_wedge` | Stone - Wedge |  | hand | RETIRE | **APPROVED: Stone Wedge retired.** A flaked stone wedge. Driven into a log at a workbench, it splits two planks. |
-| 458 | `bronze_pickaxe` | Bronze - Pickaxe | bronze t2 | forge | UPDATE | **APPROVED: sharpening (s3.2).** A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder. |
-| 459 | `bronze_axe` | Bronze - Axe | bronze t2 | forge | UPDATE | **APPROVED: sharpening (s3.2).** A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone. |
-| 460 | `bronze_hammer` | Bronze - Hammer | bronze t3 | forge | KEEP | A cast bronze head on a short haft. Hold it to place big builds from blueprints. |
-| 461 | `bronze_knife` | Bronze - Knife | bronze t2 | forge | UPDATE | **APPROVED: sharpening (s3.2).** A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark. |
+| 458 | `bronze_pickaxe` | Bronze - Pickaxe | bronze t2 | forge | UPDATE | **APPROVED: metal repair rule (s3.1).** A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder. |
+| 459 | `bronze_axe` | Bronze - Axe | bronze t2 | forge | UPDATE | **APPROVED: metal repair rule (s3.1).** A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone. |
+| 460 | `bronze_hammer` | Bronze - Hammer | bronze t3 | forge | UPDATE | **APPROVED: metal repair rule (s3.1).** A cast bronze head on a short haft. Hold it to place big builds from blueprints. |
+| 461 | `bronze_knife` | Bronze - Knife | bronze t2 | forge | UPDATE | **APPROVED: metal repair rule (s3.1).** A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark. |
 | 542 | `torch_doused` | Torch | t1 |  | KEEP | A stick wrapped in fibre. Lights your way after dark. |
 | 557 | `spyglass` | Wooden - Spyglass | t1 | workbench L3 | KEEP | A wooden tube with a crystal lens. Hold it and right-click to see three times closer. |
-| 560 | `iron_hammer` | Iron - Hammer | iron t3 | brick_forge L2 | KEEP | A forged iron head on a short haft. Hold it to place big builds from blueprints. |
-| 561 | `steel_hammer` | Steel - Hammer | steel t3 | brick_forge L3 | FUTURE | A forged steel head on a short haft. Hold it to place big builds from blueprints. |
+| 560 | `iron_hammer` | Iron - Hammer | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal repair rule (s3.1).** A forged iron head on a short haft. Hold it to place big builds from blueprints. |
+| 561 | `steel_hammer` | Steel - Hammer | steel t3 | brick_forge L3 | FUTURE | **APPROVED: metal repair rule (s3.1) when live.** A forged steel head on a short haft. Hold it to place big builds from blueprints. |
 | 668 | `wooden_lantern` | Wooden - Lantern |  | workbench L1 | KEEP | A plank lantern with horn panes. Takes a candle; does not go out in the rain. |
 | 669 | `iron_lantern` | Iron - Lantern |  | brick_forge L2 | KEEP | An iron lantern with horn panes. Burns lamp oil; does not go out in the rain. |
-| 798 | `bronze_chisel` | Bronze - Chisel | bronze t2 | forge | KEEP | **APPROVED: sculpture tool (s3.4).** A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench. |
-| 799 | `iron_chisel` | Iron - Chisel | iron t3 | brick_forge L2 | KEEP | **APPROVED: sculpture tool (s3.4).** An iron chisel. Keeps its edge on stone far longer than bronze. |
-| 800 | `steel_chisel` | Steel - Chisel | steel t4 | brick_forge L3 | FUTURE | **APPROVED: sculpture tool (s3.4).** A steel chisel. Cuts the hardest stone cleanly. |
+| 798 | `bronze_chisel` | Bronze - Chisel | bronze t2 | forge | UPDATE | **APPROVED: metal repair rule (s3.1).** A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench. |
+| 799 | `iron_chisel` | Iron - Chisel | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal repair rule (s3.1).** An iron chisel. Keeps its edge on stone far longer than bronze. |
+| 800 | `steel_chisel` | Steel - Chisel | steel t4 | brick_forge L3 | FUTURE | **APPROVED: metal repair rule (s3.1) when live.** A steel chisel. Cuts the hardest stone cleanly. |
 | 807 | `mortar_pestle` | Mortar and pestle |  | hand | KEEP | A hollowed stone and a round grinder for crushing herbs into poultices and cures. |
-| 815 | `whetstone` | Whetstone |  | hand | UPDATE | **APPROVED: portable sharpener with water (s3.2).** A fine flat stone for honing an edge. Brings a worn blade back without new parts. |
+| 815 | `whetstone` | Whetstone |  | hand | UPDATE | **APPROVED: portable sharpening (s3.1).** A fine flat stone for honing an edge. Brings a worn blade back without new parts. |
 | 892 | `wooden_lantern_dark` | Wooden - Lantern |  |  | KEEP | A lantern gone out. Press its key to light it, with a candle in your pack if it burned out. |
 | 893 | `iron_lantern_dark` | Iron - Lantern |  |  | KEEP | A lantern gone out. Press its key to light it, with lamp oil in your pack if it burned out. |
 
@@ -381,14 +447,14 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 1 | `stone` | Stone |  |  | KEEP | A fist-sized stone. Pick it up from the ground, or break it off a boulder. |
 | 2 | `stick` | Stick |  |  | KEEP | A fallen branch. Burns, and makes handles, frames and fences. |
 | 3 | `plant_fibre` | Plant fibre |  |  | KEEP | Stringy strands from nettles and grass. Twist 3 into twine, or use one to light a fire. |
-| 4 | `log` | Log |  |  | KEEP | **APPROVED: basic Log to Planks.** A heavy length of trunk. Split it for firewood, or wedge it into planks. |
+| 4 | `log` | Log |  |  | KEEP | **APPROVED: whole log; class Q3.** A heavy length of trunk. Split it for firewood, or wedge it into planks. |
 | 5 | `twine` | Twine |  | hand | KEEP | Twisted fibre cord. Binds tools, frames and kits. |
 | 9 | `seed_bundle` | Wild grain |  |  | KEEP | A bundle of seeds. Eat them, or plant them. |
 | 13 | `bark` | Bark |  |  | KEEP | Bark stripped from a felled trunk. |
 | 14 | `leaves` | Leaves |  |  | KEEP | A handful of green leaves from a felled tree. Roofs a shelter. |
 | 18 | `tree_roots` | Roots |  |  | KEEP | Roots from the base of a felled tree. |
-| 26 | `firewood` | Firewood |  |  | KEEP | Split wood. Burns long and steady. |
-| 27 | `lumber` | Plank |  | saw_mill | KEEP | **APPROVED: Planks; display name Plank.** Boards from a log. Make them at a saw mill, or wedge them at a workbench. |
+| 26 | `firewood` | Firewood |  |  | UPDATE | **RECOMMENDED: rename Hard firewood (s4.2).** Split wood. Burns long and steady. |
+| 27 | `lumber` | Plank |  | saw_mill | UPDATE | **APPROVED: 6 per softwood log (s4.2).** Boards from a log. Make them at a saw mill, or wedge them at a workbench. |
 | 30 | `driftwood` | Driftwood |  |  | KEEP | A bleached branch washed up on a bank. Dry, so it burns well. |
 | 31 | `iron_ingot` | Iron ingot |  | brick_forge L2 | KEEP | A bar of smelted iron. Hard, for tools and nails. |
 | 32 | `steel_ingot` | Steel ingot |  | brick_forge L3 | FUTURE | A bar of steel. Placeholder until smelting exists. |
@@ -436,10 +502,10 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 231 | `tar` | Tar |  | campfire | KEEP | Thick black tar, boiled down. Seals a flat roof and soaks logs against rot. |
 | 232 | `hinges` | Hinges | iron | brick_forge L2 | KEEP | A pair of iron hinges for a door, a gate or a lid. |
 | 233 | `wooden_pin` | Wooden pin |  | workbench L1 | KEEP | A hardwood pin or dowel that joins logs and beams without iron. |
-| 234 | `wooden_block` | Wooden block |  | hand | KEEP | A short round of a small log, bark still on. Burns longer than firewood, or split it on a chopping block. |
-| 236 | `firewood_soft` | Softwood firewood |  |  | KEEP | Split pine, spruce or fir. It catches fast and burns out quick. |
+| 234 | `wooden_block` | Wooden block |  | hand | UPDATE | **RECOMMENDED: rename Hardwood block (s4.2).** A short round of a small log, bark still on. Burns longer than firewood, or split it on a chopping block. |
+| 236 | `firewood_soft` | Softwood firewood |  |  | UPDATE | **RECOMMENDED: rename Soft firewood (s4.2).** Split pine, spruce or fir. It catches fast and burns out quick. |
 | 237 | `wooden_block_soft` | Softwood block |  | hand | KEEP | A short round of a small softwood log. Burns longer than soft firewood, or split it on a chopping block. |
-| 238 | `saw_blade` | Saw blade |  | brick_forge L2 | KEEP | A pair of iron saw blades for a sawmill frame. |
+| 238 | `saw_blade` | Saw blade |  | brick_forge L2 | RETIRE | **APPROVED: no saw-blade intermediates (s4.2).** A pair of iron saw blades for a sawmill frame. |
 | 239 | `water_wheel` | Water wheel |  | workbench L3 | KEEP | A wooden wheel with paddles. It turns where running water pushes it. |
 | 270 | `wooden_arrow` | Wooden - Arrow |  | hand | KEEP | A hardened stick with feather fletching. Needs a bow. |
 | 271 | `stone_arrow` | Stone - Arrow |  | hand | KEEP | An arrow with a flaked stone point. Hits harder than wood. |
@@ -459,7 +525,7 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 301 | `copper_ore` | Copper ore |  |  | KEEP | A heavy lump streaked green and red. Smelts to copper in a forge. |
 | 302 | `tin_ore` | Tin ore |  |  | KEEP | A dark, very heavy lump. Smelts to tin in a forge. |
 | 303 | `iron_ore` | Iron ore |  |  | KEEP | A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge. |
-| 304 | `coal` | Coal |  |  | KEEP | A black lump that burns hot. Smelts iron and makes steel. |
+| 304 | `coal` | Coal |  |  | KEEP | **APPROVED: distinct from charcoal.** A black lump that burns hot. Smelts iron and makes steel. |
 | 332 | `wheat` | Wheat |  |  | KEEP | Golden heads of grain. Thresh and grind for flour. |
 | 333 | `barley` | Barley |  |  | KEEP | Hardy grain for bread and brewing. |
 | 334 | `carrot` | Carrot |  |  | KEEP | A sweet orange root grown in a tilled bed. |
@@ -526,9 +592,9 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 537 | `honeyspindle_bush` | Honeyspindle bush |  |  | KEEP | A honeyspindle bush dug up whole, roots and all. Plant it again somewhere else. |
 | 538 | `sleetberry_bush` | Sleetberry bush |  |  | KEEP | A sleetberry bush dug up whole, roots and all. Plant it again somewhere else. |
 | 539 | `sunsilver_vine_bush` | Sunsilver vine bush |  |  | KEEP | A sunsilver vine bush dug up whole, roots and all. Plant it again somewhere else. |
-| 540 | `wooden_block_large` | Large wooden block |  |  | KEEP | A thick round of a big trunk. Split it into firewood or 4 small blocks, or make a chopping block of it. |
-| 541 | `wooden_block_soft_large` | Large softwood block |  |  | KEEP | A thick round of a big softwood trunk. Split it into soft firewood or 4 small blocks, or a chopping block. |
-| 547 | `charcoal` | Charcoal |  | campfire | KEEP | Firewood burned slow and starved of air. The best smelting fuel. |
+| 540 | `wooden_block_large` | Large wooden block |  |  | KEEP | **UNRESOLVED: Q4.** A thick round of a big trunk. Split it into firewood or 4 small blocks, or make a chopping block of it. |
+| 541 | `wooden_block_soft_large` | Large softwood block |  |  | KEEP | **UNRESOLVED: Q4.** A thick round of a big softwood trunk. Split it into soft firewood or 4 small blocks, or a chopping block. |
+| 547 | `charcoal` | Charcoal |  | campfire | UPDATE | **APPROVED: 100 per log from the kiln (s5.3).** Firewood burned slow and starved of air. The best smelting fuel. |
 | 548 | `wool_cloth` | Wool cloth |  | hand | KEEP | Wool spun and woven into a warm cloth. Tunics, caps and rugs are cut from it. |
 | 549 | `fur` | Fur |  |  | KEEP | A thick pelt with the hair on, from a wolf, fox or bear. The warmest thing to wear. |
 | 550 | `fish` | Fish |  |  | KEEP | Any fish: trout, pike, perch, salmon and the rest. |
@@ -778,17 +844,16 @@ Already retired (1; numbers never reused): 56 `medicine` Medicine.
 | # | id | Name | Tier | Made at | Status | Purpose / note |
 |---|---|---|---|---|---|---|
 | 8 | `campfire_kit` | Campfire |  | hand | KEEP | Stones and sticks for a fire. Set it down, then light it with fibre. |
-| 25 | `chopping_block` | Chopping block |  | hand | KEEP | A log set on end. Split wooden blocks into firewood on it. |
+| 25 | `chopping_block` | Chopping block |  | hand | UPDATE | **APPROVED: firewood workstation (s4.3).** A log set on end. Split wooden blocks into firewood on it. |
 | 92 | `large_forge_kit` | Large forge |  |  | FUTURE | **follows large_forge.** A big arched forge with a riveted iron frame, ready to raise. |
 | 94 | `master_forge_kit` | Master forge |  |  | UPDATE | **follows master_forge.** An ornate black iron and gold forge set with red gems, ready to raise. |
 | 235 | `rock_pile` | Rock pile |  | hand | KEEP | A heap of 45 stones. Set it down to store rock; pick it up to carry it. |
-| 242 | `woodworking_table_kit` | Woodworking table |  |  | RETIRED | **already retired kit.** A heavy table with vices and clamps for fine woodwork. Set it down in a workshop. |
 | 250 | `rough_bed_kit` | Thatch - Bed |  | hand | KEEP | Sticks, branches and rough bedding lashed with twine. Set it under a roof and lie down to sleep. |
 | 276 | `snare` | Snare |  | hand | KEEP | A loop of twine on a bent stick. Set it on a worn animal path. |
 | 822 | `fish_trap` | Fish trap |  | hand | FUTURE | A cone of woven sticks set in the water. Fish swim in and cannot find the way out. |
 | 824 | `bird_trap` | Bird trap |  | hand | FUTURE | A stick cage propped on a trigger. A ground bird that steps in for the bait brings it down. |
 
-Already retired (185; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest_kit` Wicker - Chest; 24 `chopping_block_kit` Chopping block; 28 `plank_chest_kit` Wooden - Chest; 73 `workbench_kit` Wooden - Workbench; 81 `tool_rack_kit` Tool rack; 83 `vice_kit` Vice; 85 `log_workbench_kit` Carpenter's bench; 87 `stone_forge_kit` Stone - Forge; 89 `blacksmithy_kit` Brick - Forge; 192 `wall_section_kit` Refined - Wall; 194 `floor_section_kit` Refined - Ceiling; 196 `roof_section_kit` Refined - Roof; 198 `foundation_section_kit` Sturdy - Foundation; 200 `doorway_section_kit` Refined - Doorway; 202 `window_section_kit` Refined - Window; 204 `timber_prop_kit` Post; 206 `timber_set_kit` Beam; 211 `ladder_kit` Ladder; 240 `saw_mill_kit` Sawmill; 252 `thatch_wall_kit` Crude - Wall; 254 `campfire_pot_kit` Campfire pot; 256 `clay_hearth_kit` Clay hearth; 261 `thatch_floor_kit` Crude - Foundation; 263 `thatch_roof_kit` Crude - Roof; 265 `thatch_doorway_kit` Crude - Doorway; 268 `oven_kit` Oven; 462 `stairs_wood_kit` Refined - Stairs; 464 `log_wall_kit` Rustic - Wall; 466 `log_floor_kit` Rustic - Ceiling; 468 `log_roof_kit` Rustic - Roof; 470 `stone_wall_kit` Sturdy - Wall; 472 `stone_floor_kit` Sturdy - Ceiling; 474 `stone_roof_kit` Sturdy - Roof; 476 `brick_wall_kit` Superior - Wall; 478 `brick_floor_kit` Superior - Ceiling; 480 `brick_roof_kit` Superior - Roof; 482 `log_cabin_set_kit` Log cabin set; 487 `log_seat_kit` Seat; 488 `bench_kit` Wooden - Bench; 489 `chair_kit` Wooden - Chair; 490 `table_kit` Wooden - Table; 491 `hide_rug_kit` Hide - Rug; 492 `wool_rug_kit` Wool - Rug; 493 `straw_bed_kit` Straw - Bed; 494 `feather_bed_kit` Feather - Bed; 495 `canopy_bed_kit` Canopy bed; 496 `wall_torch_kit` Wall torch; 497 `chandelier_kit` Chandelier; 498 `fireplace_kit` Fireplace; 499 `flower_pot_kit` Flower pot; 500 `antler_mount_kit` Antler mount; 501 `stool_kit` Stool; 558 `wood_foundation_kit` Refined - Foundation; 562 `log_foundation_kit` Rustic - Foundation; 564 `brick_foundation_kit` Superior - Foundation; 566 `log_doorway_kit` Rustic - Doorway; 568 `stone_doorway_kit` Sturdy - Doorway; 570 `brick_doorway_kit` Superior - Doorway; 572 `thatch_window_kit` Crude - Window; 574 `log_window_kit` Rustic - Window; 576 `stone_window_kit` Sturdy - Window; 578 `brick_window_kit` Superior - Window; 580 `thatch_fence_kit` Crude - Fence; 582 `thatch_gate_kit` Crude - Gate; 584 `wood_fence_kit` Refined - Fence; 586 `wood_gate_kit` Refined - Gate; 588 `log_fence_kit` Rustic - Fence; 590 `log_gate_kit` Rustic - Gate; 592 `log_palisade_kit` Palisade; 594 `log_palisade_gate_kit` Palisade gate; 596 `stone_fence_kit` Sturdy - Fence; 598 `stone_gate_kit` Sturdy - Gate; 600 `brick_fence_kit` Superior - Fence; 602 `brick_gate_kit` Superior - Gate; 604 `iron_fence_kit` Iron - Fence; 606 `iron_gate_kit` Iron - Gate; 608 `thatch_pillar_kit` Crude - Pillar; 610 `wooden_pillar_kit` Refined - Pillar; 612 `log_pillar_kit` Rustic - Pillar; 614 `stone_pillar_kit` Sturdy - Pillar; 616 `brick_pillar_kit` Superior - Pillar; 618 `thatch_roof_corner_kit` Crude - Roof corner; 620 `wooden_roof_corner_kit` Refined - Roof corner; 622 `log_roof_corner_kit` Rustic - Roof corner; 624 `stone_roof_corner_kit` Sturdy - Roof corner; 626 `brick_roof_corner_kit` Superior - Roof corner; 628 `log_bench_kit` Log bench; 630 `log_table_kit` Log table; 632 `stone_bench_kit` Stone - Bench; 634 `stone_table_kit` Stone - Table; 636 `iron_bench_kit` Iron - Bench; 638 `iron_chair_kit` Iron - Chair; 640 `iron_table_kit` Iron - Table; 642 `stone_workbench_kit` Stone - Workbench; 644 `wooden_shelf_kit` Shelf; 646 `wooden_cupboard_kit` Cupboard; 648 `wooden_barrel_kit` Barrel; 650 `log_stairs_kit` Rustic - Stairs; 652 `stone_stairs_kit` Sturdy - Stairs; 654 `brick_stairs_kit` Superior - Stairs; 656 `wooden_railing_kit` Wooden - Railing; 658 `iron_railing_kit` Iron - Railing; 660 `double_doorway_kit` Refined - Double doorway; 662 `iron_doorway_kit` Iron - Doorway; 664 `steel_doorway_kit` Steel - Doorway; 670 `wooden_hanging_lantern_kit` Wooden - Hanging lantern; 672 `iron_hanging_lantern_kit` Iron - Hanging lantern; 674 `iron_wall_lantern_kit` Wall lantern; 676 `wooden_torch_post_kit` Torch post; 678 `stone_torch_pillar_kit` Torch pillar; 680 `iron_torch_stand_kit` Torch stand; 682 `wooden_lamp_post_kit` Wooden - Lamp post; 684 `iron_lamp_post_kit` Iron - Lamp post; 686 `stone_lamp_post_kit` Stone - Lamp post; 688 `stone_brazier_kit` Stone - Brazier; 690 `iron_brazier_kit` Iron - Brazier; 692 `thatch_garden_plot_kit` Thatch - Garden plot; 694 `wooden_garden_plot_kit` Wooden - Garden plot; 696 `stone_garden_plot_kit` Stone - Garden plot; 698 `brick_garden_plot_kit` Brick - Garden plot; 700 `wooden_planter_box_kit` Planter box; 702 `stone_planter_kit` Stone - Planter; 704 `wooden_trellis_kit` Trellis; 706 `wooden_compost_bin_kit` Compost bin; 708 `thatch_scarecrow_kit` Scarecrow; 710 `wooden_cold_frame_kit` Cold frame; 712 `stone_well_kit` Well; 714 `wooden_hand_pump_kit` Wooden - Hand pump; 716 `iron_hand_pump_kit` Iron - Hand pump; 718 `log_trough_kit` Log trough; 720 `wooden_trough_kit` Wooden - Trough; 722 `wooden_channel_kit` Wooden - Channel; 724 `wooden_channel_corner_kit` Wooden - Channel corner; 726 `wooden_channel_tee_kit` Wooden - Channel tee; 728 `wooden_sluice_kit` Sluice; 731 `stone_trough_kit` Stone - Trough; 733 `stone_channel_kit` Stone - Channel; 735 `stone_channel_corner_kit` Stone - Channel corner; 737 `stone_channel_tee_kit` Stone - Channel tee; 739 `clay_pipe_run_kit` Clay - Pipe; 741 `clay_pipe_elbow_kit` Clay - Pipe elbow; 743 `clay_pipe_tee_kit` Clay - Pipe tee; 745 `iron_pipe_kit` Iron - Pipe; 747 `iron_pipe_elbow_kit` Iron - Pipe elbow; 749 `iron_tap_kit` Tap; 751 `iron_deep_well_pump_kit` Deep-well pump; 753 `stone_cistern_kit` Cistern; 755 `stone_raised_cistern_kit` Raised cistern; 770 `kiln_kit` Kiln; 772 `tanning_rack_kit` Tanning rack; 774 `drying_rack_kit` Drying rack; 776 `smoker_kit` Smoker; 778 `oil_press_kit` Oil press; 780 `storage_jar_kit` Storage jar; 782 `hide_sack_kit` Hide - Sack; 784 `wicker_basket_kit` Basket; 786 `weapon_rack_kit` Weapon rack; 788 `armour_stand_kit` Armour stand; 790 `sign_kit` Sign; 792 `tusk_mount_kit` Tusk mount; 794 `clay_bloomery_kit` Clay bloomery; 796 `stonecutters_bench_kit` Stonecutter's bench; 826 `iron_anvil_kit` Anvil; 829 `preserving_jar_kit` Preserving jar; 831 `root_cellar_kit` Root cellar; 847 `log_shelf_kit` Log shelf; 849 `wooden_crate_kit` Crate; 851 `iron_chest_kit` Iron - Chest; 860 `mixer_kit` Mixer; 862 `engineered_foundation_kit` Engineered - Foundation; 864 `engineered_wall_kit` Engineered - Wall; 866 `engineered_doorway_kit` Engineered - Doorway; 868 `engineered_window_kit` Engineered - Window; 870 `engineered_pillar_kit` Engineered - Pillar; 872 `engineered_stairs_kit` Engineered - Stairs; 874 `engineered_floor_kit` Engineered - Ceiling; 876 `engineered_roof_kit` Engineered - Roof; 878 `engineered_roof_corner_kit` Engineered - Roof corner; 880 `fortified_foundation_kit` Fortified - Foundation; 882 `fortified_wall_kit` Fortified - Wall; 884 `fortified_doorway_kit` Fortified - Doorway; 886 `fortified_gate_kit` Fortified - Gate; 888 `fortified_pillar_kit` Fortified - Pillar; 890 `fortified_wall_top_kit` Fortified - Wall top.
+Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest_kit` Wicker - Chest; 24 `chopping_block_kit` Chopping block; 28 `plank_chest_kit` Wooden - Chest; 73 `workbench_kit` Wooden - Workbench; 81 `tool_rack_kit` Tool rack; 83 `vice_kit` Vice; 85 `log_workbench_kit` Carpenter's bench; 87 `stone_forge_kit` Stone - Forge; 89 `blacksmithy_kit` Brick - Forge; 192 `wall_section_kit` Refined - Wall; 194 `floor_section_kit` Refined - Ceiling; 196 `roof_section_kit` Refined - Roof; 198 `foundation_section_kit` Sturdy - Foundation; 200 `doorway_section_kit` Refined - Doorway; 202 `window_section_kit` Refined - Window; 204 `timber_prop_kit` Post; 206 `timber_set_kit` Beam; 211 `ladder_kit` Ladder; 240 `saw_mill_kit` Sawmill; 242 `woodworking_table_kit` Woodworking table; 252 `thatch_wall_kit` Crude - Wall; 254 `campfire_pot_kit` Campfire pot; 256 `clay_hearth_kit` Clay hearth; 261 `thatch_floor_kit` Crude - Foundation; 263 `thatch_roof_kit` Crude - Roof; 265 `thatch_doorway_kit` Crude - Doorway; 268 `oven_kit` Oven; 462 `stairs_wood_kit` Refined - Stairs; 464 `log_wall_kit` Rustic - Wall; 466 `log_floor_kit` Rustic - Ceiling; 468 `log_roof_kit` Rustic - Roof; 470 `stone_wall_kit` Sturdy - Wall; 472 `stone_floor_kit` Sturdy - Ceiling; 474 `stone_roof_kit` Sturdy - Roof; 476 `brick_wall_kit` Superior - Wall; 478 `brick_floor_kit` Superior - Ceiling; 480 `brick_roof_kit` Superior - Roof; 482 `log_cabin_set_kit` Log cabin set; 487 `log_seat_kit` Seat; 488 `bench_kit` Wooden - Bench; 489 `chair_kit` Wooden - Chair; 490 `table_kit` Wooden - Table; 491 `hide_rug_kit` Hide - Rug; 492 `wool_rug_kit` Wool - Rug; 493 `straw_bed_kit` Straw - Bed; 494 `feather_bed_kit` Feather - Bed; 495 `canopy_bed_kit` Canopy bed; 496 `wall_torch_kit` Wall torch; 497 `chandelier_kit` Chandelier; 498 `fireplace_kit` Fireplace; 499 `flower_pot_kit` Flower pot; 500 `antler_mount_kit` Antler mount; 501 `stool_kit` Stool; 558 `wood_foundation_kit` Refined - Foundation; 562 `log_foundation_kit` Rustic - Foundation; 564 `brick_foundation_kit` Superior - Foundation; 566 `log_doorway_kit` Rustic - Doorway; 568 `stone_doorway_kit` Sturdy - Doorway; 570 `brick_doorway_kit` Superior - Doorway; 572 `thatch_window_kit` Crude - Window; 574 `log_window_kit` Rustic - Window; 576 `stone_window_kit` Sturdy - Window; 578 `brick_window_kit` Superior - Window; 580 `thatch_fence_kit` Crude - Fence; 582 `thatch_gate_kit` Crude - Gate; 584 `wood_fence_kit` Refined - Fence; 586 `wood_gate_kit` Refined - Gate; 588 `log_fence_kit` Rustic - Fence; 590 `log_gate_kit` Rustic - Gate; 592 `log_palisade_kit` Palisade; 594 `log_palisade_gate_kit` Palisade gate; 596 `stone_fence_kit` Sturdy - Fence; 598 `stone_gate_kit` Sturdy - Gate; 600 `brick_fence_kit` Superior - Fence; 602 `brick_gate_kit` Superior - Gate; 604 `iron_fence_kit` Iron - Fence; 606 `iron_gate_kit` Iron - Gate; 608 `thatch_pillar_kit` Crude - Pillar; 610 `wooden_pillar_kit` Refined - Pillar; 612 `log_pillar_kit` Rustic - Pillar; 614 `stone_pillar_kit` Sturdy - Pillar; 616 `brick_pillar_kit` Superior - Pillar; 618 `thatch_roof_corner_kit` Crude - Roof corner; 620 `wooden_roof_corner_kit` Refined - Roof corner; 622 `log_roof_corner_kit` Rustic - Roof corner; 624 `stone_roof_corner_kit` Sturdy - Roof corner; 626 `brick_roof_corner_kit` Superior - Roof corner; 628 `log_bench_kit` Log bench; 630 `log_table_kit` Log table; 632 `stone_bench_kit` Stone - Bench; 634 `stone_table_kit` Stone - Table; 636 `iron_bench_kit` Iron - Bench; 638 `iron_chair_kit` Iron - Chair; 640 `iron_table_kit` Iron - Table; 642 `stone_workbench_kit` Stone - Workbench; 644 `wooden_shelf_kit` Shelf; 646 `wooden_cupboard_kit` Cupboard; 648 `wooden_barrel_kit` Barrel; 650 `log_stairs_kit` Rustic - Stairs; 652 `stone_stairs_kit` Sturdy - Stairs; 654 `brick_stairs_kit` Superior - Stairs; 656 `wooden_railing_kit` Wooden - Railing; 658 `iron_railing_kit` Iron - Railing; 660 `double_doorway_kit` Refined - Double doorway; 662 `iron_doorway_kit` Iron - Doorway; 664 `steel_doorway_kit` Steel - Doorway; 670 `wooden_hanging_lantern_kit` Wooden - Hanging lantern; 672 `iron_hanging_lantern_kit` Iron - Hanging lantern; 674 `iron_wall_lantern_kit` Wall lantern; 676 `wooden_torch_post_kit` Torch post; 678 `stone_torch_pillar_kit` Torch pillar; 680 `iron_torch_stand_kit` Torch stand; 682 `wooden_lamp_post_kit` Wooden - Lamp post; 684 `iron_lamp_post_kit` Iron - Lamp post; 686 `stone_lamp_post_kit` Stone - Lamp post; 688 `stone_brazier_kit` Stone - Brazier; 690 `iron_brazier_kit` Iron - Brazier; 692 `thatch_garden_plot_kit` Thatch - Garden plot; 694 `wooden_garden_plot_kit` Wooden - Garden plot; 696 `stone_garden_plot_kit` Stone - Garden plot; 698 `brick_garden_plot_kit` Brick - Garden plot; 700 `wooden_planter_box_kit` Planter box; 702 `stone_planter_kit` Stone - Planter; 704 `wooden_trellis_kit` Trellis; 706 `wooden_compost_bin_kit` Compost bin; 708 `thatch_scarecrow_kit` Scarecrow; 710 `wooden_cold_frame_kit` Cold frame; 712 `stone_well_kit` Well; 714 `wooden_hand_pump_kit` Wooden - Hand pump; 716 `iron_hand_pump_kit` Iron - Hand pump; 718 `log_trough_kit` Log trough; 720 `wooden_trough_kit` Wooden - Trough; 722 `wooden_channel_kit` Wooden - Channel; 724 `wooden_channel_corner_kit` Wooden - Channel corner; 726 `wooden_channel_tee_kit` Wooden - Channel tee; 728 `wooden_sluice_kit` Sluice; 731 `stone_trough_kit` Stone - Trough; 733 `stone_channel_kit` Stone - Channel; 735 `stone_channel_corner_kit` Stone - Channel corner; 737 `stone_channel_tee_kit` Stone - Channel tee; 739 `clay_pipe_run_kit` Clay - Pipe; 741 `clay_pipe_elbow_kit` Clay - Pipe elbow; 743 `clay_pipe_tee_kit` Clay - Pipe tee; 745 `iron_pipe_kit` Iron - Pipe; 747 `iron_pipe_elbow_kit` Iron - Pipe elbow; 749 `iron_tap_kit` Tap; 751 `iron_deep_well_pump_kit` Deep-well pump; 753 `stone_cistern_kit` Cistern; 755 `stone_raised_cistern_kit` Raised cistern; 770 `kiln_kit` Kiln; 772 `tanning_rack_kit` Tanning rack; 774 `drying_rack_kit` Drying rack; 776 `smoker_kit` Smoker; 778 `oil_press_kit` Oil press; 780 `storage_jar_kit` Storage jar; 782 `hide_sack_kit` Hide - Sack; 784 `wicker_basket_kit` Basket; 786 `weapon_rack_kit` Weapon rack; 788 `armour_stand_kit` Armour stand; 790 `sign_kit` Sign; 792 `tusk_mount_kit` Tusk mount; 794 `clay_bloomery_kit` Clay bloomery; 796 `stonecutters_bench_kit` Stonecutter's bench; 826 `iron_anvil_kit` Anvil; 829 `preserving_jar_kit` Preserving jar; 831 `root_cellar_kit` Root cellar; 847 `log_shelf_kit` Log shelf; 849 `wooden_crate_kit` Crate; 851 `iron_chest_kit` Iron - Chest; 860 `mixer_kit` Mixer; 862 `engineered_foundation_kit` Engineered - Foundation; 864 `engineered_wall_kit` Engineered - Wall; 866 `engineered_doorway_kit` Engineered - Doorway; 868 `engineered_window_kit` Engineered - Window; 870 `engineered_pillar_kit` Engineered - Pillar; 872 `engineered_stairs_kit` Engineered - Stairs; 874 `engineered_floor_kit` Engineered - Ceiling; 876 `engineered_roof_kit` Engineered - Roof; 878 `engineered_roof_corner_kit` Engineered - Roof corner; 880 `fortified_foundation_kit` Fortified - Foundation; 882 `fortified_wall_kit` Fortified - Wall; 884 `fortified_doorway_kit` Fortified - Doorway; 886 `fortified_gate_kit` Fortified - Gate; 888 `fortified_pillar_kit` Fortified - Pillar; 890 `fortified_wall_top_kit` Fortified - Wall top.
 
 ### A.structure (203 rows)
 
@@ -802,11 +867,11 @@ Already retired (185; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 82 | `tool_rack` | Tool rack |  |  | KEEP | A tool rack. Beside a camp bench it raises the bench a level. |
 | 84 | `vice` | Vice |  |  | KEEP | A wooden vice. Beside a camp bench it raises the bench a level. |
 | 86 | `log_workbench` | Carpenter's bench |  |  | KEEP | A pinned plank bench with its own rack and vice. Stand near it to make the things that need a work table. |
-| 88 | `stone_forge` | Stone - Forge |  |  | UPDATE | **UNRESOLVED: role after Smelter/Smithy split (U10).** A clay and rough stone forge under a log lean-to. Stand near it to work metal. |
-| 90 | `blacksmithy` | Brick - Forge |  |  | UPDATE | **RECOMMENDED: becomes the Smithy (s5).** A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel. |
+| 88 | `stone_forge` | Stone - Forge |  |  | UPDATE | **UNRESOLVED: role after the split (Q8).** A clay and rough stone forge under a log lean-to. Stand near it to work metal. |
+| 90 | `blacksmithy` | Brick - Forge |  |  | UPDATE | **RECOMMENDED: becomes the Smithy (s5.2).** A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel. |
 | 91 | `carcass` | Carcass |  |  | KEEP | A freshly killed animal. Work it with a knife for meat, hide and bones. |
-| 93 | `large_forge` | Large forge |  |  | FUTURE | **RECOMMENDED: possible Blast Furnace id (s5).** A big arched forge with a riveted iron frame and a brick-lined firebox. |
-| 95 | `master_forge` | Master forge |  |  | UPDATE | **RECOMMENDED: becomes the Master Smithy (s5).** An ornate black iron and gold forge set with red gems, always glowing. |
+| 93 | `large_forge` | Large forge |  |  | FUTURE | **RECOMMENDED: possible Blast Furnace id (Q8).** A big arched forge with a riveted iron frame and a brick-lined firebox. |
+| 95 | `master_forge` | Master forge |  |  | UPDATE | **RECOMMENDED: becomes the Master Smithy (s5.2).** An ornate black iron and gold forge set with red gems, always glowing. |
 | 193 | `wall_section` | Refined - Wall | planks |  | KEEP | A plank wall, two metres wide. Set pieces edge to edge to build a house. |
 | 195 | `floor_section` | Refined - Ceiling | planks |  | KEEP | A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge. |
 | 197 | `roof_section` | Refined - Roof | planks |  | KEEP | A plank roof on four posts, to set over walls and ceilings. |
@@ -817,8 +882,8 @@ Already retired (185; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 207 | `timber_set` | Beam | wood |  | KEEP | A post and cap frame that braces a tunnel. Longer reach and slower to wear. |
 | 212 | `ladder` | Ladder | wood |  | KEEP | A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb. |
 | 225 | `path_patch` | Path | earth |  | KEEP | Trodden ground, a metre of path. |
-| 241 | `saw_mill` | Sawmill |  |  | KEEP | **APPROVED: waterwheel reciprocating sawmill (s4).** A water-driven sawmill. Stand near it to saw logs into planks. |
-| 243 | `woodworking_table` | Woodworking table |  |  | RETIRE | **RECOMMENDED: redundant with Carpenter's bench (U7).** A woodworking table. Stand near it for fine woodwork. |
+| 241 | `saw_mill` | Sawmill |  |  | UPDATE | **APPROVED: new yields, no saw blade (s4.2).** A water-driven sawmill. Stand near it to saw logs into planks. |
+| 243 | `woodworking_table` | Woodworking table |  |  | RETIRE | **APPROVED: retired in open PR #1036 (s4.4).** A woodworking table. Stand near it for fine woodwork. |
 | 251 | `rough_bed` | Thatch - Bed |  |  | KEEP | A low frame of sticks and branches with a heap of rough bedding, like a manger. |
 | 253 | `thatch_wall` | Crude - Wall |  |  | KEEP | A thatch wall. |
 | 255 | `campfire_pot` | Campfire pot |  |  | KEEP | A pot hung over a small fire. It cooks while the fire is lit. The fire stays at firewood. |
@@ -952,9 +1017,9 @@ Already retired (185; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 752 | `iron_deep_well_pump` | Deep-well pump |  |  | KEEP | A force pump for a stone well. Lifts from deep and pushes water up an iron pipe. |
 | 754 | `stone_cistern` | Cistern |  |  | KEEP | A stone tank that holds two thousand litres, with an overflow at the rim. |
 | 756 | `stone_raised_cistern` | Raised cistern |  |  | KEEP | A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity. |
-| 771 | `kiln` | Kiln |  |  | KEEP | A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal. |
+| 771 | `kiln` | Kiln |  |  | UPDATE | **APPROVED: batch charcoal from logs (s5.3).** A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal. |
 | 773 | `tanning_rack` | Tanning rack |  |  | KEEP | **APPROVED: tanning.** A log frame to stretch scraped hides on while bark tannin turns them to leather. |
-| 775 | `drying_rack` | Drying rack |  |  | UPDATE | **APPROVED: adds hide drying (s6).** A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep. |
+| 775 | `drying_rack` | Drying rack |  |  | UPDATE | **PENDING CONFIRMATION: adds hide drying (s6).** A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep. |
 | 777 | `smoker` | Smoker |  |  | KEEP | A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks. |
 | 779 | `oil_press` | Oil press |  |  | KEEP | A stone press on a log frame. Squeezes linseed and walnuts for lamp oil. |
 | 781 | `storage_jar` | Storage jar |  |  | KEEP | A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out. |
@@ -968,7 +1033,7 @@ Already retired (185; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 797 | `stonecutters_bench` | Stonecutter's bench |  |  | KEEP | A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel. |
 | 823 | `fish_trap_set` | Fish trap |  |  | KEEP | A fish trap set in the water. |
 | 825 | `bird_trap_set` | Bird trap |  |  | KEEP | A bird trap set on the ground. |
-| 827 | `iron_anvil` | Anvil |  |  | RETIRE | **RECOMMENDED: Smithy has an anvil built in (s5).** A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel. |
+| 827 | `iron_anvil` | Anvil |  |  | RETIRE | **RECOMMENDED: Smithy has built-in tools (s5.2).** A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel. |
 | 830 | `preserving_jar` | Preserving jar |  |  | KEEP | A wide-mouthed clay jar with a lid, for pickling and preserving. |
 | 832 | `root_cellar` | Root cellar |  |  | KEEP | A stone-lined store dug into the ground. Cool all year, so food keeps far longer. |
 | 840 | `chicken_coop` | Chicken coop |  |  | FUTURE | A thatched coop for four chickens. They lay eggs. |
@@ -976,7 +1041,7 @@ Already retired (185; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 842 | `tub` | Tub |  |  | FUTURE | A wooden bathtub filled from a bucket. Warm it with a fire close by. |
 | 843 | `sap_tap` | Sap tap |  |  | FUTURE | A wooden spout driven into a maple or birch to catch sap. |
 | 844 | `cheese_press` | Cheese press |  |  | FUTURE | A wooden press that squeezes curds into cheese. |
-| 845 | `spinning_wheel` | Spinning wheel |  |  | FUTURE | **not in Dave's list; unchanged.** A treadle wheel that spins wool and flax into thread. |
+| 845 | `spinning_wheel` | Spinning wheel |  |  | FUTURE | **not in Dave's lists; unchanged.** A treadle wheel that spins wool and flax into thread. |
 | 846 | `loom` | Loom |  |  | FUTURE | **APPROVED: weaving station (s6).** A wooden frame loom for weaving thread into cloth. |
 | 848 | `log_shelf` | Log - Shelf |  |  | KEEP | Split logs lashed between two log uprights. A first shelf to set against a wall. |
 | 850 | `wooden_crate` | Crate |  |  | KEEP | A braced plank crate with a nailed lid. Holds 10 stacks. |
