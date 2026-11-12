@@ -8,7 +8,7 @@ Owner: thread "Fix spear combat, log carrying, tools". Base: `origin/dev` at `b9
 |---|---|---|
 | TEST-004 spear combat | NEEDS PLAYER VERIFICATION | Root cause found and fixed in code; the spear hold is a visual change nobody has seen yet. |
 | TEST-010 log carry | NEEDS PLAYER VERIFICATION | Log raised onto the shoulder and the right-hand tool put away; position chosen from the skeleton, not seen in game. |
-| TEST-013 tools and "Forest Humus" | NEEDS PLAYER VERIFICATION | Server now uses the tool in hand; label fixed. Tuning (axe on rock) needs Dave's feel. |
+| TEST-013 tools and "Forest Humus" | NEEDS PLAYER VERIFICATION | Server now uses the tool in hand with Dave's tool tiers for rock and wood; label fixed. Numbers need Dave's feel in play. |
 
 No row is VERIFIED FIXED: Godot has not run on this change yet (no cloud runs; PC run pending Dave's go).
 
@@ -46,19 +46,18 @@ Why the axe and pick seemed equal:
 2. `boulders.json` gave the stone axe and stone pick the same 3 blows per stone.
 3. The wear used work kind `"boulder"`, which has no `drops.json tool_wear` entry, so the existing "axe on rock wears 5" rule never applied.
 
-Fix:
-- The client sends the held pack slot + 1 in the boulder ACT_HIT `count` (protocol 112; `PROTOCOL.md`). The server uses only that tool, which must be on the hotbar, not broken, and have a `boulders.json tools` entry; anything else is refused as no tool.
-- Wear uses work kind `"rock"`: axe 5 per blow, pick 1 (existing data).
-- Tuning of existing entries only: axe blows per stone are now twice the pick's of the same material (stone 6, bronze 4, iron 2, steel 2; picks unchanged 3, 2, 1, 1).
-- A boulder's stones are still fixed by its size; a better tool only takes them in fewer blows (unchanged).
+Fix (protocol 112, approved by Dave in the thread, 12 Nov 2026: "yes it needs to know what tool I am using"):
+- The client sends the held pack slot + 1: in the boulder ACT_HIT `count`, and in at.x of the tree ACT_HIT and the trunk, stump and log ACT_PROCESS (`PROTOCOL.md`). The server uses and wears only that tool, which must be on the hotbar and not broken; anything else is refused as no tool.
 
-Effect for a Stone - Axe (900 durability) vs Stone - Pickaxe (4500) on rock: axe 6 blows and 30 wear per stone (about 30 stones a life), pick 3 blows and 3 wear (about 1500).
+Tool tiers (Dave 12 Nov 2026, in the thread):
+- Rock (`boulders.json tools`, now stones per blow): pick stone 1, bronze 2, iron 3, steel 4; axe stone 0.5, bronze 1, iron 1.5, steel 2. A boulder's stones stay fixed by its size; a better tool empties it in fewer blows, so it wears less for the same stone. A fraction carries over in the boulder's `progress`. Wear kind `"rock"`: an axe dulls and wears 5 a blow, a pick 1 ("hitting an axe on a stone will pull down its sharpness rapidly").
+- Wood (`drops.json wood_tools speed`, the work one blow does): axe stone 1.0 (the old timing), bronze 1.5, iron 2.0, steel 2.5; pick stone 0.15, bronze 0.2, iron 0.25, steel 0.3. It divides the blows to fell a tree, cut a log off a trunk and break up a stump.
+- A pick on wood ("using a pickaxe on a tree or a log will give you thatch, and kindling. not sticks or wood. if you break a log with a pickaxe it will just leave a pile of kindling"): every blow gives 1-2 kindling and 1 thatch, nothing else (no branches, sticks, firewood or bark). A trunk length cut through with a pick leaves a pile of 10 kindling instead of the log; a log on the ground breaks after 1 / speed blows (7 with a stone pick) into a pile of 5 (small log) or 10 (shoulder log) kindling; a stump gives 5 kindling. Wood never wears or dulls a pick (`tool_wear` pick tree, trunk, split 0: "a tree cant dull a pickaxe"). A tree a pick fells still falls and breaks into logs like any other (my reading; say if it should not). The 5 and 10 kindling counts are a first guess for Dave to tune.
+- Not changed: the chopping block (split at a structure) and swinging at bare rock ground (`_mine`, still the first axe on the hotbar; reported, not in this fix).
 
-Wood (protocol 112): only an axe works wood (a pick is refused), but every tree, trunk, stump and loose-log blow used the first axe on the hotbar, so a held pick with an axe on the hotbar still chopped. Now the client sends the held slot + 1 in at.x of the tree ACT_HIT and the wood ACT_PROCESS; the server (`_held_tool`) uses and wears only that slot when it is an axe on the hotbar. Not changed: the chopping block (split at a structure) and swinging at bare rock ground (`_mine`, which still needs an axe on the hotbar; reported, not in this fix). Tests: 40 tree/trunk/stump/log calls in 11 tests send the axe slot through `src/worldgen/tools/held_tool.gd`; `test_server_items.gd` adds "a pickaxe in hand does not work a trunk, nor wear the axe on the hotbar".
+Tests: `test_server_items.gd` boulder block (nothing, a stone or an empty slot in hand refused; iron pick 10 blows = 30 stones and 10 wear; a held stone axe with the iron pick on the hotbar: 12 blows = 6 stones, 60 axe wear, pick untouched; luck doubles at 3 a blow) and a pick on a trunk (kindling and thatch, no sticks, no wear on pick or axe); `test_stump_chop.gd` tiers (a bronze axe fells in fewer blows than a stone axe; a pick takes at least 5 times as many, gives kindling and thatch, no sticks, no wear; a stone pick breaks a log in 7 blows into a pile of 5 kindling, no blocks); `test_ore.gd`, `test_flint.gd` (now a stone pick, one piece a blow), `test_bronze_path.gd` send the held slot; 40 tree/trunk/stump/log calls in 11 tests send the axe slot through `src/worldgen/tools/held_tool.gd`.
 
-Tests: `test_server_items.gd` boulder block (held axe with an iron pick on the hotbar: 6 blows a stone, 5 wear a blow, pick untouched; a stone or an empty slot in hand refused), `test_ore.gd`, `test_flint.gd`, `test_bronze_path.gd` updated to send the slot.
-
-Dave to check: look at a boulder (it says Rock); with both on the hotbar, hold the Stone - Pickaxe, then the Stone - Axe: the pick takes a stone every 3 blows, the axe every 6 and wears fast. Say if the axe penalty feels right.
+Dave to check: look at a boulder (it says Rock). Hold the Stone - Pickaxe on a boulder: a stone every blow; a Stone - Axe: a stone every two blows, dulling fast. Chop a tree with the pickaxe: very slow, kindling and thatch only, no wear; break a log on the ground with it: a pile of kindling.
 
 ## Review
 

@@ -5480,21 +5480,21 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 
 
 # The tool in hand for a boulder blow (TEST-013, Dave 12 Nov 2026: the stone axe and stone pick were the same because the best tool on the
-# hotbar did the work, whatever was held): [slot, blows per stone] from boulders.json tools by its class and material, [] when the held slot
+# hotbar did the work, whatever was held): [slot, stones per blow] from boulders.json tools by its class and material, [] when the held slot
 # is not a usable boulder tool on the hotbar.
 func _boulder_tool(inv, slot: int) -> Array:
 	if slot < 0 or slot >= inv.SLOTS or not inv.on_hotbar(slot) or _is_broken(inv, slot):
 		return []
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
-	var blows: int = int((_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 0))
-	return [slot, blows] if blows > 0 else []
+	var rate: float = float((_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 0.0))
+	return [slot, rate] if rate > 0.0 else []
 
 
-# One blow on a boulder (ACT_HIT with the boulder marker; `held_slot` is the pack slot in hand). The held tool wears every blow (drops.json
-# tool_wear "rock": an axe wears faster on stone than a pick); after its blows-per-stone a rough stone comes out into the pack (refused when
-# too heavy to carry), the boulder shrinks, and it is gone with its last stone. The stones in a boulder are fixed by its size; a better tool
-# only takes them out in fewer blows.
+# One blow on a boulder (ACT_HIT with the boulder marker; `held_slot` is the pack slot in hand). The held tool wears once a blow (drops.json
+# tool_wear "rock": an axe 5, a pick 1) and takes its stones per blow (boulders.json tools: a better pick more, an axe half; a fraction carries
+# over in the boulder's "progress") into the pack, as many as can be carried (none: refused, too heavy). The boulder shrinks and is gone with
+# its last stone. Its stones are fixed by its size, so a better tool empties it in fewer blows and wears less doing it (TEST-013).
 func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
@@ -5520,54 +5520,36 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		_reject(peer, 0)
 		return
 
-	_last_hit[peer] = now
-	_wear_slot(peer, inv, int(tool[0]), "rock")
-	info["blows"] = int(info.get("blows", 0)) + 1
-	hit_number(peer, it["pos"] + Vector3(0.0, size_now, 0.0), HIT_POINTS / float(maxi(int(tool[1]), 1)))
-
-	if int(info["blows"]) < int(tool[1]):
-		return
-
+	var rate: float = float(tool[1])
+	var progress: float = float(info.get("progress", 0.0)) + rate
+	var pieces: int = mini(int(floor(progress + 0.001)), int(it["count"]))
 	var stone: int = table.number_of("stone")
 
-	if _fit(peer, inv, stone, 1) == 0:
-		_say(peer, "Too heavy to carry any more")
-		_reject(peer, 2)
+	if pieces > 0:
+		pieces = mini(pieces, _fit(peer, inv, stone, pieces))
+
+		if pieces == 0:
+			_say(peer, "Too heavy to carry any more")
+			_reject(peer, 2)
+			return
+
+	_last_hit[peer] = now
+	_wear_slot(peer, inv, int(tool[0]), "rock")
+	hit_number(peer, it["pos"] + Vector3(0.0, size_now, 0.0), HIT_POINTS * minf(rate, 1.0))
+	info["progress"] = progress - float(pieces)
+
+	if pieces == 0:
 		return
 
-	info["blows"] = 0
-	var out: int = 1
-
-	# Luck (TD condition): a rough stone now and then comes away as two (boulders.json luck_extra, nudged by the peer's luck).
-	if int(it["count"]) > 1 and fate(peer, "boulder_extra", float(_boulder_cfg.get("luck_extra", 0.05))):
-		out = 2
-
-	# Ore (F-23): a pick on an outcrop takes ore out of it now and then, else stone.
 	var ore_cfg: Dictionary = _boulder_cfg.get("ore", {})
-	var ore_item: int = 0
+	var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))
+	var a_pick: bool = str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick"))
+	# needs_material (boulders.json ore): the pick materials that may take each ore; no entry = any pick (iron ore needs a bronze, iron or steel pick: the ladder).
+	var material_ok: bool = not info.has("ore") or ((ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), []) as Array).is_empty() or ((ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), []) as Array).has(str(held.get("material", "")))
 
-	if info.has("ore") and not ore_cfg.is_empty():
-		var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))
+	if info.has("ore") and not ore_cfg.is_empty() and a_pick and not material_ok:
+		_say(peer, "This pick is too soft for that ore.")   # said once per blow that breaks stone off
 
-		# needs_material (boulders.json ore): the pick materials that may take each ore; no entry = any pick (iron ore needs a bronze, iron or steel pick: the ladder).
-		var allowed_materials: Array = (ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), [])
-		var material_ok: bool = allowed_materials.is_empty() or allowed_materials.has(str(held.get("material", "")))
-
-		if not material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and int(info.get("blows", 0)) == 0:
-			_say(peer, "This pick is too soft for that ore.")   # said once per stone, when the stone comes away
-
-		var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
-		var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(ore_cfg.get("piece_share", 0.5))
-
-		if material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", share):
-			var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
-			ore_item = table.number_of(piece_id)
-
-	if ore_item > 0:
-		inv.add(ore_item, 1)
-		out = 1
-
-	# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule is one piece, never a double.
 	var flint_cfg: Dictionary = _boulder_cfg.get("flint", {})
 	var flint_n: int = table.number_of(str(flint_cfg.get("item", "flint"))) if not flint_cfg.is_empty() else 0
 	var flint_p: float = float(flint_cfg.get("chance", 0.0))
@@ -5575,16 +5557,45 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	if flint_n > 0 and water_near.is_valid() and bool(water_near.call(it["pos"], float(flint_cfg.get("water_reach_m", 6.0)))):
 		flint_p = float(flint_cfg.get("near_water_chance", flint_p))
 
-	if ore_item > 0:
-		pass   # the piece was ore
-	elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
-		inv.add(flint_n, 1)
-		out = 1
-	else:
-		inv.add(stone, out)
+	var taken: int = 0
+
+	for n in range(pieces):
+		var left: int = int(it["count"]) - taken
+
+		if left <= 0:
+			break
+
+		var out: int = 1
+
+		# Luck (TD condition): a rough stone now and then comes away as two (boulders.json luck_extra, nudged by the peer's luck).
+		if left > 1 and fate(peer, "boulder_extra", float(_boulder_cfg.get("luck_extra", 0.05))):
+			out = 2
+
+		# Ore (F-23): a pick on an outcrop takes ore out of it now and then, else stone.
+		var ore_item: int = 0
+
+		if info.has("ore") and not ore_cfg.is_empty() and a_pick and material_ok:
+			var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
+			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(ore_cfg.get("piece_share", 0.5))
+
+			if fate(peer, "boulder_ore", share):
+				var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
+				ore_item = table.number_of(piece_id)
+
+		# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule or an ore is one piece, never a double.
+		if ore_item > 0:
+			inv.add(ore_item, 1)
+			out = 1
+		elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
+			inv.add(flint_n, 1)
+			out = 1
+		else:
+			inv.add(stone, out)
+
+		taken += out
 
 	practice(peer, "mine_rock")   # breaking a boulder is Mining too
-	it["count"] = int(it["count"]) - out
+	it["count"] = maxi(int(it["count"]) - taken, 0)
 	_boulder_left[it["scatter"]] = int(it["count"])
 	_dirty = true
 
@@ -5742,7 +5753,7 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 	return best
 
 
-# One axe blow on a standing tree. Enough blows fell it: the standing tree is removed, and a trunk
+# One blow on a standing tree with the tool in hand (an axe; a pick very slowly, wood_tools). Enough work fells it: the standing tree is removed, and a trunk
 # and a stump lie there (records in _items with a "tree" entry, saved in tree_states.json).
 func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void:
 	if chunk.x == Net.HIT_BOULDER:
@@ -5757,9 +5768,9 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
 		return
 
-	var axe: int = _held_tool(inv, held_slot, "axe")
+	var tool: Array = _wood_tool(inv, held_slot)   # an axe, or (very slowly) a pick
 
-	if axe < 0:
+	if tool.is_empty():
 		_reject(peer, 1)
 		return
 
@@ -5776,14 +5787,20 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 		return
 
 	_last_hit[peer] = now
-	_wear_slot(peer, inv, axe, "tree")
+	_wear_slot(peer, inv, int(tool[0]), "tree")
 	var key: String = "%d,%d,%d" % [chunk.x, chunk.y, tree_id]
-	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
+	var chop: Dictionary = _chops.get(key, {"hits": 0.0, "msec": now})
 
 	if now - int(chop["msec"]) > CHOP_RESET_MS:
-		chop["hits"] = 0
+		chop["hits"] = 0.0
 
-	chop["hits"] = int(chop["hits"]) + 1
+	chop["hits"] = float(chop["hits"]) + float(tool[2])   # the work done: a stone axe 1 a blow, a better axe more, a pick a little (wood_tools speed)
+
+	if str(tool[1]) == "pick":
+		var splinter_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		splinter_rng.seed = hash([key, int(float(chop["hits"]) * 1000.0)])
+		_pick_splinters(peer, splinter_rng)
+
 	chop["msec"] = now
 	_chops[key] = chop
 	var fell: Dictionary = _drops.get("felling", {})   # data/items/drops.json "felling": the blow counts follow the swing time (balance, Dave tunes)
@@ -5794,9 +5811,9 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 
 	var needed: int = maxi(1, int(ceil(float(clampi(int(round(float(fell.get("tree_base", 4.0)) + hit_radius * float(fell.get("tree_per_trunk_m", 30.0)))), int(fell.get("tree_min", 4)), int(fell.get("tree_max", 40)))) / skill_factor(peer, "fell_tree"))))
 
-	hit_number(peer, spot + Vector3(0.0, 1.2, 0.0), HIT_POINTS / float(needed))
+	hit_number(peer, spot + Vector3(0.0, 1.2, 0.0), HIT_POINTS * float(tool[2]) / float(needed))
 
-	if int(chop["hits"]) < needed:
+	if float(chop["hits"]) < float(needed) - 0.001:
 		return
 
 	if _trees_in_chunk(chunk) >= TRUNKS_PER_CHUNK:
@@ -5895,6 +5912,31 @@ func _held_tool(inv, slot: int, tool_class: String) -> int:
 	return slot if str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class else -1
 
 
+# The wood tool in hand as [slot, tool class, speed]: an axe, or a pick (the wrong tool: very slow, tears loose sticks and kindling), with
+# drops.json wood_tools speed by its class and material; [] when the held slot is neither (TEST-013).
+func _wood_tool(inv, slot: int) -> Array:
+	var speeds: Dictionary = (_drops.get("wood_tools", {}) as Dictionary).get("speed", {})
+
+	for tool_class in ["axe", "pick"]:
+		if _held_tool(inv, slot, tool_class) >= 0:
+			var speed: float = float((speeds.get(tool_class, {}) as Dictionary).get(str(table.entry(table.id_of(inv.numbers[slot])).get("material", "")), 0.0))
+			return [slot, tool_class, speed] if speed > 0.0 else []
+
+	return []
+
+
+# What a pick tears loose from wood with every blow (drops.json wood_tools pick_splinters): kindling and thatch, never sticks or wood (Dave 12 Nov 2026).
+func _pick_splinters(peer: int, rng: RandomNumberGenerator) -> void:
+	for row in (_drops.get("wood_tools", {}) as Dictionary).get("pick_splinters", []):
+		give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
+
+# The kindling a pick leaves of a whole log (drops.json wood_tools pick_log_kindling): a shoulder log or a trunk length, else a small log.
+func _pick_kindling(big: bool) -> int:
+	var counts: Dictionary = (_drops.get("wood_tools", {}) as Dictionary).get("pick_log_kindling", {})
+	return maxi(1, int(counts.get("big" if big else "small", 10 if big else 5)))
+
+
 func _has_tool(inv, tool_class: String) -> bool:
 	return _tool_slot(inv, tool_class) >= 0
 
@@ -5952,7 +5994,12 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	var before: Array = _snapshot(inv)
 	# A skilled crafter looks after their tools: wear is spread by the tool_care factor (1.0 for everyone at first), a deterministic
 	# carry of the fraction so no dice are involved.
-	var wear_now: float = float(maxi(1, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))) / skill_factor(peer, "tool_care") + float(_wear_carry.get(peer, 0.0))
+	var per_use: int = maxi(0, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))   # 0: work that cannot wear or dull this tool (a pick on wood)
+
+	if per_use == 0:
+		return
+
+	var wear_now: float = float(per_use) / skill_factor(peer, "tool_care") + float(_wear_carry.get(peer, 0.0))
 	var whole: int = int(floor(wear_now + 0.001))
 	_wear_carry[peer] = wear_now - float(whole)
 	var dull_at: int = SmithingRules.dull_at(entry, inv.inst[slot])
@@ -6295,7 +6342,7 @@ func _load_trees() -> void:
 		_next_id += 1
 
 
-# One axe blow on a felled trunk (drops.json "trunk"): branches and leaves first, then logs with some
+# One blow with the tool in hand on a felled trunk (drops.json "trunk"; a pick only tears it up, wood_tools): branches and leaves first, then logs with some
 # bark and now and then seeds. The server checks the axe, the pace and that the player stands at the
 # trunk (distance to its line). The trunk is used up when its logs are gone; the stump stays.
 func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
@@ -6305,20 +6352,21 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 		_process_carcass(peer, inv, id)
 		return
 
-	var axe: int = _held_tool(inv, held_slot, "axe")   # wood is worked with the axe in hand (TEST-013)
+	var tool: Array = _wood_tool(inv, held_slot)   # wood is worked with the tool in hand: an axe, or (very slowly) a pick (TEST-013)
+	var a_log: bool = not it.is_empty() and not it.has("tree") and not it.has("struct") and (table.id_of(int(it["number"])) == "log" or is_shoulder_item(int(it["number"])))
 
-	if axe < 0:
-		if not it.is_empty() and (it.has("tree") or (not it.has("struct") and (table.id_of(int(it["number"])) == "log" or is_shoulder_item(int(it["number"]))))):
-			_say(peer, "You need an axe in hand to work wood.")   # a pick or nothing held: the wood sound played, so say why nothing came of it
+	if tool.is_empty():
+		if a_log or (not it.is_empty() and it.has("tree")):
+			_say(peer, "You need an axe in hand to work wood.")   # the wood sound played, so say why nothing came of it
 
 		return
 
-	if not it.is_empty() and not it.has("tree") and not it.has("struct"):
-		_chop_loose_log(peer, inv, id, axe)
+	if a_log:
+		_chop_loose_log(peer, inv, id, tool)
 		return
 
 	if not it.is_empty() and it.has("tree") and int(it["tree"]["state"]) == 4:
-		_chop_stump(peer, inv, id, axe)
+		_chop_stump(peer, inv, id, tool)
 		return
 
 	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer):
@@ -6351,8 +6399,9 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 		return
 
 	_last_process[peer] = now
-	_wear_slot(peer, inv, axe, "trunk")
+	_wear_slot(peer, inv, int(tool[0]), "trunk")
 	practice(peer, "work_trunk")
+	var by_pick: bool = str(tool[1]) == "pick"   # the wrong tool: it only tears the wood up into kindling and thatch (Dave 12 Nov 2026)
 	tree["landed"] = true   # the client draws it lying from now on (a shorter trunk is not felled again)
 
 	if not tree.has("logs_left"):
@@ -6364,11 +6413,14 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	var blows: int = int(tree["blows"])
 	tree["blows"] = blows + 1
 
+	if by_pick:
+		_pick_splinters(peer, rng)
+
 	if blows < int(cfg.get("branch_blows", 3)):
-		for row in _branch_rows(tree, cfg, it["pos"]):
+		for row in ([] if by_pick else _branch_rows(tree, cfg, it["pos"])):
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
-		for row in cfg.get("small", []):
+		for row in ([] if by_pick else cfg.get("small", [])):
 			var small_id: String = _wood_item("firewood", str(tree.get("species", ""))) if str(row[0]) == "firewood" else str(row[0])
 			give(peer, table.number_of(small_id), roll_amount(peer, rng, int(row[1]), int(row[2])))
 
@@ -6376,19 +6428,21 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 			_items.erase(id)
 	else:
 		var per_log: float = float(cfg.get("blows_per_log", 3))   # a fraction is fine (1.6: a log every 1 or 2 blows, the remainder carries over)
-		var progress: float = float(tree.get("cut_progress", 0.0)) + 1.0
+		var progress: float = float(tree.get("cut_progress", 0.0)) + float(tool[2])   # a better axe cuts through sooner, a pick very slowly (wood_tools speed)
 		tree["cut_progress"] = progress
 
-		if progress >= per_log - 0.001:   # the cut goes through: the log drops on the ground beside the trunk (never into the pack or onto the shoulder)
-			if _cut_log_off(peer, id, tree, cfg):
+		if progress >= per_log - 0.001:   # the cut goes through: the log drops on the ground beside the trunk (never into the pack or onto the shoulder); a pick leaves a pile of kindling instead
+			if _cut_log_off(peer, id, tree, cfg, by_pick):
 				tree["cut_progress"] = progress - per_log
 				tree["logs_left"] = int(tree["logs_left"]) - 1
 			else:
-				tree["cut_progress"] = maxf(per_log - 1.0, 0.0)   # no room for it: the next blow tries the cut again
+				tree["cut_progress"] = maxf(per_log - float(tool[2]), 0.0)   # no room for it: the next blow tries the cut again
 
 		var thatch_bark: Dictionary = (cfg.get("thatch_bark", {}) as Dictionary).get(str(tree.get("species", "")), {})
 
-		if not thatch_bark.is_empty():   # birch and softwood bark is thatch (Dave 24 Oct)
+		if by_pick:
+			pass   # the pick's kindling and thatch above are all it gets
+		elif not thatch_bark.is_empty():   # birch and softwood bark is thatch (Dave 24 Oct)
 			if roll_chance(peer, rng, float(thatch_bark.get("chance", 0.3))):
 				var count: Array = thatch_bark.get("count", [2, 4])
 				give(peer, table.number_of("thatch"), roll_amount(peer, rng, int(count[0]), int(count[1])))
@@ -6425,7 +6479,7 @@ func _stump_final_rows(cfg: Dictionary, radius: float) -> Array:
 
 # One axe blow on a stump (drops.json "stump"): a few blows (more for a thick one) chop it up for kindling and firewood, then it is gone and its record
 # is freed. The blow count is saved with the stump, so a half-chopped stump stays half-chopped across a restart; the pace and skill rules are the trunk's.
-func _chop_stump(peer: int, inv, id: int, axe: int) -> void:   # `axe`: the usable axe in hand (checked by _process_trunk)
+func _chop_stump(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: the wood tool in hand, _wood_tool (checked by _process_trunk)
 	var it: Dictionary = _items.get(id, {})
 
 	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 4 or not _peer_pos.has(peer):
@@ -6443,16 +6497,26 @@ func _chop_stump(peer: int, inv, id: int, axe: int) -> void:   # `axe`: the usab
 		return
 
 	_last_process[peer] = now
-	_wear_slot(peer, inv, axe, "trunk")
+	_wear_slot(peer, inv, int(tool[0]), "trunk")
 	practice(peer, "work_trunk")
+	var by_pick: bool = str(tool[1]) == "pick"
 	var needed: int = clampi(int(ceil(float(cfg.get("blows_base", 3)) + float(tree["radius"]) * float(cfg.get("blows_per_radius_m", 15)))), int(cfg.get("blows_min", 3)), int(cfg.get("blows_max", 14)))
+	needed = maxi(1, int(ceil(float(needed) / float(tool[2]) - 0.001)))   # the stone axe's blows, divided by the tool's speed (wood_tools)
 	var blows: int = int(tree.get("blows", 0)) + 1
 	tree["blows"] = blows
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(id) ^ (blows * 7919)
 	var species: String = str(tree.get("species", ""))
 
-	if blows < needed:
+	if by_pick:   # a pick only tears the stump up: kindling and thatch every blow, a pile of kindling at the end (Dave 12 Nov 2026)
+		_pick_splinters(peer, rng)
+
+		if blows >= needed:
+			give(peer, table.number_of("kindling"), _pick_kindling(false))
+			_items.erase(id)
+		elif send_notice.is_valid():
+			send_notice.call(peer, "Breaking up the stump: %d of %d" % [blows, needed])
+	elif blows < needed:
 		if roll_chance(peer, rng, float(cfg.get("chip_chance", 0.5))):
 			for row in cfg.get("chip", []):
 				give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
@@ -6777,7 +6841,7 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_b
 
 # One log cut off the far end of a felled trunk (Dave: a log must land on the ground, never in the pack or on the shoulder; the trunk gets shorter with a fresh cut face). The log is an ordinary
 # dropped log item beside the trunk, so it obeys the drop rules; false (nothing changes, the next blow tries again) when the spot is too crowded. The last log takes whatever is left of the trunk.
-func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary) -> bool:
+func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kindling: bool = false) -> bool:   # as_kindling: cut with a pick, the piece is a pile of kindling
 	var it: Dictionary = _items[id]
 	var log_len: float = float(cfg.get("log_length_m", 2.44))
 	var length_now: float = float(tree["length"])
@@ -6790,8 +6854,9 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary) -> bool
 	var radius: float = float(tree["radius"])
 	var at: Vector3 = it["pos"] + along * (mid * cos(pitch)) + side * (radius + 0.7) + Vector3(0.0, sin(pitch) * mid + radius, 0.0)
 	var log_n: int = _log_number(str(tree.get("species", "")))
+	var dropped: bool = drop_in_world(table.number_of("kindling"), _pick_kindling(true), at) if as_kindling else drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius))
 
-	if not drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius)):
+	if not dropped:
 		_say(peer, "Too many things lie here. Clear some away first.")
 		return false
 
@@ -9041,7 +9106,9 @@ func _drop_firewood_beside(block: Dictionary, count: int, wood_id: String = "fir
 
 # A log lying on the ground, struck with an axe, falls apart into wooden blocks: 3 per log (Dave 4 Nov 2026, BUG-014), small blocks from a short log,
 # large blocks from a large shoulder log.
-func _chop_loose_log(peer: int, inv, id: int, axe: int) -> void:   # `axe`: the usable axe in hand (checked by _process_trunk)
+# With a pick (Dave 12 Nov 2026: "if you break a log with a pickaxe it will just leave a pile of kindling") it takes 1 / speed blows, each tearing loose
+# kindling and thatch, and the log is left as a pile of kindling where it lay.
+func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: the wood tool in hand, _wood_tool (checked by _process_trunk)
 	var it: Dictionary = _items.get(id, {})
 
 	if it.is_empty() or it.has("struct") or it.has("tree") or it.has("fire") or it.has("scatter") or not _peer_pos.has(peer):
@@ -9062,6 +9129,29 @@ func _chop_loose_log(peer: int, inv, id: int, axe: int) -> void:   # `axe`: the 
 		return
 
 	_last_process[peer] = now
+
+	if str(tool[1]) == "pick":
+		_wear_slot(peer, inv, int(tool[0]), "split")
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		var work: float = float(it.get("pick_work", 0.0)) + float(tool[2])
+		rng.seed = hash([id, int(work * 1000.0)])
+		_pick_splinters(peer, rng)
+		it["pick_work"] = work
+		_dirty = true
+
+		if work < 1.0 - 0.001:
+			return
+
+		it.erase("pick_work")
+
+		if int(it["count"]) > 1:
+			it["count"] = int(it["count"]) - 1
+		else:
+			_items.erase(id)
+
+		drop_in_world(table.number_of("kindling"), _pick_kindling(big), it["pos"] + Vector3(0.0, 0.1, 0.0))
+		return
+
 	var cfg: Dictionary = _structures.get("chopping_block", {})
 	var blocks: int = int(cfg.get("blocks_per_shoulder_log", 3)) if big else int(cfg.get("blocks_per_log", 3))
 
@@ -9070,7 +9160,7 @@ func _chop_loose_log(peer: int, inv, id: int, axe: int) -> void:   # `axe`: the 
 	else:
 		_items.erase(id)
 
-	_wear_slot(peer, inv, axe, "split")
+	_wear_slot(peer, inv, int(tool[0]), "split")
 	drop_in_world(table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
 	practice(peer, "split_log")
 	_dirty = true

@@ -1156,14 +1156,22 @@ func _init() -> void:
 	var sticks: int = w.table.number_of("stick")
 	var logs: int = w.table.number_of("log")
 	var apple: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)   # kept for the non-key wood test below
-	# TEST-013 (Dave 12 Nov 2026): the axe in hand does the wood work. With the axe on the hotbar, a held pickaxe does nothing to the trunk.
+	# TEST-013 (Dave 12 Nov 2026): the tool in hand does the wood work. A held pickaxe (the axe still on the hotbar) only tears the trunk up:
+	# kindling and thatch, no sticks or branches, and neither the pick nor the axe on the hotbar wears.
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
-	var pick_at: Vector3 = Vector3(float(w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe")) + 1), 0.0, 0.0)
+	var pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
+	var pick_at: Vector3 = Vector3(float(pick_slot + 1), 0.0, 0.0)
 	var axe_wear: int = int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1])
 	var sticks_before: int = w.inventory_of(1).count_of(sticks)
+	var kindling_before: int = w.inventory_of(1).count_of(w.table.number_of("kindling"))
+	var thatch_before: int = w.inventory_of(1).count_of(w.table.number_of("thatch"))
+	var trunk_before_pick: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)
 	w._last_process.clear()
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, pick_at)
-	check(w.inventory_of(1).count_of(sticks) == sticks_before and int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear, "a pickaxe in hand does not work a trunk, nor wear the axe on the hotbar")
+	check(w.inventory_of(1).count_of(sticks) == sticks_before and w.inventory_of(1).count_of(w.table.number_of("kindling")) > kindling_before and w.inventory_of(1).count_of(w.table.number_of("thatch")) > thatch_before, "a pickaxe in hand tears kindling and thatch off a trunk, no sticks")
+	check(int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear and int(w.inventory_of(1).wear[pick_slot]) == 0 and int(w.inventory_of(1).inst[pick_slot].get("sharp", 0)) == 0, "wood neither wears nor dulls the pick, and the axe on the hotbar is not used")
+	w._items[trunk_id] = trunk_before_pick   # the axe checks below start from the untouched trunk
+	w.inventory_of(1).remove(w.table.number_of("stone_pickaxe"), 1)
 	w._last_process.clear()
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 	check(w.inventory_of(1).count_of(sticks) >= 1 and w.inventory_of(1).count_of(w.table.number_of("leaves")) >= 1, "first blows take branches and leaves")
@@ -2845,6 +2853,7 @@ func _init() -> void:
 	bo.ground_height = func(x, _z): return 10.0 + x * 0.3
 	bo.peer_connected_hello(1, "boulderkey01")
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
+	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
 	check(big >= 4000 and big <= 5200, "a 1 m radius boulder makes about 4600 stones at 0.85 height, 2600 kg/m3, half usable (%d)" % big)
 	check(bo._boulder_stones(0.3) >= 100 and bo._boulder_stones(0.3) <= 150 and bo._boulder_stones(1.2) > 7000, "small boulders make a hundred or so, a 1.2 m one several thousand (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
@@ -2863,10 +2872,10 @@ func _init() -> void:
 		bo._last_hit.clear()
 		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)   # count: the held pack slot + 1 (protocol 112)
 
-	check(bo.inventory_of(1).count_of(stone_id) == 10 and int(bo._items[900001]["count"]) == small_total - 10, "an iron pick takes one stone per blow (%d stones, %d left)" % [bo.inventory_of(1).count_of(stone_id), int(bo._items[900001]["count"])])
+	check(bo.inventory_of(1).count_of(stone_id) == 30 and int(bo._items[900001]["count"]) == small_total - 30, "an iron pick takes three stones a blow (boulders.json tools: stone 1, bronze 2, iron 3, steel 4): 10 blows, 30 stones (%d stones, %d left)" % [bo.inventory_of(1).count_of(stone_id), int(bo._items[900001]["count"])])
 	check(int(bo.inventory_of(1).wear[pick_slot]) == 10, "every blow wears the pick one (%d)" % int(bo.inventory_of(1).wear[pick_slot]))
 	# TEST-013 (Dave 12 Nov 2026): the tool IN HAND does the work, not the best one on the hotbar. With the iron pick still on the hotbar,
-	# a held stone axe takes six blows a stone (twice a stone pick's three) and wears five a blow (drops.json tool_wear axe rock).
+	# a held stone axe takes half a stone a blow (half a stone pick's one; Dave 12 Nov 2026) and wears five a blow (drops.json tool_wear axe rock: it dulls fast on stone).
 	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 	var axe_slot: int = bo.inventory_of(1).numbers.find(bo.table.number_of("stone_axe"))
 
@@ -2874,7 +2883,7 @@ func _init() -> void:
 		bo._last_hit.clear()
 		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, axe_slot + 1, Vector3.ZERO)
 
-	check(bo.inventory_of(1).count_of(stone_id) == 12, "a held stone axe takes six blows per stone even with an iron pick on the hotbar: 12 blows, 2 stones (%d)" % (bo.inventory_of(1).count_of(stone_id) - 10))
+	check(bo.inventory_of(1).count_of(stone_id) == 36, "a held stone axe takes a stone every two blows even with an iron pick on the hotbar: 12 blows, 6 stones (%d)" % (bo.inventory_of(1).count_of(stone_id) - 30))
 	check(int(bo.inventory_of(1).wear[axe_slot]) == 60 and int(bo.inventory_of(1).wear[pick_slot]) == 10, "the held axe wears five a blow on rock and the pick on the hotbar not at all (axe %d, pick %d)" % [int(bo.inventory_of(1).wear[axe_slot]), int(bo.inventory_of(1).wear[pick_slot])])
 	var left_before: int = int(bo._items[900001]["count"])
 	bo._last_hit.clear()
@@ -2890,7 +2899,7 @@ func _init() -> void:
 	check(bo_rejects[-1] == 0, "too far away: refused")
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo._items[900001]["count"] = 1
-	bo._items[900001]["boulder"]["blows"] = 0
+	bo._items[900001]["boulder"]["progress"] = 0.0
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)
 	check(not bo._items.has(900001) and int(bo._boulder_left[bo.BOULDER_KEY | 7]) == 0, "the last stone takes the boulder with it")
@@ -2919,7 +2928,7 @@ func _init() -> void:
 					bo.inventory_of(1).counts[slot] = 0
 					bo.inventory_of(1).numbers[slot] = 0
 
-		extras.append(taken - 400)
+		extras.append(taken - 1200)   # an iron pick: 3 stones a blow
 		bo._items.erase(900002)
 		bo.inventory_of(1).numbers[bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))] = 0
 

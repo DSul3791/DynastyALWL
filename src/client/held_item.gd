@@ -1907,7 +1907,7 @@ func _strike() -> void:
 
 	if log_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # wood work: the axe in hand (protocol 112)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # wood work: the tool in hand, an axe or (slowly) a pick (protocol 112)
 	elif boulder_id != 0:
 		_sound.hits.hit(_hit_tool(), "stone", hit["position"], 1.0)   # a boulder is stone whatever the ground under it
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, held_slot + 1, Vector3.ZERO)   # the tool in hand does the work (TEST-013)
