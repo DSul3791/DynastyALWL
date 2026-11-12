@@ -51,10 +51,23 @@ Clones on Dave's PC (`git clone --shared` of his checkout; each has the `.godot`
 | `537ddb2b0` | #1037 | Phases 0, 1, 1b, 2a | full suite 344/345 (flora timeout), smoke PASS |
 | `b62db1e7c` | #1038 | Phase 2b (metal, textiles), Phase 3, 1b follow-ups | full suite 345/348 (2 flakes + 1 test fixed), smoke PASS |
 | `5285e2e20` | #1039 | Phase 2c (tool ladder, tool care, craftsmanship, Tempered) | full suite 344/346 (2 flakes), smoke PASS |
+| `fefee0aa2` | #1040 | Phase 4a clothing layers | full plan 345/347 (2 flakes), smoke PASS (exit 139 known) |
+| `c2fc59a73` | #1041 | Phase 6 cooking and preservation, Phase 9 storage and locks | full suite 352/353 (flora timeout), smoke PASS |
+| `aa0ce7d2d` | #1042 | Phase 4b weapons, armour, clothing, protection | affected plan 198/198, smoke PASS |
 
-## In flight (12 Nov, morning)
-- T11 Phase 4a layering: branch `m001/p4a-layers` (clone m001_p4a), review round 1 FAIL (fire heat counted as overheating) → fixes in progress; must merge onto dev `5285e2e20`.
-- Next: Phase 4b (weapons, armour, clothing rows and protection), Phase 5 (carrying), Phase 6-8 (food), Phase 9-10 (storage, Handcart).
+## In flight (12 Nov)
+- T15 Phase 5 carrying: branch `m001/p5` (clone m001_p5): review round 1 FAIL (a dropped full bag despawned in 20 min) → fixes and merge with dev in progress.
+- T16 Phases 7 then 8 (food effects, platters): branch `m001/p7` (clone m001_p7), engineer working.
+- Next: Phase 10 Handcart and movable loaded crates (after 5 and 9), then the final integrated walkthrough audit and mission report.
+
+## AI team evaluation notes (mission section 13)
+- Planned vs accepted: every task so far needed at least one review round; 6 of 13 reviewed tasks had a first-round FAIL (T05 evidence, T06/T10 correctness, T11 fire heat, T12 batch loss, T13 evidence, T14 walking strain, T15 bag despawn). Every FAIL was a real defect or a real evidence gap; no review round was wasted.
+- Reviews caught defects tests missed: catalog number clash with gathered.json (T03), wrong-smithy fuel burn (T06), Tempered Cuirass ineligible (T10), campfire counted as overheating (T11), batches lost on the ground (T12), clothes weight making walking exhausting (T14), full bags despawning (T15). Two pre-existing bugs were also found and fixed (shoulder-log duplication, craft-cancel ages).
+- Integration conflicts: shared data files (items/recipes/blueprints/structures.json) conflicted at every parallel merge; resolved by applying one side's changed entries onto the other (no row changed on both sides). Number ranges per branch prevented collisions after T03.
+- Process failures found: (1) `run_tests.sh` does not run the `validate_items` checks lane — must be run explicitly; (2) fresh clones lack untracked `.import` files and `worlds/` — copy both; (3) smoke runs leave their terrain server alive on port 24600 — stop it by PID after checking its command line; (4) a mission-lead patch once set every ledger row's phase (fixed; `--check` now guards it).
+- Owner interruptions: none after Dave's 05:42 autonomy direction; decisions were taken from the documents and recorded here (Q1, Q2, drying rack, comfort families, layer split).
+- Resume: this file plus the ledger and each task's BRIEF/RESULTS are enough for a fresh session; clones are listed per task.
+- Known flakes: `test_flora_density` (times out at 300 s under 3 parallel jobs, passes alone), `test_npc_view` (prints PASS then crashes at quit, also at base).
 
 ## Evidence so far
 - T02 at `159b566` (voxel build, this PC): `tools/run_tests.sh` over the 205 tests `tests_for_diff.py` picks: 201 PASS, 4 FAIL (audio `.import` files missing from the clone); after copying the untracked `.import` files from Dave's checkout, the 4 PASS (`scratchpad/t02b`). Total 205/205.
