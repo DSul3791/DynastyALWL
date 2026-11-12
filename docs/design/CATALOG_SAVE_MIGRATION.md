@@ -66,7 +66,7 @@
    - This needs a small loader and menu change. Master s7 item 1 is updated to match.
    - Structure rows are never deleted. If one ever must be, the loader first gets a `_structures.has(kind)` guard (hard lookups at si:3397, 10551 and 11921).
 7. **Worn slots.**
-   - Append any new slot (neck, strap, quiver) at the **end** of `clothing.json slots`.
+   - Append any new slot (neck, strap, quiver) at the **end** of `clothing.json slots`. (Since M001-T11 the append-only list that orders a saved `worn` array is `clothing.json worn`, one "slot:layer" position each; `slots` is the set of body slots. Neck was added there; strap and quiver wait for Phase 5.)
    - Before `_load_characters` calls `_clean_worn`, the pass reads the raw worn array and moves every item whose slot changed (for example a quiver leaving the waist) into a `worn_moved` list on the character row.
    - After `_load_inventories`, the items in `worn_moved` go into the pack. If the pack is full, they are handed over at the next join and dropped at the player's feet. They are never blanked.
 8. **Worn instance data.** `worn` changes from bare numbers to slot arrays `[number, 1, wear(, instance data)]`. An old bare number reads as `[n, 1, 0]`. This lands in the slot-format phase, before Tempered armour or enhancements exist.

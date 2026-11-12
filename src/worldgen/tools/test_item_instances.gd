@@ -234,7 +234,7 @@ func _init() -> void:
 
 	inv.add(tunic, 1, 9, {"craft": 1})
 	items.action(1, Net.ACT_WEAR, slot_with(inv, tunic, {"craft": 1}), 0, 0, Vector3.ZERO)
-	var body: int = items._clothing_slots().find("body")
+	var body: int = items._worn_places().find("body:base")
 	var worn: Array = items.worn_slots_of(1)
 	check(int(worn[body][0]) == tunic and int(worn[body][2]) == 9 and worn[body][3] == {"craft": 1} and inv.count_of(tunic) == 0, "worn, the tunic is the slot [number, 1, wear, inst] (%s)" % str(worn[body]))
 	check(worn_sent.size() == 2 and InventoryScript.inst_from_bytes(worn_sent[1], 0).get(body, {}) == {"craft": 1}, "the worn message carries its data")

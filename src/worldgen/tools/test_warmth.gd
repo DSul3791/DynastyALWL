@@ -147,11 +147,12 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("backpack"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_WEAR, inv.numbers.find(items.table.number_of("backpack")), 0, 0, Vector3.ZERO)
 	check(items._carry_body(1) > kg_before + 10.0, "a worn pack raises the carry limit")
-	items.action(1, Net.ACT_UNWEAR, 6, 0, 0, Vector3.ZERO)   # the cloak is in the outer slot (index 6, #921)
+	items.action(1, Net.ACT_UNWEAR, 6, 0, 0, Vector3.ZERO)   # the cloak is in the body's outer layer (worn position 6, #921, protocol 107)
 	check(items.worn_of(1)[6] == 0 and inv.count_of(items.table.number_of("hide_cloak")) == 1, "taking a piece off returns it to the pack")
 	items._dirty = true
 	items.save()
-	check(make(dir).worn_of(1).size() == 8 or true, "worn list has one entry per slot")
+	var reloaded = make(dir)
+	check(reloaded.worn_of(1).size() == reloaded._worn_places().size(), "worn list has one entry per worn position")
 	items.insulation_of = func(_p): return 0.5
 
 	# Respawn resets it; old saves read warm.
