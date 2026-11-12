@@ -1,17 +1,18 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 9 — TOOLS, WOOD, STATIONS, FURNITURE AND WEAPONS RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D6], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 9 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS AND OWNER-APPROVED ARMOUR PROPOSAL RECORDED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D6], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 9, reviewed categories only; not final).** Existing rows: KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 53 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6) and 2 new FUTURE rows (Steel bolt, Iron - Lance). No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 9 data reconciliation baseline before [D7] armour additions; NOT the final combined master catalog count).** Existing rows: KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 53 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6) and 2 new FUTURE rows (Steel bolt, Iron - Lance). No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
 | Tag | Source | Weight |
 |---|---|---|
+| **[D7]** | Dave explicitly accepted the full Armour Proposal 1: 8 existing core armour pieces, 14 new armour variants, protective clothing/shields cross-listed, realistic modular layering and excluded redundancies | **Owner-approved category design; not game implementation approval** |
 | **[D6]** | Dave, 12 Nov 2026 (PR #1035 comment 01:49Z): Weapons Proposal 2 approved in full, with his Poison Arrow addition; category approval only | Explicit Dave category decision |
 | **[D5]** | Dave's later furniture clarification: Bronze and Iron nails are already sufficient; do not invent a separate luxury-nail ladder or insist on Iron nails for every Fine/Ornate recipe. Rustic furniture may be just Hardwood Boards plus nails; fancy furniture uses **more Hardwood Boards and more nails**, and **cloth/leather only where suitable** (such as upholstered seats, cushions, padded furnishings) | **Latest explicit Dave furniture rule; supersedes overcomplicated fastener requirements** |
 | **[C7]** | ChatGPT's delegated confirmation of Draft 7: Tempered outputs are steel, per-item-instance, with no duplicate item IDs; furniture family scope in s3.5 accepted (four-grade chests/chairs/tables, two-grade benches, others single where appropriate) | **Confirmed catalog design, not implementation approval** |
@@ -299,6 +300,60 @@ Dave approved ChatGPT's Weapons Proposal 2 in full, plus his own Poison Arrow re
 
 Categories not yet reviewed (armour, clothing, backpacks and carrying gear, saddles and saddlebags, carts, wagons and carriages, cooking, food preservation) keep today's rows until their category review; food, medicine and coins are untouched so far (Appendix A).
 
+### 3.7 Armour [D7] — APPROVED CATEGORY (NOT APPROVAL TO IMPLEMENT)
+
+**Authority:** Dave explicitly accepted ChatGPT's complete Armour Proposal 1 immediately after approving the Weapons Proposal 2. This is CATEGORY design approval; the full Master Items Catalog and game implementation remain unapproved. Armour draws on the recognizable D&D 5e light/medium/heavy archetypes but uses Dynasty's own damage, coverage, fatigue, weather and crafting systems. Preserve all existing numeric item IDs. The armour category is not the clothing category: the shared clothing rows listed below are cross-references, not duplicated.
+
+**Existing dedicated armour — 8 KEEP/UPDATE rows with stable IDs:**
+
+| # | ID | Item | Gameplay role / catalog direction |
+|---|---|---|---|
+| 325 | `leather_jerkin` | Leather - Jerkin | Light flexible torso defence, separate from temperature clothing |
+| 327 | `gambeson` | Fibre - Gambeson | Padded impact-reducing armour, allows under-armour layering |
+| 838 | `bronze_scale_shirt` | Bronze - Scale shirt | Early flexible metal torso armour |
+| 329 | `mail_shirt` | Iron - Mail shirt | Cut-resistant, flexible, heavy torso armour |
+| 331 | `plate_cuirass` | Steel - Cuirass | Rigid advanced chest/back protection; still useful alongside full plate |
+| 326 | `bronze_helm` | Bronze - Helm | First metal helmet, Stone Forge |
+| 328 | `iron_helm` | Iron - Helm | Riveted general-purpose helmet, Smithy |
+| 330 | `steel_helm` | Steel - Helm | Advanced steel helmet with fitting/possible visor, Smithy |
+
+**NEW armour — 14 ADD concepts (all distinct master item rows, IDs/numbers assigned only when approved implementation occurs):**
+
+| Group | Proposed item | Craft station | Distinct purpose |
+|---|---|---|---|
+| Torso | Iron - Brigandine | Smithy plus leather/cloth components | Concealed small plates fastened to a protective flexible shell |
+| Torso | Iron - Breastplate | Smithy | Focused rigid front torso protection, lighter than full plate |
+| Torso | Iron - Mail hauberk | Smithy | Longer mail with sleeves and thigh coverage; heavier than shirt |
+| Torso | Steel - Half plate | Smithy | Substantial torso/shoulder protection with mobility trade-offs |
+| Torso | Steel - Plate harness | Smithy | Articulated premium upper-body protection; not a one-item full-body magical suit |
+| Head | Iron - Mail coif | Smithy | Flexible head/neck mail, different blunt defence from rigid helms |
+| Hands | Iron - Gauntlets | Smithy | Metal hand/finger armour with dexterity trade-offs |
+| Hands | Steel - Gauntlets | Smithy | Advanced articulated gauntlets |
+| Legs | Bronze - Greaves | Stone Forge | Early metal lower-leg defence |
+| Legs | Iron - Mail chausses | Smithy | Flexible extended chainmail leg coverage |
+| Legs | Iron - Greaves | Smithy | Rigid lower-leg protection |
+| Legs | Steel - Greaves | Smithy | Advanced articulated lower-leg protection |
+| Feet | Iron - Sabatons | Smithy | Armour worn over suitable boots; protection/weight trade-off |
+| Feet | Steel - Sabatons | Smithy | Advanced articulated foot plates |
+
+**Existing protective clothing — 8 cross-listed KEEP rows (not eight additional armour items):** Hide - Tunic #305; Hide - Hood #65; Hide - Boots #64; Hide - Gloves #307; Leather - Cap #324; Leather - Trousers #764; Leather - Boots #765; Leather - Gloves #766. Ordinary clothing and survival utility remain their primary role, with modest realistic protection.
+
+**Shield cross-list — 6, already in approved Weapons [D6]:** Wicker #312; Wooden #314; Bronze #317; Iron #320; Steel #323; proposed ADD Iron Buckler. DO NOT add or count a second shield catalogue definition.
+
+**Protection & equipment rules:**
+1. Armor is modular by body region: head, torso, hands, legs and feet. Ordinary shirts may go under mail and cloaks over armour. Padded liners may be part of metal armour. Head mail coif beneath helm, sabatons over boots, gambeson beneath other armour require explicit compatible layering rules in the equipment system; do not allow unlimited stacking of protection or duplicated full bonuses. Preserve existing `slot` metadata and plan a compatible sublayer schema, not a destructive replacement.
+2. Protection depends on material, coverage, damage mode and penetration. Distinguish slashing, piercing, blunt force, and projectile impact. Fatigue, weight, temperature, wetness, noise, dexterity and movement are trade-offs; avoid fantasy blanket immunity.
+3. Leather is lighter/quiet; padded gambeson helps impacts; bronze scales flexible; mail strong against cuts but less resistant to concentrated blunt force; breastplate/cuirass protect vitals; half plate/full harness increase covered area and require maintenance. Distinct armour types must have different useful roles, not mere progressively bigger defence scores.
+4. Crafting: primitive hide by hand with reusable Bone Needle + consumed Thread; leather at Leatherworking Table; Gambeson at Tailor's Table; bronze at Stone Forge/Smithy; iron/steel at Smithy. Repairs at suitable original production stations, portable simple sewing for eligible clothing. Ordinary steel armour must not require the Quenching Trough. Master Smithy craftsmanship +1/+2 remains separate.
+5. Optional `Tempered` property for eligible steel armour produced at a Smithy with the attached Quenching Trough, per instance with suitable durability benefit, **never sharpness benefit for armour**, no duplicate master item rows and no occupation of one of the two magical enchantment slots. Enchantments stay permanent, never replaceable; physical craftsmanship independent.
+6. Armour model visuals should show plate/rivet/strap construction, worn condition and actual equipped components. Description for Steel - Cuirass #331 must not say it is universally the best armour after adding Half plate and Plate harness.
+7. Exclude stand-alone Studded Leather, Ring Mail and Splint Armour as redundant/confusing. Brigandine supplies the realistic plated-fabric archetype.
+8. Keep **horse barding** for saddles/animal equipment review; **monster-hide armour** for creature material design; **magical robes** for magic/clothing design; **legendary/ceremonial armour** for future quest or prestige design. Do not silently add them now.
+
+**Counts:** 8 existing dedicated armour entries; 14 ADD; 8 existing protective clothing cross-listed; 6 shields cross-listed with approved Weapons = **36 armour-related entries, but only 14 new item rows**. No item IDs reused; deduplicate all cross-listed items when combining catalog totals.
+
+**Cross-document reconciliation required before final catalog approval:** Inspect equipment slots `head/body/hands/legs/feet/outer`, durability, recipe/blueprint materials, smelting gates and skill stations, armour/body coverage, damage resistance and UI. Repair and layering tests are not established by this desk-approved design. Claimed full-catalog readiness remains withheld until remaining categories and aggregate audits finish.
+
 ## 4. Implementation details (follow from the decisions; no new design)
 
 1. **Repair data:** `repair_station` on each metal tool names its crafting station type (today 26 rows say `forge`; bronze tools: `forge`, which the Smithy also provides; iron and steel: the Smithy); `drops.json tool_wear.repair_restores` (0.5) becomes "restore up to the remaining maximum"; stone, wooden and primitive rows lose `repair`; code removes a disposable tool at zero, drops a surviving thrown Javelin as a pickup, and keeps a broken metal tool in its slot.
@@ -407,7 +462,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: armour; clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is now approved by Dave and reconciled in s3.6 [D6]; ARMOUR is next (ChatGPT drafting for Dave). Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: armour; clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and recorded in s3.7 [D7] (14 proposed ADD rows; counts and dependencies pending Claude's full reconciliation). CLOTHING is next for Dave's category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
