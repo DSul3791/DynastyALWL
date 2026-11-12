@@ -109,48 +109,44 @@ Two *simple* recipes paths, generally matching the Food Preparation Table and fi
 
 **APPROVAL WARNING:** Dave approved the *workflow*, not these 5 item entries. Count remains **zero new approved preservation ADD** until he says yes to this roster; no gameplay JSON/recipes/merge authorized.
 
-## 3. Functional decorative platters and edible boards — owner idea, exact roster pending
+## 3. Edible serving platters — nine OWNER-APPROVED board recipes [D15]
 
-**Owner-directed behavior:** A **generic reusable Serving Platter** is the physical tabletop display carrier. At the **Food Preparation Table**, the player combines **already cooked/prepared edible components** into a named board/platter meal. That assembled food becomes **one inventory item**, can be carried or traded, and can be **placed onto a compatible dining table using the Serving Platter**. The board's identity/recipe determines what foods appear. There are NOT twenty distinct platter furniture types.
+Dave requested one **generic reusable Serving Platter** that displays different real edible boards crafted from actual food at the **Food Preparation Table**. The player carries the prepared board in inventory, places it on compatible household/tavern table furniture using the Serving Platter, and player/NPC diners take actual portions. As food is consumed, the display visibly empties. Leftovers and the reusable carrier remain recoverable; no free food, spoilage reset or duplication.
 
-- Platter presentation is not purely decorative: a player (and eventually an authorized NPC) can **take/eat actual portions**, which lowers its remaining contents and changes the visible arrangement. No free infinite food.
-- One placed carrier reserves appropriate tabletop surface/slot and bears an actual assembled food item/batch. Removing the board gives the player its remaining edible contents safely; removing an empty carrier returns the reusable Serving Platter. No duplicated platter objects.
-- Spoilage/quality of its contents continue aging on the table; placing or repacking a board must not reset them. Capacity, shared access and item persistence obey regular inventory rules. Save/multiplayer transactions must be atomic and authorized.
-- Table size, clipping and dining animations need eventual art/interaction design; use the existing approved table furniture, **no extra new table type**.
-- If a recipe depends on a future ingredient (e.g. **Beef** is not a current distinct food ID; **Cheese** currently has `future: true`), mark it blocked for now rather than silently inventing livestock or activating future recipes.
+Dave then directed merging similar board recipes and explicitly approved **NINE** distinct names. The previously proposed 20-board and 15-board lists are superseded, not pending.
 
-### Revised prepared boards — **P15-v2, FOR DAVE'S REVIEW, NOT APPROVED**
-
-**Recommended: 15 named edible board/platter recipes, one generic reusable Serving Platter.** This is **15 prepared-food inventory items + 1 display carrier** if each recipe is represented as its own item, sharing one display/eating code path. Thirteen board recipes use existing obtainable ingredients in principle; **two are explicitly FUTURE-gated** (Roast Beef, Ploughman's Board). Exact recipe materials and portions are for later tuning and availability validation; no livestock or food dependency is silently activated.
-
-| Status | Board / platter (Food Prep Table output) | What appears, using live food when available |
+| Approved status | Prepared food-board item | Suitable already-defined food inputs / distinction |
 |---|---|---|
-| PROPOSED ADD | **Seafood Platter** | Steamed shellfish #361, Crab Cakes #397, roasted fish #80 |
-| PROPOSED ADD | **Fisherman's Board** | Smoked Fish #185, Salted Fish #407, Rye Flatbread #388; visually distinct **preserved fish board** |
-| PROPOSED ADD | **Roast Dinner Platter** | Rosemary Joint #275, Baked Potato #391, roasted root vegetables; renames Sunday Roast |
-| PROPOSED FUTURE | **Roast Beef Platter** | Genuine species-specific beef once livestock/meat source exists; current generic Roast Meat #69 is not silently called beef |
-| PROPOSED ADD | **Hunter's Feast** | Roast Beast #191, mushroom skewers #180, roots/vegetables |
-| PROPOSED ADD | **Mixed Grill Platter** | Sausage #804, Meat Skewers #803, grilled/roasted meat |
-| PROPOSED ADD | **Charcuterie Board** | Jerky #406, sausage #804, dried fruit; cheese may join when FUTURE Cheese #418 becomes available, not mandatory now |
-| PROPOSED FUTURE | **Ploughman's Board** | Bread, Cheese #418 (FUTURE), Pickled Vegetables #834 (FUTURE), apple; keep as beloved style but gate properly |
-| PROPOSED ADD | **Harvest Platter** | Roasted roots #177, Baked Potatoes #391, mushrooms or seasonal vegetables |
-| PROPOSED ADD | **Tavern Supper Board** | Existing savoury pie #401 or #402, flatbread #273, roasted vegetables |
-| PROPOSED ADD | **Breakfast Platter** | Boiled Eggs #362, Oat Cakes #405, Sausages #804 |
-| PROPOSED ADD | **Traveller's Board** | Trail Bread #189, Jerky #406, Dried Apples #450, nuts |
-| PROPOSED ADD | **Orchard Fruit Platter** | Apples #431–435, pears #436–438, plums #440 |
-| PROPOSED ADD | **Dessert Board** | Apple Pie #452, Honey Loaf #274, Chestnut Cakes #183 and fruit where appropriate |
-| PROPOSED ADD | **Grand Banquet Platter** | One substantial Roast Beast #191 plus bread, vegetables and other banquet food (actual costly inputs, no free food) |
+| ADD | **Seafood Platter** | Cooked crab/shellfish/fish, including former Fisherman's and Coastal ideas |
+| ADD | **Roast Platter** | Roast Meat #69, Rosemary Joint #275, Roast Beast #191, roots and vegetables; includes former Roast Beef (species-specific beef is not available in live data and may become a future variant only) |
+| ADD | **Mixed Grill Platter** | Sausage #804, Meat Skewer #803, grilled foods |
+| ADD | **Charcuterie Board** | Jerky #406, cured sausage and preserved accompaniments; Traveller's Board merged here |
+| FUTURE | **Ploughman's Board** | Bread + Cheese #418 and Pickled Vegetables #834; cheese and pickles remain FUTURE |
+| ADD | **Harvest Platter** | Roasted vegetables, roots and mushrooms |
+| ADD | **Tavern Supper Board** | Savoury pies and cooked sides |
+| ADD | **Breakfast Platter** | Eggs, Oat Cakes and sausage |
+| ADD | **Dessert Platter** | Sweet cakes, baked fruit, pie, honey loaf |
 
-**Five deliberate merges from the original 20 names (not extra IDs):**
-1. **Smoked Fish Board** → Fisherman's Board; same cold fish/bread layout.
-2. **Coastal Feast** → Seafood Platter; same mixed seafood feast.
-3. **Sausage Supper** → Mixed Grill Platter; same sausage-focused cooked-meat board.
-4. **Bread & Cheese Board** → Ploughman's Board; cheese/bread plate with additional pickled foods.
-5. **Sweet Treats Board** → Dessert Board; overlapping sweet/pastry food group.
+**Counts:** 8 new current food boards + 1 new future board + 1 reusable **Serving Platter** physical carrier = **9 approved ADD item concepts and 1 approved FUTURE concept**. The nine names are nine distinct food inventory items, **not nine physical serving-plate variants**. No separately named generic Roast Beef item is added; true beef could be a look/ingredient variant only after that item source exists. Ploughman's Board remains inaccessible until real cheese and pickles exist.
 
-The result retains 15 **visually and functionally distinct compositions** instead of 20 slightly duplicated variants, including Dave's explicit examples: Seafood, Roast Beef, Charcuterie and Ploughman's. Do not add one item for each wooden platter model; **one Serving Platter** is the reusable physical carrier. Each named board is still a **real prepared food** in the inventory (not an image-only decoration), made using the Food Preparation Table and actual existing cooked ingredients. Eating portions changes the visible arrangement and decreases actual remaining servings. Reusable carrier can be removed when empty; normal spoilage continues. Per-board item IDs (15 food rows) are the low-risk default for current item-data compatibility; a future proposal could use a polymorphic prepared-board ID, but that may increase per-instance complexity and is **not** an owner-approved simplification.
+**How it functions:** Food Preparation Table combines real cooked food inputs to one board inventory item, with real mass/portions/freshness. Placing the board onto a table consumes an available Serving Platter carrier's presentation slot; the display mesh depends on board identity, with a few efficient visible portion states. Click/take serving reduces food available. Picking up the board transfers all remaining portions back to a safe inventory while releasing the carrier; storage, ownership, multiplayer and save/replication are authoritative. Serving platters do not automatically create XP or other bonuses unrelated to their recipe; future food effects are shared profiles in §3a.
 
-**P15-v2 counts:** **1 physical Serving Platter + 13 ready-eligible food-board ADD + 2 FUTURE-gated food boards = 16 proposed definitions**. These are **not part of the currently approved catalog totals**. No item is approved just because its name appears on this list.
+### 3a. Future food effects, Fitness training XP and skill XP [D16]
+
+Dave directs that eating real meals should give **temporary, intuitive gameplay benefits** tied to what they contain, and better/higher-tier recipes should produce stronger or longer benefits. This extends the existing hunger/calorie, Fitness training, exertion and health systems rather than creating entirely new character attributes.
+
+| Food class | Example temporary benefit | XP policy |
+|---|---|---|
+| Protein-rich meat/fish/egg | More effective exertion endurance / physical recovery | **Fitness XP boost while actually earning Fitness training XP**. Dave used **+20% Fitness XP** as illustrative value. |
+| Hearty red-meat meals | Better temporary health recovery, physical nourishment | Fitness XP if assigned protein role; don't multiply two competing XP profiles |
+| Bread, grains, potatoes | Energy/stamina and light exertion or movement recovery | **NO XP gain bonus** from this food group |
+| Fruit and vegetables | Sustained recovery/comfort, possible mild endurance | No arbitrary blanket XP bonus |
+| Desserts and sweets | Fast energy burst, shorter duration | May **reduce** XP earned while active, a conscious balance trade-off, magnitude TBD |
+| Higher-tier balanced meals | Combined longer-lasting benefits | May boost **all actively earned skill XP** (including Fitness), but apply **one** multiplier, not Fitness bonus multiplied again |
+
+**Simple tier ladder** (proposed tuning, not yet numerical): everyday raw/simple food = brief/small benefit; cooked recipe = moderate; multi-ingredient advanced meal/feast = more useful/longer. Ordinary eating still provides calories; do not force players to eat luxury meals just to gain any XP. Profiles should be readable and predictable; one active food-benefit profile at a time prevents infinite eating/stacking. No permanent free Fitness points; Fitness still levels by genuine physical effort. A Fitness XP bonus is calculated **at each training XP earning event** (the current system accumulates daily and grants at midnight), not when daily points are paid out; eating 30 seconds before midnight cannot retroactively boost a day's efforts. The same rule applies to later skill XP sources; a meal only changes XP being earned *while its effect is active*.
+
+**Developer note, not additional owner approval:** food profile ID, effect duration, one XP modifier category, one vitals/exertion bonus and potency tier can be data-driven; no one-off per-dish script. Avoid double counting via prepared board servings, overpowered movement speeds, excessive XP stacking or infinite re-eating. Exact +/− percentages, duration and profile precedence require later owner-approved balancing. The food effect system is planned for later, not implemented or granted by this document.
 
 ## 4. How storage, preservation and serving interact
 
