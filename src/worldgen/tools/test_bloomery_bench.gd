@@ -80,7 +80,7 @@ func _init() -> void:
 	_put("stone_forge", FORGE_AT)
 	_put("test_stonecutter", BENCH_AT)
 
-	# The live iron smelt is the yardstick: 4 ore + 1 fuel, 45 s (at the brick forge, level 2, #950).
+	# The live iron smelt is the yardstick: 4 ore + fuel, 45 s (at the Smelter since Mission 001 phase 2b; the brick forge before, #950).
 	var forge_smelt: Dictionary = {}
 
 	for n in items.recipes.numbers():
@@ -88,7 +88,7 @@ func _init() -> void:
 			forge_smelt = items.recipes.recipe(int(n))
 
 	check(table.number_of("cut_stone_block") > 0 and table.number_of("fuel") > 0, "the stand-ins' items exist (cut_stone_block, the fuel group)")
-	check(not forge_smelt.is_empty() and str(forge_smelt.get("station", "")) == "brick_forge", "the brick forge's iron smelt is the yardstick")
+	check(not forge_smelt.is_empty() and str(forge_smelt.get("station", "")) == "smelter", "the Smelter's iron smelt is the yardstick (Mission 001 phase 2b: smelting moved off the forges)")
 	var bloom: Dictionary = _recipe({"number": 99961, "id": "test_bloomery_iron", "name": "Iron ingot", "category": "Materials",
 		"needs": [[table.number_of("iron_ore"), 5], [table.number_of("fuel"), 3]], "gives": [table.number_of("iron_ingot"), 1],
 		"craft_s": 3.0 * float(forge_smelt.get("craft_s", 45.0)), "known": true, "station": "test_bloomery"})

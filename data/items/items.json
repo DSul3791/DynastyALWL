@@ -392,8 +392,8 @@
 		},
 		"plank_chest": {
 			"number": 29,
-			"name": "Wooden - Chest",
-			"description": "A plank chest for storing more things.",
+			"name": "Rustic - Chest",
+			"description": "A plain chest of nailed hardwood boards with a hinged lid. Holds 20 stacks.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -411,16 +411,7 @@
 			"look_alikes": [],
 			"value": 30
 		},
-		"steel_ingot": {
-			"number": 32,
-			"name": "Steel ingot",
-			"description": "A bar of steel. Placeholder until smelting exists.",
-			"kind": "material",
-			"stack": 20,
-			"look_alikes": [],
-			"value": 60,
-			"future": true
-		},
+		"steel_ingot": {"number": 32, "name": "Steel ingot", "description": "A bar of steel from the blast furnace.", "kind": "material", "stack": 20, "look_alikes": [], "value": 60},
 		"iron_pickaxe": {
 			"number": 33,
 			"name": "Iron - Pickaxe",
@@ -1157,15 +1148,7 @@
 			"value": 600,
 			"look_alikes": []
 		},
-		"blacksmithy": {
-			"number": 90,
-			"name": "Brick - Forge",
-			"description": "A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"blacksmithy": {"number": 90, "name": "Smithy", "description": "A smithy with its own forge, anvil and bench. Fire it with charcoal or coal to work bronze, iron and steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": []},
 		"carcass": {
 			"number": 91,
 			"name": "Carcass",
@@ -1186,16 +1169,7 @@
 			"value": 900,
 			"look_alikes": []
 		},
-		"large_forge": {
-			"number": 93,
-			"future": true,
-			"name": "Large forge",
-			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"large_forge": {"number": 93, "name": "Blast furnace", "description": "A tall furnace that holds great heat. Makes steel and smelts in bulk.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20."},
 		"master_forge_kit": {
 			"number": 94,
 			"future": true,
@@ -1207,16 +1181,7 @@
 			"value": 3000,
 			"look_alikes": []
 		},
-		"master_forge": {
-			"number": 95,
-			"future": true,
-			"name": "Master forge",
-			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy for special and masterwork pieces.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21."},
 		"log_oak": {
 			"number": 100,
 			"name": "Oak log",
@@ -2977,15 +2942,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"saw_blade": {
-			"number": 238,
-			"name": "Saw blade",
-			"description": "A pair of iron saw blades for a sawmill frame.",
-			"kind": "material",
-			"stack": 10,
-			"look_alikes": [],
-			"value": 60
-		},
+		"saw_blade": {"number": 238, "name": "Saw blade", "description": "A pair of iron saw blades for a sawmill frame.", "kind": "material", "stack": 10, "look_alikes": [], "value": 60, "retired": true},
 		"water_wheel": {
 			"number": 239,
 			"name": "Water wheel",
@@ -3758,7 +3715,7 @@
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
+			"description": "A rusty brown lump. Smelts to iron in a smelter.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -4426,24 +4383,7 @@
 			"look_alikes": [],
 			"value": 4
 		},
-		"stone_wedge": {
-			"number": 353,
-			"name": "Stone - Wedge",
-			"description": "A flaked stone wedge. Driven into a log at a workbench, it splits two planks.",
-			"kind": "tool",
-			"tool_class": "wedge",
-			"stack": 1,
-			"unstackable": true,
-			"durability": 600,
-			"repair": [
-				[
-					"stone",
-					1
-				]
-			],
-			"look_alikes": [],
-			"value": 6
-		},
+		"stone_wedge": {"number": 353, "name": "Stone - Wedge", "description": "A flaked stone wedge. Driven into a log at a workbench, it splits two planks.", "kind": "tool", "tool_class": "wedge", "stack": 1, "unstackable": true, "durability": 600, "repair": [["stone", 1]], "look_alikes": [], "value": 6, "retired": true},
 		"fibre_arrow": {
 			"number": 354,
 			"name": "Fibre - Arrow",
@@ -5819,8 +5759,8 @@
 		},
 		"bench": {
 			"number": 504,
-			"name": "Wooden - Bench",
-			"description": "A plank bench that seats two or three.",
+			"name": "Crude - Bench",
+			"description": "A rough bench of pinned boards tied with twine. Seats two or three.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -5828,7 +5768,7 @@
 		},
 		"chair": {
 			"number": 505,
-			"name": "Wooden - Chair",
+			"name": "Rustic - Chair",
 			"description": "A chair with a back. Sit and rest.",
 			"kind": "structure",
 			"stack": 1,
@@ -5837,8 +5777,8 @@
 		},
 		"table": {
 			"number": 506,
-			"name": "Wooden - Table",
-			"description": "A plank table on trestles.",
+			"name": "Rustic - Table",
+			"description": "A plain table of nailed hardwood boards on trestles.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -6315,15 +6255,7 @@
 			"look_alikes": [],
 			"value": 6
 		},
-			"charcoal": {
-				"number": 547,
-				"name": "Charcoal",
-				"description": "Firewood burned slow and starved of air. The best smelting fuel.",
-				"kind": "material",
-				"stack": 20,
-				"look_alikes": [],
-				"value": 3
-			},
+			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 20, "look_alikes": [], "value": 0.15},
 			"wool_cloth": {
 				"number": 548,
 				"name": "Wool cloth",
@@ -6382,16 +6314,7 @@
 				"value": 2,
 				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
 			},
-			"fuel": {
-				"number": 554,
-				"name": "Fuel",
-				"description": "Charcoal or coal: what a forge burns to smelt.",
-				"kind": "material",
-				"stack": 20,
-				"look_alikes": [],
-				"value": 3,
-				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
-			},
+			"fuel": {"number": 554, "name": "Fuel", "description": "Charcoal or coal: what a forge burns to smelt.", "kind": "material", "stack": 20, "look_alikes": [], "value": 0.15, "note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."},
 			"pitch": {
 				"number": 555,
 				"name": "Pitch",
@@ -7326,8 +7249,8 @@
 			},
 			"iron_bench": {
 				"number": 637,
-				"name": "Iron - Bench",
-				"description": "A timber bench bound with iron. Seats two or three.",
+				"name": "Fine - Bench",
+				"description": "A smooth hardwood bench with a leather seat. Seats two or three.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7347,8 +7270,8 @@
 			},
 			"iron_chair": {
 				"number": 639,
-				"name": "Iron - Chair",
-				"description": "An iron-bound chair with a hide seat.",
+				"name": "Fine - Chair",
+				"description": "A planed hardwood chair with a leather seat.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7368,8 +7291,8 @@
 			},
 			"iron_table": {
 				"number": 641,
-				"name": "Iron - Table",
-				"description": "A plank table bound with iron.",
+				"name": "Fine - Table",
+				"description": "A planed hardwood table with fitted joints.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7411,7 +7334,7 @@
 			"wooden_shelf": {
 				"number": 645,
 				"name": "Shelf",
-				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+				"description": "Hardwood shelves, pinned and tied, to set against a wall. Holds 8 stacks.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7432,7 +7355,7 @@
 			"wooden_cupboard": {
 				"number": 647,
 				"name": "Cupboard",
-				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+				"description": "A tall hardwood cupboard with doors. Holds 16 stacks.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7453,7 +7376,7 @@
 			"wooden_barrel": {
 				"number": 649,
 				"name": "Barrel",
-				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"description": "A hooped barrel of hardwood staves. Holds 8 stacks.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -8978,7 +8901,7 @@
 			"weapon_rack": {
 				"number": 787,
 				"name": "Weapon rack",
-				"description": "A plank rack against a wall for spears, bows and blades.",
+				"description": "A hardwood rack against a wall for spears, bows and blades.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -8999,7 +8922,7 @@
 			"armour_stand": {
 				"number": 789,
 				"name": "Armour stand",
-				"description": "A plank figure to hang a set of armour and clothes on.",
+				"description": "A hardwood figure to hang a set of armour and clothes on.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -9059,16 +8982,7 @@
 				"look_alikes": [],
 				"value": 46
 			},
-			"clay_bloomery": {
-				"number": 795,
-				"name": "Clay bloomery",
-				"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed station: row state 200."
-			},
+			"clay_bloomery": {"number": 795, "name": "Clay bloomery", "description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 200.", "retired": true},
 			"stonecutters_bench_kit": {
 				"number": 796,
 				"retired": true,
@@ -9486,16 +9400,7 @@
 				"look_alikes": [],
 				"value": 160
 			},
-			"iron_anvil": {
-				"number": 827,
-				"name": "Anvil",
-				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed add-on: row state 204, addon_of brick_forge."
-			},
+			"iron_anvil": {"number": 827, "name": "Anvil", "description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed add-on: row state 204, addon_of brick_forge.", "retired": true},
 			"preserving_jar_kit": {
 				"number": 829,
 				"retired": true,
@@ -9693,8 +9598,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: With yarn and thread; the hand cloth recipes go when it lands."
+				"note": "Placed station: row state 245 (Mission 001 phase 2b)."
 			},
 			"leather_belt": {
 				"number": 828,
@@ -9764,8 +9668,8 @@
 			},
 			"iron_chest": {
 				"number": 852,
-				"name": "Iron - Chest",
-				"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
+				"name": "Ornate - Chest",
+				"description": "A carved hardwood strongbox bound with iron bands. Holds 30 stacks, more than any other chest.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -10322,39 +10226,9 @@
 				"look_alikes": [],
 				"value": 12
 			},
-			"smelter": {
-				"number": 908,
-				"name": "Smelter",
-				"description": "A stone and clay furnace. Smelts ore into metal.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
-			},
-			"bellows": {
-				"number": 909,
-				"name": "Bellows",
-				"description": "A leather and wood bellows for the Smithy. Blows air into the fire to raise its heat.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
-			},
-			"quenching_trough": {
-				"number": 910,
-				"name": "Quenching trough",
-				"description": "A water trough at the Smithy for cooling hot metal.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
-			},
+			"smelter": {"number": 908, "name": "Smelter", "description": "A stone and clay furnace. Smelts ore into copper, tin and iron ingots, and alloys bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b)."},
+			"bellows": {"number": 909, "name": "Bellows", "description": "Leather bellows for a smithy. It heats faster and burns less fuel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
+			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
 			"leatherworking_table": {
 				"number": 911,
 				"name": "Leatherworking table",
@@ -10363,8 +10237,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
+				"note": "Placed station: row state 243 (Mission 001 phase 2b)."
 			},
 			"tailors_table": {
 				"number": 912,
@@ -10374,8 +10247,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
+				"note": "Placed station: row state 244 (Mission 001 phase 2b)."
 			},
 			"thread": {
 				"number": 913,
@@ -10384,7 +10256,6 @@
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],
-				"future": true,
 				"value": 2
 			},
 			"crude_chest": {
@@ -10395,8 +10266,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 230."
 			},
 			"fine_chest": {
 				"number": 915,
@@ -10406,8 +10276,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 231."
 			},
 			"crude_chair": {
 				"number": 916,
@@ -10417,8 +10286,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 232."
 			},
 			"ornate_chair": {
 				"number": 917,
@@ -10428,8 +10296,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 233."
 			},
 			"crude_table": {
 				"number": 918,
@@ -10439,8 +10306,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 234."
 			},
 			"ornate_table": {
 				"number": 919,
@@ -10450,8 +10316,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 235."
 			},
 			"iron_shortsword": {
 				"number": 920,

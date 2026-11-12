@@ -135,14 +135,13 @@ func _init() -> void:
 	craft("two_logs_test", 1)
 	check(count("chopping_block") == 1 and ground_logs() == 0, "two logs lying on the ground make the two-log craft")
 
-	# 5. Hand-split planks (1 log, the wedge kept) at a workbench, log on the shoulder (rough planks are retired, recipe audit 10 Nov 2026).
+	# 5. Planks by hand saw from the log on the shoulder (Mission 001: the stone-wedge planks are retired; a spruce log gives 6 Planks).
 	reset()
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("workbench_kit"), 0, 1, Vector3.ZERO)
-	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
-	items.inventory_of(1).add(items.table.number_of("stone_wedge"), 1)
-	items.give(1, items.table.number_of("log_spruce"), 1)   # hand-split planks take a softwood log (Mission 001 phase 2a)
-	craft("lumber_wedge", 1)
-	check(count("lumber") == 2 and items.shoulder_of(1) == "", "planks from the shoulder log at the workbench (%d planks)" % count("lumber"))
+	items.give(1, items.table.number_of("hand_saw"), 1)
+	items.give(1, items.table.number_of("log_spruce"), 1)
+	craft("lumber_by_hand", 1)
+	check(count("lumber") == 6 and items.shoulder_of(1) == "", "planks from the shoulder log with the hand saw (%d planks)" % count("lumber"))
+	items.inventory_of(1).remove(items.table.number_of("hand_saw"), 1)
 
 	# 6. A pack log is used when nothing is near (the old behaviour).
 	reset()

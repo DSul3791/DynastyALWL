@@ -189,6 +189,12 @@ const LOOKS := {
 	"log_shelf": {"builder": "log_shelf", "args": []},
 	"iron_chest": {"builder": "iron_chest", "args": []},
 	"wooden_crate": {"builder": "crate", "args": []},
+	# shortcut: Mission 001 furniture grades (master s3.5) borrow a family look, not their own grade look (pegs and lashings, carved trim), until Art draws them.
+	"crude_chest": {"builder": "crate", "args": []},
+	"crude_chair": {"builder": "chair", "args": []},
+	"ornate_chair": {"builder": "chair", "args": []},
+	"crude_table": {"builder": "table", "args": []},
+	"ornate_table": {"builder": "table", "args": []},
 	"engineered_foundation": {"builder": "concrete_foundation", "args": [false]},
 	"engineered_wall": {"builder": "concrete_wall", "args": [false]},
 	"engineered_doorway": {"builder": "engineered_doorway", "args": [false]},

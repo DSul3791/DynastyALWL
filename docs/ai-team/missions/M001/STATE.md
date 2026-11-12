@@ -30,6 +30,7 @@ Clones on Dave's PC (`git clone --shared` of his checkout; each has the `.godot`
 
 | Task | Phase | Owner | Branch (clone) @ head | Status | Review | Next action |
 |---|---|---|---|---|---|---|
+| PR #1037 into `dev` (T01–T05, T04) | 0–2a, 1b | mission lead | merged `537ddb2b0` | DONE: 344/345 full suite at `9c196da1f` (flora timeout), smoke PASS | all task reviews | — |
 | T00 PR #1035 docs into `dev` | 0 | mission lead | merged `e314789` | DONE | PASS WITH NOTES on `0707384` | — |
 | T01 plan, ledger, state | 0 | mission lead | `m001/p2b-metal` (m001_p2b) | fixes applied | PASS WITH NOTES on `159b566`; 5 should-fix fixed; ledger phase bug found by me and fixed (`1bfc5d2`) | dev PR with T02–T05 |
 | T02 Woodworking table retired (from PR #1036) | 0 | mission lead | same | tests PASS | same review | dev PR; close #1036 as carried |
@@ -37,7 +38,11 @@ Clones on Dave's PC (`git clone --shared` of his checkout; each has the `.godot`
 | T05 Phase 2a wood | 2a | mission lead | same | PASS on PC | FAIL on evidence then 4 should-fix: wedge recipe softwood-only, tropical hardwood species row, nearby logs for the saw groups, runtime yield test; all fixed | rerun at final head, dev PR |
 | T04 Phase 1b instance data | 1b | systems-engineer agent | `m001/p1b-instances` (m001_p1b) | review fixes in progress | PASS WITH NOTES (opus reviewer): 7 findings sent back to the engineer | merge after fixes and rerun |
 | T08 Phase 3 furniture | 3 | systems-engineer agent | `m001/p3-furniture` (m001_p3), brief `T08_BRIEF.md` | in development | pending | states 230–235, blueprints 186–191 reserved |
-| T06 Phase 2b metal and stations | 2b | mission lead | `m001/p2b-metal` | not started | — | after the dev PR; states 240+, blueprints 200+ |
+| T06 Phase 2b metal and stations | 2b | mission lead | `m001/p2b-metal` (m001_p2b) | PASS on PC (test_iron_saw_route) | PASS WITH NOTES (opus): wrong-Smithy firing, route-test cost asserts, stale iron-ore text, showroom Saw blade, tick cost fixed; charcoal burn decided (Q2) | merge with T08 and T04b, dev PR 2 |
+| T04b Phase 1b follow-ups (plain-only building costs, shoulder-log duplication, craft-cancel wear) | 1b | systems-engineer agent | `m001/t04b-fixes` (m001_p1b) @ `cd7d9a936` | PASS on PC | pending | review, then dev PR 2 |
+| T07 Leatherworking table, Tailor's table, Loom, Thread, Drying rack hide step | 2b | systems-engineer agent + mission lead | `m001/t07-textiles` (m001_p2b2) @ `cb02885ef` | PASS on PC (test_textile_route) | PASS WITH NOTES; evidence rerun at the merged head | dev PR 2 |
+| T04c refund order, positive controls | 1b | systems-engineer agent | `m001/t04b-fixes` @ `d3ef33050` | PASS on PC | mission lead read the diff (non-author) | dev PR 2 |
+| T08 Phase 3 furniture | 3 | systems-engineer agent | `m001/p3-furniture` @ `785fb0514` | PASS on PC | PASS WITH NOTES, fixes in | dev PR 2 |
 
 ## Evidence so far
 - T02 at `159b566` (voxel build, this PC): `tools/run_tests.sh` over the 205 tests `tests_for_diff.py` picks: 201 PASS, 4 FAIL (audio `.import` files missing from the clone); after copying the untracked `.import` files from Dave's checkout, the 4 PASS (`scratchpad/t02b`). Total 205/205.
@@ -48,6 +53,9 @@ Clones on Dave's PC (`git clone --shared` of his checkout; each has the `.godot`
 None open. Q1 (existing FUTURE rows) was decided under the 05:42 direction: see the plan, "Existing FUTURE rows switched on".
 
 ## Coordinator decisions (ENGINEERING, recorded for review)
+- **Q2 charcoal burn (12 Nov, under Dave's 05:42 autonomy direction):** master s4 item 9 says a Charcoal "fuel" burn time longer than Hard firewood, but s2.6 [D1] makes 100 Charcoal per log. Read together, the intent is that charcoal burns longer *than the wood it came from*, not that one of a hundred pieces outlasts a bolt of firewood (that made fuel from nothing, 12-14x). Decided: one Charcoal burns 3600 game s (100 from a log = 1.4x the log; the kiln is worth it), the campfire makes 12 from 2 firewood (an open fire wastes wood), smelts take 5 fuel. Values 0.15 (game value_of truncates to 0: Hob will not buy charcoal; accepted). All are s5 tuning numbers for playtest.
+- **Drying rack hide step (T07):** s3.4 says the Drying rack "adds the hide drying step". With no intermediate to add (catalog fixed), the existing scrape step (recipe 179, Hide -> Scraped hide, used only for leather) moves to the Drying rack (8 sticks, 4 twine). Hand-sewn hide goods use raw Hide, so day-one clothing still needs no building. Scraping time 8 s -> 20 s is s5 tuning. Master Appendix A still lists Scraped hide as made by hand: the implementation differs there on purpose, and Dave may overrule.
+- Showroom keeps older retired display items (Sal's rows) as it did; only the Saw blade row was removed. A strict validator rule was tried and dropped as scope creep.
 - Reinforced wagon wheel is FUTURE-GATED with the animal vehicles: it serves only them (s3.11; s8 "only the Handcart before").
 - Meatballs 837 goes live in Phase 6 with Uncooked Meatballs (s3.12 DELEGATED default).
 - Phase 2 is split 2a/2b/2c and Phase 4 into 4a/4b to fix the dependency contradiction and to bring craftsmanship into Mission 001.

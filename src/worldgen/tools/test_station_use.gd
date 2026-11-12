@@ -42,10 +42,13 @@ func _init() -> void:
 	var hearth: Dictionary = StationUse.usable(["clay_hearth", "campfire"], false, [], recipes, table, cooking)
 	check(hearth.get(n.call("beet"), -1) == StationUse.INPUT and hearth.get(n.call("raw_meat"), -1) == StationUse.INPUT, "a clay hearth: its own recipes and the campfire's it stands in for")
 
+	# Mission 001 phase 2b (master s2.7 item 3): no smelting at any forge or smithy; the Smelter takes the ores, the forges take ingots.
 	var forge: Dictionary = StationUse.usable(["forge"], false, [], recipes, table, cooking)
-	check(forge.get(n.call("copper_ore"), -1) == StationUse.INPUT and not forge.has(n.call("iron_ore")), "a stone forge takes copper ore, not iron ore")
+	check(not forge.has(n.call("copper_ore")) and not forge.has(n.call("iron_ore")) and forge.get(n.call("bronze_ingot"), -1) == StationUse.INPUT, "a stone forge takes bronze ingots, no ore")
+	var smelter: Dictionary = StationUse.usable(["smelter"], false, [], recipes, table, cooking)
+	check(smelter.get(n.call("iron_ore"), -1) == StationUse.INPUT and smelter.get(n.call("copper_ore"), -1) == StationUse.INPUT and smelter.get(n.call("tin_ore"), -1) == StationUse.INPUT, "the Smelter takes iron, copper and tin ore")
 	var brick: Dictionary = StationUse.usable(["brick_forge", "forge"], false, [], recipes, table, cooking)
-	check(brick.get(n.call("iron_ore"), -1) == StationUse.INPUT and brick.get(n.call("copper_ore"), -1) == StationUse.INPUT, "a brick forge takes iron ore, and copper for the bronze work it also does")
+	check(brick.get(n.call("iron_ingot"), -1) == StationUse.INPUT and not brick.has(n.call("iron_ore")), "the Smithy takes iron ingots, no ore")
 
 	var torch: Dictionary = StationUse.usable([], false, ["stick"], recipes, table, cooking)
 	check(torch.size() == 1 and torch.get(n.call("stick"), -1) == StationUse.FUEL, "a wall torch: only its own fuel")

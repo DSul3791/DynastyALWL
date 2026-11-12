@@ -12,8 +12,8 @@ const BuildingPlans := preload("res://src/client/building_plans.gd")
 
 # The building tiers in the order the list shows them (Dave 10 Nov 2026: Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified; metal
 # pieces keep Iron and Steel). The old tier words sit beside the new ones (Thatch by Crude, Log by Rustic, Wooden by Refined, Stone by Sturdy, Brick by
-# Superior), so furniture that keeps its material word lists with its tier. blueprints.json "tier_order" replaces this list when it has one.
-const TIER_ORDER := ["Crude", "Thatch", "Rustic", "Log", "Refined", "Wooden", "Sturdy", "Stone", "Superior", "Brick", "Engineered", "Fortified", "Bronze", "Iron", "Steel"]
+# Superior), so furniture that keeps its material word lists with its tier; the furniture grades Fine and Ornate (master s3.5) follow Rustic. blueprints.json "tier_order" replaces this list when it has one.
+const TIER_ORDER := ["Crude", "Thatch", "Rustic", "Log", "Fine", "Ornate", "Refined", "Wooden", "Sturdy", "Stone", "Superior", "Brick", "Engineered", "Fortified", "Bronze", "Iron", "Steel"]
 
 const DEFAULT_MODE := "repair"           # Dave 10 Nov 2026: a hammer first taken in hand (and after a game start) is on Repair, the first line of its list
 var mode: String = DEFAULT_MODE          # "place" (blueprints and saved plans), "save" (left click saves the building you aim at) or "repair" (left click repairs the piece you aim at)

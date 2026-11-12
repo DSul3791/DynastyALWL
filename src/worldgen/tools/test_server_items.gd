@@ -3197,6 +3197,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("stone"), 4)
 	bw.give(1, bw.table.number_of("twine"), 10)
 	bw.give(1, bw.table.number_of("hide"), 2)
+	bw.give(1, bw.table.number_of("thread"), 2)   # needle work takes Thread, not Twine (master s3.4, Mission 001 phase 2b)
 	bw.give(1, bw.table.number_of("sewing_needle"), 1)   # sewn things keep a Bone - Needle (item system, 10 Nov 2026); it stays for the hood below
 	bw._last_queue_act.clear()
 	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
@@ -3225,14 +3226,14 @@ func _init() -> void:
 		check(bw_rec.has(rid) and bool(bw.recipes.recipe(int(bw_rec[rid]["number"])).get("known", false)) and str(bw.recipes.recipe(int(bw_rec[rid]["number"])).get("station", "")) == "" and not bool(bw.table.entry(rid).get("future", false)), "%s is live, known from the start and made by hand" % rid)
 
 	bw.give(1, bw.table.number_of("hide"), 1)
-	bw.give(1, bw.table.number_of("twine"), 1)
+	bw.give(1, bw.table.number_of("thread"), 1)
 	bw._last_queue_act.clear()
 	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["hide_hood"]["number"]), 0, 1, Vector3.ZERO)
 
 	for n in 40:
 		bw._craft_tick(0.25)
 
-	check(bw.inventory_of(1).count_of(bw.table.number_of("hide_hood")) == 1, "a hide hood by hand from a hide and twine")
+	check(bw.inventory_of(1).count_of(bw.table.number_of("hide_hood")) == 1, "a hide hood by hand from a hide and thread")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

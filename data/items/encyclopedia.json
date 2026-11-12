@@ -2061,8 +2061,8 @@
 				"Used in Campfire pot",
 				"Used in Fibre - Sandals",
 				"Used in Fishing rod",
-				"Used in Wooden - Bench",
-				"Used in Wooden - Table",
+				"Used in Crude - Bench",
+				"Used in Rustic - Table",
 				"Used in Wooden - Railing",
 				"Used in Wooden - Hanging lantern",
 				"Used in Wooden - Lamp post",
@@ -2395,13 +2395,13 @@
 				"Used in Bucket",
 				"Used in Iron - Shield",
 				"Used in Ladder",
-				"Used in Wooden - Chest",
-				"Used in Wooden - Bench",
-				"Used in Wooden - Chair",
-				"Used in Wooden - Table",
-				"Used in Iron - Bench",
-				"Used in Iron - Chair",
-				"Used in Iron - Table",
+				"Used in Rustic - Chest",
+				"Used in Crude - Bench",
+				"Used in Rustic - Chair",
+				"Used in Rustic - Table",
+				"Used in Fine - Bench",
+				"Used in Fine - Chair",
+				"Used in Fine - Table",
 				"Used in Stone - Table",
 				"Used in Stone - Workbench",
 				"Used in Iron - Doorway",
@@ -2419,7 +2419,7 @@
 				"Used in Sign",
 				"Used in Tusk mount",
 				"Used in Weapon rack",
-				"Used in Iron - Chest",
+				"Used in Ornate - Chest",
 				"Used in Barrel",
 				"Used in Beam",
 				"Used in Carpenter's bench",
@@ -2474,7 +2474,7 @@
 			"obtainable_now": true
 		},
 		"plank_chest": {
-			"name": "Wooden - Chest",
+			"name": "Rustic - Chest",
 			"kind": "structure",
 			"description": "A plank chest for storing more things.",
 			"how_to_get": [],
@@ -2486,7 +2486,7 @@
 			"kind": "material",
 			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
-				"Craft at a brick forge: 4 Iron ore, 1 Fuel",
+				"Craft at a smelter: 4 Iron ore, 5 Fuel",
 				"Craft at a clay bloomery: 5 Iron ore, 3 Fuel"
 			],
 			"used_for": [
@@ -2501,9 +2501,9 @@
 				"Used in Iron - Hammer",
 				"Used in Iron - Fence",
 				"Used in Iron - Gate",
-				"Used in Iron - Bench",
-				"Used in Iron - Chair",
-				"Used in Iron - Table",
+				"Used in Fine - Bench",
+				"Used in Fine - Chair",
+				"Used in Fine - Table",
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
 				"Used in Iron - Brazier",
@@ -2519,7 +2519,7 @@
 				"Used in Tap",
 				"Used in Iron - Chisel",
 				"Used in Anvil",
-				"Used in Iron - Chest",
+				"Used in Ornate - Chest",
 				"Used in Iron band",
 				"Used in Torch pillar"
 			],
@@ -2530,7 +2530,7 @@
 			"kind": "material",
 			"description": "A bar of steel. Placeholder until smelting exists.",
 			"how_to_get": [
-				"Craft at a brick forge: 2 Iron ingot, 1 Fuel"
+				"Craft at a blast furnace: 2 Iron ingot, 5 Fuel"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -2700,8 +2700,8 @@
 				"Used in Hide - Cloak",
 				"Used in Hide - Gloves",
 				"Used in Hide glue",
-				"Used in Wooden - Chair",
-				"Used in Iron - Chair",
+				"Used in Rustic - Chair",
+				"Used in Fine - Chair",
 				"Used in Iron - Hand pump",
 				"Used in Wooden - Hand pump",
 				"Used in Deep-well pump",
@@ -4215,14 +4215,14 @@
 				"Used to build Sawmill",
 				"Used to build Woodworking table",
 				"Used in Iron - Fence",
-				"Used in Iron - Bench",
-				"Used in Iron - Chair",
-				"Used in Iron - Table",
+				"Used in Fine - Bench",
+				"Used in Fine - Chair",
+				"Used in Fine - Table",
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
 				"Used in Wooden - Hand pump",
 				"Used in Deep-well pump",
-				"Used in Iron - Chest",
+				"Used in Ornate - Chest",
 				"Used in Barrel",
 				"Used in Crate",
 				"Used in Cupboard"
@@ -4303,7 +4303,7 @@
 				"Used in Iron - Hand pump",
 				"Used in Deep-well pump",
 				"Used in Tap",
-				"Used in Iron - Chest",
+				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Engineered - Doorway",
 				"Used in Fortified - Doorway",
@@ -4326,7 +4326,7 @@
 			],
 			"used_for": [
 				"Planned: joins logs and beams without iron (timber frame).",
-				"Used in Wooden - Chair",
+				"Used in Rustic - Chair",
 				"Used in Carpenter's bench",
 				"Used in Sturdy - Ceiling",
 				"Used in Superior - Ceiling",
@@ -4837,7 +4837,7 @@
 			"kind": "material",
 			"description": "Smelted copper. Soft, but good for early tools.",
 			"how_to_get": [
-				"Craft at a forge: 3 Copper ore, 1 Fuel"
+				"Craft at a smelter: 3 Copper ore, 5 Fuel"
 			],
 			"used_for": [
 				"Used in Bronze ingot",
@@ -4850,7 +4850,7 @@
 			"kind": "material",
 			"description": "Smelted tin. Mixed with copper it makes bronze.",
 			"how_to_get": [
-				"Craft at a forge: 3 Tin ore, 1 Fuel"
+				"Craft at a smelter: 3 Tin ore, 5 Fuel"
 			],
 			"used_for": [
 				"Used in Bronze ingot"
@@ -7099,7 +7099,7 @@
 			"obtainable_now": true
 		},
 		"bench": {
-			"name": "Wooden - Bench",
+			"name": "Crude - Bench",
 			"kind": "structure",
 			"description": "A plank bench that seats two or three.",
 			"how_to_get": [
@@ -7109,7 +7109,7 @@
 			"obtainable_now": true
 		},
 		"chair": {
-			"name": "Wooden - Chair",
+			"name": "Rustic - Chair",
 			"kind": "structure",
 			"description": "A chair with a back. Sit and rest.",
 			"how_to_get": [
@@ -7119,7 +7119,7 @@
 			"obtainable_now": true
 		},
 		"table": {
-			"name": "Wooden - Table",
+			"name": "Rustic - Table",
 			"kind": "structure",
 			"description": "A plank table on trestles.",
 			"how_to_get": [
@@ -8201,7 +8201,7 @@
 			"obtainable_now": true
 		},
 		"iron_bench": {
-			"name": "Iron - Bench",
+			"name": "Fine - Bench",
 			"kind": "structure",
 			"description": "A timber bench bound with iron. Seats two or three.",
 			"how_to_get": [],
@@ -8219,7 +8219,7 @@
 			"obtainable_now": true
 		},
 		"iron_chair": {
-			"name": "Iron - Chair",
+			"name": "Fine - Chair",
 			"kind": "structure",
 			"description": "An iron-bound chair with a hide seat.",
 			"how_to_get": [],
@@ -8237,7 +8237,7 @@
 			"obtainable_now": true
 		},
 		"iron_table": {
-			"name": "Iron - Table",
+			"name": "Fine - Table",
 			"kind": "structure",
 			"description": "A plank table bound with iron.",
 			"how_to_get": [],
@@ -10346,7 +10346,7 @@
 			"obtainable_now": true
 		},
 		"iron_chest": {
-			"name": "Iron - Chest",
+			"name": "Ornate - Chest",
 			"kind": "structure",
 			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
 			"how_to_get": [],
@@ -10759,14 +10759,14 @@
 				"Used to build Sawmill",
 				"Used to build Woodworking table",
 				"Used in Iron - Fence",
-				"Used in Iron - Bench",
-				"Used in Iron - Chair",
-				"Used in Iron - Table",
+				"Used in Fine - Bench",
+				"Used in Fine - Chair",
+				"Used in Fine - Table",
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
 				"Used in Wooden - Hand pump",
 				"Used in Deep-well pump",
-				"Used in Iron - Chest",
+				"Used in Ornate - Chest",
 				"Used in Barrel",
 				"Used in Crate",
 				"Used in Cupboard"
@@ -10787,7 +10787,7 @@
 				"Used in Iron - Hand pump",
 				"Used in Deep-well pump",
 				"Used in Tap",
-				"Used in Iron - Chest",
+				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Engineered - Doorway",
 				"Used in Fortified - Doorway",

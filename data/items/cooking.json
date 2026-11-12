@@ -119,7 +119,8 @@
 		"wooden_block_soft": 28800.0,
 		"wooden_block_large": 86400.0,
 		"wooden_block_soft_large": 43200.0,
-		"driftwood": 2880.0
+		"driftwood": 2880.0,
+		"charcoal": 3600.0
 	},
 	"fuel_class": {
 		"log_oak": "log",
@@ -157,7 +158,8 @@
 		"wooden_block_soft": "firewood",
 		"wooden_block_large": "firewood",
 		"wooden_block_soft_large": "firewood",
-		"log": "log"
+		"log": "log",
+		"charcoal": "firewood"
 	},
 	"fire_tiers_note": "A tier needs min_pieces PIECES laid on the fire, a soft firewood counting as much as a hard one (piece_game_s is the shortest piece of the class, only a ceiling by burning time). Dave 1 Nov 2026: medium (3+ firewood) is twice the small fire in light radius, brightness, warmth and protection from wolves; large (3+ logs) is twice the medium again (light_m 3.5/7/14, light_energy 1/2/4 (set to match the client FIRE_LIGHT, docs and CONTROLS on 2 Nov 2026; the server does not read them for fires), heat_c 10/20/40 within heat_radius_m, protect_m 5/10/20 = how far wolves keep from it). The heat reach is not doubled. Dave 24 Oct: one campfire whose size follows its wood. The fire burns its biggest wood first. A tier needs at least min_pieces pieces of that wood; once burning it stays that size until that wood is gone, then drops to the highest tier that still has min_pieces, else the survival fire. Tier 1 survival (sticks, driftwood, kindling), 2 campfire (firewood), 3 bonfire (logs). state is the world-item state of a lit fire of that tier (1 stays the campfire; 40 and 41 are new and only appended). light_m and light_energy size the client light, heat_c and heat_radius_m the warmth.",
 	"fire_tiers": {

@@ -95,11 +95,11 @@ func is_empty() -> bool:
 	return true
 
 
-func count_of(number: int) -> int:
+func count_of(number: int, plain_only: bool = false) -> int:
 	var total: int = 0
 
 	for i in SLOTS:
-		if numbers[i] == number:
+		if numbers[i] == number and not (plain_only and not inst[i].is_empty()):
 			total += counts[i]
 
 	return total
@@ -110,7 +110,8 @@ func has(number: int, count: int) -> bool:
 
 
 # Take `count` of an item (from the last slots first, plain stacks before instances). False and no change if there is not enough.
-# Each instance unit taken is appended to `taken` as [number, inst, wear], so a refund can give it back as it was (the craft queue).
+# Each part taken from a slot is appended to `taken` as [number, inst, wear, count], in the order taken, so a refund can give back as it
+# was what is still owed (the craft queue).
 func remove(number: int, count: int, taken: Array = []) -> bool:
 	if count <= 0 or not has(number, count):
 		return false
@@ -122,8 +123,7 @@ func remove(number: int, count: int, taken: Array = []) -> bool:
 			if left > 0 and numbers[i] == number and inst[i].is_empty() == plain:
 				var take: int = mini(left, counts[i])
 
-				for _k in (0 if plain else take):
-					taken.append([number, inst[i].duplicate(true), wear[i]])
+				taken.append([number, inst[i].duplicate(true), wear[i], take])
 
 				counts[i] -= take
 				left -= take
@@ -174,8 +174,9 @@ func has_fill(number: int, count: int) -> bool:
 
 # Takes `count` for an ingredient: the group's lowest member first (ItemTable.spend_order: tier, material, value; own id first on a tie), then the next.
 # False and no change if the pack holds too few. An id that is no group is taken as itself.
-func remove_fill(number: int, count: int, taken_inst: Array = []) -> bool:
-	if count <= 0 or not has_fill(number, count):
+# `plain_only` (building costs): only units without instance data are taken, at most each member's plain count, so an instance never fills a cost.
+func remove_fill(number: int, count: int, taken_inst: Array = [], plain_only: bool = false) -> bool:
+	if count <= 0 or count_fill(number, plain_only) < count:
 		return false
 
 	var left: int = count
@@ -183,7 +184,7 @@ func remove_fill(number: int, count: int, taken_inst: Array = []) -> bool:
 
 	for fill in (spend if not spend.is_empty() else fills_of(number)):
 		if left > 0:
-			var taken: int = mini(left, count_of(fill))
+			var taken: int = mini(left, count_of(fill, plain_only))
 
 			if taken > 0:
 				remove(fill, taken, taken_inst)

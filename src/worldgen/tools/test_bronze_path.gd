@@ -83,6 +83,9 @@ func pick_out(ore: String, item: String, want: int, blows: int) -> void:
 
 		items._last_hit.clear()
 		items.action(1, Net.ACT_HIT, OUTCROP_ID, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		# The plain stones the blows break off are not under test: dropping them keeps a run of bad ore luck from filling the carry limit
+		# ("Too heavy to carry any more", 3 of 17 runs on 12 Nov 2026), which left the ore steps short.
+		items.inventory_of(1).remove(items.table.number_of("stone"), have("stone"))
 
 	items._items.erase(OUTCROP_ID)
 
@@ -166,6 +169,20 @@ func _init() -> void:
 	check(forge_id >= 0, "3b. the Stone - Forge stands (a wooden hammer, %s)" % str(forge_bp["cost"]))
 	check(items.station_near(1, "forge", 1), "3c. it serves as a forge, level 1")
 
+	# 3d. The Smelter beside it (Mission 001 phase 2b, master s2.7 item 3): smelting and the bronze alloy moved off the forge, which only shapes bronze.
+	var smelter_bp: Dictionary = {}
+
+	for number in items._blueprints:
+		if str(items._blueprints[number].get("structure", "")) == "smelter":
+			smelter_bp = items._blueprints[number]
+
+	for need in smelter_bp.get("cost", []):
+		give(str(need[0]), int(need[1]))
+
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(smelter_bp.get("number", 0)), 0, 0, HERE + Vector3(3.0, 0.0, -0.5))
+	check(not smelter_bp.is_empty() and items.station_near(1, "smelter", 1), "3d. a Smelter stands beside the forge, from its stone-and-clay blueprint (%s)" % str(smelter_bp.get("cost", [])))
+	check(not items.station_near(1, "smelter", 1) or items.recipes.recipe(recipe_number("smelt_copper")).get("station", "") == "smelter", "3e. copper is smelted at the Smelter, not the forge")
+
 	# 4. Charcoal at a lit campfire, one fuel a smelt.
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": FIRE_AT, "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}
 	items._next_id += 1
@@ -173,7 +190,7 @@ func _init() -> void:
 	craft("charcoal", charcoal_crafts, 120 * charcoal_crafts)
 	check(have("charcoal") >= fuel_n, "4. %d firewood make %d charcoal at the campfire (%d needed)" % [charcoal_crafts * need_of("charcoal", "firewood"), have("charcoal"), fuel_n])
 
-	# 5. Copper and tin ingots at the Stone - Forge, charcoal as the fuel.
+	# 5. Copper and tin ingots at the Smelter, charcoal as the fuel.
 	craft("smelt_copper", copper_smelts, 120 * copper_smelts)
 	check(have("copper_ingot") >= copper_ingots, "5a. %d copper ore make %d copper ingots (%d)" % [copper_ore_n, copper_ingots, have("copper_ingot")])
 	craft("smelt_tin", tin_smelts, 120 * tin_smelts)

@@ -19,12 +19,12 @@ So a camp can have its lean-to or only a big tree; the comfort items need not be
 |---|---|---|
 | shelter | sheltered +1 (once) | rule |
 | bed (only the BEST bed in range counts) | rough bed 1, straw bed 2, feather bed 4, canopy bed 5 | rough bed live (bed.json comfort 1), rest future |
-| seat | log seat 1, bench 1, chair 2 | future (log seat and bench are the cheap first items) |
-| table | workbench 1, table 2 | workbench live, table future |
+| seat (graded families, chairs and benches: each counts once at its BEST grade in range, Mission 001 master s3.5) | log seat 1, stool 1; graded: Crude chair 1, Crude bench 1, Rustic chair 2, Fine chair 3, Fine bench 3, Ornate chair 4 | placeable |
+| table (graded tables count once, at the BEST grade in range) | workbench 1; graded: Crude table 1, Rustic table 2, Fine table 3, Ornate table 4 | placeable |
 | rug | hide rug 1, wool rug 2 (both count) | future |
 | fire (LIT only) | campfire 1, clay hearth 2, fireplace 4 | campfire and hearth live, fireplace future |
 | light (LIT only) | wall torch 1, candle chandelier 3 | future |
-| storage | chest 1, plank chest 1 | live |
+| storage | wicker chest 1; board chests (Crude, Rustic, Fine, Ornate) 1, counted once as one family | live |
 | door, window | a doorway piece 1, a window wall 1 | live |
 | decor | flower pot 1, antler mount 1 | future |
 A kind counts once however many you place. A sensible camp: shelter 1 + straw bed 2 + bench 1 + workbench 1 + lit campfire 1 + chest 1 = **7**. A fine house: shelter 1 + canopy bed 5 + chair 2 + table 2 + rugs 3 + fireplace 4 + chandelier 3 + wall torch 1 + chest 1 + door 1 + window 1 + pot 1 = capped at **20**. The sum of everything is 39, so the cap of 20 matters. The existing rough bed (comfort 1 in bed.json) is the starting point: a bare lean-to with a rough bed is comfort 2 (shelter + bed) and just earns the buff.

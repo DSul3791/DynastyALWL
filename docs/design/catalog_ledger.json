@@ -417,8 +417,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -459,10 +464,15 @@
    "section": null,
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "switched on by s3.3 (Blast Furnace steel)"
+   "note": "switched on by s3.3 (Blast Furnace steel); M001-T06 (phase 2b)"
   },
   {
    "key": "iron_pickaxe",
@@ -1271,10 +1281,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "carcass",
@@ -1313,10 +1328,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "master_forge_kit",
@@ -1341,10 +1361,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b); masterwork +1/+2 lands in 2c"
   },
   {
    "key": "coin_copper",
@@ -3407,10 +3432,15 @@
    "section": "3.2",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "water_wheel",
@@ -3449,10 +3479,15 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "woodworking_table_kit",
@@ -3509,10 +3544,15 @@
    "section": "3.1",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "stone_adze",
@@ -4965,10 +5005,15 @@
    "section": "3.2",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "fibre_arrow",
@@ -7079,8 +7124,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7093,8 +7144,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7107,8 +7164,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7177,8 +7240,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7653,10 +7721,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "wool_cloth",
@@ -8913,8 +8986,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -8941,8 +9020,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -8969,8 +9054,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -9025,8 +9116,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -9053,8 +9149,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -9081,8 +9182,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -10789,10 +10895,10 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
+   "state": "IN DEVELOPMENT",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06: kiln recipe is 1 log -> 100 Charcoal; batch storage, gradual burn and self-consumption (s2.6) wait for station storage (s2.5)"
   },
   {
    "key": "tanning_rack_kit",
@@ -10845,10 +10951,12 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_textile_route"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07: the hide drying step = recipe 179 (scraped hide) moves to the Drying rack (mission lead decision, STATE.md)"
   },
   {
    "key": "smoker_kit",
@@ -11013,8 +11121,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -11041,8 +11154,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -11125,10 +11243,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "stonecutters_bench_kit",
@@ -11573,10 +11696,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "leather_belt",
@@ -11839,10 +11967,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): state 245, blueprint 207; recipes 245, 334, 342 moved here; own Loom look"
   },
   {
    "key": "log_shelf_kit",
@@ -11923,8 +12056,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12724,10 +12862,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "new:Bellows",
@@ -12739,10 +12882,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "Smithy add-ons, not stations"
+   "note": "Smithy add-ons, not stations; M001-T06 (phase 2b)"
   },
   {
    "key": "new:Quenching Trough",
@@ -12754,10 +12902,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "Smithy add-ons, not stations"
+   "note": "Smithy add-ons, not stations; M001-T06 (phase 2b); stands as a Smithy add-on; its Tempered output lands in 2c"
   },
   {
    "key": "new:Leatherworking Table",
@@ -12769,10 +12922,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): state 243, blueprint 205; recipes 278, 392, 356, 361, 213, 214, 358, 359, 360 moved here (no station level); look borrowed (carpenters_bench), NOT visually complete"
   },
   {
    "key": "new:Tailor's Table",
@@ -12784,10 +12942,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): state 244, blueprint 206; recipes 216, 237-244 moved here (no station level); look borrowed (table), NOT visually complete"
   },
   {
    "key": "new:Thread",
@@ -12799,10 +12962,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): hand recipe 409 (2 plant fibre -> 1 Thread, value-neutral at value 2); replaces Twine in needle recipes 23, 39-42, 173, 194-196, 237, 238, 241, 388; no model yet"
   },
   {
    "key": "new:Crude - Chest",
@@ -12814,8 +12982,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12829,8 +13002,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12844,8 +13022,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12859,8 +13043,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12874,8 +13064,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12889,8 +13085,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
