@@ -102,6 +102,19 @@ func build(client) -> void:
 		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_EDITS, 0, 0, 0, Vector3.ZERO)
 		show_page("admin"))
 	_button(reset, "No, keep them", func(): show_page("admin"))
+	var world: VBoxContainer = _page("reset_world")
+	var world_warn: Label = Label.new()
+	world_warn.text = "Reset the WHOLE world for everyone?
+Every dig and fill, every dropped item and everything built or placed
+(chests and stations with their contents, fires, beds, farm beds) is deleted.
+Characters, packs, worn gear and skills are kept. This cannot be undone."
+	world_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	world_warn.add_theme_font_size_override("font_size", 20)
+	world.add_child(world_warn)
+	_button(world, "Yes, reset the world", func():
+		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_WORLD, 0, 0, 0, Vector3.ZERO)
+		show_page("admin"))
+	_button(world, "No, keep it", func(): show_page("admin"))
 	var fresh: VBoxContainer = _page("new_player")
 	var fresh_warn: Label = Label.new()
 	fresh_warn.text = "Start over as a brand new player?\nYour pack and worn gear are emptied, your vitals reset\nand Admin mode goes off. You stay where you are."
@@ -427,6 +440,7 @@ func _build_admin() -> void:
 		_c._set_menu(false))
 	_button(admin, "Play as a new player", func(): show_page("new_player"))
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
+	_button(admin, "Reset world (terrain, dropped items, buildings)", func(): show_page("reset_world"))
 	_button(admin, "Dump water here (to a file on the server)", func():
 		var here: Vector3 = _c.body.global_position
 		_c.net.inventory_action.rpc_id(1, Net.ACT_DUMP_WATER, 0, 0, 0, here)

@@ -218,6 +218,7 @@ const ACT_VIEW_OPEN := 72        # a = world id of a Storage sign or Warehouse d
 const ACT_VIEW_TAKE := 73        # a = view world id, b = item number, count = how many: taken from those containers into the pack, nearest first; answered with storage_view (protocol 108)
 const ACT_VIEW_PUT := 74         # a = view world id, b = pack slot (-1: every stack an open container there already holds), count = how many: into those containers; answered with storage_view (protocol 108)
 const ACT_CART := 78             # b = 0 take the handle of cart a, 1 let go, 2 lift crate a onto the nearest free cart, 3 set crate a down off its cart; answered with cart_pull (0 and 1) (protocol 111)
+const ACT_RESET_WORLD := 79      # admin only (BLOCKER-001, Dave 12 Nov 2026): the whole world loses every loose item, placed structure (with its contents) and campfire, then every dig and fill as ACT_RESET_EDITS; characters are kept (no protocol change, just a new kind)
 
 
 @rpc("authority", "call_remote", "reliable")
