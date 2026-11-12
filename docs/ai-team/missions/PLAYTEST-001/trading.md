@@ -11,7 +11,7 @@ Other findings are in the sibling ledgers of this folder.
 | TEST-002 Coin denomination order | NEEDS PLAYER VERIFICATION | Window coins and coin words now run gold, silver, bronze, copper (left to right). Unit test updated. |
 | TEST-009 Unexpected coins during gathering | NEEDS PLAYER VERIFICATION | Source found: starter-goal rewards. Kept (designed rewards), now named on screen. |
 
-No Godot test has run yet for this change (cloud runs are forbidden; Dave's PC was in use). Statuses move to VERIFIED FIXED only after the PC tests and Dave's play check.
+Automated tests pass on Dave's PC (below); merged into `dev` by PR #1058 (merge 00d8f2a20a537ab1111cd8fac9de515042b86a25). Statuses move to VERIFIED FIXED only after Dave's play check (nothing here was seen on screen).
 
 ## TEST-003: cause
 
@@ -49,7 +49,12 @@ Fix (rewards unchanged): one notice per goal, "Goal done: Light a fire. You earn
 
 Selector (`tools/tests_for_diff.py origin/dev HEAD`): 171 fast, 3 timing, 1 pictures, wide because `server_items.gd` and `terrain_client.gd` are touched. The review commit also touches a comment in `terrain_net.gd`, which selects all fast and timing tests (path rule); it is comment-only. Scoped dev plan, agreed by the gate reviewer with three additions (TEST_GATES.md): `tools/local_check.sh` (parse check; the client edits have no headless test), `test_trade`, `test_trade_buy_rules`, `test_coin_icons`, `test_goals`, `test_mission001_walkthrough`, `test_wanted_order`, `test_earn_loop`, `test_first_town`, `test_dialogue`, `test_carrying`, `test_cooking_route`, the `always` set, and the PC start-up/world-load smoke through the client welcome (which builds the trade window). Deferred: the rest of the selection, to the next `tools/release_check.sh` run.
 
-Results: see the PR.
+Results (Dave's PC ManlandRyzen5, 12 Nov 2026, worktree `E:/Software/godotDev/wt_trading` at exactly 1a0857f92790fe62c7c98bb580f9ee6830003d6e, Godot 4.7.2.stable.custom_build.ed1daf0bf voxel build, `run_tests.sh --jobs 2`):
+- 22/22 PASS, 0 retries (the 11 named tests and the 11 of the `always` set).
+- Import exit 0, 0 script errors. Client smoke (headless, separate APPDATA): welcome and ground ready, 0 script errors (exit 127 is the known headless-quit issue).
+- `local_check.sh`: parse OK; FAIL on warning counts over `tools/warning_baseline.txt`, all pre-existing on dev and outside this change (server_items.gd 9 vs 8, the extra from 62395ee91; four other files not touched). The baseline is stale on dev.
+- Outputs: `E:/Software/godotDev/wt_trading/_out/`. Deferred: the rest of the selector's 171 fast / 3 timing / 1 pictures, to the next `tools/release_check.sh`.
+- Review: independent gate review PASS WITH NITS on ef1e947, findings 1-2 fixed, re-review PASS on 1a0857f. CI green.
 
 ## What Dave should check in play
 
