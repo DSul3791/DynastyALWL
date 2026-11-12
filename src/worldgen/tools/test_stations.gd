@@ -100,10 +100,12 @@ func _init() -> void:
 	tiers.peer_connected_hello(1, "tier-key-000001")
 	tiers.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0), Vector3(600.0, 10.0, 0.0), Vector3(800.0, 10.0, 0.0)]
-	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
-	# [workbench, forge, brick_forge]. The Brick - Forge is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
-	# level-1 forge for bronze (also). The large and master forges are parked and keep their old forge levels.
-	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 3, 0], [0, 4, 0]]
+	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge", "master_forge"]
+	# [workbench, forge, brick_forge]. The Smithy (Brick - Forge) is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
+	# level-1 forge for bronze (also). Mission 001 phase 2b: the Blast furnace is its own body (blast_furnace, no forge work) and the Master smithy
+	# a smithy too (brick_forge 2, forge 1) with its own master_smithy body. The smithies must burn to craft: the player carries charcoal to fire them.
+	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 0, 0], [0, 1, 2]]
+	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
 
 	for n in 5:
 		var kit_number: int = tiers.table.number_of(kits[n])
@@ -119,33 +121,47 @@ func _init() -> void:
 		check(tiers.station_near(1, "brick_forge", int(want[n][2])) or int(want[n][2]) == 0, "%s brick forge %d" % [kits[n], int(want[n][2])])
 		check(not tiers.station_near(1, "brick_forge", int(want[n][2]) + 1), "%s brick forge capped at %d" % [kits[n], int(want[n][2])])
 
+	check(tiers.station_near(1, "blast_furnace", 1) == false, "no blast furnace beside the master smithy spot")
+	tiers.report_position(1, spots[3] - Vector3(2.0, 0.0, 0.0))
+	check(tiers.station_near(1, "blast_furnace", 1) and tiers.station_near(1, "smelter", 1), "the Blast furnace makes steel and smelts in bulk (blast_furnace, also a smelter)")
+	tiers.report_position(1, spots[4] - Vector3(2.0, 0.0, 0.0))
+	check(tiers.station_near(1, "master_smithy", 1), "the Master smithy is its own body")
+	tiers.inventory_of(1).remove(tiers.table.number_of("charcoal"), tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")))
+	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
+	check(not tiers.station_near(1, "brick_forge", 1), "a cold Smithy with no fuel in the pack serves nothing (master s4 item 10: it must burn)")
+
 	var steel: int = 0
 
 	for number in tiers.recipes.numbers():
 		if str(tiers.recipes.recipe(number)["id"]) == "steel_pickaxe":
 			steel = number
 
-	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel needs the brick forge at level 3 (bronze forge 1, iron brick forge 2, steel brick forge 3)")
+	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 1, "steel work is at the Smithy with no level: Blast furnace steel gates it (master s4 item 10, the Anvil retired)")
 
-	# The Anvil beside the brick forge is the steel step: brick forge 2 plus one add-on kind is level 3. Beside a stone forge it adds nothing.
+	# Bellows and the Quenching trough beside the Smithy are add-ons (master s2.7 item 5) that change how it works, never its level.
+	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
 	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
-	check(not tiers.station_near(1, "brick_forge", 3), "no anvil yet: the brick forge is level 2")
-	var anvil: int = tiers.table.number_of("iron_anvil_kit")
-	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
-	tiers.place_item(1, anvil, spots[2] + Vector3(0.0, 0.0, 3.0), 0)   # outside the 2.5 m structure gap, inside the 5 m add-on reach
-	var anvils: int = 0
+
+	for addon in [["bellows", Vector3(0.0, 0.0, 3.0)], ["quenching_trough", Vector3(0.0, 0.0, -3.0)]]:
+		var addon_n: int = tiers.table.number_of(str(addon[0]))
+		tiers.action(1, Net.ACT_ADMIN_GIVE, addon_n, 0, 1, Vector3.ZERO)
+		tiers.place_item(1, addon_n, spots[2] + addon[1], 0)
+
+	var addons: int = 0
 
 	for id in tiers._items:
-		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "iron_anvil":
-			anvils += 1
+		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) in ["bellows", "quenching_trough"]:
+			addons += 1
 
-	check(anvils == 1, "the anvil stands beside the brick forge (%d)" % anvils)
-	check(tiers.station_near(1, "brick_forge", 3) and not tiers.station_near(1, "brick_forge", 4), "an anvil beside it makes the brick forge level 3, for steel")
-	check(tiers.station_near(1, "forge", 1) and not tiers.station_near(1, "forge", 2), "and it is still a level 1 forge for bronze, no higher")
-	tiers.report_position(1, spots[1] - Vector3(2.0, 0.0, 0.0))
-	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
-	tiers.place_item(1, anvil, spots[1] + Vector3(0.0, 0.0, 3.0), 0)
-	check(not tiers.station_near(1, "forge", 2) and not tiers.station_near(1, "brick_forge", 1), "an anvil beside a stone forge does nothing: the stone forge never reaches iron")
+	check(addons == 2, "Bellows and a Quenching trough stand beside the Smithy (%d)" % addons)
+	check(tiers.station_near(1, "brick_forge", 2) and not tiers.station_near(1, "brick_forge", 3), "they do not raise the Smithy's level")
+	var smithy_id: int = tiers.serving_station(1, "brick_forge", 2)
+	var smithy_def: Dictionary = tiers._structures["blacksmithy"]
+	check(smithy_id >= 0 and is_equal_approx(tiers._addon_factor(tiers._items[smithy_id], smithy_def, "craft_speed"), 1.25), "Bellows make the Smithy's crafts faster")
+	var before_fuel: int = tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal"))
+	check(tiers.station_near(1, "brick_forge", 2, true) and bool(tiers._items[smithy_id]["struct"].get("lit", false)), "a craft fires the cold Smithy")
+	check(tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")) == before_fuel - 1 and float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)) > float(smithy_def["fuel_s"]), "with one charcoal from the pack, and it burns longer with Bellows beside it")
+	check(tiers.station_near(1, "brick_forge", 2, true) and tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")) == before_fuel - 1, "a burning Smithy takes no more fuel")
 
 	_body_checks(tiers)
 

@@ -6255,15 +6255,7 @@
 			"look_alikes": [],
 			"value": 6
 		},
-			"charcoal": {
-				"number": 547,
-				"name": "Charcoal",
-				"description": "Firewood burned slow and starved of air. The best smelting fuel.",
-				"kind": "material",
-				"stack": 20,
-				"look_alikes": [],
-				"value": 3
-			},
+			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 20, "look_alikes": [], "value": 0.1},
 			"wool_cloth": {
 				"number": 548,
 				"name": "Wool cloth",
@@ -6322,16 +6314,7 @@
 				"value": 2,
 				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
 			},
-			"fuel": {
-				"number": 554,
-				"name": "Fuel",
-				"description": "Charcoal or coal: what a forge burns to smelt.",
-				"kind": "material",
-				"stack": 20,
-				"look_alikes": [],
-				"value": 3,
-				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
-			},
+			"fuel": {"number": 554, "name": "Fuel", "description": "Charcoal or coal: what a forge burns to smelt.", "kind": "material", "stack": 20, "look_alikes": [], "value": 0.1, "note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."},
 			"pitch": {
 				"number": 555,
 				"name": "Pitch",

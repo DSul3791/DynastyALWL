@@ -459,10 +459,15 @@
    "section": null,
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "switched on by s3.3 (Blast Furnace steel)"
+   "note": "switched on by s3.3 (Blast Furnace steel); M001-T06 (phase 2b)"
   },
   {
    "key": "iron_pickaxe",
@@ -1271,10 +1276,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "carcass",
@@ -1313,10 +1323,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "master_forge_kit",
@@ -1341,10 +1356,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b); masterwork +1/+2 lands in 2c"
   },
   {
    "key": "coin_copper",
@@ -3407,10 +3427,15 @@
    "section": "3.2",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "water_wheel",
@@ -3449,10 +3474,15 @@
    "section": "3.2",
    "phase": "2a",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "woodworking_table_kit",
@@ -3509,10 +3539,15 @@
    "section": "3.1",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "stone_adze",
@@ -4965,10 +5000,15 @@
    "section": "3.2",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "fibre_arrow",
@@ -7653,10 +7693,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "wool_cloth",
@@ -10789,10 +10834,10 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
+   "state": "IN DEVELOPMENT",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06: kiln recipe is 1 log -> 100 Charcoal; batch storage, gradual burn and self-consumption (s2.6) wait for station storage (s2.5)"
   },
   {
    "key": "tanning_rack_kit",
@@ -11125,10 +11170,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "stonecutters_bench_kit",
@@ -11573,10 +11623,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "leather_belt",
@@ -12724,10 +12779,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T06 (phase 2b)"
   },
   {
    "key": "new:Bellows",
@@ -12739,10 +12799,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "Smithy add-ons, not stations"
+   "note": "Smithy add-ons, not stations; M001-T06 (phase 2b)"
   },
   {
    "key": "new:Quenching Trough",
@@ -12754,10 +12819,15 @@
    "section": "3.3",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_iron_saw_route",
+    "test_stations",
+    "test_bronze_path",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "Smithy add-ons, not stations"
+   "note": "Smithy add-ons, not stations; M001-T06 (phase 2b); stands as a Smithy add-on; its Tempered output lands in 2c"
   },
   {
    "key": "new:Leatherworking Table",

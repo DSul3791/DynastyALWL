@@ -1,6 +1,7 @@
 extends SceneTree
 
-# Wood without iron (guide finding F-05, FLINT_ORE_SPEC.md; Tyler 31 Oct 2026): the route a player can really walk from bare hands to lumber and planks:
+# The lumber route. Mission 001 phases 2a and 2b (master s2.3, s2.7) replaced the stone-wedge route described next (kept as history): Planks and
+# Hardwood boards now start at the Iron - Saw or the Sawmill. Old route (guide finding F-05, FLINT_ORE_SPEC.md; Tyler 31 Oct 2026):
 # stone wedge (2 stones, 1 stick, by hand) -> workbench kit (20 sticks, 6 twine, 4 stones, by hand) -> place the workbench -> a log at the workbench with the wedge in the pack
 # gives 2 lumber ("Hand-split planks", recipe lumber_wedge); rough planks are retired (recipe audit, 10 Nov 2026), so the workbench makes none. Before the ingredient groups (F-16) the log
 # step could never be filled. The wedge is kept (not used up). Without the workbench near, nothing is made; without the wedge, no lumber from the wedge recipe.
@@ -62,24 +63,24 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
 	items.admin_mode_on = func(_p): return false
-	give("stone", 8)   # the wedge (2 stones) and the bench kit (pace pass: 20 sticks, 6 twine, 4 stones, 60 s)
+	# Mission 001 phase 2b (master s2.3 item 6, s2.7 item 1): no stone wedges and no hand-split planks; Planks and Hardwood boards start at the first
+	# Iron - Saw (made at the burning Smithy) or the Sawmill. The wedge recipes are retired, so asking for them makes nothing.
+	give("stone", 8)
 	give("stick", 30)
-	give("twine", 8)
+	items.inventory_of(1).add(items.table.number_of("log_spruce"), 2)
 	craft("stone_wedge", 1)
-	check(count("stone_wedge") == 1 and count("stone") == 6, "a stone wedge from 2 stones and a stick, by hand")
-	for spent in [["stone", 4], ["stick", 20], ["twine", 6]]:   # the bench kit used to take these; the pack stays as light as it was so the lumber is not left on the ground by the carry limit
-		items.inventory_of(1).remove(items.table.number_of(str(spent[0])), int(spent[1]))
-	items.inventory_of(1).add(items.table.number_of("log_spruce"), 3)   # logs in the pack: the real carry (shoulder, ground) is test_logs_carry
+	check(count("stone_wedge") == 0 and count("stone") == 8, "the Stone - Wedge is retired: no wedge is made")
 	craft("lumber_wedge", 1)
-	check(count("lumber") == 0 and count("log_spruce") == 3, "no workbench near: no lumber, the log is kept")
-	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
-	craft("lumber_wedge", 1)
-	check(count("lumber") == 2 and count("log_spruce") == 2 and count("stone_wedge") == 1, "at the workbench, a log and the wedge give 2 lumber; the wedge is kept (%d lumber, %d logs left)" % [count("lumber"), count("log_spruce")])
-	craft("rough_plank", 1)
-	check(count("rough_plank") == 0 and count("log_spruce") == 2, "rough planks are retired: the workbench makes none, the log is kept (%d)" % count("rough_plank"))
-	items.inventory_of(1).remove(items.table.number_of("stone_wedge"), 1)
-	craft("lumber_wedge", 1)
-	check(count("lumber") == 2 and count("log_spruce") == 2, "without the wedge the wedge recipe makes nothing")
+	check(count("lumber") == 0 and count("log_spruce") == 2, "hand-split planks are retired: no Planks before a saw, the logs are kept")
+	var saw_recipe: Dictionary = {}
+
+	for k in items.recipes.numbers():
+		if str(items.recipes.recipe(int(k)).get("id", "")) == "hand_saw":
+			saw_recipe = items.recipes.recipe(int(k))
+
+	var saw_needs: Array = saw_recipe.get("needs", []).map(func(nd): return items.table.id_of(int(nd[0])))
+	check(str(saw_recipe.get("station", "")) == "brick_forge" and saw_needs.has("iron_ingot") and not saw_needs.has("saw_blade"), "the Iron - Saw is made at the Smithy from iron and wood, with no Saw blade (%s)" % str(saw_needs))
+	items.inventory_of(1).remove(items.table.number_of("log_spruce"), 2)
 
 	# Mission 001 phase 2a (master s2.3, [D4]): a hand saw turns a softwood or plain log into 6 Planks and a hardwood log into 4 Hardwood boards,
 	# never the other way round; the sawmill gives the same (validate_items checks the balance row), the hand saw is slower.

@@ -3849,10 +3849,10 @@
 			"craft_s": 4.0,
 			"known": true
 		},
-		"smelt_copper": {"number": 190, "name": "Copper ingot", "category": "Materials", "needs": [["copper_ore", 3], ["fuel", 10]], "gives": ["copper_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
-		"smelt_tin": {"number": 191, "name": "Tin ingot", "category": "Materials", "needs": [["tin_ore", 3], ["fuel", 10]], "gives": ["tin_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
-		"smelt_iron": {"number": 192, "name": "Iron ingot", "category": "Materials", "needs": [["iron_ore", 4], ["fuel", 10]], "gives": ["iron_ingot", 1], "craft_s": 45.0, "known": true, "station": "smelter"},
-		"smelt_steel": {"number": 193, "name": "Steel ingot", "category": "Materials", "needs": [["iron_ingot", 2], ["fuel", 10]], "gives": ["steel_ingot", 1], "craft_s": 14.0, "known": true, "station": "blast_furnace"},
+		"smelt_copper": {"number": 190, "name": "Copper ingot", "category": "Materials", "needs": [["copper_ore", 3], ["fuel", 5]], "gives": ["copper_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
+		"smelt_tin": {"number": 191, "name": "Tin ingot", "category": "Materials", "needs": [["tin_ore", 3], ["fuel", 5]], "gives": ["tin_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
+		"smelt_iron": {"number": 192, "name": "Iron ingot", "category": "Materials", "needs": [["iron_ore", 4], ["fuel", 5]], "gives": ["iron_ingot", 1], "craft_s": 45.0, "known": true, "station": "smelter"},
+		"smelt_steel": {"number": 193, "name": "Steel ingot", "category": "Materials", "needs": [["iron_ingot", 2], ["fuel", 5]], "gives": ["steel_ingot", 1], "craft_s": 14.0, "known": true, "station": "blast_furnace"},
 		"hide_tunic": {
 			"number": 194,
 			"name": "Hide - Tunic",
@@ -7032,7 +7032,7 @@
 			"craft_s": 8.0,
 			"known": true
 		},
-		"charcoal": {"number": 341, "name": "Charcoal", "category": "Materials", "needs": [["firewood", 2]], "gives": ["charcoal", 10], "craft_s": 30.0, "known": true, "station": "campfire"},
+		"charcoal": {"number": 341, "name": "Charcoal", "category": "Materials", "needs": [["firewood", 2]], "gives": ["charcoal", 20], "craft_s": 30.0, "known": true, "station": "campfire"},
 		"wool_cloth": {
 			"number": 342,
 			"name": "Wool cloth",

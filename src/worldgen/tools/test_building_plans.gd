@@ -27,7 +27,7 @@ func _init() -> void:
 		{"pos": Vector3(100.0, 10.3, 104.0), "state": 50, "yaw": 90.0, "piece": true},   # a log wall, a step above the floor
 		{"pos": Vector3(100.0, 10.0, 100.0), "state": 51, "yaw": 90.0, "piece": true},   # a log floor: the lowest, so the anchor
 		{"pos": Vector3(300.0, 10.0, 300.0), "state": 50, "yaw": 0.0, "piece": true},    # another house far away: not part of it
-		{"pos": Vector3(102.0, 10.0, 102.0), "state": 20, "yaw": 0.0, "piece": true},    # a large forge beside it: no blueprint, counted as skipped
+		{"pos": Vector3(102.0, 10.0, 102.0), "state": 200, "yaw": 0.0, "piece": true},    # a Clay bloomery beside it (retired, Mission 001; the Large forge has a blueprint now): no blueprint, counted as skipped
 	]
 	var states: Dictionary = {50: 16, 51: 17}
 	check(Plans.capture(rows, states, Vector3(0.0, 0.0, 0.0)).is_empty(), "nothing placeable near the aim saves nothing")
