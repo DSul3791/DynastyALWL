@@ -370,12 +370,22 @@ func _init() -> void:
 
 	var young: int = 2
 	var old_age: int = life / 2
-	inv.numbers[0] = nuts   # written directly so the two ages stay two stacks: slot 0 young, slot 1 old (taken first: last slot first)
-	inv.counts[0] = 9
-	inv.wear[0] = young
-	inv.numbers[1] = nuts
-	inv.counts[1] = 6
-	inv.wear[1] = old_age
+	var free_slots: Array = []
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] == 0 and free_slots.size() < 2:
+			free_slots.append(slot)
+
+	# Written directly so the two ages stay two stacks, and only into empty slots (a write over a held slot would keep that slot's instance
+	# data and lose the item): the young stack first, the old one in the later slot (taken first: last slot first).
+	var young_at: int = int(free_slots[0])
+	var old_at: int = int(free_slots[1])
+	inv.numbers[young_at] = nuts
+	inv.counts[young_at] = 9
+	inv.wear[young_at] = young
+	inv.numbers[old_at] = nuts
+	inv.counts[old_at] = 6
+	inv.wear[old_at] = old_age
 	inv.add(nectar, 5)
 	items._last_queue_act.erase(1)
 	items.action(1, Net.ACT_CRAFT_QUEUE, 31, 0, 5, Vector3.ZERO)
@@ -393,7 +403,12 @@ func _init() -> void:
 		if inv.numbers[slot] == nuts:
 			ages.append([inv.counts[slot], inv.wear[slot]])
 
-	check(ages == [[9, young]] and inv.count_of(nectar) == 3, "the cancel gives back the nine young nuts still owed, at their age, not the old ones (%s)" % str(ages))
+	var young_back: int = 0
+
+	for got in ages:
+		young_back += int(got[0]) if int(got[1]) == young else 0
+
+	check(young_back == 9 and inv.count_of(nuts) == 9 and inv.count_of(nuts, true) == 9 and inv.count_of(nectar) == 3, "the cancel gives back the nine young nuts still owed, plain and at their age, not the old ones (%s)" % str(ages))
 
 	for slot in inv.SLOTS:
 		if inv.numbers[slot] in [nuts, nectar]:
