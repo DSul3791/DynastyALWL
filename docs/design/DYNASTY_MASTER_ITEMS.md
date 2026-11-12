@@ -1,17 +1,18 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 14 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS, ARMOUR, CLOTHING, CARRYING GEAR, ANIMAL TACK AND VEHICLES RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D11], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 14 baseline plus owner-approved Cooking and Food Preparation [D12] recorded; whole master catalog remains incomplete. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D12], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 14, reviewed categories only; not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 126 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10, 13 vehicles and parts in s3.11) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Vehicles add 10 blueprints and 10 structure states but no kit items. Cross-listed rows (dual-use tools, shields, protective clothing, containers, troughs, harnesses) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 14 audited baseline BEFORE 23 new [D12] cooking/prepared-food ADD items; combined numbers pending recalculation, NOT final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 126 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10, 13 vehicles and parts in s3.11) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Vehicles add 10 blueprints and 10 structure states but no kit items. Cross-listed rows (dual-use tools, shields, protective clothing, containers, troughs, harnesses) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
 | Tag | Source | Weight |
 |---|---|---|
+| **[D12]** | Dave approved full revised Cooking Proposal 2: Food Preparation Table (built-in knives/cutting board/rolling pin), 6 other cookware/attachments, 16 tangible prepared food intermediates and prepare→cook where food needs assembling; no personal inventory knife prep | **Owner-approved cooking category; NOT implementation permission** |
 | **[D11]** | Dave approved ten carts/wagons/carriages and three reusable wheel/axle items; specifically removed Wheelbarrow as redundant with Handcart; paired animals remain one draft unit as in [D10] | **Approved vehicle category; NOT game implementation or complete-catalog approval** |
 | **[D10]** | Dave approved 20 horse-tack items: original 18 plus Double Heavy Draft Harness and Double Ox Yoke; yoked animals move as one logical controller in fixed formation, with individual stamina/health and combined hauling | **Approved animal-tack category and technical rule; NOT approval of vehicles or implementation** |
 | **[D9]** | Dave approved ChatGPT's entire Backpacks, Pouches & Carrying Equipment Proposal 1 (“lets do it”): retain 6 existing gear rows, add 9 distinct carrying aids; cross-list 3 already-existing containers; require realistic weight, volume, attachment and persistence | **Owner-approved carrying category; not full catalog or gameplay approval** |
@@ -671,6 +672,60 @@ The existing `water_wheel` item is a different mechanical system and MUST NOT be
 
 **Counts and dependencies:** 1 hand-powered + 3 single-animal + 6 paired-animal vehicles + 3 parts = **13 ADD**; 0 existing vehicle items. Cumulative new ADD total increases by 13 from the last audited baseline after reconciliation; no extra horse-tack, plated animal armour, animal food or duplicated individual wheel subparts. **Cooking and food-preparation stations** are the next complete category for owner review. After that food preservation. Re-audit every completed category before calling the master catalog final.
 
+### 3.12 Cooking and food preparation [D12] — OWNER APPROVED CATEGORY
+
+**Owner authority:** Dave accepted ChatGPT's complete Cooking & Food Preparation Proposal 2 (“sounds good”), after directing the Food Preparation Table and a two-stage cooking workflow. This is **category design approval ONLY**. The full Master Items Catalog is not approved, and no recipes, gameplay files, merge or Godot implementation is authorized. New item IDs and structure states are assigned only at later authorized implementation. Keep existing finished-food item IDs stable.
+
+**Existing cook stations retained (NOT ADD):** Campfire (existing placeable kit #8); Campfire Pot (existing structure #255); Clay Hearth (existing structure #257, already has roasting spit); Oven (existing structure #267). Existing Fireplace #514 stays primarily light/warmth, becomes cook-capable only with the approved Cooking Crane. Existing utensil items retained: Clay Pot #40, Copper Pot #835 (future), Wooden Bowl #39, Hand Mill #344, Mortar & Pestle #807, and existing knives as cross-listed **non-kitchen** tools. Exact cross-category totals must not count these twice.
+
+**Seven new cooking equipment definitions (ADD):**
+
+| Approved new item | Design role and station relationships |
+|---|---|
+| **Food Preparation Table** | **Required station** to assemble/mix/knead/shape food into actual uncooked/prepared item outputs; visually wooden table with built-in cutting board, kitchen knives and rolling pin; recipe UI and station-local sourcing; these kitchen implements are NOT individual tool or ingredient items |
+| Clay Griddle | Suitable cooking surface for hearth/fire flatbreads, cakes and light frying |
+| Campfire Roasting Spit | Basic Campfire attachment for larger meat roasting; distinct from the existing built-in Clay Hearth spit |
+| Iron Grill Grate | Campfire/hearth grill attachment for multiple fish/meat/vegetables |
+| Iron Frying Pan | Reusable cooking vessel for eggs, fritters, fish and similar fried meals |
+| Iron Cauldron | Reusable large-batch vessel for stews and communal meals |
+| Fireplace Cooking Crane | Smithy-made **add-on** to existing Fireplace #514, enabling suitable hanging-pot cooking, not a new standalone fireplace or station |
+
+The griddle, spit, grate, pan and cauldron should be **equipment or compatible attachments**, not five gratuitous standalone cooking stations; only the Food Preparation Table is a new independently placeable food-preparation station. Attachment/vessel compatibility with Campfire, Campfire Pot, Clay Hearth and Oven must be explicitly modeled. Preserve original structure IDs/states and workstation-level inheritance. The Cooking Crane attaches to Fireplace #514.
+
+**Sixteen new tangible prepared/uncooked food items (ADD):**
+
+| New item | Final cooking destination; existing cooked output ID stays unchanged |
+|---|---|
+| Unbaked Flatbread | Clay Hearth or Clay Griddle → Flatbread #273 |
+| Unbaked Rye Flatbread | Clay Hearth or Clay Griddle → Rye Flatbread #388 |
+| Unbaked Garlic Flatbread | Clay Hearth or Clay Griddle → Garlic Bread #404 |
+| Unbaked Honey Loaf | Oven → Honey Loaf #274 |
+| Unbaked Trail Bread | Clay Hearth or Oven → Trail Bread #189 |
+| Unbaked Oatcakes | Clay Griddle or Clay Hearth → Oat Cakes #405 |
+| Unbaked Chestnut Cakes | Clay Griddle or Clay Hearth → Chestnut Cakes #183 |
+| Unbaked Apple Pie | Oven → Apple Pie #452 |
+| Unbaked Fish Pie | Oven → Fish Pie #402 |
+| Unbaked Venison Pie | Oven → Venison Pie #401 |
+| Uncooked Meatballs | Campfire Pot or Iron Frying Pan → Meatballs #837 (future) |
+| Uncooked Sausages | Campfire Pot or Iron Grill Grate → Sausage #804 |
+| Uncooked Meat Skewers | Campfire or Iron Grill Grate → Meat Skewer #803 |
+| Uncooked Mushroom Skewers | Campfire or Iron Grill Grate → Mushroom Skewer #180 |
+| Uncooked Crab Cakes | Clay Griddle or Iron Frying Pan → Crab Cakes #397 |
+| Banana Fritter Batter | Clay Griddle or Iron Frying Pan → Banana Fritter #411 |
+
+**MANDATORY owner rule (overrides previous recipes):**
+1. **Prepare → Cook** only when food needs assembly, dough forming/kneading, shaping, stuffing or comparable processing. Food Preparation Table outputs inventory items, with identity/condition/spoilage, that can be stored/transported; proper cooking station consumes the **prepared output**, not all original ingredients a second time. Existing finished recipe IDs and final food IDs are preserved, recipes revised only at implementation.
+2. **NO personal carried knives or separate chopping board/rolling-pin items for cooking**, and **NO inventory-only hand food preparation**. The Table visibly incorporates knives, cutting board and rolling pin and supplies their functionality. User explicitly says knives are used to skin animals, not to prepare food; keep existing tools' other approved non-cooking roles.
+3. Simple food that needs no advance assembly can be cooked **directly at an appropriate food station**, such as fish over a campfire, water boiling in a pot, or simple soups in a pot. Avoid forced prep for each basic food and avoid meaningless duplicate intermediate items. Existing cook recipes are audited to route assembled foods via the Table and to correct unsuitable cooking destinations, e.g. Omelette currently at Campfire Pot → proper pan when supported.
+4. Station prerequisites: real heat/fuel, attachable cookware, appropriate batch volumes, safe input sourcing from approved station storage. Prepared food may spoil, burn, undercook or overcook as applicable to the approved future systems. Include realistic cooking safety without simulating knife cuts or detailed food-chopping animations.
+5. Cooking progression: basic Campfire + Campfire Pot, Clay Hearth, Oven; upgraded Fireplace + Cooking Crane; equipment allows grilling/frying/communal batches. No arbitrary mandatory iron gate for basic cooked survival meals. Table recipe UI, ingredient groups and local storage obey general workstation rules in s2.5.
+
+**Exclusions:** No duplicate Cooking Kettle (pots suffice), Cooking Tripod (Campfire Pot built-in), Bread Oven (existing Oven), separate Baking Table/Kitchen Workbench (Food Preparation Table covers), dozens of per-metal pan tiers, separate ladle/spoon kitchen-tool requirements, or Cast-Iron Stove (already covered by existing cooking stations). Griddle/spit/grate/pan and Cauldron must offer **distinct methods**, not cosmetic duplicates.
+
+**Approved counts:** **7 new equipment/add-on item definitions + 16 prepared-food item definitions = 23 ADD**. Existing cooking stations and vessels are cross-listed, **not** new ADD. Food items database currently includes 116 total items (not 116 prepared dishes); do not conflate ingredient and cooked meal counts. Audit recipes and station compatibility but DO NOT implement them until full catalog approval and a separate explicit implementation authorization.
+
+**Next owner category pending review:** Food Preservation (drying, smoking, salting, fermentation, pickling, dairy preservation, cold storage and spoilage). Do not preemptively mark preservation items approved.
+
 ## 4. Implementation details (follow from the decisions; no new design)
 
 1. **Repair data:** `repair_station` on each metal tool names its crafting station type (today 26 rows say `forge`; bronze tools: `forge`, which the Smithy also provides; iron and steel: the Smithy); `drops.json tool_wear.repair_restores` (0.5) becomes "restore up to the remaining maximum"; stone, wooden and primitive rows lose `repair`; code removes a disposable tool at zero, drops a surviving thrown Javelin as a pickup, and keeps a broken metal tool in its slot.
@@ -789,7 +844,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are owner-approved and reconciled in s3.11 [D11] (13 ADD items, NO Wheelbarrow). FOOD PREPARATION, COOKING EQUIPMENT AND COOKING STATIONS is next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are owner-approved and reconciled in s3.11 [D11] (13 ADD items, NO Wheelbarrow). COOKING AND FOOD PREPARATION is owner-approved in s3.12 [D12] (23 new ADD items; complete source/recipe audit pending). FOOD PRESERVATION is next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
