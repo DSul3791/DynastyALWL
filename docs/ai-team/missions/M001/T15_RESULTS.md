@@ -74,3 +74,28 @@ No new failures against base. Deviation: one short standard-exe run (about 1 s, 
 - Looks: 10 `worn.json` placeholders (pack and belt builders; a shoulder bag draws as a backpack, belt pieces as a second belt) and 9 grey item chunks: NOT visually complete.
 - Merge: `PROTOCOL_VERSION` 109 (Phase 9 108); `worn.json` and `recipes.json` appends at the end of their sections and `recipes.json next_number` 611 may conflict with parallel phases (take the larger); `clothing.json` positions are append-only, so any branch appending there must go after `strap:base`.
 - All numbers (slots, 0.5 / 1.5 kg limits, belt points 3, recipe amounts) are s5 tuning for playtest.
+
+## Review round 1 (FAIL on one item) and merge of dev: code under test **`47a5fe8cf`**
+`16bd4dfc8` holds the fixes; `47a5fe8cf` merges dev `aa0ce7d2d` (via `m001/p4b` `bf057cc7a`: Phases 6, 9, 4b). The commit after it changes only this file.
+
+| Review item | Done |
+|---|---|
+| 1 MUST: a dropped full bag despawned at the 1200 s item lifetime | Chose the safe option: `_expire_items` skips a ground item whose inst holds a `bag`, so a full bag **never despawns**; an empty one ages as any item. Test: full frame and full pack still lie after `_expire_items(100000)`, the empty shoulder bag is gone. Risk: full bags left in the world accumulate (only `ACT_CLEAR_DROPS` removes them). |
+| 2 Wolf meat | `carried_count` (pack, bags in the pack, worn bags) feeds the wolves' `meat` / `meat_cooked`; `take_all_meat` also empties meat out of those bags (`_take_from_bags`). Tested (meat in a worn frame counts; taken out of the frame in the pack, stones left). |
+| 3 Movement (s3.9 rule 2 and table) | `items.json worn_speed_mult` 0.85 on the Wooden - Pack frame: client walk, run and sprint (`speed_factor`), ladder climb (`terrain_client` passes it to `ladder.step`), server strike recovery and bow pace (divided by it). `loaded_effort` (frame 0.25, rucksack 0.15) adds `effort_of` work while moving: loaded_effort x the bag's load as a share of the free carry, at most 1. s5 numbers. Tested: the frame's 0.85, no effort empty, effort with 10 kg, none once swapped off. Climb, strike and bow pace are NOT tested (client and combat timing). |
+| 3 Quick use (s3.9 rule 5) | `clothing.json quick` = pouch, bandolier, scabbard. A hotbar key whose item is not in the pack but in one of those draws one to the pack (client `draw_from_quick_bag` sends `ACT_CHEST_TAKE` from that bag; `held_item.press_slot` then holds it). No protocol change. Tested on the server: `BagRules.quick_take` finds the key's berries in the worn pouch, one take brings one to the pack and the key resolves; the quiver is not a quick bag. The key press itself is client code, NOT RUN in game. Ledger rows stay IMPLEMENTED - UNVERIFIED with notes. |
+| 4 Tests | `test_carrying` 57 checks: Store all fills the quiver to 40 (stones left), Take all empties it; shop refuses a bag with contents ("Empty the bag first."), sells it empty; a rucksack worn over a full frame sends the frame to the pack whole; plus items 1-3. |
+| 5 Nice | Client re-asks the open bag when another bag is worn in its place (`container_panel.opened_bag`); the panel shows filled slots past `bag_slots`; backpack, quiver and bedroll texts synced in `encyclopedia.json` and `descriptions_voice.json`; one `_bag_refusal` call per put. |
+
+Merge: protocol **109** keeps 108's history (Phase 9); recipes 600-610 beside dev's 430-477 and 500-560, `next_number` 611; `clothing.json worn` dev 20 + these 7 = 27; dev moved chest put/take into `_box_put` / `_box_take`, which now carry the bag rules (refusal, quiver room, bag weight, `weighed` take); strike and bow pace keep 4b's `recover_ms` and `pace_ms` with the frame divisor; `items.json` carrying rows reapplied onto dev's rows (dev changed none of them).
+
+| Run at `47a5fe8cf` | Result |
+|---|---|
+| `tests_for_diff.py bf057cc7a HEAD` plan (343 fast + 8 timing), `run_tests.sh --jobs 3`, no edits during the run (`full3`) | **349 pass, 2 fail**: `test_npc_view` exit 139 after printing `test_npc_view: PASS` (known exit-race crash) and `test_flora_density` 300 s timeout under load (known) |
+| `test_flora_density` alone, 700 s limit (`r10`) | PASS (380 s) |
+| `test_carrying` (in the plan) | PASS, 57 checks |
+| `validate_items` (`r10`) | PASS, 0 errors, 124 warnings |
+| `catalog_ledger.py --check`, `merge_check.py bf057cc7a`, `check_look_names.py` | PASS, all clear (carry_audit warning as at base), PASS |
+| In-game visual, quick-use key, climb and combat pacing, multiplayer | NOT RUN |
+
+Logs: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\t15\full3` and `r10`.
