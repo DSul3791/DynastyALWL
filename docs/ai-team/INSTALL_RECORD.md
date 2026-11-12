@@ -4,7 +4,7 @@
 ## Dave's instructions (verbatim source: project thread "Install AI Team Operating System", 11 Nov 2026 17:40 UTC)
 - Install and validate the AI Team Operating System from the configuration package.
 - Preserve the existing game's code, designs, decisions and completed handoff.
-- Do not resume game development until Dave explicitly authorizes it.
+- Do not resume game development until Dave explicitly authorizes it. *(Lifted by Dave 12 Nov 2026.)*
 - The `dev` branch is for nightly playtesting; `main` remains protected and stable.
 - Keep communication with Dave brief; technical documentation is handled internally.
 
@@ -37,7 +37,7 @@ Existing `.claude/settings.json` permissions (push to `main`, force push, recurs
 - PASS: `python3 -I tools/check_ai_team_package.py` (19 core files, 8 agents, 7 skills, frontmatter, entry-point pointers, superseded rules). Negative check: the old `main` versions of `docs/START_HERE.md` and `RULES.md` contain the superseded strings the checker now rejects.
 - PASS: the same check added to CI (`.github/workflows/merge_check.yml`), which also now runs on pushes to `dev`. Static only, no Godot.
 - PASS (observed live, 11 Nov 2026, Claude Code project thread on this branch): all 8 `.claude/agents` appeared as agent types and all 7 `.claude/skills` appeared as skills without any account upload. One live trial: `gate-reviewer` reviewed head `4fc1cbdd` read-only (tools Read/Grep/Glob only, as its allowlist says) and returned PASS with one real finding (WORKFLOW vs RULES on Dave's go), fixed in `379ea4fd`.
-- NOT RUN: the other live agent cases (`EVALUATION_CASES.md`), Phase 4 smoke trial, any Godot test (none allowed in the cloud; development paused).
+- NOT RUN: the other live agent cases (`EVALUATION_CASES.md`), Phase 4 smoke trial, any Godot test (none allowed in the cloud; development was paused then, lifted 12 Nov 2026).
 - OBSERVED (OPTEST-01, 11 Nov 2026): GitHub reports `main` **protected** and `dev` **not protected** (branch list API). The exact rule set (required checks, reviews, force push) is not readable from a cloud session; see `docs/ai-team/trials/OPTEST-01/RESULTS.md` for the non-destructive PR check.
 - KNOWN LIMITATION (OPTEST-01, PR #1032, 11 Nov 2026), recorded for future improvement: GitHub does not mechanically enforce "Dave's go before `main`". PR #1032 showed `mergeable_state: clean` with CI green and no approving review, and AI sessions open and merge PRs through Dave's own GitHub account, so GitHub cannot tell an AI merge from Dave's. The rule is process-enforced (`RULES.md`, `CLAUDE.md`, agent tool allowlists, `.claude/settings.json` push denies). Dave (11 Nov 2026): record it; raise it again only with a practical recommended solution. Candidate directions to evaluate later, none adopted: a separate bot/App identity for AI writes so a required review by Dave becomes meaningful; protecting `dev`.
 - NOT VERIFIED: Cowork account skills; Library copies (`/mnt/project-files/START_HERE.md`, `HANDOFF.md`) — SYNC PENDING, they are not in this project's shared folder.

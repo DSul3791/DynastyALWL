@@ -8,7 +8,7 @@
 | C — Cross-system significant | Breaking saves/RPCs, re-bake method, architecture change, gameplay tier/name rewrite | Coordinator recommends | PROPOSED, impact map | Yes |
 | D — Protected/irreversible | Delete uncommitted work, spend money, publish, weaken security/gates, force push, new backup location if policy requires | Dave and actual tool permissions | Explicit authorization and evidence | Always |
 
-When uncertain, select the least disruptive reversible option, preserve evidence and escalate **only if stakes are material**. A question from Dave is not automatically a 'go' for destructive changes. Direct new instructions from Dave can grant ordinary work authority but do not bypass external permission prompts or the current handoff freeze unless explicit.
+When uncertain, select the least disruptive reversible option, preserve evidence and escalate **only if stakes are material**. A question from Dave is not automatically a 'go' for destructive changes. Direct new instructions from Dave can grant ordinary work authority but do not bypass external permission prompts or the item catalog freeze unless explicit.
 
 **Escalation format, maximum 4 lines to Dave:** Problem; Recommended choice; Why/impact; Required yes/no. Batch unrelated nonurgent choices; continue unaffected jobs. Never pass off a DELEGATED decision as a direct quote or confirmed director approval.
 

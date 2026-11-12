@@ -106,8 +106,8 @@ for f in sh("git", "ls-files", "-o", "--exclude-standard").splitlines():
 
 
 # 7. Deletions (Decision 61 as clarified by Dave, 12 Nov 2026; rules and their source in tools/deletion_rules.py):
-#    replaced code may be deleted once nothing in the game uses it; documents are archived, never deleted; other files go
-#    to proposed_removals/ with a REMOVALS.md line. Tests: tools/test_deletion_rules.py.
+#    replaced code is deleted when its replacement is declared in REMOVALS.md and nothing uses it; documents are archived,
+#    never deleted; everything else goes to proposed_removals/ with a REMOVALS.md row. Tests: tools/test_deletion_rules.py.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import deletion_rules
 if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
@@ -115,14 +115,19 @@ if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
     _added = sh("git", "diff", "--name-only", "--diff-filter=AR", BASE).splitlines()
     _game = {}
     for f in (sh("git", "ls-files").splitlines() if _deleted else []):   # read game files only when something was deleted
-        if (f.endswith(deletion_rules.GAME_EXT) or f == "project.godot") and os.path.isfile(f):
+        if f.endswith(deletion_rules.USE_EXT) and os.path.isfile(f):
             try:
                 _game[f] = open(f, encoding="utf-8", errors="ignore").read()
             except OSError:
                 pass
     _removals = open("proposed_removals/REMOVALS.md", encoding="utf-8").read() if os.path.isfile("proposed_removals/REMOVALS.md") else ""
+    def _head_read(p):
+        try:
+            return open(p, encoding="utf-8", errors="ignore").read()
+        except OSError:
+            return ""
     for msg in deletion_rules.deletion_problems(_deleted, _added, os.path.isfile, lambda p: sh("git", "show", BASE + ":" + p),
-                                                _game, _removals):
+                                                _head_read, _game, _removals):
         bad(msg)
     # looks: a look entry that was in BASE must still be in data/items/looks.json
     try:

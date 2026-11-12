@@ -98,3 +98,8 @@ No whole files. Removed inside live files (git history keeps them; why, and what
 | assets/audio/hits/hit_swing_0.ogg, hit_swing_1.ogg, hit_swing_2.ogg | Kathleen | 10 Nov | the whoosh every tool swing played, hit or miss | none: only the blow sounds (hit_sounds.hit) |
 | assets/audio/make_swing.py | Kathleen | 10 Nov | generated the whoosh | none |
 Also removed inside live files: hit_sounds.gd swing() with its SWING_* constants and counters, the call in held_item.gd _start_swing, the "swing" row of tools/sound_check.py, and the hit_swing rows of the sound manifest, SOUND_PACK.md and LOUDNESS.md.
+
+## Replaced code (deleted outright, Decision 61 as clarified by Dave, 12 Nov 2026)
+Code that new code replaced is deleted, not moved here. Add one row per deleted file in the same PR; `tools/merge_check.py` checks that the replacement exists and that nothing still uses the old file. Code with no replacement is an ordinary unused file: move it aside as above.
+| deleted path | replaced by (path at HEAD) | who | date | why |
+|---|---|---|---|---|
