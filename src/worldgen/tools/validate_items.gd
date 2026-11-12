@@ -905,6 +905,16 @@ func _init() -> void:
 
 		if String(def.get("use", "")) == "storage_view" and (float(def.get("view_m", 0.0)) <= 0.0 or int(def.get("slots", 0)) > 0):
 			fail("structures.json %s: a storage view needs view_m above 0 and holds nothing itself" % kind)
+
+		# Movable containers (master s3.11 and s3.13, Mission 001 phase 10): a vehicle carries its own cargo store and its pace and limits; cargo is a container.
+		if def.has("vehicle"):
+			var v: Variant = def["vehicle"]
+
+			if typeof(v) != TYPE_DICTIONARY or int(def.get("slots", 0)) <= 0 or float(def.get("max_kg", 0.0)) <= 0.0 or float(v.get("speed_mps", 0.0)) <= 0.0 or float(v.get("hitch_m", 0.0)) <= 0.0 or float(v.get("slope_max", 0.0)) <= 0.0 or typeof(v.get("crate_spots", null)) != TYPE_ARRAY:
+				fail("structures.json %s: a vehicle needs slots, max_kg (its payload), speed_mps, hitch_m, slope_max and crate_spots" % kind)
+
+		if def.has("cargo") and (typeof(def["cargo"]) != TYPE_BOOL or int(def.get("slots", 0)) <= 0 or def.has("vehicle")):
+			fail("structures.json %s: cargo must be true or false, on a container with slots that is not itself a vehicle" % kind)
 		obtainable[String(def.get("item", ""))] = true
 
 		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks

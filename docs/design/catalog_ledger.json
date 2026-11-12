@@ -14932,10 +14932,15 @@
    "section": "3.11",
    "phase": "10",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_handcart",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T17: hammer blueprint 250, structure state 290, the first movable world entity (server_carts.gd); placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Wooden Cart Wheel",
@@ -14947,10 +14952,13 @@
    "section": "3.11",
    "phase": "10",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_handcart"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T17: recipe 700 at the Carpenter's bench; grey placeholder look"
   },
   {
    "key": "new:Axle Assembly",
@@ -14962,10 +14970,13 @@
    "section": "3.11",
    "phase": "10",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_handcart"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T17: recipe 701 at the Carpenter's bench; implementation name Axle (s3.11 DELEGATED); grey placeholder look"
   },
   {
    "key": "new:Light Cargo Cart",
@@ -15869,13 +15880,14 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "validate_items",
-    "test_storage_locks",
     "test_blueprints",
-    "test_hammer_list"
+    "test_hammer_list",
+    "test_handcart",
+    "test_storage_locks",
+    "validate_items"
    ],
    "accepted_commit": null,
-   "note": "rows and locks in phase 9 (M001-T13); loaded-crate movement in phase 10"
+   "note": "rows and locks in phase 9 (M001-T13); loaded-crate movement on the Handcart in phase 10 (M001-T17: lifted with contents, lock and owner, ages at the cart's rate, views by location)"
   },
   {
    "key": "new:Warehouse Desk",
