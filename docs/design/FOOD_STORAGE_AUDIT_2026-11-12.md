@@ -89,7 +89,7 @@ Times are in game hours (1 game hour = 2.5 real minutes). Tier follows the exist
 - T2: 3 kinds.
 - T3: 4 or more kinds, and boards.
 
-Every hook below already exists (the Rested and bed multipliers in `comfort.json`, read by the vitals code).
+The hooks reuse existing multiplier fields (`regen_mult`, `exhaustion_mult`, `hunger_thirst_mult`, `skill_gain_mult` in `comfort.json`). A food multiplier in the Fitness tick, and instant energy from ordinary food (today only energy aids give it, and only when tired), are new code.
 
 | Group | T1 | T2 | T3 | Hook |
 |---|---|---|---|---|
@@ -119,8 +119,10 @@ Every hook below already exists (the Rested and bed multipliers in `comfort.json
    - Drop Dried Herbs: fresh herbs never spoil today.
    - Drop Cured Olives: Olives #445 are already edible and keep well.
    - The alternative is to keep all five and change fresh herbs and raw olives to match.
+   - Approving the jar also retires the placed Preserving Jar #830 (an existing KEEP row) and moves its six recipes to the Table (s2 item 6).
+   - Ripening clock: you said jars mature with elapsed game time. The simplest build reuses the spoilage clock, so cellars and winter would slow ripening too. *Recommendation:* accept that. Plain elapsed time needs a new field.
 2. **Energy aids vs [D16].**
-   - Today Nut cake, Herbal tea and Nettle tea give instant energy and permanently cost Fitness training (21 Oct rule).
+   - Today Nut cake, Herbal tea, Nettle tea and Magic tonic (FUTURE) give instant energy and permanently cost Fitness training (21 Oct rule).
    - [D16] wants temporary effects only.
    - *Recommendation:* replace the permanent cost with [D16]'s temporary dessert-style penalty, and let teas join the Beverage group.
 3. **Large Wooden Chest.** It cannot have more slots than the 30-slot Ornate - Chest without a format change.
@@ -130,7 +132,9 @@ Every hook below already exists (the Rested and bed multipliers in `comfort.json
    - *Recommendation:* approve it as its own future design category.
 5. **Nutrition guides [P17].**
    - *Recommendation:* NPC dialogue only for now, with no book items. Revisit when book items exist.
-6. **Tuning sheet (s4).** Accept, change or defer.
+6. **Drinks for the Beverage slot.** No coffee exists, and the only plain drink is Fruit juice. Teas are medicines or energy aids.
+   - *Recommendation:* for now, accept Fruit juice plus the teas (after question 2). Add coffee, ale or other drinks only in a later catalog decision; each would be a new ADD row.
+7. **Tuning sheet (s4).** Accept, change or defer.
 
 ## 6. Audit rounds
 
@@ -141,4 +145,16 @@ Every hook below already exists (the Rested and bed multipliers in `comfort.json
   - An implementation review against code and data (23).
   - Every substantive finding is fixed (s1), recommended (s2), or an owner question (s5).
   - Minor points with no design effect were not carried forward: the misplaced s3.7 table heading, and a `wear` overflow far beyond any planned ready time.
-- **Round 3:** a fresh independent re-audit of the edited documents. The result is recorded below.
+- **Round 3, a fresh independent re-audit of commit 03db6fd:** 4 must-fix and 7 should-fix findings. All are fixed in the next commit:
+  - Sign overlap marked as a recommendation.
+  - The merge rule (`merge_gap` is 10% of shelf life) now never merges across `ready_age` or merges boards.
+  - #830 retirement is tied to the jar decision.
+  - Beverage drinks became owner question 6. Magic tonic was added to question 2, and the ripening clock to question 1.
+  - "Container" is defined.
+  - Master s5 now lists the food and storage numbers.
+  - The recipe-route count was corrected.
+  - Log - Shelf #848 is flagged: its blueprint and structure are retired.
+  - Ageing is described as covering all saved packs.
+  - The hook claim was narrowed.
+  - Ox wording was fixed.
+- **Round 4, a final independent check of the round 3 fixes:** recorded in the PR comment for the final commit.
