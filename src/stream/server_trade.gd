@@ -125,7 +125,7 @@ func wanted_order(peer: int, npc_id: String) -> String:
 		var number: int = items.table.number_of(str(need[0]))
 		words.append("%d %s" % [int(need[1]), items.table.sentence_name(number)])
 
-		if items.count_for(peer, str(need[0])) < int(need[1]):
+		if items.count_for(peer, str(need[0]), true) < int(need[1]):   # a Maturing stack is not what he asked for (master s3.14)
 			short = true
 
 	var pay: int = int(order.get("pay", 0))
@@ -134,7 +134,7 @@ func wanted_order(peer: int, npc_id: String) -> String:
 		return "Today I want %s. I pay %s." % [" and ".join(words), items._coin_words(pay)]
 
 	for need in order["needs"]:
-		items.take_from(peer, str(need[0]), int(need[1]))
+		items.take_from(peer, str(need[0]), int(need[1]), true)
 
 	items.add_coins(peer, pay, "trade")
 	items.add_rep(peer, npc_id, int(_shops[npc_id]["wanted_orders"].get("rep", 1)))
@@ -347,6 +347,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	if not kinds.has("all") and not kinds.has(str(entry.get("kind", ""))):
 		return "The trader does not buy that."
+
+	if inv.maturing_at(a):   # a sealed batch is sold only once Ready (master s3.14 [D14])
+		return "That is still maturing."
 
 	var life: float = 1.0
 	var durability: int = inv.max_durability(a)

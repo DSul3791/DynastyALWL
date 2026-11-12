@@ -1,6 +1,6 @@
 {
 	"note": "Hammer blueprints. Dave 4 Nov 2026: no kits at all; everything placed is built with the hammer from the materials in the pack, except the Rough bed (a hand craft from the pack; blueprint 24 retired) and the campfire (a fire entity; code pending). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'near' another placed structure that must be near, 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused, and so learning that recipe can unlock the row), 'known' false rows are learned, 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
-	"next_number": 209,
+	"next_number": 236,
 	"blueprints": {
 		"wall_section": {"category": "Walls and doors", "number": 1, "name": "Refined - Wall", "structure": "wall_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_section_kit"},
 		"floor_section": {"category": "Roofs and ceilings", "number": 2, "name": "Refined - Ceiling", "structure": "floor_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "floor_section_kit"},
@@ -262,6 +262,24 @@
 		"leatherworking_table": {"category": "Workshops and stations", "number": 205, "name": "Leatherworking table", "structure": "leatherworking_table", "cost": [["log", 4], ["stick", 4], ["twine", 4], ["stone", 2]], "station": "", "hammer": 1, "known": true},
 		"tailors_table": {"category": "Workshops and stations", "number": 206, "name": "Tailor's table", "structure": "tailors_table", "cost": [["log", 3], ["stick", 6], ["twine", 4]], "station": "", "hammer": 1, "known": true},
 		"loom": {"category": "Workshops and stations", "number": 207, "name": "Loom", "structure": "loom", "cost": [["log", 2], ["stick", 10], ["twine", 6], ["clay", 4]], "station": "", "hammer": 1, "known": true},
-		"grindstone": {"category": "Workshops and stations", "number": 208, "name": "Grindstone", "structure": "grindstone", "cost": [["stone", 12], ["log", 2]], "station": "", "hammer": 1, "known": true}
+		"grindstone": {"category": "Workshops and stations", "number": 208, "name": "Grindstone", "structure": "grindstone", "cost": [["stone", 12], ["log", 2]], "station": "", "hammer": 1, "known": true},
+		"large_wooden_chest": {"category": "Storage and shelter", "number": 220, "name": "Large wooden chest", "structure": "large_wooden_chest", "cost": [["hardwood_board", 14], ["nails", 20], ["hinges", 2]], "station": "", "hammer": 1, "known": true},
+		"wardrobe": {"category": "Storage and shelter", "number": 221, "name": "Wardrobe", "structure": "wardrobe", "cost": [["hardwood_board", 8], ["nails", 12], ["hinges", 2]], "station": "", "hammer": 1, "known": true},
+		"dresser": {"category": "Storage and shelter", "number": 222, "name": "Dresser", "structure": "dresser", "cost": [["hardwood_board", 6], ["nails", 12]], "station": "", "hammer": 1, "known": true},
+		"bookcase": {"category": "Storage and shelter", "number": 223, "name": "Bookcase", "structure": "bookcase", "cost": [["hardwood_board", 6], ["nails", 10]], "station": "", "hammer": 1, "known": true},
+		"apothecary_cabinet": {"category": "Storage and shelter", "number": 224, "name": "Apothecary cabinet", "structure": "apothecary_cabinet", "cost": [["hardwood_board", 4], ["nails", 8], ["hinges", 2]], "station": "", "hammer": 1, "known": true},
+		"bottle_and_jar_rack": {"category": "Storage and shelter", "number": 225, "name": "Bottle and jar rack", "structure": "bottle_and_jar_rack", "cost": [["hardwood_board", 4], ["nails", 8]], "station": "", "hammer": 1, "known": true},
+		"tool_cabinet": {"category": "Storage and shelter", "number": 226, "name": "Tool cabinet", "structure": "tool_cabinet", "cost": [["hardwood_board", 6], ["nails", 12], ["hinges", 2]], "station": "", "hammer": 1, "known": true},
+		"open_storage_bin": {"category": "Storage and shelter", "number": 227, "name": "Open storage bin", "structure": "open_storage_bin", "cost": [["lumber", 6], ["wooden_pin", 8]], "station": "", "hammer": 1, "known": true},
+		"firewood_rack": {"category": "Storage and shelter", "number": 228, "name": "Firewood rack", "structure": "firewood_rack", "cost": [["log", 2], ["stick", 10], ["twine", 2]], "station": "", "hammer": 1, "known": true},
+		"log_rack": {"category": "Storage and shelter", "number": 229, "name": "Log rack", "structure": "log_rack", "cost": [["log", 4], ["twine", 4]], "station": "", "hammer": 1, "known": true},
+		"board_rack": {"category": "Storage and shelter", "number": 230, "name": "Board rack", "structure": "board_rack", "cost": [["log", 2], ["lumber", 4], ["wooden_pin", 8]], "station": "", "hammer": 1, "known": true},
+		"masons_pallet": {"category": "Storage and shelter", "number": 231, "name": "Mason's pallet", "structure": "masons_pallet", "cost": [["lumber", 6], ["wooden_pin", 12]], "station": "", "hammer": 1, "known": true},
+		"ore_and_metal_rack": {"category": "Storage and shelter", "number": 232, "name": "Ore and metal rack", "structure": "ore_and_metal_rack", "cost": [["hardwood_board", 6], ["nails", 12], ["iron_band", 2]], "station": "", "hammer": 1, "known": true},
+		"storage_sign": {"category": "Storage and shelter", "number": 233, "name": "Storage sign", "structure": "storage_sign", "cost": [["lumber", 2], ["stick", 1], ["charcoal", 1]], "station": "", "hammer": 1, "known": true},
+		"warehouse_crate": {"category": "Storage and shelter", "number": 234, "name": "Warehouse crate", "structure": "warehouse_crate", "cost": [["hardwood_board", 8], ["nails", 16], ["iron_band", 4]], "station": "", "hammer": 3, "known": true},
+		"warehouse_desk": {"category": "Storage and shelter", "number": 235, "name": "Warehouse desk", "structure": "warehouse_desk", "cost": [["hardwood_board", 8], ["nails", 12]], "station": "", "hammer": 1, "known": true},
+		"food_preparation_table": {"category": "Workshops and stations", "number": 210, "name": "Food preparation table", "structure": "food_preparation_table", "cost": [["log", 3], ["twine", 2]], "station": "", "hammer": 1, "known": true},
+		"fireplace_cooking_crane": {"category": "Workshops and stations", "number": 211, "name": "Fireplace cooking crane", "structure": "fireplace_cooking_crane", "cost": [["iron_band", 4]], "station": "", "hammer": 1, "known": true}
 	}
 }

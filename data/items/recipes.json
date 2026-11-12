@@ -1,5 +1,5 @@
 {
-	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
+	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs. 'ready_age' (game hours, Mission 001 phase 6, master s3.14): a sealed batch at the Preserving jar; the whole queued count is made at once at age 0 and is Maturing (not eaten, used, sold or merged with a Ready stack) until its age reaches ready_age; its inputs must be at least half fresh.",
 	"next_number": 561,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
@@ -646,27 +646,7 @@
 				]
 			]
 		},
-		"energy_bar": {
-			"number": 31,
-			"name": "Nut cake",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"nuts",
-					3
-				],
-				[
-					"honeyspindle_nectar",
-					1
-				]
-			],
-			"gives": [
-				"energy_bar",
-				2
-			],
-			"craft_s": 6.0,
-			"known": true
-		},
+		"energy_bar": {"number": 31, "name": "Nut cake", "category": "Food and drink", "needs": [["nuts", 3], ["honeyspindle_nectar", 1]], "gives": ["energy_bar", 2], "craft_s": 6.0, "known": true, "station": "food_preparation_table"},
 		"herbal_tea": {
 			"number": 32,
 			"name": "Herbal tea",
@@ -2338,28 +2318,7 @@
 			"known": true,
 			"station": "saw_mill"
 		},
-		"cook_berry_compote": {
-			"number": 102,
-			"name": "Berry compote",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"berries",
-					2
-				],
-				[
-					"honeyspindle_nectar",
-					1
-				]
-			],
-			"gives": [
-				"berry_compote",
-				2
-			],
-			"craft_s": 6.0,
-			"station": "preserving_jar",
-			"known": true
-		},
+		"cook_berry_compote": {"number": 102, "name": "Berry compote", "category": "Food and drink", "needs": [["berries", 2], ["honeyspindle_nectar", 1]], "gives": ["berry_compote", 2], "craft_s": 6.0, "station": "campfire_pot", "known": true},
 		"cook_nut_paste": {
 			"number": 103,
 			"name": "Nut paste",
@@ -2448,28 +2407,7 @@
 			"station": "clay_hearth",
 			"known": true
 		},
-		"cook_mushroom_skewer": {
-			"number": 107,
-			"name": "Mushroom skewer",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"mushrooms",
-					3
-				],
-				[
-					"wild_garlic_leaves",
-					1
-				]
-			],
-			"gives": [
-				"mushroom_skewer",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "clay_hearth",
-			"known": true
-		},
+		"cook_mushroom_skewer": {"number": 107, "name": "Mushroom skewer", "category": "Food and drink", "needs": [["uncooked_mushroom_skewers", 2]], "gives": ["mushroom_skewer", 2], "craft_s": 8.0, "station": "campfire", "known": true},
 		"cook_herb_fish": {
 			"number": 108,
 			"name": "Herb fish",
@@ -2518,32 +2456,7 @@
 			"station": "campfire",
 			"known": true
 		},
-		"cook_chestnut_cakes": {
-			"number": 110,
-			"name": "Chestnut cakes",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"chestnuts",
-					3
-				],
-				[
-					"honeyspindle_nectar",
-					1
-				],
-				[
-					"linseed",
-					1
-				]
-			],
-			"gives": [
-				"chestnut_cakes",
-				3
-			],
-			"craft_s": 10.0,
-			"station": "clay_hearth",
-			"known": true
-		},
+		"cook_chestnut_cakes": {"number": 110, "name": "Chestnut cakes", "category": "Food and drink", "needs": [["unbaked_chestnut_cakes", 3]], "gives": ["chestnut_cakes", 3], "craft_s": 10.0, "station": "clay_hearth", "known": true},
 		"cook_fruit_leather": {
 			"number": 111,
 			"name": "Fruit leather",
@@ -2670,32 +2583,7 @@
 			"station": "campfire_pot",
 			"known": true
 		},
-		"cook_trail_bread": {
-			"number": 116,
-			"name": "Trail bread",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"linseed",
-					2
-				],
-				[
-					"hazelnuts",
-					2
-				],
-				[
-					"animal_fat",
-					1
-				]
-			],
-			"gives": [
-				"trail_bread",
-				3
-			],
-			"craft_s": 12.0,
-			"station": "clay_hearth",
-			"known": true
-		},
+		"cook_trail_bread": {"number": 116, "name": "Trail bread", "category": "Food and drink", "needs": [["unbaked_trail_bread", 3]], "gives": ["trail_bread", 3], "craft_s": 12.0, "station": "clay_hearth", "known": true},
 		"cook_hearty_pottage": {
 			"number": 117,
 			"name": "Hearty pottage",
@@ -3646,50 +3534,8 @@
 				]
 			]
 		},
-		"cook_flatbread": {
-			"number": 174,
-			"name": "Flatbread",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"flour",
-					1
-				],
-				[
-					"water",
-					1
-				]
-			],
-			"gives": [
-				"flatbread",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "clay_hearth",
-			"known": true
-		},
-		"cook_honey_loaf": {
-			"number": 175,
-			"name": "Honey loaf",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"flour",
-					2
-				],
-				[
-					"honeyspindle_nectar",
-					1
-				]
-			],
-			"gives": [
-				"honey_loaf",
-				2
-			],
-			"craft_s": 12.0,
-			"station": "oven",
-			"known": true
-		},
+		"cook_flatbread": {"number": 174, "name": "Flatbread", "category": "Food and drink", "needs": [["unbaked_flatbread", 2]], "gives": ["flatbread", 2], "craft_s": 8.0, "station": "clay_hearth", "known": true},
+		"cook_honey_loaf": {"number": 175, "name": "Honey loaf", "category": "Food and drink", "needs": [["unbaked_honey_loaf", 2]], "gives": ["honey_loaf", 2], "craft_s": 12.0, "station": "oven", "known": true},
 		"cook_roast_joint": {
 			"number": 176,
 			"name": "Rosemary joint",
@@ -4881,32 +4727,7 @@
 			"station": "campfire_pot",
 			"known": true
 		},
-		"cook_rye_flatbread": {
-			"number": 250,
-			"name": "Rye flatbread",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"flour",
-					2
-				],
-				[
-					"water",
-					1
-				],
-				[
-					"sea_salt",
-					1
-				]
-			],
-			"gives": [
-				"rye_flatbread",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "clay_hearth",
-			"known": true
-		},
+		"cook_rye_flatbread": {"number": 250, "name": "Rye flatbread", "category": "Food and drink", "needs": [["unbaked_rye_flatbread", 2]], "gives": ["rye_flatbread", 2], "craft_s": 8.0, "station": "clay_hearth", "known": true},
 		"cook_pea_soup": {
 			"number": 251,
 			"name": "Pea soup",
@@ -5099,76 +4920,9 @@
 			"station": "campfire_pot",
 			"known": true
 		},
-		"cook_crab_cakes": {
-			"number": 259,
-			"name": "Crab cakes",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"crab_meat",
-					2
-				],
-				[
-					"flour",
-					1
-				]
-			],
-			"gives": [
-				"crab_cakes",
-				2
-			],
-			"craft_s": 10.0,
-			"station": "campfire",
-			"known": true
-		},
-		"cook_egg_nettle_fry": {
-			"number": 260,
-			"name": "Egg and nettle fry",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"egg",
-					2
-				],
-				[
-					"nettles",
-					1
-				],
-				[
-					"animal_fat",
-					1
-				]
-			],
-			"gives": [
-				"egg_nettle_fry",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "campfire_pot",
-			"known": true
-		},
-		"cook_herb_omelette": {
-			"number": 261,
-			"name": "Herb omelette",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"egg",
-					3
-				],
-				[
-					"thyme",
-					1
-				]
-			],
-			"gives": [
-				"herb_omelette",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "campfire_pot",
-			"known": true
-		},
+		"cook_crab_cakes": {"number": 259, "name": "Crab cakes", "category": "Food and drink", "needs": [["uncooked_crab_cakes", 2]], "keeps": [["clay_griddle", 1]], "gives": ["crab_cakes", 2], "craft_s": 10.0, "station": "campfire", "known": true},
+		"cook_egg_nettle_fry": {"number": 260, "name": "Egg and nettle fry", "category": "Food and drink", "needs": [["egg", 2], ["nettles", 1], ["animal_fat", 1]], "keeps": [["clay_griddle", 1]], "gives": ["egg_nettle_fry", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"cook_herb_omelette": {"number": 261, "name": "Herb omelette", "category": "Food and drink", "needs": [["egg", 3], ["thyme", 1]], "keeps": [["clay_griddle", 1]], "gives": ["herb_omelette", 2], "craft_s": 8.0, "station": "campfire", "known": true},
 		"cook_seal_stew": {
 			"number": 262,
 			"name": "Seal stew",
@@ -5195,58 +4949,8 @@
 			"station": "campfire_pot",
 			"known": true
 		},
-		"cook_venison_pie": {
-			"number": 263,
-			"name": "Venison pie",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"raw_meat",
-					1
-				],
-				[
-					"flour",
-					1
-				],
-				[
-					"animal_fat",
-					1
-				]
-			],
-			"gives": [
-				"venison_pie",
-				2
-			],
-			"craft_s": 14.0,
-			"station": "oven",
-			"known": true
-		},
-		"cook_fish_pie": {
-			"number": 264,
-			"name": "Fish pie",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"trout",
-					1
-				],
-				[
-					"flour",
-					1
-				],
-				[
-					"onion",
-					1
-				]
-			],
-			"gives": [
-				"fish_pie",
-				2
-			],
-			"craft_s": 14.0,
-			"station": "oven",
-			"known": true
-		},
+		"cook_venison_pie": {"number": 263, "name": "Venison pie", "category": "Food and drink", "needs": [["unbaked_venison_pie", 2]], "gives": ["venison_pie", 2], "craft_s": 14.0, "station": "oven", "known": true},
+		"cook_fish_pie": {"number": 264, "name": "Fish pie", "category": "Food and drink", "needs": [["unbaked_fish_pie", 2]], "gives": ["fish_pie", 2], "craft_s": 14.0, "station": "oven", "known": true},
 		"cook_juniper_trout": {
 			"number": 265,
 			"name": "Juniper trout",
@@ -5269,50 +4973,8 @@
 			"station": "campfire",
 			"known": true
 		},
-		"cook_garlic_bread": {
-			"number": 266,
-			"name": "Garlic bread",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"flour",
-					2
-				],
-				[
-					"wild_garlic_leaves",
-					1
-				]
-			],
-			"gives": [
-				"garlic_bread",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "clay_hearth",
-			"known": true
-		},
-		"cook_oat_cakes": {
-			"number": 267,
-			"name": "Oat cakes",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"oats",
-					2
-				],
-				[
-					"animal_fat",
-					1
-				]
-			],
-			"gives": [
-				"oat_cakes",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "clay_hearth",
-			"known": true
-		},
+		"cook_garlic_bread": {"number": 266, "name": "Garlic bread", "category": "Food and drink", "needs": [["unbaked_garlic_flatbread", 2]], "gives": ["garlic_bread", 2], "craft_s": 8.0, "station": "clay_hearth", "known": true},
+		"cook_oat_cakes": {"number": 267, "name": "Oat cakes", "category": "Food and drink", "needs": [["unbaked_oatcakes", 2]], "gives": ["oat_cakes", 2], "craft_s": 8.0, "station": "clay_hearth", "known": true},
 		"cook_jerky": {
 			"number": 268,
 			"name": "Jerky",
@@ -5393,28 +5055,7 @@
 			"station": "drying_rack",
 			"known": true
 		},
-		"cook_sauerkraut": {
-			"number": 271,
-			"name": "Sauerkraut",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"cabbage",
-					2
-				],
-				[
-					"sea_salt",
-					1
-				]
-			],
-			"gives": [
-				"sauerkraut",
-				2
-			],
-			"craft_s": 12.0,
-			"station": "preserving_jar",
-			"known": true
-		},
+		"cook_sauerkraut": {"number": 271, "name": "Sauerkraut", "category": "Food and drink", "needs": [["cabbage", 2], ["sea_salt", 1]], "gives": ["sauerkraut", 2], "craft_s": 12.0, "station": "preserving_jar", "ready_age": 48.0, "known": true},
 		"cook_hazelnut_butter": {
 			"number": 272,
 			"name": "Hazelnut butter",
@@ -5433,28 +5074,7 @@
 			"station": "campfire_pot",
 			"known": true
 		},
-		"cook_banana_fritter": {
-			"number": 273,
-			"name": "Banana fritter",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"bananas",
-					2
-				],
-				[
-					"flour",
-					1
-				]
-			],
-			"gives": [
-				"banana_fritter",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "clay_hearth",
-			"known": true
-		},
+		"cook_banana_fritter": {"number": 273, "name": "Banana fritter", "category": "Food and drink", "needs": [["banana_fritter_batter", 2]], "keeps": [["clay_griddle", 1]], "gives": ["banana_fritter", 2], "craft_s": 8.0, "station": "campfire", "known": true},
 		"cook_cactus_fry": {
 			"number": 274,
 			"name": "Cactus fry",
@@ -5619,76 +5239,9 @@
 			"station": "drying_rack",
 			"known": true
 		},
-		"cook_apple_sauce": {
-			"number": 283,
-			"name": "Apple sauce",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"apple_cooking",
-					3
-				],
-				[
-					"honeyspindle_nectar",
-					1
-				]
-			],
-			"gives": [
-				"apple_sauce",
-				2
-			],
-			"craft_s": 10.0,
-			"station": "preserving_jar",
-			"known": true
-		},
-		"cook_apple_pie": {
-			"number": 284,
-			"name": "Apple pie",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"apple_cooking",
-					2
-				],
-				[
-					"flour",
-					1
-				],
-				[
-					"animal_fat",
-					1
-				]
-			],
-			"gives": [
-				"apple_pie",
-				2
-			],
-			"craft_s": 14.0,
-			"station": "oven",
-			"known": true
-		},
-		"cook_plum_jam": {
-			"number": 285,
-			"name": "Plum jam",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"plums",
-					3
-				],
-				[
-					"honeyspindle_nectar",
-					1
-				]
-			],
-			"gives": [
-				"plum_jam",
-				2
-			],
-			"craft_s": 12.0,
-			"station": "preserving_jar",
-			"known": true
-		},
+		"cook_apple_sauce": {"number": 283, "name": "Apple sauce", "category": "Food and drink", "needs": [["apple_cooking", 3], ["honeyspindle_nectar", 1]], "gives": ["apple_sauce", 2], "craft_s": 10.0, "station": "campfire_pot", "known": true},
+		"cook_apple_pie": {"number": 284, "name": "Apple pie", "category": "Food and drink", "needs": [["unbaked_apple_pie", 2]], "gives": ["apple_pie", 2], "craft_s": 14.0, "station": "oven", "known": true},
+		"cook_plum_jam": {"number": 285, "name": "Plum jam", "category": "Food and drink", "needs": [["plums", 3], ["honeyspindle_nectar", 1]], "gives": ["plum_jam", 2], "craft_s": 12.0, "station": "campfire_pot", "known": true},
 		"cook_stewed_pears": {
 			"number": 286,
 			"name": "Stewed pears",
@@ -5711,28 +5264,7 @@
 			"station": "campfire_pot",
 			"known": true
 		},
-		"cook_preserved_damsons": {
-			"number": 287,
-			"name": "Preserved damsons",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"damsons",
-					3
-				],
-				[
-					"honeyspindle_nectar",
-					1
-				]
-			],
-			"gives": [
-				"preserved_damsons",
-				2
-			],
-			"craft_s": 12.0,
-			"station": "preserving_jar",
-			"known": true
-		},
+		"cook_preserved_damsons": {"number": 287, "name": "Preserved damsons", "category": "Food and drink", "needs": [["damsons", 3], ["honeyspindle_nectar", 1]], "gives": ["preserved_damsons", 2], "craft_s": 12.0, "station": "campfire_pot", "known": true},
 		"cook_dried_figs": {
 			"number": 288,
 			"name": "Dried figs",
@@ -7421,79 +6953,9 @@
 			"station_level": 2
 		},
 		"steel_chisel": {"number": 373, "name": "Steel - Chisel", "category": "Tools", "needs": [["steel_ingot", 1], ["stick", 1]], "gives": ["steel_chisel", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
-		"cook_meat_skewer": {
-			"number": 374,
-			"name": "Meat skewer",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"raw_meat",
-					2
-				],
-				[
-					"stick",
-					1
-				],
-				[
-					"wild_garlic_leaves",
-					1
-				]
-			],
-			"gives": [
-				"meat_skewer",
-				2
-			],
-			"craft_s": 8.0,
-			"station": "campfire",
-			"known": true
-		},
-		"cook_sausage": {
-			"number": 375,
-			"name": "Sausage",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"raw_meat",
-					2
-				],
-				[
-					"gut",
-					1
-				],
-				[
-					"sea_salt",
-					1
-				]
-			],
-			"gives": [
-				"sausage",
-				2
-			],
-			"craft_s": 12.0,
-			"station": "campfire_pot",
-			"known": true
-		},
-		"fruit_juice": {
-			"number": 376,
-			"name": "Fruit juice",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"fruit",
-					3
-				],
-				[
-					"water",
-					1
-				]
-			],
-			"gives": [
-				"fruit_juice",
-				1
-			],
-			"craft_s": 4.0,
-			"known": true
-		},
+		"cook_meat_skewer": {"number": 374, "name": "Meat skewer", "category": "Food and drink", "needs": [["uncooked_meat_skewers", 2]], "gives": ["meat_skewer", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"cook_sausage": {"number": 375, "name": "Sausage", "category": "Food and drink", "needs": [["uncooked_sausages", 2]], "gives": ["sausage", 2], "craft_s": 12.0, "station": "campfire_pot", "known": true},
+		"fruit_juice": {"number": 376, "name": "Fruit juice", "category": "Food and drink", "needs": [["fruit", 3], ["water", 1]], "gives": ["fruit_juice", 1], "craft_s": 4.0, "known": true, "station": "food_preparation_table"},
 		"mortar_pestle": {
 			"number": 377,
 			"name": "Mortar and pestle",
@@ -7822,33 +7284,7 @@
 			"known": false,
 			"locked": true
 		},
-		"pickled_vegetables": {
-			"number": 393,
-			"name": "Pickled vegetables",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"vegetable",
-					3
-				],
-				[
-					"sea_salt",
-					1
-				],
-				[
-					"water",
-					1
-				]
-			],
-			"gives": [
-				"pickled_vegetables",
-				2
-			],
-			"craft_s": 12.0,
-			"known": false,
-			"station": "preserving_jar",
-			"locked": true
-		},
+		"pickled_vegetables": {"number": 393, "name": "Pickled vegetables", "category": "Food and drink", "needs": [["vegetable", 3], ["sea_salt", 1], ["water", 1]], "gives": ["pickled_vegetables", 2], "craft_s": 12.0, "known": false, "station": "preserving_jar", "locked": true, "ready_age": 72.0},
 		"copper_pot": {
 			"number": 394,
 			"name": "Copper - Pot",
@@ -7905,39 +7341,7 @@
 			],
 			"locked": true
 		},
-		"meatballs": {
-			"number": 396,
-			"name": "Meatballs",
-			"category": "Food and drink",
-			"needs": [
-				[
-					"raw_meat",
-					3
-				],
-				[
-					"flour",
-					1
-				],
-				[
-					"sea_salt",
-					1
-				]
-			],
-			"gives": [
-				"meatballs",
-				3
-			],
-			"craft_s": 12.0,
-			"known": false,
-			"station": "campfire_pot",
-			"keeps": [
-				[
-					"copper_pot",
-					1
-				]
-			],
-			"locked": true
-		},
+		"meatballs": {"number": 396, "name": "Meatballs", "category": "Food and drink", "needs": [["uncooked_meatballs", 3]], "gives": ["meatballs", 3], "craft_s": 12.0, "known": true, "station": "campfire_pot"},
 		"bronze_scale_shirt": {"number": 397, "name": "Bronze - Scale shirt", "category": "Armour", "needs": [["bronze_ingot", 4], ["leather", 1]], "gives": ["bronze_scale_shirt", 1], "craft_s": 16.0, "known": true, "station": "forge"},
 		"claw_necklace": {
 			"number": 398,
@@ -8408,6 +7812,54 @@
 			"known": true,
 			"station": "brick_forge"
 		},
+		"prep_mushroom_skewer": {"number": 430, "name": "Uncooked mushroom skewers", "category": "Food and drink", "needs": [["mushrooms", 3], ["wild_garlic_leaves", 1]], "gives": ["uncooked_mushroom_skewers", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_mushroom_skewer_iron_grill_grate": {"number": 431, "name": "Mushroom skewer (grill)", "category": "Food and drink", "needs": [["uncooked_mushroom_skewers", 4]], "keeps": [["iron_grill_grate", 1]], "gives": ["mushroom_skewer", 4], "craft_s": 8.0, "station": "campfire", "known": true},
+		"prep_chestnut_cakes": {"number": 432, "name": "Unbaked chestnut cakes", "category": "Food and drink", "needs": [["chestnuts", 3], ["honeyspindle_nectar", 1], ["linseed", 1]], "gives": ["unbaked_chestnut_cakes", 3], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_chestnut_cakes_clay_griddle": {"number": 433, "name": "Chestnut cakes (griddle)", "category": "Food and drink", "needs": [["unbaked_chestnut_cakes", 3]], "keeps": [["clay_griddle", 1]], "gives": ["chestnut_cakes", 3], "craft_s": 10.0, "station": "campfire", "known": true},
+		"cook_hunters_stew_iron_cauldron": {"number": 434, "name": "Hunter's stew (cauldron)", "category": "Food and drink", "needs": [["raw_meat", 3], ["wild_carrot_roots", 3], ["wild_garlic_leaves", 3]], "keeps": [["iron_cauldron", 1]], "gives": ["hunters_stew", 6], "craft_s": 24.0, "station": "campfire_pot", "known": true},
+		"cook_forager_stew_iron_cauldron": {"number": 435, "name": "Forager's stew (cauldron)", "category": "Food and drink", "needs": [["nettles", 6], ["burdock_roots", 3], ["chanterelles", 3]], "keeps": [["iron_cauldron", 1]], "gives": ["forager_stew", 6], "craft_s": 24.0, "station": "campfire_pot", "known": true},
+		"cook_fish_stew_iron_cauldron": {"number": 436, "name": "Fish stew (cauldron)", "category": "Food and drink", "needs": [["perch", 3], ["watercress", 3], ["wild_carrot_roots", 3]], "keeps": [["iron_cauldron", 1]], "gives": ["fish_stew", 6], "craft_s": 24.0, "station": "campfire_pot", "known": true},
+		"prep_trail_bread": {"number": 437, "name": "Unbaked trail bread", "category": "Food and drink", "needs": [["linseed", 2], ["hazelnuts", 2], ["animal_fat", 1]], "gives": ["unbaked_trail_bread", 3], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_hearty_pottage_iron_cauldron": {"number": 438, "name": "Hearty pottage (cauldron)", "category": "Food and drink", "needs": [["flour", 3], ["wild_carrot_roots", 3], ["herbs", 3], ["animal_fat", 3]], "keeps": [["iron_cauldron", 1]], "gives": ["hearty_pottage", 9], "craft_s": 28.0, "station": "campfire_pot", "known": true},
+		"prep_flatbread": {"number": 439, "name": "Unbaked flatbread", "category": "Food and drink", "needs": [["flour", 1], ["water", 1]], "gives": ["unbaked_flatbread", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_flatbread_clay_griddle": {"number": 440, "name": "Flatbread (griddle)", "category": "Food and drink", "needs": [["unbaked_flatbread", 2]], "keeps": [["clay_griddle", 1]], "gives": ["flatbread", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"prep_honey_loaf": {"number": 441, "name": "Unbaked honey loaf", "category": "Food and drink", "needs": [["flour", 2], ["honeyspindle_nectar", 1]], "gives": ["unbaked_honey_loaf", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_roast_joint_campfire_roasting_spit": {"number": 442, "name": "Rosemary joint (spit)", "category": "Food and drink", "needs": [["raw_meat", 2], ["rosemary", 1], ["wild_garlic_leaves", 1]], "keeps": [["campfire_roasting_spit", 1]], "gives": ["roast_joint", 2], "craft_s": 14.0, "station": "campfire", "known": true},
+		"prep_rye_flatbread": {"number": 443, "name": "Unbaked rye flatbread", "category": "Food and drink", "needs": [["flour", 2], ["water", 1], ["sea_salt", 1]], "gives": ["unbaked_rye_flatbread", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_rye_flatbread_clay_griddle": {"number": 444, "name": "Rye flatbread (griddle)", "category": "Food and drink", "needs": [["unbaked_rye_flatbread", 2]], "keeps": [["clay_griddle", 1]], "gives": ["rye_flatbread", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"cook_cabbage_stew_iron_cauldron": {"number": 445, "name": "Cabbage stew (cauldron)", "category": "Food and drink", "needs": [["cabbage", 3], ["raw_meat", 3], ["onion", 3]], "keeps": [["iron_cauldron", 1]], "gives": ["cabbage_stew", 6], "craft_s": 28.0, "station": "campfire_pot", "known": true},
+		"cook_mussel_stew_iron_cauldron": {"number": 446, "name": "Mussel stew (cauldron)", "category": "Food and drink", "needs": [["shellfish", 9], ["wild_garlic_leaves", 3], ["water", 3]], "keeps": [["iron_cauldron", 1]], "gives": ["mussel_stew", 6], "craft_s": 24.0, "station": "campfire_pot", "known": true},
+		"prep_crab_cakes": {"number": 447, "name": "Uncooked crab cakes", "category": "Food and drink", "needs": [["crab_meat", 2], ["flour", 1]], "gives": ["uncooked_crab_cakes", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_crab_cakes_iron_frying_pan": {"number": 448, "name": "Crab cakes (pan)", "category": "Food and drink", "needs": [["uncooked_crab_cakes", 2]], "keeps": [["iron_frying_pan", 1]], "gives": ["crab_cakes", 2], "craft_s": 10.0, "station": "campfire", "known": true},
+		"cook_egg_nettle_fry_iron_frying_pan": {"number": 449, "name": "Egg-nettle fry (pan)", "category": "Food and drink", "needs": [["egg", 2], ["nettles", 1], ["animal_fat", 1]], "keeps": [["iron_frying_pan", 1]], "gives": ["egg_nettle_fry", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"cook_herb_omelette_iron_frying_pan": {"number": 450, "name": "Herb omelette (pan)", "category": "Food and drink", "needs": [["egg", 3], ["thyme", 1]], "keeps": [["iron_frying_pan", 1]], "gives": ["herb_omelette", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"cook_seal_stew_iron_cauldron": {"number": 451, "name": "Seal stew (cauldron)", "category": "Food and drink", "needs": [["seal_meat", 3], ["turnip", 3], ["water", 3]], "keeps": [["iron_cauldron", 1]], "gives": ["seal_stew", 6], "craft_s": 28.0, "station": "campfire_pot", "known": true},
+		"prep_venison_pie": {"number": 452, "name": "Unbaked venison pie", "category": "Food and drink", "needs": [["raw_meat", 1], ["flour", 1], ["animal_fat", 1]], "gives": ["unbaked_venison_pie", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"prep_fish_pie": {"number": 453, "name": "Unbaked fish pie", "category": "Food and drink", "needs": [["trout", 1], ["flour", 1], ["onion", 1]], "gives": ["unbaked_fish_pie", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"prep_garlic_bread": {"number": 454, "name": "Unbaked garlic flatbread", "category": "Food and drink", "needs": [["flour", 2], ["wild_garlic_leaves", 1]], "gives": ["unbaked_garlic_flatbread", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_garlic_bread_clay_griddle": {"number": 455, "name": "Garlic bread (griddle)", "category": "Food and drink", "needs": [["unbaked_garlic_flatbread", 2]], "keeps": [["clay_griddle", 1]], "gives": ["garlic_bread", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"prep_oat_cakes": {"number": 456, "name": "Unbaked oatcakes", "category": "Food and drink", "needs": [["oats", 2], ["animal_fat", 1]], "gives": ["unbaked_oatcakes", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_oat_cakes_clay_griddle": {"number": 457, "name": "Oat cakes (griddle)", "category": "Food and drink", "needs": [["unbaked_oatcakes", 2]], "keeps": [["clay_griddle", 1]], "gives": ["oat_cakes", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"prep_banana_fritter": {"number": 458, "name": "Banana fritter batter", "category": "Food and drink", "needs": [["bananas", 2], ["flour", 1]], "gives": ["banana_fritter_batter", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_banana_fritter_iron_frying_pan": {"number": 459, "name": "Banana fritter (pan)", "category": "Food and drink", "needs": [["banana_fritter_batter", 2]], "keeps": [["iron_frying_pan", 1]], "gives": ["banana_fritter", 2], "craft_s": 8.0, "station": "campfire", "known": true},
+		"prep_apple_pie": {"number": 460, "name": "Unbaked apple pie", "category": "Food and drink", "needs": [["apple_cooking", 2], ["flour", 1], ["animal_fat", 1]], "gives": ["unbaked_apple_pie", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"prep_meat_skewer": {"number": 461, "name": "Uncooked meat skewers", "category": "Food and drink", "needs": [["raw_meat", 2], ["stick", 1], ["wild_garlic_leaves", 1]], "gives": ["uncooked_meat_skewers", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_meat_skewer_iron_grill_grate": {"number": 462, "name": "Meat skewer (grill)", "category": "Food and drink", "needs": [["uncooked_meat_skewers", 4]], "keeps": [["iron_grill_grate", 1]], "gives": ["meat_skewer", 4], "craft_s": 8.0, "station": "campfire", "known": true},
+		"prep_sausage": {"number": 463, "name": "Uncooked sausages", "category": "Food and drink", "needs": [["raw_meat", 2], ["gut", 1], ["sea_salt", 1]], "gives": ["uncooked_sausages", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_sausage_iron_grill_grate": {"number": 464, "name": "Sausage (grill)", "category": "Food and drink", "needs": [["uncooked_sausages", 2]], "keeps": [["iron_grill_grate", 1]], "gives": ["sausage", 2], "craft_s": 12.0, "station": "campfire", "known": true},
+		"clay_griddle": {"number": 465, "name": "Clay - Griddle", "category": "Containers and furniture", "needs": [["clay", 4]], "gives": ["clay_griddle", 1], "craft_s": 12.0, "station": "campfire", "known": true},
+		"campfire_roasting_spit": {"number": 466, "name": "Campfire roasting spit", "category": "Containers and furniture", "needs": [["stick", 4], ["twine", 2]], "gives": ["campfire_roasting_spit", 1], "craft_s": 8.0, "known": true},
+		"iron_grill_grate": {"number": 467, "name": "Iron - Grill grate", "category": "Containers and furniture", "needs": [["iron_ingot", 2]], "gives": ["iron_grill_grate", 1], "craft_s": 10.0, "station": "brick_forge", "known": true},
+		"iron_frying_pan": {"number": 468, "name": "Iron - Frying pan", "category": "Containers and furniture", "needs": [["iron_ingot", 2], ["stick", 1]], "gives": ["iron_frying_pan", 1], "craft_s": 10.0, "station": "brick_forge", "known": true},
+		"iron_cauldron": {"number": 469, "name": "Iron - Cauldron", "category": "Containers and furniture", "needs": [["iron_ingot", 5]], "gives": ["iron_cauldron", 1], "craft_s": 16.0, "station": "brick_forge", "known": true},
+		"prep_meatballs": {"number": 470, "name": "Uncooked meatballs", "category": "Food and drink", "needs": [["raw_meat", 3], ["flour", 1], ["sea_salt", 1]], "gives": ["uncooked_meatballs", 3], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"cook_meatballs_iron_frying_pan": {"number": 471, "name": "Meatballs (pan)", "category": "Food and drink", "needs": [["uncooked_meatballs", 3]], "keeps": [["iron_frying_pan", 1]], "gives": ["meatballs", 3], "craft_s": 12.0, "station": "campfire", "known": true},
+		"smoked_meat": {"number": 472, "name": "Smoked meat", "category": "Food and drink", "needs": [["raw_meat", 2], ["sea_salt", 1]], "gives": ["smoked_meat", 1], "craft_s": 14.0, "station": "smoker", "known": true},
+		"dried_mushrooms_porcini": {"number": 473, "name": "Dried mushrooms (porcini)", "category": "Food and drink", "needs": [["porcini", 3]], "gives": ["dried_mushrooms", 1], "craft_s": 10.0, "station": "drying_rack", "known": true},
+		"dried_mushrooms_chanterelles": {"number": 474, "name": "Dried mushrooms (chanterelles)", "category": "Food and drink", "needs": [["chanterelles", 3]], "gives": ["dried_mushrooms", 1], "craft_s": 10.0, "station": "drying_rack", "known": true},
+		"dried_mushrooms_morels": {"number": 475, "name": "Dried mushrooms (morels)", "category": "Food and drink", "needs": [["morels", 3]], "gives": ["dried_mushrooms", 1], "craft_s": 10.0, "station": "drying_rack", "known": true},
+		"dried_mushrooms_puffball": {"number": 476, "name": "Dried mushrooms (puffball)", "category": "Food and drink", "needs": [["puffball", 3]], "gives": ["dried_mushrooms", 1], "craft_s": 10.0, "station": "drying_rack", "known": true},
+		"prep_mushroom_skewer_dried": {"number": 477, "name": "Uncooked mushroom skewers (dried)", "category": "Food and drink", "needs": [["dried_mushrooms", 2], ["wild_garlic_leaves", 1], ["water", 1]], "gives": ["uncooked_mushroom_skewers", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
 		"iron_shortsword": {"number": 500, "name": "Iron - Shortsword", "category": "Weapons", "needs": [["iron_ingot", 1], ["leather", 1]], "gives": ["iron_shortsword", 1], "craft_s": 16.0, "known": true, "station": "brick_forge"},
 		"steel_shortsword": {"number": 501, "name": "Steel - Shortsword", "category": "Weapons", "needs": [["steel_ingot", 1], ["leather", 1]], "gives": ["steel_shortsword", 1], "craft_s": 18.0, "known": true, "station": "brick_forge"},
 		"iron_greatsword": {"number": 502, "name": "Iron - Greatsword", "category": "Weapons", "needs": [["iron_ingot", 3], ["leather", 1]], "gives": ["iron_greatsword", 1], "craft_s": 22.0, "known": true, "station": "brick_forge"},
