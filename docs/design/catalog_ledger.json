@@ -417,8 +417,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7079,8 +7084,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7093,8 +7104,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7107,8 +7124,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -7177,8 +7200,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -8913,8 +8941,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -8941,8 +8975,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -8969,8 +9009,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -9025,8 +9071,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -9053,8 +9104,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -9081,8 +9137,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -11013,8 +11074,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -11041,8 +11107,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -11923,8 +11994,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12814,8 +12890,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12829,8 +12910,13 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12844,8 +12930,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12859,8 +12951,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12874,8 +12972,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },
@@ -12889,8 +12993,14 @@
    "section": "3.5",
    "phase": "3",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_furniture_grades",
+    "test_blueprints",
+    "test_hammer_list",
+    "test_comfort"
+   ],
    "accepted_commit": null,
    "note": ""
   },

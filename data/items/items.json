@@ -392,8 +392,8 @@
 		},
 		"plank_chest": {
 			"number": 29,
-			"name": "Wooden - Chest",
-			"description": "A plank chest for storing more things.",
+			"name": "Rustic - Chest",
+			"description": "A plain chest of nailed hardwood boards with a hinged lid. Holds 20 stacks.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -5819,8 +5819,8 @@
 		},
 		"bench": {
 			"number": 504,
-			"name": "Wooden - Bench",
-			"description": "A plank bench that seats two or three.",
+			"name": "Crude - Bench",
+			"description": "A rough bench of pinned boards tied with twine. Seats two or three.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -5828,7 +5828,7 @@
 		},
 		"chair": {
 			"number": 505,
-			"name": "Wooden - Chair",
+			"name": "Rustic - Chair",
 			"description": "A chair with a back. Sit and rest.",
 			"kind": "structure",
 			"stack": 1,
@@ -5837,8 +5837,8 @@
 		},
 		"table": {
 			"number": 506,
-			"name": "Wooden - Table",
-			"description": "A plank table on trestles.",
+			"name": "Rustic - Table",
+			"description": "A plain table of nailed hardwood boards on trestles.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -7326,8 +7326,8 @@
 			},
 			"iron_bench": {
 				"number": 637,
-				"name": "Iron - Bench",
-				"description": "A timber bench bound with iron. Seats two or three.",
+				"name": "Fine - Bench",
+				"description": "A smooth hardwood bench with a leather seat. Seats two or three.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7347,8 +7347,8 @@
 			},
 			"iron_chair": {
 				"number": 639,
-				"name": "Iron - Chair",
-				"description": "An iron-bound chair with a hide seat.",
+				"name": "Fine - Chair",
+				"description": "A planed hardwood chair with a leather seat.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7368,8 +7368,8 @@
 			},
 			"iron_table": {
 				"number": 641,
-				"name": "Iron - Table",
-				"description": "A plank table bound with iron.",
+				"name": "Fine - Table",
+				"description": "A planed hardwood table with fitted joints.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7411,7 +7411,7 @@
 			"wooden_shelf": {
 				"number": 645,
 				"name": "Shelf",
-				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+				"description": "Hardwood shelves, pinned and tied, to set against a wall. Holds 8 stacks.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7432,7 +7432,7 @@
 			"wooden_cupboard": {
 				"number": 647,
 				"name": "Cupboard",
-				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+				"description": "A tall hardwood cupboard with doors. Holds 16 stacks.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -7453,7 +7453,7 @@
 			"wooden_barrel": {
 				"number": 649,
 				"name": "Barrel",
-				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"description": "A hooped barrel of hardwood staves. Holds 8 stacks.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -8978,7 +8978,7 @@
 			"weapon_rack": {
 				"number": 787,
 				"name": "Weapon rack",
-				"description": "A plank rack against a wall for spears, bows and blades.",
+				"description": "A hardwood rack against a wall for spears, bows and blades.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -8999,7 +8999,7 @@
 			"armour_stand": {
 				"number": 789,
 				"name": "Armour stand",
-				"description": "A plank figure to hang a set of armour and clothes on.",
+				"description": "A hardwood figure to hang a set of armour and clothes on.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -9764,8 +9764,8 @@
 			},
 			"iron_chest": {
 				"number": 852,
-				"name": "Iron - Chest",
-				"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
+				"name": "Ornate - Chest",
+				"description": "A carved hardwood strongbox bound with iron bands. Holds 30 stacks, more than any other chest.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -10395,8 +10395,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 230."
 			},
 			"fine_chest": {
 				"number": 915,
@@ -10406,8 +10405,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 231."
 			},
 			"crude_chair": {
 				"number": 916,
@@ -10417,8 +10415,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 232."
 			},
 			"ornate_chair": {
 				"number": 917,
@@ -10428,8 +10425,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 233."
 			},
 			"crude_table": {
 				"number": 918,
@@ -10439,8 +10435,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 234."
 			},
 			"ornate_table": {
 				"number": 919,
@@ -10450,8 +10445,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 3): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 235."
 			},
 			"iron_shortsword": {
 				"number": 920,
