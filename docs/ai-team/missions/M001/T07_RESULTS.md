@@ -48,3 +48,7 @@ No must-fix. Notes, left as they are:
 - The workbench L2/L3 lose all leather and cloth recipes; anything that showed them as level unlocks (hints, guides) is stale text.
 - `look_placeholders.json` now holds two structure ids with no item icon row; `test_item_looks` skips them (it only checks ids in `looks.json`).
 - Tanning in the route test uses given water and tannin bark.
+
+
+## Mission lead addendum (12 Nov, head cb02885ef)
+The Drying rack hide step was added after this report: recipe 179 (Scraped hide) is made at the Drying rack (decision in STATE.md). test_textile_route covers it (no rack: no scraped hide; at the rack: one). Evidence for the merged dev candidate is recorded in the PR.
