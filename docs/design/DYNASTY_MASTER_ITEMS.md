@@ -1,12 +1,12 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 12 — PREVIOUS CATEGORIES PLUS OWNER-APPROVED HORSE TACK [D10] RECORDED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D10], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 13 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS, ARMOUR, CLOTHING, CARRYING GEAR AND ANIMAL TACK RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D10], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 12 previously audited baseline BEFORE the 20 [D10] approved horse-tack ADD rows; not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 93 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9) and 2 new FUTURE rows (Steel bolt, Iron - Lance). Riding - Boots is counted with mounted gear, not here. Cross-listed rows (dual-use tools, shields, protective clothing, containers) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 13, reviewed categories only; not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 113 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Cross-listed rows (dual-use tools, shields, protective clothing, containers, troughs) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
@@ -323,7 +323,7 @@ Dave approved ChatGPT's Weapons Proposal 2 in full, plus his own Poison Arrow re
 
 `outer`, `back` and `waist` stay single. An item names its layer with a new `layer` field beside its existing `slot`, so the current slot data stays valid. Protection combines across layers per damage mode with diminishing returns (the layers never simply add), and weight and fatigue add up. Old saves load with every worn item on its own slot's clothing layer.
 
-Categories not yet reviewed (saddles and saddlebags, carts, wagons and carriages, cooking, food preservation) keep today's rows until their category review; food, medicine and coins are untouched so far (Appendix A).
+Categories not yet reviewed (carts, wagons and carriages, cooking, food preservation) keep today's rows until their category review; food, medicine and coins are untouched so far (Appendix A).
 
 ### 3.7 Armour [D7] — APPROVED CATEGORY (NOT APPROVAL TO IMPLEMENT)
 
@@ -581,6 +581,28 @@ Existing quivers have `slot: waist` although descriptions say worn on back. Choo
 
 **Deliberately excluded:** individual stirrups/bits/reins, multiple saddlebag size/colour material rows, generic Bronze/Steel horseshoes, exotic flying-mount saddles, magical tack, separate armoured animal limbs. Carts, wagons and carriages are a subsequent **UNAPPROVED** category; their 1-/2-animal hitch requirements must be compatible with this approved system.
 
+**3.10 reconciliation against the data (Claude, 12 Nov; desk review of `items.json`, `animals/animals.json` and the animal code on dev `7f8aabf4`):**
+
+| Check | Finding | Result / resolution |
+|---|---|---|
+| Existing tack | No halter, bridle, saddle, harness, yoke, horseshoe, barding, feedbag or grooming row exists, live or retired. | PASS. 0 existing rows, 20 ADD. |
+| Name clashes and style | No clash. Several names break the "Material - Object" and sentence-case style (decision 71). For example: Rope Halter, Leather Bridle, Leather Saddlebags, Wicker Panniers, Iron Horseshoes (Set), Iron Mail Barding and Steel Plate Barding. | For ChatGPT. Recommended forms: Rope - Halter, Leather - Bridle, Riding saddle, Traveller's saddle, War saddle, Pack saddle, Leather - Saddlebags, Wicker - Panniers, Cargo lashings, Light draft harness, Heavy collar harness, Double draft harness, Double ox yoke, Iron - Horseshoes (one item is a set of four), Padded - Horse blanket, Feedbag, Grooming kit, Padded - Barding, Iron - Mail barding, Steel - Plate barding. Nothing is renamed here. |
+| Materials and stations | All of these exist or are approved: Rope 44, Leather, Leather strap 415, Sinew, Thread, the cloths, Iron and Steel ingots, Rivets, Planks and Hardwood Boards. So do the Leatherworking Table, Tailor's Table, Carpenter's bench 86, Smithy and Blast Furnace. | PASS. **RECOMMEND:** saddle trees and the Double ox yoke use Hardwood Boards, and the Pack saddle frame uses Planks, with no substitution (s2.3, [D4]). |
+| Fodder | Troughs 719, 721 and 732 are live and Fodder trough 841 is FUTURE. No hay item exists. Grain exists, and straw is a gathered material. | NOTE. The Feedbag holds existing grain or straw. Hay waits for the cooking and food categories. |
+| **Animals to equip** | Horses and donkeys exist as wild herd animals. Their `tame` block only changes spook distance. No code catches, owns, leads, rides or hitches an animal. The only ox is the Wild ox (`buffalo`), which has no `tame` block. | **DEPENDENCY.** Every [D10] row needs an animal-keeping system: capture or purchase, ownership, leading, riding and per-animal saving. The two ox items also need a tameable or domestic ox. This is for ChatGPT to raise with Dave as its own decision. Nothing is designed here. |
+| Animal equipment slots | None exist. | **RECOMMEND** below. |
+| Cargo storage | Saddlebags, Panniers and Lashings carry goods. | Uses the same per-container inventory as [D9] rule 3 (s3.9), stored per animal. This is one system, not two. |
+| Paired draft controller | No mount or draft controller exists. Animals run on the server herd AI. | **RECOMMEND:** one *draft unit* controller with 1 or 2 members. The single harnesses form a unit of one, so single and paired hitching share code, and a vehicle always attaches to a unit. This follows the [D10] rule. |
+| Barding and Tempered | Steel - Plate barding is steel armour. | It is eligible for optional Tempered durability (s4 item 15). Iron - Mail barding is not. |
+| Riding - Boots | Now owned here as a FUTURE row. | Counted once, in the new FUTURE rows below. |
+
+**Recommended animal equipment slots (engineering; ChatGPT may override):**
+- `head`: halter or bridle. The Feedbag replaces it while the animal eats.
+- `back`: one of a riding saddle, pack saddle, blanket or barding. The blanket is a rest cover, so it is not worn under a saddle.
+- `back add-on`: Saddlebags (riding saddles only), or Panniers and Lashings (Pack saddle only).
+- `draft`: one harness, collar or yoke. It cannot be worn with any saddle.
+- `hooves`: horseshoes, on horses and donkeys only.
+
 **Counts:** 0 existing dedicated tack; **20 ADD** horse-care/riding/pack/harness/barding item rows. Cross-listed **1 FUTURE** Riding - Boots is owned here and must not be counted a second time against [D8]; existing FUTURE Lance is owned by [D6]. All 20 new rows are documentation plans; this section authorizes no JSON edits, code, merge or runtime implementation.
 
 ## 4. Implementation details (follow from the decisions; no new design)
@@ -662,11 +684,12 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 | 34 | Name rule for grades | decision 71 (a tier word only where several versions exist); four-word check | "Grade - Object" fits | PASS | The grade word replaces the material word, as in "Stone - Axe". No clash with live names; "Fine board" 227 is retired. |
 | 35 | Draft 6 claims | s6 rows 20, 21 and the Draft 6 readiness line | Withdrawn where [D4] changes them | DONE | Substitution analysis and its code list withdrawn; the durability-only Quenching Trough effect withdrawn. |
 | 36 | Tempered scope | steel rows 34, 47, 224, 294, 321, 322, 323, 330, 331, 561, 800 and the new steel tools; `edge` flags | Only eligible steel; sharpness benefit only on edged rows; no stacking | PASS | Striker excluded; sharpness benefit limited to `edge: true` rows; durability adds, never multiplies (s4 item 15). |
-| 37 | Counts and Appendix A | status per row vs s3 tables; Appendix A generator overrides | Totals agree | PASS | KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889); ADD 93 and 2 new FUTURE rows (Draft 12). Every s3 UPDATE, RETIRE and FUTURE row carries the same status in Appendix A. |
+| 37 | Counts and Appendix A | status per row vs s3 tables; Appendix A generator overrides | Totals agree | PASS | KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889); ADD 113 and 3 new FUTURE rows (Draft 13). Every s3 UPDATE, RETIRE and FUTURE row carries the same status in Appendix A. |
 | 38 | Weapons category [D6] | 21 weapon rows 7–816, arrows 270, 271, 352, 817; recipes 3, 170–172, 181, 201, 206, 226, 228, 336, 357, 381, 385 | Approved roster matches the data; no duplicates with tool ADDs | PASS / 4 defects recorded | All 21 ids exist (the 9 metal weapons are FUTURE). Iron and Steel Axe and Knife are counted once (s3.1). Defects recorded for implementation: recipe 3 keeps its Stone, Javelin `stack` 5 with `unstackable`, Bronze - Shield needs pre-saw Planks, Steel - Sword description. Recipes 228 and 336 give Wooden - Arrow, not the retired Fibre arrow 354. |
 | 39 | Armour category [D7] | 8 core rows, 8 cross-listed clothing rows, recipes 39–42, 194–196, 213–220, 358–360, 397; `clothing.json` slots | Approved roster matches the data; stations and metals in order; layering supported | PASS / NEEDS CODE | Ids, stations and the bronze, iron, steel order hold (s3.7 table). Layering and protection need new code (recommended model in s3.7). Hide - Trousers 306 possibly missing from the cross-list. |
 | 40 | Clothing category [D8] | 24 kept rows, recipes 39–42, 194–196, 213, 214, 237–244, 358–360 and the hand fibre, straw and snowshoe recipes; `clothing.json`, `warmth.json` | Roster matches data; materials exist; layers and weather supported | PASS / NEEDS CODE | Ids, stations and materials hold (s3.8 table). Neck slot, sock liner, Dress span and per-material weather need code (merged model in s3.8). Oilcloth uses Lamp oil; Tabard uses a cloth group. |
 | 41 | Carrying category [D9] | rows 50, 767, 272, 762, 828, 819, 42, 783, 785; recipes 30, 173, 356, 361, 388, 392; `weights.json`, `worn.json`, `inventory.gd`, `carry_bonus_kg` code | Roster matches data; carry, volume and slots consistent with rules 1–3 | PASS / CONFLICT / NEEDS CODE | Ids, stations and materials hold. Backpack `carry_bonus_kg` conflicts with rule 2, and the waist-slot quiver conflicts with rule 1 (recommendations in s3.9). Per-bag contents need new code. |
+| 42 | Animal tack category [D10] | `items.json` (no tack rows; Rope, troughs, Fodder trough 841); `animals.json` horse, donkey, buffalo; animal code | Materials and stations exist; animals can be owned, equipped and hitched | PASS / DEPENDENCY | Materials and stations hold. No animal-keeping system exists, and no tameable ox exists, so all 20 rows depend on a separate decision. Animal slots and the draft-unit controller are recommended in s3.10. Names for ChatGPT. |
 
 ## 7. JSON change list (none made; all wait for Dave's approval of this catalog)
 
@@ -685,6 +708,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 13. **Armour [D7] (s3.7):** 14 new item rows with recipes at the stations in rule 4; Steel - Cuirass 331 description; protection values and damage modes (new combat system).
 14. **Clothing [D8] (s3.8):** 17 new item rows with recipes at the Tailor's Table, Leatherworking Table or by hand; a `wear_layer` field on every clothing and armour row and the merged layer model (new neck slot, sock liner, Dress span, old-save mapping); per-material weather fields; a Linen-keyed cloth group for the Tabard.
 15. **Carrying [D9] (s3.9):** 9 new item rows with `worn.json` rows; retire `carry_bonus_kg` once pack volume exists; per-bag contents in pack, save and network; `shoulder` and chest-strap slots, belt attachment points and the quiver slot; quiver descriptions.
+16. **Animal tack [D10] (s3.10):** 20 new item rows, plus Riding - Boots when live; animal equipment slots; per-animal cargo through the [D9] container inventory; the draft-unit controller (1 or 2 animals). This depends on an animal-keeping system that is not yet designed.
 
 ## 8. Remaining issues and readiness
 
@@ -697,7 +721,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved in s3.10 [D10] (20 ADD item rows, one Riding Boots future cross-reference), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
