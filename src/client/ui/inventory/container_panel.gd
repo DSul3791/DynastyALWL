@@ -19,6 +19,7 @@ var root: Control   # the top control this part built
 var _keep_out: CheckBox   # the open container's "keep out" tick
 var _lock: Control        # the lock beside the tick while the container is kept out
 var opened_bag: int = 0   # the item number of the worn bag the screen last showed (0 for a chest), so a bag swapped in its place is asked for again
+var _code_lock: Button    # the owner's code-lock controls for a lockable chest or crate (catalog phase 9; storage_dialogs.gd)
 
 
 func _init(owner_view) -> void:
@@ -69,6 +70,17 @@ func build() -> void:
 	bar.add_child(gap)
 	bar.add_child(_hint("Take all", "take_all", "Take every stack from the container into your pack", take_all))
 	bar.add_child(_hint("Store all", "store_all", "Put every pack stack the container takes into it (the hotbar's items and favourites stay)", store_all))
+	_code_lock = Button.new()
+	_code_lock.text = "Lock"
+	_code_lock.tooltip_text = "Set, change or remove a four-digit code, and choose who else may open it"
+	_code_lock.flat = true
+	_code_lock.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+	_code_lock.add_theme_font_size_override("font_size", view._px(18))
+	_code_lock.add_theme_color_override("font_color", ArtKit.CREAM)
+	_code_lock.add_theme_color_override("font_hover_color", ArtKit.HEADING)
+	_code_lock.pressed.connect(func() -> void: view._storage_ui.open_owner(view.chest_id))
+	_code_lock.visible = false
+	bar.add_child(_code_lock)
 
 	# The grid: the pack's wells, 6 across with 10 px gaps; a big container scrolls (the wheel; no bar, it would not fit the 650 px).
 	var scroll: ScrollContainer = ScrollContainer.new()
@@ -216,6 +228,12 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 
 	if is_instance_valid(_lock):
 		_lock.visible = view.chest_keep_out and not fire
+
+	var storage_ui = view.get("_storage_ui")   # absent on the tests' stand-in views
+
+	if is_instance_valid(_code_lock):
+		_code_lock.visible = not fire and storage_ui != null and storage_ui.may_manage(view.chest_id)
+		_code_lock.text = "Locked" if storage_ui != null and bool(storage_ui.lock_state.get("locked", false)) else "Lock"
 
 	for i in view.inventory.SLOTS:
 		var slot = view._chest_buttons[i]

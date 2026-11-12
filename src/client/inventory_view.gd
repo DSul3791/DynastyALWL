@@ -55,6 +55,7 @@ var _ground_below: Callable
 const RecipeListScript := preload("res://src/client/ui/inventory/recipe_list.gd")
 const PackGridScript := preload("res://src/client/ui/inventory/pack_grid.gd")
 const ContainerPanelScript := preload("res://src/client/ui/inventory/container_panel.gd")
+const StorageDialogsScript := preload("res://src/client/ui/inventory/storage_dialogs.gd")   # the code lock and the Storage sign / Warehouse desk windows (catalog phase 9)
 const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the window's look (steps B and C)
 const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
@@ -64,6 +65,7 @@ const ArtKit := preload("res://src/client/ui/art_kit.gd")
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
 var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store, in the Craft column under its Chest tab
+var _storage_ui: StorageDialogsScript          # the code-lock window and the storage-view window
 var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
 var _pinned_part: PinnedRecipeScript           # the pinned recipe's checklist card
 
@@ -72,6 +74,7 @@ func _init() -> void:
 	_recipe_part = RecipeListScript.new(self)
 	_pack_part = PackGridScript.new(self)
 	_container_part = ContainerPanelScript.new(self)
+	_storage_ui = StorageDialogsScript.new(self)
 	_queue_part = CraftQueueScript.new(self)
 	_pinned_part = PinnedRecipeScript.new(self)
 
@@ -268,6 +271,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.chest_info_received.connect(_on_chest_info)
+	net.chest_lock_received.connect(_storage_ui.on_lock)
+	net.storage_view_received.connect(_storage_ui.on_view)
 	net.craft_stock_received.connect(_on_craft_stock)
 	net.favourites_received.connect(_on_favourites)
 	net.bulk_done_received.connect(_on_bulk_done)
@@ -460,6 +465,10 @@ func search_escape() -> bool:
 
 
 func close() -> void:
+	if _storage_ui.is_open():
+		_storage_ui.close()
+		return   # Esc shuts the lock or storage window first
+
 	if dialogue_open and dialogue_close.is_valid():
 		dialogue_close.call()
 
@@ -890,6 +899,9 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to open the door" if state == 26 else "Press E to close the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	var station_def: Dictionary = _structure_by_state(state)
+
+	if str(station_def.get("use", "")) == "storage_view":   # a Storage sign or Warehouse desk (catalog phase 9): E shows what the containers round it hold
+		return {"prompt": "Press E to see what is stored here (hold E to take it down)", "tap": func(): _storage_ui.ask_view(id), "hold": take_down}
 
 	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E lies down on it and makes it the spawn point (Dave 4 Nov 2026), hold E takes it down
 		var bed: Dictionary = {"prompt": "Press E to lie down (hold E to take it down)", "hold": take_down}
@@ -1637,6 +1649,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 
 	_queue_refresh()
 	_container_part.refresh()
+	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
 	refresh_hotbar()
 
 
@@ -3376,6 +3389,17 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 
 
 # Is a lit fire (any tier) within r metres of a point? Display only.
+# A placed structure of `kind` within r that is lit (its world record carries the lit fixture light).
+func _lit_structure_near(pos: Vector3, kind: String, r: float) -> bool:
+	var state: int = int(_structures_cfg.get(kind, {}).get("state", -2))
+
+	for id in _world:
+		if int(_world[id]["state"]) == state and _world[id].get("light") != null and pos.distance_to(_world[id]["pos"]) <= r:
+			return true
+
+	return false
+
+
 func _lit_fire_near(pos: Vector3, r: float) -> bool:
 	for fire_id in _world:
 		if _lit_state(int(_world[fire_id]["state"])) and pos.distance_to(_world[fire_id]["pos"]) <= r:
@@ -3465,6 +3489,9 @@ func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
 			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_near(_world[id]["pos"], 0.3):
 				continue   # the pot cooks only while the fire it hangs over is lit
+
+			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_near(_world[id]["pos"], str(def.get("attach_to", "")), float(def.get("attach_m", 2.5))):
+				continue   # the cooking crane cooks only beside a burning fireplace (ServerItems.serving_station)
 
 			return true
 
@@ -4807,7 +4834,7 @@ var dialogue_close: Callable = Callable()
 
 
 func screen_open() -> bool:
-	return open or chest_mode or character_open() or dialogue_open
+	return open or chest_mode or character_open() or dialogue_open or _storage_ui.is_open()
 
 
 const CHEST_KEYS := [["take_all", 0], ["store_all", 1], ["stack_nearby", 2], ["sort_both", 3]]    # action id, Net.ACT_BULK kind
@@ -4820,6 +4847,9 @@ const CHEST_KEYS := [["take_all", 0], ["store_all", 1], ["stack_nearby", 2], ["s
 func quick_key(event: InputEventKey) -> bool:
 	if dialogue_open and dialogue_key.is_valid():
 		return bool(dialogue_key.call(event))
+
+	if _storage_ui.is_open():
+		return true   # the lock or storage window has the keys (its code and search fields)
 
 	var slot: int = _hover if _hover >= 0 else _selected
 

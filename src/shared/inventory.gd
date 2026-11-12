@@ -48,7 +48,18 @@ func _mergeable(number: int, wear_a: int, wear_b: int) -> bool:
 		return absi(wear_a - wear_b) < int(round(float(table.wet_wood().get("wet_merge_h", 2.0)) * 10.0))
 
 	var life: int = table.shelf_units(number)
-	return life == 0 or absi(wear_a - wear_b) <= int(float(life) * float(table.spoilage().get("merge_gap", 0.1)))
+
+	if life == 0:
+		return true
+
+	# A sealed food (item_table.gd ready_units) never joins across its ready age, and a Maturing batch joins only its own age, so batches sealed
+	# at different times stay apart and none ripens early by averaging (master s3.14 [D14]).
+	var ready: int = table.ready_units(number) if table.has_method("ready_units") else 0
+
+	if ready > 0 and mini(wear_a, wear_b) < ready:
+		return wear_a == wear_b
+
+	return absi(wear_a - wear_b) <= int(float(life) * float(table.spoilage().get("merge_gap", 0.1)))
 
 
 func _joined_age(number: int, wear_a: int, count_a: int, wear_b: int, count_b: int) -> int:
@@ -97,14 +108,19 @@ func is_empty() -> bool:
 	return true
 
 
-func count_of(number: int, plain_only: bool = false) -> int:
+func count_of(number: int, plain_only: bool = false, ready_only: bool = false) -> int:
 	var total: int = 0
 
 	for i in SLOTS:
-		if numbers[i] == number and not (plain_only and not inst[i].is_empty()):
+		if numbers[i] == number and not (plain_only and not inst[i].is_empty()) and not (ready_only and maturing_at(i)):
 			total += counts[i]
 
 	return total
+
+
+# A Maturing stack (item_table.gd ready_units): it is not eaten, sold or used as an ingredient until Ready (master s3.14 [D14]).
+func maturing_at(i: int) -> bool:
+	return table != null and numbers[i] != 0 and table.has_method("maturing") and table.maturing(numbers[i], wear[i])
 
 
 func has(number: int, count: int) -> bool:
@@ -113,16 +129,16 @@ func has(number: int, count: int) -> bool:
 
 # Take `count` of an item (from the last slots first, plain stacks before instances). False and no change if there is not enough.
 # Each part taken from a slot is appended to `taken` as [number, inst, wear, count], in the order taken, so a refund can give back as it
-# was what is still owed (the craft queue).
-func remove(number: int, count: int, taken: Array = []) -> bool:
-	if count <= 0 or not has(number, count):
+# was what is still owed (the craft queue). `ready_only`: Maturing stacks are left alone (an ingredient take).
+func remove(number: int, count: int, taken: Array = [], ready_only: bool = false) -> bool:
+	if count <= 0 or count_of(number, false, ready_only) < count:
 		return false
 
 	var left: int = count
 
 	for plain in [true, false]:
 		for i in range(SLOTS - 1, -1, -1):
-			if left > 0 and numbers[i] == number and inst[i].is_empty() == plain:
+			if left > 0 and numbers[i] == number and inst[i].is_empty() == plain and not (ready_only and maturing_at(i)):
 				var take: int = mini(left, counts[i])
 
 				taken.append([number, inst[i].duplicate(true), wear[i], take])
@@ -164,7 +180,7 @@ func count_fill(number: int, plain_only: bool = false) -> int:
 	var total: int = 0
 
 	for i in SLOTS:
-		if numbers[i] != 0 and fills.has(numbers[i]) and not (plain_only and not inst[i].is_empty()):
+		if numbers[i] != 0 and fills.has(numbers[i]) and not (plain_only and not inst[i].is_empty()) and not maturing_at(i):
 			total += counts[i]
 
 	return total
@@ -186,10 +202,10 @@ func remove_fill(number: int, count: int, taken_inst: Array = [], plain_only: bo
 
 	for fill in (spend if not spend.is_empty() else fills_of(number)):
 		if left > 0:
-			var taken: int = mini(left, count_of(fill, plain_only))
+			var taken: int = mini(left, count_of(fill, plain_only, true))
 
 			if taken > 0:
-				remove(fill, taken, taken_inst)
+				remove(fill, taken, taken_inst, true)
 				left -= taken
 
 	return true

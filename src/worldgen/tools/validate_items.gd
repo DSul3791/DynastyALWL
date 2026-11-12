@@ -259,6 +259,7 @@ func _init() -> void:
 
 		var def_no_kit: Dictionary = structure_defs[kind].duplicate(true)
 		def_no_kit.erase("kit")
+		def_no_kit.erase("takes_kinds")   # items.json kinds, not item ids ("medicine" is also a retired item id); checked below
 
 		for ref in JSON.stringify(def_no_kit).split("\""):
 			if retired_ids.has(ref):
@@ -685,6 +686,14 @@ func _init() -> void:
 	for id in spoilage.get("by_id", {}):
 		want_item.call(String(id), "spoilage.json by_id")
 
+	# A stack's age is a u16 in tenths of a game hour (inventory.gd to_bytes): a shelf life past it never rots (master s3.14 wear cap).
+	var shelf_cap_h: float = 65535.0 * float(spoilage.get("unit_h", 0.1)) / float(spoilage.get("gentle_mult", 1))
+
+	for list in ["by_id", "by_suffix"]:
+		for id in spoilage.get(list, {}):
+			if float(spoilage[list][id]) > shelf_cap_h:
+				fail("spoilage.json %s %s: %s game hours x gentle_mult %s passes the wear cap (at most %.1f)" % [list, id, str(spoilage[list][id]), str(spoilage.get("gentle_mult", 1)), shelf_cap_h])
+
 	for id in cooking.get("fuel", {}):
 		want_item.call(String(id), "cooking.json fuel")
 
@@ -724,6 +733,14 @@ func _init() -> void:
 
 		for id in r.get("identify", []):
 			want_item.call(String(id), "recipe '%s' identify" % rid)
+
+		# A sealed batch (master s3.14): its output spoils, and only after it is Ready (ready_age game hours, unscaled, under the stretched shelf life).
+		if float(r.get("ready_age", 0.0)) > 0.0:
+			var made_id: String = String(r.get("gives", [""])[0])
+			var shelf_h: float = float(spoilage.get("by_id", {}).get(made_id, 0.0)) * float(spoilage.get("gentle_mult", 1))
+
+			if float(r["ready_age"]) >= shelf_h:
+				fail("recipes.json %s: ready_age %s must be under the shelf life of %s (%.0f game hours)" % [rid, str(r["ready_age"]), made_id, shelf_h])
 
 		for list in ["needs", "keeps"]:
 			for row in r.get(list, []):
@@ -873,6 +890,21 @@ func _init() -> void:
 
 		if String(def.get("who", "anyone")) != "anyone" and not (bool(def.get("take_only", false)) and String(def.get("who")) == "owner"):   # remains: owner first day
 			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])
+
+		# Storage rules (master s3.13, Mission 001 phase 9): a code lock only on a container, what it takes names real items or kinds, a view has a radius.
+		if def.has("lockable") and (typeof(def["lockable"]) != TYPE_BOOL or int(def.get("slots", 0)) <= 0 or bool(def.get("take_only", false))):
+			fail("structures.json %s: lockable must be true or false, and only on a container with slots" % kind)
+
+		for take in def.get("takes", []):
+			if not items_file["items"].has(String(take)) or bool(items_file["items"][String(take)].get("retired", false)):
+				fail("structures.json %s: takes '%s', which is not a live item or group" % [kind, take])
+
+		for take_kind in def.get("takes_kinds", []):
+			if not String(take_kind) in ["tool", "weapon", "material", "clothing", "gear", "container", "medicine", "food", "coin", "placeable", "structure"]:
+				fail("structures.json %s: takes_kinds '%s' is not an items.json kind" % [kind, take_kind])
+
+		if String(def.get("use", "")) == "storage_view" and (float(def.get("view_m", 0.0)) <= 0.0 or int(def.get("slots", 0)) > 0):
+			fail("structures.json %s: a storage view needs view_m above 0 and holds nothing itself" % kind)
 		obtainable[String(def.get("item", ""))] = true
 
 		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks
@@ -1151,6 +1183,53 @@ func _init() -> void:
 		for hung in clothing_cfg.get("belt_hangs", []):
 			if not places.has(hung):
 				fail("clothing.json: belt_hangs %s is not a worn position" % hung)
+	# Armour and damage modes (catalog Phase 4b, data/items/protection.json): every protect names known modes with shares 0..1 and a cover 0..1 on
+	# a worn slot; every live row that does damage (a weapon or its ammunition) names its damage mode; the attack modes and slot shares are sane.
+	var protection: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/protection.json"))
+
+	if typeof(protection) != TYPE_DICTIONARY or (protection.get("modes", []) as Array).is_empty():
+		fail("protection.json is not an object with modes")
+	else:
+		var modes: Array = protection["modes"]
+		var shares: Dictionary = protection.get("slots", {})
+		var share_sum: float = 0.0
+
+		for slot in shares:
+			share_sum += float(shares[slot])
+
+			if typeof(clothing_cfg) == TYPE_DICTIONARY and not (clothing_cfg.get("slots", []) as Array).has(slot):
+				fail("protection.json slots: '%s' is not a clothing.json slot" % slot)
+
+		if absf(share_sum - 1.0) > 0.001:
+			fail("protection.json slots: the shares add up to %.3f, not 1" % share_sum)
+
+		for key in ["layer_keep", "slot_cap", "cap"]:
+			if float(protection.get(key, -1.0)) <= 0.0 or float(protection.get(key, -1.0)) > 1.0:
+				fail("protection.json %s must be above 0 and at most 1" % key)
+
+		for cause in protection.get("attack_modes", {}):
+			if cause != "note" and not modes.has(String(protection["attack_modes"][cause])):
+				fail("protection.json attack_modes.%s: '%s' is not a mode" % [cause, protection["attack_modes"][cause]])
+
+		if not modes.has(String(protection.get("default_mode", ""))):
+			fail("protection.json default_mode is not a mode")
+
+		for id in items_file.get("items", {}):
+			var row: Dictionary = items_file["items"][id]
+
+			if row.has("protect"):
+				if String(row.get("slot", "")) == "" or float(row.get("cover", -1.0)) <= 0.0 or float(row.get("cover", -1.0)) > 1.0:
+					fail("items.json: '%s' has protect but no worn slot or no cover above 0 and at most 1" % id)
+
+				for mode in row["protect"]:
+					if not modes.has(mode) or float(row["protect"][mode]) < 0.0 or float(row["protect"][mode]) > 1.0:
+						fail("items.json: '%s' protect %s is not a mode with a share 0..1" % [id, mode])
+
+			if float(row.get("damage", 0.0)) > 0.0 and not bool(row.get("retired", false)) and not bool(row.get("future", false)) and not modes.has(String(row.get("damage_mode", ""))):
+				fail("items.json: '%s' does damage but has no damage_mode of %s" % [id, str(modes)])
+
+			if float(row.get("pen", 0.0)) < 0.0 or float(row.get("pen", 0.0)) >= 1.0:
+				fail("items.json: '%s' pen must be 0 or more and below 1" % id)
 
 	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).
 	if FileAccess.file_exists("res://data/npcs/outfits.json") and FileAccess.file_exists("res://data/items/worn.json"):

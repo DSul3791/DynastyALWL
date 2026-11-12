@@ -152,7 +152,9 @@
 			"fish_stew": 880,
 			"trail_bread": 950,
 			"hearty_pottage": 1050,
-			"feast_roast": 950
+			"feast_roast": 950,
+			"smoked_meat": 1000,
+			"dried_mushrooms": 200
 		},
 		"by_suffix": {
 			"berries": 4,
