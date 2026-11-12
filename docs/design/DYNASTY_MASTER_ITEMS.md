@@ -1,12 +1,12 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 6 CORRECTED FOR DAVE'S NEW RULINGS; FURNITURE-GRADE RE-AUDIT REQUIRED; NOT APPROVED FOR IMPLEMENTATION.** Dave's explicit rulings and ChatGPT's delegated design decisions are written into the catalog. Section 8 records remaining implementation risks, not a questionnaire. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 7 (12 Nov 2026): DAVE'S [D4] FURNITURE, WOOD AND QUENCHING RULINGS FOLDED IN; FRESH AUDIT DONE. AWAITING DAVE'S FINAL CATALOG APPROVAL; NOT APPROVED FOR IMPLEMENTATION.** The Draft 6 audit and its "ready" statement are superseded. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals baseline (before [D4] furniture-grade expansion).** Existing rows: KEEP 520, UPDATE 40, RETIRE 23, FUTURE 53, already retired 253 (889). New rows previously planned: ADD 18. **These counts must be recomputed after Claude enumerates furniture grade variants.** No number or id is reused.
+**Totals (Draft 7).** Existing rows: KEEP 506, UPDATE 54, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 24 (18 tools and stations, 6 furniture grades in s3.5). No number or id is reused.
 
 ## 1. Sources and labels
 
@@ -59,12 +59,12 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 
 1. A 3 m softwood/basic Log becomes 6 Planks; a 3 m hardwood species log becomes 4 Hardwood Boards. Iron/Steel hand saws and the waterwheel reciprocating sawmill have equal yields, but hand sawing is much slower. Felled full logs are 3.0 m; adjust weight and geometry consistently.
 2. **NO SUBSTITUTION IN EITHER DIRECTION [D4].** Planks and Hardwood Boards are distinct ingredients. Hardwood Boards never meet a Plank cost, and Planks never meet a Hardwood Board cost, including recipes, blueprints, NPC jobs and automatic storage sourcing. Do not create a shared ingredient group or permission-based fallback.
-3. **Furniture grades [D4]** are **Crude, Rustic, Fine, Ornate** (Fine corresponds to Dave's “Nice”; Ornate to “Fancy”). These are furniture production/appearance grades, not magical enchantments or the separate +1/+2 physical craftsmanship enhancement. Use them on meaningful furniture families (chests, chairs, tables, shelves, cupboards, beds, suitable furnishings); not every object needs four versions.
-4. **ALL finished wooden furniture grades use Hardwood Boards [D4]**: Crude and Rustic use fewer boards and simple wooden joinery (pins/twine or modest fasteners), Fine uses more boards and better fittings, Ornate uses the most boards and better nails/hinges plus skilled finishing. Available existing hardware: Wooden pin #233, Bronze nails #894 and hinges #895, iron Nails #228 and Hinges #232. Prefer appropriate existing materials rather than inventing steel/silver nails or intermediate boards without need. A fancy item should be distinct in appearance, recipe, and value/function where reasonable; exact quantities and exact grade variants are a catalog design/audit task.
-5. Reconcile all existing furniture blueprints and item rows including Wooden - Chest #27, Wooden - Chair #42, Wooden - Table #43, Shelf #96, Cupboard #97, Barrel #98, Canopy bed #48, Iron - Chair #93, Iron - Table #94, Iron - Chest #169. Basic finished pieces use fewer Hardwood Boards; more decorative variants use more and better nails/fittings. **Crate #168 is a rough packing container** (may continue to use ordinary Planks), not a graded finished-furniture family; Wicker - Chest #26 remains an early sticks/twine option. A crude item need not require iron, so the wood/furniture progression remains playable after access to the first saw.
+3. **Furniture grades [D4]:** **Crude, Rustic, Fine, Ornate** (Fine is Dave's "Nice", Ornate his "Fancy"). They are production and appearance grades of furniture, separate from the +1/+2 physical craftsmanship slot and from enchantments. They are used only on families where a grade changes something real (storage slots or comfort points, look, value). Families, rows and costs: s3.5.
+4. **Finished wooden furniture uses Hardwood Boards [D4]:** Crude and Rustic use fewer boards and simple joinery, Fine uses more boards and better fittings, Ornate the most boards with the best fittings and finish. Fittings come from existing items only: Wooden pin 233, Twine 5, Bronze nails 894 and Bronze hinges 895 (filling the `nails` and `hinges` groups, spent before iron), Nails 228 and Hinges 232 (iron), Iron band 859 (iron only), and Hide, Leather 283 and Fine leather 284 for seats. No new nails, boards or finishes.
+5. **Not graded finished furniture [D4]:** the Crate (item 850, blueprint 168) is a rough packing box and stays on Planks; the Wicker - Chest (item 23, blueprint 26) stays the stick-and-twine starter. Log, stick, straw, hide, wool and stone furniture is not board furniture and is unchanged. Crude furniture needs no metal, so furniture is reachable as soon as the first saw makes Hardwood Boards.
 6. Retire unused species-specific `lumber_*` and `beam_*` rows, but keep the species `log_*` rows. No board sizing or Fine Board processing step, no stone wedges, bronze saws or saw-blade intermediates.
 7. An axe chops softwood Log → Softwood Blocks → Soft Firewood and hardwood Log → Hardwood Blocks → Hard Firewood. Hard Firewood delivers equal heat for longer burning. Whole logs remain usable for building or charcoal.
-8. **Catalog expansion required:** inventory existing furniture, assign meaningful grades, list exact existing rows to UPDATE and any genuinely needed distinct grade-variant items/blueprints to ADD, with expected function, visual differentiation, station and material progression. Recompute counts from those planned additions; do not silently assert the old total of 18 ADD rows is complete.
+8. Planks and Hardwood Boards both start at the first Iron Hand Saw. Planks exist in every forested biome (softwood species and the plain Log); Hardwood Boards only where hardwood species grow (s6 row 30).
 
 ### 2.4 Chopping Block [D1]
 
@@ -84,7 +84,7 @@ Any wood-burning fire or workstation may give a small charcoal byproduct. Charco
 2. The Smithy contains a forge, anvil and bench (built-in blacksmithing tools); no player-held smithing hammer and no Saw Blade ingredient [D1].
 3. **Smelter**: copper, tin and iron ore (bog iron) to ingots, and bronze alloy. **Blast Furnace**: its advanced, high-capacity tier, and steel [D1]. No smelting at any forge or smithy [C].
 4. **Bronze before iron [C]:** the **Stone - Forge (88)** stays as the bronze smithy. It shapes bronze items only, has an iron-free cost, and does no smelting. The ordinary Smithy also works bronze, and additionally iron and steel. This keeps Bronze a real rung before Iron and keeps the wilderness route to the Iron Hand Saw.
-5. **Bellows and Quenching Trough are add-ons attached to the Smithy, NOT independent workstations [D4].** Bellows improve heat-up and efficiency. The **Quenching Trough upgrades the Smithy's available capabilities so it can make better metal goods**, including appropriate improved/tempered outputs for eligible metals/items. Plain/untempered goods remain possible without it. This is not a separate crafting station and **not merely a blanket one-time max-durability bonus** for every item. Its exact improved recipes, materials and benefits must be cataloged; do not conflate them with the ornate Master Smithy's +1/+2 physical craftsmanship or wizard magic.
+5. **Bellows and Quenching Trough are add-ons attached to the Smithy, not workstations [D4].** Bellows: faster warm-up and metalworking, lower fuel use [C]. The **Quenching Trough** upgrades the Smithy so it can make better metal goods; every plain recipe still works without it, so it never blocks progression. **Drafted mapping (Claude, for ChatGPT to confirm, s8):** with the trough attached, eligible **steel** tools, weapons and armour made at that Smithy come out **Tempered**, a per-instance property recorded at crafting (like wear; no new item rows). A Tempered item has a higher maximum durability and loses sharpness more slowly. It shows in the name ("Tempered Steel - Axe"), never stacks with plain items, is not re-applied by repair or reheating, and is separate from the Master Smithy's +1/+2 craftsmanship and from enchantments. Bronze and iron are not eligible (quenching does not usefully harden them).
 6. **Master Smithy**: a distinct, ornate prestige workshop for special and masterwork items with +1/+2 physical craftsmanship. Wizard enchantments are separate [D1].
 7. **Station rows [C]:** Brick - Forge 90 (`blacksmithy`) becomes the Smithy; the never-built Large forge rows 92/93 become the Blast Furnace; the never-built Master forge rows 94/95 become the Master Smithy; the standalone Anvil 827 retires, because the Smithy has its own anvil. Every reference, look, blueprint, recipe, name and test changes with the renames. Retired numbers are never reused.
 8. **No Clay Bloomery.** No save-game migration is needed for any retirement or reuse: Dynasty has never been publicly released or played by other players [D1].
@@ -161,7 +161,7 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 | 101–174 (16 rows) | lumber_oak … beam_walnut | Species lumber and beams (future) | RETIRE (DECIDED) | Superseded by Plank and Hardwood board. References handled in s4 item 3 (`wood_species.json retired_to`, Hob's buy rules in `shops.json`). Species `log_*` rows stay. |
 | 243 | woodworking_table | Woodworking table | RETIRE (APPROVED) | **In open PR #1036** (item 243, blueprint 12, structure state 35). Carpenter's bench 86 stays. |
 | 205, 207 | timber_prop, timber_set | Post, Beam | KEEP | Building pieces. |
-| existing furniture, additional variants to enumerate | | Crude / Rustic / Fine / Ornate furniture families | UPDATE / POSSIBLE ADD [D4] | Audit each furniture item/blueprint and assign relevant grades, Hardwood Board needs, quality of nails/fittings and appearance. Distinct variants need explicit planned item and blueprint rows, not assumed global modifiers. Current 18 ADD total predates this design. |
+| see s3.5 | | Graded furniture | UPDATE ×14, ADD ×6 [D4] | Families, grades, costs and looks in s3.5. |
 
 ### 3.3 Metalworking, fuel and kilns
 
@@ -193,6 +193,57 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 | 846 | loom | Loom | UPDATE (APPROVED) | Goes live with a blueprint and structure state; cloth recipes 245 (Linen), 334 (Fibre cloth), 342 (Wool cloth) move to it. |
 | 845 | spinning_wheel | Spinning wheel | FUTURE | Later: faster Thread and spun wool (2.8 item 4). |
 
+### 3.5 Furniture [D4] (grade design drafted by Claude from Dave's rulings)
+
+**Which families get grades.** A family is graded only where a grade changes storage slots or comfort points (`comfort.json` seat, table and bed classes), not just a name:
+- Chests get four grades, because storage is the main progression.
+- Chairs and tables get four grades, for comfort.
+- Benches get two, as a simple object.
+- Shelf, Cupboard, Barrel, Weapon rack, Armour stand and Canopy bed stay single objects. They already form a ladder by object, and four copies of each would add nothing.
+
+Existing rows are reused for grades wherever one fits, so only 6 rows are new.
+
+**Fittings by grade** (existing items only):
+
+| Grade | Boards | Fittings | Seat | Hammer | Look |
+|---|---|---|---|---|---|
+| Crude | Fewest Hardwood Boards | Wooden pins, Twine; no metal | Bare | Any (`hammer` 1) | Rough boards, visible pegs and lashings |
+| Rustic | More | `nails` (Bronze first, else iron); `hinges` on lids and doors | Hide | Any (`hammer` 1) | Plain nailed boards |
+| Fine | More again | More `nails` and `hinges` | Leather | Metal (`hammer` 3, as the iron rows have today) | Planed, smooth, fitted joints |
+| Ornate | Most | `nails`, `hinges` and Iron bands (iron only) | Fine leather | Metal (`hammer` 3) | Carved trim, iron banding, upholstery |
+
+**Rows** (item / blueprint / structure state; "new" rows take numbers at implementation):
+
+| Family | Grade | Row | Status | Change | Utility |
+|---|---|---|---|---|---|
+| Chest | Crude | new | ADD | **Crude - Chest**: Hardwood Boards, Wooden pins, Twine; lid tied, no hinges | Slots between the Crate (10) and Rustic (20) |
+| Chest | Rustic | item 29 / bp 27 / state 48 | UPDATE | Rename Wooden - Chest → **Rustic - Chest**. Planks → Hardwood Boards; keeps Hinges; Twine → `nails`. | 20 slots (today) |
+| Chest | Fine | new | ADD | **Fine - Chest**: more boards, `nails`, `hinges` | Between 20 and 30 |
+| Chest | Ornate | item 852 / bp 169 / state 209 | UPDATE | Rename Iron - Chest → **Ornate - Chest**. Planks → Hardwood Boards; Iron ingots → Iron bands. | 30 slots (today) |
+| Chair | Crude | new | ADD | **Crude - Chair**: boards, Wooden pins | Lowest seat comfort |
+| Chair | Rustic | item 505 / bp 42 / state 62 | UPDATE | Rename Wooden - Chair → **Rustic - Chair**. Planks → boards; Hide seat; pins → `nails`. | Seat 2 (today) |
+| Chair | Fine | item 639 / bp 93 / state 128 | UPDATE | Rename Iron - Chair → **Fine - Chair**. Planks → boards; Iron ingot dropped; Leather seat. | Above Rustic |
+| Chair | Ornate | new | ADD | **Ornate - Chair**: most boards, `nails`, Iron band, Fine leather | Highest seat comfort |
+| Table | Crude | new | ADD | **Crude - Table**: boards, Wooden pins, Twine | Lowest table comfort |
+| Table | Rustic | item 506 / bp 43 / state 63 | UPDATE | Rename Wooden - Table → **Rustic - Table**. Planks → boards; Twine → `nails`. | Table 2 (today) |
+| Table | Fine | item 641 / bp 94 / state 129 | UPDATE | Rename Iron - Table → **Fine - Table**. Planks → boards; Iron ingot dropped. | Above Rustic |
+| Table | Ornate | new | ADD | **Ornate - Table**: most boards, `nails`, Iron bands | Highest table comfort |
+| Bench | Crude | item 504 / bp 41 / state 61 | UPDATE | Rename Wooden - Bench → **Crude - Bench**. Planks → boards; Wooden pins with the Twine. | Seat 1 (today) |
+| Bench | Fine | item 637 / bp 92 / state 127 | UPDATE | Rename Iron - Bench → **Fine - Bench**. Planks → boards; Iron ingot dropped. | Above Crude |
+| Shelf | single | item 645 / bp 96 | UPDATE | Planks → few boards; Wooden pins with the Twine | 8 slots |
+| Cupboard | single | item 647 / bp 97 | UPDATE | Planks → boards; `nails` and `hinges` as today | 16 slots |
+| Barrel | single | item 649 / bp 98 | UPDATE | Planks → boards; `nails` as today | 8 slots |
+| Weapon rack, Armour stand | single | items 787, 789 / bp 158, 159 | UPDATE | Planks → boards | 6 slots each |
+| Canopy bed | single (the Ornate bed) | item 511 / bp 48 | UPDATE | Planks → boards | Bed 5, the best bed |
+| Crate | not graded | item 850 / bp 168 | KEEP | Planks and `nails` (a rough packing box) | 10 slots |
+| Wicker - Chest, Stool, Seat, log furniture, Stone - Bench and Table, Straw and Feather beds, rugs | not graded | 23, 503, 502, 629, 631, 719, 848, 633, 635, 509, 510, 507, 508 | KEEP | No boards involved | Early comfort and storage |
+
+**Notes on the rows:**
+- The three Iron furniture rows lose their raw Iron ingot. Their iron now comes as fittings (`nails`, `hinges`, Iron band), because [D4] asks for better nails and fittings rather than metal bodies.
+- Value follows the material cost, checked by the `items_check.py` economy test.
+- Each grade needs its own look (`looks.json`) and its own structure state.
+- Furniture needs no station: every row stays a hammer blueprint.
+
 Food, medicine, coins and most gear and placeables are not touched by any decision and stay KEEP (Appendix A).
 
 ## 4. Implementation details (follow from the decisions; no new design)
@@ -221,15 +272,16 @@ Food, medicine, coins and most gear and placeables are not touched by any decisi
     - The Anvil today raises the Brick - Forge to level 3. With it retired, the steel recipes at `brick_forge` L3 (19, 28, 142, 183, 210–212, 219, 220, 347, 373) and 404 (Iron band) need no level: Steel ingots from the Blast Furnace already gate the steel rows.
     - Every station row gains input and output capacity fields; station inventories join the crafting source order (pack, ground stock, containers; DEVTEST-01 "lowest group member first" stays).
 11. **Recipe moves:** 185, 190–192 → Smelter; 193 → Blast Furnace; bronze working at `forge` (204–206, 215, 290–293, 371, 394, 397, 405, 406) stays at the Stone - Forge and the Smithy; iron and steel working at `brick_forge` (18, 19, 27, 28, 141, 142, 145, 149, 183, 184, 188, 207–212, 217–220, 346, 347, 351, 372, 373, 404) → Smithy; leather and clothing rows per 3.4; Loom takes 245, 334, 342. New Bronze - Sickle and Bronze - Scythe recipes go to `forge`.
-12. **Hardwood Boards/furniture grades [D4]:** finished-furniture blueprints 27, 42, 43, 48, 93, 94, 96, 97, 98, 169 (plus all relevant others found in audit) change their Plank cost to Hardwood Board. Crude/Rustic use fewer, Fine/Ornate more Hardwood Boards plus improved fasteners. Retain Crate 168 as an unrefined Plank utility container. Record new per-grade item/blueprint rows explicitly and reconcile names, costs, skills, looks and counts.
+12. **Furniture [D4]:** blueprint cost changes, renames and the 6 new item, blueprint and structure rows exactly as in s3.5. **Comfort:** `comfort.json` counts each kind once and only the best bed. Graded families must count once per class at their best grade (as beds do), or a player could stack four chair grades for comfort; give each grade a `kinds` row with its points and extend the best-one rule from beds to seats and tables (small code change). Storage slots go on each structure row (`slots`).
 13. **Tool tiers:** today's numbers clash across families (Bronze and Iron - Pickaxe both t2; Iron - Spade t3; Steel - Hammer t3 vs Steel - Spade t4; no tier on Wooden spade and hoe). Renumber by material rank in every family (Wooden 1, Stone 2, Bronze 3, Iron 4, Steel 5) and remap `digging.json tier_extra` and blueprint `hammer` values so any metal hammer still builds any tier (decision 73). No saves to migrate.
 14. **Names:** an ingredient group is shown under its key item's name, so after the renames a `firewood` cost would read "Hard firewood" and a `wooden_block` cost "Hardwood block" while still taking the softwood kinds. Group costs need a group label ("Firewood", "Wooden block") in the recipe and site lists (`recipe_list.gd`, `inventory_view.gd`, `_site_view`). Dynamic enhanced names are exempt from the `validate_items.gd` four-word check; static names keep it. The renames in 3.2 and 3.3 keep the naming rules.
-15. **Enhancements:** per-instance save data (like wear and sharpness), no `items.json` rows; saves and network protocol change; enhanced items never stack with plain ones; slot writes refuse an occupied magical slot.
-16. **Related rows to update with each retirement or rename:** `weights.json`, `looks.json`, `showroom.json`, `design_names.json`, `descriptions_voice.json`, `encyclopedia.json`, `data/stations/forge_sizes.json`, `data/npcs/town_proposal.json` (names `stone_forge`); tests `test_server_items.gd`, `test_tool_looks.gd`, `test_stations.gd`, `test_lumber_route.gd`, `test_logs_carry.gd`, `test_bloomery_bench.gd`, `test_blueprints.gd`, `test_structure_looks*.gd`, `test_whetstone.gd`; client `basic_look.gd`, `piece_look.gd`, `look_table.gd`; `tools/gen_looks.py` and the icon painters. Run `tools/items_check.py` on the authorized PC after the data change.
+15. **Tempered (s2.7 item 5, pending ChatGPT):** a per-instance flag set when a steel tool, weapon or armour piece is crafted at a Smithy with the Quenching Trough attached; it raises the item's maximum durability and slows sharpness loss; repair and sharpening read it but never set it. Same save and network path as item 16.
+16. **Enhancements:** per-instance save data (like wear and sharpness), no `items.json` rows; saves and network protocol change; enhanced items never stack with plain ones; slot writes refuse an occupied magical slot.
+17. **Related rows to update with each retirement or rename:** `weights.json`, `looks.json`, `showroom.json`, `design_names.json`, `descriptions_voice.json`, `encyclopedia.json`, `data/stations/forge_sizes.json`, `data/npcs/town_proposal.json` (names `stone_forge`); tests `test_server_items.gd`, `test_tool_looks.gd`, `test_stations.gd`, `test_lumber_route.gd`, `test_logs_carry.gd`, `test_bloomery_bench.gd`, `test_blueprints.gd`, `test_structure_looks*.gd`, `test_whetstone.gd`; client `basic_look.gd`, `piece_look.gd`, `look_table.gd`; `tools/gen_looks.py` and the icon painters. Run `tools/items_check.py` on the authorized PC after the data change.
 
 ## 5. Numbers still to set (tuning, not design)
 
-Durability, repair materials and amounts; sharpening rate and maximum-durability cost per sharpening; grindstone speed; hand-saw time ("much slower" than the sawmill's 6 s per log); kiln burn time and self-consumption rate (Dave: not to be invented now); smelting fuel per ingot on the new 100-per-log charcoal scale (today 1 to 3 `fuel` per smelt); Bellows speed and fuel saving; Quenching Trough upgrade-gated improved metal recipes and quality (no universal bonus); Thread recipe (plant fibre per Thread) and Thread per sewing recipe; all new blueprint costs (Smelter, Smithy, Blast Furnace, Bellows, Quenching Trough, Master Smithy, Grindstone, Leatherworking Table, Tailor's Table, Loom, Chopping Block station) and the Sawmill's cost without a Saw blade; the Stone - Forge cost (live cost stays unless changed; it must stay iron-free); station storage capacities and sourcing radii; hammer sourcing ranges; 3 m log weight; Charcoal stack size (today 20, so one 600-charcoal kiln batch would fill all 30 pack slots) and value (today 3, against a Log's 4 for 100 Charcoal); the campfire charcoal rate of recipe 341 on the same scale; Thread and Hardwood board stack sizes. The item-data and systems roles propose these in the implementation PR, checked by `items_check.py` economy and first-hour tests, and they are tuned in playtest.
+Durability, repair materials and amounts; sharpening rate and maximum-durability cost per sharpening; grindstone speed; hand-saw time ("much slower" than the sawmill's 6 s per log); kiln burn time and self-consumption rate (Dave: not to be invented now); smelting fuel per ingot on the new 100-per-log charcoal scale (today 1 to 3 `fuel` per smelt); Bellows speed and fuel saving; Quenching Trough upgrade-gated improved metal recipes and quality (no universal bonus); Thread recipe (plant fibre per Thread) and Thread per sewing recipe; all new blueprint costs (Smelter, Smithy, Blast Furnace, Bellows, Quenching Trough, Master Smithy, Grindstone, Leatherworking Table, Tailor's Table, Loom, Chopping Block station) and the Sawmill's cost without a Saw blade; the Stone - Forge cost (live cost stays unless changed; it must stay iron-free); station storage capacities and sourcing radii; hammer sourcing ranges; 3 m log weight; Charcoal stack size (today 20, so one 600-charcoal kiln batch would fill all 30 pack slots) and value (today 3, against a Log's 4 for 100 Charcoal); the campfire charcoal rate of recipe 341 on the same scale; Thread and Hardwood board stack sizes; board and fitting counts, storage slots and comfort points for each furniture grade (s3.5; order fixed, numbers open); Tempered bonuses. The item-data and systems roles propose these in the implementation PR, checked by `items_check.py` economy and first-hour tests, and they are tuned in playtest.
 
 ## 6. Audit matrix (second pass, 12 Nov 2026)
 
@@ -245,7 +297,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 | 6 | Rows using items this catalog retires | recipes 26, 152, 157, 187, 227, 230, 367; blueprints 11, 164; anvil level on 12 recipes | Each handled | PASS | s3, s4 items 5, 6, 10. |
 | 7 | NPC, shop, loot, goal references to retiring items | `data/npcs/*.json`, `drops.json`, `carcass.json`, `nests.json`, `camp_goals.json`, `starter_goals.json`, `hints.json`, `item_uses.json`, `open_recipes.json` | None left orphaned | ISSUE, fixed in doc | Only Hob's 16 species-lumber buy rules; remapped in s4 item 3. `town_proposal.json` names `stone_forge`, which stays. |
 | 8 | PR #1036 isolation | PR #1036 diff | Only the Woodworking table rows | PASS | Three one-line `retired` flags (item 243, blueprint 12, structure `woodworking_table`); no live recipe uses station `woodworking_table`; this PR changes no data. |
-| 9 | Previously approved items and new [D4] graded furniture | s2 decisions vs items/blueprints | Every item has a row or named ADD | RE-AUDIT REQUIRED | 18 earlier ADDs covered tools and stations only. Enumerate any new Crude/Rustic/Fine/Ornate furniture item and blueprint rows without reusing IDs. |
+| 9 | Approved items present | s2 decisions vs `items.json` | Every approved item has a row or an ADD | PASS | 24 ADD rows with name and function: 18 tools and stations (s3.1 to 3.4) and 6 furniture grades (s3.5). Smithy, Blast Furnace, Master Smithy, Loom, Chopping Block and 8 furniture grades reuse existing rows. |
 | 10 | Existing structure rows reused | `structures.json` states 7, 18, 20, 21 | Reuse, not duplicate | ISSUE, fixed in doc | The Chopping Block already has state 7 and the forges states 18, 20, 21; s7 item 5 now reuses them instead of adding new states. |
 | 11 | Family ladders and tiers | `tier`, `material`, `tool_class` of all tools | Ascending by material in each family | ISSUE, fixed in doc | Bronze and Iron - Pickaxe both t2, Iron - Spade t3 and others; renumber (s4 item 13). Blueprint `hammer: 3` keeps meaning "any metal hammer" (decision 73). |
 | 12 | Tool-specific `keeps` | recipes 20, 278, 344, 339, 340, 159 | A better tool of the class works | ISSUE, fixed in doc | Switch to groups `knife`, `axe`, `saw` (s4 item 4). Group `keeps` already work (recipe 384 keeps `knife`). |
@@ -256,8 +308,8 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 | 17 | Before the first Leather strap | hide → Scraper (179) → Tanning rack (logs, twine; tannin bark, water) → Leather (234) → strap (278) | Strap available before bronze | PASS if the Leatherworking Table stays pre-metal and Plank-free | s4 item 10 and s8 risk. |
 | 18 | Plank timing | 70 blueprints, recipes 22, 150, 203, 350, 400, Log workbench (L2) | Planks start at the first Iron Hand Saw (approved) | PASS (by design) | The Bucket, Wooden - Shield, Wooden longbow (workbench L2) and plank buildings come after first iron. |
 | 19 | Grain before sickles | `crops.json` 5 crops `tool_to_harvest: sickle`; `server_items.gd` farming | Harvest possible without a sickle | PASS | Half yield until the Bronze - Sickle (Stone - Sickle retired). Accepted consequence of the ladder. |
-| 20 | Material separation [D4 replaces Draft 5] | `item_table.gd`, `recipe_table.gd`, `server_items.gd`, groups/blueprints | Hardwood Boards and Planks must never substitute either way | NEW RULE / NEEDS CODE TEST | Previous PASS/PARTLY SUPPORTED substitution analysis is superseded. Ensure new Hardwood Board is NOT added as a member of the `lumber` ingredient group. Check recipe, blueprint, refund and NPC/workstation source paths do not treat them interchangeably. |
-| 21 | Existing fastener/item group and furniture quality planning | `nails`, `hinges`, `wooden_pin`, furniture blueprints | Higher furniture grades use more Hardwood Boards and better fitted nails/hinges | RE-AUDIT REQUIRED | Existing bronze and iron nails/hinges support realistic grade costs; avoid auto-spending higher-grade metal fittings on low-grade recipes. Plan distinct grade outputs and validate inputs. |
+| 20 | Plank and Hardwood Board separation [D4] | `item_table.gd load_groups`, `inventory.gd remove_fill`, `recipe_table.gd`, `server_items.gd` sites, refunds | Never substitute either way | PASS (desk) | Two plain ids with no shared group are matched exactly on every path (recipes, blueprint sites, repairs, refunds, containers). No code is needed; the Draft 6 permission and refund work is withdrawn. Hardwood board must not be added to any group. |
+| 21 | Fittings by grade | groups `nails` (Nails, Bronze nails), `hinges` (Hinges, Bronze hinges); Wooden pin 233 (recipe 150); Iron band 859 (recipe 404) | Low grades never use up better fittings; Ornate truly needs iron | PASS | `spend_order` spends bronze before iron, so Rustic and Fine take Bronze nails first. Ornate requires Iron band, a plain id, so bronze cannot meet it. `nails` is both the iron item and the group key, so no recipe can demand iron-only nails; Iron band covers that need. |
 | 22 | Charcoal as fire fuel | `cooking.json fuel`, `fuel_class`; group `firewood`; recipe 341 | Charcoal burns in fires; no loop | ISSUE, fixed in doc | Draft 5 put Charcoal in the `firewood` group, which fires do not read and which would let recipe 341 make Charcoal from Charcoal. Now `cooking.json` (s4 item 9). |
 | 23 | Group display names after renames | `firewood` → "Hard firewood", `wooden_block` → "Hardwood block" | A group cost reads as a group | ISSUE, needs code | Group label in recipe and site lists (s4 item 14). |
 | 24 | Inventory overflow | stacks: Charcoal 20, Plank 20, Log 5, species logs 1; pack 30 slots; `recipe_table.gd craft` | Outputs fit; crafting refuses rather than drops | ISSUE (tuning) | `craft` rolls back when the result does not fit. A 600-charcoal kiln batch is 30 stacks: stations keep output (2.5), and the Charcoal stack size and value are retuned (s5). |
@@ -265,34 +317,50 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 | 26 | Durability and repair data | `repair`, `repair_station`, `edge` on 54 tools; `drops.json tool_wear` | Matches 2.2 | ISSUE, fixed in doc | Iron - Saw repair is 1 Twine and 1 Stick and has no `repair_station`; stone tools carry `edge`; covered by s4 items 1, 2 and s7 item 2. |
 | 27 | Duplicate function and names | ADD names vs live names; two-state objects; renames | No clash | PASS | Five shared names are allowed two-state objects. The 234 rename leaves Large wooden block 540 unrenamed; recommended later rename "Large hardwood block" for a parallel name (needs ChatGPT's nod, as the freeze bars discretionary renames). |
 | 28 | Food, medicine, coins | kinds food 116, medicine 5, coin 4 | Untouched by decisions | PASS | No changes. |
+| 29 | Comfort stacking with graded furniture | `comfort.json rules.each_kind_once`, `one_bed_counts`, `kinds` | Four chair grades do not add up | ISSUE, needs code (small) | Best-one-per-class rule for seats and tables (s4 item 12). |
+| 30 | Wood by biome | `flora.json` trees × `log_*` rows × `wood_species.json` class | Every forested biome can make Planks; boards where hardwood grows | PASS / RISK | Planks wherever trees grow (softwood or plain Log). No Hardwood Boards at all in alpine meadow, beach, dry scrub, hot desert, mangrove, marsh, savanna or volcanic waste; few in heath and grassland. Finished furniture there needs travel or trade (s8). Shelter, storage (Crate, Wicker) and beds stay possible. |
+| 31 | Planks in fittings | recipe 150 (1 Plank → 20 Wooden pins) | Crude furniture reachable | PASS | Crude furniture needs a few Planks (for pins) plus boards; both come from the same saw. |
+| 32 | Quenching Trough progression | Smelter → Stone - Forge / Smithy → Bellows, Quenching Trough add-ons → Blast Furnace steel | No recipe or quality softlock | PASS (desk) | No plain recipe needs the trough. Tempered applies only to steel, so the trough becomes useful once the Blast Furnace runs. The add-on is a buildable attached structure (`addon_of` the Smithy), not a station. |
+| 33 | Early storage ladder | Wicker - Chest 12, Hide - Sack 6, Basket 6, Storage jar 4, Crate 10, Rustic - Chest 20, Ornate - Chest 30 slots | Storage grows with progress | PASS / NOTE | The Crate (10 slots, Planks and nails) holds less than the Wicker - Chest (12, sticks). Unchanged; noted only. |
+| 34 | Name rule for grades | decision 71 (a tier word only where several versions exist); four-word check | "Grade - Object" fits | PASS | The grade word replaces the material word, as in "Stone - Axe". No clash with live names; "Fine board" 227 is retired. |
+| 35 | Draft 6 claims | s6 rows 20, 21 and the Draft 6 readiness line | Withdrawn where [D4] changes them | DONE | Substitution analysis and its code list withdrawn; the durability-only Quenching Trough effect withdrawn. |
 
 ## 7. JSON change list (none made; all wait for Dave's approval of this catalog)
 
 1. **Retire:** items 45, 238, 298, 353, 795, 827 and the 16 species `lumber_*` and `beam_*` rows; recipes 26, 152, 187, 227, 230, 367; blueprints 162, 164; structures `clay_bloomery` (state 200) and `iron_anvil` (state 204). Woodworking table rows: PR #1036.
 2. **Durability:** stone, wooden and primitive tools and weapons (6, 11, 222, 244, 297, 19, 221, 247, 293, 7, 313, 295) and the Bone - Needle 49 lose `repair`; stone tools lose `edge`. Metal tools: `repair_station` per crafting station, `edge` on sharpening-eligible metal tools. `drops.json`: replace `tool_wear.repair_restores` and `tool_wear.hone`.
-3. **Wood:** recipes 16 and 159 to 6 Planks; separate Hardwood Board item/saw routes; `hand_saw_balance`; renames of 234, 26, 236; recipe 157 to Smithy without Saw blade; sawmill blueprint 11 without blade; **NO Plank↔Hardwood Board substitution**; finished furniture uses Hardwood Boards, fewer in Crude/Rustic and more plus better nails/hinges in Fine/Ornate; upgrade appropriate existing furniture blueprints (27, 42, 43, 48, 93, 94, 96, 97, 98, 169, plus audit); retain rough Crate 168 as a Plank utility object; enumerate new grade variants separately; `wood_species.json` default class and retired_to mapping, `log` group, Hob's trade rules, 3 m logs/weights.
+3. **Wood:** recipes 16 and 159 to 6 Planks; Hardwood board item and its sawmill and hand-saw recipes (in no group); `hand_saw_balance`; renames of 234, 26, 236; recipe 157 to the Smithy with no Saw blade; blueprint 11 without the Saw blade; `wood_species.json` default class, `retired_to` and `log` group; Hob's buy rules; `log_length_m` 3.0 with weights.
 4. **Charcoal:** kiln recipe 364 to logs → 100 Charcoal each, batch; Charcoal in `cooking.json fuel` and `fuel_class` (not the `firewood` group); Charcoal stack size and value rescaled (s5).
 5. **Stations:** new independent production stations: Smelter, Grindstone, Leatherworking Table, Tailor's Table, Loom; Chopping Block reuses structure state 7 and gains its station identity. **Bellows and Quenching Trough are Smithy add-on item/blueprint/structure entries, not independent crafting stations.** Rename and re-cost Smithy #90, Blast Furnace #93, Master Smithy #95; preserve their existing structure states; station inventories on actual production stations.
 6. **Tools:** add the 10 ladder tools with recipes; groups `axe`, `saw`, extended `knife`; recipes 20, 278, 344, 339, 340, 159 to the groups; tier renumbering.
 7. **Recipes:** station moves (s4 item 11); anvil level dropped from the 12 steel and Iron band recipes; chisel off recipe 368.
 8. **Textiles:** Thread item and hand recipe; Twine → Thread in recipes 23, 39–42, 173, 194–196, 237, 238, 241, 388.
 9. **Enhancements:** per-instance slot data and the eligibility in 2.9 (code and save format, no item rows).
+10. **Furniture (s3.5):** 14 blueprint cost changes and 8 renames; 6 new item, blueprint and structure rows; `comfort.json` grade kinds and the best-one rule; `slots` per chest grade; looks.
+11. **Tempered:** per-instance flag (s4 item 15), pending ChatGPT.
 
-## 8. Dave's corrections and next audit
+## 8. For ChatGPT, risks and readiness
 
-**[D4] supersedes ChatGPT's earlier Draft 5 assumptions; no question remains to put back to Dave on these subjects.**
+**Draft 6's "audit clean, ready" statement is superseded** by [D4] and this fresh audit (s6 rows 9, 20, 21, 29–35). Dave confirmed [D4] in project chat on 12 Nov 01:09Z.
 
-- **Quenching Trough:** attached upgrade to the Smithy, never a standalone workstation. Makes better metal goods/tempered recipes possible when attached. The old universal one-time initial max-durability bonus proposal is withdrawn. Distinguish Smithy upgrade capability, Master Smithy +1/+2 physical craftsmanship, and permanent magical enchantments.
-- **Wood:** absolutely no substitution between Planks and Hardwood Boards. Basic finished wooden furniture uses *fewer Hardwood Boards*, Fine and Ornate furniture progressively *more Hardwood Boards and better nails/fittings*. This replaces the idea that basic furniture always uses ordinary Planks.
-- **Furniture grades:** Crude, Rustic, Fine (Nice), Ornate (Fancy) are the proposed in-game labels for Dave's requested quality ladder. Apply where meaningful to furniture, distinct from the item-instance craftsmanship/enchantment slots. List item rows, recipes/blueprints, models, costs, trade and utility; do not automatically multiply every piece fourfold.
-- **Early survival:** Rough Crate may use Planks because it is packing/storage rather than finished furniture; Wicker - Chest remains stick/twine. Basic finished furniture must be reachable once hardwood boards can be produced. No new saw, extra board-sizing steps or substitution introduced.
+**For ChatGPT to confirm** (design drafted from Dave's rulings; no Dave preference needed):
+1. **Tempered goods (s2.7 item 5).** Dave wants the Quenching Trough to let the Smithy make better metal goods. Drafted: steel tools, weapons and armour made with the trough come out Tempered. This is per instance (higher maximum durability, slower sharpness loss) and needs no new item rows. *Alternative:* separate tempered item rows for each steel item (about 15 more rows).
+2. **Furniture families (s3.5).** Drafted: four grades for chests, chairs and tables, two for benches, single objects elsewhere. That means 6 new rows and 8 existing rows renamed to grade names. *Alternative:* four grades for every family (about 25 more rows).
 
-**Readiness: NOT ready for Dave's final approval yet.** The earlier Draft 6 audit and its claim of readiness are historical and superseded on these points. Next Claude task is to reconcile all furniture-family variants, existing fasteners and Smithy upgrade-gated outputs in the catalog, trace dependencies, update Appendix A and the audited counts, then conduct another independent contradiction/softlock audit. Identify explicit planned ADD rows and avoid inventing runtime behavior. Documentation only. No game JSON, code, main-branch changes or PR merge until Dave approves the completed catalog.
+**Remaining risks** (implementation or later design, not blockers):
+- **Hardwood-free biomes (s6 row 30):** finished furniture there depends on travel, or on traders selling Hardwood Boards. No shop does today; Hob only buys them. A trader stock rule is a later trade decision.
+- **Comfort stacking:** graded furniture needs the small best-one rule (s6 row 29).
+- **Code still needed:**
+  - Per-instance data (sharpness, current maximum durability, Tempered, enhancement slots) needs new pack, save and network fields.
+  - Station storage, kiln batches and sharpening (s4).
+- **Early routes:** the Leatherworking Table must stay pre-metal and Plank-free. The first-hour and first-saw routes need a Godot walkthrough on the authorized PC (s6 rows 15–17).
+- **Baseline:** compared against `dev` at `7f8aabf4`; recheck the latest integration branch before implementation.
 
+**Readiness.** No blocker found. Once ChatGPT confirms the two drafted points (or changes them), the catalog is ready for Dave's final approval. **Do not merge or implement until Dave explicitly approves the finished master catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
-Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 53, KEEP 520, RETIRE 23, RETIRED 253, UPDATE 40.
+Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 53, KEEP 506, RETIRE 23, RETIRED 253, UPDATE 54.
 `RETIRED` = already retired before this document (kept only for its number). `Made at` is the station of the first live recipe that gives the item (`hand` = no station; L = station level); blank = not crafted (gathered, dropped, built from a blueprint, or a group placeholder). Purpose is the live tooltip description. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
 
 ### A.tool (54 rows)
@@ -793,8 +861,8 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | # | id | Name | Tier | Made at | Status | Purpose / note |
 |---|---|---|---|---|---|---|
 | 21 | `lean_to` | Lean-to |  |  | KEEP | A ridge pole on two forks, with a roof of leaned sticks and boughs down to the ground. Crawl in under it. |
-| 23 | `chest` | Wicker - Chest | wicker |  | KEEP | A woven chest for storing things. |
-| 29 | `plank_chest` | Wooden - Chest | planks |  | KEEP | A plank chest for storing more things. |
+| 23 | `chest` | Wicker - Chest | wicker |  | KEEP | **[D4]: stick-and-twine starter (s3.5).** A woven chest for storing things. |
+| 29 | `plank_chest` | Wooden - Chest | planks |  | UPDATE | **DECIDED [D4]: becomes Rustic - Chest, Hardwood Boards (s3.5).** A plank chest for storing more things. |
 | 54 | `remains` | Remains |  |  | KEEP | A fallen traveller and the pack they carried. |
 | 74 | `workbench` | Wooden - Workbench |  |  | KEEP | A camp bench. It counts as a workbench: stand near it to make the things that need one. |
 | 82 | `tool_rack` | Tool rack |  |  | KEEP | A tool rack. Beside a camp bench it raises the bench a level. |
@@ -839,14 +907,14 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 481 | `brick_roof` | Superior - Roof |  |  | KEEP | A tiled brick roof. |
 | 502 | `log_seat` | Seat |  |  | KEEP | A log seat. Sit on it by the fire. |
 | 503 | `stool` | Stool |  |  | KEEP | A lashed stool. Sit on it. |
-| 504 | `bench` | Wooden - Bench |  |  | KEEP | A plank bench that seats two or three. |
-| 505 | `chair` | Wooden - Chair |  |  | KEEP | A chair with a back. Sit and rest. |
-| 506 | `table` | Wooden - Table |  |  | KEEP | A plank table on trestles. |
+| 504 | `bench` | Wooden - Bench |  |  | UPDATE | **DECIDED [D4]: becomes Crude - Bench (s3.5).** A plank bench that seats two or three. |
+| 505 | `chair` | Wooden - Chair |  |  | UPDATE | **DECIDED [D4]: becomes Rustic - Chair (s3.5).** A chair with a back. Sit and rest. |
+| 506 | `table` | Wooden - Table |  |  | UPDATE | **DECIDED [D4]: becomes Rustic - Table (s3.5).** A plank table on trestles. |
 | 507 | `hide_rug` | Hide - Rug |  |  | KEEP | A pelt on the floor. |
 | 508 | `wool_rug` | Wool - Rug |  |  | FUTURE | A striped woven rug. |
 | 509 | `straw_bed` | Straw - Bed |  |  | KEEP | A bed with a heaped straw tick. |
 | 510 | `feather_bed` | Feather - Bed |  |  | KEEP | A bed with a feather tick and a blanket. |
-| 511 | `canopy_bed` | Canopy bed |  |  | KEEP | A canopy bed with curtains. |
+| 511 | `canopy_bed` | Canopy bed |  |  | UPDATE | **DECIDED [D4]: Hardwood Boards; the Ornate bed (s3.5).** A canopy bed with curtains. |
 | 512 | `wall_torch` | Wall torch |  |  | KEEP | A torch on the wall. It lights when fuelled. |
 | 513 | `chandelier` | Chandelier |  |  | KEEP | A hanging hoop of candles. It lights when fuelled. |
 | 514 | `fireplace` | Fireplace |  |  | KEEP | A brick hearth with a chimney. It lights when fuelled. |
@@ -892,13 +960,13 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 631 | `log_table` | Log - Table |  |  | KEEP | A table with a hand-hewn log top. |
 | 633 | `stone_bench` | Stone - Bench |  |  | KEEP | A heavy stone slab on stone feet. Seats two or three. |
 | 635 | `stone_table` | Stone - Table |  |  | KEEP | A thick stone-footed table with a plank top. |
-| 637 | `iron_bench` | Iron - Bench |  |  | KEEP | A timber bench bound with iron. Seats two or three. |
-| 639 | `iron_chair` | Iron - Chair |  |  | KEEP | An iron-bound chair with a hide seat. |
-| 641 | `iron_table` | Iron - Table |  |  | KEEP | A plank table bound with iron. |
+| 637 | `iron_bench` | Iron - Bench |  |  | UPDATE | **DECIDED [D4]: becomes Fine - Bench (s3.5).** A timber bench bound with iron. Seats two or three. |
+| 639 | `iron_chair` | Iron - Chair |  |  | UPDATE | **DECIDED [D4]: becomes Fine - Chair (s3.5).** An iron-bound chair with a hide seat. |
+| 641 | `iron_table` | Iron - Table |  |  | UPDATE | **DECIDED [D4]: becomes Fine - Table (s3.5).** A plank table bound with iron. |
 | 643 | `stone_workbench` | Stone - Workbench |  |  | KEEP | A stone-topped workbench, the biggest of the three. Takes the tool rack and vice. |
-| 645 | `wooden_shelf` | Shelf |  |  | KEEP | Plank shelves to set against a wall. Holds 8 stacks. |
-| 647 | `wooden_cupboard` | Cupboard |  |  | KEEP | A tall plank cupboard with doors. Holds 16 stacks. |
-| 649 | `wooden_barrel` | Barrel |  |  | KEEP | A hooped plank barrel. Holds 8 stacks. |
+| 645 | `wooden_shelf` | Shelf |  |  | UPDATE | **DECIDED [D4]: Hardwood Boards (s3.5).** Plank shelves to set against a wall. Holds 8 stacks. |
+| 647 | `wooden_cupboard` | Cupboard |  |  | UPDATE | **DECIDED [D4]: Hardwood Boards (s3.5).** A tall plank cupboard with doors. Holds 16 stacks. |
+| 649 | `wooden_barrel` | Barrel |  |  | UPDATE | **DECIDED [D4]: Hardwood Boards (s3.5).** A hooped plank barrel. Holds 8 stacks. |
 | 651 | `log_stairs` | Rustic - Stairs |  |  | KEEP | A flight of hewn log steps up to the next ceiling. |
 | 653 | `stone_stairs` | Sturdy - Stairs |  |  | KEEP | A flight of mortared stone steps up to the next ceiling. |
 | 655 | `brick_stairs` | Superior - Stairs |  |  | KEEP | A flight of brick steps up to the next ceiling. |
@@ -958,8 +1026,8 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 781 | `storage_jar` | Storage jar |  |  | KEEP | A tall lidded clay jar for grain, oil or water. Small, but it keeps damp and mice out. |
 | 783 | `hide_sack` | Hide - Sack |  |  | KEEP | A hide sack tied at the neck. A first store for a camp before there are planks for a chest. |
 | 785 | `wicker_basket` | Basket |  |  | KEEP | A woven basket of sticks and twine. A first store for a camp. |
-| 787 | `weapon_rack` | Weapon rack |  |  | KEEP | A plank rack against a wall for spears, bows and blades. |
-| 789 | `armour_stand` | Armour stand |  |  | KEEP | A plank figure to hang a set of armour and clothes on. |
+| 787 | `weapon_rack` | Weapon rack |  |  | UPDATE | **DECIDED [D4]: Hardwood Boards (s3.5).** A plank rack against a wall for spears, bows and blades. |
+| 789 | `armour_stand` | Armour stand |  |  | UPDATE | **DECIDED [D4]: Hardwood Boards (s3.5).** A plank figure to hang a set of armour and clothes on. |
 | 791 | `sign` | Sign |  |  | KEEP | A plank board on a stick to mark a camp or a path. |
 | 793 | `tusk_mount` | Tusk mount |  |  | KEEP | A pair of boar tusks on a plank. Hang it on a wall for comfort. |
 | 795 | `clay_bloomery` | Clay bloomery |  |  | RETIRE | **APPROVED: no Clay Bloomery (s2.7).** A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge. |
@@ -977,8 +1045,8 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 845 | `spinning_wheel` | Spinning wheel |  |  | FUTURE | **DECIDED: later, faster Thread (s2.8).** A treadle wheel that spins wool and flax into thread. |
 | 846 | `loom` | Loom |  |  | UPDATE | **APPROVED: weaving station, goes live (s3.4).** A wooden frame loom for weaving thread into cloth. |
 | 848 | `log_shelf` | Log - Shelf |  |  | KEEP | Split logs lashed between two log uprights. A first shelf to set against a wall. |
-| 850 | `wooden_crate` | Crate |  |  | KEEP | A braced plank crate with a nailed lid. Holds 10 stacks. |
-| 852 | `iron_chest` | Iron - Chest |  |  | KEEP | A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest. |
+| 850 | `wooden_crate` | Crate |  |  | KEEP | **[D4]: rough packing box, stays on Planks (s3.5).** A braced plank crate with a nailed lid. Holds 10 stacks. |
+| 852 | `iron_chest` | Iron - Chest |  |  | UPDATE | **DECIDED [D4]: becomes Ornate - Chest, Hardwood Boards, Iron bands (s3.5).** A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest. |
 | 861 | `mixer` | Mixer |  |  | KEEP | A stone trough with a cranked wooden paddle. Mixes lime powder, sand, stone and water into concrete. |
 | 863 | `engineered_foundation` | Engineered - Foundation |  |  | KEEP | A poured concrete slab on a stone footing, four metres square. Walls and ceilings snap onto it. |
 | 865 | `engineered_wall` | Engineered - Wall |  |  | KEEP | A poured concrete wall, two metres wide. |
