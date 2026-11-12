@@ -13239,7 +13239,7 @@ func _lights_tick(spent: float) -> void:
 
 # --- Comfort and the Rested buff (docs/COMFORT_DESIGN.md, data/items/comfort.json; Sal's design, Tyler 31 Oct 2026) ---
 # comfort_at(peer): 0 when not sheltered; else 1 for the shelter plus the points of every DIFFERENT comfort kind within radius_m (9 m) and height_m (3 m) of the player, each kind
-# once, only the best bed, fires/torches/chandeliers only while lit, clamped to max_level (20). A placed structure counts by its structures.json `comfort` id (or its own kind
+# once, only the best bed and the best grade of each graded family (a kind with a "grade" and "family": chair, table, bench; master s3.5), fires/torches/chandeliers only while lit, clamped to max_level (20). A placed structure counts by its structures.json `comfort` id (or its own kind
 # when comfort.json has a kind of that name: rough_bed, workbench, chest ...); lit fires count as `campfire`, a clay hearth as lit when a lit fire burns within 3 m.
 # Rested: earned by sleeping or lying on a good bed at comfort 2 or more (sitting on a seat for 30 s is not built yet); lasts comfort_buff_real_minutes (45) REAL minutes; the tier
 # (health regeneration, exhaustion, hunger and thirst, action speed, skill gain, cold) is the highest whose min_level is reached when earned; a rest at an equal or higher level
@@ -13320,6 +13320,7 @@ func comfort_at(peer: int, force: bool = false) -> Dictionary:
 
 	var level: int = int(cfg.get("shelter", {}).get("points", 1))
 	var best_bed: int = 0
+	var best_graded: Dictionary = {}   # family -> [kind id, points]: four chair grades never stack (comfort.json rules.best_grade_counts)
 	var items: Array = []
 
 	for kind_id in found:
@@ -13330,8 +13331,17 @@ func comfort_at(peer: int, force: bool = false) -> Dictionary:
 			best_bed = maxi(best_bed, points)
 			continue
 
+		if kind.has("grade"):
+			if points > int(best_graded.get(str(kind["family"]), ["", 0])[1]):
+				best_graded[str(kind["family"])] = [kind_id, points]
+			continue
+
 		level += points
 		items.append([kind_id, points, bool(kind.get("needs_lit", false))])
+
+	for family in best_graded:
+		level += int(best_graded[family][1])
+		items.append([best_graded[family][0], best_graded[family][1], false])
 
 	level += best_bed
 
@@ -13357,18 +13367,22 @@ func comfort_tip(peer: int) -> String:
 		lines.append("Comfort %d of %d" % [int(data["level"]), int(cfg.get("max_level", 20))])
 		lines.append("+%d  Shelter" % int(cfg.get("shelter", {}).get("points", 1)))
 		var have: Dictionary = {}
+		var graded_have: Dictionary = {}   # graded families that already count (a better grade adds only the difference)
 
 		for row in data["items"]:
 			var id: String = str(row[0])
 			have[id] = true
 			lines.append("+%d  %s" % [int(row[1]), _comfort_name(id)])
 
+			if _comfort_kind(id).has("grade"):
+				graded_have[str(_comfort_kind(id)["family"])] = true
+
 		var missing: Array = []
 
 		for kind in cfg.get("kinds", []):
 			var id: String = str(kind["id"])
 
-			if have.has(id) or (str(kind.get("class", "")) == "bed" and have.has("bed")) or not (str(kind.get("status", "")) in ["live", "placeable"]):
+			if have.has(id) or (str(kind.get("class", "")) == "bed" and have.has("bed")) or (kind.has("grade") and graded_have.has(str(kind["family"]))) or not (str(kind.get("status", "")) in ["live", "placeable"]):
 				continue
 
 			missing.append([int(kind["points"]), id, bool(kind.get("needs_lit", false))])

@@ -15,6 +15,7 @@
 	"rules": {
 		"each_kind_once": true,
 		"one_bed_counts": "only the best bed within the radius counts (you sleep in one)",
+		"best_grade_counts": "graded furniture (a kind with a grade: crude, rustic, fine, ornate; master s3.5) counts once per family (chair, table, bench, board chest), only the best grade within the radius, as the bed does, so grades never stack but a bench and a chair both count; kinds with no grade count by kind",
 		"lit_only": "fires, torches and chandeliers count only while lit; a laid, unlit or burnt-out fire gives 0",
 		"same_floor": "items within height_m above or below the player's feet"
 	},
@@ -71,6 +72,8 @@
 			"id": "bench",
 			"class": "seat",
 			"points": 1,
+			"grade": "crude",
+			"family": "bench",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "bench_kit"
@@ -79,6 +82,8 @@
 			"id": "chair",
 			"class": "seat",
 			"points": 2,
+			"grade": "rustic",
+			"family": "chair",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "chair_kit"
@@ -87,9 +92,81 @@
 			"id": "table",
 			"class": "table",
 			"points": 2,
+			"grade": "rustic",
+			"family": "table",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "table_kit"
+		},
+		{
+			"id": "crude_chair",
+			"class": "seat",
+			"points": 1,
+			"grade": "crude",
+			"family": "chair",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "crude_chair (blueprint 188)"
+		},
+		{
+			"id": "fine_chair",
+			"class": "seat",
+			"points": 3,
+			"grade": "fine",
+			"family": "chair",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "iron_chair (Fine - Chair, blueprint 93)"
+		},
+		{
+			"id": "ornate_chair",
+			"class": "seat",
+			"points": 4,
+			"grade": "ornate",
+			"family": "chair",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "ornate_chair (blueprint 189)"
+		},
+		{
+			"id": "fine_bench",
+			"class": "seat",
+			"points": 3,
+			"grade": "fine",
+			"family": "bench",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "iron_bench (Fine - Bench, blueprint 92)"
+		},
+		{
+			"id": "crude_table",
+			"class": "table",
+			"points": 1,
+			"grade": "crude",
+			"family": "table",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "crude_table (blueprint 190)"
+		},
+		{
+			"id": "fine_table",
+			"class": "table",
+			"points": 3,
+			"grade": "fine",
+			"family": "table",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "iron_table (Fine - Table, blueprint 94)"
+		},
+		{
+			"id": "ornate_table",
+			"class": "table",
+			"points": 4,
+			"grade": "ornate",
+			"family": "table",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "ornate_table (blueprint 191)"
 		},
 		{
 			"id": "workbench",
@@ -167,9 +244,41 @@
 			"id": "plank_chest",
 			"class": "storage",
 			"points": 1,
+			"grade": "rustic",
+			"family": "chest",
 			"needs_lit": false,
 			"status": "live",
 			"source": "plank_chest (live)"
+		},
+		{
+			"id": "crude_chest",
+			"class": "storage",
+			"points": 1,
+			"grade": "crude",
+			"family": "chest",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "crude_chest (blueprint 186)"
+		},
+		{
+			"id": "fine_chest",
+			"class": "storage",
+			"points": 1,
+			"grade": "fine",
+			"family": "chest",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "fine_chest (blueprint 187)"
+		},
+		{
+			"id": "ornate_chest",
+			"class": "storage",
+			"points": 1,
+			"grade": "ornate",
+			"family": "chest",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "iron_chest (Ornate - Chest, blueprint 169)"
 		},
 		{
 			"id": "thatch_doorway",
