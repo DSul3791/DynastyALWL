@@ -268,7 +268,7 @@
 			"value": 20,
 			"retired": true
 		},
-		"chopping_block": {"number": 25, "name": "Chopping block", "description": "A log set on end. Split wooden blocks on it, or chop logs from your storage nearby into firewood.", "kind": "placeable", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "slots": 8},
+		"chopping_block": {"number": 25, "name": "Chopping block", "description": "A log set on end. Split wooden blocks on it, or chop logs from your storage nearby into firewood.", "kind": "placeable", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "slots": 10},
 		"driftwood": {
 			"number": 30,
 			"name": "Driftwood",
@@ -278,7 +278,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"firewood": {"number": 26, "name": "Hard firewood", "description": "Split hardwood. Burns long and steady, twice as long as soft firewood.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 4},
+		"firewood": {"number": 26, "name": "Hard firewood", "description": "Split hardwood. Burns long and steady, twice as long as soft firewood.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
@@ -2773,7 +2773,7 @@
 			"sell_lot": 12
 		},
 		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
-		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 3, "sell_lot": 12},
+		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
 		"wooden_block_soft": {
 			"number": 237,
 			"name": "Softwood block",
@@ -5643,7 +5643,7 @@
 			"look_alikes": [],
 			"value": 6
 		},
-			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 100, "look_alikes": [], "value": 0.3},
+			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 100, "look_alikes": [], "value": 0.15},
 			"wool_cloth": {
 				"number": 548,
 				"name": "Wool cloth",
@@ -8012,7 +8012,7 @@
 				"look_alikes": [],
 				"value": 152
 			},
-			"kiln": {"number": 771, "name": "Kiln", "description": "A domed brick kiln. Fires bricks and lime, and burns up to six logs to charcoal, a hundred from each.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 188.", "slots": 10},
+			"kiln": {"number": 771, "name": "Kiln", "description": "A domed brick kiln. Fires bricks and lime, and burns up to six logs to charcoal, a hundred from each.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 188.", "slots": 14},
 			"tanning_rack_kit": {
 				"number": 772,
 				"retired": true,

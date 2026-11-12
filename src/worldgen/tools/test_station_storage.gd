@@ -246,6 +246,7 @@ func _init() -> void:
 	var guest_ingots: int = box(smelter).count_of(ingot)
 	craft(2, "hand_saw", 1, 20)
 	check(box(smelter).count_of(ingot) == guest_ingots and pack(2, saw) == 0, "a stranger's craft never draws on someone's station store")
+	items._last_queue_act.clear()
 	act(2, Net.ACT_CRAFT_CANCEL, 0)
 	act(2, Net.ACT_CHEST_OPEN, chest)
 	check(int(items._chest_viewer.get(2, -1)) != chest, "a stranger cannot open the owner's locked chest")
@@ -261,16 +262,23 @@ func _init() -> void:
 	var kdef: Dictionary = def_of(kiln)
 	var per_log: int = int(kdef.get("per_log", 100))
 	var batch: int = int(kdef.get("batch_logs", 6))
-	var log_n: int = n("log")
+	var log_n: int = n("log_oak")   # 3 m species logs (one a slot, carried on the shoulder), and one plain Log
+	var plain: int = n("log")
 	act(1, Net.ACT_CHEST_OPEN, kiln)
 
-	for i in batch + 1:   # one at a time: logs are heavy
+	for i in batch - 1:   # one at a time: a species log goes on the shoulder
 		items.give(1, log_n, 1)
 		act(1, Net.ACT_CHEST_PUT, slot_of(1, log_n), kiln, 1)
 
-	check(in_count(kiln, log_n) == batch and pack(1, log_n) == 1, "the Kiln takes %d logs and refuses the next" % batch)
+	items.give(1, plain, 2)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, plain), kiln, 2)
+	check(in_count(kiln, log_n) == batch - 1 and in_count(kiln, plain) == 1 and pack(1, plain) == 1, "the Kiln takes %d Oak logs and a Log, %d in all, and refuses the next" % [batch - 1, batch])
+	items.give(1, log_n, 1)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, log_n), kiln, 1)
+	check(in_count(kiln, log_n) == batch - 1 and pack(1, log_n) == 1, "a 7th (Oak) log is refused too")
 	act(1, Net.ACT_BULK, ItemsScript.BULK_STACK_NEARBY, 0)
-	check(in_count(kiln, log_n) == batch and pack(1, log_n) == 1, "Stack to nearby does not push a log past the Kiln's %d either" % batch)
+	check(in_count(kiln, plain) == 1 and pack(1, plain) == 1, "Stack to nearby does not push a Log past the Kiln's %d either" % batch)
+	clear_pack(1)
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("stick")) if slot_of(1, n("stick")) >= 0 else 0, kiln, 1)
 	check(box(kiln).count_of(n("stick")) == 0, "the Kiln takes logs only")
 	act(1, Net.ACT_CHEST_CLOSE, 0)
@@ -278,11 +286,13 @@ func _init() -> void:
 	check(bool(items._items[kiln]["struct"].get("lit", false)), "E lights the Kiln")
 	var per_s: float = float(kdef.get("log_s", 300.0)) / float(per_log)
 	burn(kiln, per_s * 50.0)
-	check(out_count(kiln, charcoal) == 50 and in_count(kiln, log_n) == batch - 1, "gradual: after half a log's burn 50 Charcoal are out and the first log is in the burn")
+	check(out_count(kiln, charcoal) == 50 and (in_count(kiln, log_n) + in_count(kiln, plain)) == batch - 1, "gradual: after half a log's burn 50 Charcoal are out and the first log is in the burn")
 	act(1, Net.ACT_USE_STRUCT, kiln)
 	check(not bool(items._items[kiln]["struct"].get("lit", false)), "E puts it out")
 	burn(kiln, per_s * 30.0)
-	check(out_count(kiln, charcoal) == 50 and in_count(kiln, log_n) == batch - 1 and int(items._items[kiln]["struct"]["kiln"]["left"]) == per_log - 50, "put out it keeps everything: 50 Charcoal, %d logs and the half-burnt one" % (batch - 1))
+	check(out_count(kiln, charcoal) == 50 and (in_count(kiln, log_n) + in_count(kiln, plain)) == batch - 1 and int(items._items[kiln]["struct"]["kiln"]["left"]) == per_log - 50, "put out it keeps everything: 50 Charcoal, %d logs and the half-burnt one" % (batch - 1))
+	act(1, Net.ACT_PICKUP, kiln)
+	check(items._items.has(kiln) and said.back() == "Empty it first.", "a Kiln holding logs is not taken down")
 
 	items.save()
 	items._finish_writer()
@@ -299,7 +309,7 @@ func _init() -> void:
 	act(1, Net.ACT_USE_STRUCT, kiln)
 	check(bool(items._items[kiln]["struct"].get("lit", false)), "relit")
 	burn(kiln, per_s * float(per_log * batch - 50) + 0.5)
-	check(out_count(kiln, charcoal) == per_log * batch and in_count(kiln, log_n) == 0 and int(items._items[kiln]["struct"]["kiln"]["left"]) == 0, "relit it goes on: %d logs made %d Charcoal" % [batch, per_log * batch])
+	check(out_count(kiln, charcoal) == per_log * batch and (in_count(kiln, log_n) + in_count(kiln, plain)) == 0 and int(items._items[kiln]["struct"]["kiln"]["left"]) == 0, "relit it goes on: %d logs made %d Charcoal" % [batch, per_log * batch])
 	var self_s: float = float(kdef.get("self_burn_s", 150.0))
 	burn(kiln, self_s * 2.0)
 	check(out_count(kiln, charcoal) == per_log * batch - 2 and bool(items._items[kiln]["struct"].get("lit", false)), "done and still lit it slowly burns its own charcoal (2 in %d s)" % int(self_s * 2.0))
@@ -317,10 +327,35 @@ func _init() -> void:
 	burn(kiln, self_s * 2.0 + 1.0)
 	check(not bool(items._items[kiln]["struct"].get("lit", false)) and box(kiln).count_of(charcoal) == 0, "with no charcoal left to burn it goes out")
 
+	# A full output pauses the Kiln (it stays lit, the log in the burn waits); room lets it go on. A part-burnt log alone stops a take-down.
+	var first_k: int = int(kdef["slots"])
+
+	for i in range(first_k, first_k + int(kdef["out_slots"])):
+		box(kiln).numbers[i] = stone
+		box(kiln).counts[i] = items.table.stack_of(stone)
+
+	box(kiln).add(plain, 1)
+	act(1, Net.ACT_USE_STRUCT, kiln)
+	burn(kiln, per_s * 10.0)
+	check(out_count(kiln, charcoal) == 0 and int(items._items[kiln]["struct"]["kiln"]["left"]) == per_log and bool(items._items[kiln]["struct"].get("lit", false)), "with its output full the lit Kiln makes nothing: its log waits in the burn")
+	box(kiln).clear_slot(first_k)
+	burn(kiln, per_s * 3.0)
+	check(out_count(kiln, charcoal) == 4, "room in the output: it goes on (the piece that waited, then 3 more)")
+	act(1, Net.ACT_USE_STRUCT, kiln)
+
+	for i in box(kiln).SLOTS:
+		box(kiln).clear_slot(i)
+
+	act(1, Net.ACT_PICKUP, kiln)
+	check(items._items.has(kiln) and int(items._items[kiln]["struct"]["kiln"]["left"]) > 0 and said.back() == "Empty it first.", "an empty Kiln with a part-burnt log is not taken down (the log would be lost)")
+	act(1, Net.ACT_PICKUP, smelter)
+	check(items._items.has(smelter) and said.back() == "Empty it first.", "a Smelter with things in its store is not taken down")
+
 	# --- 6. The Chopping block ---
 	var block: int = place("chopping_block@6,-2,0", 1)
 	var rack: int = place("log_rack@11,-1,0", 1)
-	box(rack).add(n("log_spruce"), 3)
+	box(rack).add(n("log_spruce"), 2)
+	box(rack).add(plain, 1)
 	clear_pack(1)
 
 	for id in items._items.keys():   # nothing loose lying about: the logs must come from the rack
@@ -332,10 +367,23 @@ func _init() -> void:
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("lumber")), block, 5)
 	check(box(block).count_of(n("lumber")) == 0 and pack(1, n("lumber")) == 5, "the Chopping block refuses Planks")
 	act(1, Net.ACT_CHEST_CLOSE, 0)
-	var made: int = int(items.recipes.recipe(recipe_number("chopping_soft_firewood"))["gives"][1])
+	var cb: Dictionary = items._structures["chopping_block"]
+	var by_plain: int = int(cb["blocks_per_log"]) * int(cb["firewood_per_block"])
+	var by_species: int = int(cb["blocks_per_shoulder_log"]) * int(cb["firewood_per_large_block"])
 	craft(1, "chopping_soft_firewood", 2, 40)
-	check(out_count(block, n("firewood_soft")) == made * 2 and box(rack).count_of(n("log_spruce")) == 1, "two Soft firewood crafts: %d in the block's output, two logs from the Log rack" % (made * 2))
+	check(out_count(block, n("firewood_soft")) == by_plain + by_species and box(rack).count_of(n("log_spruce")) == 1 and box(rack).count_of(plain) == 0, "two Soft firewood crafts from the Log rack, the Log first (lowest first): %d + %d, what the hand chop gives" % [by_plain, by_species])
 	check(pack(1, n("lumber")) == 5 and pack(1, n("firewood_soft")) == 0, "no Planks used, nothing in the pack")
+	items._last_queue_act.clear()
+	act(1, Net.ACT_CRAFT_QUEUE, recipe_number("chopping_soft_firewood"), 0, 1)
+	check(box(rack).count_of(n("log_spruce")) == 0, "a third craft queued takes the last Spruce log")
+	items._last_queue_act.clear()
+	act(1, Net.ACT_CRAFT_CANCEL, 0)
+	check(pack(1, n("log_spruce")) == 1 and out_count(block, n("firewood_soft")) == by_plain + by_species, "cancelled before it is chopped, the Spruce log comes back whole")
+	clear_pack(1)
+	hold_tool(1, "stone_axe")
+	items.give(1, n("log_oak"), 1)
+	craft(1, "chopping_hard_firewood", 1, 20)
+	check(out_count(block, n("firewood")) == by_species and pack(1, n("log_oak")) == 0, "an Oak log gives %d Hard firewood" % by_species)
 	var needs: Array = items.recipes.recipe(recipe_number("chopping_hard_firewood"))["needs"]
 	check(needs.size() == 1 and not items.table.group_members(int(needs[0][0])).has(n("lumber")) and not items.table.group_members(int(needs[0][0])).has(n("hardwood_board")), "Hard firewood takes a hardwood log, never Planks or Hardwood boards")
 
@@ -370,6 +418,71 @@ func _init() -> void:
 		last = items._hammer_x(1)
 
 	check(rising, "the sourcing range rises with every hammer tier (steel x%.2f)" % last)
+	clear_pack(1)
+	hold_tool(1, "steel_hammer")
+	var jars_before: int = count_kind("storage_jar")
+	items.report_position(1, Vector3(5.0, 10.0, -6.0))   # the far chest is 21 m away: beyond a wooden hammer's 12 m, within a steel one's 30 m
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(jar_row["number"]), 0, 0, Vector3(5.0, 10.0, -8.0))
+	var far_left: int = 0
+
+	for need in jar_row.get("cost", []):
+		far_left += box(far_chest).count_of(n(str(need[0])))
+
+	check(count_kind("storage_jar") == jars_before + 1 and far_left == 0, "with the steel hammer the Storage jar is built, paid from the chest 20 m away")
+
+	# Repairs draw only on the player's own containers (CraftStock.owner_ok, not kept out), never another player's open chest.
+	items.report_position(1, HERE)
+	var own_chest: int = place("chest@6,1.5,0", 1)
+	var other_chest: int = place("chest@4,1.5,0", 2)
+	var kept_out: int = place("chest@5,-1.5,0", 1)
+	items._items[kept_out]["struct"]["keep_out"] = true
+	var repair_ids: Array = []
+
+	for row in items._boxes_near(1):
+		repair_ids.append(int(row[0]))
+
+	check(repair_ids.has(own_chest) and not repair_ids.has(other_chest) and not repair_ids.has(kept_out), "repair sourcing: the own chest, not a stranger's open chest or a kept-out one")
+
+	# --- 10. A queued chain through a station: Bronze ingots from ores at the player's own Smelter (the parts wait in its output) ---
+	items.report_position(1, HERE)
+	clear_pack(1)
+	var copper: int = n("copper_ingot")
+	var tin: int = n("tin_ingot")
+	var bronze: int = n("bronze_ingot")
+
+	for i in range(first_out, first_out + int(def_of(smelter)["out_slots"])):
+		box(smelter).clear_slot(i)
+
+	for i in int(def_of(smelter)["slots"]):
+		box(smelter).clear_slot(i)
+
+	var bronze_row: Dictionary = items.recipes.recipe(recipe_number("bronze_ingot"))
+	var copper_need: int = 0
+	var tin_need: int = 0
+
+	for need in bronze_row["needs"]:
+		if int(need[0]) == copper:
+			copper_need = int(need[1])
+		elif int(need[0]) == tin:
+			tin_need = int(need[1])
+
+	var ore_per_copper: int = 0
+	var ore_per_tin: int = 0
+
+	for need in items.recipes.recipe(recipe_number("smelt_copper"))["needs"]:
+		if int(need[0]) == n("copper_ore"):
+			ore_per_copper = int(need[1])
+
+	for need in items.recipes.recipe(recipe_number("smelt_tin"))["needs"]:
+		if int(need[0]) == n("tin_ore"):
+			ore_per_tin = int(need[1])
+
+	items.give(1, n("copper_ore"), ore_per_copper * copper_need)
+	items.give(1, n("tin_ore"), ore_per_tin * tin_need)
+	items.give(1, charcoal, 100)
+	craft(1, "bronze_ingot", 1, 200)
+	check(out_count(smelter, bronze) == int(bronze_row["gives"][1]) and box(smelter).count_of(copper) == 0 and box(smelter).count_of(tin) == 0 and items.craft_queue_of(1).is_empty(), "queued from ores, the copper and tin smelts wait in the Smelter's output and the Bronze ingot craft takes them there: %d Bronze ingots" % int(bronze_row["gives"][1]))
+	check(pack(1, n("copper_ore")) == 0 and pack(1, n("tin_ore")) == 0 and pack(1, bronze) == 0, "every ore used, the Bronze kept in the Smelter")
 
 	# --- 9. The Stone - Forge 88 (master s2.7 item 4, Phase 2b, verified here): an iron-free cost, bronze work only, no smelting ---
 	var forge_cost_ok: bool = false
@@ -398,6 +511,16 @@ func _init() -> void:
 
 	print("test_station_storage: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
+
+
+func count_kind(kind: String) -> int:
+	var c: int = 0
+
+	for id in items._items:
+		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == kind and not items._items[id]["struct"].has("site"):
+			c += 1
+
+	return c
 
 
 func id_of_kind(kind: String) -> int:

@@ -2371,7 +2371,7 @@
 			"description": "Split hardwood. Burns long and steady, twice as long as soft firewood.",
 			"how_to_get": [
 				"Split a hardwood block on a chopping block: 2 hard firewood",
-				"Chopped at a chopping block: 1 Hardwood log (keep any axe) gives 6",
+				"Chopped at a chopping block: 1 Hardwood log (keep any axe) gives 12, as by hand",
 				"From chopping a stump",
 				"From a felled tree",
 				"Picked from fallen log",
@@ -4358,7 +4358,7 @@
 			"description": "Split pine, spruce or fir. It catches fast and burns out quick.",
 			"how_to_get": [
 				"Split a softwood block on a chopping block: 2 soft firewood",
-				"Chopped at a chopping block: 1 Softwood log (keep any axe) gives 6"
+				"Chopped at a chopping block: 1 Softwood log (keep any axe) gives 12, a plain Log 6, as by hand"
 			],
 			"used_for": [
 				"Fast, short fuel for a fire (pine, spruce, fir).",
@@ -9567,7 +9567,7 @@
 		"kiln_kit": {
 			"name": "Kiln",
 			"kind": "placeable",
-			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"description": "A domed brick kiln. Fires bricks and lime, and burns up to six logs to charcoal, a hundred from each.",
 			"how_to_get": [
 				"Build with a hammer (press R): 30 Brick, 8 Clay, 4 Clay mortar"
 			],
@@ -9577,7 +9577,7 @@
 		"kiln": {
 			"name": "Kiln",
 			"kind": "structure",
-			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"description": "A domed brick kiln. Fires bricks and lime, and burns up to six logs to charcoal, a hundred from each.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true

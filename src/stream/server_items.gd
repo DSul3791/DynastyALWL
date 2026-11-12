@@ -8374,9 +8374,11 @@ func _spend_sorted(rows: Array, number: int, member_of: Callable) -> Array:
 	return out
 
 
-# [[item id, inventory], ...] of containers (chests) within reach of the player (times reach_x: a better hammer repairs from farther).
+# [[item id, inventory], ...] of the player's own containers and station stores (not kept out: the crafting rule, CraftStock.owner_ok) within reach
+# (times reach_x: a better hammer repairs from farther). Never another player's container, open or not.
 func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 	var out: Array = []
+	var key: String = str(_peer_key.get(peer, ""))
 
 	for sid in _items:
 		var s: Dictionary = _items[sid]
@@ -8384,7 +8386,7 @@ func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
 			continue
 
-		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= (Interact.server_reach_m() + 2.0) * reach_x and _may_access(peer, s):
+		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= (Interact.server_reach_m() + 2.0) * reach_x and _may_access(peer, s) and CraftStock.owner_ok(str(s["struct"].get("owner", "")), key) and not bool(s["struct"].get("keep_out", false)):
 			out.append([sid, _chests[int(s["struct"]["uid"])]])
 
 	return out
@@ -8904,6 +8906,12 @@ func _out_slots(kind: String) -> int:
 	return int(_structures.get(kind, {}).get("out_slots", 0))
 
 
+# The slots a take may reach in a container: its usable slots, and a station's output slots after them.
+func _store_span(id: int, box) -> int:
+	var out: int = _out_slots(str(_items.get(id, {}).get("struct", {}).get("kind", ""))) if id >= 0 else 0
+	return mini(box.usable + out, box.SLOTS)
+
+
 func _is_station_store(it: Dictionary) -> bool:
 	return it.has("struct") and _out_slots(str(it["struct"]["kind"])) > 0 and _is_storage(it)
 
@@ -9105,7 +9113,8 @@ func _load_kilns() -> void:
 
 		if typeof(row) == TYPE_ARRAY and (row as Array).size() >= 3:
 			it["struct"]["lit"] = int(row[0]) == 1
-			it["struct"]["kiln"] = {"left": maxi(int(row[1]), 0), "t": maxf(float(row[2]), 0.0)}
+			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(def.get("per_log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(def.get("log_s", 300.0)), float(def.get("self_burn_s", 150.0))))}
 
 
 # --- Serving platters (master s3.15 [D15]; catalog Phase 8) ---
@@ -16143,7 +16152,7 @@ func _view_open(peer: int, vid: int) -> void:
 	var totals: Dictionary = {}
 
 	for row in boxes:
-		for slot in row[1].usable:
+		for slot in _store_span(int(row[0]), row[1]):   # a station's output slots too
 			if int(row[1].numbers[slot]) != 0:
 				totals[int(row[1].numbers[slot])] = int(totals.get(int(row[1].numbers[slot]), 0)) + int(row[1].counts[slot])
 
@@ -16169,7 +16178,7 @@ func _view_take(peer: int, inv, vid: int, number: int, count: int) -> void:
 	for row in _view_boxes(peer, vid):
 		var took_here: bool = false
 
-		for slot in row[1].usable:
+		for slot in _store_span(int(row[0]), row[1]):   # a station's output slots too
 			if left <= 0:
 				break
 
@@ -16373,9 +16382,7 @@ func _bulk(peer: int, inv, kind: int, sort_key: int) -> void:
 func _bulk_take_all(peer: int, inv, id: int, box) -> int:
 	var moved: int = 0
 
-	var out: int = _out_slots(str(_items.get(id, {}).get("struct", {}).get("kind", ""))) if id >= 0 else 0   # a station's output slots too
-
-	for slot in mini(box.usable + out, box.SLOTS):
+	for slot in _store_span(id, box):   # a station's output slots too
 		if box.numbers[slot] == 0 or is_shoulder_item(box.numbers[slot]):
 			continue
 
@@ -16800,16 +16807,17 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 func _start_deferred(peer: int, head: Array) -> bool:
 	var inv = inventory_of(peer)
 	var times: int = int(head[1])
+	var stock: Dictionary = _stock_of(peer)   # parts made at a station wait in its output (master s2.5): the craft stock reaches them there
 
 	for need in head[3]:
-		if inv == null or not inv.has_fill(need[0], int(need[1]) * times):
+		if inv == null or _stock_have(inv, int(need[0]), stock) < int(need[1]) * times:
 			_cancel_craft(peer, 0)
 			_say(peer, "%s was cancelled: the parts it needed are gone" % str(recipes.recipe(int(head[0])).get("name", "That")))
 			return false
 
 	for need in head[3]:
 		var held: Array = []
-		inv.remove_fill(need[0], int(need[1]) * times, held)
+		_stock_take(inv, int(need[0]), int(need[1]) * times, stock, held)
 		var merged: bool = false
 
 		for have in head[2]:
@@ -16961,9 +16969,10 @@ func _craft_tick(spent: float) -> void:
 		var made_n: int = int(recipe["gives"][0])
 		var made_inst: Dictionary = SmithingRules.made_inst(table.entry(table.id_of(made_n)), variant)
 		var made_age: int = _made_age(made_n, head)
+		var made_count: int = _chop_yield(head, false) if bool(recipe.get("chop", false)) else int(recipe["gives"][1])
 		var store_id: int = -1 if float(recipe.get("ready_age", 0.0)) > 0.0 else _craft_store(peer, recipe, free_entry)
 
-		if store_id >= 0 and _out_room(_items[store_id], made_n, made_inst, made_age) < int(recipe["gives"][1]):
+		if store_id >= 0 and _out_room(_items[store_id], made_n, made_inst, made_age) < made_count:
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
 				_say(peer, "Your %s waits: the %s is full. Take something out of it." % [str(recipe.get("name", "craft")), table.sentence_name(int(_items[store_id]["number"]))])
@@ -17004,7 +17013,7 @@ func _craft_tick(spent: float) -> void:
 			if sealed:
 				_give_batch(peer, int(recipe["gives"][0]), int(recipe["gives"][1]) * times)
 			elif store_id >= 0:
-				var spill: int = _out_add(store_id, made_n, int(recipe["gives"][1]), made_age, made_inst)
+				var spill: int = _out_add(store_id, made_n, _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count, made_age, made_inst)
 
 				if spill > 0:   # not reached (the room was checked this tick); kept so a disagreement with Inventory.add never loses the product
 					give(peer, made_n, spill, made_inst, made_age)
@@ -17012,7 +17021,7 @@ func _craft_tick(spent: float) -> void:
 				if int(head[1]) - times <= 0:
 					_say(peer, "%s done: it is in the %s." % [str(recipe.get("name", "Your craft")), table.sentence_name(int(_items[store_id]["number"]))])
 			else:
-				give(peer, made_n, int(recipe["gives"][1]), made_inst, made_age)
+				give(peer, made_n, _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count, made_inst, made_age)
 
 			_gain_source = SRC_PICKUP
 			_goal_made(peer, int(recipe["gives"][0]))
@@ -17028,6 +17037,28 @@ func _craft_tick(spent: float) -> void:
 
 		_dirty = true
 		_sync_craft_queue(peer)
+
+
+# A Chopping block craft (recipes.json "chop", master s2.4) yields what chopping that log by hand yields (structures.json chopping_block): a large
+# log on the shoulder (every species log) 3 large blocks of 4 firewood each, a plain Log 3 blocks of 2. The log is the first unit the entry still
+# holds (crafts finish in the order the units were taken); `use` drops it from the entry, so a cancel refunds only the logs not yet chopped.
+# An entry with no recorded units (an admin craft) yields the recipe's count.
+func _chop_yield(entry: Array, use: bool) -> int:
+	var cfg: Dictionary = _structures.get("chopping_block", {})
+	var rows: Array = entry[2][0][2] if not (entry[2] as Array).is_empty() and (entry[2][0] as Array).size() > 2 else []
+
+	if rows.is_empty():
+		return int(recipes.recipe(int(entry[0])).get("gives", [0, 0])[1])
+
+	var big: bool = is_shoulder_item(int(rows[0][0]))
+	var made: int = int(cfg.get("blocks_per_shoulder_log", 3)) * int(cfg.get("firewood_per_large_block", 4)) if big else int(cfg.get("blocks_per_log", 3)) * int(cfg.get("firewood_per_block", 2))
+
+	if use and rows[0].size() > 3 and int(rows[0][3]) > 1:
+		rows[0][3] = int(rows[0][3]) - 1
+	elif use:
+		rows.remove_at(0)
+
+	return made
 
 
 const SEAL_MIN_FRESH := 0.5   # master s3.14: sealing refuses inputs below half freshness
