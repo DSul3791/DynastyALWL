@@ -505,6 +505,7 @@ func _ready() -> void:
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
+	items.restore_flora = func() -> void: flora.restore_all()
 	items.floor_below = _floor_below
 	items.water_flow_at = _water_flow_at
 	items.water_wheel = _water_wheel
@@ -615,8 +616,8 @@ func _ready() -> void:
 	animals.thieves.take_food = func(id): return items.take_loose(id)
 	animals.goblins.stealable = func(centre, r): return items.stealable_near(centre, r)   # goblins steal one small unlit thing at a time and pile it in their den
 	animals.goblins.take_one = func(id): return items.take_one(id)
-	animals.goblins.hoard_drop = func(number, count, pos, life_s): return items.drop_in_world(number, count, pos, 0, life_s)
-	animals.goblins.gift_drop = func(number, count, pos, by): return items.drop_in_world(number, count, pos, 0, 0.0, NAN, NAN, by)
+	animals.goblins.hoard_drop = func(number, count, pos, life_s): return items.drop_world_made(number, count, pos, life_s)
+	animals.goblins.gift_drop = func(number, count, pos, by): return items.drop_world_made(number, count, pos, 0.0, by)
 	animals.goblins.item_number = func(id): return items.table.number_of(id)
 	animals.goblins.peer_key = func(peer): return items.key_of(peer)
 	animals.goblins.trust.game_seconds = func(): return game_clock.seconds
@@ -632,7 +633,7 @@ func _ready() -> void:
 	animals.wolves.store_dir = store_dir
 	animals.wolves.load_dens()   # wolf_dens.json: killed packs' dens resting, and their orphans (wolf_packs_and_pups_design.md)
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
-	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
+	animals.drop_loot = func(number, count, pos): items.drop_world_made(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
 	@warning_ignore("confusable_local_declaration")

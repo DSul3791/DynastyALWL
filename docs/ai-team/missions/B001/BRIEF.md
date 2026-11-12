@@ -30,3 +30,9 @@ An Admin -> Reset World button usable in play. With explicit confirmation and th
 
 ## Acceptance
 Unit test with restart (`test_reset_world.gd`), real terrain server reset and restart on a throwaway store (`reset_world_store.gd` + `--dev-reset-world`), game start smoke on an isolated user folder, related tests from `tools/tests_for_diff.py`, independent review on the exact SHA. Results: `RESULTS.md`.
+
+## Revision 2 (Dave, 12 Nov 2026 20:09): "reset the world to what it was like before a character played in it"
+Dave: den piles and things the server put into the world must stay. Changes to the calls above:
+- Call 1 replaced: loose items the server lays (goblin den piles and gifts, a thief's dropped loot: `drop_world_made`) are marked `world` and kept; they are saved as the additive `world_items.json` key `world_rows` (indexes of those rows; an older file has none, so its piles count as player-made once). Everything else loose still goes.
+- Call 4 replaced: used-up natural content is restored. Felled trees stand again (trunk and stump rows go, `server_flora.restore_all` clears every flora removal and writes `flora_removed.json` at once), saplings go (there are none before play), scatter is taken up and laid out again from the seed with the picked marks cleared, and boulder, bog-iron, picked-plant, bare-bush, fruit, shore, nest, fish-stock and ore-patch counts start fresh.
+- Unchanged: characters, remains, the showroom, carcasses, admin NPCs and markers. Animals (populations, dens, goblin bands, goblin trust) are not part of the reset: they are creatures, not world items, and goblin trust is a character's relationship.

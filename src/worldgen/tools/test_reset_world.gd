@@ -3,8 +3,9 @@ extends SceneTree
 # Admin "Reset world" (BLOCKER-001, Dave 12 Nov 2026; docs/ai-team/missions/B001/BRIEF.md). After a drop, a dig and a fill, and
 # building (foundation, wall, door, floor, bed, workbench, a chest with things in it, a campfire, a tilled bed with a crop), far apart so most
 # of it is outside any player's reach, ACT_RESET_WORLD from an admin removes all of it, saves at once, and the terrain edit log is empty;
-# a restart (a fresh server over the same store) brings none of it back. Natural rows (scatter, a boulder), the picked-scatter marks,
-# saplings, a dead character's remains, and the character's pack, worn gear, vitals and skills stay. A non-admin is refused and changes nothing.
+# a restart (a fresh server over the same store) brings none of it back. The world goes back to before anyone played (Dave 12 Nov 20:09):
+# a felled trunk goes and the flora removals are cleared, picked scatter, a mined boulder, bog iron and picked plants come back, saplings go.
+# What the server put down (a den pile), a dead character's remains, and the character's pack, worn gear, vitals and skills stay. A non-admin is refused and changes nothing.
 #   godot --headless --path . --script res://src/worldgen/tools/test_reset_world.gd   (voxel build: GroundOps uses VoxelBuffer)
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -20,6 +21,7 @@ var failures: int = 0
 var said: Array = []
 var ops
 var terrain_resets: int = 0
+var flora_restores: int = 0
 
 
 func check(ok: bool, what: String) -> void:
@@ -46,6 +48,7 @@ func make_items(admin_peer: int):
 	items.reset_terrain_edits = func() -> void:   # what the server scene does first: the edit log is emptied (the ground reload is not under test)
 		terrain_resets += 1
 		ops.reset()
+	items.restore_flora = func() -> void: flora_restores += 1
 	items.setup(ItemTableScript.load_default(), DIR)
 	return items
 
@@ -56,7 +59,7 @@ func player_rows(items) -> int:
 	for id in items._items:
 		var it: Dictionary = items._items[id]
 
-		if not (it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("struct") and (bool(it["struct"].get("transient", false)) or str(it["struct"]["kind"]) == "remains"))):
+		if not (it.has("scatter") or it.has("tree") or it.has("world") or it.has("showroom") or (it.has("struct") and (bool(it["struct"].get("transient", false)) or str(it["struct"]["kind"]) == "remains"))):
 			n += 1
 
 	return n
@@ -65,6 +68,20 @@ func player_rows(items) -> int:
 func progress_kept(items) -> bool:
 	var row: Dictionary = items._characters.get(KEY, {})
 	return float((row.get("skills", {}) as Dictionary).get("digging", 0.0)) == 1234.0 and int(row.get("fitness", 0)) == 3 and (row.get("learned", {}) as Dictionary).has("127") and int(row.get("coins", 0)) == 55
+
+
+func world_piles(items) -> int:
+	return items._items.values().filter(func(it): return it.has("world")).size()
+
+
+func world_count(items) -> int:
+	var n: int = 0
+
+	for it in items._items.values():
+		if it.has("world"):
+			n += int(it["count"])
+
+	return n
 
 
 func count_kind(items, kind: String) -> int:
@@ -134,16 +151,28 @@ func _init() -> void:
 	check(items.kill(2, "test"), "player 2 dies")
 	check(count_kind(items, "remains") == 1, "player 2 left remains")
 
-	# Natural rows that must stay: a loose scatter stone, a boulder, a picked-scatter mark and a sapling.
+	# A den pile the server laid (kept), far away.
+	check(items.drop_world_made(stone, 3, Vector3(-1500.0, 10.0, 800.0), 604800.0), "the server lays a den pile")
+	check(items.drop_in_world(stone, 20, Vector3(-1500.2, 10.0, 800.0)), "a player's stones dropped on the den pile")
+	check(items.drop_in_world(stick, 2, Vector3(-1490.0, 10.0, 800.0)) and items.drop_world_made(stick, 1, Vector3(-1490.1, 10.0, 800.0)), "a server stick laid on a player's sticks")
+	check(world_piles(items) == 2, "server and player piles never merge (%d server piles)" % world_piles(items))
+	# Natural content players used up (restored): a laid scatter stone and boulder (laid out again from the seed), a picked-scatter mark,
+	# a mined boulder, bog iron, a picked plant, a bare bush, a felled trunk, a sapling.
 	items._items[900001] = {"number": stone, "count": 1, "pos": Vector3(60.0, 10.0, 0.0), "left": 1.0e9, "scatter": 4242}
 	items._items[900002] = {"number": 0, "count": 30, "pos": Vector3(70.0, 10.0, 0.0), "left": 1.0e9, "scatter": 4343, "boulder": {"size": 1}}
+	items._items[900003] = {"number": 0, "count": 1, "pos": Vector3(80.0, 10.0, 0.0), "left": 1.0e9, "tree": {"state": 2, "chunk": [1, 1]}}
+	items._cells_done[Vector2i(1, 0)] = true
 	items._taken[5151] = true
+	items._boulder_left[4343] = 12
+	items._bog_left["3,4"] = [10, 0.0]
+	items._picked["1,1,7"] = 100.0
+	items._stripped["1,1"] = {8: 1}
 	items._saplings.append({"slot": 0, "chunk": [1, 1], "species": 1, "pos": Vector3(90.0, 10.0, 90.0), "planted_at": 0.0})
 	items._dirty = true
 	items.save()
 	items._finish_writer()
 	var before: int = player_rows(items)
-	check(before == 12, "12 player rows before the reset (2 drops, 10 placed), got %d" % before)
+	check(before == 14, "14 player rows before the reset (4 drops, 10 placed), got %d" % before)
 	var stones_before: int = inv.count_of(stone)
 	var sticks_before: int = inv.count_of(stick)
 
@@ -160,8 +189,10 @@ func _init() -> void:
 	check(player_rows(items) == 0, "no dropped item or placed thing is left, near or far (left %d)" % player_rows(items))
 	check(not items._chests.has(chest_uid) and not items._chests.has(far_uid), "the chests' contents are gone with them")
 	check(items._crops.is_empty(), "the crop on the tilled bed is gone")
-	check(items._items.has(900001) and items._items.has(900002), "the natural scatter and boulder stay")
-	check(items._taken.has(5151) and items._saplings.size() == 1, "picked-scatter marks and saplings stay")
+	check(not items._items.has(900001) and not items._items.has(900002) and items._cells_done.is_empty(), "the scatter is taken up to be laid out again from the seed")
+	check(not items._items.has(900003) and flora_restores == 1, "the felled trunk goes and the felled trees stand again")
+	check(items._taken.is_empty() and items._boulder_left.is_empty() and items._bog_left.is_empty() and items._picked.is_empty() and items._stripped.is_empty() and items._saplings.is_empty(), "picked scatter, boulders, bog iron and plants are restored, saplings go")
+	check(world_piles(items) == 2 and world_count(items) == 4, "the server's den pile (3 stones) and stick stay, the player's stones and sticks on them go")
 	check(inv.count_of(stone) == stones_before and inv.count_of(stick) == sticks_before, "the pack is kept")
 	check(progress_kept(items) and is_equal_approx(float(items.vitals_of(1)["hunger"]), 42.0), "character row and vitals are kept")
 	check(count_kind(items, "remains") == 1, "the dead character's remains (pack and purse) are kept")
@@ -186,7 +217,8 @@ func _init() -> void:
 	var inv2 = again.inventory_of(1)
 	check(inv2.count_of(stone) == stones_before and inv2.count_of(stick) == sticks_before, "the pack is kept over the restart")
 	check(progress_kept(again), "skills, fitness, learned recipes and coins are kept over the restart")
-	check(again._taken.has(5151) and again._saplings.size() == 1, "picked-scatter marks and saplings are kept over the restart")
+	check(again._taken.is_empty() and again._boulder_left.is_empty() and again._bog_left.is_empty() and again._picked.is_empty() and again._saplings.is_empty(), "nothing used up comes back as used up after the restart")
+	check(world_piles(again) == 2 and world_count(again) == 4, "the server's piles are still the server's after the restart")
 
 	print("test_reset_world: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
