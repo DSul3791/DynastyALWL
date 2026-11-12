@@ -1,12 +1,12 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 8, FINAL CONSISTENCY AUDIT DONE (12 Nov 2026). READY FOR DAVE'S FINAL CATALOG APPROVAL; NOT APPROVED FOR IMPLEMENTATION.** All Dave rulings ([B], [D1]–[D5], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 8 — PREVIOUS RECONCILIATION SCOPE ONLY; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D5], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 8).** Existing rows: KEEP 506, UPDATE 54, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 24 (18 tools and stations, 6 furniture grades in s3.5). No number or id is reused.
+**Totals (Draft 8, previously reviewed scope ONLY; not final master catalog totals).** Existing rows: KEEP 506, UPDATE 54, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 24 (18 tools and stations, 6 furniture grades in s3.5). No number or id is reused.
 
 ## 1. Sources and labels
 
@@ -354,7 +354,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The catalog is ready for Dave's final approval. **Do not merge or implement until Dave explicitly approves it.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: weapons and ammunition; armour; clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. The user is currently reviewing WEAPONS first. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
