@@ -197,6 +197,24 @@ func _init() -> void:
 	inv.wear[slot] = inv.max_durability(slot)
 	items.action(1, Net.ACT_REPAIR, slot, 0, 0, Vector3.ZERO)
 	check(not items._sharpening.has(1), "a broken tool is not sharpened")
+
+	# Sharpening that lowers the maximum to the wear breaks the tool, as a use would: a metal tool stays broken, a disposable one is gone.
+	dull(slot, 1.0)
+	inv.wear[slot] = inv.max_durability(slot) - 1
+	said.clear()
+	items.action(1, Net.ACT_REPAIR, slot, 0, 0, Vector3.ZERO)
+	run(float(c["grindstone"]["full_s"]) + 1.0)
+	check(inv.numbers[slot] == n(tool) and items._is_broken(inv, slot) and said.any(func(t): return str(t).begins_with("Your bronze axe broke. Repair it")), "a sharpening that takes the maximum below the wear breaks a metal tool, which stays (%s)" % str(said))
+	inv.clear_slot(slot)
+	var knife_row: Dictionary = items.table.entry("bronze_knife")
+	knife_row.erase("repair")   # stand-in: no live edge row is disposable (validate_items forbids it); the code still handles one
+	ks = inv.numbers.find(knife)   # the knife sharpened above, the only one in the pack
+	dull(ks, 1.0)
+	inv.wear[ks] = inv.max_durability(ks) - 1
+	said.clear()
+	items.action(1, Net.ACT_REPAIR, ks, 0, 0, Vector3.ZERO)
+	run(float(c["grindstone"]["full_s"]) + 1.0)
+	check(inv.count_of(knife) == 0 and said.has("Your bronze knife broke and is gone."), "and a disposable one is gone (%s)" % str(said))
 	print("whetstone tests: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

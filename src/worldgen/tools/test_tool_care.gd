@@ -331,6 +331,44 @@ func _init() -> void:
 
 	check(swept >= 25, "7. the sweep covered the ledger's Phase 2c tool rows (%d)" % swept)
 
+	# 8. Tempered covers every steel weapon and armour row of s3.6/s3.7 (their rows carry no material: temper.include), never ammunition,
+	# the Steel - Striker or the s3.10 barding.
+	for id in c["temper"]["include"]:
+		check(items.table.has_id(str(id)) and SmithingRules.temper_ok(str(id), items.table.entry(str(id)), 1), "8a. %s can be Tempered" % id)
+
+	check(SmithingRules.temper_ok("plate_cuirass", items.table.entry("plate_cuirass"), 1), "8b. the Steel - Cuirass (plate_cuirass) can be Tempered")
+
+	for id in ["steel_arrow", "steel_bolt", "steel_striker", "steel_plate_barding", "steel_ingot", "iron_sword"]:
+		check(not SmithingRules.temper_ok(id, items.table.entry(id), 1), "8c. %s is never Tempered" % id)
+
+	# 9. Cancelling a variant craft gives back exactly the scaled materials it took; walking away from the Master smithy makes it wait.
+	empty_pack()
+	clear_stations()
+	place("master_forge", HERE + Vector3(0.0, 0.0, 3.0))
+	var scaled: Array = SmithingRules.scaled_needs(r["needs"], plus2)
+	craft(pick_recipe, plus2, 1.0)
+	check(scaled.all(func(need): return inv.count_of(int(need[0])) == 0), "9a. a queued +2 took its scaled needs (%s)" % str(scaled))
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(scaled.all(func(need): return inv.count_of(int(need[0])) == int(need[1])), "9b. the cancel gives back exactly the scaled needs")
+	empty_pack()
+	clear_stations()
+	place("blacksmithy", HERE + Vector3(0.0, 0.0, -3.0))   # the plain Smithy stays: only the Master smithy goes
+	var master_at: int = items._next_id
+	place("master_forge", HERE + Vector3(0.0, 0.0, 3.0))
+	said.clear()
+	craft(pick_recipe, plus1, 2.0)
+	var master_row: Dictionary = items._items[master_at]
+	items._items.erase(master_at)
+	items._variant_seen.clear()   # the server looks again at most once a real second; the test's clock runs faster than that
+	items._station_said.clear()
+	run(craft_s * SmithingRules.time_mult(plus1) * 2.0)
+	check(slot_of(pick) < 0 and not items._craft_queues[key]["entries"].is_empty() and said.any(func(t): return str(t).contains("+1") and str(t).contains("waits")), "9c. with only a plain Smithy beside it the +1 craft waits (%s)" % str(said.slice(maxi(said.size() - 2, 0))))
+	items._items[master_at] = master_row
+	items._variant_seen.clear()
+	run(craft_s * SmithingRules.time_mult(plus1) * 1.5)
+	check(slot_of(pick) >= 0 and int(inv.inst_of(slot_of(pick)).get("craft", 0)) == 1, "9d. back beside it, the +1 pickaxe is made")
+
 	print("tool care: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

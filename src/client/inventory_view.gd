@@ -1604,6 +1604,9 @@ func _on_full(bytes: PackedByteArray) -> void:
 
 
 # Protocol 106: a count byte, 9 bytes per changed slot (slot, u32 number, u16 count, u16 wear), then the instance data of those slots (Inventory.inst_bytes).
+const DISPOSABLE_BREAK_WEAR := 10   # one heavy use: rock wear 5 (drops.json tool_wear) x dull_wear_mult 2 (smithing.json)
+
+
 func _on_slots(bytes: PackedByteArray) -> void:
 	var n: int = mini(bytes[0], floori(float(bytes.size() - 1) / 9.0)) if not bytes.is_empty() else 0
 	var insts: Dictionary = InventoryScript.inst_from_bytes(bytes, 1 + n * 9)
@@ -1616,6 +1619,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			var was_broken: bool = is_broken(slot)
 			var was_wear: int = inventory.wear[slot]
 			var was_number: int = inventory.numbers[slot]
+			var was_most: int = inventory.max_durability(slot)
 			inventory.numbers[slot] = bytes.decode_u32(at + 1)
 			inventory.counts[slot] = bytes.decode_u16(at + 5)
 			inventory.wear[slot] = bytes.decode_u16(at + 7)
@@ -1626,6 +1630,9 @@ func _on_slots(bytes: PackedByteArray) -> void:
 					tool_event.call("broke")
 				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
 					tool_event.call("repaired")
+			elif tool_event.is_valid() and was_number != 0 and inventory.numbers[slot] == 0 and SmithingRules.disposable(table.entry(table.id_of(was_number))) and was_wear + DISPOSABLE_BREAK_WEAR >= was_most:
+				# shortcut: a disposable tool that leaves its slot within one heavy use of its end is taken as broken (the server clears it at zero); dropping one that worn plays the break sound too, revisit if that is heard in play
+				tool_event.call("broke")
 
 	_queue_refresh()
 	_container_part.refresh()
@@ -3466,30 +3473,46 @@ func craft_variants(r: Dictionary) -> Array:
 	if station == "" or made_id == "":
 		return [0]
 
-	var level: int = int(r.get("station_level", 1))
-	var c: Dictionary = SmithingRules.cfg()
-	var master_station: String = str(c.get("craft", {}).get("station", "master_smithy"))
-	var smithy_station: String = str(c.get("temper", {}).get("station", "brick_forge"))
-	_structure_by_state(-1)   # loads the structure table
-	var addon_state: int = int(_structures_cfg.get(str(c.get("temper", {}).get("addon", "")), {}).get("state", -2))
+	_memo_frame()   # the card asks several times a refresh; the world walk runs once a frame per recipe, like station_near
+	var key: String = "variants|%d" % int(r.get("number", 0))
+
+	if not _near_memo.has(key):
+		var level: int = int(r.get("station_level", 1))
+		var c: Dictionary = SmithingRules.cfg()
+		# As the server: the nearest Master smithy and the nearest Smithy within reach (ServerItems.serving_station), each serving the recipe.
+		var master_id: int = _nearest_serving(str(c.get("craft", {}).get("station", "master_smithy")))
+		var smithy_id: int = _nearest_serving(str(c.get("temper", {}).get("station", "brick_forge")))
+		var master: bool = master_id >= 0 and _def_serves(_structure_by_state(int(_world[master_id]["state"])), station, level)
+		var trough: bool = false
+
+		if smithy_id >= 0 and _def_serves(_structure_by_state(int(_world[smithy_id]["state"])), station, level):
+			var addon_state: int = int(_structures_cfg.get(str(c.get("temper", {}).get("addon", "")), {}).get("state", -2))
+			var reach: float = float(_structure_by_state(int(_world[smithy_id]["state"])).get("addon_reach_m", 5.0))
+
+			for other in _world:
+				if int(_world[other]["state"]) == addon_state and _world[smithy_id]["pos"].distance_to(_world[other]["pos"]) <= reach:
+					trough = true
+
+		_near_memo[key] = SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)
+
+	return _near_memo[key]
+
+
+# The world id of the nearest placed structure within its reach that serves `station` (its own or "also"), or -1.
+func _nearest_serving(station: String) -> int:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
-	var master: bool = false
-	var trough: bool = false
+	var best: int = -1
+	var best_d: float = INF
 
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+		var d: float = here.distance_to(_world[id]["pos"])
 
-		if def.is_empty() or here.distance_to(_world[id]["pos"]) > float(def.get("reach_m", 3.0)) + 1.0 or not _def_serves(def, station, level):
-			continue
+		if not def.is_empty() and d <= float(def.get("reach_m", 3.0)) + 1.0 and d < best_d and _def_serves(def, station, 1):
+			best = int(id)
+			best_d = d
 
-		master = master or _def_serves(def, master_station, 1)
-
-		if not trough and _def_serves(def, smithy_station, 1):
-			for other in _world:
-				if int(_world[other]["state"]) == addon_state and _world[id]["pos"].distance_to(_world[other]["pos"]) <= float(def.get("addon_reach_m", 5.0)):
-					trough = true
-
-	return SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)
+	return best
 
 
 func _def_serves(def: Dictionary, station: String, level: int) -> bool:

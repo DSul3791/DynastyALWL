@@ -677,6 +677,7 @@ func peer_left(peer: int) -> void:
 	_motion.erase(peer)
 	_snow_memo.erase(peer)
 	_sharpening.erase(peer)   # a sharpening job is not saved: it stops on quit
+	_variant_seen.erase(peer)
 	_work_until.erase(peer)
 	_vitals_sent.erase(peer)
 	_strain.erase(peer)
@@ -5729,15 +5730,21 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	_dirty = true
 
 	if _is_broken(inv, slot):
-		var item_name: String = table.sentence_name(inv.numbers[slot])
-
-		if SmithingRules.disposable(entry):   # stone, wooden and primitive tools are gone at zero (master s2.2 rules 1-3)
-			inv.clear_slot(slot)
-			_say(peer, "Your %s broke and is gone." % item_name)
-		else:   # a metal tool stays in its slot, unusable, until it is repaired (rule 4)
-			_say(peer, "Your %s broke. %s" % [item_name, _repair_hint(entry)])
+		_tool_broke(peer, inv, slot, entry)
 
 	_send_changes(peer, inv, before)
+
+
+# A tool at its maximum: stone, wooden and primitive tools are gone (master s2.2 rules 1-3); a metal tool stays in its slot, unusable,
+# until it is repaired (rule 4). The caller sends the slot change.
+func _tool_broke(peer: int, inv, slot: int, entry: Dictionary) -> void:
+	var item_name: String = table.sentence_name(inv.numbers[slot])
+
+	if SmithingRules.disposable(entry):
+		inv.clear_slot(slot)
+		_say(peer, "Your %s broke and is gone." % item_name)
+	else:
+		_say(peer, "Your %s broke. %s" % [item_name, _repair_hint(entry)])
 
 
 # Repair (ACT_REPAIR, R on a slot). A dull edge tool that is not broken is sharpened (_start_sharpen); otherwise, or when sharpening cannot start
@@ -5926,6 +5933,10 @@ func _apply_sharpen(peer: int, inv, job: Dictionary) -> void:
 	inv.inst[slot] = InventoryScript.clean_inst(item_inst)
 	practice(peer, "tool_care")
 	_dirty = true
+
+	if _is_broken(inv, slot):   # the lower maximum reached its wear: it breaks as a use would break it
+		_tool_broke(peer, inv, slot, entry)
+
 	_send_changes(peer, inv, before)
 
 	if str(job["how"]) == "whetstone":
@@ -15183,6 +15194,22 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	_send_stock(peer)
 
 
+const VARIANT_CHECK_MS := 1000
+var _variant_seen: Dictionary = {}   # peer -> [ms, recipe number, variant, allowed]: the station scan for a running variant craft, at most once a second
+
+
+# Is the variant still allowed beside this player (craft_variants), worked out at most once a second per player for the craft queue.
+func _variant_here(peer: int, recipe: Dictionary, variant: int) -> bool:
+	var now: int = Time.get_ticks_msec()
+	var seen: Array = _variant_seen.get(peer, [])
+
+	if seen.is_empty() or now - int(seen[0]) >= VARIANT_CHECK_MS or int(seen[1]) != int(recipe.get("number", -1)) or int(seen[2]) != variant:
+		seen = [now, int(recipe.get("number", -1)), variant, craft_variants(peer, recipe).has(variant)]
+		_variant_seen[peer] = seen
+
+	return bool(seen[3])
+
+
 # A queue entry's variant: [recipe, count, needs, parts, chain, variant]; shorter entries are plain.
 func _variant_of(entry: Array) -> int:
 	return int(entry[5]) if entry.size() > 5 else 0
@@ -15438,7 +15465,7 @@ func _craft_tick(spent: float) -> void:
 		var variant: int = _variant_of(head)
 
 		# A Tempered or +1/+2 craft runs only beside the stations that allow it; walk away and it waits, as for a station.
-		if variant != 0 and not free_entry and not craft_variants(peer, recipe).has(variant):
+		if variant != 0 and not free_entry and not _variant_here(peer, recipe, variant):
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
 				_say(peer, "Your %s %s waits: go back to the smithy that makes it" % [SmithingRules.label(variant), str(recipe.get("name", "craft"))])

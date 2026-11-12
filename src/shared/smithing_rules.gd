@@ -106,10 +106,11 @@ static func craft_ok(entry: Dictionary, gives_count: int) -> bool:
 	return gives_count == 1 and bool(entry.get("unstackable", false)) and cfg().get("eligible_kinds", []).has(str(entry.get("kind", "")))
 
 
-# Tempered eligibility (s4 item 15): an eligible steel row, not the excluded ones (the Steel - Striker); ammunition stacks and is out already.
+# Tempered eligibility (s4 item 15): a steel tool (its material) or a steel weapon or armour row listed in temper.include (those rows carry no
+# material), not the excluded ones (the Steel - Striker); ammunition stacks and is out already.
 static func temper_ok(item_id: String, entry: Dictionary, gives_count: int) -> bool:
 	var t: Dictionary = cfg().get("temper", {})
-	var steel: bool = str(entry.get("material", "")) == str(t.get("material", "steel")) or item_id.begins_with(str(t.get("material", "steel")) + "_")
+	var steel: bool = str(entry.get("material", "")) == str(t.get("material", "steel")) or t.get("include", []).has(item_id)
 	return steel and craft_ok(entry, gives_count) and not t.get("exclude", []).has(item_id)
 
 

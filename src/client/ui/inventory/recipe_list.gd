@@ -367,7 +367,7 @@ func _refresh_detail() -> void:
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_detail.add_child(about)
 
-	for stat in _stats_of(entry):
+	for stat in _stats_of(entry, variant):
 		_detail.add_child(_stat_row(str(stat[0]), str(stat[1])))
 
 	_detail.add_child(_section("Needs"))
@@ -520,11 +520,12 @@ func used_in(number: int) -> Array:
 
 
 # The made item's stats for the card: what it does, how long it lasts and what mends it (from items.json).
-func _stats_of(entry: Dictionary) -> Array:
+# `variant`: the Make as choice; Lasts shows the maximum durability a Tempered or +1/+2 craft is made with (SmithingRules.made_inst).
+func _stats_of(entry: Dictionary, variant: int = 0) -> Array:
 	var stats: Array = []
 
 	if int(entry.get("durability", 0)) > 0:
-		stats.append(["Lasts", "%d uses" % int(entry["durability"])])
+		stats.append(["Lasts", "%d uses" % SmithingRules.max_of(entry, SmithingRules.made_inst(entry, variant))])
 
 	var mends: PackedStringArray = PackedStringArray()
 

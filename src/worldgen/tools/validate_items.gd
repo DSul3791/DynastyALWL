@@ -563,6 +563,20 @@ func _init() -> void:
 	if not structure_defs.has(String(smithing.get("temper", {}).get("addon", ""))):
 		fail("smithing.json temper.addon is not a structure")
 
+	# Tempered (s4 item 15): every steel weapon and armour row (a "Steel - " weapon or clothing row, unstackable) is listed in temper.include,
+	# since those rows carry no material; every listed id is an item.
+	var temper_include: Array = smithing.get("temper", {}).get("include", [])
+
+	for include_id in temper_include:
+		if not items_file.get("items", {}).has(String(include_id)):
+			fail("smithing.json temper.include names '%s', which is not an item" % include_id)
+
+	for id in items_file.get("items", {}):
+		var steel_row: Dictionary = items_file["items"][id]
+
+		if String(steel_row.get("name", "")).begins_with("Steel - ") and ["weapon", "clothing"].has(String(steel_row.get("kind", ""))) and bool(steel_row.get("unstackable", false)) and not bool(steel_row.get("retired", false)) and not temper_include.has(id) and String(steel_row.get("material", "")) != "steel":
+			fail("smithing.json temper.include lacks the steel weapon or armour row '%s' (s4 item 15)" % id)
+
 	if (smithing.get("craft", {}).get("materials", []) as Array).size() != 3 or (smithing.get("craft", {}).get("time", []) as Array).size() != 3:
 		fail("smithing.json craft.materials and craft.time need three factors (plain, +1, +2)")
 
