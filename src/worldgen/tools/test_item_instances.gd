@@ -211,6 +211,25 @@ func _init() -> void:
 	chest.add(stone, 1, 0, {"temper": 1})
 	items.action(1, Net.ACT_BULK, 0, 0, 0, Vector3.ZERO)   # Take all
 	check(slot_with(inv, stone, {"temper": 1}) >= 0, "Take all moves an instance with its data")
+	items.action(1, Net.ACT_BULK, 1, 0, 0, Vector3.ZERO)   # Store all
+	check(slot_with(chest, stone, {"temper": 1}) >= 0 and slot_with(inv, stone, {"temper": 1}) < 0, "Store all moves it into the chest with its data")
+	items.action(1, Net.ACT_BULK, 0, 0, 0, Vector3.ZERO)
+	inv.add(stone, 5)
+	items._sort_slots(inv, 0, inv.SLOTS, 1, true)
+	check(slot_with(inv, stone, {"temper": 1}) >= 0 and slot_with(inv, axe, mighty) >= 0 and inv.count_of(stone) == 6, "Sort reorders the stacks with their data, never joining them")
+	inv.add(stone, 4, 0, {"sharp": 2})
+	items._split(inv, slot_with(inv, stone, {"sharp": 2}), 2)
+	var halves: int = 0
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] == stone and inv.inst_of(slot) == {"sharp": 2} and inv.counts[slot] == 2:
+			halves += 1
+
+	check(halves == 2, "a split instance stack keeps its data on both halves")
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] == stone and inv.inst_of(slot) != {"temper": 1}:
+			inv.clear_slot(slot)
 
 	inv.add(tunic, 1, 9, {"craft": 1})
 	items.action(1, Net.ACT_WEAR, slot_with(inv, tunic, {"craft": 1}), 0, 0, Vector3.ZERO)
@@ -232,13 +251,44 @@ func _init() -> void:
 			inv.clear_slot(slot)
 
 	inv.add(fibre, 2)
-	inv.add(fibre, 1, 0, {"craft": 2})
+	inv.add(fibre, 1, 6, {"craft": 2})
 	items.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
 	var queue: Array = items._queue_of(1).get("entries", [])
 	check(inv.count_of(fibre) == 0 and queue.size() == 1, "a queued Twine takes the three fibres, the instance one too")
 	items._last_queue_act.erase(1)   # queue actions are paced
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
-	check(inv.count_of(fibre) == 3 and slot_with(inv, fibre, {"craft": 2}) >= 0, "a cancel gives the instance fibre back as it was (%s)" % str(queue))
+	var back_fibre: int = slot_with(inv, fibre, {"craft": 2})
+	check(inv.count_of(fibre) == 3 and back_fibre >= 0 and inv.wear[back_fibre] == 6, "a cancel gives the instance fibre back as it was, wear included (%s)" % str(queue))
+
+	var undo = InventoryScript.new(table)
+	undo.add(fibre, 2)
+	undo.add(fibre, 1, 4, {"craft": 1})
+	undo.usable = 0   # the Twine cannot go in, so the craft is undone
+	check(not items.recipes.craft(1, undo) and slot_with(undo, fibre, {"craft": 1}) >= 0 and undo.wear[slot_with(undo, fibre, {"craft": 1})] == 4 and undo.count_of(fibre) == 3, "an undone recipe_table craft gives the instance back with its data and wear")
+
+	inv.add(stone, 2)
+	var stock: Dictionary = items._stock_of(1)
+	check(items._stock_have(inv, stone, stock) - items._stock_have(inv, stone, stock, true) == 1, "building stock leaves the instance stone out (a blueprint keeps counts only)")
+	var kit: int = table.number_of("campfire_kit")
+	inv.add(kit, 1, 0, {"craft": 1})
+	var things: int = items._items.size()
+	items._place(1, inv, slot_with(inv, kit, {"craft": 1}), Vector3(1.5, 10.0, 0.0))
+	check(slot_with(inv, kit, {"craft": 1}) >= 0 and items._items.size() == things, "an instance item is never set down as a placed piece (it would turn plain)")
+	inv.clear_slot(slot_with(inv, kit, {"craft": 1}))
+	var berries: int = table.number_of("berries")
+
+	if berries > 0 and table.shelf_units(berries) > 0:
+		inv.add(berries, 1, 0, {"craft": 1})
+		var rot_at: int = slot_with(inv, berries, {"craft": 1})
+		items._spoil_inventory(inv, table.shelf_units(berries))
+		check(inv.numbers[rot_at] != berries and inv.inst_of(rot_at).is_empty(), "food that rots turns plain, so the rotten stack can merge")
+		inv.clear_slot(rot_at)
+	else:
+		check(false, "berries spoil (the rot check needs a perishable item)")
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] == stone and inv.inst_of(slot).is_empty():
+			inv.clear_slot(slot)
 
 	for slot in inv.SLOTS:
 		if inv.numbers[slot] == fibre:

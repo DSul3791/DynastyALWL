@@ -777,7 +777,7 @@ func inventory_of(peer: int):
 
 # Puts items in a player's inventory. Whatever does not fit lies on the ground at their feet.
 # Returns how many went into the inventory. For harvesting and crafting.
-func give(peer: int, number: int, count: int, item_inst: Dictionary = {}) -> int:
+func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_wear: int = 0) -> int:
 	var inv = inventory_of(peer)
 
 	if inv == null or number <= 0 or count <= 0 or table.id_of(number) == "":
@@ -788,7 +788,7 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}) -> int
 
 	var before: Array = _snapshot(inv)
 	var fits: int = _fit(peer, inv, number, count)
-	var left: int = inv.add(number, fits, 0, item_inst) + (count - fits)
+	var left: int = inv.add(number, fits, item_wear, item_inst) + (count - fits)
 	var was_src: String = _gain_source
 	_gain_source = SRC_GATHER if was_src == SRC_PICKUP else was_src
 	_send_changes(peer, inv, before)
@@ -796,7 +796,7 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}) -> int
 	_dirty = true
 
 	if left > 0:
-		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), 0, 0.0, NAN, NAN, "", item_inst)
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, 0.0, NAN, NAN, "", item_inst)
 
 	return count - left
 
@@ -851,7 +851,7 @@ var _shoulder_sent: Dictionary = {}
 
 
 # Puts one large log in the pack (it shows on the shoulder); with a log already carried the new one lies at the player's feet. Returns how many were taken.
-func _give_shoulder(peer: int, number: int, count: int) -> int:
+func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = {}) -> int:
 	var key: String = str(_peer_key.get(peer, ""))
 	var inv = inventory_of(peer)
 
@@ -862,11 +862,11 @@ func _give_shoulder(peer: int, number: int, count: int) -> int:
 
 	if shoulder_of(peer) != "":
 		_say(peer, "Put your log down first (Q).")
-		drop_in_world(number, count, here)
+		drop_in_world(number, count, here, 0, 0.0, NAN, NAN, "", item_inst)
 		return 0
 
 	var before: Array = _snapshot(inv)
-	var took: int = 1 if _fit(peer, inv, number, 1) > 0 and inv.add(number, 1) == 0 else 0
+	var took: int = 1 if _fit(peer, inv, number, 1) > 0 and inv.add(number, 1, 0, item_inst) == 0 else 0
 	_send_changes(peer, inv, before)
 	_dirty = true
 
@@ -874,7 +874,7 @@ func _give_shoulder(peer: int, number: int, count: int) -> int:
 		_say(peer, "Too heavy to carry any more")
 
 	if count > took:
-		drop_in_world(number, count - took, here)
+		drop_in_world(number, count - took, here, 0, 0.0, NAN, NAN, "", item_inst)
 
 	return took
 
@@ -891,7 +891,7 @@ func lay_down_shoulder(peer: int, at: Vector3 = Vector3.ZERO) -> bool:
 	var spot: Vector3 = at if at != Vector3.ZERO and at.distance_to(here) <= DROP_REACH_M else here
 	var number: int = inv.numbers[slot]
 
-	if not drop_in_world(number, 1, spot):
+	if not drop_in_world(number, 1, spot, 0, 0.0, NAN, NAN, "", inv.inst_of(slot)):
 		return false
 
 	var before: Array = _snapshot(inv)
@@ -2190,7 +2190,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	_last_shot[peer] = now
 	var arrow: Dictionary = table.entry(table.id_of(inv.numbers[ammo]))
 	var number: int = inv.numbers[ammo]
-	inv.take_from_slot(ammo, 1)
+	var shot_inst: Dictionary = inv.take_from_slot(ammo, 1)["inst"]
 	var power: float = _bow.power(draw_ms)
 
 	if power <= float(_bow.cfg.get("weak_power", 0.25)):
@@ -2202,7 +2202,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var fire_cfg: Dictionary = _bow.cfg.get("fire_arrow", {})
 	var aflame: bool = bool(arrow.get("fire", false)) and not fire_cfg.is_empty() and _flame_near(_peer_pos[peer], float(fire_cfg.get("light_m", 3.0)))
 	var damage: float = _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id) * (float(fire_cfg.get("damage_mult", 1.5)) if aflame else 1.0)
-	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
+	_arrows.append({"peer": peer, "number": number, "inst": shot_inst, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
 		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
 
 	if animal_alarm.is_valid():
@@ -2332,12 +2332,12 @@ func _arrow_fly(delta: float) -> void:
 				var lit_what: String = "" if wet else _arrow_ignite(at)
 				print("server items: fire arrow came down at x%d z%d after %.0f m (animal %s): burnt up%s" % [int(at.x), int(at.z), float(ar["flown"]), str(hit_animal_now), (", lit a " + lit_what) if lit_what != "" else ""])
 			elif stuck and fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), false, false)):
-				_stick_arrow(int(ar["number"]), at, (ar["vel"] as Vector3).normalized())
+				_stick_arrow(int(ar["number"]), at, (ar["vel"] as Vector3).normalized(), ar.get("inst", {}))
 				print("server items: arrow stuck in a tree at x%d z%d y%.1f after %.0f m" % [int(at.x), int(at.z), at.y, float(ar["flown"])])
 			elif stuck:
 				print("server items: arrow hit a tree at x%d z%d after %.0f m: broke" % [int(at.x), int(at.z), float(ar["flown"])])
 			elif fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), hit_animal_now, wet)):
-				var kept: bool = drop_in_world(int(ar["number"]), 1, at)
+				var kept: bool = drop_in_world(int(ar["number"]), 1, at, 0, 0.0, NAN, NAN, "", ar.get("inst", {}))
 				print("server items: arrow landed at x%d z%d y%.1f after %.0f m (animal %s, water %s): %s" % [int(at.x), int(at.z), at.y, float(ar["flown"]), str(hit_animal_now), str(wet), "lying there" if kept else "NOT dropped (crowded or refused)"])
 			else:
 				print("server items: arrow landed at x%d z%d after %.0f m (animal %s, water %s): broke or lost" % [int(at.x), int(at.z), float(ar["flown"]), str(hit_animal_now), str(wet)])
@@ -2365,9 +2365,12 @@ func _arrow_trunk(from: Vector3, to: Vector3) -> float:
 # An arrow stuck in a tree where it hit (Dave 10 Nov 2026: "there should be an arrow in that tree until I collect it or it fades out in 5 minutes"):
 # a loose arrow at the hit point, not let down to the ground, turned along its flight (rot_y about the vertical, tilt up), bow.json stuck_s seconds
 # (300) unless picked up. It never joins another arrow's pile.
-func _stick_arrow(number: int, at: Vector3, along: Vector3) -> void:
+func _stick_arrow(number: int, at: Vector3, along: Vector3, item_inst: Dictionary = {}) -> void:
 	_items[_next_id] = {"number": number, "count": 1, "pos": at, "left": float(_bow.cfg.get("stuck_s", 300.0)), "wear": 0,
 		"rot_y": atan2(-along.z, along.x), "tilt": asin(clampf(along.y, -1.0, 1.0))}
+
+	if not item_inst.is_empty():
+		_items[_next_id]["inst"] = item_inst.duplicate(true)
 	_next_id += 1
 	_dirty = true
 
@@ -3436,6 +3439,10 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		number = inv.numbers[slot]
 		kit_id = table.id_of(number)
 
+		if not inv.inst_of(slot).is_empty():
+			_say(peer, "That cannot be set down: a placed piece would lose what makes it special.")   # a structure row keeps no instance data
+			return
+
 	if kit_id != "campfire_kit" and (_structure_of_kit(kit_id).is_empty() or bool(_structure_of_kit(kit_id).get("hand_placed", false))):
 		if _structure_of_kit(kit_id).is_empty():
 			_say(peer, "That cannot be placed.")
@@ -4334,7 +4341,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 			_say(peer, "Too heavy to carry any more")
 			return
 
-		var took: int = _give_shoulder(peer, int(it["number"]), 1)
+		var took: int = _give_shoulder(peer, int(it["number"]), 1, it.get("inst", {}))
 
 		if took > 0:
 			if int(it["count"]) > 1:
@@ -6892,7 +6899,7 @@ func _fuel(peer: int, inv, id: int) -> void:
 			var wet: int = int(inv.wear[slot]) if slot >= 0 else 0
 
 			if bool(fire.get("synced", false)) and _chests.has(int(fire.get("uid", 0))):
-				if _chests[int(fire["uid"])].add(number, 1, wet) > 0:   # the store is what burns: the piece goes into it; a full store keeps it in the pack
+				if _chests[int(fire["uid"])].add(number, 1, wet, inv.inst_of(slot)) > 0:   # the store is what burns: the piece goes into it; a full store keeps it in the pack
 					_say(peer, "The fire's store is full.")
 					return
 
@@ -7268,6 +7275,10 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 	if def.is_empty():
 		return
 
+	if not inv.inst_of(slot).is_empty():
+		_say(peer, "That cannot be set down: a placed piece would lose what makes it special.")   # a structure row keeps no instance data
+		return
+
 	if _peer_pos[peer].distance_to(at) > float(def.get("use_reach_m", 3.0)) + 1.0:
 		_say(peer, "Too far to place that.")
 		return
@@ -7520,7 +7531,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 	var stock: Dictionary = _stock_of(peer)
 
 	for need in row["cost"]:
-		if _stock_have(inv, table.number_of(str(need[0])), stock) < int(need[1]):
+		if _stock_have(inv, table.number_of(str(need[0])), stock, true) < int(need[1]):
 			if site_ok:
 				continue   # a blueprint site is set down anyway; the materials are deposited later (Dave 5 Nov 2026)
 
@@ -7581,7 +7592,7 @@ func _blueprint_short(peer: int, inv, row: Dictionary) -> bool:
 	var stock: Dictionary = _stock_of(peer)
 
 	for need in row["cost"]:
-		if _stock_have(inv, table.number_of(str(need[0])), stock) < int(need[1]):
+		if _stock_have(inv, table.number_of(str(need[0])), stock, true) < int(need[1]):
 			return true
 
 	return false
@@ -7595,7 +7606,7 @@ func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
 		var left: int = int(need[1]) - _take_ground_stock(peer, number, int(need[1]))   # heavy stock laid on the ground beside the build goes first (Dave 2 Nov)
 
 		if left > 0:
-			_stock_take(inv, number, left, stock)   # then the pack, loose stacks within 12 m and the builder's own containers, nearest first
+			_stock_take(inv, number, left, stock, [], true)   # then the pack, loose stacks within 12 m and the builder's own containers, nearest first
 
 	if peer >= 0:
 		_send_stock(peer)   # the hammer list's counts follow what was taken
@@ -7618,7 +7629,7 @@ func _ground_stock(peer: int, number: int) -> Array:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder") or not fills.has(int(it.get("number", 0))):
+		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder") or it.has("inst") or not fills.has(int(it.get("number", 0))):
 			continue
 
 		var d: float = _peer_pos[peer].distance_to(it["pos"])
@@ -7932,10 +7943,10 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 
 	for need in needs:
 		var number: int = table.number_of(str(need[0]))
-		var have: int = inv.count_fill(number) + _ground_count(number, it["pos"], ground_m)
+		var have: int = inv.count_fill(number, true) + _ground_count(number, it["pos"], ground_m)   # building takes plain units only
 
 		for box in boxes:
-			have += box[1].count_fill(number)
+			have += box[1].count_fill(number, true)
 
 		if have < int(need[1]):
 			short.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
@@ -7953,7 +7964,7 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 			if left <= 0:
 				break
 
-			var from_box: int = mini(left, box[1].count_fill(number))
+			var from_box: int = mini(left, box[1].count_fill(number, true))
 
 			if from_box > 0 and box[1].remove_fill(number, from_box):
 				left -= from_box
@@ -7975,7 +7986,7 @@ func _ground_count(number: int, at: Vector3, radius: float) -> int:
 	for gid in _items:
 		var g: Dictionary = _items[gid]
 
-		if fills.has(int(g.get("number", 0))) and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
+		if fills.has(int(g.get("number", 0))) and not g.has("struct") and not g.has("fire") and not g.has("tree") and not g.has("inst") and (g["pos"] as Vector3).distance_to(at) <= radius:
 			total += int(g["count"])
 
 	return total
@@ -7989,7 +8000,7 @@ func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 	for gid in _items.keys():
 		var g: Dictionary = _items[gid]
 
-		if fills.has(int(g.get("number", 0))) and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
+		if fills.has(int(g.get("number", 0))) and not g.has("struct") and not g.has("fire") and not g.has("tree") and not g.has("inst") and (g["pos"] as Vector3).distance_to(at) <= radius:
 			stacks.append(gid)
 
 	for gid in _spend_sorted(stacks, number, func(id): return int(_items[id]["number"])):
@@ -8100,10 +8111,10 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 
 	for need in _site_needs(_site_of(it)):
 		var number: int = table.number_of(str(need[0]))
-		var on_hand: int = inv.count_fill(number) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M)
+		var on_hand: int = inv.count_fill(number, true) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M)
 
 		for box in boxes:
-			on_hand += box[1].count_fill(number)
+			on_hand += box[1].count_fill(number, true)
 
 		out.append([str(need[0]), int(need[1]), on_hand])
 
@@ -8134,7 +8145,7 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 
 		var number: int = table.number_of(str(need[0]))
 		var put: int = 0
-		var from_pack: int = mini(left, inv.count_fill(number))
+		var from_pack: int = mini(left, inv.count_fill(number, true))   # building takes plain units only (remove_fill takes plain first)
 
 		if from_pack > 0 and inv.remove_fill(number, from_pack):
 			put += from_pack
@@ -8146,7 +8157,7 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 			if put >= left:
 				break
 
-			var from_box: int = mini(left - put, box[1].count_fill(number))
+			var from_box: int = mini(left - put, box[1].count_fill(number, true))
 
 			if from_box > 0 and box[1].remove_fill(number, from_box):
 				put += from_box
@@ -8917,7 +8928,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
 			if shoulder_of(peer) != "":
 				_say(peer, "Put your log down first (Q).")
-			elif _give_shoulder(peer, number, 1) == 1:
+			elif _give_shoulder(peer, number, 1, held_inst) == 1:
 				chest.take_from_slot(a, 1)
 				_dirty = true
 		else:
@@ -10391,12 +10402,16 @@ func _clothing_slots() -> Array:
 	return _clothing.get("slots", [])
 
 
-# The item numbers a character wears, one per body slot; old saves have none.
+# The item numbers a character wears, one per body slot; old saves have none. Read straight off the record (slot arrays, or an old bare
+# number): it runs on every position report, carry and warmth check, so it builds no slot arrays.
 func worn_of(peer: int) -> Array:
+	var list: Array = _characters.get(_peer_key.get(peer, ""), {}).get("worn", [])
 	var out: Array = []
 
-	for entry in worn_slots_of(peer):
-		out.append(int(entry[0]))
+	for i in _clothing_slots().size():
+		var raw: Variant = list[i] if i < list.size() else 0
+		var head: Variant = raw[0] if typeof(raw) == TYPE_ARRAY and not (raw as Array).is_empty() else raw
+		out.append(maxi(int(head), 0) if typeof(head) == TYPE_INT or typeof(head) == TYPE_FLOAT else 0)
 
 	return out
 
@@ -10925,6 +10940,7 @@ func _spoil_inventory(inv, units: int) -> bool:
 		if inv.wear[i] >= life:
 			inv.numbers[i] = rotten
 			inv.wear[i] = 0
+			inv.inst[i] = {}   # rotten food is plain, so it joins the next rotten stack (a torch's in-place change keeps its instance)
 			inv.counts[i] = mini(inv.counts[i], table.stack_of(rotten))
 
 	return changed
@@ -11015,6 +11031,7 @@ func _spoil_tick(spent: float) -> void:
 			if int(it["wear"]) >= life:
 				it["number"] = rotten_n
 				it["wear"] = 0
+				it.erase("inst")
 
 
 # --- Death and remains (Dave: DESIGN_IDEAS.md 6.1; data/items/death.json) ---
@@ -14094,7 +14111,7 @@ func _pull_nearby_logs(peer: int, inv, want: int) -> int:
 		var it: Dictionary = _items.get(int(row[0]), {})
 		var take: int = mini(int(row[1]), want - moved)
 
-		if it.is_empty() or inv.add(int(it["number"]), take) > 0:
+		if it.is_empty() or inv.add(int(it["number"]), take, 0, it.get("inst", {})) > 0:
 			continue
 
 		if int(it["count"]) > take:
@@ -14242,7 +14259,7 @@ func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String) -> voi
 
 
 # Loose stacks of an ingredient (or any member of its group: a `log` need takes any log) near the player: [[world id, count], ...], nearest first.
-func _craft_ground(stock: Dictionary, number: int, inv) -> Array:
+func _craft_ground(stock: Dictionary, number: int, inv, plain_only: bool = false) -> Array:
 	var out: Array = []
 
 	if number <= 0 or inv == null:
@@ -14253,42 +14270,43 @@ func _craft_ground(stock: Dictionary, number: int, inv) -> Array:
 	for row in stock.get("near", []):
 		var it: Dictionary = _items.get(int(row[0]), {})
 
-		if not it.is_empty() and fills.has(int(it.get("number", 0))):
+		if not it.is_empty() and fills.has(int(it.get("number", 0))) and not (plain_only and it.has("inst")):
 			out.append([int(row[0]), int(it["count"])])
 
 	return out
 
 
 # How much of an ingredient the craft stock holds: the pack, the ground near the player and their containers (`stock` from _stock_of).
-func _stock_have(inv, number: int, stock: Dictionary) -> int:
+# `plain_only` (building costs): units with instance data do not count, so a blueprint never takes one (its site and refund keep counts only).
+func _stock_have(inv, number: int, stock: Dictionary, plain_only: bool = false) -> int:
 	if inv == null:
 		return 0
 
-	var total: int = inv.count_fill(number)
+	var total: int = inv.count_fill(number, plain_only)
 
-	for row in _craft_ground(stock, number, inv):
+	for row in _craft_ground(stock, number, inv, plain_only):
 		total += int(row[1])
 
 	for box in stock.get("boxes", []):
-		total += box[1].count_fill(number)
+		total += box[1].count_fill(number, plain_only)
 
 	return total
 
 
 # Takes up to `want` of an ingredient: the pack first, then the ground near the player, then the containers nearest first. Returns how many it took.
-func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Array = []) -> int:
+func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Array = [], plain_only: bool = false) -> int:
 	if inv == null or want <= 0:
 		return 0
 
 	var boxes: Array = stock.get("boxes", [])
-	var ground: Array = _spend_sorted(_craft_ground(stock, number, inv), number, func(stack): return int(_items[int(stack[0])]["number"]))
-	var have: Array = [inv.count_fill(number)]
+	var ground: Array = _spend_sorted(_craft_ground(stock, number, inv, plain_only), number, func(stack): return int(_items[int(stack[0])]["number"]))
+	var have: Array = [inv.count_fill(number, plain_only)]
 
 	for row in ground:
 		have.append(int(row[1]))
 
 	for box in boxes:
-		have.append(box[1].count_fill(number))
+		have.append(box[1].count_fill(number, plain_only))
 
 	var plan: Array = CraftStock.take_plan(want, have)
 	var took: int = 0
@@ -14304,7 +14322,7 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Arr
 			continue
 
 		for _k in (share if it.has("inst") else 0):
-			taken_inst.append([int(it["number"]), it["inst"].duplicate(true)])
+			taken_inst.append([int(it["number"]), it["inst"].duplicate(true), int(it.get("wear", 0))])
 
 		if int(it["count"]) > share:
 			it["count"] = int(it["count"]) - share
@@ -14942,16 +14960,16 @@ func _refund_entry(peer: int, entry: Array) -> void:
 	for need in entry[2]:
 		var left: int = int(need[1]) * int(entry[1])
 
-		# Instance units go back first and as they were (a finished craft used the plain ones first, as Inventory.remove takes them).
+		# Instance units go back first and as they were, wear included (a finished craft used the plain ones first, as Inventory.remove takes them).
 		for unit in (need[2] if need.size() > 2 else []):
 			if left > 0:
-				give(peer, int(unit[0]), 1, unit[1])
+				give(peer, int(unit[0]), 1, unit[1], int(unit[2]) if unit.size() > 2 else 0)
 				left -= 1
 
 		give(peer, _refund_number(int(need[0])), left)   # a group ingredient gives back its lowest member, as a taken-down piece does
 
 
-# Keeps the instance units a craft took on its ingredient rows: row k gains a third value, the list of [item number, inst] taken for it.
+# Keeps the instance units a craft took on its ingredient rows: row k gains a third value, the list of [item number, inst, wear] taken for it.
 func _hold_insts(rows: Array, held: Array) -> void:
 	for k in mini(rows.size(), held.size()):
 		if not (held[k] as Array).is_empty():
@@ -15132,8 +15150,8 @@ func _load_craft_queues() -> void:
 				var units: Array = []
 
 				for unit in (need[2] if need.size() > 2 and typeof(need[2]) == TYPE_ARRAY else []):
-					if typeof(unit) == TYPE_ARRAY and (unit as Array).size() == 2:
-						units.append([int(unit[0]), InventoryScript.clean_inst(unit[1])])   # instance units the craft took (_hold_insts)
+					if typeof(unit) == TYPE_ARRAY and (unit as Array).size() >= 2:
+						units.append([int(unit[0]), InventoryScript.clean_inst(unit[1]), maxi(int(unit[2]), 0) if unit.size() > 2 else 0])   # instance units the craft took (_hold_insts)
 
 				needs.append([int(need[0]), int(need[1]), units] if not units.is_empty() else [int(need[0]), int(need[1])])
 

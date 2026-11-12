@@ -110,7 +110,7 @@ func has(number: int, count: int) -> bool:
 
 
 # Take `count` of an item (from the last slots first, plain stacks before instances). False and no change if there is not enough.
-# Each instance unit taken is appended to `taken` as [number, inst], so a refund can give it back as it was (the craft queue).
+# Each instance unit taken is appended to `taken` as [number, inst, wear], so a refund can give it back as it was (the craft queue).
 func remove(number: int, count: int, taken: Array = []) -> bool:
 	if count <= 0 or not has(number, count):
 		return false
@@ -123,7 +123,7 @@ func remove(number: int, count: int, taken: Array = []) -> bool:
 				var take: int = mini(left, counts[i])
 
 				for _k in (0 if plain else take):
-					taken.append([number, inst[i].duplicate(true)])
+					taken.append([number, inst[i].duplicate(true), wear[i]])
 
 				counts[i] -= take
 				left -= take
@@ -156,12 +156,13 @@ func fills_of(number: int) -> PackedInt32Array:
 	return PackedInt32Array([number])
 
 
-func count_fill(number: int) -> int:
+# `plain_only`: units with instance data do not count (building costs never take them).
+func count_fill(number: int, plain_only: bool = false) -> int:
 	var fills: PackedInt32Array = fills_of(number)
 	var total: int = 0
 
 	for i in SLOTS:
-		if numbers[i] != 0 and fills.has(numbers[i]):
+		if numbers[i] != 0 and fills.has(numbers[i]) and not (plain_only and not inst[i].is_empty()):
 			total += counts[i]
 
 	return total

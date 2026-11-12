@@ -125,17 +125,20 @@ func refresh() -> void:
 
 	for gear in LEFT + RIGHT:
 		var number: int = 0
+		var item_inst: Dictionary = {}
 		var at: int = slots.find(gear)
 
 		if at >= 0 and at < view.worn.size():
 			number = view.worn[at]
+			item_inst = view.worn_inst.get(at, {})
 		elif gear == "right" and view.held_slot_now.is_valid():
 			var held: int = int(view.held_slot_now.call())
 			number = view.inventory.numbers[held] if held >= 0 and held < view.inventory.SLOTS else 0
+			item_inst = view.inventory.inst_of(held) if number != 0 else {}
 
 		# STUB(step 3d): the left hand shows its silhouette until the game has an off-hand item (a shield or torch held in the left).
 		var slot = wells[gear]
-		InventoryLook.show_stack(view, slot, number, 1, 0, view.inst_label(number, view.worn_inst.get(at, {})) if number != 0 else str(gear).capitalize())
+		InventoryLook.show_stack(view, slot, number, 1, 0, view.inst_label(number, item_inst) if number != 0 else str(gear).capitalize())
 		(slot.get_node("Ghost") as Control).visible = number == 0
 
 	var worn_sign: int = hash(view.worn)
