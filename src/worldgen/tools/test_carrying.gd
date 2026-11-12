@@ -379,6 +379,11 @@ func _init() -> void:
 	var quiver_at: int = -1 - place(back, "waist:quiver")
 	give(back, 1, "wooden_arrow", 20)
 	give(back, 1, "stone", 3)
+
+	for slot in inv1.hotbar_slots:   # an admin give fills from slot 0; Store all leaves the hotbar (TEST-008), so put the stacks in the backpack first
+		if inv1.numbers[slot] == arrow or inv1.numbers[slot] == stone:
+			back.action(1, Net.ACT_MOVE, slot, inv1.free_bag_slot(), 0, Vector3.ZERO)
+
 	back.action(1, Net.ACT_CHEST_OPEN, quiver_at, 0, 0, Vector3.ZERO)
 	back.action(1, Net.ACT_BULK, 1, 0, 0, Vector3.ZERO)
 	check(int(held(back, 1, "waist:quiver").get(arrow, 0)) == 40 and inv1.count_of(arrow) == 19 and not held(back, 1, "waist:quiver").has(stone) and inv1.count_of(stone) == 3, "Store all fills the quiver to its 40 arrows and leaves the stones")
