@@ -4479,7 +4479,7 @@ func _on_worn(numbers: PackedInt32Array, insts: PackedByteArray = PackedByteArra
 
 	worn = numbers
 
-	if chest_mode and chest_id < 0 and BagRules.slots_of(table, container_number()) <= 0:
+	if chest_mode and chest_id < 0 and BagRules.slots_of(table, _container_part.container_number()) <= 0:
 		_close_chest()   # the open bag was taken off
 
 	if worn_event.is_valid():
@@ -4523,14 +4523,6 @@ func worn_top(slot: String, skip: Array = []) -> int:
 # The body weight the carry limit is worked out from (the server does the same): a pack adds room, never strength (catalog Phase 5).
 func carry_body_kg() -> float:
 	return weight_kg
-
-
-# The item the open container is: the world item, or for a worn bag (chest_id -1 - its worn position, protocol 109) the bag worn there.
-func container_number() -> int:
-	if chest_id < 0:
-		return int(worn[-1 - chest_id]) if -1 - chest_id < worn.size() else 0
-
-	return int(_world.get(chest_id, {}).get("number", 0))
 
 
 # Opens the bag worn at a worn position beside the pack (the container screen); the server answers with its contents.

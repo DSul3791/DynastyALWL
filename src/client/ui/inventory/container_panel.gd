@@ -188,7 +188,7 @@ func refresh() -> void:
 	if not view.chest_mode or view._chest_panel == null:
 		return
 
-	var capacity: int = BagRules.slots_of(view.table, view.container_number()) if view.chest_id < 0 else int(view.table.entry(view.table.id_of(view.container_number())).get("slots", view.inventory.SLOTS))
+	var capacity: int = BagRules.slots_of(view.table, container_number()) if view.chest_id < 0 else int(view.table.entry(view.table.id_of(container_number())).get("slots", view.inventory.SLOTS))
 	var fire: bool = is_fire()
 
 	if view.chest_id < 0 and view.chest_tab and view._frame != null and is_instance_valid(view._frame):
@@ -220,12 +220,20 @@ func title() -> String:
 	if is_fire():
 		return "FIRE"
 
-	var container_name: String = view.table.name_of(view.container_number())
+	var container_name: String = view.table.name_of(container_number())
 
 	if view.chest_id < 0 and not view._carry_cfg.is_empty():   # a worn bag shows what its load weighs (it counts toward the carry limit)
 		return "%s  %.1f KG" % [container_name.to_upper(), CarryRules.carried_kg(view.chest_inv, view.table, view._carry_cfg)]
 
 	return container_name.to_upper() if container_name != "" else "CHEST"
+
+
+# The item the open container is: the world item, or for a worn bag (chest_id -1 - its worn position, protocol 109) the bag worn there.
+func container_number() -> int:
+	if view.chest_id < 0:
+		return int(view.worn[-1 - view.chest_id]) if -1 - view.chest_id < view.worn.size() else 0
+
+	return int(view._world.get(view.chest_id, {}).get("number", 0))
 
 
 # True when the open container is a fire (lit or out); its store takes only wood and food (Dave, 4 Nov 2026).
