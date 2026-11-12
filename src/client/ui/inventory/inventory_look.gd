@@ -70,7 +70,8 @@ static func make_slot(view, index: int) -> Control:
 
 
 # Shows pack or chest slot contents on an item slot: icon (or the name while there is no icon), count, wear or freshness, tooltip.
-static func show_stack(view, slot, number: int, count: int, wear: int, tooltip: String) -> void:
+# `most`: the slot's current maximum durability (Inventory.max_durability), 0 for the row's.
+static func show_stack(view, slot, number: int, count: int, wear: int, tooltip: String, most: int = 0) -> void:
 	if number == 0:
 		slot.set_item(null, 0)
 		slot.set_caption("")
@@ -87,7 +88,7 @@ static func show_stack(view, slot, number: int, count: int, wear: int, tooltip: 
 	if view.table.shelf_units(number) > 0:
 		fraction = view.table.freshness(number, wear)
 	else:
-		var durability: int = int(view.table.entry(item_id).get("durability", 0))     # the same rule as InventoryView.condition
+		var durability: int = most if most > 0 else int(view.table.entry(item_id).get("durability", 0))     # the same rule as InventoryView.condition
 
 		if durability > 0 and wear > 0:
 			fraction = clampf(1.0 - float(wear) / float(durability), 0.0, 1.0)

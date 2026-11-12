@@ -5,6 +5,7 @@ extends RefCounted
 # for every item (a multiple of its value), so the server sends two multipliers and the client prices what it shows; the server
 # prices every deal itself.
 
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TALK_RANGE_M := 4.5
 
 var items                       # ServerItems
@@ -348,7 +349,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		return "The trader does not buy that."
 
 	var life: float = 1.0
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = inv.max_durability(a)
 
 	if durability > 0:
 		life = clampf(1.0 - float(inv.wear[a]) / float(durability), 0.0, 1.0)
@@ -358,7 +359,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	count = mini(count, inv.counts[a])
 	var item_id: String = items.table.id_of(number2)
-	var value: int = int(entry.get("value", 0))
+	var value: int = int(round(float(entry.get("value", 0)) * SmithingRules.value_mult(inv.inst_of(a))))   # craftsmanship raises it (master s2.9 item 3)
 	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is a fifth of a copper; sold in lots of sell_lot (5), one price per lot, a single stone pays nothing
 	var brule: Dictionary = _buy_rule(npc_id, item_id)
 
@@ -467,13 +468,14 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 	return "Sold %d kinds of extra stuff for %s." % [sold, items._coin_words(items.coins_of(peer) - before_coins)]
 
 
-# What a smith asks to mend the tool in a pack slot (0 = nothing to mend).
-func repair_cost(number: int, item_wear: int, pay_mult: float) -> int:
+# What a smith asks to mend the tool in a pack slot (0 = nothing to mend, or a disposable tool: master s2.2 rules 1-3). `most` is its current
+# maximum durability (Inventory.max_durability; 0 = the row's).
+func repair_cost(number: int, item_wear: int, pay_mult: float, most: int = 0) -> int:
 	var entry: Dictionary = items.table.entry(items.table.id_of(number))
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = most if most > 0 else int(entry.get("durability", 0))
 	var value: int = int(entry.get("value", 0))
 
-	if durability <= 0 or item_wear <= 0 or value <= 0:
+	if durability <= 0 or item_wear <= 0 or value <= 0 or SmithingRules.disposable(entry):
 		return 0
 
 	var used: float = clampf(float(item_wear) / float(durability), 0.0, 1.0)
@@ -484,7 +486,7 @@ func _repair_deal(peer: int, npc_id: String, inv, slot: int, pay_mult: float) ->
 	if not bool(_shops[npc_id].get("repairs", false)):
 		return "He does not mend tools."
 
-	var cost: int = repair_cost(inv.numbers[slot], inv.wear[slot], pay_mult)
+	var cost: int = repair_cost(inv.numbers[slot], inv.wear[slot], pay_mult, inv.max_durability(slot))
 
 	if cost <= 0:
 		return "That needs no mending."

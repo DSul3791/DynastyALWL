@@ -6,6 +6,7 @@ extends RefCounted
 
 const SLOTS := 30
 const FORMAT := 3               # 2 added wear per slot; 3 the instance data after the slots (inst_bytes)
+const MAX_D_CAP := 1000000       # max_d travels in the JSON block, not the u16 wear: a +2 Tempered steel spade passes 65535
 
 var table
 var numbers: PackedInt32Array = PackedInt32Array()
@@ -264,13 +265,12 @@ func key_slot(key: int) -> int:
 
 	var first: int = -1
 	var number: int = hotbar[key]
-	var durability: int = int(table.entry(table.id_of(number)).get("durability", 0)) if table != null else 0
 
 	for slot in SLOTS:
 		if numbers[slot] != number:
 			continue
 
-		if durability <= 0 or wear[slot] < durability:
+		if max_durability(slot) <= 0 or wear[slot] < max_durability(slot):
 			return slot
 
 		if first < 0:
@@ -414,7 +414,7 @@ static func clean_inst(raw: Variant) -> Dictionary:
 		out["sharp"] = mini(sharp, 65535)
 
 	if max_d >= 0:
-		out["max_d"] = mini(max_d, 65535)
+		out["max_d"] = mini(max_d, MAX_D_CAP)
 
 	if _whole(raw, "temper", 0) == 1:
 		out["temper"] = 1
@@ -443,7 +443,7 @@ func inst_of(slot: int) -> Dictionary:
 	return inst[slot] if slot >= 0 and slot < SLOTS and numbers[slot] != 0 else {}
 
 
-# --- Instance API for the catalog's Phase 2c (durability, sharpening, craftsmanship, Tempered); nothing in play calls it yet ---
+# --- Instance API for the catalog's Phase 2c (durability, sharpening, craftsmanship, Tempered; rules in smithing_rules.gd) ---
 
 # A new instance as crafting makes it: craftsmanship 0, 1 or 2 and Tempered. Craftsmanship is fixed here; nothing changes it afterwards.
 static func make_inst(craft: int = 0, tempered: bool = false) -> Dictionary:
