@@ -10,7 +10,6 @@ extends SceneTree
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
-const InventoryView := preload("res://src/client/inventory_view.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 
@@ -167,9 +166,6 @@ func _init() -> void:
 	again.peer_connected_hello(1, "hotbarkeys01")
 	check(Array(again.inventory_of(1).hotbar)[0] == knife, "only once: the next join keeps the keys")
 
-	# 8. Craft clicks: 1, shift 5 (or fewer), held all the stock makes; none makeable asks once, as before.
-	check(InventoryView.click_count(12, false, false) == 1 and InventoryView.click_count(12, true, false) == 5 and InventoryView.click_count(3, true, false) == 3, "click 1, shift-click 5, or 3 when only 3 can be made")
-	check(InventoryView.click_count(12, false, true) == 12 and InventoryView.click_count(12, true, true) == 12 and InventoryView.click_count(0, true, true) == 1, "held makes all 12; with none makeable a click asks for one as before")
 	var pot_recipe: int = 0
 
 	for k in items.recipes.numbers():

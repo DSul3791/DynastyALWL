@@ -26,8 +26,6 @@ var _footer: VBoxContainer                # under it, never scrolled away: the b
 var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
 var _qty: int = 1                         # the last quantity chosen, kept between refreshes
 var _variant: int = 0                     # the variant chosen on the card (SmithingRules code: Tempered, +1, +2), kept between refreshes
-const CRAFT_HOLD_MS := 400                 # a press this long on a recipe row is a hold: make as many as the stock allows (decisions row 24)
-var _press_msec: int = 0                  # when the recipe row was pressed
 
 
 func _init(owner_view) -> void:
@@ -151,10 +149,7 @@ func refresh() -> void:
 		if not makeable and view._station_ok(r):
 			entry.tooltip_text = missing_text(r)
 
-		entry.pressed.connect(_select_recipe.bind(r["number"]))
-		# A click on the row crafts (one, shift five, held as many as possible).
-		entry.button_down.connect(func(): _press_msec = Time.get_ticks_msec())
-		entry.button_up.connect(func(): view.craft_click(int(r["number"]), Input.is_key_pressed(KEY_SHIFT), Time.get_ticks_msec() - _press_msec >= CRAFT_HOLD_MS))
+		entry.pressed.connect(func(): row_clicked(int(r["number"]), Input.is_key_pressed(KEY_SHIFT)))
 
 		entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
 		entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
@@ -245,6 +240,16 @@ func _build_tabs() -> Control:
 
 func _recipe_shown(r: Dictionary) -> bool:
 	return RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
+
+
+# A click on a recipe row (Dave 12 Nov 2026, PLAYTEST-001 TEST-005): it selects the recipe and shows its card, and never crafts; the Craft button
+# makes the quantity in the box. Shift-click makes exactly one at once. (Replaces decisions row 24 (7): a 0.4 s hold made all the stock allowed,
+# the runaway crafts of TEST-001.)
+func row_clicked(number: int, shift: bool) -> void:
+	if shift:
+		view._start_craft(number, 1)
+
+	_select_recipe(number)
 
 
 func _select_recipe(number: int) -> void:
@@ -378,7 +383,7 @@ func _refresh_detail() -> void:
 		# The helper (look doc section 9): one press queues the recipe, and the server makes the parts first.
 		var helper: Button = _hint_button("Make it  (makes %s first)" % " and ".join(made_first))
 		var helper_number: int = view._selected_recipe
-		helper.pressed.connect(func() -> void: view.craft_click(helper_number, false, false))
+		helper.pressed.connect(func() -> void: view._start_craft(helper_number, 1))
 		_detail.add_child(helper)
 	elif int(parts["ambiguous"]) != 0:
 		var choose_line: Label = _text(str(parts["msg"]), 18, ArtKit.HEADING)

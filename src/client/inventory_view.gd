@@ -3100,47 +3100,6 @@ func _can_craft(number: int) -> bool:
 	return _free_craft() or _stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
 
 
-# Craft clicks (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions row 24): a click makes one, shift-click five (fewer when the stock
-# makes fewer), a hold (recipe_list CRAFT_HOLD_MS) as many as the stock allows, up to the queue's 20. Each is one queue request, so the server's
-# pacing never refuses part of it. With nothing makeable the click does what it did before (the server says what is missing or makes the parts first).
-const CRAFT_SHIFT_COUNT := 5
-const CRAFT_MOST := 20          # the server's CRAFT_QUEUE_MAX_COUNT and the count box's top
-
-
-# How many times recipe `number` can be made from the pack and the stock in reach now (0 when not at all, at most CRAFT_MOST).
-func max_makeable(number: int) -> int:
-	var r: Dictionary = recipes.recipe(number)
-
-	if r.is_empty() or not (_station_ok(r) or station_in_reach(r)):
-		return 0
-
-	if _free_craft():
-		return CRAFT_MOST
-
-	var most: int = CRAFT_MOST
-
-	for need in r["needs"]:
-		most = mini(most, floori(float(stock_fill(int(need[0]))) / float(maxi(int(need[1]), 1))))
-
-	for keep in r["keeps"]:
-		if stock_fill(int(keep[0])) < int(keep[1]):
-			return 0
-
-	return maxi(most, 0)
-
-
-func craft_click(number: int, shift: bool, held: bool) -> void:
-	_start_craft(number, click_count(max_makeable(number), shift, held))
-
-
-# How many one click asks for, `most` being how many the stock makes: 1, shift 5 (or fewer), held all of them; 1 when none (as before).
-static func click_count(most: int, shift: bool, held: bool) -> int:
-	if most <= 0:
-		return 1
-
-	return most if held else (mini(CRAFT_SHIFT_COUNT, most) if shift else 1)
-
-
 # --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 12 m
 # and the player's own containers within 12 m that are not kept out. The server sends what lies outside the pack (craft_stock, protocol 98).
 
