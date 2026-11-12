@@ -941,7 +941,10 @@
 		"breakfast_platter": 0.8,
 		"dessert_platter": 0.8,
 		"serving_platter": 1.0,
-		"ploughmans_board": 0.8
+		"ploughmans_board": 0.8,
+		"clay_griddle": 2.0,
+		"campfire_roasting_spit": 1.0,
+		"iron_grill_grate": 3.0
 	},
 	"by_suffix": {
 		"berries": 0.005,

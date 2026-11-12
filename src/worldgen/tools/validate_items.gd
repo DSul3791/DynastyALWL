@@ -685,6 +685,14 @@ func _init() -> void:
 	for id in spoilage.get("by_id", {}):
 		want_item.call(String(id), "spoilage.json by_id")
 
+	# A stack's age is a u16 in tenths of a game hour (inventory.gd to_bytes): a shelf life past it never rots (master s3.14 wear cap).
+	var shelf_cap_h: float = 65535.0 * float(spoilage.get("unit_h", 0.1)) / float(spoilage.get("gentle_mult", 1))
+
+	for list in ["by_id", "by_suffix"]:
+		for id in spoilage.get(list, {}):
+			if float(spoilage[list][id]) > shelf_cap_h:
+				fail("spoilage.json %s %s: %s game hours x gentle_mult %s passes the wear cap (at most %.1f)" % [list, id, str(spoilage[list][id]), str(spoilage.get("gentle_mult", 1)), shelf_cap_h])
+
 	for id in cooking.get("fuel", {}):
 		want_item.call(String(id), "cooking.json fuel")
 
@@ -724,6 +732,14 @@ func _init() -> void:
 
 		for id in r.get("identify", []):
 			want_item.call(String(id), "recipe '%s' identify" % rid)
+
+		# A sealed batch (master s3.14): its output spoils, and only after it is Ready (ready_age game hours, unscaled, under the stretched shelf life).
+		if float(r.get("ready_age", 0.0)) > 0.0:
+			var made_id: String = String(r.get("gives", [""])[0])
+			var shelf_h: float = float(spoilage.get("by_id", {}).get(made_id, 0.0)) * float(spoilage.get("gentle_mult", 1))
+
+			if float(r["ready_age"]) >= shelf_h:
+				fail("recipes.json %s: ready_age %s must be under the shelf life of %s (%.0f game hours)" % [rid, str(r["ready_age"]), made_id, shelf_h])
 
 		for list in ["needs", "keeps"]:
 			for row in r.get(list, []):

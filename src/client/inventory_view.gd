@@ -3365,6 +3365,17 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 
 
 # Is a lit fire (any tier) within r metres of a point? Display only.
+# A placed structure of `kind` within r that is lit (its world record carries the lit fixture light).
+func _lit_structure_near(pos: Vector3, kind: String, r: float) -> bool:
+	var state: int = int(_structures_cfg.get(kind, {}).get("state", -2))
+
+	for id in _world:
+		if int(_world[id]["state"]) == state and _world[id].get("light") != null and pos.distance_to(_world[id]["pos"]) <= r:
+			return true
+
+	return false
+
+
 func _lit_fire_near(pos: Vector3, r: float) -> bool:
 	for fire_id in _world:
 		if _lit_state(int(_world[fire_id]["state"])) and pos.distance_to(_world[fire_id]["pos"]) <= r:
@@ -3454,6 +3465,9 @@ func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
 			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_near(_world[id]["pos"], 0.3):
 				continue   # the pot cooks only while the fire it hangs over is lit
+
+			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_near(_world[id]["pos"], str(def.get("attach_to", "")), float(def.get("attach_m", 2.5))):
+				continue   # the cooking crane cooks only beside a burning fireplace (ServerItems.serving_station)
 
 			return true
 

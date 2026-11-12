@@ -22,7 +22,7 @@ func _init() -> void:
 	var list = ListScript.new()
 	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
-	check(rows.size() == 142, "a wooden hammer lists every known blueprint (142 with the Grindstone of phase 2c; 141 with the Leatherworking table, Tailor's table and Loom of phase 2b part 2; 138 with the Crude chest, chair and table of phase 3; 135 after Mission 001 phase 2b: Smelter, Blast furnace, Bellows and Quenching trough in, Clay bloomery and Anvil out; 133 after the Woodworking table retired; 134 after the building tiers: the Mixer and nine Engineered pieces in, Log - Bench, Table and Shelf out; Fortified and iron pieces need an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
+	check(rows.size() == 144, "a wooden hammer lists every known blueprint (144 with the Food preparation table and Fireplace cooking crane of phase 6; 142 with the Grindstone of phase 2c; 141 with the Leatherworking table, Tailor's table and Loom of phase 2b part 2; 138 with the Crude chest, chair and table of phase 3; 135 after Mission 001 phase 2b: Smelter, Blast furnace, Bellows and Quenching trough in, Clay bloomery and Anvil out; 133 after the Woodworking table retired; 134 after the building tiers: the Mixer and nine Engineered pieces in, Log - Bench, Table and Shelf out; Fortified and iron pieces need an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
 	var ordered: bool = true
 
 	for k in range(rows.size() - 1):
@@ -123,6 +123,6 @@ func _init() -> void:
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 141 and strict_list.rows(2).size() == 142, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 143 and strict_list.rows(2).size() == 144, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

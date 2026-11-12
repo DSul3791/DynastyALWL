@@ -348,6 +348,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if not kinds.has("all") and not kinds.has(str(entry.get("kind", ""))):
 		return "The trader does not buy that."
 
+	if inv.maturing_at(a):   # a sealed batch is sold only once Ready (master s3.14 [D14])
+		return "That is still maturing."
+
 	var life: float = 1.0
 	var durability: int = inv.max_durability(a)
 
