@@ -2904,6 +2904,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 		_boulder_rock.set_shader_parameter("fade_end", 100001.0)
 
 	var body: StaticBody3D = StaticBody3D.new()
+	body.set_meta("boulder", true)   # the look label names it (terrain_client _inspect_target: it showed the soil under it, TEST-013)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	shape.shape = SphereShape3D.new()
 	body.add_child(shape)

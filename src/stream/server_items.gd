@@ -5480,26 +5480,23 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 
 
 # The blows a stone takes from the best tool a hotbar key points at (items.json material, boulders.json tools), as [slot, blows], or [].
-func _boulder_tool(inv) -> Array:
-	var best: Array = []
-	var tools: Dictionary = _boulder_cfg.get("tools", {})
+# The tool in hand for a boulder blow (TEST-013, Dave 12 Nov 2026: the stone axe and stone pick were the same because the best tool on the
+# hotbar did the work, whatever was held): [slot, blows per stone] from boulders.json tools by its class and material, [] when the held slot
+# is not a usable boulder tool on the hotbar.
+func _boulder_tool(inv, slot: int) -> Array:
+	if slot < 0 or slot >= inv.SLOTS or not inv.on_hotbar(slot) or _is_broken(inv, slot):
+		return []
 
-	for slot in range(inv.SLOTS):
-		if not inv.on_hotbar(slot) or _is_broken(inv, slot):
-			continue
-
-		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
-		var blows: int = int(tools.get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 0))
-
-		if blows > 0 and (best.is_empty() or blows < int(best[1])):
-			best = [slot, blows]
-
-	return best
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var blows: int = int((_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 0))
+	return [slot, blows] if blows > 0 else []
 
 
-# One blow on a boulder (ACT_HIT with the boulder marker). The best tool wears every blow; after its blows-per-stone a rough
-# stone comes out into the pack (refused when too heavy to carry), the boulder shrinks, and it is gone with its last stone.
-func _hit_boulder(peer: int, inv, id: int) -> void:
+# One blow on a boulder (ACT_HIT with the boulder marker; `held_slot` is the pack slot in hand). The held tool wears every blow (drops.json
+# tool_wear "rock": an axe wears faster on stone than a pick); after its blows-per-stone a rough stone comes out into the pack (refused when
+# too heavy to carry), the boulder shrinks, and it is gone with its last stone. The stones in a boulder are fixed by its size; a better tool
+# only takes them out in fewer blows.
+func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
 	if it.is_empty() or not it.has("boulder") or not _peer_pos.has(peer):
@@ -5510,7 +5507,7 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
 		return
 
-	var tool: Array = _boulder_tool(inv)
+	var tool: Array = _boulder_tool(inv, held_slot)
 
 	if tool.is_empty():
 		_reject(peer, 1)
@@ -5525,7 +5522,7 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 		return
 
 	_last_hit[peer] = now
-	_wear_slot(peer, inv, int(tool[0]), "boulder")
+	_wear_slot(peer, inv, int(tool[0]), "rock")
 	info["blows"] = int(info.get("blows", 0)) + 1
 	hit_number(peer, it["pos"] + Vector3(0.0, size_now, 0.0), HIT_POINTS / float(maxi(int(tool[1]), 1)))
 
@@ -5750,7 +5747,7 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 # and a stump lie there (records in _items with a "tree" entry, saved in tree_states.json).
 func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	if chunk.x == Net.HIT_BOULDER:
-		_hit_boulder(peer, inv, tree_id)
+		_hit_boulder(peer, inv, tree_id, chunk.y - 1)   # a boulder blow's count is the held pack slot plus one
 		return
 
 	if not _peer_pos.has(peer) or not tree_info.is_valid() or not cut_tree.is_valid():
