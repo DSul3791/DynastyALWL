@@ -70,7 +70,7 @@ Two *simple* recipes paths, generally matching the Food Preparation Table and fi
 - **Merging:** stacks only merge when their ages are within `merge_gap`.
 - **Maturation:** a "Maturing X" item would turn into "X" at its ready age, in the same way, and X then spoils normally.
 - **What it gives:** batch timing, safe stacking, save, load and network persistence all come with the existing system. Cold storage would also slow maturation, which is realistic.
-- **Cost:** each passively matured food needs one "Maturing" row, which the pending roster must count.
+- **Compatibility cost / alternative, not a binding requirement:** today's item-transition code would naturally represent each passive recipe with its own `Maturing X` row. A compact per-batch maturation state on the existing food item could avoid those extra IDs but would require schema, save and replication review. Prefer the least risky implementation that presents one simple gameplay workflow; **do not silently add unapproved new IDs or claim per-batch state is already supported**.
 - **Lazy updates:** today's ageing is a periodic server tick over stacks, not per bottle, so hundreds of jars cost no more than a few stacks. The "update lazily" wording above is therefore optional.
 
 **Safeguards:** moving/stacking jars must not reset spoilage or ready times; batch crafting consumes real recipe resources and real vessels; no free thousands of bottles; all content persists across multiplayer, saving, vehicle and warehouse movement; any scale/performance limits must be tuned and disclosed rather than arbitrary hidden limits.
