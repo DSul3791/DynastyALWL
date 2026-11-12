@@ -311,6 +311,18 @@ func invalidate(chunk: Vector2i) -> void:
 	_mutex.unlock()
 
 
+# The admin world reset (server_items.reset_world): every felled tree and removed plant stands again, saved at once. The clients reload their
+# plants with the ground reset that follows.
+func restore_all() -> void:
+	_mutex.lock()
+	_removed.clear()
+	_brush.clear()
+	_memory.clear()
+	_removed_dirty = true
+	_mutex.unlock()
+	save_removed(true)
+
+
 # Forgets every made chunk (the tile files changed).
 func clear_memory() -> void:
 	_mutex.lock()

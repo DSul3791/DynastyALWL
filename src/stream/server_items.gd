@@ -989,6 +989,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 			if int(near["number"]) != number or int(near.get("wear", 0)) != 0 or near.has("inst") or int(near["count"]) >= PILE_CAP:
 				continue
 
+			if near.has("world") != _laying_world:
+				continue   # a server pile and a player's pile never merge: the world reset keeps the one and takes the other
+
 			if Vector2(near["pos"].x - position.x, near["pos"].z - position.z).length() <= MERGE_M and absf(near["pos"].y - position.y) <= 2.0:
 				var room: int = PILE_CAP - int(near["count"])
 				var added: int = mini(count, room)
@@ -1312,6 +1315,7 @@ var floor_below: Callable               # set by the server: (Vector3) -> float,
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
+var restore_flora: Callable             # set by the server: () -> void, forgets every felled tree and removed plant (server_flora.restore_all), for reset_world
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
 var spyglass: Dictionary = {}          # peer -> the animal id an admin watches through the spyglass (0 none, -1 refused: not an admin); absent when not looking (ACT_SPYGLASS)
 var spyglass_tier: Dictionary = {}     # peer -> the tier of the spyglass item looked through (absent: the admin glass, or not looking)
@@ -1482,6 +1486,7 @@ func save() -> void:
 
 	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs})
 	var items: Array = []
+	var world_rows: Array = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -1526,6 +1531,9 @@ func save() -> void:
 			row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
 			row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
 
+		if it.has("world"):
+			world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
+
 		items.append(row)
 
 	_save_trees()
@@ -1536,7 +1544,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -2045,12 +2053,34 @@ func tree_row_count() -> int:
 	return n
 
 
-# Admin "Reset world" (BLOCKER-001, Dave 12 Nov 2026; docs/ai-team/missions/B001/BRIEF.md). Across the whole world, not only the loaded part
-# (every row is in _items): each loose item (drops, loot, den piles, stuck arrows, split logs), every placed structure with its contents (buildings,
-# stations, containers, blueprint sites, tilled beds and their crops, path patches, traps, carts and crates) and every campfire go. Kept:
-# the natural rows (scatter, boulders, trees and stumps), the showroom and carcasses (neither is saved), planted and regrown saplings, and every
-# character's pack, worn gear, vitals, skills and progression - remains too: they hold a dead character's pack and purse (they expire by themselves). The ground is the server scene's part (reset_terrain_edits, after this). Written to
-# disk before it returns, so a hard stop cannot bring the rows back. Returns how many rows went.
+# drop_in_world for what the server itself puts down (a goblin den pile or gift, a thief's dropped loot): the new piles are marked "world"
+# (saved as world_items.json "world_rows") so the world reset keeps them as world content. Server and player piles never merge (drop_in_world).
+# Piles saved before 13 Nov 2026 carry no mark and count as player-made (the first reset takes them once).
+var _laying_world: bool = false
+
+
+func drop_world_made(number: int, count: int, position: Vector3, lifetime_s: float = 0.0, by: String = "") -> bool:
+	var first_new: int = _next_id
+	_laying_world = true
+	var laid: bool = drop_in_world(number, count, position, 0, lifetime_s, NAN, NAN, by)
+	_laying_world = false
+
+	for id in range(first_new, _next_id):
+		if _items.has(id):
+			_items[id]["world"] = true
+
+	return laid
+
+
+# Admin "Reset world" (BLOCKER-001, Dave 12 Nov 2026; docs/ai-team/missions/B001/BRIEF.md): the world as it was before anyone played in it (Dave
+# 12 Nov 20:09), across the whole world, not only the loaded part (every row is in _items). Gone: every loose item a player made or let go
+# (drops, stuck arrows, split logs), every placed structure with its contents (buildings, stations, containers, blueprint sites, tilled beds
+# and their crops, path patches, traps, carts and crates) and every campfire. Restored: felled trees stand again (trunks and stumps go, the
+# flora removals are cleared, saplings go), picked-up scatter, mined boulders and bog iron, picked plants and fruit, shore finds, nests, fish
+# and ore patches. Kept: what the server put down ("world": den piles, goblin gifts, loot), the showroom and carcasses (neither is saved), and
+# every character's pack, worn gear, vitals, skills and progression - remains too: they hold a dead character's pack and purse (they expire by
+# themselves). The ground is the server scene's part (reset_terrain_edits, after this). Written to disk before it returns, so a hard stop
+# cannot bring anything back. Returns how many player-made rows went.
 func reset_world() -> int:
 	for peer in _carts.puller_of.keys():
 		_carts.release(int(peer), "")   # the client is told it holds no handle
@@ -2061,7 +2091,11 @@ func reset_world() -> int:
 	for id in _items.keys():
 		var it: Dictionary = _items[id]
 
-		if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("struct") and (bool(it["struct"].get("transient", false)) or str(it["struct"]["kind"]) == "remains")):
+		if it.has("world") or it.has("showroom") or (it.has("struct") and (bool(it["struct"].get("transient", false)) or str(it["struct"]["kind"]) == "remains")):
+			continue
+
+		if it.has("scatter") or it.has("tree"):
+			_items.erase(id)   # scatter is laid out again round the players from the seed (_cells_done below); a trunk or stump goes, its tree stands again
 			continue
 
 		if it.has("struct"):
@@ -2080,6 +2114,24 @@ func reset_world() -> int:
 	for id in _items:
 		if _items[id].has("struct"):
 			_grid_add(id, _items[id])
+
+	_taken.clear()
+	_cells_done.clear()
+	_boulder_left.clear()
+	_bog_left.clear()
+	_picked.clear()
+	_stripped.clear()
+	_fruit.clear()
+	_shore_taken.clear()
+	_nest_taken.clear()
+	_fish_stock.clear()
+	_mined.clear()
+	_chops.clear()
+	_split_due.clear()
+	_saplings.clear()
+
+	if restore_flora.is_valid():
+		restore_flora.call()   # every felled tree and cleared plant stands again (server_flora.restore_all)
 
 	_crops.clear()
 	_plot_water.clear()
@@ -4916,7 +4968,14 @@ func _load_world_items() -> void:
 
 	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
 
+	var world_rows: Dictionary = {}   # indexes of the rows the server put down (added 13 Nov 2026; an older file has none)
+	var row_n: int = -1
+
+	for n in parsed.get("world_rows", []):
+		world_rows[int(n)] = true
+
 	for row in parsed["items"]:
+		row_n += 1
 		var entry: Dictionary = {"number": table.current_number(int(row[0])), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 
 		if is_dead_kit(int(row[0])):
@@ -5046,6 +5105,9 @@ func _load_world_items() -> void:
 
 				if not _chests.has(int(row[9])):
 					_chests[int(row[9])] = InventoryScript.new(table)
+
+		if world_rows.has(row_n):
+			entry["world"] = true
 
 		_items[_next_id] = entry
 		_next_id += 1
