@@ -42,6 +42,11 @@ static func ammo_for(cfg: Dictionary, bow_id: String) -> Array:
 	return cfg.get("bows", {}).get(bow_id, {}).get("ammo", cfg.get("ammo", []))
 
 
+# The least time between two shots: the row's own pace_ms (a crossbow's reload), else the bows' pace_ms.
+static func pace_ms(cfg: Dictionary, bow_id: String) -> int:
+	return int(cfg.get("bows", {}).get(bow_id, {}).get("pace_ms", cfg.get("pace_ms", 700)))
+
+
 # Whether a shot from it sticks in a trunk it hits (an arrow does; a sling stone drops at the foot): the row's "sticks", true by default.
 static func sticks(cfg: Dictionary, bow_id: String) -> bool:
 	return bool(cfg.get("bows", {}).get(bow_id, {}).get("sticks", true))
@@ -52,12 +57,12 @@ static func say(cfg: Dictionary, bow_id: String, key: String) -> String:
 	return str(cfg.get("bows", {}).get(bow_id, {}).get(key, cfg.get(key, "")))
 
 
-# A weapon drawn and loosed through ACT_SHOOT: a bow or a sling (items.json weapon_class).
+# A weapon drawn and loosed through ACT_SHOOT: a bow, a crossbow or a sling (items.json weapon_class).
 static func shoots(entry: Dictionary) -> bool:
 	return str(entry.get("weapon_class", "")) in SHOOTERS
 
 
-const SHOOTERS := ["bow", "sling"]
+const SHOOTERS := ["bow", "crossbow", "sling"]
 
 
 # The arrow's speed (m/s) at full draw from this bow, and how far it may fly.

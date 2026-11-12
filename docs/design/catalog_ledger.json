@@ -3894,10 +3894,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; rename only"
   },
   {
    "key": "wooden_arrow",
@@ -4561,10 +4564,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "bronze_mace",
@@ -4575,10 +4581,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "bronze_shield",
@@ -4589,10 +4598,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; offhand shield on a wicker base (no Planks), durability and repair at the forge"
   },
   {
    "key": "iron_sword",
@@ -4603,10 +4615,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "iron_mace",
@@ -4617,10 +4632,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "iron_shield",
@@ -4631,10 +4649,13 @@
    "section": null,
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; offhand shield, durability and repair at the Smithy"
   },
   {
    "key": "steel_sword",
@@ -4645,10 +4666,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "steel_mace",
@@ -4659,10 +4683,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "steel_shield",
@@ -4673,10 +4700,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1); M001-T14: live with its recipe at its station; offhand shield, durability and repair at the Smithy"
   },
   {
    "key": "leather_cap",
@@ -4715,10 +4745,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "gambeson",
@@ -4743,10 +4776,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "mail_shirt",
@@ -4757,10 +4793,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "steel_helm",
@@ -4771,10 +4810,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "plate_cuirass",
@@ -4785,10 +4827,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "wheat",
@@ -10898,10 +10943,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; rename only"
   },
   {
    "key": "leather_trousers",
@@ -11982,10 +12030,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "claw_necklace",
@@ -13267,10 +13318,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Shortsword",
@@ -13282,10 +13336,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Greatsword",
@@ -13297,10 +13354,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Greatsword",
@@ -13312,10 +13372,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Rapier",
@@ -13327,10 +13390,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Scimitar",
@@ -13342,10 +13408,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Battleaxe",
@@ -13357,10 +13426,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Battleaxe",
@@ -13372,10 +13444,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Greataxe",
@@ -13387,10 +13462,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Greataxe",
@@ -13402,10 +13480,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Warhammer",
@@ -13417,10 +13498,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Warhammer",
@@ -13432,10 +13516,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Maul",
@@ -13447,10 +13534,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Quarterstaff",
@@ -13462,10 +13552,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Bronze - Spear",
@@ -13477,10 +13570,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Spear",
@@ -13492,10 +13588,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Spear",
@@ -13507,10 +13606,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Pike",
@@ -13522,10 +13624,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Halberd",
@@ -13537,10 +13642,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Steel - Halberd",
@@ -13552,10 +13660,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Iron - Trident",
@@ -13567,10 +13678,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; damage mode, reach and recovery"
   },
   {
    "key": "new:Light crossbow",
@@ -13582,10 +13696,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; shoots bolts with its own reload (bow.json)"
   },
   {
    "key": "new:Heavy crossbow",
@@ -13597,10 +13714,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; shoots bolts with its own reload (bow.json)"
   },
   {
    "key": "new:Iron - Buckler",
@@ -13612,10 +13732,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; offhand shield, durability and repair at the Smithy"
   },
   {
    "key": "new:Bronze - Arrow",
@@ -13627,10 +13750,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
    "key": "new:Iron - Arrow",
@@ -13642,10 +13768,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
    "key": "new:Steel - Arrow",
@@ -13657,10 +13786,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
    "key": "new:Wooden bolt",
@@ -13672,10 +13804,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
    "key": "new:Iron bolt",
@@ -13687,10 +13822,13 @@
    "section": "3.6",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; projectile ammunition"
   },
   {
    "key": "new:Steel bolt",
@@ -13732,10 +13870,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Iron - Breastplate",
@@ -13747,10 +13888,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Iron - Mail hauberk",
@@ -13762,10 +13906,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Steel - Half plate",
@@ -13777,10 +13924,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Steel - Plate harness",
@@ -13792,10 +13942,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Iron - Mail coif",
@@ -13807,10 +13960,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Iron - Gauntlets",
@@ -13822,10 +13978,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Steel - Gauntlets",
@@ -13837,10 +13996,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Bronze - Greaves",
@@ -13852,10 +14014,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Iron - Mail chausses",
@@ -13867,10 +14032,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Iron - Greaves",
@@ -13882,10 +14050,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Steel - Greaves",
@@ -13897,10 +14068,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Iron - Sabatons",
@@ -13912,10 +14086,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Steel - Sabatons",
@@ -13927,10 +14104,13 @@
    "section": "3.7",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Linen - Trousers",
@@ -13942,10 +14122,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Linen - Skirt",
@@ -13957,10 +14140,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Linen - Dress",
@@ -13972,10 +14158,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Wool - Dress",
@@ -13987,10 +14176,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Wool - Cloak",
@@ -14002,10 +14194,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Wool - Coat",
@@ -14017,10 +14212,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Wool - Robe",
@@ -14032,10 +14230,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Oilcloth - Cloak",
@@ -14047,10 +14248,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Linen - Apron",
@@ -14062,10 +14266,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Leather - Apron",
@@ -14077,10 +14284,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Tabard",
@@ -14092,10 +14302,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Linen - Headwrap",
@@ -14107,10 +14320,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Leather - Broad-brim hat",
@@ -14122,10 +14338,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Fur - Mittens",
@@ -14137,10 +14356,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Leather - Shoes",
@@ -14152,10 +14374,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; protection by damage mode, durability and repair at the making station"
   },
   {
    "key": "new:Wool - Socks",
@@ -14167,10 +14392,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Wool - Scarf",
@@ -14182,10 +14410,13 @@
    "section": "3.8",
    "phase": "4b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_armour",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T14: live with its recipe at its station; warmth and layer"
   },
   {
    "key": "new:Fibre - Shoulder bag",
