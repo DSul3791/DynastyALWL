@@ -19,10 +19,16 @@ Brief and design calls: `BRIEF.md`. Branch `claude/project-thread-o138r7` from d
 ## Independent review
 Read-only gate reviewer on `66b918e7c`. Finding 1 (remains held the dead character's pack and purse and were deleted) **fixed**: remains are kept, with a test. Background-write race: checked safe. Admin bypass: none (fails closed). Character data: untouched. Client sync: removed rows go by the normal world sync, ground by `ground_reset`. No regressions seen.
 
+## Revision 2 (Dave 20:09: the world as before anyone played)
+- Code: `drop_world_made` and the saved `world_rows` key; `reset_world` restores natural content; `server_flora.restore_all`; the server wires goblin piles, gifts and thief loot to `drop_world_made`.
+- `test_reset_world` (extended: den pile kept, felled trunk gone and trees restored, scatter re-laid, picked, boulder, bog and plant marks cleared, saplings gone, all held after a restart): PASS.
+- Real server, throwaway store `E:\Software\godotDeveset01_store_c` (seed adds a den pile, picked scatter, a mined boulder and two flora removals): reset then `--check` RESET_STORE_OK (world_piles 1, felled_chunks 0, taken 0), plain restart then `--check` RESET_STORE_OK again.
+- Focused existing tests, 32 PASS: test_felled_stays_gone, test_trunk_cutting, test_stump_chop, test_fell_autosplit, test_fruit_tree, test_shrub_work, test_flora_near_water, test_bog_iron, test_bog_rows, test_shore_gather, test_nests, test_goblin_den_life, test_goblin_stealing, test_goblin_friendship, test_thieves, test_items_persistence, test_save_compat, test_persistence_drills, test_server_items, test_ground_ops, test_death, test_real_death, test_mission001_walkthrough, test_dev_place, test_placement_rules, test_storage_locks, test_handcart, test_farming, test_skills, test_new_player, test_test_flag, test_reset_world.
+
 ## Limitations (open)
 - Admin check: local play has `check_admin` false (`data/items/admin_setting.json`), so everyone is an admin there, as for every admin action. Must be true before any public server.
 - The button and confirmation page are **not visually checked** (no windowed run); the server path is tested.
-- Felled trees stay felled, plants cleared under buildings are not restored, scatter that was picked up stays picked (natural content left as it is). Goblin den piles, loot and stuck arrows go with the loose items (a saved row does not say who dropped it). Materials deposited in an unfinished blueprint site are lost with the site.
+- (Revision 2 fixed: trees, plants and scatter are restored; den piles, gifts and loot are kept.) Den piles saved before revision 2 carry no mark and go once. Animals are not reset. Materials deposited in an unfinished blueprint site are lost with the site.
 - The reset runs in one server frame (synchronous saves plus the terrain reload); a hitch on a big world is likely and not measured.
 - If the terrain log could not be rewritten the server prints an error but players are still told the ground is rebuilding; pressing the reset again retries.
 - `.prev` backups of the store files keep the pre-reset world until the next save (read only if a main file is corrupt).
