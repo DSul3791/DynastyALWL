@@ -21,7 +21,7 @@
 | 4 | Tags | [P14-v2] and [P17] were not defined. The companion list omitted this file and the handoff. Some places still used [P14]. | Tag rows and links added. [P14] replaced with [P14-v2]. |
 | 5 | Stale notes | Several old "next category" lines, s6 row 28 ("food untouched") and row 39 (Hide - Trousers) predated later decisions. | Marked historical or corrected. |
 | 6 | Maturing | The docs said jars mature by plain elapsed time, then praised reusing the spoilage clock. That clock is scaled by place and season, and the only built transition is to rotten food. They also described both new `Maturing X` IDs and no new IDs. | One working representation in master s3.14 and companion s2: same food ID plus a `ready_age` against the existing age. Place and season scaling is stated. Plain elapsed time would need a new field. |
-| 7 | Transit ageing | The docs said food keeps ageing on carts and ships. Today ageing covers only packs, placed containers and ground items. | Recorded as needed code: cargo joins the ageing loop, plus `place_mult` rows for new containers and cargo. |
+| 7 | Transit ageing | The docs said food keeps ageing on carts and ships. Today ageing covers all saved packs, placed containers and ground items, but not cargo. | Recorded as needed code: cargo joins the ageing loop, plus `place_mult` rows for new containers and cargo. |
 | 8 | Slot state | Boards keeping portions and freshness, and jars returning a vessel, were assumed. A slot holds only number, count, `wear` and favourite, and eating returns nothing. | Board stack count = portions; shelf life fixed at assembly. A jar return on eating is needed code. |
 | 9 | Board group | "A complex board is a Main Meal" was worded as owner text. It would let the Dessert Platter escape the dessert penalty. | Marked PROPOSED: Dessert Platter → Dessert, Harvest Platter → Fruit & Vegetables, the other seven → Main Meal. |
 | 10 | Drinks | "Herbal tea" was used as a Beverage example. Medicinal teas are refused unless the player is sick. Herbal and Nettle tea are energy aids, refused unless tired, and they permanently cost Fitness training. No coffee exists. | Facts added to master s3.16. Scenarios use Fruit juice 806. The energy-aid conflict is owner question 2. |
@@ -59,7 +59,7 @@ These are recorded in the master with "for ChatGPT". None removes approved funct
    - NPC diners are FUTURE, because no NPC hunger exists.
    - The Serving Platter gets a pre-saw wooden recipe.
 8. **Locked containers:** only the owner or a player with access may lift, load or take down a locked container. Sourcing never bypasses a lock.
-9. **Warehouse Desk:** covers a stated radius or its building. Signs may overlap.
+9. **Warehouse Desk:** covers a stated radius or its building. Where a desk and a Storage sign cover the same crate, the desk takes priority, so Dave's one-context rule holds.
 10. **Crate #850** keeps everything. The Warehouse Crate earns its row as heavier, stackable, ship-rated freight.
 11. **Bookcase:** holds general small items until book items exist. No book, map or scroll item exists today.
 12. **Bulk storage accepts separate sets:**
@@ -146,7 +146,7 @@ The hooks reuse existing multiplier fields (`regen_mult`, `exhaustion_mult`, `hu
   - Every substantive finding is fixed (s1), recommended (s2), or an owner question (s5).
   - Minor points with no design effect were not carried forward: the misplaced s3.7 table heading, and a `wear` overflow far beyond any planned ready time.
 - **Round 3, a fresh independent re-audit of commit 03db6fd:** 4 must-fix and 7 should-fix findings. All are fixed in the next commit:
-  - Sign overlap marked as a recommendation.
+  - Sign overlap: first marked as a recommendation, then (round 4) withdrawn in favour of a desk-over-sign priority that keeps Dave's one-context rule.
   - The merge rule (`merge_gap` is 10% of shelf life) now never merges across `ready_age` or merges boards.
   - #830 retirement is tied to the jar decision.
   - Beverage drinks became owner question 6. Magic tonic was added to question 2, and the ripening clock to question 1.
@@ -157,4 +157,8 @@ The hooks reuse existing multiplier fields (`regen_mult`, `exhaustion_mult`, `hu
   - Ageing is described as covering all saved packs.
   - The hook claim was narrowed.
   - Ox wording was fixed.
-- **Round 4, a final independent check of the round 3 fixes:** recorded in the PR comment for the final commit.
+- **Round 4, a final independent check of commit d023f6a:** confirmed the round 3 fixes. It found 3 remaining issues, all fixed in the final commit:
+  - Sign overlap still narrowed Dave's rule; it is now a desk-over-sign priority.
+  - A self-contradicting bag-in-chest sentence was removed.
+  - Magic tonic was added to the master's energy-aid list.
+- **Result:** no substantive issue remains open, other than the seven owner decisions in s5 and the s2 recommendations for ChatGPT.
