@@ -1279,7 +1279,7 @@ func _init() -> void:
 	sp.peer_connected_hello(1, "abcdef123456")
 	sp.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 10, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 4, Vector3.ZERO)
-	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).counts[1] == 4 and sp.inventory_of(1).numbers[1] == stone, "split moves a part to the next empty slot")
+	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).counts[10] == 4 and sp.inventory_of(1).numbers[10] == stone, "split moves a part to the first empty backpack slot (slot 10, after the hotbar)")
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 6, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 0, Vector3.ZERO)
 	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).count_of(stone) == 10, "cannot split everything or nothing")
