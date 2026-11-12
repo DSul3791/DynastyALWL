@@ -57,6 +57,7 @@ const LOOKS := {
 	"bench": {"builder": "bench", "args": []},
 	"chair": {"builder": "chair", "args": []},
 	"table": {"builder": "table", "args": []},
+	"serving_platter": {"builder": "serving_platter", "args": []},
 	"wool_rug": {"builder": "rug", "args": []},
 	"hide_rug": {"builder": "hide_rug", "args": []},
 	"wall_torch": {"builder": "wall_torch", "args": [false]},

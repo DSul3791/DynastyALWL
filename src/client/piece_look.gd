@@ -1801,6 +1801,19 @@ static func _torus_at(parent: Node3D, ring: float, tube: float, at: Vector3, mat
 
 
 # A hide rug 1.7 by 1.1 m: the flattened shape of a whole hide with four leg stubs and a ragged edge, brown on top with a darker fur rim, 3 cm thick, no collision.
+# A Serving Platter on a table top (catalog phase 8): a flat board with a raised rim. shortcut: the same board full or empty, no food on it
+# (NOT visually complete); the world row carries the board and portions (inventory_view _note_platter) for Art to draw the fullness.
+static func serving_platter() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.5, 0.025, 0.35), Vector3(0.0, 0.0125, 0.0), _planks)
+
+	for z in [-0.165, 0.165]:
+		_box(root, Vector3(0.5, 0.04, 0.02), Vector3(0.0, 0.02, z), _frame)
+
+	return root
+
+
 static func hide_rug() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()

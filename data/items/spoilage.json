@@ -4,6 +4,7 @@
 	"gentle_mult": 4,
 	"tick_s": 15,
 	"merge_gap": 0.1,
+	"exact_age": ["seafood_platter", "roast_platter", "mixed_grill_platter", "charcuterie_board", "harvest_platter", "tavern_supper_board", "breakfast_platter", "dessert_platter"],
 	"rotten_item": "rotten_food",
 	"sick": {
 		"health": 0,
@@ -46,6 +47,7 @@
 		"masons_pallet": 1.0,
 		"ore_and_metal_rack": 1.0,
 		"warehouse_crate": 0.6,
+		"serving_platter": 1.0,
 		"handcart": 1.0
 	},
 	"season_mult": {
@@ -190,7 +192,15 @@
 		"smoked_meat": 480,
 		"dried_mushrooms": 720,
 		"mushrooms": 36,
-		"puffball": 24
+		"puffball": 24,
+		"seafood_platter": 24,
+		"roast_platter": 48,
+		"mixed_grill_platter": 48,
+		"charcuterie_board": 360,
+		"harvest_platter": 48,
+		"tavern_supper_board": 72,
+		"breakfast_platter": 120,
+		"dessert_platter": 72
 	},
 	"by_suffix": {
 		"berries": 36,
