@@ -50,8 +50,8 @@ Never judge a full test run on the standard exe: the world tests fail to compile
 ## Run tests
 ```
 GODOT_EXE=/c/GodotInstaller/Godot_v4.7.2-stable_win64_console.exe tools/run_one_test.sh <test> 300 /tmp/o_<test>    # one test, result in <out>/<test>.result
-python3 tools/tests_for_diff.py origin/dev HEAD --full > /tmp/plan.json
-GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json   # whole suite
+python3 tools/tests_for_diff.py origin/dev HEAD > /tmp/plan.json          # the change's tests; read its "why" first (docs/ai-team/TEST_GATES.md, risk-based selection). Add --full only for the nightly run and before main
+GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json   # runs the plan
 ```
 Tests live in `src/worldgen/tools/` and `src/water2/`. Latest full-run result: `docs/TYLER_NEXT_TASKS.md` (Tyler's final report); the Phase 2 order is `docs/handoff/PHASE2_RUNBOOK.md`.
 
