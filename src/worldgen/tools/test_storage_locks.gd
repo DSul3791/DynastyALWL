@@ -314,5 +314,55 @@ func _init() -> void:
 	act(1, Net.ACT_PICKUP, empty_crate)
 	check(not items._items.has(empty_crate), "the owner takes the empty locked crate down")
 
+	# 12. Hammer repair sourcing, live pushes, Store all and Stack to nearby obey the locks and the content rules (review M001-T13).
+	check(not items._boxes_near(3).any(func(row): return int(row[0]) == secret) and items._boxes_near(1).any(func(row): return int(row[0]) == secret), "hammer repair draws on a locked chest for its owner only")
+	items._chest_viewer[3] = secret
+	items._chest_viewer[1] = secret
+	var sent_3: int = int(chest_sends.get(3, 0))
+	var sent_1: int = int(chest_sends.get(1, 0))
+	items._push_box(secret, box(secret))
+	check(int(chest_sends.get(3, 0)) == sent_3 and int(chest_sends.get(1, 0)) == sent_1 + 1, "a live push of a locked chest reaches its owner, not a stranger who had it open")
+	items._chest_viewer.erase(3)
+	var fw_rack: int = place("firewood_rack@-1,0,3", 1)
+	var firewood: int = items.table.number_of("firewood")
+	items.inventory_of(1).add(firewood, 3)
+	items.inventory_of(1).add(stone, 2)
+	var pack_stone: int = items.inventory_of(1).count_of(stone)
+	act(1, Net.ACT_CHEST_OPEN, fw_rack)
+	act(1, Net.ACT_BULK, 1)
+	check(box(fw_rack).count_of(firewood) == 3 and box(fw_rack).count_of(stone) == 0 and items.inventory_of(1).count_of(stone) == pack_stone, "Store all puts the firewood in the firewood rack and keeps the stones")
+	var clay: int = items.table.number_of("clay")
+	box(fw_rack).add(clay, 1)   # a stack it would not take (as if the rule changed); no other container holds clay
+	items.inventory_of(1).add(clay, 2)
+	act(1, Net.ACT_BULK, 2)
+	check(box(fw_rack).count_of(clay) == 1 and items.inventory_of(1).count_of(clay) == 2, "Stack to nearby does not add clay to a firewood rack that holds some (rack %d)" % box(fw_rack).count_of(clay))
+
+	# 13. A damaged lock row on an owned container loads fail-closed: only the owner opens it, and the owner can set a new code.
+	var secret_uid: int = int(items._items[secret]["struct"]["uid"])
+	items._dirty = true
+	items.save()
+	var saved: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/world_items.json"))
+	var broke: int = 0
+
+	for row in saved["items"]:
+		if row.size() > 17 and int(row[10]) == secret_uid:
+			row[17] = "{\"salt\": 7, \"hash\": \"short\"}"
+			broke += 1
+
+	var f: FileAccess = FileAccess.open(DIR + "/world_items.json", FileAccess.WRITE)
+	f.store_string(JSON.stringify(saved))
+	f.close()
+	items = make_server()
+	secret = id_of_uid(secret_uid)
+	join(1, keys[1], Vector3(0.0, 10.0, 1.0))
+	join(3, keys[3], Vector3(-2.5, 10.0, 0.5))
+	check(broke == 1 and items._items[secret]["struct"].has("lock") and items._may_access(1, items._items[secret]) and not items._may_access(3, items._items[secret]), "a damaged lock loads fail-closed: the owner opens it, nobody else")
+	lock(3, secret, ItemsScript.LOCK_TRY, 1)
+	check(not items._may_access(3, items._items[secret]), "no code opens a damaged lock")
+	lock(1, secret, ItemsScript.LOCK_SET, 5)
+	clock[0] += 100.0
+	lock(3, secret, ItemsScript.LOCK_TRY, 5)
+	check(items._may_access(3, items._items[secret]), "the owner sets a new code and it works again")
+
 	print("test_storage_locks: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

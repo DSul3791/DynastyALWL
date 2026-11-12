@@ -62,7 +62,18 @@ place_mult: 0.6 closed furniture and crates, 0.8 open shelves and tool cabinet, 
 - The owner cannot name players to let in (the server knows only character keys, not names): "let in the player beside it" and a count of others with access.
 - No client UI test; the windows were not opened in a running game.
 
-## Risks
+## Review round 1 (FAIL on evidence; code PASS WITH NOTES) and the fixes
+- A damaged or unusable lock row on a container with an owner now loads **fail-closed**: an empty-code lock only the owner passes (no code can match); the owner sets a new code or takes the lock off. An ownerless container with a damaged row loads unlocked (nobody could ever open it otherwise). Test: `test_storage_locks` section 13.
+- New tests (section 12): hammer-repair sourcing (`_boxes_near`) skips a locked chest for a stranger and uses it for its owner; `_push_box` reaches the owner and not a stranger who had the chest open; Store all keeps what the container does not take; Stack to nearby.
+- Stack to nearby now also applies `_box_takes`. Negative control: with that check removed, the new test fails ("rack 3").
+- world_items.json stays version 2: an older build sets a version 2 file aside as `.bad` and does not misread it (so it does not load those locks unlocked); this build reads version 1 files.
+
+## Residual risks
+- **Character keys come from the client** (`hello(player_key)`): a scripted client can present a fresh key per try and get a fresh wait each time. This is a wider authentication question for Dave, not a lock bug. No per-container cap was added, because one would let strangers lock an owner's friends out by failing on purpose.
+- The `tries` list grows by one entry per failing key per container (a right code removes that key's entry; failures are never pruned, since a count must survive its deadline). Small per key, unbounded under the scripted-key abuse above.
+- A player with the code (or let in) can empty a locked chest and then take it down: s4.8 / the s3.13 reconciliation default lets "the owner or a player with access" lift or take down a locked container.
+- The first player to open a container with no owner becomes its owner (8 Nov 2026 rule) and can then lock it. New game: every container is owned from placement, so only containers from older saves have no owner.
+## Other risks
 - Unmeasured: each view action scans all world records once (`shortcut:` comment).
 - Playtest worlds from before load (version 1 world_items reads), but a 108 server refuses older clients.
 - A four-digit code is a game lock, not security: the save holds a salted hash of a 10 000-value space.

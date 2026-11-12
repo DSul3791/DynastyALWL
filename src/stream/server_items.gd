@@ -4800,6 +4800,9 @@ func _load_world_items() -> void:
 			if row.size() > 17 and typeof(row[17]) == TYPE_STRING and str(row[17]) != "" and entry["struct"].has("uid"):
 				var saved_lock: Dictionary = _clean_lock(JSON.parse_string(str(row[17])))   # world_items version 2: the code lock (s3.13)
 
+				if saved_lock.is_empty() and str(entry["struct"].get("owner", "")) != "":
+					saved_lock = {"salt": "", "hash": "", "ok": [], "allow": [], "tries": {}}   # a damaged lock fails closed: only the owner opens it until they set a new code or take it off
+
 				if not saved_lock.is_empty():
 					entry["struct"]["lock"] = saved_lock
 
@@ -14910,7 +14913,7 @@ func _lock_wait_s(it: Dictionary, key: String) -> float:
 	return maxf(float(row[1]) - _unix(), 0.0) if row.size() == 2 else 0.0
 
 
-# A saved lock, checked field by field; {} when it is not a usable lock (then the container loads unlocked: it never had a valid code).
+# A saved lock, checked field by field; {} when it is not a usable lock (the loader then fails closed for an owned container: owner only).
 func _clean_lock(raw: Variant) -> Dictionary:
 	if typeof(raw) != TYPE_DICTIONARY or typeof(raw.get("salt")) != TYPE_STRING or typeof(raw.get("hash")) != TYPE_STRING or str(raw["hash"]).length() != 64:
 		return {}
@@ -15500,8 +15503,8 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 			if inv.numbers[slot] != number:
 				break   # the whole stack has gone
 
-			if box[1].count_of(number) <= 0:
-				continue
+			if box[1].count_of(number) <= 0 or not _box_takes(str(_items[int(box[0])]["struct"]["kind"]), number):
+				continue   # only chests that already hold it, and take it (structures.json takes)
 
 			var amount: int = _box_room(int(box[0]), number, inv.counts[slot])
 			var put: int = amount - (box[1].add(number, amount, inv.wear[slot]) if amount > 0 else 0)
