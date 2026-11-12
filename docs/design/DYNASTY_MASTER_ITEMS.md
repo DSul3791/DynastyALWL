@@ -221,12 +221,11 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 
 ## 8. Decisions still needing Dave
 
-<<<<<<< HEAD
 **ChatGPT has entered design responses to all nine questions under Dave's delegated review process. These are proposed decisions for the catalog, not authorization to implement game data.** Dave can change any response using its optional override line. Dave explicitly answered question 8: enchantments are forever, with no replacement or removal. Remaining details of eligibility and stackables are proposals, not newly approved decisions. After that, Claude should reconcile the catalog's other sections against these responses, expose any true contradictions, and await Dave's final approval. No changes to game JSON or gameplay.
-=======
+
 ### 8.0 Reconciliation of the section 8 answers (Claude, 12 Nov)
 
-The answers below were entered by ChatGPT under Dave's delegated review process. Sections 3, 4 and 7 now carry them as **PROPOSED (s8 item N)** until Dave approves the catalog; item 8 also needs his explicit confirmation. Effects and contradictions found:
+The answers below were entered by ChatGPT under Dave's delegated review process. Sections 3, 4 and 7 now carry them as **PROPOSED (s8 item N)** until Dave approves the catalog. Dave has decided the permanence part of item 8 himself. Effects and contradictions found:
 
 | Item | Effect on the catalog | Contradiction or knock-on to note |
 |---|---|---|
@@ -237,12 +236,10 @@ The answers below were entered by ChatGPT under Dave's delegated review process.
 | 5 | Hardwood boards in blueprints Barrel 98, Cupboard 97, Canopy bed 48 (and carts, wagons, carriages when built). Planks stay in Crate 168, Wooden - Chest 27, Wooden - Chair 42, Wooden - Table 43, Shelf 96. | The "Hardwood Chest for later" is **not added** (catalog freeze); it needs its own approval if wanted. |
 | 6 | Leatherworking Table: 278, 392, 173 and 356 (quivers), 30 and 361 (backpacks), 213, 214, 358, 359, 360 (leather garments). Tailor's Table: 216, 237–244 and cloth items. Hide garments 39–42, 194–196 stay by hand. | "Consumed Thread" replaces Twine in sewing: 13 live needle recipes use Twine today (23, 39–42, 173, 194–196, 237, 238, 241, 388). Swapping them to Thread is a recipe change that follows from item 9; noted in s7. |
 | 7 | `drops.json log_length_m` 2.44 → 3.0; log dimensions, segmentation (`max_logs`, `blows_per_log`), `weights.json` log masses and tests change together. | None. |
-| 8 | Not applied beyond a note: awaits Dave. | Consistent with s2.9 items 1 to 5. |
+| 8 | **Decided by Dave:** enchantments are permanent (s2.9 item 6); a magical slot is filled once; physical craftsmanship fixed at creation. Eligibility (individually tracked tools, weapons, shields, armour, clothing, gear; not stackables or consumables) stays PROPOSED. | None. The draft-4 recommendation (overwrite allowed) is withdrawn. |
 | 9 | Add a Thread item, hand-craftable from plant fibre (later wool); consumed by sewing and portable repairs. | Conflicts with nothing approved, but it is a new item and a new ingredient in about 13 recipes (item 6), so it needs Dave's approval with the catalog. Twine stays for binding. |
 
 
-**ChatGPT has entered design responses to all nine questions under Dave's delegated review process. These are proposed decisions for the catalog, not authorization to implement game data.** Dave can change any response using its optional override line. Question 8 (magical effect replacement) explicitly awaits Dave's confirmation. After that, Claude should reconcile the catalog's other sections against these responses, expose any true contradictions, and await Dave's final approval. No changes to game JSON or gameplay.
->>>>>>> a8d804a (DYNASTY_MASTER_ITEMS.md: reconcile sections 3 and 7 with the section 8 answers (8.0))
 
 1. **Durability class of wooden tools, the Bone - Needle, stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper.** Dave's rules cover stone tools and metal tools only.
    **Recommend:** stone and flint weapons and the Scraper are disposable like stone tools; wooden tools are disposable too (they are as cheap as stone ones); the Bone - Needle breaks and is repaired by hand with a Bone, like a metal tool at its crafting place, since it is "the one reusable needle".
