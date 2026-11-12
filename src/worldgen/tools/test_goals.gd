@@ -75,7 +75,6 @@ func _init() -> void:
 	items.peer_connected_hello(1, "goals0000001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
-	items._admin_mode_off[1] = true
 	items.admin_mode_on = func(_p): return false
 	var rows: Array = items.goals_state(1)
 	check(rows.size() >= 10 and rows[0][3] == 1 and rows.any(func(r): return r[0] == "axe" and r[3] == 0), "goals_state lists the goals: the first open, the axe locked (%d goals)" % rows.size())

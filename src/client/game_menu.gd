@@ -166,7 +166,7 @@ func refresh() -> void:
 		_vsync_switch.set_on(_c.display.vsync_index != 2)
 		_fullscreen_switch.set_on(_c.display.fullscreen)
 		_tunnel_switch.set_on(_c.tunnel_on)
-		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
+		_admin_mode_switch.set_on(_c.items != null and _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
 		_damage_switch.set_on(_c.display.damage_numbers)

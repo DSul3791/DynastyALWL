@@ -189,13 +189,13 @@ const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left
 const ACT_ADMIN_ENERGY := 56   # admin only, tests: count = the energy (0 to 100) this character is set to (no protocol change)
 const ACT_HIT_SHRUB := 57     # a = flora id, b = chunk x, count = chunk z, at.x = 1 for a pickaxe (dig it up whole), 0 for an axe (chop it into leaves and sticks); Dave 2 Nov 2026
 const ACT_PLANT_BUSH := 58    # a = pack slot of a dug-up <species>_bush, at = the ground under the crosshair: it is planted there
-const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand new player (empty pack, nothing worn, fresh vitals, Admin mode off); stays flagged so Admin mode is off at every login until switched on again (no protocol change)
+const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand new player (empty pack, nothing worn, fresh vitals, Admin mode off) (no protocol change)
 const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
 const ACT_LITTER := 33     # at = a dead branch lying on the forest floor within reach: one stick into the pack (the client hides that branch)
 const ACT_STRIKE := 32     # a = slot of a weapon, at = aim direction: one jab at an animal in front (the server checks reach, pace and the weapon)
 const ACT_CLEAR_DROPS := 38  # a = radius in metres (admin only): removes the loose dropped items within it of the player; no protocol change, just a new kind
-const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch; while on, an admin crafts anything free (no protocol change)
+const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch, off at every login (Dave 11 Nov 2026); while on, an admin crafts anything free (no protocol change)
 const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (collapse rubble too) and reload the baked terrain for everyone
 const ACT_DUMP_WATER := 41   # at = the point (admin only): the server writes the live water cells in a 40 m box there to a text file in its store
 const ACT_LAND_TYPES := 46   # at = the point (admin only): the server classifies the land round it from the live water (lake, river, marsh, swamp, bog, floodplain), checks the springs near it and writes land_types_X_Z.txt (water land types, R1)

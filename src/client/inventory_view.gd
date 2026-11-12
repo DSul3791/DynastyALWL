@@ -28,7 +28,6 @@ const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
-const AdminScript := preload("res://src/stream/server_admin.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CharacterScreenScript := preload("res://src/client/character_screen.gd")
@@ -2896,12 +2895,13 @@ func _make_vice() -> Node3D:
 	return BuildingLook.vice()
 
 
-# Admin mode (Dave 2026-10-23, on by default): the whole list is craftable free for an admin; the server decides, this only stops the list greying.
-var admin_craft: bool = true    # Esc > Admin > Admin mode switch (on by default)
+# Admin mode (Dave 2026-10-23; OFF by default since Dave 11 Nov 2026): the whole list is craftable free for an admin who switched it on; the
+# server decides, this only matches its greying. The admin check being off (local play) no longer makes crafting free.
+var admin_craft: bool = false   # Esc > Admin > Admin mode switch (off at every start)
 
 
 func _free_craft() -> bool:
-	return admin_craft or not AdminScript.check_enabled()
+	return admin_craft
 
 
 func _can_craft(number: int) -> bool:

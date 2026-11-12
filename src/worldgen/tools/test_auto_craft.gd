@@ -52,7 +52,6 @@ func fresh(dir: String):
 	made.peer_connected_hello(1, "autocraftkey1")
 	made.report_position(1, Vector3(100.0, 10.0, 100.0))
 	made.vitals_of(1)["weight"] = 120.0
-	made._admin_mode_off[1] = true
 	return made
 
 
@@ -207,7 +206,6 @@ func _init() -> void:
 	var again = make("user://test_auto_craft")
 	again.peer_connected_hello(1, "autocraftkey1")
 	again.report_position(1, Vector3(100.0, 10.0, 100.0))
-	again._admin_mode_off[1] = true
 	var shape_after: Array = entries(again).map(func(e): return [e[0], e[1], e[2], e[3], e[4]])
 	check(shape_after == shape, "the queue is the same after save and load (%s / %s)" % [str(shape), str(shape_after)])
 	check(count(again, "plant_fibre") == 0 and count(again, "stone") == 4, "the taken ingredients are still taken after the load")
