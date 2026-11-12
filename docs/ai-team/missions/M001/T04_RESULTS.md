@@ -33,3 +33,30 @@ No new failures against base. One deviation: a two-line GDScript default-argumen
 - The plan's new worn slots (neck, strap, quiver in `clothing.json`) are data under `data/items/`, outside this brief; not done.
 - World-item rows sent to clients carry no instance data (ground tooltips show plain); no in-game visual check of the tooltip was made.
 - `_split` still does not copy wear to the new half (pre-existing).
+
+## Review round 1 (PASS WITH NOTES on `7864137b5`): fixes in `dacdbb630`
+Code under test: **`dacdbb630`** (the commit after it adds only this section). Same machine, build and scripts.
+
+| Note | Fix (choice per path) |
+|---|---|
+| 1 shot arrows | carry: the arrow entry keeps take_from_slot's inst; `_stick_arrow` and the landed drop write it |
+| 2 shoulder log | carry: lay-down, pick-up, chest-to-shoulder (`_give_shoulder` takes the inst) |
+| 2 `_pull_nearby_logs`, fire fuel into the store | carry: `inv.add(..., inst)`, store `add(..., inst)` |
+| 2 blueprint sites, `_pay_blueprint`, `_refund_blueprint`, structure repair, site view | skip: building costs count and take plain units only (`count_fill(n, true)`, `_stock_have/_stock_take(..., plain_only)`, ground stacks with inst left out), so a refund (counts only) never turns an instance plain |
+| 2 placed kits, torches, snares | refuse: `_place` and `_place_torch` say "That cannot be set down" for an instance slot, so no structure (or snare, or kit back from take-down) ever had one |
+| 3 craft-queue wear | unit rows are `[number, inst, wear]` (pack, box and ground), saved and given back with their wear (`give` gains `item_wear`) |
+| 4 `worn_of` hot path | reads the record's numbers directly, no slot arrays or dictionaries |
+| 5 tests | `test_item_instances` adds Store all, Sort, split, `recipe_table.craft` undo, building stock, placement refusal, rot (60 checks) |
+| 6 You column | the right-hand well uses `view.inventory.inst_of(held)` |
+| 7 rot | rotten food (pack, chest, ground) drops its inst; in-place torch changes keep theirs |
+
+| Run at `dacdbb630` | Result |
+|---|---|
+| `test_item_instances` | PASS (60 checks) |
+| `tests_for_diff.py origin/dev HEAD` plan (333 fast + 8 timing), `run_tests.sh --jobs 3` | 339 pass, 2 fail |
+| `test_flora_density` | FAIL: 300 s timeout under load, as at `62395ee91` (passed alone there, 396 s); timing-lane test, untouched code |
+| `test_npc_view` | FAIL exit 139: prints `test_npc_view: PASS`, then a segfault at quit. Flaky at every commit: base `159b566` 2 of 4 runs crash, `7864137b5` 2 of 3, `dacdbb630` 8 of 8. It loads none of the changed files (`tests_for_diff.py --explain`); the crash follows "dynasty shapes: made on a worker" (an exit race). Not attributed to T04; the 8 of 8 at head should be watched |
+| `validate_items` (run explicitly) | FAIL: 3 errors, the same at base `159b566`: `structures.json woodworking_table names the retired item woodworking_table` (item data, outside this task) |
+| `check_look_names.py`, `warnings` | NOT RUN |
+
+Remaining note: the hammer list's craft_stock counts still include instance units of building materials, so it could show a piece as covered that the server builds as a site. No building material can carry instance data in play (master s2.9 item 7), so no player sees this yet.
