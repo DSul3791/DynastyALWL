@@ -1,6 +1,6 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 4 FOR DAVE'S APPROVAL (12 Nov 2026). Documentation only.** **Dave: the questions for you are in section 8, with a "Dave's answer" line under each.** Nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code is changed by this document. The item catalog stays frozen until Dave approves this finished catalog.
+**Status: DRAFT 4 WITH CHATGPT REVIEW ANSWERS (12 Nov 2026); NOT YET APPROVED FOR IMPLEMENTATION.** **Nine proposed resolutions are in section 8; Dave may override any and must confirm question 8 before the final catalog approval.** Nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code is changed by this document. The item catalog stays frozen until Dave approves this finished catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4`. Open PR #1036 retires the Woodworking table separately.
 
@@ -220,55 +220,73 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 
 ## 8. Decisions still needing Dave
 
-Only these are open. Each has a recommendation. **Dave: write your answer on the "Dave's answer" line under each question** (for example "Agree", "Alternative (a)", or your own wording). Edit this file on the PR branch in GitHub, or reply in a PR comment with the item numbers.
+**ChatGPT has entered design responses to all nine questions under Dave's delegated review process. These are proposed decisions for the catalog, not authorization to implement game data.** Dave can change any response using its optional override line. Question 8 (magical effect replacement) explicitly awaits Dave's confirmation. After that, Claude should reconcile the catalog's other sections against these responses, expose any true contradictions, and await Dave's final approval. No changes to game JSON or gameplay.
 
 1. **Durability class of wooden tools, the Bone - Needle, stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper.** Dave's rules cover stone tools and metal tools only.
    **Recommend:** stone and flint weapons and the Scraper are disposable like stone tools; wooden tools are disposable too (they are as cheap as stone ones); the Bone - Needle breaks and is repaired by hand with a Bone, like a metal tool at its crafting place, since it is "the one reusable needle".
    *Consequences:* early tools are simple to replace; one rule for all primitive tools. *Alternative:* wooden tools keep today's stick repair.
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** Treat wooden tools, stone/flint weapons, and the flint Scraper as *disposable on breakage*, just like stone tools; no repair grind for primitive gear. A thrown Javelin is recoverable if it survives the impact, but disappears if broken. The single Bone - Needle is reusable across many sewing jobs (thread is consumed, not the needle); if the needle eventually breaks, craft a replacement from bone by hand rather than "repairing" the old needle with a whole bone. This does not imply all wooden weapons, bows or shields share tool durability values.
+
+   **Dave's correction/override (optional):** _
 
 2. **Bronze working needs an iron-built Smithy.** The Smithy costs Iron ingots, so if all metalworking moves there, bronze tools come after iron, against the Stone, Bronze, Iron, Steel ladders.
    **Recommend:** keep the Stone - Forge (88) as the bronze-working smithy (bronze tools only, no smelting, no iron in its cost); the Smithy works bronze, iron and steel.
    *Consequences:* bronze stays a real step before iron; one extra station stays in the game. *Alternatives:* (a) bronze tools crafted at the Smelter; (b) accept bronze as a parallel tier reachable after first iron, and retire the Stone - Forge.
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** **Keep Stone - Forge (#88) for bronze smithing**, with a stone/clay/wood bootstrap and no iron ingredients. The Smelter produces copper, tin and bronze; the Stone Forge shapes bronze items. The ordinary iron-built Smithy can also work bronze and additionally works iron and steel. No smelting is done at either forge. This keeps Bronze a genuine pre-Iron tool rung and preserves the wilderness path to an Iron Saw.
+
+   **Dave's correction/override (optional):** _
 
 3. **Station ids.** **Recommend:** the Brick - Forge row (90, `blacksmithy`) becomes the Smithy with its new cost; the never-obtainable Master forge rows (94/95) become the Master Smithy; the never-obtainable Large forge rows (92/93) become the Blast Furnace; retire the Anvil (827). No saves to migrate.
    *Consequences:* no new numbers for four stations; old descriptions and looks are rewritten. *Alternative:* new rows for all, leaving 90 and 92–95 retired or future.
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** **Accept the proposed stable-ID reuse** after implementation impact checks: Brick - Forge #90 becomes Smithy; the old Large Forge item/structure rows 92/93 become Blast Furnace; Master Forge rows 94/95 become Master Smithy. Keep Stone - Forge #88 for bronze (answer 2). Retire the redundant standalone Anvil #827 as a crafting requirement, since the Smithy includes its own anvil. Preserve every stable numeric ID/state rather than recycling retired IDs; update every reference, model, blueprint, recipe, name and test with the station renames. No game-data edit yet.
+
+   **Dave's correction/override (optional):** _
 
 4. **What the Bellows and the Quenching Trough improve.** **Recommend:** Bellows: faster Smithy crafting and less fuel; Quenching Trough: metal tools and weapons made at that Smithy get higher maximum durability. Neither gates recipes.
    *Consequences:* real reasons to build both, no new progression gates. *Alternative:* each add-on raises the Smithy's station level (the live add-on model) and gates advanced recipes (steel or weapon work).
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** **Bellows** improve heating efficiency: faster warm-up/metalworking and lower fuel consumption. **Quenching Trough** is an optional finishing aid that gives eligible forged metal tools/weapons better maximum durability or edge retention when used; it does not automatically produce Master Smithy +1/+2 craftsmanship. Neither add-on gates baseline recipes, so a player is never progression-locked by an optional upgrade. The exact magnitude and fuel/time balance belong in section 5.
+
+   **Dave's correction/override (optional):** _
 
 5. **Hardwood board uses.** **Recommend:** these live blueprints switch their Planks to Hardwood boards: Wooden - Chest 27, Barrel 98, Crate 168, Wooden - Chair 42, Wooden - Table 43, Shelf 96, Cupboard 97, Canopy bed 48; carts, wagons and carriages use them when built. Building pieces and rough items keep Planks. Retire the future species lumber and beam rows (101–174).
    *Consequences:* fine furniture needs hardwood trees and a saw. *Alternative:* a recipe may take either (an ingredient group of Plank and Hardwood board).
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** Preserve early storage and avoid making *all* furniture require hardwood: existing basic **Crate and Wooden Chest** use ordinary Planks, as do basic Wooden Chair, Wooden Table and Shelf. **Barrel, Cupboard and Canopy bed** use Hardwood Boards; carts, wagons, carriages and higher-quality furniture use them where appropriate. Plan a separate higher-quality Hardwood Chest for later (only if its capacity/quality justifies an added item). Hardwood remains useful for fine construction. Retire only unused **species-specific lumber_* and beam_* rows**, not species log_* rows; audit all references before retirement.
+
+   **Dave's correction/override (optional):** _
 
 6. **Leather clothing and hide garments.** Leather goods go to the Leatherworking Table and clothing to the Tailor's Table (approved), but leather clothing fits both, and hide garments are sewn by hand today.
    **Recommend:** Leatherworking Table: leather straps, belt, quiver, backpack and all leather garments (cap, jerkin, trousers, boots, gloves). Tailor's Table: wool, linen, fibre-cloth and fur garments (216, 237–244). Hide garments (39–42, 194–196) stay by hand with the needle for day one.
    *Alternative:* all garments at the Tailor's Table; hide garments also move.
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** **Leatherworking Table** makes leather straps, belts, quivers, backpacks, and leather garments/boots/gloves. **Tailor's Table** makes cloth, wool, linen, fibre-cloth and fur clothing; the Loom weaves cloth. Basic **hide garments remain hand-sewable with the one Bone - Needle and consumed Thread**, so clothing is possible on day one without a dedicated building. Workstation repairs remain available for appropriate finished goods; simple needle-and-thread repairs remain portable. Avoid shifting metal armour smithing to the Tailor's Table.
+
+   **Dave's correction/override (optional):** _
 
 7. **Log length.** Felled logs are 2.44 m; Dave's yields are per 3 m log. **Recommend:** make felled logs 3 m.
    *Consequences:* heavier logs (weights.json), fewer logs per trunk. *Alternative:* keep 2.44 m and treat the yields as per log regardless of length.
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** **Standardize harvested full logs at 3.0 metres** to match the approved 6 Planks/softwood log and 4 Hardwood Boards/hardwood log and the kiln's 100 Charcoal/log rule. Update drop segmentation, physical dimensions, carrying weights and related tests consistently. Do not silently treat an old 2.44 m log as 3 m while leaving the geometry untouched; keep wood/mass balance for section 5.
+
+   **Dave's correction/override (optional):** _
 
 8. **Enhancement replacement and destruction (awaiting Dave), eligibility, stackables.** **Recommend:** physical craftsmanship is fixed when crafted and cannot be replaced; a new magical enchantment may replace one in a chosen slot, destroying the old effect with nothing returned; eligible items are tools, weapons, armour, clothing and gear (single-instance items); stackables and consumables (food, ammunition, materials) are not eligible.
    *Alternatives:* enhancements removable by a wizard for a cost; or every enhancement permanent; or enhanced stacks split from plain ones.
 
-   **Dave's answer:** _
+   **ChatGPT's proposed answer — please confirm this particular gameplay rule:** Physical craftsmanship is fixed when the item is made (not an enchantment that can be stripped off). Each of the two magical slots can be overwritten deliberately; doing so **destroys the old magical effect, not the item**, with nothing returned, and magic cannot be extracted or moved to another item. The universal per-instance schema supports the slots even when empty, but first-pass enchantable gameplay covers non-stackable individual tools, weapons, shields, armour, clothing and gear. Ordinary materials, food, ammunition and other stackable consumables are not enchantable initially; enhanced instances never merge into plain stacks. **This proposal is not represented as a prior explicit approval by Dave.**
+
+   **Dave's correction/override (optional):** _
 
 9. **Thread and numbers.** **Recommend:** Twine serves as the thread for needle repairs (no new item); the balancing numbers in s5 are proposed by the item-data and systems roles in the implementation PR and tuned in playtest.
    *Alternative:* a Thread item (from flax or wool) before the Loom lands.
 
-   **Dave's answer:** _
+   **ChatGPT's answer:** **Add a distinct Thread item**, rather than using coarse binding Twine as sewing thread. It is consumed in small quantities for hand sewing and portable repairs, while the reusable Bone - Needle remains. To protect the first-day survival loop, Thread must be hand-craftable from available plant fibres (and later from spun wool); the Spinning Wheel can make it faster when introduced, and the Loom still handles weaving. The item-data/systems agents propose numerical costs, timings, capacities and rates, checked against first-hour bootstrap and then tuned during playtesting. No gameplay/JSON changes until Dave approves the catalog.
+
+   **Dave's correction/override (optional):** _
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
