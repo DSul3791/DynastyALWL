@@ -210,6 +210,7 @@ var _speed3: Dictionary = {}        # peer -> smoothed speed in m/s, vertical in
 var _cave_pool: Dictionary = {}     # peer -> true while swimming in a spring cave pool (icy; BUG-008)
 var _swimming: Dictionary = {}      # peer -> true while the server reads them as swimming
 var _soak: Dictionary = {}          # peer -> 0..1, how rain-soaked they are (warmth.json soak_*: rain wets, only shelter dries; Dave 5 Nov on the rain card)
+var _overheat: Dictionary = {}      # peer -> 0..1, the worn heat load times how hot it feels, at the last warmth reading (warmth.json layers; adds to exertion)
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
@@ -267,7 +268,7 @@ var _sick_cfg: Dictionary = {}      # data/items/sickness.json
 var send_thought: Callable          # (peer, line id, text, kind): the inner voice
 var send_remains: Callable          # (peer, rows [[position Vector3, seconds left], ...]): the owner's remains that still hold gear
 var _remains_sent: Dictionary = {}
-var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per body slot in clothing.json order, PackedByteArray instance data: Inventory.inst_bytes)
+var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per worn position in clothing.json worn order, PackedByteArray instance data: Inventory.inst_bytes)
 var _worn_sent: Dictionary = {}
 var _fishing: Dictionary = {}         # peer -> {phase "wait" or "bite", at msec, spot, cell, bites}
 var _fish_stock: Dictionary = {}      # cell key -> [fish left, unix time of the last count]
@@ -300,7 +301,7 @@ var zone_messages: int = 0
 var vent_messages: int = 0
 var zone_usec: int = 0
 var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
-var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset until clothing exists
+var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset, insulation_worn is used (tests set it)
 var send_warmth: Callable           # (peer, warmth percent 0..100)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
@@ -644,6 +645,7 @@ func peer_left(peer: int) -> void:
 	_torch_seen.erase(peer)
 	_cave_pool.erase(peer)
 	_soak.erase(peer)
+	_overheat.erase(peer)
 	_last_dose.erase(peer)
 	_remains_sent.erase(peer)
 	_worn_sent.erase(peer)
@@ -9289,6 +9291,8 @@ func effort_of(peer: int) -> float:
 		if warmth >= float(_body_cfg().get("shiver_stop_at", -1.0)):   # the body stops shivering deep in the cold (docs/design/body_in_weather_design.md 4)
 			level += float(_warmth_cfg.get("shiver_effort", 0.15)) * maxf(cold_at - warmth, 0.0) / maxf(cold_at, 1.0)
 
+		level += float(_layers_cfg().get("heat_effort", 0.5)) * float(_overheat.get(peer, 0.0))   # too warmly dressed for the heat is work too
+
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
 		level += float(_moving.get(peer, 0.0)) * float(_carry_cfg.get("load_effort", 0.45)) * pow(_load_ratio(peer), float(_carry_cfg.get("load_effort_power", 1.5)))
@@ -10627,23 +10631,59 @@ func _symptom_count(peer: int) -> int:
 	return int(_symptoms_seen[peer])
 
 
-# --- Clothing and equipment (data/items/clothing.json; items of kind clothing or gear with a slot) ---
+# --- Clothing and equipment (data/items/clothing.json; items of kind clothing or gear with a slot and a wear_layer; layers M001-T11) ---
 
-func _clothing_slots() -> Array:
+func _clothing_cfg() -> Dictionary:
 	if _clothing.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/clothing.json"))
-		_clothing = parsed if typeof(parsed) == TYPE_DICTIONARY else {"slots": []}
+		_clothing = parsed if typeof(parsed) == TYPE_DICTIONARY else {"slots": [], "worn": []}
 
-	return _clothing.get("slots", [])
+	return _clothing
 
 
-# The item numbers a character wears, one per body slot; old saves have none. Read straight off the record (slot arrays, or an old bare
+# The body slots an item's `slot` may name.
+func _clothing_slots() -> Array:
+	return _clothing_cfg().get("slots", [])
+
+
+# The worn positions ("slot:layer") in record and wire order. Append-only, so a save of any version lines up with it.
+func _worn_places() -> Array:
+	return _clothing_cfg().get("worn", [])
+
+
+# The worn position an item goes to, from its slot and wear_layer (none: the slot's first layer); -1 if it is not worn.
+func _place_of(number: int) -> int:
+	var entry: Dictionary = table.entry(table.id_of(number))
+	var slot: String = str(entry.get("slot", ""))
+	var layers: Array = _clothing_cfg().get("layers", {}).get(slot, [])
+
+	if layers.is_empty():
+		return -1
+
+	return _worn_places().find("%s:%s" % [slot, str(entry.get("wear_layer", layers[0]))])
+
+
+# Every position a piece worn at `place` fills: its own, and the same layer of each slot in its `spans` (a Dress: body and legs base).
+func _covers(number: int, place: int) -> Array:
+	var out: Array = [place]
+	var layer: String = str(_worn_places()[place]).get_slice(":", 1)
+
+	for slot in table.entry(table.id_of(number)).get("spans", []):
+		var other: int = _worn_places().find("%s:%s" % [str(slot), layer])
+
+		if other >= 0:
+			out.append(other)
+
+	return out
+
+
+# The item numbers a character wears, one per worn position; old saves have none. Read straight off the record (slot arrays, or an old bare
 # number): it runs on every position report, carry and warmth check, so it builds no slot arrays.
 func worn_of(peer: int) -> Array:
 	var list: Array = _characters.get(_peer_key.get(peer, ""), {}).get("worn", [])
 	var out: Array = []
 
-	for i in _clothing_slots().size():
+	for i in _worn_places().size():
 		var raw: Variant = list[i] if i < list.size() else 0
 		var head: Variant = raw[0] if typeof(raw) == TYPE_ARRAY and not (raw as Array).is_empty() else raw
 		out.append(maxi(int(head), 0) if typeof(head) == TYPE_INT or typeof(head) == TYPE_FLOAT else 0)
@@ -10651,13 +10691,13 @@ func worn_of(peer: int) -> Array:
 	return out
 
 
-# What a character wears as slot arrays [number, 1, wear, inst], one per body slot ([0, 0, 0, {}] for nothing; catalog Phase 1b).
+# What a character wears as slot arrays [number, 1, wear, inst], one per worn position ([0, 0, 0, {}] for nothing; catalog Phase 1b).
 func worn_slots_of(peer: int) -> Array:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
 	var list: Array = row.get("worn", [])
 	var out: Array = []
 
-	for i in _clothing_slots().size():
+	for i in _worn_places().size():
 		out.append(_worn_entry(list[i] if i < list.size() else 0))
 
 	return out
@@ -10677,28 +10717,114 @@ static func _worn_entry(raw: Variant) -> Array:
 	return [number, 1, maxi(used, 0), row[3] if row.size() > 3 and typeof(row[3]) == TYPE_DICTIONARY else {}]
 
 
+# A saved worn list, cleaned: each piece in its own position. An older save's eight columns are the first eight positions, so a piece there is
+# in its slot's base layer (a cloak in the old outer column in body outer); one whose layer is another (a helm saved in the head column) moves to
+# its own position when that is free. A piece that fits nowhere is left off, with a warning.
 func _clean_worn(raw: Variant) -> Array:
+	var places: Array = _worn_places()
 	var out: Array = []
-	var slots: Array = _clothing_slots()
+	var moved: Array = []
 
-	for i in slots.size():
+	for i in places.size():
+		out.append([0, 0, 0, {}])
+
+	for i in places.size():
 		var entry: Array = _worn_entry(raw[i] if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0)
 		var number: int = table.current_number(int(entry[0]))   # worn Hide leggings come back as Hide trousers
-		var fits: bool = number > 0 and table.id_of(number) != "" and str(table.entry(table.id_of(number)).get("slot", "")) == str(slots[i])
-		out.append([number, 1, int(entry[2]), InventoryScript.clean_inst(entry[3])] if fits else [0, 0, 0, {}])
+
+		if number <= 0 or table.id_of(number) == "":
+			continue
+
+		var piece: Array = [number, 1, int(entry[2]), InventoryScript.clean_inst(entry[3])]
+		var own: int = _place_of(number)
+
+		if own == i:
+			out[i] = piece
+		else:
+			moved.append([own, piece])
+
+	for row in moved:
+		if int(row[0]) >= 0 and int(out[int(row[0])][0]) == 0:
+			out[int(row[0])] = row[1]
+		else:
+			push_warning("characters.json: worn %s fits no free position, left off" % table.id_of(int(row[1][0])))
 
 	return out
 
 
-# Share of body heat the worn pieces keep, 0..max_insulation (warmth.json). The `insulation_of` hook, when set, takes over.
-func insulation_worn(peer: int) -> float:
+func _layers_cfg() -> Dictionary:
+	return _warmth_cfg.get("layers", {})
+
+
+# A worn piece's fabric row (warmth.json layers fabrics; items.json `fabric`), {} for none.
+func _fabric(entry: Dictionary) -> Dictionary:
+	return _layers_cfg().get("fabrics", {}).get(str(entry.get("fabric", "")), {})
+
+
+# One slot's layers with diminishing returns (master s3.7 rule 1, s3.8 design 2: never full stacking): largest first, each further one
+# counts layer_keep times the one before. The protection of Phase 4b is meant to combine through here too.
+func _layered(values: Array) -> float:
+	values.sort()
+	values.reverse()
+	var keep: float = float(_layers_cfg().get("layer_keep", 0.6))
+	var share: float = 1.0
 	var total: float = 0.0
+
+	for value in values:
+		total += float(value) * share
+		share *= keep
+
+	return total
+
+
+# A value of every worn piece (`value_of(items.json entry)`), layered per body slot, the slots added up.
+func _layered_worn(peer: int, value_of: Callable) -> float:
+	var by_slot: Dictionary = {}
 
 	for number in worn_of(peer):
 		if number > 0:
-			total += float(table.entry(table.id_of(number)).get("warmth", 0.0))
+			var entry: Dictionary = table.entry(table.id_of(number))
+			var slot: String = str(entry.get("slot", ""))
 
-	return minf(total, float(_warmth_cfg.get("max_insulation", 0.85)))
+			if not by_slot.has(slot):
+				by_slot[slot] = []
+
+			by_slot[slot].append(float(value_of.call(entry)))
+
+	var total: float = 0.0
+
+	for slot in by_slot:
+		total += _layered(by_slot[slot])
+
+	return total
+
+
+# Share of body heat the worn pieces keep, 0..max_insulation (warmth.json): layered per slot, each piece's warmth cut toward its fabric's
+# wet_keep as the body is soaked. The `insulation_of` hook, when set, takes over.
+func insulation_worn(peer: int) -> float:
+	var soak: float = clampf(float(_soak.get(peer, 0.0)), 0.0, 1.0)
+	var kept: Callable = func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0)) * lerpf(1.0, float(_fabric(entry).get("wet_keep", 1.0)), soak)
+	return minf(_layered_worn(peer, kept), float(_warmth_cfg.get("max_insulation", 0.85)))
+
+
+# How much heat the worn pieces trap in warm air, 0..max_insulation: their warmth times (1 - breath), layered the same way (fur hot, linen cool).
+func heat_load(peer: int) -> float:
+	var trapped: Callable = func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0)) * (1.0 - float(_fabric(entry).get("breath", 1.0)))
+	return minf(_layered_worn(peer, trapped), float(_warmth_cfg.get("max_insulation", 0.85)))
+
+
+# The share of falling rain the worn body pieces keep off: the best shedder's rain_shed (an Oilcloth - Cloak), 0 with none.
+func rain_shed(peer: int) -> float:
+	var best: float = 0.0
+
+	for number in worn_of(peer):
+		if number > 0:
+			var entry: Dictionary = table.entry(table.id_of(number))
+
+			if str(entry.get("slot", "")) == "body":
+				best = maxf(best, float(_fabric(entry).get("rain_shed", 0.0)))
+
+	return clampf(best, 0.0, 1.0)
 
 
 # Extra kilograms a worn pack lets the body carry.
@@ -10718,25 +10844,44 @@ func _carry_body(peer: int) -> float:
 	return float(vitals_of(peer).get("weight", 75.0)) + carry_bonus_kg(peer) / ratio
 
 
+# ACT_WEAR: the piece in a pack slot goes to its slot-and-layer. Every worn piece sharing a position with it comes off into the pack (the one in
+# that layer; a Dress filling body and legs base), each needing a free pack slot (worn pieces never stack; the slot the new piece leaves counts).
+# Without room nothing moves, so nothing is lost or doubled.
 func _wear(peer: int, inv, slot: int) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _characters.has(_peer_key.get(peer, "")):
 		return
 
 	var number: int = inv.numbers[slot]
-	var place: int = _clothing_slots().find(str(table.entry(table.id_of(number)).get("slot", "")))
+	var place: int = _place_of(number)
 
 	if place < 0:
 		_say(peer, "You cannot wear that.")
 		return
 
 	var worn: Array = worn_slots_of(peer)
-	var old: Array = worn[place]
+	var covers: Array = _covers(number, place)
+	var off: Array = []
+
+	for i in worn.size():
+		if int(worn[i][0]) > 0 and _covers(int(worn[i][0]), i).any(func(at: int) -> bool: return covers.has(at)):
+			off.append(i)
+
+	var room: int = 1 if inv.counts[slot] == 1 else 0
+
+	for i in inv.usable:
+		if inv.numbers[i] == 0:
+			room += 1
+
+	if off.size() > room:
+		_say(peer, "Your pack has no room for what that replaces.")
+		_reject(peer, 3)
+		return
+
 	var piece: Dictionary = inv.take_from_slot(slot, 1)
 
-	if int(old[0]) > 0 and inv.add(int(old[0]), 1, int(old[2]), old[3]) > 0:
-		inv.add(number, 1, int(piece["wear"]), piece["inst"])
-		_reject(peer, 0)
-		return
+	for i in off:
+		inv.add(int(worn[i][0]), 1, int(worn[i][2]), worn[i][3])
+		worn[i] = [0, 0, 0, {}]
 
 	worn[place] = [number, 1, int(piece["wear"]), piece["inst"]]
 	_characters[_peer_key[peer]]["worn"] = worn
@@ -10744,6 +10889,7 @@ func _wear(peer: int, inv, slot: int) -> void:
 	_sync_worn(peer, true)
 
 
+# ACT_UNWEAR: the piece in one worn position back into the pack (each layer comes off on its own); a full pack refuses.
 func _unwear(peer: int, inv, place: int) -> void:
 	var worn: Array = worn_slots_of(peer)
 
@@ -10751,7 +10897,8 @@ func _unwear(peer: int, inv, place: int) -> void:
 		return
 
 	if inv.add(int(worn[place][0]), 1, int(worn[place][2]), worn[place][3]) > 0:
-		_reject(peer, 0)
+		_say(peer, "Your pack is full.")
+		_reject(peer, 3)
 		return
 
 	worn[place] = [0, 0, 0, {}]
@@ -10902,6 +11049,11 @@ func warmth_target(peer: int) -> float:
 		air = float(mouth_air.get("air_c", cave_c))
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
+
+	# Overdressed in warm air (fur too hot, linen cool; warmth.json layers): kept for effort_of until the next reading. The air and wind only:
+	# a fire's heat is the warmth a dressed body seeks, never a heat load.
+	var hot: float = feels - float(cfg.get("comfort_c", 15.0))
+	_overheat[peer] = heat_load(peer) * minf(hot / maxf(float(_layers_cfg().get("heat_span_c", 10.0)), 0.01), 1.0) if hot > 0.0 and not bool(_swimming.get(peer, false)) else 0.0
 
 	var heat: float = 0.0
 	var tiers: Dictionary = _cooking.get("fire_tiers", {})
@@ -11084,7 +11236,8 @@ func _update_soak(peer: int, game_s: float) -> void:
 	if bool(_swimming.get(peer, false)):
 		soak = 1.0   # in the water: soaked through
 	elif precip > 0.05 and not covered:
-		soak = minf(soak + float(cfg.get("soak_per_h", 4.0)) * hours, maxf(soak, minf(precip * 2.0, 1.0)))
+		var reaches: float = 1.0 - rain_shed(peer)   # an oilcloth cloak keeps most of the rain off: slower to soak, and less wet in the end
+		soak = minf(soak + float(cfg.get("soak_per_h", 4.0)) * reaches * hours, maxf(soak, minf(precip * 2.0, 1.0) * reaches))
 	elif by_fire:   # body_703 on: wool by a fire dries in hours, not minutes (docs/design/body_in_weather_design.md 2)
 		soak = maxf(soak - float(_body_cfg().get("dry_fire_per_h", cfg.get("dry_fire_per_h", 6.0))) * hours, 0.0)
 	elif covered and not in_cave:
@@ -13732,20 +13885,14 @@ func _comfort_tick(spent: float = 0.0) -> void:
 
 
 # --- Camp goals' own checks (data/items/camp_goals.json, HINTS_AND_CAMP_EVENTS_SPEC.md section 2; Tyler 31 Oct 2026) ---
-# worn_warmth {min}: the warmth of the worn pieces (items.json `warmth`, summed, capped at 0.85) is at least min. talked {npc, hour_between}: note_talked(peer, npc) is called when a
+# worn_warmth {min}: the warmth of the worn pieces (items.json `warmth`, layered per slot as insulation_worn does when dry, capped at 0.85) is at least min. talked {npc, hour_between}: note_talked(peer, npc) is called when a
 # dialogue with that NPC opens, and counts when the game hour is inside the band. moved_lit_night {metres}: walking while holding a torch (in the pack) or within 4 m of a lit fire, between
 # dusk (hour 19) and dawn (hour 6); the metres are added up once a slow tick and kept in the goal counts.
 var _night_last_pos: Dictionary = {}
 
 
 func _worn_warmth(peer: int) -> float:
-	var total: float = 0.0
-
-	for number in worn_of(peer):
-		if int(number) > 0:
-			total += float(table.entry(table.id_of(int(number))).get("warmth", 0.0))
-
-	return minf(total, 0.85)
+	return minf(_layered_worn(peer, func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0))), 0.85)
 
 
 func _game_hour() -> float:

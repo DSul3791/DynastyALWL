@@ -243,7 +243,8 @@ static func slope_tilt(on_floor: bool, local_normal: Vector3, pace: float, clip:
 	return clampf(angle, -0.1, 0.44) if angle > 0.0 else clampf(angle * 0.4, -0.1, 0.0)
 
 
-# The clothes colours of the worn items: body colours the coat, legs the trousers, feet the shoes (stage-one clothing, art/MODEL_PLAN.md).
+# The clothes colours of the worn items: body colours the coat, legs the trousers, feet the shoes (stage-one clothing, art/MODEL_PLAN.md). Only the
+# layer that is the body's own garment tints it (body and legs base, feet footwear); cloaks, armour and socks hang as their own pieces.
 static func outfit_colors(worn_numbers: Array, table, base: Dictionary = {}) -> Dictionary:
 	var out: Dictionary = {"coat": base.get("coat", COAT), "trousers": base.get("trousers", TROUSERS), "shoes": base.get("shoes", SHOES)}
 
@@ -255,7 +256,7 @@ static func outfit_colors(worn_numbers: Array, table, base: Dictionary = {}) -> 
 		var slot: String = str(table.entry(id).get("slot", ""))
 		var def: Dictionary = BasicLookScript.entry(id)
 
-		if def.is_empty():
+		if def.is_empty() or not str(table.entry(id).get("wear_layer", "base")) in ["base", "footwear"]:
 			continue
 
 		var tint: Color = Color.html(str(def.get("color", "#808080")))

@@ -1,8 +1,8 @@
 extends SceneTree
 
-# The outer and waist clothing slots (the item review, 10 Nov 2026; data/items/clothing.json): a cloak goes over the body piece, a belt, quiver or
-# pouch at the waist, each in its own slot at the end of the list, so a save from before them reads them empty and keeps the rest; a cloak worn
-# outer leaves the tunic on. The cloak row is moved to "outer" here; Jamie's item batch moves the real rows.
+# The outer and waist clothing positions (the item review, 10 Nov 2026; layers since M001-T11, protocol 107; data/items/clothing.json): a cloak goes
+# over the body piece (the body's outer layer), a belt, quiver or pouch at the waist, in worn positions 6 and 7, so a save from before them reads
+# them empty and keeps the rest; a cloak worn outer leaves the tunic on. The layer model itself is test_clothing_layers.gd.
 #   godot --headless --path . --script res://src/worldgen/tools/test_clothing_slots.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -33,18 +33,17 @@ func _init() -> void:
 	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	items.send_notice = func(_p, _t): pass
 	items.setup(ItemTableScript.load_default(), dir)
-	var slots: Array = items._clothing_slots()
-	check(slots == ["head", "body", "legs", "feet", "hands", "back", "outer", "waist"], "eight slots, outer and waist last (%s)" % str(slots))
+	var places: Array = items._worn_places()
+	check(places.slice(0, 8) == ["head:base", "body:base", "legs:base", "feet:footwear", "hands:base", "back:base", "body:outer", "waist:base"], "the first eight positions are the eight old slots, outer and waist last (%s)" % str(places))
 
 	items.peer_connected_hello(1, "dresser00001")
 	var tunic: int = items.table.number_of("hide_tunic")
 	var key: String = str(items._peer_key[1])
 	items._characters[key]["worn"] = [0, tunic, 0, 0, 0, 0]   # a save from before the new slots
 	var worn: Array = items.worn_of(1)
-	check(worn.size() == 8 and int(worn[1]) == tunic and int(worn[6]) == 0 and int(worn[7]) == 0, "an old save keeps its tunic and reads outer and waist empty (%s)" % str(worn))
-	check(items._clean_worn([0, tunic, 0, 0, 0, 0]).size() == 8, "and loads cleaned to eight")
+	check(worn.size() == places.size() and int(worn[1]) == tunic and int(worn[6]) == 0 and int(worn[7]) == 0, "an old save keeps its tunic and reads outer and waist empty (%s)" % str(worn))
+	check(items._clean_worn([0, tunic, 0, 0, 0, 0]).size() == places.size() and int(items._clean_worn([0, tunic, 0, 0, 0, 0])[1][0]) == tunic, "and loads cleaned to every position")
 
-	items.table.entry("hide_cloak")["slot"] = "outer"
 	var cloak: int = items.table.number_of("hide_cloak")
 	items.action(1, Net.ACT_ADMIN_GIVE, cloak, 0, 1, Vector3.ZERO)
 	var inv = items.inventory_of(1)
@@ -53,7 +52,7 @@ func _init() -> void:
 	check(int(worn[6]) == cloak and int(worn[1]) == tunic, "a cloak goes on over the tunic, which stays on (%s)" % str(worn))
 	check(items.insulation_worn(1) > float(items.table.entry("hide_tunic").get("warmth", 0.0)), "and both keep warm")
 	items.action(1, Net.ACT_UNWEAR, 6, 0, 0, Vector3.ZERO)
-	check(int(items.worn_of(1)[6]) == 0 and inv.count_of(cloak) == 1, "taking off the outer slot gives the cloak back")
+	check(int(items.worn_of(1)[6]) == 0 and inv.count_of(cloak) == 1 and int(items.worn_of(1)[1]) == tunic, "taking off the outer layer gives the cloak back and leaves the tunic")
 
 	print("clothing slots: %d failures" % failures)
 	items._finish_writer()
