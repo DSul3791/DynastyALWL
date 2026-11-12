@@ -36,6 +36,9 @@ class FakeInventory:
 		numbers.resize(SLOTS)
 		numbers[4] = 7
 
+	func inst_of(_slot: int) -> Dictionary:   # protocol 106: no instance data here
+		return {}
+
 
 class FakeView:
 	var table: FakeTable = FakeTable.new()
@@ -51,6 +54,11 @@ class FakeView:
 		return size
 
 	func _item_label(number: int) -> String:
+		return table.name_of(number)
+
+	var worn_inst: Dictionary = {}   # protocol 106: the worn pieces' instance data (none here)
+
+	func inst_label(number: int, _item_inst: Dictionary) -> String:
 		return table.name_of(number)
 
 var failures: int = 0

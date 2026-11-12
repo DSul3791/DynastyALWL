@@ -193,6 +193,7 @@ var thought_event: Callable = Callable()     # (line id, kind) when the inner vo
 var _thought_label: Label
 var _thought_until_msec: int = 0
 var worn: PackedInt32Array = PackedInt32Array()   # item number per body slot (clothing.json order), 0 = nothing (protocol 40)
+var worn_inst: Dictionary = {}                    # body slot index -> the worn piece's instance data (protocol 106); absent = plain
 var clothing_cfg: Dictionary = {}
 const TrackingScript := preload("res://src/shared/tracking.gd")
 var trail_mult: float = 1.0                 # Tracking skill -> trail life multiple, 1.0 to 6.0 (see _update_trail_mult)
@@ -1600,8 +1601,13 @@ func _on_full(bytes: PackedByteArray) -> void:
 	refresh_hotbar()
 
 
+# Protocol 106: a count byte, 9 bytes per changed slot (slot, u32 number, u16 count, u16 wear), then the instance data of those slots (Inventory.inst_bytes).
 func _on_slots(bytes: PackedByteArray) -> void:
-	for at in range(0, bytes.size() - 8, 9):
+	var n: int = mini(bytes[0], floori(float(bytes.size() - 1) / 9.0)) if not bytes.is_empty() else 0
+	var insts: Dictionary = InventoryScript.inst_from_bytes(bytes, 1 + n * 9)
+
+	for k in n:
+		var at: int = 1 + k * 9
 		var slot: int = bytes[at]
 
 		if slot < inventory.SLOTS:
@@ -1611,6 +1617,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			inventory.numbers[slot] = bytes.decode_u32(at + 1)
 			inventory.counts[slot] = bytes.decode_u16(at + 5)
 			inventory.wear[slot] = bytes.decode_u16(at + 7)
+			inventory.inst[slot] = insts.get(slot, {}) if inventory.numbers[slot] != 0 else {}
 
 			if tool_event.is_valid() and inventory.numbers[slot] == was_number and was_number != 0:
 				if is_broken(slot) and not was_broken:
@@ -2158,7 +2165,7 @@ func hotbar_tip(key: int) -> String:
 	var key_name: String = "0" if key == 9 else str(key + 1)
 
 	if slot >= 0:
-		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) + ("\nKeys: Use (E) takes it off the hotbar" if open else "")
+		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], inventory.inst_of(slot)) + ("\nKeys: Use (E) takes it off the hotbar" if open else "")
 
 	if key_number(key) != 0:
 		return "%s: none in your pack. The next one you get comes back to key %s." % [table.name_of(key_number(key)), key_name]
@@ -4384,7 +4391,8 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 	return "%s %02d:%02d:%02d Burn time%s" % [_item_label(number), floori(float(total) / 3600.0), floori(float(total) / 60.0) % 60, total % 60, size]
 
 
-func _on_worn(numbers: PackedInt32Array) -> void:
+func _on_worn(numbers: PackedInt32Array, insts: PackedByteArray = PackedByteArray()) -> void:
+	worn_inst = InventoryScript.inst_from_bytes(insts, 0)
 	var first: bool = worn.is_empty()
 	var changed: Array = []
 	var ids: Array = []
@@ -4798,18 +4806,42 @@ func _item_label(number: int) -> String:
 	return item_name
 
 
+# An item's name with its craftsmanship after it ("Steel - Axe +2"; master s2.9: the name shows the instance's enhancements).
+func inst_label(number: int, item_inst: Dictionary) -> String:
+	var craft: int = int(item_inst.get("craft", 0))
+	return _item_label(number) + (" +%d" % craft if craft > 0 else "")
+
+
+# The instance lines of a tooltip: Tempered and each filled magical slot; empty slots stay hidden (master s2.9 item 1).
+func inst_lines(item_inst: Dictionary) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+
+	if int(item_inst.get("temper", 0)) == 1:
+		out.append("Tempered")
+
+	for effect in item_inst.get("magic", []):
+		if str(effect) != "":
+			out.append("Enchanted: %s" % str(effect))
+
+	return out
+
+
 func _freshness_word(f: float) -> String:
 	return "fresh" if f > 0.6 else ("going off" if f > 0.25 else "nearly rotten")
 
 
-func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
+func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary = {}) -> String:
 	if number == 0:
 		return ""
 
 	var entry: Dictionary = table.entry(table.id_of(number))
-	var item_name: String = _item_label(number)
+	var item_name: String = inst_label(number, item_inst)
 
 	var text: String = "%s x%d\n%s, %s" % [item_name, count, str(entry.get("kind", "item")), "does not stack" if table.stack_of(number) <= 1 else "stacks without limit (weight is your limit)"]
+
+	for line in inst_lines(item_inst):
+		text += "\n" + line
+
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
 	if int(entry.get("capacity_ml", 0)) > 0:
