@@ -126,14 +126,14 @@
   "iron_grill_grate": "Mission 001 phase 6 kept cooking equipment: no looks.json row or model yet (NOT visually complete)",
   "iron_frying_pan": "Mission 001 phase 6 kept cooking equipment: no looks.json row or model yet (NOT visually complete)",
   "iron_cauldron": "Mission 001 phase 6 kept cooking equipment: no looks.json row or model yet (NOT visually complete)",
-  "seafood_platter": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "roast_platter": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "mixed_grill_platter": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "charcuterie_board": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "harvest_platter": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "tavern_supper_board": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "breakfast_platter": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "dessert_platter": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
+  "seafood_platter": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
+  "roast_platter": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
+  "mixed_grill_platter": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
+  "charcuterie_board": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
+  "harvest_platter": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
+  "tavern_supper_board": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
+  "breakfast_platter": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
+  "dessert_platter": "Mission 001 phase 8, live: no board model yet (NOT visually complete)",
   "ploughmans_board": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands"
  }
 }

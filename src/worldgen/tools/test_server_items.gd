@@ -2098,12 +2098,12 @@ func _init() -> void:
 	var slot_bar: int = en.inventory_of(1).numbers.find(bar)
 	en._last_eat.clear()
 	en.action(1, Net.ACT_EAT, slot_bar, 0, 0, Vector3.ZERO)
-	check(en.energy_of(1) == 55.0 and en.inventory_of(1).count_of(bar) == 2, "an energy bar gives 25 energy at once")
-	check(float(en._characters["energykey001"]["train"]) < 0.0, "and costs fitness training")
+	check(en.energy_of(1) == 42.0 and en.inventory_of(1).count_of(bar) == 2, "a Nut cake gives 12 energy at once (master s3.16 [D17])")
+	check(float(en._characters["energykey001"].get("train", 0.0)) == 0.0, "and costs no fitness training")
 	en.vitals_of(1)["energy"] = 100.0
 	en._last_eat.clear()
 	en.action(1, Net.ACT_EAT, slot_bar, 0, 0, Vector3.ZERO)
-	check(en.inventory_of(1).count_of(bar) == 2, "not tired: the bar is kept")
+	check(en.inventory_of(1).count_of(bar) == 1, "not tired: it is eaten all the same (no refusal)")
 
 	for k in 40:
 		en.vitals_of(1)["energy"] = 10.0
@@ -2111,7 +2111,7 @@ func _init() -> void:
 		en.action(1, Net.ACT_ADMIN_GIVE, bar, 0, 1, Vector3.ZERO)
 		en.action(1, Net.ACT_EAT, en.inventory_of(1).numbers.find(bar), 0, 0, Vector3.ZERO)
 
-	check(en.fitness_of(1) == fit_before - 2 or en.fitness_of(1) == fit_before - 3, "supplements can wear fitness down by at most 3 points (%d to %d)" % [fit_before, en.fitness_of(1)])
+	check(en.fitness_of(1) == fit_before and en.energy_of(1) == 10.0, "40 more while its Dessert slot runs: no energy and no fitness lost (%d to %d, energy %.0f)" % [fit_before, en.fitness_of(1), en.energy_of(1)])
 
 	# Sleep (job 86): lying plus ACT_SLEEP rests faster, by place; rain on the open wakes; stance and rest end it.
 	var sleeper: Array = [0.0, 0.0]      # cover, rain

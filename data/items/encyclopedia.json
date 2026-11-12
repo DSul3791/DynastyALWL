@@ -2790,7 +2790,7 @@
 		"energy_bar": {
 			"name": "Nut cake",
 			"kind": "food",
-			"description": "Nuts pressed with honey into a cake. Quick energy that wears on your fitness.",
+			"description": "Nuts pressed with honey into a cake. Quick energy; a sweet slows what you learn for a while.",
 			"how_to_get": [
 				"Craft: 3 Nuts, 1 Honey"
 			],
