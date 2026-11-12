@@ -2,8 +2,8 @@ extends SceneTree
 
 # Graded furniture (Mission 001 phase 3, master docs/design/DYNASTY_MASTER_ITEMS.md s3.5 and s2.3 items 3-5): Crude, Rustic, Fine, Ornate chests,
 # chairs and tables, Crude and Fine benches, and the single board pieces are built from Hardwood boards, never Planks (the Crate keeps Planks);
-# each grade costs more boards than the one below and places from its blueprint; chest slots rise by grade; comfort counts only the best graded
-# seat and the best graded table.
+# each grade costs more boards than the one below and places from its blueprint; chest slots rise by grade; comfort counts each graded
+# family (chair, table, bench) once, at its best grade.
 #   godot --headless --path . --script res://src/worldgen/tools/test_furniture_grades.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -159,7 +159,7 @@ func _place_checks() -> void:
 				check(box != null and int(box.usable) == int(items._structures[id]["slots"]), "%s: opens with %d slots" % [id, int(items._structures[id]["slots"])])
 
 
-# Comfort: graded seats and tables count once per class, the best grade; ungraded seats still count by kind.
+# Comfort: each graded family (chair, table, bench) counts once, at its best grade; families and ungraded kinds still add up.
 func _comfort_checks() -> void:
 	for family in ["Chair", "Table", "Bench"]:
 		var points: Array = FAMILIES[family].map(func(k): return int(items._comfort_kind(str(items._structures[k].get("comfort", k))).get("points", 0)))
@@ -171,9 +171,14 @@ func _comfort_checks() -> void:
 		check(ok, "%s comfort rises by grade %s" % [family, str(points)])
 
 	check(int(items._comfort_kind("chair")["points"]) == 2 and int(items._comfort_kind("table")["points"]) == 2 and int(items._comfort_kind("bench")["points"]) == 1, "today's points stay: Rustic chair 2, Rustic table 2, Crude bench 1")
+	var pts: Callable = func(k: String) -> int: return int(items._comfort_kind(k)["points"])
+	var level: Callable = func() -> int: return int(items.comfort_at(1, true)["level"])
 	items._items.clear()
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	var level: Callable = func() -> int: return int(items.comfort_at(1, true)["level"])
+	add_struct("bench", Vector3(1.0, 10.0, 2.0))
+	add_struct("chair", Vector3(2.0, 10.0, 2.0))
+	check(level.call() == 1 + pts.call("bench") + pts.call("chair"), "a Crude bench and a Rustic chair both count, as today (%d)" % level.call())
+	items._items.clear()
 	var ornate_chair: int = 0
 
 	for kind in FAMILIES["Chair"] + FAMILIES["Bench"]:
@@ -182,21 +187,21 @@ func _comfort_checks() -> void:
 		if kind == "ornate_chair":
 			ornate_chair = id
 
-	var best_seat: int = int(items._comfort_kind("ornate_chair")["points"])
-	check(level.call() == 1 + best_seat, "four chair grades and two benches count as the Ornate chair alone (%d)" % level.call())
+	var seats: int = pts.call("ornate_chair") + pts.call("fine_bench")
+	check(level.call() == 1 + seats, "four chair grades count as the Ornate chair and two bench grades as the Fine bench (%d)" % level.call())
 
 	for kind in FAMILIES["Table"]:
 		add_struct(kind, Vector3(-1.0 - 0.5 * float(items._items.size()), 10.0, -1.0))
 
-	var best_table: int = int(items._comfort_kind("ornate_table")["points"])
-	check(level.call() == 1 + best_seat + best_table, "and four table grades as the Ornate table alone (%d)" % level.call())
+	check(level.call() == 1 + seats + pts.call("ornate_table"), "and four table grades as the Ornate table alone (%d)" % level.call())
 	add_struct("log_seat", Vector3(3.0, 10.0, -2.0))
-	check(level.call() == 2 + best_seat + best_table, "an ungraded log seat still adds its point (%d)" % level.call())
+	check(level.call() == 2 + seats + pts.call("ornate_table"), "an ungraded log seat still adds its point (%d)" % level.call())
 	items._items.erase(ornate_chair)
-	check(level.call() == 2 + int(items._comfort_kind("fine_chair")["points"]) + best_table, "without the Ornate chair the next best seat counts (%d)" % level.call())
+	check(level.call() == 2 + pts.call("fine_chair") + pts.call("fine_bench") + pts.call("ornate_table"), "without the Ornate chair the Fine chair counts (%d)" % level.call())
 	items._comfort_cache.clear()
 	var tip: String = items.comfort_tip(1)
-	check((tip.contains("Fine chair") or tip.contains("Fine bench")) and not tip.contains("Crude chair") and not tip.contains("Crude table"), "the tooltip names the seat that counts and offers no lower grade (%s)" % tip.replace("\n", " | "))
+	check(tip.contains("Fine chair") and tip.contains("Fine bench") and not tip.contains("Crude chair") and not tip.contains("Crude table") and not tip.contains("Crude bench"), "the tooltip names the grades that count and offers no lower grade (%s)" % tip.replace("
+", " | "))
 
 
 func _init() -> void:

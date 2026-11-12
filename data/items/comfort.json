@@ -15,7 +15,7 @@
 	"rules": {
 		"each_kind_once": true,
 		"one_bed_counts": "only the best bed within the radius counts (you sleep in one)",
-		"best_grade_counts": "graded seats and tables (a kind with a grade: crude, rustic, fine, ornate; master s3.5) count once per class, only the best grade within the radius, as the bed does; seats and tables with no grade still count by kind",
+		"best_grade_counts": "graded furniture (a kind with a grade: crude, rustic, fine, ornate; master s3.5) counts once per family (chair, table, bench), only the best grade within the radius, as the bed does, so grades never stack but a bench and a chair both count; kinds with no grade count by kind",
 		"lit_only": "fires, torches and chandeliers count only while lit; a laid, unlit or burnt-out fire gives 0",
 		"same_floor": "items within height_m above or below the player's feet"
 	},
@@ -73,6 +73,7 @@
 			"class": "seat",
 			"points": 1,
 			"grade": "crude",
+			"family": "bench",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "bench_kit"
@@ -82,6 +83,7 @@
 			"class": "seat",
 			"points": 2,
 			"grade": "rustic",
+			"family": "chair",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "chair_kit"
@@ -91,6 +93,7 @@
 			"class": "table",
 			"points": 2,
 			"grade": "rustic",
+			"family": "table",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "table_kit"
@@ -100,6 +103,7 @@
 			"class": "seat",
 			"points": 1,
 			"grade": "crude",
+			"family": "chair",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "crude_chair (blueprint 188)"
@@ -109,6 +113,7 @@
 			"class": "seat",
 			"points": 3,
 			"grade": "fine",
+			"family": "chair",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "iron_chair (Fine - Chair, blueprint 93)"
@@ -118,6 +123,7 @@
 			"class": "seat",
 			"points": 4,
 			"grade": "ornate",
+			"family": "chair",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "ornate_chair (blueprint 189)"
@@ -127,6 +133,7 @@
 			"class": "seat",
 			"points": 3,
 			"grade": "fine",
+			"family": "bench",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "iron_bench (Fine - Bench, blueprint 92)"
@@ -136,6 +143,7 @@
 			"class": "table",
 			"points": 1,
 			"grade": "crude",
+			"family": "table",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "crude_table (blueprint 190)"
@@ -145,6 +153,7 @@
 			"class": "table",
 			"points": 3,
 			"grade": "fine",
+			"family": "table",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "iron_table (Fine - Table, blueprint 94)"
@@ -154,6 +163,7 @@
 			"class": "table",
 			"points": 4,
 			"grade": "ornate",
+			"family": "table",
 			"needs_lit": false,
 			"status": "placeable",
 			"source": "ornate_table (blueprint 191)"
