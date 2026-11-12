@@ -2,7 +2,7 @@
 
 # COORDINATOR_STATE — replace this template with live state
 Updated (timezone): UNKNOWN
-Project operating policy: NOT ACTIVE / HANDOFF FREEZE ON (until written lift)
+Project operating policy: IN FORCE (handoff freeze lifted 12 Nov 2026) / VERIFY
 Current stable main SHA: VERIFY LIVE
 Current dev SHA: NOT CREATED / VERIFY LIVE
 Water record and test machine status: VERIFY

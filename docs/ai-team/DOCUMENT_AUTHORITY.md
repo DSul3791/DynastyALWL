@@ -1,5 +1,5 @@
 # Documentation authority, provenance and synchronization
-**Status: PROPOSED.**
+**Status: IN FORCE (activated by Dave, 12 Nov 2026; `INSTALL_RECORD.md`). Drafted as PROPOSED.**
 
 ## Do not confuse documents with approvals
 The Cowork Library `START_HERE.md` is the navigation map. The repo `docs/START_HERE.md` is the engineering entry point. Authority is **per topic and decision**, not 'everything in the newest file'. Resolve the authoritative topic document using `/mnt/project-files/handoffs/DOC_AUDIT_11Nov.md`, `docs/DOC_MAP.md` when refreshed, and `design/decisions_pending.md` for the 85 historical rulings. For current item mechanics, repo `data/items/*.json` is implementation truth; `docs/design/item_system.md`, `progression.md`, and `buildables_plan.md` state intended design. Code and documents can disagree—log mismatch; do not silently make the code authoritative over creative intent.

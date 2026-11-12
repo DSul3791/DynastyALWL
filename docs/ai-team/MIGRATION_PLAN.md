@@ -1,5 +1,5 @@
 # Staged integration plan
-**Status: PLAN ONLY, current handoff freeze remains ON.**
+**Status: HISTORICAL PLAN. Install done 11 Nov 2026; handoff freeze lifted by Dave 12 Nov 2026 (`INSTALL_RECORD.md`).**
 
 **Phase 0 — verify:** Inspect `START_HERE`, `HANDOFF`, decision 1-85, authoritative topic audit and current repo main. Confirm PC paths, GitHub settings, existing CI and any existing root `CLAUDE.md` or `.claude` layout. Ask no routine questions. Produce concise diff/impact report saved to repo staging and Library.
 

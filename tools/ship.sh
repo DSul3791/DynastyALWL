@@ -4,7 +4,7 @@
 # Steps: fetch, merge --no-ff (stops on a conflict and tells you which files), merge_check + marker grep + parse_scan, bump build.gd,
 # HANDOFF.md line 3 and both BUILD_LOG copies, local_check (label default RESTART), commit, push with retry, verify origin (build number and ancestor).
 # Env: SKIP_TESTS=1 skips the selected tests before the push, PYTHON (default python3), GODOT_EXE via tools/godot or PATH, BUILD_LOG_DIR (optional second copy of BUILD_LOG and HANDOFF; unset = repo copies only), NO_PUSH=1 to stop before pushing.
-# Never deletes anything (Dave's rule): files removed by a merge must already be under proposed_removals/ (merge_check step 7).
+# Never deletes anything (Dave's rule; except code replaced by new code, see the Replaced code table in REMOVALS.md): files removed by a merge must already be under proposed_removals/ (merge_check step 7).
 set -u
 HASH=${1:?usage: tools/ship.sh <hash> "<title>" "<gate note>" [label]}; TITLE=${2:?title}; NOTE=${3:?gate note}; LABEL=${4:-RESTART}
 PY=${PYTHON:-$(command -v python3 || command -v python)}; BRANCH=main; LOGDIR=${BUILD_LOG_DIR:-}

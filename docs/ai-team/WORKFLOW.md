@@ -1,5 +1,5 @@
 # Daily engineering and playtest workflow
-**Status: PROPOSED. Activate only by explicit written instruction.**
+**Status: IN FORCE (activated by Dave, 12 Nov 2026; `INSTALL_RECORD.md`). Drafted as PROPOSED.**
 
 ## Branches
 - `feature/<task-id>-<short-scope>` (or agreed `claude/<task-id>`): single job, isolated worktree; owns only assigned paths. No unreviewed worker edits to someone else's branch.
