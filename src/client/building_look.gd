@@ -1753,6 +1753,12 @@ static func _tall_smoke_plume(tier: int) -> GPUParticles3D:
 	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var box: float = tall_tier("view_wide_m", tier)
 	plume.visibility_aabb = AABB(Vector3(-box * 0.5, -2.0, -box * 0.5), Vector3(box, tall_tier("view_high_m", tier), box))   # 60 s downwind in a breeze, up over the canopy
+	var live: int = 0
+
+	for ref in _tall_plumes:
+		live += 1 if (ref as WeakRef).get_ref() != null else 0
+
+	plume.visible = live < int(tall_tier("max_fires", tier))   # past the cap it starts hidden (no warm start paid); the cap corrects it within a second
 	_tall_plumes.append(weakref(plume))
 	return plume
 
@@ -1761,7 +1767,7 @@ static func _tall_smoke_plume(tier: int) -> GPUParticles3D:
 # starts again warm (its preprocess) when it comes back into the nearest few.
 static func _cap_tall_plumes() -> void:
 	var live: Array = []
-	var camera: Camera3D = null
+	var ranked: Array = []
 
 	for ref in _tall_plumes:
 		var plume: GPUParticles3D = (ref as WeakRef).get_ref() as GPUParticles3D
@@ -1770,24 +1776,12 @@ static func _cap_tall_plumes() -> void:
 			continue
 
 		live.append(ref)
+		var camera: Camera3D = plume.get_viewport().get_camera_3d() if plume.is_inside_tree() else null
 
-		if camera == null and plume.is_inside_tree():
-			camera = plume.get_viewport().get_camera_3d()
+		if camera != null:   # each plume ranked by its own viewport's camera
+			ranked.append([plume.global_position.distance_squared_to(camera.global_position), plume])
 
 	_tall_plumes = live
-
-	if camera == null:
-		return
-
-	var eye: Vector3 = camera.global_position
-	var ranked: Array = []
-
-	for ref in live:
-		var plume: GPUParticles3D = (ref as WeakRef).get_ref() as GPUParticles3D
-
-		if plume != null and plume.is_inside_tree():
-			ranked.append([plume.global_position.distance_squared_to(eye), plume])
-
 	ranked.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	var cap: int = int(tall_tier("max_fires", 1))
 

@@ -45,7 +45,7 @@ A second, sparse "tall" plume on every lit campfire (`_tall_smoke_plume`, every 
 | 2 m/s breeze | about 34 m up, 43 m downwind |
 | Still clear night | rises to about 30 m and spreads flat there (the cold air holds it down) |
 
-Performance limits: 24, 36 or 48 puffs per fire (small, medium, large), stepped at 10 fps with interpolation, so the warm start costs the same 600 steps as the near plume's; only the 6 lit fires nearest the camera draw it (the rest are hidden, so not simulated, and start again warm when they come back into the nearest six). Not measured on the PC.
+Performance limits: 24, 36 or 48 puffs per fire (small, medium, large), stepped at 10 fps with interpolation, so the warm start costs the same 600 steps as the near plume's; only the 6 lit fires nearest the camera draw it (the rest are hidden, so not simulated, and start again warm when they come back into the nearest six). A fire past the nearest six starts hidden, so it never pays the warm start. Not measured on the PC.
 
 Limit (a `shortcut:` comment in the code): a fire is drawn only while the server sends it, within 100 m (`server_items.gd` `NEAR_M`). So the smoke is seen from up to 100 m, not from a hill farther off. Seeing camps from farther needs the server to send a list of distant lit fires (a network change in a shared server file); left for Dave to decide.
 
@@ -53,7 +53,7 @@ Limit (a `shortcut:` comment in the code): a fire is drawn only while the server
 
 | Test | What | Run |
 |---|---|---|
-| `test_canopy_cover` (new) | builds the near models of maple, beech, oak, sweet chestnut and walnut as the game does and checks leaves cover at least 85% of the sky within 20 degrees of overhead (card shapes); the core is near-only and inside the crown | NOT RUN |
+| `test_canopy_cover` (new) | builds the near models of maple, beech, oak, sweet chestnut and walnut as the game does and checks leaves cover at least 92% (oak 82%, all four oak variants) of the sky within 20 degrees of overhead (card shapes; to be calibrated on the first PC run); no leaves, so no core, on the winter model; the core is near-only and inside the crown | NOT RUN |
 | `test_fire_smoke` (extended) | the tall plume: unseen at the fire, above 35 m in a calm and 25 m in a breeze, stops at about 30 m on a still night, spreads, cull box holds it, warm start no dearer than the near plume; the nearest-six cap and its hand-over when a fire goes out | NOT RUN |
 
 Godot runs only on Dave's PC; nothing has run yet. The selector picks 202 fast tests (the shared `tree_builder.gd` and `building_look.gd`); a scoped plan is proposed in the PR for the gate reviewer.
@@ -63,3 +63,7 @@ Godot runs only on Dave's PC; nothing has run yet. The selector picks 202 fast t
 1. Stand under an oak, a maple and a beech in summer and look straight up: the middle and top of the crown should be leafy, with only small gaps.
 2. Light a campfire in a forest and step back 30 to 80 m, or climb a nearby rise within 100 m: the smoke should climb past the treetops, lean with the wind and spread into a haze.
 3. Light six or more fires close together and watch the frame rate.
+
+## Review
+
+Independent gate review of c7175588: PASS WITH FIXES. Fixed in the next commit: the cap test now builds its fires after the scene tree starts (`_initialize` + `await process_frame`); a tall plume past the cap starts hidden; each plume is ranked by its own viewport's camera; per-species canopy thresholds, oak variants 2 and 3, and a winter check. Open for Dave's look: the small (one-rock-ring) fire now also sends smoke up over the trees; TEST-011 is partial past 100 m.

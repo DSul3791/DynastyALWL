@@ -11,7 +11,10 @@ const SPECIES := ["maple", "beech", "oak", "sweet_chestnut", "walnut"]
 const EYE := Vector3(1.0, 1.7, 0.0)   # a player standing a metre from the trunk
 const CONE_DEG := 20.0
 const CELLS := 40                     # across the cone, on a flat plane one metre above the eye
-const MIN_COVER := 0.85                # before the core: oak about 0.33, maple 0.68 to 0.9, beech 0.77 to 0.95 (a port of the builder, 12 Nov 2026)
+# Before the core (a port of the builder, 12 Nov 2026, card shapes): oak about 0.33, maple 0.68 to 0.9, beech 0.77 to 0.95; after it about 0.92 and up
+# (oak about 0.85 and up: its dome is the widest and flattest). Calibrate on the PC run if these are off.
+const MIN_COVER := {"oak": 0.82}
+const MIN_COVER_DEFAULT := 0.92
 
 var _fails: int = 0
 
@@ -110,7 +113,8 @@ func _init() -> void:
 		# crowns (2 and 3 the young ones, a pole with a leafy top of its own).
 		var h: float = 0.5 * (float(entry["height_m"][0]) + float(entry["height_m"][1]))
 
-		for variant in [0, 1]:
+		# Oak variants 2 and 3 are mature crowns leaning to one side; the others' 2 and 3 are young poles with a leafy top of their own.
+		for variant in ([0, 1, 2, 3] if species == "oak" else [0, 1]):
 			if variety_state(species, variant) != 0:
 				print("skip %s variant %d: a dying crown by design" % [species, variant])
 				continue
@@ -122,7 +126,19 @@ func _init() -> void:
 				if mesh.surface_get_material(s) == leaf:
 					cover = sky_cover(mesh.surface_get_arrays(s), EYE)
 
-			_check(cover >= MIN_COVER, "%s variant %d, %.0f m: leaves cover %.0f%% of the sky within %.0f degrees of overhead (at least %.0f%%)" % [species, variant, h, cover * 100.0, CONE_DEG, MIN_COVER * 100.0])
+			var least: float = float(MIN_COVER.get(species, MIN_COVER_DEFAULT))
+			_check(cover >= least, "%s variant %d, %.0f m: leaves cover %.0f%% of the sky within %.0f degrees of overhead (at least %.0f%%)" % [species, variant, h, cover * 100.0, CONE_DEG, least * 100.0])
+
+			if variant == 0:
+				# The bare winter model gets no core (no leaves at all).
+				var winter: ArrayMesh = TreeBuilder.build(entry, h, variant, false, materials, "winter")
+				var winter_leaves: int = 0
+
+				for s in range(winter.get_surface_count()):
+					if winter.surface_get_material(s) == leaf:
+						winter_leaves += winter.surface_get_array_len(s)
+
+				_check(winter_leaves == 0, "%s in winter: no leaves, so no core (%d leaf vertices)" % [species, winter_leaves])
 
 	# The core is small and near-only: 12 vertices a clump (three cards), none on the far model.
 	var near: TreeBuilder.Acc = TreeBuilder.Acc.new()

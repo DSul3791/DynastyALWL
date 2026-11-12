@@ -20,7 +20,8 @@ static func _height_at(v: Vector3, x: float) -> float:
 	return x * v.y / maxf(Vector2(v.x, v.z).length(), 0.001)
 
 
-func _init() -> void:
+func _initialize() -> void:
+	await process_frame          # the root takes children only once the tree is running (the nearest-fires cap below needs fires in the tree)
 	var small_1: Vector3 = BuildingLook.plume_velocity(1.0, 0.0, BuildingLook.smoke_tier("rise_m_s", 1), 0.0)
 	var large_1: Vector3 = BuildingLook.plume_velocity(1.0, 0.0, BuildingLook.smoke_tier("rise_m_s", 3), 0.0)
 	_check(absf(_height_at(small_1, 10.0) - 3.0) < 0.1 and absf(_height_at(large_1, 10.0) - 5.3) < 0.1, "1 m/s: smoke 3.0 m (small) and 5.3 m (large) up at 10 m downwind (Jamie's Briggs table)")
