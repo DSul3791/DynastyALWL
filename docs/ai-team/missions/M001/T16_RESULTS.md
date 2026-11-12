@@ -78,3 +78,27 @@ Fixed before the commit: a stranger could open the platter and Take all (the own
 - Recipe `next_number` 478 -> 659 (above this task's block 650-658): Phases 4b and 5 will conflict on that line.
 - A platter's owner is the placer; a platter left by a player who never returns stays theirs (no expiry).
 - Table heights are read from the looks by eye (0.73 / 0.8 / 0.85 m), not measured in game.
+
+## Review round 1 and the dev merge
+
+Gate review FAIL on one must-fix (mission lead's message). Fix commit `3bfe4f401`; merge of the dev state `a2a8f1ea8` (dev `aa0ce7d2d`: Phase 4b, protocol 108, plus the mission state commit): **`ce4dfad59` = code head under test**. This section is committed on top (docs only). Not pushed.
+
+### Fixed
+1. **MUST, swap exploit:** a slot replaced through the fourth-group question no longer vanishes. It stays as an `off` entry until its own end: it holds no slot and gives no benefit, but it locks that group's instant energy (a later food of that group is not "fresh" until then; a newer entry carries the lock on as `lock`), and a replaced dessert's XP -5 % keeps running to its own end. The HUD shows it ("Dessert (Nut cake), replaced: XP -5 %, 3 min"; `food_effects` rows gain a fifth field, replaced 1/0). Test: Nut cake and Herbal tea alternated three times with three slots full: energy rises once (+12), Fitness XP stays x1.10 while the replaced dessert's penalty runs, back to x1.15 at its end.
+2. **Ghost frame cost:** the client's `surface_rows(states)` keeps only the states of the platter's `attach_kinds` (`PlacementRules.attach_states`), as the server's `_surface_rows` does.
+3. **Logout:** effects are kept through logout (master s3.16): `peer_left` stops each timer with its time left (`left`, `lock_left`), the next hello runs it on (`FoodEffects.pause` / `resume`). Test: 20 game hours away and a server restart, the stew has the same time left.
+5. **Platter blocking:** a table with a platter on it is found with the turned footprint (`PlacementRules.over_table`, shared with `table_spot`), not a radius: the table end to end beside it, or turned a quarter, can be taken down.
+6. The serving kinds are read once (`_serve_kinds`) for the world-item sync.
+
+### Recorded, not changed
+- **(4) Dave's tuning call, flagged for playtest:** a tier 1 dessert gives +8 energy once per game hour (2.5 real minutes) of its slot; the drain is 12 to 54 a game day (0.5 to 2.25 an hour), so desserts eaten each hour can out-supply the drain and stand in for rest. The [D17] values are Dave's accepted starting values; the slot rule, the stomach cap and the XP -5 % are the only limits.
+- **Catalog data edits made in Phase 8** (implementation fields on catalog rows, reported for review): board values 40-60 a board -> the dishes' value per portion (9-26); board weights 0.8 -> per portion 0.20-0.36 kg; Serving platter value 20 -> 6, weight 1.0 -> 0.6 kg, kind `container` -> `placeable`; board descriptions gain "Each piece is one portion."; the Serving platter description rewritten for the table use.
+- **Nut cake tier:** master s3.16 states "Nut cake (3 ingredient kinds, tier 2)"; its live recipe 31 has 2 kinds (nuts group, nectar), which the chain rule makes tier 1. Kept at tier 2 as the master says; only its shown tier depends on it (its energy 12 is `energy_aids`). Reported, not fixed.
+
+### Merge
+One conflict, `recipes.json`: both blocks kept (Phase 4b 500-560, T16 650-658; no duplicate numbers), `next_number` 659 (4b had 561). Protocol: dev 108, Phase 5 takes 109, T16 keeps 110. Phase 5's recipes 600-610 sit under 659.
+
+### Evidence (Dave's PC, voxel build, at `ce4dfad59`, no edits during the run)
+- `python3 tools/tests_for_diff.py a2a8f1ea8 HEAD` (344 fast, 8 timing) through `tools/run_tests.sh --jobs 3`: **350 PASS, 2 FAIL**, both the known flakes: `test_flora_density` timed out after 300 s (checks ok up to the timeout), `test_npc_view` exit 139 at quit after printing PASS. Wall 939 s. Plan `C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/r1_plan.json`, log `C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/r1_suite.log`, per-test output `C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/r1_suite/`.
+- Checks lane at the same head: `validate_items` PASS, 0 errors, 116 warnings (`C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/35a61d07-6ae9-47de-b88c-fe7400bb03ef/scratchpad/t16/r1_checks/validate_items.out`); `check_look_names.py` 237 drawable; `merge_check.py` all clear (one carry-audit warning, at base); `catalog_ledger.py --check` pass.
+- Before the merge, at `3bfe4f401`: `test_food_effects`, `test_serving_platter`, `test_server_items`, `test_placement_rules`, `test_comfort` PASS. NOT RUN: startup smoke, any in-game look.
