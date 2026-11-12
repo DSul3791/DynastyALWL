@@ -1,10 +1,10 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 5, CONSOLIDATED (12 Nov 2026). AWAITING DAVE'S FINAL APPROVAL; NOT APPROVED FOR IMPLEMENTATION.** Every decision Dave made himself, and every decision ChatGPT made on his behalf, is now written into sections 2 to 7 and Appendix A. Section 8 lists only the two design points still open for ChatGPT and the remaining risks. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 5, TWO FINAL DESIGN POINTS RESOLVED BY CHATGPT (12 Nov 2026). AWAITING INDEPENDENT RE-AUDIT AND DAVE'S FINAL CATALOG APPROVAL; NOT APPROVED FOR IMPLEMENTATION.** Dave's explicit rulings and ChatGPT's delegated design decisions are written into the catalog. Section 8 records remaining implementation risks, not a questionnaire. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
-Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit results; s7 JSON change list; s8 open points for ChatGPT and remaining risks; Appendix A the full 889-row catalog.
+Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit results; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
 **Totals.** Existing rows: KEEP 520, UPDATE 40, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 18. No number or id is reused.
 
@@ -61,9 +61,10 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 3. Iron and Steel Hand Saws give the same yields as sawmills, much more slowly. The sawmill is waterwheel-powered, vertical, reciprocating [D1].
 4. No board sizes and no Fine board step. Hardwood Boards are for fine furniture and construction, chests, barrels, carts, wagons and carriages [D1].
 5. **Where Hardwood Boards are required [C]:** Barrel, Cupboard and Canopy bed, and later carts, wagons, carriages and higher-quality furniture. Basic storage and furniture stay on Planks: Crate, Wooden - Chest, Wooden - Chair, Wooden - Table, Shelf. Building pieces and rough items stay on Planks. A higher-quality Hardwood Chest is a possible later item only if its capacity or quality justifies it; it is not in this catalog.
-6. The unused species-specific `lumber_*` and `beam_*` rows retire; the species `log_*` rows stay [C].
-7. An axe chops a softwood log into Softwood Blocks, then Soft Firewood; a hardwood log into Hardwood Blocks, then Hard Firewood. Hard Firewood gives the same heat and burns significantly longer [D1].
-8. Logs can stay whole for construction or charcoal. No stone wedges, bronze saws, saw-blade intermediates or unnecessary wood-processing stations [D1].
+6. **One-way Plank substitution [C, Draft 5 resolution]:** a Hardwood Board can satisfy an ordinary Plank ingredient or blueprint cost on a **1-for-1** basis, but a Plank can **never** satisfy a recipe specifically requiring Hardwood Boards. Ordinary Planks are selected first. When a job would consume the more valuable Hardwood Boards as substitutes, players must see the actual material requirement and explicitly allow that substitution. NPCs and automatic workstation sourcing never spend Hardwood Boards as Planks without the player's corresponding material-use authorization. Applies consistently to hand recipes, workstation batches and hammer blueprints. This prevents a hardwood-only region from blocking basic construction while preserving premium-wood requirements.
+7. The unused species-specific `lumber_*` and `beam_*` rows retire; the species `log_*` rows stay [C].
+8. An axe chops a softwood log into Softwood Blocks, then Soft Firewood; a hardwood log into Hardwood Blocks, then Hard Firewood. Hard Firewood gives the same heat and burns significantly longer [D1].
+9. Logs can stay whole for construction or charcoal. No stone wedges, bronze saws, saw-blade intermediates or unnecessary wood-processing stations [D1].
 
 ### 2.4 Chopping Block [D1]
 
@@ -83,7 +84,7 @@ Any wood-burning fire or workstation may give a small charcoal byproduct. Charco
 2. The Smithy contains a forge, anvil and bench (built-in blacksmithing tools); no player-held smithing hammer and no Saw Blade ingredient [D1].
 3. **Smelter**: copper, tin and iron ore (bog iron) to ingots, and bronze alloy. **Blast Furnace**: its advanced, high-capacity tier, and steel [D1]. No smelting at any forge or smithy [C].
 4. **Bronze before iron [C]:** the **Stone - Forge (88)** stays as the bronze smithy. It shapes bronze items only, has an iron-free cost, and does no smelting. The ordinary Smithy also works bronze, and additionally iron and steel. This keeps Bronze a real rung before Iron and keeps the wilderness route to the Iron Hand Saw.
-5. **Bellows** and **Quenching Trough** are nearby upgrades of the ordinary Smithy [D1]. **Bellows [C]:** faster warm-up and metalworking, lower fuel use. **Quenching Trough [C]:** an optional finishing aid giving eligible forged metal tools and weapons better durability (exact effect: s8 item 1); it never gives Master Smithy +1/+2 craftsmanship. Neither add-on gates a baseline recipe, so no player is locked out by an optional upgrade.
+5. **Bellows** and **Quenching Trough** are nearby upgrades of the ordinary Smithy [D1]. **Bellows [C]:** faster warm-up and metalworking, lower fuel use. **Quenching Trough [C, Draft 5 resolution]:** an optional finishing aid giving eligible heat-treatable forged metal tools and weapons a **one-time bonus to their initial maximum durability when crafted**. No separate edge-retention statistic, no extra physical-craftsmanship tier and no magical effect. Repairing, reheating, or quenching an existing item cannot reapply or stack the bonus; later sharpening still permanently reduces its remaining maximum durability. The bonus is applied only where the metal and item type are physically appropriate (for example steel cutting tools, not cloth or wooden items); specific values remain balancing decisions. Neither add-on gates a baseline recipe, so no player is locked out by an optional upgrade.
 6. **Master Smithy**: a distinct, ornate prestige workshop for special and masterwork items with +1/+2 physical craftsmanship. Wizard enchantments are separate [D1].
 7. **Station rows [C]:** Brick - Forge 90 (`blacksmithy`) becomes the Smithy; the never-built Large forge rows 92/93 become the Blast Furnace; the never-built Master forge rows 94/95 become the Master Smithy; the standalone Anvil 827 retires, because the Smithy has its own anvil. Every reference, look, blueprint, recipe, name and test changes with the renames. Retired numbers are never reused.
 8. **No Clay Bloomery.** No save-game migration is needed for any retirement or reuse: Dynasty has never been publicly released or played by other players [D1].
@@ -203,6 +204,7 @@ Food, medicine, coins and most gear and placeables are not touched by any decisi
    - `wood_species.json retired_to` maps hardwood `lumber_*` to the Hardwood board, softwood `lumber_*` and all `beam_*` to the Plank.
    - Hob's `shops.json buy_rules`: the 16 species `lumber_*` and `beam_*` rules collapse into `lumber` (3 per copper, as today for softwood and plain) and a new Hardwood board rule (2 per copper, as today for hardwood).
    - Clean the 17 already-retired species logs out of the `log` group.
+   - **Plank-substitution implementation rule:** accept Hardwood Board as a one-way, 1:1 substitute for ordinary Plank in BOTH recipe ingredients and hammer blueprint costs; never permit the reverse. Prefer Planks, display real planned consumption and require explicit permission before spending Hardwood Boards as substitutes, including NPC/station automatic sourcing. Audit actual group/blueprint/crafting code paths before adopting a new ingredient group: the existing lowest-member ID sorting rule must not accidentally consume hardwood first, and blueprint material resolution must support substitution rather than silently rejecting it.
    - Log length (2.3 item 2): `drops.json log_length_m` 2.44 → 3.0, with log dimensions, segmentation (`max_logs`, `blows_per_log`), `weights.json` log masses and tests.
 4. **Tool groups:** add groups `axe` (stone, bronze, iron, steel axes) and `saw` (Iron - Saw, Steel - Saw); extend `knife` with the iron and steel knives. Recipes that keep one specific primitive tool switch to the group, so a better tool works and a disposable one is not required forever: 20, 278, 344 (`stone_knife` → `knife`); 339, 340 (`stone_axe` → `axe`); 159 (`hand_saw` → `saw`).
 5. **Hand saw recipe 157:** station Smithy (burning), iron and wood, no Saw blade, no workbench level.
@@ -225,7 +227,7 @@ Food, medicine, coins and most gear and placeables are not touched by any decisi
 
 ## 5. Numbers still to set (tuning, not design)
 
-Durability, repair materials and amounts; sharpening rate and maximum-durability cost per sharpening; grindstone speed; hand-saw time ("much slower" than the sawmill's 6 s per log); kiln burn time and self-consumption rate (Dave: not to be invented now); smelting fuel per ingot on the new 100-per-log charcoal scale (today 1 to 3 `fuel` per smelt); Bellows speed and fuel saving; the Quenching Trough bonus; Thread recipe (plant fibre per Thread) and Thread per sewing recipe; all new blueprint costs (Smelter, Smithy, Blast Furnace, Bellows, Quenching Trough, Master Smithy, Grindstone, Leatherworking Table, Tailor's Table, Loom, Chopping Block station) and the Sawmill's cost without a Saw blade; the Stone - Forge cost (live cost stays unless changed; it must stay iron-free); station storage capacities and sourcing radii; hammer sourcing ranges; 3 m log weight. The item-data and systems roles propose these in the implementation PR, checked by `items_check.py` economy and first-hour tests, and they are tuned in playtest.
+Durability, repair materials and amounts; sharpening rate and maximum-durability cost per sharpening; grindstone speed; hand-saw time ("much slower" than the sawmill's 6 s per log); kiln burn time and self-consumption rate (Dave: not to be invented now); smelting fuel per ingot on the new 100-per-log charcoal scale (today 1 to 3 `fuel` per smelt); Bellows speed and fuel saving; the one-time Quenching Trough initial-max-durability bonus (no extra edge-retention statistic); Thread recipe (plant fibre per Thread) and Thread per sewing recipe; all new blueprint costs (Smelter, Smithy, Blast Furnace, Bellows, Quenching Trough, Master Smithy, Grindstone, Leatherworking Table, Tailor's Table, Loom, Chopping Block station) and the Sawmill's cost without a Saw blade; the Stone - Forge cost (live cost stays unless changed; it must stay iron-free); station storage capacities and sourcing radii; hammer sourcing ranges; 3 m log weight. The item-data and systems roles propose these in the implementation PR, checked by `items_check.py` economy and first-hour tests, and they are tuned in playtest.
 
 ## 6. Audit results (scripts over `data/items/`, `data/npcs/`, dev `7f8aabf4`)
 
@@ -249,7 +251,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 
 1. **Retire:** items 45, 238, 298, 353, 795, 827 and the 16 species `lumber_*` and `beam_*` rows; recipes 26, 152, 187, 227, 230, 367; blueprints 162, 164; structures `clay_bloomery` (state 200) and `iron_anvil` (state 204). Woodworking table rows: PR #1036.
 2. **Durability:** stone, wooden and primitive tools and weapons (6, 11, 222, 244, 297, 19, 221, 247, 293, 7, 313, 295) and the Bone - Needle 49 lose `repair`; stone tools lose `edge`. Metal tools: `repair_station` per crafting station, `edge` on sharpening-eligible metal tools. `drops.json`: replace `tool_wear.repair_restores` and `tool_wear.hone`.
-3. **Wood:** recipes 16 and 159 to 6 Planks; Hardwood board item and sawmill and hand-saw recipes; `hand_saw_balance`; renames of 234, 26, 236; recipe 157 to the Smithy with no Saw blade; blueprint 11 without the Saw blade; blueprints 98, 97, 48 to Hardwood boards; `wood_species.json` default class, `retired_to` and `log` group; Hob's buy rules; `log_length_m` 3.0 with weights.
+3. **Wood:** recipes 16 and 159 to 6 Planks; Hardwood board item and sawmill and hand-saw recipes; `hand_saw_balance`; renames of 234, 26, 236; recipe 157 to the Smithy with no Saw blade; blueprint 11 without the Saw blade; blueprints 98, 97, 48 to Hardwood boards; **one-way 1:1 Hardwood Board substitution for ordinary Plank costs (recipes AND blueprints), Planks-first and explicit authorization for hardwood fallback**; `wood_species.json` default class, `retired_to` and `log` group; Hob's buy rules; `log_length_m` 3.0 with weights.
 4. **Charcoal:** kiln recipe 364 to logs → 100 Charcoal each, batch; Charcoal in the `firewood` group.
 5. **Stations:** add items, blueprints (from 186) and structure states (from 230) for the Smelter, Bellows, Quenching Trough, Grindstone, Leatherworking Table, Tailor's Table, Loom and the Chopping Block station; rename and re-cost rows 90 (Smithy), 93 (Blast Furnace), 95 (Master Smithy) with their blueprints and structure states and new station ids for 93 and 95; capacity fields on every station.
 6. **Tools:** add the 10 ladder tools with recipes; groups `axe`, `saw`, extended `knife`; recipes 20, 278, 344, 339, 340, 159 to the groups; tier renumbering.
@@ -257,18 +259,25 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 8. **Textiles:** Thread item and hand recipe; Twine → Thread in recipes 23, 39–42, 173, 194–196, 237, 238, 241, 388.
 9. **Enhancements:** per-instance slot data and the eligibility in 2.9 (code and save format, no item rows).
 
-## 8. Open points for ChatGPT, and remaining risks
+## 8. Final Draft 5 design resolutions and implementation risks
 
-**Open design points (ChatGPT to decide; nothing here needs Dave's preference):**
+**No outstanding design questions from Draft 5.** ChatGPT resolved these under Dave's delegated catalog-review process; they do **not** constitute Dave's final approval of the master catalog or authorization to change game data.
 
-1. **Quenching Trough effect.** The decision says "better maximum durability *or* edge retention". **Recommend:** maximum durability only. Edge retention (slower sharpness loss) would be a second new per-instance statistic beside sharpness and current maximum durability. *Alternative:* both, as two small bonuses.
-2. **Can Hardwood boards stand in for Planks?** Recipes and blueprints that ask for Planks would otherwise reject Hardwood boards, so a player in hardwood-only forest must find a softwood or basic Log for a Crate, chest or building piece. **Recommend:** yes, one way only: a `plank` ingredient group (Plank, Hardwood board) wherever Planks are asked; Barrel, Cupboard and Canopy bed still need Hardwood boards. *Alternative:* no substitution; Planks only from softwood and basic Logs.
+1. **Quenching Trough — DECIDED:** eligible heat-treatable forged metal tools and weapons gain a one-time *initial maximum-durability* bonus at crafting. No separate edge-retention statistic, no recurring bonus on repair, and no Master Smithy craftsmanship bonus; all quantitative tuning remains in section 5. See 2.7.
+2. **Hardwood Board substitution — DECIDED:** Hardwood Board can stand in for Plank 1:1 wherever ordinary Planks are accepted, including recipes and blueprints; Planks cannot substitute for Hardwood Boards where premium wood is specifically required. Prefer regular Planks; spend hardwood as the substitute only with explicit player material-use permission. This rule also governs nearby-storage sourcing and NPC production. See 2.3 and 4.3.
 
-**Remaining risks (implementation, not design):**
+**Implementation and validation risks (not open design questions):**
+- Check the current crafting, blueprint, workstation and storage ingredient-group paths before selecting a representation for one-way substitution. The existing group-member ordering MUST NOT spend hardwood ahead of available Planks or without permission. Include mixed-ingredient, partial-input, NPC-auto-sourcing, storage-selection and hammer-construction tests.
+- The Leatherworking Table must be obtainable before bronze because the Bronze - Axe needs a Leather strap; its blueprint cost must not depend on iron or Planks.
+- Moving cloth to the Loom and clothing to the Tailor's Table replaces the old workbench L2/L3 gates; costs and earliest access must make survival progression playable.
+- Renaming forge items/stations 90, 93 and 95 requires coordinated updates to looks, structures, save references, recipe stations, `forge_sizes.json`, tests, and all remaining references.
+- A Quenching Trough at a Smithy applies its durability effect once at manufacture only; repairing or sharpening must never duplicate it or reset maximum durability. Verify the base/current maximum data model and appropriate metal/item eligibility.
+- Retirements of species lumber/beam rows must preserve still-live species logs, avoid orphaned NPC trade rules, and leave no uncraftable required outputs.
+- The catalog was compared against `dev` at `7f8aabf4`; rebase/recheck the actual latest integration branch before any implementation planning. No `main` branch changes.
+- Exact capacities, durability costs, speeds, material amounts and rates remain **balancing work**, not invitations to change settled design.
 
-- The Leatherworking Table must be buildable before bronze, because the Bronze - Axe needs a Leather strap (s4 item 10). Its cost is set in s5 under that limit.
-- Moving cloth to the Loom and clothing to the Tailor's Table removes today's workbench L2 and L3 gates on those recipes; the stations' own costs become the gate.
-- Renaming rows 90, 93, 95 touches looks, structure tests and `forge_sizes.json`; the implementation PR runs the full item and structure tests on the authorized PC.
+**Next step:** Claude performs a second independent, adversarial, full-system catalog audit against the above decisions, fixes documentation inconsistencies, and presents a concise review of any material gaps. **Do not merge or implement until Dave explicitly approves the finished master catalog.**
+
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
