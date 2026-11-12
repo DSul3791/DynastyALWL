@@ -67,7 +67,7 @@ func refresh() -> void:
 		var held_here: bool = (_held != null and _held.holding and _held.held_key == key) or off_here
 
 		var look = cell["look"]
-		InventoryLook.show_stack(_items, look, number, count, _items.inventory.wear[slot] if slot >= 0 else 0, _items.hotbar_tip(key))
+		InventoryLook.show_stack(_items, look, number, count, _items.inventory.wear[slot] if slot >= 0 else 0, _items.hotbar_tip(key), _items.inventory.max_durability(slot) if slot >= 0 else 0)
 		look.set_marked((ItemSlot.MARK_CREAM if off_here else ItemSlot.MARK_GOLD) if held_here else 0)
 		look.modulate = Color(1.0, 1.0, 1.0, 0.45) if dimmed else Color.WHITE
 

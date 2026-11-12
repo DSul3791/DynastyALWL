@@ -44,6 +44,18 @@ Clones on Dave's PC (`git clone --shared` of his checkout; each has the `.godot`
 | T04c refund order, positive controls | 1b | systems-engineer agent | `m001/t04b-fixes` @ `d3ef33050` | PASS on PC | mission lead read the diff (non-author) | dev PR 2 |
 | T08 Phase 3 furniture | 3 | systems-engineer agent | `m001/p3-furniture` @ `785fb0514` | PASS on PC | PASS WITH NOTES, fixes in | dev PR 2 |
 
+
+## Dev checkpoints (all on Dave's PC, voxel build)
+| dev SHA | PR | Contents | Evidence |
+|---|---|---|---|
+| `537ddb2b0` | #1037 | Phases 0, 1, 1b, 2a | full suite 344/345 (flora timeout), smoke PASS |
+| `b62db1e7c` | #1038 | Phase 2b (metal, textiles), Phase 3, 1b follow-ups | full suite 345/348 (2 flakes + 1 test fixed), smoke PASS |
+| `5285e2e20` | #1039 | Phase 2c (tool ladder, tool care, craftsmanship, Tempered) | full suite 344/346 (2 flakes), smoke PASS |
+
+## In flight (12 Nov, morning)
+- T11 Phase 4a layering: branch `m001/p4a-layers` (clone m001_p4a), review round 1 FAIL (fire heat counted as overheating) → fixes in progress; must merge onto dev `5285e2e20`.
+- Next: Phase 4b (weapons, armour, clothing rows and protection), Phase 5 (carrying), Phase 6-8 (food), Phase 9-10 (storage, Handcart).
+
 ## Evidence so far
 - T02 at `159b566` (voxel build, this PC): `tools/run_tests.sh` over the 205 tests `tests_for_diff.py` picks: 201 PASS, 4 FAIL (audio `.import` files missing from the clone); after copying the untracked `.import` files from Dave's checkout, the 4 PASS (`scratchpad/t02b`). Total 205/205.
 - Startup smoke at `159b566` from the mission clone (world data copied from Dave's checkout): client reached the welcome and loaded the world, 0 script errors, 2 leaf textures missing (import cache mismatch in the clone only), exit 127 (known headless-exit issue).

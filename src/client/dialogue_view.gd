@@ -4,6 +4,7 @@ extends Node
 # screen with the NPC's name, their line and the choices (click, or keys 1 to 5). Esc or the last line closes it. The line carries
 # a voice_id for text to voice (Mandy hooks that up through voice_line). Fonts are 20 px on the 1920x1080 canvas (26 on the old 2880x1620 one), readable on a 55 inch 4K.
 
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const FONT_PX := 20
 const MAX_CHOICES := 5
 
@@ -314,7 +315,8 @@ func _price_to_get(slot: int) -> int:
 		return 0
 
 	var life: float = 1.0
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = items.inventory.max_durability(slot)
+	value = int(round(float(value) * SmithingRules.value_mult(items.inventory.inst_of(slot))))   # craftsmanship raises it, as on the server
 
 	if durability > 0:
 		life = clampf(1.0 - float(items.inventory.wear[slot]) / float(durability), 0.0, 1.0)
@@ -334,11 +336,11 @@ func _repair_cost(slot: int) -> int:
 		return 0
 
 	var entry: Dictionary = items.table.entry(items.table.id_of(number))
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = items.inventory.max_durability(slot)
 	var value: int = int(entry.get("value", 0))
 	var worn: int = items.inventory.wear[slot]
 
-	if durability <= 0 or worn <= 0 or value <= 0:
+	if durability <= 0 or worn <= 0 or value <= 0 or SmithingRules.disposable(entry):
 		return 0
 
 	return maxi(int(ceil(float(value) * _repair_rate * clampf(float(worn) / float(durability), 0.0, 1.0) * _shop_pay - 0.0001)), 1)

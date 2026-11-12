@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1253,
+	"next_number": 1255,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -59,26 +59,15 @@
 			"description": "A stone bound to a handle. Fells trees, breaks rock and works wood.",
 			"kind": "tool",
 			"tool_class": "axe",
-			"tier": 1,
+			"tier": 2,
 			"stack": 1,
 			"unstackable": true,
 			"chop": 1.0,
 			"dig": 1.0,
 			"durability": 900,
 			"look_alikes": [],
-			"repair": [
-				[
-					"stick",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
 			"value": 20,
-			"material": "stone",
-			"edge": true
+			"material": "stone"
 		},
 		"spear": {
 			"number": 7,
@@ -93,18 +82,7 @@
 			"throw_damage": 6.0,
 			"durability": 450,
 			"look_alikes": [],
-			"repair": [
-				[
-					"stone",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
-			"value": 25,
-			"edge": true
+			"value": 25
 		},
 		"campfire_kit": {
 			"number": 8,
@@ -143,24 +121,14 @@
 			"description": "A flaked stone on a handle. Dresses a kill and cuts bark.",
 			"kind": "tool",
 			"tool_class": "knife",
-			"tier": 1,
+			"material": "stone",
+			"tier": 2,
 			"stack": 1,
 			"unstackable": true,
 			"cut": 1.0,
 			"durability": 540,
 			"look_alikes": [],
-			"repair": [
-				[
-					"stone",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
-			"value": 12,
-			"edge": true
+			"value": 12
 		},
 		"torch": {
 			"number": 12,
@@ -277,13 +245,8 @@
 			"unstackable": true,
 			"look_alikes": [],
 			"durability": 2025,
-			"repair": [
-				[
-					"stick",
-					1
-				]
-			],
-			"value": 15
+			"value": 15,
+			"tier": 1
 		},
 		"lean_to_kit": {
 			"number": 20,
@@ -419,7 +382,7 @@
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "iron",
-			"tier": 2,
+			"tier": 4,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 9000,
@@ -435,7 +398,8 @@
 				]
 			],
 			"value": 120,
-			"repair_station": "forge"
+			"repair_station": "brick_forge",
+			"edge": true
 		},
 		"steel_pickaxe": {
 			"number": 34,
@@ -444,7 +408,7 @@
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "steel",
-			"tier": 3,
+			"tier": 5,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 22500,
@@ -460,8 +424,8 @@
 				]
 			],
 			"value": 300,
-			"future": true,
-			"repair_station": "forge"
+			"repair_station": "brick_forge",
+			"edge": true
 		},
 		"soil": {
 			"number": 35,
@@ -592,7 +556,8 @@
 				]
 			],
 			"value": 30,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true
 		},
 		"iron_spade": {
 			"number": 46,
@@ -602,7 +567,7 @@
 			"tool_class": "spade",
 			"spade_size": "large",
 			"material": "iron",
-			"tier": 3,
+			"tier": 4,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 20250,
@@ -618,7 +583,7 @@
 			],
 			"value": 90,
 			"look_alikes": [],
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"steel_spade": {
 			"number": 47,
@@ -628,7 +593,7 @@
 			"tool_class": "spade",
 			"spade_size": "large",
 			"material": "steel",
-			"tier": 4,
+			"tier": 5,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 40500,
@@ -643,9 +608,8 @@
 				]
 			],
 			"value": 140,
-			"future": true,
 			"look_alikes": [],
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"bone": {
 			"number": 48,
@@ -665,12 +629,6 @@
 			"stack": 1,
 			"unstackable": true,
 			"durability": 270,
-			"repair": [
-				[
-					"bone",
-					1
-				]
-			],
 			"value": 8,
 			"look_alikes": []
 		},
@@ -2733,14 +2691,9 @@
 			"stack": 1,
 			"unstackable": true,
 			"durability": 2025,
-			"repair": [
-				[
-					"stick",
-					1
-				]
-			],
 			"value": 15,
-			"look_alikes": []
+			"look_alikes": [],
+			"tier": 1
 		},
 		"stone_hoe": {
 			"number": 222,
@@ -2753,16 +2706,6 @@
 			"stack": 1,
 			"unstackable": true,
 			"durability": 4050,
-			"repair": [
-				[
-					"stone",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
 			"value": 30,
 			"look_alikes": []
 		},
@@ -2773,7 +2716,7 @@
 			"kind": "tool",
 			"tool_class": "hoe",
 			"material": "iron",
-			"tier": 3,
+			"tier": 4,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 20250,
@@ -2789,7 +2732,7 @@
 			],
 			"value": 90,
 			"look_alikes": [],
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"steel_hoe": {
 			"number": 224,
@@ -2798,7 +2741,7 @@
 			"kind": "tool",
 			"tool_class": "hoe",
 			"material": "steel",
-			"tier": 4,
+			"tier": 5,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 40500,
@@ -2814,8 +2757,7 @@
 			],
 			"value": 140,
 			"look_alikes": [],
-			"future": true,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"path_patch": {
 			"number": 225,
@@ -3031,16 +2973,6 @@
 			"stack": 1,
 			"unstackable": true,
 			"durability": 1500,
-			"repair": [
-				[
-					"stick",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
 			"value": 10,
 			"look_alikes": []
 		},
@@ -3055,16 +2987,6 @@
 			"stack": 1,
 			"unstackable": true,
 			"durability": 4350,
-			"repair": [
-				[
-					"stone",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
 			"value": 30,
 			"look_alikes": []
 		},
@@ -3075,13 +2997,13 @@
 			"kind": "tool",
 			"tool_class": "saw",
 			"material": "iron",
-			"tier": 3,
+			"tier": 4,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 2500,
 			"repair": [
 				[
-					"twine",
+					"iron_ingot",
 					1
 				],
 				[
@@ -3091,7 +3013,8 @@
 			],
 			"value": 70,
 			"look_alikes": [],
-			"edge": true
+			"edge": true,
+			"repair_station": "brick_forge"
 		},
 		"stone_adze": {
 			"number": 246,
@@ -3535,16 +3458,6 @@
 			"unstackable": true,
 			"durability": 300,
 			"look_alikes": [],
-			"repair": [
-				[
-					"flint",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
 			"value": 12
 		},
 		"steel_striker": {
@@ -3553,7 +3466,7 @@
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"kind": "tool",
 			"tool_class": "striker",
-			"tier": 4,
+			"tier": 5,
 			"stack": 1,
 			"unstackable": true,
 			"future": true,
@@ -3574,18 +3487,12 @@
 			"kind": "weapon",
 			"weapon_class": "javelin",
 			"tier": 2,
-			"stack": 5,
+			"stack": 1,
 			"unstackable": true,
 			"damage": 4.0,
 			"throw_damage": 9.0,
 			"durability": 120,
 			"look_alikes": [],
-			"repair": [
-				[
-					"stick",
-					1
-				]
-			],
 			"value": 15
 		},
 		"obsidian_knife": {
@@ -3627,16 +3534,6 @@
 			"unstackable": true,
 			"durability": 4500,
 			"look_alikes": [],
-			"repair": [
-				[
-					"stone",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
 			"value": 35
 		},
 		"sickle": {
@@ -3662,7 +3559,8 @@
 				]
 			],
 			"value": 18,
-			"edge": true
+			"edge": true,
+			"retired": true
 		},
 		"scythe": {
 			"number": 299,
@@ -3671,7 +3569,7 @@
 			"kind": "tool",
 			"tool_class": "scythe",
 			"material": "iron",
-			"tier": 3,
+			"tier": 4,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 9000,
@@ -3687,7 +3585,7 @@
 				]
 			],
 			"value": 80,
-			"repair_station": "forge",
+			"repair_station": "brick_forge",
 			"edge": true
 		},
 		"wooden_club": {
@@ -3864,16 +3762,6 @@
 			"damage": 9.0,
 			"durability": 400,
 			"look_alikes": [],
-			"repair": [
-				[
-					"stone",
-					1
-				],
-				[
-					"twine",
-					1
-				]
-			],
 			"value": 20
 		},
 		"plank_shield": {
@@ -3983,7 +3871,7 @@
 				]
 			],
 			"value": 120,
-			"repair_station": "forge",
+			"repair_station": "brick_forge",
 			"edge": true
 		},
 		"iron_mace": {
@@ -4006,7 +3894,7 @@
 				]
 			],
 			"value": 110,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"iron_shield": {
 			"number": 320,
@@ -4028,7 +3916,7 @@
 				]
 			],
 			"value": 110,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"steel_sword": {
 			"number": 321,
@@ -4050,7 +3938,7 @@
 				]
 			],
 			"value": 250,
-			"repair_station": "forge",
+			"repair_station": "brick_forge",
 			"edge": true
 		},
 		"steel_mace": {
@@ -4073,7 +3961,7 @@
 				]
 			],
 			"value": 230,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"steel_shield": {
 			"number": 323,
@@ -4095,7 +3983,7 @@
 				]
 			],
 			"value": 230,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"leather_cap": {
 			"number": 324,
@@ -5415,7 +5303,7 @@
 			"unstackable": true,
 			"material": "bronze",
 			"tool_class": "pick",
-			"tier": 2,
+			"tier": 3,
 			"durability": 7000,
 			"repair": [
 				[
@@ -5429,7 +5317,8 @@
 			],
 			"repair_station": "forge",
 			"look_alikes": [],
-			"value": 80
+			"value": 80,
+			"edge": true
 		},
 		"bronze_axe": {
 			"number": 459,
@@ -5440,7 +5329,7 @@
 			"unstackable": true,
 			"material": "bronze",
 			"tool_class": "axe",
-			"tier": 2,
+			"tier": 3,
 			"durability": 2500,
 			"repair": [
 				[
@@ -5491,7 +5380,7 @@
 			"unstackable": true,
 			"material": "bronze",
 			"tool_class": "knife",
-			"tier": 2,
+			"tier": 3,
 			"durability": 1500,
 			"repair": [
 				[
@@ -6636,7 +6525,7 @@
 				"unstackable": true,
 				"material": "iron",
 				"tool_class": "hammer",
-				"tier": 3,
+				"tier": 4,
 				"durability": 9000,
 				"repair": [
 					[
@@ -6648,7 +6537,7 @@
 						1
 					]
 				],
-				"repair_station": "forge",
+				"repair_station": "brick_forge",
 				"look_alikes": [],
 				"value": 90
 			},
@@ -6659,10 +6548,9 @@
 				"kind": "tool",
 				"stack": 1,
 				"unstackable": true,
-				"future": true,
 				"material": "steel",
 				"tool_class": "hammer",
-				"tier": 3,
+				"tier": 5,
 				"durability": 22500,
 				"repair": [
 					[
@@ -6674,7 +6562,7 @@
 						1
 					]
 				],
-				"repair_station": "forge",
+				"repair_station": "brick_forge",
 				"look_alikes": [],
 				"value": 140
 			},
@@ -9075,7 +8963,7 @@
 				"unstackable": true,
 				"material": "bronze",
 				"tool_class": "chisel",
-				"tier": 2,
+				"tier": 3,
 				"durability": 400,
 				"repair": [
 					[
@@ -9085,7 +8973,8 @@
 				],
 				"look_alikes": [],
 				"value": 40,
-				"edge": true
+				"edge": true,
+				"repair_station": "forge"
 			},
 			"iron_chisel": {
 				"number": 799,
@@ -9096,7 +8985,7 @@
 				"unstackable": true,
 				"material": "iron",
 				"tool_class": "chisel",
-				"tier": 3,
+				"tier": 4,
 				"durability": 700,
 				"repair": [
 					[
@@ -9106,7 +8995,8 @@
 				],
 				"look_alikes": [],
 				"value": 60,
-				"edge": true
+				"edge": true,
+				"repair_station": "brick_forge"
 			},
 			"steel_chisel": {
 				"number": 800,
@@ -9115,10 +9005,9 @@
 				"kind": "tool",
 				"stack": 1,
 				"unstackable": true,
-				"future": true,
 				"material": "steel",
 				"tool_class": "chisel",
-				"tier": 4,
+				"tier": 5,
 				"durability": 1200,
 				"repair": [
 					[
@@ -9128,7 +9017,8 @@
 				],
 				"look_alikes": [],
 				"value": 80,
-				"edge": true
+				"edge": true,
+				"repair_station": "brick_forge"
 			},
 			"carved_stone_block": {
 				"number": 801,
@@ -10166,110 +10056,170 @@
 				"name": "Iron - Axe",
 				"description": "An iron head on a hardwood handle. Fells and splits wood, and holds its edge longer than bronze.",
 				"kind": "tool",
+				"tool_class": "axe",
+				"material": "iron",
+				"tier": 4,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 100
+				"value": 100,
+				"durability": 3750,
+				"repair": [["iron_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"steel_axe": {
 				"number": 897,
 				"name": "Steel - Axe",
 				"description": "A steel head on a hardwood handle. The keenest axe for felling and splitting, and slowest to dull.",
 				"kind": "tool",
+				"tool_class": "axe",
+				"material": "steel",
+				"tier": 5,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 220
+				"value": 220,
+				"durability": 9375,
+				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"iron_knife": {
 				"number": 898,
 				"name": "Iron - Knife",
 				"description": "A forged iron blade on a short grip. Cuts, skins and carves, and serves as a dagger.",
 				"kind": "tool",
+				"tool_class": "knife",
+				"material": "iron",
+				"tier": 4,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 50
+				"value": 50,
+				"durability": 2250,
+				"repair": [["iron_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"steel_knife": {
 				"number": 899,
 				"name": "Steel - Knife",
 				"description": "A steel blade on a short grip. Holds a fine edge for skinning, carving and close defence.",
 				"kind": "tool",
+				"tool_class": "knife",
+				"material": "steel",
+				"tier": 5,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 100
+				"value": 100,
+				"durability": 5625,
+				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"steel_saw": {
 				"number": 900,
 				"name": "Steel - Saw",
 				"description": "A steel bow saw. Its teeth outlast an iron saw's when sawing logs into boards.",
 				"kind": "tool",
+				"tool_class": "saw",
+				"material": "steel",
+				"tier": 5,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 140
+				"value": 140,
+				"durability": 6250,
+				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"bronze_sickle": {
 				"number": 901,
 				"name": "Bronze - Sickle",
 				"description": "A curved bronze blade on a short handle. Reaps grass and grain.",
 				"kind": "tool",
+				"tool_class": "sickle",
+				"material": "bronze",
+				"tier": 3,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 40
+				"value": 40,
+				"durability": 1667,
+				"repair": [["bronze_ingot", 1], ["stick", 1]],
+				"repair_station": "forge",
+				"edge": true
 			},
 			"iron_sickle": {
 				"number": 902,
 				"name": "Iron - Sickle",
 				"description": "A curved iron blade on a short handle. Reaps grass and grain, and keeps its edge longer than bronze.",
 				"kind": "tool",
+				"tool_class": "sickle",
+				"material": "iron",
+				"tier": 4,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 60
+				"value": 60,
+				"durability": 2500,
+				"repair": [["iron_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"steel_sickle": {
 				"number": 903,
 				"name": "Steel - Sickle",
 				"description": "A curved steel blade on a short handle. Reaps grass and grain and holds its edge longest.",
 				"kind": "tool",
+				"tool_class": "sickle",
+				"material": "steel",
+				"tier": 5,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 100
+				"value": 100,
+				"durability": 6250,
+				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"bronze_scythe": {
 				"number": 904,
 				"name": "Bronze - Scythe",
 				"description": "A long curved bronze blade on a tall handle. Mows grass, thatch and grain in wide sweeps.",
 				"kind": "tool",
+				"tool_class": "scythe",
+				"material": "bronze",
+				"tier": 3,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 60
+				"value": 60,
+				"durability": 6000,
+				"repair": [["bronze_ingot", 1], ["stick", 1]],
+				"repair_station": "forge",
+				"edge": true
 			},
 			"steel_scythe": {
 				"number": 905,
 				"name": "Steel - Scythe",
 				"description": "A long curved steel blade on a tall handle. Mows in wide sweeps and holds its edge best.",
 				"kind": "tool",
+				"tool_class": "scythe",
+				"material": "steel",
+				"tier": 5,
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"value": 140
+				"value": 140,
+				"durability": 22500,
+				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair_station": "brick_forge",
+				"edge": true
 			},
 			"grindstone": {
 				"number": 906,
@@ -10279,8 +10229,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2c): no blueprint or structure row until its phase lands."
+				"note": "Placed station: row state 246 (Mission 001 phase 2c)."
 			},
 			"hardwood_board": {
 				"number": 907,
@@ -12163,6 +12112,26 @@
 				"look_alikes": [],
 				"future": true,
 				"value": 35
+			},
+			"axe": {
+				"number": 1253,
+				"name": "Axe",
+				"description": "Any axe: stone, bronze, iron or steel.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2,
+				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
+			},
+			"saw": {
+				"number": 1254,
+				"name": "Saw",
+				"description": "Any hand saw: iron or steel.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2,
+				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
 			}
 	}
 }

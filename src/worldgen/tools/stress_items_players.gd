@@ -115,7 +115,7 @@ func run(players: int, label: String) -> void:
 					items.place_piece(p, "workbench_kit", pos[p - 1] + Vector3(0.0, 0.0, 2.0))
 				elif kind == 9:
 					items._last_queue_act.clear()
-					items.action(p, Net.ACT_CRAFT_QUEUE, 26, 0, 1, Vector3.ZERO)   # stone spade: needs a camp bench
+					items.action(p, Net.ACT_CRAFT_QUEUE, 140, 0, 1, Vector3.ZERO)   # stone hoe: needs a camp bench (recipe 26, the Stone - Spade, is retired)
 				else:
 					if rng.randf() < 0.3:
 						items.kill(p, "stress")

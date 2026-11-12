@@ -206,7 +206,7 @@ func _init() -> void:
 	check(items.harvest(1, items.inventory_of(1), bed) and count("wheat") == int(ceil(float(yield_wheat) / 2.0)) and count("wheat_seeds") >= 4 and not items._crops.has(key), "no sickle: half the wheat (%d of %d), the seeds come back, the bed is empty" % [count("wheat"), yield_wheat])
 
 	# Full yield with a sickle, second crop; winter and frost.
-	give("sickle", 1)
+	give("bronze_sickle", 1)   # the Stone - Sickle is retired (master s3.1, Mission 001 phase 2c)
 	season[0] = "spring"
 	rain[0] = 0.0
 	check(items.sow(1, items.inventory_of(1), bed, slot_of("wheat_seeds")), "the bed is sown again")

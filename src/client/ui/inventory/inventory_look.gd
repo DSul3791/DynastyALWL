@@ -9,6 +9,7 @@ extends RefCounted
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 
 const ICON_DIR := "res://assets/ui/item_icons/"     # tools/icon_bake.gd output, committed once Dave has looked at the sheet
 const CARRY_WARN := 0.7                             # carry bar: gold below this share of the limit, amber to CARRY_BAD, red from there
@@ -70,7 +71,8 @@ static func make_slot(view, index: int) -> Control:
 
 
 # Shows pack or chest slot contents on an item slot: icon (or the name while there is no icon), count, wear or freshness, tooltip.
-static func show_stack(view, slot, number: int, count: int, wear: int, tooltip: String) -> void:
+# `most`: the slot's current maximum durability (Inventory.max_durability), 0 for the row's.
+static func show_stack(view, slot, number: int, count: int, wear: int, tooltip: String, most: int = 0) -> void:
 	if number == 0:
 		slot.set_item(null, 0)
 		slot.set_caption("")
@@ -87,7 +89,7 @@ static func show_stack(view, slot, number: int, count: int, wear: int, tooltip: 
 	if view.table.shelf_units(number) > 0:
 		fraction = view.table.freshness(number, wear)
 	else:
-		var durability: int = int(view.table.entry(item_id).get("durability", 0))     # the same rule as InventoryView.condition
+		var durability: int = most if most > 0 else int(view.table.entry(item_id).get("durability", 0))     # the same rule as InventoryView.condition
 
 		if durability > 0 and wear > 0:
 			fraction = clampf(1.0 - float(wear) / float(durability), 0.0, 1.0)
@@ -353,7 +355,8 @@ static func craft_fraction(view) -> float:
 	if view.craft_entries.is_empty():
 		return 0.0
 
-	var craft_s: float = float(view.recipes.recipe(int(view.craft_entries[0][0])).get("craft_s", 0.0))
+	var head: Array = view.craft_entries[0]
+	var craft_s: float = float(view.recipes.recipe(int(head[0])).get("craft_s", 0.0)) * (SmithingRules.time_mult(int(head[2])) if head.size() > 2 else 1.0)
 
 	if craft_s <= 0.0:
 		return 1.0

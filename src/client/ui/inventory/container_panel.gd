@@ -207,7 +207,7 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 		slot.visible = i < capacity
 		var number: int = view.chest_inv.numbers[i]
 		var tip: String = view._tooltip(number, view.chest_inv.counts[i], view.chest_inv.wear[i], view.chest_inv.inst_of(i)) if number != 0 else ""
-		InventoryLook.show_stack(view, slot, number, view.chest_inv.counts[i], view.chest_inv.wear[i], tip)
+		InventoryLook.show_stack(view, slot, number, view.chest_inv.counts[i], view.chest_inv.wear[i], tip, view.chest_inv.max_durability(i))
 
 
 # The name on the Craft plate while the container shows: "FIRE", the container's name, or "CHEST".

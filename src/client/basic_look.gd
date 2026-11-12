@@ -1897,7 +1897,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
 			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
 			# five cross-lashing bands of leather thong either side of the head. Mesh axes: haft along x (grip at -x), head at x = 0.22, edge toward +z.
-			color = color if bits.has("bronze") else _warm_stone(color)                                              # darker and warmer: in sunlight the plain grey read pale blue (a bronze head keeps its own colour)
+			color = color if bits.has("bronze") or bits.has("metal") else _warm_stone(color)                                              # darker and warmer: in sunlight the plain grey read pale blue (a bronze head keeps its own colour)
 			dark = color.darkened(0.3)
 			light = color.lightened(0.18)
 			var haft_wood: Color = Color(0.3, 0.2, 0.11)
@@ -2130,6 +2130,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				stone = Color(0.012, 0.012, 0.018)
 			elif bits.has("bronze"):
 				stone = Color(0.5, 0.26, 0.06)                                                                                                          # a bronze blade
+			elif bits.has("metal"):
+				stone = color   # a forged iron or steel blade in its looks.json colour (Mission 001 phase 2c)
 			for k in range(4):
 				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
 			for k in range(2):

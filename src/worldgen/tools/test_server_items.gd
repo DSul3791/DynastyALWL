@@ -860,7 +860,6 @@ func _init() -> void:
 	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
 
 	# The spade tier adds to the top of the dig roll (digging.json tier_extra).
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_spade"), 0, 1, Vector3.ZERO)
 	check(m._spade_tier(m.inventory_of(1)) >= 1, "the spade tier is read from the tool in the pack")
 	var most: int = 0
 	mat[0] = "sand"
@@ -1311,17 +1310,12 @@ func _init() -> void:
 	wr._last_mine.clear()
 	wr._mined.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
-	check(wr._is_broken(axe_n, wr.inventory_of(1).wear[0]), "the last use breaks it")
-	wr.inventory_of(1).wear[0] = durability   # a rock blow wears five uses, so the last one can overshoot
+	check(wr.inventory_of(1).count_of(axe_n) == 0, "the last use breaks the Stone - Axe and it is gone (no repair: master s2.2 rule 1; repair is test_tool_care)")
 	var stones_before: int = wr.inventory_of(1).count_of(wr.table.number_of("stone"))
 	wr._last_mine.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
-	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "a broken axe does nothing")
-	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
-	check(wr.inventory_of(1).wear[0] == durability, "no materials, no repair")
-	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("twine"), 0, 1, Vector3.ZERO)
-	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
-	check(wr.inventory_of(1).wear[0] == durability - durability / 2 and wr.inventory_of(1).count_of(wr.table.number_of("twine")) == 0, "a repair spends materials and wins back half")
+	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "with no axe a blow on rock does nothing")
+	wr.inventory_of(1).add(axe_n, 1, ceili(durability * 0.5))   # a fresh half-worn axe in slot 0 (= durability - durability / 2, as the checks below expect)
 	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
 	var dropped: int = 0
 

@@ -150,11 +150,12 @@ func _init() -> void:
 
 	# Repairs: a smith mends worn tools for coin; iron tools need a forge when mended by hand.
 	var inv_r = items.inventory_of(1)
-	items.give_to(1, "stone_axe", 1)
-	var axe_slot: int = inv_r.numbers.find(items.table.number_of("stone_axe"))
+	items.give_to(1, "bronze_knife", 1)
+	var axe_slot: int = inv_r.numbers.find(items.table.number_of("bronze_knife"))
 	inv_r.wear[axe_slot] = 100
 	var smith_cost: int = trade.repair_cost(inv_r.numbers[axe_slot], 100, 1.0)
-	check(smith_cost >= 1 and smith_cost < 20, "half-worn stone axe: a few coppers to mend (%d)" % smith_cost)
+	check(smith_cost >= 1 and smith_cost < 20, "a worn bronze knife: a few coppers to mend (%d)" % smith_cost)
+	check(items.table.entry("stone_axe").get("repair", []).is_empty() and trade.repair_cost(items.table.number_of("stone_axe"), 100, 1.0) == 0, "a disposable Stone - Axe (no repair, master s2.2 rule 1) is never mended")
 	var coins_r: int = items.coins_of(1)
 	var said4: String = trade.deal(1, "hob", 2, axe_slot, 1)
 	check(inv_r.wear[axe_slot] == 0 and items.coins_of(1) == coins_r - trade.repair_cost(inv_r.numbers[axe_slot], 100, float(trade.multipliers(1, "hob")["pay"])), "Hob mends it as new for coin (%s)" % said4)

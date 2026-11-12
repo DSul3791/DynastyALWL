@@ -11,6 +11,7 @@ const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd"
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TAB_PX := 48.0                       # the category tabs: a column of 48 px glyph tabs (redesign 4.3)
 const LIST_PX := 226.0                     # the recipe list's width (196 cut about 47 of 338 names at text scale 1.2; 226 cuts about 11, 9 Nov 2026)
 const CARD_ICON_PX := 96.0                 # the made item's well on the recipe card
@@ -24,6 +25,7 @@ var _detail: VBoxContainer                # the chosen recipe: its needs, the qu
 var _footer: VBoxContainer                # under it, never scrolled away: the brass Craft button and Pin
 var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
 var _qty: int = 1                         # the last quantity chosen, kept between refreshes
+var _variant: int = 0                     # the variant chosen on the card (SmithingRules code: Tempered, +1, +2), kept between refreshes
 const CRAFT_HOLD_MS := 400                 # a press this long on a recipe row is a hold: make as many as the stock allows (decisions row 24)
 var _press_msec: int = 0                  # when the recipe row was pressed
 
@@ -255,7 +257,12 @@ func craft_selected() -> void:
 	if view._selected_recipe == 0:
 		return
 
-	view._start_craft(view._selected_recipe, chosen_quantity())
+	view._start_craft(view._selected_recipe, chosen_quantity(), chosen_variant())
+
+
+# The variant chosen on the card when the stations here still allow it, else plain.
+func chosen_variant() -> int:
+	return _variant if view.craft_variants(view.recipes.recipe(view._selected_recipe)).has(_variant) else 0
 
 
 # The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
@@ -321,6 +328,16 @@ func _refresh_detail() -> void:
 	if r.is_empty():
 		return
 
+	# The variant chosen in Make as (catalog Phase 2c): its needs (more materials for +1/+2) are what the wells, the shortfall line and the
+	# Craft button show, so a variant the stock cannot cover is never offered as craftable.
+	var variants: Array = view.craft_variants(r)
+	var variant: int = _variant if variants.has(_variant) else 0
+	var made_as: Dictionary = r
+
+	if variant != 0:
+		made_as = r.duplicate()
+		made_as["needs"] = SmithingRules.scaled_needs(r["needs"], variant)
+
 	var gives: Array = r.get("gives", [0, 0])
 	var made: int = int(gives[0]) if not gives.is_empty() else 0
 	var entry: Dictionary = view.table.entry(view.table.id_of(made)) if made != 0 else {}
@@ -350,11 +367,11 @@ func _refresh_detail() -> void:
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_detail.add_child(about)
 
-	for stat in _stats_of(entry):
+	for stat in _stats_of(entry, variant):
 		_detail.add_child(_stat_row(str(stat[0]), str(stat[1])))
 
 	_detail.add_child(_section("Needs"))
-	var parts: Dictionary = view._parts_plan(view._selected_recipe)
+	var parts: Dictionary = view._parts_plan(view._selected_recipe) if variant == 0 else {"ok": false, "ambiguous": 0}   # the server plans parts for plain crafts only
 
 	if bool(parts["ok"]):
 		var made_first: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], view.table.sentence_name(m[0])])
@@ -373,8 +390,8 @@ func _refresh_detail() -> void:
 	wells.add_theme_constant_override("v_separation", 10)
 	_detail.add_child(wells)
 
-	for need in r["needs"] + r["keeps"]:
-		var kept: bool = r["keeps"].has(need)
+	for need in made_as["needs"] + made_as["keeps"]:
+		var kept: bool = made_as["keeps"].has(need)
 		var have: int = view.stock_fill(need[0])   # the pack, loose stacks within 3 m and own containers within 12 m (craft_stock)
 		wells.add_child(_need_well(int(need[0]), int(need[1]), have, kept))
 
@@ -390,7 +407,26 @@ func _refresh_detail() -> void:
 	_quantity.value_changed.connect(func(v): _qty = int(v))
 	_quantity.get_line_edit().add_theme_font_size_override("font_size", view._px(view.BODY_PX - 8))
 	row.add_child(_quantity)
-	var short: String = missing_text(r)
+	# Make as (catalog Phase 2c): the variants the stations beside you allow, Plain first, each with what it costs over the plain craft.
+	if variants.size() > 1:
+		var as_row: HBoxContainer = HBoxContainer.new()
+		as_row.add_theme_constant_override("separation", 12)
+		_detail.add_child(as_row)
+		as_row.add_child(_text("Make as", 18, ArtKit.CREAM))
+		var pick: OptionButton = OptionButton.new()
+		pick.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 8))
+
+		for code in variants:
+			var mats: float = float(SmithingRules.cfg().get("craft", {}).get("materials", [1.0, 1.0, 1.0])[SmithingRules.craft_in(code)])
+			pick.add_item("%s%s" % [SmithingRules.label(code), "" if code == 0 else "  (x%s materials, x%s time)" % [str(snappedf(mats, 0.1)), str(snappedf(SmithingRules.time_mult(code), 0.1))]], code)
+
+		pick.select(maxi(variants.find(variant), 0))
+		pick.item_selected.connect(func(index: int) -> void:
+			_variant = pick.get_item_id(index)
+			view._refresh())
+		as_row.add_child(pick)
+
+	var short: String = missing_text(made_as)
 
 	if short != "":
 		var shortfall: Label = _text("Short: " + short.trim_prefix("needs ") + ".", 18, ArtKit.BAD)
@@ -421,8 +457,8 @@ func _refresh_detail() -> void:
 
 	# The Craft button: cast brass, the word engraved; dim when the recipe cannot be made here now.
 	var make: Button = Button.new()
-	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not (view._can_craft(view._selected_recipe) and view._station_ok(r))
+	make.text = "Craft  (%.0f s)" % (float(r["craft_s"]) * SmithingRules.time_mult(variant))
+	make.disabled = not ((view._can_craft(view._selected_recipe) if variant == 0 else view._free_craft() or short == "") and view._station_ok(r))
 	make.custom_minimum_size = Vector2(0.0, 58.0)
 	make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	make.add_theme_font_override("font", ArtKit.font("cinzel_bold"))
@@ -484,11 +520,12 @@ func used_in(number: int) -> Array:
 
 
 # The made item's stats for the card: what it does, how long it lasts and what mends it (from items.json).
-func _stats_of(entry: Dictionary) -> Array:
+# `variant`: the Make as choice; Lasts shows the maximum durability a Tempered or +1/+2 craft is made with (SmithingRules.made_inst).
+func _stats_of(entry: Dictionary, variant: int = 0) -> Array:
 	var stats: Array = []
 
 	if int(entry.get("durability", 0)) > 0:
-		stats.append(["Lasts", "%d uses" % int(entry["durability"])])
+		stats.append(["Lasts", "%d uses" % SmithingRules.max_of(entry, SmithingRules.made_inst(entry, variant))])
 
 	var mends: PackedStringArray = PackedStringArray()
 
