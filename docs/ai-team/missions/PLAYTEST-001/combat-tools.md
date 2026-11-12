@@ -20,10 +20,10 @@ Reproduced by reading the code (`src/client/held_item.gd`):
 
 Fix:
 - The jab runs on its own clock every frame, whatever draws the model.
-- `_aim_spear()` places the spear every frame from the view, not the hand bone: the point straight ahead from the fist with the hand `SPEAR_GRIP_Z` (0.3 m) behind the shaft's middle. Third person: the body's facing, 8 degrees up. First person: the same at rest, turning to the camera's aim as the arms come up (jab, throw aim). The old spear branches of `_mount_model` / `_mount_model_third` are deleted (decision 61).
+- `_aim_spear()` places the spear every frame from the view, not the hand bone: the point straight ahead from the fist with the hand `SPEAR_GRIP_Z` (0.3 m) behind the shaft's middle. Third person: the body's facing (avatar root, -Z), 8 degrees up. First person: the facing tipped 35 degrees down at rest, so it hangs below the view with the arms, turning to the camera's aim as the arms come up (jab, throw aim). The old spear branches of `_mount_model` / `_mount_model_third` are deleted (decision 61).
 - Not changed: there is no spear-thrust animation in Dave's glb (84 clips, none a thrust), so the punch clip still moves the arm; the spear now points along it.
 
-Test: `src/worldgen/tools/test_spear_hold.gd` (three jabs in a row each end; rest and aimed spear directions; grip distance; no stretch).
+Test: `src/worldgen/tools/test_spear_hold.gd` (three jabs in a row each end; first-person rest and aimed directions; third-person facing with a hand mount at an odd angle; grip distance; no stretch). Eating from the hand is refused while a log is carried (review finding 5).
 
 Dave to check: hold the Wooden Spear, jab repeatedly at a rabbit in first and third person; attacks never stop; the spear looks like a spear (point ahead, shaft through the fist).
 
@@ -54,11 +54,15 @@ Fix:
 
 Effect for a Stone - Axe (900 durability) vs Stone - Pickaxe (4500) on rock: axe 6 blows and 30 wear per stone (about 30 stones a life), pick 3 blows and 3 wear (about 1500).
 
-Wood (second PR, protocol 113): only an axe works wood (a pick is refused), but every tree, trunk, stump and loose-log blow used the first axe on the hotbar, so a held pick with an axe on the hotbar still chopped. Now the client sends the held slot + 1 in at.x of the tree ACT_HIT and the wood ACT_PROCESS; the server (`_held_tool`) uses and wears only that slot when it is an axe on the hotbar. Not changed: the chopping block (split at a structure) and swinging at bare rock ground (`_mine`, which still needs an axe on the hotbar; reported, not in this fix). Tests: 40 tree/trunk/stump/log calls in 11 tests send the axe slot through `src/worldgen/tools/held_tool.gd`; `test_server_items.gd` adds "a pickaxe in hand does not work a trunk, nor wear the axe on the hotbar".
+Wood (protocol 112): only an axe works wood (a pick is refused), but every tree, trunk, stump and loose-log blow used the first axe on the hotbar, so a held pick with an axe on the hotbar still chopped. Now the client sends the held slot + 1 in at.x of the tree ACT_HIT and the wood ACT_PROCESS; the server (`_held_tool`) uses and wears only that slot when it is an axe on the hotbar. Not changed: the chopping block (split at a structure) and swinging at bare rock ground (`_mine`, which still needs an axe on the hotbar; reported, not in this fix). Tests: 40 tree/trunk/stump/log calls in 11 tests send the axe slot through `src/worldgen/tools/held_tool.gd`; `test_server_items.gd` adds "a pickaxe in hand does not work a trunk, nor wear the axe on the hotbar".
 
 Tests: `test_server_items.gd` boulder block (held axe with an iron pick on the hotbar: 6 blows a stone, 5 wear a blow, pick untouched; a stone or an empty slot in hand refused), `test_ore.gd`, `test_flint.gd`, `test_bronze_path.gd` updated to send the slot.
 
 Dave to check: look at a boulder (it says Rock); with both on the hotbar, hold the Stone - Pickaxe, then the Stone - Axe: the pick takes a stone every 3 blows, the axe every 6 and wears fast. Say if the axe penalty feels right.
+
+## Review
+
+Gate review 1 (independent gate-reviewer agent) of d7c936e: FAIL on gate rules: (1) the protocol change needs Dave's approval (RULES.md "Big changes need Dave's approval first: ... the network protocol"; Class C in DECISION_AUTHORITY.md); asked on the thread, pending; (2) no Godot run yet. Code findings 3 (third-person facing from the skeleton, wrong for the fallback body), 4 (first-person spear in view at rest), 5 (eating with a log on the shoulder) and 9 (stale comment) fixed. The boulder and wood changes share one bump (112).
 
 ## Test evidence
 

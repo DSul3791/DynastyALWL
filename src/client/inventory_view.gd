@@ -6332,7 +6332,7 @@ func run_chop_test(client) -> void:
 	var blows: int = 0
 
 	for n in range(60):
-		net.inventory_action.rpc_id(1, Net.ACT_HIT, best[2], best[1].x, best[1].y, Vector3(float(inventory.numbers.find(table.number_of("stone_axe")) + 1), 0.0, 0.0))   # the given axe is the one in hand (protocol 113)
+		net.inventory_action.rpc_id(1, Net.ACT_HIT, best[2], best[1].x, best[1].y, Vector3(float(inventory.numbers.find(table.number_of("stone_axe")) + 1), 0.0, 0.0))   # the given axe is the one in hand (protocol 112)
 		blows += 1
 		await get_tree().create_timer(0.45).timeout
 		var states: Array = []

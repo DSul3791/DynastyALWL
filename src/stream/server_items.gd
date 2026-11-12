@@ -1085,7 +1085,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a, count)
 	elif kind == Net.ACT_HIT:
-		_hit(peer, inv, a, Vector2i(b, count), int(at.x) - 1)   # a tree blow's at.x is the held pack slot + 1 (protocol 113)
+		_hit(peer, inv, a, Vector2i(b, count), int(at.x) - 1)   # a tree blow's at.x is the held pack slot + 1 (protocol 112)
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
 		_chest_action(peer, inv, kind, a, b, count)
 	elif kind == Net.ACT_USE_STRUCT:
@@ -1137,7 +1137,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_SPLIT:
 		_split(inv, a, count)
 	elif kind == Net.ACT_PROCESS:
-		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 113)
+		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 112)
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_CHEST_CLOSE:

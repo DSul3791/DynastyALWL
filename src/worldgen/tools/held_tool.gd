@@ -1,5 +1,5 @@
 extends RefCounted
-# Test helper (protocol 113, TEST-013): wood work is done with the axe in hand, so a tree blow (ACT_HIT) or a trunk, stump or log blow
+# Test helper (protocol 112, TEST-013): wood work is done with the axe in hand, so a tree blow (ACT_HIT) or a trunk, stump or log blow
 # (ACT_PROCESS) carries the held pack slot + 1 in at.x. at_axe gives that for player `peer`'s first usable axe on the hotbar, as a
 # player holding it would send; with no axe it is 0 (nothing in hand) and the server refuses the blow.
 
