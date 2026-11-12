@@ -278,6 +278,8 @@
 		"ore_and_metal_rack": {"category": "Storage and shelter", "number": 232, "name": "Ore and metal rack", "structure": "ore_and_metal_rack", "cost": [["hardwood_board", 6], ["nails", 12], ["iron_band", 2]], "station": "", "hammer": 1, "known": true},
 		"storage_sign": {"category": "Storage and shelter", "number": 233, "name": "Storage sign", "structure": "storage_sign", "cost": [["lumber", 2], ["stick", 1], ["charcoal", 1]], "station": "", "hammer": 1, "known": true},
 		"warehouse_crate": {"category": "Storage and shelter", "number": 234, "name": "Warehouse crate", "structure": "warehouse_crate", "cost": [["hardwood_board", 8], ["nails", 16], ["iron_band", 4]], "station": "", "hammer": 3, "known": true},
-		"warehouse_desk": {"category": "Storage and shelter", "number": 235, "name": "Warehouse desk", "structure": "warehouse_desk", "cost": [["hardwood_board", 8], ["nails", 12]], "station": "", "hammer": 1, "known": true}
+		"warehouse_desk": {"category": "Storage and shelter", "number": 235, "name": "Warehouse desk", "structure": "warehouse_desk", "cost": [["hardwood_board", 8], ["nails", 12]], "station": "", "hammer": 1, "known": true},
+		"food_preparation_table": {"category": "Workshops and stations", "number": 210, "name": "Food preparation table", "structure": "food_preparation_table", "cost": [["log", 3], ["twine", 2]], "station": "", "hammer": 1, "known": true},
+		"fireplace_cooking_crane": {"category": "Workshops and stations", "number": 211, "name": "Fireplace cooking crane", "structure": "fireplace_cooking_crane", "cost": [["iron_band", 4]], "station": "", "hammer": 1, "known": true}
 	}
 }

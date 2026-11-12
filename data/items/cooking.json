@@ -80,7 +80,8 @@
 		"fish_stew": 22,
 		"trail_bread": 0,
 		"hearty_pottage": 30,
-		"feast_roast": 30
+		"feast_roast": 30,
+		"smoked_meat": 6
 	},
 	"fuel_note": "Every large log (log_<species>, carried on the shoulder, a pack item since 1 Nov 2026) burns like a log: 3 real hours. Dave 1 Nov 2026 (replaces the 24 Oct times): a stick burns 2 REAL minutes, a bolt of firewood 20 real minutes, a log 3 real hours (game seconds = real x 24; soft firewood half a firewood, kindling half a stick). Stored fuel is not capped (Dave 2 Nov 2026: the timer is the sum of all fuel). Older note: burn times in GAME seconds (clock is 24:1; a game hour is 2.5 real minutes), Dave 24 Oct: a stick, driftwood piece or bundle of kindling is a small fire's wood (stick 15 game minutes, driftwood 15, kindling 7.5), firewood 1 game hour (soft firewood 30 minutes), a log 2 game hours. A fire placed from a kit is laid with 4 sticks and lit by hand with plant fibre.",
 	"fuel": {

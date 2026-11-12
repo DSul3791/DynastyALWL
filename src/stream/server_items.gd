@@ -1919,14 +1919,14 @@ func npc_train(peer: int, skill: String, max_level: int, cost_id: String = "", c
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	var problem: String = SkillWeb.train_problem(_skills_cfg, skill, records, now_s, 100.0, max_level)
 
-	if problem == "" and cost_id != "" and count_for(peer, cost_id) < cost_n:
+	if problem == "" and cost_id != "" and count_for(peer, cost_id, true) < cost_n:
 		problem = "not enough to pay"
 
 	if problem != "" or dry:
 		return problem
 
 	if cost_id != "":
-		take_from(peer, cost_id, cost_n)
+		take_from(peer, cost_id, cost_n, true)
 
 	return train_skill(peer, skill, -1)
 
@@ -10100,9 +10100,10 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 
 
 # For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
-func count_for(peer: int, id: String) -> int:
+# `ready_only`: a Maturing stack (master s3.14) does not count, for what an NPC asks or takes in payment.
+func count_for(peer: int, id: String, ready_only: bool = false) -> int:
 	var inv = inventory_of(peer)
-	return inv.count_of(table.number_of(id)) if inv != null and table.number_of(id) > 0 else 0
+	return inv.count_of(table.number_of(id), false, ready_only) if inv != null and table.number_of(id) > 0 else 0
 
 
 func give_to(peer: int, id: String, count: int) -> void:
@@ -10286,14 +10287,14 @@ func sync_reputation(peer: int) -> void:
 	send_reputation.call(peer, ids, names, points)
 
 
-func take_from(peer: int, id: String, count: int) -> bool:
+func take_from(peer: int, id: String, count: int, ready_only: bool = false) -> bool:
 	var inv = inventory_of(peer)
 
 	if inv == null or table.number_of(id) <= 0:
 		return false
 
 	var before: Array = _snapshot(inv)
-	var ok: bool = inv.remove(table.number_of(id), count)
+	var ok: bool = inv.remove(table.number_of(id), count, [], ready_only)
 	_send_changes(peer, inv, before)
 	return ok
 
@@ -11850,6 +11851,9 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_within(it["pos"], POT_ON_FIRE_M):
 				continue   # the pot hangs over its fire: with that fire out nothing cooks, the craft waits where it is and nothing is lost
 
+			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_within(it["pos"], "fireplace", float(def.get("attach_m", 2.5))):
+				continue   # the Fireplace cooking crane (master s3.12) hangs its pot over a fireplace: only while that fireplace burns
+
 			# A station that must be burning to craft (the Smithy, Blast furnace and Master smithy, master s4 item 10): a cold one serves while the crafter
 			# carries its fuel, and the craft itself (light_it) fires it from the pack. Without fuel the craft waits and nothing is lost.
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
@@ -11943,6 +11947,16 @@ func _seat_near(pos: Vector3) -> bool:
 
 			if str(_comfort_kind(str(_structures.get(skind, {}).get("comfort", skind))).get("class", "")) == "seat":
 				return true
+
+	return false
+
+
+func _lit_structure_within(pos: Vector3, kind: String, r: float) -> bool:
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other.has("struct") and str(other["struct"]["kind"]) == kind and bool(other["struct"].get("lit", false)) and pos.distance_to(other["pos"]) <= r:
+			return true
 
 	return false
 
@@ -14829,7 +14843,7 @@ func _craft_ground(stock: Dictionary, number: int, inv, plain_only: bool = false
 	for row in stock.get("near", []):
 		var it: Dictionary = _items.get(int(row[0]), {})
 
-		if not it.is_empty() and fills.has(int(it.get("number", 0))) and not (plain_only and it.has("inst")):
+		if not it.is_empty() and fills.has(int(it.get("number", 0))) and not (plain_only and it.has("inst")) and not table.maturing(int(it["number"]), int(it.get("wear", 0))):
 			out.append([int(row[0]), int(it["count"])])
 
 	return out
@@ -15761,6 +15775,18 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		recipe = recipe.duplicate()
 		recipe["needs"] = SmithingRules.scaled_needs(recipe["needs"], variant)
 
+	# A sealed batch is capped by the room in the pack and the player's storage nearby (master s3.14 bulk): it never spills onto the ground.
+	if float(recipe.get("ready_age", 0.0)) > 0.0:
+		var room_crafts: int = floori(float(_batch_room(peer, int(recipe["gives"][0]))) / float(maxi(int(recipe["gives"][1]), 1)))
+
+		if room_crafts <= 0:
+			_say(peer, "No room for the batch: make space in your pack or a chest nearby")
+			return
+
+		if room_crafts < clampi(count, 1, CRAFT_QUEUE_MAX_COUNT):
+			_say(peer, "Room for only %d of that batch in your pack and chests nearby" % room_crafts)
+			count = room_crafts
+
 	if free:
 		var line: Array = queue["entries"]
 
@@ -16118,6 +16144,14 @@ func _craft_tick(spent: float) -> void:
 		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft"):
 			continue
 
+		# A sealed batch done while its room was filled meanwhile waits, finished, until there is space again (never onto the ground).
+		if float(recipe.get("ready_age", 0.0)) > 0.0 and _batch_room(peer, int(recipe["gives"][0])) < int(recipe["gives"][1]) * int(head[1]):
+			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
+				_station_said[peer] = Time.get_ticks_msec()
+				_say(peer, "Your %s batch waits: make room in your pack or a chest nearby" % str(recipe.get("name", "")).to_lower())
+
+			continue
+
 		queue["elapsed"] = 0.0
 		var inv = inventory_of(peer)
 
@@ -16133,13 +16167,27 @@ func _craft_tick(spent: float) -> void:
 		if wears_tool != "" and not free_entry:
 			tools_ok = tools_ok and inv != null and _tool_slot(inv, wears_tool) >= 0
 
+		# A sealed batch (recipes.json ready_age, master s3.14 [D14]) takes only fresh produce: below half freshness it is refused, so maturing is not skipped.
+		var sealed: bool = float(recipe.get("ready_age", 0.0)) > 0.0
+
 		if not tools_ok:
 			queue["entries"].remove_at(0)
 			_refund_entry(peer, head)
 			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
+		elif sealed and _stalest_input(head) < SEAL_MIN_FRESH:
+			queue["entries"].remove_at(0)
+			_refund_entry(peer, head)
+			_say(peer, "%s was not sealed: only fresh produce keeps in a jar" % str(recipe.get("name", "That")))
 		else:
+			# One craft of a sealed recipe makes the whole queued batch at once (one timer, one stack); any other recipe makes one craft's worth.
+			var times: int = int(head[1]) if sealed else 1
 			_gain_source = SRC_CRAFT
-			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]), SmithingRules.made_inst(table.entry(table.id_of(int(recipe["gives"][0]))), variant))
+
+			if sealed:
+				_give_batch(peer, int(recipe["gives"][0]), int(recipe["gives"][1]) * times)
+			else:
+				give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]), SmithingRules.made_inst(table.entry(table.id_of(int(recipe["gives"][0]))), variant), _made_age(int(recipe["gives"][0]), head))
+
 			_gain_source = SRC_PICKUP
 			_goal_made(peer, int(recipe["gives"][0]))
 
@@ -16147,13 +16195,101 @@ func _craft_tick(spent: float) -> void:
 				_wear_tool(peer, inv, wears_tool, "craft")
 
 			practice(peer, "craft", clampf(float(recipe.get("craft_s", 3.0)) / 3.0, 0.3, 2.0))   # a long craft teaches more than a quick one
-			head[1] = int(head[1]) - 1
+			head[1] = int(head[1]) - times
 
 			if int(head[1]) <= 0:
 				queue["entries"].remove_at(0)
 
 		_dirty = true
 		_sync_craft_queue(peer)
+
+
+const SEAL_MIN_FRESH := 0.5   # master s3.14: sealing refuses inputs below half freshness
+
+
+# The freshness of the stalest perishable unit a queue entry took (the [number, inst, wear, count] rows _hold_insts keeps), 1.0 when none spoils.
+func _stalest_input(entry: Array) -> float:
+	var stalest: float = 1.0
+
+	for need in entry[2]:
+		for unit in (need[2] if need.size() > 2 else []):
+			if table.shelf_units(int(unit[0])) > 0:
+				stalest = minf(stalest, table.freshness(int(unit[0]), int(unit[2]) if unit.size() > 2 else 0))
+
+	return stalest
+
+
+# The age a made food starts at (master s3.14, crafted age): the age fraction of its stalest perishable input, so preparing old produce does not
+# make it fresh; 0 for an item that does not spoil. shortcut: one entry of several crafts gives every output the stalest input of all of them
+# (never fresher than it should be); per-craft inputs would need the rows split by craft, revisit if long mixed-age queues matter.
+func _made_age(made: int, entry: Array) -> int:
+	var life: int = table.shelf_units(made)
+	return 0 if life <= 0 else int(round((1.0 - _stalest_input(entry)) * float(life)))
+
+
+# Where a sealed batch may go (master s3.14 bulk): the pack, then the player's own storage within the crafting reach, nearest first, each up to its
+# free space for `number` at age 0 (carry weight or max_kg, and a slot to put it in). [[inventory, world id or -1 for the pack, room], ...].
+func _batch_spots(peer: int, number: int) -> Array:
+	var out: Array = []
+	var inv = inventory_of(peer)
+
+	if inv == null:
+		return out
+
+	if _batch_slot(inv, number):
+		out.append([inv, -1, _fit(peer, inv, number, table.COUNT_MAX)])
+
+	for box in _craft_boxes(peer):
+		box[1].usable = clampi(int(_structures.get(str(_items[int(box[0])]["struct"]["kind"]), {}).get("slots", box[1].SLOTS)), 1, box[1].SLOTS)
+
+		if _batch_slot(box[1], number):
+			out.append([box[1], int(box[0]), _box_room(int(box[0]), number, table.COUNT_MAX)])
+
+	return out
+
+
+# A slot a fresh batch can go into: an empty one, or a plain stack of it at age 0 (Inventory._mergeable joins a Maturing batch only at its own age).
+func _batch_slot(inv, number: int) -> bool:
+	for i in inv.usable:
+		if inv.numbers[i] == 0 or (inv.numbers[i] == number and inv.inst[i].is_empty() and inv.wear[i] == 0 and inv.counts[i] < table.stack_of(number)):
+			return true
+
+	return false
+
+
+func _batch_room(peer: int, number: int) -> int:
+	var room: int = 0
+
+	for spot in _batch_spots(peer, number):
+		room += int(spot[2])
+
+	return room
+
+
+# A sealed batch goes into the pack and the player's nearby storage, never onto the ground: the queue capped it to the room, and the craft waits
+# while that room is gone (_craft_tick). It starts at age 0 and matures from there.
+func _give_batch(peer: int, number: int, count: int) -> void:
+	var left: int = count
+
+	for spot in _batch_spots(peer, number):
+		if left <= 0:
+			break
+
+		var before: Array = _snapshot(spot[0]) if int(spot[1]) < 0 else []
+		var put: int = mini(left, int(spot[2]))
+		put -= spot[0].add(number, put)
+		left -= put
+
+		if int(spot[1]) < 0:
+			_send_changes(peer, spot[0], before)
+		elif put > 0:
+			_push_box(int(spot[1]), spot[0])
+
+	if left > 0:   # not reached (the room was checked this tick); kept so a disagreement between the room and Inventory.add can never lose food
+		push_error("sealed batch: %d of item %d found no room after the check" % [left, number])
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO))
+
+	_dirty = true
 
 
 func _sync_craft_queue(peer: int) -> void:
@@ -16520,6 +16656,10 @@ func _eat(peer: int, inv, slot: int) -> void:
 
 	var item_id: String = table.id_of(inv.numbers[slot])
 	var spoil: Dictionary = table.spoilage()
+
+	if inv.maturing_at(slot):   # a sealed batch is eaten only once Ready (master s3.14 [D14])
+		_say(peer, "The %s is still maturing: about %d more game hours." % [table.sentence_name(inv.numbers[slot]), table.ready_hours_left(inv.numbers[slot], inv.wear[slot])])
+		return
 
 	if _eat_stopped(peer, item_id, now):
 		_last_eat[peer] = now

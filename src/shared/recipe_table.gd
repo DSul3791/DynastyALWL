@@ -49,8 +49,12 @@ func load_file(path: String, item_table) -> bool:
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)), "locked": bool(row.get("locked", false)),
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),
 			"wears_tool": str(row.get("wears_tool", "")),
+			"ready_age": float(row.get("ready_age", 0.0)),   # game hours a sealed batch matures (master s3.14): one timer for the whole batch, output at age 0
 		}
 		_by_number[entry["number"]] = entry
+
+		if float(entry["ready_age"]) > 0.0 and item_table.has_method("set_ready_age"):
+			item_table.set_ready_age(int(entry["gives"][0]), float(entry["ready_age"]))   # the item table rules Maturing stacks (merge, eat, use)
 
 	_open_listed(path.get_base_dir().path_join("open_recipes.json"))
 	return true

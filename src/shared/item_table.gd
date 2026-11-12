@@ -291,6 +291,30 @@ func _shelf_units_uncached(number: int) -> int:
 	return 0 if hours <= 0.0 else maxi(int(round(hours * float(cfg.get("gentle_mult", 1)) / float(cfg.get("unit_h", 0.1)))), 1)
 
 
+# Passive maturing (master s3.14 [D14], Mission 001 phase 6): the age in wear units at which a sealed food is Ready, from the "ready_age" (game
+# hours, not stretched by gentle_mult) of the recipe that makes it, which recipe_table.gd load_file sets here; 0 for food that is ready when made.
+# Below it the stack is Maturing: it is not eaten, used, sold or merged with a stack of another age (Inventory._mergeable).
+var _ready: Dictionary = {}   # item number -> ready age in wear units
+
+
+func set_ready_age(number: int, hours: float) -> void:
+	if number > 0 and hours > 0.0:
+		_ready[number] = maxi(int(_ready.get(number, 0)), int(round(hours / float(spoilage().get("unit_h", 0.1)))))
+
+
+func ready_units(number: int) -> int:
+	return int(_ready.get(number, 0))
+
+
+func maturing(number: int, age_units: int) -> bool:
+	return age_units < ready_units(number)
+
+
+# Game hours until a Maturing stack is Ready at the pack's pace, rounded up (0 once Ready): what the player is told and shown.
+func ready_hours_left(number: int, age_units: int) -> int:
+	return ceili(float(maxi(ready_units(number) - age_units, 0)) * float(spoilage().get("unit_h", 0.1)))
+
+
 # 1.0 fresh down to 0.0 rotten for a stack of `number` with the age `age_units`; 1.0 for anything that does not spoil.
 func freshness(number: int, age_units: int) -> float:
 	var life: int = shelf_units(number)

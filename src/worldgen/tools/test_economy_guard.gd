@@ -22,6 +22,28 @@ func _read(file: String) -> Dictionary:
 	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
 
+# k when recipe `rid` gives and needs exactly k times what another live recipe for the same item gives and needs (and nothing else), else 1.
+func _batch_of_other(recipes: Dictionary, rid: String) -> int:
+	var r: Dictionary = recipes[rid]
+
+	for other_id in recipes:
+		var o: Dictionary = recipes[other_id]
+
+		if other_id == rid or bool(o.get("retired", false)) or o["gives"][0] != r["gives"][0] or int(o["gives"][1]) <= 0 or int(r["gives"][1]) % int(o["gives"][1]) != 0:
+			continue
+
+		var k: int = roundi(float(r["gives"][1]) / float(o["gives"][1]))
+		var same: bool = k > 1 and (o["needs"] as Array).size() == (r["needs"] as Array).size()
+
+		for i in (o["needs"] as Array).size():
+			same = same and String(o["needs"][i][0]) == String(r["needs"][i][0]) and int(o["needs"][i][1]) * k == int(r["needs"][i][1])
+
+		if same:
+			return k
+
+	return 1
+
+
 func _init() -> void:
 	var items: Dictionary = _read("items.json").get("items", {})
 	var gathered: Dictionary = _read("gathered.json").get("items", {})
@@ -38,6 +60,10 @@ func _init() -> void:
 			continue
 
 		var out_id: String = String(r["gives"][0])
+
+		if _batch_of_other(recipes, rid) > 1:
+			continue   # k crafts of another recipe made at once (the Iron - Cauldron's stews): that recipe is the one checked
+
 		var out_kind: String = String(items.get(out_id, gathered.get(out_id, {})).get("kind", ""))
 		var batch: float = value_of.call(out_id) * float(r["gives"][1])
 		var inputs: float = 0.0
