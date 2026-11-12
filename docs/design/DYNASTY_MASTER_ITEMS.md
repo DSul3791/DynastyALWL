@@ -1,17 +1,18 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 13 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS, ARMOUR, CLOTHING, CARRYING GEAR AND ANIMAL TACK RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D10], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 13 BASELINE PLUS OWNER-APPROVED 13-ENTRY VEHICLE CATEGORY [D11] RECORDED; PREVIOUS CATEGORIES RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D11], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 13, reviewed categories only; not final).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 113 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Cross-listed rows (dual-use tools, shields, protective clothing, containers, troughs) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 13 reconciled baseline BEFORE the 13 new [D11] vehicle/component ADD items; NOT the final combined count).** Existing rows: KEEP 500, UPDATE 60, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 113 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8, 9 carrying items in s3.9, 20 animal tack items in s3.10) and 3 new FUTURE rows (Steel bolt, Iron - Lance, Riding - Boots). Cross-listed rows (dual-use tools, shields, protective clothing, containers, troughs) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
 | Tag | Source | Weight |
 |---|---|---|
+| **[D11]** | Dave approved ten carts/wagons/carriages and three reusable wheel/axle items; specifically removed Wheelbarrow as redundant with Handcart; paired animals remain one draft unit as in [D10] | **Approved vehicle category; NOT game implementation or complete-catalog approval** |
 | **[D10]** | Dave approved 20 horse-tack items: original 18 plus Double Heavy Draft Harness and Double Ox Yoke; yoked animals move as one logical controller in fixed formation, with individual stamina/health and combined hauling | **Approved animal-tack category and technical rule; NOT approval of vehicles or implementation** |
 | **[D9]** | Dave approved ChatGPT's entire Backpacks, Pouches & Carrying Equipment Proposal 1 (“lets do it”): retain 6 existing gear rows, add 9 distinct carrying aids; cross-list 3 already-existing containers; require realistic weight, volume, attachment and persistence | **Owner-approved carrying category; not full catalog or gameplay approval** |
 | **[D8]** | Dave explicitly approved the full Clothing Proposal 1: 24 retained ordinary garment items; 17 new garments; Riding Boots future under mounted gear; 8 armour items cross-listed; layering and weather/climate effects | **Owner-approved category design; not implementation permission** |
@@ -605,6 +606,58 @@ Existing quivers have `slot: waist` although descriptions say worn on back. Choo
 
 **Counts:** 0 existing dedicated tack; **20 ADD** horse-care/riding/pack/harness/barding item rows. Cross-listed **1 FUTURE** Riding - Boots is owned here and must not be counted a second time against [D8]; existing FUTURE Lance is owned by [D6]. All 20 new rows are documentation plans; this section authorizes no JSON edits, code, merge or runtime implementation.
 
+### 3.11 Carts, wagons and carriages [D11] — OWNER APPROVED (WHEELBARROW REMOVED)
+
+**Authority:** Dave approved ChatGPT's complete Carts, Wagons & Carriages Proposal 1 with a specific change: **DROP the Wheelbarrow** because the Handcart serves its purpose. Dave then explicitly said "I like it all. make it so." This is owner approval for the **13-entry vehicle/components category**, not final approval of the complete Master Items Catalog or authorization to implement, merge, alter gameplay, create blueprints or deploy runtime code. No dedicated vehicle catalog items exist on current baseline `dev`.
+
+**New vehicle types — ten distinct buildable world entities (ADD, new IDs/numbers assigned at authorized implementation only):**
+
+| Class | New vehicle | Traction and hitch | Distinct purpose and limits |
+|---|---|---|---|
+| Human | Handcart | Person pushes or pulls, no harness | Earliest local settlement hauler; two wheels, more cargo than a backpack, awkward on narrow/steep/rough paths |
+| One-animal | Light Cargo Cart | One compatible draft animal using Light Draft Harness, or suitable single heavy harness | Two-wheel farm/trade supplies, moderate cargo |
+| One-animal | Passenger Gig | One suitable horse/donkey + compatible single harness | Lightweight two-wheel driver + one passenger, minimal freight |
+| One-animal | Cargo Sled | One compatible draft animal; hand-pulled if lightly loaded | Wheel-free sled intended for snowy ground, poor on bare roads/stones |
+| Two-animal | Farm Wagon | Double Heavy Draft Harness for matched horses/donkeys OR Double Ox Yoke for two oxen | Four-wheel sideboard wagon, crops/grain/hay/general hauling |
+| Two-animal | Timber Flatbed Wagon | Compatible double animal draft unit | Long, open structural platform for logs, Hardwood Boards, Planks, stone and bulky construction loads |
+| Two-animal | Covered Merchant Wagon | Compatible double animal draft unit | Weather-protected enclosed trading cargo; heavier than open wagon |
+| Two-animal | Traveller's Wagon | Compatible double animal draft unit | Slower mobile sleeping/storage accommodation while parked, NOT automatic cooking/crafting workshop |
+| Two-animal | Passenger Carriage | Compatible double animal draft unit | Enclosed upholstered passenger vehicle, relatively little cargo space |
+| Two-animal | Passenger Sleigh | Compatible double animal draft unit | Snow-condition passenger transport on runners, not an all-season road wagon |
+
+**New reusable vehicle components — three ADD inventory material/component definitions:**
+
+| New component | Role |
+|---|---|
+| Wooden Cart Wheel | Replaceable basic wheel for Handcart, Light Cargo Cart, Passenger Gig and other compatible light builds |
+| Reinforced Wagon Wheel | Heavier wheel for wagons and carriage builds |
+| Axle Assembly | Replaceable common axle component for wheeled vehicles; validate size compatibility in construction/repair, no spokes or individual nails as separate item definitions |
+
+The existing `water_wheel` item is a different mechanical system and MUST NOT become a substitute for a cart or wagon wheel.
+
+**Total: 10 vehicle entity types + 3 reusable components = 13 proposed new catalog concepts.** No Wheelbarrow blueprint, item, structure or vehicle variant; do not count it as future or retained.
+
+**Vehicles as world assets and construction:**
+1. Vehicles are **persistent movable world entities**, not human pocket inventory items. Hammer construction blueprints create assembled vehicles; wheel and axle parts are ordinary craftable inventory items; record item/blueprint/structure/vehicle entity relationships explicitly before implementation and avoid auto-generating one carryable vehicle kit per vehicle unless a later approved design truly requires it.
+2. Primitive Handcart is available before horses/donkeys/oxen and before a complex transportation tech tree. Early wooden cart material sourcing must respect real existing tools and gates. More complex cars/wagons can use **Hardwood Boards**, ordinary Planks, logs/blocks, Wooden Pins, Bronze/Iron Nails, Iron Bands, Leather and cloth with functional fitting logic. **No substitution** between Planks and Hardwood Boards, in either direction. Honour bronze-before-iron access and the Iron Hand Saw prerequisite for sawn boards.
+3. Wheels and axles built at Carpenter's Bench with iron/bronze fittings as appropriate. Whole vehicle assembly is by Hammer blueprint, not a new universal Vehicle Workshop by default. Carriages can use upholstery and existing furniture/textile fabrication methods, no invented premium fastener tier.
+
+**Owner-approved simple vehicle/draft physics, shared with [D10]:**
+- **One controller per vehicle** handles locomotion/heading, steering, collisions, stop/start/reverse and plausible turning radius; animate wheels visually, no full separate physics simulation for each wheel or suspension spring.
+- For two-animal vehicles, two compatible fitted animals join as the **one logical paired draft unit** specified in [D10]: same heading, speed, movement and facing with side-by-side spacing, combined effective pulling strength, individual health/stamina. Connect vehicle to the shared logical controller, not two competing physics bodies. Unhitching restores independent animals. A disabled animal causes safe halt or detach handling.
+- Haulability uses real animal/human strength, loaded mass, volume/size, road/soil conditions, grades, water obstacles, stamina and physical terrain. The pair need not yield exactly double practical traction. The vehicle does not ignore weight by having more storage slots.
+- Vehicle collision and route constraints matter: narrow paths, bridge width, rocks, deep mud, rivers, slope, snow, passengers and cargo all contribute. Passenger Sleigh/Cargo Sled require suitable surface; do not make every vehicle universally effective on all terrain.
+
+**Cargo, passengers, repairs and persistence:**
+- Container/inventory data belongs to each physical vehicle and persists with its location, ownership and attached animals across save/network, moving, parking, leaving world or dismantling. Prevent duplication, deletion and bag-within-bag exploits. Load mass/volume/geometry and load balance constrain cargo. Sacks inside a cargo wagon must count fully. Visible cargo where practical.
+- Passengers occupy actual seats, count toward load and can board/exit when stationary. NPC and multiplayer passengers need later network controls; do not invent autonomous NPC coach-driving here.
+- Damage may affect wheel, axle, frame or cloth cover; repair with appropriate materials/tool at the vehicle instead of arbitrary whole-vehicle replacement. Parked/abandoned vehicles remain world objects, not despawned because the owner walked away.
+- Vehicle saddle/hitch compatibility needs the [D10] **single** draft options for one-animal vehicles and **Double Heavy Harness/Double Ox Yoke** for two-animal vehicles. Draft harnesses and barding are not new vehicle items; cross-listed only.
+
+**Deliberately excluded:** Wheelbarrow (specifically rejected by Dave), Noble Coach (appearance variant of Passenger Carriage), separate Ox Cart (use existing cart/wagon with appropriate animal), Hay Wagon (Farm Wagon), Heavy Cargo Cart (covered by Light Cargo Cart and Farm Wagon), Armoured War Wagon (future warfare), Ploughs and Harvesters (agriculture), Siege Engines (warfare), and Boats/Ships (water transport). Appearance/paint/upholstery variants do not multiply catalog rows.
+
+**Counts and dependencies:** 1 hand-powered + 3 single-animal + 6 paired-animal vehicles + 3 parts = **13 ADD**; 0 existing vehicle items. Cumulative new ADD total increases by 13 from the last audited baseline after reconciliation; no extra horse-tack, plated animal armour, animal food or duplicated individual wheel subparts. **Cooking and food-preparation stations** are the next complete category for owner review. After that food preservation. Re-audit every completed category before calling the master catalog final.
+
 ## 4. Implementation details (follow from the decisions; no new design)
 
 1. **Repair data:** `repair_station` on each metal tool names its crafting station type (today 26 rows say `forge`; bronze tools: `forge`, which the Smithy also provides; iron and steel: the Smithy); `drops.json tool_wear.repair_restores` (0.5) becomes "restore up to the remaining maximum"; stone, wooden and primitive rows lose `repair`; code removes a disposable tool at zero, drops a surviving thrown Javelin as a pickup, and keeps a broken metal tool in its slot.
@@ -721,7 +774,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and reconciled in s3.9 [D9] (9 ADD rows). SADDLES, SADDLEBAGS AND ANIMAL TACK is owner-approved and reconciled in s3.10 [D10] (20 ADD item rows, one Riding Boots FUTURE row), with the simplified paired-draft movement rule. CARTS, WAGONS AND CARRIAGES are owner-approved in s3.11 [D11] (13 ADD items, NO Wheelbarrow), pending cumulative reconciliation. FOOD PREPARATION, COOKING EQUIPMENT AND COOKING STATIONS is next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
