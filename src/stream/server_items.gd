@@ -14325,8 +14325,7 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Arr
 		if share <= 0 or it.is_empty():
 			continue
 
-		if it.has("inst") or int(it.get("wear", 0)) != 0:
-			taken_inst.append([int(it["number"]), it.get("inst", {}).duplicate(true), int(it.get("wear", 0)), share])
+		taken_inst.append([int(it["number"]), it.get("inst", {}).duplicate(true), int(it.get("wear", 0)), share])
 
 		if int(it["count"]) > share:
 			it["count"] = int(it["count"]) - share
@@ -14964,23 +14963,24 @@ func _refund_entry(peer: int, entry: Array) -> void:
 	for need in entry[2]:
 		var left: int = int(need[1]) * int(entry[1])
 
-		# The recorded units go back as they were, wear (age, water) included: instances first (a finished craft used the plain ones first, as
-		# Inventory.remove takes them), then worn plain stacks; the rest are plain unworn units. Rows: [number, inst, wear, count] (older: count 1).
+		# The recorded units go back as they were, wear (age, water) and instance data included. Rows are in the order they were taken and crafts
+		# finish in queue order, so the units still owed are the last ones: give from the end. Rows: [number, inst, wear, count] (older: count 1);
+		# what no row covers (an older save) comes back plain.
 		var rows: Array = need[2] if need.size() > 2 else []
 
-		for want_inst in [true, false]:
-			for unit in rows:
-				var n: int = mini(left, int(unit[3]) if unit.size() > 3 else 1)
+		for k in range(rows.size() - 1, -1, -1):
+			var unit: Array = rows[k]
+			var n: int = mini(left, int(unit[3]) if unit.size() > 3 else 1)
 
-				if n > 0 and (unit[1] as Dictionary).is_empty() != want_inst:
-					give(peer, int(unit[0]), n, unit[1], int(unit[2]) if unit.size() > 2 else 0)
-					left -= n
+			if n > 0:
+				give(peer, int(unit[0]), n, unit[1], int(unit[2]) if unit.size() > 2 else 0)
+				left -= n
 
 		give(peer, _refund_number(int(need[0])), left)   # a group ingredient gives back its lowest member, as a taken-down piece does
 
 
-# Keeps what a craft took that a refund must give back as it was (instances, worn or aged stacks): row k gains a third value, the list of
-# [item number, inst, wear, count] taken for it (Inventory.remove).
+# Keeps what a craft took, in order, so a refund gives back as it was what is still owed: row k gains a third value, the list of
+# [item number, inst, wear, count] taken for it (Inventory.remove, _stock_take).
 func _hold_insts(rows: Array, held: Array) -> void:
 	for k in mini(rows.size(), held.size()):
 		if not (held[k] as Array).is_empty():

@@ -303,7 +303,7 @@ func _init() -> void:
 
 	for slot in inv.SLOTS:
 		if inv.numbers[slot] == 0:
-			inv.numbers[slot] = stone
+			inv.numbers[slot] = fibre   # light, so only the full pack (not the weight) stops the log
 			inv.counts[slot] = 1
 			filler.append(slot)
 
@@ -331,7 +331,14 @@ func _init() -> void:
 	before_logs = logs_out.call()
 	items.action(1, Net.ACT_PICKUP, log_id, 0, 0, Vector3.ZERO)
 	check(before_logs == 1 and logs_out.call() == 1 and items._items.has(log_id) and inv.count_of(big) == 0, "a full pack picks up no log and the ground holds one, not two")
-	items._items.erase(log_id)
+	inv.clear_slot(filler.pop_back())   # positive controls: with a free slot the same pick-up and chest take succeed
+	items.action(1, Net.ACT_PICKUP, log_id, 0, 0, Vector3.ZERO)
+	check(inv.count_of(big) == 1 and not items._items.has(log_id) and logs_out.call() == 0, "with a free slot the log is picked up, and only one exists")
+	inv.clear_slot(inv.numbers.find(big))
+	chest.add(big, 1)
+	items.action(1, Net.ACT_CHEST_TAKE, chest.numbers.find(big), chest_id, 1, Vector3.ZERO)
+	check(inv.count_of(big) == 1 and chest.count_of(big) == 0 and logs_out.call() == 0, "and taken from the chest, the log moves to the pack, only one exists")
+	inv.clear_slot(inv.numbers.find(big))
 
 	for slot in filler:
 		inv.clear_slot(slot)
@@ -349,6 +356,49 @@ func _init() -> void:
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	var aged: int = inv.numbers.find(fibre)
 	check(inv.count_of(fibre) == 3 and aged >= 0 and inv.wear[aged] == 7, "a cancel gives plain units back with their recorded wear")
+
+	# Perishable food: five queued crafts over two stacks of different age, two finished, then a cancel gives back the units still owed, at their own
+	# age (rows run in the order taken; the last ones are owed). Recipe 31 (energy bar) takes three nuts and one nectar a craft.
+	var nuts: int = table.number_of("nuts")
+	var nectar: int = table.number_of("honeyspindle_nectar")
+	var life: int = table.shelf_units(nuts)
+	check(nuts > 0 and nectar > 0 and life > 100 and items.recipes.recipe(31).get("needs", []) == [[nuts, 3], [nectar, 1]], "nuts spoil and recipe 31 takes three nuts and a nectar (life %d)" % life)
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] in [nuts, nectar, fibre]:
+			inv.clear_slot(slot)
+
+	var young: int = 2
+	var old_age: int = life / 2
+	inv.numbers[0] = nuts   # written directly so the two ages stay two stacks: slot 0 young, slot 1 old (taken first: last slot first)
+	inv.counts[0] = 9
+	inv.wear[0] = young
+	inv.numbers[1] = nuts
+	inv.counts[1] = 6
+	inv.wear[1] = old_age
+	inv.add(nectar, 5)
+	items._last_queue_act.erase(1)
+	items.action(1, Net.ACT_CRAFT_QUEUE, 31, 0, 5, Vector3.ZERO)
+	var food_queue: Array = items._queue_of(1).get("entries", [])
+	check(inv.count_of(nuts) == 0 and food_queue.size() == 1 and int(food_queue[0][1]) == 5, "five energy bars are queued (%s)" % str(food_queue))
+
+	if food_queue.size() == 1:
+		food_queue[0][1] = 3   # two crafts finished (as _craft_tick counts them down); they used the six old nuts taken first
+
+	items._last_queue_act.erase(1)
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	var ages: Array = []
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] == nuts:
+			ages.append([inv.counts[slot], inv.wear[slot]])
+
+	check(ages == [[9, young]] and inv.count_of(nectar) == 3, "the cancel gives back the nine young nuts still owed, at their age, not the old ones (%s)" % str(ages))
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] in [nuts, nectar]:
+			inv.clear_slot(slot)
+
 	var berries: int = table.number_of("berries")
 
 	if berries > 0 and table.shelf_units(berries) > 0:
