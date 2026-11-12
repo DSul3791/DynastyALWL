@@ -45,6 +45,19 @@ class FakeView:
 		return inventory.numbers.find(keys[key]) if key >= 0 and key < keys.size() and int(keys[key]) != 0 else -1
 
 
+# Third person stand-in for the body: the avatar root faces -Z as the game does; a hand mount turned at an odd angle (the jab clip's fist).
+class FakeRig:
+	extends Node3D
+	var hand_mount_r: Marker3D = Marker3D.new()
+	var hand_mount_l: Marker3D = Marker3D.new()
+
+	func _init() -> void:
+		add_child(hand_mount_r)
+		add_child(hand_mount_l)
+		hand_mount_r.position = Vector3(0.3, 1.2, -0.2)
+		hand_mount_r.rotation_degrees = Vector3(70.0, -30.0, 15.0)
+
+
 func _check(ok: bool, what: String) -> void:
 	print(("ok   " if ok else "FAIL ") + what)
 
@@ -95,13 +108,16 @@ func run() -> void:
 
 		_check(held._jab_t < 0.0, "jab %d has ended after %.1f s (the jab is %.2f s)" % [n + 1, 0.5, HeldItem.JAB_S])
 
-	# The spear points ahead from the fist: at rest level with the body's facing and a little up, its point SPEAR_GRIP_Z ahead of the hand.
+	# The spear points ahead from the fist: at rest ahead along the body's facing, tipped down with the hanging arms, its point SPEAR_GRIP_Z ahead of the hand.
 	held._arm_up = 0.0
 	held._aim_spear()
 	var tip: Vector3 = -held._model.global_basis.z.normalized()
 	var ahead: Vector3 = -camera.global_basis.z
 	ahead.y = 0.0
-	_check(tip.dot(ahead.normalized()) > 0.98 and tip.y > 0.0 and tip.y < 0.3, "at rest the spear points ahead and a little up (%s)" % str(tip))
+	var down: float = rad_to_deg(asin(-tip.y))
+	tip.y = 0.0
+	_check(tip.normalized().dot(ahead.normalized()) > 0.999 and absf(down - HeldItem.SPEAR_REST_DOWN_DEG) < 0.5, "at rest the spear points ahead, %.0f degrees down with the arms (%.1f)" % [HeldItem.SPEAR_REST_DOWN_DEG, down])
+	tip = -held._model.global_basis.z.normalized()
 	var hand: Vector3 = (held._model.get_parent() as Node3D).global_position
 	_check(held._model.global_position.distance_to(hand + tip * HeldItem.SPEAR_GRIP_Z) < 0.001, "the hand holds it %.1f m behind the middle of the shaft" % HeldItem.SPEAR_GRIP_Z)
 	camera.rotation_degrees = Vector3(-30.0, 40.0, 0.0)
@@ -110,6 +126,22 @@ func run() -> void:
 	tip = -held._model.global_basis.z.normalized()
 	_check(tip.dot(-camera.global_basis.z) > 0.999, "with the arms up to jab it points where the view looks (%s)" % str(tip))
 	_check(is_equal_approx(held._model.global_basis.x.length(), 1.0) and absf(held._model.global_basis.x.dot(held._model.global_basis.y)) < 0.001, "drawn at its own size, not stretched")
+
+	# Third person: in the body's right hand, pointing where the body faces (8 degrees up) whatever the hand's own angle.
+	var rig: FakeRig = FakeRig.new()
+	world.add_child(rig)
+	rig.rotation_degrees.y = 60.0
+	held.set_avatar(rig)
+	held.set_first_person(false)
+	held._process(0.05)
+	var facing: Vector3 = rig.global_basis * Vector3.FORWARD
+	tip = -held._model.global_basis.z.normalized()
+	var up: float = rad_to_deg(asin(tip.y))
+	tip.y = 0.0
+	_check(held._model.get_parent() == rig.hand_mount_r, "third person: the spear is in the body's right hand")
+	_check(tip.normalized().dot(facing) > 0.999 and absf(up - HeldItem.SPEAR_LIFT_DEG) < 0.5, "third person: it points the way the body faces, %.0f degrees up (%.1f)" % [HeldItem.SPEAR_LIFT_DEG, up])
+	_check(held._model.global_position.distance_to(rig.hand_mount_r.global_position - held._model.global_basis.z * HeldItem.SPEAR_GRIP_Z) < 0.001, "third person: the fist is on the shaft")
+	held.set_first_person(true)
 
 	# TEST-010: a log on the shoulder puts the right-hand tool away; laid down, it comes back.
 	held.press_slot(1)

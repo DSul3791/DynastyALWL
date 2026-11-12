@@ -5479,7 +5479,6 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 	return rock if rocks.has(rock) else ""
 
 
-# The blows a stone takes from the best tool a hotbar key points at (items.json material, boulders.json tools), as [slot, blows], or [].
 # The tool in hand for a boulder blow (TEST-013, Dave 12 Nov 2026: the stone axe and stone pick were the same because the best tool on the
 # hotbar did the work, whatever was held): [slot, blows per stone] from boulders.json tools by its class and material, [] when the held slot
 # is not a usable boulder tool on the hotbar.

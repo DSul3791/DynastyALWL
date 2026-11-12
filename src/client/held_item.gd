@@ -1047,7 +1047,7 @@ func _placing_id() -> String:
 
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
-	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
+	if button == MOUSE_BUTTON_RIGHT and pressed and held_number() != 0 and _inv.edible_slot(held_slot):   # nothing to eat in a hand that steadies a log
 		_inv.eat_slot(held_slot)
 		return true
 
@@ -2348,9 +2348,11 @@ func _mount_model_third(kind: String) -> void:
 
 # A spear is held as a spear, not a knife (TEST-004, Dave's playtest 12 Nov 2026): the shaft runs through the fist pointing ahead, the hand
 # SPEAR_GRIP_Z behind the model's middle, whatever the hand bone's own angle (the jab clip is a punch, which turned a spear laid along the
-# fingers into a dagger grip). Third person: the body's facing, lifted SPEAR_LIFT_DEG. First person: the same at rest, turning to the view as
-# the arms come up to jab or aim (_arm_up). Placed every frame after the arms.
+# fingers into a dagger grip). Third person: the body's facing (the avatar root faces -Z, as the game does), lifted SPEAR_LIFT_DEG. First
+# person: the facing tipped down SPEAR_REST_DOWN_DEG at rest, so the spear hangs below the view with the arms (Dave 21 and 25 Oct: the arms
+# show only when working or looking down), turning to the view as the arms come up to jab or aim (_arm_up). Placed every frame after the arms.
 const SPEAR_LIFT_DEG := 8.0
+const SPEAR_REST_DOWN_DEG := 35.0
 
 
 func _aim_spear() -> void:
@@ -2362,18 +2364,18 @@ func _aim_spear() -> void:
 	var tip: Vector3
 
 	if _first_person:
-		var level: Vector3 = Basis(Vector3.UP, _camera.global_rotation.y) * Vector3.FORWARD
-		tip = (level + lift).normalized().slerp(-_camera.global_transform.basis.z, clampf(_arm_up, 0.0, 1.0))
+		var rest: Vector3 = Basis(Vector3.UP, _camera.global_rotation.y) * Basis(Vector3.RIGHT, -deg_to_rad(SPEAR_REST_DOWN_DEG)) * Vector3.FORWARD
+		tip = rest.slerp(-_camera.global_transform.basis.z, clampf(_arm_up, 0.0, 1.0))
 	else:
-		var skel: Node3D = _avatar_rig.get("skeleton") as Node3D if _avatar_rig != null else null
+		var avatar: Node3D = _avatar_rig as Node3D
 
-		if skel == null:
+		if avatar == null:
 			return
 
-		var front: Vector3 = skel.global_basis * Vector3.BACK      # the Dynasty skeleton faces +Z
+		var front: Vector3 = avatar.global_basis * Vector3.FORWARD
 		front.y = 0.0
 
-		if front.length() < 0.001:
+		if front.length_squared() < 1e-12:
 			return
 
 		tip = (front.normalized() + lift).normalized()
