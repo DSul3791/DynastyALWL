@@ -2195,6 +2195,11 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_last_shot.get(peer, -100000)) < BowAim.pace_ms(_bow.cfg, bow_id):
+		var wait_line: String = BowAim.say(_bow.cfg, bow_id, "say_not_spanned")   # a crossbow says it is not spanned yet; a bow stays silent
+
+		if wait_line != "":
+			_say(peer, wait_line)
+
 		return
 
 	var ammo: int = _bow.ammo_slot(inv, table, loaded, bow_id)
@@ -2207,7 +2212,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var arrow: Dictionary = table.entry(table.id_of(inv.numbers[ammo]))
 	var number: int = inv.numbers[ammo]
 	var shot_inst: Dictionary = inv.take_from_slot(ammo, 1)["inst"]
-	var power: float = _bow.power(draw_ms)
+	var power: float = 1.0 if BowAim.full_power(_bow.cfg, bow_id) else _bow.power(draw_ms)
 
 	if power <= float(_bow.cfg.get("weak_power", 0.25)):
 		_say(peer, str(_bow.cfg.get("say_weak", "")))
@@ -9298,8 +9303,8 @@ func effort_of(peer: int) -> float:
 
 		level += float(_layers_cfg().get("heat_effort", 0.5)) * float(_overheat.get(peer, 0.0))   # too warmly dressed for the heat is work too
 
-	# Worn weight is work on the move (protection.json effort_per_kg): plate tires more than linen.
-	level += float(_moving.get(peer, 0.0)) * float(_protection_cfg.get("effort_per_kg", 0.0)) * _worn_kg(peer)
+	# Armour past effort_free_kg is work on the move (protection.json): plate tires; clothing and light leather never make a walk non-restful.
+	level += float(_moving.get(peer, 0.0)) * float(_protection_cfg.get("effort_per_kg", 0.0)) * maxf(_armour_kg(peer) - float(_protection_cfg.get("effort_free_kg", 0.0)), 0.0)
 
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
@@ -10111,15 +10116,17 @@ func _wear_armour(peer: int, amount: float) -> void:
 		_sync_worn(peer, true)
 
 
-# Kilograms worn (weights.json): worn weight is work on the move (effort_of).
-func _worn_kg(peer: int) -> float:
+# Kilograms of armour worn (weights.json; pieces with protect and a durability): its weight is work on the move (effort_of).
+func _armour_kg(peer: int) -> float:
 	var total: float = 0.0
 
 	if _carry_cfg.is_empty():
 		return total
 
 	for number in worn_of(peer):
-		if number > 0:
+		var entry: Dictionary = table.entry(table.id_of(number)) if number > 0 else {}
+
+		if entry.has("protect") and int(entry.get("durability", 0)) > 0:
 			total += CarryRules.weight_of(table.id_of(number), _carry_cfg)
 
 	return total

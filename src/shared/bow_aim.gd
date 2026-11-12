@@ -47,6 +47,11 @@ static func pace_ms(cfg: Dictionary, bow_id: String) -> int:
 	return int(cfg.get("bows", {}).get(bow_id, {}).get("pace_ms", cfg.get("pace_ms", 700)))
 
 
+# A crossbow is spanned before it is loosed, so every shot leaves at full power whatever the draw time (bow.json row "full_power").
+static func full_power(cfg: Dictionary, bow_id: String) -> bool:
+	return bool(cfg.get("bows", {}).get(bow_id, {}).get("full_power", false))
+
+
 # Whether a shot from it sticks in a trunk it hits (an arrow does; a sling stone drops at the foot): the row's "sticks", true by default.
 static func sticks(cfg: Dictionary, bow_id: String) -> bool:
 	return bool(cfg.get("bows", {}).get(bow_id, {}).get("sticks", true))

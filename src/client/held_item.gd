@@ -1261,7 +1261,7 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
 	var bow_id: String = held_id()
-	var v: Vector3 = direction * BowAim.bow_speed_max(_bow_cfg, bow_id) * bow_power(draw_ms, _bow_cfg)
+	var v: Vector3 = direction * BowAim.bow_speed_max(_bow_cfg, bow_id) * (1.0 if BowAim.full_power(_bow_cfg, bow_id) else bow_power(draw_ms, _bow_cfg))   # a crossbow leaves at full power
 	var node: Node3D = _make_arrow_model(arrow)
 	_root.add_child(node)
 	node.global_position = _camera.global_position + direction * 0.8

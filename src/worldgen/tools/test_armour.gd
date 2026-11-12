@@ -291,8 +291,10 @@ func _init() -> void:
 	var mail_mace: float = lost(mace["damage"], "test", mace["mode"], mace["pen"])
 	check(bare_sword > bare_mace and mail_mace > mail_sword, "3. bare the sword takes %.1f and the mace %.1f; through mail the sword %.2f and the mace %.2f" % [bare_sword, bare_mace, mail_sword, mail_mace])
 	check(is_equal_approx(mail_sword, float(sword["damage"]) * (1.0 - expected(["mail_shirt"], "slashing"))), "3. through mail the sword loses exactly the mail's slashing share")
+	var hammer: Dictionary = items.weapon_blow(items.table.entry("steel_warhammer"), {})
 	var rapier: Dictionary = items.weapon_blow(items.table.entry("steel_rapier"), {})
-	check(float(rapier["pen"]) > 0.0 and is_equal_approx(lost(rapier["damage"], "test", rapier["mode"], rapier["pen"]), float(rapier["damage"]) * (1.0 - expected(["mail_shirt"], "piercing", float(rapier["pen"])))), "3. a rapier's penetration (%.2f) takes off part of the mail's protection" % float(rapier["pen"]))
+	check(float(hammer["pen"]) > 0.0 and is_equal_approx(lost(hammer["damage"], "test", hammer["mode"], hammer["pen"]), float(hammer["damage"]) * (1.0 - expected(["mail_shirt"], "blunt", float(hammer["pen"])))), "3. a warhammer's penetration (%.2f) takes off part of the mail's protection" % float(hammer["pen"]))
+	check(float(rapier["pen"]) < float(hammer["pen"]) and str(items.table.entry("steel_rapier")["description"]).contains("poor against armour"), "3. the rapier is poor against armour, as its text says (pen %.2f)" % float(rapier["pen"]))
 	check(is_equal_approx(float(items.weapon_blow(items.table.entry("steel_sword"), {"craft": 2})["damage"]), float(sword["damage"]) + 2.0), "3. a +2 sword's blow is two harder")
 
 	# 4. Attacks by animals take their mode from protection.json; falls are not attacks.
@@ -384,11 +386,21 @@ func _init() -> void:
 	items.action(1, Net.ACT_SHOOT, xs, 1200, 0, Vector3(0.0, 0.2, -1.0))
 	check(have("wooden_bolt") == 4, "7. a shot takes one bolt")
 	items._last_shot[1] = Time.get_ticks_msec() - BowAim.pace_ms(bow_cfg, "wooden_bow") - 50
+	said.clear()
 	items.action(1, Net.ACT_SHOOT, xs, 1200, 0, Vector3(0.0, 0.2, -1.0))
-	check(have("wooden_bolt") == 4, "7. a second shot before the crossbow is spanned again is refused")
+	check(have("wooden_bolt") == 4 and said.has(str(bow_cfg["bows"]["light_crossbow"]["say_not_spanned"])), "7. a release before the crossbow is spanned again is refused and says so (%s)" % str(said))
 	items._last_shot[1] = Time.get_ticks_msec() - BowAim.pace_ms(bow_cfg, "light_crossbow") - 50
-	items.action(1, Net.ACT_SHOOT, xs, 1200, 0, Vector3(0.0, 0.2, -1.0))
-	check(have("wooden_bolt") == 3, "7. spanned again, it shoots")
+	items._arrows.clear()
+	items.action(1, Net.ACT_SHOOT, xs, 100, 0, Vector3(0.0, 0.2, -1.0))
+	check(have("wooden_bolt") == 3 and items._arrows.size() == 1 and is_equal_approx((items._arrows[0]["vel"] as Vector3).length(), items._bow.speed(1.0, "light_crossbow")), "7. spanned again, a quick release (100 ms) still shoots at full power")
+	items._last_shot.clear()
+	said.clear()
+	empty_pack()
+	inv.add(n("wooden_bow"), 1)
+	inv.add(n("wooden_arrow"), 5)
+	items._last_shot[1] = Time.get_ticks_msec() - 300
+	items.action(1, Net.ACT_SHOOT, slot_of("wooden_bow"), 1200, 0, Vector3(0.0, 0.2, -1.0))
+	check(said.is_empty() and have("wooden_arrow") == 5, "7. a bow inside its pace stays silent (no spanning line)")
 	empty_pack()
 	inv.add(n("wooden_bow"), 1)
 	inv.add(n("wooden_bolt"), 5)
@@ -397,14 +409,36 @@ func _init() -> void:
 	check(have("wooden_bolt") == 5, "7. a Shortbow does not shoot bolts")
 	empty_pack()
 
-	# 8. Weight, heat: worn weight is work on the move; a gambeson is a heat load, plate is not much of one.
+	# 8. Weight, heat: armour past effort_free_kg is work on the move, but a walk in clothing or light leather stays restful (exertion.json
+	# rest_effort, Dave 10 Nov 2026); a gambeson is a heat load, plate is not much of one.
+	strip()
+	var rest: float = float(items._exertion_cfg["rest_effort"])
+	items._exertion[1] = items._effort_at_speed(3.2)   # the walking pace (test_run_speed: WALK_SPEED 3.2 m/s)
 	items._moving[1] = 1.0
+	items._work_until.clear()   # the shots above held a short burst of work
 	var effort_bare: float = items.effort_of(1)
-	wear("steel_plate_harness")
-	var kg: float = items._worn_kg(1)
-	check(kg > 10.0 and is_equal_approx(items.effort_of(1) - effort_bare, float(prot["effort_per_kg"]) * kg), "8. %.0f kg of plate adds %.3f effort on the move" % [kg, items.effort_of(1) - effort_bare])
+	check(effort_bare <= rest, "8. a bare walk is restful (%.3f against rest_effort %.2f)" % [effort_bare, rest])
+	var outfits: Dictionary = {"hide": ["hide_hood", "hide_tunic", "hide_cloak", "hide_trousers", "hide_boots", "hide_gloves"],
+		"wool": ["wool_cap", "wool_tunic", "wool_coat", "wool_trousers", "wool_socks", "fur_boots", "wool_mittens", "wool_scarf"],
+		"light leather": ["leather_cap", "leather_jerkin", "leather_apron", "leather_trousers", "leather_boots", "leather_gloves"]}
+
+	for outfit in outfits:
+		for id in outfits[outfit]:
+			wear(id)
+
+		check(outfits[outfit].all(func(id): return items.worn_of(1).has(n(id))) and items.effort_of(1) <= rest, "8. walking in a full %s outfit stays restful (effort %.3f, %.1f kg of armour)" % [outfit, items.effort_of(1), items._armour_kg(1)])
+		strip()
+
+	for id in full:
+		wear(id)
+
+	var kg: float = items._armour_kg(1)
+	check(kg > float(prot["effort_free_kg"]) and items.effort_of(1) > rest and is_equal_approx(items.effort_of(1) - effort_bare, float(prot["effort_per_kg"]) * (kg - float(prot["effort_free_kg"]))), "8. a full steel kit (%.0f kg of armour) makes the walk work (effort %.3f)" % [kg, items.effort_of(1)])
 	items._moving[1] = 0.0
-	check(is_equal_approx(items.effort_of(1), effort_bare), "8. standing still, plate is no extra work")
+	items._exertion[1] = 0.0
+	var still: float = items.effort_of(1)
+	strip()
+	check(is_equal_approx(still, items.effort_of(1)), "8. standing still, plate is no extra work")
 	strip()
 	wear("gambeson")
 	var hot_gambeson: float = items.heat_load(1)
