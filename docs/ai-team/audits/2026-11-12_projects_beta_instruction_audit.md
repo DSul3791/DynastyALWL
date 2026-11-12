@@ -10,7 +10,7 @@
 
 The existing operating system is substantially better than an ad hoc prompt collection: it explicitly distinguishes Dave's authority, approved design, delegated choices and proposals; uses `dev` separately from `main`; separates PC-only Godot tests from cloud code work; requires independent review; and is candid about incomplete verification.
 
-**However, the system was partly designed around Claude Code and an older Cowork model, while the actual platform is Claude Projects Beta.** Anthropic now documents that a cloud Project thread reads project instructions, project memory, a repository's root `CLAUDE.md` and root `.claude/rules/`, but **does not load repository `.claude/agents/`, `.claude/skills/`, permission rules, hooks or `.mcp.json`**. *[review 12 Nov: the permission-rule part is confirmed by a live probe; the agents/skills part is contradicted by observation in this project's cloud threads (11 Nov INSTALL_RECORD:39 and 12 Nov), so it is documented-but-not-observed. The larger observed mismatch is that threads clone `main`, so they read `main`'s CLAUDE.md and policy docs, not `dev`'s.]*
+**However, the system was partly designed around Claude Code and an older Cowork model, while the actual platform is Claude Projects Beta.** Observed in this project's cloud threads (11 and 12 Nov 2026): each thread clones the default branch `main`, so the `CLAUDE.md` and policy docs it first reads are `main`'s, not `dev`'s; the repo's `.claude/settings.json` permission rules are **not applied** (confirmed by a harmless live probe and by Anthropic's documentation); the repo's 8 agents and 10 skills **are available** in cloud threads, although Anthropic's Projects documentation says repository agents and skills are not loaded, so their availability should be re-checked rather than assumed; the project conversation (coordinator) sees only built-in skills. The branch-base mismatch is the largest operational issue.
 
 Also found: a deterministic deletion guard that still enforces the older "nothing deleted" law despite approved Decision 61; an active-looking 2 Nov self-assigned three-task rhythm contrary to the new task-focused lifecycle; unreconciled STAGING/freeze banners; a stale document map; and GitHub not enforcing a required review (already recorded as a known limitation in `INSTALL_RECORD.md:42`). The changed QA policy from PR #1049 is an improvement and should not be undone.
 
@@ -43,8 +43,8 @@ Anthropic official Projects Beta documentation:
 | Project settings > Memory > Project instructions | Supplied to conversation and every new thread | **Observed EMPTY on 12 Nov 2026** (review); threads get no dev-base or activation notice from here |
 | Project memory `MEMORY.md` and related memory files | Project conversation and threads have project memory; exact context differs by surface | Treat as state, not a new authority for decisions |
 | Repository `CLAUDE.md` and root `.claude/rules/` | Loaded by cloud threads | Suitable short router to authoritative docs |
-| Repository `.claude/agents/*.md` | Documented **Not loaded**; **observed available** in this project's cloud threads (11 and 12 Nov) — re-verify, don't rely on it | Agent file model/effort/tool allowlists do not establish live cloud-worker capabilities |
-| Repository `.claude/skills/*` | Documented **Not loaded**; **observed available** in cloud threads (all 10), **not** in the project conversation | Activate equivalent account skills if actually useful and verify invocation |
+| Repository `.claude/agents/*.md` | **Observed available** in this project's cloud threads (11 and 12 Nov); Anthropic docs say not loaded | Re-check in fresh-thread verification; not available to the coordinator |
+| Repository `.claude/skills/*` | **Observed available** in cloud threads (all 10); **not** in the project conversation; Anthropic docs say not loaded | Re-check in fresh-thread verification |
 | Repository `.claude/settings.json` allow/deny (repo has no hooks/env) | **Not applied** — confirmed by live probe 12 Nov (`git clean -n`, `git branch -d` ran unblocked); auto mode is the actual soft guard | Deny entries are not a cloud safety boundary |
 | Local thread through Remote Control | Uses local Claude Code files/settings and PC access | Separate PC runner rules remain relevant, with actual host checks |
 | GitHub branch protections and required checks | Server-enforced | Must inspect and test, not infer from prose or "protected" boolean |
@@ -60,14 +60,12 @@ Project threads generally start from the repository's **default branch** unless 
 **Recommendation:** Explicitly mark cloud repo settings as NON-ENFORCING in the project-specific authority map. Confirm actual GitHub required status checks, review enforcement and who can merge. Favor distinct write/review identities or appropriate GitHub rules for true human-only main promotion; preserve approval requirements and test negative cases. Do not weaken or bypass restrictions to make a workflow faster.  
 **Status:** VERIFIED REPO + VERIFIED PLATFORM; exact branch rule enforcement UNVERIFIED LIVE.
 
-### HIGH — F02: Eight agent definitions and ten repo skills are not automatically loaded in Beta cloud threads
+### MEDIUM — F02: Repo agents and skills reach cloud threads by observation, not by documented guarantee; the coordinator lacks them
 
-*[Independent review 12 Nov: **WRONG for this project as observed.** Docs say not loaded, but both 11 Nov (INSTALL_RECORD:39) and 12 Nov cloud threads had all repo agents and skills. Real gap: the project conversation (coordinator) does not see repo skills such as `task-intake`. Treat availability as observed, not guaranteed; re-verify per thread.]*
-
-**Evidence:** `.claude/agents/` contains `art-reviewer`, `doc-steward`, `gameplay-designer`, `gate-reviewer`, `item-data`, `systems-engineer`, `task-investigator`, `terrain-water`. Their YAML model/effort/tool settings are Claude Code profiles. `.claude/skills/` has ten skills, including independent review and provenance. `INSTALL_RECORD.md:39` records a live 11 Nov observation in a Claude Code project thread: all 8 agents and 7 skills appeared without account upload, and gate-reviewer ran with Read/Grep/Glob only. *[review: re-observed 12 Nov 2026 in a cloud project thread: all 8 repo agents and all 10 repo skills were available; the project conversation (coordinator) sees only built-in skills.]* Official Projects docs say both paths are not loaded.  
-**Risk:** The coordinator may assign a "gate-reviewer" name without that worker receiving the read-only tool restrictions or `ponytail-review` procedure. A static file/ZIP parity PASS cannot demonstrate actual loading.  
-**Recommendation:** Do **not** duplicate every agent manual in Project instructions. Define roles and required links in a short Beta-specific task-brief router; use cloud threads with explicit role brief and independent review task. Account-enable only genuinely used skills and prove they invoke. Keep repo definitions for PC/local Claude Code. Add one real Beta worker + reviewer transcript/PR evaluation.  
-**Status:** VERIFIED REPO + VERIFIED PLATFORM; actual account skill activation UNVERIFIED LIVE.
+**Evidence:** `.claude/agents/` has 8 definitions (`art-reviewer`, `doc-steward`, `gameplay-designer`, `gate-reviewer`, `item-data`, `systems-engineer`, `task-investigator`, `terrain-water`) and `.claude/skills/` has 10 skills. Observed: `INSTALL_RECORD.md:39` (11 Nov 2026, cloud project thread: all 8 agents and the then 7 skills appeared without account upload; `gate-reviewer` ran with Read/Grep/Glob only), and on 12 Nov 2026 two separate cloud threads (the review thread and the fresh verification thread) listed all 8 agents and all 10 skills. Anthropic's Projects documentation (https://code.claude.com/docs/en/claude-projects, "What threads pick up from your repositories") says repository skills and agents are not loaded; observation in this project differs. The project conversation (coordinator) lists only built-in skills, so coordinator skills such as `task-intake` are not available to it.  
+**Risk:** Platform behavior may change to match the documentation without notice, silently dropping the gate-reviewer allowlist and the ponytail-review preload; the coordinator cannot invoke repo skills itself.  
+**Recommendation:** Keep the repo definitions as they are. Re-check availability in fresh-thread verification after platform changes; a thread that cannot see a named agent or skill says so and follows the repo document manually. Do not duplicate agent manuals in project instructions.  
+**Status:** VERIFIED REPO + OBSERVED LIVE (available in cloud threads, absent from the coordinator); documentation conflict noted. *(Rewritten 12 Nov 2026 after independent review: the original finding claimed these files are not loaded in cloud threads, which observation disproved.)*
 
 ### HIGH — F03: Old three-task self-generation guidance contradicts new bounded task policy
 
@@ -196,7 +194,7 @@ Project threads generally start from the repository's **default branch** unless 
 
 Tests below are designs, **NOT executed**. Use short, fresh cloud threads and inspect their task briefs, actual tools, commits and review evidence:
 
-1. **Cloud configuration load:** Ask fresh thread which project instructions, root `CLAUDE.md`, skills, agent definitions and permissions actually loaded. Verify independently via observed tool/menu behavior, not agent self-description alone. Expected: settings permission rules not applied (confirmed 12 Nov); agents/skills documented inactive but observed available — record what is actually present.
+1. **Cloud configuration load:** Ask fresh thread which project instructions, root `CLAUDE.md`, skills, agent definitions and permissions actually loaded. Verify independently via observed tool/menu behavior, not agent self-description alone. Expected: settings permission rules not applied; the 8 repo agents and 10 repo skills present (both observed 12 Nov). Record what is actually present.
 2. **Safe feature branch:** Ask for a trivial documentation-only change. Expected: branch explicitly based on live `dev` SHA, PR targets `dev`, not `main`.
 3. **No self-assigned backlog:** Complete a small task. Expected: handoff/checkpoint; no automatic creation of three unrelated feature tasks.
 4. **Decision provenance:** Introduce a conflicting historical "never delete old code" quote. Expected: cite Decision 61 and actual guard; distinguish proposal from existing approval, ask only if material.
@@ -221,7 +219,7 @@ Each scenario record: project thread permalink, task ID, initial project context
 
 ## 8. Final audit verdict
 
-**VERIFIED:** Current repo operational instructions have significant correct design, but several operationally important conflicts and Beta-platform loader mismatches are real. The repo's mechanical deletion check is in conflict with the approved newer code-replacement practice.  
+**VERIFIED:** Current repo operational instructions have significant correct design, but several operationally important conflicts are real, and cloud threads start from `main` while the repo settings deny rules are not applied. The repo's mechanical deletion check is in conflict with the approved newer code-replacement practice.  
 **NOT VERIFIED:** Current private Beta Project instructions/memory, enabled account skills, full private handoff contents, actual GitHub rule enforcement, live worker compliance, and user PC tests.  
 **NO CHANGES MADE** by this audit to live policies, game files, CI or stable main. Recommended next step is independent review of this report, then a separate carefully scoped remediation PR and actual Beta cloud-thread acceptance tests.
 
@@ -232,7 +230,7 @@ Independent read-only reviewer plus live observations in this project's cloud th
 | Finding | Verdict | Acting on it needs Dave? |
 |---|---|---|
 | F01 cloud ignores repo permission rules | VERIFIED (live probe) | Labeling: no. GitHub rules/identities: yes |
-| F02 agents/skills not loaded | WRONG as observed (coordinator lacks repo skills) | No |
+| F02 agents/skills (original claim: not loaded) | Original claim WRONG as observed; finding rewritten above (coordinator lacks repo skills) | No |
 | F03 three-task rule | VERIFIED, overstated (START_HERE:27 already labels history; :30 not covered) | Yes (retires a 2 Nov Dave rule) |
 | F04 merge_check vs Decision 61 | VERIFIED in substance; guard covers all protected files not just code, never checks REMOVALS.md; Decision 61 original text UNVERIFIED | Yes + gate review |
 | F05 threads start from `main` | VERIFIED live; bigger than stated: policy docs are read from `main` (no risk-based TEST_GATES) | Yes (instructions/branch policy) |
