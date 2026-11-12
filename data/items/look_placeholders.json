@@ -3,7 +3,9 @@
  "items": {
   "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)",
   "hardwood_board": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
-  "thread": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
+  "thread": "Mission 001 phase 2b, live: no thread model yet (NOT visually complete)",
+  "leatherworking_table": "Mission 001 phase 2b station: borrows the Carpenter's bench look (structures.json look carpenters_bench) until Art draws it; NOT visually complete; no item icon row",
+  "tailors_table": "Mission 001 phase 2b station: borrows the plank table look (structures.json look table) until Art draws it; NOT visually complete; no item icon row",
   "iron_shortsword": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
   "steel_shortsword": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
   "iron_greatsword": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",

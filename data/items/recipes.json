@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 409,
+	"next_number": 410,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -502,7 +502,7 @@
 					2
 				],
 				[
-					"twine",
+					"thread",
 					1
 				]
 			],
@@ -857,7 +857,7 @@
 					3
 				],
 				[
-					"twine",
+					"thread",
 					2
 				]
 			],
@@ -884,7 +884,7 @@
 					2
 				],
 				[
-					"twine",
+					"thread",
 					2
 				]
 			],
@@ -911,7 +911,7 @@
 					1
 				],
 				[
-					"twine",
+					"thread",
 					1
 				]
 			],
@@ -938,7 +938,7 @@
 					1
 				],
 				[
-					"twine",
+					"thread",
 					1
 				]
 			],
@@ -3647,7 +3647,7 @@
 			"category": "Clothing",
 			"needs": [
 				["hide", 2],
-				["twine", 2]
+				["thread", 2]
 			],
 			"gives": ["quiver", 1],
 			"craft_s": 6.0,
@@ -3863,7 +3863,7 @@
 					3
 				],
 				[
-					"twine",
+					"thread",
 					2
 				]
 			],
@@ -3890,7 +3890,7 @@
 					3
 				],
 				[
-					"twine",
+					"thread",
 					2
 				]
 			],
@@ -3917,7 +3917,7 @@
 					1
 				],
 				[
-					"twine",
+					"thread",
 					2
 				]
 			],
@@ -4254,8 +4254,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 2,
+			"station": "leatherworking_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4283,8 +4282,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 2,
+			"station": "leatherworking_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4335,8 +4333,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 2
+			"station": "tailors_table"
 		},
 		"iron_helm": {
 			"number": 217,
@@ -4763,7 +4760,7 @@
 					2
 				],
 				[
-					"twine",
+					"thread",
 					1
 				]
 			],
@@ -4773,8 +4770,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4792,7 +4788,7 @@
 					2
 				],
 				[
-					"twine",
+					"thread",
 					1
 				]
 			],
@@ -4802,8 +4798,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4827,8 +4822,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4852,8 +4846,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4871,7 +4864,7 @@
 					3
 				],
 				[
-					"twine",
+					"thread",
 					1
 				]
 			],
@@ -4881,8 +4874,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4910,8 +4902,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4939,8 +4930,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4968,8 +4958,7 @@
 			],
 			"craft_s": 16.0,
 			"known": true,
-			"station": "workbench",
-			"station_level": 3,
+			"station": "tailors_table",
 			"keeps": [
 				[
 					"sewing_needle",
@@ -4992,7 +4981,8 @@
 				2
 			],
 			"craft_s": 20.0,
-			"known": true
+			"known": true,
+			"station": "loom"
 		},
 		"fibre_cloth": {
 			"number": 334,
@@ -5009,7 +4999,8 @@
 				1
 			],
 			"craft_s": 30.0,
-			"known": true
+			"known": true,
+			"station": "loom"
 		},
 		"flour_from_oats": {
 			"number": 246,
@@ -5788,7 +5779,7 @@
 			],
 			"craft_s": 6.0,
 			"known": true,
-			"station": "workbench"
+			"station": "leatherworking_table"
 		},
 		"butter": {
 			"number": 279,
@@ -7048,7 +7039,8 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": true
+			"known": true,
+			"station": "loom"
 		},
 		"wild_grain_flour": {
 			"number": 343,
@@ -7346,8 +7338,7 @@
 					1
 				]
 			],
-			"station": "workbench",
-			"station_level": 2
+			"station": "leatherworking_table"
 		},
 		"wooden_longbow": {
 			"number": 357,
@@ -7402,8 +7393,7 @@
 					1
 				]
 			],
-			"station": "workbench",
-			"station_level": 2
+			"station": "leatherworking_table"
 		},
 		"leather_boots": {
 			"number": 359,
@@ -7431,8 +7421,7 @@
 					1
 				]
 			],
-			"station": "workbench",
-			"station_level": 2
+			"station": "leatherworking_table"
 		},
 		"leather_gloves": {
 			"number": 360,
@@ -7460,8 +7449,7 @@
 					1
 				]
 			],
-			"station": "workbench",
-			"station_level": 2
+			"station": "leatherworking_table"
 		},
 		"leather_backpack": {
 			"number": 361,
@@ -7489,8 +7477,7 @@
 					1
 				]
 			],
-			"station": "workbench",
-			"station_level": 3
+			"station": "leatherworking_table"
 		},
 		"straw_hat": {
 			"number": 362,
@@ -7993,7 +7980,7 @@
 					3
 				],
 				[
-					"twine",
+					"thread",
 					2
 				]
 			],
@@ -8267,8 +8254,7 @@
 					1
 				]
 			],
-			"station": "workbench",
-			"station_level": 2
+			"station": "leatherworking_table"
 		},
 		"bark_shingle": {
 			"number": 399,
@@ -8439,6 +8425,23 @@
 			"wears_tool": "saw",
 			"gives": ["hardwood_board", 4],
 			"craft_s": 24.0,
+			"known": true
+		},
+		"thread": {
+			"number": 409,
+			"name": "Thread",
+			"category": "Materials",
+			"needs": [
+				[
+					"plant_fibre",
+					2
+				]
+			],
+			"gives": [
+				"thread",
+				1
+			],
+			"craft_s": 2.0,
 			"known": true
 		}
 	}
