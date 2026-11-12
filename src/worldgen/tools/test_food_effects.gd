@@ -247,6 +247,27 @@ func _init() -> void:
 	var back: Dictionary = FoodEffects.live(again._food_of(1), clock[0])
 	check(back.has("main") and absf(float(back["main"]["until"]) - clock[0] - left_before) < 0.5, "after 20 game hours logged out (and a restart) the stew has the same %.0f game s left" % left_before)
 
+	# Two connections on one character (review round 2): one leaving must not stop the timers the other is still living by.
+	again.peer_connected_hello(2, KEY)
+	again.report_position(2, Vector3(0.0, 10.0, 0.0))
+	again._characters[KEY]["food"] = {}
+	again.vitals_of(2)["energy"] = 40.0
+	var cake: int = again.table.number_of("berry_compote")
+
+	for n in 2:
+		again.action(2, Net.ACT_ADMIN_GIVE, cake, 0, 1, Vector3.ZERO)
+		again._last_eat.clear()
+		again.vitals_of(2)["fed"] = 0.0
+		again.action(2, Net.ACT_EAT, again.inventory_of(2).numbers.find(cake), 0, 0, Vector3.ZERO)
+		clock[0] += 600.0   # ten game minutes apart, well within the dessert's hour
+		if n == 0:
+			again.peer_left(1)   # the first connection leaves between the two desserts
+
+	check(again.energy_of(2) == 48.0 and FoodEffects.live(again._food_of(2), clock[0]).has("dessert"), "the other connection still on the character: two desserts within the hour give energy once (%.0f), the slot keeps running" % again.energy_of(2))
+	again.peer_connected_hello(1, KEY)
+	again.report_position(1, Vector3(0.0, 10.0, 0.0))
+	check(FoodEffects.live(again._food_of(1), clock[0]).has("dessert"), "and the first connection comes back to the same running slot")
+
 	# Death clears every effect.
 	check(again.kill(1, "test"), "the character dies")
 	check(FoodEffects.live(again._food_of(1), clock[0]).is_empty() and (food_rows[-1] as Array).is_empty(), "death clears every food effect and tells the HUD")

@@ -447,10 +447,11 @@ static func table_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, rows: Ar
 	return best
 
 
-# Whether `spot` lies over a table's top: inside its turned footprint, TABLE_MARGIN_M wider (table_spot; a table with a platter on it stays up).
-static func over_table(table_def: Dictionary, at: Vector3, yaw_deg: float, spot: Vector3) -> bool:
+# Whether `spot` lies over a table's top: inside its turned footprint, `margin` wider (table_spot aims with TABLE_MARGIN_M; a table with a
+# platter on it stays up, checked with no margin).
+static func over_table(table_def: Dictionary, at: Vector3, yaw_deg: float, spot: Vector3, margin: float = TABLE_MARGIN_M) -> bool:
 	var local: Vector2 = Vector2(spot.x - at.x, spot.z - at.z).rotated(deg_to_rad(yaw_deg))
-	return absf(local.x) <= float(table_def.get("footprint_x", 1.0)) * 0.5 + TABLE_MARGIN_M and absf(local.y) <= float(table_def.get("footprint_z", 1.0)) * 0.5 + TABLE_MARGIN_M
+	return absf(local.x) <= float(table_def.get("footprint_x", 1.0)) * 0.5 + margin and absf(local.y) <= float(table_def.get("footprint_z", 1.0)) * 0.5 + margin
 
 
 # The structure states a table-top piece of `kit_id` may sit on (its attach_kinds), for the ghost's rows.

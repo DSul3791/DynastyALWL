@@ -636,7 +636,10 @@ func start_position_for(peer: int) -> Array:
 
 
 func peer_left(peer: int) -> void:
-	FoodEffects.pause(_food_of(peer), _now_game_s())   # food effects are kept through logout (master s3.16): the timers stop
+	var key_left: String = str(_peer_key.get(peer, ""))
+
+	if _peer_key.keys().filter(func(p): return p != peer and str(_peer_key[p]) == key_left).is_empty():
+		FoodEffects.pause(_food_of(peer), _now_game_s())   # food effects are kept through logout (master s3.16): the timers stop, unless the character is still in the game on another connection
 	_bed_cache.erase(peer)
 	_stock_sig.erase(peer)
 	_stock_poll_ms.erase(peer)
@@ -8870,7 +8873,7 @@ var _serve_kinds_cache: Dictionary = {}
 
 # The structure kinds that serve (structures.json use "serve"), read once: the world-item sync asks for every row.
 func _serve_kinds() -> Dictionary:
-	if _serve_kinds_cache.is_empty():
+	if _serve_kinds_cache.is_empty() and not _structures.is_empty():   # not cached before structures.json is read
 		_serve_kinds_cache = {"": false}
 
 		for kind in _structures:
@@ -8901,7 +8904,7 @@ func _platter_on(table_it: Dictionary) -> bool:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and _serve_kinds().has(str(it["struct"]["kind"])) and (_structures[str(it["struct"]["kind"])].get("attach_kinds", {}) as Dictionary).has(kind) and it["pos"].y > table_it["pos"].y and PlacementRules.over_table(table_def, table_it["pos"], float(table_it["struct"].get("yaw", 0.0)), it["pos"]):
+		if it.has("struct") and _serve_kinds().has(str(it["struct"]["kind"])) and (_structures[str(it["struct"]["kind"])].get("attach_kinds", {}) as Dictionary).has(kind) and it["pos"].y > table_it["pos"].y and PlacementRules.over_table(table_def, table_it["pos"], float(table_it["struct"].get("yaw", 0.0)), it["pos"], 0.0):   # no margin: table_spot keeps a platter inside its own top, so a touching neighbour is free
 			return true
 
 	return false
