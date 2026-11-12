@@ -81,8 +81,9 @@ func _init() -> void:
 	stone = items.table.number_of("stone")
 	berries = items.table.number_of("berries") if items.table.number_of("berries") > 0 else items.table.number_of("raw_meat")
 	check(axe > 0 and knife > 0 and clay > 0 and stone > 0 and berries > 0, "the test items are in the table")
-	var net_methods: Array = Net.get_script_method_list().map(func(m: Dictionary) -> String: return str(m["name"]))
-	check(Net.PROTOCOL_VERSION >= 112 and not Net.get_script_constant_map().has("ACT_HOTBAR_SET") and not net_methods.has("hotbar"), "protocol 112: no ACT_HOTBAR_SET, no hotbar rpc")
+	var net_script: Script = load("res://src/stream/terrain_net.gd")   # a Script value, so its reflection methods are called on the resource, not as statics
+	var net_methods: Array = net_script.get_script_method_list().map(func(m: Dictionary) -> String: return str(m["name"]))
+	check(Net.PROTOCOL_VERSION >= 112 and not net_script.get_script_constant_map().has("ACT_HOTBAR_SET") and not net_methods.has("hotbar"), "protocol 112: no ACT_HOTBAR_SET, no hotbar rpc")
 	check(pack().hotbar_slots == 10 and pack().bag_from == 10 and InventoryScript.new(items.table).hotbar_slots == 0, "a pack has ten hotbar slots; a container has none")
 	empty_pack()
 
