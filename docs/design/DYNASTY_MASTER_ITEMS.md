@@ -1,6 +1,6 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 4 WITH CHATGPT REVIEW ANSWERS (12 Nov 2026); NOT YET APPROVED FOR IMPLEMENTATION.** **Nine proposed resolutions are in section 8; Dave may override any and must confirm question 8 before the final catalog approval.** Nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code is changed by this document. The item catalog stays frozen until Dave approves this finished catalog.
+**Status: DRAFT 4 WITH CHATGPT REVIEW ANSWERS (12 Nov 2026); NOT YET APPROVED FOR IMPLEMENTATION.** **Nine responses are in section 8. Dave has explicitly approved the permanent-enchantment rule in question 8; other ChatGPT recommendations remain proposed until the full catalog is approved.** Nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code is changed by this document. The item catalog stays frozen until Dave approves this finished catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4`. Open PR #1036 retires the Woodworking table separately.
 
@@ -89,7 +89,7 @@ Tanning and drying for hides and leather; a **Leatherworking Table** for leather
 3. Physical craftsmanship improves what suits the type (weight, durability, sharpness, damage, efficiency or value), at most +2 where numeric. Magical slots carry separate supernatural effects.
 4. Craftsmanship and magic coexist; physical and magical numeric bonuses are calculated separately and add on the same statistic (e.g. **Mighty Steel Sword +4** = +2 physical + 2 magical damage; **Light Flaming Steel Sword of Might +2** shows three distinct effects).
 5. The display name reflects the actual enhancements rather than always a generic +1 label, and dynamic names are not bound by the static four-word name rule.
-6. **Not yet approved:** whether enhancements can be replaced, and the replacement and destruction rules (s8 item 8).
+6. **APPROVED — Dave, 11 Nov 2026:** Magical enchantments are **permanent**. Once an enchantment occupies a magical slot, it cannot be removed, replaced, overwritten, extracted or transferred. Each of the two magical slots may be filled only while empty. The enchantment remains bound to its item for the item's lifetime. Physical craftsmanship is also fixed when the item is crafted. Eligibility and stackable-item scope are still proposals in s8 item 8.
 
 ### 2.10 Older rulings superseded
 
@@ -220,7 +220,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 
 ## 8. Decisions still needing Dave
 
-**ChatGPT has entered design responses to all nine questions under Dave's delegated review process. These are proposed decisions for the catalog, not authorization to implement game data.** Dave can change any response using its optional override line. Question 8 (magical effect replacement) explicitly awaits Dave's confirmation. After that, Claude should reconcile the catalog's other sections against these responses, expose any true contradictions, and await Dave's final approval. No changes to game JSON or gameplay.
+**ChatGPT has entered design responses to all nine questions under Dave's delegated review process. These are proposed decisions for the catalog, not authorization to implement game data.** Dave can change any response using its optional override line. Dave explicitly answered question 8: enchantments are forever, with no replacement or removal. Remaining details of eligibility and stackables are proposals, not newly approved decisions. After that, Claude should reconcile the catalog's other sections against these responses, expose any true contradictions, and await Dave's final approval. No changes to game JSON or gameplay.
 
 1. **Durability class of wooden tools, the Bone - Needle, stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper.** Dave's rules cover stone tools and metal tools only.
    **Recommend:** stone and flint weapons and the Scraper are disposable like stone tools; wooden tools are disposable too (they are as cheap as stone ones); the Bone - Needle breaks and is repaired by hand with a Bone, like a metal tool at its crafting place, since it is "the one reusable needle".
@@ -274,10 +274,10 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 
    **Dave's correction/override (optional):** _
 
-8. **Enhancement replacement and destruction (awaiting Dave), eligibility, stackables.** **Recommend:** physical craftsmanship is fixed when crafted and cannot be replaced; a new magical enchantment may replace one in a chosen slot, destroying the old effect with nothing returned; eligible items are tools, weapons, armour, clothing and gear (single-instance items); stackables and consumables (food, ammunition, materials) are not eligible.
-   *Alternatives:* enhancements removable by a wizard for a cost; or every enhancement permanent; or enhanced stacks split from plain ones.
+8. **Enchantment permanence (DECIDED by Dave); eligibility and stackables (proposed).** **Dave's decision:** enchantments are forever. Once put on an item, the enchantment is never replaceable, removable, transferable, extractable, or overwritten. Magical slots fill once; occupied slots stay occupied for that item's lifetime. Physical craftsmanship remains fixed at creation. **Recommendation on remaining scope only:** initially permit enchantments for individually tracked tools, weapons, shields, armour, clothing and gear; exclude stackable consumables and materials (food, ammunition and bulk resources). Enhanced items never merge with ordinary stacks.
+   *Alternative requiring future approval:* explicitly support enchanting individually tracked units of an ordinarily stackable item, with unique item instances; this is NOT the default.
 
-   **ChatGPT's proposed answer — please confirm this particular gameplay rule:** Physical craftsmanship is fixed when the item is made (not an enchantment that can be stripped off). Each of the two magical slots can be overwritten deliberately; doing so **destroys the old magical effect, not the item**, with nothing returned, and magic cannot be extracted or moved to another item. The universal per-instance schema supports the slots even when empty, but first-pass enchantable gameplay covers non-stackable individual tools, weapons, shields, armour, clothing and gear. Ordinary materials, food, ammunition and other stackable consumables are not enchantable initially; enhanced instances never merge into plain stacks. **This proposal is not represented as a prior explicit approval by Dave.**
+   **Dave's explicit answer:** **Enchantments cannot be replaced; they are forever.** No overwrite, removal, extraction, transfer or refund for an occupied enchantment slot. An empty magical slot may receive an enchantment once; thereafter that effect stays on its original item for the item's lifetime. **ChatGPT's separate recommendation (not yet individually approved):** initially limit enchantment gameplay to non-stackable individually tracked tools, weapons, shields, armour, clothing and gear, while excluding food, ammunition, bulk materials and consumables. The universal schema still supports the same slots on every item; display empty slots only when relevant. Enhanced items do not merge into ordinary stacks.
 
    **Dave's correction/override (optional):** _
 
