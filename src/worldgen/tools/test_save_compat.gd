@@ -95,7 +95,7 @@ func _init() -> void:
 	var v: Dictionary = items._vitals.get("compat-key-aaa01", {})
 	check(not v.is_empty() and absf(float(v["fed"]) - 1200.0) < 0.1 and float(v["wet"]) > 0.0 and float(v["warmth"]) == 100.0 and float(v["energy"]) == 100.0 and float(v["sick"]) == 0.0, "era 24: older vitals start full where they never had a field (%s)" % str(v))
 	check(int(items._characters["compat-key-aaa01"]["luck"]) == 5 and int(items._characters["compat-key-bbb02"]["fitness"]) == -3, "era 26: luck and fitness survive")
-	check(int(items._characters["compat-key-aaa01"]["strength"]) == 0 and items._characters["compat-key-aaa01"]["worn"].count(0) == items._clothing_slots().size() and items._characters["compat-key-aaa01"]["skills"].is_empty(), "newer attributes default to neutral (%s)" % str(items._characters["compat-key-aaa01"]))
+	check(int(items._characters["compat-key-aaa01"]["strength"]) == 0 and items._characters["compat-key-aaa01"]["worn"].size() == items._clothing_slots().size() and items._characters["compat-key-aaa01"]["worn"].all(func(e): return int(e[0]) == 0) and items._characters["compat-key-aaa01"]["skills"].is_empty(), "newer attributes default to neutral (%s)" % str(items._characters["compat-key-aaa01"]))
 	check(items._characters["compat-key-ccc03"]["skills"].has("mining") and int(items._characters["compat-key-ccc03"].get("skills_v", 0)) == 2, "era 37: old skill records migrate to the web")
 	check(FileAccess.file_exists(dir + "/characters.json.v1.bak"), "and the old file is kept as a backup")
 
