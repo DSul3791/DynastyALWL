@@ -12,6 +12,7 @@ Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP 
 
 | Tag | Source | Weight |
 |---|---|---|
+| **[D9]** | Dave approved ChatGPT's entire Backpacks, Pouches & Carrying Equipment Proposal 1 (“lets do it”): retain 6 existing gear rows, add 9 distinct carrying aids; cross-list 3 already-existing containers; require realistic weight, volume, attachment and persistence | **Owner-approved carrying category; not full catalog or gameplay approval** |
 | **[D8]** | Dave explicitly approved the full Clothing Proposal 1: 24 retained ordinary garment items; 17 new garments; Riding Boots future under mounted gear; 8 armour items cross-listed; layering and weather/climate effects | **Owner-approved category design; not implementation permission** |
 | **[D7]** | Dave explicitly accepted the full Armour Proposal 1: 8 existing core armour pieces, 14 new armour variants, protective clothing/shields cross-listed, realistic modular layering and excluded redundancies | **Owner-approved category design; not game implementation approval** |
 | **[D6]** | Dave, 12 Nov 2026 (PR #1035 comment 01:49Z): Weapons Proposal 2 approved in full, with his Poison Arrow addition; category approval only | Explicit Dave category decision |
@@ -465,6 +466,52 @@ Rules of the model:
 
 **Next category awaiting Dave's review:** Backpacks, pouches and carrying gear. Do NOT append new gear items as owner-approved until ChatGPT presents the entire category and Dave approves it. After that: saddles/saddlebags, carts/wagons/carriages, cooking, food preservation, other categories, and final whole-system re-audit.
 
+### 3.9 Backpacks, pouches and carrying equipment [D9] — OWNER APPROVED CATEGORY
+
+**Source:** Dave explicitly approved ChatGPT's full Backpacks, Pouches & Carrying Equipment Proposal 1 (“lets do it”) following approval of weapons, armour and clothing. CATEGORY APPROVAL only. No code, inventory data or merge authorized. Human personal equipment is designed here; pack-animal equipment, saddles and vehicles remain upcoming categories.
+
+**Six existing gear rows, stable IDs (KEEP, with explicit necessary metadata/behavior UPDATE):**
+
+| Item # | ID | Item | Role / needed reconciliation |
+|---|---|---|---|
+| 50 | `backpack` | Hide - Backpack | Basic early backpack; increases organized volume but total burden still counts |
+| 767 | `leather_backpack` | Leather - Backpack | Larger, tougher and modestly more weather resistant |
+| 272 | `quiver` | Hide - Quiver | 40 compatible arrows, carried visibly at hip or waist to coexist with backpack |
+| 762 | `leather_quiver` | Leather - Quiver | 60 compatible arrows, better rain protection |
+| 828 | `leather_belt` | Leather - Belt | Base for attachment points: pouch, quiver, scabbard or other sensible equipment |
+| 819 | `bedroll` | Bedroll | Portable sleep aid, attachable to pack exterior (not another backpack slot) |
+
+Existing quivers have `slot: waist` although descriptions say worn on back. Choose consistent waist/hip appearance and an attachment-based belt interface without losing compatibility with existing equipping.
+
+**Nine distinct new carrying-gear items (ADD; new IDs/numbers only upon implementation approval):**
+
+| New item | Production | Function / distinction |
+|---|---|---|
+| Fibre - Shoulder bag | Hand: plant fibre + twine | Very early small pack before animal hides |
+| Wicker - Pack basket | Hand: sticks + twine | Cheap bulky/light cargo, awkward and poor wet-weather protection |
+| Leather - Satchel | Leatherworking Table | Small shoulder carry for documents, valuables, food and other light personal items |
+| Belt pouch | Hand from hide; appropriate leather craft option | Small quickly accessible waist inventory; coins/herbs/potions, not large tools/logs |
+| Tool roll | Tailor's or Leatherworking Table | Organized limited small-tool and repair inventory; not a full backpack |
+| Traveller's Rucksack | Tailor's Table, with cloth and leather straps | Largest general travel pack; increases volume but movement cost when loaded |
+| Wooden - Pack frame | Carpenter's Bench, wood and straps | Carries awkward logs, ore sacks and construction loads; restrictive in climbing/sprinting/fighting |
+| Weapon scabbard | Leatherworking Table | Compatible sheathing and draw of suitable swords on hip/back; not one new item per blade |
+| Utility bandolier | Leatherworking Table | Limited quick-access slots for small consumables; no extra physical carrying-strength bonus |
+
+**Three existing cross-listed containers/structures; NO new IDs:** Waterskin #42 for drink; placed Hide - Sack #783 and Basket #785 for early camp storage. Bucket, cookware and jars remain their relevant functional categories and are not automatically wearable bags.
+
+**Rules and validation:**
+1. Use a **sensible attachment/loadout scheme** rather than forcing belt and quiver into mutually exclusive slots: one principal back container, one shoulder bag if compatible, one belt with finite attachment points, optional small utility bandolier and strapped exterior bedroll. No multiple stacked giant backpacks or unlimited pouches.
+2. **Volume, mass and object dimensions all matter.** A bigger pack organizes more, but never increases human muscle power; loaded weight affects stamina, exertion, balance, jump/climb/sprint/swim/combat. A bulky pack frame has an intentional movement penalty.
+3. Contents stay with the physical container when carried, detached, dropped, traded or stored; disallow recursive bag nesting, item duplication and content loss. A full bag cannot vanish when unequipped; replicate per-instance inventories through save/network data with safe world drops. Existing 30-slot pack rules must be reconciled rather than contradicted.
+4. Quivers accept appropriate arrows only and draw ammunition while equipped; hide 40 and leather 60 keep their existing capacity values. Rain/condition affect material differences but do not arbitrarily destroy ammo.
+5. Scabbards attach only compatible weapons; quick-use equipment uses limited dedicated slots, not free storage. Item types and actual access are validated in interface code.
+6. Condition and repair: fibre/wicker primitive; hide/leather repair at hand or Leatherworking Table as suitable; fabric at Tailor's Table. Water can soak and impair contents depending on material, closures and maintenance. Cosmetic variations stay per-instance looks.
+7. **No new coin purse, herb pouch, magic bottomless bag, separate dagger sheath by material or duplicate small/large pouch sizes.** Saddle panniers, horse saddles and vehicles wait for their own category. No arbitrary capacity/durability/stamina tuning numbers locked in this design.
+
+**Approved category counts:** 6 existing personal gear rows, **9 ADD** carrying items, 3 cross-listed existing containers/structures. The 18 related concept total is **not** 18 new items; only 9 new items are required. Deduplicate cross-category tool roll/scabbard interactions and preserve existing row IDs.
+
+**Next:** ChatGPT is designing saddles, tack, saddlebags and pack animal equipment for Dave to review in one complete proposal. No horse equipment is owner-approved yet.
+
 ## 4. Implementation details (follow from the decisions; no new design)
 
 1. **Repair data:** `repair_station` on each metal tool names its crafting station type (today 26 rows say `forge`; bronze tools: `forge`, which the Smithy also provides; iron and steel: the Smithy); `drops.json tool_wear.repair_restores` (0.5) becomes "restore up to the remaining maximum"; stone, wooden and primitive rows lose `repair`; code removes a disposable tool at zero, drops a surviving thrown Javelin as a pickup, and keeps a broken metal tool in its slot.
@@ -577,7 +624,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is next for Dave's review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is owner-approved and recorded in s3.9 [D9] (9 ADD rows; pending comprehensive audit). SADDLES, SADDLEBAGS AND ANIMAL TACK is next for Dave's complete-category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
