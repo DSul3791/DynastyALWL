@@ -53,6 +53,9 @@ func load_file(path: String, item_table) -> bool:
 		}
 		_by_number[entry["number"]] = entry
 
+		if float(entry["ready_age"]) > 0.0 and item_table.has_method("set_ready_age"):
+			item_table.set_ready_age(int(entry["gives"][0]), float(entry["ready_age"]))   # the item table rules Maturing stacks (merge, eat, use)
+
 	_open_listed(path.get_base_dir().path_join("open_recipes.json"))
 	return true
 

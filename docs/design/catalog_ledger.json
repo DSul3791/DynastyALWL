@@ -14980,7 +14980,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "M001-T12 (phase 6): state 251, blueprint 211 (3 iron); addon_of fireplace; serves campfire_pot only while a lit Fireplace stands within attach_m 2.5 (new attach code in serving_station); borrows the tool rack look"
+   "note": "M001-T12 (phase 6): state 251, blueprint 211 (4 Iron band, Smithy-made); addon_of fireplace; serves campfire_pot only while a lit Fireplace stands within attach_m 2.5 (new attach code in serving_station); borrows the tool rack look"
   },
   {
    "key": "new:Unbaked Flatbread",

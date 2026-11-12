@@ -9,7 +9,6 @@ const COUNT_MAX := 65535
 const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material per flora yield (tools/gen_gathered_items.py)
 const GROUPS_PATH := "res://data/items/wood_species.json"   # "ingredient_groups": a plain id (log) that any listed item (log_oak ...) fills (guide finding F-16)
 const RENAMES_PATH := "res://data/items/renames.json"   # a retired item -> the item that took its place, swapped in when a save loads
-const RECIPES_PATH := "res://data/items/recipes.json"   # read only for the recipes' ready_age (ready_units)
 
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry
@@ -293,33 +292,27 @@ func _shelf_units_uncached(number: int) -> int:
 
 
 # Passive maturing (master s3.14 [D14], Mission 001 phase 6): the age in wear units at which a sealed food is Ready, from the "ready_age" (game
-# hours, not stretched by gentle_mult) of the recipe that makes it; 0 for food that is ready when made. Below it the stack is Maturing: it is not
-# eaten, used, sold or merged with a Ready stack (Inventory._mergeable).
+# hours, not stretched by gentle_mult) of the recipe that makes it, which recipe_table.gd load_file sets here; 0 for food that is ready when made.
+# Below it the stack is Maturing: it is not eaten, used, sold or merged with a stack of another age (Inventory._mergeable).
 var _ready: Dictionary = {}   # item number -> ready age in wear units
-var _ready_loaded: bool = false
+
+
+func set_ready_age(number: int, hours: float) -> void:
+	if number > 0 and hours > 0.0:
+		_ready[number] = maxi(int(_ready.get(number, 0)), int(round(hours / float(spoilage().get("unit_h", 0.1)))))
 
 
 func ready_units(number: int) -> int:
-	if not _ready_loaded:
-		_ready_loaded = true
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RECIPES_PATH)) if FileAccess.file_exists(RECIPES_PATH) else null
-
-		if typeof(parsed) == TYPE_DICTIONARY:
-			var unit_h: float = float(spoilage().get("unit_h", 0.1))
-			var rows: Dictionary = parsed.get("recipes", {})
-
-			for id in rows:
-				var hours: float = float(rows[id].get("ready_age", 0.0))
-				var made: int = number_of(str(rows[id].get("gives", [""])[0]))
-
-				if hours > 0.0 and made > 0 and not bool(rows[id].get("retired", false)):
-					_ready[made] = maxi(int(_ready.get(made, 0)), int(round(hours / unit_h)))
-
 	return int(_ready.get(number, 0))
 
 
 func maturing(number: int, age_units: int) -> bool:
 	return age_units < ready_units(number)
+
+
+# Game hours until a Maturing stack is Ready at the pack's pace, rounded up (0 once Ready): what the player is told and shown.
+func ready_hours_left(number: int, age_units: int) -> int:
+	return ceili(float(maxi(ready_units(number) - age_units, 0)) * float(spoilage().get("unit_h", 0.1)))
 
 
 # 1.0 fresh down to 0.0 rotten for a stack of `number` with the age `age_units`; 1.0 for anything that does not spoil.

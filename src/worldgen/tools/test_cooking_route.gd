@@ -9,7 +9,9 @@ extends SceneTree
 #   4. the Fireplace cooking crane cooks a stew only while its fireplace burns;
 #   5. Sauerkraut sealed as one batch at a built Preserving jar #830: Maturing (not eaten, not an ingredient), then Ready and eaten; stale
 #      cabbage is refused; batches sealed at different times never merge until both are Ready; the age survives save and load;
-#   6. batch conservation: a full pack sends the batch to the player's nearby chest, and a full chest to the ground, none lost;
+#   6. batch room: a full pack sends the batch to the player's nearby chest; a batch is capped to the room there, refused with none, waits when the
+#      room fills before it is done, and never lands on the ground; Maturing stacks in a chest or on the ground are no craft stock; Hob will not
+#      buy one and an NPC order does not count or take one;
 #   7. Smoked meat at a built Smoker, Dried mushrooms at a built Drying rack (outside the mushrooms group).
 # Station materials, iron, charcoal, eggs and the like are given: they are gathered or made elsewhere (test_first_hour, test_iron_saw_route).
 #   godot --headless --path . --script res://src/worldgen/tools/test_cooking_route.gd
@@ -17,6 +19,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const TradeScript := preload("res://src/stream/server_trade.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 const PRE_SAW := ["log", "stick", "twine", "stone", "clay"]   # master s3.12 reconciliation: the table needs no Planks or metal
@@ -314,7 +317,7 @@ func _init() -> void:
 	check(at2 >= 0 and inv2.wear[at2] == age_now and inv2.count_of(num("sauerkraut")) == per * batch + per - 1, "5j. the sealed food's age and count survive save and load")
 	again._finish_writer()
 
-	# 6. Batch conservation: a full pack sends the batch to the player's chest within reach, a full chest to the ground.
+	# 6. Batch room: a full pack sends the batch to the player's chest within reach; the room caps it; never the ground.
 	inv.remove(num("sauerkraut"), have("sauerkraut"))
 	var chest: int = build("chest", jar_at + Vector3(-2.0, 0.0, 0.0))
 	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
@@ -330,17 +333,82 @@ func _init() -> void:
 	craft("cook_sauerkraut", batch, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
 	check(have("sauerkraut") == 0 and box.count_of(num("sauerkraut")) == per * batch and loose("sauerkraut") == 0 and loose("cabbage") == 0, "6a. pack full: all %d go into the chest beside the jar (chest %d, ground %d)" % [per * batch, box.count_of(num("sauerkraut")), loose("sauerkraut")])
 
-	box.remove(num("sauerkraut"), box.count_of(num("sauerkraut")))   # taken out, so the next batch cannot join it and must find no room at all
+	# Maturing stacks in the chest and on the ground are no ingredient; once the ground stack is Ready it is (the ground ages it faster than a chest).
+	var kraut_n: int = num("sauerkraut")
+	items.drop_in_world(kraut_n, 3, jar_at + Vector3(0.0, 0.0, 1.5))
+	check(loose("sauerkraut") == 3 and items._stock_have(inv, kraut_n, items._stock_of(1)) == 0, "6b. Maturing Sauerkraut in the chest (%d) and on the ground (3) is no craft stock" % box.count_of(kraut_n))
+	items._spoil_tick(ready_s * 1.1)
+	check(items._stock_have(inv, kraut_n, items._stock_of(1)) == 3, "6c. the ground stack, Ready first, counts; the chest's, still Maturing, does not (%d)" % items._stock_have(inv, kraut_n, items._stock_of(1)))
+	box.remove(kraut_n, box.count_of(kraut_n))
 
-	for i in box.SLOTS:
-		if box.numbers[i] == 0:
-			box.add(num("clay_pot"), 1)
+	for wid in items._items.keys():
+		if not items._items[wid].has("struct") and int(items._items[wid].get("number", 0)) == kraut_n:
+			items._items.erase(wid)
 
+	# The room caps the batch: clay fills the chest by weight until five Sauerkraut still fit, so two crafts of the five asked are sealed.
+	var filler: int = num("clay")   # 0.1 kg a piece: fills the chest by weight in small steps
+
+	for k in range(2000):
+		if items._box_room(chest, kraut_n, 99) < 6:
+			break
+
+		box.add(filler, 1)
+
+	var room_crafts: int = floori(float(items._box_room(chest, kraut_n, 99)) / float(per))
 	items.drop_in_world(cabbage, cab_need * batch, jar_at + Vector3(0.5, 0.0, 0.5))
 	items.drop_in_world(num("sea_salt"), salt_need * batch, jar_at + Vector3(-0.5, 0.0, 0.5))
 	craft("cook_sauerkraut", batch, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
-	check(have("sauerkraut") == 0 and box.count_of(num("sauerkraut")) == 0 and loose("sauerkraut") == per * batch and loose("cabbage") == 0, "6b. pack and chest full: all %d lie on the ground, none lost (%d)" % [per * batch, loose("sauerkraut")])
+	check(room_crafts > 0 and room_crafts < batch and box.count_of(kraut_n) == room_crafts * per and loose("cabbage") == cab_need * (batch - room_crafts) and loose("sauerkraut") == 0 and told("Room for only"), "6d. room for %d crafts: %d sealed into the chest, the rest of the cabbage untouched, nothing on the ground" % [room_crafts, box.count_of(kraut_n)])
+
+	# No room at all: refused, nothing taken.
+	for k in range(2000):
+		if items._box_room(chest, kraut_n, 99) <= 0:
+			break
+
+		box.add(filler, 1)
+
+	var kraut_before: int = box.count_of(kraut_n)
+	craft("cook_sauerkraut", 1, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
+	check(box.count_of(kraut_n) == kraut_before and loose("cabbage") == cab_need * (batch - room_crafts) and loose("sauerkraut") == 0 and told("No room"), "6e. pack and chest full: the batch is refused and nothing is taken")
+
+	# Room that fills while the batch is sealed: the finished batch waits, its ingredients held, until there is room again.
+	box.remove(kraut_n, box.count_of(kraut_n))
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("cook_sauerkraut"), 0, 1, Vector3.ZERO)
+	var queued: bool = not items.craft_queue_of(1).is_empty()
+
+	for k in range(2000):
+		if items._box_room(chest, kraut_n, 99) <= 0:
+			break
+
+		box.add(filler, 1)
+
+	items._station_said.clear()   # the wait is said at most every 8 s; this run is faster than that
+
+	for s in range(int(recipe("cook_sauerkraut")["craft_s"]) + 3):
+		items.tick(1.0)
+
+	check(queued and not items.craft_queue_of(1).is_empty() and box.count_of(kraut_n) == 0 and loose("sauerkraut") == 0 and told("waits"), "6f. the room filled meanwhile: the batch waits, not on the ground")
+	box.remove(filler, box.count_of(filler))
+
+	for s in range(3):
+		items.tick(1.0)
+
+	check(items.craft_queue_of(1).is_empty() and box.count_of(kraut_n) == per and loose("sauerkraut") == 0, "6g. room again: the waiting batch goes into the chest")
 	inv.remove(num("clay_pot"), have("clay_pot"))
+
+	# Hob does not buy a Maturing stack, and an NPC order neither counts nor takes one.
+	inv.add(kraut_n, 2)
+	var trade = TradeScript.new()
+	trade.items = items
+	trade.npcs = {"npcs": {"hob": {"dormant": false, "placed": true, "pos": jar_at + Vector3(0.0, 0.0, -1.0)}}}
+	trade.setup(dir)
+	trade.now = func(): return 1000.0
+	trade.game_seconds = func(): return 0.0
+	var kraut_slot: int = inv.numbers.find(kraut_n)
+	check(trade.deal(1, "hob", 1, kraut_slot, 2) == "That is still maturing." and have("sauerkraut") == 2, "6h. Hob will not buy Maturing Sauerkraut")
+	check(items.count_for(1, "sauerkraut", true) == 0 and not items.take_from(1, "sauerkraut", 1, true) and have("sauerkraut") == 2, "6i. an NPC order neither counts nor takes it")
+	inv.remove(kraut_n, 2)
 
 	# 7. Smoked meat and Dried mushrooms, one step each at their stations.
 	var smoke_at: Vector3 = Vector3(0.0, 10.0, 60.0)

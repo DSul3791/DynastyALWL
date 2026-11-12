@@ -264,6 +264,6 @@
 		"loom": {"category": "Workshops and stations", "number": 207, "name": "Loom", "structure": "loom", "cost": [["log", 2], ["stick", 10], ["twine", 6], ["clay", 4]], "station": "", "hammer": 1, "known": true},
 		"grindstone": {"category": "Workshops and stations", "number": 208, "name": "Grindstone", "structure": "grindstone", "cost": [["stone", 12], ["log", 2]], "station": "", "hammer": 1, "known": true},
 		"food_preparation_table": {"category": "Workshops and stations", "number": 210, "name": "Food preparation table", "structure": "food_preparation_table", "cost": [["log", 3], ["twine", 2]], "station": "", "hammer": 1, "known": true},
-		"fireplace_cooking_crane": {"category": "Workshops and stations", "number": 211, "name": "Fireplace cooking crane", "structure": "fireplace_cooking_crane", "cost": [["iron_ingot", 3]], "station": "", "hammer": 1, "known": true}
+		"fireplace_cooking_crane": {"category": "Workshops and stations", "number": 211, "name": "Fireplace cooking crane", "structure": "fireplace_cooking_crane", "cost": [["iron_band", 4]], "station": "", "hammer": 1, "known": true}
 	}
 }
