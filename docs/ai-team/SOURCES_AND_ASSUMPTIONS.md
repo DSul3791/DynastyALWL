@@ -3,7 +3,7 @@
 Official Anthropic (recheck before deployment):
 - https://code.claude.com/docs/en/memory — CLAUDE.md precedence and AGENTS.md selection. Root CLAUDE.md means AGENTS.md is not read by default; deliberately avoid AGENTS.md duplication.
 - https://code.claude.com/docs/en/sub-agents — Claude Code `.claude/agents/*.md` definitions, independent contexts, model aliases, effort and permissions.
-- https://code.claude.com/docs/en/skills — SKILL.md and scope; cloud Cowork loads account-enabled skills, not automatically local `.claude/skills` in repo-based project thread.
+- https://code.claude.com/docs/en/skills — SKILL.md and scope; cloud Cowork loads account-enabled skills, not automatically local `.claude/skills` in repo-based project thread *(assumption at writing; in this project's cloud threads the repo skills and agents were observed available on 11 and 12 Nov 2026, `INSTALL_RECORD.md`)*.
 - https://code.claude.com/docs/en/best-practices — keep CLAUDE.md concise, use skills for procedures, enforce critical rules with permissions/hooks.
 - https://code.claude.com/docs/en/agent-teams — Claude Code agent teams are experimental and distinct from Cowork's worker UI; do not assume cross-platform equivalence.
 - https://support.claude.com/en/articles/14116274-organize-your-tasks-with-projects-in-claude-cowork — Cowork project context, instructions and memory; not Claude Code project setting.

@@ -26,7 +26,7 @@ Examined directly:
 - **All eight** repo `.claude/agents/*.md` definitions and **all ten** `.claude/skills/*/SKILL.md` bodies; `.claude/settings.json`.
 - Tool implementation: `tools/tests_for_diff.py`, `tools/test_lanes.json`, `tools/merge_check.py`, `tools/check_ai_team_package.py`, `.github/workflows/merge_check.yml`.
 - Relevant operational evidence: `docs/ai-team/missions/B001/{BRIEF,RESULTS}.md` on its PR branch, PR #1048 and QA PR #1049; installation, Ponytail and operational-trial records.
-- GitHub branch metadata: `main` protected; `dev` **not** protected at audit time (exact detailed `main` rule set not verified).
+- GitHub branch metadata: `main` protected; `dev` **not** protected at audit time (exact detailed `main` rule set not verified at audit time; read via API 12 Nov, see `INSTALL_RECORD.md` platform notes).
 
 Not fully examined: every gameplay/design specification, archived source, historical mirror, one-off mission result, all code implementations, test execution, the actual **private** Claude Project instructions/memory/current connected skill list, and private shared Library handoff/decision bodies beyond available index material. Those require separate topical and live-platform audits. **Do not claim all 971 document bodies were read.** Historical and archived documents are deliberately not treated as governing rules.
 
@@ -212,7 +212,7 @@ Each scenario record: project thread permalink, task ID, initial project context
 
 ## 7. External research and community guidance
 
-- Anthropic official Projects Beta reference: https://code.claude.com/docs/en/claude-projects (authoritative for this platform, particularly repo file/setting/skill load behavior).
+- Anthropic official Projects Beta reference: https://code.claude.com/docs/en/claude-projects (authoritative for documented settings and load behavior; in this project, repo skills and agents were observed to differ, see F02).
 - Anthropic official settings reference: https://code.claude.com/docs/en/settings (repo settings ignored by cloud Project threads).
 - Anthropic official instruction placement: https://claude.com/resources/articles/steering-claude-code-skills-hooks-rules-subagents-and-more (short `CLAUDE.md`, specialized skills, enforce invariant safety through actual permissions/hooks where supported).
 - Community reports, anecdotal and **not verification of Dynasty**: https://www.reddit.com/r/ClaudeCode/comments/1xeeo8h/agents_keep_viewing_my_rules_as_suggestions_and/ (Oct 2026: stale/conflicting context after compaction); https://www.reddit.com/r/ClaudeAI/comments/1rz2oo3/what_happens_when_you_stop_adding_rules_to/ (Mar 2026: costs of ever-growing instruction files). Treat as problem hypotheses, not policy authority.
