@@ -529,7 +529,7 @@ func _add_worn_lines() -> void:
 	for i in slots.size():
 		var number: int = int(_items.worn[i]) if i < _items.worn.size() else 0
 		var line: HBoxContainer = HBoxContainer.new()
-		var name: Label = _label("%s: %s" % [labels.get(slots[i], str(slots[i])), _items.table.name_of(number) if number > 0 else "nothing"], BODY_PX)
+		var name: Label = _label("%s: %s" % [labels.get(slots[i], str(slots[i])), _items.inst_label(number, _items.worn_inst.get(i, {})) if number > 0 else "nothing"], BODY_PX)
 		name.custom_minimum_size = Vector2(_px(360), 0)
 		line.add_child(name)
 

@@ -46,8 +46,14 @@ func _init() -> void:
 	var log_n: int = table.number_of("log")
 	var oak: int = table.number_of("log_oak")
 	var spruce: int = table.number_of("log_spruce")
-	check(table.group_members(log_n).size() >= 26 and table.group_members(log_n).has(oak), "the log group lists the plain log and every log_<species> (%d)" % table.group_members(log_n).size())
-	check(table.group_members(oak).is_empty(), "a species log is not itself a group")
+	# Mission 001 phase 2a: the retired species logs left the group; the plain log and the 8 live species logs remain.
+	check(table.group_members(log_n).size() == 9 and table.group_members(log_n).has(oak) and table.group_members(log_n).has(spruce), "the log group lists the plain log and every live log_<species> (%d)" % table.group_members(log_n).size())
+	# The softwood and hardwood log groups (master s2.3, [D4]): keyed by Spruce log and Oak log, labelled for cost lists, disjoint.
+	var soft_logs: PackedInt32Array = table.group_members(spruce)
+	var hard_logs: PackedInt32Array = table.group_members(oak)
+	check(soft_logs.has(log_n) and soft_logs.has(table.number_of("log_scots_pine")) and not soft_logs.has(oak), "Softwood log: spruce, Scots pine and the plain Log (%s)" % str(soft_logs))
+	check(hard_logs.size() == 6 and hard_logs.has(table.number_of("log_maple")) and not hard_logs.has(log_n) and not hard_logs.has(spruce), "Hardwood log: the six hardwood species (%s)" % str(hard_logs))
+	check(table.cost_name(spruce) == "Softwood log" and table.cost_name(oak) == "Hardwood log" and table.name_of(oak) == "Oak log", "the groups read under their labels in costs, the logs keep their names")
 	inv.add(oak, 3)
 	inv.add(spruce, 2)
 	check(inv.count_fill(log_n) == 5 and inv.has_fill(log_n, 5) and not inv.has_fill(log_n, 6) and inv.count_of(log_n) == 0, "the pack's 3 oak and 2 spruce logs count as 5 logs for an ingredient (the plain item count stays 0)")

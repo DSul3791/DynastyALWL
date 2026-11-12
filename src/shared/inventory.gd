@@ -5,7 +5,7 @@ extends RefCounted
 # use the same rules. Number 0 means an empty slot.
 
 const SLOTS := 30
-const FORMAT := 2               # 2 added wear per slot
+const FORMAT := 3               # 2 added wear per slot; 3 the instance data after the slots (inst_bytes)
 
 var table
 var numbers: PackedInt32Array = PackedInt32Array()
@@ -17,6 +17,10 @@ var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools 
 var fav: PackedInt32Array = PackedInt32Array()       # favourites (inventory step 3, a pack only): the item number a slot was favourited with, 0 none; see is_fav
 const HOTBAR_KEYS := 10
 var hotbar: PackedInt32Array = PackedInt32Array()    # the pointer hotbar (inventory step 4, a pack only): keys 1 to 9 and 0 each hold an item number, 0 none; see key_slot
+# Per-instance data (catalog Phase 1b, master s2.2, s2.9, s4 items 2, 15, 16): {} for a plain item, else only the keys that are not default:
+# sharp (sharpness used, int), max_d (current maximum durability, int; absent = the row's durability), temper (1), craft (1 or 2, fixed at craft time),
+# magic (two Strings, "" empty; a slot is filled only while empty and nothing clears it). A slot with an instance never merges.
+var inst: Array = []
 
 
 func _init(item_table = null) -> void:
@@ -26,6 +30,10 @@ func _init(item_table = null) -> void:
 	wear.resize(SLOTS)
 	fav.resize(SLOTS)
 	hotbar.resize(HOTBAR_KEYS)
+	inst.resize(SLOTS)
+
+	for i in SLOTS:
+		inst[i] = {}
 
 
 # Add as many as fit (fills partial stacks first). Returns how many were left over.
@@ -51,7 +59,7 @@ func _joined_age(number: int, wear_a: int, count_a: int, wear_b: int, count_b: i
 	return int(round(float(wear_a * count_a + wear_b * count_b) / float(maxi(count_a + count_b, 1))))
 
 
-func add(number: int, count: int, item_wear: int = 0) -> int:
+func add(number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}) -> int:
 	if number <= 0 or count <= 0 or table == null:
 		return count
 
@@ -59,7 +67,7 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 	var left: int = count
 
 	for i in usable:
-		if left > 0 and numbers[i] == number and counts[i] < stack and _mergeable(number, wear[i], item_wear):
+		if left > 0 and item_inst.is_empty() and inst[i].is_empty() and numbers[i] == number and counts[i] < stack and _mergeable(number, wear[i], item_wear):
 			var put: int = mini(left, stack - counts[i])
 			wear[i] = _joined_age(number, wear[i], counts[i], item_wear, put)
 			counts[i] += put
@@ -73,6 +81,7 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 				counts[i] = put
 				wear[i] = item_wear
 				fav[i] = 0
+				inst[i] = item_inst.duplicate(true)
 				left -= put
 
 	return left
@@ -100,25 +109,38 @@ func has(number: int, count: int) -> bool:
 	return count_of(number) >= count
 
 
-# Take `count` of an item (from the last slots first). False and no change if there is not enough.
-func remove(number: int, count: int) -> bool:
+# Take `count` of an item (from the last slots first, plain stacks before instances). False and no change if there is not enough.
+# Each instance unit taken is appended to `taken` as [number, inst, wear], so a refund can give it back as it was (the craft queue).
+func remove(number: int, count: int, taken: Array = []) -> bool:
 	if count <= 0 or not has(number, count):
 		return false
 
 	var left: int = count
 
-	for i in range(SLOTS - 1, -1, -1):
-		if left > 0 and numbers[i] == number:
-			var take: int = mini(left, counts[i])
-			counts[i] -= take
-			left -= take
+	for plain in [true, false]:
+		for i in range(SLOTS - 1, -1, -1):
+			if left > 0 and numbers[i] == number and inst[i].is_empty() == plain:
+				var take: int = mini(left, counts[i])
 
-			if counts[i] == 0:
-				numbers[i] = 0
-				wear[i] = 0
-				fav[i] = 0
+				for _k in (0 if plain else take):
+					taken.append([number, inst[i].duplicate(true), wear[i]])
+
+				counts[i] -= take
+				left -= take
+
+				if counts[i] == 0:
+					clear_slot(i)
 
 	return true
+
+
+# Empties a slot of everything it carries (number, count, wear, favourite, instance).
+func clear_slot(i: int) -> void:
+	numbers[i] = 0
+	counts[i] = 0
+	wear[i] = 0
+	fav[i] = 0
+	inst[i] = {}
 
 
 # Ingredient counting (guide finding F-16, Tyler 31 Oct 2026): an ingredient that names a group (plain `log`, `wooden_block`, `firewood`: item_table.gd
@@ -134,12 +156,13 @@ func fills_of(number: int) -> PackedInt32Array:
 	return PackedInt32Array([number])
 
 
-func count_fill(number: int) -> int:
+# `plain_only`: units with instance data do not count (building costs never take them).
+func count_fill(number: int, plain_only: bool = false) -> int:
 	var fills: PackedInt32Array = fills_of(number)
 	var total: int = 0
 
 	for i in SLOTS:
-		if numbers[i] != 0 and fills.has(numbers[i]):
+		if numbers[i] != 0 and fills.has(numbers[i]) and not (plain_only and not inst[i].is_empty()):
 			total += counts[i]
 
 	return total
@@ -151,7 +174,7 @@ func has_fill(number: int, count: int) -> bool:
 
 # Takes `count` for an ingredient: the group's lowest member first (ItemTable.spend_order: tier, material, value; own id first on a tie), then the next.
 # False and no change if the pack holds too few. An id that is no group is taken as itself.
-func remove_fill(number: int, count: int) -> bool:
+func remove_fill(number: int, count: int, taken_inst: Array = []) -> bool:
 	if count <= 0 or not has_fill(number, count):
 		return false
 
@@ -163,13 +186,13 @@ func remove_fill(number: int, count: int) -> bool:
 			var taken: int = mini(left, count_of(fill))
 
 			if taken > 0:
-				remove(fill, taken)
+				remove(fill, taken, taken_inst)
 				left -= taken
 
 	return true
 
 
-# Remove from one slot; returns {number, count} actually taken.
+# Remove from one slot; returns {number, count, wear, inst} actually taken.
 func take_from_slot(slot: int, count: int) -> Dictionary:
 	if slot < 0 or slot >= SLOTS or numbers[slot] == 0 or count <= 0:
 		return {"number": 0, "count": 0}
@@ -177,14 +200,13 @@ func take_from_slot(slot: int, count: int) -> Dictionary:
 	var take: int = mini(count, counts[slot])
 	var number: int = numbers[slot]
 	var item_wear: int = wear[slot]
+	var item_inst: Dictionary = inst[slot].duplicate(true)
 	counts[slot] -= take
 
 	if counts[slot] == 0:
-		numbers[slot] = 0
-		wear[slot] = 0
-		fav[slot] = 0
+		clear_slot(slot)
 
-	return {"number": number, "count": take, "wear": item_wear}
+	return {"number": number, "count": take, "wear": item_wear, "inst": item_inst}
 
 
 # Move a slot onto another: merge when the same item, else swap.
@@ -192,7 +214,7 @@ func move(from_slot: int, to_slot: int) -> void:
 	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= SLOTS or to_slot >= SLOTS or numbers[from_slot] == 0:
 		return
 
-	if numbers[to_slot] == numbers[from_slot] and table != null and _mergeable(numbers[to_slot], wear[to_slot], wear[from_slot]):
+	if numbers[to_slot] == numbers[from_slot] and inst[to_slot].is_empty() and inst[from_slot].is_empty() and table != null and _mergeable(numbers[to_slot], wear[to_slot], wear[from_slot]):
 		var room: int = table.stack_of(numbers[to_slot]) - counts[to_slot]
 		var put: int = mini(room, counts[from_slot])
 		wear[to_slot] = _joined_age(numbers[to_slot], wear[to_slot], counts[to_slot], wear[from_slot], put)
@@ -200,9 +222,7 @@ func move(from_slot: int, to_slot: int) -> void:
 		counts[from_slot] -= put
 
 		if counts[from_slot] == 0:
-			numbers[from_slot] = 0
-			wear[from_slot] = 0
-			fav[from_slot] = 0
+			clear_slot(from_slot)
 
 		return
 
@@ -210,6 +230,9 @@ func move(from_slot: int, to_slot: int) -> void:
 	var c: int = counts[to_slot]
 	var w: int = wear[to_slot]
 	var f: int = fav[to_slot]
+	var d: Dictionary = inst[to_slot]
+	inst[to_slot] = inst[from_slot]
+	inst[from_slot] = d
 	numbers[to_slot] = numbers[from_slot]
 	counts[to_slot] = counts[from_slot]
 	wear[to_slot] = wear[from_slot]
@@ -298,38 +321,183 @@ func fav_flags() -> PackedByteArray:
 	return out
 
 
+# Format 3: the format byte, 8 bytes per slot (u32 number, u16 count, u16 wear), then the instance data of the slots that have one (inst_bytes).
 func to_bytes() -> PackedByteArray:
 	var out: PackedByteArray = PackedByteArray()
 	out.resize(1 + SLOTS * 8)
 	out[0] = FORMAT
+	var map: Dictionary = {}
 
 	for i in SLOTS:
 		out.encode_u32(1 + i * 8, numbers[i])
 		out.encode_u16(1 + i * 8 + 4, counts[i])
 		out.encode_u16(1 + i * 8 + 6, mini(wear[i], 65535))
 
+		if not inst_of(i).is_empty():
+			map[i] = inst[i]
+
+	out.append_array(inst_bytes(map))
 	return out
 
 
 func from_bytes(bytes: PackedByteArray) -> bool:
-	if bytes.size() != 1 + SLOTS * 8 or bytes[0] != FORMAT:
+	var head: int = 1 + SLOTS * 8
+
+	if bytes.size() < head + 2 or bytes[0] != FORMAT or bytes.size() != head + 2 + bytes.decode_u16(head):
 		return false
+
+	var map: Dictionary = inst_from_bytes(bytes, head)
 
 	for i in SLOTS:
 		numbers[i] = bytes.decode_u32(1 + i * 8)
 		counts[i] = bytes.decode_u16(1 + i * 8 + 4)
 		wear[i] = bytes.decode_u16(1 + i * 8 + 6)
+		inst[i] = map.get(i, {}) if numbers[i] != 0 else {}
 
 	return true
 
 
-# JSON form for the server save file: [[number, count, wear], ...] with empty slots as [0, 0, 0], and a fourth 1 on a favourite
-# (inventory step 3). Version 1 saves had [number, count] only; they load with zero wear.
+# The instance data of some slots on the wire: u16 byte length, then UTF-8 JSON {"slot": inst} (length 0 for none). Inventory bytes, slot updates
+# and the worn list all carry it this way (protocol 106).
+static func inst_bytes(map: Dictionary) -> PackedByteArray:
+	var out: PackedByteArray = PackedByteArray([0, 0])
+
+	if map.is_empty():
+		return out
+
+	var text: PackedByteArray = JSON.stringify(map).to_utf8_buffer()
+
+	if text.size() > 65535:
+		push_error("inventory: instance data of %d bytes does not fit the u16 length; sent without it" % text.size())
+		return out
+
+	out.encode_u16(0, text.size())
+	out.append_array(text)
+	return out
+
+
+# {slot int: inst} from inst_bytes at byte `at`; {} when there is none or it does not read.
+static func inst_from_bytes(bytes: PackedByteArray, at: int) -> Dictionary:
+	var out: Dictionary = {}
+
+	if at < 0 or at + 2 > bytes.size():
+		return out
+
+	var n: int = bytes.decode_u16(at)
+
+	if n == 0 or at + 2 + n > bytes.size():
+		return out
+
+	var parsed: Variant = JSON.parse_string(bytes.slice(at + 2, at + 2 + n).get_string_from_utf8())
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		for key in parsed:
+			if str(key).is_valid_int():
+				out[int(key)] = clean_inst(parsed[key])
+
+	return out
+
+
+# An instance from a save or the wire, keeping only known keys with sane values that are not default (anything else reads as plain).
+static func clean_inst(raw: Variant) -> Dictionary:
+	var out: Dictionary = {}
+
+	if typeof(raw) != TYPE_DICTIONARY:
+		return out
+
+	var sharp: int = _whole(raw, "sharp", 0)
+	var max_d: int = _whole(raw, "max_d", -1)
+	var craft: int = _whole(raw, "craft", 0)
+
+	if sharp > 0:
+		out["sharp"] = mini(sharp, 65535)
+
+	if max_d >= 0:
+		out["max_d"] = mini(max_d, 65535)
+
+	if _whole(raw, "temper", 0) == 1:
+		out["temper"] = 1
+
+	if craft == 1 or craft == 2:
+		out["craft"] = craft
+
+	var magic: Variant = raw.get("magic", [])
+
+	if typeof(magic) == TYPE_ARRAY and (magic as Array).size() == 2:
+		var two: Array = [str(magic[0]) if typeof(magic[0]) == TYPE_STRING else "", str(magic[1]) if typeof(magic[1]) == TYPE_STRING else ""]
+
+		if two != ["", ""]:
+			out["magic"] = two
+
+	return out
+
+
+static func _whole(raw: Dictionary, key: String, fallback: int) -> int:
+	var value: Variant = raw.get(key, fallback)
+	return int(value) if typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT else fallback
+
+
+# The instance data of a slot ({} for a plain or empty one).
+func inst_of(slot: int) -> Dictionary:
+	return inst[slot] if slot >= 0 and slot < SLOTS and numbers[slot] != 0 else {}
+
+
+# --- Instance API for the catalog's Phase 2c (durability, sharpening, craftsmanship, Tempered); nothing in play calls it yet ---
+
+# A new instance as crafting makes it: craftsmanship 0, 1 or 2 and Tempered. Craftsmanship is fixed here; nothing changes it afterwards.
+static func make_inst(craft: int = 0, tempered: bool = false) -> Dictionary:
+	return clean_inst({"craft": craft, "temper": 1 if tempered else 0})
+
+
+# The slot's current maximum durability: its instance's max_d, else the item row's durability (0 for an item that does not wear).
+func max_durability(slot: int) -> int:
+	if slot < 0 or slot >= SLOTS or numbers[slot] == 0:
+		return 0
+
+	if inst[slot].has("max_d"):
+		return int(inst[slot]["max_d"])
+
+	return int(table.entry(table.id_of(numbers[slot])).get("durability", 0)) if table != null else 0
+
+
+# Sharpness used so far on the slot's item (0 = fully sharp).
+func sharpness_used(slot: int) -> int:
+	return int(inst_of(slot).get("sharp", 0))
+
+
+# Fills magical slot `index` (0 or 1) of the single item in `slot` with `effect`. Refused (false, nothing changes) when that slot is already
+# filled, the effect is empty or the slot holds no single item: an enchantment is never removed, replaced or moved (master s2.9 item 6).
+func fill_magic(slot: int, index: int, effect: String) -> bool:
+	if slot < 0 or slot >= SLOTS or numbers[slot] == 0 or counts[slot] != 1 or index < 0 or index > 1 or effect == "":
+		return false
+
+	var magic: Array = inst[slot].get("magic", ["", ""])
+
+	if str(magic[index]) != "":
+		return false
+
+	magic = magic.duplicate()
+	magic[index] = effect
+	inst[slot]["magic"] = magic
+	return true
+
+
+# JSON form for the server save file: [[number, count, wear], ...] with empty slots as [0, 0, 0], a fourth 1 on a favourite
+# (inventory step 3) and a fifth, the instance data, when there is one (the fourth is then written, 0 or 1). Version 1 saves had
+# [number, count] only; they load with zero wear.
 func to_json_array() -> Array:
 	var out: Array = []
 
 	for i in SLOTS:
-		out.append([numbers[i], counts[i], wear[i], 1] if is_fav(i) else [numbers[i], counts[i], wear[i]])
+		var row: Array = [numbers[i], counts[i], wear[i]]
+
+		if is_fav(i) or not inst_of(i).is_empty():
+			row.append(1 if is_fav(i) else 0)
+
+		if not inst_of(i).is_empty():
+			row.append(inst[i].duplicate(true))
+
+		out.append(row)
 
 	return out
 
@@ -340,3 +508,4 @@ func from_json_array(data: Array) -> void:
 		counts[i] = clampi(int(data[i][1]), 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0
 		fav[i] = numbers[i] if data[i].size() > 3 and int(data[i][3]) == 1 else 0
+		inst[i] = clean_inst(data[i][4]) if data[i].size() > 4 and numbers[i] != 0 else {}

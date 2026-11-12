@@ -119,7 +119,7 @@ func craft(number: int, inventory) -> bool:
 	if not r["known"]:
 		return false
 
-	var backup: Array = [inventory.numbers.duplicate(), inventory.counts.duplicate()]
+	var backup: Array = [inventory.numbers.duplicate(), inventory.counts.duplicate(), inventory.wear.duplicate(), inventory.inst.duplicate(true)]
 
 	for need in r["needs"]:
 		inventory.remove_fill(need[0], need[1])
@@ -127,6 +127,8 @@ func craft(number: int, inventory) -> bool:
 	if inventory.add(r["gives"][0], r["gives"][1]) > 0:
 		inventory.numbers = backup[0]
 		inventory.counts = backup[1]
+		inventory.wear = backup[2]
+		inventory.inst = backup[3]   # an undone craft gives every slot back as it was, wear and instance data included
 		return false
 
 	return true

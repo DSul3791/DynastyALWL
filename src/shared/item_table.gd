@@ -15,6 +15,7 @@ var _by_number: Dictionary = {}    # int number -> entry
 var _spoil: Dictionary = {}
 var _spoil_loaded: bool = false
 var _groups: Dictionary = {}       # int number of a group id -> PackedInt32Array of the member item numbers (the group id itself first)
+var _group_label: Dictionary = {}   # group key item number -> the label its costs read under (wood_species.json group_labels)
 var _renamed: Dictionary = {}      # int number of a retired item -> int number of the item that replaced it
 
 
@@ -85,6 +86,27 @@ func load_groups(path: String) -> void:
 				members.append(n)
 
 		_groups[number_of(id)] = members
+
+	# A group cost reads under its label, not its key item's name (master s4 item 14): a softwood-log cost keyed by Spruce log reads
+	# "Softwood log", and a firewood cost "Firewood" though the key item is Hard firewood.
+	var labels: Dictionary = parsed.get("group_labels", {})
+
+	for id in labels:
+		if _groups.has(number_of(str(id))) and typeof(labels[id]) == TYPE_STRING:
+			_group_label[number_of(str(id))] = str(labels[id])
+
+
+# The name an ingredient reads under in a cost list: a labelled group's label, else the item's own name.
+func cost_name(number: int) -> String:
+	return String(_group_label.get(number, name_of(number)))
+
+
+func cost_sentence(number: int) -> String:
+	return in_sentence(cost_name(number))
+
+
+func has_group_label(number: int) -> bool:
+	return _group_label.has(number)
 
 
 # The item numbers that fill an ingredient: [] when the number is not a group id.

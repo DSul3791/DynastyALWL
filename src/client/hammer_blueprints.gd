@@ -125,7 +125,7 @@ func rows(hammer_tier: int) -> Array:
 		for need in row["cost"]:
 			var have: int = _have(_table.number_of(str(need[0])))   # a group cost (log, nails) counts any member, as the server does
 			all = all and have >= int(need[1])
-			parts.append("%s %d/%d" % [_table.in_sentence(str(_table.entry(str(need[0])).get("name", need[0]))), have, int(need[1])])
+			parts.append("%s %d/%d" % [_table.cost_sentence(_table.number_of(str(need[0]))) if _table.number_of(str(need[0])) > 0 else str(need[0]), have, int(need[1])])
 
 		out.append({"number": int(row["number"]), "name": str(row["name"]), "kit": str(row["kit"]), "text": ", ".join(parts), "can": all, "station": str(row.get("station", "")), "category": str(row.get("category", "Other"))})
 
@@ -209,7 +209,7 @@ func plan_text(plan: Dictionary) -> String:
 	var parts: PackedStringArray = []
 
 	for id in cost:
-		parts.append("%s %d/%d" % [_table.in_sentence(str(_table.entry(str(id)).get("name", id))), _have(_table.number_of(str(id))), int(cost[id])])
+		parts.append("%s %d/%d" % [_table.cost_sentence(_table.number_of(str(id))) if _table.number_of(str(id)) > 0 else str(id), _have(_table.number_of(str(id))), int(cost[id])])
 
 	return "%d pieces: %s" % [plan["pieces"].size(), ", ".join(parts)]
 

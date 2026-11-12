@@ -42,6 +42,9 @@ class FakeStore:
 		counts.resize(SLOTS)
 		wear.resize(SLOTS)
 
+	func inst_of(_slot: int) -> Dictionary:   # protocol 106: no instance data here
+		return {}
+
 
 class FakePack:
 	var shown: int = 0
@@ -73,7 +76,7 @@ class FakeView:
 	func _px(size: int) -> int:
 		return size
 
-	func _tooltip(_number: int, _count: int, _wear: int) -> String:
+	func _tooltip(_number: int, _count: int, _wear: int, _inst: Dictionary = {}) -> String:
 		return ""
 
 	func _item_label(number: int) -> String:

@@ -170,6 +170,7 @@
 			"note": "First-tier sawmill (Dave 2026-10-22). Placement: on a foundation lifted 0.5 m or more, with the wheel (a 2 m span beside the saw frame, local x -2.5 to -0.5 turned with the piece) over water running at least data/water_flow.json min_speed_m_s."
 		},
 		"woodworking_table": {
+			"retired": true,
 			"blocks_walk": true,
 			"kit": "woodworking_table_kit",
 			"item": "woodworking_table",

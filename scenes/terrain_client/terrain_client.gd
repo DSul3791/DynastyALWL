@@ -3957,7 +3957,7 @@ func _update_view(delta: float) -> void:
 
 		_avatar = _make_avatar()
 		body.add_child(_avatar)
-		net.worn_received.connect(func(_numbers: PackedInt32Array) -> void: _dress_avatar())
+		net.worn_received.connect(func(_numbers: PackedInt32Array, _insts: PackedByteArray) -> void: _dress_avatar())
 		_dress_avatar()
 
 	var want: float = _view_m if third_person and not spyglass.active else 0.0

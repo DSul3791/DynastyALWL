@@ -1537,9 +1537,10 @@ func _init() -> void:
 
 	check(loose_of.call(firewood_n) > 40 and big_heaps == 1 and heap_left >= ItemsScript.PILE_LIFETIME_S - 1.0, "the heap beside the block grows past 40 as one pile and lives as a pile (%d pieces, %d heaps, %.0f s)" % [loose_of.call(firewood_n), big_heaps, heap_left])
 
-	# A log lying on the ground, struck with the axe, falls apart into wooden blocks.
+	# A plain log lying on the ground, struck with the axe, falls apart into wooden blocks: softwood ones, since the plain Log is softwood (Mission 001, master s4 item 3).
 	cb.drop_in_world(cb.table.number_of("log"), 1, Vector3(1.0, 10.0, 0.0))
 	var lying: int = 0
+	var soft_block_n: int = cb.table.number_of("wooden_block_soft")
 
 	for k in cb._items:
 		if int(cb._items[k]["number"]) == cb.table.number_of("log") and not cb._items[k].has("struct"):
@@ -1547,7 +1548,7 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(lying) and loose_of.call(block_n) == 3, "a log chopped on the ground makes 3 wooden blocks (%d)" % loose_of.call(block_n))
+	check(not cb._items.has(lying) and loose_of.call(soft_block_n) == 3, "a plain log chopped on the ground makes 3 softwood blocks (%d)" % loose_of.call(soft_block_n))
 
 	# A softwood log chops to softwood blocks, and those split to softwood firewood (wood_species.json class_items).
 	var soft_n: int = cb.table.number_of("wooden_block_soft_large")   # a spruce log is a large shoulder log: large blocks (BUG-014)
@@ -2358,7 +2359,7 @@ func _init() -> void:
 		if hs.recipes.recipe(rn)["id"] == "lumber_by_hand":
 			by_hand = hs.recipes.recipe(rn)
 
-	check(not by_hand.is_empty() and by_hand["gives"][1] == 2 and by_hand["craft_s"] == 24.0, "the hand saw recipe matches the balance row (2 lumber, 24 s)")
+	check(not by_hand.is_empty() and by_hand["gives"][1] == 6 and by_hand["craft_s"] == 24.0, "the hand saw recipe matches the balance row (6 lumber, 24 s, master s2.3)")
 	hs.give(1, hs.table.number_of("log"), 2)
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
@@ -2371,7 +2372,7 @@ func _init() -> void:
 	for n in 100:
 		hs._craft_tick(0.25)
 
-	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 2 lumber")
+	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 6 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 6 lumber")
 	check(saw_slot >= 0 and hs.inventory_of(1).on_hotbar(saw_slot) and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
 
 	for rid in ["wooden_hammer", "stone_hammer"]:

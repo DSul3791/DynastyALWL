@@ -206,7 +206,7 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 		var slot = view._chest_buttons[i]
 		slot.visible = i < capacity
 		var number: int = view.chest_inv.numbers[i]
-		var tip: String = view._tooltip(number, view.chest_inv.counts[i], view.chest_inv.wear[i]) if number != 0 else ""
+		var tip: String = view._tooltip(number, view.chest_inv.counts[i], view.chest_inv.wear[i], view.chest_inv.inst_of(i)) if number != 0 else ""
 		InventoryLook.show_stack(view, slot, number, view.chest_inv.counts[i], view.chest_inv.wear[i], tip)
 
 
