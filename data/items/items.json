@@ -3012,6 +3012,7 @@
 			"look_alikes": []
 		},
 		"woodworking_table": {
+			"retired": true,
 			"number": 243,
 			"name": "Woodworking table",
 			"description": "A woodworking table. Stand near it for fine woodwork.",

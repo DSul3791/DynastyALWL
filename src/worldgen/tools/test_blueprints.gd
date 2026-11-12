@@ -143,42 +143,42 @@ func _init() -> void:
 		# A retired kit recipe can never be learned (the recipe table skips it), so a blueprint marked unknown could never be built (fireplace, Dino S-place 2 Nov).
 		check(bool(row.get("known", true)) or bool(row.get("locked", false)), "%s: known (or locked), since its kit recipe is retired and cannot be learned" % id)
 
-	check(live.size() == 180 and live.has("mixer") and live.has("engineered_wall") and live.has("fortified_wall_top") and not live.has("log_bench") and not live.has("log_shelf") and live.has("wooden_crate") and live.has("iron_chest") and live.has("preserving_jar") and live.has("root_cellar") and live.has("iron_anvil") and live.has("clay_bloomery") and live.has("storage_jar") and live.has("kiln") and live.has("oil_press") and live.has("stone_raised_cistern") and live.has("stone_well") and live.has("stone_garden_plot") and live.has("wooden_torch_post") and live.has("iron_brazier") and live.has("double_doorway") and live.has("wooden_railing") and live.has("stone_workbench") and live.has("wooden_barrel") and live.has("stone_pillar") and live.has("brick_roof_corner") and live.has("log_foundation") and live.has("brick_window") and live.has("thatch_fence") and live.has("iron_gate") and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
+	check(live.size() == 179 and live.has("mixer") and live.has("engineered_wall") and live.has("fortified_wall_top") and not live.has("log_bench") and not live.has("log_shelf") and live.has("wooden_crate") and live.has("iron_chest") and live.has("preserving_jar") and live.has("root_cellar") and live.has("iron_anvil") and live.has("clay_bloomery") and live.has("storage_jar") and live.has("kiln") and live.has("oil_press") and live.has("stone_raised_cistern") and live.has("stone_well") and live.has("stone_garden_plot") and live.has("wooden_torch_post") and live.has("iron_brazier") and live.has("double_doorway") and live.has("wooden_railing") and live.has("stone_workbench") and live.has("wooden_barrel") and live.has("stone_pillar") and live.has("brick_roof_corner") and live.has("log_foundation") and live.has("brick_window") and live.has("thatch_fence") and live.has("iron_gate") and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and not live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
 
 	# Dave 10 Nov 2026 (docs/design/buildables_plan.md): no hammer blueprint needs a workbench near.
 	check(live.values().all(func(r): return str(r.get("station", "")) != "workbench"), "no hammer blueprint needs a workbench")
 
 	# Place: a hammer, the station near at its level, every material; a short pack takes nothing. No row names a station any more, so
-	# the test gives the woodworking table one to check the rule still holds for a row that does.
-	var table_bp: Dictionary = live["woodworking_table"]
+	# the test gives the crate one to check the rule still holds for a row that does.
+	var table_bp: Dictionary = live["wooden_crate"]
 	items._blueprints[int(table_bp["number"])]["station"] = "workbench"
 	items._blueprints[int(table_bp["number"])]["station_level"] = 1
 	var spot: Vector3 = Vector3(200.0, 10.0, 205.0)
 	items.report_position(1, Vector3(200.0, 10.0, 204.0))
 	_clear(1)
 	var before: int = items.world_item_count()
-	_give(1, "lumber", 12)
-	_give(1, "nails", 60)
+	_give(1, "lumber", 5)
+	_give(1, "nails", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
-	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no hammer: nothing placed, nothing taken")
+	check(items.world_item_count() == before and _have(1, "lumber") == 5, "no hammer: nothing placed, nothing taken")
 	_give(1, "wooden_hammer", 1)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
-	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no workbench near: nothing placed, nothing taken")
+	check(items.world_item_count() == before and _have(1, "lumber") == 5, "no workbench near: nothing placed, nothing taken")
 	items.place_piece(1, "log_workbench_kit", Vector3(200.0, 10.0, 202.0))
 	check(_ids_standing("log_workbench").size() == 1, "a log workbench stands (the station)")
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
-	_give(1, "lumber", 11)
-	_give(1, "nails", 60)
+	_give(1, "lumber", 4)
+	_give(1, "nails", 8)
 	var with_bench: int = items.world_item_count()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
-	check(items.world_item_count() == with_bench + 1 and _have(1, "lumber") == 11 and _have(1, "nails") == 60, "a short pack sets down a blueprint site and takes nothing (Dave 5 Nov 2026)")
-	var site_id: int = _ids_standing("woodworking_table")[0]
+	check(items.world_item_count() == with_bench + 1 and _have(1, "lumber") == 4 and _have(1, "nails") == 8, "a short pack sets down a blueprint site and takes nothing (Dave 5 Nov 2026)")
+	var site_id: int = _ids_standing("wooden_crate")[0]
 	check(items._items[site_id]["struct"].has("site"), "the piece is a site until its materials are in")
 	_give(1, "lumber", 1)
 	items.action(1, Net.ACT_USE_STRUCT, site_id, 0, 0, Vector3.ZERO)
-	check(items.world_item_count() == with_bench + 1 and _ids_standing("woodworking_table").size() == 1 and not items._items[site_id]["struct"].has("site"), "E on the site deposits the materials and the table stands")
-	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "woodworking_table_kit") == 0 and _have(1, "wooden_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
+	check(items.world_item_count() == with_bench + 1 and _ids_standing("wooden_crate").size() == 1 and not items._items[site_id]["struct"].has("site"), "E on the site deposits the materials and the crate stands")
+	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "wooden_crate_kit") == 0 and _have(1, "wooden_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
 
 	# A station level the bench cannot give: a row asking for level 4 (set here), the log workbench is level 2.
 	var smith: Dictionary = live["blacksmithy"]
@@ -195,33 +195,33 @@ func _init() -> void:
 
 	# Row hammer tier: a row asking for hammer 2 refuses the wooden hammer.
 	items._blueprints[int(table_bp["number"])]["hammer"] = 2
-	_give(1, "lumber", 12)
-	_give(1, "nails", 60)
+	_give(1, "lumber", 5)
+	_give(1, "nails", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
-	check(_ids_standing("woodworking_table").size() == 1 and _have(1, "lumber") == 12, "a row with hammer 2 refuses the wooden hammer")
+	check(_ids_standing("wooden_crate").size() == 1 and _have(1, "lumber") == 5, "a row with hammer 2 refuses the wooden hammer")
 	items._blueprints[int(table_bp["number"])]["hammer"] = 1
 
 	# Take down: every material back, no kit.
-	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
-	# The nails cost is a group (nails, bronze_nails): a take-down gives back the group's lowest member, Bronze nails (#1004), so the 60 nails paid
-	# come back as 60 bronze nails and the 60 refused at the hammer-2 row stay as nails.
-	check(_ids_standing("woodworking_table").is_empty() and _have(1, "lumber") == 24 and _have(1, "nails") == 60 and _have(1, "bronze_nails") == 60 and _have(1, "woodworking_table_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, bronze nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "bronze_nails")])
+	items.action(1, Net.ACT_PICKUP, _ids_standing("wooden_crate")[0], 0, 0, Vector3.ZERO)
+	# The nails cost is a group (nails, bronze_nails): a take-down gives back the group's lowest member, Bronze nails (#1004), so the 8 nails paid
+	# come back as 8 bronze nails and the 8 refused at the hammer-2 row stay as nails.
+	check(_ids_standing("wooden_crate").is_empty() and _have(1, "lumber") == 10 and _have(1, "nails") == 8 and _have(1, "bronze_nails") == 8 and _have(1, "wooden_crate_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, bronze nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "bronze_nails")])
 
 	# Takedown into a full pack keeps the blueprint piece.
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
-	_give(1, "lumber", 12)
-	_give(1, "nails", 60)
+	_give(1, "lumber", 5)
+	_give(1, "nails", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
-	check(_ids_standing("woodworking_table").size() == 1, "the table stands again")
+	check(_ids_standing("wooden_crate").size() == 1, "the crate stands again")
 	var inv = items.inventory_of(1)
 
 	for slot in range(inv.SLOTS):
 		inv.numbers[slot] = items.table.number_of("stone")
 		inv.counts[slot] = items.table.stack_of(items.table.number_of("stone"))
 
-	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
-	check(_ids_standing("woodworking_table").size() == 1, "a full pack: the table stays up, nothing is lost")
+	items.action(1, Net.ACT_PICKUP, _ids_standing("wooden_crate")[0], 0, 0, Vector3.ZERO)
+	check(_ids_standing("wooden_crate").size() == 1, "a full pack: the crate stays up, nothing is lost")
 
 	# A snare: the kit places as the snare_trap structure and takes down into the kit.
 	_clear(1)

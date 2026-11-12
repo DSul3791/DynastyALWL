@@ -22,7 +22,7 @@ func _init() -> void:
 	var list = ListScript.new()
 	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
-	check(rows.size() == 134, "a wooden hammer lists every known blueprint (134 after the building tiers: the Mixer and nine Engineered pieces in, Log - Bench, Table and Shelf out; Fortified and iron pieces need an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
+	check(rows.size() == 133, "a wooden hammer lists every known blueprint (133 after the Woodworking table retired; 134 after the building tiers: the Mixer and nine Engineered pieces in, Log - Bench, Table and Shelf out; Fortified and iron pieces need an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
 	var ordered: bool = true
 
 	for k in range(rows.size() - 1):
@@ -36,16 +36,16 @@ func _init() -> void:
 	var wall: Dictionary = {}
 
 	for row in rows:
-		if str(row["name"]) == "Woodworking table":
+		if str(row["name"]) == "Crate":
 			wall = row
 
-	check(wall.get("kit", "") == "woodworking_table_kit" and str(wall["text"]) == "plank 0/12, nails 0/60", "table row: kit and have/need text (%s)" % str(wall.get("text", "")))
-	pack.add(table.number_of("lumber"), 11)
-	pack.add(table.number_of("nails"), 60)
-	check(not list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]["can"], "11 of 12 planks is short")
+	check(wall.get("kit", "") == "wooden_crate_kit" and str(wall["text"]) == "plank 0/5, nails 0/8", "crate row: kit and have/need text (%s)" % str(wall.get("text", "")))
+	pack.add(table.number_of("lumber"), 4)
+	pack.add(table.number_of("nails"), 8)
+	check(not list.rows(1).filter(func(r): return r["name"] == "Crate")[0]["can"], "4 of 5 planks is short")
 	pack.add(table.number_of("lumber"), 1)
-	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]
-	check(bool(wall_now["can"]) and str(wall_now["text"]) == "plank 12/12, nails 60/60", "12 planks (lumber, shown as Plank since the item system renames 10 Nov 2026) and 60 nails cover the table (%s)" % str(wall_now["text"]))
+	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Crate")[0]
+	check(bool(wall_now["can"]) and str(wall_now["text"]) == "plank 5/5, nails 8/8", "5 planks (lumber, shown as Plank since the item system renames 10 Nov 2026) and 8 nails cover the crate (%s)" % str(wall_now["text"]))
 	# A group cost counts every member in the pack, as the server does (Inventory.count_fill): oak logs cover a blueprint asking for logs.
 	var log_row: Dictionary = {}
 
@@ -70,7 +70,7 @@ func _init() -> void:
 	var in_chest: Dictionary = {nails_n: 60}
 	list.stock_count = func(number: int) -> int:
 		return pack.count_fill(number) + int(in_chest.get(number, 0))
-	var stocked: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]
+	var stocked: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Crate")[0]
 	check(bool(stocked["can"]) and str(stocked["text"]) == "plank 12/12, nails 60/60", "60 nails in a chest in reach cover the table with none in the pack (%s)" % str(stocked["text"]))
 	list.stock_count = Callable()
 	pack.add(nails_n, 60)

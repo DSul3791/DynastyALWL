@@ -235,11 +235,11 @@ func _init() -> void:
 	column.append({"pos": Vector3(10.0, 14.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0})
 	column.append({"pos": Vector3(10.0, 16.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0})
 	check(Rules.foundation_stack(fdef, Vector3(10.0, 16.3, 10.0), column).is_empty(), "a column stops at %d layers" % Rules.STACK_MAX_LAYERS)
-	# The wood chain stations: the woodworking table and the sawmill place like other stations.
+	# The wood chain stations: the Carpenter's bench (log workbench) and the sawmill place like other stations (the Woodworking table retired, Mission 001).
 	var before_stations: Vector3 = items._peer_pos[2]
 	items.report_position(2, Vector3(800.0, 10.0, 800.0))
 
-	for station_kit in [["woodworking_table_kit", "woodworking_table", 802.0]]:
+	for station_kit in [["log_workbench_kit", "log_workbench", 802.0]]:
 		items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of(str(station_kit[0])), 0, 1, Vector3.ZERO)
 		items.place_item(2, items.table.number_of(str(station_kit[0])), Vector3(800.0, 10.0, float(station_kit[2])), 0)
 		var station_found: bool = false
