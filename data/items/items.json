@@ -9598,8 +9598,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: With yarn and thread; the hand cloth recipes go when it lands."
+				"note": "Placed station: row state 245 (Mission 001 phase 2b)."
 			},
 			"leather_belt": {
 				"number": 828,
@@ -10238,8 +10237,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
+				"note": "Placed station: row state 243 (Mission 001 phase 2b)."
 			},
 			"tailors_table": {
 				"number": 912,
@@ -10249,8 +10247,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
+				"note": "Placed station: row state 244 (Mission 001 phase 2b)."
 			},
 			"thread": {
 				"number": 913,
@@ -10259,7 +10256,6 @@
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],
-				"future": true,
 				"value": 2
 			},
 			"crude_chest": {

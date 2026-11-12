@@ -10951,10 +10951,12 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_textile_route"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07: the hide drying step = recipe 179 (scraped hide) moves to the Drying rack (mission lead decision, STATE.md)"
   },
   {
    "key": "smoker_kit",
@@ -11965,10 +11967,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): state 245, blueprint 207; recipes 245, 334, 342 moved here; own Loom look"
   },
   {
    "key": "log_shelf_kit",
@@ -12915,10 +12922,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): state 243, blueprint 205; recipes 278, 392, 356, 361, 213, 214, 358, 359, 360 moved here (no station level); look borrowed (carpenters_bench), NOT visually complete"
   },
   {
    "key": "new:Tailor's Table",
@@ -12930,10 +12942,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): state 244, blueprint 206; recipes 216, 237-244 moved here (no station level); look borrowed (table), NOT visually complete"
   },
   {
    "key": "new:Thread",
@@ -12945,10 +12962,15 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_textile_route",
+    "test_server_items",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T07 (phase 2b): hand recipe 409 (2 plant fibre -> 1 Thread, value-neutral at value 2); replaces Twine in needle recipes 23, 39-42, 173, 194-196, 237, 238, 241, 388; no model yet"
   },
   {
    "key": "new:Crude - Chest",

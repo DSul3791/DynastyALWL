@@ -699,7 +699,10 @@
 		"fortified_wall_top": {"kit": "fortified_wall_top_kit", "item": "fortified_wall_top", "state": 228, "piece": true, "piece_kind": "wall_top", "material": "stone", "footprint_x": 2.0, "footprint_z": 0.4, "cap_per_chunk": 200, "max_rise_m": 1.0, "sound": "stone", "clears_grass": false, "blocks_walk": true, "look": "fortified_wall_top"},
 		"smelter": {"kit": "smelter", "item": "smelter", "state": 240, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station": "smelter", "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "look": "stone_forge"},
 		"bellows": {"kit": "bellows", "item": "bellows", "state": 241, "footprint_x": 0.8, "footprint_z": 0.5, "cap_per_chunk": 4, "addon_of": "brick_forge", "adds_level": false, "craft_speed": 1.25, "fuel_saving": 1.5, "sound": "timber", "clears_grass": true, "look": "tool_rack"},
-		"quenching_trough": {"kit": "quenching_trough", "item": "quenching_trough", "state": 242, "footprint_x": 1.2, "footprint_z": 0.5, "cap_per_chunk": 4, "addon_of": "brick_forge", "adds_level": false, "sound": "stone", "clears_grass": true, "look": "log_trough"}
+		"quenching_trough": {"kit": "quenching_trough", "item": "quenching_trough", "state": 242, "footprint_x": 1.2, "footprint_z": 0.5, "cap_per_chunk": 4, "addon_of": "brick_forge", "adds_level": false, "sound": "stone", "clears_grass": true, "look": "log_trough"},
+		"leatherworking_table": {"kit": "leatherworking_table", "item": "leatherworking_table", "state": 243, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 4, "station": "leatherworking_table", "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "look": "carpenters_bench"},
+		"tailors_table": {"kit": "tailors_table", "item": "tailors_table", "state": 244, "blocks_walk": true, "footprint_x": 1.4, "footprint_z": 0.7, "cap_per_chunk": 4, "station": "tailors_table", "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "look": "table"},
+		"loom": {"kit": "loom", "item": "loom", "state": 245, "blocks_walk": true, "footprint_x": 1.6, "footprint_z": 0.8, "cap_per_chunk": 4, "station": "loom", "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "look": "loom"}
 	},
 	"campfire": {
 		"gap_m": 2.0,
