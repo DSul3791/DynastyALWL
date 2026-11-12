@@ -1,6 +1,6 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 7 (12 Nov 2026): DAVE'S [D4] FURNITURE, WOOD AND QUENCHING RULINGS FOLDED IN; FRESH AUDIT DONE. AWAITING DAVE'S FINAL CATALOG APPROVAL; NOT APPROVED FOR IMPLEMENTATION.** The Draft 6 audit and its "ready" statement are superseded. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 7 WITH CHATGPT DESIGN CONFIRMATIONS AND DAVE'S FURNITURE MATERIAL CLARIFICATION (12 Nov 2026 UTC). FINAL DOCUMENT CONSISTENCY AUDIT REQUIRED; NOT APPROVED FOR IMPLEMENTATION.** The Draft 6 audit and its "ready" statement are superseded. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
@@ -12,7 +12,9 @@ Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP 
 
 | Tag | Source | Weight |
 |---|---|---|
-| **[D4]** | Dave, 11 Nov Atlantic / 12 Nov UTC: Quenching Trough is a Smithy upgrade permitting better products (not an independent workstation); no Hardwood Board/Plank substitution; wooden furniture may use Crude, Rustic, Nice, Fancy grades, basic pieces using fewer Hardwood Boards and fancy pieces requiring more Hardwood Boards and better nails | **Latest explicit Dave rule; overrides ChatGPT's prior guesses** |
+| **[D5]** | Dave's later furniture clarification: Bronze and Iron nails are already sufficient; do not invent a separate luxury-nail ladder or insist on Iron nails for every Fine/Ornate recipe. Rustic furniture may be just Hardwood Boards plus nails; fancy furniture uses **more Hardwood Boards and more nails**, and **cloth/leather only where suitable** (such as upholstered seats, cushions, padded furnishings) | **Latest explicit Dave furniture rule; supersedes overcomplicated fastener requirements** |
+| **[C7]** | ChatGPT's delegated confirmation of Draft 7: Tempered outputs are steel, per-item-instance, with no duplicate item IDs; furniture family scope in s3.5 accepted (four-grade chests/chairs/tables, two-grade benches, others single where appropriate) | **Confirmed catalog design, not implementation approval** |
+| **[D4]** | Dave, 11 Nov Atlantic / 12 Nov UTC: Quenching Trough is a Smithy upgrade permitting better products (not an independent workstation); no Hardwood Board/Plank substitution; wooden furniture may use Crude, Rustic, Nice, Fancy grades, basic pieces using fewer Hardwood Boards and fancy pieces requiring more Hardwood Boards and better nails | **Explicit Dave rule; supersedes ChatGPT's earlier guesses** |
 | **[D3]** | Dave, project chat, 12 Nov 2026 00:46Z: "ChatGPT is directing this reconciliation on my behalf"; final approval of the catalog stays with Dave | Makes [C] approved design input |
 | **[C]** | ChatGPT on PR #1035: the nine decisions recorded in commit `5218134` and its handoff comment of 12 Nov 00:45Z | DECIDED via [D3]; loses to an explicit Dave decision |
 | **[D2]** | Dave, 12 Nov 2026 00:25Z: review 5866741315 on PR #1035 is ChatGPT's review, approved unless his later decisions differ | Approves [R] |
@@ -60,7 +62,7 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 1. A 3 m softwood/basic Log becomes 6 Planks; a 3 m hardwood species log becomes 4 Hardwood Boards. Iron/Steel hand saws and the waterwheel reciprocating sawmill have equal yields, but hand sawing is much slower. Felled full logs are 3.0 m; adjust weight and geometry consistently.
 2. **NO SUBSTITUTION IN EITHER DIRECTION [D4].** Planks and Hardwood Boards are distinct ingredients. Hardwood Boards never meet a Plank cost, and Planks never meet a Hardwood Board cost, including recipes, blueprints, NPC jobs and automatic storage sourcing. Do not create a shared ingredient group or permission-based fallback.
 3. **Furniture grades [D4]:** **Crude, Rustic, Fine, Ornate** (Fine is Dave's "Nice", Ornate his "Fancy"). They are production and appearance grades of furniture, separate from the +1/+2 physical craftsmanship slot and from enchantments. They are used only on families where a grade changes something real (storage slots or comfort points, look, value). Families, rows and costs: s3.5.
-4. **Finished wooden furniture uses Hardwood Boards [D4]:** Crude and Rustic use fewer boards and simple joinery, Fine uses more boards and better fittings, Ornate the most boards with the best fittings and finish. Fittings come from existing items only: Wooden pin 233, Twine 5, Bronze nails 894 and Bronze hinges 895 (filling the `nails` and `hinges` groups, spent before iron), Nails 228 and Hinges 232 (iron), Iron band 859 (iron only), and Hide, Leather 283 and Fine leather 284 for seats. No new nails, boards or finishes.
+4. **Finished wooden furniture uses Hardwood Boards [D4][D5]:** Crude can use few boards and wooden pins/twine; **Rustic can be simply Hardwood Boards plus existing nails**, with hinges only on objects that require them. Fine and Ornate use progressively **more Hardwood Boards and more nails**, with extra quality shown in fit, finish and appearance. Upholstered/padded pieces may additionally require **cloth, leather, cushions or hides as relevant**; never force cloth or leather into a bare wooden table, chest or shelf just because it is Fancy. Use existing Bronze nails 894, iron Nails 228, Bronze hinges 895, iron Hinges 232, Wooden pin 233, Twine 5 and existing textiles/leathers. Do not invent premium nail tiers, demand iron-only nails just for a grade, or add unnecessary materials. Planks and Hardwood Boards still **never substitute** for each other.
 5. **Not graded finished furniture [D4]:** the Crate (item 850, blueprint 168) is a rough packing box and stays on Planks; the Wicker - Chest (item 23, blueprint 26) stays the stick-and-twine starter. Log, stick, straw, hide, wool and stone furniture is not board furniture and is unchanged. Crude furniture needs no metal, so furniture is reachable as soon as the first saw makes Hardwood Boards.
 6. Retire unused species-specific `lumber_*` and `beam_*` rows, but keep the species `log_*` rows. No board sizing or Fine Board processing step, no stone wedges, bronze saws or saw-blade intermediates.
 7. An axe chops softwood Log → Softwood Blocks → Soft Firewood and hardwood Log → Hardwood Blocks → Hard Firewood. Hard Firewood delivers equal heat for longer burning. Whole logs remain usable for building or charcoal.
@@ -84,7 +86,7 @@ Any wood-burning fire or workstation may give a small charcoal byproduct. Charco
 2. The Smithy contains a forge, anvil and bench (built-in blacksmithing tools); no player-held smithing hammer and no Saw Blade ingredient [D1].
 3. **Smelter**: copper, tin and iron ore (bog iron) to ingots, and bronze alloy. **Blast Furnace**: its advanced, high-capacity tier, and steel [D1]. No smelting at any forge or smithy [C].
 4. **Bronze before iron [C]:** the **Stone - Forge (88)** stays as the bronze smithy. It shapes bronze items only, has an iron-free cost, and does no smelting. The ordinary Smithy also works bronze, and additionally iron and steel. This keeps Bronze a real rung before Iron and keeps the wilderness route to the Iron Hand Saw.
-5. **Bellows and Quenching Trough are add-ons attached to the Smithy, not workstations [D4].** Bellows: faster warm-up and metalworking, lower fuel use [C]. The **Quenching Trough** upgrades the Smithy so it can make better metal goods; every plain recipe still works without it, so it never blocks progression. **Drafted mapping (Claude, for ChatGPT to confirm, s8):** with the trough attached, eligible **steel** tools, weapons and armour made at that Smithy come out **Tempered**, a per-instance property recorded at crafting (like wear; no new item rows). A Tempered item has a higher maximum durability and loses sharpness more slowly. It shows in the name ("Tempered Steel - Axe"), never stacks with plain items, is not re-applied by repair or reheating, and is separate from the Master Smithy's +1/+2 craftsmanship and from enchantments. Bronze and iron are not eligible (quenching does not usefully harden them).
+5. **Bellows and Quenching Trough are add-ons attached to the Smithy, not workstations [D4].** Bellows: faster warm-up and metalworking, lower fuel use [C]. The **Quenching Trough** upgrades the Smithy so it can make better metal goods; every plain recipe still works without it, so it never blocks progression. **Confirmed [C7]:** with the Quenching Trough attached, the Smithy can make eligible **steel** tools, weapons and armour as **Tempered** items. Tempering is a property of the **individual crafted instance**, not a duplicate master item definition or standalone workstation. It increases suitable maximum durability; slower sharpness loss applies **only to sharp-edged equipment**, never to blunt tools/weapons or armour without a sharpness mechanic. The name may show "Tempered" dynamically. It does not use craftsmanship or magical enhancement slots; it cannot be added by repair/reheating or stacked repeatedly. The normal steel recipe remains available without the add-on. Initial scope excludes bronze and low-carbon iron; specific bonuses, recipe effort and fuel remain balancing decisions.
 6. **Master Smithy**: a distinct, ornate prestige workshop for special and masterwork items with +1/+2 physical craftsmanship. Wizard enchantments are separate [D1].
 7. **Station rows [C]:** Brick - Forge 90 (`blacksmithy`) becomes the Smithy; the never-built Large forge rows 92/93 become the Blast Furnace; the never-built Master forge rows 94/95 become the Master Smithy; the standalone Anvil 827 retires, because the Smithy has its own anvil. Every reference, look, blueprint, recipe, name and test changes with the renames. Retired numbers are never reused.
 8. **No Clay Bloomery.** No save-game migration is needed for any retirement or reuse: Dynasty has never been publicly released or played by other players [D1].
@@ -193,9 +195,9 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 | 846 | loom | Loom | UPDATE (APPROVED) | Goes live with a blueprint and structure state; cloth recipes 245 (Linen), 334 (Fibre cloth), 342 (Wool cloth) move to it. |
 | 845 | spinning_wheel | Spinning wheel | FUTURE | Later: faster Thread and spun wool (2.8 item 4). |
 
-### 3.5 Furniture [D4] (grade design drafted by Claude from Dave's rulings)
+### 3.5 Furniture [D4][D5][C7] (grade scope confirmed; material simplicity required)
 
-**Which families get grades.** A family is graded only where a grade changes storage slots or comfort points (`comfort.json` seat, table and bed classes), not just a name:
+**Confirmed family scope [C7].** A family gets grades only where grades change useful storage/comfort and visual quality, not just a name:
 - Chests get four grades, because storage is the main progression.
 - Chairs and tables get four grades, for comfort.
 - Benches get two, as a simple object.
@@ -203,14 +205,16 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 
 Existing rows are reused for grades wherever one fits, so only 6 rows are new.
 
+**Furniture grade material principle [D5]:** Rustic is allowed to be nothing more than Hardwood Boards and common Bronze/Iron nails, plus hinges only where function requires them. Fancy furniture uses **larger quantities** of boards/nails, and cloth or leather only when it belongs in the design (upholstered chairs/benches, padded beds, etc.). Prefer the existing `nails` and `hinges` groups; do not require iron-only nails merely to claim higher grade. Iron banding is a separate structural/decorative choice only where it makes visual sense.
+
 **Fittings by grade** (existing items only):
 
 | Grade | Boards | Fittings | Seat | Hammer | Look |
 |---|---|---|---|---|---|
 | Crude | Fewest Hardwood Boards | Wooden pins, Twine; no metal | Bare | Any (`hammer` 1) | Rough boards, visible pegs and lashings |
-| Rustic | More | `nails` (Bronze first, else iron); `hinges` on lids and doors | Hide | Any (`hammer` 1) | Plain nailed boards |
-| Fine | More again | More `nails` and `hinges` | Leather | Metal (`hammer` 3, as the iron rows have today) | Planed, smooth, fitted joints |
-| Ornate | Most | `nails`, `hinges` and Iron bands (iron only) | Fine leather | Metal (`hammer` 3) | Carved trim, iron banding, upholstery |
+| Rustic | More | Ordinary `nails` (Bronze or Iron); hinges only on lids/doors | **Optional**, if the furniture has a seat covering | Any (`hammer` 1) | Plain, nailed Hardwood Boards |
+| Fine | More again | More ordinary `nails`, hinges only if needed; no compulsory higher metal type | **Cloth or leather for upholstered items** | Metal (`hammer` 3, as the iron rows have today) | Smooth, fitted boards; upholstery only if appropriate |
+| Ornate | Most | Most ordinary `nails`; hinges/banding only where design needs them | **More cloth/leather and trim for upholstered pieces; none required for a bare table** | Metal (`hammer` 3) | Elaborate joinery, carved trim and optional upholstery |
 
 **Rows** (item / blueprint / structure state; "new" rows take numbers at implementation):
 
@@ -218,16 +222,16 @@ Existing rows are reused for grades wherever one fits, so only 6 rows are new.
 |---|---|---|---|---|---|
 | Chest | Crude | new | ADD | **Crude - Chest**: Hardwood Boards, Wooden pins, Twine; lid tied, no hinges | Slots between the Crate (10) and Rustic (20) |
 | Chest | Rustic | item 29 / bp 27 / state 48 | UPDATE | Rename Wooden - Chest → **Rustic - Chest**. Planks → Hardwood Boards; keeps Hinges; Twine → `nails`. | 20 slots (today) |
-| Chest | Fine | new | ADD | **Fine - Chest**: more boards, `nails`, `hinges` | Between 20 and 30 |
-| Chest | Ornate | item 852 / bp 169 / state 209 | UPDATE | Rename Iron - Chest → **Ornate - Chest**. Planks → Hardwood Boards; Iron ingots → Iron bands. | 30 slots (today) |
+| Chest | Fine | new | ADD | **Fine - Chest**: more Hardwood Boards and nails; hinges for its lid, not mandatory cloth/leather | Between 20 and 30 |
+| Chest | Ornate | item 852 / bp 169 / state 209 | UPDATE | Rename Iron - Chest → **Ornate - Chest**. Planks → Hardwood Boards; more nails and improved finish; metal bands only if the appearance/structure uses them. No mandatory cloth/leather. | 30 slots (today) |
 | Chair | Crude | new | ADD | **Crude - Chair**: boards, Wooden pins | Lowest seat comfort |
 | Chair | Rustic | item 505 / bp 42 / state 62 | UPDATE | Rename Wooden - Chair → **Rustic - Chair**. Planks → boards; Hide seat; pins → `nails`. | Seat 2 (today) |
 | Chair | Fine | item 639 / bp 93 / state 128 | UPDATE | Rename Iron - Chair → **Fine - Chair**. Planks → boards; Iron ingot dropped; Leather seat. | Above Rustic |
-| Chair | Ornate | new | ADD | **Ornate - Chair**: most boards, `nails`, Iron band, Fine leather | Highest seat comfort |
+| Chair | Ornate | new | ADD | **Ornate - Chair**: most Hardwood Boards and nails, with upholstered cloth/leather seat and decorative detail (metal band only if appropriate) | Highest seat comfort |
 | Table | Crude | new | ADD | **Crude - Table**: boards, Wooden pins, Twine | Lowest table comfort |
 | Table | Rustic | item 506 / bp 43 / state 63 | UPDATE | Rename Wooden - Table → **Rustic - Table**. Planks → boards; Twine → `nails`. | Table 2 (today) |
 | Table | Fine | item 641 / bp 94 / state 129 | UPDATE | Rename Iron - Table → **Fine - Table**. Planks → boards; Iron ingot dropped. | Above Rustic |
-| Table | Ornate | new | ADD | **Ornate - Table**: most boards, `nails`, Iron bands | Highest table comfort |
+| Table | Ornate | new | ADD | **Ornate - Table**: most Hardwood Boards and nails, better finished/carved joinery; iron bands optional, **no compulsory cloth/leather** | Highest table comfort |
 | Bench | Crude | item 504 / bp 41 / state 61 | UPDATE | Rename Wooden - Bench → **Crude - Bench**. Planks → boards; Wooden pins with the Twine. | Seat 1 (today) |
 | Bench | Fine | item 637 / bp 92 / state 127 | UPDATE | Rename Iron - Bench → **Fine - Bench**. Planks → boards; Iron ingot dropped. | Above Crude |
 | Shelf | single | item 645 / bp 96 | UPDATE | Planks → few boards; Wooden pins with the Twine | 8 slots |
@@ -239,7 +243,7 @@ Existing rows are reused for grades wherever one fits, so only 6 rows are new.
 | Wicker - Chest, Stool, Seat, log furniture, Stone - Bench and Table, Straw and Feather beds, rugs | not graded | 23, 503, 502, 629, 631, 719, 848, 633, 635, 509, 510, 507, 508 | KEEP | No boards involved | Early comfort and storage |
 
 **Notes on the rows:**
-- The three Iron furniture rows lose their raw Iron ingot. Their iron now comes as fittings (`nails`, `hinges`, Iron band), because [D4] asks for better nails and fittings rather than metal bodies.
+- Three existing Iron furniture variants may drop raw Iron ingots in favor of ordinary nails/hinges and optional bands where they belong. **Do not require iron-only nails/hinges just because furniture is Fine or Ornate; Bronze or Iron nails can both count through the existing groups.** Increased quantities and appropriate cloth/leather upholstery, rather than extra fastener tiers, should express the grade [D5].
 - Value follows the material cost, checked by the `items_check.py` economy test.
 - Each grade needs its own look (`looks.json`) and its own structure state.
 - Furniture needs no station: every row stays a hammer blueprint.
@@ -275,7 +279,7 @@ Food, medicine, coins and most gear and placeables are not touched by any decisi
 12. **Furniture [D4]:** blueprint cost changes, renames and the 6 new item, blueprint and structure rows exactly as in s3.5. **Comfort:** `comfort.json` counts each kind once and only the best bed. Graded families must count once per class at their best grade (as beds do), or a player could stack four chair grades for comfort; give each grade a `kinds` row with its points and extend the best-one rule from beds to seats and tables (small code change). Storage slots go on each structure row (`slots`).
 13. **Tool tiers:** today's numbers clash across families (Bronze and Iron - Pickaxe both t2; Iron - Spade t3; Steel - Hammer t3 vs Steel - Spade t4; no tier on Wooden spade and hoe). Renumber by material rank in every family (Wooden 1, Stone 2, Bronze 3, Iron 4, Steel 5) and remap `digging.json tier_extra` and blueprint `hammer` values so any metal hammer still builds any tier (decision 73). No saves to migrate.
 14. **Names:** an ingredient group is shown under its key item's name, so after the renames a `firewood` cost would read "Hard firewood" and a `wooden_block` cost "Hardwood block" while still taking the softwood kinds. Group costs need a group label ("Firewood", "Wooden block") in the recipe and site lists (`recipe_list.gd`, `inventory_view.gd`, `_site_view`). Dynamic enhanced names are exempt from the `validate_items.gd` four-word check; static names keep it. The renames in 3.2 and 3.3 keep the naming rules.
-15. **Tempered (s2.7 item 5, pending ChatGPT):** a per-instance flag set when a steel tool, weapon or armour piece is crafted at a Smithy with the Quenching Trough attached; it raises the item's maximum durability and slows sharpness loss; repair and sharpening read it but never set it. Same save and network path as item 16.
+15. **Tempered (confirmed [C7]):** a persistent per-instance flag is set **only when selecting the tempered output option** for eligible steel tools, weapons or armour at a Smithy with Quenching Trough add-on. It raises maximum durability, and slows sharpness loss **only for edges that have sharpness** (not armour or blunt weapons). Repair/sharpening cannot create it or grant it repeatedly; it is not a separate catalog item and consumes no enhancement slot. Same save/network path as item 16.
 16. **Enhancements:** per-instance save data (like wear and sharpness), no `items.json` rows; saves and network protocol change; enhanced items never stack with plain ones; slot writes refuse an occupied magical slot.
 17. **Related rows to update with each retirement or rename:** `weights.json`, `looks.json`, `showroom.json`, `design_names.json`, `descriptions_voice.json`, `encyclopedia.json`, `data/stations/forge_sizes.json`, `data/npcs/town_proposal.json` (names `stone_forge`); tests `test_server_items.gd`, `test_tool_looks.gd`, `test_stations.gd`, `test_lumber_route.gd`, `test_logs_carry.gd`, `test_bloomery_bench.gd`, `test_blueprints.gd`, `test_structure_looks*.gd`, `test_whetstone.gd`; client `basic_look.gd`, `piece_look.gd`, `look_table.gd`; `tools/gen_looks.py` and the icon painters. Run `tools/items_check.py` on the authorized PC after the data change.
 
@@ -309,7 +313,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 | 18 | Plank timing | 70 blueprints, recipes 22, 150, 203, 350, 400, Log workbench (L2) | Planks start at the first Iron Hand Saw (approved) | PASS (by design) | The Bucket, Wooden - Shield, Wooden longbow (workbench L2) and plank buildings come after first iron. |
 | 19 | Grain before sickles | `crops.json` 5 crops `tool_to_harvest: sickle`; `server_items.gd` farming | Harvest possible without a sickle | PASS | Half yield until the Bronze - Sickle (Stone - Sickle retired). Accepted consequence of the ladder. |
 | 20 | Plank and Hardwood Board separation [D4] | `item_table.gd load_groups`, `inventory.gd remove_fill`, `recipe_table.gd`, `server_items.gd` sites, refunds | Never substitute either way | PASS (desk) | Two plain ids with no shared group are matched exactly on every path (recipes, blueprint sites, repairs, refunds, containers). No code is needed; the Draft 6 permission and refund work is withdrawn. Hardwood board must not be added to any group. |
-| 21 | Fittings by grade | groups `nails` (Nails, Bronze nails), `hinges` (Hinges, Bronze hinges); Wooden pin 233 (recipe 150); Iron band 859 (recipe 404) | Low grades never use up better fittings; Ornate truly needs iron | PASS | `spend_order` spends bronze before iron, so Rustic and Fine take Bronze nails first. Ornate requires Iron band, a plain id, so bronze cannot meet it. `nails` is both the iron item and the group key, so no recipe can demand iron-only nails; Iron band covers that need. |
+| 21 | Fittings by grade [D5] | nail/hinge groups (Bronze/Iron), Wooden pin 233, optional Iron band 859; furniture rows s3.5 | Higher grades require larger board/nail quantities, cloth/leather only where appropriate, but no additional nail tiers | PASS (desk) / BALANCE CHECK | Use existing nail/hinge groups with Bronze or Iron acceptable. Do not force Iron nails on Fine/Ornate. Confirm distinct recipe amounts and appropriate upholstery per furniture family during catalog balancing and first-hour testing. |
 | 22 | Charcoal as fire fuel | `cooking.json fuel`, `fuel_class`; group `firewood`; recipe 341 | Charcoal burns in fires; no loop | ISSUE, fixed in doc | Draft 5 put Charcoal in the `firewood` group, which fires do not read and which would let recipe 341 make Charcoal from Charcoal. Now `cooking.json` (s4 item 9). |
 | 23 | Group display names after renames | `firewood` → "Hard firewood", `wooden_block` → "Hardwood block" | A group cost reads as a group | ISSUE, needs code | Group label in recipe and site lists (s4 item 14). |
 | 24 | Inventory overflow | stacks: Charcoal 20, Plank 20, Log 5, species logs 1; pack 30 slots; `recipe_table.gd craft` | Outputs fit; crafting refuses rather than drops | ISSUE (tuning) | `craft` rolls back when the result does not fit. A 600-charcoal kiln batch is 30 stacks: stations keep output (2.5), and the Charcoal stack size and value are retuned (s5). |
@@ -337,26 +341,24 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 8. **Textiles:** Thread item and hand recipe; Twine → Thread in recipes 23, 39–42, 173, 194–196, 237, 238, 241, 388.
 9. **Enhancements:** per-instance slot data and the eligibility in 2.9 (code and save format, no item rows).
 10. **Furniture (s3.5):** 14 blueprint cost changes and 8 renames; 6 new item, blueprint and structure rows; `comfort.json` grade kinds and the best-one rule; `slots` per chest grade; looks.
-11. **Tempered:** per-instance flag (s4 item 15), pending ChatGPT.
+11. **Tempered [C7]:** confirmed per-instance steel quality, not duplicate item rows; Quenching Trough must be a Smithy add-on (s4 item 15).
 
-## 8. For ChatGPT, risks and readiness
+## 8. Draft 7 decisions confirmed; remaining verification
 
-**Draft 6's "audit clean, ready" statement is superseded** by [D4] and this fresh audit (s6 rows 9, 20, 21, 29–35). Dave confirmed [D4] in project chat on 12 Nov 01:09Z.
+**Both Draft 7 questions have been settled by ChatGPT on Dave's behalf, with Dave's newest [D5] furniture-material clarification taking precedence.** No blank approval questions remain.
 
-**For ChatGPT to confirm** (design drafted from Dave's rulings; no Dave preference needed):
-1. **Tempered goods (s2.7 item 5).** Dave wants the Quenching Trough to let the Smithy make better metal goods. Drafted: steel tools, weapons and armour made with the trough come out Tempered. This is per instance (higher maximum durability, slower sharpness loss) and needs no new item rows. *Alternative:* separate tempered item rows for each steel item (about 15 more rows).
-2. **Furniture families (s3.5).** Drafted: four grades for chests, chairs and tables, two for benches, single objects elsewhere. That means 6 new rows and 8 existing rows renamed to grade names. *Alternative:* four grades for every family (about 25 more rows).
+1. **Tempered steel [C7]**: Quenching Trough is **a Smithy add-on**, not a standalone workstation. It unlocks optional Tempered steel outputs for relevant tools, weapons and armour, using a per-item-instance property rather than additional master-list IDs. Appropriate maximum-durability improvement, with slower sharpness loss on *edged items only*; never applied retroactively by repair or duplicated in craftsmanship/magical slots. Normal smithing remains available without the add-on.
+2. **Furniture family scope [C7]**: four grades for chests, chairs and tables; two for benches; individual other furniture variants where a grade would add no real utility. The six planned additional furniture items remain provisionally correct subject to the final audit.
+3. **Furniture materials [D5]**: Crude uses minimum boards/simple pins; **Rustic may use only Hardwood Boards and nails**; Fine/Ornate require progressively **more boards and more nails**, and **cloth/leather only for suitable upholstery/padded/decorative applications**, not all furniture. Bronze and Iron nails/hinges remain usable existing options; no new tiers or forced iron-only fasteners. **Planks and Hardwood Boards remain non-substitutable in either direction.**
 
-**Remaining risks** (implementation or later design, not blockers):
-- **Hardwood-free biomes (s6 row 30):** finished furniture there depends on travel, or on traders selling Hardwood Boards. No shop does today; Hob only buys them. A trader stock rule is a later trade decision.
-- **Comfort stacking:** graded furniture needs the small best-one rule (s6 row 29).
-- **Code still needed:**
-  - Per-instance data (sharpness, current maximum durability, Tempered, enhancement slots) needs new pack, save and network fields.
-  - Station storage, kiln batches and sharpening (s4).
-- **Early routes:** the Leatherworking Table must stay pre-metal and Plank-free. The first-hour and first-saw routes need a Godot walkthrough on the authorized PC (s6 rows 15–17).
-- **Baseline:** compared against `dev` at `7f8aabf4`; recheck the latest integration branch before implementation.
+**Implementation and audit follow-ups (not catalog design questions):**
+- Reconcile s3.5 recipes/blueprints and counts using the D5 material rule; avoid unevidenced requirements for Iron bands, cloth, leather or extra nail tiers. Recheck furniture price and comfort progression, early Hardwood Board supply, starter storage, and best-one-per-class comfort stacking.
+- Test on the authorized PC the survival route to first saw, pre-iron Leatherworking Table and Bronze working, plus per-instance Tempered/save/network properties, station add-ons and workbench source lookup. Desk checks are not runtime proof.
+- Hardwood Board distribution differs across biomes: furniture in hardwood-poor areas depends on travel or future trade stock; don't silently add substitution or claim universal access.
+- Reconcile with the actual latest `dev` before implementation; preserve PR #1036 separation.
 
-**Readiness.** No blocker found. Once ChatGPT confirms the two drafted points (or changes them), the catalog is ready for Dave's final approval. **Do not merge or implement until Dave explicitly approves the finished master catalog.**
+**Readiness:** Two Draft 7 design points are settled. **Final catalog sign-off remains Dave's; do not treat this document as permission to merge, change JSON or gameplay, or begin implementation.** Claude should now do a final documentation consistency review incorporating [D5], commit its results and report back only material inconsistencies.
+
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
