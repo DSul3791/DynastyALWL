@@ -280,6 +280,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.food_effects_received.connect(_food_ui.on_effects)
 	net.food_ask_received.connect(_food_ui.on_ask)
 	net.craft_stock_received.connect(_on_craft_stock)
+	net.cart_pull_received.connect(func(id: int, pace_dms: int): pulling_id = id; pull_pace_mps = float(pace_dms) / 10.0)
+	net.items_moved_received.connect(_on_items_moved)
 	net.favourites_received.connect(_on_favourites)
 	net.bulk_done_received.connect(_on_bulk_done)
 	net.hotbar_received.connect(_on_hotbar)
@@ -553,6 +555,9 @@ func register_interactable(interactable_name: String, priority: int, probe: Call
 # in the cursor does not also gather the wood lying around it). Only when the cursor is on nothing with an E action does the priority order decide, which
 # is where the nearby pick-up and gather live. "aimed" is set on a result that won because of the cursor.
 func current_interaction() -> Dictionary:
+	if pulling_id != 0:   # both hands on the handle: E only lets go (catalog Phase 10)
+		return {"kind": "structure", "prompt": "Press E to let go of the handcart", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CART, 0, CART_RELEASE, 0, Vector3.ZERO)}
+
 	var first: Dictionary = {}
 	var best: Dictionary = {}
 	var best_cos: float = -2.0
@@ -896,6 +901,21 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
 
+	var cart_def: Dictionary = _structure_by_state(state)
+
+	if cart_def.has("vehicle"):   # the Handcart (catalog Phase 10): E takes the handle, F opens its cargo, hold E takes it apart
+		return {"prompt": "Press E to take the handle (F to open it, hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CART, id, CART_GRAB, 0, Vector3.ZERO), "hold": take_down}
+
+	if bool(_world[id].get("on", false)):   # a crate riding on a cart: hold E sets it down beside the cart
+		return {"prompt": "Press E to open (hold E to set it down off the handcart)", "tap": func(): _ask_open(id), "hold": func():
+			clear_prompt()
+			net.inventory_action.rpc_id(1, Net.ACT_CART, id, CART_UNLOAD, 0, Vector3.ZERO)}
+
+	if bool(cart_def.get("cargo", false)) and _cart_near(_world[id]["pos"]):   # a crate beside a cart: hold E lifts it on, with what it holds
+		return {"prompt": "Press E to open (hold E to lift it onto the handcart)", "tap": func(): _ask_open(id), "hold": func():
+			clear_prompt()
+			net.inventory_action.rpc_id(1, Net.ACT_CART, id, CART_LOAD, 0, Vector3.ZERO)}
+
 	if str(_structure_by_state(state).get("use", "")) == "serve":   # a placed Serving Platter (catalog phase 8): E eats a portion of its board, or opens it to set one out
 		var board: int = int(_world[id].get("board", 0))
 
@@ -1162,6 +1182,7 @@ func _process_body(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	t = FrameProbe.start()
 	_roll_tick(_delta, now)
+	_glide_tick(_delta)
 	_snap_tick(now)
 	_hold_e_check()
 	_auto_pickup_tick(now)
@@ -1781,6 +1802,54 @@ func speed_factor() -> float:
 # What the worn pieces leave of every gait and of climbing (items.json worn_speed_mult: the pack frame, master s3.9 rule 2).
 func worn_speed() -> float:
 	return CarryRules.worn_speed_mult(worn, table)
+
+
+# --- The Handcart (catalog Phase 10, M001-T17; server_carts.gd): the server moves carts, the client draws them gliding to each new place ---
+const CART_GRAB := 0      # ACT_CART b values (server_carts.gd OP_*)
+const CART_RELEASE := 1
+const CART_LOAD := 2
+const CART_UNLOAD := 3
+const GLIDE_RATE := 10.0  # per second: a moved cart covers most of the way to its new place within a fifth of a second (the server's move rate)
+var pulling_id: int = 0          # cart_pull: the cart this player holds the handle of, 0 none
+var pull_pace_mps: float = 0.0   # and its pace: the walk is capped there (terrain_client)
+var _gliding: Dictionary = {}    # world id -> true while its node is still on the way to its place
+
+
+# True when a cart stands within 3 m of the point (a crate there can be lifted onto it).
+func _cart_near(at: Vector3) -> bool:
+	for id in _world:
+		if _structure_by_state(int(_world[id].get("state", -1))).has("vehicle") and (_world[id]["pos"] as Vector3).distance_to(at) <= 3.0:
+			return true
+
+	return false
+
+
+func _on_items_moved(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array) -> void:
+	for i in mini(ids.size(), mini(positions.size(), yaws.size())):
+		if _world.has(ids[i]):
+			_glide(ids[i], positions[i], yaws[i])
+
+
+func _glide(id: int, to: Vector3, yaw_deg: float) -> void:
+	_world[id]["pos"] = to
+	_world[id]["yaw"] = yaw_deg
+	_gliding[id] = true
+
+
+func _glide_tick(delta: float) -> void:
+	for id in _gliding.keys():
+		if not _world.has(id) or not (_world[id].get("node") is Node3D):
+			_gliding.erase(id)
+			continue
+
+		var node: Node3D = _world[id]["node"]
+		var share: float = clampf(delta * GLIDE_RATE, 0.0, 1.0)
+		node.position = node.position.lerp(_world[id]["pos"], share)
+		node.rotation.y = lerp_angle(node.rotation.y, deg_to_rad(float(_world[id]["yaw"])), share)
+
+		if node.position.distance_to(_world[id]["pos"]) < 0.01:
+			node.position = _world[id]["pos"]
+			_gliding.erase(id)
 
 
 # The purse as words, cheapest coin first: "4 copper, 3 bronze, 2 silver" (copper = items.json value unit). Used where only text fits
@@ -2466,6 +2535,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				_snap_loose(id)
 				prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_b
 
+			if _world[id]["state"] == state and state >= 5 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("yaw"):
+				_world[id]["on"] = bool(row[5].get("on", false))   # a crate lifted onto a cart or set down
+
+				if (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+					_glide(id, row[3], float(row[5]["yaw"]))   # a cart or a crate on it moved (the world sync after items_moved, or instead of a lost one)
+
 			if _world[id]["state"] == state:
 				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
 					_world[id]["burn"] = float(row[5]["burn"])
@@ -2529,7 +2604,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				elif light_m > 0.0 and fixture_light is SpotLight3D:
 					(fixture_light as SpotLight3D).spot_range = light_m
 
-			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw)}
+			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw), "on": row.size() > 5 and bool((row[5] as Dictionary).get("on", false))}
 
 			if site_extra != null:
 				_world[id]["site"] = site_extra

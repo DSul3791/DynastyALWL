@@ -27,7 +27,7 @@ const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
-const VERSION := 2                       # world_items.json: 2 (protocol 108) adds the code lock at row index 17; version 1 files load with no locks
+const VERSION := 3                       # world_items.json: 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
@@ -387,6 +387,10 @@ var season_stamp: Callable            # set by the server: () -> int, game year 
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
 var _traps = null                   # server_traps.gd (snares), made in setup
+const CartsScript := preload("res://src/stream/server_carts.gd")
+var _carts = null                   # server_carts.gd (the Handcart and crates riding on it, catalog Phase 10), made in setup
+var send_cart_pull: Callable        # (peer, cart world id or 0, pace in tenths of m/s): the cart this player holds the handle of (protocol 111)
+var send_items_moved: Callable      # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array): placed things that moved (a pulled cart and its crates; protocol 111)
 var animals_near: Callable           # (point, radius) -> Array of {id, sp, pos}: the animals a snare can reach (set by the server)
 var animal_lure: Callable            # (animal id, point) -> bool: the animal moves its home to a snare and grazes there (set by the server)
 var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
@@ -436,6 +440,8 @@ func setup(item_table, store_dir: String) -> void:
 	table = item_table
 	_traps = TrapsScript.new()
 	_traps.host = self
+	_carts = CartsScript.new()
+	_carts.host = self
 	recipes = RecipeTableScript.load_default(item_table)
 	_dir = store_dir
 	var structures: Variant = JSON.parse_string(FileAccess.get_file_as_string(STRUCTURES_PATH))
@@ -489,6 +495,7 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
+	_carts.after_load()
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
@@ -637,6 +644,7 @@ func start_position_for(peer: int) -> Array:
 
 
 func peer_left(peer: int) -> void:
+	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
 	if _peer_key.keys().filter(func(p): return p != peer and str(_peer_key[p]) == key_left).is_empty():
@@ -720,6 +728,7 @@ func report_position(peer: int, position: Vector3) -> void:
 	if _peer_key.has(peer):
 		_peer_pos[peer] = position
 		_note_motion(peer, position)
+		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
 		var now: int = Time.get_ticks_msec()
 		_note_zone(peer, position)
 
@@ -1141,6 +1150,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_view_take(peer, inv, a, b, count)
 	elif kind == Net.ACT_VIEW_PUT:
 		_view_put(peer, inv, a, b, count)
+	elif kind == Net.ACT_CART:
+		_carts.action(peer, b, a)
 	elif kind == Net.ACT_CRAFT_STOCK:
 		_send_stock(peer, a == 1)   # a = 1: the hammer list's poll while walking (held_item.gd), answered cheaply and only when the stock changed
 	elif kind == Net.ACT_FAVOURITE:
@@ -1470,7 +1481,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else ""])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0))])
 			continue
 
 		var at: Vector3 = it["pos"]
@@ -4606,6 +4617,9 @@ func _sync_world_items() -> void:
 				if it.has("struct") and bool(it["struct"].get("lit", false)):
 					signature += 7      # a fixture lit or put out is sent again (the client draws or drops its flame)
 
+				if it.has("struct"):
+					signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
+
 				var fill: int = _store_fill(it) if it.has("struct") and _out_slots(str(it["struct"]["kind"])) > 0 else -1
 
 				if fill >= 0:
@@ -4635,6 +4649,9 @@ func _sync_world_items() -> void:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") else {}))))])
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
+
+					if it.has("struct") and it["struct"].has("on"):
+						(added[added.size() - 1][5] as Dictionary)["on"] = true   # a crate riding on a cart (the client offers to set it down)
 
 					if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid"):
 						var plate = _chests.get(int(it["struct"]["uid"]))
@@ -4866,6 +4883,10 @@ func _load_world_items() -> void:
 
 				if not saved_lock.is_empty():
 					entry["struct"]["lock"] = saved_lock
+
+			if row.size() > 19 and int(row[18]) > 0 and entry["struct"].has("uid"):
+				entry["struct"]["on"] = int(row[18])   # world_items version 3: the crate rides on the cart with this uid (_carts.after_load checks it)
+				entry["struct"]["spot"] = maxi(int(row[19]), 0)
 
 			if row.size() > 15 and str(row[15]) != "":
 				var saved_site: Variant = JSON.parse_string(str(row[15]))
@@ -8709,6 +8730,14 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "It is locked.")   # only the owner or a player with access takes a locked container down (s3.13 locked-crate movement rule)
 		return
 
+	if it["struct"].has("on"):
+		_say(peer, "Set it down off the handcart first.")
+		return
+
+	if not _carts.vehicle_of(it).is_empty():
+		_carts.dismantle(peer, inv, id)   # a cart comes apart with its cargo and crates kept safe (all or nothing)
+		return
+
 	if str(def.get("use", "")) == "serve" and not _platter_return(peer, inv, it, def):
 		return
 
@@ -9638,10 +9667,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 	if max_kg > 0.0 and not _carry_cfg.is_empty():
 		var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg) + CarryRules.bag_kg(held_inst, table, _carry_cfg), 0.001)
 		var room: float = max_kg - CarryRules.carried_kg(chest, table, _carry_cfg)
-		amount = clampi(int(floor(room / each + 0.0001)), 0, amount)
+		var cart_room: float = _carts.room_kg(id) if id >= 0 else INF   # a cart, or a crate riding on one, also stays within the cart's payload
+		amount = clampi(int(floor(minf(room, cart_room) / each + 0.0001)), 0, amount)
 
 		if amount == 0:
-			_say(peer, "It is too heavy for the chest")
+			_say(peer, "It is too heavy for the chest" if cart_room >= room else "The handcart cannot carry more.")
 			_reject(peer, 2)
 
 	var left: int = chest.add(number, amount, held_wear, held_inst) if amount > 0 else 0
@@ -9871,7 +9901,7 @@ func effort_of(peer: int) -> float:
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
 		level += float(_moving.get(peer, 0.0)) * float(_carry_cfg.get("load_effort", 0.45)) * pow(_load_ratio(peer), float(_carry_cfg.get("load_effort_power", 1.5)))
-		level += float(_moving.get(peer, 0.0)) * _loaded_bag_effort(peer)
+		level += float(_moving.get(peer, 0.0)) * (_loaded_bag_effort(peer) + _carts.pull_effort(peer))   # a loaded bag, a loaded cart in hand
 
 	return level
 
@@ -12239,11 +12269,18 @@ func _spoil_tick(spent: float) -> void:
 
 	var kind_of_uid: Dictionary = {}
 	var pos_of_uid: Dictionary = {}
+	var riding: Array = []   # crates on a cart, found in the same pass (no second pass when none ride)
 
 	for id in _items:
 		if _items[id].has("struct") and _items[id]["struct"].has("uid"):
 			kind_of_uid[int(_items[id]["struct"]["uid"])] = str(_items[id]["struct"]["kind"])
 			pos_of_uid[int(_items[id]["struct"]["uid"])] = _items[id]["pos"]
+
+			if _items[id]["struct"].has("on"):
+				riding.append(id)
+
+	for id in riding:
+		kind_of_uid[int(_items[id]["struct"]["uid"])] = _carts.place_kind(_items[id], kind_of_uid)   # a crate on a cart ages at the cart's place_mult (s3.13: in transit)
 
 	var place_units: Dictionary = {}
 
@@ -12380,6 +12417,7 @@ func kill(peer: int, cause: String) -> bool:
 	_characters[key].erase("food")     # and every food effect (s3.16)
 	_sync_food(peer, true)
 	_rest_credit.erase(peer)
+	_carts.release(peer, "")   # a cart in hand stays where they fell
 	var pos: Vector3 = _peer_pos[peer]
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
@@ -16094,7 +16132,7 @@ func _view_boxes(peer: int, vid: int) -> Array:
 
 		if not other.is_empty():
 			views.append([int(sid), s["pos"], float(other.get("view_m", 0.0)), int(other.get("view_rank", 0))])
-		elif d <= radius and _is_storage(s):
+		elif d <= radius and _is_storage(s) and not s["struct"].has("on") and _carts.vehicle_of(s).is_empty():   # a cart and the crates riding on it are in transit: no view holds them
 			boxes.append([int(sid), d])
 
 	var out: Array = []
@@ -16434,7 +16472,7 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 		return amount
 
 	var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg), 0.001)
-	return clampi(int(floor((max_kg - CarryRules.carried_kg(box, table, _carry_cfg)) / each + 0.0001)), 0, amount)
+	return clampi(int(floor(minf(max_kg - CarryRules.carried_kg(box, table, _carry_cfg), _carts.room_kg(sid)) / each + 0.0001)), 0, amount)
 
 
 # Stack to nearby: each pack stack (not a favourite, not the shoulder log) goes into the player's own storage chests within

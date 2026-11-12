@@ -47,7 +47,8 @@
 		"masons_pallet": 1.0,
 		"ore_and_metal_rack": 1.0,
 		"warehouse_crate": 0.6,
-		"serving_platter": 1.0
+		"serving_platter": 1.0,
+		"handcart": 1.0
 	},
 	"season_mult": {
 		"spring": 1.0,

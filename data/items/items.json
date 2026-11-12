@@ -9878,8 +9878,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 10): no blueprint or structure row until its phase lands."
+				"note": "Placed piece: row state 290 (Mission 001 phase 10, master s3.11): a movable cart with its own cargo store."
 			},
 			"wooden_cart_wheel": {
 				"number": 1190,
@@ -9889,7 +9888,6 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
 				"value": 25
 			},
 			"axle": {
@@ -9900,7 +9898,6 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"future": true,
 				"value": 30
 			},
 			"light_cargo_cart": {

@@ -4724,6 +4724,9 @@ func _move_player(delta: float) -> void:
 
 		pace *= _snow_pace()   # snow and glacial ice are slow going, snowshoes ease it (snow_walk.json, Part C plan 7)
 
+		if items.pulling_id != 0:
+			pace = minf(pace, items.pull_pace_mps)   # a handcart in hand: no faster than the cart can go (server cart_pull, catalog Phase 10)
+
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
 		elif strain_cap < 0.0:
