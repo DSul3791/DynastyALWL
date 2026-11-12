@@ -1852,8 +1852,9 @@ func _glide_tick(delta: float) -> void:
 			_gliding.erase(id)
 
 
-# The purse as words, cheapest coin first: "4 copper, 3 bronze, 2 silver" (copper = items.json value unit). Used where only text fits
-# (tooltips, notices); windows draw coin icons instead (fill_coin_line).
+# The purse as words, richest coin first: "2 silver, 3 bronze, 4 copper" (copper = items.json value unit; Dave, playtest 12 Nov 2026 TEST-002:
+# highest to lowest, left to right, everywhere, as the server's _coin_words). Used where only text fits (tooltips, notices); windows draw
+# coin icons instead (fill_coin_line).
 func coin_text(copper: int) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 	var left: int = copper
@@ -1866,7 +1867,7 @@ func coin_text(copper: int) -> String:
 
 		if left >= each:
 			@warning_ignore("integer_division")
-			parts.insert(0, "%d %s" % [left / each, str(row["name"])])
+			parts.append("%d %s" % [left / each, str(row["name"])])
 			left = left % each
 
 	return ", ".join(parts) if not parts.is_empty() else "nothing"
@@ -1914,12 +1915,12 @@ func make_coin_label(px: int) -> RichTextLabel:
 
 
 # Fills the label with segments: a String is text, an int is a coin amount in copper drawn as "4 (copper icon) 3 (bronze icon) ...",
-# cheapest coin first (copper, bronze, silver, gold, left to right). A zero amount reads "nothing".
+# richest coin first (gold, silver, bronze, copper, left to right; TEST-002). A zero amount reads "nothing".
 func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
 	label.clear()
 	var px: int = int(label.get_meta("px", 24))
 	var rows: Array = _coins_cfg.get("ladder", []).duplicate()
-	rows.sort_custom(func(x, y): return int(x["copper"]) < int(y["copper"]))
+	rows.sort_custom(func(x, y): return int(x["copper"]) > int(y["copper"]))
 
 	for segment in segments:
 		if typeof(segment) == TYPE_STRING:
@@ -1932,7 +1933,7 @@ func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
 		for row in rows.duplicate():
 			amounts.append([row, 0])
 
-		for n in range(amounts.size() - 1, -1, -1):
+		for n in amounts.size():
 			var each: int = maxi(int(amounts[n][0]["copper"]), 1)
 			@warning_ignore("integer_division")
 			amounts[n][1] = left / each
