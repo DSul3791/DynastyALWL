@@ -204,26 +204,7 @@
 			"sound": "foundation",
 			"clears_grass": true
 		},
-		"blacksmithy": {
-			"blocks_walk": true,
-			"kit": "blacksmithy_kit",
-			"item": "blacksmithy",
-			"state": 18,
-			"footprint_x": 1.5,
-			"footprint_z": 1.17,
-			"cap_per_chunk": 1,
-			"station": "brick_forge",
-			"station_level": 2,
-			"tier": "epic",
-			"reach_m": 5.0,
-			"addon_reach_m": 5.0,
-			"look": "blacksmithy",
-			"sound": "foundation",
-			"clears_grass": true,
-			"also": {
-				"forge": 1
-			}
-		},
+		"blacksmithy": {"blocks_walk": true, "kit": "blacksmithy_kit", "item": "blacksmithy", "state": 18, "footprint_x": 1.5, "footprint_z": 1.17, "cap_per_chunk": 1, "station": "brick_forge", "station_level": 2, "tier": "epic", "reach_m": 5.0, "addon_reach_m": 5.0, "look": "blacksmithy", "sound": "foundation", "clears_grass": true, "also": {"forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800},
 		"carcass": {
 			"kit": "",
 			"item": "carcass",
@@ -237,40 +218,8 @@
 			"sound": "",
 			"clears_grass": false
 		},
-		"large_forge": {
-			"blocks_walk": true,
-			"kit": "large_forge_kit",
-			"item": "large_forge",
-			"state": 20,
-			"footprint_x": 2.8,
-			"footprint_z": 2.0,
-			"cap_per_chunk": 1,
-			"station": "forge",
-			"station_level": 3,
-			"tier": "epic",
-			"reach_m": 6.0,
-			"addon_reach_m": 5.0,
-			"look": "big_forge",
-			"sound": "foundation",
-			"clears_grass": true
-		},
-		"master_forge": {
-			"blocks_walk": true,
-			"kit": "master_forge_kit",
-			"item": "master_forge",
-			"state": 21,
-			"footprint_x": 3.9,
-			"footprint_z": 2.6,
-			"cap_per_chunk": 1,
-			"station": "forge",
-			"station_level": 4,
-			"tier": "epic",
-			"reach_m": 6.0,
-			"addon_reach_m": 5.0,
-			"look": "big_forge",
-			"sound": "foundation",
-			"clears_grass": true
-		},
+		"large_forge": {"blocks_walk": true, "kit": "large_forge", "item": "large_forge", "state": 20, "footprint_x": 2.8, "footprint_z": 2.0, "cap_per_chunk": 1, "station": "blast_furnace", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"smelter": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800},
+		"master_forge": {"blocks_walk": true, "kit": "master_forge", "item": "master_forge", "state": 21, "footprint_x": 3.9, "footprint_z": 2.6, "cap_per_chunk": 1, "station": "master_smithy", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"brick_forge": 2, "forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800},
 		"wall_section": {
 			"blocks_walk": true,
 			"kit": "wall_section_kit",
@@ -713,11 +662,11 @@
 		"armour_stand": {"kit": "armour_stand_kit", "item": "armour_stand", "state": 197, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 8, "slots": 6, "max_kg": 40, "who": "anyone", "sound": "timber", "clears_grass": true, "look": "armour_stand"},
 		"sign": {"kit": "sign_kit", "item": "sign", "state": 198, "footprint_x": 0.6, "footprint_z": 0.1, "cap_per_chunk": 12, "sound": "timber", "clears_grass": false, "gap_exempt": true, "look": "sign"},
 		"tusk_mount": {"kit": "tusk_mount_kit", "item": "tusk_mount", "state": 199, "footprint_x": 0.44, "footprint_z": 0.1, "cap_per_chunk": 12, "sound": "timber", "clears_grass": false, "gap_exempt": true, "comfort": "tusk_mount", "look": "tusk_mount"},
-		"clay_bloomery": {"kit": "clay_bloomery_kit", "item": "clay_bloomery", "state": 200, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "station": "clay_bloomery", "look": "clay_bloomery"},
+		"clay_bloomery": {"kit": "clay_bloomery_kit", "item": "clay_bloomery", "state": 200, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "station": "clay_bloomery", "look": "clay_bloomery", "retired": true},
 		"stonecutters_bench": {"kit": "stonecutters_bench_kit", "item": "stonecutters_bench", "state": 201, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "stone", "clears_grass": true, "station": "stonecutters_bench", "look": "stonecutters_bench"},
 		"fish_trap_set": {"kit": "fish_trap", "item": "fish_trap_set", "state": 202, "footprint_x": 0.8, "footprint_z": 0.5, "cap_per_chunk": 6, "fish_trap": true, "min_water_m": 0.3, "slots": 2, "who": "anyone", "look": "fish_trap_set", "sound": "thump", "clears_grass": false},
 		"bird_trap_set": {"kit": "bird_trap", "item": "bird_trap_set", "state": 203, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "bird_trap_set", "sound": "thump", "clears_grass": false},
-		"iron_anvil": {"kit": "iron_anvil_kit", "item": "iron_anvil", "state": 204, "footprint_x": 0.6, "footprint_z": 0.4, "cap_per_chunk": 2, "addon_of": "brick_forge", "look": "iron_anvil", "sound": "metal", "clears_grass": true},
+		"iron_anvil": {"kit": "iron_anvil_kit", "item": "iron_anvil", "state": 204, "footprint_x": 0.6, "footprint_z": 0.4, "cap_per_chunk": 2, "addon_of": "brick_forge", "look": "iron_anvil", "sound": "metal", "clears_grass": true, "retired": true},
 		"preserving_jar": {"kit": "preserving_jar_kit", "item": "preserving_jar", "state": 205, "footprint_x": 0.5, "footprint_z": 0.5, "cap_per_chunk": 8, "station": "preserving_jar", "station_level": 1, "reach_m": 3.0, "sound": "thump", "clears_grass": true, "look": "preserving_jar"},
 		"root_cellar": {"kit": "root_cellar_kit", "item": "root_cellar", "state": 206, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 2.0, "cap_per_chunk": 2, "slots": 12, "max_kg": 120, "who": "anyone", "cold_store": true, "sound": "stone", "clears_grass": true, "look": "root_cellar"},
 		"log_shelf": {"kit": "log_shelf_kit", "item": "log_shelf", "state": 207, "footprint_x": 1.2, "footprint_z": 0.3, "cap_per_chunk": 8, "slots": 6, "max_kg": 30, "who": "anyone", "sound": "timber", "clears_grass": true, "look": "log_shelf", "retired": true},
@@ -741,7 +690,10 @@
 		"fortified_gate": {"kit": "fortified_gate_kit", "item": "fortified_gate", "state": 225, "piece": true, "piece_kind": "fence", "material": "stone", "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "max_rise_m": 1.0, "sound": "stone", "clears_grass": false, "use": "door", "use_pace_ms": 400, "use_reach_m": 3.0, "look": "fortified_gate", "toggle": "fortified_gate_open", "blocks_walk": true},
 		"fortified_gate_open": {"kit": "fortified_gate_kit", "item": "fortified_gate", "state": 226, "piece": true, "piece_kind": "fence", "material": "stone", "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "max_rise_m": 1.0, "sound": "stone", "clears_grass": false, "use": "door", "use_pace_ms": 400, "use_reach_m": 3.0, "look": "fortified_gate_open", "toggle": "fortified_gate"},
 		"fortified_pillar": {"kit": "fortified_pillar_kit", "item": "fortified_pillar", "state": 227, "piece": true, "piece_kind": "pillar", "material": "stone", "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 100, "max_rise_m": 0.6, "blocks_walk": true, "sound": "stone", "clears_grass": false, "look": "fortified_pillar"},
-		"fortified_wall_top": {"kit": "fortified_wall_top_kit", "item": "fortified_wall_top", "state": 228, "piece": true, "piece_kind": "wall_top", "material": "stone", "footprint_x": 2.0, "footprint_z": 0.4, "cap_per_chunk": 200, "max_rise_m": 1.0, "sound": "stone", "clears_grass": false, "blocks_walk": true, "look": "fortified_wall_top"}
+		"fortified_wall_top": {"kit": "fortified_wall_top_kit", "item": "fortified_wall_top", "state": 228, "piece": true, "piece_kind": "wall_top", "material": "stone", "footprint_x": 2.0, "footprint_z": 0.4, "cap_per_chunk": 200, "max_rise_m": 1.0, "sound": "stone", "clears_grass": false, "blocks_walk": true, "look": "fortified_wall_top"},
+		"smelter": {"kit": "smelter", "item": "smelter", "state": 240, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station": "smelter", "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "look": "clay_bloomery"},
+		"bellows": {"kit": "bellows", "item": "bellows", "state": 241, "footprint_x": 0.8, "footprint_z": 0.5, "cap_per_chunk": 4, "addon_of": "brick_forge", "adds_level": false, "craft_speed": 1.25, "fuel_saving": 1.5, "sound": "timber", "clears_grass": true, "look": "iron_anvil"},
+		"quenching_trough": {"kit": "quenching_trough", "item": "quenching_trough", "state": 242, "footprint_x": 1.2, "footprint_z": 0.5, "cap_per_chunk": 4, "addon_of": "brick_forge", "adds_level": false, "sound": "stone", "clears_grass": true, "look": "log_trough"}
 	},
 	"campfire": {
 		"gap_m": 2.0,

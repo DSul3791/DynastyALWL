@@ -3664,10 +3664,12 @@ func _water_flow_rules() -> Dictionary:
 
 # How much slower a station recipe runs at a sawmill whose wheel gives less than full_power_w (Sonny section 10: craft time x full_power_w / P).
 # The wheel's watts are worked out once per placed sawmill and kept on it ("wheel_w"); 1.0 for every other station, or with no wheel callable.
+# Also: Bellows beside a Smithy (an add-on with craft_speed, master s2.7 item 5) make its crafts faster.
 func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 	var station: String = str(recipe.get("station", ""))
+	var wheel: bool = water_wheel.is_valid() and _wheel_station(station)
 
-	if station == "" or not water_wheel.is_valid() or not _wheel_station(station):
+	if station == "" or not (wheel or _speed_addon_station(station)):
 		return 1.0
 
 	var id: int = serving_station(peer, station, int(recipe.get("station_level", 1)))
@@ -3675,8 +3677,27 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 	if id < 0:
 		return 1.0
 
+	var slow: float = 1.0 / _addon_factor(_items[id], _structures.get(str(_items[id]["struct"]["kind"]), {}), "craft_speed")
+
+	if not wheel:
+		return slow
+
 	var watts: float = _wheel_watts(_items[id])
-	return 1.0 if watts < 0.0 else 1.0 / WaterFlowScript.wheel_share(watts, _water_flow_rules())
+	return slow if watts < 0.0 else slow / WaterFlowScript.wheel_share(watts, _water_flow_rules())
+
+
+var _speed_addons: Dictionary = {}   # station -> true when some add-on of it carries craft_speed (worked out once)
+
+
+func _speed_addon_station(station: String) -> bool:
+	if _speed_addons.is_empty():
+		_speed_addons["_read"] = true
+
+		for kind in _structures:
+			if _structures[kind].has("craft_speed") and not bool(_structures[kind].get("retired", false)):
+				_speed_addons[str(_structures[kind].get("addon_of", ""))] = true
+
+	return _speed_addons.has(station)
 
 
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
@@ -11363,13 +11384,13 @@ func _queue_of(peer: int) -> Dictionary:
 
 # Crafting stations (structures.json "station", "station_level", "reach_m"): a placed structure of that station within reach of the
 # player. The server measures the distance with 1 m of grace so lag never fails a craft; the client only displays (Tyler).
-func station_near(peer: int, station: String, level: int = 1) -> bool:
-	return serving_station(peer, station, level) >= 0
+func station_near(peer: int, station: String, level: int = 1, light_it: bool = false) -> bool:
+	return serving_station(peer, station, level, 0.0, light_it) >= 0
 
 
 # The world id of the nearest placed station that serves `station` at `level` and is working (a lit fire; a pot over a lit fire), within its
 # own reach (station_near) or, with `far_m` above it, within far_m (the crafting reach: _step_to_station); -1 when none.
-func serving_station(peer: int, station: String, level: int = 1, far_m: float = 0.0) -> int:
+func serving_station(peer: int, station: String, level: int = 1, far_m: float = 0.0, light_it: bool = false) -> int:
 	if not _peer_pos.has(peer):
 		return -1
 
@@ -11401,6 +11422,18 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 		if station_level_of(it, def, station) >= level:
 			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_within(it["pos"], POT_ON_FIRE_M):
 				continue   # the pot hangs over its fire: with that fire out nothing cooks, the craft waits where it is and nothing is lost
+
+			# A station that must be burning to craft (the Smithy, Blast furnace and Master smithy, master s4 item 10): a cold one serves while the crafter
+			# carries its fuel, and the craft itself (light_it) fires it from the pack. Without fuel the craft waits and nothing is lost.
+			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
+				var fuel_n: int = table.number_of(str(def.get("fuel", "fuel")))
+				var inv_l = inventory_of(peer)
+
+				if fuel_n <= 0 or inv_l == null or not inv_l.has_fill(fuel_n, 1):
+					continue
+
+				if light_it:
+					_fire_station(peer, inv_l, it, def, fuel_n)
 
 			best = int(id)
 			best_d = d
@@ -11492,7 +11525,63 @@ func station_level_of(it: Dictionary, def: Dictionary, station: String) -> int:
 	return int(def.get("also", {}).get(station, 0))
 
 
-# How many different add-on kinds (structures.json addon_of) stand within addon_reach_m of a station: each raises its level by one.
+# A station of this kind stands within its reach but is cold and the player has no fuel for it.
+func _cold_station_near(peer: int, station: String) -> bool:
+	if not _peer_pos.has(peer):
+		return false
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct"):
+			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)) and station_level_of(it, def, station) > 0 and _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
+				return true
+
+	return false
+
+
+# Fires a cold station that burns fuel (craft_needs_lit) with one fuel unit from the pack: lit for fuel_s seconds, longer with Bellows beside it.
+func _fire_station(peer: int, inv, it: Dictionary, def: Dictionary, fuel_n: int) -> void:
+	var before: Array = _snapshot(inv)
+
+	if not inv.remove_fill(fuel_n, 1):
+		return
+
+	_send_changes(peer, inv, before)
+	it["struct"]["lit"] = true
+	it["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0)) * _addon_factor(it, def, "fuel_saving")
+	_lit_valid = false
+	_dirty = true
+	_say(peer, "You fire the %s." % table.sentence_name(int(it["number"])))
+
+
+# The product of an add-on's factor (structures.json craft_speed, fuel_saving) over the add-on kinds standing beside this station (Bellows, phase 2b); 1.0 with none.
+func _addon_factor(station_row: Dictionary, def: Dictionary, field: String) -> float:
+	var factor: float = 1.0
+	var seen: Dictionary = {}
+	var reach: float = float(def.get("addon_reach_m", 5.0))
+	var station: String = str(def.get("station", ""))
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if not other.has("struct"):
+			continue
+
+		var kind: String = str(other["struct"]["kind"])
+		var odef: Dictionary = _structures.get(kind, {})
+
+		if not seen.has(kind) and odef.has(field) and str(odef.get("addon_of", "")) == station and station_row["pos"].distance_to(other["pos"]) <= reach:
+			seen[kind] = true
+			factor *= float(odef[field])
+
+	return factor
+
+
+# How many different add-on kinds (structures.json addon_of) stand within addon_reach_m of a station: each raises its level by one,
+# except an add-on marked "adds_level": false (the Smithy's Bellows and Quenching trough, which change how it works, not what it can make).
 func _addon_kinds(station_row: Dictionary, def: Dictionary, station: String) -> int:
 	var kinds: Dictionary = {}
 	var reach: float = float(def.get("addon_reach_m", 5.0))
@@ -11505,7 +11594,7 @@ func _addon_kinds(station_row: Dictionary, def: Dictionary, station: String) -> 
 
 		var kind: String = str(other["struct"]["kind"])
 
-		if str(_structures.get(kind, {}).get("addon_of", "")) == station and station_row["pos"].distance_to(other["pos"]) <= reach:
+		if str(_structures.get(kind, {}).get("addon_of", "")) == station and bool(_structures.get(kind, {}).get("adds_level", true)) and station_row["pos"].distance_to(other["pos"]) <= reach:
 			kinds[kind] = true
 
 	return kinds.size()
@@ -14813,7 +14902,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		return
 
 	if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
-		_say(peer, "That needs a %s nearby" % _station_name(str(recipe["station"])))
+		_say(peer, ("The %s is cold: carry charcoal or coal to fire it" if _cold_station_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
 		return
 
 	for group_id in LOG_GROUP_IDS:   # shoulder and ground logs count (F-16), for any log and for the Softwood and Hardwood logs of the saws
@@ -15063,10 +15152,10 @@ func _craft_tick(spent: float) -> void:
 			_sync_craft_queue(peer)
 			continue
 
-		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
+		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1)), true):
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
-				_say(peer, "Your craft waits: go back to the %s" % _station_name(str(recipe["station"])))
+				_say(peer, ("The %s is cold: carry charcoal or coal to fire it" if _cold_station_near(peer, str(recipe["station"])) else "Your craft waits: go back to the %s") % _station_name(str(recipe["station"])))
 
 			continue
 

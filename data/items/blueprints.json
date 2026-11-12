@@ -1,6 +1,6 @@
 {
 	"note": "Hammer blueprints. Dave 4 Nov 2026: no kits at all; everything placed is built with the hammer from the materials in the pack, except the Rough bed (a hand craft from the pack; blueprint 24 retired) and the campfire (a fire entity; code pending). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'near' another placed structure that must be near, 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused, and so learning that recipe can unlock the row), 'known' false rows are learned, 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
-	"next_number": 186,
+	"next_number": 205,
 	"blueprints": {
 		"wall_section": {"category": "Walls and doors", "number": 1, "name": "Refined - Wall", "structure": "wall_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_section_kit"},
 		"floor_section": {"category": "Roofs and ceilings", "number": 2, "name": "Refined - Ceiling", "structure": "floor_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "floor_section_kit"},
@@ -114,9 +114,9 @@
 		"armour_stand": {"category": "Storage and shelter", "number": 159, "name": "Armour stand", "structure": "armour_stand", "cost": [["lumber", 8], ["twine", 2]], "station": "", "hammer": 1, "known": true},
 		"sign": {"category": "Lights and decoration", "number": 160, "name": "Sign", "structure": "sign", "cost": [["lumber", 2], ["stick", 1]], "station": "", "hammer": 1, "known": true},
 		"tusk_mount": {"category": "Lights and decoration", "number": 161, "name": "Tusk mount", "structure": "tusk_mount", "cost": [["tusk", 2], ["lumber", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true},
-		"clay_bloomery": {"category": "Workshops and stations", "number": 162, "name": "Clay bloomery", "structure": "clay_bloomery", "cost": [["clay", 24], ["stone", 10], ["mortar", 2]], "station": "", "hammer": 1, "known": true},
+		"clay_bloomery": {"category": "Workshops and stations", "number": 162, "name": "Clay bloomery", "structure": "clay_bloomery", "cost": [["clay", 24], ["stone", 10], ["mortar", 2]], "station": "", "hammer": 1, "known": true, "retired": true},
 		"stonecutters_bench": {"category": "Workshops and stations", "number": 163, "name": "Stonecutter's bench", "structure": "stonecutters_bench", "cost": [["cobblestone", 20], ["log", 4]], "station": "", "hammer": 1, "known": true},
-		"iron_anvil": {"category": "Workshops and stations", "number": 164, "name": "Anvil", "structure": "iron_anvil", "cost": [["iron_ingot", 5], ["log", 1]], "station": "", "hammer": 1, "known": true},
+		"iron_anvil": {"category": "Workshops and stations", "number": 164, "name": "Anvil", "structure": "iron_anvil", "cost": [["iron_ingot", 5], ["log", 1]], "station": "", "hammer": 1, "known": true, "retired": true},
 		"preserving_jar": {"category": "Workshops and stations", "number": 165, "name": "Preserving jar", "structure": "preserving_jar", "cost": [["clay", 6]], "station": "", "hammer": 1, "known": true},
 		"root_cellar": {"category": "Storage and shelter", "number": 166, "name": "Root cellar", "structure": "root_cellar", "cost": [["cut_stone_block", 20], ["mortar", 6]], "station": "", "hammer": 1, "known": true},
 		"log_shelf": {"category": "Storage and shelter", "number": 167, "name": "Log - Shelf", "structure": "log_shelf", "cost": [["log", 3], ["twine", 2]], "station": "", "hammer": 1, "retired": true, "known": false},
@@ -166,58 +166,8 @@
 			"known": true,
 			"recipe": "stone_forge_kit"
 		},
-		"blacksmithy": {
-			"category": "Workshops and stations",
-			"number": 10,
-			"name": "Brick - Forge",
-			"structure": "blacksmithy",
-			"cost": [
-				[
-					"brick",
-					20
-				],
-				[
-					"stone",
-					10
-				],
-				[
-					"mortar",
-					4
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "blacksmithy_kit"
-		},
-		"saw_mill": {
-			"category": "Workshops and stations",
-			"number": 11,
-			"name": "Sawmill",
-			"structure": "saw_mill",
-			"cost": [
-				[
-					"lumber",
-					40
-				],
-				[
-					"nails",
-					100
-				],
-				[
-					"saw_blade",
-					1
-				],
-				[
-					"water_wheel",
-					1
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "saw_mill_kit"
-		},
+		"blacksmithy": {"category": "Workshops and stations", "number": 10, "name": "Smithy", "structure": "blacksmithy", "cost": [["stone", 16], ["clay", 10], ["log", 4], ["iron_ingot", 3]], "station": "", "hammer": 1, "known": true, "recipe": "blacksmithy_kit"},
+		"saw_mill": {"category": "Workshops and stations", "number": 11, "name": "Sawmill", "structure": "saw_mill", "cost": [["lumber", 40], ["nails", 100], ["water_wheel", 1], ["iron_ingot", 4]], "station": "", "hammer": 1, "known": true, "recipe": "saw_mill_kit"},
 		"woodworking_table": {
 			"retired": true,
 			"category": "Workshops and stations",
@@ -297,6 +247,11 @@
 		"chandelier": {"category": "Lights and decoration", "number": 50, "name": "Chandelier", "structure": "chandelier", "cost": [["lumber", 2], ["twine", 2], ["candle", 6]], "station": "", "hammer": 1, "known": true, "recipe": "chandelier_kit"},
 		"flower_pot": {"category": "Lights and decoration", "number": 51, "name": "Flower pot", "structure": "flower_pot", "cost": [["clay", 2], ["soil", 1]], "station": "", "hammer": 1, "known": true, "recipe": "flower_pot_kit"},
 		"antler_mount": {"category": "Lights and decoration", "number": 52, "name": "Antler mount", "structure": "antler_mount", "cost": [["antler", 2], ["lumber", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "antler_mount_kit"},
-		"vice": {"category": "Workshops and stations", "number": 53, "name": "Vice", "structure": "vice", "cost": [["stick", 8], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "vice_kit"}
+		"vice": {"category": "Workshops and stations", "number": 53, "name": "Vice", "structure": "vice", "cost": [["stick", 8], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "vice_kit"},
+		"smelter": {"category": "Workshops and stations", "number": 200, "name": "Smelter", "structure": "smelter", "cost": [["clay", 24], ["stone", 10]], "station": "", "hammer": 1, "known": true},
+		"large_forge": {"category": "Workshops and stations", "number": 201, "name": "Blast furnace", "structure": "large_forge", "cost": [["brick", 40], ["stone", 20], ["mortar", 8], ["iron_ingot", 6]], "station": "", "hammer": 1, "known": true},
+		"master_forge": {"category": "Workshops and stations", "number": 202, "name": "Master smithy", "structure": "master_forge", "cost": [["brick", 30], ["stone", 20], ["log", 6], ["iron_ingot", 10], ["steel_ingot", 4]], "station": "", "hammer": 3, "known": true},
+		"bellows": {"category": "Workshops and stations", "number": 203, "name": "Bellows", "structure": "bellows", "cost": [["leather", 3], ["log", 2], ["iron_ingot", 1]], "station": "", "hammer": 1, "known": true},
+		"quenching_trough": {"category": "Workshops and stations", "number": 204, "name": "Quenching trough", "structure": "quenching_trough", "cost": [["stone", 12], ["log", 2], ["iron_ingot", 2]], "station": "", "hammer": 1, "known": true}
 	}
 }

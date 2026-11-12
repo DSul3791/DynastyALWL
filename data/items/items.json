@@ -411,16 +411,7 @@
 			"look_alikes": [],
 			"value": 30
 		},
-		"steel_ingot": {
-			"number": 32,
-			"name": "Steel ingot",
-			"description": "A bar of steel. Placeholder until smelting exists.",
-			"kind": "material",
-			"stack": 20,
-			"look_alikes": [],
-			"value": 60,
-			"future": true
-		},
+		"steel_ingot": {"number": 32, "name": "Steel ingot", "description": "A bar of steel from the blast furnace.", "kind": "material", "stack": 20, "look_alikes": [], "value": 60},
 		"iron_pickaxe": {
 			"number": 33,
 			"name": "Iron - Pickaxe",
@@ -1157,15 +1148,7 @@
 			"value": 600,
 			"look_alikes": []
 		},
-		"blacksmithy": {
-			"number": 90,
-			"name": "Brick - Forge",
-			"description": "A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"blacksmithy": {"number": 90, "name": "Smithy", "description": "A smithy with its own forge, anvil and bench. Fire it with charcoal or coal to work bronze, iron and steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": []},
 		"carcass": {
 			"number": 91,
 			"name": "Carcass",
@@ -1186,16 +1169,7 @@
 			"value": 900,
 			"look_alikes": []
 		},
-		"large_forge": {
-			"number": 93,
-			"future": true,
-			"name": "Large forge",
-			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"large_forge": {"number": 93, "name": "Blast furnace", "description": "A tall furnace that holds great heat. Makes steel and smelts in bulk.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20."},
 		"master_forge_kit": {
 			"number": 94,
 			"future": true,
@@ -1207,16 +1181,7 @@
 			"value": 3000,
 			"look_alikes": []
 		},
-		"master_forge": {
-			"number": 95,
-			"future": true,
-			"name": "Master forge",
-			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy for special and masterwork pieces.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21."},
 		"log_oak": {
 			"number": 100,
 			"name": "Oak log",
@@ -2977,15 +2942,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"saw_blade": {
-			"number": 238,
-			"name": "Saw blade",
-			"description": "A pair of iron saw blades for a sawmill frame.",
-			"kind": "material",
-			"stack": 10,
-			"look_alikes": [],
-			"value": 60
-		},
+		"saw_blade": {"number": 238, "name": "Saw blade", "description": "A pair of iron saw blades for a sawmill frame.", "kind": "material", "stack": 10, "look_alikes": [], "value": 60, "retired": true},
 		"water_wheel": {
 			"number": 239,
 			"name": "Water wheel",
@@ -4426,24 +4383,7 @@
 			"look_alikes": [],
 			"value": 4
 		},
-		"stone_wedge": {
-			"number": 353,
-			"name": "Stone - Wedge",
-			"description": "A flaked stone wedge. Driven into a log at a workbench, it splits two planks.",
-			"kind": "tool",
-			"tool_class": "wedge",
-			"stack": 1,
-			"unstackable": true,
-			"durability": 600,
-			"repair": [
-				[
-					"stone",
-					1
-				]
-			],
-			"look_alikes": [],
-			"value": 6
-		},
+		"stone_wedge": {"number": 353, "name": "Stone - Wedge", "description": "A flaked stone wedge. Driven into a log at a workbench, it splits two planks.", "kind": "tool", "tool_class": "wedge", "stack": 1, "unstackable": true, "durability": 600, "repair": [["stone", 1]], "look_alikes": [], "value": 6, "retired": true},
 		"fibre_arrow": {
 			"number": 354,
 			"name": "Fibre - Arrow",
@@ -9059,16 +8999,7 @@
 				"look_alikes": [],
 				"value": 46
 			},
-			"clay_bloomery": {
-				"number": 795,
-				"name": "Clay bloomery",
-				"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed station: row state 200."
-			},
+			"clay_bloomery": {"number": 795, "name": "Clay bloomery", "description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 200.", "retired": true},
 			"stonecutters_bench_kit": {
 				"number": 796,
 				"retired": true,
@@ -9486,16 +9417,7 @@
 				"look_alikes": [],
 				"value": 160
 			},
-			"iron_anvil": {
-				"number": 827,
-				"name": "Anvil",
-				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed add-on: row state 204, addon_of brick_forge."
-			},
+			"iron_anvil": {"number": 827, "name": "Anvil", "description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed add-on: row state 204, addon_of brick_forge.", "retired": true},
 			"preserving_jar_kit": {
 				"number": 829,
 				"retired": true,
@@ -10322,39 +10244,9 @@
 				"look_alikes": [],
 				"value": 12
 			},
-			"smelter": {
-				"number": 908,
-				"name": "Smelter",
-				"description": "A stone and clay furnace. Smelts ore into metal.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
-			},
-			"bellows": {
-				"number": 909,
-				"name": "Bellows",
-				"description": "A leather and wood bellows for the Smithy. Blows air into the fire to raise its heat.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
-			},
-			"quenching_trough": {
-				"number": 910,
-				"name": "Quenching trough",
-				"description": "A water trough at the Smithy for cooling hot metal.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"note": "Future placeholder (Mission 001 phase 2b): no blueprint or structure row until its phase lands."
-			},
+			"smelter": {"number": 908, "name": "Smelter", "description": "A squat stone and clay furnace. Smelts copper, tin and bog iron ore into ingots, and copper and tin into bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b)."},
+			"bellows": {"number": 909, "name": "Bellows", "description": "Leather bellows for a smithy. It heats faster and burns less fuel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
+			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
 			"leatherworking_table": {
 				"number": 911,
 				"name": "Leatherworking table",
