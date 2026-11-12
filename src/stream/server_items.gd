@@ -498,6 +498,7 @@ func setup(item_table, store_dir: String) -> void:
 	_carts.after_load()
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
+	_load_kilns()
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
@@ -1522,6 +1523,7 @@ func save() -> void:
 	_save_craft_queues()
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
+	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true})
 
 
@@ -4618,6 +4620,11 @@ func _sync_world_items() -> void:
 				if it.has("struct"):
 					signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
 
+				var fill: int = _store_fill(it) if it.has("struct") and _out_slots(str(it["struct"]["kind"])) > 0 else -1
+
+				if fill >= 0:
+					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
+
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
 
@@ -4658,6 +4665,9 @@ func _sync_world_items() -> void:
 
 						if wheel >= 0:
 							(added[added.size() - 1][5] as Dictionary)["wheel"] = wheel   # a sawmill: its water wheel's share, for the look-at line
+
+						if fill >= 0:
+							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
 					known[id] = signature
 
 		for bog in _bog_rows_near(peer, here):
@@ -7829,7 +7839,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		cost_rows.append([table.number_of(str(need[0])), int(need[1])])
 
 	_pull_nearby_logs(peer, inv, _log_need(cost_rows, 1))   # shoulder and ground logs count (F-16)
-	var stock: Dictionary = _stock_of(peer)
+	var stock: Dictionary = _stock_of(peer, false, _hammer_x(peer))
 
 	for need in row["cost"]:
 		if _stock_have(inv, table.number_of(str(need[0])), stock, true) < int(need[1]):
@@ -7840,6 +7850,20 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 			return false
 
 	return true
+
+
+# Better hammers draw building materials from farther (master s2.1: a better hammer gains only sourcing range and durability): building_wear.json
+# hammer_reach_x by the tier of the heaviest working hammer on the hotbar times each building distance (the 12 m stock, the site gather, the heavy
+# stock beside a site, repairs); 1 with no hammer.
+func _hammer_x(peer: int) -> float:
+	var inv = inventory_of(peer)
+	var slot: int = _heaviest_hammer_slot(inv) if inv != null else -1
+
+	if slot < 0:
+		return 1.0
+
+	var tier: int = int(table.entry(table.id_of(inv.numbers[slot])).get("tier", 1))
+	return maxf(float((_wear_cfg.get("hammer_reach_x", {}) as Dictionary).get(str(tier), 1.0)), 1.0)
 
 
 # The heaviest working hammer on the hotbar (-1 none): a stone hammer in key 1 does not hide the iron one in key 4 that the player holds
@@ -7890,7 +7914,7 @@ func _hammers_for(tier_needed: int) -> String:
 # builder's own containers within CRAFT_REACH_M (12 m) that are not kept out. The hammer list counts the same stock (craft_stock, protocol 98), so it
 # never shows a piece as covered that the server would set down as a site.
 func _blueprint_short(peer: int, inv, row: Dictionary) -> bool:
-	var stock: Dictionary = _stock_of(peer)
+	var stock: Dictionary = _stock_of(peer, false, _hammer_x(peer))
 
 	for need in row["cost"]:
 		if _stock_have(inv, table.number_of(str(need[0])), stock, true) < int(need[1]):
@@ -7900,7 +7924,7 @@ func _blueprint_short(peer: int, inv, row: Dictionary) -> bool:
 
 
 func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
-	var stock: Dictionary = _stock_of(peer)
+	var stock: Dictionary = _stock_of(peer, false, _hammer_x(peer))
 
 	for need in row["cost"]:
 		var number: int = table.number_of(str(need[0]))
@@ -7910,7 +7934,7 @@ func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
 			_stock_take(inv, number, left, stock, [], true)   # then the pack, loose stacks within 12 m and the builder's own containers, nearest first
 
 	if peer >= 0:
-		_send_stock(peer)   # the hammer list's counts follow what was taken
+		_send_stock(peer, false, true)   # the hammer list's counts follow what was taken
 
 
 # Heavy building stock on the ground (Dave 2 Nov 2026: "we use the hammer to make blueprints on the spot"): a blueprint takes its materials from loose
@@ -8250,8 +8274,8 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 	if log_need > 0:
 		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_fill(table.number_of("log"))))   # shoulder and ground logs count, as for building
 
-	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0))
-	var boxes: Array = _boxes_near(peer)
+	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0)) * _hammer_x(peer)
+	var boxes: Array = _boxes_near(peer, _hammer_x(peer))
 	var short: PackedStringArray = []
 
 	for need in needs:
@@ -8371,9 +8395,11 @@ func _spend_sorted(rows: Array, number: int, member_of: Callable) -> Array:
 	return out
 
 
-# [[item id, inventory], ...] of containers (chests) within reach of the player.
-func _boxes_near(peer: int) -> Array:
+# [[item id, inventory], ...] of the player's own containers and station stores (not kept out: the crafting rule, CraftStock.owner_ok) within reach
+# (times reach_x: a better hammer repairs from farther). Never another player's container, open or not.
+func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 	var out: Array = []
+	var key: String = str(_peer_key.get(peer, ""))
 
 	for sid in _items:
 		var s: Dictionary = _items[sid]
@@ -8381,7 +8407,7 @@ func _boxes_near(peer: int) -> Array:
 		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
 			continue
 
-		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= Interact.server_reach_m() + 2.0 and _may_access(peer, s):
+		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= (Interact.server_reach_m() + 2.0) * reach_x and _may_access(peer, s) and CraftStock.owner_ok(str(s["struct"].get("owner", "")), key) and not bool(s["struct"].get("keep_out", false)):
 			out.append([sid, _chests[int(s["struct"]["uid"])]])
 
 	return out
@@ -8420,11 +8446,12 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 	if inv == null or not _peer_pos.has(peer):
 		return out
 
-	var boxes: Array = _craft_boxes(peer)
+	var reach_x: float = _hammer_x(peer)
+	var boxes: Array = _craft_boxes(peer, reach_x)
 
 	for need in _site_needs(_site_of(it)):
 		var number: int = table.number_of(str(need[0]))
-		var on_hand: int = inv.count_fill(number, true) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M)
+		var on_hand: int = inv.count_fill(number, true) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M * reach_x)
 
 		for box in boxes:
 			on_hand += box[1].count_fill(number, true)
@@ -8446,7 +8473,8 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 		_say(peer, "Too far to deposit materials there.")
 		return
 
-	var boxes: Array = _craft_boxes(peer)
+	var reach_x: float = _hammer_x(peer)
+	var boxes: Array = _craft_boxes(peer, reach_x)
 	var have: Dictionary = site["have"]
 	var moved: int = 0
 
@@ -8464,7 +8492,7 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 			put += from_pack
 
 		if put < left:
-			put += _ground_take(number, left - put, _peer_pos[peer], BUILD_STOCK_M)
+			put += _ground_take(number, left - put, _peer_pos[peer], BUILD_STOCK_M * reach_x)
 
 		for box in boxes:
 			if put >= left:
@@ -8508,7 +8536,7 @@ func _gather_site(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items[id]
 	var site: Dictionary = _site_of(it)
 	var here: Vector3 = _peer_pos[peer]
-	var reach: float = float(_wear_cfg.get("site_gather_m", CraftStock.CRAFT_REACH_M))
+	var reach: float = float(_wear_cfg.get("site_gather_m", CraftStock.CRAFT_REACH_M)) * _hammer_x(peer)
 	var key: String = str(_peer_key.get(peer, ""))
 	var sources: Array = []   # [distance, world id, is a container], nearest first
 
@@ -8804,6 +8832,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0) -> void:
 		_dirty = true
 		return
 
+	if str(def.get("use", "")) == "kiln":   # E lights the Kiln while it holds wood and puts it out (master s2.6)
+		_kiln_use(peer, it, def)
+		return
+
 	if str(def.get("use", "")) != "split_log":
 		return
 
@@ -8889,6 +8921,229 @@ func _chop_loose_log(peer: int, inv, id: int) -> void:
 	drop_in_world(table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
 	practice(peer, "split_log")
 	_dirty = true
+
+
+# --- Station stores (master s2.5 [D1][R]; Mission 001 T18) ---
+# A station whose structures.json row has "out_slots" keeps a store: its first `slots` slots are the input (players put in, under the row's
+# takes; the inventory's usable stays at slots, so every put, Store all, Stack to nearby and view deposit lands there) and the next out_slots
+# the output, which only the station's own production fills (a craft run there by its owner, the Kiln's batch). Products stay in the station and
+# never drop on the ground; with no room for a craft's product the craft waits. The store is a container in every other way (owner, keep out,
+# Phase 9 locks and _may_access, storage views, take-down only when empty), and crafts and building draw on it after the pack, the ground and
+# the player's own containers (_stock_of).
+
+func _out_slots(kind: String) -> int:
+	return int(_structures.get(kind, {}).get("out_slots", 0))
+
+
+# The slots a take may reach in a container: its usable slots, and a station's output slots after them.
+func _store_span(id: int, box) -> int:
+	var out: int = _out_slots(str(_items.get(id, {}).get("struct", {}).get("kind", ""))) if id >= 0 else 0
+	return mini(box.usable + out, box.SLOTS)
+
+
+func _is_station_store(it: Dictionary) -> bool:
+	return it.has("struct") and _out_slots(str(it["struct"]["kind"])) > 0 and _is_storage(it)
+
+
+# How many of an item (at this age and instance) a station's output slots still take; an instance only goes into an empty slot.
+func _out_room(it: Dictionary, number: int, item_inst: Dictionary = {}, item_wear: int = 0) -> int:
+	var box = _chests.get(int(it["struct"].get("uid", 0)))
+	var kind: String = str(it["struct"]["kind"])
+
+	if box == null or number <= 0:
+		return 0
+
+	var first: int = int(_structures.get(kind, {}).get("slots", 0))
+	var stack: int = table.stack_of(number)
+	var room: int = 0
+
+	for i in range(first, mini(first + _out_slots(kind), box.SLOTS)):
+		if box.numbers[i] == 0:
+			room += stack if item_inst.is_empty() else 1
+		elif item_inst.is_empty() and box.inst[i].is_empty() and box.numbers[i] == number and box._mergeable(number, box.wear[i], item_wear):
+			room += maxi(stack - box.counts[i], 0)
+
+	return room
+
+
+# Puts a product into a station's output slots (the caller checked _out_room); whoever has it open sees it come. Returns what did not fit.
+func _out_add(id: int, number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}) -> int:
+	var it: Dictionary = _items[id]
+	var box = _chests[int(it["struct"]["uid"])]
+	var first: int = int(_structures.get(str(it["struct"]["kind"]), {}).get("slots", 0))
+	box.usable = mini(first + _out_slots(str(it["struct"]["kind"])), box.SLOTS)
+	var left: int = box.add(number, count, item_wear, item_inst, first)
+	box.usable = first
+	_push_box(id, box)
+	_dirty = true
+	return left
+
+
+# The store's fill for the world row (master s2.5 world-visible fill levels; the looks are placeholders): 0 empty, else 1 to 4 quarters of its
+# slots in use, rounded up so one stack shows.
+func _store_fill(it: Dictionary) -> int:
+	var box = _chests.get(int(it["struct"].get("uid", 0)))
+	var kind: String = str(it["struct"]["kind"])
+
+	if box == null:
+		return 0
+
+	var total: int = mini(int(_structures.get(kind, {}).get("slots", 0)) + _out_slots(kind), box.SLOTS)
+	var used: int = 0
+
+	for i in total:
+		if box.numbers[i] != 0:
+			used += 1
+
+	return 0 if used == 0 or total <= 0 else clampi(ceili(4.0 * float(used) / float(total)), 1, 4)
+
+
+# The station that keeps a finished craft: the one serving the recipe beside the player, when it has a store and the crafter owns it (a guest's
+# product goes to their pack, as before, so it never lands in someone else's station). -1 for any other craft.
+func _craft_store(peer: int, recipe: Dictionary, free_entry: bool) -> int:
+	if free_entry or str(recipe.get("station", "")) == "":
+		return -1
+
+	var id: int = serving_station(peer, str(recipe["station"]), int(recipe.get("station_level", 1)))
+
+	if id < 0 or not _is_station_store(_items[id]) or not CraftStock.owner_ok(str(_items[id]["struct"].get("owner", "")), str(_peer_key.get(peer, ""))):
+		return -1
+
+	return id
+
+
+# --- The Kiln batch (master s2.6 [D1]; Mission 001 T18) ---
+# Logs put in (at most batch_logs, the one burning included) turn to charcoal while the Kiln is lit: per_log pieces a log, one every
+# log_s / per_log real seconds, into its output. A log is taken when its turn starts, so taking logs out never undoes a piece. With every log done
+# and the Kiln still lit, it burns its own charcoal, one every self_burn_s, and goes out when none is left. E lights it while it holds wood and puts
+# it out; put out, it keeps everything (the part-burnt log too) and goes on where it stopped when lit again. A full output pauses it (it stays lit).
+# struct["kiln"] = {"left": pieces still to come from the log in the burn, "t": seconds toward the next piece}; saved in kilns.json by the store's uid.
+
+# Logs in the Kiln's input slots, plus the one in the burn.
+func _kiln_logs(it: Dictionary, box, def: Dictionary) -> int:
+	var logs: int = 1 if int(it["struct"].get("kiln", {}).get("left", 0)) > 0 else 0
+	var log_n: int = table.number_of("log")
+
+	for i in mini(int(def.get("slots", 0)), box.SLOTS):
+		if box.numbers[i] != 0 and (box.numbers[i] == log_n or table.group_members(log_n).has(box.numbers[i])):
+			logs += box.counts[i]
+
+	return logs
+
+
+# How many of `amount` logs a Kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything else.
+func _kiln_room(id: int, box, amount: int) -> int:
+	var def: Dictionary = _structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {})
+
+	if int(def.get("batch_logs", 0)) <= 0 or box == null:
+		return amount
+
+	return clampi(int(def["batch_logs"]) - _kiln_logs(_items[id], box, def), 0, amount)
+
+
+# E on a Kiln: lights it while it holds wood, puts it out when it burns.
+func _kiln_use(peer: int, it: Dictionary, def: Dictionary) -> void:
+	var box = _chests.get(int(it["struct"].get("uid", 0)))
+
+	if box == null:
+		return
+
+	if bool(it["struct"].get("lit", false)):
+		it["struct"]["lit"] = false
+		_say(peer, "You put the kiln out. What is in it stays.")
+	elif _kiln_logs(it, box, def) <= 0:
+		_say(peer, "Put logs in the kiln first (F).")
+		return
+	else:
+		it["struct"]["lit"] = true
+		it["struct"]["kiln"] = it["struct"].get("kiln", {"left": 0, "t": 0.0})
+		_say(peer, "The kiln is lit: each log gives %d charcoal." % int(def.get("per_log", 100)))
+
+	_dirty = true
+
+
+# One slow tick of a lit Kiln (_lights_tick).
+func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
+	var box = _chests.get(int(it["struct"].get("uid", 0)))
+
+	if box == null:
+		it["struct"]["lit"] = false
+		return
+
+	var k: Dictionary = it["struct"].get("kiln", {"left": 0, "t": 0.0})
+	it["struct"]["kiln"] = k
+	var per: float = maxf(float(def.get("log_s", 300.0)) / maxf(float(def.get("per_log", 100)), 1.0), 0.01)
+	var self_s: float = maxf(float(def.get("self_burn_s", 150.0)), 0.01)
+	var charcoal: int = table.number_of("charcoal")
+	var changed: bool = false
+	k["t"] = float(k.get("t", 0.0)) + spent
+
+	for _step in 1000:   # a slow tick is a quarter second, a few pieces at most; the cap only bounds a long jump
+		if int(k.get("left", 0)) <= 0 and _kiln_logs(it, box, def) > 0 and box.remove_fill(table.number_of("log"), 1):
+			k["left"] = int(def.get("per_log", 100))   # the next log's turn starts: it is in the burn now
+			changed = true
+
+		if int(k.get("left", 0)) > 0:
+			if float(k["t"]) < per:
+				break
+
+			if _out_room(it, charcoal) <= 0:
+				k["t"] = per   # full output pauses production
+				break
+
+			_out_add(id, charcoal, 1)
+			k["left"] = int(k["left"]) - 1
+			k["t"] = float(k["t"]) - per
+			changed = true
+		else:
+			if float(k["t"]) < self_s:
+				break
+
+			if box.remove(charcoal, 1):   # converted: it slowly burns its own charcoal
+				k["t"] = float(k["t"]) - self_s
+				changed = true
+			else:
+				it["struct"]["lit"] = false   # nothing left to burn: it goes out
+				k["t"] = 0.0
+				changed = true
+				break
+
+	if changed:
+		_push_box(id, box)
+		_dirty = true
+
+
+func _kilns_save() -> Dictionary:
+	var rows: Dictionary = {}
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and it["struct"].has("uid") and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "kiln" and (it["struct"].has("kiln") or bool(it["struct"].get("lit", false))):
+			var k: Dictionary = it["struct"].get("kiln", {})
+			rows[str(it["struct"]["uid"])] = [1 if bool(it["struct"].get("lit", false)) else 0, int(k.get("left", 0)), float(k.get("t", 0.0))]
+
+	return rows
+
+
+func _load_kilns() -> void:
+	var parsed: Variant = _read_json_version("kilns.json", 1)
+
+	if parsed == null or typeof(parsed.get("kilns", null)) != TYPE_DICTIONARY or (parsed["kilns"] as Dictionary).is_empty():
+		return
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or not it["struct"].has("uid") or str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) != "kiln":
+			continue
+
+		var row: Variant = parsed["kilns"].get(str(it["struct"]["uid"]), null)
+
+		if typeof(row) == TYPE_ARRAY and (row as Array).size() >= 3:
+			it["struct"]["lit"] = int(row[0]) == 1
+			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(def.get("per_log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(def.get("log_s", 300.0)), float(def.get("self_burn_s", 150.0))))}
 
 
 # --- Serving platters (master s3.15 [D15]; catalog Phase 8) ---
@@ -8991,6 +9246,9 @@ func _serve(peer: int, id: int, choice: int) -> void:
 
 func _struct_empty(id: int) -> bool:
 	var chest = _chests.get(int(_items.get(id, {}).get("struct", {}).get("uid", 0)))
+
+	if int(_items.get(id, {}).get("struct", {}).get("kiln", {}).get("left", 0)) > 0:
+		return false   # a Kiln with a log still turning to charcoal holds that log
 
 	if chest == null:
 		return true
@@ -9394,6 +9652,13 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 	var held_inst: Dictionary = inv.inst_of(a)
 	var amount: int = mini(count, inv.counts[a])
 	var max_kg: float = float(_structures.get(kind, {}).get("max_kg", 0.0))
+	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
+		amount = _kiln_room(id, chest, amount)
+
+		if amount == 0:
+			_say(peer, "The kiln holds %d logs." % int(_structures[kind]["batch_logs"]))
+			_reject(peer, 3)
+			return 0
 
 	if id < 0:
 		amount = mini(amount, BagRules.room(table, _bag_number(peer, id), chest))   # a quiver holds its ammo_capacity of arrows
@@ -14192,7 +14457,7 @@ func _light_rows_save() -> Array:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and bool(it["struct"].get("lit", false)):
+		if it.has("struct") and bool(it["struct"].get("lit", false)) and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) != "kiln":   # a Kiln is saved in kilns.json
 			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
 
 	return rows
@@ -14223,6 +14488,12 @@ func _lights_tick(spent: float) -> void:
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
+			var lit_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+			if str(lit_def.get("use", "")) == "kiln":   # a Kiln burns its logs to charcoal, not a fuel_left
+				_kiln_burn(int(id), it, lit_def, spent)
+				continue
+
 			# A torch out in the open rain goes out like an open fire (Dave, 4 Nov 2026); one under a crown, a roof or an overhang burns on.
 			if rain >= FlameRules.RAIN_DOUSE and bool(_structures.get(str(it["struct"]["kind"]), {}).get("rain_douses", false)) and not (cover_at.is_valid() and float(cover_at.call(it["pos"] + Vector3(0.0, 0.5, 0.0))) > 0.5):
 				it["struct"]["lit"] = false
@@ -15354,9 +15625,10 @@ func _is_storage(it: Dictionary) -> bool:
 	return int(def.get("slots", 0)) > 0 and not bool(def.get("take_only", false)) and str(def.get("use", "")) != "serve"   # a Serving Platter is a table display: no crafting stock, no storage views
 
 
-# The containers a craft or a blueprint site may use: [[world id, inventory, distance], ...], nearest first.
-func _craft_boxes(peer: int) -> Array:
-	return _stock_of(peer)["boxes"]
+# The containers a craft or a blueprint site may use: [[world id, inventory, distance, a station's store], ...], containers nearest first, then
+# station stores nearest first. `reach_x`: building with a better hammer reaches farther (_hammer_x).
+func _craft_boxes(peer: int, reach_x: float = 1.0) -> Array:
+	return _stock_of(peer, false, reach_x)["boxes"]
 
 
 # A loose item that counts as ground stock: not scatter, trees, fires, structures or boulders (the same as building's ground stock).
@@ -15368,7 +15640,9 @@ func _is_loose(it: Dictionary) -> bool:
 # "near": [[world id, distance], ...] the loose items within CraftStock.LOOSE_STOCK_M, nearest first}. The stock functions below take it.
 # `from_grid`: look only at the records the last world sync filed in the grid cells within reach (the hammer list's poll, display only: up to
 # SYNC_EVERY_S old, so a stack dropped since then shows on the next poll). Taking (crafts, blueprints) always scans every record.
-func _stock_of(peer: int, from_grid: bool = false) -> Dictionary:
+# `reach_x` scales both distances (building with a better hammer, master s2.1). Station stores come after the containers (master s4 item 10:
+# pack, ground stock, containers, then station inventories).
+func _stock_of(peer: int, from_grid: bool = false, reach_x: float = 1.0) -> Dictionary:
 	var stock: Dictionary = {"boxes": [], "near": []}
 
 	if not _peer_pos.has(peer):
@@ -15378,32 +15652,32 @@ func _stock_of(peer: int, from_grid: bool = false) -> Dictionary:
 	var here: Vector3 = _peer_pos[peer]
 
 	if from_grid and not _sync_grid.is_empty():
-		for sid in _stock_cells(here):
+		for sid in _stock_cells(here, reach_x):
 			if _items.has(sid):   # not taken since the grid was filed
-				_stock_note(stock, sid, here, key)
+				_stock_note(stock, sid, here, key, reach_x)
 	else:
 		for sid in _items:
-			_stock_note(stock, sid, here, key)
+			_stock_note(stock, sid, here, key, reach_x)
 
-	(stock["boxes"] as Array).sort_custom(func(a, b): return float(a[2]) < float(b[2]))
+	(stock["boxes"] as Array).sort_custom(func(a, b): return [a[3], float(a[2])] < [b[3], float(b[2])])
 	(stock["near"] as Array).sort_custom(func(a, b): return float(a[1]) < float(b[1]))
 	return stock
 
 
 # Files one record into a craft stock when it lies in reach: a loose stack within LOOSE_STOCK_M, or the player's own storage container within
 # CRAFT_REACH_M (not kept out). The distance is checked first, so the far records (most of them) cost one subtraction.
-func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String) -> void:
+func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String, reach_x: float = 1.0) -> void:
 	var s: Dictionary = _items[sid]
 	var d: float = (s["pos"] as Vector3).distance_to(here)
 
-	if d > maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M):
+	if d > maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M) * reach_x:
 		return
 
 	if _is_loose(s):
-		if d <= CraftStock.LOOSE_STOCK_M:
+		if d <= CraftStock.LOOSE_STOCK_M * reach_x:
 			(stock["near"] as Array).append([sid, d])
-	elif _is_storage(s) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d):
-		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d])
+	elif _is_storage(s) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
+		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _out_slots(str(s["struct"]["kind"])) > 0 else 0])
 
 
 # Loose stacks of an ingredient (or any member of its group: a `log` need takes any log) near the player: [[world id, count], ...], nearest first.
@@ -15504,8 +15778,8 @@ func _stock_covers(inv, recipe: Dictionary, times: int, stock: Dictionary) -> bo
 
 
 # The world ids the last sync filed in the grid cells that a craft's reach around `here` touches (one to four NEAR_M cells).
-func _stock_cells(here: Vector3) -> Array:
-	var reach: float = maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M)
+func _stock_cells(here: Vector3, reach_x: float = 1.0) -> Array:
+	var reach: float = maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M) * reach_x
 	var lo: Vector2i = Vector2i(int(floor((here.x - reach) / NEAR_M)), int(floor((here.z - reach) / NEAR_M)))
 	var hi: Vector2i = Vector2i(int(floor((here.x + reach) / NEAR_M)), int(floor((here.z + reach) / NEAR_M)))
 	var out: Array = []
@@ -15524,7 +15798,7 @@ const STOCK_POLL_MS := 500   # a hammer poll is answered at most this often per 
 # request and after a "keep out" change: item number -> count, the ground near them and their containers in reach. The client adds the pack.
 # `poll` (the hammer list while the player walks, ACT_CRAFT_STOCK a = 1): at most once per STOCK_POLL_MS, from the sync grid, and nothing is sent
 # when the stock is what this player was last sent (the client keeps the old counts).
-func _send_stock(peer: int, poll: bool = false) -> void:
+func _send_stock(peer: int, poll: bool = false, building: bool = false) -> void:
 	if not send_craft_stock.is_valid() or not _peer_pos.has(peer):
 		return
 
@@ -15537,7 +15811,7 @@ func _send_stock(peer: int, poll: bool = false) -> void:
 		_stock_poll_ms[peer] = now_ms
 
 	var counts: Dictionary = {}
-	var stock: Dictionary = _stock_of(peer, poll)
+	var stock: Dictionary = _stock_of(peer, poll, _hammer_x(peer) if poll or building else 1.0)   # the hammer list counts what that hammer reaches (master s2.1)
 
 	for row in stock["near"]:
 		var it: Dictionary = _items[int(row[0])]
@@ -15916,7 +16190,7 @@ func _view_open(peer: int, vid: int) -> void:
 	var totals: Dictionary = {}
 
 	for row in boxes:
-		for slot in row[1].usable:
+		for slot in _store_span(int(row[0]), row[1]):   # a station's output slots too
 			if int(row[1].numbers[slot]) != 0:
 				totals[int(row[1].numbers[slot])] = int(totals.get(int(row[1].numbers[slot]), 0)) + int(row[1].counts[slot])
 
@@ -15942,7 +16216,7 @@ func _view_take(peer: int, inv, vid: int, number: int, count: int) -> void:
 	for row in _view_boxes(peer, vid):
 		var took_here: bool = false
 
-		for slot in row[1].usable:
+		for slot in _store_span(int(row[0]), row[1]):   # a station's output slots too
 			if left <= 0:
 				break
 
@@ -16146,7 +16420,7 @@ func _bulk(peer: int, inv, kind: int, sort_key: int) -> void:
 func _bulk_take_all(peer: int, inv, id: int, box) -> int:
 	var moved: int = 0
 
-	for slot in box.usable:
+	for slot in _store_span(id, box):   # a station's output slots too
 		if box.numbers[slot] == 0 or is_shoulder_item(box.numbers[slot]):
 			continue
 
@@ -16192,6 +16466,7 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 func _box_room(sid: int, number: int, amount: int) -> int:
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
+	amount = _kiln_room(sid, box, amount)
 
 	if max_kg <= 0.0 or _carry_cfg.is_empty() or box == null:
 		return amount
@@ -16570,16 +16845,17 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 func _start_deferred(peer: int, head: Array) -> bool:
 	var inv = inventory_of(peer)
 	var times: int = int(head[1])
+	var stock: Dictionary = _stock_of(peer)   # parts made at a station wait in its output (master s2.5): the craft stock reaches them there
 
 	for need in head[3]:
-		if inv == null or not inv.has_fill(need[0], int(need[1]) * times):
+		if inv == null or _stock_have(inv, int(need[0]), stock) < int(need[1]) * times:
 			_cancel_craft(peer, 0)
 			_say(peer, "%s was cancelled: the parts it needed are gone" % str(recipes.recipe(int(head[0])).get("name", "That")))
 			return false
 
 	for need in head[3]:
 		var held: Array = []
-		inv.remove_fill(need[0], int(need[1]) * times, held)
+		_stock_take(inv, int(need[0]), int(need[1]) * times, stock, held)
 		var merged: bool = false
 
 		for have in head[2]:
@@ -16727,6 +17003,20 @@ func _craft_tick(spent: float) -> void:
 
 			continue
 
+		# A station with a store keeps what its owner makes there (master s2.5): with no room in its output the finished craft waits.
+		var made_n: int = int(recipe["gives"][0])
+		var made_inst: Dictionary = SmithingRules.made_inst(table.entry(table.id_of(made_n)), variant)
+		var made_age: int = _made_age(made_n, head)
+		var made_count: int = _chop_yield(head, false) if bool(recipe.get("chop", false)) else int(recipe["gives"][1])
+		var store_id: int = -1 if float(recipe.get("ready_age", 0.0)) > 0.0 else _craft_store(peer, recipe, free_entry)
+
+		if store_id >= 0 and _out_room(_items[store_id], made_n, made_inst, made_age) < made_count:
+			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
+				_station_said[peer] = Time.get_ticks_msec()
+				_say(peer, "Your %s waits: the %s is full. Take something out of it." % [str(recipe.get("name", "craft")), table.sentence_name(int(_items[store_id]["number"]))])
+
+			continue
+
 		queue["elapsed"] = 0.0
 		var inv = inventory_of(peer)
 
@@ -16760,8 +17050,16 @@ func _craft_tick(spent: float) -> void:
 
 			if sealed:
 				_give_batch(peer, int(recipe["gives"][0]), int(recipe["gives"][1]) * times)
+			elif store_id >= 0:
+				var spill: int = _out_add(store_id, made_n, _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count, made_age, made_inst)
+
+				if spill > 0:   # not reached (the room was checked this tick); kept so a disagreement with Inventory.add never loses the product
+					give(peer, made_n, spill, made_inst, made_age)
+
+				if int(head[1]) - times <= 0:
+					_say(peer, "%s done: it is in the %s." % [str(recipe.get("name", "Your craft")), table.sentence_name(int(_items[store_id]["number"]))])
 			else:
-				give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]), SmithingRules.made_inst(table.entry(table.id_of(int(recipe["gives"][0]))), variant), _made_age(int(recipe["gives"][0]), head))
+				give(peer, made_n, _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count, made_inst, made_age)
 
 			_gain_source = SRC_PICKUP
 			_goal_made(peer, int(recipe["gives"][0]))
@@ -16777,6 +17075,28 @@ func _craft_tick(spent: float) -> void:
 
 		_dirty = true
 		_sync_craft_queue(peer)
+
+
+# A Chopping block craft (recipes.json "chop", master s2.4) yields what chopping that log by hand yields (structures.json chopping_block): a large
+# log on the shoulder (every species log) 3 large blocks of 4 firewood each, a plain Log 3 blocks of 2. The log is the first unit the entry still
+# holds (crafts finish in the order the units were taken); `use` drops it from the entry, so a cancel refunds only the logs not yet chopped.
+# An entry with no recorded units (an admin craft) yields the recipe's count.
+func _chop_yield(entry: Array, use: bool) -> int:
+	var cfg: Dictionary = _structures.get("chopping_block", {})
+	var rows: Array = entry[2][0][2] if not (entry[2] as Array).is_empty() and (entry[2][0] as Array).size() > 2 else []
+
+	if rows.is_empty():
+		return int(recipes.recipe(int(entry[0])).get("gives", [0, 0])[1])
+
+	var big: bool = is_shoulder_item(int(rows[0][0]))
+	var made: int = int(cfg.get("blocks_per_shoulder_log", 3)) * int(cfg.get("firewood_per_large_block", 4)) if big else int(cfg.get("blocks_per_log", 3)) * int(cfg.get("firewood_per_block", 2))
+
+	if use and rows[0].size() > 3 and int(rows[0][3]) > 1:
+		rows[0][3] = int(rows[0][3]) - 1
+	elif use:
+		rows.remove_at(0)
+
+	return made
 
 
 const SEAL_MIN_FRESH := 0.5   # master s3.14: sealing refuses inputs below half freshness
@@ -16815,6 +17135,9 @@ func _batch_spots(peer: int, number: int) -> Array:
 		out.append([inv, -1, _fit(peer, inv, number, table.COUNT_MAX)])
 
 	for box in _craft_boxes(peer):
+		if bool(box[3]):
+			continue   # a station's store keeps its own products; a sealed batch goes to the pack and storage only (master s3.14)
+
 		box[1].usable = clampi(int(_structures.get(str(_items[int(box[0])]["struct"]["kind"]), {}).get("slots", box[1].SLOTS)), 1, box[1].SLOTS)
 
 		if _batch_slot(box[1], number):

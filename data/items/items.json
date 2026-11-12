@@ -268,16 +268,7 @@
 			"value": 20,
 			"retired": true
 		},
-		"chopping_block": {
-			"number": 25,
-			"name": "Chopping block",
-			"description": "A log set on end. Split wooden blocks into firewood on it.",
-			"kind": "placeable",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": [],
-			"value": 20
-		},
+		"chopping_block": {"number": 25, "name": "Chopping block", "description": "A log set on end. Split wooden blocks on it, or chop logs from your storage nearby into firewood.", "kind": "placeable", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "slots": 10},
 		"driftwood": {
 			"number": 30,
 			"name": "Driftwood",
@@ -287,16 +278,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"firewood": {
-			"number": 26,
-			"name": "Firewood",
-			"description": "Split wood. Burns long and steady.",
-			"kind": "material",
-			"pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2},
-			"stack": 40,
-			"look_alikes": [],
-			"value": 2
-		},
+		"firewood": {"number": 26, "name": "Hard firewood", "description": "Split hardwood. Burns long and steady, twice as long as soft firewood.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
@@ -1031,15 +1013,7 @@
 			"value": 120,
 			"look_alikes": []
 		},
-		"stone_forge": {
-			"number": 88,
-			"name": "Stone - Forge",
-			"description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"stone_forge": {"number": 88, "name": "Stone - Forge", "description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 8},
 		"blacksmithy_kit": {
 			"number": 89,
 			"retired": true,
@@ -1051,7 +1025,7 @@
 			"value": 600,
 			"look_alikes": []
 		},
-		"blacksmithy": {"number": 90, "name": "Smithy", "description": "A smithy with its own forge, anvil and bench. Fire it with charcoal or coal to work bronze, iron and steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": []},
+		"blacksmithy": {"number": 90, "name": "Smithy", "description": "A smithy with its own forge, anvil and bench. Fire it with charcoal or coal to work bronze, iron and steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 12},
 		"carcass": {
 			"number": 91,
 			"name": "Carcass",
@@ -1072,7 +1046,7 @@
 			"value": 900,
 			"look_alikes": []
 		},
-		"large_forge": {"number": 93, "name": "Blast furnace", "description": "A tall furnace that holds great heat. Makes steel and smelts in bulk.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20."},
+		"large_forge": {"number": 93, "name": "Blast furnace", "description": "A tall furnace that holds great heat. Makes steel and smelts in bulk.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20.", "slots": 12},
 		"master_forge_kit": {
 			"number": 94,
 			"future": true,
@@ -1084,7 +1058,7 @@
 			"value": 3000,
 			"look_alikes": []
 		},
-		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy for special and masterwork pieces.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21."},
+		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy for special and masterwork pieces.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21.", "slots": 12},
 		"log_oak": {
 			"number": 100,
 			"name": "Oak log",
@@ -2798,27 +2772,8 @@
 			"value": 1,
 			"sell_lot": 12
 		},
-		"wooden_block": {
-			"number": 234,
-			"name": "Wooden block",
-			"description": "A short round of a small log, bark still on. Burns longer than firewood, or split it on a chopping block.",
-			"kind": "material",
-			"pile": {"shape": "logs", "handful": 5, "color": [0.40, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true},
-			"stack": 10,
-			"look_alikes": [],
-			"value": 3
-		},
-		"firewood_soft": {
-			"number": 236,
-			"name": "Softwood firewood",
-			"description": "Split pine, spruce or fir. It catches fast and burns out quick.",
-			"kind": "material",
-			"pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2},
-			"stack": 40,
-			"look_alikes": [],
-			"value": 1,
-			"sell_lot": 12
-		},
+		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
+		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
 		"wooden_block_soft": {
 			"number": 237,
 			"name": "Softwood block",
@@ -2851,15 +2806,7 @@
 			"value": 400,
 			"look_alikes": []
 		},
-		"saw_mill": {
-			"number": 241,
-			"name": "Sawmill",
-			"description": "A water-driven sawmill. Stand near it to saw logs into planks.",
-			"kind": "structure",
-			"stack": 1,
-			"unstackable": true,
-			"look_alikes": []
-		},
+		"saw_mill": {"number": 241, "name": "Sawmill", "description": "A water-driven sawmill. Stand near it to saw logs into planks.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 10},
 		"woodworking_table_kit": {
 			"number": 242,
 			"retired": true,
@@ -5696,7 +5643,7 @@
 			"look_alikes": [],
 			"value": 6
 		},
-			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 20, "look_alikes": [], "value": 0.15},
+			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 100, "look_alikes": [], "value": 0.15},
 			"wool_cloth": {
 				"number": 548,
 				"name": "Wool cloth",
@@ -8065,16 +8012,7 @@
 				"look_alikes": [],
 				"value": 152
 			},
-			"kiln": {
-				"number": 771,
-				"name": "Kiln",
-				"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed station: row state 188."
-			},
+			"kiln": {"number": 771, "name": "Kiln", "description": "A domed brick kiln. Fires bricks and lime, and burns up to six logs to charcoal, a hundred from each.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 188.", "slots": 14},
 			"tanning_rack_kit": {
 				"number": 772,
 				"retired": true,
@@ -8848,16 +8786,7 @@
 				"future": true,
 				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: With yarn and thread; the hand cloth recipes go when it lands."
 			},
-			"loom": {
-				"number": 846,
-				"name": "Loom",
-				"description": "A wooden frame loom for weaving thread into cloth.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed station: row state 245 (Mission 001 phase 2b)."
-			},
+			"loom": {"number": 846, "name": "Loom", "description": "A wooden frame loom for weaving thread into cloth.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 245 (Mission 001 phase 2b).", "slots": 8},
 			"leather_belt": {
 				"number": 828,
 				"name": "Leather - Belt",
@@ -9543,29 +9472,11 @@
 				"look_alikes": [],
 				"value": 12
 			},
-			"smelter": {"number": 908, "name": "Smelter", "description": "A stone and clay furnace. Smelts ore into copper, tin and iron ingots, and alloys bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b)."},
+			"smelter": {"number": 908, "name": "Smelter", "description": "A stone and clay furnace. Smelts ore into copper, tin and iron ingots, and alloys bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b).", "slots": 8},
 			"bellows": {"number": 909, "name": "Bellows", "description": "Leather bellows for a smithy. It heats faster and burns less fuel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
 			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
-			"leatherworking_table": {
-				"number": 911,
-				"name": "Leatherworking table",
-				"description": "A bench with tools for cutting and stitching leather.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed station: row state 243 (Mission 001 phase 2b)."
-			},
-			"tailors_table": {
-				"number": 912,
-				"name": "Tailor's table",
-				"description": "A broad table for cutting and sewing cloth into clothes.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"note": "Placed station: row state 244 (Mission 001 phase 2b)."
-			},
+			"leatherworking_table": {"number": 911, "name": "Leatherworking table", "description": "A bench with tools for cutting and stitching leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 243 (Mission 001 phase 2b).", "slots": 8},
+			"tailors_table": {"number": 912, "name": "Tailor's table", "description": "A broad table for cutting and sewing cloth into clothes.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 244 (Mission 001 phase 2b).", "slots": 8},
 			"thread": {
 				"number": 913,
 				"name": "Thread",
@@ -10099,7 +10010,7 @@
 				"future": true,
 				"value": 80
 			},
-			"food_preparation_table": {"number": 1202, "name": "Food preparation table", "description": "A wooden table with a cutting board, knives and a rolling pin, for preparing food.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 250 (Mission 001 phase 6)."},
+			"food_preparation_table": {"number": 1202, "name": "Food preparation table", "description": "A wooden table with a cutting board, knives and a rolling pin, for preparing food.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 250 (Mission 001 phase 6).", "slots": 8},
 			"clay_griddle": {"number": 1203, "name": "Clay - Griddle", "description": "A flat clay cooking surface for flatbreads, cakes and light frying.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "griddle", "value": 4},
 			"campfire_roasting_spit": {"number": 1204, "name": "Campfire roasting spit", "description": "A spit that fits over a campfire for roasting large cuts of meat.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "roasting_spit", "value": 5},
 			"iron_grill_grate": {"number": 1205, "name": "Iron - Grill grate", "description": "An iron grate over a fire for grilling fish, meat and vegetables.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "grill_grate", "value": 35},

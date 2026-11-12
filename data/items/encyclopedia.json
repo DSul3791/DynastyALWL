@@ -2348,7 +2348,7 @@
 		"chopping_block": {
 			"name": "Chopping block",
 			"kind": "placeable",
-			"description": "A log set on end. Split wooden blocks into firewood on it.",
+			"description": "A log set on end. Split wooden blocks on it, or chop logs from your storage nearby into firewood.",
 			"how_to_get": [
 				"Craft: 1 Large wooden block"
 			],
@@ -2366,10 +2366,12 @@
 			"obtainable_now": true
 		},
 		"firewood": {
-			"name": "Firewood",
+			"name": "Hard firewood",
 			"kind": "material",
-			"description": "Split wood. Burns long and steady.",
+			"description": "Split hardwood. Burns long and steady, twice as long as soft firewood.",
 			"how_to_get": [
+				"Split a hardwood block on a chopping block: 2 hard firewood",
+				"Chopped at a chopping block: 1 Hardwood log (keep any axe) gives 12, as by hand",
 				"From chopping a stump",
 				"From a felled tree",
 				"Picked from fallen log",
@@ -4336,9 +4338,9 @@
 			"obtainable_now": true
 		},
 		"wooden_block": {
-			"name": "Wooden block",
+			"name": "Hardwood block",
 			"kind": "material",
-			"description": "A short round of a small log, bark still on. Burns longer than firewood, or split it on a chopping block.",
+			"description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.",
 			"how_to_get": [
 				"Strike a small log lying on the ground with an axe: 3 blocks"
 			],
@@ -4351,10 +4353,13 @@
 			"obtainable_now": true
 		},
 		"firewood_soft": {
-			"name": "Softwood firewood",
+			"name": "Soft firewood",
 			"kind": "material",
 			"description": "Split pine, spruce or fir. It catches fast and burns out quick.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Split a softwood block on a chopping block: 2 soft firewood",
+				"Chopped at a chopping block: 1 Softwood log (keep any axe) gives 12, a plain Log 6, as by hand"
+			],
 			"used_for": [
 				"Fast, short fuel for a fire (pine, spruce, fir).",
 				"Used in Charcoal"
@@ -7415,10 +7420,10 @@
 		"charcoal": {
 			"name": "Charcoal",
 			"kind": "material",
-			"description": "Firewood burned slow and starved of air. The best smelting fuel.",
+			"description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.",
 			"how_to_get": [
 				"Craft at a campfire: 2 Firewood",
-				"Craft at a kiln: 2 Firewood"
+				"Burned in a lit kiln: 100 from each log, up to six logs a batch"
 			],
 			"used_for": [
 				"Used in Copper ingot",
@@ -9562,7 +9567,7 @@
 		"kiln_kit": {
 			"name": "Kiln",
 			"kind": "placeable",
-			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"description": "A domed brick kiln. Fires bricks and lime, and burns up to six logs to charcoal, a hundred from each.",
 			"how_to_get": [
 				"Build with a hammer (press R): 30 Brick, 8 Clay, 4 Clay mortar"
 			],
@@ -9572,7 +9577,7 @@
 		"kiln": {
 			"name": "Kiln",
 			"kind": "structure",
-			"description": "A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal.",
+			"description": "A domed brick kiln. Fires bricks and lime, and burns up to six logs to charcoal, a hundred from each.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true

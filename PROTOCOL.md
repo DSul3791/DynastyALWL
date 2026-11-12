@@ -112,6 +112,8 @@ Structure states are the structures.json `state` numbers (the highest used is 22
 
 A placed sawmill's row (a structure whose structures.json row has `needs_running_water`) carries an extra key, `"wheel": percent`. That is its water wheel's share of full saw speed (server_items.wheel_percent, the same rule `_wheel_slow` uses; #1009). The look-at prompt shows it as "(the wheel gives 60 %)". There was no version bump, because older clients ignore the key.
 
+A station with a store (a structures.json row with `out_slots`: the Smelter, Smithy, Kiln, Sawmill, Chopping block and the other workstations, master s2.5, M001-T18) carries `"fill": 0..4` on its row: 0 empty, else the quarters of its store's slots in use, rounded up (server_items._store_fill), and the row is sent again when it changes. The look-at prompt shows it ("half full"); the looks are placeholders. Its store is an ordinary container on the wire (ACT_CHEST_OPEN / PUT / TAKE, chest_contents): slots 0 to `slots - 1` are the input, the next `out_slots` the output, which only the station's own production fills. No version bump: older clients ignore the key.
+
 ## Save formats
 
 Every server item file (inventories, world_items, tree_states, chests, vitals, craft_queues) is written atomically (.tmp then rename) and the file it replaces is first copied to `<name>.prev`. A file that does not parse is set aside as `.bad` and the `.prev` copy (one save interval old, 30 s) is restored in its place; a file from a newer version is set aside as `.bad` and not replaced by the old copy. Drilled by src/worldgen/tools/test_persistence_drills.gd.

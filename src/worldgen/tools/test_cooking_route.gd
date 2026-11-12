@@ -74,8 +74,22 @@ func craft(id: String, times: int, seconds: int) -> void:
 	for s in range(seconds):
 		items.tick(1.0)
 
+	collect()
+
 	for k in range(items.craft_queue_of(1).size()):   # a craft still waiting would hold up every later one: cancel it (refunded), the check then fails alone
 		items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+
+
+# Station products stay in the station (master s2.5, M001-T18): after a craft the player takes them out of their own station stores beside
+# them through the real server path (open, Take all, close), as a player does.
+func collect() -> void:
+	for id in items._items.keys():
+		var it: Dictionary = items._items.get(id, {})
+
+		if it.has("struct") and items._is_station_store(it) and str(it["struct"].get("owner", "")) == items.key_of(1) and (it["pos"] as Vector3).distance_to(items.position_of(1)) <= 4.0:
+			items.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+			items.action(1, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
+			items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 
 
 func blueprint_of(structure: String) -> Dictionary:

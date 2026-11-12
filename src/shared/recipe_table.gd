@@ -49,6 +49,7 @@ func load_file(path: String, item_table) -> bool:
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)), "locked": bool(row.get("locked", false)),
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),
 			"wears_tool": str(row.get("wears_tool", "")),
+			"chop": bool(row.get("chop", false)),   # a Chopping block recipe: it yields what the hand chop gives for the log taken (master s2.4, server_items._chop_yield)
 			"ready_age": float(row.get("ready_age", 0.0)),   # game hours a sealed batch matures (master s3.14): one timer for the whole batch, output at age 0
 		}
 		_by_number[entry["number"]] = entry
