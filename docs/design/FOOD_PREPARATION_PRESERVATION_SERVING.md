@@ -47,6 +47,12 @@
 | Uncooked Crab Cakes | Crab Cakes |
 | Banana Fritter Batter | Banana Fritters |
 
+**Open points from the master catalog's s3.12 reconciliation:**
+- Build the Food Preparation Table from logs and twine, like Log - Table 631, so bread stays pre-metal.
+- Move Energy bar and Fruit juice from hand recipes to the Table.
+- Butter belongs with preservation.
+- Map the attachments to `addon_of` structures with station tags.
+
 Keep existing finished food IDs. Original ingredients are consumed **once** at preparation. Finishing consumes the intermediate **without also charging ingredients again**. Reusable vessels survive. Uncooked items are actual inventory with spoilage. Suitable station and fuel/heat still matter. Cooking and storage may use permitted nearby workstation inventory under §2.5 of master catalog.
 
 ## 2. Simplified preservation — owner-approved workflow, item roster pending
@@ -57,6 +63,15 @@ Two *simple* recipes paths, generally matching the Food Preparation Table and fi
 2. **Passive jar/bottle maturation:** at the Food Preparation Table, supply ingredients **and real containers** to assemble any supported bulk batch: 10, 50 or **hundreds of bottles/jars** if material inputs and storage permit. Each produced sealed portion is **Maturing** and changes to **Ready** automatically when elapsed game time reaches its recipe ready time. No manual stirring, clicking individual jars, moving them to another workstation, or per-frame timers; storage of the jars is enough. Sauerkraut, fermented vegetables and suitable brined/pickled vegetables are examples. Do not represent heat-dependent jam processing as raw fruit + honey sealed into a safe preserve: cook/heating as appropriate before packaging.
 
 **Dumbed-down state model:** Maturing → Ready → Spoiled as relevant; ordinary fresh foods have their own shelf-life. Keep one game-time `ready_at` (or an equivalent batch time) plus expiry per batch/portion, update lazily when viewed/transferred/saved, not in continuous per-bottle physics. A transferred or split batch retains its maturation time and freshness. Different ready times should not silently collapse into a single stack with a reset clock. Storage (Root Cellar, Granary if approved) can modify shelf life according to a few consistent rules without microbiology, ambient humidity simulation or pointless micromanagement.
+
+**Engineering note (Claude, recommendation, not an owner rule):** passive maturation can reuse the live spoilage clock (`spoilage.json`) instead of adding a new timer.
+- **How the clock works today:** every perishable stack already keeps its age in the slot's `wear` field, and the server ages every pack and container by place and season.
+- **Rotting:** at full age a stack already turns into another item (`rotten_food`).
+- **Merging:** stacks only merge when their ages are within `merge_gap`.
+- **Maturation:** a "Maturing X" item would turn into "X" at its ready age, in the same way, and X then spoils normally.
+- **What it gives:** batch timing, safe stacking, save, load and network persistence all come with the existing system. Cold storage would also slow maturation, which is realistic.
+- **Cost:** each passively matured food needs one "Maturing" row, which the pending roster must count.
+- **Lazy updates:** today's ageing is a periodic server tick over stacks, not per bottle, so hundreds of jars cost no more than a few stacks. The "update lazily" wording above is therefore optional.
 
 **Safeguards:** moving/stacking jars must not reset spoilage or ready times; batch crafting consumes real recipe resources and real vessels; no free thousands of bottles; all content persists across multiplayer, saving, vehicle and warehouse movement; any scale/performance limits must be tuned and disclosed rather than arbitrary hidden limits.
 
@@ -77,6 +92,17 @@ No duplicate Fermentation Crock, second Smoker or extra Fish Drying Rack. The se
 - Spoilage/quality of its contents continue aging on the table; placing or repacking a board must not reset them. Capacity, shared access and item persistence obey regular inventory rules. Save/multiplayer transactions must be atomic and authorized.
 - Table size, clipping and dining animations need eventual art/interaction design; use the existing approved table furniture, **no extra new table type**.
 - If a recipe depends on a future ingredient (e.g. **Beef** is not a current distinct food ID; **Cheese** currently has `future: true`), mark it blocked for now rather than silently inventing livestock or activating future recipes.
+
+**Roster review notes (Claude, against `items.json`; for the owner review):**
+- **Possible duplicates of existing rows in the pending preservation list:**
+  - Salted Butter vs Butter 417 (FUTURE, hand recipe)
+  - Hard Cheese vs Cheese 418 (FUTURE)
+  - Cured Olives vs Olives 445
+  - Smoked Sausage vs Sausage 804 finished in the Smoker
+  - Smoked Meat and Salted Meat vs Jerky 406
+  - Dried Fish vs Salted fish 407 and Smoked fish 185
+- **Granary:** it exists nowhere in the data.
+- **Platter #5:** a live **Roast beast 191** ("feast_roast") and **Rosemary joint 275** exist. Naming the board after Roast beast would avoid the beef gate.
 
 ### Twenty named board/feast recipes — PROPOSAL, awaiting Dave's list approval
 
