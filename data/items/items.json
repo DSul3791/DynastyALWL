@@ -3450,7 +3450,7 @@
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"kind": "tool",
 			"tool_class": "striker",
-			"tier": 4,
+			"tier": 5,
 			"stack": 1,
 			"unstackable": true,
 			"future": true,
@@ -3849,7 +3849,7 @@
 				]
 			],
 			"value": 120,
-			"repair_station": "forge",
+			"repair_station": "brick_forge",
 			"edge": true
 		},
 		"iron_mace": {
@@ -3872,7 +3872,7 @@
 				]
 			],
 			"value": 110,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"iron_shield": {
 			"number": 320,
@@ -3894,7 +3894,7 @@
 				]
 			],
 			"value": 110,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"steel_sword": {
 			"number": 321,
@@ -3916,7 +3916,7 @@
 				]
 			],
 			"value": 250,
-			"repair_station": "forge",
+			"repair_station": "brick_forge",
 			"edge": true
 		},
 		"steel_mace": {
@@ -3939,7 +3939,7 @@
 				]
 			],
 			"value": 230,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"steel_shield": {
 			"number": 323,
@@ -3961,7 +3961,7 @@
 				]
 			],
 			"value": 230,
-			"repair_station": "forge"
+			"repair_station": "brick_forge"
 		},
 		"leather_cap": {
 			"number": 324,

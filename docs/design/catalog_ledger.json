@@ -4234,7 +4234,7 @@
    "state": "FUTURE-GATED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T09: tier 4 -> 5 by material rank (s4 item 13); row stays FUTURE"
   },
   {
    "key": "javelin",
@@ -4585,7 +4585,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "iron_mace",
@@ -4599,7 +4599,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "iron_shield",
@@ -4613,7 +4613,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "steel_sword",
@@ -4627,7 +4627,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "steel_mace",
@@ -4641,7 +4641,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "steel_shield",
@@ -4655,7 +4655,7 @@
    "state": "NOT STARTED",
    "tests": [],
    "accepted_commit": null,
-   "note": "FUTURE row switched on (Q1, STATE.md)"
+   "note": "FUTURE row switched on (Q1, STATE.md); M001-T09: repair_station forge -> brick_forge (iron and steel are worked at the Smithy, s4 item 1)"
   },
   {
    "key": "leather_cap",
