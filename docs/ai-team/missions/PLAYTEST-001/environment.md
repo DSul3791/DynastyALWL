@@ -6,8 +6,8 @@ Dave's playtest findings of 12 Nov 2026, environmental realism (priority 4). Bas
 
 | Test | Status | Evidence |
 |---|---|---|
-| TEST-007 Tree canopies missing central foliage | NEEDS PLAYER VERIFICATION | Cause found and fixed in the tree models; `test_canopy_cover` written. Not yet seen on screen; Godot tests not yet run on the PC. |
-| TEST-011 Campfire smoke disappears at canopy height | NEEDS PLAYER VERIFICATION | Tall plume added; `test_fire_smoke` extended. Not yet seen on screen; Godot tests not yet run on the PC. Seen from 100 m at most (see limits). |
+| TEST-007 Tree canopies missing central foliage | NEEDS PLAYER VERIFICATION | Cause found and fixed in the tree models; `test_canopy_cover` written. Tests PASS on the PC (50b05ed5); not yet seen on screen. |
+| TEST-011 Campfire smoke disappears at canopy height | NEEDS PLAYER VERIFICATION | Tall plume added; `test_fire_smoke` extended. Tests PASS on the PC (50b05ed5); not yet seen on screen. Seen from 100 m at most (see limits). |
 
 ## TEST-007: cause
 
@@ -53,10 +53,10 @@ Limit (a `shortcut:` comment in the code): a fire is drawn only while the server
 
 | Test | What | Run |
 |---|---|---|
-| `test_canopy_cover` (new) | builds the near models of maple, beech, oak, sweet chestnut and walnut as the game does and checks leaves cover at least 92% (oak 82%, all four oak variants) of the sky within 20 degrees of overhead (card shapes; to be calibrated on the first PC run); no leaves, so no core, on the winter model; the core is near-only and inside the crown | PASS (PC, 50b05ed5) |
+| `test_canopy_cover` (new) | builds the near models of maple, beech, oak, sweet chestnut and walnut as the game does and checks leaves cover at least 92% (oak 82%, all four oak variants) of the sky within 20 degrees of overhead (card shapes); no leaves, so no core, on the winter model; the core is near-only and inside the crown | PASS (PC, 50b05ed5) |
 | `test_fire_smoke` (extended) | the tall plume: unseen at the fire, above 35 m in a calm and 25 m in a breeze, stops at about 30 m on a still night, spreads, cull box holds it, warm start no dearer than the near plume; the nearest-six cap and its hand-over when a fire goes out | PASS (PC, 50b05ed5) |
 
-PC run, 12 Nov 2026, Dave's PC (ManlandRyzen5), Godot 4.7.2 voxel build, separate worktree at `50b05ed5a9145cd18f75dceac283424ab5584477`: **68/68 PASS**. Scoped plan agreed by the gate reviewer: the selector's set for the non-trigger files (60, the always set included) plus test_fire_state_look, test_lit_fixture, test_forge_models, test_flora_budget, test_flora_load_order, test_flora_close, test_fruit_tree, test_fruit_share, test_season_fruit, test_fell_autosplit, test_bare_winter, test_tree_sway, test_leanto_collider, test_cave_not_rock, test_buildable_looks_b4. The full selection (202, from the shared `tree_builder.gd` and `building_look.gd`) is deferred to the broad run before `main`.
+PC run, 12 Nov 2026, Dave's PC (ManlandRyzen5), Godot 4.7.2 voxel build, separate worktree at `50b05ed5a9145cd18f75dceac283424ab5584477`: **68/68 PASS** (68 distinct tests after removing the names on both lists). Scoped plan agreed by the gate reviewer: the selector's set for the non-trigger files (60, the always set included) plus test_fire_state_look, test_lit_fixture, test_forge_models, test_flora_budget, test_flora_load_order, test_flora_close, test_fruit_tree, test_fruit_share, test_season_fruit, test_fell_autosplit, test_bare_winter, test_tree_sway, test_leanto_collider, test_cave_not_rock, test_buildable_looks_b4. The full selection (202, from the shared `tree_builder.gd` and `building_look.gd`) is deferred to the broad run before `main`.
 
 - Canopy cover measured (card shapes, 20 degrees overhead): maple 98 and 99%, beech 100 and 99%, oak 98, 96, 98, 96% (all four variants), sweet chestnut 100%, walnut 100 and 100%; sweet chestnut variant 0 skipped (a dying crown by design). Winter models: no leaves.
 - Smoke: tall plume a fifth as thick at 44 m in a calm, 34 m up and 43 m downwind in a 2 m/s breeze, stops at about 30 m on a still night, puffs 10 m wide at the end; 9 fires: the 6 nearest draw it.
