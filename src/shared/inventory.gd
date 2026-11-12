@@ -75,21 +75,22 @@ func _joined_age(number: int, wear_a: int, count_a: int, wear_b: int, count_b: i
 	return int(round(float(wear_a * count_a + wear_b * count_b) / float(maxi(count_a + count_b, 1))))
 
 
-func add(number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}) -> int:
+# `first`: only the slots from there up to usable take it (a station's output slots come after its input slots, master s2.5).
+func add(number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}, first: int = 0) -> int:
 	if number <= 0 or count <= 0 or table == null:
 		return count
 
 	var stack: int = 65535 if stack_all else table.stack_of(number)
 	var left: int = count
 
-	for i in usable:
+	for i in range(first, usable):
 		if left > 0 and item_inst.is_empty() and inst[i].is_empty() and numbers[i] == number and counts[i] < stack and _mergeable(number, wear[i], item_wear):
 			var put: int = mini(left, stack - counts[i])
 			wear[i] = _joined_age(number, wear[i], counts[i], item_wear, put)
 			counts[i] += put
 			left -= put
 
-	for pass_from in [bag_from, 0]:
+	for pass_from in [maxi(bag_from, first), first]:
 		for i in range(pass_from, usable):
 			if left > 0 and numbers[i] == 0:
 				var put: int = mini(left, stack)

@@ -14,9 +14,10 @@ static func owner_ok(owner_key: String, player_key: String) -> bool:
 	return owner_key != "" and owner_key == player_key
 
 
-# A storage container counts for a craft when the player owns it, it is not ticked "keep out" and it stands within CRAFT_REACH_M.
-static func box_counts(owner_key: String, keep_out: bool, player_key: String, distance_m: float) -> bool:
-	return not keep_out and owner_ok(owner_key, player_key) and distance_m <= CRAFT_REACH_M
+# A storage container counts for a craft when the player owns it, it is not ticked "keep out" and it stands within CRAFT_REACH_M (building with a
+# better hammer passes a longer reach_m, master s2.1).
+static func box_counts(owner_key: String, keep_out: bool, player_key: String, distance_m: float, reach_m: float = CRAFT_REACH_M) -> bool:
+	return not keep_out and owner_ok(owner_key, player_key) and distance_m <= reach_m
 
 
 # Splits `want` across sources in the order given (the pack, then the ground, then the containers nearest first): how many each one gives.

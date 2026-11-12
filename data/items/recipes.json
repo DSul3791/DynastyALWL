@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs. 'ready_age' (game hours, Mission 001 phase 6, master s3.14): a sealed batch at the Preserving jar; the whole queued count is made at once at age 0 and is Maturing (not eaten, used, sold or merged with a Ready stack) until its age reaches ready_age; its inputs must be at least half fresh.",
-	"next_number": 659,
+	"next_number": 722,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -6805,7 +6805,7 @@
 			"known": true,
 			"station": "kiln"
 		},
-		"kiln_charcoal": {"number": 364, "name": "Charcoal", "category": "Materials", "needs": [["log", 1]], "gives": ["charcoal", 100], "craft_s": 120.0, "known": true, "station": "kiln"},
+		"kiln_charcoal": {"number": 364, "name": "Charcoal", "category": "Materials", "needs": [["log", 1]], "gives": ["charcoal", 100], "craft_s": 120.0, "known": true, "station": "kiln", "retired": true},
 		"press_lamp_oil_linseed": {
 			"number": 365,
 			"name": "Lamp oil (linseed)",
@@ -7940,6 +7940,8 @@
 		"tavern_supper_board": {"number": 655, "name": "Tavern supper board", "category": "Food and drink", "needs": [["venison_pie", 1], ["fish_pie", 1], ["flatbread", 1], ["roast_roots", 1]], "gives": ["tavern_supper_board", 4], "craft_s": 6.0, "known": true, "station": "food_preparation_table"},
 		"breakfast_platter": {"number": 656, "name": "Breakfast platter", "category": "Food and drink", "needs": [["boiled_egg", 2], ["oat_cakes", 2], ["sausage", 1]], "gives": ["breakfast_platter", 5], "craft_s": 6.0, "known": true, "station": "food_preparation_table"},
 		"dessert_platter": {"number": 657, "name": "Dessert platter", "category": "Food and drink", "needs": [["apple_pie", 1], ["honey_loaf", 1], ["baked_apples", 1], ["berry_compote", 1]], "gives": ["dessert_platter", 4], "craft_s": 6.0, "known": true, "station": "food_preparation_table"},
-		"serving_platter": {"number": 658, "name": "Serving platter", "category": "Containers and furniture", "needs": [["wooden_block", 2]], "gives": ["serving_platter", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]]}
+		"serving_platter": {"number": 658, "name": "Serving platter", "category": "Containers and furniture", "needs": [["wooden_block", 2]], "gives": ["serving_platter", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]]},
+		"chopping_soft_firewood": {"number": 720, "name": "Soft firewood", "category": "Materials", "needs": [["log_spruce", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood_soft", 6], "craft_s": 12.0, "known": true, "station": "chopping_block"},
+		"chopping_hard_firewood": {"number": 721, "name": "Hard firewood", "category": "Materials", "needs": [["log_oak", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood", 6], "craft_s": 12.0, "known": true, "station": "chopping_block"}
 	}
 }

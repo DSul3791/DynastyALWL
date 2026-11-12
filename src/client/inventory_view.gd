@@ -904,11 +904,19 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return {"prompt": "Press E to set a food board on the platter (hold E to take it up)", "tap": func(): _ask_open(id), "hold": take_down}
 
+	if state == 7:   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2); F chops logs from storage nearby (master s2.4)
+		return {"prompt": "Press E to split firewood, F to chop logs from storage%s (hold E to pick up the block)" % _fill_note(id), "tap": func(): _use_block(id), "hold": take_down}
+
+	var store_def: Dictionary = _structure_by_state(state)
+
+	if str(store_def.get("use", "")) == "kiln":   # the Kiln (master s2.6): E lights it and puts it out, like a fire; F for its logs and charcoal
+		return {"prompt": "Press E to %s, F for its logs and charcoal%s (hold E to take it down)" % ["put the kiln out" if bool(_world[id].get("lit", false)) else "light the kiln", _fill_note(id)], "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	if str(store_def.get("station", "")) != "" and int(store_def.get("out_slots", 0)) > 0:   # a station with a store (master s2.5): E opens the store, F crafts
+		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
+
 	if _is_chest(state):
 		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}
-
-	if state == 7:
-		return {"prompt": "Press E to split firewood (hold E to pick up the block)", "tap": func(): _use_block(id), "hold": take_down}   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2)
 
 	if state == 33:
 		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
@@ -1072,7 +1080,13 @@ func open_container() -> bool:
 	if best == 0:
 		return false
 
-	if str(_structure_by_state(int(_world[best]["state"])).get("station", "")) != "":
+	var best_def: Dictionary = _structure_by_state(int(_world[best]["state"]))
+
+	if str(best_def.get("station", "")) != "" and int(best_def.get("out_slots", 0)) > 0:   # a station with a store: its window, on the Craft tab (the Kiln: on its store)
+		_ask_open(best, str(best_def.get("use", "")) != "kiln")
+		return true
+
+	if str(best_def.get("station", "")) != "":
 		_open_station()
 		return true
 
@@ -1102,13 +1116,13 @@ func pick_up_nearest() -> bool:
 	if id == 0:
 		return false
 
-	if _is_chest(int(_world[id]["state"])) and not Input.is_key_pressed(KEY_SHIFT):
-		_ask_open(id)
-		return true
-
-	if _world[id]["state"] == 7 and not Input.is_key_pressed(KEY_SHIFT):
+	if _world[id]["state"] == 7 and not Input.is_key_pressed(KEY_SHIFT):   # before the chest test: the chopping block has a store now (master s2.4)
 		net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
 		_block_next_msec = Time.get_ticks_msec() + 600
+		return true
+
+	if _is_chest(int(_world[id]["state"])) and not Input.is_key_pressed(KEY_SHIFT):
+		_ask_open(id)
 		return true
 
 	pick_stamp = Time.get_ticks_msec()
@@ -2258,10 +2272,20 @@ func eat_slot(slot: int) -> void:
 # Asks the server to open a container. The server also pushes fresh contents while it is open (a fire eating wood); a push that arrives when
 # no window is open and none was asked for in the last 2 s is ignored, so closing the window is not undone.
 var _open_asked_msec: int = -100000
+var _craft_first: bool = false   # the window being asked for is a station's: it opens on the Craft tab, its store one tab away
 
 
-func _ask_open(id: int) -> void:
+# A station store's fill for the look-at line (server_items._store_fill: 0 empty, 1 to 4 quarters), "" for anything else.
+func _fill_note(id: int) -> String:
+	if not _world.has(id) or not _world[id].has("fill"):
+		return ""
+
+	return " (%s)" % ["empty", "a quarter full", "half full", "three quarters full", "full"][clampi(int(_world[id]["fill"]), 0, 4)]
+
+
+func _ask_open(id: int, craft_first: bool = false) -> void:
 	_open_asked_msec = Time.get_ticks_msec()
+	_craft_first = craft_first
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
 
 
@@ -2280,7 +2304,8 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		open = true
 		_build_panel()
 		_panel.visible = true      # one window, the container in its Craft column (4.4)
-		chest_tab = true
+		chest_tab = not _craft_first
+		_craft_first = false
 		_container_part.build()
 		_show_tab()
 
@@ -2503,6 +2528,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("wheel"):
 				_world[id]["wheel"] = int(row[5]["wheel"])   # a sawmill's water wheel share in percent (server_items.wheel_percent)
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("fill"):
+				_world[id]["fill"] = int(row[5]["fill"])   # a station store's fill (server_items._store_fill)
+				_world[id]["lit"] = bool(row[5].get("lit", false))   # a Kiln: E lights it or puts it out
 
 			_note_platter(id, row, state)
 

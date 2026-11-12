@@ -14,5 +14,7 @@
 	"good_condition": 0.98,
 	"ground_m": 6.0,
 	"site_gather_m": 12.0,
+	"hammer_reach_x": {"1": 1.0, "2": 1.25, "3": 1.5, "4": 2.0, "5": 2.5},
+	"hammer_reach_note": "Master s2.1 (better hammers gain only automatic material-sourcing range and durability), Mission 001 T18: by the hammer tier (Wooden 1 to Steel 5) of the heaviest working hammer on the hotbar, every building distance is multiplied by this: the 12 m stock of a blueprint and a site deposit (pack, ground, own containers and station stores), site_gather_m, the 4 m heavy stock beside a site, and a repair's ground_m and container reach. A wooden hammer keeps today's distances (Dave 10 Nov: 12 m); a steel one reaches 30 m. s5 tuning numbers.",
 	"site_gather_note": "Dave 10 Nov 2026 ('craft from containers is always a mode people love in other games we are going to build it right in and make it better. it will even pick stuff up from the ground'): the hammer in Repair mode, left click on a blue blueprint site, pulls what it still needs from within site_gather_m of the builder: the pack first, then loose items on the ground and the builder's own containers (not ticked keep out; the crafting rule, craft_stock.gd), nearest first. Always on. Only what is still needed is taken."
 }
