@@ -17,6 +17,7 @@ const FULL := {"sharp": 12, "max_d": 180, "temper": 1, "craft": 2, "magic": ["fl
 var failures: int = 0
 var slots_sent: Array = []
 var worn_sent: Array = []
+var notices: Array = []
 
 
 func check(ok: bool, what: String) -> void:
@@ -26,13 +27,13 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-func make():
+func make(dir: String = DIR):
 	var items = ItemsScript.new()
 	items.send_full = func(_p, _b): pass
 	items.send_slots = func(_p, b): slots_sent.append(b)
 	items.send_world_items = func(_p, _a, _r): pass
 	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	items.send_notice = func(_p, _t): pass
+	items.send_notice = func(_p, t): notices.append(str(t))
 	items.send_carry = func(_p, _id): pass
 	items.send_chest = func(_p, _id, _b): pass
 	items.send_chest_info = func(_p, _id, _k, _m): pass
@@ -41,7 +42,7 @@ func make():
 	items.send_favourites = func(_p, _f): pass
 	items.send_worn = func(_p, numbers, insts): worn_sent = [numbers, insts]
 	items.ground_height = func(_x, _z): return 10.0
-	items.setup(ItemTableScript.load_default(), DIR)
+	items.setup(ItemTableScript.load_default(), dir)
 	items.admin_mode_on = func(_p): return false
 	items.peer_connected_hello(1, KEY)
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
@@ -272,9 +273,82 @@ func _init() -> void:
 	var kit: int = table.number_of("campfire_kit")
 	inv.add(kit, 1, 0, {"craft": 1})
 	var things: int = items._items.size()
-	items._place(1, inv, slot_with(inv, kit, {"craft": 1}), Vector3(1.5, 10.0, 0.0))
+	items._place(1, inv, slot_with(inv, kit, {"craft": 1}), Vector3(-1.5, 10.0, -1.0))
 	check(slot_with(inv, kit, {"craft": 1}) >= 0 and items._items.size() == things, "an instance item is never set down as a placed piece (it would turn plain)")
 	inv.clear_slot(slot_with(inv, kit, {"craft": 1}))
+	inv.add(kit, 1)
+	items._place(1, inv, slot_with(inv, kit, {}), Vector3(-1.5, 10.0, -1.0))
+	check(inv.count_of(kit) == 0 and items._items.size() == things + 1, "the same kit without instance data is set down there (positive control)")
+
+	# Building costs and groups: an instance log lower in the log group's spend order is never taken; plain logs of another member are.
+	var log_n: int = table.number_of("log")
+	var order: PackedInt32Array = table.spend_order(log_n)
+	check(order.size() >= 2, "the log group has two members to spend (%s)" % str(order))
+	var low: int = order[0] if order.size() > 0 else 0
+	var high: int = order[1] if order.size() > 1 else 0
+	var logs = InventoryScript.new(table)
+	logs.add(low, 1, 0, {"craft": 1})
+	logs.add(high, 2)
+	check(logs.count_fill(log_n, true) == 2 and logs.remove_fill(log_n, 2, [], true) and logs.count_of(high) == 0 and slot_with(logs, low, {"craft": 1}) >= 0, "remove_fill(plain_only) takes the plain logs and leaves the instance log first in spend order")
+	check(not logs.remove_fill(log_n, 1, [], true) and slot_with(logs, low, {"craft": 1}) >= 0, "and refuses when only the instance log is left")
+	inv.add(low, 1, 0, {"craft": 1})
+	inv.add(high, 2)
+	var took_logs: int = items._stock_take(inv, log_n, 2, items._stock_of(1), [], true)
+	check(took_logs == 2 and slot_with(inv, low, {"craft": 1}) >= 0 and inv.count_of(high) == 0, "a blueprint's _stock_take(plain_only) does the same from the pack (took %d)" % took_logs)
+	inv.clear_slot(slot_with(inv, low, {"craft": 1}))
+
+	# A large log that does not fit is never doubled: the chest or the ground keeps it and nothing is laid at the player's feet.
+	var big: int = table.number_of("log_oak")
+	var filler: Array = []
+
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] == 0:
+			inv.numbers[slot] = stone
+			inv.counts[slot] = 1
+			filler.append(slot)
+
+	var logs_out: Callable = func() -> int:
+		var seen: int = chest.count_of(big)
+
+		for id in items._items:
+			if int(items._items[id].get("number", 0)) == big:
+				seen += int(items._items[id]["count"])
+
+		return seen
+
+	chest.add(big, 1)
+	var before_logs: int = logs_out.call()
+	items.action(1, Net.ACT_CHEST_TAKE, chest.numbers.find(big), chest_id, 1, Vector3.ZERO)
+	check(chest.count_of(big) == 1 and logs_out.call() == before_logs and inv.count_of(big) == 0, "a full pack takes no log from the chest and none appears on the ground")
+	chest.clear_slot(chest.numbers.find(big))
+	items.drop_in_world(big, 1, Vector3(1.0, 10.0, 0.0))
+	var log_id: int = -1
+
+	for id in items._items:
+		if int(items._items[id].get("number", 0)) == big:
+			log_id = id
+
+	before_logs = logs_out.call()
+	items.action(1, Net.ACT_PICKUP, log_id, 0, 0, Vector3.ZERO)
+	check(before_logs == 1 and logs_out.call() == 1 and items._items.has(log_id) and inv.count_of(big) == 0, "a full pack picks up no log and the ground holds one, not two")
+	items._items.erase(log_id)
+
+	for slot in filler:
+		inv.clear_slot(slot)
+
+	# A craft cancel gives plain stacks back with their wear (food age, wet wood), not fresh.
+	for slot in inv.SLOTS:
+		if inv.numbers[slot] == fibre:
+			inv.clear_slot(slot)
+
+	inv.add(fibre, 3, 7)
+	items._last_queue_act.erase(1)
+	items.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	check(inv.count_of(fibre) == 0, "the Twine takes the three worn fibres")
+	items._last_queue_act.erase(1)
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	var aged: int = inv.numbers.find(fibre)
+	check(inv.count_of(fibre) == 3 and aged >= 0 and inv.wear[aged] == 7, "a cancel gives plain units back with their recorded wear")
 	var berries: int = table.number_of("berries")
 
 	if berries > 0 and table.shelf_units(berries) > 0:
@@ -331,6 +405,47 @@ func _init() -> void:
 		remains = back._chests.get(int(back._items[id]["struct"].get("uid", 0)))
 
 	check(remains != null and slot_with(remains, axe, mighty) >= 0, "the remains keep the instance")
+
+	# Craft-queue unit rows from a save: [number, inst] (oldest), [number, inst, wear] (T04), [number, inst, wear, count] (now) all load and refund.
+	var dir2: String = DIR + "_queue"
+	DirAccess.make_dir_recursive_absolute(dir2)
+
+	for file in DirAccess.get_files_at(dir2):
+		DirAccess.remove_absolute(dir2 + "/" + file)
+
+	var rows: Array = [[fibre, {"craft": 1}], [fibre, {"craft": 2}, 5], [fibre, {}, 8, 2]]
+	var file: FileAccess = FileAccess.open(dir2 + "/craft_queues.json", FileAccess.WRITE)
+	file.store_string(JSON.stringify({"version": 1, "players": {KEY: {"entries": [[1, 2, [[fibre, 3, rows]], [], 0]], "elapsed": 0.0}}}))
+	file.close()
+	var third = make(dir2)
+	var third_inv = third.inventory_of(1)
+	empty_pack(third_inv)
+	var loaded: Array = third._queue_of(1).get("entries", [[0, 0, [[0, 0, []]]]])[0][2][0][2]
+	check(loaded == [[fibre, {"craft": 1}, 0, 1], [fibre, {"craft": 2}, 5, 1], [fibre, {}, 8, 2]], "two-, three- and four-value unit rows load (%s)" % str(loaded))
+	third.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	var c1: int = slot_with(third_inv, fibre, {"craft": 1})
+	var c2: int = slot_with(third_inv, fibre, {"craft": 2})
+	var worn8: int = -1
+
+	for slot in third_inv.SLOTS:
+		if third_inv.numbers[slot] == fibre and third_inv.inst_of(slot).is_empty() and third_inv.wear[slot] == 8:
+			worn8 = slot
+
+	check(third_inv.count_of(fibre) == 6 and c1 >= 0 and third_inv.wear[c1] == 0 and c2 >= 0 and third_inv.wear[c2] == 5 and worn8 >= 0, "the cancel gives each row back as it was, the rest plain (fibre does not age, so the plain ones join the worn stack) (%s)" % str(third_inv.to_json_array().filter(func(r): return int(r[0]) != 0)))
+	for slot in third_inv.SLOTS:
+		if third_inv.numbers[slot] == fibre:
+			third_inv.clear_slot(slot)
+
+	third_inv.add(fibre, 3, 4)
+	third._last_queue_act.erase(1)
+	third.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	third._dirty = true
+	third.save()
+	third._finish_writer()
+	var fourth = make(dir2)
+	var saved_rows: Array = fourth._queue_of(1).get("entries", [[0, 0, [[0, 0, []]]]])[0][2][0]
+	check(saved_rows.size() > 2 and not (saved_rows[2] as Array).is_empty() and int(saved_rows[2][0][2]) == 4 and int(saved_rows[2][0][3]) == 3, "a queued craft's unit rows survive a save and reload (%s)" % str(saved_rows))
+	fourth._finish_writer()
 
 	print("item instances: %d failures" % failures)
 	items._finish_writer()
