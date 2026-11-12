@@ -1138,7 +1138,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_VIEW_PUT:
 		_view_put(peer, inv, a, b, count)
 	elif kind == Net.ACT_CART:
-		_carts.action(peer, inv, b, a)
+		_carts.action(peer, b, a)
 	elif kind == Net.ACT_CRAFT_STOCK:
 		_send_stock(peer, a == 1)   # a = 1: the hammer list's poll while walking (held_item.gd), answered cheaply and only when the stock changed
 	elif kind == Net.ACT_FAVOURITE:

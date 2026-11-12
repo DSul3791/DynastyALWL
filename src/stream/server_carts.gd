@@ -118,7 +118,7 @@ func place_kind(it: Dictionary, kind_of_uid: Dictionary) -> String:
 	return str(kind_of_uid.get(int(it["struct"]["on"]), it["struct"]["kind"])) if it["struct"].has("on") else str(it["struct"]["kind"])
 
 
-func action(peer: int, inv, op: int, a: int) -> void:
+func action(peer: int, op: int, a: int) -> void:
 	if op == OP_GRAB:
 		_grab(peer, a)
 	elif op == OP_RELEASE:
@@ -282,7 +282,7 @@ func _grade(at: Vector3, heading: Vector2) -> float:
 # Moves the cart and the crates on it; the players who see them hear of it at once (items_moved), the rest at the next world sync.
 func _move(id: int, cart: Dictionary, to: Vector3, yaw_deg: float, riders: Array) -> void:
 	cart["pos"] = to
-	cart["struct"]["yaw"] = posmod(yaw_deg, 360.0)
+	cart["struct"]["yaw"] = fposmod(yaw_deg, 360.0)
 	var ids: PackedInt32Array = PackedInt32Array([id])
 	var at: PackedVector3Array = PackedVector3Array([to])
 	var yaws: PackedFloat32Array = PackedFloat32Array([cart["struct"]["yaw"]])
