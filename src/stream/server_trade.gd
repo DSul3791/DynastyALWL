@@ -348,6 +348,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if not kinds.has("all") and not kinds.has(str(entry.get("kind", ""))):
 		return "The trader does not buy that."
 
+	if inv.inst_of(a).has("bag"):   # a sale ends the item, so a bag that holds anything is refused, never sold with its contents (master s3.9 rule 3)
+		return "Empty the bag first."
 	if inv.maturing_at(a):   # a sealed batch is sold only once Ready (master s3.14 [D14])
 		return "That is still maturing."
 

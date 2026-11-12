@@ -20,7 +20,8 @@ const HOTBAR_KEYS := 10
 var hotbar: PackedInt32Array = PackedInt32Array()    # the pointer hotbar (inventory step 4, a pack only): keys 1 to 9 and 0 each hold an item number, 0 none; see key_slot
 # Per-instance data (catalog Phase 1b, master s2.2, s2.9, s4 items 2, 15, 16): {} for a plain item, else only the keys that are not default:
 # sharp (sharpness used, int), max_d (current maximum durability, int; absent = the row's durability), temper (1), craft (1 or 2, fixed at craft time),
-# magic (two Strings, "" empty; a slot is filled only while empty and nothing clears it). A slot with an instance never merges.
+# magic (two Strings, "" empty; a slot is filled only while empty and nothing clears it), bag (a bag's contents, catalog Phase 5: rows in the
+# to_json_array shape, src/shared/bag_rules.gd; a row's own inst never holds a bag). A slot with an instance never merges.
 var inst: Array = []
 
 
@@ -416,7 +417,8 @@ static func inst_from_bytes(bytes: PackedByteArray, at: int) -> Dictionary:
 
 
 # An instance from a save or the wire, keeping only known keys with sane values that are not default (anything else reads as plain).
-static func clean_inst(raw: Variant) -> Dictionary:
+# `in_bag`: the instance of something inside a bag, which never holds a bag of its own (no nesting, master s3.9 rule 3).
+static func clean_inst(raw: Variant, in_bag: bool = false) -> Dictionary:
 	var out: Dictionary = {}
 
 	if typeof(raw) != TYPE_DICTIONARY:
@@ -445,6 +447,40 @@ static func clean_inst(raw: Variant) -> Dictionary:
 
 		if two != ["", ""]:
 			out["magic"] = two
+
+	var bag: Variant = raw.get("bag", [])
+
+	if not in_bag and typeof(bag) == TYPE_ARRAY:
+		var rows: Array = []
+
+		for row in (bag as Array).slice(0, SLOTS):
+			rows.append(_clean_row(row))
+
+		while not rows.is_empty() and int(rows.back()[0]) == 0:
+			rows.pop_back()
+
+		if not rows.is_empty():
+			out["bag"] = rows
+
+	return out
+
+
+# One row of a bag's contents, cleaned: [number, count, wear] and, with an instance, [.., 0, inst] (no favourites in a bag); [0, 0, 0] if unreadable.
+static func _clean_row(row: Variant) -> Array:
+	if typeof(row) != TYPE_ARRAY or (row as Array).size() < 3 or not (row as Array).slice(0, 3).all(func(v: Variant) -> bool: return typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT):
+		return [0, 0, 0]
+
+	var number: int = int(row[0])
+	var count: int = clampi(int(row[1]), 0, 65535)
+
+	if number <= 0 or count <= 0:
+		return [0, 0, 0]
+
+	var out: Array = [number, count, maxi(int(row[2]), 0)]
+	var item_inst: Dictionary = clean_inst(row[4], true) if row.size() > 4 else {}
+
+	if not item_inst.is_empty():
+		out.append_array([0, item_inst])
 
 	return out
 

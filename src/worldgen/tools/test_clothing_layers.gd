@@ -84,7 +84,7 @@ func _init() -> void:
 
 	# 1. The model: the first eight positions are the old eight slots, every clothing row has its own position.
 	check(places.slice(0, 8) == ["head:base", "body:base", "legs:base", "feet:footwear", "hands:base", "back:base", "body:outer", "waist:base"], "the first eight positions are the old slots (%s)" % str(places.slice(0, 8)))
-	check(places.size() == 20 and places.back() == "body:mail" and places.has("neck:base") and items._clothing_slots().has("neck") and not items._clothing_slots().has("outer"), "neck is a slot and outer is the body's outer layer (%d positions)" % places.size())
+	check(places.size() >= 20 and places[19] == "body:mail" and places.has("neck:base") and items._clothing_slots().has("neck") and not items._clothing_slots().has("outer"), "neck is a slot and outer is the body's outer layer (%d positions)" % places.size())
 	var homeless: Array = []
 
 	for id in items.table.ids():

@@ -598,18 +598,7 @@
 			"value": 8,
 			"look_alikes": []
 		},
-		"backpack": {
-			"number": 50,
-			"name": "Hide - Backpack",
-			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
-			"kind": "gear",
-			"stack": 1,
-			"unstackable": true,
-			"value": 40,
-			"look_alikes": [],
-			"slot": "back",
-			"carry_bonus_kg": 12
-		},
+		"backpack": {"number": 50, "name": "Hide - Backpack", "description": "A hide pack worn on the back. It holds more in order, but its load still weighs on you.", "kind": "gear", "stack": 1, "unstackable": true, "value": 40, "look_alikes": [], "slot": "back", "bag_slots": 10, "bag_takes": "any"},
 		"energy_bar": {
 			"number": 51,
 			"name": "Nut cake",
@@ -3123,19 +3112,7 @@
 		"wooden_bow": {"number": 269, "name": "Shortbow", "description": "A bow of bent wood and twine. Needs arrows.", "kind": "weapon", "weapon_class": "bow", "tier": 1, "durability": 400, "repair": [["twine", 1]], "stack": 1, "unstackable": true, "value": 30, "look_alikes": []},
 		"wooden_arrow": {"number": 270, "name": "Wooden - Arrow", "description": "A hardened stick with feather fletching. Needs a bow.", "kind": "material", "ammo_class": "arrow", "damage": 5.0, "tip": "wood", "stack": 20, "value": 2, "look_alikes": [], "damage_mode": "projectile"},
 		"stone_arrow": {"number": 271, "name": "Stone - Arrow", "description": "An arrow with a flaked stone point. Hits harder than wood.", "kind": "material", "ammo_class": "arrow", "damage": 8.0, "tip": "stone", "stack": 20, "value": 4, "look_alikes": [], "damage_mode": "projectile"},
-		"quiver": {
-			"number": 272,
-			"name": "Hide - Quiver",
-			"description": "A hide tube worn on the back. Holds 40 arrows.",
-			"kind": "gear",
-			"slot": "waist",
-			"ammo_class": "arrow",
-			"ammo_capacity": 40,
-			"stack": 1,
-			"unstackable": true,
-			"value": 25,
-			"look_alikes": []
-		},
+		"quiver": {"number": 272, "name": "Hide - Quiver", "description": "A hide tube worn at the hip, beside a pack. Holds 40 arrows.", "kind": "gear", "slot": "waist", "ammo_class": "arrow", "ammo_capacity": 40, "stack": 1, "unstackable": true, "value": 25, "look_alikes": [], "wear_layer": "quiver", "bag_slots": 2, "bag_takes": "arrow"},
 		"oven": {
 			"number": 267,
 			"name": "Oven",
@@ -8047,39 +8024,12 @@
 				"value": 2
 			},
 			"bone_club": {"number": 761, "name": "Bone - Club", "description": "A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer.", "kind": "weapon", "weapon_class": "club", "tier": 1, "stack": 1, "unstackable": true, "damage": 8.0, "durability": 450, "look_alikes": ["Wooden - Club"], "repair": [["bone", 1]], "value": 12, "damage_mode": "blunt"},
-			"leather_quiver": {
-				"number": 762,
-				"name": "Leather - Quiver",
-				"description": "A stiff leather tube worn on the back. Holds 60 arrows and keeps them dry.",
-				"kind": "gear",
-				"slot": "waist",
-				"ammo_class": "arrow",
-				"ammo_capacity": 60,
-				"stack": 1,
-				"unstackable": true,
-				"value": 45,
-				"look_alikes": [
-					"Hide - Quiver"
-				]
-			},
+			"leather_quiver": {"number": 762, "name": "Leather - Quiver", "description": "A stiff leather tube worn at the hip, beside a pack. Holds 60 arrows and keeps them dry.", "kind": "gear", "slot": "waist", "ammo_class": "arrow", "ammo_capacity": 60, "stack": 1, "unstackable": true, "value": 45, "look_alikes": ["Hide - Quiver"], "wear_layer": "quiver", "bag_slots": 3, "bag_takes": "arrow"},
 			"wooden_longbow": {"number": 763, "name": "Longbow", "description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.", "kind": "weapon", "weapon_class": "bow", "tier": 2, "durability": 600, "repair": [["sinew", 1]], "stack": 1, "unstackable": true, "value": 50, "look_alikes": ["Shortbow"]},
 			"leather_trousers": {"number": 764, "name": "Leather - Trousers", "description": "Leather trousers laced with straps. Tougher than hide and better in the wet.", "kind": "clothing", "slot": "legs", "wear_layer": "base", "fabric": "leather", "warmth": 0.16, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Trousers"], "value": 55, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.06, "projectile": 0.1}, "cover": 0.9},
 			"leather_boots": {"number": 765, "name": "Leather - Boots", "description": "Leather boots with a strapped ankle. They keep the feet dry for longer.", "kind": "clothing", "slot": "feet", "wear_layer": "footwear", "fabric": "leather", "warmth": 0.13, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Boots"], "value": 40, "protect": {"slashing": 0.15, "piercing": 0.1, "blunt": 0.08, "projectile": 0.1}, "cover": 1.0},
 			"leather_gloves": {"number": 766, "name": "Leather - Gloves", "description": "Leather gloves with fingers. For work, the bowstring and the cold.", "kind": "clothing", "slot": "hands", "wear_layer": "base", "fabric": "leather", "warmth": 0.09, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Gloves"], "value": 30, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.05, "projectile": 0.08}, "cover": 1.0},
-			"leather_backpack": {
-				"number": 767,
-				"name": "Leather - Backpack",
-				"description": "A leather pack with a frame of straps. Worn on the back, it carries more than a hide pack.",
-				"kind": "gear",
-				"slot": "back",
-				"carry_bonus_kg": 18,
-				"stack": 1,
-				"unstackable": true,
-				"value": 90,
-				"look_alikes": [
-					"Hide - Backpack"
-				]
-			},
+			"leather_backpack": {"number": 767, "name": "Leather - Backpack", "description": "A leather pack worn on the back. Holds more than a hide pack and sheds a little rain.", "kind": "gear", "slot": "back", "stack": 1, "unstackable": true, "value": 90, "look_alikes": ["Hide - Backpack"], "bag_slots": 15, "bag_takes": "any"},
 			"straw_hat": {
 				"number": 768,
 				"name": "Straw - Hat",
@@ -8635,16 +8585,7 @@
 				"value": 1,
 				"look_alikes": []
 			},
-			"bedroll": {
-				"number": 819,
-				"name": "Bedroll",
-				"description": "Hides sewn into a roll to sleep on. Better rest in the open, but it is not a bed.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"value": 14,
-				"look_alikes": []
-			},
+			"bedroll": {"number": 819, "name": "Bedroll", "description": "A hide roll to sleep on, strapped to a worn pack. Better rest in the open, but not a bed.", "kind": "gear", "stack": 1, "unstackable": true, "value": 14, "look_alikes": [], "slot": "back", "wear_layer": "roll"},
 			"wooden_snowshoes": {
 				"number": 820,
 				"name": "Snowshoes",
@@ -9775,105 +9716,15 @@
 			"leather_shoes": {"number": 979, "name": "Leather - Shoes", "description": "Light leather shoes, quiet for everyday wear.", "kind": "clothing", "slot": "feet", "wear_layer": "footwear", "fabric": "leather", "stack": 1, "unstackable": true, "look_alikes": [], "value": 30, "warmth": 0.08, "protect": {"slashing": 0.08, "piercing": 0.05, "blunt": 0.04, "projectile": 0.05}, "cover": 0.8, "durability": 300, "repair": [["leather", 1]], "repair_station": "leatherworking_table"},
 			"wool_socks": {"number": 980, "name": "Wool - Socks", "description": "Wool socks worn under footwear for warmth.", "kind": "clothing", "slot": "feet", "wear_layer": "socks", "fabric": "wool", "stack": 1, "unstackable": true, "look_alikes": [], "value": 10, "warmth": 0.06},
 			"wool_scarf": {"number": 981, "name": "Wool - Scarf", "description": "A wool scarf that keeps the neck and face warm.", "kind": "clothing", "slot": "neck", "wear_layer": "base", "fabric": "wool", "stack": 1, "unstackable": true, "look_alikes": [], "value": 14, "warmth": 0.08},
-			"fibre_shoulder_bag": {
-				"number": 982,
-				"name": "Fibre - Shoulder bag",
-				"description": "A small plant-fibre bag on a strap. The first pack, before hides.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 12
-			},
-			"wicker_pack_basket": {
-				"number": 983,
-				"name": "Wicker - Pack basket",
-				"description": "A woven basket worn on the back. Cheap and roomy, but awkward and poor in the wet.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 20
-			},
-			"leather_satchel": {
-				"number": 984,
-				"name": "Leather - Satchel",
-				"description": "A small leather bag worn on the shoulder for light things.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 45
-			},
-			"belt_pouch": {
-				"number": 985,
-				"name": "Belt pouch",
-				"description": "A small pouch worn on the belt for quick reach.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 12
-			},
-			"tool_roll": {
-				"number": 986,
-				"name": "Tool roll",
-				"description": "A rolled cloth or leather case that keeps small tools and repair kit in order.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 25
-			},
-			"travellers_rucksack": {
-				"number": 987,
-				"name": "Traveller's rucksack",
-				"description": "A large cloth and leather pack for long journeys. Holds a lot, and is heavy full.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 130
-			},
-			"wooden_pack_frame": {
-				"number": 988,
-				"name": "Wooden - Pack frame",
-				"description": "A wooden frame with straps for awkward loads such as logs and ore sacks.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 30
-			},
-			"weapon_scabbard": {
-				"number": 989,
-				"name": "Weapon scabbard",
-				"description": "A leather scabbard worn on the hip or back. Sheathes a sword.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 25
-			},
-			"utility_bandolier": {
-				"number": 990,
-				"name": "Utility bandolier",
-				"description": "A leather strap of loops for small things you need at hand.",
-				"kind": "gear",
-				"stack": 1,
-				"unstackable": true,
-				"look_alikes": [],
-				"future": true,
-				"value": 30
-			},
+			"fibre_shoulder_bag": {"number": 982, "name": "Fibre - Shoulder bag", "description": "A small plant-fibre bag on a strap. The first pack, before hides.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 12, "slot": "shoulder", "bag_slots": 4, "bag_takes": "any"},
+			"wicker_pack_basket": {"number": 983, "name": "Wicker - Pack basket", "description": "A woven basket worn on the back. Cheap and roomy, but awkward and poor in the wet.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "slot": "back", "bag_slots": 10, "bag_takes": "any"},
+			"leather_satchel": {"number": 984, "name": "Leather - Satchel", "description": "A small leather bag worn on the shoulder for light things.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 45, "slot": "shoulder", "bag_slots": 6, "bag_takes": "small"},
+			"belt_pouch": {"number": 985, "name": "Belt pouch", "description": "A small pouch worn on the belt for quick reach.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 12, "slot": "waist", "wear_layer": "pouch", "bag_slots": 4, "bag_takes": "small"},
+			"tool_roll": {"number": 986, "name": "Tool roll", "description": "A rolled cloth or leather case that keeps small tools and repair kit in order.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 25, "slot": "waist", "wear_layer": "tools", "bag_slots": 6, "bag_takes": "small_tool"},
+			"travellers_rucksack": {"number": 987, "name": "Traveller's rucksack", "description": "A large cloth and leather pack for long journeys. Holds a lot, and is heavy full.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 130, "slot": "back", "bag_slots": 20, "bag_takes": "any", "loaded_effort": 0.15},
+			"wooden_pack_frame": {"number": 988, "name": "Wooden - Pack frame", "description": "A wooden frame with straps for awkward loads such as logs and ore sacks.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 30, "slot": "back", "bag_slots": 4, "bag_takes": "awkward", "worn_speed_mult": 0.85, "loaded_effort": 0.25},
+			"weapon_scabbard": {"number": 989, "name": "Weapon scabbard", "description": "A leather scabbard worn on the hip or back. Sheathes a sword.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 25, "slot": "waist", "wear_layer": "scabbard", "bag_slots": 1, "bag_takes": "blade"},
+			"utility_bandolier": {"number": 990, "name": "Utility bandolier", "description": "A leather strap of loops for small things you need at hand.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 30, "slot": "strap", "bag_slots": 6, "bag_takes": "consumable"},
 			"rope_halter": {
 				"number": 991,
 				"name": "Rope - Halter",

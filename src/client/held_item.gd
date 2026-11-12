@@ -291,6 +291,9 @@ func _key_number(key: int) -> int:
 
 # A hotbar key (0 to 9): hold what it points at, or put it away when it is the one already held.
 func press_slot(slot: int) -> void:
+	if _inv.has_method("draw_from_quick_bag"):
+		_inv.draw_from_quick_bag(clampi(slot, 0, HOTBAR_SLOTS - 1))   # an item kept in a worn pouch, bandolier or scabbard comes to hand
+
 	# Torch and shield go in the left hand beside whatever the right hand holds (Dave 2026-10-23); the same key again stows it.
 	if is_offhand(_key_number(slot)):
 		slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
@@ -772,18 +775,25 @@ func has_arrow() -> bool:
 	return arrow_to_shoot() != 0
 
 
-# The arrow the next shot takes, as the server picks it: the one the bow is loaded with while the pack holds it, else the first of BOW_AMMO there; 0 none.
+# The arrow the next shot takes, as the server picks it: from a worn quiver if it holds one the bow takes, else from the pack; in each, the one
+# the bow is loaded with while it is there, else the first of the bow's ammo there; 0 none.
 func arrow_to_shoot() -> int:
+	var quiver: Dictionary = _inv.quiver_counts() if _inv.has_method("quiver_counts") else {}
+	var from_quiver: int = _arrow_in(func(number: int) -> int: return int(quiver.get(number, 0)))
+	return from_quiver if from_quiver != 0 else _arrow_in(func(number: int) -> int: return _inv.inventory.count_of(number))
+
+
+func _arrow_in(count_of: Callable) -> int:
 	var loaded: int = int(_inv.bow_arrow)
 	var ammo: Array = BowAim.ammo_for(_bow_config(), held_id())
 
-	if loaded != 0 and _inv.inventory.count_of(loaded) > 0 and ammo.has(_inv.table.id_of(loaded)):
+	if loaded != 0 and int(count_of.call(loaded)) > 0 and ammo.has(_inv.table.id_of(loaded)):
 		return loaded
 
 	for id in ammo:
 		var number: int = _inv.table.number_of(id)
 
-		if number > 0 and _inv.inventory.count_of(number) > 0:   # 0 = not in the table (0 is also an empty slot)
+		if number > 0 and int(count_of.call(number)) > 0:   # 0 = not in the table (0 is also an empty slot)
 			return number
 
 	return 0
