@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1076,
+	"next_number": 1253,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -11328,7 +11328,7 @@
 				"value": 15
 			},
 			"light_draft_harness": {
-				"number": 1000,
+				"number": 1177,
 				"name": "Light draft harness",
 				"description": "A leather breastcollar and traces for one animal pulling a light cart.",
 				"kind": "gear",
@@ -11339,7 +11339,7 @@
 				"value": 80
 			},
 			"heavy_collar_harness": {
-				"number": 1001,
+				"number": 1178,
 				"name": "Heavy collar harness",
 				"description": "A padded collar and traces for one animal pulling a heavy load steadily.",
 				"kind": "gear",
@@ -11350,7 +11350,7 @@
 				"value": 140
 			},
 			"double_draft_harness": {
-				"number": 1002,
+				"number": 1179,
 				"name": "Double draft harness",
 				"description": "A full harness for a matched pair of horses or donkeys, with shared reins.",
 				"kind": "gear",
@@ -11361,7 +11361,7 @@
 				"value": 260
 			},
 			"double_ox_yoke": {
-				"number": 1003,
+				"number": 1180,
 				"name": "Double ox yoke",
 				"description": "A wooden yoke for two oxen pulling together.",
 				"kind": "gear",
@@ -11372,7 +11372,7 @@
 				"value": 100
 			},
 			"iron_horseshoes": {
-				"number": 1004,
+				"number": 1181,
 				"name": "Iron - Horseshoes",
 				"description": "A set of four iron horseshoes. Protects hooves on hard ground.",
 				"kind": "gear",
@@ -11383,7 +11383,7 @@
 				"value": 40
 			},
 			"padded_horse_blanket": {
-				"number": 1005,
+				"number": 1182,
 				"name": "Padded - Horse blanket",
 				"description": "A padded blanket that keeps a horse warm at rest.",
 				"kind": "gear",
@@ -11394,7 +11394,7 @@
 				"value": 50
 			},
 			"feedbag": {
-				"number": 1006,
+				"number": 1183,
 				"name": "Feedbag",
 				"description": "A bag hung on an animal's head to feed it hay or grain on the move.",
 				"kind": "gear",
@@ -11405,7 +11405,7 @@
 				"value": 10
 			},
 			"grooming_kit": {
-				"number": 1007,
+				"number": 1184,
 				"name": "Grooming kit",
 				"description": "Brushes and a hoof pick for caring for a horse.",
 				"kind": "gear",
@@ -11416,7 +11416,7 @@
 				"value": 20
 			},
 			"padded_barding": {
-				"number": 1008,
+				"number": 1185,
 				"name": "Padded - Barding",
 				"description": "Quilted armour for an animal. Light, but hot.",
 				"kind": "gear",
@@ -11427,7 +11427,7 @@
 				"value": 120
 			},
 			"iron_mail_barding": {
-				"number": 1009,
+				"number": 1186,
 				"name": "Iron - Mail barding",
 				"description": "Iron mail armour for an animal. Flexible, and heavy.",
 				"kind": "gear",
@@ -11438,7 +11438,7 @@
 				"value": 380
 			},
 			"steel_plate_barding": {
-				"number": 1010,
+				"number": 1187,
 				"name": "Steel - Plate barding",
 				"description": "Steel plate armour for an animal. Strong, hot, heavy and tiring.",
 				"kind": "gear",
@@ -11449,7 +11449,7 @@
 				"value": 800
 			},
 			"riding_boots": {
-				"number": 1011,
+				"number": 1188,
 				"name": "Riding - Boots",
 				"description": "Tall leather boots for the saddle.",
 				"kind": "clothing",
@@ -11460,7 +11460,7 @@
 				"value": 45
 			},
 			"handcart": {
-				"number": 1012,
+				"number": 1189,
 				"name": "Handcart",
 				"description": "A two-wheeled cart pushed or pulled by hand. Carries more than a backpack.",
 				"kind": "structure",
@@ -11471,7 +11471,7 @@
 				"note": "Future placeholder (Mission 001 phase 10): no blueprint or structure row until its phase lands."
 			},
 			"wooden_cart_wheel": {
-				"number": 1013,
+				"number": 1190,
 				"name": "Wooden - Cart wheel",
 				"description": "A spoked wooden wheel for a handcart or a light cart.",
 				"kind": "material",
@@ -11482,7 +11482,7 @@
 				"value": 25
 			},
 			"axle": {
-				"number": 1014,
+				"number": 1191,
 				"name": "Axle",
 				"description": "A wooden axle with its fittings. Carries a pair of wheels.",
 				"kind": "material",
@@ -11493,7 +11493,7 @@
 				"value": 30
 			},
 			"light_cargo_cart": {
-				"number": 1015,
+				"number": 1192,
 				"name": "Light cargo cart",
 				"description": "A two-wheeled cart for one animal. Carries farm and trade goods.",
 				"kind": "structure",
@@ -11504,7 +11504,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"passenger_gig": {
-				"number": 1016,
+				"number": 1193,
 				"name": "Passenger gig",
 				"description": "A light two-wheeled gig for a driver and one passenger.",
 				"kind": "structure",
@@ -11515,7 +11515,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"cargo_sled": {
-				"number": 1017,
+				"number": 1194,
 				"name": "Cargo sled",
 				"description": "A sled on runners for hauling loads over snow.",
 				"kind": "structure",
@@ -11526,7 +11526,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"farm_wagon": {
-				"number": 1018,
+				"number": 1195,
 				"name": "Farm wagon",
 				"description": "A four-wheeled sided wagon for crops, grain, hay and general hauling.",
 				"kind": "structure",
@@ -11537,7 +11537,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"timber_wagon": {
-				"number": 1019,
+				"number": 1196,
 				"name": "Timber wagon",
 				"description": "A long open wagon for logs, boards, stone and other bulky loads.",
 				"kind": "structure",
@@ -11548,7 +11548,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"covered_wagon": {
-				"number": 1020,
+				"number": 1197,
 				"name": "Covered wagon",
 				"description": "A wagon with a cover that keeps trade goods dry.",
 				"kind": "structure",
@@ -11559,7 +11559,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"travellers_wagon": {
-				"number": 1021,
+				"number": 1198,
 				"name": "Traveller's wagon",
 				"description": "A slow covered wagon with a bed and storage, to live in while parked.",
 				"kind": "structure",
@@ -11570,7 +11570,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"passenger_carriage": {
-				"number": 1022,
+				"number": 1199,
 				"name": "Passenger carriage",
 				"description": "An enclosed, upholstered carriage for passengers, with little room for cargo.",
 				"kind": "structure",
@@ -11581,7 +11581,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"passenger_sleigh": {
-				"number": 1023,
+				"number": 1200,
 				"name": "Passenger sleigh",
 				"description": "A sleigh on runners that carries passengers over snow.",
 				"kind": "structure",
@@ -11592,7 +11592,7 @@
 				"note": "Future placeholder (catalog phase 11, outside Mission 001): no blueprint or structure row until its phase lands."
 			},
 			"reinforced_wagon_wheel": {
-				"number": 1024,
+				"number": 1201,
 				"name": "Reinforced wagon wheel",
 				"description": "A heavy wheel of hardwood boards with an iron tyre, for wagons and carriages.",
 				"kind": "material",
@@ -11603,7 +11603,7 @@
 				"value": 80
 			},
 			"food_preparation_table": {
-				"number": 1025,
+				"number": 1202,
 				"name": "Food preparation table",
 				"description": "A wooden table with a cutting board, knives and a rolling pin, for preparing food.",
 				"kind": "structure",
@@ -11614,7 +11614,7 @@
 				"note": "Future placeholder (Mission 001 phase 6): no blueprint or structure row until its phase lands."
 			},
 			"clay_griddle": {
-				"number": 1026,
+				"number": 1203,
 				"name": "Clay - Griddle",
 				"description": "A flat clay cooking surface for flatbreads, cakes and light frying.",
 				"kind": "structure",
@@ -11625,7 +11625,7 @@
 				"note": "Future placeholder (Mission 001 phase 6): no blueprint or structure row until its phase lands."
 			},
 			"campfire_roasting_spit": {
-				"number": 1027,
+				"number": 1204,
 				"name": "Campfire roasting spit",
 				"description": "A spit that fits over a campfire for roasting large cuts of meat.",
 				"kind": "structure",
@@ -11636,7 +11636,7 @@
 				"note": "Future placeholder (Mission 001 phase 6): no blueprint or structure row until its phase lands."
 			},
 			"iron_grill_grate": {
-				"number": 1028,
+				"number": 1205,
 				"name": "Iron - Grill grate",
 				"description": "An iron grate over a fire for grilling fish, meat and vegetables.",
 				"kind": "structure",
@@ -11647,7 +11647,7 @@
 				"note": "Future placeholder (Mission 001 phase 6): no blueprint or structure row until its phase lands."
 			},
 			"iron_frying_pan": {
-				"number": 1029,
+				"number": 1206,
 				"name": "Iron - Frying pan",
 				"description": "A reusable iron pan for frying eggs, fritters and fish.",
 				"kind": "container",
@@ -11658,7 +11658,7 @@
 				"value": 35
 			},
 			"iron_cauldron": {
-				"number": 1030,
+				"number": 1207,
 				"name": "Iron - Cauldron",
 				"description": "A large reusable iron pot for stews and meals for many.",
 				"kind": "container",
@@ -11669,7 +11669,7 @@
 				"value": 70
 			},
 			"fireplace_cooking_crane": {
-				"number": 1031,
+				"number": 1208,
 				"name": "Fireplace cooking crane",
 				"description": "An iron arm fitted to a fireplace to hang a pot over the fire.",
 				"kind": "structure",
@@ -11680,7 +11680,7 @@
 				"note": "Future placeholder (Mission 001 phase 6): no blueprint or structure row until its phase lands."
 			},
 			"unbaked_flatbread": {
-				"number": 1032,
+				"number": 1209,
 				"name": "Unbaked flatbread",
 				"description": "Flat dough, ready for the hearth or griddle.",
 				"kind": "food",
@@ -11690,7 +11690,7 @@
 				"value": 6
 			},
 			"unbaked_rye_flatbread": {
-				"number": 1033,
+				"number": 1210,
 				"name": "Unbaked rye flatbread",
 				"description": "Flat rye dough, ready for the hearth or griddle.",
 				"kind": "food",
@@ -11700,7 +11700,7 @@
 				"value": 9
 			},
 			"unbaked_garlic_flatbread": {
-				"number": 1034,
+				"number": 1211,
 				"name": "Unbaked garlic flatbread",
 				"description": "Flat dough rubbed with wild garlic, ready for the hearth or griddle.",
 				"kind": "food",
@@ -11710,7 +11710,7 @@
 				"value": 7
 			},
 			"unbaked_honey_loaf": {
-				"number": 1035,
+				"number": 1212,
 				"name": "Unbaked honey loaf",
 				"description": "A honeyed loaf of dough, ready for the oven.",
 				"kind": "food",
@@ -11720,7 +11720,7 @@
 				"value": 8
 			},
 			"unbaked_trail_bread": {
-				"number": 1036,
+				"number": 1213,
 				"name": "Unbaked trail bread",
 				"description": "A dense dough of nuts and grain, ready to bake.",
 				"kind": "food",
@@ -11730,7 +11730,7 @@
 				"value": 7
 			},
 			"unbaked_oatcakes": {
-				"number": 1037,
+				"number": 1214,
 				"name": "Unbaked oatcakes",
 				"description": "Shaped oat dough, ready for the griddle or hearth.",
 				"kind": "food",
@@ -11740,7 +11740,7 @@
 				"value": 9
 			},
 			"unbaked_chestnut_cakes": {
-				"number": 1038,
+				"number": 1215,
 				"name": "Unbaked chestnut cakes",
 				"description": "Shaped chestnut dough, ready for the griddle or hearth.",
 				"kind": "food",
@@ -11750,7 +11750,7 @@
 				"value": 5
 			},
 			"unbaked_apple_pie": {
-				"number": 1039,
+				"number": 1216,
 				"name": "Unbaked apple pie",
 				"description": "An apple pie ready for the oven.",
 				"kind": "food",
@@ -11760,7 +11760,7 @@
 				"value": 15
 			},
 			"unbaked_fish_pie": {
-				"number": 1040,
+				"number": 1217,
 				"name": "Unbaked fish pie",
 				"description": "A fish pie ready for the oven.",
 				"kind": "food",
@@ -11770,7 +11770,7 @@
 				"value": 11
 			},
 			"unbaked_venison_pie": {
-				"number": 1041,
+				"number": 1218,
 				"name": "Unbaked venison pie",
 				"description": "A venison pie ready for the oven.",
 				"kind": "food",
@@ -11780,7 +11780,7 @@
 				"value": 12
 			},
 			"uncooked_sausages": {
-				"number": 1042,
+				"number": 1219,
 				"name": "Uncooked sausages",
 				"description": "Seasoned minced meat in casings, ready to cook.",
 				"kind": "food",
@@ -11790,7 +11790,7 @@
 				"value": 16
 			},
 			"uncooked_meat_skewers": {
-				"number": 1043,
+				"number": 1220,
 				"name": "Uncooked meat skewers",
 				"description": "Pieces of meat on sticks, ready to grill.",
 				"kind": "food",
@@ -11800,7 +11800,7 @@
 				"value": 14
 			},
 			"uncooked_mushroom_skewers": {
-				"number": 1044,
+				"number": 1221,
 				"name": "Uncooked mushroom skewers",
 				"description": "Mushrooms on sticks, ready to grill.",
 				"kind": "food",
@@ -11810,7 +11810,7 @@
 				"value": 7
 			},
 			"uncooked_crab_cakes": {
-				"number": 1045,
+				"number": 1222,
 				"name": "Uncooked crab cakes",
 				"description": "Shaped crab meat, ready to fry.",
 				"kind": "food",
@@ -11820,7 +11820,7 @@
 				"value": 8
 			},
 			"banana_fritter_batter": {
-				"number": 1046,
+				"number": 1223,
 				"name": "Banana fritter batter",
 				"description": "Mashed banana in batter, ready to fry.",
 				"kind": "food",
@@ -11830,7 +11830,7 @@
 				"value": 5
 			},
 			"uncooked_meatballs": {
-				"number": 1047,
+				"number": 1224,
 				"name": "Uncooked meatballs",
 				"description": "Seasoned minced meat rolled into balls, ready to cook.",
 				"kind": "food",
@@ -11840,7 +11840,7 @@
 				"value": 10
 			},
 			"large_wooden_chest": {
-				"number": 1048,
+				"number": 1225,
 				"name": "Large wooden chest",
 				"description": "A big wooden chest that holds more weight than a plain chest.",
 				"kind": "structure",
@@ -11851,7 +11851,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"wardrobe": {
-				"number": 1049,
+				"number": 1226,
 				"name": "Wardrobe",
 				"description": "A tall cupboard for clothes, cloaks, boots and gear.",
 				"kind": "structure",
@@ -11862,7 +11862,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"dresser": {
-				"number": 1050,
+				"number": 1227,
 				"name": "Dresser",
 				"description": "A chest of drawers for small personal things.",
 				"kind": "structure",
@@ -11873,7 +11873,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"bookcase": {
-				"number": 1051,
+				"number": 1228,
 				"name": "Bookcase",
 				"description": "A shelved case for books, maps, scrolls and papers.",
 				"kind": "structure",
@@ -11884,7 +11884,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"apothecary_cabinet": {
-				"number": 1052,
+				"number": 1229,
 				"name": "Apothecary cabinet",
 				"description": "A small cabinet for herbs, tonics and remedies.",
 				"kind": "structure",
@@ -11895,7 +11895,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"bottle_and_jar_rack": {
-				"number": 1053,
+				"number": 1230,
 				"name": "Bottle and jar rack",
 				"description": "A rack that shows off stored bottles, jars and preserves.",
 				"kind": "structure",
@@ -11906,7 +11906,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"tool_cabinet": {
-				"number": 1054,
+				"number": 1231,
 				"name": "Tool cabinet",
 				"description": "A cabinet for tools and repair gear.",
 				"kind": "structure",
@@ -11917,7 +11917,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"open_storage_bin": {
-				"number": 1055,
+				"number": 1232,
 				"name": "Open storage bin",
 				"description": "A bin for loose stone, clay, ore and charcoal.",
 				"kind": "structure",
@@ -11928,7 +11928,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"firewood_rack": {
-				"number": 1056,
+				"number": 1233,
 				"name": "Firewood rack",
 				"description": "A rack that stacks firewood to dry, under cover.",
 				"kind": "structure",
@@ -11939,7 +11939,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"log_rack": {
-				"number": 1057,
+				"number": 1234,
 				"name": "Log rack",
 				"description": "A heavy rack for whole logs.",
 				"kind": "structure",
@@ -11950,7 +11950,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"board_rack": {
-				"number": 1058,
+				"number": 1235,
 				"name": "Board rack",
 				"description": "A rack for planks, hardwood boards and beams, kept apart.",
 				"kind": "structure",
@@ -11961,7 +11961,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"masons_pallet": {
-				"number": 1059,
+				"number": 1236,
 				"name": "Mason's pallet",
 				"description": "A strong pallet for stone blocks, bricks and other masonry.",
 				"kind": "structure",
@@ -11972,7 +11972,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"ore_and_metal_rack": {
-				"number": 1060,
+				"number": 1237,
 				"name": "Ore and metal rack",
 				"description": "A strong rack for ore, ingots and worked metal.",
 				"kind": "structure",
@@ -11983,7 +11983,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"storage_sign": {
-				"number": 1061,
+				"number": 1238,
 				"name": "Storage sign",
 				"description": "A sign that marks a storage zone and lists what is stored there.",
 				"kind": "structure",
@@ -11994,7 +11994,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"warehouse_crate": {
-				"number": 1062,
+				"number": 1239,
 				"name": "Warehouse crate",
 				"description": "A sturdy freight crate that can be moved while full and loaded onto a wagon or ship.",
 				"kind": "structure",
@@ -12005,7 +12005,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"warehouse_desk": {
-				"number": 1063,
+				"number": 1240,
 				"name": "Warehouse desk",
 				"description": "A desk that keeps the account of the crates in a warehouse.",
 				"kind": "structure",
@@ -12016,7 +12016,7 @@
 				"note": "Future placeholder (Mission 001 phase 9): no blueprint or structure row until its phase lands."
 			},
 			"smoked_meat": {
-				"number": 1064,
+				"number": 1241,
 				"name": "Smoked meat",
 				"description": "A joint of meat smoked with salt. Keeps well and feeds many.",
 				"kind": "food",
@@ -12026,7 +12026,7 @@
 				"value": 30
 			},
 			"dried_mushrooms": {
-				"number": 1065,
+				"number": 1242,
 				"name": "Dried mushrooms",
 				"description": "Mushrooms dried until they keep for months.",
 				"kind": "food",
@@ -12036,7 +12036,7 @@
 				"value": 8
 			},
 			"seafood_platter": {
-				"number": 1066,
+				"number": 1243,
 				"name": "Seafood platter",
 				"description": "A platter of cooked fish, shellfish and crab.",
 				"kind": "food",
@@ -12046,7 +12046,7 @@
 				"value": 40
 			},
 			"roast_platter": {
-				"number": 1067,
+				"number": 1244,
 				"name": "Roast platter",
 				"description": "A platter of roast meat with roots and vegetables.",
 				"kind": "food",
@@ -12056,7 +12056,7 @@
 				"value": 60
 			},
 			"mixed_grill_platter": {
-				"number": 1068,
+				"number": 1245,
 				"name": "Mixed grill platter",
 				"description": "A platter of sausage, skewers and grilled meats.",
 				"kind": "food",
@@ -12066,7 +12066,7 @@
 				"value": 55
 			},
 			"charcuterie_board": {
-				"number": 1069,
+				"number": 1246,
 				"name": "Charcuterie board",
 				"description": "A board of cured meats, jerky and sausage with preserved sides.",
 				"kind": "food",
@@ -12076,7 +12076,7 @@
 				"value": 50
 			},
 			"harvest_platter": {
-				"number": 1070,
+				"number": 1247,
 				"name": "Harvest platter",
 				"description": "A platter of roasted vegetables, roots and mushrooms.",
 				"kind": "food",
@@ -12086,7 +12086,7 @@
 				"value": 35
 			},
 			"tavern_supper_board": {
-				"number": 1071,
+				"number": 1248,
 				"name": "Tavern supper board",
 				"description": "A board of savoury pies, bread and vegetable sides.",
 				"kind": "food",
@@ -12096,7 +12096,7 @@
 				"value": 45
 			},
 			"breakfast_platter": {
-				"number": 1072,
+				"number": 1249,
 				"name": "Breakfast platter",
 				"description": "A platter of eggs, oatcakes and sausage.",
 				"kind": "food",
@@ -12106,7 +12106,7 @@
 				"value": 35
 			},
 			"dessert_platter": {
-				"number": 1073,
+				"number": 1250,
 				"name": "Dessert platter",
 				"description": "A platter of apple pie, sweet cakes and fruit.",
 				"kind": "food",
@@ -12116,7 +12116,7 @@
 				"value": 45
 			},
 			"serving_platter": {
-				"number": 1074,
+				"number": 1251,
 				"name": "Serving platter",
 				"description": "A wide platter that carries a prepared food board to a table.",
 				"kind": "container",
@@ -12127,7 +12127,7 @@
 				"value": 20
 			},
 			"ploughmans_board": {
-				"number": 1075,
+				"number": 1252,
 				"name": "Ploughman's board",
 				"description": "A board of bread, cheese and pickles.",
 				"kind": "food",

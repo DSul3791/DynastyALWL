@@ -125,6 +125,12 @@ func _init() -> void:
 		if int(file.get("next_number", 0)) <= highest:
 			fail("%s: next_number %s is not above the highest number %d" % [pair[1], file.get("next_number"), highest])
 
+	# items.json and gathered.json share one number space (Mission 001: new catalog rows from 1000 met the gathered materials): each file's
+	# next_number must be above every number in either file, so neither can hand out a number the other uses.
+	for pair in [[items_file, "items.json"], [gathered_file, "gathered.json"]]:
+		if not numbers.is_empty() and int(pair[0].get("next_number", 0)) <= int(numbers.keys().max()):
+			fail("%s: next_number %s is not above the highest number in items.json and gathered.json (%d)" % [pair[1], pair[0].get("next_number"), int(numbers.keys().max())])
+
 	# Every structure has its own world-item state (the client finds the structure of a row by its state): two with the same state made the plank chest (6) shadow the
 	# woven chest, so the chest could not be placed (31 Oct 2026, the chest client self-test).
 	var states_seen: Dictionary = {}
@@ -248,6 +254,9 @@ func _init() -> void:
 			fail("structures.json names the retired item %s" % ref)
 
 	for kind in structure_defs:
+		if bool(structure_defs[kind].get("retired", false)):   # a retired piece (the Woodworking table, Mission 001) keeps its row for its state number only
+			continue
+
 		var def_no_kit: Dictionary = structure_defs[kind].duplicate(true)
 		def_no_kit.erase("kit")
 
