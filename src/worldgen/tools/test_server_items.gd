@@ -860,7 +860,6 @@ func _init() -> void:
 	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
 
 	# The spade tier adds to the top of the dig roll (digging.json tier_extra).
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_spade"), 0, 1, Vector3.ZERO)
 	check(m._spade_tier(m.inventory_of(1)) >= 1, "the spade tier is read from the tool in the pack")
 	var most: int = 0
 	mat[0] = "sand"
@@ -1296,6 +1295,7 @@ func _init() -> void:
 	wr.ground_height = func(x, z): return 10.0
 	wr.peer_connected_hello(1, "abcdef123456")
 	var axe_n: int = wr.table.number_of("stone_axe")
+	wr.table._by_id["stone_axe"]["repair"] = [["stick", 1], ["twine", 1]]   # the repair mechanism on a test row: the live Stone - Axe is disposable (master s2.2, Mission 001 phase 2c)
 	check(wr.inventory_of(1).count_of(axe_n) == 1 and wr.inventory_of(1).wear[0] == 0, "a version 1 save loads with zero wear")
 	var durability: int = int(wr.table.entry("stone_axe")["durability"])
 	wr.report_position(1, Vector3(0.0, 10.0, 0.0))

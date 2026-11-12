@@ -4097,6 +4097,16 @@
    "color": "#8a8a90",
    "size": 1.0
   },
+  "axe": {
+   "shape": "axe",
+   "color": "#8a8a90",
+   "size": 1.0
+  },
+  "saw": {
+   "shape": "saw",
+   "color": "#8a8a90",
+   "size": 1.0
+  },
   "fish_trap": {
    "shape": "kit",
    "color": "#8a7040",

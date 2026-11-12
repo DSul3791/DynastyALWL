@@ -11,7 +11,7 @@
 		"log_oak": ["log_beech", "log_birch", "log_tropical_hardwood", "log_walnut", "log_maple"],
 		"wooden_block": ["wooden_block", "wooden_block_soft"],
 		"bronze_chisel": ["bronze_chisel", "iron_chisel", "steel_chisel"],
-		"knife": ["stone_knife", "obsidian_knife", "bronze_knife"],
+		"knife": ["stone_knife", "obsidian_knife", "bronze_knife", "iron_knife", "steel_knife"], "axe": ["stone_axe", "bronze_axe", "iron_axe", "steel_axe"], "saw": ["hand_saw", "steel_saw"],
 		"nails": ["nails", "bronze_nails"],
 		"hinges": ["hinges", "bronze_hinges"],
 		"wooden_block_large": ["wooden_block_large", "wooden_block_soft_large"],
@@ -27,7 +27,7 @@
 		"herbs": ["thyme", "rosemary", "marjoram", "sage", "mint"]
 	},
 	"key_woods": ["oak", "beech", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
-	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "firewood": "Firewood", "wooden_block": "Wooden block", "wooden_block_large": "Large wooden block"},
+	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "firewood": "Firewood", "wooden_block": "Wooden block", "wooden_block_large": "Large wooden block", "knife": "Any knife", "axe": "Any axe", "saw": "Any saw"},
 	"retired_to": {"note": "Master s4 item 3. Data only; renames.json is the live mechanism, and Dynasty is a new game (Dave 12 Nov 2026), so no rename rows are needed.", "log_": "log", "lumber_": {"hardwood": "hardwood_board", "softwood": "lumber"}, "beam_": "lumber"},
 	"default": {
 		"class": "softwood",
