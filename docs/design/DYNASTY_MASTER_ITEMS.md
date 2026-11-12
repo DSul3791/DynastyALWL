@@ -1,17 +1,18 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 10 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS AND ARMOUR RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D7], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 10 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS, ARMOUR AND OWNER-APPROVED CLOTHING RECORDED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D7], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 10, reviewed categories only; not final).** Existing rows: KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 67 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7) and 2 new FUTURE rows (Steel bolt, Iron - Lance). Cross-listed rows (dual-use tools, shields, protective clothing) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 10 previously audited baseline, BEFORE 17 [D8] clothing ADD items; not final).** Existing rows: KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 67 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7) and 2 new FUTURE rows (Steel bolt, Iron - Lance). Cross-listed rows (dual-use tools, shields, protective clothing) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
 | Tag | Source | Weight |
 |---|---|---|
+| **[D8]** | Dave explicitly approved the full Clothing Proposal 1: 24 retained ordinary garment items; 17 new garments; Riding Boots future under mounted gear; 8 armour items cross-listed; layering and weather/climate effects | **Owner-approved category design; not implementation permission** |
 | **[D7]** | Dave explicitly accepted the full Armour Proposal 1: 8 existing core armour pieces, 14 new armour variants, protective clothing/shields cross-listed, realistic modular layering and excluded redundancies | **Owner-approved category design; not game implementation approval** |
 | **[D6]** | Dave, 12 Nov 2026 (PR #1035 comment 01:49Z): Weapons Proposal 2 approved in full, with his Poison Arrow addition; category approval only | Explicit Dave category decision |
 | **[D5]** | Dave's later furniture clarification: Bronze and Iron nails are already sufficient; do not invent a separate luxury-nail ladder or insist on Iron nails for every Fine/Ornate recipe. Rustic furniture may be just Hardwood Boards plus nails; fancy furniture uses **more Hardwood Boards and more nails**, and **cloth/leather only where suitable** (such as upholstered seats, cushions, padded furnishings) | **Latest explicit Dave furniture rule; supersedes overcomplicated fastener requirements** |
@@ -376,6 +377,60 @@ Categories not yet reviewed (clothing, backpacks and carrying gear, saddles and 
 
 **Cross-document reconciliation required before final catalog approval:** Inspect equipment slots `head/body/hands/legs/feet/outer`, durability, recipe/blueprint materials, smelting gates and skill stations, armour/body coverage, damage resistance and UI. Repair and layering tests are not established by this desk-approved design. Claimed full-catalog readiness remains withheld until remaining categories and aggregate audits finish.
 
+### 3.8 Clothing [D8] — OWNER APPROVED (NOT APPROVAL TO IMPLEMENT)
+
+**Authority:** Dave explicitly approved ChatGPT's complete Clothing Proposal 1 together with prior category decisions. This is clothing-category approval only, not approval of the full Master Items Catalog or gameplay implementation. Separate from Armour [D7], with eight dedicated armour items cross-listed but not duplicated.
+
+**Keep existing 24 non-armour clothing items with stable IDs:**
+
+| Purpose | Existing item # and name |
+|---|---|
+| Primitive fibre | #60 Fibre - Skirt; #61 Fibre - Cloak; #62 Fibre - Sandals |
+| Primitive hide | #63 Hide - Cloak; #64 Hide - Boots; #65 Hide - Hood; #66 Hide - Mittens; #305 Hide - Tunic; #306 Hide - Trousers; #307 Hide - Gloves |
+| Everyday leather | #324 Leather - Cap; #764 Leather - Trousers; #765 Leather - Boots; #766 Leather - Gloves |
+| Wool | #366 Wool - Tunic; #367 Wool - Trousers; #368 Wool - Cap; #369 Wool - Mittens |
+| Linen | #370 Linen - Shirt |
+| Fur | #371 Fur - Cloak; #372 Fur - Hat; #373 Fur - Boots |
+| Climate/terrain | #768 Straw - Hat; #820 Snowshoes |
+
+Retired Hide - Leggings #67 remains retired, redundant with Hide - Trousers. **Armour** #325 Leather - Jerkin; #327 Fibre - Gambeson; #326 Bronze - Helm; #328 Iron - Helm; #329 Iron - Mail shirt; #330 Steel - Helm; #331 Steel - Cuirass; #838 Bronze - Scale shirt are covered by [D7], not part of the 24 ordinary-clothing rows.
+
+**Add these 17 ordinary clothing items (new distinct item definitions, numbers assigned at authorized implementation only):**
+
+| Group | ADD item | Material and distinct use |
+|---|---|---|
+| Everyday | Linen - Trousers | Linen; breathable warm-weather legs |
+| Everyday | Linen - Skirt | Linen; lightweight warm-weather garment |
+| Everyday | Linen - Dress | Linen; one-piece body/leg coverage |
+| Everyday | Wool - Dress | Wool cloth; warm one-piece body/leg coverage |
+| Outer | Wool - Cloak | Wool cloth; everyday outer warmth |
+| Outer | Wool - Coat | Wool cloth and Thread; fitted heavy cold-weather outerwear |
+| Outer | Wool - Robe | Wool cloth; ordinary robe for civilians, scholars, clergy and mages (NOT automatically magic) |
+| Outer/work | Oilcloth - Cloak | Linen plus suitable drying oil and finishing; rain-repellent, maintainable, not magic waterproof |
+| Work | Linen - Apron | Linen; cooking, tailoring and household work |
+| Work | Leather - Apron | Leather; sparks/abrasion protection for smithing/woodworking, not fireproof |
+| Social | Tabard | Linen or Wool; faction heraldry and uniform colours as customizable appearance, no duplicate item row per emblem |
+| Head | Linen - Headwrap | Linen; sun/dust/heat protection |
+| Head | Leather - Broad-brim hat | Leather; more durable sun/rain protection |
+| Hands | Fur - Mittens | Fur and Thread; extreme warmth with dexterity cost |
+| Feet | Leather - Shoes | Leather; light/quiet everyday footwear |
+| Inner feet | Wool - Socks | Wool; insulation under footwear, requires compatible liner slot |
+| Neck | Wool - Scarf | Wool; small warmth layer at neck/face, compatible with reasonable equipment |
+
+**Future, not in 17 immediate ADD:** Riding - Boots (FUTURE) belong with mounted gear and saddles; don't duplicate them in both category totals.
+
+**Design, stations and mechanics [D8]:**
+1. Clothing is mainly for temperature, wind, rain, wetness, mobility, comfort, appearance and social identity. Plant fibre cheap/fragile; hide warm but wet-stiff; leather abrasion-resistant but warm; linen cool; wool warm when somewhat damp but weighty soaked; fur extremely warm but hot; oilcloth rain-resistant but poorly breathable and needing maintenance.
+2. Preserve existing `slot` fields and add targeted **compatible layers**: base torso; armour torso; overgarment; headwear/helm; hands/gloves/gauntlets; leg base/greaves; footwear/sabatons; inner socks; neck scarf. Dresses provide one-piece body and leg coverage without forcing two independent garment slots. Do not permit unlimited clothing to stack full thermal/armour bonuses. A cloak over armour and clothing under mail are intended.
+3. Clothing is wearable by any player character independent of character creator's Male/Female/Other selection. Optional colours, patterns, faction heraldry, dirt, wear, tears, repairs, fit and shape are appearance/per-instance variables rather than hundreds of master item definitions.
+4. Primitive Fibre/Hide by hand (Bone Needle reusable, Thread consumed where sewing needed). Linen/Wool/Fur tailoring at Tailor's Table; woven textiles from Loom. Leather pieces and work apron at Leatherworking Table. Oilcloth finishing at the Tailor's Table using a suitable existing oil/material route: verify appropriate hardening/curing material before adding another resource. No Iron Saw or smithy gate for sewn basics.
+5. Fabric repairs portable needle+Thread where appropriate, or Tailor's Table; leather repairs at Leatherworking Table. Appropriate physical craftsmanship and two **permanent** magical enchantment slots apply when eligible. Never classify a mundane coloured robe as magically enchanted.
+6. **Deliberately excluded:** Cotton and Silk materials until those ecosystems exist; hooded/unhooded duplicates for each cloak; identical garment colour variants as IDs; separate generic magical robe in ordinary clothing; dedicated Leather Vest (overlaps Leather Jerkin [D7]); duplicates of Leather Trousers.
+
+**Counts for [D8]:** 24 existing ordinary clothing (keep or update as required by layering), **17 ADD ordinary clothing**, 1 FUTURE Riding - Boots to be owned by mounted equipment category, 8 armour pieces cross-listed (NO duplicate IDs). 50 clothing-related concepts by the proposal's counting method; only 17 immediate new item rows added to prior categories. Proposed numbers and stations should be audited for material accessibility and implementation consistency.
+
+**Next category awaiting Dave's review:** Backpacks, pouches and carrying gear. Do NOT append new gear items as owner-approved until ChatGPT presents the entire category and Dave approves it. After that: saddles/saddlebags, carts/wagons/carriages, cooking, food preservation, other categories, and final whole-system re-audit.
+
 ## 4. Implementation details (follow from the decisions; no new design)
 
 1. **Repair data:** `repair_station` on each metal tool names its crafting station type (today 26 rows say `forge`; bronze tools: `forge`, which the Smithy also provides; iron and steel: the Smithy); `drops.json tool_wear.repair_restores` (0.5) becomes "restore up to the remaining maximum"; stone, wooden and primitive rows lose `repair`; code removes a disposable tool at zero, drops a surviving thrown Javelin as a pickup, and keeps a broken metal tool in its slot.
@@ -486,7 +541,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is next for Dave's category review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and recorded in s3.8 [D8] (17 ADD rows; remaining category reconciliation/audit pending). BACKPACKS, POUCHES AND CARRYING GEAR is next for Dave's review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
