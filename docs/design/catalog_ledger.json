@@ -12460,7 +12460,8 @@
   },
   {
    "key": "new:Iron - Axe",
-   "number": null,
+   "id": "iron_axe",
+   "number": 896,
    "name": "Iron - Axe",
    "category": null,
    "catalog": "ADD",
@@ -12474,7 +12475,8 @@
   },
   {
    "key": "new:Steel - Axe",
-   "number": null,
+   "id": "steel_axe",
+   "number": 897,
    "name": "Steel - Axe",
    "category": null,
    "catalog": "ADD",
@@ -12488,7 +12490,8 @@
   },
   {
    "key": "new:Iron - Knife",
-   "number": null,
+   "id": "iron_knife",
+   "number": 898,
    "name": "Iron - Knife",
    "category": null,
    "catalog": "ADD",
@@ -12502,7 +12505,8 @@
   },
   {
    "key": "new:Steel - Knife",
-   "number": null,
+   "id": "steel_knife",
+   "number": 899,
    "name": "Steel - Knife",
    "category": null,
    "catalog": "ADD",
@@ -12516,7 +12520,8 @@
   },
   {
    "key": "new:Steel - Saw",
-   "number": null,
+   "id": "steel_saw",
+   "number": 900,
    "name": "Steel - Saw",
    "category": null,
    "catalog": "ADD",
@@ -12530,7 +12535,8 @@
   },
   {
    "key": "new:Bronze - Sickle",
-   "number": null,
+   "id": "bronze_sickle",
+   "number": 901,
    "name": "Bronze - Sickle",
    "category": null,
    "catalog": "ADD",
@@ -12544,7 +12550,8 @@
   },
   {
    "key": "new:Iron - Sickle",
-   "number": null,
+   "id": "iron_sickle",
+   "number": 902,
    "name": "Iron - Sickle",
    "category": null,
    "catalog": "ADD",
@@ -12558,7 +12565,8 @@
   },
   {
    "key": "new:Steel - Sickle",
-   "number": null,
+   "id": "steel_sickle",
+   "number": 903,
    "name": "Steel - Sickle",
    "category": null,
    "catalog": "ADD",
@@ -12572,7 +12580,8 @@
   },
   {
    "key": "new:Bronze - Scythe",
-   "number": null,
+   "id": "bronze_scythe",
+   "number": 904,
    "name": "Bronze - Scythe",
    "category": null,
    "catalog": "ADD",
@@ -12586,7 +12595,8 @@
   },
   {
    "key": "new:Steel - Scythe",
-   "number": null,
+   "id": "steel_scythe",
+   "number": 905,
    "name": "Steel - Scythe",
    "category": null,
    "catalog": "ADD",
@@ -12600,7 +12610,8 @@
   },
   {
    "key": "new:Grindstone",
-   "number": null,
+   "id": "grindstone",
+   "number": 906,
    "name": "Grindstone",
    "category": null,
    "catalog": "ADD",
@@ -12614,7 +12625,8 @@
   },
   {
    "key": "new:Hardwood board",
-   "number": null,
+   "id": "hardwood_board",
+   "number": 907,
    "name": "Hardwood board",
    "category": null,
    "catalog": "ADD",
@@ -12628,7 +12640,8 @@
   },
   {
    "key": "new:Smelter",
-   "number": null,
+   "id": "smelter",
+   "number": 908,
    "name": "Smelter",
    "category": null,
    "catalog": "ADD",
@@ -12642,7 +12655,8 @@
   },
   {
    "key": "new:Bellows",
-   "number": null,
+   "id": "bellows",
+   "number": 909,
    "name": "Bellows",
    "category": null,
    "catalog": "ADD",
@@ -12656,7 +12670,8 @@
   },
   {
    "key": "new:Quenching Trough",
-   "number": null,
+   "id": "quenching_trough",
+   "number": 910,
    "name": "Quenching Trough",
    "category": null,
    "catalog": "ADD",
@@ -12670,7 +12685,8 @@
   },
   {
    "key": "new:Leatherworking Table",
-   "number": null,
+   "id": "leatherworking_table",
+   "number": 911,
    "name": "Leatherworking Table",
    "category": null,
    "catalog": "ADD",
@@ -12684,7 +12700,8 @@
   },
   {
    "key": "new:Tailor's Table",
-   "number": null,
+   "id": "tailors_table",
+   "number": 912,
    "name": "Tailor's Table",
    "category": null,
    "catalog": "ADD",
@@ -12698,7 +12715,8 @@
   },
   {
    "key": "new:Thread",
-   "number": null,
+   "id": "thread",
+   "number": 913,
    "name": "Thread",
    "category": null,
    "catalog": "ADD",
@@ -12712,7 +12730,8 @@
   },
   {
    "key": "new:Crude - Chest",
-   "number": null,
+   "id": "crude_chest",
+   "number": 914,
    "name": "Crude - Chest",
    "category": null,
    "catalog": "ADD",
@@ -12726,7 +12745,8 @@
   },
   {
    "key": "new:Fine - Chest",
-   "number": null,
+   "id": "fine_chest",
+   "number": 915,
    "name": "Fine - Chest",
    "category": null,
    "catalog": "ADD",
@@ -12740,7 +12760,8 @@
   },
   {
    "key": "new:Crude - Chair",
-   "number": null,
+   "id": "crude_chair",
+   "number": 916,
    "name": "Crude - Chair",
    "category": null,
    "catalog": "ADD",
@@ -12754,7 +12775,8 @@
   },
   {
    "key": "new:Ornate - Chair",
-   "number": null,
+   "id": "ornate_chair",
+   "number": 917,
    "name": "Ornate - Chair",
    "category": null,
    "catalog": "ADD",
@@ -12768,7 +12790,8 @@
   },
   {
    "key": "new:Crude - Table",
-   "number": null,
+   "id": "crude_table",
+   "number": 918,
    "name": "Crude - Table",
    "category": null,
    "catalog": "ADD",
@@ -12782,7 +12805,8 @@
   },
   {
    "key": "new:Ornate - Table",
-   "number": null,
+   "id": "ornate_table",
+   "number": 919,
    "name": "Ornate - Table",
    "category": null,
    "catalog": "ADD",
@@ -12796,7 +12820,8 @@
   },
   {
    "key": "new:Iron - Shortsword",
-   "number": null,
+   "id": "iron_shortsword",
+   "number": 920,
    "name": "Iron - Shortsword",
    "category": null,
    "catalog": "ADD",
@@ -12810,7 +12835,8 @@
   },
   {
    "key": "new:Steel - Shortsword",
-   "number": null,
+   "id": "steel_shortsword",
+   "number": 921,
    "name": "Steel - Shortsword",
    "category": null,
    "catalog": "ADD",
@@ -12824,7 +12850,8 @@
   },
   {
    "key": "new:Iron - Greatsword",
-   "number": null,
+   "id": "iron_greatsword",
+   "number": 922,
    "name": "Iron - Greatsword",
    "category": null,
    "catalog": "ADD",
@@ -12838,7 +12865,8 @@
   },
   {
    "key": "new:Steel - Greatsword",
-   "number": null,
+   "id": "steel_greatsword",
+   "number": 923,
    "name": "Steel - Greatsword",
    "category": null,
    "catalog": "ADD",
@@ -12852,7 +12880,8 @@
   },
   {
    "key": "new:Steel - Rapier",
-   "number": null,
+   "id": "steel_rapier",
+   "number": 924,
    "name": "Steel - Rapier",
    "category": null,
    "catalog": "ADD",
@@ -12866,7 +12895,8 @@
   },
   {
    "key": "new:Steel - Scimitar",
-   "number": null,
+   "id": "steel_scimitar",
+   "number": 925,
    "name": "Steel - Scimitar",
    "category": null,
    "catalog": "ADD",
@@ -12880,7 +12910,8 @@
   },
   {
    "key": "new:Iron - Battleaxe",
-   "number": null,
+   "id": "iron_battleaxe",
+   "number": 926,
    "name": "Iron - Battleaxe",
    "category": null,
    "catalog": "ADD",
@@ -12894,7 +12925,8 @@
   },
   {
    "key": "new:Steel - Battleaxe",
-   "number": null,
+   "id": "steel_battleaxe",
+   "number": 927,
    "name": "Steel - Battleaxe",
    "category": null,
    "catalog": "ADD",
@@ -12908,7 +12940,8 @@
   },
   {
    "key": "new:Iron - Greataxe",
-   "number": null,
+   "id": "iron_greataxe",
+   "number": 928,
    "name": "Iron - Greataxe",
    "category": null,
    "catalog": "ADD",
@@ -12922,7 +12955,8 @@
   },
   {
    "key": "new:Steel - Greataxe",
-   "number": null,
+   "id": "steel_greataxe",
+   "number": 929,
    "name": "Steel - Greataxe",
    "category": null,
    "catalog": "ADD",
@@ -12936,7 +12970,8 @@
   },
   {
    "key": "new:Iron - Warhammer",
-   "number": null,
+   "id": "iron_warhammer",
+   "number": 930,
    "name": "Iron - Warhammer",
    "category": null,
    "catalog": "ADD",
@@ -12950,7 +12985,8 @@
   },
   {
    "key": "new:Steel - Warhammer",
-   "number": null,
+   "id": "steel_warhammer",
+   "number": 931,
    "name": "Steel - Warhammer",
    "category": null,
    "catalog": "ADD",
@@ -12964,7 +13000,8 @@
   },
   {
    "key": "new:Steel - Maul",
-   "number": null,
+   "id": "steel_maul",
+   "number": 932,
    "name": "Steel - Maul",
    "category": null,
    "catalog": "ADD",
@@ -12978,7 +13015,8 @@
   },
   {
    "key": "new:Quarterstaff",
-   "number": null,
+   "id": "quarterstaff",
+   "number": 933,
    "name": "Quarterstaff",
    "category": null,
    "catalog": "ADD",
@@ -12992,7 +13030,8 @@
   },
   {
    "key": "new:Bronze - Spear",
-   "number": null,
+   "id": "bronze_spear",
+   "number": 934,
    "name": "Bronze - Spear",
    "category": null,
    "catalog": "ADD",
@@ -13006,7 +13045,8 @@
   },
   {
    "key": "new:Iron - Spear",
-   "number": null,
+   "id": "iron_spear",
+   "number": 935,
    "name": "Iron - Spear",
    "category": null,
    "catalog": "ADD",
@@ -13020,7 +13060,8 @@
   },
   {
    "key": "new:Steel - Spear",
-   "number": null,
+   "id": "steel_spear",
+   "number": 936,
    "name": "Steel - Spear",
    "category": null,
    "catalog": "ADD",
@@ -13034,7 +13075,8 @@
   },
   {
    "key": "new:Iron - Pike",
-   "number": null,
+   "id": "iron_pike",
+   "number": 937,
    "name": "Iron - Pike",
    "category": null,
    "catalog": "ADD",
@@ -13048,7 +13090,8 @@
   },
   {
    "key": "new:Iron - Halberd",
-   "number": null,
+   "id": "iron_halberd",
+   "number": 938,
    "name": "Iron - Halberd",
    "category": null,
    "catalog": "ADD",
@@ -13062,7 +13105,8 @@
   },
   {
    "key": "new:Steel - Halberd",
-   "number": null,
+   "id": "steel_halberd",
+   "number": 939,
    "name": "Steel - Halberd",
    "category": null,
    "catalog": "ADD",
@@ -13076,7 +13120,8 @@
   },
   {
    "key": "new:Iron - Trident",
-   "number": null,
+   "id": "iron_trident",
+   "number": 940,
    "name": "Iron - Trident",
    "category": null,
    "catalog": "ADD",
@@ -13090,7 +13135,8 @@
   },
   {
    "key": "new:Light crossbow",
-   "number": null,
+   "id": "light_crossbow",
+   "number": 941,
    "name": "Light crossbow",
    "category": null,
    "catalog": "ADD",
@@ -13104,7 +13150,8 @@
   },
   {
    "key": "new:Heavy crossbow",
-   "number": null,
+   "id": "heavy_crossbow",
+   "number": 942,
    "name": "Heavy crossbow",
    "category": null,
    "catalog": "ADD",
@@ -13118,7 +13165,8 @@
   },
   {
    "key": "new:Iron - Buckler",
-   "number": null,
+   "id": "iron_buckler",
+   "number": 943,
    "name": "Iron - Buckler",
    "category": null,
    "catalog": "ADD",
@@ -13132,7 +13180,8 @@
   },
   {
    "key": "new:Bronze - Arrow",
-   "number": null,
+   "id": "bronze_arrow",
+   "number": 944,
    "name": "Bronze - Arrow",
    "category": null,
    "catalog": "ADD",
@@ -13146,7 +13195,8 @@
   },
   {
    "key": "new:Iron - Arrow",
-   "number": null,
+   "id": "iron_arrow",
+   "number": 945,
    "name": "Iron - Arrow",
    "category": null,
    "catalog": "ADD",
@@ -13160,7 +13210,8 @@
   },
   {
    "key": "new:Steel - Arrow",
-   "number": null,
+   "id": "steel_arrow",
+   "number": 946,
    "name": "Steel - Arrow",
    "category": null,
    "catalog": "ADD",
@@ -13174,7 +13225,8 @@
   },
   {
    "key": "new:Wooden bolt",
-   "number": null,
+   "id": "wooden_bolt",
+   "number": 947,
    "name": "Wooden bolt",
    "category": null,
    "catalog": "ADD",
@@ -13188,7 +13240,8 @@
   },
   {
    "key": "new:Iron bolt",
-   "number": null,
+   "id": "iron_bolt",
+   "number": 948,
    "name": "Iron bolt",
    "category": null,
    "catalog": "ADD",
@@ -13202,7 +13255,8 @@
   },
   {
    "key": "new:Steel bolt",
-   "number": null,
+   "id": "steel_bolt",
+   "number": 949,
    "name": "Steel bolt",
    "category": null,
    "catalog": "NEW FUTURE",
@@ -13216,7 +13270,8 @@
   },
   {
    "key": "new:Iron - Lance",
-   "number": null,
+   "id": "iron_lance",
+   "number": 950,
    "name": "Iron - Lance",
    "category": null,
    "catalog": "NEW FUTURE",
@@ -13230,7 +13285,8 @@
   },
   {
    "key": "new:Iron - Brigandine",
-   "number": null,
+   "id": "iron_brigandine",
+   "number": 951,
    "name": "Iron - Brigandine",
    "category": null,
    "catalog": "ADD",
@@ -13244,7 +13300,8 @@
   },
   {
    "key": "new:Iron - Breastplate",
-   "number": null,
+   "id": "iron_breastplate",
+   "number": 952,
    "name": "Iron - Breastplate",
    "category": null,
    "catalog": "ADD",
@@ -13258,7 +13315,8 @@
   },
   {
    "key": "new:Iron - Mail hauberk",
-   "number": null,
+   "id": "iron_mail_hauberk",
+   "number": 953,
    "name": "Iron - Mail hauberk",
    "category": null,
    "catalog": "ADD",
@@ -13272,7 +13330,8 @@
   },
   {
    "key": "new:Steel - Half plate",
-   "number": null,
+   "id": "steel_half_plate",
+   "number": 954,
    "name": "Steel - Half plate",
    "category": null,
    "catalog": "ADD",
@@ -13286,7 +13345,8 @@
   },
   {
    "key": "new:Steel - Plate harness",
-   "number": null,
+   "id": "steel_plate_harness",
+   "number": 955,
    "name": "Steel - Plate harness",
    "category": null,
    "catalog": "ADD",
@@ -13300,7 +13360,8 @@
   },
   {
    "key": "new:Iron - Mail coif",
-   "number": null,
+   "id": "iron_mail_coif",
+   "number": 956,
    "name": "Iron - Mail coif",
    "category": null,
    "catalog": "ADD",
@@ -13314,7 +13375,8 @@
   },
   {
    "key": "new:Iron - Gauntlets",
-   "number": null,
+   "id": "iron_gauntlets",
+   "number": 957,
    "name": "Iron - Gauntlets",
    "category": null,
    "catalog": "ADD",
@@ -13328,7 +13390,8 @@
   },
   {
    "key": "new:Steel - Gauntlets",
-   "number": null,
+   "id": "steel_gauntlets",
+   "number": 958,
    "name": "Steel - Gauntlets",
    "category": null,
    "catalog": "ADD",
@@ -13342,7 +13405,8 @@
   },
   {
    "key": "new:Bronze - Greaves",
-   "number": null,
+   "id": "bronze_greaves",
+   "number": 959,
    "name": "Bronze - Greaves",
    "category": null,
    "catalog": "ADD",
@@ -13356,7 +13420,8 @@
   },
   {
    "key": "new:Iron - Mail chausses",
-   "number": null,
+   "id": "iron_mail_chausses",
+   "number": 960,
    "name": "Iron - Mail chausses",
    "category": null,
    "catalog": "ADD",
@@ -13370,7 +13435,8 @@
   },
   {
    "key": "new:Iron - Greaves",
-   "number": null,
+   "id": "iron_greaves",
+   "number": 961,
    "name": "Iron - Greaves",
    "category": null,
    "catalog": "ADD",
@@ -13384,7 +13450,8 @@
   },
   {
    "key": "new:Steel - Greaves",
-   "number": null,
+   "id": "steel_greaves",
+   "number": 962,
    "name": "Steel - Greaves",
    "category": null,
    "catalog": "ADD",
@@ -13398,7 +13465,8 @@
   },
   {
    "key": "new:Iron - Sabatons",
-   "number": null,
+   "id": "iron_sabatons",
+   "number": 963,
    "name": "Iron - Sabatons",
    "category": null,
    "catalog": "ADD",
@@ -13412,7 +13480,8 @@
   },
   {
    "key": "new:Steel - Sabatons",
-   "number": null,
+   "id": "steel_sabatons",
+   "number": 964,
    "name": "Steel - Sabatons",
    "category": null,
    "catalog": "ADD",
@@ -13426,7 +13495,8 @@
   },
   {
    "key": "new:Linen - Trousers",
-   "number": null,
+   "id": "linen_trousers",
+   "number": 965,
    "name": "Linen - Trousers",
    "category": null,
    "catalog": "ADD",
@@ -13440,7 +13510,8 @@
   },
   {
    "key": "new:Linen - Skirt",
-   "number": null,
+   "id": "linen_skirt",
+   "number": 966,
    "name": "Linen - Skirt",
    "category": null,
    "catalog": "ADD",
@@ -13454,7 +13525,8 @@
   },
   {
    "key": "new:Linen - Dress",
-   "number": null,
+   "id": "linen_dress",
+   "number": 967,
    "name": "Linen - Dress",
    "category": null,
    "catalog": "ADD",
@@ -13468,7 +13540,8 @@
   },
   {
    "key": "new:Wool - Dress",
-   "number": null,
+   "id": "wool_dress",
+   "number": 968,
    "name": "Wool - Dress",
    "category": null,
    "catalog": "ADD",
@@ -13482,7 +13555,8 @@
   },
   {
    "key": "new:Wool - Cloak",
-   "number": null,
+   "id": "wool_cloak",
+   "number": 969,
    "name": "Wool - Cloak",
    "category": null,
    "catalog": "ADD",
@@ -13496,7 +13570,8 @@
   },
   {
    "key": "new:Wool - Coat",
-   "number": null,
+   "id": "wool_coat",
+   "number": 970,
    "name": "Wool - Coat",
    "category": null,
    "catalog": "ADD",
@@ -13510,7 +13585,8 @@
   },
   {
    "key": "new:Wool - Robe",
-   "number": null,
+   "id": "wool_robe",
+   "number": 971,
    "name": "Wool - Robe",
    "category": null,
    "catalog": "ADD",
@@ -13524,7 +13600,8 @@
   },
   {
    "key": "new:Oilcloth - Cloak",
-   "number": null,
+   "id": "oilcloth_cloak",
+   "number": 972,
    "name": "Oilcloth - Cloak",
    "category": null,
    "catalog": "ADD",
@@ -13538,7 +13615,8 @@
   },
   {
    "key": "new:Linen - Apron",
-   "number": null,
+   "id": "linen_apron",
+   "number": 973,
    "name": "Linen - Apron",
    "category": null,
    "catalog": "ADD",
@@ -13552,7 +13630,8 @@
   },
   {
    "key": "new:Leather - Apron",
-   "number": null,
+   "id": "leather_apron",
+   "number": 974,
    "name": "Leather - Apron",
    "category": null,
    "catalog": "ADD",
@@ -13566,7 +13645,8 @@
   },
   {
    "key": "new:Tabard",
-   "number": null,
+   "id": "tabard",
+   "number": 975,
    "name": "Tabard",
    "category": null,
    "catalog": "ADD",
@@ -13580,7 +13660,8 @@
   },
   {
    "key": "new:Linen - Headwrap",
-   "number": null,
+   "id": "linen_headwrap",
+   "number": 976,
    "name": "Linen - Headwrap",
    "category": null,
    "catalog": "ADD",
@@ -13594,7 +13675,8 @@
   },
   {
    "key": "new:Leather - Broad-brim hat",
-   "number": null,
+   "id": "leather_broad_brim_hat",
+   "number": 977,
    "name": "Leather - Broad-brim hat",
    "category": null,
    "catalog": "ADD",
@@ -13608,7 +13690,8 @@
   },
   {
    "key": "new:Fur - Mittens",
-   "number": null,
+   "id": "fur_mittens",
+   "number": 978,
    "name": "Fur - Mittens",
    "category": null,
    "catalog": "ADD",
@@ -13622,7 +13705,8 @@
   },
   {
    "key": "new:Leather - Shoes",
-   "number": null,
+   "id": "leather_shoes",
+   "number": 979,
    "name": "Leather - Shoes",
    "category": null,
    "catalog": "ADD",
@@ -13636,7 +13720,8 @@
   },
   {
    "key": "new:Wool - Socks",
-   "number": null,
+   "id": "wool_socks",
+   "number": 980,
    "name": "Wool - Socks",
    "category": null,
    "catalog": "ADD",
@@ -13650,7 +13735,8 @@
   },
   {
    "key": "new:Wool - Scarf",
-   "number": null,
+   "id": "wool_scarf",
+   "number": 981,
    "name": "Wool - Scarf",
    "category": null,
    "catalog": "ADD",
@@ -13664,7 +13750,8 @@
   },
   {
    "key": "new:Fibre - Shoulder bag",
-   "number": null,
+   "id": "fibre_shoulder_bag",
+   "number": 982,
    "name": "Fibre - Shoulder bag",
    "category": null,
    "catalog": "ADD",
@@ -13678,7 +13765,8 @@
   },
   {
    "key": "new:Wicker - Pack basket",
-   "number": null,
+   "id": "wicker_pack_basket",
+   "number": 983,
    "name": "Wicker - Pack basket",
    "category": null,
    "catalog": "ADD",
@@ -13692,7 +13780,8 @@
   },
   {
    "key": "new:Leather - Satchel",
-   "number": null,
+   "id": "leather_satchel",
+   "number": 984,
    "name": "Leather - Satchel",
    "category": null,
    "catalog": "ADD",
@@ -13706,7 +13795,8 @@
   },
   {
    "key": "new:Belt pouch",
-   "number": null,
+   "id": "belt_pouch",
+   "number": 985,
    "name": "Belt pouch",
    "category": null,
    "catalog": "ADD",
@@ -13720,7 +13810,8 @@
   },
   {
    "key": "new:Tool roll",
-   "number": null,
+   "id": "tool_roll",
+   "number": 986,
    "name": "Tool roll",
    "category": null,
    "catalog": "ADD",
@@ -13734,7 +13825,8 @@
   },
   {
    "key": "new:Traveller's Rucksack",
-   "number": null,
+   "id": "travellers_rucksack",
+   "number": 987,
    "name": "Traveller's Rucksack",
    "category": null,
    "catalog": "ADD",
@@ -13748,7 +13840,8 @@
   },
   {
    "key": "new:Wooden - Pack frame",
-   "number": null,
+   "id": "wooden_pack_frame",
+   "number": 988,
    "name": "Wooden - Pack frame",
    "category": null,
    "catalog": "ADD",
@@ -13762,7 +13855,8 @@
   },
   {
    "key": "new:Weapon scabbard",
-   "number": null,
+   "id": "weapon_scabbard",
+   "number": 989,
    "name": "Weapon scabbard",
    "category": null,
    "catalog": "ADD",
@@ -13776,7 +13870,8 @@
   },
   {
    "key": "new:Utility bandolier",
-   "number": null,
+   "id": "utility_bandolier",
+   "number": 990,
    "name": "Utility bandolier",
    "category": null,
    "catalog": "ADD",
@@ -13790,7 +13885,8 @@
   },
   {
    "key": "new:Rope Halter",
-   "number": null,
+   "id": "rope_halter",
+   "number": 991,
    "name": "Rope Halter",
    "category": null,
    "catalog": "ADD",
@@ -13804,7 +13900,8 @@
   },
   {
    "key": "new:Leather Bridle",
-   "number": null,
+   "id": "leather_bridle",
+   "number": 992,
    "name": "Leather Bridle",
    "category": null,
    "catalog": "ADD",
@@ -13818,7 +13915,8 @@
   },
   {
    "key": "new:Riding Saddle",
-   "number": null,
+   "id": "riding_saddle",
+   "number": 993,
    "name": "Riding Saddle",
    "category": null,
    "catalog": "ADD",
@@ -13832,7 +13930,8 @@
   },
   {
    "key": "new:Traveller's Saddle",
-   "number": null,
+   "id": "travellers_saddle",
+   "number": 994,
    "name": "Traveller's Saddle",
    "category": null,
    "catalog": "ADD",
@@ -13846,7 +13945,8 @@
   },
   {
    "key": "new:War Saddle",
-   "number": null,
+   "id": "war_saddle",
+   "number": 995,
    "name": "War Saddle",
    "category": null,
    "catalog": "ADD",
@@ -13860,7 +13960,8 @@
   },
   {
    "key": "new:Pack Saddle",
-   "number": null,
+   "id": "pack_saddle",
+   "number": 996,
    "name": "Pack Saddle",
    "category": null,
    "catalog": "ADD",
@@ -13874,7 +13975,8 @@
   },
   {
    "key": "new:Leather Saddlebags",
-   "number": null,
+   "id": "leather_saddlebags",
+   "number": 997,
    "name": "Leather Saddlebags",
    "category": null,
    "catalog": "ADD",
@@ -13888,7 +13990,8 @@
   },
   {
    "key": "new:Wicker Panniers",
-   "number": null,
+   "id": "wicker_panniers",
+   "number": 998,
    "name": "Wicker Panniers",
    "category": null,
    "catalog": "ADD",
@@ -13902,7 +14005,8 @@
   },
   {
    "key": "new:Cargo Lashings",
-   "number": null,
+   "id": "cargo_lashings",
+   "number": 999,
    "name": "Cargo Lashings",
    "category": null,
    "catalog": "ADD",
@@ -13916,7 +14020,8 @@
   },
   {
    "key": "new:Light Draft Harness",
-   "number": null,
+   "id": "light_draft_harness",
+   "number": 1000,
    "name": "Light Draft Harness",
    "category": null,
    "catalog": "ADD",
@@ -13930,7 +14035,8 @@
   },
   {
    "key": "new:Heavy Horse Collar Harness",
-   "number": null,
+   "id": "heavy_collar_harness",
+   "number": 1001,
    "name": "Heavy Horse Collar Harness",
    "category": null,
    "catalog": "ADD",
@@ -13944,7 +14050,8 @@
   },
   {
    "key": "new:Double Heavy Draft Harness",
-   "number": null,
+   "id": "double_draft_harness",
+   "number": 1002,
    "name": "Double Heavy Draft Harness",
    "category": null,
    "catalog": "ADD",
@@ -13958,7 +14065,8 @@
   },
   {
    "key": "new:Double Ox Yoke",
-   "number": null,
+   "id": "double_ox_yoke",
+   "number": 1003,
    "name": "Double Ox Yoke",
    "category": null,
    "catalog": "ADD",
@@ -13972,7 +14080,8 @@
   },
   {
    "key": "new:Iron Horseshoes (Set)",
-   "number": null,
+   "id": "iron_horseshoes",
+   "number": 1004,
    "name": "Iron Horseshoes (Set)",
    "category": null,
    "catalog": "ADD",
@@ -13986,7 +14095,8 @@
   },
   {
    "key": "new:Padded Horse Blanket",
-   "number": null,
+   "id": "padded_horse_blanket",
+   "number": 1005,
    "name": "Padded Horse Blanket",
    "category": null,
    "catalog": "ADD",
@@ -14000,7 +14110,8 @@
   },
   {
    "key": "new:Feedbag",
-   "number": null,
+   "id": "feedbag",
+   "number": 1006,
    "name": "Feedbag",
    "category": null,
    "catalog": "ADD",
@@ -14014,7 +14125,8 @@
   },
   {
    "key": "new:Grooming Kit",
-   "number": null,
+   "id": "grooming_kit",
+   "number": 1007,
    "name": "Grooming Kit",
    "category": null,
    "catalog": "ADD",
@@ -14028,7 +14140,8 @@
   },
   {
    "key": "new:Padded Barding",
-   "number": null,
+   "id": "padded_barding",
+   "number": 1008,
    "name": "Padded Barding",
    "category": null,
    "catalog": "ADD",
@@ -14042,7 +14155,8 @@
   },
   {
    "key": "new:Iron Mail Barding",
-   "number": null,
+   "id": "iron_mail_barding",
+   "number": 1009,
    "name": "Iron Mail Barding",
    "category": null,
    "catalog": "ADD",
@@ -14056,7 +14170,8 @@
   },
   {
    "key": "new:Steel Plate Barding",
-   "number": null,
+   "id": "steel_plate_barding",
+   "number": 1010,
    "name": "Steel Plate Barding",
    "category": null,
    "catalog": "ADD",
@@ -14070,7 +14185,8 @@
   },
   {
    "key": "new:Riding - Boots",
-   "number": null,
+   "id": "riding_boots",
+   "number": 1011,
    "name": "Riding - Boots",
    "category": null,
    "catalog": "NEW FUTURE",
@@ -14084,7 +14200,8 @@
   },
   {
    "key": "new:Handcart",
-   "number": null,
+   "id": "handcart",
+   "number": 1012,
    "name": "Handcart",
    "category": null,
    "catalog": "ADD",
@@ -14098,7 +14215,8 @@
   },
   {
    "key": "new:Wooden Cart Wheel",
-   "number": null,
+   "id": "wooden_cart_wheel",
+   "number": 1013,
    "name": "Wooden Cart Wheel",
    "category": null,
    "catalog": "ADD",
@@ -14112,7 +14230,8 @@
   },
   {
    "key": "new:Axle Assembly",
-   "number": null,
+   "id": "axle",
+   "number": 1014,
    "name": "Axle Assembly",
    "category": null,
    "catalog": "ADD",
@@ -14126,7 +14245,8 @@
   },
   {
    "key": "new:Light Cargo Cart",
-   "number": null,
+   "id": "light_cargo_cart",
+   "number": 1015,
    "name": "Light Cargo Cart",
    "category": null,
    "catalog": "ADD",
@@ -14140,7 +14260,8 @@
   },
   {
    "key": "new:Passenger Gig",
-   "number": null,
+   "id": "passenger_gig",
+   "number": 1016,
    "name": "Passenger Gig",
    "category": null,
    "catalog": "ADD",
@@ -14154,7 +14275,8 @@
   },
   {
    "key": "new:Cargo Sled",
-   "number": null,
+   "id": "cargo_sled",
+   "number": 1017,
    "name": "Cargo Sled",
    "category": null,
    "catalog": "ADD",
@@ -14168,7 +14290,8 @@
   },
   {
    "key": "new:Farm Wagon",
-   "number": null,
+   "id": "farm_wagon",
+   "number": 1018,
    "name": "Farm Wagon",
    "category": null,
    "catalog": "ADD",
@@ -14182,7 +14305,8 @@
   },
   {
    "key": "new:Timber Flatbed Wagon",
-   "number": null,
+   "id": "timber_wagon",
+   "number": 1019,
    "name": "Timber Flatbed Wagon",
    "category": null,
    "catalog": "ADD",
@@ -14196,7 +14320,8 @@
   },
   {
    "key": "new:Covered Merchant Wagon",
-   "number": null,
+   "id": "covered_wagon",
+   "number": 1020,
    "name": "Covered Merchant Wagon",
    "category": null,
    "catalog": "ADD",
@@ -14210,7 +14335,8 @@
   },
   {
    "key": "new:Traveller's Wagon",
-   "number": null,
+   "id": "travellers_wagon",
+   "number": 1021,
    "name": "Traveller's Wagon",
    "category": null,
    "catalog": "ADD",
@@ -14224,7 +14350,8 @@
   },
   {
    "key": "new:Passenger Carriage",
-   "number": null,
+   "id": "passenger_carriage",
+   "number": 1022,
    "name": "Passenger Carriage",
    "category": null,
    "catalog": "ADD",
@@ -14238,7 +14365,8 @@
   },
   {
    "key": "new:Passenger Sleigh",
-   "number": null,
+   "id": "passenger_sleigh",
+   "number": 1023,
    "name": "Passenger Sleigh",
    "category": null,
    "catalog": "ADD",
@@ -14252,7 +14380,8 @@
   },
   {
    "key": "new:Reinforced Wagon Wheel",
-   "number": null,
+   "id": "reinforced_wagon_wheel",
+   "number": 1024,
    "name": "Reinforced Wagon Wheel",
    "category": null,
    "catalog": "ADD",
@@ -14266,7 +14395,8 @@
   },
   {
    "key": "new:Food Preparation Table",
-   "number": null,
+   "id": "food_preparation_table",
+   "number": 1025,
    "name": "Food Preparation Table",
    "category": null,
    "catalog": "ADD",
@@ -14280,7 +14410,8 @@
   },
   {
    "key": "new:Clay Griddle",
-   "number": null,
+   "id": "clay_griddle",
+   "number": 1026,
    "name": "Clay Griddle",
    "category": null,
    "catalog": "ADD",
@@ -14294,7 +14425,8 @@
   },
   {
    "key": "new:Campfire Roasting Spit",
-   "number": null,
+   "id": "campfire_roasting_spit",
+   "number": 1027,
    "name": "Campfire Roasting Spit",
    "category": null,
    "catalog": "ADD",
@@ -14308,7 +14440,8 @@
   },
   {
    "key": "new:Iron Grill Grate",
-   "number": null,
+   "id": "iron_grill_grate",
+   "number": 1028,
    "name": "Iron Grill Grate",
    "category": null,
    "catalog": "ADD",
@@ -14322,7 +14455,8 @@
   },
   {
    "key": "new:Iron Frying Pan",
-   "number": null,
+   "id": "iron_frying_pan",
+   "number": 1029,
    "name": "Iron Frying Pan",
    "category": null,
    "catalog": "ADD",
@@ -14336,7 +14470,8 @@
   },
   {
    "key": "new:Iron Cauldron",
-   "number": null,
+   "id": "iron_cauldron",
+   "number": 1030,
    "name": "Iron Cauldron",
    "category": null,
    "catalog": "ADD",
@@ -14350,7 +14485,8 @@
   },
   {
    "key": "new:Fireplace Cooking Crane",
-   "number": null,
+   "id": "fireplace_cooking_crane",
+   "number": 1031,
    "name": "Fireplace Cooking Crane",
    "category": null,
    "catalog": "ADD",
@@ -14364,7 +14500,8 @@
   },
   {
    "key": "new:Unbaked Flatbread",
-   "number": null,
+   "id": "unbaked_flatbread",
+   "number": 1032,
    "name": "Unbaked Flatbread",
    "category": null,
    "catalog": "ADD",
@@ -14378,7 +14515,8 @@
   },
   {
    "key": "new:Unbaked Rye Flatbread",
-   "number": null,
+   "id": "unbaked_rye_flatbread",
+   "number": 1033,
    "name": "Unbaked Rye Flatbread",
    "category": null,
    "catalog": "ADD",
@@ -14392,7 +14530,8 @@
   },
   {
    "key": "new:Unbaked Garlic Flatbread",
-   "number": null,
+   "id": "unbaked_garlic_flatbread",
+   "number": 1034,
    "name": "Unbaked Garlic Flatbread",
    "category": null,
    "catalog": "ADD",
@@ -14406,7 +14545,8 @@
   },
   {
    "key": "new:Unbaked Honey Loaf",
-   "number": null,
+   "id": "unbaked_honey_loaf",
+   "number": 1035,
    "name": "Unbaked Honey Loaf",
    "category": null,
    "catalog": "ADD",
@@ -14420,7 +14560,8 @@
   },
   {
    "key": "new:Unbaked Trail Bread",
-   "number": null,
+   "id": "unbaked_trail_bread",
+   "number": 1036,
    "name": "Unbaked Trail Bread",
    "category": null,
    "catalog": "ADD",
@@ -14434,7 +14575,8 @@
   },
   {
    "key": "new:Unbaked Oatcakes",
-   "number": null,
+   "id": "unbaked_oatcakes",
+   "number": 1037,
    "name": "Unbaked Oatcakes",
    "category": null,
    "catalog": "ADD",
@@ -14448,7 +14590,8 @@
   },
   {
    "key": "new:Unbaked Chestnut Cakes",
-   "number": null,
+   "id": "unbaked_chestnut_cakes",
+   "number": 1038,
    "name": "Unbaked Chestnut Cakes",
    "category": null,
    "catalog": "ADD",
@@ -14462,7 +14605,8 @@
   },
   {
    "key": "new:Unbaked Apple Pie",
-   "number": null,
+   "id": "unbaked_apple_pie",
+   "number": 1039,
    "name": "Unbaked Apple Pie",
    "category": null,
    "catalog": "ADD",
@@ -14476,7 +14620,8 @@
   },
   {
    "key": "new:Unbaked Fish Pie",
-   "number": null,
+   "id": "unbaked_fish_pie",
+   "number": 1040,
    "name": "Unbaked Fish Pie",
    "category": null,
    "catalog": "ADD",
@@ -14490,7 +14635,8 @@
   },
   {
    "key": "new:Unbaked Venison Pie",
-   "number": null,
+   "id": "unbaked_venison_pie",
+   "number": 1041,
    "name": "Unbaked Venison Pie",
    "category": null,
    "catalog": "ADD",
@@ -14504,7 +14650,8 @@
   },
   {
    "key": "new:Uncooked Sausages",
-   "number": null,
+   "id": "uncooked_sausages",
+   "number": 1042,
    "name": "Uncooked Sausages",
    "category": null,
    "catalog": "ADD",
@@ -14518,7 +14665,8 @@
   },
   {
    "key": "new:Uncooked Meat Skewers",
-   "number": null,
+   "id": "uncooked_meat_skewers",
+   "number": 1043,
    "name": "Uncooked Meat Skewers",
    "category": null,
    "catalog": "ADD",
@@ -14532,7 +14680,8 @@
   },
   {
    "key": "new:Uncooked Mushroom Skewers",
-   "number": null,
+   "id": "uncooked_mushroom_skewers",
+   "number": 1044,
    "name": "Uncooked Mushroom Skewers",
    "category": null,
    "catalog": "ADD",
@@ -14546,7 +14695,8 @@
   },
   {
    "key": "new:Uncooked Crab Cakes",
-   "number": null,
+   "id": "uncooked_crab_cakes",
+   "number": 1045,
    "name": "Uncooked Crab Cakes",
    "category": null,
    "catalog": "ADD",
@@ -14560,7 +14710,8 @@
   },
   {
    "key": "new:Banana Fritter Batter",
-   "number": null,
+   "id": "banana_fritter_batter",
+   "number": 1046,
    "name": "Banana Fritter Batter",
    "category": null,
    "catalog": "ADD",
@@ -14574,7 +14725,8 @@
   },
   {
    "key": "new:Uncooked Meatballs",
-   "number": null,
+   "id": "uncooked_meatballs",
+   "number": 1047,
    "name": "Uncooked Meatballs",
    "category": null,
    "catalog": "ADD",
@@ -14588,7 +14740,8 @@
   },
   {
    "key": "new:Large Wooden Chest",
-   "number": null,
+   "id": "large_wooden_chest",
+   "number": 1048,
    "name": "Large Wooden Chest",
    "category": null,
    "catalog": "ADD",
@@ -14602,7 +14755,8 @@
   },
   {
    "key": "new:Wardrobe",
-   "number": null,
+   "id": "wardrobe",
+   "number": 1049,
    "name": "Wardrobe",
    "category": null,
    "catalog": "ADD",
@@ -14616,7 +14770,8 @@
   },
   {
    "key": "new:Dresser",
-   "number": null,
+   "id": "dresser",
+   "number": 1050,
    "name": "Dresser",
    "category": null,
    "catalog": "ADD",
@@ -14630,7 +14785,8 @@
   },
   {
    "key": "new:Bookcase",
-   "number": null,
+   "id": "bookcase",
+   "number": 1051,
    "name": "Bookcase",
    "category": null,
    "catalog": "ADD",
@@ -14644,7 +14800,8 @@
   },
   {
    "key": "new:Apothecary Cabinet",
-   "number": null,
+   "id": "apothecary_cabinet",
+   "number": 1052,
    "name": "Apothecary Cabinet",
    "category": null,
    "catalog": "ADD",
@@ -14658,7 +14815,8 @@
   },
   {
    "key": "new:Bottle & Jar Rack",
-   "number": null,
+   "id": "bottle_and_jar_rack",
+   "number": 1053,
    "name": "Bottle & Jar Rack",
    "category": null,
    "catalog": "ADD",
@@ -14672,7 +14830,8 @@
   },
   {
    "key": "new:Tool Cabinet",
-   "number": null,
+   "id": "tool_cabinet",
+   "number": 1054,
    "name": "Tool Cabinet",
    "category": null,
    "catalog": "ADD",
@@ -14686,7 +14845,8 @@
   },
   {
    "key": "new:Open Storage Bin",
-   "number": null,
+   "id": "open_storage_bin",
+   "number": 1055,
    "name": "Open Storage Bin",
    "category": null,
    "catalog": "ADD",
@@ -14700,7 +14860,8 @@
   },
   {
    "key": "new:Firewood Rack",
-   "number": null,
+   "id": "firewood_rack",
+   "number": 1056,
    "name": "Firewood Rack",
    "category": null,
    "catalog": "ADD",
@@ -14714,7 +14875,8 @@
   },
   {
    "key": "new:Log Rack",
-   "number": null,
+   "id": "log_rack",
+   "number": 1057,
    "name": "Log Rack",
    "category": null,
    "catalog": "ADD",
@@ -14728,7 +14890,8 @@
   },
   {
    "key": "new:Lumber Rack",
-   "number": null,
+   "id": "board_rack",
+   "number": 1058,
    "name": "Lumber Rack",
    "category": null,
    "catalog": "ADD",
@@ -14742,7 +14905,8 @@
   },
   {
    "key": "new:Mason's Pallet",
-   "number": null,
+   "id": "masons_pallet",
+   "number": 1059,
    "name": "Mason's Pallet",
    "category": null,
    "catalog": "ADD",
@@ -14756,7 +14920,8 @@
   },
   {
    "key": "new:Ore & Metal Rack",
-   "number": null,
+   "id": "ore_and_metal_rack",
+   "number": 1060,
    "name": "Ore & Metal Rack",
    "category": null,
    "catalog": "ADD",
@@ -14770,7 +14935,8 @@
   },
   {
    "key": "new:Storage Sign / Ledger",
-   "number": null,
+   "id": "storage_sign",
+   "number": 1061,
    "name": "Storage Sign / Ledger",
    "category": null,
    "catalog": "ADD",
@@ -14784,7 +14950,8 @@
   },
   {
    "key": "new:Warehouse Crate",
-   "number": null,
+   "id": "warehouse_crate",
+   "number": 1062,
    "name": "Warehouse Crate",
    "category": null,
    "catalog": "ADD",
@@ -14798,7 +14965,8 @@
   },
   {
    "key": "new:Warehouse Desk",
-   "number": null,
+   "id": "warehouse_desk",
+   "number": 1063,
    "name": "Warehouse Desk",
    "category": null,
    "catalog": "ADD",
@@ -14812,7 +14980,8 @@
   },
   {
    "key": "new:Smoked Meat",
-   "number": null,
+   "id": "smoked_meat",
+   "number": 1064,
    "name": "Smoked Meat",
    "category": null,
    "catalog": "ADD",
@@ -14826,7 +14995,8 @@
   },
   {
    "key": "new:Dried Mushrooms",
-   "number": null,
+   "id": "dried_mushrooms",
+   "number": 1065,
    "name": "Dried Mushrooms",
    "category": null,
    "catalog": "ADD",
@@ -14840,7 +15010,8 @@
   },
   {
    "key": "new:Seafood Platter",
-   "number": null,
+   "id": "seafood_platter",
+   "number": 1066,
    "name": "Seafood Platter",
    "category": null,
    "catalog": "ADD",
@@ -14854,7 +15025,8 @@
   },
   {
    "key": "new:Roast Platter",
-   "number": null,
+   "id": "roast_platter",
+   "number": 1067,
    "name": "Roast Platter",
    "category": null,
    "catalog": "ADD",
@@ -14868,7 +15040,8 @@
   },
   {
    "key": "new:Mixed Grill Platter",
-   "number": null,
+   "id": "mixed_grill_platter",
+   "number": 1068,
    "name": "Mixed Grill Platter",
    "category": null,
    "catalog": "ADD",
@@ -14882,7 +15055,8 @@
   },
   {
    "key": "new:Charcuterie Board",
-   "number": null,
+   "id": "charcuterie_board",
+   "number": 1069,
    "name": "Charcuterie Board",
    "category": null,
    "catalog": "ADD",
@@ -14896,7 +15070,8 @@
   },
   {
    "key": "new:Harvest Platter",
-   "number": null,
+   "id": "harvest_platter",
+   "number": 1070,
    "name": "Harvest Platter",
    "category": null,
    "catalog": "ADD",
@@ -14910,7 +15085,8 @@
   },
   {
    "key": "new:Tavern Supper Board",
-   "number": null,
+   "id": "tavern_supper_board",
+   "number": 1071,
    "name": "Tavern Supper Board",
    "category": null,
    "catalog": "ADD",
@@ -14924,7 +15100,8 @@
   },
   {
    "key": "new:Breakfast Platter",
-   "number": null,
+   "id": "breakfast_platter",
+   "number": 1072,
    "name": "Breakfast Platter",
    "category": null,
    "catalog": "ADD",
@@ -14938,7 +15115,8 @@
   },
   {
    "key": "new:Dessert Platter",
-   "number": null,
+   "id": "dessert_platter",
+   "number": 1073,
    "name": "Dessert Platter",
    "category": null,
    "catalog": "ADD",
@@ -14952,7 +15130,8 @@
   },
   {
    "key": "new:Serving Platter",
-   "number": null,
+   "id": "serving_platter",
+   "number": 1074,
    "name": "Serving Platter",
    "category": null,
    "catalog": "ADD",
@@ -14966,7 +15145,8 @@
   },
   {
    "key": "new:Ploughman's Board",
-   "number": null,
+   "id": "ploughmans_board",
+   "number": 1075,
    "name": "Ploughman's Board",
    "category": null,
    "catalog": "NEW FUTURE",

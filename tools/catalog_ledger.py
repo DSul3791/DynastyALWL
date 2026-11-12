@@ -8,7 +8,8 @@ The ledger is the one machine-readable record of every catalog entry's implement
 edited by hand (or by small scripts) as work lands; --check keeps it honest. Existing rows come from Appendix A of
 docs/design/DYNASTY_MASTER_ITEMS.md (itself generated from items.json at 7f8aabf4); new rows are listed below by
 catalog section, in catalog order, with names exactly as the catalog writes them (house-style renames happen when the
-row is created, decision 71).
+row is created, decision 71). Once a row is created in items.json its ledger entry
+gets "number" and "id"; --check verifies both against items.json.
 """
 import json
 import re
@@ -218,8 +219,16 @@ def check(ledger: dict) -> list:
         if by_number.get(e["number"]) != e["key"]:
             errors.append("%s: items.json has number %s as %s" % (e["key"], e["number"], by_number.get(e["number"])))
     for e in entries:
-        if e["key"].startswith("new:") and e["number"] is not None and e["number"] not in by_number:
-            errors.append("%s: number %s is not in items.json" % (e["key"], e["number"]))
+        if not e["key"].startswith("new:"):
+            continue
+        if (e["number"] is None) != (e.get("id") is None):
+            errors.append("%s: number %s and id %s must be set together" % (e["key"], e["number"], e.get("id")))
+        elif e["number"] is not None:
+            row = items.get(e["id"])
+            if by_number.get(e["number"]) != e["id"]:
+                errors.append("%s: items.json has number %s as %s, not %s" % (e["key"], e["number"], by_number.get(e["number"]), e["id"]))
+            elif e["state"] in ("NOT STARTED", "FUTURE-GATED") and not row.get("future"):
+                errors.append("%s: row %s is not future: true but the ledger state is %s" % (e["key"], e["id"], e["state"]))
     return errors
 
 
