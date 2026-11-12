@@ -9,6 +9,7 @@ extends RefCounted
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 
 const ICON_DIR := "res://assets/ui/item_icons/"     # tools/icon_bake.gd output, committed once Dave has looked at the sheet
 const CARRY_WARN := 0.7                             # carry bar: gold below this share of the limit, amber to CARRY_BAD, red from there
@@ -354,7 +355,8 @@ static func craft_fraction(view) -> float:
 	if view.craft_entries.is_empty():
 		return 0.0
 
-	var craft_s: float = float(view.recipes.recipe(int(view.craft_entries[0][0])).get("craft_s", 0.0))
+	var head: Array = view.craft_entries[0]
+	var craft_s: float = float(view.recipes.recipe(int(head[0])).get("craft_s", 0.0)) * (SmithingRules.time_mult(int(head[2])) if head.size() > 2 else 1.0)
 
 	if craft_s <= 0.0:
 		return 1.0

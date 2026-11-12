@@ -4,8 +4,8 @@ extends SceneTree
 # An edge tool (items.json edge: true) dulls with use and wears faster when fully dull. R on it sharpens it: on a whetstone from the pack
 # with water at hand, a timed job of up to full_s for a fully dull tool (less in proportion, faster sitting on a seat), then the other dull edge
 # tools one after another; it stops when the player walks away or the water goes, and what was done counts in proportion. The grindstone does
-# the same faster with no water. Sharpening restores sharpness to 100 % and lowers the maximum durability in proportion. The Grindstone
-# structure is T09's data: a stand-in row is used while it is not in this base.
+# the same faster with no water. Sharpening restores sharpness to 100 % and lowers the maximum durability in proportion. The Grindstone is the
+# live structure row (T09: state 246, station grindstone).
 #   godot --headless --path . --script res://src/worldgen/tools/test_whetstone.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -176,10 +176,7 @@ func _init() -> void:
 		if str(items._structures[kind].get("station", "")) == station:
 			grind_kind = kind
 
-	if grind_kind == "":   # stand-in for T09's Grindstone structure (state 246)
-		grind_kind = "grindstone"
-		items._structures[grind_kind] = {"item": "grindstone", "station": station, "station_level": 1, "reach_m": 3.0, "footprint_x": 1.0, "footprint_z": 0.6}
-
+	check(grind_kind == "grindstone" and int(items._structures[grind_kind].get("state", 0)) == 246, "the live Grindstone structure is the grindstone station (%s)" % grind_kind)
 	place(grind_kind, HERE + Vector3(0.0, 0.0, 1.5))
 	dull(slot, 1.0)
 	max_was = inv.max_durability(slot)

@@ -31,7 +31,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | world_items | server to client | reliable | added: Array, removed: PackedInt32Array | 10 |
 | animals | server to client | unreliable | rows: Array (id, species number, position, heading, state) | 48 |
 | reject | server to client | reliable | reason: int (0 too far, 1 no tool, 2 pack full, 3 other) | 23 |
-| craft_queue | server to client | reliable | entries: Array of [recipe number, crafts left], head first; left_ms: int (time left on the head craft) | 22 |
+| craft_queue | server to client | reliable | entries: Array of [recipe number, crafts left], head first, with a third value, the variant (SmithingRules code), on a Tempered or +1/+2 craft (catalog Phase 2c; an older client reads the first two); left_ms: int (time left on the head craft) | 22 |
 | strain | server to client | reliable | strain_pm: int, state: int, fade_pm: int, stance: int | 20 |
 | breath | server to client | reliable | deciseconds: int (air left in tenths of a second under water; -1 = head above the surface, symbol hides). Sent when the air changes by half a second while diving, once on surfacing | 32 |
 | vitals | server to client | reliable | hunger: int, health: int, weight_dkg: int | 18 |

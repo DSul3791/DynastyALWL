@@ -1295,7 +1295,6 @@ func _init() -> void:
 	wr.ground_height = func(x, z): return 10.0
 	wr.peer_connected_hello(1, "abcdef123456")
 	var axe_n: int = wr.table.number_of("stone_axe")
-	wr.table._by_id["stone_axe"]["repair"] = [["stick", 1], ["twine", 1]]   # the repair mechanism on a test row: the live Stone - Axe is disposable (master s2.2, Mission 001 phase 2c)
 	check(wr.inventory_of(1).count_of(axe_n) == 1 and wr.inventory_of(1).wear[0] == 0, "a version 1 save loads with zero wear")
 	var durability: int = int(wr.table.entry("stone_axe")["durability"])
 	wr.report_position(1, Vector3(0.0, 10.0, 0.0))
@@ -1307,23 +1306,16 @@ func _init() -> void:
 		wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 
 	check(wr.inventory_of(1).wear[0] >= 13 and wr.inventory_of(1).wear[0] <= 16, "each effective blow on rock wears the axe five uses (drops.json tool_wear) (%d, care %.4f carry %.4f)" % [wr.inventory_of(1).wear[0], wr.skill_factor(1, "tool_care"), float(wr._wear_carry.get(1, 0.0))])
-	wr.table.entry("stone_axe")["repair"] = [["twine", 1]]   # stand-in: a repairable tool (the catalog's stone axe is disposable: test_tool_care)
 	wr.inventory_of(1).wear[0] = durability - 1
 	wr._last_mine.clear()
 	wr._mined.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
-	check(wr._is_broken(wr.inventory_of(1), 0), "the last use breaks it")
-	wr.inventory_of(1).wear[0] = durability   # a rock blow wears five uses, so the last one can overshoot
+	check(wr.inventory_of(1).count_of(axe_n) == 0, "the last use breaks the Stone - Axe and it is gone (no repair: master s2.2 rule 1; repair is test_tool_care)")
 	var stones_before: int = wr.inventory_of(1).count_of(wr.table.number_of("stone"))
 	wr._last_mine.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
-	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "a broken axe does nothing")
-	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
-	check(wr.inventory_of(1).wear[0] == durability, "no materials, no repair")
-	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("twine"), 0, 1, Vector3.ZERO)
-	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
-	check(wr.inventory_of(1).wear[0] == 0 and wr.inventory_of(1).count_of(wr.table.number_of("twine")) == 0, "a repair spends materials and restores it to its maximum (catalog Phase 2c)")
-	wr.inventory_of(1).wear[0] = ceili(durability * 0.5)   # = durability - durability / 2, as the checks below expect
+	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "with no axe a blow on rock does nothing")
+	wr.inventory_of(1).add(axe_n, 1, ceili(durability * 0.5))   # a fresh half-worn axe in slot 0 (= durability - durability / 2, as the checks below expect)
 	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
 	var dropped: int = 0
 

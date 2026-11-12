@@ -15510,8 +15510,8 @@ func _sync_craft_queue(peer: int) -> void:
 func _pairs(entries: Array) -> Array:
 	var out: Array = []
 
-	for entry in entries:
-		out.append([int(entry[0]), int(entry[1])])
+	for entry in entries:   # a variant craft (catalog Phase 2c) adds its SmithingRules code: [recipe, count, variant]
+		out.append([int(entry[0]), int(entry[1])] if _variant_of(entry) == 0 else [int(entry[0]), int(entry[1]), _variant_of(entry)])
 
 	return out
 

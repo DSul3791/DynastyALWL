@@ -328,6 +328,16 @@ func _refresh_detail() -> void:
 	if r.is_empty():
 		return
 
+	# The variant chosen in Make as (catalog Phase 2c): its needs (more materials for +1/+2) are what the wells, the shortfall line and the
+	# Craft button show, so a variant the stock cannot cover is never offered as craftable.
+	var variants: Array = view.craft_variants(r)
+	var variant: int = _variant if variants.has(_variant) else 0
+	var made_as: Dictionary = r
+
+	if variant != 0:
+		made_as = r.duplicate()
+		made_as["needs"] = SmithingRules.scaled_needs(r["needs"], variant)
+
 	var gives: Array = r.get("gives", [0, 0])
 	var made: int = int(gives[0]) if not gives.is_empty() else 0
 	var entry: Dictionary = view.table.entry(view.table.id_of(made)) if made != 0 else {}
@@ -361,7 +371,7 @@ func _refresh_detail() -> void:
 		_detail.add_child(_stat_row(str(stat[0]), str(stat[1])))
 
 	_detail.add_child(_section("Needs"))
-	var parts: Dictionary = view._parts_plan(view._selected_recipe)
+	var parts: Dictionary = view._parts_plan(view._selected_recipe) if variant == 0 else {"ok": false, "ambiguous": 0}   # the server plans parts for plain crafts only
 
 	if bool(parts["ok"]):
 		var made_first: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], view.table.sentence_name(m[0])])
@@ -380,8 +390,8 @@ func _refresh_detail() -> void:
 	wells.add_theme_constant_override("v_separation", 10)
 	_detail.add_child(wells)
 
-	for need in r["needs"] + r["keeps"]:
-		var kept: bool = r["keeps"].has(need)
+	for need in made_as["needs"] + made_as["keeps"]:
+		var kept: bool = made_as["keeps"].has(need)
 		var have: int = view.stock_fill(need[0])   # the pack, loose stacks within 3 m and own containers within 12 m (craft_stock)
 		wells.add_child(_need_well(int(need[0]), int(need[1]), have, kept))
 
@@ -398,8 +408,6 @@ func _refresh_detail() -> void:
 	_quantity.get_line_edit().add_theme_font_size_override("font_size", view._px(view.BODY_PX - 8))
 	row.add_child(_quantity)
 	# Make as (catalog Phase 2c): the variants the stations beside you allow, Plain first, each with what it costs over the plain craft.
-	var variants: Array = view.craft_variants(r)
-
 	if variants.size() > 1:
 		var as_row: HBoxContainer = HBoxContainer.new()
 		as_row.add_theme_constant_override("separation", 12)
@@ -412,13 +420,13 @@ func _refresh_detail() -> void:
 			var mats: float = float(SmithingRules.cfg().get("craft", {}).get("materials", [1.0, 1.0, 1.0])[SmithingRules.craft_in(code)])
 			pick.add_item("%s%s" % [SmithingRules.label(code), "" if code == 0 else "  (x%s materials, x%s time)" % [str(snappedf(mats, 0.1)), str(snappedf(SmithingRules.time_mult(code), 0.1))]], code)
 
-		pick.select(maxi(variants.find(chosen_variant()), 0))
+		pick.select(maxi(variants.find(variant), 0))
 		pick.item_selected.connect(func(index: int) -> void:
 			_variant = pick.get_item_id(index)
 			view._refresh())
 		as_row.add_child(pick)
 
-	var short: String = missing_text(r)
+	var short: String = missing_text(made_as)
 
 	if short != "":
 		var shortfall: Label = _text("Short: " + short.trim_prefix("needs ") + ".", 18, ArtKit.BAD)
@@ -449,8 +457,8 @@ func _refresh_detail() -> void:
 
 	# The Craft button: cast brass, the word engraved; dim when the recipe cannot be made here now.
 	var make: Button = Button.new()
-	make.text = "Craft  (%.0f s)" % (float(r["craft_s"]) * SmithingRules.time_mult(chosen_variant()))
-	make.disabled = not (view._can_craft(view._selected_recipe) and view._station_ok(r))
+	make.text = "Craft  (%.0f s)" % (float(r["craft_s"]) * SmithingRules.time_mult(variant))
+	make.disabled = not ((view._can_craft(view._selected_recipe) if variant == 0 else view._free_craft() or short == "") and view._station_ok(r))
 	make.custom_minimum_size = Vector2(0.0, 58.0)
 	make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	make.add_theme_font_override("font", ArtKit.font("cinzel_bold"))

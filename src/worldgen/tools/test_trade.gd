@@ -155,10 +155,7 @@ func _init() -> void:
 	inv_r.wear[axe_slot] = 100
 	var smith_cost: int = trade.repair_cost(inv_r.numbers[axe_slot], 100, 1.0)
 	check(smith_cost >= 1 and smith_cost < 20, "a worn bronze knife: a few coppers to mend (%d)" % smith_cost)
-	var stone_axe: Dictionary = items.table.entry("stone_axe").duplicate()
-	items.table.entry("stone_axe").erase("repair")   # a disposable row (catalog Phase 2c, master s2.2 rule 1)
-	check(trade.repair_cost(items.table.number_of("stone_axe"), 100, 1.0) == 0, "a disposable tool is never mended")
-	items.table.entry("stone_axe").merge(stone_axe)
+	check(items.table.entry("stone_axe").get("repair", []).is_empty() and trade.repair_cost(items.table.number_of("stone_axe"), 100, 1.0) == 0, "a disposable Stone - Axe (no repair, master s2.2 rule 1) is never mended")
 	var coins_r: int = items.coins_of(1)
 	var said4: String = trade.deal(1, "hob", 2, axe_slot, 1)
 	check(inv_r.wear[axe_slot] == 0 and items.coins_of(1) == coins_r - trade.repair_cost(inv_r.numbers[axe_slot], 100, float(trade.multipliers(1, "hob")["pay"])), "Hob mends it as new for coin (%s)" % said4)

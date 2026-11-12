@@ -273,6 +273,16 @@ func _init() -> void:
 	no_key.sort()
 	print("info: biomes whose trees include no key wood (they give firewood and sticks only): ", ", ".join(no_key))
 
+	# The stations live structures serve (their own station or "also"): a repair_station must be one, or the tool could never be mended.
+	var served: Dictionary = {}
+
+	for kind in structure_defs:
+		if not bool(structure_defs[kind].get("retired", false)):
+			served[String(structure_defs[kind].get("station", ""))] = true
+
+			for also in structure_defs[kind].get("also", {}):
+				served[String(also)] = true
+
 	for id in items_file.get("items", {}):
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
@@ -319,6 +329,17 @@ func _init() -> void:
 		# Master s2.2: stone, wooden and primitive gear is disposable (no repair); a metal tool is repaired at the station type that makes it.
 		if String(item.get("kind", "")) == "tool" and ["bronze", "iron", "steel"].has(String(item.get("material", ""))) and item.has("durability") and not bool(item.get("retired", false)) and (item.get("repair", []).is_empty() or String(item.get("repair_station", "")) == ""):
 			fail("items.json: metal tool '%s' needs repair materials and a repair_station" % id)
+
+		# Catalog Phase 2c code (src/shared/smithing_rules.gd): a row with durability and no repair is disposable, gone when it breaks; any
+		# other is mended at its repair_station; an edge dulls against the row's durability and is sharpened, so it needs a repairable row (s2.2 rule 8).
+		if String(item.get("repair_station", "")) != "" and not served.has(String(item["repair_station"])):
+			fail("items.json: '%s' repair_station '%s' is no live structure's station" % [id, item["repair_station"]])
+
+		if String(item.get("repair_station", "")) != "" and item.get("repair", []).is_empty():
+			fail("items.json: '%s' has a repair_station but no repair materials" % id)
+
+		if bool(item.get("edge", false)) and (int(item.get("durability", 0)) < 1 or item.get("repair", []).is_empty()):
+			fail("items.json: '%s' has an edge but no durability or repair (only repairable tools are sharpened)" % id)
 
 		for row in item.get("repair", []):
 			want_item.call(String(row[0]), "items.json %s repair" % id)
@@ -528,6 +549,22 @@ func _init() -> void:
 
 		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet"]:   # quiet: less noise (stalk, server_animals brush noise)
 			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness or quiet" % action)
+
+	# smithing.json (catalog Phase 2c): its whetstone is an item, its grindstone, Master smithy and Smithy are stations and the temper add-on a structure.
+	var smithing: Dictionary = _read("smithing.json")
+
+	if not items_file.get("items", {}).has(String(smithing.get("whetstone", {}).get("item", ""))):
+		fail("smithing.json whetstone.item is not an item")
+
+	for station_ref in [smithing.get("grindstone", {}).get("station", ""), smithing.get("craft", {}).get("station", ""), smithing.get("temper", {}).get("station", "")]:
+		if not served.has(String(station_ref)):
+			fail("smithing.json names the station '%s' that no live structure serves" % station_ref)
+
+	if not structure_defs.has(String(smithing.get("temper", {}).get("addon", ""))):
+		fail("smithing.json temper.addon is not a structure")
+
+	if (smithing.get("craft", {}).get("materials", []) as Array).size() != 3 or (smithing.get("craft", {}).get("time", []) as Array).size() != 3:
+		fail("smithing.json craft.materials and craft.time need three factors (plain, +1, +2)")
 
 	# Stations: a recipe's station is a placed structure with that station, or one of the stations still to be built.
 	var stations: Dictionary = {"saw_mill": true, "forge": true, "campfire": true}   # a lit campfire is a station for dishes
