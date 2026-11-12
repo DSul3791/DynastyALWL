@@ -15187,10 +15187,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Wardrobe",
@@ -15202,10 +15207,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Dresser",
@@ -15217,10 +15227,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Bookcase",
@@ -15232,10 +15247,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Apothecary Cabinet",
@@ -15247,10 +15267,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Bottle & Jar Rack",
@@ -15262,10 +15287,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Tool Cabinet",
@@ -15277,10 +15307,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Open Storage Bin",
@@ -15292,10 +15327,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Firewood Rack",
@@ -15307,10 +15347,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Log Rack",
@@ -15322,10 +15367,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Lumber Rack",
@@ -15337,10 +15387,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Mason's Pallet",
@@ -15352,10 +15407,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Ore & Metal Rack",
@@ -15367,10 +15427,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T13; placeholder look (NOT visually complete)"
   },
   {
    "key": "new:Storage Sign / Ledger",
@@ -15382,10 +15447,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "view over nearby containers, 8 m (M001-T13)"
   },
   {
    "key": "new:Warehouse Crate",
@@ -15397,10 +15467,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": "rows and locks in phase 9; loaded-crate movement in phase 10"
+   "note": "rows and locks in phase 9 (M001-T13); loaded-crate movement in phase 10"
   },
   {
    "key": "new:Warehouse Desk",
@@ -15412,10 +15487,15 @@
    "section": "3.13",
    "phase": "9",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "validate_items",
+    "test_storage_locks",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
    "accepted_commit": null,
-   "note": "rows and locks in phase 9; loaded-crate movement in phase 10"
+   "note": "view over nearby containers, 16 m, outranks a sign (M001-T13); loaded-crate movement in phase 10"
   },
   {
    "key": "new:Smoked Meat",

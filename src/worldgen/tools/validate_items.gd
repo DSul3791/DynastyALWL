@@ -259,6 +259,7 @@ func _init() -> void:
 
 		var def_no_kit: Dictionary = structure_defs[kind].duplicate(true)
 		def_no_kit.erase("kit")
+		def_no_kit.erase("takes_kinds")   # items.json kinds, not item ids ("medicine" is also a retired item id); checked below
 
 		for ref in JSON.stringify(def_no_kit).split("\""):
 			if retired_ids.has(ref):
@@ -873,6 +874,21 @@ func _init() -> void:
 
 		if String(def.get("who", "anyone")) != "anyone" and not (bool(def.get("take_only", false)) and String(def.get("who")) == "owner"):   # remains: owner first day
 			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])
+
+		# Storage rules (master s3.13, Mission 001 phase 9): a code lock only on a container, what it takes names real items or kinds, a view has a radius.
+		if def.has("lockable") and (typeof(def["lockable"]) != TYPE_BOOL or int(def.get("slots", 0)) <= 0 or bool(def.get("take_only", false))):
+			fail("structures.json %s: lockable must be true or false, and only on a container with slots" % kind)
+
+		for take in def.get("takes", []):
+			if not items_file["items"].has(String(take)) or bool(items_file["items"][String(take)].get("retired", false)):
+				fail("structures.json %s: takes '%s', which is not a live item or group" % [kind, take])
+
+		for take_kind in def.get("takes_kinds", []):
+			if not String(take_kind) in ["tool", "weapon", "material", "clothing", "gear", "container", "medicine", "food", "coin", "placeable", "structure"]:
+				fail("structures.json %s: takes_kinds '%s' is not an items.json kind" % [kind, take_kind])
+
+		if String(def.get("use", "")) == "storage_view" and (float(def.get("view_m", 0.0)) <= 0.0 or int(def.get("slots", 0)) > 0):
+			fail("structures.json %s: a storage view needs view_m above 0 and holds nothing itself" % kind)
 		obtainable[String(def.get("item", ""))] = true
 
 		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks

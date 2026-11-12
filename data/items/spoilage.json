@@ -31,7 +31,21 @@
 		"weapon_rack": 1.0,
 		"armour_stand": 1.0,
 		"remains": 1.0,
-		"ground": 1.5
+		"ground": 1.5,
+		"large_wooden_chest": 0.6,
+		"wardrobe": 0.6,
+		"dresser": 0.6,
+		"bookcase": 0.8,
+		"apothecary_cabinet": 0.6,
+		"bottle_and_jar_rack": 0.8,
+		"tool_cabinet": 0.8,
+		"open_storage_bin": 1.0,
+		"firewood_rack": 1.0,
+		"log_rack": 1.0,
+		"board_rack": 1.0,
+		"masons_pallet": 1.0,
+		"ore_and_metal_rack": 1.0,
+		"warehouse_crate": 0.6
 	},
 	"season_mult": {
 		"spring": 1.0,
