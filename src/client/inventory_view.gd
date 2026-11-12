@@ -192,7 +192,7 @@ var inner_settings = InnerSettingsScript.new()   # Esc > Settings > Inner voice:
 var thought_event: Callable = Callable()     # (line id, kind) when the inner voice speaks: Sounds plays inner_voice/<line id>.ogg if it exists
 var _thought_label: Label
 var _thought_until_msec: int = 0
-var worn: PackedInt32Array = PackedInt32Array()   # item number per body slot (clothing.json order), 0 = nothing (protocol 40)
+var worn: PackedInt32Array = PackedInt32Array()   # item number per worn position (clothing.json worn, "slot:layer"), 0 = nothing (protocols 40, 107)
 var worn_inst: Dictionary = {}                    # body slot index -> the worn piece's instance data (protocol 106); absent = plain
 var clothing_cfg: Dictionary = {}
 const TrackingScript := preload("res://src/shared/tracking.gd")
@@ -4426,6 +4426,26 @@ func clothing_slots() -> Array:
 	return clothing_cfg.get("slots", [])
 
 
+# The worn positions ("slot:layer"), in the order of `worn` (clothing.json worn, protocol 107).
+func worn_places() -> Array:
+	clothing_slots()
+	return clothing_cfg.get("worn", [])
+
+
+# The worn position showing on a body slot: its outermost worn layer (`skip` leaves layers out, as the You column's own Outer well), -1 for none.
+func worn_top(slot: String, skip: Array = []) -> int:
+	var places: Array = worn_places()
+	var layers: Array = clothing_cfg.get("layers", {}).get(slot, [])
+
+	for k in range(layers.size() - 1, -1, -1):
+		var at: int = places.find("%s:%s" % [slot, str(layers[k])])
+
+		if not skip.has(str(layers[k])) and at >= 0 and at < worn.size() and worn[at] != 0:
+			return at
+
+	return -1
+
+
 # The body weight the carry limit is worked out from: the real weight plus what a worn pack adds (the server does the same).
 func carry_body_kg() -> float:
 	var bonus: float = 0.0
@@ -4858,7 +4878,8 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 		text += "\n%s each" % (("%.0f g" % (each_kg * 1000.0)) if each_kg < 0.1 else ("%.2f kg" % each_kg))
 
 	if str(entry.get("slot", "")) != "":
-		text += "\nWorn on the %s. Use (E) puts it on." % str(entry["slot"])
+		var layer: String = str(entry.get("wear_layer", "base"))
+		text += "\nWorn on the %s%s. Use (E) puts it on." % [str(entry["slot"]), "" if layer in ["base", "footwear"] else ", %s layer" % layer]
 
 		if float(entry.get("warmth", 0.0)) > 0.0:
 			text += " Keeps %d%% of your body heat in." % int(round(float(entry["warmth"]) * 100.0))

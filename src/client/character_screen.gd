@@ -515,32 +515,48 @@ func _skill_depth(id: String, defs: Dictionary) -> int:
 	return depth
 
 
-# What you wear, one line per body slot with a button to take the piece off (Use on the item in the pack puts it on).
+# What you wear: every worn layer on its own line with a button to take that piece off, and "nothing" for a body slot with nothing on
+# (Use on the item in the pack puts it on). Layers show inside to outside under their slot (clothing.json layers, protocol 107).
 func _add_worn_lines() -> void:
-	var slots: Array = _items.clothing_slots()
+	var places: Array = _items.worn_places()
 
-	if slots.is_empty():
+	if places.is_empty():
 		return
 
 	_remains_box.add_child(HSeparator.new())
 	_remains_box.add_child(_label("Wearing", TITLE_PX - 6))
-	var labels: Dictionary = _items.clothing_cfg.get("labels", {})
+	var labels: Dictionary = _items.clothing_cfg.get("worn_labels", {})
+	var slot_labels: Dictionary = _items.clothing_cfg.get("labels", {})
 
-	for i in slots.size():
-		var number: int = int(_items.worn[i]) if i < _items.worn.size() else 0
-		var line: HBoxContainer = HBoxContainer.new()
-		var name: Label = _label("%s: %s" % [labels.get(slots[i], str(slots[i])), _items.inst_label(number, _items.worn_inst.get(i, {})) if number > 0 else "nothing"], BODY_PX)
-		name.custom_minimum_size = Vector2(_px(360), 0)
-		line.add_child(name)
+	for slot in _items.clothing_slots():
+		var shown: int = 0
 
-		if number > 0:
-			var off: Button = Button.new()
-			off.text = "Take off"
-			off.add_theme_font_size_override("font_size", BODY_PX)
-			off.pressed.connect(func() -> void: _items.net.inventory_action.rpc_id(1, Net.ACT_UNWEAR, i, 0, 0, Vector3.ZERO))
-			line.add_child(off)
+		for layer in _items.clothing_cfg.get("layers", {}).get(slot, []):
+			var i: int = places.find("%s:%s" % [slot, layer])
+			var number: int = int(_items.worn[i]) if i >= 0 and i < _items.worn.size() else 0
 
-		_remains_box.add_child(line)
+			if number > 0:
+				_add_worn_line(str(labels.get(places[i], places[i])), i, number)
+				shown += 1
+
+		if shown == 0:
+			_add_worn_line(str(slot_labels.get(slot, slot)), -1, 0)
+
+
+func _add_worn_line(label: String, i: int, number: int) -> void:
+	var line: HBoxContainer = HBoxContainer.new()
+	var name: Label = _label("%s: %s" % [label, _items.inst_label(number, _items.worn_inst.get(i, {})) if number > 0 else "nothing"], BODY_PX)
+	name.custom_minimum_size = Vector2(_px(360), 0)
+	line.add_child(name)
+
+	if number > 0:
+		var off: Button = Button.new()
+		off.text = "Take off"
+		off.add_theme_font_size_override("font_size", BODY_PX)
+		off.pressed.connect(func() -> void: _items.net.inventory_action.rpc_id(1, Net.ACT_UNWEAR, i, 0, 0, Vector3.ZERO))
+		line.add_child(off)
+
+	_remains_box.add_child(line)
 
 
 # The death markers (DESIGN_IDEAS 6.1): each of your remains that still holds gear, with the way and distance to it and the

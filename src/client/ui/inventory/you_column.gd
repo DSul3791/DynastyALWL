@@ -121,12 +121,12 @@ func refresh() -> void:
 	if root == null or not is_instance_valid(root):
 		return
 
-	var slots: Array = view.clothing_slots()
-
 	for gear in LEFT + RIGHT:
 		var number: int = 0
 		var item_inst: Dictionary = {}
-		var at: int = slots.find(gear)
+		# A well shows its slot's outermost worn layer (protocol 107); the Outer well is the body's outer layer, so Body shows what is under it.
+		# Every layer, each with its own Take off, is on the Tab screen (character_screen.gd).
+		var at: int = view.worn_places().find("body:outer") if gear == "outer" else view.worn_top(gear, ["outer"] if gear == "body" else [])
 
 		if at >= 0 and at < view.worn.size():
 			number = view.worn[at]
