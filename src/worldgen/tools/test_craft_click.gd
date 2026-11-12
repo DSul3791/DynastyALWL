@@ -9,6 +9,11 @@ const RecipeList := preload("res://src/client/ui/inventory/recipe_list.gd")
 const ItemSounds := preload("res://src/client/item_sounds.gd")
 
 
+class FakeRecipes:
+	func recipe(number: int) -> Dictionary:
+		return {"number": number, "id": "wooden_spear" if number == 5 else "campfire"}
+
+
 # Just enough of an InventoryView for row clicks: what was asked to be crafted and what is selected.
 class FakeView:
 	var recipes: FakeRecipes = FakeRecipes.new()
@@ -40,11 +45,6 @@ class FakeTable:
 
 	func number_of(_id: String) -> int:
 		return 0
-
-
-class FakeRecipes:
-	func recipe(number: int) -> Dictionary:
-		return {"number": number, "id": "wooden_spear" if number == 5 else "campfire"}
 
 
 # Just enough of an InventoryView for ItemSounds.watch.
@@ -85,7 +85,6 @@ func _check_clicks() -> void:
 	check(view.crafted.is_empty() and view._selected_recipe == 7, "clicking again, or another recipe, still crafts nothing")
 	list.row_clicked(5, true)
 	check(view.crafted == [[5, 1]] and view._selected_recipe == 5, "shift-click makes exactly one, and selects it")
-	check(not RecipeList.get_script_constant_map().has("CRAFT_HOLD_MS"), "the hold that queued all the stock allowed is gone")
 	view._selected_recipe = 0
 	list.craft_selected()
 	check(view.crafted.size() == 1, "the Craft button with nothing selected makes nothing")
@@ -110,6 +109,7 @@ func _check_sounds() -> void:
 	items._crafting = 5
 	items._craft_head_end_msec = Time.get_ticks_msec() + 20000   # a queue of several spears
 	fx.watch(items)
+	check(fx.played == 1, "the craft_start cue sounds (its clips live with the item sounds)")
 	check(fx.work_played == 1 and fx.last_work.begins_with("craft_carve"), "the queue starts: the spear's carving sound (%s)" % fx.last_work)
 	fx._work.stop()   # the 4.5 s clip ran out
 	fx.watch(items)

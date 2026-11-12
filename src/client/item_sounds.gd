@@ -413,7 +413,7 @@ func _variants(sound_name: String) -> Array:
 	if _streams.has(sound_name):
 		return _streams[sound_name]
 
-	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done"
+	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done" and sound_name != "craft_start"   # the two cues live with the item sounds
 	var eating: bool = sound_name.begins_with("eat_") or sound_name == "drink_gulp" or sound_name.begins_with("heal_")
 	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), sound_name)
 
