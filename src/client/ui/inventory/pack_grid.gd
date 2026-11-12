@@ -200,6 +200,9 @@ func show_info() -> void:
 	if view.table.shelf_units(number) > 0:
 		item_facts.append(["Fresh", "%d %%" % int(view.table.freshness(number, wear) * 100.0)])
 
+	if view.table.ready_units(number) > 0:   # a sealed batch (master s3.14): Maturing until its ready age, then Ready
+		item_facts.append(["Maturing", "about %d h more" % view.table.ready_hours_left(number, wear)] if view.table.maturing(number, wear) else ["Ready", "to eat"])
+
 	var inst_facts: Array = []
 
 	for line in view.inst_lines(store.inst_of(slot), number):

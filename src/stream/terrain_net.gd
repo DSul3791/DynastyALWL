@@ -37,7 +37,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 107  # 107 (12 Nov 2026): clothing layers (catalog Phase 4a, M001-T11): worn carries one entry per worn position (clothing.json worn, "slot:layer", 20 today; the first eight are the old eight slots), and ACT_UNWEAR a is a worn position. 106 (12 Nov 2026): item instances (catalog Phase 1b): Inventory.FORMAT 3 and inventory_slots carry per-slot instance data after the slots, worn gains its pieces' instance data. 105 (10 Nov 2026): wheel_share (the sawmill ghost asks the server what its water wheel would give: ACT_WHEEL_ASK; water rules section 10). 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 108  # 108 (12 Nov 2026): storage locks and views (catalog Phase 9): ACT_CHEST_LOCK, ACT_VIEW_OPEN, ACT_VIEW_TAKE, ACT_VIEW_PUT, chest_lock, storage_view; world_items.json version 2. 107 (12 Nov 2026): clothing layers (catalog Phase 4a, M001-T11): worn carries one entry per worn position (clothing.json worn, "slot:layer", 20 today; the first eight are the old eight slots), and ACT_UNWEAR a is a worn position. 106 (12 Nov 2026): item instances (catalog Phase 1b): Inventory.FORMAT 3 and inventory_slots carry per-slot instance data after the slots, worn gains its pieces' instance data. 105 (10 Nov 2026): wheel_share (the sawmill ghost asks the server what its water wheel would give: ACT_WHEEL_ASK; water rules section 10). 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -86,6 +86,8 @@ signal notice_received(text: String)
 signal road_marker_reached(at: Vector3)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal chest_info_received(id: int, keep_out: bool, may_set: bool)
+signal chest_lock_received(id: int, locked: bool, mine: bool, may_open: bool, wait_s: int, allowed: int)
+signal storage_view_received(id: int, numbers: PackedInt32Array, counts: PackedInt32Array, containers: int)
 signal craft_stock_received(numbers: PackedInt32Array, counts: PackedInt32Array)
 signal step_to_received(position: Vector3, yaw: float)
 signal wheel_share_received(at: Vector3, yaw_deg: int, percent: int, why: String)
@@ -207,6 +209,10 @@ const ACT_FAVOURITE := 67        # a = pack slot, b = 1 favourite, 0 not: bulk b
 const ACT_HOTBAR_SET := 68       # a = key 0 to 9 (keys 1 to 9 and 0), b = item number, 0 clears the key; one key per item (putting it on a key takes it off another); answered with hotbar (protocol 100)
 const ACT_SPYGLASS := 69         # a = 1 looking through the admin spyglass, 0 not; b = the watched animal id (0 none). Admin only: the server sends animals out to the spyglass radius and animal_info for the watched one; a non-admin gets animal_info(-1, {}). a = 2 (10 Nov 2026): looking through the spyglass item in pack slot `count` (no admin; the tier's radius, data/items/spyglass.json; refused without one)
 const ACT_WHEEL_ASK := 70        # at = the sawmill ghost's spot, a = its turn in degrees, b = the kit's item number: what would its water wheel give there? Answered with wheel_share (protocol 105)
+const ACT_CHEST_LOCK := 71       # a = container world id, b = 0 set the code, 1 take the lock off, 2 enter a code, 3 let the player beside it in, 4 withdraw every grant; count = the code 0 to 9999 (four digits, leading zeros: 42 is "0042") for 0 and 2. Owner only but 2; answered with chest_lock (protocol 108)
+const ACT_VIEW_OPEN := 72        # a = world id of a Storage sign or Warehouse desk within reach: answered with storage_view, the totals of the nearby containers this player may open (protocol 108)
+const ACT_VIEW_TAKE := 73        # a = view world id, b = item number, count = how many: taken from those containers into the pack, nearest first; answered with storage_view (protocol 108)
+const ACT_VIEW_PUT := 74         # a = view world id, b = pack slot (-1: every stack an open container there already holds), count = how many: into those containers; answered with storage_view (protocol 108)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -710,6 +716,20 @@ func chest_contents(id: int, bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func chest_info(id: int, keep_out: bool, may_set: bool) -> void:
 	chest_info_received.emit(id, keep_out, may_set)
+
+
+# A lockable container's code lock as this player sees it (protocol 108): it has a code, this player owns it, may open it, must wait wait_s seconds
+# before the next code, and (to the owner only) how many other players have access. Never the code. Sent on opening, when access is refused and after ACT_CHEST_LOCK.
+@rpc("authority", "call_remote", "reliable")
+func chest_lock(id: int, locked: bool, mine: bool, may_open: bool, wait_s: int, allowed: int) -> void:
+	chest_lock_received.emit(id, locked, mine, may_open, wait_s, allowed)
+
+
+# What a Storage sign or Warehouse desk shows this player (protocol 108): item numbers and totals over the containers it covers that this
+# player may open, and how many such containers. Sent on ACT_VIEW_OPEN and after every ACT_VIEW_TAKE and ACT_VIEW_PUT.
+@rpc("authority", "call_remote", "reliable")
+func storage_view(id: int, numbers: PackedInt32Array, counts: PackedInt32Array, containers: int) -> void:
+	storage_view_received.emit(id, numbers, counts, containers)
 
 
 # What a craft may use besides the pack (protocol 98, docs/design/INVENTORY_CRAFTING_REPORT.md step 2): item numbers and counts lying within 3 m and

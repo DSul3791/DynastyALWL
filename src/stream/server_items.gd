@@ -27,7 +27,7 @@ const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
-const VERSION := 1
+const VERSION := 2                       # world_items.json: 2 (protocol 108) adds the code lock at row index 17; version 1 files load with no locks
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
@@ -186,6 +186,8 @@ var water_near: Callable         # (position, reach in metres) -> true when wate
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
+var send_chest_lock: Callable   # (peer, world id, locked, mine, may_open, wait_s, allowed): a lockable container's code lock as this player sees it (protocol 108; never the code)
+var send_storage_view: Callable # (peer, view world id, item numbers, counts, containers): what a Storage sign or Warehouse desk shows this player (protocol 108)
 var send_craft_stock: Callable  # (peer, numbers PackedInt32Array, counts PackedInt32Array): what a craft may use besides the pack (protocol 98)
 var send_wheel_share: Callable  # (peer, at, yaw degrees, percent, why): the answer to ACT_WHEEL_ASK (protocol 105, _wheel_ask)
 var send_step_to: Callable      # (peer, position, yaw radians): the server moved the player to a station to craft there (protocol 103, _step_to_station)
@@ -1109,6 +1111,14 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_chest_viewer.erase(peer)
 	elif kind == Net.ACT_CHEST_KEEP_OUT:
 		_set_keep_out(peer, a, b == 1)
+	elif kind == Net.ACT_CHEST_LOCK:
+		_lock_action(peer, inv, a, b, count)
+	elif kind == Net.ACT_VIEW_OPEN:
+		_view_open(peer, a)
+	elif kind == Net.ACT_VIEW_TAKE:
+		_view_take(peer, inv, a, b, count)
+	elif kind == Net.ACT_VIEW_PUT:
+		_view_put(peer, inv, a, b, count)
 	elif kind == Net.ACT_CRAFT_STOCK:
 		_send_stock(peer, a == 1)   # a = 1: the hammer list's poll while walking (held_item.gd), answered cheaply and only when the stock changed
 	elif kind == Net.ACT_FAVOURITE:
@@ -1437,7 +1447,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else ""])
 			continue
 
 		var at: Vector3 = it["pos"]
@@ -1909,14 +1919,14 @@ func npc_train(peer: int, skill: String, max_level: int, cost_id: String = "", c
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	var problem: String = SkillWeb.train_problem(_skills_cfg, skill, records, now_s, 100.0, max_level)
 
-	if problem == "" and cost_id != "" and count_for(peer, cost_id) < cost_n:
+	if problem == "" and cost_id != "" and count_for(peer, cost_id, true) < cost_n:
 		problem = "not enough to pay"
 
 	if problem != "" or dry:
 		return problem
 
 	if cost_id != "":
-		take_from(peer, cost_id, cost_n)
+		take_from(peer, cost_id, cost_n, true)
 
 	return train_skill(peer, skill, -1)
 
@@ -4705,7 +4715,7 @@ func _load_inventories() -> void:
 
 
 func _load_world_items() -> void:
-	var parsed: Variant = _read_json("world_items.json")
+	var parsed: Variant = _read_json_version("world_items.json", VERSION, 1)
 
 	if parsed == null:
 		return
@@ -4788,6 +4798,15 @@ func _load_world_items() -> void:
 
 			if row.size() > 16 and int(row[16]) == 1:
 				entry["struct"]["keep_out"] = true   # the owner keeps it out of crafting and blueprint sites
+
+			if row.size() > 17 and typeof(row[17]) == TYPE_STRING and str(row[17]) != "" and entry["struct"].has("uid"):
+				var saved_lock: Dictionary = _clean_lock(JSON.parse_string(str(row[17])))   # world_items version 2: the code lock (s3.13)
+
+				if saved_lock.is_empty() and str(entry["struct"].get("owner", "")) != "":
+					saved_lock = {"salt": "", "hash": "", "ok": [], "allow": [], "tries": {}}   # a damaged lock fails closed: only the owner opens it until they set a new code or take it off
+
+				if not saved_lock.is_empty():
+					entry["struct"]["lock"] = saved_lock
 
 			if row.size() > 15 and str(row[15]) != "":
 				var saved_site: Variant = JSON.parse_string(str(row[15]))
@@ -4877,11 +4896,6 @@ func _load_world_items() -> void:
 		_next_id += 1
 
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
-
-
-# The parsed dictionary, or null when there is no file or it cannot be used (then it is kept as .bad).
-func _read_json(name: String) -> Variant:
-	return _read_json_version(name, VERSION)
 
 
 # Reads a save file. A file that does not parse (a torn write, a damaged disk) is set aside as .bad and the copy kept
@@ -8285,7 +8299,7 @@ func _boxes_near(peer: int) -> Array:
 		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
 			continue
 
-		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= Interact.server_reach_m() + 2.0:
+		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= Interact.server_reach_m() + 2.0 and _may_access(peer, s):
 			out.append([sid, _chests[int(s["struct"]["uid"])]])
 
 	return out
@@ -8600,6 +8614,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 	if def.is_empty() or str(def.get("kit", "")) == "":
+		return
+
+	if not _may_access(peer, it):
+		_say(peer, "It is locked.")   # only the owner or a player with access takes a locked container down (s3.13 locked-crate movement rule)
 		return
 
 	if not _struct_empty(id):
@@ -9043,7 +9061,7 @@ func _push_box(id: int, box) -> void:
 		return
 
 	for peer in _chest_viewer:
-		if int(_chest_viewer[peer]) == id and _peer_pos.has(peer) and _peer_pos[peer].distance_to(_items[id]["pos"]) <= CHEST_REACH_M:
+		if int(_chest_viewer[peer]) == id and _peer_pos.has(peer) and _peer_pos[peer].distance_to(_items[id]["pos"]) <= CHEST_REACH_M and _may_access(peer, _items[id]):
 			send_chest.call(peer, id, box.to_bytes())
 
 
@@ -9064,6 +9082,10 @@ func _chest_of(peer: int, id: int):
 
 	if str(it["struct"]["kind"]) == "remains" and not _may_open_remains(peer, it):
 		_say(peer, "These remains are not yours to open yet.")
+		return null
+
+	if not _may_access(peer, it):
+		_send_lock_info(peer, id)   # locked to this player: no contents, the client asks for the code (open, put, take, Take all and Store all all come here)
 		return null
 
 	var chest = _chests.get(int(it["struct"]["uid"]))
@@ -9114,45 +9136,10 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 	if fire_refuses:
 		_say(peer, "A fire takes wood and food.")
 		_reject(peer, 3)
-	elif kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
-		_reject(peer, 3)
-	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
-		var number: int = inv.numbers[a]
-		var held_wear: int = inv.wear[a]
-		var held_inst: Dictionary = inv.inst_of(a)
-		var amount: int = mini(count, inv.counts[a])
-		var max_kg: float = float(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
-
-		# A container takes only so many kilograms (structures.json max_kg): put what fits, keep the rest.
-		if max_kg > 0.0 and not _carry_cfg.is_empty():
-			var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg), 0.001)
-			var room: float = max_kg - CarryRules.carried_kg(chest, table, _carry_cfg)
-			amount = clampi(int(floor(room / each + 0.0001)), 0, amount)
-
-			if amount == 0:
-				_say(peer, "It is too heavy for the chest")
-				_reject(peer, 2)
-
-		var left: int = chest.add(number, amount, held_wear, held_inst) if amount > 0 else 0
-		inv.take_from_slot(a, amount - left)
-		_dirty = true
-	elif kind == Net.ACT_CHEST_TAKE and a >= 0 and a < chest.SLOTS and chest.numbers[a] != 0 and count > 0:
-		var number: int = chest.numbers[a]
-		var held_wear: int = chest.wear[a]
-		var held_inst: Dictionary = chest.inst_of(a)
-		var amount: int = mini(count, chest.counts[a])
-
-		if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
-			if shoulder_of(peer) != "":
-				_say(peer, "Put your log down first (Q).")
-			elif _give_shoulder(peer, number, 1, held_inst, false) == 1:
-				chest.take_from_slot(a, 1)
-				_dirty = true
-		else:
-			amount = _fit(peer, inv, number, amount)
-			var left: int = inv.add(number, amount, held_wear, held_inst)
-			chest.take_from_slot(a, amount - left)
-			_dirty = true
+	elif kind == Net.ACT_CHEST_PUT:
+		_box_put(peer, inv, id, chest, a, count)
+	elif kind == Net.ACT_CHEST_TAKE:
+		_box_take(peer, inv, chest, a, count)
 
 	# Wood moved in or out of a fire's store counts at once (Dave 5 Nov 2026), not only when the window closes: the burn time, the tier and the laid state follow.
 	# A burning fire waits for the window to close (its burn debt must not take wood put in meanwhile, test_fire_store); a fire that is not burning has no debt.
@@ -9164,10 +9151,101 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_send_chest_info(peer, id)   # after the contents, so the client knows which container it is about
+		_send_lock_info(peer, id)   # a lockable container: its lock as this player sees it (the owner's lock controls)
 		_say_cold_store(peer, id)
 
 	if kind == Net.ACT_CHEST_TAKE and str(_items.get(id, {}).get("struct", {}).get("kind", "")) == "remains":
 		_sync_remains(peer, false)
+
+
+# One put from pack slot `a` into container `id` (its inventory `chest`), up to `count`: the container's own rules (take-only, what it takes,
+# its max_kg). The caller has already checked reach and access (_chest_of, or a storage view's _view_boxes). Returns how many went in.
+func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
+	var kind: String = str(_items.get(id, {}).get("struct", {}).get("kind", ""))
+
+	if bool(_structures.get(kind, {}).get("take_only", false)):
+		_reject(peer, 3)
+		return 0
+
+	if a < 0 or a >= inv.SLOTS or inv.numbers[a] == 0 or count <= 0:
+		return 0
+
+	var number: int = inv.numbers[a]
+
+	if not _box_takes(kind, number):
+		_say(peer, "The %s does not take that." % table.in_sentence(table.name_of(int(_items[id]["number"]))))
+		_reject(peer, 3)
+		return 0
+
+	var held_wear: int = inv.wear[a]
+	var held_inst: Dictionary = inv.inst_of(a)
+	var amount: int = mini(count, inv.counts[a])
+	var max_kg: float = float(_structures.get(kind, {}).get("max_kg", 0.0))
+
+	# A container takes only so many kilograms (structures.json max_kg): put what fits, keep the rest.
+	if max_kg > 0.0 and not _carry_cfg.is_empty():
+		var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg), 0.001)
+		var room: float = max_kg - CarryRules.carried_kg(chest, table, _carry_cfg)
+		amount = clampi(int(floor(room / each + 0.0001)), 0, amount)
+
+		if amount == 0:
+			_say(peer, "It is too heavy for the chest")
+			_reject(peer, 2)
+
+	var left: int = chest.add(number, amount, held_wear, held_inst) if amount > 0 else 0
+	inv.take_from_slot(a, amount - left)
+	_dirty = true
+	return amount - left
+
+
+# One take of up to `count` from container slot `a` into the pack (a large log onto the shoulder, one at a time), under the carry cap.
+# The caller has already checked reach and access. Returns how many came out.
+func _box_take(peer: int, inv, chest, a: int, count: int) -> int:
+	if a < 0 or a >= chest.SLOTS or chest.numbers[a] == 0 or count <= 0:
+		return 0
+
+	var number: int = chest.numbers[a]
+	var held_wear: int = chest.wear[a]
+	var held_inst: Dictionary = chest.inst_of(a)
+	var amount: int = mini(count, chest.counts[a])
+
+	if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
+		if shoulder_of(peer) != "":
+			_say(peer, "Put your log down first (Q).")
+		elif _give_shoulder(peer, number, 1, held_inst, false) == 1:
+			chest.take_from_slot(a, 1)
+			_dirty = true
+			return 1
+
+		return 0
+
+	amount = _fit(peer, inv, number, amount)
+	var left: int = inv.add(number, amount, held_wear, held_inst)
+	chest.take_from_slot(a, amount - left)
+	_dirty = true
+	return amount - left
+
+
+# Whether a container kind takes an item (structures.json "takes_kinds": items.json kinds, "takes": item ids or ingredient groups, any member).
+# A kind with neither takes anything (master s3.13: a log rack takes logs, a wardrobe clothes).
+func _box_takes(kind: String, number: int) -> bool:
+	var def: Dictionary = _structures.get(kind, {})
+	var kinds: Array = def.get("takes_kinds", [])
+	var ids: Array = def.get("takes", [])
+
+	if kinds.is_empty() and ids.is_empty():
+		return true
+
+	if kinds.has(str(table.entry(table.id_of(number)).get("kind", ""))):
+		return true
+
+	for id in ids:
+		var n: int = table.number_of(str(id))
+
+		if n == number or table.group_members(n).has(number):
+			return true
+
+	return false
 
 
 func _save_chests() -> void:
@@ -10022,9 +10100,10 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 
 
 # For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
-func count_for(peer: int, id: String) -> int:
+# `ready_only`: a Maturing stack (master s3.14) does not count, for what an NPC asks or takes in payment.
+func count_for(peer: int, id: String, ready_only: bool = false) -> int:
 	var inv = inventory_of(peer)
-	return inv.count_of(table.number_of(id)) if inv != null and table.number_of(id) > 0 else 0
+	return inv.count_of(table.number_of(id), false, ready_only) if inv != null and table.number_of(id) > 0 else 0
 
 
 func give_to(peer: int, id: String, count: int) -> void:
@@ -10208,14 +10287,14 @@ func sync_reputation(peer: int) -> void:
 	send_reputation.call(peer, ids, names, points)
 
 
-func take_from(peer: int, id: String, count: int) -> bool:
+func take_from(peer: int, id: String, count: int, ready_only: bool = false) -> bool:
 	var inv = inventory_of(peer)
 
 	if inv == null or table.number_of(id) <= 0:
 		return false
 
 	var before: Array = _snapshot(inv)
-	var ok: bool = inv.remove(table.number_of(id), count)
+	var ok: bool = inv.remove(table.number_of(id), count, [], ready_only)
 	_send_changes(peer, inv, before)
 	return ok
 
@@ -11772,6 +11851,9 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_within(it["pos"], POT_ON_FIRE_M):
 				continue   # the pot hangs over its fire: with that fire out nothing cooks, the craft waits where it is and nothing is lost
 
+			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_within(it["pos"], "fireplace", float(def.get("attach_m", 2.5))):
+				continue   # the Fireplace cooking crane (master s3.12) hangs its pot over a fireplace: only while that fireplace burns
+
 			# A station that must be burning to craft (the Smithy, Blast furnace and Master smithy, master s4 item 10): a cold one serves while the crafter
 			# carries its fuel, and the craft itself (light_it) fires it from the pack. Without fuel the craft waits and nothing is lost.
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
@@ -11865,6 +11947,16 @@ func _seat_near(pos: Vector3) -> bool:
 
 			if str(_comfort_kind(str(_structures.get(skind, {}).get("comfort", skind))).get("class", "")) == "seat":
 				return true
+
+	return false
+
+
+func _lit_structure_within(pos: Vector3, kind: String, r: float) -> bool:
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other.has("struct") and str(other["struct"]["kind"]) == kind and bool(other["struct"].get("lit", false)) and pos.distance_to(other["pos"]) <= r:
+			return true
 
 	return false
 
@@ -14751,7 +14843,7 @@ func _craft_ground(stock: Dictionary, number: int, inv, plain_only: bool = false
 	for row in stock.get("near", []):
 		var it: Dictionary = _items.get(int(row[0]), {})
 
-		if not it.is_empty() and fills.has(int(it.get("number", 0))) and not (plain_only and it.has("inst")):
+		if not it.is_empty() and fills.has(int(it.get("number", 0))) and not (plain_only and it.has("inst")) and not table.maturing(int(it["number"]), int(it.get("wear", 0))):
 			out.append([int(row[0]), int(it["count"])])
 
 	return out
@@ -14933,6 +15025,419 @@ func _set_keep_out(peer: int, id: int, on: bool) -> void:
 	_send_stock(peer)
 
 
+# --- Code locks and storage views (master s3.13 [D13]; docs/design/STORAGE_WAREHOUSING_DESIGN.md s4 to s6; Mission 001 phase 9) ---
+# A lockable container (structures.json "lockable": the chests and crates) is open to anyone until its owner sets a four-digit code (0000 to 9999,
+# kept as four characters). The owner always opens it without the code. Anyone else gets in once they enter the current code (their own access, not
+# the container's: it stays locked for everyone else) or when the owner lets them in. A wrong code makes that player wait 10 s times their
+# consecutive failures on that container before the next try, as a wall-clock deadline saved with the container, so a reconnect, a restart or
+# another interface never resets it; the right code resets the count. Changing the code drops the code-based access; owner grants stay.
+# struct["lock"] = {"salt", "hash" (sha256 of salt and code: the code itself is never saved or sent), "ok": [keys that entered this code],
+# "allow": [keys the owner let in], "tries": {key: [consecutive failures, unix deadline]}}; saved as world_items.json row index 17.
+# _may_access is the one check: _chest_of (open, put, take, Take all, Store all, Sort), _push_box, take-down, repair sourcing and the storage views.
+# Craft and blueprint-site sourcing and Stack to nearby already use only the player's own containers (CraftStock.owner_ok), so they never pass a lock.
+# Phase 10 (loaded crates lifted onto a cart) calls _may_access before it lifts or loads one; the lock rides in the struct with the crate.
+const LOCK_SET := 0       # ACT_CHEST_LOCK b: the owner sets or changes the code (count = 0 to 9999)
+const LOCK_CLEAR := 1     # the owner takes the lock off (open to anyone again; every grant and wait goes with it)
+const LOCK_TRY := 2       # anyone else enters a code (count = 0 to 9999)
+const LOCK_ALLOW := 3     # the owner lets in the nearest other player standing within CHEST_REACH_M of the container
+const LOCK_REVOKE := 4    # the owner withdraws every grant and every code-based access
+const LOCK_WAIT_STEP_S := 10.0   # the owner's rule: 10 s after the first wrong code, 20 s after the second, and so on, with no cap
+
+
+# The code as saved and compared: four digit characters, leading zeros kept ("0042"); "" for a value outside 0 to 9999.
+static func lock_code(value: int) -> String:
+	return "%04d" % value if value >= 0 and value <= 9999 else ""
+
+
+static func _code_hash(salt: String, code: String) -> String:
+	return (salt + ":" + code).sha256_text()
+
+
+func _lock_of(it: Dictionary) -> Dictionary:
+	return it.get("struct", {}).get("lock", {})
+
+
+# Whether this player may open and use a container: no lock, or they are its owner, entered the current code, or were let in.
+func _may_access(peer: int, it: Dictionary) -> bool:
+	var lock: Dictionary = _lock_of(it)
+
+	if lock.is_empty():
+		return true
+
+	var key: String = str(_peer_key.get(peer, ""))
+	return key != "" and (key == str(it["struct"].get("owner", "")) or (lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
+
+
+# Seconds this character must still wait before trying a code on this container (0: may try).
+func _lock_wait_s(it: Dictionary, key: String) -> float:
+	var row: Array = _lock_of(it).get("tries", {}).get(key, [])
+	return maxf(float(row[1]) - _unix(), 0.0) if row.size() == 2 else 0.0
+
+
+# A saved lock, checked field by field; {} when it is not a usable lock (the loader then fails closed for an owned container: owner only).
+func _clean_lock(raw: Variant) -> Dictionary:
+	if typeof(raw) != TYPE_DICTIONARY or typeof(raw.get("salt")) != TYPE_STRING or typeof(raw.get("hash")) != TYPE_STRING or str(raw["hash"]).length() != 64:
+		return {}
+
+	var lock: Dictionary = {"salt": str(raw["salt"]), "hash": str(raw["hash"]), "ok": [], "allow": [], "tries": {}}
+
+	for field in ["ok", "allow"]:
+		if typeof(raw.get(field)) == TYPE_ARRAY:
+			for key in raw[field]:
+				if typeof(key) == TYPE_STRING and str(key) != "" and not (lock[field] as Array).has(str(key)):
+					(lock[field] as Array).append(str(key))
+
+	if typeof(raw.get("tries")) == TYPE_DICTIONARY:
+		for key in raw["tries"]:
+			var row: Variant = raw["tries"][key]
+
+			if typeof(row) == TYPE_ARRAY and (row as Array).size() == 2 and int(row[0]) > 0:
+				lock["tries"][str(key)] = [int(row[0]), float(row[1])]
+
+	return lock
+
+
+# The lock as this player sees it (protocol 108 chest_lock): whether it has a code, whether they own it, whether they may open it, how long
+# before their next try, and (to the owner only) how many other players have access. Never the code. Lockable containers only.
+func _send_lock_info(peer: int, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if not send_chest_lock.is_valid() or it.is_empty() or not bool(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("lockable", false)):
+		return
+
+	var lock: Dictionary = _lock_of(it)
+	var key: String = str(_peer_key.get(peer, ""))
+	var mine: bool = key != "" and key == str(it["struct"].get("owner", ""))
+	var others: int = (lock.get("ok", []) as Array).size() + (lock.get("allow", []) as Array).size() if mine else 0
+	send_chest_lock.call(peer, id, not lock.is_empty(), mine, _may_access(peer, it), int(ceil(_lock_wait_s(it, key))), others)
+
+
+# ACT_CHEST_LOCK: a = the container's world id, b = LOCK_* operation, count = the code for LOCK_SET and LOCK_TRY. Within chest reach only.
+func _lock_action(peer: int, inv, id: int, op: int, value: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not _is_storage(it) or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
+		return
+
+	if not bool(_structures.get(str(it["struct"]["kind"]), {}).get("lockable", false)):
+		_say(peer, "This cannot be locked.")
+		return
+
+	var key: String = str(_peer_key.get(peer, ""))
+	var mine: bool = key != "" and key == str(it["struct"].get("owner", ""))
+	var lock: Dictionary = _lock_of(it)
+
+	if op == LOCK_TRY:
+		_lock_try(peer, inv, id, it, key, value)
+		return
+
+	if not mine:
+		_say(peer, "Only the owner can change the lock.")
+		_send_lock_info(peer, id)
+		return
+
+	if op == LOCK_SET:
+		var code: String = lock_code(value)
+
+		if code == "":
+			_reject(peer, 3)
+			return
+
+		var salt: String = "%08x%08x" % [randi(), randi()]
+		it["struct"]["lock"] = {"salt": salt, "hash": _code_hash(salt, code), "ok": [], "allow": lock.get("allow", []), "tries": lock.get("tries", {})}   # a new code drops code-based access
+		_say(peer, "Locked with a four-digit code. Only you, those you let in and those who know the code can open it.")
+	elif op == LOCK_CLEAR:
+		it["struct"].erase("lock")
+		_say(peer, "The lock is off: anyone can open it.")
+	elif op == LOCK_ALLOW:
+		if lock.is_empty():
+			_say(peer, "Set a code first: an unlocked container is open to everyone.")
+		else:
+			var guest: String = _nearest_other_key(peer, it["pos"])
+
+			if guest == "":
+				_say(peer, "Nobody else is standing by it.")
+			elif not (lock["allow"] as Array).has(guest):
+				(lock["allow"] as Array).append(guest)
+				_say(peer, "The player beside it can now open it.")
+	elif op == LOCK_REVOKE:
+		if not lock.is_empty():
+			lock["ok"] = []
+			lock["allow"] = []
+			_say(peer, "Only you can open it now.")
+	else:
+		return
+
+	_dirty = true
+	_lock_changed(id)
+
+
+# A code entered by anyone but the owner: refused while their wait runs (not counted), right opens it for them, wrong counts and starts the wait.
+func _lock_try(peer: int, inv, id: int, it: Dictionary, key: String, value: int) -> void:
+	var lock: Dictionary = _lock_of(it)
+
+	if lock.is_empty() or _may_access(peer, it) or key == "":
+		_chest_action(peer, inv, Net.ACT_CHEST_OPEN, id, 0, 0)   # nothing to enter: it opens as usual
+		return
+
+	var wait: float = _lock_wait_s(it, key)
+
+	if wait > 0.0:
+		_say(peer, "Wait %d seconds before trying again." % int(ceil(wait)))
+		_send_lock_info(peer, id)
+		return
+
+	var code: String = lock_code(value)
+	_dirty = true
+
+	if code != "" and _code_hash(str(lock["salt"]), code) == str(lock["hash"]):
+		(lock["ok"] as Array).append(key)
+		(lock["tries"] as Dictionary).erase(key)
+		_chest_action(peer, inv, Net.ACT_CHEST_OPEN, id, 0, 0)
+		return
+
+	var fails: int = int((lock["tries"] as Dictionary).get(key, [0, 0.0])[0]) + 1
+	lock["tries"][key] = [fails, _unix() + LOCK_WAIT_STEP_S * fails]
+	_say(peer, "Wrong code. Wait %d seconds before trying again." % int(LOCK_WAIT_STEP_S * fails))
+	_send_lock_info(peer, id)
+
+
+# After a lock change: the owner sees the new state, and anyone who has the container open and lost access is shut out of it.
+func _lock_changed(id: int) -> void:
+	for viewer in _chest_viewer.keys():
+		if int(_chest_viewer[viewer]) == id:
+			if not _may_access(viewer, _items[id]):
+				_chest_viewer.erase(viewer)
+
+			_send_lock_info(viewer, id)
+
+	var owner_key: String = str(_items[id]["struct"].get("owner", ""))
+
+	for viewer in _peer_key:
+		if str(_peer_key[viewer]) == owner_key and int(_chest_viewer.get(viewer, 0)) != id:
+			_send_lock_info(viewer, id)
+
+
+# The key of the other player standing nearest `at` within CHEST_REACH_M, or "".
+func _nearest_other_key(peer: int, at: Vector3) -> String:
+	var best: String = ""
+	var best_d: float = CHEST_REACH_M
+
+	for other in _peer_pos:
+		var d: float = (_peer_pos[other] as Vector3).distance_to(at)
+
+		if other != peer and d <= best_d and not (str(_peer_key.get(other, "")) in ["", str(_peer_key.get(peer, ""))]):
+			best = str(_peer_key[other])
+			best_d = d
+
+	return best
+
+
+# --- Storage views: the Storage sign and the Warehouse desk (s3.13: views over nearby physical containers, never a second store) ---
+# A structure with "use": "storage_view" shows the containers within its "view_m" that it holds the context of: each container belongs to at
+# most one view, the one with the highest "view_rank" covering it (a desk, 2, before a sign, 1), then the nearest, then the lowest world id.
+# It lists, deposits and withdraws only through containers this player may open (_may_access), so a lock is never passed and hidden contents
+# never show, not even in the totals. Every transfer is the containers' own put and take (_box_put, _box_take), so their rules stay.
+
+func _view_def(it: Dictionary) -> Dictionary:
+	if not it.has("struct") or it["struct"].has("site"):
+		return {}
+
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+	return def if str(def.get("use", "")) == "storage_view" else {}
+
+
+# The widest view radius in structures.json (how far another view can stand and still claim a container this view could see).
+func _view_reach_max() -> float:
+	var most: float = 0.0
+
+	for kind in _structures:
+		most = maxf(most, float(_structures[kind].get("view_m", 0.0)))
+
+	return most
+
+
+# The containers view `vid` holds the context of and this player may open: [[world id, inventory, metres from the view], ...], nearest first.
+func _view_boxes(peer: int, vid: int) -> Array:
+	var view: Dictionary = _items.get(vid, {})
+	var def: Dictionary = _view_def(view)
+
+	if def.is_empty():
+		return []
+
+	var here: Vector3 = view["pos"]
+	var radius: float = float(def.get("view_m", 0.0))
+	var reach: float = radius + _view_reach_max()
+	var views: Array = []   # [world id, position, radius, rank] of every view that could claim a container in this one's circle
+	var boxes: Array = []
+
+	# shortcut: one pass over every world record per view action (as _stock_of without its grid), unmeasured; revisit with the sync grid if a busy town shows it in the slow-action line.
+	for sid in _items:
+		var s: Dictionary = _items[sid]
+		var d: float = (s["pos"] as Vector3).distance_to(here)
+
+		if d > reach:
+			continue
+
+		var other: Dictionary = _view_def(s)
+
+		if not other.is_empty():
+			views.append([int(sid), s["pos"], float(other.get("view_m", 0.0)), int(other.get("view_rank", 0))])
+		elif d <= radius and _is_storage(s):
+			boxes.append([int(sid), d])
+
+	var out: Array = []
+
+	for row in boxes:
+		var s: Dictionary = _items[int(row[0])]
+
+		if _view_holder(s["pos"], views) == vid and _may_access(peer, s):
+			var box = _chests[int(s["struct"]["uid"])]
+			box.usable = clampi(int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", box.SLOTS)), 1, box.SLOTS)
+			out.append([int(row[0]), box, float(row[1])])
+
+	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]) or (float(a[2]) == float(b[2]) and int(a[0]) < int(b[0])))
+	return out
+
+
+# The view a container at `at` belongs to (0 none): the highest rank covering it, then the nearest, then the lowest id.
+static func _view_holder(at: Vector3, views: Array) -> int:
+	var best: Array = []
+
+	for v in views:
+		var d: float = (v[1] as Vector3).distance_to(at)
+
+		if d > float(v[2]):
+			continue
+
+		var rank: Array = [-int(v[3]), d, int(v[0])]
+
+		if best.is_empty() or rank < best:
+			best = rank
+
+	return 0 if best.is_empty() else int(best[2])
+
+
+# The view within reach of the player, or {} (and the client hears "too far").
+func _view_in_reach(peer: int, vid: int) -> Dictionary:
+	var it: Dictionary = _items.get(vid, {})
+
+	if _view_def(it).is_empty() or not _peer_pos.has(peer):
+		return {}
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m() + 1.0:
+		_reject(peer, 0)
+		return {}
+
+	return it
+
+
+# ACT_VIEW_OPEN, and the answer after every view transfer: item number and total over the containers this player may open (storage_view).
+func _view_open(peer: int, vid: int) -> void:
+	if _view_in_reach(peer, vid).is_empty() or not send_storage_view.is_valid():
+		return
+
+	var boxes: Array = _view_boxes(peer, vid)
+	var totals: Dictionary = {}
+
+	for row in boxes:
+		for slot in row[1].usable:
+			if int(row[1].numbers[slot]) != 0:
+				totals[int(row[1].numbers[slot])] = int(totals.get(int(row[1].numbers[slot]), 0)) + int(row[1].counts[slot])
+
+	var listed: Array = totals.keys()
+	listed.sort()
+	var numbers: PackedInt32Array = PackedInt32Array()
+	var counts: PackedInt32Array = PackedInt32Array()
+
+	for number in listed:
+		numbers.append(int(number))
+		counts.append(int(totals[number]))
+
+	send_storage_view.call(peer, vid, numbers, counts, boxes.size())
+
+
+# ACT_VIEW_TAKE: up to `count` of item `number` from the view's containers into the pack, nearest container first.
+func _view_take(peer: int, inv, vid: int, number: int, count: int) -> void:
+	if _view_in_reach(peer, vid).is_empty() or number <= 0:
+		return
+
+	var left: int = count
+
+	for row in _view_boxes(peer, vid):
+		var took_here: bool = false
+
+		for slot in row[1].usable:
+			if left <= 0:
+				break
+
+			if int(row[1].numbers[slot]) == number:
+				var took: int = _box_take(peer, inv, row[1], slot, left)
+				left -= took
+				took_here = took_here or took > 0
+
+				if took == 0:
+					left = 0   # the pack, the carry limit or the shoulder is full: stop rather than try every slot
+
+		if took_here:
+			_push_box(int(row[0]), row[1])
+
+		if left <= 0:
+			break
+
+	_view_open(peer, vid)
+
+
+# ACT_VIEW_PUT: pack slot `slot` (up to `count`) into the view's containers that take it, those already holding the item first, nearest first.
+# Slot -1 deposits every pack stack (not a favourite, not an instance, not the shoulder log) whose item one of those containers already holds.
+func _view_put(peer: int, inv, vid: int, slot: int, count: int) -> void:
+	if _view_in_reach(peer, vid).is_empty():
+		return
+
+	var boxes: Array = _view_boxes(peer, vid)
+
+	if slot == -1:
+		for s in inv.SLOTS:
+			var number: int = inv.numbers[s]
+
+			if number != 0 and not inv.is_fav(s) and inv.inst_of(s).is_empty() and not is_shoulder_item(number) and boxes.any(func(row): return row[1].count_of(number) > 0):
+				_view_put_slot(peer, inv, boxes, s, inv.counts[s], true)
+	elif slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0:
+		_view_put_slot(peer, inv, boxes, slot, count, false)
+
+	_view_open(peer, vid)
+
+
+func _view_put_slot(peer: int, inv, boxes: Array, slot: int, count: int, holding_only: bool) -> void:
+	var number: int = inv.numbers[slot]
+	var order: Array = boxes.filter(func(row): return row[1].count_of(number) > 0)
+
+	if not holding_only:
+		order.append_array(boxes.filter(func(row): return row[1].count_of(number) <= 0))
+
+	var want: int = mini(count, inv.counts[slot])
+	var left: int = want
+
+	for row in order:
+		if left <= 0 or inv.numbers[slot] != number:
+			break
+
+		var kind: String = str(_items[int(row[0])]["struct"]["kind"])
+
+		if not _box_takes(kind, number) or _box_room(int(row[0]), number, left) == 0:
+			continue   # the next container may take it: no refusal is said for this one
+
+		var put: int = _box_put(peer, inv, int(row[0]), row[1], slot, left)
+		left -= put
+
+		if put > 0:
+			_push_box(int(row[0]), row[1])
+
+	if left == want and not holding_only:
+		_say(peer, "No container here takes that, or they are all full.")
+		_reject(peer, 2)
+
+
 # --- Pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 24) ---
 # Keys 1 to 9 and 0 hold item numbers (Inventory.hotbar), saved as the character's "hotbar"; sorting and moving never change them. A tool or weapon
 # that newly enters the pack goes on the first empty key unless a key already holds that item. ACT_HOTBAR_SET puts any item on a key by hand.
@@ -15093,7 +15598,7 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 	for slot in range(BULK_FIXED_SLOTS, inv.SLOTS):
 		var number: int = inv.numbers[slot]
 
-		if number == 0 or inv.is_fav(slot) or is_shoulder_item(number) or (it.has("fire") and not _fire_takes(table.id_of(number))):
+		if number == 0 or inv.is_fav(slot) or is_shoulder_item(number) or (it.has("fire") and not _fire_takes(table.id_of(number))) or not _box_takes(str(it.get("struct", {}).get("kind", "")), number):
 			continue
 
 		if _box_room(id, number, inv.counts[slot]) == 0:
@@ -15159,8 +15664,8 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 			if inv.numbers[slot] != number:
 				break   # the whole stack has gone
 
-			if box[1].count_of(number) <= 0:
-				continue
+			if box[1].count_of(number) <= 0 or not _box_takes(str(_items[int(box[0])]["struct"]["kind"]), number):
+				continue   # only chests that already hold it, and take it (structures.json takes)
 
 			var amount: int = _box_room(int(box[0]), number, inv.counts[slot])
 			var put: int = amount - (box[1].add(number, amount, inv.wear[slot]) if amount > 0 else 0)
@@ -15269,6 +15774,18 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 
 		recipe = recipe.duplicate()
 		recipe["needs"] = SmithingRules.scaled_needs(recipe["needs"], variant)
+
+	# A sealed batch is capped by the room in the pack and the player's storage nearby (master s3.14 bulk): it never spills onto the ground.
+	if float(recipe.get("ready_age", 0.0)) > 0.0:
+		var room_crafts: int = floori(float(_batch_room(peer, int(recipe["gives"][0]))) / float(maxi(int(recipe["gives"][1]), 1)))
+
+		if room_crafts <= 0:
+			_say(peer, "No room for the batch: make space in your pack or a chest nearby")
+			return
+
+		if room_crafts < clampi(count, 1, CRAFT_QUEUE_MAX_COUNT):
+			_say(peer, "Room for only %d of that batch in your pack and chests nearby" % room_crafts)
+			count = room_crafts
 
 	if free:
 		var line: Array = queue["entries"]
@@ -15627,6 +16144,14 @@ func _craft_tick(spent: float) -> void:
 		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft"):
 			continue
 
+		# A sealed batch done while its room was filled meanwhile waits, finished, until there is space again (never onto the ground).
+		if float(recipe.get("ready_age", 0.0)) > 0.0 and _batch_room(peer, int(recipe["gives"][0])) < int(recipe["gives"][1]) * int(head[1]):
+			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
+				_station_said[peer] = Time.get_ticks_msec()
+				_say(peer, "Your %s batch waits: make room in your pack or a chest nearby" % str(recipe.get("name", "")).to_lower())
+
+			continue
+
 		queue["elapsed"] = 0.0
 		var inv = inventory_of(peer)
 
@@ -15642,13 +16167,27 @@ func _craft_tick(spent: float) -> void:
 		if wears_tool != "" and not free_entry:
 			tools_ok = tools_ok and inv != null and _tool_slot(inv, wears_tool) >= 0
 
+		# A sealed batch (recipes.json ready_age, master s3.14 [D14]) takes only fresh produce: below half freshness it is refused, so maturing is not skipped.
+		var sealed: bool = float(recipe.get("ready_age", 0.0)) > 0.0
+
 		if not tools_ok:
 			queue["entries"].remove_at(0)
 			_refund_entry(peer, head)
 			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
+		elif sealed and _stalest_input(head) < SEAL_MIN_FRESH:
+			queue["entries"].remove_at(0)
+			_refund_entry(peer, head)
+			_say(peer, "%s was not sealed: only fresh produce keeps in a jar" % str(recipe.get("name", "That")))
 		else:
+			# One craft of a sealed recipe makes the whole queued batch at once (one timer, one stack); any other recipe makes one craft's worth.
+			var times: int = int(head[1]) if sealed else 1
 			_gain_source = SRC_CRAFT
-			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]), SmithingRules.made_inst(table.entry(table.id_of(int(recipe["gives"][0]))), variant))
+
+			if sealed:
+				_give_batch(peer, int(recipe["gives"][0]), int(recipe["gives"][1]) * times)
+			else:
+				give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]), SmithingRules.made_inst(table.entry(table.id_of(int(recipe["gives"][0]))), variant), _made_age(int(recipe["gives"][0]), head))
+
 			_gain_source = SRC_PICKUP
 			_goal_made(peer, int(recipe["gives"][0]))
 
@@ -15656,13 +16195,101 @@ func _craft_tick(spent: float) -> void:
 				_wear_tool(peer, inv, wears_tool, "craft")
 
 			practice(peer, "craft", clampf(float(recipe.get("craft_s", 3.0)) / 3.0, 0.3, 2.0))   # a long craft teaches more than a quick one
-			head[1] = int(head[1]) - 1
+			head[1] = int(head[1]) - times
 
 			if int(head[1]) <= 0:
 				queue["entries"].remove_at(0)
 
 		_dirty = true
 		_sync_craft_queue(peer)
+
+
+const SEAL_MIN_FRESH := 0.5   # master s3.14: sealing refuses inputs below half freshness
+
+
+# The freshness of the stalest perishable unit a queue entry took (the [number, inst, wear, count] rows _hold_insts keeps), 1.0 when none spoils.
+func _stalest_input(entry: Array) -> float:
+	var stalest: float = 1.0
+
+	for need in entry[2]:
+		for unit in (need[2] if need.size() > 2 else []):
+			if table.shelf_units(int(unit[0])) > 0:
+				stalest = minf(stalest, table.freshness(int(unit[0]), int(unit[2]) if unit.size() > 2 else 0))
+
+	return stalest
+
+
+# The age a made food starts at (master s3.14, crafted age): the age fraction of its stalest perishable input, so preparing old produce does not
+# make it fresh; 0 for an item that does not spoil. shortcut: one entry of several crafts gives every output the stalest input of all of them
+# (never fresher than it should be); per-craft inputs would need the rows split by craft, revisit if long mixed-age queues matter.
+func _made_age(made: int, entry: Array) -> int:
+	var life: int = table.shelf_units(made)
+	return 0 if life <= 0 else int(round((1.0 - _stalest_input(entry)) * float(life)))
+
+
+# Where a sealed batch may go (master s3.14 bulk): the pack, then the player's own storage within the crafting reach, nearest first, each up to its
+# free space for `number` at age 0 (carry weight or max_kg, and a slot to put it in). [[inventory, world id or -1 for the pack, room], ...].
+func _batch_spots(peer: int, number: int) -> Array:
+	var out: Array = []
+	var inv = inventory_of(peer)
+
+	if inv == null:
+		return out
+
+	if _batch_slot(inv, number):
+		out.append([inv, -1, _fit(peer, inv, number, table.COUNT_MAX)])
+
+	for box in _craft_boxes(peer):
+		box[1].usable = clampi(int(_structures.get(str(_items[int(box[0])]["struct"]["kind"]), {}).get("slots", box[1].SLOTS)), 1, box[1].SLOTS)
+
+		if _batch_slot(box[1], number):
+			out.append([box[1], int(box[0]), _box_room(int(box[0]), number, table.COUNT_MAX)])
+
+	return out
+
+
+# A slot a fresh batch can go into: an empty one, or a plain stack of it at age 0 (Inventory._mergeable joins a Maturing batch only at its own age).
+func _batch_slot(inv, number: int) -> bool:
+	for i in inv.usable:
+		if inv.numbers[i] == 0 or (inv.numbers[i] == number and inv.inst[i].is_empty() and inv.wear[i] == 0 and inv.counts[i] < table.stack_of(number)):
+			return true
+
+	return false
+
+
+func _batch_room(peer: int, number: int) -> int:
+	var room: int = 0
+
+	for spot in _batch_spots(peer, number):
+		room += int(spot[2])
+
+	return room
+
+
+# A sealed batch goes into the pack and the player's nearby storage, never onto the ground: the queue capped it to the room, and the craft waits
+# while that room is gone (_craft_tick). It starts at age 0 and matures from there.
+func _give_batch(peer: int, number: int, count: int) -> void:
+	var left: int = count
+
+	for spot in _batch_spots(peer, number):
+		if left <= 0:
+			break
+
+		var before: Array = _snapshot(spot[0]) if int(spot[1]) < 0 else []
+		var put: int = mini(left, int(spot[2]))
+		put -= spot[0].add(number, put)
+		left -= put
+
+		if int(spot[1]) < 0:
+			_send_changes(peer, spot[0], before)
+		elif put > 0:
+			_push_box(int(spot[1]), spot[0])
+
+	if left > 0:   # not reached (the room was checked this tick); kept so a disagreement between the room and Inventory.add can never lose food
+		push_error("sealed batch: %d of item %d found no room after the check" % [left, number])
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO))
+
+	_dirty = true
 
 
 func _sync_craft_queue(peer: int) -> void:
@@ -16029,6 +16656,10 @@ func _eat(peer: int, inv, slot: int) -> void:
 
 	var item_id: String = table.id_of(inv.numbers[slot])
 	var spoil: Dictionary = table.spoilage()
+
+	if inv.maturing_at(slot):   # a sealed batch is eaten only once Ready (master s3.14 [D14])
+		_say(peer, "The %s is still maturing: about %d more game hours." % [table.sentence_name(inv.numbers[slot]), table.ready_hours_left(inv.numbers[slot], inv.wear[slot])])
+		return
 
 	if _eat_stopped(peer, item_id, now):
 		_last_eat[peer] = now

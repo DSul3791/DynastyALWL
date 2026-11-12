@@ -1,6 +1,6 @@
 # Storage, warehouses, movable crates and access controls
 
-**Status: OWNER-APPROVED DESIGN [D13]; DOCS ONLY — NOT IMPLEMENTED.**
+**Status: OWNER-APPROVED DESIGN [D13]. Implementation: Mission 001 phase 9 (M001-T13, 12 Nov 2026) built the sixteen rows, code locks and the Storage sign and Warehouse desk views (`PROTOCOL.md` 108, `docs/ai-team/missions/M001/T13_RESULTS.md`); loaded movable crates (s4 rules 4 to 6, acceptance 6 to 8) are phase 10. The "Safety gate" line in s7 is the record from before the mission.**
 **Authority:** `docs/design/DYNASTY_MASTER_ITEMS.md` §3.13 [D13] is the authoritative item catalog and decision source. This companion explains behavior, invariants, risks and acceptance scenarios; it introduces no additional item IDs, recipes, gameplay permissions or authorization to merge. On any conflict, the latest explicit Dave ruling recorded in the master catalog wins.
 
 ## 1. Player goal
