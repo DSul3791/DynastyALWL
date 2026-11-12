@@ -214,9 +214,11 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 	if is_instance_valid(_lock):
 		_lock.visible = view.chest_keep_out and not fire
 
+	var storage_ui = view.get("_storage_ui")   # absent on the tests' stand-in views
+
 	if is_instance_valid(_code_lock):
-		_code_lock.visible = not fire and view._storage_ui.may_manage(view.chest_id)
-		_code_lock.text = "Locked" if bool(view._storage_ui.lock_state.get("locked", false)) else "Lock"
+		_code_lock.visible = not fire and storage_ui != null and storage_ui.may_manage(view.chest_id)
+		_code_lock.text = "Locked" if storage_ui != null and bool(storage_ui.lock_state.get("locked", false)) else "Lock"
 
 	for i in view.inventory.SLOTS:
 		var slot = view._chest_buttons[i]

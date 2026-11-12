@@ -15107,6 +15107,7 @@ func _view_boxes(peer: int, vid: int) -> Array:
 	var views: Array = []   # [world id, position, radius, rank] of every view that could claim a container in this one's circle
 	var boxes: Array = []
 
+	# shortcut: one pass over every world record per view action (as _stock_of without its grid), unmeasured; revisit with the sync grid if a busy town shows it in the slow-action line.
 	for sid in _items:
 		var s: Dictionary = _items[sid]
 		var d: float = (s["pos"] as Vector3).distance_to(here)

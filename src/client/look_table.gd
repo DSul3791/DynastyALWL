@@ -203,7 +203,7 @@ const LOOKS := {
 	"apothecary_cabinet": {"builder": "cupboard", "args": []},
 	"bottle_and_jar_rack": {"builder": "shelf", "args": []},
 	"tool_cabinet": {"builder": "cupboard", "args": []},
-	"open_storage_bin": {"builder": "barrel", "args": []},
+	"open_storage_bin": {"builder": "crate", "args": []},
 	"firewood_rack": {"builder": "log_shelf", "args": []},
 	"log_rack": {"builder": "log_shelf", "args": []},
 	"board_rack": {"builder": "shelf", "args": []},
