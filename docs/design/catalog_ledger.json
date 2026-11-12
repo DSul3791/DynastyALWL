@@ -10951,10 +10951,12 @@
    "section": "3.4",
    "phase": "2b",
    "depends": [],
-   "state": "BLOCKED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_textile_route"
+   ],
    "accepted_commit": null,
-   "note": "M001-T07: hide-drying step not added. The live chain is hide -> Scraped hide (recipe 179, by hand, catalog KEEP 'hand') -> Leather (recipe 234, Tanning rack, KEEP); a drying step needs a new intermediate item or a move of a KEEP recipe, both outside the catalog. Needs a mission-lead decision; food drying unchanged."
+   "note": "M001-T07: the hide drying step = recipe 179 (scraped hide) moves to the Drying rack (mission lead decision, STATE.md)"
   },
   {
    "key": "smoker_kit",

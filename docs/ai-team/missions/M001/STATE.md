@@ -52,6 +52,7 @@ None open. Q1 (existing FUTURE rows) was decided under the 05:42 direction: see 
 
 ## Coordinator decisions (ENGINEERING, recorded for review)
 - **Q2 charcoal burn (12 Nov, under Dave's 05:42 autonomy direction):** master s4 item 9 says a Charcoal "fuel" burn time longer than Hard firewood, but s2.6 [D1] makes 100 Charcoal per log. Read together, the intent is that charcoal burns longer *than the wood it came from*, not that one of a hundred pieces outlasts a bolt of firewood (that made fuel from nothing, 12-14x). Decided: one Charcoal burns 3600 game s (100 from a log = 1.4x the log; the kiln is worth it), the campfire makes 12 from 2 firewood (an open fire wastes wood), smelts take 5 fuel. Values 0.15 (game value_of truncates to 0: Hob will not buy charcoal; accepted). All are s5 tuning numbers for playtest.
+- **Drying rack hide step (T07):** s3.4 says the Drying rack "adds the hide drying step". With no intermediate to add (catalog fixed), the existing scrape step (recipe 179, Hide -> Scraped hide, used only for leather) moves to the Drying rack (8 sticks, 4 twine). Hand-sewn hide goods use raw Hide, so day-one clothing still needs no building.
 - Showroom keeps older retired display items (Sal's rows) as it did; only the Saw blade row was removed. A strict validator rule was tried and dropped as scope creep.
 - Reinforced wagon wheel is FUTURE-GATED with the animal vehicles: it serves only them (s3.11; s8 "only the Handcart before").
 - Meatballs 837 goes live in Phase 6 with Uncooked Meatballs (s3.12 DELEGATED default).
