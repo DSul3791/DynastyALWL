@@ -75,10 +75,7 @@ func _init() -> void:
 		var cap: float = (2.5 * inputs + craft + 4.0) if out_kind == "food" else (8.0 * inputs + craft + 8.0)
 		checked += 1
 		check(batch <= cap, "recipe %s makes %s worth %d for inputs worth %d (cap %d): a profit engine" % [rid, out_id, int(batch), int(inputs), int(cap)])
-		# Chopping a log to firewood at the Chopping block (master s2.4, M001-T18) gives what the hand chop gives (3 blocks a log, 2 firewood a block,
-		# structures.json chopping_block): timber is worth more than firewood, so burning it is a choice, not a money-losing kit. The profit cap still applies.
-		if str(r.get("station", "")) != "chopping_block":
-			check(batch >= 0.4 * inputs, "recipe %s makes %s worth %d for inputs worth %d: it loses money" % [rid, out_id, int(batch), int(inputs)])
+		check(batch >= 0.4 * inputs, "recipe %s makes %s worth %d for inputs worth %d: it loses money" % [rid, out_id, int(batch), int(inputs)])
 
 	print("economy guard: %d recipes checked, %d failures" % [checked, failures])
 	quit(1 if failures > 0 else 0)

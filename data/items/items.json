@@ -278,7 +278,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"firewood": {"number": 26, "name": "Hard firewood", "description": "Split hardwood. Burns long and steady, twice as long as soft firewood.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
+		"firewood": {"number": 26, "name": "Hard firewood", "description": "Split hardwood. Burns long and steady, twice as long as soft firewood.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 4},
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
@@ -2773,7 +2773,7 @@
 			"sell_lot": 12
 		},
 		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
-		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 1, "sell_lot": 12},
+		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 3, "sell_lot": 12},
 		"wooden_block_soft": {
 			"number": 237,
 			"name": "Softwood block",
@@ -5643,7 +5643,7 @@
 			"look_alikes": [],
 			"value": 6
 		},
-			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 100, "look_alikes": [], "value": 0.15},
+			"charcoal": {"number": 547, "name": "Charcoal", "description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.", "kind": "material", "stack": 100, "look_alikes": [], "value": 0.3},
 			"wool_cloth": {
 				"number": 548,
 				"name": "Wool cloth",
