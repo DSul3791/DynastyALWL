@@ -10,6 +10,8 @@ const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd"
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
+const BagRules := preload("res://src/shared/bag_rules.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
 const LOOK_COLUMNS := 6     # slots across the container: the Craft column's 650 px, the same 100 px wells as the pack (redesign 4.4)
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
@@ -186,8 +188,11 @@ func refresh() -> void:
 	if not view.chest_mode or view._chest_panel == null:
 		return
 
-	var capacity: int = int(view.table.entry(view.table.id_of(int(view._world.get(view.chest_id, {}).get("number", 0)))).get("slots", view.inventory.SLOTS))
+	var capacity: int = BagRules.slots_of(view.table, view.container_number()) if view.chest_id < 0 else int(view.table.entry(view.table.id_of(view.container_number())).get("slots", view.inventory.SLOTS))
 	var fire: bool = is_fire()
+
+	if view.chest_id < 0 and view.chest_tab and view._frame != null and is_instance_valid(view._frame):
+		view._frame.set_title(2, title())   # a worn bag's weight follows what goes in and out
 
 	_refresh_look(capacity, fire)
 
@@ -215,7 +220,11 @@ func title() -> String:
 	if is_fire():
 		return "FIRE"
 
-	var container_name: String = view.table.name_of(int(view._world.get(view.chest_id, {}).get("number", 0)))
+	var container_name: String = view.table.name_of(view.container_number())
+
+	if view.chest_id < 0 and not view._carry_cfg.is_empty():   # a worn bag shows what its load weighs (it counts toward the carry limit)
+		return "%s  %.1f KG" % [container_name.to_upper(), CarryRules.carried_kg(view.chest_inv, view.table, view._carry_cfg)]
+
 	return container_name.to_upper() if container_name != "" else "CHEST"
 
 

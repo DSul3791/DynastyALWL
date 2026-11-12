@@ -106,6 +106,7 @@ The one-window screen is the only inventory window; the old window and its `--ol
 | Right click on a pack stack | Small menu: Use (E), Split (S), Drop (D), Drop one (Shift+D), Repair (R), Favourite or Unfavourite, and Move to the container when a chest is open |
 | Favourite (right-click menu) | Toggles a gold wax seal on the stack; Sort and the bulk buttons leave it where it is |
 | Take all / Store all / Stack to nearby / Sort (buttons under the chest) | Take all fills the pack from the chest (logs stay); Store all puts every pack stack in the chest; Stack to nearby adds to stacks your own chests within 12 m already hold (no chest need be open); Sort reorders the pack and the chest by the sort key |
+| Left click on the Back or Waist gear well, or Open beside a worn bag on the Tab screen | Opens that worn bag (pack, shoulder bag, pouch, quiver, tool roll, scabbard, bandolier) beside your pack like a chest, with what its load weighs; a bag takes only what it is made for and never another bag (catalog Phase 5) |
 | Keep out of crafting (tick on an open chest) | Only the chest's owner can tick it; crafting and blueprint sites then leave that chest alone (stacking in still works). A chest's owner is whoever placed it |
 | Middle click on a slot | Nothing yet (the slot takes the click so it does not fall through to the game) |
 | Drag a pack stack onto a hotbar box | Puts its item on that key |

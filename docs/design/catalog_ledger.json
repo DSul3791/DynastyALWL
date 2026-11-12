@@ -759,12 +759,15 @@
    "category": "gear",
    "catalog": "UPDATE",
    "section": "3.4",
-   "phase": "2b",
+   "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 10 (organized volume), contents per instance, back:base"
   },
   {
    "key": "energy_bar",
@@ -3934,12 +3937,15 @@
    "category": "gear",
    "catalog": "UPDATE",
    "section": "3.4",
-   "phase": "2b",
+   "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): waist:quiver (hip, coexists with a pack; no belt needed, takes a belt point on one), 40 arrows, bow draws from it first; description"
   },
   {
    "key": "flatbread",
@@ -10884,10 +10890,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): waist:quiver, 60 arrows; description"
   },
   {
    "key": "wooden_longbow",
@@ -10954,10 +10963,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 15, back:base"
   },
   {
    "key": "straw_hat",
@@ -11709,12 +11721,15 @@
    "category": "gear",
    "catalog": "KEEP",
    "section": "3.9",
-   "phase": null,
+   "phase": "5",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): strapped to a worn pack (back:roll, needs back:base); still works from the pack"
   },
   {
    "key": "wooden_snowshoes",
@@ -14197,10 +14212,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; shoulder:base, 4 slots, any; recipe 600 by hand; worn look placeholder"
   },
   {
    "key": "new:Wicker - Pack basket",
@@ -14212,10 +14230,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; back:base, 10 slots, any; recipe 601 by hand (wet-weather penalty not modelled); worn look placeholder"
   },
   {
    "key": "new:Leather - Satchel",
@@ -14227,10 +14248,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; shoulder:base, 6 slots, small items; recipe 602 Leatherworking table; worn look placeholder"
   },
   {
    "key": "new:Belt pouch",
@@ -14242,10 +14266,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; waist:pouch (needs a belt), 4 slots, small items; recipes 603 by hand (hide), 604 Leatherworking table; worn look placeholder"
   },
   {
    "key": "new:Tool roll",
@@ -14257,10 +14284,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; waist:tools (needs a belt), 6 slots, small tools; recipes 605 Tailor's table, 606 Leatherworking table; worn look placeholder"
   },
   {
    "key": "new:Traveller's Rucksack",
@@ -14272,10 +14302,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; back:base, 20 slots, any; recipe 607 Tailor's table; worn look placeholder"
   },
   {
    "key": "new:Wooden - Pack frame",
@@ -14287,10 +14320,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; back:base, 4 slots, awkward loads incl. large logs; recipe 608 Carpenter's bench (movement penalty not modelled); worn look placeholder"
   },
   {
    "key": "new:Weapon scabbard",
@@ -14302,10 +14338,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; waist:scabbard (needs a belt), 1 sword; recipe 609 Leatherworking table (draw from it not modelled); worn look placeholder"
   },
   {
    "key": "new:Utility bandolier",
@@ -14317,10 +14356,13 @@
    "section": "3.9",
    "phase": "5",
    "depends": [],
-   "state": "NOT STARTED",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_carrying",
+    "validate_items"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "M001-T15 (phase 5): live; strap:base, 6 slots, small food and medicine, no strength bonus; recipe 610 Leatherworking table; worn look placeholder"
   },
   {
    "key": "new:Rope Halter",

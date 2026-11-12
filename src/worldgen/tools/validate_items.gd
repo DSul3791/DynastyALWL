@@ -1137,6 +1137,21 @@ func _init() -> void:
 			if row.has("fabric") and not fabrics.has(String(row["fabric"])):
 				fail("items.json: '%s' fabric '%s' is not a warmth.json layers fabric" % [id, row["fabric"]])
 
+			# Bags (catalog Phase 5, src/shared/bag_rules.gd): their own slots fit an inventory, bag_takes is a known rule, nothing still says carry_bonus_kg.
+			if row.has("bag_slots") and (int(row["bag_slots"]) < 1 or int(row["bag_slots"]) > 30 or not String(row.get("bag_takes", "")) in ["any", "small", "small_tool", "consumable", "arrow", "blade", "awkward"]):
+				fail("items.json: bag '%s' needs bag_slots 1 to 30 and a known bag_takes" % id)
+
+			if row.has("carry_bonus_kg"):
+				fail("items.json: '%s' has carry_bonus_kg, retired in catalog Phase 5 (a pack adds room, not strength)" % id)
+
+		for hung in clothing_cfg.get("attach", {}):
+			if not places.has(hung) or not places.has(String(clothing_cfg["attach"][hung][0])):
+				fail("clothing.json: attach %s names a position that is not worn" % hung)
+
+		for hung in clothing_cfg.get("belt_hangs", []):
+			if not places.has(hung):
+				fail("clothing.json: belt_hangs %s is not a worn position" % hung)
+
 	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).
 	if FileAccess.file_exists("res://data/npcs/outfits.json") and FileAccess.file_exists("res://data/items/worn.json"):
 		var outfits: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/outfits.json"))

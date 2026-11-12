@@ -70,6 +70,16 @@
 		"leather_shoes": {"builder": "boots", "color": "#6a4024", "layer": 1, "placeholder": true},
 		"wool_socks": {"builder": "boots", "color": "#c9b99a", "layer": 0, "placeholder": true},
 		"wool_scarf": {"builder": "belt", "color": "#c9b99a", "layer": 2, "placeholder": true},
-		"riding_boots": {"builder": "boots", "color": "#5a3a22", "layer": 1, "placeholder": true}
+		"riding_boots": {"builder": "boots", "color": "#5a3a22", "layer": 1, "placeholder": true},
+		"bedroll": {"builder": "pack", "color": "#7b6243", "layer": 3, "placeholder": true},
+		"fibre_shoulder_bag": {"builder": "pack", "color": "#8a8a52", "layer": 3, "placeholder": true},
+		"wicker_pack_basket": {"builder": "pack", "color": "#a8844e", "layer": 3, "placeholder": true},
+		"leather_satchel": {"builder": "pack", "color": "#7a4a28", "layer": 3, "placeholder": true},
+		"belt_pouch": {"builder": "belt", "color": "#6b4c31", "layer": 2, "placeholder": true},
+		"tool_roll": {"builder": "belt", "color": "#7a6a50", "layer": 2, "placeholder": true},
+		"travellers_rucksack": {"builder": "pack", "color": "#6a5a42", "layer": 3, "placeholder": true},
+		"wooden_pack_frame": {"builder": "pack", "color": "#8a6a3a", "layer": 3, "placeholder": true},
+		"weapon_scabbard": {"builder": "belt", "color": "#5a3a22", "layer": 2, "placeholder": true},
+		"utility_bandolier": {"builder": "belt", "color": "#6a4024", "layer": 2, "placeholder": true}
 	}
 }

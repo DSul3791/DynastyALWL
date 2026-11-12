@@ -23,18 +23,36 @@ static func weight_of(item_id: String, cfg: Dictionary) -> float:
 	return float(cfg.get("default_kg", 0.1))
 
 
-# Kilograms an inventory holds.
+# Kilograms an inventory holds, with what each bag in it holds (catalog Phase 5).
 static func carried_kg(inventory, table, cfg: Dictionary) -> float:
 	var total: float = 0.0
 
 	for slot in range(inventory.usable):
 		if inventory.numbers[slot] != 0:
-			var id: String = table.id_of(inventory.numbers[slot])
-			total += weight_of(id, cfg) * float(inventory.counts[slot])
+			total += _stack_kg(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], table, cfg) + bag_kg(inventory.inst[slot], table, cfg)
 
-			# A container carries its water in the wear field (millilitres); a litre weighs a kilogram.
-			if int(table.entry(id).get("capacity_ml", 0)) > 0:
-				total += float(inventory.wear[slot]) / 1000.0
+	return total
+
+
+static func _stack_kg(number: int, count: int, wear: int, table, cfg: Dictionary) -> float:
+	var id: String = table.id_of(number)
+	var kg: float = weight_of(id, cfg) * float(count)
+
+	# A container carries its water in the wear field (millilitres); a litre weighs a kilogram.
+	if int(table.entry(id).get("capacity_ml", 0)) > 0:
+		kg += float(wear) / 1000.0
+
+	return kg
+
+
+# Kilograms of what a bag holds (its instance data's `bag` rows, src/shared/bag_rules.gd): a bag adds room, never strength (master s3.9 rule 2),
+# so its load counts in full wherever the bag is, worn or in the pack.
+static func bag_kg(item_inst: Dictionary, table, cfg: Dictionary) -> float:
+	var total: float = 0.0
+
+	for row in item_inst.get("bag", []):
+		if int(row[0]) != 0:
+			total += _stack_kg(int(row[0]), int(row[1]), int(row[2]), table, cfg)
 
 	return total
 

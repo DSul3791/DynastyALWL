@@ -14,7 +14,7 @@ Source figures (REI, "How Much Should Your Pack Weigh?", rei.com/learn/expert-ad
 | Hard load | 22 to 30 kg | 42 to 52 kg is slowed |
 | Real maximum, short distance | about 75 kg, strong people more | 52.5 kg refused |
 
-The game is already **more generous than reality** for a normal adult, so raising `carry_kg_per_body_kg` (0.7) or `free_ratio` (0.8) is not needed and would let players carry impossible loads. Gameplay comes first: Dave should feel unburdened picking a meadow, and with the weights fixed below he does. Strength and fitness scaling is unchanged (a worn pack still adds `carry_bonus_kg`). Not changed: `carry_kg_per_body_kg`, `free_ratio`, `min_speed`, `load_effort`.
+The game is already **more generous than reality** for a normal adult, so raising `carry_kg_per_body_kg` (0.7) or `free_ratio` (0.8) is not needed and would let players carry impossible loads. Gameplay comes first: Dave should feel unburdened picking a meadow, and with the weights fixed below he does. Strength and fitness scaling is unchanged. (Since catalog Phase 5, M001-T15, 12 Nov 2026, a worn pack no longer adds `carry_bonus_kg`: a bag adds its own slots and its load counts in full, master s3.9 rule 2.) Not changed: `carry_kg_per_body_kg`, `free_ratio`, `min_speed`, `load_effort`.
 
 ## Weight changes (kg of ONE item; `data/items/weights.json`)
 | Item | Old | New | Reasoning (estimates unless stated) |
