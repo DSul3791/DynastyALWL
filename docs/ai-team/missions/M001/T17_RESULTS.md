@@ -62,6 +62,32 @@ Logs root: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6
 - Crate 850 ledger row stays NO CHANGE although its structures row gains `cargo` (ledger tracks item rows).
 
 ## Risks
-- ACT number 78 and recipe numbers vs Phases 7-8 at merge; `gen_dishes.py` would hand out recipe numbers from `next_number` 702 (inside the 700-719 range).
+- `gen_dishes.py` would hand out recipe numbers from `next_number` 702 (inside the 700-719 range) if run again (see round 1).
 - Character keys come from the client (T13 risk) apply to the cart's lock checks too.
 - A crate on a cart ages faster than in a warehouse (1.0 against 0.6): by design (cart's place_mult), tuning.
+
+## Review round 1 (FAIL on slope creep) and merge of dev: code under test **`71fb9179b`**
+`4b28af9ad` holds the fixes; `71fb9179b` merges dev (Phases 7-8, protocol 110: `m001/p7` `d037e9b13`, the dev `81f7fee01` tree). The commit after it changes only this file.
+
+| Review item | Done |
+|---|---|
+| 1 MUST slope creep | Over `slope_max` a step must be **less steep** than where the cart stands (`grade >= current` refuses; the old 0.01 tolerance let a slowly steepening ramp be climbed). Test: a ramp of grade 0.02 x walked at 0.5 m/s stops at x 17.9 (grade 0.36). Negative control with the old rule: the cart crept to x 28.3, grade 0.57 (FAIL, `scratchpad\t17\neg2\`). |
+| 2 Walls | `structure_blocks_step` from the cart's old spot to the new one, and from the cart to each set-down spot. Test: a log wall across the way stops the cart; a trunk (`trunks_near`) too. |
+| 3 Height | The cart and a set-down crate rest at `floor_below` (digs and fills, as a dropped item) from a metre over the higher of the surface and the old height; the generated surface when it is unset. Grade and water still read the generated surface. `shortcut:` comment: one `floor_below` walk per moving report (about 20 steps of 5 cm on open ground), measured only with a stand-in (the test's copy of the walk: the per-report cost stayed about 50 us); revisit with a cached column height if the slow-action line shows carts. |
+| 4 One large log | Dismantle refuses when the store holds more than one large log, or one while the shoulder is taken. Test: two Birch logs refuse; with one, it lands on the shoulder. |
+| 5 Tests | Added: wall and trunk, slow slope creep, a stranger setting down a locked riding crate (refused), a Phase 5 bag with 3 stones in the cart's store through a dismantle (same instance data in the pack), death while pulling (`kill` lets go; the cart stays where they fell). |
+| 6 Locks per step | Every move step checks `_may_access` for each riding crate: a crate locked after the grab releases a puller without access before the cart moves. Tested. |
+| 7 Micro-steps | The cart may travel pace x elapsed time (a budget of at most half a second), not a fixed bit per report. Test: 50 reports with the clock standing still move it 0.000 m. |
+| 8 Carts not lockable | Recorded: matches the design (s3.13 lists lockable chests and crates; a cart is not one). Anyone may pull a cart or open its store; the locked crates on it stay protected. |
+| 9 Spoil pass and chunk cap | The spoil pass finds riding crates in its existing loop (no second pass over the world). Set-down respects the crate kind's `cap_per_chunk` ("Too many of these stand here already."); a dismantle still sets crates down past the cap so nothing is lost. |
+
+Merge: conflicts in `PROTOCOL.md` (rows and notes kept, 111 above 110), `terrain_net.gd` (`PROTOCOL_VERSION` 111 with the 111 then 110 history), `recipes.json` (dev 650-658 and these 700-701; `next_number` 702), `spoilage.json` and `structures.json` (serving_platter and handcart rows both), `inventory_view.gd` (cart, crate and platter prompts), `server_items.gd` (peer_left, world-sync signature and extra, take-down: cart rules then platter rules). Dev added no action number, so `ACT_CART` 78 stands. `world_items.json` stays version 3 (dev did not change the row shape). `tools/gen_dishes.py` hands out recipe numbers from `next_number` (702 now): it never reuses 700-701, but would take 702-719 from this phase's reserved range if run again; no dishes were regenerated here.
+
+| Run at `71fb9179b` (head the same before and after, no tracked edits during the run) | Result |
+|---|---|
+| `tests_for_diff.py d037e9b13 HEAD` plan, `run_tests.sh --jobs 3` (354 tests) | **352 PASS, 2 FAIL**: `test_npc_view` exit 139 after printing PASS (known exit crash); `test_flora_density` 300 s timeout under load (known; it passed alone at `5c692c013` in 379 s) |
+| `test_handcart` (in the plan) | PASS, 75 checks; 468 puller reports at about 50 us each |
+| `validate_items` | PASS, 0 errors, 114 warnings |
+| `merge_check.py d037e9b13`, `catalog_ledger.py --check`, `check_look_names.py` | all clear (carry_audit warning predates T17), exit 0, 238 looks drawable |
+| In-game look and feel, two real clients | NOT RUN |
+Logs: `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\t17\full_71fb917\` (`full_run.log`, `full\`, `checks\`, `plan.json`, `merge_check.log`, `ledger_check.log`, `look_names.log`, `head_*.txt`).
