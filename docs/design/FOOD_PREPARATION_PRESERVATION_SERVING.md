@@ -3,7 +3,7 @@
 **Status: MIXED — read approvals carefully.**
 - **APPROVED [D12]:** 7 new cooking-equipment concepts, 16 uncooked/prepared intermediates, and the Food Preparation Table workflow.
 - **OWNER-APPROVED PRESERVATION WORKFLOW:** prepare once; either finish at a suitable existing station OR allow sealed prepared jars/bottles to **mature passively** by elapsed game time. The **complete preservation additions roster is NOT yet approved**.
-- **OWNER-DIRECTED SERVING PLATTER FUNCTION:** a generic reusable platter lets a prepared food-board inventory item be displayed on a table and eaten from. **The exact list of 20 board recipes is PROPOSED, not owner-approved.**
+- **OWNER-DIRECTED SERVING PLATTER FUNCTION:** a generic reusable platter lets a prepared food-board inventory item be displayed on a table and eaten from. **The revised P15-v2 list of 15 board recipes is PROPOSED, not owner-approved.**
 - **No implementation authorization** for any part of this companion document. The authoritative catalog of approved item statuses remains [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md).
 
 ## 1. Cooking: approved two-stage design [D12]
@@ -77,11 +77,37 @@ Two *simple* recipes paths, generally matching the Food Preparation Table and fi
 
 **Existing preservation KEEP, do not duplicate:** Drying Rack #775, Smoker #777, Preserving Jar #830, Root Cellar #832, Storage Jar #781, Barrel #649, Cheese Press #844 (future); preserved foods Jerky #406, Salted Fish #407, Smoked Fish #185, Dried Berries #408, Dried Apples #450, Dried Figs #456, Fruit Leather #184, Sauerkraut #409, Pickled Vegetables #834 (future), Plum Jam #453 and Preserved Damsons #455.
 
-### Pending preservation item roster — proposals only
+### Revised preservation roster — **P14-v2, FOR DAVE'S REVIEW, NOT APPROVED**
 
-The original proposal suggested **3 stations** (Curing Tub, Butter Churn, Granary) plus **9 new foods** (Prepared Meat Strips; Salted Meat; Smoked Meat; Dried Mushrooms; Dried Herbs; Cured Olives; Salted Butter; Hard Cheese; Smoked Sausage). Later simplification favored **dropping the separate Curing Tub** in favor of existing Preserving Jar, and suggested **Dried Fish** as another possible new preserved food. Therefore the previously floated "**12 ADD**" total is **obsolete as a final count**. Before catalog approval, Dave must review the final minimal roster, including Butter Churn, Granary, any dairy/livestock gating, and whether cured/smoked items warrant distinct IDs. Do **not** implement or count any pending ADD in the accepted 165-item total.
+**Recommended minimum: one new portable container and four new preserved foods = 5 proposed ADD rows; ZERO new preservation stations.** This proposal supersedes the earlier 12-ADD list. It follows Dave's repeated requirements: prepare at ONE Food Preparation Table, finish once at an existing rack/smoker or let the jars mature automatically, keep the system light and minimize nearly identical foods and workstations.
 
-No duplicate Fermentation Crock, second Smoker or extra Fish Drying Rack. The sealed jar maturation technique may require actual jars/bottles as consumable or returnable containers; finalize physical representation before adding recipe data. Container compatibility and spoilage need simple UI text.
+| P14-v2 | Proposed item | Unique reason; actual process |
+|---|---|---|
+| ADD (container) | **Sealable Preserve Jar** | One small reusable **portable sealed container**, distinct from *placed* Preserving Jar station #830 and Storage Jar structure #781. Crafted from existing clay process, taken empty to the Food Preparation Table and filled with real food/brine for bulk `Maturing` → `Ready` jars. Empty container returned when food eaten or jar emptied; no free jars and no material dupes. A cosmetic bottle variant, if added, must not require a whole new inventory ladder. |
+| ADD (food) | **Smoked Meat** | Uses meat and Smoker #777, different from existing *Jerky* #406 (dried strips). Requires at most one Food Prep Table step if food must be assembled or seasoned. |
+| ADD (food) | **Dried Mushrooms** | Drying Rack #775 makes a lightweight preserved ingredient useful for travel/winter stews |
+| ADD (food) | **Dried Herbs** | Drying Rack #775 makes long-lived cooking ingredient; do not multiply by herb species |
+| ADD (food) | **Cured Olives** | Existing *Olives* #445 are bitter before curing; prepare in a Sealable Preserve Jar and allow passive brine maturation |
+
+**No new cheese/butter rows or stations.** Existing Butter #417, Cheese #418, Cheese Press #844 and Milk #416 are already FUTURE and will be used when livestock/dairy systems warrant them; no `Salted Butter`, `Hard Cheese` or standalone Butter Churn now. The proposed **Granary becomes a logical storage layout** using the approved Storage Sign / Ledger, warehouse storage, suitable bins and storage jars; it isn't a second magical storage inventory or a 6th item here.
+
+**Explicit consolidation / drops:**
+- **Curing Tub** → OMIT; existing Preserving Jar #830, the Food Preparation Table and the single-step finish rule cover the role; do not make the placed #830 mandatory to click for every newly assembled sealed jar.
+- **Prepared Meat Strips** → OMIT separate master item; existing Jerky #406 and Smoked Meat cover uses, and any genuinely necessary preparation follows the already-approved Table mechanic without a new universal strip ingredient.
+- **Salted Meat** → OMIT as redundant with Jerky and Smoked Meat.
+- **Smoked Sausage** → OMIT as redundant with existing Sausage #804 and proposed Smoked Meat.
+- **Dried Fish** → OMIT because existing Salted Fish #407 and Smoked Fish #185 supply distinct preserving methods.
+- **Butter Churn, Salted Butter, Hard Cheese** → DEFER/OMIT in this category; current dairy items are future.
+- **Granary** → NO new object; create a storehouse/granary using approved Storage and Warehousing [D13] objects.
+
+**Passively maturing jars: one gameplay item status, not one new item ID for each product's maturing stage.** E.g., `Sauerkraut — Maturing` and `Sauerkraut — Ready` may share its existing final food definition plus batch condition/ready-time metadata, accompanied by an actual sealed-jar unit. **Technical feasibility is an implementation-gate concern:** Claude noted that the existing `spoilage.json`/stack `wear` system currently transitions food IDs with time. Prefer reuse of that clock, but if a change of schema is required to avoid duplicate maturing rows, compare complexity, compatibility and saves before proceeding; never silently claim this is already supported in live code. Do not mint separate `Maturing X` item IDs unless an approved implementation review proves it is substantially simpler/safer.
+
+**Simple bulk examples (design only):**
+- Food Preparation Table + 200 empty Sealable Preserve Jars + real cabbages/salt → 200 portions of sealed Sauerkraut in *Maturing* state (or legal recipe batch sizes), which become *Ready* automatically as in-game time passes. Existing Sauerkraut #409 stays the same finished food ID.
+- Similar sealed batches of **Pickled Vegetables #834** (existing FUTURE, not activated without its gate) and **Cured Olives**. Heat-required jams are still cooked before filling and are not treated as safe by passive raw soaking.
+- Dry herbs or mushrooms directly on existing Drying Rack if no preparation is needed. Use the Smoker directly for appropriate meat if no separate assembly is necessary.
+
+**APPROVAL WARNING:** Dave approved the *workflow*, not these 5 item entries. Count remains **zero new approved preservation ADD** until he says yes to this roster; no gameplay JSON/recipes/merge authorized.
 
 ## 3. Functional decorative platters and edible boards — owner idea, exact roster pending
 
@@ -93,43 +119,38 @@ No duplicate Fermentation Crock, second Smoker or extra Fish Drying Rack. The se
 - Table size, clipping and dining animations need eventual art/interaction design; use the existing approved table furniture, **no extra new table type**.
 - If a recipe depends on a future ingredient (e.g. **Beef** is not a current distinct food ID; **Cheese** currently has `future: true`), mark it blocked for now rather than silently inventing livestock or activating future recipes.
 
-**Roster review notes (Claude, against `items.json`; for the owner review):**
-- **Possible duplicates of existing rows in the pending preservation list:**
-  - Salted Butter vs Butter 417 (FUTURE, hand recipe)
-  - Hard Cheese vs Cheese 418 (FUTURE)
-  - Cured Olives vs Olives 445
-  - Smoked Sausage vs Sausage 804 finished in the Smoker
-  - Smoked Meat and Salted Meat vs Jerky 406
-  - Dried Fish vs Salted fish 407 and Smoked fish 185
-- **Granary:** it exists nowhere in the data.
-- **Platter #5:** a live **Roast beast 191** ("feast_roast") and **Rosemary joint 275** exist. Naming the board after Roast beast would avoid the beef gate.
+### Revised prepared boards — **P15-v2, FOR DAVE'S REVIEW, NOT APPROVED**
 
-### Twenty named board/feast recipes — PROPOSAL, awaiting Dave's list approval
+**Recommended: 15 named edible board/platter recipes, one generic reusable Serving Platter.** This is **15 prepared-food inventory items + 1 display carrier** if each recipe is represented as its own item, sharing one display/eating code path. Thirteen board recipes use existing obtainable ingredients in principle; **two are explicitly FUTURE-gated** (Roast Beef, Ploughman's Board). Exact recipe materials and portions are for later tuning and availability validation; no livestock or food dependency is silently activated.
 
-| # | Proposed prepared platter or board | Representative food composition or visual |
+| Status | Board / platter (Food Prep Table output) | What appears, using live food when available |
 |---|---|---|
-| 1 | Seafood Platter | Cooked shellfish, crab cakes, fish |
-| 2 | Fisherman's Platter | Herb fish, juniper trout, vegetables |
-| 3 | Smoked Fish Board | Smoked/salted fish and rye bread |
-| 4 | Coastal Feast | Mixed seafood, roast fish and bread |
-| 5 | Roast Beef Platter | **Future beef** roast slices, roots and onions |
-| 6 | Sunday Roast Platter | Rosemary joint, baked potatoes, vegetables |
-| 7 | Hunter's Feast | Roast beast, mushroom skewers, roots |
-| 8 | Mixed Grill Platter | Sausages, skewers, grilled meat |
-| 9 | Sausage Supper | Sausages, turnip mash, roasted onion |
-| 10 | Charcuterie Board | Cured meats, sausage, jerky, **future cheese** and dried fruit |
-| 11 | Ploughman's Board | Bread, **future cheese**, pickled vegetables and apples |
-| 12 | Bread & Cheese Board | Breads, **future cheese**, fruit |
-| 13 | Harvest Platter | Vegetables, baked potatoes, mushrooms |
-| 14 | Tavern Supper Board | Savoury pie, bread, roast vegetables |
-| 15 | Breakfast Platter | Eggs, oatcakes, sausage |
-| 16 | Traveller's Board | Trail bread, jerky, dried apples, nuts |
-| 17 | Orchard Fruit Platter | Seasonal apples, pears, plums |
-| 18 | Sweet Treats Board | Honey loaf, chestnut cakes, fruit leather, pastries |
-| 19 | Dessert Platter | Apple pie, baked fruit, sweet cakes |
-| 20 | Grand Banquet Platter | Large roast with bread, vegetables and other dishes |
+| PROPOSED ADD | **Seafood Platter** | Steamed shellfish #361, Crab Cakes #397, roasted fish #80 |
+| PROPOSED ADD | **Fisherman's Board** | Smoked Fish #185, Salted Fish #407, Rye Flatbread #388; visually distinct **preserved fish board** |
+| PROPOSED ADD | **Roast Dinner Platter** | Rosemary Joint #275, Baked Potato #391, roasted root vegetables; renames Sunday Roast |
+| PROPOSED FUTURE | **Roast Beef Platter** | Genuine species-specific beef once livestock/meat source exists; current generic Roast Meat #69 is not silently called beef |
+| PROPOSED ADD | **Hunter's Feast** | Roast Beast #191, mushroom skewers #180, roots/vegetables |
+| PROPOSED ADD | **Mixed Grill Platter** | Sausage #804, Meat Skewers #803, grilled/roasted meat |
+| PROPOSED ADD | **Charcuterie Board** | Jerky #406, sausage #804, dried fruit; cheese may join when FUTURE Cheese #418 becomes available, not mandatory now |
+| PROPOSED FUTURE | **Ploughman's Board** | Bread, Cheese #418 (FUTURE), Pickled Vegetables #834 (FUTURE), apple; keep as beloved style but gate properly |
+| PROPOSED ADD | **Harvest Platter** | Roasted roots #177, Baked Potatoes #391, mushrooms or seasonal vegetables |
+| PROPOSED ADD | **Tavern Supper Board** | Existing savoury pie #401 or #402, flatbread #273, roasted vegetables |
+| PROPOSED ADD | **Breakfast Platter** | Boiled Eggs #362, Oat Cakes #405, Sausages #804 |
+| PROPOSED ADD | **Traveller's Board** | Trail Bread #189, Jerky #406, Dried Apples #450, nuts |
+| PROPOSED ADD | **Orchard Fruit Platter** | Apples #431–435, pears #436–438, plums #440 |
+| PROPOSED ADD | **Dessert Board** | Apple Pie #452, Honey Loaf #274, Chestnut Cakes #183 and fruit where appropriate |
+| PROPOSED ADD | **Grand Banquet Platter** | One substantial Roast Beast #191 plus bread, vegetables and other banquet food (actual costly inputs, no free food) |
 
-The one generic Serving Platter **concept** is owner-directed, but the exact 20 platter item IDs/recipes, portions, quantities and prerequisites are **NOT fully approved**. Do **not** count 1+20 ADD in the master catalog's approved rows until Dave explicitly signs off. If one recipe matches another too closely, the final owner review can combine or remove it.
+**Five deliberate merges from the original 20 names (not extra IDs):**
+1. **Smoked Fish Board** → Fisherman's Board; same cold fish/bread layout.
+2. **Coastal Feast** → Seafood Platter; same mixed seafood feast.
+3. **Sausage Supper** → Mixed Grill Platter; same sausage-focused cooked-meat board.
+4. **Bread & Cheese Board** → Ploughman's Board; cheese/bread plate with additional pickled foods.
+5. **Sweet Treats Board** → Dessert Board; overlapping sweet/pastry food group.
+
+The result retains 15 **visually and functionally distinct compositions** instead of 20 slightly duplicated variants, including Dave's explicit examples: Seafood, Roast Beef, Charcuterie and Ploughman's. Do not add one item for each wooden platter model; **one Serving Platter** is the reusable physical carrier. Each named board is still a **real prepared food** in the inventory (not an image-only decoration), made using the Food Preparation Table and actual existing cooked ingredients. Eating portions changes the visible arrangement and decreases actual remaining servings. Reusable carrier can be removed when empty; normal spoilage continues. Per-board item IDs (15 food rows) are the low-risk default for current item-data compatibility; a future proposal could use a polymorphic prepared-board ID, but that may increase per-instance complexity and is **not** an owner-approved simplification.
+
+**P15-v2 counts:** **1 physical Serving Platter + 13 ready-eligible food-board ADD + 2 FUTURE-gated food boards = 16 proposed definitions**. These are **not part of the currently approved catalog totals**. No item is approved just because its name appears on this list.
 
 ## 4. How storage, preservation and serving interact
 
