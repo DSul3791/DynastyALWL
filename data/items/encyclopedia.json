@@ -2553,7 +2553,7 @@
 		"iron_pickaxe": {
 			"name": "Iron - Pickaxe",
 			"kind": "tool",
-			"description": "An iron head on a hardwood handle. One blow breaks one stone off a boulder.",
+			"description": "An iron head on a hardwood handle. One blow breaks three stones off a boulder.",
 			"how_to_get": [
 				"Craft at a brick forge: 3 Iron ingot, 2 Stick"
 			],
@@ -2563,7 +2563,7 @@
 		"steel_pickaxe": {
 			"name": "Steel - Pickaxe",
 			"kind": "tool",
-			"description": "A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest.",
+			"description": "A steel head on a hardwood handle. One blow breaks four stones off a boulder, and it lasts longest.",
 			"how_to_get": [
 				"Craft at a brick forge: 3 Steel ingot, 2 Stick"
 			],

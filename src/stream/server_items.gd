@@ -5533,6 +5533,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 			_reject(peer, 2)
 			return
 
+	var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))   # read before the wear: a stone tool that breaks on this blow leaves its slot empty
 	_last_hit[peer] = now
 	_wear_slot(peer, inv, int(tool[0]), "rock")
 	hit_number(peer, it["pos"] + Vector3(0.0, size_now, 0.0), HIT_POINTS * minf(rate, 1.0))
@@ -5542,7 +5543,6 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		return
 
 	var ore_cfg: Dictionary = _boulder_cfg.get("ore", {})
-	var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))
 	var a_pick: bool = str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick"))
 	# needs_material (boulders.json ore): the pick materials that may take each ore; no entry = any pick (iron ore needs a bronze, iron or steel pick: the ladder).
 	var material_ok: bool = not info.has("ore") or ((ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), []) as Array).is_empty() or ((ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), []) as Array).has(str(held.get("material", "")))
@@ -5991,13 +5991,14 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	var work_cfg: Dictionary = _exertion_cfg.get("tool_effort", {})
 	_work_until[peer] = Time.get_ticks_msec() + int(float(_exertion_cfg.get("work_s", 2.5)) * 1000.0)
 	_work_level[peer] = float(work_cfg.get(tool_class, work_cfg.get("default", 0.6)))
-	var before: Array = _snapshot(inv)
 	# A skilled crafter looks after their tools: wear is spread by the tool_care factor (1.0 for everyone at first), a deterministic
 	# carry of the fraction so no dice are involved.
 	var per_use: int = maxi(0, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))   # 0: work that cannot wear or dull this tool (a pick on wood)
 
 	if per_use == 0:
 		return
+
+	var before: Array = _snapshot(inv)
 
 	var wear_now: float = float(per_use) / skill_factor(peer, "tool_care") + float(_wear_carry.get(peer, 0.0))
 	var whole: int = int(floor(wear_now + 0.001))
@@ -6449,7 +6450,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 		elif roll_chance(peer, rng, float(cfg.get("bark_chance", 0.3))):
 			give(peer, table.number_of("bark"), 1)
 
-		if roll_chance(peer, rng, float(cfg.get("seed_chance", 0.15))):
+		if not by_pick and roll_chance(peer, rng, float(cfg.get("seed_chance", 0.15))):
 			var own: Array = cfg.get("by_species", {}).get(str(tree.get("species", "")), [])
 
 			if own.is_empty():
@@ -6460,7 +6461,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 		if int(tree["logs_left"]) <= 0:
 			var roots: Array = cfg.get("roots", [])
 
-			if not roots.is_empty():
+			if not roots.is_empty() and not by_pick:
 				give(peer, table.number_of(str(roots[0])), roll_amount(peer, rng, int(roots[1]), int(roots[2])))
 
 			_items.erase(id)

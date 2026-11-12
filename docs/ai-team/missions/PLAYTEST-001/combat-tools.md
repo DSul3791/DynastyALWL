@@ -65,6 +65,8 @@ Gate review 1 (independent gate-reviewer agent) of d7c936e: FAIL on gate rules: 
 
 Gate review 2 (32530ba): no new must-fix. Done: checks that an axe only on the hotbar (nothing in hand) chops no tree, trunk, stump or log; a "You need an axe in hand to work wood." line when wood is struck without one; comment provenance quotes Dave's notes; FELLING_DESIGN.md network line updated. Follow-up (reported, not in this PR): `_mine` (swinging at bare rock ground) still needs and wears the first axe on the hotbar, so a held pick there wears the axe.
 
+Gate review 4 (73aeadc, tool tiers): PASS, no must-fix. Fixed after it: the boulder tool is read before its wear (a stone pick breaking on a blow kept that blow's ore); a pick on a trunk gives no seeds or roots either (kindling and thatch only); the iron and steel pickaxe descriptions say three and four stones a blow (text only, no item change); the stale boulders.json note line; no slot snapshot for zero wear.
+
 ## Test evidence
 
 | Check | Ran | Result |
