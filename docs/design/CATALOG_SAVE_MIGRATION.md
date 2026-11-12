@@ -35,8 +35,8 @@
 ## 2. Rules
 
 1. **One gated pass, `migrate_catalog`.**
-   - **Versions.** Raise `INVENTORY_VERSION`, `VERSION` and the chest and character literals by one. Each loader passes `oldest` = its old version, so v1 files still load. Without that, every existing save loads empty.
-   - **Stamp.** Each file carries its own `catalog_v` stamp, so a crash mid-save cannot leave files half-migrated.
+   - **Versions.** Raise `INVENTORY_VERSION`, `VERSION` and the chest and character literals by one. `inventories.json` keeps its existing `oldest` of 1; the other loaders pass their old version as `oldest`, so every existing file still loads. Without that, every existing save loads empty.
+   - **Stamp.** Each file carries its own `catalog_v` stamp: the number of the last migration step applied to it. The pass runs on every load, and each phase appends a numbered step that runs once when the stamp is below it. A crash mid-save cannot leave files half-migrated, and a step added in a later phase (for example the food step in phase 6) still runs.
    - **Backup.** Write a create-once backup named `*.catalog.bak`, not `*.v1.bak`. The skills migration already owns `characters.json.v1.bak`.
    - **Repeat runs.** The pass is idempotent.
 2. **Order inside the pass** (after all files have loaded, before the first player joins):
@@ -62,7 +62,7 @@
    - **Carried Clay bloomery 795 and Anvil 827:** the cost of blueprint 162 or 164.
 6. **Retired placed structures stay and still refund.** This covers the Clay bloomery (state 200), the Anvil (state 204) and the Woodworking table 243 (PR #1036).
    - They keep loading and working.
-   - Their blueprints 162, 164 and 12 are marked **`hidden: true`** (not buildable) instead of `retired`, so `_blueprint_of_kit` still refunds materials on take-down.
+   - Their blueprints 162 and 164 (and blueprint 12, if PR #1036 does the same) are marked **`hidden: true`** (not buildable) instead of `retired`, so `_blueprint_of_kit` still refunds materials on take-down.
    - This needs a small loader and menu change. Master s7 item 1 is updated to match.
    - Structure rows are never deleted. If one ever must be, the loader first gets a `_structures.has(kind)` guard (hard lookups at si:3397, 10551 and 11921).
 7. **Worn slots.**

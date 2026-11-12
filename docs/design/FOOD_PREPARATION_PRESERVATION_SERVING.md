@@ -55,7 +55,7 @@
 - Uncooked Meatballs goes live together with Meatballs #837 (Campfire Pot or Pan).
 - Generated dishes are rewritten through `dishes.json` and `tools/gen_dishes.py`, not by hand.
 - Butter belongs with preservation.
-- Map the attachments to `addon_of` structures with station tags.
+- Keep the Griddle, Spit, Grate, Pan and Cauldron as kept equipment used at the fire or hearth; only the Fireplace Cooking Crane gets new attach code.
 
 Keep existing finished food IDs. Original ingredients are consumed **once** at preparation. Finishing consumes the intermediate **without also charging ingredients again**. Reusable vessels survive. Uncooked items are actual inventory with spoilage. Suitable station and fuel/heat still matter. Cooking and storage may use permitted nearby workstation inventory under §2.5 of master catalog.
 

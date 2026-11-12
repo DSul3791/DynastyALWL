@@ -78,7 +78,7 @@
 | **Jam** | Plums and nectar are cooked at the Campfire Pot and are Ready at once. | Holds, under the [D14] heat rule. |
 | **Route to the first saw** | Bog iron, then the Smelter, charcoal, iron, the Smithy and the Iron hand saw. Planks and Hardwood boards follow, then graded furniture and the Wardrobe and Bookcase. | Holds (master s6 rows 15–17). Hardwood-free biomes need travel or trade (s6 row 30). |
 | **A day of training on food** | A Rosemary joint (Main Meal: +10 to +20 % Fitness XP by its tier), Flatbread (Bread & Grains: lower energy drain) and Herbal tea (Beverage: a small energy lift, plus −5 % hunger and thirst drain for 2 h). Fitness XP is boosted per tick, then paid at midnight. | Holds. There is no permanent Fitness change, because energy aids lose their cost. |
-| **Dessert after training** | A Nut cake fills a slot after a replace prompt. It gives its 25 energy (once per slot fill, so it cannot replace sleep) and −5 % XP for 1 h on its own timer. Replacing it later does not clear the penalty. | Holds. No permanent penalty. |
+| **Dessert after training** | A Nut cake fills a slot after a replace prompt. It gives +12 energy (Dessert tier 2, once per slot fill, so it cannot replace sleep) and −5 % XP for 1 h on its own timer. Replacing it later does not clear the penalty. | Holds. No permanent penalty. |
 | **Sick player with Chamomile tea** | The tea cures and fills the Beverage slot. A healthy player gets the Beverage effect only. | Holds under [D17]. |
 | **Warehouse trade run** | A Warehouse Crate is coded 0042. The owner wheels it full on a Handcart from Warehouse A to Warehouse B. Desk A loses it and Desk B shows it to the owner. A friend with the code sees it; a stranger sees nothing. The Sauerkraut inside keeps ageing. | Holds, once cargo joins the ageing loop (phase 10). |
 | **Old save after the update** | A playtest world with a Clay bloomery, a Saw blade in a chest, a worn quiver and old Sauerkraut. The bloomery still works, the Saw blade becomes its ingredients, the quiver moves to the pack, and the Sauerkraut is Ready. | Holds under the migration rules. |
@@ -139,5 +139,12 @@ All are fixed in the next commit. The main fixes:
 - Phase dependencies are fixed: clothing and carrying need phase 2, storage needs 3, Handcart needs 2, books need 9.
 - Poison preparation and enhancement effects are placed in phase 12.
 
-## 6. Round 6
-A fresh independent check of the round 5 fixes is recorded in the PR comment for the final commit.
+## 6. Round 6: final independent check of 47792ec
+
+The check confirmed the round 5 fixes, the counts, the rule and phase cross-references and the data claims. It found no weakened owner decision and no open owner question. It raised 4 points, all fixed in the final commit:
+- Three leftover attachment lines now say "kept equipment".
+- The meaning of the `catalog_v` stamp is defined: the number of the last step applied, so later-phase steps still run.
+- The inventories loader keeps `oldest` 1.
+- Nut cake gives the Dessert tier value (+12), not its live 25, to keep Dave's accepted numbers. Nut cake's `energy_aids` row changes to match.
+
+**Result:** no substantive issue remains.
