@@ -14,7 +14,7 @@ An Admin -> Reset World button usable in play. With explicit confirmation and th
 
 ## Design (smallest reliable)
 - New action `ACT_RESET_WORLD := 79` (no protocol change, a new kind, like `ACT_CLEAR_DROPS`). Admin only; a non-admin is told no and nothing changes.
-- `server_items.reset_world()`: lets go of carts, removes every row that is not natural (keeps `scatter`, `tree`, `showroom`, transient), removes their roofs and their `_chests` stores, clears crops and plot water, rebuilds the walk grid, water network, supports and pot links, clears per-player caches that name world ids, re-sends remains, then saves every store file synchronously (no queued older write may land after it).
+- `server_items.reset_world()`: lets go of carts, removes every row that is not natural (keeps `scatter`, `tree`, `showroom`, transient rows and `remains`), removes their roofs and their `_chests` stores, clears crops and plot water, rebuilds the walk grid, water network, supports and pot links, clears per-player caches that name world ids, re-sends remains, then saves every store file synchronously (no queued older write may land after it).
 - The action then calls the existing `_reset_terrain_edits` (log emptied on disk at once, ground and water rebuilt, every client reloads its ground). Every player is told.
 - Clients learn of the removed rows through the normal world sync (removed ids), the same path as any take-down.
 - Esc > Admin gets "Reset world (terrain, dropped items, buildings)", which opens a confirmation page (Yes / No), the same pattern as the terrain-edit reset.
@@ -22,7 +22,7 @@ An Admin -> Reset World button usable in play. With explicit confirmation and th
 
 ## Calls made where the brief is silent
 1. **All loose items go, not only those a player let go.** After a save a loose row does not record who dropped it; loot, goblin den piles, split logs and stuck arrows are the same kind of row. They also expire on their own. Keeping some would need a new saved field (a schema change) for little gain.
-2. **Remains go** (a dead character's pile): they are dropped items in the world, not the character's pack. The character record itself is untouched.
+2. **Remains stay** (a dead character's pile). The first design removed them; the independent review showed a remains row holds the dead character's whole pack and purse (`kill()` moves them into its store), so removing it would lose character inventory, which the brief says to keep. They expire on their own (7 days).
 3. **Tilled beds and their crops go; path patches go**: both are player-placed structure rows. Saplings stay (`_saplings` mixes natural regrowth and replanted bushes and is flora, which the brief keeps).
 4. **Trees stay as they are** (felled trees stay felled, stumps stay): trees are natural content and the brief does not ask for regrowth. Picked scatter marks, picked and bare plants, boulder and bog-iron counts stay for the same reason. Plants removed under buildings (`flora_removed.json`) are not restored.
 5. **Characters are not touched at all**: packs, worn gear, vitals, skills, coins, learned recipes, craft queues and the spawn-bed record (a missing bed falls back to the world spawn as it does after any take-down).

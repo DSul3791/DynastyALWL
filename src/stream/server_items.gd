@@ -2047,9 +2047,9 @@ func tree_row_count() -> int:
 
 # Admin "Reset world" (BLOCKER-001, Dave 12 Nov 2026; docs/ai-team/missions/B001/BRIEF.md). Across the whole world, not only the loaded part
 # (every row is in _items): each loose item (drops, loot, den piles, stuck arrows, split logs), every placed structure with its contents (buildings,
-# stations, containers, blueprint sites, tilled beds and their crops, path patches, remains, traps, carts and crates) and every campfire go. Kept:
+# stations, containers, blueprint sites, tilled beds and their crops, path patches, traps, carts and crates) and every campfire go. Kept:
 # the natural rows (scatter, boulders, trees and stumps), the showroom and carcasses (neither is saved), planted and regrown saplings, and every
-# character's pack, worn gear, vitals, skills and progression. The ground is the server scene's part (reset_terrain_edits, after this). Written to
+# character's pack, worn gear, vitals, skills and progression - remains too: they hold a dead character's pack and purse (they expire by themselves). The ground is the server scene's part (reset_terrain_edits, after this). Written to
 # disk before it returns, so a hard stop cannot bring the rows back. Returns how many rows went.
 func reset_world() -> int:
 	for peer in _carts.puller_of.keys():
@@ -2061,7 +2061,7 @@ func reset_world() -> int:
 	for id in _items.keys():
 		var it: Dictionary = _items[id]
 
-		if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("struct") and bool(it["struct"].get("transient", false))):
+		if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("struct") and (bool(it["struct"].get("transient", false)) or str(it["struct"]["kind"]) == "remains")):
 			continue
 
 		if it.has("struct"):

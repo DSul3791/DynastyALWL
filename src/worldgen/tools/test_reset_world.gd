@@ -4,7 +4,7 @@ extends SceneTree
 # building (foundation, wall, door, floor, bed, workbench, a chest with things in it, a campfire, a tilled bed with a crop), far apart so most
 # of it is outside any player's reach, ACT_RESET_WORLD from an admin removes all of it, saves at once, and the terrain edit log is empty;
 # a restart (a fresh server over the same store) brings none of it back. Natural rows (scatter, a boulder), the picked-scatter marks,
-# saplings, and the character's pack, worn gear, vitals and skills stay. A non-admin is refused and changes nothing.
+# saplings, a dead character's remains, and the character's pack, worn gear, vitals and skills stay. A non-admin is refused and changes nothing.
 #   godot --headless --path . --script res://src/worldgen/tools/test_reset_world.gd   (voxel build: GroundOps uses VoxelBuffer)
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -56,7 +56,7 @@ func player_rows(items) -> int:
 	for id in items._items:
 		var it: Dictionary = items._items[id]
 
-		if not (it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("struct") and bool(it["struct"].get("transient", false)))):
+		if not (it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("struct") and (bool(it["struct"].get("transient", false)) or str(it["struct"]["kind"]) == "remains"))):
 			n += 1
 
 	return n
@@ -129,6 +129,11 @@ func _init() -> void:
 	items._chests[far_uid].add(stick, 2)
 	items._crops["52.00,20.00"] = {"crop": "barley", "sown": 1, "age": 1, "wet": 0, "day": 1, "compost": false}
 
+	# A dead character's remains (their pack and purse) must stay: player 2 dies carrying 6 stones.
+	items.inventory_of(2).add(stone, 6)
+	check(items.kill(2, "test"), "player 2 dies")
+	check(count_kind(items, "remains") == 1, "player 2 left remains")
+
 	# Natural rows that must stay: a loose scatter stone, a boulder, a picked-scatter mark and a sapling.
 	items._items[900001] = {"number": stone, "count": 1, "pos": Vector3(60.0, 10.0, 0.0), "left": 1.0e9, "scatter": 4242}
 	items._items[900002] = {"number": 0, "count": 30, "pos": Vector3(70.0, 10.0, 0.0), "left": 1.0e9, "scatter": 4343, "boulder": {"size": 1}}
@@ -159,6 +164,7 @@ func _init() -> void:
 	check(items._taken.has(5151) and items._saplings.size() == 1, "picked-scatter marks and saplings stay")
 	check(inv.count_of(stone) == stones_before and inv.count_of(stick) == sticks_before, "the pack is kept")
 	check(progress_kept(items) and is_equal_approx(float(items.vitals_of(1)["hunger"]), 42.0), "character row and vitals are kept")
+	check(count_kind(items, "remains") == 1, "the dead character's remains (pack and purse) are kept")
 	check(not items.structure_blocks(40.0, 20.0, 0.5), "the removed workbench blocks nothing")
 
 	# After the reset the world works as before: a new drop and a new building.
@@ -175,6 +181,7 @@ func _init() -> void:
 	check(count_kind(again, "workbench") == 0 and count_kind(again, "wood_foundation") == 0 and count_kind(again, "chest") == 1, "no removed building comes back")
 	check(not again._chests.has(chest_uid) and not again._chests.has(far_uid), "no removed chest's contents come back")
 	check(again._crops.is_empty(), "no crop comes back")
+	check(count_kind(again, "remains") == 1, "the remains are kept over the restart")
 	again.peer_connected_hello(1, KEY)
 	var inv2 = again.inventory_of(1)
 	check(inv2.count_of(stone) == stones_before and inv2.count_of(stick) == sticks_before, "the pack is kept over the restart")
