@@ -1,12 +1,12 @@
 # Dynasty master items catalog
 
-**Status: DRAFT 10 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS, ARMOUR AND OWNER-APPROVED CLOTHING RECORDED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D7], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status: DRAFT 11 — TOOLS, WOOD, STATIONS, FURNITURE, WEAPONS, ARMOUR AND CLOTHING RECONCILED; THE COMPLETE MASTER ITEMS CATALOG IS NOT YET FINISHED. FINAL APPROVAL WITHHELD PENDING CATEGORY-BY-CATEGORY DESIGN AND AUDIT (12 Nov 2026 UTC). NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED.** All Dave rulings ([B], [D1]–[D8], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 Data read: `data/items/items.json` (889 rows, next number 896), `recipes.json` (404 rows, 287 live, next 407), `blueprints.json` (185 rows, next 186), `structures.json` (216 rows, highest state 228; state 229 is bog iron in code only), on `dev` at `7f8aabf4` (unchanged on 12 Nov). Open PR #1036 retires the Woodworking table separately.
 
 Layout: s1 sources and labels; s2 design decisions; s3 the catalog by row (KEEP / UPDATE / ADD / RETIRE / FUTURE); s4 implementation details (no new design); s5 numbers still to set; s6 audit matrix; s7 JSON change list; s8 completed design resolutions and remaining implementation risks; Appendix A the full 889-row catalog.
 
-**Totals (Draft 10 previously audited baseline, BEFORE 17 [D8] clothing ADD items; not final).** Existing rows: KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 67 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7) and 2 new FUTURE rows (Steel bolt, Iron - Lance). Cross-listed rows (dual-use tools, shields, protective clothing) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
+**Totals (Draft 11, reviewed categories only; not final).** Existing rows: KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889). New rows: ADD 84 (18 tools and stations, 6 furniture grades in s3.5, 29 weapons and ammunition in s3.6, 14 armour pieces in s3.7, 17 clothing pieces in s3.8) and 2 new FUTURE rows (Steel bolt, Iron - Lance). Riding - Boots is counted with mounted gear, not here. Cross-listed rows (dual-use tools, shields, protective clothing) are counted once. No number or id is reused. Totals change as each remaining category is reviewed.
 
 ## 1. Sources and labels
 
@@ -312,16 +312,16 @@ Dave approved ChatGPT's Weapons Proposal 2 in full, plus his own Poison Arrow re
 | Protection | No item has a protection value, and weapons carry one `damage` number with no damage mode. Rule 2 (slashing, piercing, blunt, projectile; coverage; penetration) is a new combat system. | **NEEDS CODE**, and later balancing. |
 | Tempered scope | s4 item 15 listed only the Steel - Helm and Cuirass among armour. | FIXED in s4 item 15: all steel armour rows in 3.7 are eligible, with durability only, never sharpness. |
 | Steel - Cuirass 331 description | "The best body armour" is wrong once Half plate and Plate harness exist. | Defect recorded for the data change (rule 6). |
-| Hide - Trousers 306 | It is protective hide clothing like the cross-listed Hide - Tunic 305, but it is not in the cross-list. | Possible omission for ChatGPT. It is cross-listing only; no new row, and counts are unaffected. |
+| Hide - Trousers 306 | It is protective hide clothing like the cross-listed Hide - Tunic 305, but it is not in the cross-list. | CLOSED by [D8]: ordinary clothing (s3.8). |
 
-**Recommended layering model (engineering, for the implementation PR).** Each of head, body, hands, legs and feet takes up to three layers:
+**Recommended layering model (engineering; superseded by the merged model in s3.8).** Each of head, body, hands, legs and feet takes up to three layers:
 - **Clothing:** today's warmth pieces.
 - **Padding or mail:** Gambeson, Leather - Jerkin, Bronze - Scale shirt, Iron - Mail shirt, Mail hauberk, Mail coif, Mail chausses.
 - **Rigid:** helms, Brigandine, Breastplate, Cuirass, Half plate, Plate harness, Gauntlets, Greaves, Sabatons.
 
 `outer`, `back` and `waist` stay single. An item names its layer with a new `layer` field beside its existing `slot`, so the current slot data stays valid. Protection combines across layers per damage mode with diminishing returns (the layers never simply add), and weight and fatigue add up. Old saves load with every worn item on its own slot's clothing layer.
 
-Categories not yet reviewed (clothing, backpacks and carrying gear, saddles and saddlebags, carts, wagons and carriages, cooking, food preservation) keep today's rows until their category review; food, medicine and coins are untouched so far (Appendix A).
+Categories not yet reviewed (backpacks and carrying gear, saddles and saddlebags, carts, wagons and carriages, cooking, food preservation) keep today's rows until their category review; food, medicine and coins are untouched so far (Appendix A).
 
 ### 3.7 Armour [D7] — APPROVED CATEGORY (NOT APPROVAL TO IMPLEMENT)
 
@@ -429,6 +429,40 @@ Retired Hide - Leggings #67 remains retired, redundant with Hide - Trousers. **A
 
 **Counts for [D8]:** 24 existing ordinary clothing (keep or update as required by layering), **17 ADD ordinary clothing**, 1 FUTURE Riding - Boots to be owned by mounted equipment category, 8 armour pieces cross-listed (NO duplicate IDs). 50 clothing-related concepts by the proposal's counting method; only 17 immediate new item rows added to prior categories. Proposed numbers and stations should be audited for material accessibility and implementation consistency.
 
+**3.8 reconciliation against the data (Claude, 12 Nov; desk review of `items.json`, `recipes.json`, `clothing.json`, `warmth.json` on dev `7f8aabf4`):**
+
+| Check | Finding | Result / resolution |
+|---|---|---|
+| Ids and names | All 24 kept rows exist with the names and numbers above. With the 8 armour rows of [D7] and retired #67, they are every `clothing` row in `items.json` (33). Backpacks, quivers and the belt are `gear` and belong to the carrying category. None of the 17 ADD names clashes with a live or retired row. | PASS. All 24 stay KEEP in Appendix A. |
+| Recipes and stations | Fibre and hide pieces are made by hand (Hide pieces keep the Bone - Needle). Leather pieces move from workbench L2 to the Leatherworking Table, and wool, linen and fur pieces from workbench L3 to the Tailor's Table. Both moves are already in s3.4. Straw - Hat is made by hand. Snowshoes are made at the workbench. | PASS. Matches rule 4. The station moves change recipes, not the item rows. |
+| Materials for the 17 new rows | Linen 365, Wool cloth 548, Wool 364, Leather, Fur 549 and Thread (s3.4 [C]) all exist or are approved. Cloth comes from the Loom (s3.4). | PASS. |
+| Oilcloth oil | No separate drying oil exists. Lamp oil 667 comes from linseed or walnuts at the Oil press (recipes 365, 366), and also from herring at the campfire pot (349). | **RECOMMEND:** Oilcloth - Cloak takes Lamp oil, with no new resource. Real oilcloth needs linseed oil and fish oil would not cure, but one oil item keeps the game simple. Splitting the oils is ChatGPT's call. |
+| Tabard material | "Linen or Wool" for one row. | **RECOMMEND:** one Tabard row taking either cloth through an ingredient group (`item_table.gd load_groups`), keyed by Linen. The cheapest member is spent first. No second row. |
+| Thread vs today's sewing | Today's recipes sew with Twine, Sinew or Leather strap. | NOTE. Moving existing sewing recipes to Thread is part of s3.4 [C], not a new clothing change. |
+| Weather and wetness | `warmth.json` already has soak, wind chill and the body-in-weather wet strip, with one insulation value per worn item (`warmth`). It has no per-material wet behaviour, no breathability and no heat penalty. | **NEEDS CODE.** Rule 1 needs per-item fields such as wet insulation, rain shedding, breathability and overheating. Values are set in s5. |
+| Slots | `clothing.json` has no neck slot and no sock liner, and it puts one item on each of its 8 slots. A Dress needs body and legs at once. | **NEEDS CODE.** Covered by the merged layer model below. |
+| Hide - Trousers 306 | My [D7] question is resolved by [D8]. It is ordinary clothing in the 24 kept rows, not armour. | CLOSED. |
+| Riding - Boots | Owned by the mounted-gear category. | Not counted here. |
+
+**Merged layer model ([D7] + [D8]; engineering recommendation for the implementation PR).** This replaces the [D7] sketch in s3.7. Each item gets a `layer` field beside its existing `slot`, and each slot-and-layer pair holds one item:
+
+| Slot | Layers, inside to outside | Examples |
+|---|---|---|
+| head | base · mail · rigid | Hood, caps, Headwrap · Mail coif · helms. Hats (Straw, Fur, Broad-brim) use the rigid layer, so no hat goes over a helm. |
+| neck (new) | single | Wool - Scarf |
+| body | base · padding or mail · rigid · over · outer | tunics, shirts, Dress · Gambeson, Jerkin, mail, scale · Brigandine, Breastplate, Cuirass, plate · Tabard, aprons · cloaks, Coat, Robe, Oilcloth - Cloak |
+| legs | base · mail · rigid | trousers, skirts · Mail chausses · greaves |
+| hands | base · rigid | gloves, mittens · gauntlets |
+| feet | socks · footwear · over | Wool - Socks · boots, shoes, sandals · sabatons or Snowshoes |
+| back, waist | single (unchanged) | carrying gear |
+
+Rules of the model:
+- A Dress fills body base and legs base together.
+- `outer` becomes the body's outer layer, so a coat and a cloak are not worn at once.
+- Warmth and protection combine with diminishing returns, never full stacking.
+- Old saves map each worn item to its slot's base layer, and `outer` to body outer.
+- Per-instance looks (colour, pattern, heraldry, dirt, wear) need the per-instance data in s8. They are not new rows.
+
 **Next category awaiting Dave's review:** Backpacks, pouches and carrying gear. Do NOT append new gear items as owner-approved until ChatGPT presents the entire category and Dave approves it. After that: saddles/saddlebags, carts/wagons/carriages, cooking, food preservation, other categories, and final whole-system re-audit.
 
 ## 4. Implementation details (follow from the decisions; no new design)
@@ -510,9 +544,10 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 | 34 | Name rule for grades | decision 71 (a tier word only where several versions exist); four-word check | "Grade - Object" fits | PASS | The grade word replaces the material word, as in "Stone - Axe". No clash with live names; "Fine board" 227 is retired. |
 | 35 | Draft 6 claims | s6 rows 20, 21 and the Draft 6 readiness line | Withdrawn where [D4] changes them | DONE | Substitution analysis and its code list withdrawn; the durability-only Quenching Trough effect withdrawn. |
 | 36 | Tempered scope | steel rows 34, 47, 224, 294, 321, 322, 323, 330, 331, 561, 800 and the new steel tools; `edge` flags | Only eligible steel; sharpness benefit only on edged rows; no stacking | PASS | Striker excluded; sharpness benefit limited to `edge: true` rows; durability adds, never multiplies (s4 item 15). |
-| 37 | Counts and Appendix A | status per row vs s3 tables; Appendix A generator overrides | Totals agree | PASS | KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889); ADD 67 and 2 new FUTURE rows (Draft 10). Every s3 UPDATE, RETIRE and FUTURE row carries the same status in Appendix A. |
+| 37 | Counts and Appendix A | status per row vs s3 tables; Appendix A generator overrides | Totals agree | PASS | KEEP 504, UPDATE 56, RETIRE 23, FUTURE 53, already retired 253 (889); ADD 84 and 2 new FUTURE rows (Draft 11). Every s3 UPDATE, RETIRE and FUTURE row carries the same status in Appendix A. |
 | 38 | Weapons category [D6] | 21 weapon rows 7–816, arrows 270, 271, 352, 817; recipes 3, 170–172, 181, 201, 206, 226, 228, 336, 357, 381, 385 | Approved roster matches the data; no duplicates with tool ADDs | PASS / 4 defects recorded | All 21 ids exist (the 9 metal weapons are FUTURE). Iron and Steel Axe and Knife are counted once (s3.1). Defects recorded for implementation: recipe 3 keeps its Stone, Javelin `stack` 5 with `unstackable`, Bronze - Shield needs pre-saw Planks, Steel - Sword description. Recipes 228 and 336 give Wooden - Arrow, not the retired Fibre arrow 354. |
 | 39 | Armour category [D7] | 8 core rows, 8 cross-listed clothing rows, recipes 39–42, 194–196, 213–220, 358–360, 397; `clothing.json` slots | Approved roster matches the data; stations and metals in order; layering supported | PASS / NEEDS CODE | Ids, stations and the bronze, iron, steel order hold (s3.7 table). Layering and protection need new code (recommended model in s3.7). Hide - Trousers 306 possibly missing from the cross-list. |
+| 40 | Clothing category [D8] | 24 kept rows, recipes 39–42, 194–196, 213, 214, 237–244, 358–360 and the hand fibre, straw and snowshoe recipes; `clothing.json`, `warmth.json` | Roster matches data; materials exist; layers and weather supported | PASS / NEEDS CODE | Ids, stations and materials hold (s3.8 table). Neck slot, sock liner, Dress span and per-material weather need code (merged model in s3.8). Oilcloth uses Lamp oil; Tabard uses a cloth group. |
 
 ## 7. JSON change list (none made; all wait for Dave's approval of this catalog)
 
@@ -528,7 +563,8 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 10. **Furniture (s3.5):** 14 blueprint cost changes and 8 renames; 6 new item, blueprint and structure rows; `comfort.json` grade kinds and the best-one rule; `slots` per chest grade; looks.
 11. **Tempered [C7]:** confirmed per-instance steel quality, not duplicate item rows; Quenching Trough must be a Smithy add-on (s4 item 15).
 12. **Weapons [D6] (s3.6):** renames of 269 and 763; 29 new item rows with recipes (bronze at `forge`, iron and steel at the Smithy, wooden at hand or workbench); FUTURE rows for Steel bolt and Iron - Lance; fix recipe 3 (consume the Stone), Javelin 295 `stack` 1, Bronze - Shield recipe 206 without Planks, Steel - Sword 321 description; a stack-level poison state on arrows (no new rows).
-13. **Armour [D7] (s3.7):** 14 new item rows with recipes at the stations in rule 4; Steel - Cuirass 331 description; a `layer` field on clothing and armour rows and the three-layer equipment model; protection values and damage modes (new combat system).
+13. **Armour [D7] (s3.7):** 14 new item rows with recipes at the stations in rule 4; Steel - Cuirass 331 description; protection values and damage modes (new combat system).
+14. **Clothing [D8] (s3.8):** 17 new item rows with recipes at the Tailor's Table, Leatherworking Table or by hand; a `layer` field on every clothing and armour row and the merged layer model (new neck slot, sock liner, Dress span, old-save mapping); per-material weather fields; a Linen-keyed cloth group for the Tabard.
 
 ## 8. Remaining issues and readiness
 
@@ -541,7 +577,7 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 - **Later trade decision:** furniture in the eight hardwood-free biomes depends on travel or on a trader selling Hardwood Boards (s6 row 30).
 - **Baseline:** recheck against the latest `dev` before implementation (compared at `7f8aabf4`); PR #1036 stays separate.
 
-**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: clothing; backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and recorded in s3.8 [D8] (17 ADD rows; remaining category reconciliation/audit pending). BACKPACKS, POUCHES AND CARRYING GEAR is next for Dave's review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
+**Readiness.** The earlier tool/wood/workstation/furniture reconciliation has no known outstanding questions, but Dave explicitly withheld approval of the COMPLETE Master Items Catalog because further categories remain undesigned or unaudited: backpacks and other carrying gear; saddles and saddlebags; carts, wagons and carriages; food cooking; food preservation and relevant stations. These must be handled one complete category at a time, with ChatGPT proposing the entire inventory to Dave for review BEFORE changing the authoritative category design. WEAPONS is owner-approved and reconciled in s3.6 [D6]. ARMOUR is owner-approved and reconciled in s3.7 [D7] (14 ADD rows). CLOTHING is owner-approved and reconciled in s3.8 [D8] (17 ADD rows). BACKPACKS, POUCHES AND CARRYING GEAR is next for Dave's review. Re-run whole-catalog audits afterward. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
 
