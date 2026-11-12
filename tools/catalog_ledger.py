@@ -38,7 +38,7 @@ ACTIVATE = {"steel_ingot": "2b", "steel_pickaxe": "2c", "steel_spade": "2c", "st
             "steel_chisel": "2c", "bronze_sword": "4b", "bronze_mace": "4b", "bronze_shield": "4b", "iron_sword": "4b",
             "iron_mace": "4b", "iron_shield": "4b", "steel_sword": "4b", "steel_mace": "4b", "steel_shield": "4b",
             "bronze_helm": "4b", "iron_helm": "4b", "mail_shirt": "4b", "steel_helm": "4b", "plate_cuirass": "4b",
-            "bronze_scale_shirt": "4b", "copper_pot": "6", "fish_soup": "6", "meatballs": "6"}
+            "bronze_scale_shirt": "4b", "meatballs": "6"}
 
 # (section, kind, names, extra) -- kind ADD or FUTURE (a new row that lands inactive). extra: phase override / deps / note.
 NEW_ROWS = [
@@ -154,7 +154,7 @@ def build() -> dict:
         sec, phase = phase_of_existing(row, sections)
         state = {"KEEP": "NO CHANGE", "RETIRED": "RETIRED BEFORE CATALOG", "FUTURE": "FUTURE-GATED"}.get(row["catalog"], "NOT STARTED")
         note = ""
-        live_phase = phase if row["catalog"] in ("UPDATE", "RETIRE") else None
+        live_phase = PHASE_BY_HAND.get(row["id"], phase) if row["catalog"] in ("UPDATE", "RETIRE") else None
         if row["id"] in ACTIVATE:
             live_phase, state = ACTIVATE[row["id"]], "NOT STARTED"
             note = {"steel_ingot": "switched on by s3.3 (Blast Furnace steel)",
@@ -215,9 +215,20 @@ def check(ledger: dict) -> list:
     old = [e for e in entries if not e["key"].startswith("new:")]
     if sorted(e["number"] for e in old) != sorted(n for n in by_number if n < 896):
         errors.append("existing rows differ from items.json numbers below 896")
+    if len(old) != 889 or count.get("UNLISTED", 0):
+        errors.append("existing rows: %d (want 889), UNLISTED %d (want 0)" % (len(old), count.get("UNLISTED", 0)))
+    done = ("IMPLEMENTED - UNVERIFIED", "TESTED - ACCEPTED", "RETIRED - MIGRATION VERIFIED")
     for e in old:
         if by_number.get(e["number"]) != e["key"]:
             errors.append("%s: items.json has number %s as %s" % (e["key"], e["number"], by_number.get(e["number"])))
+            continue
+        retired = bool(items[e["key"]].get("retired", False))
+        if e["catalog"] == "RETIRED" and not retired:
+            errors.append("%s: retired before the catalog, but live in items.json" % e["key"])
+        if e["catalog"] == "RETIRE" and retired != (e["state"] in done):
+            errors.append("%s: items.json retired=%s but ledger state is %s" % (e["key"], retired, e["state"]))
+        if e["catalog"] not in ("RETIRE", "RETIRED") and retired:
+            errors.append("%s: retired in items.json but the catalog says %s" % (e["key"], e["catalog"]))
     for e in entries:
         if not e["key"].startswith("new:"):
             continue
