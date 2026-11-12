@@ -2,7 +2,7 @@
 **Date:** 12 November 2026
 **Repository:** `DSul3791/DynastyALWL`
 **Design PR:** #1035; branch `claude/project-thread-39uvpg`
-**Superseded in part (12 Nov):** Dave's [D17] decisions closed the [P14-v2] roster, [P17] guides and numeric tuning; the master catalog s3.14 to s3.16 is authoritative.
+**Superseded in part (12 Nov):** Dave's [D17] decisions closed the [P14-v2] roster, [P17] guides and numeric tuning; the master catalog s3.14 to s3.16 is authoritative. Totals are now 176 ADD and 4 FUTURE; wherever this brief says 174 ADD or "[P14-v2] STILL PROPOSED", the master wins.
 **Status:** OWNER DESIGN HANDOFF, DOCUMENTATION WORK ONLY. The complete master catalog is **not finally approved**. **No gameplay code, JSON, implementations, merges, deployment or promotion to `dev` / `main` is authorized.**
 
 ## 1. Start here — source of truth

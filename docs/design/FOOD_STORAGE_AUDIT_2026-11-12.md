@@ -97,7 +97,7 @@ The hooks reuse existing multiplier fields (`regen_mult`, `exhaustion_mult`, `hu
 | Bread & Grains | energy drain −10 %, 4 h | −15 %, 8 h | −20 %, 12 h | `exhaustion_mult`. No XP. |
 | Fruit & Vegetables | health regen ×1.05, 4 h | ×1.10, 8 h | ×1.15, 12 h | `regen_mult`. No XP. |
 | Dessert | +8 energy at once | +12 | +15 | XP −5 % for 1 h, on its own timer. |
-| Beverage | hunger and thirst drain −5 %, 2 h | −10 %, 4 h | — | `hunger_thirst_mult`. No XP. Medicinal teas keep their cure and take no slot. |
+| Beverage | hunger and thirst drain −5 %, 2 h | −10 %, 4 h | — | `hunger_thirst_mult`. No XP. Medicinal teas keep their cure and also give the Beverage effect (as decided in master s3.16). |
 
 **Rules:**
 - **XP:** take the single best food XP bonus, then subtract any dessert penalty.

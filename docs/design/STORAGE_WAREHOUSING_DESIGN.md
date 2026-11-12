@@ -36,7 +36,7 @@ Avoid settlement interiors filled with stacked generic chests. Storage should be
 | Shared zone interface (1) | Storage Sign / Ledger |
 | Freight (2) | **Warehouse Crate**; **Warehouse Desk** |
 
-Count = **16**. The Woodshed, Materials Yard and Storehouse are **3 construction layouts**, not master item IDs. No separate crate label, warehouse membership token, lock/key or four-digit-code item. The proposed Granary belongs to the **unapproved food-preservation item roster**. The Captain's Table belongs to a **future ship category**, not this 16-item list.
+Count = **16**. The Woodshed, Materials Yard and Storehouse are construction layouts (with the Granary, 4), not master item IDs. No separate crate label, warehouse membership token, lock/key or four-digit-code item. The Granary is a fourth layout of these pieces [D17], not a row. The Captain's Table belongs to a **future ship category**, not this 16-item list.
 
 **Known design reconciliation before implementation:** §3.5 already provides graded Crude/Rustic/Fine/Ornate Chests. **Decided [D17]:** the Large Wooden Chest keeps greater weight capacity and a larger footprint, within the 30-slot limit; do not silently duplicate the Fine/Ornate grade. A large chest is eligible for the same code-lock mechanic as all approved chests. Existing #850 Crate remains and can join warehouse views; Warehouse Crate must have a meaningful stronger shipping/handling/stacking role, not just another differently named 10-slot crate. **Actual capacities, craft costs and stack height are unapproved tuning values.**
 
@@ -96,5 +96,5 @@ Acceptance tests for subsequent engineering review (not tests already run):
 - **Authoritative approved catalog:** [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md) §§2.5, 3.5, 3.9, 3.11, **3.13 [D13]**.
 - **Existing UI direction:** [INVENTORY_CRAFTING_LOOK.md](INVENTORY_CRAFTING_LOOK.md); extend its chest UI to support per-player filtered warehouse inventory and code dialogs, without overturning its visual style.
 - **Transport:** §§3.10–3.11 of the master catalog; ship cargo and Captain's Table are *future design*.
-- **Food storage:** [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md); preservation item roster not yet owner-approved.
+- **Food storage:** [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md); preservation roster approved [D14, D17] (2 ADD).
 - **Safety gate:** docs only. Nothing here is running in-game; no change to `data/items/*.json`, UI scripts, `dev` or `main`, and no merge until the complete catalog is approved and implementation is separately authorized.

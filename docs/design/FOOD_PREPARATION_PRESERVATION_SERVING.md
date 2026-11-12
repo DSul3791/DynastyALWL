@@ -48,7 +48,7 @@
 | Uncooked Crab Cakes | Crab Cakes |
 | Banana Fritter Batter | Banana Fritters |
 
-**Open points from the master catalog's s3.12 reconciliation:**
+**Delegated defaults from the master catalog's s3.12 reconciliation:**
 - Build the Food Preparation Table from logs and twine, like Log - Table 631, so bread stays pre-metal.
 - Move Nut cake (`energy_bar`) and Fruit juice from hand recipes to the Table.
 - Route Herb omelette and Egg-nettle fry to the Clay Griddle or Iron Frying Pan, so eggs stay pre-iron.
@@ -66,16 +66,17 @@ Two simple routes, matching the Food Preparation Table and finishing-station mod
 1. **Station-finished:** where cutting, mixing or salting is involved, the Food Preparation Table makes a physical prepared item, then one existing station finishes it: Drying Rack #775, Smoker #777, Oven or pot. No multi-station chores (cure → take out → wait → move → dry → smoke). Plain berries go straight onto the Drying Rack.
 2. **Passive maturation:** at the existing placed **Preserving Jar #830**, the player seals a batch of real ingredients (any cutting or mixing first happens at the Food Preparation Table; whole cabbage and salt need none). The batch comes out as the finished food's own stack (Sauerkraut #409), *Maturing* until it has aged enough, then *Ready*, with no stirring, clicking each jar or moving between stations. Sauerkraut and brined or pickled vegetables are the examples. Jam and other cooked preserves are cooked, not sealed raw.
 
-**Roster [D17]:** keep the Preserving Jar #830; no Sealable Preserve Jar. **ADD Smoked Meat** (Smoker #777: raw meat and salt; a Main Meal joint that keeps, distinct from Jerky #406, the light travel snack) and **ADD Dried Mushrooms** (Drying Rack #775: fresh mushrooms; a long-keeping ingredient in the `mushrooms` group, made only from fresh mushroom ids). Dried Herbs and Cured Olives are not added.
+**Roster [D17]:** keep the Preserving Jar #830; no Sealable Preserve Jar. **ADD Smoked Meat** (Smoker #777: raw meat and salt; a Main Meal joint that keeps, distinct from Jerky #406, the light travel snack) and **ADD Dried Mushrooms** (Drying Rack #775: one recipe per fresh mushroom; a long-keeping Fruit & Vegetables food kept out of the `mushrooms` group so it cannot dry itself; used in a dried-mushroom skewer and the Harvest Platter). Dried Herbs and Cured Olives are not added.
 
 **Representation (DELEGATED default; no new item IDs):**
 - **The clock today:** a slot holds only number, count, `wear` and favourite. For food, `wear` is the stack's age. The server ages all saved packs, placed containers and ground items each tick, scaled by `place_mult` (for example pack 1.0, storage jar 0.5, root cellar far lower) and by season (winter 0.5, summer 1.5). At full age a stack turns into `rotten_food`, the only transition built.
 - **No vessel item.** #830 is a placed station with no inventory. Its sealed foods carry their jar as part of the food, as today. Nothing is made, consumed or returned as a jar, so jars cannot be duplicated or lost.
 - **Maturing:** each passive recipe has a `ready_age`. While `wear` is below it the stack shows Maturing and cannot be eaten; then it is Ready, and later it spoils at its normal shelf life, which must exceed `ready_age`. The age is never reset. Because the clock is scaled, a cellar or winter slows ripening as well as spoiling; this reading of "enough in-game time" needs no new field.
 - **Merging:** today stacks merge when their ages differ by less than `merge_gap`, 10% of the shelf life (for Sauerkraut about 192 game hours), and the merge averages their age. New rule: never merge across `ready_age`, and never merge two boards.
-- **Bulk:** one craft at #830 takes a batch size (for example ×1, ×10, ×50) that multiplies real inputs and outputs. 200 portions are 20 stacks of 10 in the station's output storage or nearby containers (master s2.5). One timer per stack, not per portion. Batch limits are tuning.
+- **Bulk:** one craft at #830 takes a batch size (for example ×1, ×10, ×50) that multiplies real inputs and outputs. #830 has no inventory, so output goes to the pack and then nearby containers, capped by their free space. 200 portions are 20 stacks of 10. One timer per stack, not per portion. Batch limits are tuning.
 - **Heat rule:** Berry compote (102), Apple sauce (283), Plum jam (285) and Preserved damsons (287) move from #830 to the Campfire Pot or a cooking pot and are Ready when cooked.
-- **Crafted age (DELEGATED default):** a prepared or cooked output inherits the age fraction of its oldest perishable input, so preparing old produce does not make it fresh. Today outputs start at `wear` 0.
+- **Crafted age (DELEGATED default):** a prepared or cooked output inherits the age fraction of its oldest perishable input, so preparing old produce does not make it fresh. Today outputs start at `wear` 0. Exception: a passive recipe's output starts at age 0 and sealing refuses inputs below half freshness, so maturing cannot be skipped.
+- **Unready stacks:** a Maturing stack cannot be eaten, used as an ingredient, drawn by stations or sold.
 - **Needed code:** eat and UI gating for unready stacks; batch size; the merge rule; `place_mult` rows for new containers and vehicle or ship cargo, and cargo in the ageing loop.
 - **Lazy updates:** ageing is a periodic server tick over stacks, not per portion, so hundreds of portions cost no more than a few stacks. `wear` is capped at 65535 tenths of an hour, which bounds very long ready ages.
 
@@ -83,7 +84,7 @@ Two simple routes, matching the Food Preparation Table and finishing-station mod
 
 **Existing preservation KEEP, do not duplicate:** Drying Rack #775, Smoker #777, Preserving Jar #830, Root Cellar #832, Storage Jar #781, Barrel #649, Cheese Press #844 (future); preserved foods Jerky #406, Salted Fish #407, Smoked Fish #185, Dried Berries #408, Dried Apples #450, Dried Figs #456, Fruit Leather #184, Sauerkraut #409, Pickled Vegetables #834 (future), Plum Jam #453 and Preserved Damsons #455. Dairy (Milk #416, Butter #417, Cheese #418, Cheese Press #844) stays FUTURE. The Granary is a storage layout [D13], not an item. Omitted: Sealable Preserve Jar, Dried Herbs, Cured Olives, Curing Tub, Butter Churn, Prepared Meat Strips, Salted Meat, Smoked Sausage, Dried Fish, Salted Butter, Hard Cheese.
 
-**Bulk example (design only):** the Food Preparation Table is not needed for cabbage; at #830 the player seals ×50 Sauerkraut (100 cabbage, 50 salt) twice, giving 200 Sauerkraut in 20 stacks, Maturing, then Ready on their own in a crate or the Root Cellar (slower there).
+**Bulk example (design only):** the Food Preparation Table is not needed for cabbage; at #830 the player seals ×50 Sauerkraut (100 cabbage, 50 salt) twice, giving 200 Sauerkraut in 20 stacks in the pack and a nearby crate, Maturing, then Ready on their own in a crate or the Root Cellar (slower there).
 
 ## 3. Edible serving platters — nine OWNER-APPROVED board recipes [D15]
 
@@ -128,7 +129,7 @@ Dave directs that eating real meals should give **temporary, intuitive gameplay 
 
 ## 4. How storage, preservation and serving interact
 
-- A **Maturing** stack can sit in a suitable jar rack, crate, Root Cellar or future Granary/warehouse, automatically becoming **Ready** on schedule. Moving an entire loaded crate between warehouses or later onto a ship does not alter its age, ownership or spoilage (cargo must first be added to the ageing loop; see §2).
+- A **Maturing** stack can sit in a suitable jar rack, crate, Root Cellar or a Granary layout or warehouse, automatically becoming **Ready** on schedule. Moving an entire loaded crate between warehouses or later onto a ship does not alter its age, ownership or spoilage (cargo must first be added to the ageing loop; see §2).
 - When combined with the approved warehouse system [D13], a Warehouse Desk exposes preserved food only from **local physical crates** and only to authorized players. Locked crate owners retain access; four-digit codes and escalating lockout are enforced consistently. No desk grants remote food teleportation.
 - Food Preparation Table shares permitted nearby storage sourcing but still performs every recipe's required real ingredient consumption.
 - Multiple identical boards may share appearance meshes; each board is a normal stack whose count is its remaining portions and whose age is its freshness.
