@@ -1,6 +1,6 @@
 # M001-T09 results: Phase 2c tool ladder data
 
-- Branch `m001/p2c_data`, clone `E:\Software\godotDev\m001_p2c_data`, base `84186f06a`. Head: see the commit that carries this file (`git log -1`); the data and tests are in the same commit. Not pushed.
+- Branch `m001/p2c_data`, clone `E:\Software\godotDev\m001_p2c_data`, base `84186f06a`. Commits: `b20d54ff4` (data, tests), **`7c54ad9aa538fabf45f674cbc61371dbe3a395fa`** (review notes; tested head). This file is committed on top (docs only). Not pushed.
 - Brief: `T09_BRIEF.md`. Master `DYNASTY_MASTER_ITEMS.md` s2.1, s2.2, s3.1, s3.6, s4 items 1, 2, 4, 6, 13, s7 items 2 and 6.
 
 ## What changed
@@ -49,7 +49,17 @@ Repair: one ingot of the tool's metal and one Stick, at its station type. Values
 - `validate_items`: 0 errors, 163 warnings (base 168: the five steel tools are no longer "future but obtainable"). `catalog_ledger.py --check` pass. `check_look_names.py` all 220 structure looks drawable. `check_dupe_names.py` ok.
 - NOT RUN: `tools/items_check.py` (calls Godot outside the slot runner; failed to start here), the `warnings` check lane, in-game looks, the standard exe, startup smoke.
 
+## Review notes (PASS WITH NOTES), fixed in `7c54ad9aa`
+- Looks: `looks.json` rows for the ten tools (axe, knife, saw, sickle, scythe shapes; iron `#6c6f75`, steel `#9aa3ad`, bronze `#b5803a`, as their families). `basic_look.gd`: bit `metal` keeps an axe head's and a knife blade's row colour (they were drawn as stone). Sickle and scythe blades are drawn steel-grey whatever the metal, so the bronze ones are NOT visually complete. The `axe`/`saw` group-key looks rows stay: `validate_items` requires a look for every material-kind item (as `knife`).
+- Future iron and steel Sword, Mace, Shield (318-323): `repair_station` forge -> brick_forge (bronze ones keep forge). Steel - Striker 294 tier 4 -> 5. Ledger notes added.
+- Obsidian - Knife 296: left as it is (FUTURE, parked; still has `edge` and stone-style `repair`); revisit if it ever goes live.
+- `stress_items_players.gd` queues recipe 140 (Stone - Hoe, camp bench) instead of retired 26; `showroom.json` drops both Stone - Spade entries.
+
+## Evidence at `7c54ad9aa` (voxel build)
+- `python3 tools/tests_for_diff.py 84186f06a HEAD` -> `tools/run_tests.sh --jobs 3`: 221 tests, **220 PASS, 1 FAIL** (`test_item_instances`: the same 3 checks fail at base `84186f06a`; fixed on dev per the mission lead). No flakes.
+- `validate_items` PASS, 0 errors, 163 warnings; `test_item_looks`, `test_tool_looks`, `test_showroom` PASS (also in the suite). `merge_check.py` all clear. `catalog_ledger.py --check` pass. `check_look_names.py` all 220 drawable.
+- NOT RUN: `items_check.py`, the `warnings` lane, startup smoke, in-game look check.
+
 ## Not done, risks
-- Steel - Striker 294 keeps tier 4 (FUTURE, catalog KEEP, single-row family); Obsidian - Knife 296 (FUTURE, parked) keeps `edge` and `repair`.
-- No item icons for the ten tools, the Grindstone or the `axe`/`saw` group rows (`tools/compose_group_icons.py` not run: art step). `test_tool_ladder.gd` has no `.uid` (as `test_textile_route.gd`; Godot writes it on import).
+- No inventory icons for the ten tools, the Grindstone or the `axe`/`saw` group rows (`tools/compose_group_icons.py` not run: art step). `test_tool_ladder.gd` has no `.uid` (as `test_textile_route.gd`; Godot writes it on import).
 - Recipe numbers 410-419 and item numbers 1253-1254 may collide with a parallel phase branch taking `next_number` from the same base.
