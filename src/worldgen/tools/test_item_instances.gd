@@ -144,10 +144,8 @@ func _init() -> void:
 	var n: int = msg[0] if not msg.is_empty() else 0
 	var wire_insts: Dictionary = InventoryScript.inst_from_bytes(msg, 1 + n * 9)
 	check(n == 2 and msg.size() > 1 + n * 9 + 2 and wire_insts.get(25, {}) == mighty and not wire_insts.has(at), "inventory_slots: count, 9-byte records, then the moved slot's instance data (%s)" % str(wire_insts))
-	items.action(1, Net.ACT_HOTBAR_SET, 0, axe, 0, Vector3.ZERO)
-	check(inv.key_slot(0) == 25 and inv.inst_of(inv.key_slot(0)) == mighty, "a hotbar key points at the instance item where it lies")
 	items.action(1, Net.ACT_MOVE, 25, 3, 0, Vector3.ZERO)
-	check(inv.key_slot(0) == 3 and inv.inst_of(3) == mighty, "and follows it to an old hotbar slot")
+	check(inv.key_slot(3) == 3 and inv.inst_of(3) == mighty and slot_with(inv, axe, mighty) == 3, "moved into hotbar slot 3 (key 4) it keeps its instance and is in one place")
 
 	items.action(1, Net.ACT_DROP, 3, 0, 1, Vector3(1.0, 10.0, 0.0))
 	var ground_id: int = -1

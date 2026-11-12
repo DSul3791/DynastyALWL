@@ -385,27 +385,6 @@ func _init() -> void:
 	back.action(1, Net.ACT_BULK, 0, 0, 0, Vector3.ZERO)
 	check(held(back, 1, "waist:quiver").is_empty() and inv1.count_of(arrow) == 59, "Take all empties the quiver into the pack")
 
-	# 17. Quick use (master s3.9 rule 5): a hotbar key's item in the worn pouch is found there and drawn to the pack in one take.
-	var berries_key: int = 3
-	back.inventory_of(1).hotbar[berries_key] = berries
-	var worn_insts: Dictionary = {}
-	var slots_now: Array = back.worn_slots_of(1)
-
-	for i in slots_now.size():
-		if not (slots_now[i][3] as Dictionary).is_empty():
-			worn_insts[i] = slots_now[i][3]
-
-	var quick: Array = back._clothing_cfg().get("quick", []).map(func(at: String) -> int: return place(back, at))
-	var found: Array = BagRules.quick_take(worn_insts, quick, berries)
-	check(found.size() == 2 and int(found[0]) == place(back, "waist:pouch"), "the key's berries are found in the worn pouch (%s)" % str(found))
-	var in_pouch: int = int(held(back, 1, "waist:pouch").get(berries, 0))
-
-	if found.size() == 2:
-		back.action(1, Net.ACT_CHEST_TAKE, int(found[1]), -1 - int(found[0]), 1, Vector3.ZERO)
-
-	check(int(held(back, 1, "waist:pouch").get(berries, 0)) == in_pouch - 1 and back.inventory_of(1).key_slot(berries_key) >= 0, "one comes to the pack, so the key now holds it")
-	check(BagRules.quick_take(worn_insts, quick, n.call("wooden_arrow")).is_empty(), "the quiver is not a quick-use bag (the bow draws from it itself)")
-
 	# 18. A dropped bag that holds anything never despawns; an empty one does.
 	back.action(1, Net.ACT_DROP, frame_at, 0, 1, Vector3(2.0, 10.0, 0.0))
 	give(back, 1, "fibre_shoulder_bag")

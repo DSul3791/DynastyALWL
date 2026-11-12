@@ -1,11 +1,10 @@
 extends SceneTree
 
-# The pointer hotbar and craft clicks (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 24, 8 Nov 2026).
-# Keys 1 to 9 and 0 hold item numbers, not pack slots: sorting and moving never change them. A key points at the pack slot holding its item (an unbroken one
-# first). A tool or weapon new in the pack goes on the first empty key, unless a key already holds it; food and materials do not. A key whose item has run
-# out keeps it, dimmed, and the next one comes back to it. ACT_HOTBAR_SET puts any item on a key (one key per item). "On the hotbar" for tools means a key
-# points at it. The keys are saved with the character; a character saved before them gets the items of its old slots 1 to 10, once. The pack fills from
-# slot 1. Craft clicks: 1, shift 5 (or fewer), held as many as the stock allows, each one queue request.
+# The hotbar as real slots (Dave's playtest 12 Nov 2026, TEST-008 and TEST-006; replaces the 8 Nov pointer hotbar, OVERNIGHT_DECISIONS_8NOV.md row 24).
+# Keys 1 to 9 and 0 are the pack's slots 0 to 9 and the backpack is slots 10 to 29: an item is in one place only. Pickups fill the backpack first. A tool or
+# weapon whose kind is new in the pack moves into the first empty hotbar slot; food, materials and a second axe do not. ACT_MOVE moves a stack into the
+# hotbar and back. A hotbar slot whose item is dropped, sold or used up is empty. "On the hotbar" for tools means in slots 0 to 9. Sort leaves the
+# hotbar. The slots are saved with the pack; characters.json keeps no "hotbar". Craft clicks: 1, shift 5 (or fewer), held as many as the stock allows.
 #   godot --headless --path . --script res://src/worldgen/tools/test_hotbar_keys.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -16,7 +15,6 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 
 var failures: int = 0
 var items
-var keys_sent: Dictionary = {}   # peer -> the last hotbar rpc
 var axe: int = 0
 var knife: int = 0
 var clay: int = 0
@@ -35,12 +33,20 @@ func pack():
 	return items.inventory_of(1)
 
 
-func keys() -> Array:
-	return Array(pack().hotbar)
-
-
 func give(number: int, count: int = 1) -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, number, 0, count, Vector3.ZERO)
+
+
+# A pickup as the server makes one: into the pack (backpack first), then the changes sent (where a new tool moves to the hotbar).
+func pick_up(number: int, count: int = 1) -> void:
+	var before: Array = items._snapshot(pack())
+	pack().add(number, count)
+	items._send_changes(1, pack(), before)
+
+
+func empty_pack() -> void:
+	for slot in pack().SLOTS:
+		pack().clear_slot(slot)
 
 
 func make_items(dir: String):
@@ -52,7 +58,6 @@ func make_items(dir: String):
 	w.send_notice = func(_p, _t): pass
 	w.send_carry = func(_p, _id): pass
 	w.send_chest = func(_p, _id, _b): pass
-	w.send_hotbar = func(p, k): keys_sent[p] = Array(k)
 	w.ground_height = func(_x, _z): return 10.0
 	w.setup(ItemTableScript.load_default(), dir)
 	return w
@@ -76,96 +81,74 @@ func _init() -> void:
 	stone = items.table.number_of("stone")
 	berries = items.table.number_of("berries") if items.table.number_of("berries") > 0 else items.table.number_of("raw_meat")
 	check(axe > 0 and knife > 0 and clay > 0 and stone > 0 and berries > 0, "the test items are in the table")
-	check(Net.PROTOCOL_VERSION >= 100 and Net.ACT_HOTBAR_SET == 68, "protocol 100: ACT_HOTBAR_SET 68")
-	check(keys_sent.has(1) and keys().size() == 10 and keys().count(0) == 10, "a new character has ten empty keys and is told them at the join")
+	var net_methods: Array = Net.get_script_method_list().map(func(m: Dictionary) -> String: return str(m["name"]))
+	check(Net.PROTOCOL_VERSION >= 112 and not Net.get_script_constant_map().has("ACT_HOTBAR_SET") and not net_methods.has("hotbar"), "protocol 112: no ACT_HOTBAR_SET, no hotbar rpc")
+	check(pack().hotbar_slots == 10 and pack().bag_from == 10 and InventoryScript.new(items.table).hotbar_slots == 0, "a pack has ten hotbar slots; a container has none")
+	empty_pack()
 
-	for slot in pack().SLOTS:
-		pack().numbers[slot] = 0
-		pack().counts[slot] = 0
-		pack().wear[slot] = 0
+	# 1. Pickups fill the backpack first; a tool new in the pack moves into the first empty hotbar slot, food and materials do not.
+	pick_up(clay, 3)
+	check(pack().numbers[10] == clay and pack().count_of(clay) == 3 and pack().numbers.slice(0, 10).count(0) == 10, "clay goes to backpack slot 10, the hotbar stays empty")
+	pick_up(axe)
+	check(pack().numbers[0] == axe and pack().numbers.count(axe) == 1 and pack().key_slot(0) == 0, "a new axe moves into hotbar slot 0 (key 1) and is nowhere else")
+	pick_up(berries, 2)
+	check(not pack().numbers.slice(0, 10).has(berries), "food stays in the backpack")
+	pick_up(knife)
+	check(pack().numbers[1] == knife, "a new knife moves into the next empty hotbar slot")
+	pick_up(axe)
+	check(pack().numbers.slice(0, 10).count(axe) == 1 and pack().numbers.slice(10, 30).count(axe) == 1, "a second axe stays in the backpack")
 
-	# 1. The pack fills from slot 1; a tool new in the pack goes on the first empty key, food and materials do not.
-	give(clay, 3)
-	check(pack().numbers[0] == clay and keys().count(0) == 10, "clay goes to slot 1 and on no key")
-	give(axe)
-	var axe_slot: int = pack().numbers.find(axe)
-	check(keys()[0] == axe and pack().key_slot(0) == axe_slot and keys_sent[1][0] == axe, "a new axe goes on key 1, which points at its slot (%d)" % axe_slot)
-	give(berries, 2)
-	check(not keys().has(berries), "food goes on no key by itself")
-	give(knife)
-	check(keys()[1] == knife, "a new knife goes on the next empty key")
-	give(axe)
-	check(keys().count(axe) == 1 and keys()[2] == 0, "a second axe takes no second key")
+	# 2. Moving into the hotbar takes it out of the backpack, and moving it back reverses it (TEST-008).
+	var stone_slot: int = 12
+	pack().numbers[stone_slot] = stone
+	pack().counts[stone_slot] = 5
+	items.action(1, Net.ACT_MOVE, stone_slot, 4, 0, Vector3.ZERO)
+	check(pack().numbers[4] == stone and pack().counts[4] == 5 and pack().numbers[stone_slot] == 0 and pack().count_of(stone) == 5, "stones moved to key 5 leave the backpack (one place, same count)")
+	items.action(1, Net.ACT_MOVE, 4, stone_slot, 0, Vector3.ZERO)
+	check(pack().numbers[4] == 0 and pack().key_slot(4) == -1 and pack().numbers[stone_slot] == stone and pack().count_of(stone) == 5, "moved back, key 5 is empty and the stones are in the backpack")
+	var bag_axe: int = 10 + pack().numbers.slice(10, 30).find(axe)
+	pack().wear[bag_axe] = 3
+	items.action(1, Net.ACT_MOVE, bag_axe, 1, 0, Vector3.ZERO)
+	check(pack().numbers[1] == axe and pack().wear[1] == 3 and pack().numbers[bag_axe] == knife, "an axe dropped on the knife's key swaps with it and keeps its wear")
+	items.action(1, Net.ACT_MOVE, 1, bag_axe, 0, Vector3.ZERO)
 
-	# 2. Sorting and moving never change the keys; the key follows its item.
-	items.action(1, Net.ACT_MOVE, axe_slot, 25, 0, Vector3.ZERO)
-	check(keys()[0] == axe and pack().numbers[pack().key_slot(0)] == axe, "moving the axe leaves key 1 on the axe, wherever it lies")
+	# 3. A hotbar slot whose item is gone is empty, not a dimmed reminder (TEST-006): dropped, sold (the trade clears the slot) or used up.
+	items.action(1, Net.ACT_DROP, 1, 1, 0, Vector3(1.0, 10.0, 0.0))
+	check(pack().numbers[1] == 0 and pack().key_slot(1) == -1, "the knife dropped from key 2 leaves key 2 empty")
+	pack().numbers[3] = stone
+	pack().counts[3] = 2
+	pack().remove(stone, 7)
+	check(pack().numbers[3] == 0 and pack().key_slot(3) == -1 and pack().count_of(stone) == 0, "the last stones used up from key 4 leave it empty")
+
+	# 4. "On the hotbar" for tools means in a hotbar slot.
+	check(items._tool_slot(pack(), "axe") == 0, "the axe in key 1 counts as on the hotbar")
+	items.action(1, Net.ACT_MOVE, 0, 20, 0, Vector3.ZERO)
+	var axes_in_bag: bool = pack().numbers.slice(10, 30).count(axe) == 2
+	check(axes_in_bag and items._tool_slot(pack(), "axe") < 0, "in the backpack it does not")
+	items.action(1, Net.ACT_MOVE, 20, 0, 0, Vector3.ZERO)
+
+	# 5. Sort leaves the hotbar slots (Store all and Stack to nearby skip them too).
+	var bar: PackedInt32Array = pack().numbers.slice(0, 10)
 	items.action(1, Net.ACT_BULK, 3, 1, 0, Vector3.ZERO)
-	check(keys()[0] == axe and keys()[1] == knife and pack().numbers[pack().key_slot(1)] == knife, "Sort leaves every key as it was")
+	check(pack().numbers.slice(0, 10) == bar, "Sort leaves the hotbar as it was")
 
-	# 3. An unbroken one first; a key whose item has gone keeps it (dimmed) and the next one comes back to it.
-	var first_axe: int = pack().numbers.find(axe)
-	var other_axe: int = -1
-
-	for slot in pack().SLOTS:
-		if slot != first_axe and pack().numbers[slot] == axe:
-			other_axe = slot
-
-	pack().wear[first_axe] = 100000
-	check(pack().key_slot(0) == other_axe, "with one axe worn out the key points at the unbroken one")
-	pack().wear[first_axe] = 0
-	pack().take_from_slot(first_axe, 1)
-	pack().take_from_slot(other_axe, 1)
-	check(keys()[0] == axe and pack().key_slot(0) == -1, "with no axe left key 1 keeps it and points at nothing")
-	give(axe)
-	check(keys()[0] == axe and keys().count(axe) == 1 and pack().key_slot(0) == pack().numbers.find(axe), "a new axe comes back to key 1")
-
-	# 4. Keys by hand: any item, one key per item, 0 clears, a bad key is ignored.
-	items.action(1, Net.ACT_HOTBAR_SET, 4, stone, 0, Vector3.ZERO)
-	check(keys()[4] == stone and keys_sent[1][4] == stone, "a stone can be put on key 5 by hand")
-	items.action(1, Net.ACT_HOTBAR_SET, 6, axe, 0, Vector3.ZERO)
-	check(keys()[6] == axe and keys()[0] == 0, "putting the axe on key 7 takes it off key 1")
-	items.action(1, Net.ACT_HOTBAR_SET, 4, 0, 0, Vector3.ZERO)
-	items.action(1, Net.ACT_HOTBAR_SET, 12, knife, 0, Vector3.ZERO)
-	check(keys()[4] == 0 and keys()[1] == knife, "0 clears a key; key 13 does not exist")
-
-	# 5. "On the hotbar" for tools: a key points at it.
-	check(items._tool_slot(pack(), "axe") == pack().numbers.find(axe), "the axe on key 7 counts as on the hotbar")
-	items.action(1, Net.ACT_HOTBAR_SET, 6, 0, 0, Vector3.ZERO)
-	check(items._tool_slot(pack(), "axe") < 0, "off every key it does not, wherever it lies in the pack")
-	items.action(1, Net.ACT_HOTBAR_SET, 0, axe, 0, Vector3.ZERO)
-
-	# 6. Saved with the character and back after a restart.
-	var saved_keys: Array = keys()
+	# 6. Saved with the pack and back after a restart; the character keeps no "hotbar" (an old one is ignored).
+	items._characters["hotbarkeys01"]["hotbar"] = [stone, 0, 0, 0, 0, 0, 0, 0, 0, 0]   # as a pointer-hotbar save had
+	var saved: PackedInt32Array = pack().numbers.duplicate()
 	items.save()
 	items._finish_writer()
 	var again = make_items(dir)
-	keys_sent.clear()
 	again.peer_connected_hello(1, "hotbarkeys01")
-	check(Array(again.inventory_of(1).hotbar) == saved_keys and keys_sent.has(1), "the keys are saved and sent again at the next join")
+	check(again.inventory_of(1).numbers == saved and again.inventory_of(1).hotbar_slots == 10, "the hotbar and backpack slots load back as they were, as a pack")
+	check(not again._characters["hotbarkeys01"].has("hotbar") and again.inventory_of(1).key_slot(0) == 0 and again.inventory_of(1).numbers[0] == axe, "an old saved \"hotbar\" is not read: key 1 is the axe in slot 0")
 
-	# 7. A character saved before the keys: the items in its old slots 1 to 10 become its keys, once.
-	again._characters["hotbarkeys01"].erase("hotbar")
-	var old_pack = again.inventory_of(1)
-
-	for slot in old_pack.SLOTS:
-		old_pack.numbers[slot] = 0
-		old_pack.counts[slot] = 0
-		old_pack.wear[slot] = 0
-
-	old_pack.numbers[0] = knife
-	old_pack.counts[0] = 1
-	old_pack.numbers[3] = stone
-	old_pack.counts[3] = 5
-	old_pack.numbers[12] = axe
-	old_pack.counts[12] = 1
-	again.peer_connected_hello(1, "hotbarkeys01")
-	var migrated: Array = Array(again.inventory_of(1).hotbar)
-	check(migrated[0] == knife and migrated[3] == stone and not migrated.has(axe) and again._characters["hotbarkeys01"].has("hotbar"), "old slots 1 to 10 become the keys (knife on 1, stone on 4); slot 13's axe does not")
-	old_pack.numbers[0] = 0
-	old_pack.counts[0] = 0
-	again.peer_connected_hello(1, "hotbarkeys01")
-	check(Array(again.inventory_of(1).hotbar)[0] == knife, "only once: the next join keeps the keys")
+	# 7. Admin give still fills from slot 0 (tests and the admin tool); the item is still in one place.
+	items = again
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	items.vitals_of(1)["weight"] = 2000.0
+	empty_pack()
+	give(stone, 3)
+	check(pack().numbers[0] == stone and pack().count_of(stone) == 3, "an admin give fills from slot 0")
 
 	# 8. Craft clicks: 1, shift 5 (or fewer), held all the stock makes; none makeable asks once, as before.
 	check(InventoryView.click_count(12, false, false) == 1 and InventoryView.click_count(12, true, false) == 5 and InventoryView.click_count(3, true, false) == 3, "click 1, shift-click 5, or 3 when only 3 can be made")
@@ -186,22 +169,17 @@ func _init() -> void:
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
 	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why each click is one request")
 
-	# 9. A torch and the same torch put out are one item to a key (items.json doused_item / relit_item): rain turns the slot into the doused torch while
-	# the key keeps the burning torch's number, and pressing the key must still find it to light it again (the eat run's torch_doused, 9 Nov 2026).
+	# 9. A torch put out by the rain stays in its hotbar slot: the key is the slot, so pressing it finds the doused torch to light again.
 	var torch: int = items.table.number_of("torch")
 	var doused: int = items.table.number_of("torch_doused")
-	var bag = InventoryScript.new(items.table)
-	bag.numbers[4] = torch
-	bag.counts[4] = 1
-	bag.hotbar[2] = torch
-	check(torch > 0 and doused > 0 and bag.key_slot(2) == 4 and bag.key_of_slot(4) == 2, "the burning torch is on key 3")
-	bag.numbers[4] = doused
-	check(bag.key_slot(2) == 4 and bag.key_of_slot(4) == 2, "put out by the rain, it is still key 3's (slot %d)" % bag.key_slot(2))
-	bag.hotbar[2] = doused
-	bag.numbers[4] = torch
-	check(bag.key_slot(2) == 4 and bag.key_of_slot(4) == 2, "a key given the doused torch finds it lit again")
-	bag.numbers[4] = stone
-	check(bag.key_slot(2) == -1 and bag.key_of_slot(4) == -1, "no torch at all: the key points nowhere")
+	var bag = InventoryScript.pack(items.table)
+	bag.numbers[2] = torch
+	bag.counts[2] = 1
+	check(torch > 0 and doused > 0 and bag.key_slot(2) == 2 and bag.on_hotbar(2), "the burning torch is key 3's")
+	bag.numbers[2] = doused
+	check(bag.key_slot(2) == 2, "put out by the rain, it is still key 3's")
+	bag.clear_slot(2)
+	check(bag.key_slot(2) == -1 and not bag.on_hotbar(2), "no torch at all: key 3 is empty")
 
 	print("hotbar keys: %s" % ("all passed" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)

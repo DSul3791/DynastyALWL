@@ -147,7 +147,11 @@ func clear_pack(peer: int) -> void:
 
 func hold_tool(peer: int, id: String) -> void:
 	items.give(peer, n(id), 1)
-	items.inventory_of(peer).hotbar[0] = n(id)
+	var inv = items.inventory_of(peer)
+	var at: int = inv.numbers.find(n(id))
+
+	if not inv.on_hotbar(at):
+		inv.move(at, 0)   # into hotbar slot 0 (key 1), as a player would drag it
 
 
 func _init() -> void:

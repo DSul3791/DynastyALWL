@@ -291,9 +291,6 @@ func _key_number(key: int) -> int:
 
 # A hotbar key (0 to 9): hold what it points at, or put it away when it is the one already held.
 func press_slot(slot: int) -> void:
-	if _inv.has_method("draw_from_quick_bag"):
-		_inv.draw_from_quick_bag(clampi(slot, 0, HOTBAR_SLOTS - 1))   # an item kept in a worn pouch, bandolier or scabbard comes to hand
-
 	# Torch and shield go in the left hand beside whatever the right hand holds (Dave 2026-10-23); the same key again stows it.
 	if is_offhand(_key_number(slot)):
 		slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
