@@ -202,6 +202,22 @@ func _init() -> void:
 	wear(items, "fur_cloak")
 	items.warmth_target(1)
 	check(float(items._overheat.get(1, -1.0)) == 0.0, "and fur is no load in cool air")
+	# A fire's heat is never a heat load: a full hide outfit at a lit fire on a cold night.
+	weather = {"temp_c": 2.0, "wind": 0.0, "rain": 0.0}
+	strip(items)
+
+	for id in ["hide_hood", "hide_tunic", "hide_cloak", "hide_trousers", "hide_boots", "hide_gloves"]:
+		wear(items, id)
+
+	var cold_night: float = items.warmth_target(1)
+	items._items[9901] = {"number": 1, "count": 1, "pos": Vector3(1.0, 0.0, 0.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 1000.0, "covered": false, "recheck": 0.0}}
+	var at_fire: float = items.warmth_target(1)
+	check(at_fire > cold_night and float(items._overheat.get(1, -1.0)) == 0.0, "hide outfit at a lit fire on a cold night: warmer (%.0f from %.0f), no heat load" % [at_fire, cold_night])
+	items._items.erase(9901)
+	weather = {"temp_c": 30.0, "wind": 0.0, "rain": 0.0}
+	items.warmth_target(1)
+	check(float(items._overheat.get(1, 0.0)) > 0.0, "the same outfit on a hot day is a heat load (%.2f)" % float(items._overheat.get(1, 0.0)))
+	items._overheat[1] = 0.0
 	weather = {"temp_c": 12.0, "wind": 0.0, "rain": 1.0}
 	strip(items)
 	items._soak[1] = 0.0

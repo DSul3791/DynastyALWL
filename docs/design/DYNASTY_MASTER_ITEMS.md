@@ -463,7 +463,7 @@ Retired Hide - Leggings #67 remains retired, redundant with Hide - Trousers. **A
 |---|---|---|
 | head | base · mail · rigid | Hood, caps, Headwrap · Mail coif · helms. Hats (Straw, Fur, Broad-brim) use the rigid layer, so no hat goes over a helm. |
 | neck (new) | single | Wool - Scarf |
-| body | base · padding or mail · rigid · over · outer | tunics, shirts, Dress · Gambeson, Jerkin, mail, scale · Brigandine, Breastplate, Cuirass, plate · Tabard, aprons · cloaks, Coat, Robe, Oilcloth - Cloak |
+| body | base · padding · mail · rigid · over · outer (see the Mission 001 decision below) | tunics, shirts, Dress · Gambeson, Jerkin, mail, scale · Brigandine, Breastplate, Cuirass, plate · Tabard, aprons · cloaks, Coat, Robe, Oilcloth - Cloak |
 | legs | base · mail · rigid | trousers, skirts · Mail chausses · greaves |
 | hands | base · rigid | gloves, mittens · gauntlets |
 | feet | socks · footwear · over | Wool - Socks · boots, shoes, sandals · sabatons or Snowshoes |
@@ -475,6 +475,10 @@ Rules of the model:
 - Warmth and protection combine with diminishing returns, never full stacking.
 - Old saves map each worn item to its slot's base layer, and `outer` to body outer.
 - Per-instance looks (colour, pattern, heraldry, dirt, wear) need the per-instance data in s8. They are not new rows.
+
+**Mission 001 coordinator decisions (12 Nov 2026, implemented in M001-T11, protocol 107; Dave may overrule):**
+- **Padding and mail are separate body layers, padding inside mail.** Rule 1 of s3.7 puts a gambeson beneath other armour, so the table's "padding or mail" names what the layer holds, not a ban on wearing both. Body padding: Gambeson, Leather - Jerkin. Body mail: Mail shirt, Bronze - Scale shirt, Iron - Mail hauberk.
+- **A misplaced piece in an old save goes to its own layer.** The old eight worn columns load into the first eight worn positions (each slot's base layer, the old outer column into body outer), as above. A piece whose own layer is another (a helm saved in the head column) moves to its own layer when that is free, instead of sitting in the base layer where a hood belongs. A piece that fits nowhere is left off with a warning (new game: no old-save migration).
 
 *(Historical; these categories were since decided in [D9]–[D16].)* **Next category awaiting Dave's review:** Backpacks, pouches and carrying gear. Do NOT append new gear items as owner-approved until ChatGPT presents the entire category and Dave approves it. After that: saddles/saddlebags, carts/wagons/carriages, cooking, food preservation, other categories, and final whole-system re-audit.
 

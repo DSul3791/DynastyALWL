@@ -10871,6 +10871,11 @@ func warmth_target(peer: int) -> float:
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
 
+	# Overdressed in warm air (fur too hot, linen cool; warmth.json layers): kept for effort_of until the next reading. The air and wind only:
+	# a fire's heat is the warmth a dressed body seeks, never a heat load.
+	var hot: float = feels - float(cfg.get("comfort_c", 15.0))
+	_overheat[peer] = heat_load(peer) * minf(hot / maxf(float(_layers_cfg().get("heat_span_c", 10.0)), 0.01), 1.0) if hot > 0.0 and not bool(_swimming.get(peer, false)) else 0.0
+
 	var heat: float = 0.0
 	var tiers: Dictionary = _cooking.get("fire_tiers", {})
 
@@ -10888,10 +10893,6 @@ func warmth_target(peer: int) -> float:
 			heat = maxf(heat, float(coals.get("heat_c", 8.0)))
 
 	feels += heat
-
-	# Overdressed in warm air (fur too hot, linen cool; warmth.json layers): kept for effort_of until the next reading.
-	var hot: float = feels - float(cfg.get("comfort_c", 15.0))
-	_overheat[peer] = heat_load(peer) * minf(hot / maxf(float(_layers_cfg().get("heat_span_c", 10.0)), 0.01), 1.0) if hot > 0.0 and not bool(_swimming.get(peer, false)) else 0.0
 
 	var stress: float = maxf(float(cfg.get("comfort_c", 15.0)) - feels, 0.0)
 

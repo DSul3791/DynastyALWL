@@ -19,6 +19,17 @@ Branch `m001/p4a-layers`, base `dev` `b62db1e7c`. Code under test: **`31421c218`
 - Fabric fields (`layers.fabrics`): `wet_keep` (share of warmth kept soaked through, linear in soak, before the body_703 wind strip), `breath`, `rain_shed`. plant 0.3/0.9/0.2, hide 0.4/0.3/0.2, leather 0.6/0.3/0.3, wool 0.75/0.5/0.1, linen 0.4/1.0/0, fur 0.5/0.1/0.3, oilcloth 0.9/0.1/0.7, padded 0.4/0.2/0, metal 1.0/0.6/0. Snowshoes have none (neutral).
 - Heat: in air that feels warmer than `comfort_c`, heat load = layered `warmth x (1 - breath)` (capped 0.85); exertion += `heat_effort` **0.5** x load x min((feels - comfort_c) / `heat_span_c` **10**, 1). Fur cloak at 30 C: load 0.38, +0.19 exertion; linen shirt 0.
 - Rain: the best body piece's `rain_shed` slows soaking and lowers the soak ceiling: an hour of rain soaks a bare body to 1.0, under an Oilcloth - Cloak to 0.3.
+- **Before and after (FLAG FOR PLAYTEST TUNING).** Insulation from the data (before = the old sum capped at 0.85, no fabric effect; after = layered and fabric), and the warmth target at 5 C with no wind and no fire (`100 - (20 - 5) x (1 + 0.5 x soak) x 3 x (1 - insulation)`; the body_703 wind strip comes on top in wind):
+
+| Outfit | Dry before | Dry after | Soaked before | Soaked after | Target dry, before / after | Target in heavy rain (soak 1), before / after |
+|---|---|---|---|---|---|---|
+| Fibre set (skirt, cloak, sandals) | 0.21 | 0.21 | 0.21 | 0.06 | 64 / 64 | 47 / 37 |
+| Full hide set (hood, tunic, cloak, trousers, boots, gloves) | 0.85 | 0.85 | 0.85 | 0.39 | 93 / 93 | 90 / 59 |
+| Wool and fur set (wool cap, tunic, trousers, mittens; fur cloak, boots) | 0.85 | 0.85 | 0.85 | 0.80 | 93 / 93 | 90 / 86 |
+
+  Dry outfits are unchanged (they reach the cap either way). In rain, hide and fibre now lose most of their warmth while wool and fur keep it: the hide set in heavy rain at 5 C drops from 90 to 59 (still above `cold_at` 40). That is the intended s3.8 design 1 effect, but the size of the drop is a tuning number for Dave's playtest.
+- The heat load reads the air less wind chill only; a fire's heat never makes clothing a heat load (review fix, round 3).
+- A Dress counts its warmth once, in the body slot, though it also covers the legs: Phase 4b sets its warmth value with that in mind.
 - Protection hook (Phase 4b): `_layered(values)` is the per-slot diminishing sum to reuse; no protection values exist yet.
 
 ## Wire and save (protocol 107)

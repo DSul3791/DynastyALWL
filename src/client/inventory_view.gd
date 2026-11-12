@@ -193,7 +193,7 @@ var thought_event: Callable = Callable()     # (line id, kind) when the inner vo
 var _thought_label: Label
 var _thought_until_msec: int = 0
 var worn: PackedInt32Array = PackedInt32Array()   # item number per worn position (clothing.json worn, "slot:layer"), 0 = nothing (protocols 40, 107)
-var worn_inst: Dictionary = {}                    # body slot index -> the worn piece's instance data (protocol 106); absent = plain
+var worn_inst: Dictionary = {}                    # worn position index -> the worn piece's instance data (protocol 106); absent = plain
 var clothing_cfg: Dictionary = {}
 const TrackingScript := preload("res://src/shared/tracking.gd")
 var trail_mult: float = 1.0                 # Tracking skill -> trail life multiple, 1.0 to 6.0 (see _update_trail_mult)
