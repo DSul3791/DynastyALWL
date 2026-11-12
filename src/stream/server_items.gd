@@ -1287,6 +1287,18 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			print("server: peer %d reset all terrain edits" % peer)
 			reset_terrain_edits.call()
 			_say(peer, "All terrain edits are deleted. The ground is rebuilding.")
+	elif kind == Net.ACT_RESET_WORLD:
+		if admin_ok.is_valid() and admin_ok.call(peer):
+			var gone: int = reset_world()
+			print("server: peer %d reset the world: %d world rows removed, terrain edits %s" % [peer, gone, "reset" if reset_terrain_edits.is_valid() else "not wired"])
+
+			if reset_terrain_edits.is_valid():
+				reset_terrain_edits.call()
+
+			for other in _peer_key:
+				_say(int(other), "An admin reset the world: %d dropped items and placed things are gone and the ground is rebuilding." % gone)
+		else:
+			_say(peer, "Resetting the world is for admins.")
 
 	_end_bag_edit(peer)
 	_send_changes(peer, inv, before)
@@ -2031,6 +2043,69 @@ func tree_row_count() -> int:
 			n += 1
 
 	return n
+
+
+# Admin "Reset world" (BLOCKER-001, Dave 12 Nov 2026; docs/ai-team/missions/B001/BRIEF.md). Across the whole world, not only the loaded part
+# (every row is in _items): each loose item (drops, loot, den piles, stuck arrows, split logs), every placed structure with its contents (buildings,
+# stations, containers, blueprint sites, tilled beds and their crops, path patches, traps, carts and crates) and every campfire go. Kept:
+# the natural rows (scatter, boulders, trees and stumps), the showroom and carcasses (neither is saved), planted and regrown saplings, and every
+# character's pack, worn gear, vitals, skills and progression - remains too: they hold a dead character's pack and purse (they expire by themselves). The ground is the server scene's part (reset_terrain_edits, after this). Written to
+# disk before it returns, so a hard stop cannot bring the rows back. Returns how many rows went.
+func reset_world() -> int:
+	for peer in _carts.puller_of.keys():
+		_carts.release(int(peer), "")   # the client is told it holds no handle
+
+	_carts.pulls.clear()
+	var gone: int = 0
+
+	for id in _items.keys():
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("struct") and (bool(it["struct"].get("transient", false)) or str(it["struct"]["kind"]) == "remains")):
+			continue
+
+		if it.has("struct"):
+			if it["struct"].has("roof") and roof_remove.is_valid():
+				roof_remove.call(int(it["struct"]["roof"]))
+
+			_chests.erase(int(it["struct"].get("uid", 0)))
+		elif it.has("fire"):
+			_chests.erase(int(it["fire"].get("uid", 0)))   # a campfire's store
+
+		_items.erase(id)
+		gone += 1
+
+	_grid = StructureGridScript.new()
+
+	for id in _items:
+		if _items[id].has("struct"):
+			_grid_add(id, _items[id])
+
+	_crops.clear()
+	_plot_water.clear()
+	_water_rebuild({})
+	_rebuild_supports()
+	_refresh_pots()
+	_lit_valid = false
+	_bed_cache.clear()
+	_speed_cache.clear()
+	_sync_grid = {}
+
+	for peer in _chest_viewer.keys():
+		if int(_chest_viewer[peer]) >= 0:
+			_chest_viewer.erase(peer)   # a worn bag (negative) stays open
+
+	for peer in _peer_key:
+		_sync_remains(int(peer), true)
+
+	_dirty = true
+	_finish_writer()
+	_pending_writes = []   # this save writes every file: nothing older may land after it
+	var was_async: bool = _async_writes
+	_async_writes = false
+	save()
+	_async_writes = was_async
+	return gone
 
 
 # Removes the loose dropped things (not trunks, stumps, fires, structures, boulders or the natural scatter) within `radius` of `centre`;

@@ -140,6 +140,7 @@ var _done: Array = []                  # [peer, key, bytes]
 var _done_mutex: Mutex = Mutex.new()
 var _peers: Dictionary = {}            # peer -> {"blocks": n, "bytes": n}
 var _quit_at_msec: int = -1
+var _dev_reset_at_msec: int = -1   # testing only: --dev-reset-world=S runs the admin world reset S seconds after start (src/worldgen/tools/reset_world_store.gd)
 var _watch_parent_pid: int = 0                # --watch-parent=PID (testing): quit when that process is gone
 var _watch_next_msec: int = 0
 var _quit_when_empty: bool = false
@@ -208,6 +209,8 @@ func _ready() -> void:
 			_idle_threads = maxi(int(argument.trim_prefix("--idle-threads=")), 0)
 		elif argument == "--quit-when-empty":
 			_quit_when_empty = true
+		elif argument.begins_with("--dev-reset-world="):
+			_dev_reset_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--dev-reset-world=")) * 1000.0)
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
 
@@ -2638,6 +2641,11 @@ func _process(delta: float) -> void:
 			print("server: the parent process %d is gone, closing" % _watch_parent_pid)
 			_events.event("QUIT: the parent process %d is gone" % _watch_parent_pid)
 			_quit_at_msec = now
+
+	if _dev_reset_at_msec > 0 and now >= _dev_reset_at_msec:   # testing only: the same two steps as ACT_RESET_WORLD, without a player
+		_dev_reset_at_msec = -1
+		print("server: dev reset world: %d world rows removed" % items.reset_world())
+		_reset_terrain_edits()
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1
