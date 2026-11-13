@@ -1,11 +1,11 @@
 # Building plan: pieces, snapping and materials
 Kathleen_ArtisticDirector, 2026-10-22. Art and sound side only. Piece ids, costs and snap data stay with Sal (`structures.json`, `recipes.json`). Status: historical art-side planning reference. Current door system and stock dimensions: `docs/design/DYNASTY_MASTER_ITEMS.md` §§3.0, 3.2; `docs/buglists/BUGLIST-002.md`.
 
-## 1. What we have today (build 652, Sal)
+## 1. Historical snapshot: build 652 (22 Oct; NOT current runtime)
 - One cell grid: **2 m** (`snap_m` 2.0). Foundation 4 x 4 m, 0.3 m thick, with anchors for 8 walls (two 2 m walls per edge), 4 floor cells, 5 roof spots.
 - Pieces include foundation, wall, **empty doorway frame**, window wall, floor, roof, timber prop and timber set. Doors are separate craftable/installable items. Legacy `door_open` and `door_shut` doorway states are not the current design.
-- Costs now: wall and floor 4 lumber + 1 cordage; roof 5 lumber + 2 cordage + 2 sticks; doorway 3 lumber + 1 cordage; foundation 8 stone + 2 clay. All at a workbench level 1.
-- Look today: `piece_look.gd` makes board and stone textures in code (128 px, no files). Door sounds, place sounds and the foundation thump exist.
+- Historical costs at build 652 (22 Oct), **not current:** wall/floor 4 lumber + 1 cordage; roof 5 lumber + 2 cordage + 2 sticks; doorway 3 lumber + 1 cordage; foundation 8 stone + 2 clay. **Current:** empty doorway frames cost the same as the corresponding wall (double 2×, arched unchanged); doors are independently placed hammer-blueprint pieces using the approved 28-door recipes. See the live blueprints and the master catalog.
+- Historical appearance at build 652: `piece_look.gd` generated basic board and stone textures. Current door/frame looks were rebuilt for BUGLIST-002; actual visual and audio acceptance requires an F6 check.
 
 ## 2. What the three games do (short)
 - **RuneScape: Dragonwilds:** build mode with a ghost piece. Pieces snap on a fixed grid, tiers go wood, stone and later better. Easy to learn, readable at a glance. Sources: [Mobalytics guide](https://mobalytics.gg/gamebase/guides/runescape-dragonwilds-building-guide), [wiki: Construction](https://dragonwilds.runescape.wiki/w/Construction).
@@ -80,7 +80,7 @@ Tier numbers: **T1** needed to start playing, **T2** soon after, **T3** later.
 3. Stairs and ladder model once Sal has the ids.
 4. Sounds: place and break per material (board, stone, brick, thatch), door and gate variants, footsteps on wood floor and stone floor (class sounds exist for dirt, grass, sand; wood and stone floor are new).
 5. Fort pieces after the above.
-Nothing is bulk generated until this plan is approved.
+**Historical art-plan approval note only.** This October proposal is not a current stop-work gate; use active project approvals and test gates.
 
 ## 8. Open questions (recommendation first)
 1. **Piece tiers by skin, not by new ids?** Recommend: one piece id per slot plus a `material` (thatch, wood, stone, brick) so upgrading a wall changes its look, not its place. Sal owns this.
