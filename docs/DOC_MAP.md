@@ -26,7 +26,7 @@
 ## Baseline evidence, NOT active instructions
 
 - `design/PLAYER_GOALS_REWARDS_AUDIT.md` and `design/PLAYER_GOALS_AUDIT_LEDGER.csv` are the preserved historical 651-goal audit snapshot: **230 PASS, 247 NEEDS_CORRECTION, 30 NEEDS_TEST, 144 BLOCKED**, no F6 validation of those goals. All dispositions and new decisions are in the recovery doc above. The original audit was deliberately left unchanged to make before/after verification possible.
-- `design/CATALOG_FINAL_AUDIT_2026-11-12.md` is the older catalog/static audit, not proof of 13 Nov production-station behavior.
+- The old 12 Nov catalog/static audit and early 10 Nov ingredient audit were retired from active files because their station and ingredient conclusions no longer describe approved production. They remain accessible in Git history, not through current-design links.
 - `design/FOOD_STORAGE_AUDIT_2026-11-12.md`, earlier mission result files and date-stamped handoffs are provenance for their own stages. Do not copy an old forge recipe, item number reservation or phase acceptance test into active design merely because it was once called FINAL.
 - The former long `DOC_MAP.md` inventory is available in Git history; it covered an earlier commit and does not describe current authority.
 
