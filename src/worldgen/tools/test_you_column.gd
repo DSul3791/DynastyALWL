@@ -30,6 +30,7 @@ class FakeTable:
 
 class FakeInventory:
 	const SLOTS := 30
+	var slot_count: int = SLOTS
 	var numbers: PackedInt32Array = PackedInt32Array()
 
 	func _init() -> void:

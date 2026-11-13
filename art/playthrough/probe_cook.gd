@@ -73,7 +73,7 @@ func _init() -> void:
 
 		var inv = items.inventory_of(peer)
 
-		for s in range(inv.SLOTS):
+		for s in range(inv.slot_count):
 			if inv.numbers[s] != 0:
 				inv.take_from_slot(s, 999)
 
@@ -84,7 +84,7 @@ func _init() -> void:
 		var left: int = inv.count_of(n(raw))
 		var got: String = ""
 
-		for s in range(inv.SLOTS):
+		for s in range(inv.slot_count):
 			if inv.numbers[s] != 0:
 				got += items.table.id_of(inv.numbers[s]) + " "
 

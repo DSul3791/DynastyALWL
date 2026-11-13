@@ -20,6 +20,7 @@ var _keep_out: CheckBox   # the open container's "keep out" tick
 var _lock: Control        # the lock beside the tick while the container is kept out
 var opened_bag: int = 0   # the item number of the worn bag the screen last showed (0 for a chest), so a bag swapped in its place is asked for again
 var _code_lock: Button    # the owner's code-lock controls for a lockable chest or crate (catalog phase 9; storage_dialogs.gd)
+var _grid: GridContainer  # the container's wells, one per slot of chest_inv (a body's remains can hold a pack that grew past 30)
 
 
 func _init(owner_view) -> void:
@@ -88,32 +89,12 @@ func build() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	box.add_child(scroll)
-	var grid: GridContainer = GridContainer.new()
-	grid.columns = LOOK_COLUMNS
-	grid.add_theme_constant_override("h_separation", int(ArtKit.SLOT_GAP))
-	grid.add_theme_constant_override("v_separation", int(ArtKit.SLOT_GAP))
-	scroll.add_child(grid)
-
-	for i in view.inventory.SLOTS:
-		var slot = InventoryLook.make_slot(view, i)
-		slot.set_unit(ArtKit.SLOT / ItemSlot.SLOT_PX)
-		slot.clicked.connect(func(button: int, _shift: bool) -> void:
-			if button == MOUSE_BUTTON_LEFT:
-				on_slot(true, i))
-		# The info strip under the pack reads the chest well under the pointer too (redesign 4.1: one place to read about an item).
-		slot.mouse_entered.connect(func() -> void:
-			view._chest_hover = [true, i]
-			view._pack_part.show_info())
-		slot.mouse_exited.connect(func() -> void:
-			view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover
-			view._pack_part.show_info())
-		# Dragging a pack stack onto the container puts it in; dragging out of the container is not wired (a click or shift-click takes it).
-		slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
-		slot.on_drop = func(data: Variant) -> void:
-			if not put_from_pack(int(data["slot"])):
-				slot.flash_refused()
-		grid.add_child(slot)
-		view._chest_buttons.append(slot)
+	_grid = GridContainer.new()
+	_grid.columns = LOOK_COLUMNS
+	_grid.add_theme_constant_override("h_separation", int(ArtKit.SLOT_GAP))
+	_grid.add_theme_constant_override("v_separation", int(ArtKit.SLOT_GAP))
+	scroll.add_child(_grid)
+	_fit_wells()
 
 	# The tools under the grid.
 	var tools: HBoxContainer = HBoxContainer.new()
@@ -144,7 +125,7 @@ func _hint(text: String, key_action: String, tip: String, action: Callable) -> B
 # Puts a pack stack (real slot `slot`) into the open container. False when nothing was sent: no container, an empty slot, or a fire that
 # does not take it (the same rule as the server's, so the slot can flash at once).
 func put_from_pack(slot: int) -> bool:
-	if not view.chest_mode or slot < 0 or slot >= view.inventory.SLOTS or view.inventory.numbers[slot] == 0:
+	if not view.chest_mode or slot < 0 or slot >= view.inventory.slot_count or view.inventory.numbers[slot] == 0:
 		return false
 
 	if is_fire() and not fire_takes(view.table.id_of(view.inventory.numbers[slot])):
@@ -197,17 +178,49 @@ func on_slot(chest_side: bool, slot: int) -> void:
 			view.chest_event.call("put", view._world[view.chest_id]["pos"])
 
 
+# One well per slot of the open container: wells are added or taken away when it has a different number of slots.
+func _fit_wells() -> void:
+	if view.chest_inv == null:
+		return
+
+	while view._chest_buttons.size() > view.chest_inv.slot_count:
+		view._chest_buttons.pop_back().queue_free()
+
+	for i in range(view._chest_buttons.size(), view.chest_inv.slot_count):
+		var slot = InventoryLook.make_slot(view, i)
+		slot.set_unit(ArtKit.SLOT / ItemSlot.SLOT_PX)
+		slot.clicked.connect(func(button: int, _shift: bool) -> void:
+			if button == MOUSE_BUTTON_LEFT:
+				on_slot(true, i))
+		# The info strip under the pack reads the chest well under the pointer too (redesign 4.1: one place to read about an item).
+		slot.mouse_entered.connect(func() -> void:
+			view._chest_hover = [true, i]
+			view._pack_part.show_info())
+		slot.mouse_exited.connect(func() -> void:
+			view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover
+			view._pack_part.show_info())
+		# Dragging a pack stack onto the container puts it in; dragging out of the container is not wired (a click or shift-click takes it).
+		slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
+		slot.on_drop = func(data: Variant) -> void:
+			if not put_from_pack(int(data["slot"])):
+				slot.flash_refused()
+		_grid.add_child(slot)
+		view._chest_buttons.append(slot)
+
+
 func refresh() -> void:
 	if not view.chest_mode or view._chest_panel == null:
 		return
 
-	var capacity: int = int(view.table.entry(view.table.id_of(container_number())).get("slots", view.inventory.SLOTS))
+	_fit_wells()
+
+	var capacity: int = int(view.table.entry(view.table.id_of(container_number())).get("slots", view.chest_inv.slot_count))
 	opened_bag = container_number() if view.chest_id < 0 else 0
 
 	if view.chest_id < 0:   # a bag shows its own slots, and any filled one past them (bag_slots lowered in the data: BagRules.open shows those too)
 		capacity = BagRules.slots_of(view.table, opened_bag)
 
-		for i in range(view.inventory.SLOTS - 1, capacity - 1, -1):
+		for i in range(view.chest_inv.slot_count - 1, capacity - 1, -1):
 			if view.chest_inv.numbers[i] != 0:
 				capacity = i + 1
 				break
@@ -220,7 +233,7 @@ func refresh() -> void:
 
 
 func _refresh_look(capacity: int, fire: bool) -> void:
-	view._pack_view = range(view.inventory.SLOTS)     # the pack column shows every slot in place, so a pack button is its own slot
+	view._pack_view = range(view.inventory.slot_count)     # the pack column shows every slot in place, so a pack button is its own slot
 
 	if is_instance_valid(_keep_out):
 		_keep_out.visible = view.chest_may_keep_out and not fire
@@ -235,7 +248,7 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 		_code_lock.visible = not fire and storage_ui != null and storage_ui.may_manage(view.chest_id)
 		_code_lock.text = "Locked" if storage_ui != null and bool(storage_ui.lock_state.get("locked", false)) else "Lock"
 
-	for i in view.inventory.SLOTS:
+	for i in view.chest_inv.slot_count:
 		var slot = view._chest_buttons[i]
 		slot.visible = i < capacity
 		var number: int = view.chest_inv.numbers[i]
@@ -282,7 +295,7 @@ func pack_slot(index: int) -> int:
 func pack_view_slots(fire: bool) -> Array:
 	var slots: Array = []
 
-	for i in view.inventory.SLOTS:
+	for i in view.inventory.slot_count:
 		if not fire:
 			slots.append(i)
 		elif view.inventory.numbers[i] != 0 and fire_takes(view.table.id_of(view.inventory.numbers[i])):

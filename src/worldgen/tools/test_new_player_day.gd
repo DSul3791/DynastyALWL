@@ -185,7 +185,7 @@ func _init() -> void:
 	items.send_chest = func(_p, _i, _b): pass
 	items.action(1, Net.ACT_CHEST_OPEN, remains, 0, 0, Vector3.ZERO)
 
-	for slot in range(items.inventory_of(1).SLOTS):
+	for slot in range(items.inventory_of(1).slot_count):
 		items.action(1, Net.ACT_CHEST_TAKE, slot, remains, 99, Vector3.ZERO)
 
 	check(count("stone") + count("stick") >= pack_before - 2, "the dead character's pack can be taken back from the remains (%d of %d)" % [count("stone") + count("stick"), pack_before])

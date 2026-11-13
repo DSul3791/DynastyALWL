@@ -102,7 +102,7 @@ func id_of_uid(uid: int) -> int:
 
 # The first pack slot holding an item, -1 none.
 func slot_of(peer: int, number: int) -> int:
-	for s in items.inventory_of(peer).SLOTS:
+	for s in items.inventory_of(peer).slot_count:
 		if items.inventory_of(peer).numbers[s] == number:
 			return s
 

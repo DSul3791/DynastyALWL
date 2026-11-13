@@ -65,7 +65,7 @@ func recipe(id: String) -> Dictionary:
 func empty_pack() -> void:
 	var inv = items.inventory_of(1)
 
-	for slot in range(inv.SLOTS):
+	for slot in range(inv.slot_count):
 		if inv.numbers[slot] != 0:
 			inv.remove(inv.numbers[slot], inv.counts[slot])
 

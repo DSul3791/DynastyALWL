@@ -12,7 +12,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 
 # The bag's own slots (0 for anything that is not a bag).
 static func slots_of(table, number: int) -> int:
-	return clampi(int(table.entry(table.id_of(number)).get("bag_slots", 0)), 0, InventoryScript.SLOTS) if number > 0 else 0
+	return clampi(int(table.entry(table.id_of(number)).get("bag_slots", 0)), 0, InventoryScript.BASE_SLOTS) if number > 0 else 0
 
 
 # What the bag holds, as an inventory of its own slots. A bag whose rows run past its slots (bag_slots lowered in the data) shows them all, so
@@ -20,7 +20,7 @@ static func slots_of(table, number: int) -> int:
 static func open(table, number: int, item_inst: Dictionary):
 	var inv = InventoryScript.new(table)
 	var rows: Array = item_inst.get("bag", [])
-	inv.usable = clampi(maxi(slots_of(table, number), rows.size()), 1, inv.SLOTS)
+	inv.usable = clampi(maxi(slots_of(table, number), rows.size()), 1, inv.slot_count)
 	inv.from_json_array(rows)
 	return inv
 

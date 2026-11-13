@@ -33,6 +33,7 @@ class FakeTable:
 
 class FakeStore:
 	const SLOTS := 36
+	var slot_count: int = SLOTS
 	var numbers: PackedInt32Array = PackedInt32Array()
 	var counts: PackedInt32Array = PackedInt32Array()
 	var wear: PackedInt32Array = PackedInt32Array()
@@ -47,6 +48,12 @@ class FakeStore:
 
 	func max_durability(_slot: int) -> int:   # catalog Phase 2c: 0 = the row's durability
 		return 0
+
+	func resize_to(n: int) -> void:   # a store with another slot count (a body's remains holding a grown pack, protocol 116)
+		slot_count = n
+		numbers.resize(n)
+		counts.resize(n)
+		wear.resize(n)
 
 
 class FakePack:
@@ -135,6 +142,13 @@ func _initialize() -> void:
 	check(frame.columns_fit(), "the container column fits the Craft panel")
 	check(part.title() == "STORAGE CHEST", "the plate takes the container's name")
 	check(view._pack_view.size() == FakeStore.SLOTS and view._pack_buttons.is_empty(), "a chest shows every pack slot in place, in the Pack column")
+	view.chest_inv.resize_to(45)
+	part.refresh()
+	check(view._chest_buttons.size() == 45 and view._chest_buttons[44].get_parent() == view._chest_buttons[0].get_parent(), "a store with more slots gets a well for each, in the same grid (protocol 116)")
+	view.chest_inv.resize_to(FakeStore.SLOTS)
+	part.refresh()
+	await process_frame
+	check(view._chest_buttons.size() == FakeStore.SLOTS and view._chest_buttons[0] == first, "and fewer slots take the extra wells away, keeping the rest")
 	first.mouse_entered.emit()
 	check(view._chest_hover == [true, 0], "the pointer over a chest well is the chest hover (the transfer key's target)")
 	check(view._pack_part.shown == 1, "and the info strip under the pack is asked to show it")

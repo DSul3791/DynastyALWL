@@ -1427,7 +1427,7 @@ func is_broken(slot: int) -> bool:
 
 # Is a tool of this class in a hotbar slot, the way the server checks it?
 func has_tool_class(tool_class: String) -> bool:
-	for slot in range(inventory.SLOTS):
+	for slot in range(inventory.slot_count):
 		if inventory.on_hotbar(slot) and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
 			return true
 
@@ -1664,10 +1664,26 @@ func fire_light_near(point: Vector3, radius: float) -> bool:
 	return false
 
 
+# The whole pack: at hello, and whenever the pack grows or shrinks (protocol 116), so it is handled like a slot update of every slot.
 func _on_full(bytes: PackedByteArray) -> void:
-	inventory.from_bytes(bytes)
-	_refresh()
-	refresh_hotbar()
+	var was: Array = []
+
+	for slot in inventory.slot_count:
+		was.append([inventory.numbers[slot], inventory.wear[slot], is_broken(slot), inventory.max_durability(slot)])
+
+	if not inventory.from_bytes(bytes):
+		return
+
+	if _selected >= inventory.slot_count:
+		_selected = -1   # the pack gave that slot back
+
+	if _hover >= inventory.slot_count:
+		_hover = -1
+
+	for slot in mini(was.size(), inventory.slot_count):
+		_tool_cue(slot, int(was[slot][0]), int(was[slot][1]), bool(was[slot][2]), int(was[slot][3]))
+
+	_after_slots()
 
 
 # Protocol 106: a count byte, 9 bytes per changed slot (slot, u32 number, u16 count, u16 wear), then the instance data of those slots (Inventory.inst_bytes).
@@ -1682,7 +1698,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 		var at: int = 1 + k * 9
 		var slot: int = bytes[at]
 
-		if slot < inventory.SLOTS:
+		if slot < inventory.slot_count:
 			var was_broken: bool = is_broken(slot)
 			var was_wear: int = inventory.wear[slot]
 			var was_number: int = inventory.numbers[slot]
@@ -1691,16 +1707,27 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			inventory.counts[slot] = bytes.decode_u16(at + 5)
 			inventory.wear[slot] = bytes.decode_u16(at + 7)
 			inventory.inst[slot] = insts.get(slot, {}) if inventory.numbers[slot] != 0 else {}
+			_tool_cue(slot, was_number, was_wear, was_broken, was_most)
 
-			if tool_event.is_valid() and inventory.numbers[slot] == was_number and was_number != 0:
-				if is_broken(slot) and not was_broken:
-					tool_event.call("broke")
-				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
-					tool_event.call("repaired")
-			elif tool_event.is_valid() and was_number != 0 and inventory.numbers[slot] == 0 and SmithingRules.disposable(table.entry(table.id_of(was_number))) and was_wear + DISPOSABLE_BREAK_WEAR >= was_most:
-				# shortcut: a disposable tool that leaves its slot within one heavy use of its end is taken as broken (the server clears it at zero); dropping one that worn plays the break sound too, revisit if that is heard in play
-				tool_event.call("broke")
+	_after_slots()
 
+
+# The break and repair sounds of a slot that just changed.
+func _tool_cue(slot: int, was_number: int, was_wear: int, was_broken: bool, was_most: int) -> void:
+	if not tool_event.is_valid():
+		return
+
+	if inventory.numbers[slot] == was_number and was_number != 0:
+		if is_broken(slot) and not was_broken:
+			tool_event.call("broke")
+		elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
+			tool_event.call("repaired")
+	elif was_number != 0 and inventory.numbers[slot] == 0 and SmithingRules.disposable(table.entry(table.id_of(was_number))) and was_wear + DISPOSABLE_BREAK_WEAR >= was_most:
+		# shortcut: a disposable tool that leaves its slot within one heavy use of its end is taken as broken (the server clears it at zero); dropping one that worn plays the break sound too, revisit if that is heard in play
+		tool_event.call("broke")
+
+
+func _after_slots() -> void:
 	_queue_refresh()
 	_container_part.refresh()
 	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
@@ -2131,7 +2158,7 @@ func drink() -> void:
 
 # Water containers (job 89): the container's water is kept in its slot's wear field (millilitres).
 func container_cap(slot: int) -> int:
-	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
+	if slot < 0 or slot >= inventory.slot_count or inventory.numbers[slot] == 0:
 		return 0
 
 	return int(table.entry(table.id_of(inventory.numbers[slot])).get("capacity_ml", 0))
@@ -2159,7 +2186,7 @@ func _litres(ml: int) -> String:
 
 # Can this item be eaten or applied (food or medicine in data/items/vitals.json)?
 func edible_slot(slot: int) -> bool:
-	return slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and VitalsRules.edible(table.id_of(inventory.numbers[slot]), _vitals_cfg)
+	return slot >= 0 and slot < inventory.slot_count and inventory.numbers[slot] != 0 and VitalsRules.edible(table.id_of(inventory.numbers[slot]), _vitals_cfg)
 
 
 # Is this item number food, a drink or medicine by the vitals rules the server uses too (data/items/vitals.json)?
@@ -2168,7 +2195,7 @@ func is_edible_item(number: int) -> bool:
 
 
 func equippable_slot(slot: int) -> bool:
-	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
+	if slot < 0 or slot >= inventory.slot_count or inventory.numbers[slot] == 0:
 		return false
 
 	var entry: Dictionary = table.entry(table.id_of(inventory.numbers[slot]))
@@ -2179,7 +2206,7 @@ func equippable_slot(slot: int) -> bool:
 # hotbar is real slots, Dave's playtest 12 Nov 2026 TEST-008). With every hotbar slot taken it swaps with the key in hand (or key 0), so using
 # a tool from deep in a full pack always works (moderator, 31 Oct 2026).
 func equip_with_move(slot: int) -> void:
-	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
+	if slot < 0 or slot >= inventory.slot_count or inventory.numbers[slot] == 0:
 		return
 
 	var key: int = slot
@@ -2206,7 +2233,9 @@ func equip_with_move(slot: int) -> void:
 
 # Move a stack to another pack slot (dragging, or Use on a tool).
 func move_slot(from_slot: int, to_slot: int) -> void:
-	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= inventory.SLOTS or to_slot >= inventory.SLOTS:
+	var last: int = inventory.slot_count if inventory.grows else inventory.slot_count - 1   # a full pack takes a move to just past its end (free_bag_slot)
+
+	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= inventory.slot_count or to_slot > last:
 		return
 
 	net.inventory_action.rpc_id(1, Net.ACT_MOVE, from_slot, to_slot, 0, Vector3.ZERO)
@@ -2259,7 +2288,7 @@ func hotbar_tip(key: int) -> String:
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
 func eat_slot(slot: int) -> void:
 	# Use on clothing or a pack puts it on.
-	if slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and clothing_slots().has(str(table.entry(table.id_of(inventory.numbers[slot])).get("slot", "-"))):
+	if slot >= 0 and slot < inventory.slot_count and inventory.numbers[slot] != 0 and clothing_slots().has(str(table.entry(table.id_of(inventory.numbers[slot])).get("slot", "-"))):
 		net.inventory_action.rpc_id(1, Net.ACT_WEAR, slot, 0, 0, Vector3.ZERO)
 		return
 
@@ -3118,7 +3147,7 @@ func bulk(kind: int) -> void:
 
 # Marks a pack slot as a favourite (or not): bulk buttons and Sort leave it where it is. The server answers with favourites.
 func set_favourite(slot: int, on: bool) -> void:
-	if net != null and inventory != null and slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0:
+	if net != null and inventory != null and slot >= 0 and slot < inventory.slot_count and inventory.numbers[slot] != 0:
 		net.inventory_action.rpc_id(1, Net.ACT_FAVOURITE, slot, 1 if on else 0, 0, Vector3.ZERO)
 
 
@@ -3126,7 +3155,7 @@ func _on_favourites(flags: PackedByteArray) -> void:
 	if inventory == null:
 		return
 
-	for i in mini(flags.size(), inventory.SLOTS):
+	for i in mini(flags.size(), inventory.slot_count):
 		inventory.set_fav(i, flags[i] == 1)
 
 
@@ -5137,7 +5166,7 @@ func _drop_selected(whole: bool) -> void:
 func _note_acquired() -> void:
 	var present: Dictionary = {}
 
-	for slot in range(inventory.SLOTS):
+	for slot in range(inventory.slot_count):
 		var number: int = inventory.numbers[slot]
 
 		if number != 0:
@@ -5272,7 +5301,7 @@ func run_strain_test(client) -> void:
 func _pack_items() -> int:
 	var total: int = 0
 
-	for slot in range(inventory.SLOTS):
+	for slot in range(inventory.slot_count):
 		total += inventory.counts[slot] if inventory.numbers[slot] != 0 else 0
 
 	return total
@@ -5464,7 +5493,7 @@ func run_quickkey_test(_client) -> void:
 func _stone_stacks(number: int) -> int:
 	var stacks: int = 0
 
-	for slot in range(inventory.SLOTS):
+	for slot in range(inventory.slot_count):
 		if inventory.numbers[slot] == number:
 			stacks += 1
 
@@ -5491,9 +5520,9 @@ func run_text_test(client) -> void:
 		text_step.call(direction)
 
 		# Right after the press (before any frame passes): the list must hold only the new, shown buttons.
-		valid = valid and _buttons.size() == inventory.SLOTS
+		valid = valid and _buttons.size() == inventory.slot_count
 
-		for slot in range(mini(_buttons.size(), inventory.SLOTS)):
+		for slot in range(mini(_buttons.size(), inventory.slot_count)):
 			valid = valid and is_instance_valid(_buttons[slot]) and _buttons[slot].get_parent() == _grid
 
 			if inventory.numbers[slot] != 0 and _buttons[slot].is_empty():   # an item slot (item_slot.gd) shows its stack, not text
@@ -5512,7 +5541,7 @@ func run_text_test(client) -> void:
 			valid = valid and is_instance_valid(button)
 
 		# Every slot that holds something must show it after each press.
-		for slot in range(inventory.SLOTS):
+		for slot in range(inventory.slot_count):
 			if inventory.numbers[slot] != 0 and valid and _buttons[slot].is_empty():
 				filled_ok = false
 

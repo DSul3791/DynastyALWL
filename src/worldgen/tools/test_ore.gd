@@ -58,7 +58,7 @@ func blows(items, n: int) -> void:
 func in_hand(items) -> int:
 	var inv = items.inventory_of(1)
 
-	for slot in range(inv.SLOTS):
+	for slot in range(inv.slot_count):
 		if str(items.table.entry(items.table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["pick", "axe"]:
 			return slot + 1
 

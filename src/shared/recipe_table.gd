@@ -124,16 +124,13 @@ func craft(number: int, inventory) -> bool:
 	if not r["known"]:
 		return false
 
-	var backup: Array = [inventory.numbers.duplicate(), inventory.counts.duplicate(), inventory.wear.duplicate(), inventory.inst.duplicate(true)]
+	var backup = inventory.copy()   # its slot count too: the add may have grown a pack before it failed at MAX_SLOTS
 
 	for need in r["needs"]:
 		inventory.remove_fill(need[0], need[1])
 
 	if inventory.add(r["gives"][0], r["gives"][1]) > 0:
-		inventory.numbers = backup[0]
-		inventory.counts = backup[1]
-		inventory.wear = backup[2]
-		inventory.inst = backup[3]   # an undone craft gives every slot back as it was, wear and instance data included
+		inventory.from_json_array(backup.to_json_array())   # an undone craft gives every slot back as it was, wear and instance data included
 		return false
 
 	return true

@@ -24,7 +24,7 @@ func check(ok: bool, what: String) -> void:
 func _fish_in(box) -> int:
 	var n: int = 0
 
-	for slot in box.SLOTS:
+	for slot in box.slot_count:
 		var id: String = box.table.id_of(box.numbers[slot]) if box.numbers[slot] != 0 else ""
 
 		if fish_ids.has(id):
@@ -34,7 +34,7 @@ func _fish_in(box) -> int:
 
 
 func _empty(box) -> void:
-	for slot in box.SLOTS:
+	for slot in box.slot_count:
 		box.numbers[slot] = 0
 		box.counts[slot] = 0
 		box.wear[slot] = 0

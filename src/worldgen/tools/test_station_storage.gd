@@ -107,7 +107,7 @@ func pack(peer: int, number: int) -> int:
 
 
 func slot_of(peer: int, number: int) -> int:
-	for s in items.inventory_of(peer).SLOTS:
+	for s in items.inventory_of(peer).slot_count:
 		if items.inventory_of(peer).numbers[s] == number:
 			return s
 
@@ -141,7 +141,7 @@ func burn(_id: int, seconds: float) -> void:
 func clear_pack(peer: int) -> void:
 	var inv = items.inventory_of(peer)
 
-	for s in inv.SLOTS:
+	for s in inv.slot_count:
 		inv.clear_slot(s)
 
 
@@ -347,7 +347,7 @@ func _init() -> void:
 	check(out_count(kiln, charcoal) == 4, "room in the output: it goes on (the piece that waited, then 3 more)")
 	act(1, Net.ACT_USE_STRUCT, kiln)
 
-	for i in box(kiln).SLOTS:
+	for i in box(kiln).slot_count:
 		box(kiln).clear_slot(i)
 
 	act(1, Net.ACT_PICKUP, kiln)
@@ -536,7 +536,7 @@ func id_of_kind(kind: String) -> int:
 
 
 func slot_of_box(id: int, number: int) -> int:
-	for i in box(id).SLOTS:
+	for i in box(id).slot_count:
 		if box(id).numbers[i] == number:
 			return i
 

@@ -40,7 +40,50 @@ func _init() -> void:
 	check(not inv.remove(stone, 99) and inv.count_of(stone) == 35, "removing too many changes nothing")
 
 	var full = Inventory.new(table)
-	check(full.add(axe, 35) == 5, "30 slots hold 30 axes, 5 left over")
+	check(full.add(axe, 35) == 5, "a container's 30 slots hold 30 axes, 5 left over")
+
+	# A pack grows (Dave 12 Nov 2026 23:06Z: "a minimum of 20 and if they add more stuff just start adding more slots"; protocol 116):
+	# never full by slots (the server's carry limit is the cap), and empty slots at its end go back, GROW_STEP at a time, down to 30.
+	var bag = Inventory.pack(table)
+	check(bag.slot_count == 30 and bag.slot_count - bag.hotbar_slots == 20, "a new pack has the hotbar 10 and a backpack of 20")
+	check(bag.add(axe, 21) == 0 and bag.slot_count == 35 and bag.usable == 35 and bag.numbers.slice(0, 10).count(0) == 10 and bag.numbers[30] == axe, "a full backpack grows a step before anything lands in the empty hotbar")
+	check(bag.add(axe, 14) == 0 and bag.slot_count == 45 and bag.count_of(axe) == 35, "35 axes: nothing left over, the pack grows to 45 slots")
+	check(bag.add(axe, 1) == 0 and bag.slot_count == 50 and bag.numbers[45] == axe, "one more adds a step of 5 slots, the axe in the first new one")
+	var bag_bytes = Inventory.pack(table)
+	check(bag_bytes.from_bytes(bag.to_bytes()) and bag_bytes.slot_count == 50 and bag_bytes.count_of(axe) == 36, "the bytes carry the 50 slots")
+	var bag_json = Inventory.pack(table)
+	bag_json.from_json_array(JSON.parse_string(JSON.stringify(bag.to_json_array())))
+	check(bag_json.slot_count == 50 and bag_json.count_of(axe) == 36, "so does the save")
+	check(not bag.trim() and bag.slot_count == 50, "trim keeps a step that holds an item")
+	bag.clear_slot(45)
+	check(bag.trim() and bag.slot_count == 45, "an empty last step is given back")
+
+	for i in range(30, 45):
+		bag.clear_slot(i)
+
+	check(bag.trim() and bag.slot_count == 30, "down to 30")
+	bag.clear_slot(29)
+	check(not bag.trim() and bag.slot_count == 30, "never below 30 (the backpack's 20)")
+	check(bag.free_bag_slot() == 29, "a free backpack slot is named")
+	bag.add(axe, 1)
+	check(bag.free_bag_slot() == 30, "a full backpack names the slot just past its end")
+	bag.move(10, 30)
+	check(bag.slot_count == 35 and bag.numbers[30] == axe and bag.numbers[10] == 0, "a move there grows the pack by a step")
+	bag.move(11, 36)
+	check(bag.slot_count == 35 and bag.numbers[11] == axe, "a move further past the end is ignored")
+	bag.clear_slot(31)
+	bag.move(11, 35)
+	check(bag.slot_count == 35 and bag.numbers[11] == axe, "a move past the end while a backpack slot is free is ignored")
+	check(bag.make_room() == 10 and bag.slot_count == 35, "make_room names a free slot without growing")
+	bag.add(axe, 5)   # slots 10 and 31 to 34
+	check(bag.make_room() == 35 and bag.slot_count == 40, "and grows a full backpack by a step")
+	var short = Inventory.pack(table)
+	short.from_json_array(Inventory.new(table).to_json_array())
+	bag.from_json_array(Inventory.new(table).to_json_array())
+	check(bag.slot_count == 30 and bag.count_of(axe) == 0 and short.slot_count == 30, "loading 30 empty rows empties and shrinks a grown pack")
+	check(bag.add(axe, 300) == 300 - (Inventory.MAX_SLOTS) and bag.slot_count == Inventory.MAX_SLOTS, "it stops at MAX_SLOTS (the one-byte slot index)")
+	var copied = bag.copy()
+	check(copied.grows and copied.slot_count == Inventory.MAX_SLOTS and copied.count_of(axe) == Inventory.MAX_SLOTS, "a copy keeps the slots, the contents and that it grows")
 
 	inv.move(0, 5)
 	check(inv.numbers[5] == stone and inv.numbers[0] == 0, "move to empty slot")

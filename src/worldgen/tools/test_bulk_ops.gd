@@ -63,7 +63,7 @@ func reset() -> void:
 		if it.has("struct") or it.has("fire") or (not it.has("scatter") and not it.has("tree") and not it.has("boulder")):
 			items._items.erase(k)
 
-	for slot in pack().SLOTS:
+	for slot in pack().slot_count:
 		put(slot, 0, 0)
 
 	items._chest_viewer.erase(1)
@@ -163,7 +163,7 @@ func _init() -> void:
 	act(Net.ACT_SPLIT, 20, 0, 4)
 	var split_slot: int = -1
 
-	for slot in pack().SLOTS:
+	for slot in pack().slot_count:
 		if slot != 20 and pack().numbers[slot] == stone and pack().counts[slot] == 4:
 			split_slot = slot
 
@@ -173,9 +173,9 @@ func _init() -> void:
 	check(copy.is_fav(15) and copy.is_fav(20) and copy.is_fav(split_slot) and not copy.is_fav(1), "favourites are saved and loaded with the pack")
 	var old_row: Array = [[clay, 4, 0]]
 	var old = InventoryScript.new(items.table)
-	old_row.resize(InventoryScript.SLOTS)
+	old_row.resize(InventoryScript.BASE_SLOTS)
 
-	for i in range(1, InventoryScript.SLOTS):
+	for i in range(1, InventoryScript.BASE_SLOTS):
 		old_row[i] = [0, 0, 0]
 
 	old.from_json_array(old_row)
@@ -287,12 +287,12 @@ func _init() -> void:
 	var by_name: Callable = func(inv, i: int) -> Variant: return items.table.name_of(inv.numbers[i]).to_lower()
 	bulk(3, 1)
 	check(pack().numbers[11] == flint and pack().is_fav(11) and pack().numbers[0] == stone and pack().counts[0] == 1 and pack().numbers[10] == clay, "Sort leaves the hotbar and the favourite where they are and starts the backpack at slot 10 (clay first by name)")
-	check(in_order(pack(), 10, pack().SLOTS, true, by_name) and total(pack(), stone) == 4 and total(pack(), clay) == 2 and total(pack(), fibre) == 5 and total(pack(), stick) == 2, "Sort by name: the rest in name order, empties last, nothing lost")
+	check(in_order(pack(), 10, pack().slot_count, true, by_name) and total(pack(), stone) == 4 and total(pack(), clay) == 2 and total(pack(), fibre) == 5 and total(pack(), stick) == 2, "Sort by name: the rest in name order, empties last, nothing lost")
 	check(in_order(box(sort_chest), 0, box(sort_chest).usable, false, by_name) and box(sort_chest).numbers[2] != 0 and box(sort_chest).numbers[3] == 0, "the open chest is sorted too, its stacks first")
 	check(done.size() == 5 and int(done[1]) == 3 and ids_of_done() == [sort_chest], "bulk_done: Sort, with the chest's id")
 	var heavy_first: Callable = func(inv, i: int) -> Variant: return -CarryRules.weight_of(items.table.id_of(inv.numbers[i]), items._carry_cfg) * float(inv.counts[i])
 	bulk(3, 3)
-	check(in_order(pack(), 10, pack().SLOTS, true, heavy_first) and pack().numbers[11] == flint, "Sort by weight, heaviest first, round the favourite")
+	check(in_order(pack(), 10, pack().slot_count, true, heavy_first) and pack().numbers[11] == flint, "Sort by weight, heaviest first, round the favourite")
 
 	print("bulk ops: %s" % ("all passed" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)

@@ -3267,4 +3267,4 @@ func run_test() -> void:
 
 
 func inv_slots() -> int:
-	return _inv.inventory.SLOTS
+	return _inv.inventory.slot_count

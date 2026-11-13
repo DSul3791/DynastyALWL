@@ -61,7 +61,7 @@ func clear_stations() -> void:
 
 
 func empty_pack() -> void:
-	for s in inv.SLOTS:
+	for s in inv.slot_count:
 		inv.clear_slot(s)
 
 

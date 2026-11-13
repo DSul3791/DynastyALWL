@@ -147,7 +147,7 @@ func item_checks() -> void:
 	check(items.inventory_of(1).wear[slot] == 2, "a new look wears another use")
 	items.action(1, Net.ACT_SPYGLASS, 0, 0, slot, Vector3.ZERO)
 
-	var other: int = (slot + 1) % items.inventory_of(1).SLOTS
+	var other: int = (slot + 1) % items.inventory_of(1).slot_count
 	items.action(1, Net.ACT_SPYGLASS, 2, 0, other, Vector3.ZERO)
 	check(int(items.spyglass.get(1, 0)) == -1 and not items.spyglass_tier.has(1), "no spyglass in that slot: refused")
 	items.spyglass.erase(1)

@@ -142,7 +142,7 @@ func refresh() -> void:
 			item_inst = view.worn_inst.get(at, {})
 		elif gear == "right" and view.held_slot_now.is_valid():
 			var held: int = int(view.held_slot_now.call())
-			number = view.inventory.numbers[held] if held >= 0 and held < view.inventory.SLOTS else 0
+			number = view.inventory.numbers[held] if held >= 0 and held < view.inventory.slot_count else 0
 			item_inst = view.inventory.inst_of(held) if number != 0 else {}
 
 		# STUB(step 3d): the left hand shows its silhouette until the game has an off-hand item (a shield or torch held in the left).

@@ -97,11 +97,7 @@ func build() -> Control:
 	view._grid.add_theme_constant_override("h_separation", ArtKit.SLOT_GAP)
 	view._grid.add_theme_constant_override("v_separation", ArtKit.SLOT_GAP)
 	_slot_scroll.add_child(view._grid)
-
-	for i in view.inventory.SLOTS:
-		var slot: Control = _make_slot(i)
-		view._grid.add_child(slot)
-		view._buttons.append(slot)
+	_fit_slots()
 
 	info = InfoStrip.new()
 	right.add_child(info)
@@ -136,9 +132,21 @@ func fit_rows(room: Vector2) -> void:
 	_slot_scroll.size = Vector2(room.x, float(rows * pitch - ArtKit.SLOT_GAP))
 
 
+# One slot button per pack slot: the pack grows when full and gives empty slots back (Inventory.trim), so buttons come and go with it.
+func _fit_slots() -> void:
+	while view._buttons.size() > view.inventory.slot_count:
+		view._buttons.pop_back().queue_free()
+
+	for i in range(view._buttons.size(), view.inventory.slot_count):
+		var slot: Control = _make_slot(i)
+		view._grid.add_child(slot)
+		view._buttons.append(slot)
+
+
 # The slots: arranged by the sort, then each one's text, bars, tooltip and whether the search shows it.
 func refresh() -> void:
 	station = view.station_use() if view.has_method("station_use") else {}
+	_fit_slots()
 	arrange_slots()
 
 	if view._weight_label != null:
@@ -148,7 +156,7 @@ func refresh() -> void:
 
 	_note_crafts()
 
-	for i in view.inventory.SLOTS:
+	for i in view.inventory.slot_count:
 		_refresh_look_slot(i, filter)
 
 	_last_numbers = view.inventory.numbers.duplicate()
@@ -326,7 +334,7 @@ func _note_crafts() -> void:
 
 # A stack that grew or appeared since the last refresh: a made item flies in from the queue; any other new kind of item shimmers.
 func _note_arrival(i: int, slot, number: int) -> void:
-	if number == 0 or _last_numbers.size() != view.inventory.SLOTS:
+	if number == 0 or _last_numbers.size() != view.inventory.slot_count:
 		return
 
 	var grew: bool = _last_numbers[i] != number or view.inventory.counts[i] > _last_counts[i]
@@ -366,7 +374,7 @@ func arrange_slots() -> void:
 	if view._panel == null or view._buttons.is_empty():
 		return
 
-	var order: Array = range(view.inventory.SLOTS)
+	var order: Array = range(view.inventory.slot_count)
 	var cfg: Dictionary = view._carry_cfg
 
 	var key: Callable = func(slot: int) -> Variant:

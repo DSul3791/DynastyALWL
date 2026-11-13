@@ -82,7 +82,7 @@ func _init() -> void:
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
 	var inv = items.inventory_of(7)
 
-	for n in range(inv.SLOTS):
+	for n in range(inv.slot_count):
 		if inv.numbers[n] == candle:
 			inv.numbers[n] = 0
 			inv.counts[n] = 0
