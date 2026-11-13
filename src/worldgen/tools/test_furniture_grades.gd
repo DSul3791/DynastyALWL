@@ -52,7 +52,7 @@ func _have(id: String) -> int:
 func _clear() -> void:
 	var inv = items.inventory_of(1)
 
-	for slot in range(inv.SLOTS):
+	for slot in range(inv.slot_count):
 		inv.numbers[slot] = 0
 		inv.counts[slot] = 0
 		inv.wear[slot] = 0

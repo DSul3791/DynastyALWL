@@ -124,7 +124,7 @@ func _init() -> void:
 	# Dropped items: one here (a real drop from the pack), one far away (not loaded by anyone).
 	var stone_slot: int = -1
 
-	for s in range(inv.SLOTS):
+	for s in range(inv.slot_count):
 		if inv.numbers[s] == stone:
 			stone_slot = s
 			break

@@ -86,7 +86,7 @@ func rows_count(rows: Array) -> Dictionary:
 
 
 func empty(inv) -> void:
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		inv.clear_slot(slot)
 
 
@@ -98,7 +98,7 @@ func everywhere(items, number: int) -> int:
 		var inv = items._inventories[key]
 		total += inv.count_of(number)
 
-		for slot in inv.SLOTS:
+		for slot in inv.slot_count:
 			total += int(rows_count(inv.inst_of(slot).get("bag", [])).get(number, 0))
 
 	for key in items._characters:
@@ -110,7 +110,7 @@ func everywhere(items, number: int) -> int:
 		var chest = items._chests[uid]
 		total += chest.count_of(number)
 
-		for slot in chest.SLOTS:
+		for slot in chest.slot_count:
 			total += int(rows_count(chest.inst_of(slot).get("bag", [])).get(number, 0))
 
 	for id in items._items:

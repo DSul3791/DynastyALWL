@@ -9,7 +9,7 @@ extends SceneTree
 #   4. the Fireplace cooking crane cooks a stew only while its fireplace burns;
 #   5. Sauerkraut sealed as one batch at a built Preserving jar #830: Maturing (not eaten, not an ingredient), then Ready and eaten; stale
 #      cabbage is refused; batches sealed at different times never merge until both are Ready; the age survives save and load;
-#   6. batch room: a full pack sends the batch to the player's nearby chest; a batch is capped to the room there, refused with none, waits when the
+#   6. batch room: a pack at its carry limit sends the batch to the player's nearby chest; a batch is capped to the room there, refused with none, waits when the
 #      room fills before it is done, and never lands on the ground; Maturing stacks in a chest or on the ground are no craft stock; Hob will not
 #      buy one and an NPC order does not count or take one;
 #   7. Smoked meat at a built Smoker, Dried mushrooms at a built Drying rack (outside the mushrooms group).
@@ -126,7 +126,7 @@ func slots_of(id: String) -> Array:
 	var out: Array = []
 	var inv = items.inventory_of(1)
 
-	for i in inv.SLOTS:
+	for i in inv.slot_count:
 		if inv.numbers[i] == num(id):
 			out.append(i)
 
@@ -331,20 +331,23 @@ func _init() -> void:
 	check(at2 >= 0 and inv2.wear[at2] == age_now and inv2.count_of(num("sauerkraut")) == per * batch + per - 1, "5j. the sealed food's age and count survive save and load")
 	again._finish_writer()
 
-	# 6. Batch room: a full pack sends the batch to the player's chest within reach; the room caps it; never the ground.
+	# 6. Batch room: a pack at its carry limit sends the batch to the player's chest within reach; the room caps it; never the ground.
 	inv.remove(num("sauerkraut"), have("sauerkraut"))
 	var chest: int = build("chest", jar_at + Vector3(-2.0, 0.0, 0.0))
 	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
 
-	while inv.add(num("clay_pot"), 1) == 0:
-		pass   # one unstackable pot per free slot, hotbar slots too (they are pack slots, TEST-008): the pack has no room for anything new
+	for k in range(2000):   # the pack grows (protocol 113), so only its carry limit leaves no room: pots until one Sauerkraut is too heavy
+		if items._fit(1, inv, num("sauerkraut"), 1) <= 0:
+			break
+
+		inv.add(num("clay_pot"), 1)
 
 	var cab_need: int = int(recipe("cook_sauerkraut")["needs"].filter(func(c): return int(c[0]) == cabbage)[0][1])
 	var salt_need: int = int(recipe("cook_sauerkraut")["needs"].filter(func(c): return int(c[0]) == num("sea_salt"))[0][1])
 	items.drop_in_world(cabbage, cab_need * batch, jar_at + Vector3(0.5, 0.0, 0.5))
 	items.drop_in_world(num("sea_salt"), salt_need * batch, jar_at + Vector3(-0.5, 0.0, 0.5))
 	craft("cook_sauerkraut", batch, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
-	check(have("sauerkraut") == 0 and box.count_of(num("sauerkraut")) == per * batch and loose("sauerkraut") == 0 and loose("cabbage") == 0, "6a. pack full: all %d go into the chest beside the jar (chest %d, ground %d)" % [per * batch, box.count_of(num("sauerkraut")), loose("sauerkraut")])
+	check(have("sauerkraut") == 0 and box.count_of(num("sauerkraut")) == per * batch and loose("sauerkraut") == 0 and loose("cabbage") == 0, "6a. pack at its carry limit: all %d go into the chest beside the jar (chest %d, ground %d)" % [per * batch, box.count_of(num("sauerkraut")), loose("sauerkraut")])
 
 	# Maturing stacks in the chest and on the ground are no ingredient; once the ground stack is Ready it is (the ground ages it faster than a chest).
 	var kraut_n: int = num("sauerkraut")

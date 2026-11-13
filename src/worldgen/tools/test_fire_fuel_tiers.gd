@@ -229,7 +229,7 @@ func _init() -> void:
 	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 4, Vector3.ZERO)
 	var inv_l = f.inventory_of(1)
 
-	for slot in range(inv_l.SLOTS):
+	for slot in range(inv_l.slot_count):
 		if inv_l.numbers[slot] != 0 and inv_l.numbers[slot] != log_n:
 			inv_l.numbers[slot] = 0
 			inv_l.counts[slot] = 0
@@ -310,7 +310,7 @@ func _init() -> void:
 	said.clear()
 	var inv_e = f.inventory_of(1)
 
-	for slot in range(inv_e.SLOTS):
+	for slot in range(inv_e.slot_count):
 		inv_e.numbers[slot] = 0
 		inv_e.counts[slot] = 0
 
@@ -323,7 +323,7 @@ func _init() -> void:
 	var oak: int = f.table.number_of("log_oak")
 	var inv_s = f.inventory_of(1)
 
-	for slot in range(inv_s.SLOTS):
+	for slot in range(inv_s.slot_count):
 		inv_s.numbers[slot] = 0
 		inv_s.counts[slot] = 0
 
@@ -346,7 +346,7 @@ func _init() -> void:
 	var soft: int = f.table.number_of("firewood_soft")
 	var inv_f = f.inventory_of(1)
 
-	for slot in range(inv_f.SLOTS):
+	for slot in range(inv_f.slot_count):
 		inv_f.numbers[slot] = 0
 		inv_f.counts[slot] = 0
 
@@ -358,7 +358,7 @@ func _init() -> void:
 	var old_box = f._chests.get(int(f._items[log_fire]["fire"].get("uid", 0)))
 
 	if old_box != null:
-		for slot in range(old_box.SLOTS):
+		for slot in range(old_box.slot_count):
 			old_box.numbers[slot] = 0
 			old_box.counts[slot] = 0
 

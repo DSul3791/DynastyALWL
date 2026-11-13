@@ -406,7 +406,7 @@ func pack_str(peer: int = 1) -> String:
 	var out: Array = []
 	var pinv = items.inventory_of(peer)
 
-	for s in pinv.SLOTS:
+	for s in pinv.slot_count:
 		if pinv.numbers[s] != 0:
 			out.append("%s %d" % [items.table.id_of(pinv.numbers[s]), pinv.counts[s]])
 
@@ -452,7 +452,7 @@ func step1_early_survival() -> void:
 	step("1 early survival")
 	var empty: bool = true
 
-	for s in inv.SLOTS:
+	for s in inv.slot_count:
 		empty = empty and inv.numbers[s] == 0
 
 	check(empty and items.worn_of(1).all(func(w): return int(w) == 0), "1a. a new character arrives with nothing in the pack and nothing worn")
@@ -787,7 +787,7 @@ func step3_construction_and_equipment() -> void:
 	var base_d: int = int(items.table.entry("steel_knife")["durability"])
 	check(ks >= 0 and int(inv.inst_of(ks).get("temper", 0)) == 1 and inv.max_durability(ks) > base_d, "3y. a Tempered Steel - Knife from Blast furnace steel (lasts %d against %d)" % [inv.max_durability(ks) if ks >= 0 else -1, base_d])
 
-	# The pack has 30 slots: building stuff left over stays at the forge yard; the small things go into the Rustic - Chest at depot A.
+	# Building stuff left over stays at the forge yard (the carry limit); the small things go into the Rustic - Chest at depot A.
 	leave({"brick": 0, "mortar": 0, "stone": 0, "log": 0, "stick": 4, "charcoal": 12, "plant_fibre": 0, "clay": 0, "sand": 0})
 	go(DEPOT_A + Vector3(2.0, 0.0, 1.5))
 	items.action(1, Net.ACT_CHEST_OPEN, rustic_chest, 0, 0, Vector3.ZERO)
@@ -1037,7 +1037,7 @@ func counts_of(box) -> Dictionary:
 	if box == null:
 		return out
 
-	for s in box.SLOTS:
+	for s in box.slot_count:
 		if box.numbers[s] != 0:
 			out[int(box.numbers[s])] = int(out.get(int(box.numbers[s]), 0)) + int(box.counts[s])
 

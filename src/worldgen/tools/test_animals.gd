@@ -305,7 +305,7 @@ func _hunting() -> void:
 	var spear_slot: int = -1
 	var knife_slot: int = -1
 
-	for n in inv.SLOTS:
+	for n in inv.slot_count:
 		spear_slot = n if inv.numbers[n] == spear else spear_slot
 		knife_slot = n if inv.numbers[n] == knife else knife_slot
 

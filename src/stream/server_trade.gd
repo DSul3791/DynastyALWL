@@ -339,7 +339,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		items._gain_source = items.SRC_PICKUP
 		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(each * count)]
 
-	if a < 0 or a >= inv.SLOTS or inv.numbers[a] == 0:
+	if a < 0 or a >= inv.slot_count or inv.numbers[a] == 0:
 		return ""
 
 	if kind == 2:
@@ -454,7 +454,7 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 	var sold: int = 0
 	var refused: String = ""
 
-	for slot in range(inv.SLOTS):
+	for slot in range(inv.slot_count):
 		if inv.numbers[slot] == 0:
 			continue
 

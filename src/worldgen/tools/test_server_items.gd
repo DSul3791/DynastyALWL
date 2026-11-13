@@ -551,7 +551,7 @@ func _init() -> void:
 	f.action(1, Net.ACT_ADMIN_GIVE, ck_meat, 0, 1, Vector3.ZERO)
 	var ck_mslot: int = -1
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == ck_meat:
 			ck_mslot = sl
 
@@ -564,7 +564,7 @@ func _init() -> void:
 	var ck_want: int = maxi(ck_life - int(minf(ck_left * 2.0, float(ck_life))), 0)
 	var ck_aged: bool = false
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == ck_roast_n:
 			ck_aged = ck_aged or absi(int(ck_inv.wear[sl]) - ck_want) <= 1
 
@@ -572,7 +572,7 @@ func _init() -> void:
 	f.vitals_of(1)["warmth"] = 50.0
 	f._last_eat.clear()
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == ck_roast_n:
 			f.action(1, Net.ACT_EAT, sl, 0, 0, Vector3.ZERO)
 			break
@@ -591,7 +591,7 @@ func _init() -> void:
 	check(made == 1, "a lit fire roasts one raw meat (%d roast)" % made)
 	f._last_eat.clear()
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == meat_n:
 			f.action(1, Net.ACT_EAT, sl, 0, 0, Vector3.ZERO)
 			break
@@ -1808,7 +1808,7 @@ func _init() -> void:
 	for load in [0.0, 2.0, 0.79 * cap_kg, 0.80 * cap_kg, 0.81 * cap_kg, 0.9 * cap_kg, cap_kg]:
 		var inv_c = cw.inventory_of(1)
 
-		for slot in range(inv_c.SLOTS):
+		for slot in range(inv_c.slot_count):
 			inv_c.numbers[slot] = 0
 			inv_c.counts[slot] = 0
 
@@ -2465,7 +2465,7 @@ func _init() -> void:
 	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)
 	check(ad.craft_queue_of(1).is_empty(), "with admin mode off the same craft is refused again")
 
-	# Restart mid-craft keeps the progress; a refund into a full pack drops the rest at the player's feet.
+	# Restart mid-craft keeps the progress; a refund into a pack at its carry limit drops the rest at the player's feet.
 	DirAccess.make_dir_recursive_absolute(qd + "_full")
 
 	for file in DirAccess.get_files_at(qd + "_full"):
@@ -2489,10 +2489,11 @@ func _init() -> void:
 	rq2._craft_tick(0.75)
 	check(rq2.inventory_of(1).count_of(cord) == 1, "the restored craft finishes after the rest of its time")
 
-	for n in range(rq2.inventory_of(1).SLOTS):
-		if rq2.inventory_of(1).numbers[n] == 0:
-			rq2.inventory_of(1).numbers[n] = rq2.table.number_of("stone")
-			rq2.inventory_of(1).counts[n] = 1
+	for k in range(5000):   # the pack grows (protocol 113): only its carry limit leaves no room
+		if rq2._fit(1, rq2.inventory_of(1), fibre, 1) <= 0:
+			break
+
+		rq2.inventory_of(1).add(rq2.table.number_of("stone"), 1)
 
 	rq2._last_queue_act.clear()
 	rq2.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
@@ -2502,7 +2503,7 @@ func _init() -> void:
 		if rq2._items[item_id]["number"] == fibre:
 			on_ground += int(rq2._items[item_id]["count"])
 
-	check(rq2.craft_queue_of(1).is_empty() and on_ground == 6, "a refund into a full pack lands at the player's feet (%d fibre)" % on_ground)
+	check(rq2.craft_queue_of(1).is_empty() and on_ground == 6, "a refund into a pack at its carry limit lands at the player's feet (%d fibre)" % on_ground)
 	# An entry refunds from its own saved ingredient list even if its recipe has gone.
 	rq2._craft_queues["queuekey0002"]["entries"] = [[9999, 2, [[fibre, 3]]]]
 	rq2._craft_tick(0.25)
@@ -2777,7 +2778,7 @@ func _init() -> void:
 	var box = bx._chests[int(bx._items[box_id]["struct"]["uid"])]
 	var in_pack: int = bx.inventory_of(1).count_of(box_stone)
 
-	for slot_n in range(bx.inventory_of(1).SLOTS):
+	for slot_n in range(bx.inventory_of(1).slot_count):
 		if bx.inventory_of(1).numbers[slot_n] == box_stone:
 			bx.action(1, Net.ACT_CHEST_PUT, slot_n, box_id, 40, Vector3.ZERO)
 
@@ -2885,7 +2886,7 @@ func _init() -> void:
 			taken += before_count - int(bo._items[900002]["count"])
 
 			# keep the pack light so the weight limit does not interfere
-			for slot in range(bo.inventory_of(1).SLOTS):
+			for slot in range(bo.inventory_of(1).slot_count):
 				if bo.inventory_of(1).numbers[slot] == bo.table.number_of("stone"):
 					bo.inventory_of(1).counts[slot] = 0
 					bo.inventory_of(1).numbers[slot] = 0

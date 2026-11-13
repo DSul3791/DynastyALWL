@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Clothing layers (catalog Phase 4a, M001-T11; master s3.7 rule 1, s3.8 design 1-2 and the merged layer model): each slot-and-layer pair holds
-# one piece; putting one on sends what it displaces to the pack (never lost, a full pack refuses); a coat and a cloak are never worn together; a
+# one piece; putting one on sends what it displaces to the pack (never lost; the pack grows for it); a coat and a cloak are never worn together; a
 # Dress fills body and legs base; warmth combines per slot with diminishing returns; fabrics change it wet, in heat and in rain; several layers
 # per slot survive save and reload and the wire; an older one-per-slot worn list loads.
 #   godot --headless --path . --script res://src/worldgen/tools/test_clothing_layers.gd
@@ -69,7 +69,7 @@ func wear(items, id: String) -> void:
 func strip(items) -> void:
 	items._characters[KEY]["worn"] = items._clean_worn([])
 
-	for slot in items.inventory_of(1).SLOTS:
+	for slot in items.inventory_of(1).slot_count:
 		items.inventory_of(1).clear_slot(slot)
 
 
@@ -134,25 +134,20 @@ func _init() -> void:
 	wear(items, "hide_trousers")
 	check(items.worn_of(1)[at(items, "legs:base")] == n(items, "hide_trousers") and items.worn_of(1)[at(items, "body:base")] == 0 and inv.count_of(n(items, "linen_dress")) == 1, "trousers take the dress off")
 
-	# 5. Full-pack refusal: nothing moves, nothing is lost.
+	# 5. Every pack slot taken: the pack grows for what comes off (Dave 12 Nov 2026 23:06Z, protocol 113); nothing is refused, lost or doubled.
 	wear(items, "hide_tunic")
 	var dress_slot: int = inv.numbers.find(n(items, "linen_dress"))
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == 0:
 			inv.numbers[slot] = n(items, "stone")
 			inv.counts[slot] = 1
 
-	var before: Array = items.worn_of(1)
+	var full_slots: int = inv.slot_count
 	items.action(1, Net.ACT_WEAR, dress_slot, 0, 0, Vector3.ZERO)
-	check(items.worn_of(1) == before and inv.numbers[dress_slot] == n(items, "linen_dress") and notices.back() == "Your pack has no room for what that replaces.", "a dress needing two free slots with one is refused, nothing moved, and the player is told")
+	check(items.worn_of(1)[at(items, "body:base")] == n(items, "linen_dress") and items.worn_of(1)[at(items, "legs:base")] == 0 and inv.slot_count > full_slots and owned(items, "hide_tunic") == 1 and owned(items, "hide_trousers") == 1 and owned(items, "linen_dress") == 1, "a dress that sends two pieces to a full pack goes on: the pack grows (%d to %d slots), nothing doubled" % [full_slots, inv.slot_count])
 	items.action(1, Net.ACT_UNWEAR, at(items, "body:outer"), 0, 0, Vector3.ZERO)
-	check(items.worn_of(1)[at(items, "body:outer")] == n(items, "hide_cloak") and owned(items, "hide_cloak") == 1, "taking off into a full pack is refused")
-	wear(items, "grass_cloak")   # one for one: the cloak's own slot takes the old one
-	check(items.worn_of(1)[at(items, "body:outer")] == n(items, "grass_cloak") and inv.count_of(n(items, "hide_cloak")) == 1, "a one-for-one swap works in a full pack")
-	inv.clear_slot(inv.numbers.find(n(items, "stone")))
-	items.action(1, Net.ACT_WEAR, inv.numbers.find(n(items, "linen_dress")), 0, 0, Vector3.ZERO)
-	check(items.worn_of(1)[at(items, "body:base")] == n(items, "linen_dress") and owned(items, "hide_tunic") == 1 and owned(items, "hide_trousers") == 1 and owned(items, "linen_dress") == 1, "with one more slot free the dress goes on, nothing doubled")
+	check(items.worn_of(1)[at(items, "body:outer")] == 0 and inv.count_of(n(items, "hide_cloak")) == 1 and owned(items, "hide_cloak") == 1, "taking off into that pack works")
 
 	# 6. Warmth: layered per slot with diminishing returns, slots add up.
 	strip(items)

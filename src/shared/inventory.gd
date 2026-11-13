@@ -1,17 +1,24 @@
 extends RefCounted
 
-# A player's inventory: fixed slots of {item number, count}. Pure data, no
+# A player's inventory: slots of {item number, count}. Pure data, no
 # scene code, so the server (which owns it) and the client (which shows it)
-# use the same rules. Number 0 means an empty slot.
+# use the same rules. Number 0 means an empty slot. A container has a fixed
+# number of slots; a pack grows when it is full (grows, trim).
 
-const SLOTS := 30
-const FORMAT := 3               # 2 added wear per slot; 3 the instance data after the slots (inst_bytes)
+const BASE_SLOTS := 30         # a container's slots, and a pack's fewest: the hotbar 10 and the backpack 20 (Dave 12 Nov 2026 23:06Z)
+const FORMAT := 4               # 2 added wear per slot; 3 the instance data after the slots (inst_bytes); 4 the slot count after the format byte
+# A pack is never full (Dave 12 Nov 2026 23:06Z: "slots should be almost endless... a minimum of 20 and if they add more stuff just start
+# adding more slots... they are limited by weight really"): it adds GROW_STEP slots when nothing fits, and gives empty ones back at its end.
+const GROW_STEP := 5
+const MAX_SLOTS := 250          # the slot index and the changed-slot count in inventory_slots are one byte each
 const MAX_D_CAP := 1000000       # max_d travels in the JSON block, not the u16 wear: a +2 Tempered steel spade passes 65535
 
 var table
 var numbers: PackedInt32Array = PackedInt32Array()
 var counts: PackedInt32Array = PackedInt32Array()
-var usable: int = SLOTS               # slots in use: a small container only fills its first few
+var slot_count: int = BASE_SLOTS      # the slots this inventory has; a pack's changes as it fills (grows)
+var usable: int = BASE_SLOTS          # slots in use: a small container only fills its first few; a pack uses all of them
+var grows: bool = false               # a pack (pack()): add() makes room instead of leaving any over; weight is the pack's only limit
 var bag_from: int = 0                 # new items go to slots from here first, then from slot 0 (a pack: the backpack slots after the hotbar, see pack())
 var stack_all: bool = false           # a store that stacks every item to the u16 count (a fire's wood store); not saved, the owner sets it each time
 var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
@@ -25,16 +32,64 @@ var hotbar_slots: int = 0             # a pack's first slots are its hotbar (key
 var inst: Array = []
 
 
-func _init(item_table = null) -> void:
+func _init(item_table = null, slots: int = BASE_SLOTS) -> void:
 	table = item_table
-	numbers.resize(SLOTS)
-	counts.resize(SLOTS)
-	wear.resize(SLOTS)
-	fav.resize(SLOTS)
-	inst.resize(SLOTS)
+	slot_count = 0
+	usable = 0
+	_resize(clampi(slots, 1, MAX_SLOTS))
 
-	for i in SLOTS:
+
+# To n slots: new ones are empty, ones past n are gone (callers only cut empty ones). An inventory that used all its slots still does.
+func _resize(n: int) -> void:
+	var was: int = slot_count
+	var all_used: bool = usable >= was
+	numbers.resize(n)
+	counts.resize(n)
+	wear.resize(n)
+	fav.resize(n)
+	inst.resize(n)
+
+	for i in range(was, n):
+		numbers[i] = 0
+		counts[i] = 0
+		wear[i] = 0
+		fav[i] = 0
 		inst[i] = {}
+
+	slot_count = n
+	usable = n if all_used else mini(usable, n)
+
+
+# A pack gives back the empty slots at its end, GROW_STEP at a time, down to BASE_SLOTS (the hotbar and 20 backpack slots).
+# True when it shrank (the server then sends the whole pack, since a slot update cannot say a slot is gone).
+func trim() -> bool:
+	if not grows:
+		return false
+
+	var last: int = slot_count - 1
+
+	while last >= BASE_SLOTS and numbers[last] == 0:
+		last -= 1
+
+	var want: int = BASE_SLOTS + ceili(float(maxi(last + 1 - BASE_SLOTS, 0)) / float(GROW_STEP)) * GROW_STEP
+
+	if want >= slot_count:
+		return false
+
+	_resize(want)
+	return true
+
+
+# A copy with the same slots, kind and contents: a trial run of an add or a move that must not touch the real one.
+func copy():
+	var out = load("res://src/shared/inventory.gd").new(table, slot_count)
+	out.usable = usable
+	out.bag_from = bag_from
+	out.hotbar_slots = hotbar_slots
+	out.grows = grows
+	out.stack_all = stack_all
+	out.from_json_array(to_json_array())
+	return out
 
 
 # A player's pack: slots 0 to 9 are the hotbar, real slots (an item is in the hotbar or in the backpack, never both); pickups fill the
@@ -43,6 +98,7 @@ static func pack(item_table):
 	var inv = load("res://src/shared/inventory.gd").new(item_table)
 	inv.hotbar_slots = HOTBAR_KEYS
 	inv.bag_from = HOTBAR_KEYS
+	inv.grows = true
 	return inv
 
 
@@ -84,6 +140,7 @@ func _joined_age(number: int, wear_a: int, count_a: int, wear_b: int, count_b: i
 
 
 # `first`: only the slots from there up to usable take it (a station's output slots come after its input slots, master s2.5).
+# A pack (grows) leaves nothing over: what does not fit gets new slots at the end, up to MAX_SLOTS. The caller checks the weight first.
 func add(number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}, first: int = 0) -> int:
 	if number <= 0 or count <= 0 or table == null:
 		return count
@@ -99,21 +156,33 @@ func add(number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}
 			left -= put
 
 	for pass_from in [maxi(bag_from, first), first]:
-		for i in range(pass_from, usable):
-			if left > 0 and numbers[i] == 0:
-				var put: int = mini(left, stack)
-				numbers[i] = number
-				counts[i] = put
-				wear[i] = item_wear
-				fav[i] = 0
-				inst[i] = item_inst.duplicate(true)
-				left -= put
+		left = _fill_empty(number, left, stack, item_wear, item_inst, pass_from)
+
+	if left > 0 and grows and slot_count < MAX_SLOTS:
+		var from: int = slot_count
+		var stacks: int = ceili(float(left) / float(maxi(stack, 1)))
+		_resize(mini(slot_count + ceili(float(stacks) / float(GROW_STEP)) * GROW_STEP, MAX_SLOTS))
+		left = _fill_empty(number, left, stack, item_wear, item_inst, from)
+
+	return left
+
+
+func _fill_empty(number: int, left: int, stack: int, item_wear: int, item_inst: Dictionary, from: int) -> int:
+	for i in range(from, usable):
+		if left > 0 and numbers[i] == 0:
+			var put: int = mini(left, stack)
+			numbers[i] = number
+			counts[i] = put
+			wear[i] = item_wear
+			fav[i] = 0
+			inst[i] = item_inst.duplicate(true)
+			left -= put
 
 	return left
 
 
 func is_empty() -> bool:
-	for i in SLOTS:
+	for i in slot_count:
 		if numbers[i] != 0:
 			return false
 
@@ -123,7 +192,7 @@ func is_empty() -> bool:
 func count_of(number: int, plain_only: bool = false, ready_only: bool = false) -> int:
 	var total: int = 0
 
-	for i in SLOTS:
+	for i in slot_count:
 		if numbers[i] == number and not (plain_only and not inst[i].is_empty()) and not (ready_only and maturing_at(i)):
 			total += counts[i]
 
@@ -149,7 +218,7 @@ func remove(number: int, count: int, taken: Array = [], ready_only: bool = false
 	var left: int = count
 
 	for plain in [true, false]:
-		for i in range(SLOTS - 1, -1, -1):
+		for i in range(slot_count - 1, -1, -1):
 			if left > 0 and numbers[i] == number and inst[i].is_empty() == plain and not (ready_only and maturing_at(i)):
 				var take: int = mini(left, counts[i])
 
@@ -191,7 +260,7 @@ func count_fill(number: int, plain_only: bool = false) -> int:
 	var fills: PackedInt32Array = fills_of(number)
 	var total: int = 0
 
-	for i in SLOTS:
+	for i in slot_count:
 		if numbers[i] != 0 and fills.has(numbers[i]) and not (plain_only and not inst[i].is_empty()) and not maturing_at(i):
 			total += counts[i]
 
@@ -225,7 +294,7 @@ func remove_fill(number: int, count: int, taken_inst: Array = [], plain_only: bo
 
 # Remove from one slot; returns {number, count, wear, inst} actually taken.
 func take_from_slot(slot: int, count: int) -> Dictionary:
-	if slot < 0 or slot >= SLOTS or numbers[slot] == 0 or count <= 0:
+	if slot < 0 or slot >= slot_count or numbers[slot] == 0 or count <= 0:
 		return {"number": 0, "count": 0}
 
 	var take: int = mini(count, counts[slot])
@@ -240,9 +309,13 @@ func take_from_slot(slot: int, count: int) -> Dictionary:
 	return {"number": number, "count": take, "wear": item_wear, "inst": item_inst}
 
 
-# Move a slot onto another: merge when the same item, else swap.
+# Move a slot onto another: merge when the same item, else swap. A pack takes a move to just past its end (free_bag_slot on a full one)
+# by growing.
 func move(from_slot: int, to_slot: int) -> void:
-	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= SLOTS or to_slot >= SLOTS or numbers[from_slot] == 0:
+	if grows and to_slot == slot_count and to_slot < MAX_SLOTS and from_slot >= 0 and from_slot < slot_count and numbers[from_slot] != 0:
+		_resize(mini(slot_count + GROW_STEP, MAX_SLOTS))
+
+	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= slot_count or to_slot >= slot_count or numbers[from_slot] == 0:
 		return
 
 	if numbers[to_slot] == numbers[from_slot] and inst[to_slot].is_empty() and inst[from_slot].is_empty() and table != null and _mergeable(numbers[to_slot], wear[to_slot], wear[from_slot]):
@@ -277,11 +350,11 @@ func move(from_slot: int, to_slot: int) -> void:
 # A favourite stack (inventory step 3): Sort, Store all and Stack to nearby leave it where it is. The flag holds the item number it was set with,
 # so a slot that empties (or gets something else by a direct write) is no longer a favourite.
 func is_fav(slot: int) -> bool:
-	return slot >= 0 and slot < SLOTS and numbers[slot] != 0 and fav[slot] == numbers[slot]
+	return slot >= 0 and slot < slot_count and numbers[slot] != 0 and fav[slot] == numbers[slot]
 
 
 func set_fav(slot: int, on: bool) -> void:
-	if slot >= 0 and slot < SLOTS:
+	if slot >= 0 and slot < slot_count:
 		fav[slot] = numbers[slot] if on else 0
 
 
@@ -295,37 +368,39 @@ func on_hotbar(slot: int) -> bool:
 	return slot >= 0 and slot < hotbar_slots and numbers[slot] != 0
 
 
-# The first empty backpack slot (after the hotbar), -1 when the backpack is full.
+# The first empty backpack slot (after the hotbar). A full pack names the slot just past its end, which move() adds; -1 for a full
+# container (or a pack at MAX_SLOTS).
 func free_bag_slot() -> int:
 	for slot in range(hotbar_slots, usable):
 		if numbers[slot] == 0:
 			return slot
 
-	return -1
+	return slot_count if grows and slot_count < MAX_SLOTS else -1
 
 
 # One byte per slot, 1 for a favourite: what the client is sent (protocol 99 favourites).
 func fav_flags() -> PackedByteArray:
 	var out: PackedByteArray = PackedByteArray()
-	out.resize(SLOTS)
+	out.resize(slot_count)
 
-	for i in SLOTS:
+	for i in slot_count:
 		out[i] = 1 if is_fav(i) else 0
 
 	return out
 
 
-# Format 3: the format byte, 8 bytes per slot (u32 number, u16 count, u16 wear), then the instance data of the slots that have one (inst_bytes).
+# Format 4: the format byte, the slot count byte, 8 bytes per slot (u32 number, u16 count, u16 wear), then the instance data of the slots that have one (inst_bytes).
 func to_bytes() -> PackedByteArray:
 	var out: PackedByteArray = PackedByteArray()
-	out.resize(1 + SLOTS * 8)
+	out.resize(2 + slot_count * 8)
 	out[0] = FORMAT
+	out[1] = slot_count
 	var map: Dictionary = {}
 
-	for i in SLOTS:
-		out.encode_u32(1 + i * 8, numbers[i])
-		out.encode_u16(1 + i * 8 + 4, counts[i])
-		out.encode_u16(1 + i * 8 + 6, mini(wear[i], 65535))
+	for i in slot_count:
+		out.encode_u32(2 + i * 8, numbers[i])
+		out.encode_u16(2 + i * 8 + 4, counts[i])
+		out.encode_u16(2 + i * 8 + 6, mini(wear[i], 65535))
 
 		if not inst_of(i).is_empty():
 			map[i] = inst[i]
@@ -334,18 +409,24 @@ func to_bytes() -> PackedByteArray:
 	return out
 
 
+# Takes the sender's slot count (a pack that grew or shrank, a body's remains that hold a large pack).
 func from_bytes(bytes: PackedByteArray) -> bool:
-	var head: int = 1 + SLOTS * 8
+	if bytes.size() < 2 or bytes[0] != FORMAT or bytes[1] < 1:
+		return false
 
-	if bytes.size() < head + 2 or bytes[0] != FORMAT or bytes.size() != head + 2 + bytes.decode_u16(head):
+	var n: int = bytes[1]
+	var head: int = 2 + n * 8
+
+	if bytes.size() < head + 2 or bytes.size() != head + 2 + bytes.decode_u16(head):
 		return false
 
 	var map: Dictionary = inst_from_bytes(bytes, head)
+	_resize(n)
 
-	for i in SLOTS:
-		numbers[i] = bytes.decode_u32(1 + i * 8)
-		counts[i] = bytes.decode_u16(1 + i * 8 + 4)
-		wear[i] = bytes.decode_u16(1 + i * 8 + 6)
+	for i in slot_count:
+		numbers[i] = bytes.decode_u32(2 + i * 8)
+		counts[i] = bytes.decode_u16(2 + i * 8 + 4)
+		wear[i] = bytes.decode_u16(2 + i * 8 + 6)
 		inst[i] = map.get(i, {}) if numbers[i] != 0 else {}
 
 	return true
@@ -429,7 +510,7 @@ static func clean_inst(raw: Variant, in_bag: bool = false) -> Dictionary:
 	if not in_bag and typeof(bag) == TYPE_ARRAY:
 		var rows: Array = []
 
-		for row in (bag as Array).slice(0, SLOTS):
+		for row in (bag as Array).slice(0, BASE_SLOTS):
 			rows.append(_clean_row(row))
 
 		while not rows.is_empty() and int(rows.back()[0]) == 0:
@@ -468,7 +549,7 @@ static func _whole(raw: Dictionary, key: String, fallback: int) -> int:
 
 # The instance data of a slot ({} for a plain or empty one).
 func inst_of(slot: int) -> Dictionary:
-	return inst[slot] if slot >= 0 and slot < SLOTS and numbers[slot] != 0 else {}
+	return inst[slot] if slot >= 0 and slot < slot_count and numbers[slot] != 0 else {}
 
 
 # --- Instance API for the catalog's Phase 2c (durability, sharpening, craftsmanship, Tempered; rules in smithing_rules.gd) ---
@@ -480,7 +561,7 @@ static func make_inst(craft: int = 0, tempered: bool = false) -> Dictionary:
 
 # The slot's current maximum durability: its instance's max_d, else the item row's durability (0 for an item that does not wear).
 func max_durability(slot: int) -> int:
-	if slot < 0 or slot >= SLOTS or numbers[slot] == 0:
+	if slot < 0 or slot >= slot_count or numbers[slot] == 0:
 		return 0
 
 	if inst[slot].has("max_d"):
@@ -497,7 +578,7 @@ func sharpness_used(slot: int) -> int:
 # Fills magical slot `index` (0 or 1) of the single item in `slot` with `effect`. Refused (false, nothing changes) when that slot is already
 # filled, the effect is empty or the slot holds no single item: an enchantment is never removed, replaced or moved (master s2.9 item 6).
 func fill_magic(slot: int, index: int, effect: String) -> bool:
-	if slot < 0 or slot >= SLOTS or numbers[slot] == 0 or counts[slot] != 1 or index < 0 or index > 1 or effect == "":
+	if slot < 0 or slot >= slot_count or numbers[slot] == 0 or counts[slot] != 1 or index < 0 or index > 1 or effect == "":
 		return false
 
 	var magic: Array = inst[slot].get("magic", ["", ""])
@@ -517,7 +598,7 @@ func fill_magic(slot: int, index: int, effect: String) -> bool:
 func to_json_array() -> Array:
 	var out: Array = []
 
-	for i in SLOTS:
+	for i in slot_count:
 		var row: Array = [numbers[i], counts[i], wear[i]]
 
 		if is_fav(i) or not inst_of(i).is_empty():
@@ -531,10 +612,19 @@ func to_json_array() -> Array:
 	return out
 
 
+# Every saved row loads (an inventory with fewer slots gets more, up to MAX_SLOTS); slots past the rows are emptied, and a pack then trims.
 func from_json_array(data: Array) -> void:
-	for i in mini(SLOTS, data.size()):
+	if data.size() > slot_count:
+		_resize(mini(data.size(), MAX_SLOTS))
+
+	for i in range(mini(slot_count, data.size()), slot_count):
+		clear_slot(i)
+
+	for i in mini(slot_count, data.size()):
 		numbers[i] = table.current_number(int(data[i][0])) if table != null else int(data[i][0])   # a retired item loads as its replacement (renames.json)
 		counts[i] = clampi(int(data[i][1]), 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0
 		fav[i] = numbers[i] if data[i].size() > 3 and int(data[i][3]) == 1 else 0
 		inst[i] = clean_inst(data[i][4]) if data[i].size() > 4 and numbers[i] != 0 else {}
+
+	trim()

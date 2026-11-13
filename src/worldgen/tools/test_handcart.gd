@@ -98,7 +98,7 @@ func join(peer: int, at: Vector3) -> void:
 	items.vitals_of(peer)["weight"] = 75.0
 	var inv = items.inventory_of(peer)
 
-	for s in inv.SLOTS:   # an empty pack: what the test gives is all there is
+	for s in inv.slot_count:   # an empty pack: what the test gives is all there is
 		inv.clear_slot(s)
 
 
@@ -437,7 +437,7 @@ func _init() -> void:
 	items.report_position(1, parked + Vector3(1.0, 0.0, 0.0))
 	cart_act(1, Carts.OP_LOAD, heavy)
 	check(not items._items[heavy]["struct"].has("on"), "a crate that would take the cart past its payload stays on the ground")
-	for s in box(heavy).SLOTS:
+	for s in box(heavy).slot_count:
 		box(heavy).clear_slot(s)
 
 	cart_act(1, Carts.OP_LOAD, heavy)
@@ -476,7 +476,7 @@ func _init() -> void:
 	check(box(cart).count_of(stone) == 0 and box(cart).count_of(food) == 4, "(the stones are taken out; 4 raw meat stay in its store)")
 	var inv = items.inventory_of(1)
 
-	for s in inv.SLOTS:
+	for s in inv.slot_count:
 		inv.clear_slot(s)
 
 	var bag_n: int = items.table.number_of("fibre_shoulder_bag")
@@ -492,7 +492,7 @@ func _init() -> void:
 	check(not items._items.has(cart), "the loaded cart comes apart")
 	var bag_slot: int = -1
 
-	for s in inv.SLOTS:
+	for s in inv.slot_count:
 		if inv.numbers[s] == bag_n:
 			bag_slot = s
 

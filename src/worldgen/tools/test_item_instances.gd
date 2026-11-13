@@ -50,13 +50,13 @@ func make(dir: String = DIR):
 
 
 func empty_pack(inv) -> void:
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		inv.clear_slot(slot)
 
 
 # The slot holding `number` with exactly this instance data, or -1.
 func slot_with(inv, number: int, inst: Dictionary) -> int:
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == number and inv.inst_of(slot) == inst:
 			return slot
 
@@ -70,7 +70,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(DIR + "/" + file)
 
 	check(Net.PROTOCOL_VERSION >= 106, "PROTOCOL_VERSION is 106 or later (%d)" % Net.PROTOCOL_VERSION)
-	check(InventoryScript.FORMAT == 3, "Inventory.FORMAT is 3")
+	check(InventoryScript.FORMAT == 4, "Inventory.FORMAT is 4 (protocol 113: the slot count after the format byte)")
 
 	var items = make()
 	var table = items.table
@@ -104,10 +104,13 @@ func _init() -> void:
 	check((inv.to_json_array()[plain_axe] as Array).size() == 3, "a plain slot row stays [number, count, wear]")
 	var bytes: PackedByteArray = inv.to_bytes()
 	var wire = InventoryScript.new(table)
-	check(bytes.size() > 1 + 30 * 8 + 2 and wire.from_bytes(bytes) and wire.inst_of(at) == FULL and wire.inst_of(plain_axe).is_empty(), "the bytes keep every field (%d bytes)" % bytes.size())
+	check(bytes.size() > 2 + 30 * 8 + 2 and wire.from_bytes(bytes) and wire.inst_of(at) == FULL and wire.inst_of(plain_axe).is_empty(), "the bytes keep every field (%d bytes)" % bytes.size())
 	var plain_bytes: PackedByteArray = InventoryScript.new(table).to_bytes()
-	check(plain_bytes.size() == 1 + 30 * 8 + 2, "a pack with no instances is 243 bytes (format byte, 30 x 8, empty u16 length)")
-	check(not wire.from_bytes(bytes.slice(0, 1 + 30 * 8)), "format 2 bytes are refused")
+	check(plain_bytes.size() == 2 + 30 * 8 + 2, "a pack with no instances is 244 bytes (format byte, slot count, 30 x 8, empty u16 length)")
+	check(not wire.from_bytes(bytes.slice(0, 2 + 30 * 8)), "bytes cut short are refused")
+	var old_bytes: PackedByteArray = plain_bytes.slice(1)
+	old_bytes.insert(0, 3)
+	check(not wire.from_bytes(old_bytes), "format 3 bytes are refused")
 
 	# 3. No merge with or into an instance slot.
 	empty_pack(inv)
@@ -214,19 +217,19 @@ func _init() -> void:
 	check(slot_with(chest, stone, {"temper": 1}) >= 0 and slot_with(inv, stone, {"temper": 1}) < 0, "Store all moves it into the chest with its data")
 	items.action(1, Net.ACT_BULK, 0, 0, 0, Vector3.ZERO)
 	inv.add(stone, 5)
-	items._sort_slots(inv, 0, inv.SLOTS, 1, true)
+	items._sort_slots(inv, 0, inv.slot_count, 1, true)
 	check(slot_with(inv, stone, {"temper": 1}) >= 0 and slot_with(inv, axe, mighty) >= 0 and inv.count_of(stone) == 6, "Sort reorders the stacks with their data, never joining them")
 	inv.add(stone, 4, 0, {"sharp": 2})
 	items._split(inv, slot_with(inv, stone, {"sharp": 2}), 2)
 	var halves: int = 0
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == stone and inv.inst_of(slot) == {"sharp": 2} and inv.counts[slot] == 2:
 			halves += 1
 
 	check(halves == 2, "a split instance stack keeps its data on both halves")
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == stone and inv.inst_of(slot) != {"temper": 1}:
 			inv.clear_slot(slot)
 
@@ -245,7 +248,7 @@ func _init() -> void:
 	inv.add(stone, 3)
 	check(items.take_from(1, "stone", 3) and slot_with(inv, stone, {"temper": 1}) >= 0, "a hand-over (dialogue take_item) gives the plain stones first")
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == stone:
 			inv.clear_slot(slot)
 
@@ -295,13 +298,14 @@ func _init() -> void:
 	check(took_logs == 2 and slot_with(inv, low, {"craft": 1}) >= 0 and inv.count_of(high) == 0, "a blueprint's _stock_take(plain_only) does the same from the pack (took %d)" % took_logs)
 	inv.clear_slot(slot_with(inv, low, {"craft": 1}))
 
-	# A large log that does not fit is never doubled: the chest or the ground keeps it and nothing is laid at the player's feet.
+	# A large log into a pack with every slot taken is never doubled: the pack grows for it (Dave 12 Nov 2026 23:06Z, protocol 113), so it moves
+	# once, from the chest or the ground, and nothing is laid at the player's feet.
 	var big: int = table.number_of("log_oak")
 	var filler: Array = []
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == 0:
-			inv.numbers[slot] = fibre   # light, so only the full pack (not the weight) stops the log
+			inv.numbers[slot] = fibre   # light, so only the slots (not the weight) are full
 			inv.counts[slot] = 1
 			filler.append(slot)
 
@@ -314,11 +318,11 @@ func _init() -> void:
 
 		return seen
 
+	var full_slots: int = inv.slot_count
 	chest.add(big, 1)
-	var before_logs: int = logs_out.call()
 	items.action(1, Net.ACT_CHEST_TAKE, chest.numbers.find(big), chest_id, 1, Vector3.ZERO)
-	check(chest.count_of(big) == 1 and logs_out.call() == before_logs and inv.count_of(big) == 0, "a full pack takes no log from the chest and none appears on the ground")
-	chest.clear_slot(chest.numbers.find(big))
+	check(inv.count_of(big) == 1 and chest.count_of(big) == 0 and logs_out.call() == 0 and inv.slot_count > full_slots, "every slot taken: the pack grows (%d to %d slots) and takes the log from the chest; only one exists" % [full_slots, inv.slot_count])
+	inv.clear_slot(inv.numbers.find(big))
 	items.drop_in_world(big, 1, Vector3(1.0, 10.0, 0.0))
 	var log_id: int = -1
 
@@ -326,23 +330,15 @@ func _init() -> void:
 		if int(items._items[id].get("number", 0)) == big:
 			log_id = id
 
-	before_logs = logs_out.call()
 	items.action(1, Net.ACT_PICKUP, log_id, 0, 0, Vector3.ZERO)
-	check(before_logs == 1 and logs_out.call() == 1 and items._items.has(log_id) and inv.count_of(big) == 0, "a full pack picks up no log and the ground holds one, not two")
-	inv.clear_slot(filler.pop_back())   # positive controls: with a free slot the same pick-up and chest take succeed
-	items.action(1, Net.ACT_PICKUP, log_id, 0, 0, Vector3.ZERO)
-	check(inv.count_of(big) == 1 and not items._items.has(log_id) and logs_out.call() == 0, "with a free slot the log is picked up, and only one exists")
-	inv.clear_slot(inv.numbers.find(big))
-	chest.add(big, 1)
-	items.action(1, Net.ACT_CHEST_TAKE, chest.numbers.find(big), chest_id, 1, Vector3.ZERO)
-	check(inv.count_of(big) == 1 and chest.count_of(big) == 0 and logs_out.call() == 0, "and taken from the chest, the log moves to the pack, only one exists")
+	check(inv.count_of(big) == 1 and not items._items.has(log_id) and logs_out.call() == 0, "and picked up from the ground, the log moves to the pack, only one exists")
 	inv.clear_slot(inv.numbers.find(big))
 
 	for slot in filler:
 		inv.clear_slot(slot)
 
 	# A craft cancel gives plain stacks back with their wear (food age, wet wood), not fresh.
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == fibre:
 			inv.clear_slot(slot)
 
@@ -362,7 +358,7 @@ func _init() -> void:
 	var life: int = table.shelf_units(nuts)
 	check(nuts > 0 and nectar > 0 and life > 100 and items.recipes.recipe(31).get("needs", []) == [[nuts, 3], [nectar, 1]], "nuts spoil and recipe 31 takes three nuts and a nectar (life %d)" % life)
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] in [nuts, nectar, fibre]:
 			inv.clear_slot(slot)
 
@@ -370,7 +366,7 @@ func _init() -> void:
 	var old_age: int = life / 2
 	var free_slots: Array = []
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == 0 and free_slots.size() < 2:
 			free_slots.append(slot)
 
@@ -399,7 +395,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	var ages: Array = []
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == nuts:
 			ages.append([inv.counts[slot], inv.wear[slot]])
 
@@ -410,7 +406,7 @@ func _init() -> void:
 
 	check(young_back == 9 and inv.count_of(nuts) == 9 and inv.count_of(nuts, true) == 9 and inv.count_of(nectar) == 3, "the cancel gives back the nine young nuts still owed, plain and at their age, not the old ones (%s)" % str(ages))
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] in [nuts, nectar]:
 			inv.clear_slot(slot)
 
@@ -425,11 +421,11 @@ func _init() -> void:
 	else:
 		check(false, "berries spoil (the rot check needs a perishable item)")
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == stone and inv.inst_of(slot).is_empty():
 			inv.clear_slot(slot)
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == fibre:
 			inv.clear_slot(slot)
 
@@ -492,12 +488,12 @@ func _init() -> void:
 	var c2: int = slot_with(third_inv, fibre, {"craft": 2})
 	var worn8: int = -1
 
-	for slot in third_inv.SLOTS:
+	for slot in third_inv.slot_count:
 		if third_inv.numbers[slot] == fibre and third_inv.inst_of(slot).is_empty() and third_inv.wear[slot] == 8:
 			worn8 = slot
 
 	check(third_inv.count_of(fibre) == 6 and c1 >= 0 and third_inv.wear[c1] == 0 and c2 >= 0 and third_inv.wear[c2] == 5 and worn8 >= 0, "the cancel gives each row back as it was, the rest plain (fibre does not age, so the plain ones join the worn stack) (%s)" % str(third_inv.to_json_array().filter(func(r): return int(r[0]) != 0)))
-	for slot in third_inv.SLOTS:
+	for slot in third_inv.slot_count:
 		if third_inv.numbers[slot] == fibre:
 			third_inv.clear_slot(slot)
 

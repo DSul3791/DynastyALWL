@@ -29,7 +29,7 @@ func _have(peer: int, id: String) -> int:
 func _clear(peer: int) -> void:
 	var inv = items.inventory_of(peer)
 
-	for slot in range(inv.SLOTS):
+	for slot in range(inv.slot_count):
 		inv.numbers[slot] = 0
 		inv.counts[slot] = 0
 		inv.wear[slot] = 0
@@ -207,7 +207,7 @@ func _init() -> void:
 	# come back as 8 bronze nails and the 8 refused at the hammer-2 row stay as nails.
 	check(_ids_standing("wooden_crate").is_empty() and _have(1, "lumber") == 10 and _have(1, "nails") == 8 and _have(1, "bronze_nails") == 8 and _have(1, "wooden_crate_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, bronze nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "bronze_nails")])
 
-	# Takedown into a full pack keeps the blueprint piece.
+	# Takedown into a pack whose 30 slots are all taken: the pack grows (Dave 12 Nov 2026 23:06Z, protocol 113) and the materials come back.
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
 	_give(1, "lumber", 5)
@@ -216,12 +216,14 @@ func _init() -> void:
 	check(_ids_standing("wooden_crate").size() == 1, "the crate stands again")
 	var inv = items.inventory_of(1)
 
-	for slot in range(inv.SLOTS):
-		inv.numbers[slot] = items.table.number_of("stone")
-		inv.counts[slot] = items.table.stack_of(items.table.number_of("stone"))
+	for slot in range(inv.slot_count):
+		if inv.numbers[slot] == 0:   # the hammer stays
+			inv.numbers[slot] = items.table.number_of("plant_fibre")
+			inv.counts[slot] = 1
 
+	var slots_before: int = inv.slot_count
 	items.action(1, Net.ACT_PICKUP, _ids_standing("wooden_crate")[0], 0, 0, Vector3.ZERO)
-	check(_ids_standing("wooden_crate").size() == 1, "a full pack: the crate stays up, nothing is lost")
+	check(_ids_standing("wooden_crate").is_empty() and inv.slot_count > slots_before and _have(1, "lumber") > 0, "every slot taken: the pack grows (%d to %d slots) and the crate's materials come back" % [slots_before, inv.slot_count])
 
 	# A snare: the kit places as the snare_trap structure and takes down into the kit.
 	_clear(1)

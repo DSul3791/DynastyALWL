@@ -15,7 +15,6 @@ extends RefCounted
 # The cart's payload (its max_kg) counts its cargo store and every crate on it with the crate's own wood (its blueprint's materials) and contents.
 
 const CarryRules := preload("res://src/shared/carry_rules.gd")
-const InventoryScript := preload("res://src/shared/inventory.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const OP_GRAB := 0      # ACT_CART b: take the handle of cart a
 const OP_RELEASE := 1   # let go of the handle (a ignored)
@@ -538,7 +537,7 @@ func dismantle(peer: int, inv, id: int) -> void:
 
 	var logs: int = 0
 
-	for slot in (box.SLOTS if box != null else 0):
+	for slot in (box.slot_count if box != null else 0):
 		if host.is_shoulder_item(box.numbers[slot]):
 			logs += box.counts[slot]
 
@@ -552,8 +551,7 @@ func dismantle(peer: int, inv, id: int) -> void:
 		host._say(peer, "Empty the handcart first: you cannot carry its load.")
 		return
 
-	var trial = InventoryScript.new(host.table)
-	trial.from_json_array(inv.to_json_array())
+	var trial = inv.copy()
 
 	if not _unpack(trial, box, row):
 		host._say(peer, "Make room in your pack first: the handcart's load and its parts must all fit.")
@@ -573,7 +571,7 @@ func dismantle(peer: int, inv, id: int) -> void:
 # Puts the cart's cargo and its blueprint materials into `inv`; false when something does not fit (inv is then partly filled: only call on a copy first).
 func _unpack(inv, box, row: Dictionary) -> bool:
 	if box != null:
-		for slot in box.SLOTS:
+		for slot in box.slot_count:
 			if box.numbers[slot] != 0 and inv.add(box.numbers[slot], box.counts[slot], box.wear[slot], box.inst_of(slot)) > 0:
 				return false
 

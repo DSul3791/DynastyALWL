@@ -235,7 +235,7 @@ func refresh_view() -> void:
 	_pack_list.clear()
 	_pack_shown.clear()
 
-	for slot in view.inventory.SLOTS:
+	for slot in view.inventory.slot_count:
 		if view.inventory.numbers[slot] != 0:
 			_pack_list.add_item("%s   x%d" % [view.table.name_of(view.inventory.numbers[slot]), view.inventory.counts[slot]])
 			_pack_shown.append(slot)

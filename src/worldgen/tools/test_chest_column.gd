@@ -33,6 +33,7 @@ class FakeTable:
 
 class FakeStore:
 	const SLOTS := 36
+	var slot_count: int = SLOTS
 	var numbers: PackedInt32Array = PackedInt32Array()
 	var counts: PackedInt32Array = PackedInt32Array()
 	var wear: PackedInt32Array = PackedInt32Array()

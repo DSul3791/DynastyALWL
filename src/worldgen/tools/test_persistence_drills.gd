@@ -64,7 +64,7 @@ func state_of(items) -> Dictionary:
 	var water: int = 0
 	var bucket: int = items.table.number_of("bucket")
 
-	for i in items.inventory_of(1).SLOTS:
+	for i in items.inventory_of(1).slot_count:
 		if items.inventory_of(1).numbers[i] == bucket:
 			water += items.inventory_of(1).wear[i]
 
@@ -82,7 +82,7 @@ func state_of(items) -> Dictionary:
 	var roast: int = items.table.number_of("roast_forage")
 	var food_age: int = -1
 
-	for i in items.inventory_of(1).SLOTS:
+	for i in items.inventory_of(1).slot_count:
 		if items.inventory_of(1).numbers[i] == roast:
 			food_age = items.inventory_of(1).wear[i]
 
