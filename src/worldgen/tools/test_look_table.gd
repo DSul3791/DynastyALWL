@@ -6,13 +6,13 @@ extends SceneTree
 
 const LookTable := preload("res://src/client/look_table.gd")
 const NEAR_TRIANGLES := 300
-const BIG := {"rock_pile": 900, "rough_bed": 1300, "log_wall": 1500, "saw_mill": 1500, "water_wheel": 800, "woodworking_table": 600, "door_double": 600, "foundation": 600, "clay_hearth": 600, "oven": 450, "thatch_floor": 300, "thatch_doorway": 400, "log_seat": 400, "wool_rug": 950, "hide_rug": 520, "straw_bed": 400, "feather_bed": 500, "canopy_bed": 1150, "chandelier": 600, "flower_pot": 720}   # the comfort furniture (Kathleen, 2026-10-31)
+const BIG := {"rock_pile": 900, "rough_bed": 1300, "log_wall": 1500, "saw_mill": 1500, "water_wheel": 800, "woodworking_table": 600, "foundation": 600, "clay_hearth": 600, "oven": 450, "thatch_floor": 300, "thatch_doorway": 400, "log_seat": 400, "wool_rug": 950, "hide_rug": 520, "straw_bed": 400, "feather_bed": 500, "canopy_bed": 1150, "chandelier": 600, "flower_pot": 720}   # the comfort furniture (Kathleen, 2026-10-31)
 # Buildables B1a (Kathleen, 10 Nov 2026): each new piece gets the cap of the piece it matches. The log foundation the stone foundation's (600); the thatch
 # window the thatch doorway's (400); the log doorway and window are log courses split either side of a gap, so nearly
-# twice a log wall's logs (log_wall itself 1500), 800; the stone and brick doorways and windows are masonry_wall with jamb blocks or a brick arch and a
-# door, 450 (the oven's).
-const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "log_doorway_open": 800, "log_window": 800,
-	"stone_doorway": 450, "stone_doorway_open": 450, "brick_doorway": 450, "brick_doorway_open": 450, "stone_window": 450, "brick_window": 450}
+# twice a log wall's logs (log_wall itself 1500), 800; the stone and brick doorways and windows are masonry_wall with jamb blocks or a brick arch,
+# 450 (the oven's).
+const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "log_window": 800,
+	"stone_doorway": 450, "brick_doorway": 450, "stone_window": 450, "brick_window": 450}
 # Buildables B1b to B6 (Kathleen, 10 Nov 2026), again the cap of the piece each matches. The log stairs are the stone stairs' ten steps (240) on two log
 # stringers, 350. The iron and steel doorways are the stone doorway's family, 450. The thatch and log roof corners are their straight roofs (log 300)
 # with a third eave or a fascia and a corner post, 400 (the thatch doorway's). A fence section or gate is a 2 m wall piece between two shared
@@ -22,16 +22,27 @@ const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "
 # a 2 m bed with four lashed stakes and a woven edge, 600 (the foundation's).
 const FENCES := ["thatch_fence", "thatch_gate", "thatch_gate_open", "wood_fence", "wood_gate", "wood_gate_open", "log_fence", "log_gate", "log_gate_open",
 	"stone_fence", "stone_gate", "stone_gate_open", "brick_fence", "brick_gate", "brick_gate_open", "iron_fence", "iron_gate", "iron_gate_open"]
-const B1B_B6 := {"log_stairs": 350, "iron_doorway": 450, "iron_doorway_open": 450, "steel_doorway": 450, "steel_doorway_open": 450,
+const B1B_B6 := {"log_stairs": 350, "iron_doorway": 450, "steel_doorway": 450,
 	"thatch_roof_corner": 400, "log_roof_corner": 400, "log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
 	"wooden_barrel": 500, "stone_well": 550, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
 	"stone_lamp_post": 450, "thatch_garden_plot": 600}
 # The pitched tier roofs (Kathleen, 10 Nov 2026): the clay tile roofs add a rib down the slope every 0.24 m and a round ridge tile to the courses, 350;
 # their hip corners carry the ribs over three faces and two hip caps, 400 (the thatch and log corners').
 const TILE_ROOFS := {"brick_roof": 350, "engineered_roof": 350, "brick_roof_corner": 400, "engineered_roof_corner": 400}
-# The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with an iron-clad door, bolted bands and a drop bar, 450
-# (the iron and steel doorways').
-const FORTIFIED := {"fortified_doorway": 450, "fortified_doorway_open": 450}
+# The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with bolted bands, 450 (the iron and steel doorways').
+const FORTIFIED := {"fortified_doorway": 450}
+# BUGLIST-002 (13 Nov 2026): the new empty doorway frames. The double is the single's wall twice as wide, so the single's cap; an arched frame adds the wall steps and
+# a ring of voussoirs, bent sticks or timbers round the curve (measured with tools/look_runtime.py at 252 to 1056). A door is one parametric builder: a single leaf
+# 180 to 744 triangles, a double leaf pair twice that (Fortified double arched 1488); the open look is the same leaf swung.
+const DOOR_FRAMES := {"thatch_double_doorway": 400, "thatch_arched_doorway": 700, "thatch_double_arched_doorway": 700,
+	"log_double_doorway": 800, "log_arched_doorway": 1150, "log_double_arched_doorway": 1150,
+	"double_doorway": 450, "wood_arched_doorway": 550, "wood_double_arched_doorway": 550,
+	"stone_double_doorway": 450, "stone_arched_doorway": 800, "stone_double_arched_doorway": 800,
+	"brick_double_doorway": 500, "brick_arched_doorway": 700, "brick_double_arched_doorway": 700,
+	"engineered_arched_doorway": 500, "engineered_double_arched_doorway": 550,
+	"fortified_arched_doorway": 800, "fortified_double_arched_doorway": 850}
+const DOOR_SINGLE := 800
+const DOOR_DOUBLE := 1600
 
 var failures: int = 0
 
@@ -58,7 +69,10 @@ func _cap(look: String) -> int:
 	if look in FENCES:
 		return 600
 
-	return int(BIG.get(look, B1A.get(look, B1B_B6.get(look, TILE_ROOFS.get(look, FORTIFIED.get(look, NEAR_TRIANGLES))))))
+	if ("_door" in look) and not ("doorway" in look):      # a door (shut or open): one leaf, or two for a double
+		return DOOR_DOUBLE if "double" in look else DOOR_SINGLE
+
+	return int(BIG.get(look, B1A.get(look, B1B_B6.get(look, TILE_ROOFS.get(look, FORTIFIED.get(look, DOOR_FRAMES.get(look, NEAR_TRIANGLES)))))))
 
 
 func _init() -> void:
