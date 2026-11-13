@@ -20,7 +20,7 @@ Requirement (BUGLIST-001 section C): equipping a backpack must not change the co
 Restore the weight effect for the two backpacks only, from the values the catalog already carried before M001-T15 retired them (items.json at fc67431^: Hide - Backpack 12, Leather - Backpack 18; master DYNASTY_MASTER_ITEMS.md s3.9 table row "Backpack carry bonus"). No new numbers, items, mechanics, protocol or save-format change.
 
 - data/items/items.json: `carry_bonus_kg` 12 on row 50, 18 on row 767 (field restored; bag_slots untouched).
-- src/shared/carry_rules.gd: `carry_bonus_kg(numbers, table)` (sum over worn numbers) and `body_kg(weight, worn, table, cfg)`, the one formula both sides call.
+- src/shared/carry_rules.gd: `carry_bonus_kg(numbers, table)` (sum over worn numbers) and `carry_body_kg(weight, worn, table, cfg)`, the one formula both sides call.
 - src/stream/server_items.gd `_carry_body`: calls `CarryRules.carry_body_kg` (body weight plus bonus / carry_kg_per_body_kg, the original formula); `_loaded_bag_effort` works the comfortable load out only when a worn bag has loaded_effort, so the limit and the comfortable load (free_ratio of it) both rise (limit +12 or +18 kg, comfortable +9.6 or +14.4 kg). Everything keyed on it follows: pick-up refusal `_fit`, `_carry_notice`, loaded-bag effort, cart cargo check.
 - src/client/inventory_view.gd: `carry_body_kg` calls the same helper (bar, walk slowdown, pick-up gate); the item tooltip says "you can carry N kg more".
 - src/worldgen/tools/validate_items.gd: `carry_bonus_kg` allowed only as above 0 up to 60 kg on a `back` piece (was forbidden everywhere).
@@ -52,3 +52,7 @@ Status: NEEDS PLAYER VERIFICATION (weight effect). Slot point: see Q1.
 ## F6 player check
 
 Wear the Hide - Backpack with the pack nearly full of stone (carry bar yellow or red around 42 kg): the bar's comfortable mark and limit move out (about 51.6 and 64.5 kg at 75 kg body), the walk returns to normal speed, and the inventory shows the same slots; take it off and the bar and slowdown return. The Leather - Backpack moves them further (about 56.4 and 70.5 kg).
+
+## Test evidence (PC run, 13 Nov 2026)
+
+Every GDScript test marked "NOT RUN" above has now run (below); picture lanes and visual or sound checks have still not run. Ran on the David4 test PC (Linux, Godot 4.7.2 voxel build, headless, 2 jobs, fresh import) on `claude/buglist001-integration` at 8e46c4b254ed8061938cecee06a2cbb8665393c9 (dev f5d6b54 + all seven BUGLIST-001 heads). Result: 370 pass, 0 fail, no retries (fast 361/361, timing 8/8, slow 1/1 test_worldgen). validate_items PASS (0 errors), check_look_names PASS, warnings: none new over tools/warning_baseline.txt. Startup smoke: welcome 15.7 s, ground ready 133 s, 0 script errors, exit 134 (known headless exit). Picture lanes (5): NOT RUN; visuals and sound not checked. Logs: David4 /work/lanerun/bl001b_plan, /work/lanerun/bl001b_extra. An earlier run on a0b5365 failed 2 tests (test_hammer_list counts, test_server_items road restart height) plus 3 warnings; those were test-only fixes, reviewed, and are in 8e46c4b. Merged to dev by PRs #1068-#1074; dev add271196 has the identical tree (c6ec74eb). Status stays NEEDS PLAYER VERIFICATION until Dave's F6 check.
