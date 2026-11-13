@@ -4652,7 +4652,7 @@ func worn_top(slot: String, skip: Array = []) -> int:
 # The body weight the carry limit is worked out from (the server does the same): the real weight plus what the worn pack's weight spreading
 # adds (items.json carry_bonus_kg; DESIGN-001, BUGLIST-001), so the comfortable load and the limit both rise by it.
 func carry_body_kg() -> float:
-	return CarryRules.body_kg(weight_kg, worn, table, _carry_cfg)
+	return CarryRules.carry_body_kg(weight_kg, worn, table, _carry_cfg)
 
 
 # Opens the bag worn at a worn position beside the pack (the container screen); the server answers with its contents.

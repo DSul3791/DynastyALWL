@@ -11936,7 +11936,7 @@ func rain_shed(peer: int) -> float:
 # (items.json carry_bonus_kg, 12 Hide - Backpack and 18 Leather - Backpack; DESIGN-001, BUGLIST-001). Slots are not touched: a bag's own slots are
 # separate, and the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
-	return CarryRules.body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)
+	return CarryRules.carry_body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)
 
 
 # ACT_WEAR: the piece in a pack slot goes to its slot-and-layer. Every worn piece sharing a position with it comes off into the pack (the one in

@@ -123,8 +123,8 @@ func _init() -> void:
 	check(with_leather[0] == bare[0] and with_leather[1] == bare[1], "worn Leather - Backpack: the pack's slot count is unchanged (%d)" % with_leather[0])
 	check(is_equal_approx(with_leather[2], bare[2] + 18.0) and with_leather[3] > with_hide[3], "worn Leather - Backpack: limit +18 kg, comfortable load above the hide pack's")
 
-	# The client's carry_body_kg is CarryRules.body_kg over its worn numbers (the server's worn_of): the same call gives the same body value.
-	check(is_equal_approx(CarryRules.body_kg(75.0, items.worn_of(1), table, cfg), items._carry_body(1)) and is_equal_approx(CarryRules.body_kg(75.0, [0, 0, 0], table, cfg), 75.0), "client and server work the carry body weight out through one shared helper (%.2f kg worn)" % items._carry_body(1))
+	# The client's carry_body_kg is CarryRules.carry_body_kg over its worn numbers (the server's worn_of): the same call gives the same body value.
+	check(is_equal_approx(CarryRules.carry_body_kg(75.0, items.worn_of(1), table, cfg), items._carry_body(1)) and is_equal_approx(CarryRules.carry_body_kg(75.0, [0, 0, 0], table, cfg), 75.0), "client and server work the carry body weight out through one shared helper (%.2f kg worn)" % items._carry_body(1))
 
 	# 4. Hindering follows the new comfortable load: a load that slows a bare body does not slow a pack-wearer.
 	var load_kg: float = bare[3] + 3.0
