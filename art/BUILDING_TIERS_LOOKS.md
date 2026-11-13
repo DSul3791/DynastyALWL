@@ -26,7 +26,7 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 - Triangle caps: default 300; clay-tile roofs 350 and their corners 400 (`TILE_ROOFS` in `test_look_table.gd`).
 - Crude keeps the older thatch builder (`thatch_roof`), now a sloped panel with no posts: `Crude - Roof 45` (`thatch_roof`) and `Crude - Roof 65` (`thatch_roof_65`), BUG-011; it rests on wall tops and ceiling edges (`placement_rules.gd` `roof_panel_spot`). The Crude doorway is an open frame with no door (BUG-010).
 
-## Fortified (#989; world shots by Dino 10 Nov, passed)
+## Fortified (historical #989 look pass; BUGLIST-002 replaced integral door on 13 Nov)
 
 - `concrete_wall(true)`: 0.3 m thick, plinth course at the foot, two iron bands across both faces with bolt heads, an iron strap up each end.
 - **Fortified doorway (`fortified_doorway`) is an empty, banded concrete frame**; the earlier iron-clad leaf, bar and integral open-twin behavior have been removed. A separate **Fortified - Door** is a riveted all-metal iron-and-steel door, built and attached by hammer blueprint. The same empty-frame/separate-door distinction applies to all seven tiers and four configurations; details are in `docs/design/DYNASTY_MASTER_ITEMS.md` §3.0 and `docs/buglists/BUGLIST-002.md`. Actual appearance is pending F6 verification.
