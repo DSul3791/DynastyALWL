@@ -1,0 +1,898 @@
+{
+ "meta": {
+  "workstream": "ws_runtime (automatic completion, persistence, payout, event support)",
+  "baseline": "dev dc2fa52 on branch claude/project-thread-d8jals",
+  "evidence_class": "CODE_VERIFIED unless a test is cited; no tests or Godot run in this audit",
+  "draft": "docs/design/PLAYER_GOALS_REWARDS_DRAFT.md"
+ },
+ "by_kind": {
+  "craft": {
+   "support": "PARTIAL",
+   "evidence": [
+    "src/stream/server_items.gd:15679-15688 _goal_made increments goal_counts['made:<item id>'] by 1 and runs _goals_check",
+    "src/stream/server_items.gd:17414 the ONLY call of _goal_made: in _craft_tick after a queued craft finishes (hand, station, station-store output, chop recipe, sealed batch)",
+    "src/stream/server_items.gd:17396-17401 a sealed (ready_age) recipe makes the whole queued batch in one completion: one _goal_made call for N crafts",
+    "src/stream/server_items.gd:17408-17411 chop recipe output is _chop_yield (12 firewood per log) but still one _goal_made call",
+    "src/stream/server_items.gd:1218-1219 + src/shared/recipe_table.gd:118-136 legacy ACT_CRAFT immediate craft: no _goal_made (client sends it only from test harnesses: src/client/held_item.gd:3286,3301, src/client/inventory_view.gd:5269-5270)",
+    "src/stream/server_items.gd:9170-9203 chopping-block hand split (E): wooden block -> firewood dropped beside the block, no _goal_made",
+    "src/stream/server_items.gd:9223-9278 _chop_loose_log: axe on a loose log -> 3 wooden blocks dropped in the world, no _goal_made",
+    "src/stream/server_items.gd:9421-9449 _kiln_burn: charcoal into the kiln output, no _goal_made",
+    "src/stream/server_items.gd:9834-9864 _tend_fire: raw food in a lit fire's store becomes cooking.json cooks_into/gives (roast_*), no _goal_made",
+    "src/stream/server_items.gd:7650-7668 _cook (ACT_COOK): roast into the pack, no _goal_made",
+    "src/stream/server_trade.gd:336-338 purchase gives items via items.give with _gain_source 'trade' (not a craft; does not count for made_item; does count for have_item checks)"
+   ],
+   "caveats": [
+    "Counts are per completed craft ACTION, not per unit produced (twine x2 recipe sinew_cord counts 1; jerky recipe gives 2 per craft; a sealed batch of N counts 1; a chop of 1 log giving 12 firewood counts 1).",
+    "Credit is by output item id (recipe['gives'][0]), so every recipe that yields the item counts (twine from fibre, bark or sinew); variants (Tempered/+1) count as the same item.",
+    "Only connected peers' queues tick (src/stream/server_items.gd:17292); credit lands when the craft finishes, never at queue time; a cancelled entry gives no credit.",
+    "Admin free-craft entries (free_entry) also call _goal_made (src/stream/server_items.gd:17306-17316, src/stream/server_items.gd:17414).",
+    "Craft goals whose main-route instruction uses a non-queue path will never complete: craft:firewood (draft line 46 instructs the hand split), craft:wooden_block(_soft) via hand chop, craft:charcoal via kiln, craft:roast_forage via fire store."
+   ]
+  },
+  "build": {
+   "support": "EXISTING (with caveats)",
+   "evidence": [
+    "src/stream/server_items.gd:8365-8477 _place_structure: every kit or blueprint piece (doors snapped into doorways src/stream/server_items.gd:3733-3740, roof panels, stations, add-ons attached to fire/fireplace/table, traps, handcart) ends here",
+    "src/stream/server_items.gd:8480-8499 _after_built -> _goal_event(peer, 'placed', kind) (counter 'event:placed:<kind>')",
+    "src/stream/server_items.gd:8470-8472 a blueprint SITE does not count when put down; src/stream/server_items.gd:8948-8956 _finish_site calls _after_built for the peer who deposits the last material",
+    "src/stream/server_items.gd:3790-3829 campfire_kit is placed by its own branch and fires _goal_event(peer,'placed','campfire')",
+    "src/stream/server_items.gd:7901-7955 _place_torch (hand_placed standing_torch, torch_sconce): no goal event",
+    "src/stream/server_items.gd:2891-2894/src/stream/server_items.gd:3209-3212 path patches fire 'path_laid' (not 'placed')",
+    "src/stream/server_items.gd:14628 tilled_bed created by hoeing: no placed event",
+    "src/stream/server_items.gd:9136-9145 opening/closing a door changes struct kind (toggle) without an event: no re-count, and no '<door>_open' credit"
+   ],
+   "caveats": [
+    "No upgrade system exists (no 'upgrade' in server_items.gd): station levels are separate structures, each counted by its own kind.",
+    "Take-down (src/stream/server_items.gd:9038) / pick-up of a fire (src/stream/server_items.gd:4582-4610) and placing again counts again; goals pay once so there is no money farm, but any build goal with count > 1 could be met by moving one piece.",
+    "free_build (admin) placements fire the event too (src/stream/server_items.gd:8435-8436).",
+    "All 256 draft build keys are structures.json kinds that place through _place_structure (checked against structures.json: none is hand_placed, path_patch or tilled_bed); 24 are BLUEPRINT_LOCKED/NOT_KNOWN statically (pass1 flags) and cannot be placed today, a buildability matter for another workstream."
+   ]
+  },
+  "gather": {
+   "support": "NONE (NEW_EVENT_REQUIRED)",
+   "evidence": [
+    "No _goal_event/_goal_made call in any acquisition path: gather() src/stream/server_items.gd:1563, _gather_berries src/stream/server_items.gd:1761, _process_carcass src/stream/server_items.gd:2288, _give_dig_yield src/stream/server_items.gd:3369, _dig_bog_iron src/stream/server_items.gd:3405, _hit_boulder src/stream/server_items.gd:5568, _mine src/stream/server_items.gd:3560, _pickup src/stream/server_items.gd:4619, _pickup_batch src/stream/server_items.gd:4706, _process_trunk src/stream/server_items.gd:6423, _hit_shrub src/stream/server_items.gd:7117, gather_edge src/stream/server_items.gd:13954, take_nest src/stream/server_items.gd:14042, harvest src/stream/server_items.gd:14757",
+    "src/stream/server_items.gd:4884-4891 + src/stream/server_items.gd:4929-4947 every pack gain passes _send_changes -> _report_gains, which only notifies the client feed (send_received) with a source tag (pickup/harvest/craft/quest/trade)",
+    "src/stream/server_items.gd:10042-10066 _box_take adds to the pack under the default 'pickup' source: a central gain hook would count chest withdrawals unless a container source tag is added",
+    "Only existing alternative: {have_item, count} momentary inventory poll (src/stream/server_items.gd:15723-15724) which loses credit once the item is used, and is also satisfied by purchase, admin give or chest withdrawal"
+   ],
+   "caveats": [
+    "Draft section 3 (docs/design/PLAYER_GOALS_REWARDS_DRAFT.md:768): completion checks must use verified world state, never merely an inventory item.",
+    "Whether bought/traded/looted/chest items should count is a creator decision (not decided anywhere I found)."
+   ]
+  },
+  "activity": {
+   "support": "2 EXISTING (place_campfire, place_chopping_block), 3 NEW_EVENT_REQUIRED (chop_log_blocks, medium_fire, bonfire)",
+   "evidence": [
+    "src/stream/server_items.gd:3829",
+    "src/stream/server_items.gd:8499",
+    "src/stream/server_items.gd:9223-9278",
+    "src/stream/server_items.gd:7345-7365",
+    "src/stream/server_items.gd:1134-1139"
+   ],
+   "caveats": [
+    "Fire tier changes happen at about ten sites, several with no acting peer; see goals.activity:medium_fire."
+   ]
+  },
+  "existing": {
+   "support": "26 of 28 complete through the current engine as data is written (jerky, salted_fish, story, night_walk included despite needs_code:true); 2 (twine, fell) pay ITEMS not coins",
+   "evidence": [
+    "src/stream/server_items.gd:15632-15838",
+    "data/items/starter_goals.json",
+    "data/items/camp_goals.json",
+    "src/worldgen/tools/test_goals.gd"
+   ],
+   "caveats": [
+    "`after` gating defers every goal until its prerequisites are done (src/stream/server_items.gd:15740-15747, src/stream/server_items.gd:15763)."
+   ]
+  }
+ },
+ "goals": {
+  "drink": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:drink'] >= 1; fired by ACT_DRINK when the player's 'wet' vital rose (any drink action through _drink_water, water at the feet or the slot passed).",
+   "evidence": [
+    "src/stream/server_items.gd:1104-1109",
+    "data/items/starter_goals.json goals[0].check",
+    "src/worldgen/tools/test_goals.gd:84-90 (AUTOMATED_TESTED: drink completes and pays 2 copper; not run in this audit)"
+   ],
+   "notes": "after: [] (open at start). Matches draft text. A drink that does not raise 'wet' (full) does not count."
+  },
+  "fibre": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "inv.count_of(plant_fibre) >= 12 at the moment of a check (momentary possession, every slow tick and after every goal event).",
+   "evidence": [
+    "src/stream/server_items.gd:15723-15724",
+    "data/items/starter_goals.json goals[1].check {have_item: plant_fibre, count 12}",
+    "test_goals.gd:93-95 (admin give of 40 fibre completes it)"
+   ],
+   "notes": "Works as text describes ONLY if 12 are held at once. A player who twists twine as fibre comes in may never hold 12; every other starter goal except drink depends on fibre through `after` (twine, sell -> axe -> fell -> hammer/fire -> ...), so the whole chain is deferred. Also satisfied by buying fibre from Hob (data/npcs/shops.json hob.stock includes plant_fibre), admin give or chest withdrawal. Draft line 773 asks to preserve historical acquisition counts. Recommend a cumulative 'got:plant_fibre' counter (NEW event, see gather) and no `after`."
+  },
+  "twine": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:twine'] >= 2 (two completed twine crafts of any recipe giving twine: twine, twine_bark, sinew_cord); after: [fibre].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "src/stream/server_items.gd:15715-15721",
+    "data/items/recipes.json recipes.twine/twine_bark/sinew_cord",
+    "data/items/starter_goals.json goals[2]",
+    "test_goals.gd:96-98 asserts 2 crafts complete it and give 4 sticks"
+   ],
+   "notes": "MISMATCH: data reward is {item: [stick, 4]}; draft line 32 pays 4 copper; creator requires money-only rewards. Count is per craft action, so sinew_cord (gives 2) needs two crafts. Draft text 'make 2' matches only for the 1-unit recipes. Changing the reward does not re-pay characters who already have 'twine' in goals_done."
+  },
+  "axe": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "max(goal_counts['made:stone_axe'], inv.count_of(stone_axe)) >= 1 (or_have: crafted ever, or one held now); after: [twine].",
+   "evidence": [
+    "src/stream/server_items.gd:15715-15721",
+    "data/items/starter_goals.json goals[3].check.or_have",
+    "data/npcs/shops.json hob.stock contains stone_axe",
+    "test_goals.gd:104-106, 245-250 (bought axe in pack completes)"
+   ],
+   "notes": "Draft says 'craft a Stone - Axe'; the data also pays for a bought/given axe (Dino round 6 decision quoted in code comment src/stream/server_items.gd:15718). A purchase path for a 'make' goal is a design inconsistency with craft:* goals, which do not accept purchases."
+  },
+  "fell": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:tree_felled'] >= 1; fired when the last axe blow fells a standing tree; after: [axe].",
+   "evidence": [
+    "src/stream/server_items.gd:5900",
+    "data/items/starter_goals.json goals[4]",
+    "test_goals.gd:110-117"
+   ],
+   "notes": "MISMATCH: data reward is {item: [kindling, 3]}; draft line 36 pays 6 copper (money-only required). A tree brought down by digging under it (src/stream/server_items.gd:3311-3346 -> _fell) fires no event."
+  },
+  "hammer": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "inv count of any of [wooden_hammer, wooden_hammer_soft, stone_hammer] >= 1 at the moment of a check; after: [fell].",
+   "evidence": [
+    "src/stream/server_items.gd:15726-15734",
+    "data/items/starter_goals.json goals[5].check.have_item_any",
+    "data/items/recipes.json recipes.wooden_hammer and recipes.wooden_hammer_soft both give wooden_hammer",
+    "data/items/items.json: no item 'wooden_hammer_soft'"
+   ],
+   "notes": "Draft (line 39, and line 776) says 'craft a Wooden - Hammer'. Check is possession, not crafting; 'wooden_hammer_soft' is a recipe id, not an item, so that entry is dead; stone_hammer also pays this goal AND the separate craft:stone_hammer (4 copper) -> one advanced tool pays two milestones (draft line 776 asks to clarify). A hammer that broke/was sold before 'fell' completed is not credited. Recommend made:wooden_hammer >= 1."
+  },
+  "fire": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:fire_lit'] >= 1; fired by ACT_LIGHT when the fire was laid (state 9) or warm ash and is lit after _light; after: [fell].",
+   "evidence": [
+    "src/stream/server_items.gd:1134-1139",
+    "src/stream/server_items.gd:7568-7618",
+    "src/client/inventory_view.gd:855-860 (E on a laid/ash fire sends ACT_LIGHT)",
+    "test_goals.gd:119-129"
+   ],
+   "notes": "Draft line 42 is correct about controls (F opens the fire store: src/client/key_bindings.gd:29; E lights). No starter is needed (src/stream/server_items.gd:7565-7566); a placed campfire already holds start sticks (src/stream/server_items.gd:3822-3827), so adding sticks is optional. Not counted: fire arrow ignition (src/stream/server_items.gd:2446-2465), coals catching new wood (src/stream/server_items.gd:4538-4548). Any player lighting any fire counts; relighting after putting it out counts again (harmless). Old hint text 'Put sticks on it with F' predates the store: ACT_FUEL exists on the server (src/stream/server_items.gd:1128-1129) but no client code sends it (only tests)."
+  },
+  "hoe": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "inv count of any of [wooden_hoe, stone_hoe, steel_hoe] >= 1 at the moment of a check; after: [fire].",
+   "evidence": [
+    "src/stream/server_items.gd:15726-15734",
+    "data/items/starter_goals.json goals[7]"
+   ],
+   "notes": "Draft line 278 says craft a Wooden - Hoe. stone_hoe and steel_hoe also pay this goal AND craft:stone_hoe (5) / craft:steel_hoe (20); iron_hoe is not in the list (inconsistent). Possession-based: a hoe broken/sold before 'fire' completes is lost. Recommend made:wooden_hoe >= 1."
+  },
+  "path": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:path_laid'] >= 15 (one per path patch laid by hoe stroke or by the survey road builder); after: [hoe].",
+   "evidence": [
+    "src/stream/server_items.gd:2891-2894",
+    "src/stream/server_items.gd:3209-3212",
+    "data/items/starter_goals.json goals[8]"
+   ],
+   "notes": "'from camp to the water' is not checked: any 15 patches anywhere count. Each patch event runs a full _goals_check scan (performance)."
+  },
+  "berries": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:ate_food'] >= 1; fired by ACT_EAT when 'fed' rose; after: [fire].",
+   "evidence": [
+    "src/stream/server_items.gd:1098-1103",
+    "data/items/starter_goals.json goals[9]"
+   ],
+   "notes": "Draft says 'edible wild plant or berry'; any food that feeds counts (bought roast_forage, cooked meat)."
+  },
+  "shelter": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:placed:lean_to'] >= 1; after: [fire, hammer].",
+   "evidence": [
+    "src/stream/server_items.gd:8499",
+    "src/stream/server_items.gd:8948-8956",
+    "test_goals.gd:131-137"
+   ],
+   "notes": "Blueprint site credits the peer who finishes depositing (src/stream/server_items.gd:8948-8956)."
+  },
+  "bed": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:placed:rough_bed'] >= 1 (items.json rough_bed name 'Thatch - Bed'); after: [shelter].",
+   "evidence": [
+    "src/stream/server_items.gd:8499",
+    "data/items/starter_goals.json goals[11]",
+    "data/items/structures.json rough_bed.kit rough_bed_kit"
+   ],
+   "notes": "Draft 'place it under cover' is not checked; any rough_bed placement counts. Other bed kinds do not count."
+  },
+  "workbench": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:placed:workbench'] + goal_counts['event:placed:log_workbench'] >= 1; after: [hammer].",
+   "evidence": [
+    "src/stream/server_items.gd:15704-15710",
+    "data/items/starter_goals.json goals[12].check.what_any",
+    "test_goals.gd:235-238"
+   ],
+   "notes": "Placing a Carpenter's bench (log_workbench) pays this goal (10) AND build:log_workbench (40): one placement, two milestones. Draft line 54 names the Wooden - Workbench only."
+  },
+  "spear": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:spear'] >= 1 (item 'spear' = Stone - Spear; recipe needs wooden_spear, 2 twine, 1 stone); after: [twine].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "data/items/recipes.json recipes.spear",
+    "data/items/items.json spear.name 'Stone - Spear'"
+   ],
+   "notes": "Matches draft line 217. A bought/given Stone - Spear does not count (no or_have)."
+  },
+  "knife": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:carcass_worked'] >= 1; fired in _process_carcass when a knife-class tool works a carcass; after: [spear].",
+   "evidence": [
+    "src/stream/server_items.gd:2288-2335",
+    "data/items/starter_goals.json goals[14]"
+   ],
+   "notes": "Draft says craft a Stone - Knife and work a kill; any knife-class tool counts and crafting the knife is not checked (craft:stone_knife is a separate goal)."
+  },
+  "fish": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:fish_caught'] + count held of [trout, perch, carp, pike, salmon, eel, herring, mackerel, smelt, cod] >= 1; after: [twine].",
+   "evidence": [
+    "src/stream/server_items.gd:13554",
+    "src/stream/server_items.gd:13623",
+    "src/stream/server_items.gd:13825",
+    "src/stream/server_items.gd:15729-15734",
+    "test_goals.gd:241-244"
+   ],
+   "notes": "fish_caught fires for net haul, spear fishing and rod landing; a fish-trap catch (src/stream/server_items.gd:13782-13803) fires nothing but counts while held. The held-fish fallback also counts bought/chest fish. The generic item 'fish' is not in the list."
+  },
+  "sell": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:sold'] >= 1; fired by any sale to a trader (also 'sell extras', which calls deal kind 1); after: [fibre].",
+   "evidence": [
+    "src/stream/server_trade.gd:440",
+    "src/stream/server_trade.gd:448-481"
+   ],
+   "notes": "Matches draft line 176."
+  },
+  "order": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:wanted_order'] >= 1; fired when a trader's wanted order is filled; after: [sell].",
+   "evidence": [
+    "src/stream/server_trade.gd:145",
+    "src/worldgen/tools/test_wanted_order.gd (exercises the order; does not assert the goal)"
+   ],
+   "notes": "Matches draft line 236."
+  },
+  "torch_night": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:torch'] >= 1; after: [fire].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "data/items/recipes.json recipes.torch needs stick, plant_fibre, pitch",
+    "data/items/camp_goals.json goals[0]"
+   ],
+   "notes": "Draft 'and carry it after dark' is not checked (craft only). A bought torch (Hob stock) does not count."
+  },
+  "candle": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:candle'] >= 1 (live recipe tallow_candle gives 3; recipe 'candle' is retired); after: [shelter].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "data/items/recipes.json recipes.tallow_candle; recipes.candle.retired"
+   ],
+   "notes": "Matches draft line 432."
+  },
+  "smoke_fish": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:smoked_fish'] >= 1 (recipe cook_smoked_fish at the smoker: fish + sea_salt); after: [fish, fire].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "data/items/recipes.json recipes.cook_smoked_fish"
+   ],
+   "notes": "Draft text (samphire and juniper at the campfire) does not match the live recipe (smoker, fish, sea salt); check works, text is wrong."
+  },
+  "dry_berries": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:dried_berries'] >= 3 (three crafts of cook_dried_berries at a drying rack, 1 unit each); after: [berries].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "data/items/recipes.json recipes.cook_dried_berries"
+   ],
+   "notes": "Draft 'by the fire' is wrong: the recipe is at the drying_rack station."
+  },
+  "jerky": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:jerky'] >= 2 = two craft ACTIONS of cook_jerky (drying_rack, 2 raw_meat + 1 sea_salt, gives 2) = 4 jerky; after: [knife].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "data/items/recipes.json recipes.cook_jerky",
+    "data/items/recipes.json recipes.sea_salt (campfire_pot, 2 sea_water)"
+   ],
+   "notes": "needs_code:true in camp_goals.json is stale: the recipe chain now exists. Units mismatch: 'Completion target: 2' reads as 2 jerky, the check needs 2 crafts."
+  },
+  "salted_fish": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:salted_fish'] >= 1 (cook_salted_fish at campfire_pot: trout + sea_salt); after: [fish].",
+   "evidence": [
+    "src/stream/server_items.gd:17414",
+    "data/items/recipes.json recipes.cook_salted_fish"
+   ],
+   "notes": "needs_code:true is stale; supported now (CODE_VERIFIED, no test)."
+  },
+  "winter_store": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "count held at once of smoked_fish + jerky + dried_berries + salted_fish + trail_bread >= 5; after: [smoke_fish, dry_berries].",
+   "evidence": [
+    "src/stream/server_items.gd:15726-15734",
+    "data/items/camp_goals.json goals[6]"
+   ],
+   "notes": "Momentary possession, as the draft text says ('Hold 5'); eaten food is lost credit; Maturing/age is not considered; satisfied by chest withdrawal. Conflicts with draft line 768 ('never merely an inventory item') if that rule is approved."
+  },
+  "fur_for_winter": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "_worn_warmth(peer) >= 0.7 (layered warmth of worn pieces, capped 0.85), checked every slow tick; after: [knife].",
+   "evidence": [
+    "src/stream/server_items.gd:15192-15193",
+    "src/stream/server_items.gd:15694-15695",
+    "src/worldgen/tools/test_goals.gd:187-189",
+    "src/worldgen/tools/test_clothing_layers.gd:168"
+   ],
+   "notes": "Hood+cloak+boots = 0.55 (test) does not complete; a full hide set (head 0.1, body 0.3, feet 0.15, hands 0.08-0.1, legs 0.12-0.18 per items.json warmth) reaches ~0.75-0.83 before layering rules, so 'full hide set' is plausible; exact layered total not computed here. 'before winter' not checked."
+  },
+  "story": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['hit:story'] >= 1, incremented by note_talked when a dialogue with npc 'edda' OPENS while the game hour is in [19, 23); after: [fire].",
+   "evidence": [
+    "src/stream/server_items.gd:15200-15223",
+    "src/stream/server_dialogue.gd:94-95",
+    "src/worldgen/tools/test_goals.gd:190-200 (AUTOMATED_TESTED: Edda at 21:00 completes, Hob does not, noon does not; not run in this audit)"
+   ],
+   "notes": "needs_code:true is stale. Draft says 'with Edda or Hob' and 'sit by the fire and listen': only Edda counts, opening any conversation counts, no fire or sitting check. Reward {coin_copper 3, rep 1}: 'rep' is ignored by _goals_check (src/stream/server_items.gd:15766-15775)."
+  },
+  "night_walk": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['moved_lit_night'] >= 100 metres, added once per slow tick while the game hour is >= 19 or < 6 and the player has a lit 'torch' item in the pack or is within 4 m of a lit fire (steps of 0 or > 30 m ignored); after: [torch_night].",
+   "evidence": [
+    "src/stream/server_items.gd:15226-15251",
+    "src/stream/server_items.gd:15797",
+    "src/worldgen/tools/test_goals.gd:202-212 (AUTOMATED_TESTED)"
+   ],
+   "notes": "needs_code:true is stale. 'without stumbling' is not checked; the torch need only be in the pack (items.json torch flame:true; torch_doused is a different id so a doused torch does not count)."
+  },
+  "activity:chop_log_blocks": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['event:log_chopped'] >= 1, emitted in _chop_loose_log's axe branch after the blocks drop (src/stream/server_items.gd:9266-9277): _goal_event(peer, 'log_chopped', block item id).",
+   "evidence": [
+    "src/stream/server_items.gd:6423-6440 ACT_PROCESS -> _process_trunk -> _chop_loose_log for a loose 'log' or shoulder log",
+    "src/stream/server_items.gd:9223-9278",
+    "data/items/structures.json chopping_block.blocks_per_log 3, blocks_per_shoulder_log 3",
+    "src/stream/server_items.gd:9206-9210 block item by wood class (wood_species.json class_items)"
+   ],
+   "notes": "Actual mechanics: a loose log ('log' or a shoulder species log) lying within reach, struck with an axe (ACT_PROCESS), is removed and drops 3 wooden blocks (or 3 large blocks from a shoulder log) on the ground, NOT into the pack; struck with a pick it becomes kindling after 1/speed blows (no blocks). CONTROLS.md:72 says 4 and 12 blocks: stale vs data (3/3). No event today; the blocks are picked up later via _pickup, so an inventory check would also accept blocks from any other source."
+  },
+  "activity:place_campfire": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:placed:campfire'] >= 1 (fired when a campfire_kit is placed as a laid fire).",
+   "evidence": [
+    "src/stream/server_items.gd:3790-3829",
+    "src/worldgen/tools/test_goals.gd:121-123 (placing alone does not complete 'fire')"
+   ],
+   "notes": "Picking the fire up (hold E, src/stream/server_items.gd:4582-4610) returns the kit; placing it again counts again (pays once). Draft line 41 matches."
+  },
+  "activity:place_chopping_block": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:placed:chopping_block'] >= 1 (the chopping_block item is its own kit; placed through _place -> _place_structure -> _after_built).",
+   "evidence": [
+    "src/stream/server_items.gd:8499",
+    "data/items/structures.json chopping_block.kit 'chopping_block' (not hand_placed)"
+   ],
+   "notes": "Matches draft line 44 (placed block, not the crafted item). Pick up and re-place counts again (harmless)."
+  },
+  "activity:medium_fire": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['event:fire_tier:2'] >= 1, emitted for the acting peer whenever a LIT fire's state becomes 1 (firewood tier) or 41 (log tier, if 'at least medium' is intended), from one helper that every state change goes through.",
+   "evidence": [
+    "data/items/cooking.json min_pieces = 3, fire_tiers.firewood.state 1, fire_tiers.log.state 41, fuel_class (firewood, firewood_soft, all wooden_block kinds and charcoal are class 'firewood')",
+    "src/stream/server_items.gd:7345-7365 _fire_best_state: biggest class with >= min_pieces pieces; pot caps log at firewood (src/stream/server_items.gd:7354-7355); damp wood lowers one tier (src/stream/server_items.gd:7361-7362)",
+    "src/stream/server_items.gd:9790-9822 lit fire: tier recomputed when the fire store window closes (ACT_CHEST_CLOSE src/stream/server_items.gd:1148-1149)",
+    "src/stream/server_items.gd:9965-9968 unlit fire: store changes sync at once",
+    "src/stream/server_items.gd:7614 lighting sets the tier directly",
+    "src/stream/server_items.gd:4123-4128 damp->dry tier change in the fire tick (no peer)",
+    "src/stream/server_items.gd:7406-7443 _refresh_pots (no peer)",
+    "src/stream/server_items.gd:7484 _fire_add (ACT_FUEL path, test-only)"
+   ],
+   "notes": "Draft claim '3 firewood pieces give medium' is CODE_VERIFIED (min_pieces 3 of class firewood), but any 3 firewood-class pieces count (wooden blocks, charcoal too). If the fire is laid with 3 firewood before lighting, it lights straight into medium and only fire_lit happens. Tier transitions without an acting peer (drying, pot removed) need attribution (record the last peer who fed/lit the fire on the fire row). Wet wood: the fire sits one tier lower while fire['damp'] > 0 and steps up when dry (src/stream/server_items.gd:4123-4128), so the claim 'wet wood delays it' is correct. src/worldgen/tools/test_fire_fuel_tiers.gd exercises tiers (not goals)."
+  },
+  "activity:bonfire": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['event:fire_tier:3'] >= 1 when a lit fire's state becomes 41 (FIRE_STATE_BONFIRE), same helper as medium_fire.",
+   "evidence": [
+    "data/items/cooking.json fire_tiers.log.state 41, min_pieces 3",
+    "src/stream/server_items.gd:7354-7357",
+    "src/stream/server_items.gd:7520-7535 _fuel refuses logs while a pot hangs",
+    "src/stream/server_items.gd:8374-8379 a pot cannot be placed on a fire holding logs",
+    "src/stream/server_items.gd:7406-7443 a pot arriving steps a bonfire down"
+   ],
+   "notes": "Draft claims verified: 3 log-class pieces (any 'log' or log_<species>) make the large fire; a hanging pot caps it at the firewood tier; damp lowers a tier. Note a shoulder (species) log is a pack item since 1 Nov 2026 and can go into the store."
+  },
+  "gather:stick": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:stick'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:1563-1641 gather() plant drops (drops.json by_species)",
+    "src/stream/server_items.gd:6496-6500 _process_trunk",
+    "src/stream/server_items.gd:7187 _hit_shrub",
+    "src/stream/server_items.gd:4619 _pickup of ground sticks",
+    "data/npcs/shops.json hob.stock (purchase)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:stone": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:stone'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:3560 _mine",
+    "src/stream/server_items.gd:5568 _hit_boulder",
+    "src/stream/server_items.gd:4619 _pickup of scatter stones",
+    "data/npcs/shops.json hob.stock (purchase)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:log": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:log'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:5906 _fell lays the trunk",
+    "src/stream/server_items.gd:6919 _cut_log_off cuts logs that lie on the ground",
+    "src/stream/server_items.gd:4619 _pickup",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:log_oak": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:log_oak'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:6919 species log from the trunk (shoulder item)",
+    "src/stream/server_items.gd:898-916 _give_shoulder on pickup",
+    "data/items/cooking.json fuel_class lists log_oak",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:thatch": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:thatch'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:1635-1641 gather() (drops.json by_species tall_grass/heather/reeds, harvest_yield thatch_grass)",
+    "src/stream/server_items.gd:6523 _process_trunk",
+    "src/stream/server_items.gd:6002 _pick_splinters",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:clay": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:clay'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:3369-3399 _give_dig_yield (digging.json yield.clay)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:sand": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:sand'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:3369-3399 _give_dig_yield (digging.json yield.sand, beach_sand)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:hide": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:hide'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:2288-2327 _process_carcass (carcass.json species parts)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:flint": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:flint'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "data/items/boulders.json flint (via src/stream/server_items.gd:5568 _hit_boulder, lead)",
+    "data/items/drops.json ground_scatter.bank.flint (pickup, lead)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:tannin_bark": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:tannin_bark'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "data/items/drops.json harvest_yield.oak (gather() natural yield src/stream/server_items.gd:1638, lead)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:iron_ore": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:iron_ore'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:5529 _boulder_ore (boulders.json ore.items.iron)",
+    "src/stream/server_items.gd:3405-3430 _dig_bog_iron (digging.json bog_iron)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:log_spruce": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:log_spruce'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:6919 species log from the trunk (shoulder item)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:pine_tar": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:pine_tar'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "data/items/drops.json trunk.by_species.scots_pine (src/stream/server_items.gd:6533 _process_trunk, lead)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:copper_ore": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:copper_ore'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:5529 _boulder_ore (boulders.json ore.items.copper, lead)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:tin_ore": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:tin_ore'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:5529 _boulder_ore (boulders.json ore.items.tin, lead)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:limestone": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:limestone'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "data/items/boulders.json ore.rocks.limestone (lead)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:animal_fat": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:animal_fat'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:2288-2327 _process_carcass",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:bone": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:bone'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:2288-2327 _process_carcass",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:flax": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:flax'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:14757-14786 crop harvest (crops.json flax)",
+    "src/stream/server_items.gd:1563 wild gather (drops.json by_species.flax, lead)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "gather:wool": {
+   "runtime_support": "NEW_EVENT_REQUIRED",
+   "completion_condition": "PROPOSED: goal_counts['got:wool'] >= N (N = the draft's stated amount, else 1), incremented by a NEW acquisition hook for first-hand sources only (world pickup, plant/shrub harvest, trunk/stump work, dig, boulder/mine, carcass, crop, nest, shore node, fishing), excluding container takes, trade, quest rewards and admin gives. Today nothing records an acquisition; an existing {have_item} poll would only see the item while it is held.",
+   "evidence": [
+    "src/stream/server_items.gd:2288-2327 _process_carcass (carcass.json wild_sheep, bighorn)",
+    "src/stream/server_items.gd:4929-4947 the only central gain hook today (_report_gains) feeds the client and tags container takes as 'pickup'"
+   ],
+   "notes": "Obtainability of the source itself is another workstream's matter; the paths listed are code/data leads."
+  },
+  "craft:firewood": {
+   "runtime_support": "OTHER_IMPLEMENTATION_REQUIRED",
+   "completion_condition": "goal_counts['made:firewood'] >= 1 today counts only the queued chop recipe chopping_hard_firewood (chopping block station, log_oak); PROPOSED: also call _goal_made (or a unit counter) from the hand split at the chopping block.",
+   "evidence": [
+    "src/stream/server_items.gd:9170-9203 hand split: wooden block -> firewood via _drop_firewood_beside src/stream/server_items.gd:9215-9216, no hook",
+    "src/stream/server_items.gd:17408-17414 chop recipe: one _goal_made per log (12 firewood)",
+    "docs/design/PLAYER_GOALS_REWARDS_DRAFT.md:46"
+   ],
+   "notes": "MAIN route row 46 instructs the hand split, which never completes the goal. Also sold by Hob (purchase not counted)."
+  },
+  "craft:firewood_soft": {
+   "runtime_support": "OTHER_IMPLEMENTATION_REQUIRED",
+   "completion_condition": "goal_counts['made:firewood_soft'] >= 1; same as craft:firewood (soft blocks split by hand give firewood_soft with no hook).",
+   "evidence": [
+    "src/stream/server_items.gd:9199-9200",
+    "src/stream/server_items.gd:17414"
+   ],
+   "notes": ""
+  },
+  "craft:wooden_block": {
+   "runtime_support": "OTHER_IMPLEMENTATION_REQUIRED",
+   "completion_condition": "goal_counts['made:wooden_block'] >= 1 today only from recipe small_blocks_from_large; PROPOSED: also credit _chop_loose_log (hand chop of a plain log gives wooden_block).",
+   "evidence": [
+    "src/stream/server_items.gd:9223-9278",
+    "data/items/recipes.json recipes.small_blocks_from_large"
+   ],
+   "notes": "The common source (axe on a loose log) does not credit."
+  },
+  "craft:wooden_block_soft": {
+   "runtime_support": "OTHER_IMPLEMENTATION_REQUIRED",
+   "completion_condition": "goal_counts['made:wooden_block_soft'] >= 1 today only from small_soft_blocks_from_large; hand chop of a softwood log is not credited.",
+   "evidence": [
+    "src/stream/server_items.gd:9223-9278",
+    "data/items/recipes.json recipes.small_soft_blocks_from_large"
+   ],
+   "notes": ""
+  },
+  "craft:charcoal": {
+   "runtime_support": "OTHER_IMPLEMENTATION_REQUIRED",
+   "completion_condition": "goal_counts['made:charcoal'] >= 1 today only from the campfire recipe 'charcoal' (2 firewood -> 12); the kiln's automatic charcoal (src/stream/server_items.gd:9421-9449) is not credited and has no owner attribution.",
+   "evidence": [
+    "src/stream/server_items.gd:9449",
+    "data/items/recipes.json recipes.charcoal"
+   ],
+   "notes": "Draft line 83 uses the campfire recipe, so the draft path works; the kiln path does not."
+  },
+  "craft:roast_forage": {
+   "runtime_support": "OTHER_IMPLEMENTATION_REQUIRED",
+   "completion_condition": "goal_counts['made:roast_forage'] >= 1 today only from the clay_hearth roast_* recipes; the fire-store cooking default output (cooking.json gives 'roast_forage') and ACT_COOK are not credited.",
+   "evidence": [
+    "src/stream/server_items.gd:9834-9864",
+    "src/stream/server_items.gd:7650-7668",
+    "data/items/cooking.json gives roast_forage"
+   ],
+   "notes": "Draft line 407 uses the clay hearth recipe (works). Fire cooking has no acting peer; also sold by Hob."
+  },
+  "craft:stone_hammer": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:stone_hammer'] >= 1 (queued craft).",
+   "evidence": [
+    "src/stream/server_items.gd:17414"
+   ],
+   "notes": "Double milestone: the same item also satisfies legacy 'hammer' (have_item_any, src/stream/server_items.gd:15726-15734), so one tool can pay both goals."
+  },
+  "craft:stone_hoe": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:stone_hoe'] >= 1 (queued craft).",
+   "evidence": [
+    "src/stream/server_items.gd:17414"
+   ],
+   "notes": "Double milestone: the same item also satisfies legacy 'hoe' (have_item_any, src/stream/server_items.gd:15726-15734), so one tool can pay both goals."
+  },
+  "craft:steel_hoe": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['made:steel_hoe'] >= 1 (queued craft).",
+   "evidence": [
+    "src/stream/server_items.gd:17414"
+   ],
+   "notes": "Double milestone: the same item also satisfies legacy 'hoe' (have_item_any, src/stream/server_items.gd:15726-15734), so one tool can pay both goals."
+  },
+  "build:log_workbench": {
+   "runtime_support": "EXISTING",
+   "completion_condition": "goal_counts['event:placed:log_workbench'] >= 1.",
+   "evidence": [
+    "src/stream/server_items.gd:8499"
+   ],
+   "notes": "Double milestone: the same placement also completes legacy 'workbench' (what_any includes log_workbench)."
+  }
+ },
+ "craft_paths": [
+  {
+   "path": "Queued craft (hand or station), _craft_tick",
+   "where": "src/stream/server_items.gd:17291-17428",
+   "calls_goal_made": true,
+   "unit": "+1 per completed craft action",
+   "notes": "covers hand recipes, station recipes, station-store output (_out_add), chop recipes, Tempered/+1 variants, smelter/forge/kiln/tanning rack/drying rack/smoker/campfire/clay hearth/campfire_pot recipes"
+  },
+  {
+   "path": "Sealed batch (recipes.json ready_age: cook_sauerkraut, pickled_vegetables)",
+   "where": "src/stream/server_items.gd:17396-17401",
+   "calls_goal_made": true,
+   "unit": "+1 per batch (whole queued count made at once)",
+   "notes": "credit at sealing, not at maturity"
+  },
+  {
+   "path": "Chopping block chop recipe (recipes.json chop: chopping_hard/soft_firewood)",
+   "where": "src/stream/server_items.gd:17408-17414, src/stream/server_items.gd:17433-17452",
+   "calls_goal_made": true,
+   "unit": "+1 per log (12 firewood from a shoulder log, 6 from a plain log)",
+   "notes": ""
+  },
+  {
+   "path": "Legacy immediate craft ACT_CRAFT",
+   "where": "src/stream/server_items.gd:1218-1219, src/shared/recipe_table.gd:118-136",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "used only by client test harnesses; it skips station, time and learned checks (security note outside this scope)"
+  },
+  {
+   "path": "Chopping block hand split (E)",
+   "where": "src/stream/server_items.gd:9170-9203",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "block -> 2 firewood (4 from large) on the ground"
+  },
+  {
+   "path": "Axe on a loose log (_chop_loose_log)",
+   "where": "src/stream/server_items.gd:9223-9278",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "3 wooden blocks (3 large from a shoulder log) on the ground"
+  },
+  {
+   "path": "Pick on a loose log / splinters",
+   "where": "src/stream/server_items.gd:9245-9263, src/stream/server_items.gd:6000-6002",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "kindling, thatch"
+  },
+  {
+   "path": "Kiln automatic charcoal",
+   "where": "src/stream/server_items.gd:9421-9449",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "no owner attribution in the burn loop"
+  },
+  {
+   "path": "Fire store cooking (_tend_fire)",
+   "where": "src/stream/server_items.gd:9834-9864",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "roast_* via cooking.json cooks_into/gives; no acting peer"
+  },
+  {
+   "path": "ACT_COOK (_cook)",
+   "where": "src/stream/server_items.gd:7650-7668",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "CONTROLS.md:73 says there is no hold-E cooking any more"
+  },
+  {
+   "path": "Trade purchase",
+   "where": "src/stream/server_trade.gd:303-339",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "counts for have_item / or_have checks only"
+  },
+  {
+   "path": "Goal item reward",
+   "where": "src/stream/server_items.gd:15774-15775",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "counts for have_item checks"
+  },
+  {
+   "path": "Admin give ACT_ADMIN_GIVE",
+   "where": "src/stream/server_items.gd:1232-1241",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "counts for have_item checks (tests rely on it)"
+  },
+  {
+   "path": "Fish trap, nests, crops, carcass, digging, mining, gathering",
+   "where": "src/stream/server_items.gd:13782-13803, src/stream/server_items.gd:14042-14070, src/stream/server_items.gd:14757-14786, src/stream/server_items.gd:2288-2327, src/stream/server_items.gd:3369-3430, src/stream/server_items.gd:5568, src/stream/server_items.gd:1563-1641",
+   "calls_goal_made": false,
+   "unit": "-",
+   "notes": "acquisition, not crafting (gather goals)"
+  }
+ ],
+ "place_paths": [
+  {
+   "path": "Kit or blueprint piece -> _place_structure -> _after_built",
+   "where": "src/stream/server_items.gd:8365-8499",
+   "fires_placed": true,
+   "notes": "doors (doorway snap src/stream/server_items.gd:3733-3740), roof panels, stations, pots/cranes (attach_to), traps, handcart, beds, lean-to, workbenches"
+  },
+  {
+   "path": "Blueprint site finished -> _finish_site -> _after_built",
+   "where": "src/stream/server_items.gd:8948-8956",
+   "fires_placed": true,
+   "notes": "credited to the peer whose deposit finished it; nothing counted when the site is put down (src/stream/server_items.gd:8470-8472)"
+  },
+  {
+   "path": "Campfire kit -> laid fire",
+   "where": "src/stream/server_items.gd:3790-3829",
+   "fires_placed": true,
+   "notes": "what = 'campfire'"
+  },
+  {
+   "path": "Admin free_build placement",
+   "where": "src/stream/server_items.gd:8435-8436",
+   "fires_placed": true,
+   "notes": "admin placements credit goals"
+  },
+  {
+   "path": "Hand-placed torch / sconce (_place_torch)",
+   "where": "src/stream/server_items.gd:7901-7955",
+   "fires_placed": false,
+   "notes": "structures.json hand_placed: standing_torch, torch_sconce"
+  },
+  {
+   "path": "Path patch (hoe stroke, survey road)",
+   "where": "src/stream/server_items.gd:2891-2894, src/stream/server_items.gd:3209-3212",
+   "fires_placed": false,
+   "notes": "fires 'path_laid' instead"
+  },
+  {
+   "path": "Tilled bed (hoe)",
+   "where": "src/stream/server_items.gd:14628",
+   "fires_placed": false,
+   "notes": ""
+  },
+  {
+   "path": "Door open/close toggle",
+   "where": "src/stream/server_items.gd:9136-9145",
+   "fires_placed": false,
+   "notes": "kind changes in place"
+  },
+  {
+   "path": "Take down / pick up and place again",
+   "where": "src/stream/server_items.gd:9038, src/stream/server_items.gd:4582-4610",
+   "fires_placed": true,
+   "notes": "counts again; goals pay once"
+  },
+  {
+   "path": "dev_place (--dev-place)",
+   "where": "src/stream/server_items.gd:15282",
+   "fires_placed": "UNKNOWN (no player key: _goal_state_of returns {} for an unknown peer)",
+   "notes": ""
+  }
+ ],
+ "fire_controls": {
+  "ignite": "E on a laid (state 9) or warm-ash fire: client src/client/inventory_view.gd:855-860 sends ACT_LIGHT; server src/stream/server_items.gd:1134-1139 -> _light src/stream/server_items.gd:7568-7618. No starter needed (Dave 5 Nov 2026, src/stream/server_items.gd:7565-7566); warm ash + a tinder item (cooking.json tinder plant_fibre, tinder_also) lights at once (src/stream/server_items.gd:7581-7588). Drizzle makes it a chance roll; heavy rain lights it with a short grace before going out. fire_lit fires only when the fire was laid/ash before and is lit after.",
+  "add_fuel": "F = key binding 'open' (src/client/key_bindings.gd:29) opens the fire's store; wood put in an unlit fire counts at once (src/stream/server_items.gd:9965-9968), in a lit fire when the window closes (src/stream/server_items.gd:1148-1149 -> src/stream/server_items.gd:9790-9822). ACT_FUEL (one piece, biggest wood first per cooking.json fuel_order) exists on the server (src/stream/server_items.gd:7517-7562) but no client code sends it; only tests do.",
+  "put_out": "E on a burning fire -> ACT_USE_STRUCT -> _put_out_fire (src/stream/server_items.gd:4563-4577): back to laid (state 9); E again relights and fire_lit counts again.",
+  "doc": "CONTROLS.md:73 agrees (F opens the store, E lights, 3+ firewood medium, 3+ logs large). CONTROLS.md:72 block counts (4 / 12) are stale vs structures.json chopping_block (3 / 3)."
+ },
+ "persistence": {
+  "storage": "goals_done, goal_counts, hints_seen and coins are fields of the character row _characters[key] (src/stream/server_items.gd:18322-18345), written together to characters.json by _save_characters (src/stream/server_items.gd:18178-18179) with tmp+rename (src/stream/server_items.gd:5221-5260).",
+  "coins_file": "data/items/coins.json is the coin ladder config only; the purse is _characters[key]['coins'] (src/stream/server_items.gd:11207-11208, src/stream/server_items.gd:11228-11239).",
+  "when_saved": "save() every SAVE_EVERY_S = 30 s when _dirty (src/stream/server_items.gd:50, src/stream/server_items.gd:1425-1435), serialised on the tick and written by a background thread in file order inventories.json ... characters.json ... world_items.json (src/stream/server_items.gd:1490, src/stream/server_items.gd:1542-1550). Clean shutdown saves synchronously (scenes/terrain_server/terrain_server.gd:2931-2943). Disconnect does not save; the row stays in memory and goes out with the next autosave (src/stream/server_items.gd:652-700).",
+  "crash_between_award_and_save": "coins and goals_done are in the same row of the same file, so both revert together (no double pay, no unpaid done goal); the counters revert too, so the player must redo up to ~30 s of actions. Item rewards land in inventories.json, written before characters.json: a crash between those two renames keeps the item and loses goals_done, so the reward can be paid again when the goal re-completes.",
+  "per_character": "The store key is the character's secret key; identity is 'local:<key>' (src/stream/identity_provider.gd:1-24), so per-account and per-character are the same today. A new character (new key, or after forget_key src/stream/server_items.gd:593-604) starts with no goals. Death (src/stream/server_items.gd:12781-12850) keeps goals_done and goal_counts but moves the whole purse, goal coins included, into the remains; real_death is off and the heir flow is not built (data/items/death.json real_death false, novice_grace note)."
+ },
+ "performance": {
+  "slow_tick": "SLOW_TICK_S = 0.25 s (src/stream/server_items.gd:376): _goals_tick -> _goals_check(peer) for every connected peer 4 times a second (src/stream/server_items.gd:1373-1395, src/stream/server_items.gd:15792-15822); hints every 4th tick.",
+  "per_check": "_goals_check loops all goals; per not-done goal: goals_done.has, _goal_open (after list), _goal_met (up to 4 str(check.get('event')) allocations, inventory_of lookup, string concatenation for counter keys, inv.count_of slot scan for have_item). The outer while loop rescans everything after any completion, and each completion scans all goals again for the 'Next' line.",
+  "event_cost": "Every _goal_event/_goal_made/note_talked also runs a full _goals_check synchronously (src/stream/server_items.gd:15676, src/stream/server_items.gd:15688, src/stream/server_items.gd:15223), e.g. each path patch, each drink, each placement, each craft.",
+  "estimate_note": "ESTIMATE, not measured: GDScript ~3 to 8 microseconds per not-done goal check (have_item with a 20 to 60 slot scan at the upper end).",
+  "estimates": {
+   "28 goals, 1 player": "~0.1-0.2 ms per check; 0.4-0.9 ms/s",
+   "651 goals, 1 player": "~2-5 ms per check; 8-20 ms of CPU per second",
+   "651 goals, 8 players": "~16-40 ms per slow tick",
+   "651 goals, 32 players": "~65-170 ms per slow tick (SLOW_TICK_LOG_MS is 100 ms, src/stream/server_items.gd:68)",
+   "completion burst (k goals complete in one pass)": "(k+1) full scans + k 'Next' scans; a migration that completes 100 goals for one character on first check ~ 100 x 651 x 2 checks = ~0.2-0.6 s stall"
+  }
+ }
+}
