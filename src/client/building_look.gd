@@ -751,7 +751,11 @@ const FLAME_TONGUES := {
 }
 # Light range and energy by tier (Dave 1 Nov): each step up is twice the radius and twice the brightness; flames about twice as tall; the bonfire's light is warmer.
 # Short range with a real falloff (omni_attenuation 2 = inverse-square style), centred on the flame; the nearest-lights pass flickers it a few percent around meta base_energy (Dave 31 Oct).
-const FIRE_LIGHT := {1: [3.5, 1.0], 2: [7.0, 2.0], 3: [14.0, 4.0]}
+# [range m, energy, omni_attenuation]. The large fire (tier 3) is the exception, held to Dave's BUG-002 rule: its output is at least 4 times the held torch's (not 4 times the radius).
+# Godot's omni gives energy x (1 - (d/range)^4)^2 / d^attenuation, and the torch is 2 (+-0.4) at range 12 with attenuation 1 (FlameRules.TORCH_*), so a bonfire at 14 m / energy 4 / attenuation 2 was dimmer than the torch beyond about 2 m.
+# The large fire is 20 m, energy 18, attenuation 1.5: a softer core and a longer tail than the inverse square, still dark past its reach. test_fire_light_vs_torch.gd holds it to 4x by source, emitted flux and light on the ground, against the torch's mean and its flicker peak (ledger BUGLIST-001 BUG-002).
+# Smoke, sparks and flames are unchanged (TEST-011). No shadows on any fire light: a shadow-casting omni is six shadow passes, too dear at three fires on a GTX 1050.
+const FIRE_LIGHT := {1: [3.5, 1.0, 2.0], 2: [7.0, 2.0, 2.0], 3: [20.0, 18.0, 1.5]}
 const FIRE_LIGHT_COLOR := {1: Color(1.0, 0.64, 0.34), 2: Color(1.0, 0.62, 0.3), 3: Color(1.0, 0.54, 0.2)}
 const LIGHT_FALLOFF := 2.0
 const FIRE_HALO_SCALE := {1: 1.0, 2: 1.2, 3: 1.5}   # the fog halo round a fire, as a share of a torch's (firelight_weather_design.md)
@@ -872,6 +876,23 @@ static func coals_fire(glow: float) -> Node3D:
 	return root
 
 
+# A burning fire's light, flickering with its flame (BUG-002): the same two beating sines the flame cards pulse on (about 9 and 11 Hz in FLAME_SHADER), so the light and the tongues move together,
+# and a slow lean as the fire settles. Returns the share of base_energy, 1 +- 0.15 at most and 1 on average. `phase` keeps two fires from pulsing together.
+const FLICKER_FAST := 0.09
+const FLICKER_SLOW := 0.06
+
+
+static func flame_flicker(t_s: float, phase: float) -> float:
+	var fast: float = sin(t_s * 9.0 + phase) * sin(t_s * 11.3 + phase * 0.6 + 1.0)
+	var slow: float = 0.5 * sin(t_s * 1.7 + phase * 0.5) + 0.5 * sin(t_s * 0.63 + phase)
+	return 1.0 + FLICKER_FAST * fast + FLICKER_SLOW * slow
+
+
+# The colour follows the same swing: a brighter flame is a shade yellower, a dimmer one redder (the green channel moves by half the energy swing).
+static func flame_flicker_color(base: Color, factor: float) -> Color:
+	return Color(base.r, clampf(base.g * (1.0 + 0.5 * (factor - 1.0)), 0.0, 1.0), base.b)
+
+
 static func coals_glow(light: Light3D, glow: float) -> void:
 	light.light_energy = COALS_LIGHT_ENERGY * (0.3 + 0.7 * clampf(glow, 0.0, 1.0))
 	light.set_meta("base_energy", light.light_energy)
@@ -905,8 +926,12 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		light.light_color = FIRE_LIGHT_COLOR[tier]
 		light.omni_range = float(FIRE_LIGHT[tier][0])
 		light.light_energy = float(FIRE_LIGHT[tier][1])
-		light.omni_attenuation = LIGHT_FALLOFF
+		light.omni_attenuation = float(FIRE_LIGHT[tier][2])
 		light.set_meta("base_energy", light.light_energy)
+
+		if tier == 3:
+			light.set_meta("base_color", light.light_color)
+			light.set_meta("flame_flicker", true)   # the large fire only (BUG-002): inventory_view flickers it with its flame every frame; tiers 1 and 2 keep the gentle flicker
 		light.shadow_enabled = false
 		light.position = Vector3(0.0, 0.8, 0.0)
 		light.visible = false

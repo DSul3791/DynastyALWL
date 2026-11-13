@@ -7,6 +7,14 @@ extends RefCounted
 const RAIN_DOUSE := 0.2        # rain strength that puts an open flame out: the server's RAIN_PUTS_OUT for open fires
 const RAIN_GRACE_S := 5.0      # seconds in the open rain before a torch gives up: a shower you run through to cover keeps it
 
+# The held torch's light, in one place so the large fire can be held to a multiple of it (BUG-002; docs/ai-team/missions/BUGLIST-001/environment-presentation.md):
+# the main light reaches the item's light_m (items.json torch: 12 m) with omni attenuation 1 (Godot's default), this energy with a flicker of this much each way; the hand light is the short warm one low on the stick.
+const TORCH_LIGHT_ENERGY := 2.0
+const TORCH_LIGHT_FLICKER := 0.4
+const TORCH_LIGHT_ATTENUATION := 1.0
+const TORCH_HAND_ENERGY := 0.7
+const TORCH_HAND_RANGE_M := 1.6
+
 
 # Why the flame of item `entry` goes out now: "water", "rain" or "" (it burns on). `rain_s` is how long it has been in the open rain.
 static func douse_reason(entry: Dictionary, underwater: bool, rain: float, covered: bool, rain_s: float) -> String:

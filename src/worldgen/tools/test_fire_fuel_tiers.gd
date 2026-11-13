@@ -55,7 +55,12 @@ func _init() -> void:
 	var tiers: Dictionary = cook["fire_tiers"]
 
 	for key in ["light_m", "light_energy", "protect_m", "heat_c"]:
-		check(is_equal_approx(float(tiers["firewood"][key]), 2.0 * float(tiers["weak"][key])) and is_equal_approx(float(tiers["log"][key]), 2.0 * float(tiers["firewood"][key])), "%s doubles each tier" % key)
+		check(is_equal_approx(float(tiers["firewood"][key]), 2.0 * float(tiers["weak"][key])), "%s: medium is twice small" % key)
+
+		if key.begins_with("light_"):
+			check(float(tiers["log"][key]) >= 2.0 * float(tiers["firewood"][key]), "%s: large is at least twice medium (its light is set by the 4x-torch rule, test_fire_light_vs_torch.gd)" % key)
+		else:
+			check(is_equal_approx(float(tiers["log"][key]), 2.0 * float(tiers["firewood"][key])), "%s doubles each tier" % key)
 
 	# Burn order and step-down: 3 logs, 3 firewood, 2 sticks. Large, then medium, then small, then out.
 	var fire: Dictionary = {"state": 9, "burn_left": 0.0}

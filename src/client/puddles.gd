@@ -435,15 +435,19 @@ func _lying() -> float:
 	return float(_client.sound.weather.ground_snow)
 
 
+# The share of water under a point (0 none .. 1 water) as the ground draws it now: 0 when nothing is shown or the water is frozen. The footstep splash and the rain sounds
+# (sound_stage.standing_water; rain puddle layers only where water stands, BUG-004) ask it.
+func water_under(feet: Vector3, material_id: int, up_y: float) -> float:
+	if shown <= 0.001 or ice >= 0.5:
+		return 0.0
+
+	return water_at(feet.x, feet.y, feet.z, material_id, up_y, _shelter_at(feet.x, feet.z), _trail_at(feet.x, feet.z), _lying())
+
+
 # A foot lands at `feet` on voxel material `material_id` (sound_stage.gd footstep): true, with a splash shown, when it is in open
 # water of a drawn puddle. A frozen puddle does not splash.
 func foot_in(feet: Vector3, material_id: int, up_y: float, gait: int) -> bool:
-	if shown <= 0.001 or ice >= 0.5:
-		return false
-
-	var water: float = water_at(feet.x, feet.y, feet.z, material_id, up_y, _shelter_at(feet.x, feet.z), _trail_at(feet.x, feet.z), _lying())
-
-	if water < SPLASH_IN:
+	if water_under(feet, material_id, up_y) < SPLASH_IN:
 		return false
 
 	splash(feet, 0.8 + 0.25 * float(gait))
