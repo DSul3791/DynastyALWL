@@ -103,6 +103,7 @@ func _build(layer: CanvasLayer) -> void:
 	_talk_reply.add_theme_font_size_override("font_size", FONT_PX)
 	_talk_reply.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
 	_talk_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_talk_reply.visible = false   # no blank line when there is no notice
 	box.add_child(_talk_reply)
 	_choices = VBoxContainer.new()
 	box.add_child(_choices)
@@ -168,6 +169,7 @@ func _on_say(npc_id: String, npc_name: String, text: String, voice_id: String, c
 
 
 func _choose(index: int) -> void:
+	_talk_reply.visible = false
 	_talk_reply.text = ""   # cleared here, not in _on_say: the server sends a choice's notice before the next line
 	net.npc_talk.rpc_id(1, _npc_id, index)
 
@@ -205,6 +207,7 @@ func close() -> void:
 
 	if _talk_reply != null:
 		_talk_reply.text = ""
+		_talk_reply.visible = false
 
 	if items != null and items.dialogue_open:
 		items.dialogue_open = false
@@ -439,6 +442,7 @@ func _on_notice(text: String) -> void:
 		_shop_reply.text = text
 	elif _talk_reply != null and _panel != null and _panel.visible:
 		_talk_reply.text = text
+		_talk_reply.visible = true
 
 
 func _update_sell_all() -> void:
