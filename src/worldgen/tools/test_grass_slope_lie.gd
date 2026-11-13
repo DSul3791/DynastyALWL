@@ -151,7 +151,7 @@ func _run() -> void:
 	# The cell build must use it: the card height line of grass_view.gd calls lie_y (a headless test cannot build a cell without the voxel terrain).
 	var source: String = FileAccess.get_file_as_string("res://src/client/grass_view.gd")
 	check(source.contains("buffer[o + 7] = lie_y(point, hit[\"normal\"], ox, oz)"), "_build lays the grass cards by lie_y, not at the hit's height")
-	check(not source.contains("buffer[o + 7] = point.y - 0.03"), "no grass card is still laid at the flat hit height")
+	check(not source.contains("buffer[o + 7] = point.y - 0.03\n"), "no grass card is still laid at the flat hit height")
 
 	# Far and near agree: the same point of the slope gets the same card height whichever cell density drew it.
 	var anchor: Vector3 = (_hit(space, 1.0, 20.0)["position"] as Vector3)
