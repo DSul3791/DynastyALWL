@@ -71,7 +71,7 @@ func _init() -> void:
 	inv.from_json_array([[old_n, 1, 3]])
 	check(inv.numbers[0] == new_n and inv.counts[0] == 1 and inv.wear[0] == 3, "a pack slot loads as trousers with its wear (%d, %d)" % [inv.numbers[0], inv.wear[0]])
 
-	# A whole save: pack, chest, ground item, worn legs slot and a hotbar key.
+	# A whole save: pack (its slot 0 is hotbar key 1), chest, ground item and worn legs slot.
 	var dir: String = "user://item_renames"
 	var key: String = "rename-key-aaa01"
 	var legs: int = 2
@@ -80,7 +80,7 @@ func _init() -> void:
 	put(dir, "inventories.json", {"version": 1, "inventories": {key: [[old_n, 1, 5]]}})
 	put(dir, "chests.json", {"version": 1, "next_uid": 10, "chests": {"7": [[old_n, 1, 0]]}})
 	put(dir, "world_items.json", {"version": 1, "no_kits": true, "next_id": 5, "items": [[old_n, 1, 10.0, 10.0, 10.0, 600.0]], "taken": [], "picked": {}})
-	put(dir, "characters.json", {"version": 1, "players": {key: {"worn": worn, "hotbar": [old_n, 0, 0, 0, 0, 0, 0, 0, 0, 0]}}})
+	put(dir, "characters.json", {"version": 1, "players": {key: {"worn": worn}}})
 	var items = boot(dir)
 	items.peer_connected_hello(1, key)
 	var pack = items.inventory_of(1)
@@ -93,7 +93,7 @@ func _init() -> void:
 
 	check(ground.has(new_n) and not ground.has(old_n), "the ground item is trousers (%s)" % str(ground))
 	check(int(items.worn_of(1)[legs]) == new_n, "the worn legs slot is trousers (%s)" % str(items.worn_of(1)))
-	check(pack.hotbar.has(new_n) and not pack.hotbar.has(old_n), "the hotbar key points at trousers (%s)" % str(pack.hotbar))
+	check(pack.numbers[0] == new_n and pack.on_hotbar(0), "hotbar key 1 (pack slot 0) holds trousers (%d)" % pack.numbers[0])
 
 	if failures == 0:
 		print("item renames: all checks passed")

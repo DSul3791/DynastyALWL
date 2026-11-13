@@ -124,8 +124,8 @@ func _init() -> void:
 	# 1. Disposable (s2.2 rules 1-2): a row without repair is gone at zero, a Javelin that survives its throw lands as a pickup.
 	check(SmithingRules.disposable(items.table.entry("stone_axe")) and SmithingRules.disposable(items.table.entry("javelin")), "1. the live Stone - Axe and Javelin have no repair: disposable")
 	inv.add(n("stone_axe"), 1)
+	inv.move(slot_of("stone_axe"), 0)   # onto the hotbar (key 1)
 	var axe: int = slot_of("stone_axe")
-	inv.hotbar[0] = n("stone_axe")
 	inv.wear[axe] = int(items.table.entry("stone_axe")["durability"]) - 1
 	said.clear()
 	items._wear_tool(1, inv, "axe", "tree")
@@ -153,7 +153,7 @@ func _init() -> void:
 	var pick_row: Dictionary = items.table.entry(pick)
 	var bench: String = str(pick_row.get("repair_station", ""))
 	inv.add(n(pick), 1)
-	inv.hotbar[1] = n(pick)
+	inv.move(slot_of(pick), 1)   # onto the hotbar (key 2)
 	var ps: int = slot_of(pick)
 	inv.inst[ps] = {"max_d": 8000}   # as if sharpened before
 	inv.wear[ps] = 7999

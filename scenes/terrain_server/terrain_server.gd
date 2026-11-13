@@ -470,7 +470,6 @@ func _ready() -> void:
 	items.send_step_to = func(peer, spot, yaw): net.step_to.rpc_id(peer, spot, yaw)
 	items.send_wheel_share = func(peer, spot, yaw_deg, percent, why): net.wheel_share.rpc_id(peer, spot, yaw_deg, percent, why)
 	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
-	items.send_hotbar = func(peer, keys): net.hotbar.rpc_id(peer, keys)
 	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()

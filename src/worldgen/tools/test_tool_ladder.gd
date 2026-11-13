@@ -70,13 +70,15 @@ func empty_pack() -> void:
 			inv.remove(inv.numbers[slot], inv.counts[slot])
 
 
-# Puts one of the tool in the pack with a hotbar key on it (wears_tool and the hammer need it on the hotbar).
+# Puts one of the tool in a hotbar slot (wears_tool and the hammer need it on the hotbar).
 func hold(id: String) -> void:
 	var inv = items.inventory_of(1)
 	items.give(1, n_of(id), 1)
 
-	if not inv.hotbar.has(n_of(id)):
-		inv.hotbar[0] = n_of(id)
+	var at: int = inv.numbers.find(n_of(id))
+
+	if not inv.on_hotbar(at):
+		inv.move(at, 0)   # into hotbar slot 0 (key 1), as a player would drag it
 
 
 func give_needs(id: String) -> void:
