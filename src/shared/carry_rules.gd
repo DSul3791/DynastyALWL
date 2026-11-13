@@ -81,6 +81,12 @@ static func carry_bonus_kg(numbers, table) -> float:
 	return total
 
 
+# The body weight the carry limit is worked out from, on the server and the client alike: the real weight plus what the worn pieces' weight
+# spreading adds (cap = ratio x body, so the limit rises by the bonus itself).
+static func body_kg(weight_kg: float, worn_numbers, table, cfg: Dictionary) -> float:
+	return weight_kg + carry_bonus_kg(worn_numbers, table) / maxf(float(cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
+
+
 # The most a body carries (the server refuses to pick up more).
 static func cap_kg(body_kg: float, cfg: Dictionary) -> float:
 	return body_kg * float(cfg.get("carry_kg_per_body_kg", 0.7))

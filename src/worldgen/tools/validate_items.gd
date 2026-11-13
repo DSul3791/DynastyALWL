@@ -1179,7 +1179,7 @@ func _init() -> void:
 			if row.has("fabric") and not fabrics.has(String(row["fabric"])):
 				fail("items.json: '%s' fabric '%s' is not a warmth.json layers fabric" % [id, row["fabric"]])
 
-			# Bags (catalog Phase 5, src/shared/bag_rules.gd): their own slots fit an inventory, bag_takes is a known rule, nothing still says carry_bonus_kg.
+			# Bags (catalog Phase 5, src/shared/bag_rules.gd): their own slots fit an inventory, bag_takes is a known rule, carry_bonus_kg is kilograms on a back piece.
 			if row.has("bag_slots") and (int(row["bag_slots"]) < 1 or int(row["bag_slots"]) > 30 or not String(row.get("bag_takes", "")) in ["any", "small", "small_tool", "consumable", "arrow", "blade", "awkward"]):
 				fail("items.json: bag '%s' needs bag_slots 1 to 30 and a known bag_takes" % id)
 

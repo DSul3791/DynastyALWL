@@ -123,6 +123,9 @@ func _init() -> void:
 	check(with_leather[0] == bare[0] and with_leather[1] == bare[1], "worn Leather - Backpack: the pack's slot count is unchanged (%d)" % with_leather[0])
 	check(is_equal_approx(with_leather[2], bare[2] + 18.0) and with_leather[3] > with_hide[3], "worn Leather - Backpack: limit +18 kg, comfortable load above the hide pack's")
 
+	# The client's carry_body_kg is CarryRules.body_kg over its worn numbers (the server's worn_of): the same call gives the same body value.
+	check(is_equal_approx(CarryRules.body_kg(75.0, items.worn_of(1), table, cfg), items._carry_body(1)) and is_equal_approx(CarryRules.body_kg(75.0, [0, 0, 0], table, cfg), 75.0), "client and server work the carry body weight out through one shared helper (%.2f kg worn)" % items._carry_body(1))
+
 	# 4. Hindering follows the new comfortable load: a load that slows a bare body does not slow a pack-wearer.
 	var load_kg: float = bare[3] + 3.0
 	check(CarryRules.speed_factor(load_kg, 75.0, cfg) < 1.0 and is_equal_approx(CarryRules.speed_factor(load_kg, items._carry_body(1), cfg), 1.0), "%.0f kg slows a bare body but not one in a Leather - Backpack" % load_kg)
@@ -156,7 +159,12 @@ func _init() -> void:
 	var after: Array = measure(items)
 	print("INFO near capacity unworn: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg, carried %.2f kg" % [after[0], after[1], after[2], after[3], items.carried_kg_of(1)])
 	check(total(items, axe) == axes and total(items, stone) == stones and total(items, leather) == packs and inv.count_of(leather) == 1 and items.worn_of(1)[back_place(items)] == 0, "taking the backpack off near capacity loses and doubles nothing (40 axes, 28 stones, 1 backpack, now in the pack)")
-	check(after[0] >= 69 and after[1] >= 69 and is_equal_approx(after[2], bare[2]) and is_equal_approx(after[3], bare[3]), "the pack holds all 69 stacks in %d slots and the limit is the plain one again" % after[0])
+	var occupied: int = 0
+
+	for slot in inv.slot_count:
+		occupied += 1 if inv.numbers[slot] != 0 else 0
+
+	check(occupied == 42 and after[0] >= 42 and after[1] >= 42 and is_equal_approx(after[2], bare[2]) and is_equal_approx(after[3], bare[3]), "the pack holds all 42 stacks (40 axes, 1 stack of stones, the backpack) in %d slots and the limit is the plain one again" % after[0])
 	check(items.carried_kg_of(1) > after[2] and items._fit(1, inv, stone, 5) == 0 and notices.count(OVER_NOTICE) == 1, "over the plain limit now: nothing more is picked up, the player is told once and keeps everything")
 	check(CarryRules.speed_factor(items.carried_kg_of(1), items._carry_body(1), cfg) < 1.0, "and the walk is slowed, not stripped")
 

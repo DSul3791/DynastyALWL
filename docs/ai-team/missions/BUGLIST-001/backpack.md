@@ -20,21 +20,28 @@ Requirement (BUGLIST-001 section C): equipping a backpack must not change the co
 Restore the weight effect for the two backpacks only, from the values the catalog already carried before M001-T15 retired them (items.json at fc67431^: Hide - Backpack 12, Leather - Backpack 18; master DYNASTY_MASTER_ITEMS.md s3.9 table row "Backpack carry bonus"). No new numbers, items, mechanics, protocol or save-format change.
 
 - data/items/items.json: `carry_bonus_kg` 12 on row 50, 18 on row 767 (field restored; bag_slots untouched).
-- src/shared/carry_rules.gd: `carry_bonus_kg(numbers, table)`, the shared sum over worn numbers.
-- src/stream/server_items.gd `_carry_body`: body weight plus bonus / carry_kg_per_body_kg (the original formula), so the limit and the comfortable load (free_ratio of it) both rise (limit +12 or +18 kg, comfortable +9.6 or +14.4 kg). Everything keyed on it follows: pick-up refusal `_fit`, `_carry_notice`, loaded-bag effort, cart cargo check.
-- src/client/inventory_view.gd: `carry_body_kg` the same (bar, walk slowdown, pick-up gate); the item tooltip says "you can carry N kg more".
+- src/shared/carry_rules.gd: `carry_bonus_kg(numbers, table)` (sum over worn numbers) and `body_kg(weight, worn, table, cfg)`, the one formula both sides call.
+- src/stream/server_items.gd `_carry_body`: calls `CarryRules.body_kg` (body weight plus bonus / carry_kg_per_body_kg, the original formula); `_loaded_bag_effort` works the comfortable load out only when a worn bag has loaded_effort, so the limit and the comfortable load (free_ratio of it) both rise (limit +12 or +18 kg, comfortable +9.6 or +14.4 kg). Everything keyed on it follows: pick-up refusal `_fit`, `_carry_notice`, loaded-bag effort, cart cargo check.
+- src/client/inventory_view.gd: `carry_body_kg` calls the same helper (bar, walk slowdown, pick-up gate); the item tooltip says "you can carry N kg more".
 - src/worldgen/tools/validate_items.gd: `carry_bonus_kg` allowed only as above 0 up to 60 kg on a `back` piece (was forbidden everywhere).
 - docs/CARRY_WEIGHTS.md note updated. Item descriptions left as they are ("its load still weighs on you" stays true).
 
 ## Tests (NOT RUN)
 
-- NEW src/worldgen/tools/test_backpack_carry.gd (+ .uid): measures slots, limit and comfortable load before equipping, with Hide then Leather worn, after unequipping; leather above hide; a load that slows a bare body but not a wearer; near capacity (40 axes + 28 stones, 69 stacks, 68 kg) worn then taken off: nothing lost or doubled, slowed and told once, no further pick-up; an emptied pack back to 30 slots; save and reload worn, then unequipped. Prints `INFO` lines with the raw numbers for the evidence run.
+- NEW src/worldgen/tools/test_backpack_carry.gd (+ .uid): measures slots, limit and comfortable load before equipping, with Hide then Leather worn, after unequipping; leather above hide; a load that slows a bare body but not a wearer; near capacity (40 axes + 28 stones = one stack, 42 stacks with the backpack, 68 kg) worn then taken off: nothing lost or doubled, slowed and told once, no further pick-up; an emptied pack back to 30 slots; save and reload worn, then unequipped. Prints `INFO` lines with the raw numbers for the evidence run.
 - ADJUSTED test_carrying.gd (rows 50/767 now have the bonus and no other row does; the worn-pack check expects +12 kg) and test_warmth.gd:149 (same). Both asserted the retired behaviour.
 - Run: `godot --headless --path . --script res://src/worldgen/tools/test_backpack_carry.gd`, then test_carrying, test_warmth, test_pack_growth, validate_items.
 
 Regression risks: both adjusted tests encoded the old rule; a player over the plain limit after taking a pack off is only slowed (rule 10); bag slots on the backpacks still exist (Q1); master s3.9 rule 2 text and the T15 docs now disagree with the code (history, left as written).
 
 Status: NEEDS PLAYER VERIFICATION (weight effect). Slot point: see Q1.
+
+## Coordinator rulings (05:27Z, 13 Nov 2026; the coordinator's words, not Dave's; for Dave's confirmation)
+
+- Restoring `carry_bonus_kg` 12 and 18 on rows 50 and 767 is a value correction to meet DESIGN-001 and is allowed; 12 and 18 are starting values for Dave to tune.
+- DESIGN-001 (later, explicit requirement) wins over master s3.9 rule 2 [D9]. The D9 text is not rewritten: dated notes (13 Nov 2026) beside the "Backpack carry bonus" check, the carry-limit recommendation and the row 50 and 767 text in docs/design/DYNASTY_MASTER_ITEMS.md point to BUGLIST-001 DESIGN-001 and this ruling.
+- The `bag_slots` containers stay (Q1 remains open for Dave). PROTOCOL.md entry 109 updated to match (documentation only, no version bump).
+- Gate review of deb9815 fixes (this follow-up): stack count in the near-capacity check (28 stones are one stack, so 42 stacks), shared `CarryRules.body_kg`, lazy `_loaded_bag_effort`, a client/server helper-agreement check, stale validator comment.
 
 ## Open questions (decisions recorded, nothing waited on)
 
