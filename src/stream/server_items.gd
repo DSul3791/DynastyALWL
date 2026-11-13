@@ -1145,7 +1145,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PROCESS:
 		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 115)
 	elif kind == Net.ACT_MINE:
-		_mine(peer, inv, at, a - 1)   # a: the held pack slot + 1 (protocol 117)
+		_mine(peer, inv, at, a - 1, b == 1)   # a: the held pack slot + 1 (protocol 117); b = 1: the swing struck nothing (protocol 118)
 	elif kind == Net.ACT_CHEST_CLOSE:
 		_sync_fire_from_box(peer, int(_chest_viewer.get(peer, 0)))
 		_chest_viewer.erase(peer)
@@ -2264,6 +2264,8 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if hit:
 		hit_number(peer, eye + direction.normalized() * minf(reach, 1.5), damage)
 		_wear_slot(peer, inv, slot, "strike")
+	else:
+		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
 
 
 # A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
@@ -3556,8 +3558,8 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 	_dirty = true
 
 
-func _mine(peer: int, inv, at: Vector3, held_slot: int) -> void:
-	if not _peer_pos.has(peer) or not rock_at.is_valid():
+func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = false) -> void:   # struck_nothing: the client's ray hit nothing (a swing into the air): effort only, whatever lies under the point
+	if not _peer_pos.has(peer):
 		return
 
 	if _peer_pos[peer].distance_to(at) > MINE_REACH_M:
@@ -3574,10 +3576,15 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if tool < 0 or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock") or not bool(rock_at.call(at.x, at.z)):
+	if tool < 0 or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock"):
 		return
 
 	_last_mine[peer] = now
+
+	if struck_nothing or not rock_at.is_valid() or not bool(rock_at.call(at.x, at.z)):
+		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a swing at soil or into empty air (b = 1, a point 2.5 m ahead: rock_at is x/z only, so over bare rock a claimed miss still gives nothing): it tires, it breaks no stone, wears nothing, trains nothing
+		return
+
 	_wear_slot(peer, inv, tool, "rock")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
@@ -6023,16 +6030,22 @@ func _wear_tool(peer: int, inv, tool_class: String, use: String = "") -> void:
 	_wear_slot(peer, inv, _tool_slot(inv, tool_class), use)
 
 
+# A swing was made with a tool of this class: it holds the body at the class's effort for work_s (exertion.json tool_effort). Every swing that is
+# really executed calls this once, on a hit through _wear_slot, on a miss (bare ground, empty air, a jab at nothing) directly: a miss tires
+# as much as a hit (BUGLIST-001 BUG-001).
+func _note_work(peer: int, tool_class: String) -> void:
+	var work_cfg: Dictionary = _exertion_cfg.get("tool_effort", {})
+	_work_until[peer] = Time.get_ticks_msec() + int(float(_exertion_cfg.get("work_s", 2.5)) * 1000.0)
+	_work_level[peer] = float(work_cfg.get(tool_class, work_cfg.get("default", 0.6)))
+
+
 func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	if slot < 0 or inv.max_durability(slot) <= 0:
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 	var tool_class: String = str(entry.get("tool_class", ""))
-
-	var work_cfg: Dictionary = _exertion_cfg.get("tool_effort", {})
-	_work_until[peer] = Time.get_ticks_msec() + int(float(_exertion_cfg.get("work_s", 2.5)) * 1000.0)
-	_work_level[peer] = float(work_cfg.get(tool_class, work_cfg.get("default", 0.6)))
+	_note_work(peer, tool_class)
 	# A skilled crafter looks after their tools: wear is spread by the tool_care factor (1.0 for everyone at first), a deterministic
 	# carry of the fraction so no dice are involved.
 	var per_use: int = maxi(0, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))   # 0: work that cannot wear or dull this tool (a pick on wood)
@@ -11469,7 +11482,7 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
 func _effort_at_speed(speed: float) -> float:
-	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [3.2, 0.5], [9.0, 1.0]])
+	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [3.2, 0.4], [9.0, 1.0]])
 
 	if speed <= float(anchors[0][0]):
 		return float(anchors[0][1])
@@ -11509,7 +11522,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var dt: float = float(now - int(last[1])) / 1000.0
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		_speed3[peer] = lerpf(float(_speed3.get(peer, 0.0)), Vector3(position.x - last[0].x, position.y - last[0].y, position.z - last[0].z).length() / dt, clampf(dt * 2.0, 0.0, 1.0))
-		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.5, running 1 (data)
+		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.4, running 1 (data)
 
 		if _on_path(peer, position):
 			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
@@ -13642,7 +13655,10 @@ func _cut_hole(peer: int, inv, slot: int) -> void:
 		return
 
 	if not _on_ice(_peer_pos[peer]):
-		_say(peer, str(cfg.get("say_no_ice", "")))
+		# Only by the water: an axe right-clicked anywhere else (a swing at the air, in a wood) is not asking for a hole (BUG-003).
+		if water_near.is_valid() and bool(water_near.call(_peer_pos[peer], float(cfg.get("no_ice_water_m", 6.0)))):
+			_say(peer, str(cfg.get("say_no_ice", "")))
+
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -18172,7 +18188,7 @@ var _train_rest: Dictionary = {}     # peer -> seconds continuously at rest (bel
 
 
 # Fitness XP (Dave 4 Nov, BUG-023). Every 10-second tick above min_effort (0.1) gives xp_base + xp_per_effort x effort XP (1 at the line,
-# 2 at a steady walk, 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
+# 1.8 at a steady walk (effort 0.4), 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
 # bucket is turned into points (xp_per_point = 1000 XP, the same at every level) and the player is told. A midnight that passes while
 # the player is offline is paid at the next tick after login (one bucket only, saved with the character).
 # Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral, and so is sleep.

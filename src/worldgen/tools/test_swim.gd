@@ -100,7 +100,7 @@ func _init() -> void:
 	_check(Swim.wade_factor(0.1) == 1.0 and Swim.wade_factor(Swim.SWIM_DEPTH_M) == Swim.WADE_MIN and Swim.wade_factor(0.8) < 1.0, "water slows a wader down to %.0f percent at chest depth" % (Swim.WADE_MIN * 100.0))
 	_check(Swim.pace(false) < 6.0 and Swim.pace(true) > Swim.pace(false), "swimming is slower than walking, hard swimming faster")
 
-	# Effort: walking is 0.5, rest 0.52 (exertion.json): a steady swim is work, hard swimming more.
+	# Effort: walking is 0.4, rest 0.52 (exertion.json): a steady swim is work, hard swimming more.
 	_check(Swim.effort(0.0) > 0.52 and Swim.effort(2.0) > Swim.effort(0.0) and Swim.effort(3.0) > Swim.effort(2.0), "treading water, swimming and swimming hard cost more and more")
 	print("swim: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
