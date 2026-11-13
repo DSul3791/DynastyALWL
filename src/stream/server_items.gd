@@ -3735,10 +3735,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground is too wet here.")
 		return
 
-	var on_wall: bool = on_base and (panel or str(_structure_of_kit(kit_id).get("piece_kind", "")) == PlacementRules.WALL_TOP_KIND)   # a wall top or a roof panel sits on a standing wall's top, however high that wall is
-
-	if not on_wall and absf(ground - at.y) > (1.0 if not on_base else 1.5 + (PlacementRules.stack_rise(_structures_cfg, kit_id) * float(PlacementRules.STACK_MAX_LAYERS) if on_grid.size() > 3 else 0.0)):
-		_say(peer, "You cannot place that there.")
+	if PlacementRules.off_ground(_structures_cfg, kit_id, at.y, ground, on_base, on_grid.size() > 3) == "float":   # a piece on a foundation is exempt: the ground under it was the foundation's check (BUG-009)
+		_say(peer, "You cannot place that there: %s." % PlacementRules.reason_text("float"))
 		return
 
 	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
@@ -8463,7 +8461,7 @@ func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 			support_changed.call(spot)
 
 	if bool(def.get("shelter", false)):
-		_record_rest(str(_peer_key.get(peer, "")), spot, "shelter")   # a lean-to you built is a place to come back to
+		_record_rest(str(_peer_key.get(peer, "")), _shelter_floor(spot, def), "shelter")   # a lean-to you built is a place to come back to
 
 	_goal_event(peer, "placed", str(def.get("kind", "")))
 
@@ -10470,8 +10468,10 @@ func rest_point_for(peer: int, from: Vector3) -> Vector3:
 		if str(r[3]) == "shelter":
 			var id: int = _shelter_near(spot)
 
-			if id >= 0 and _items[id]["pos"].distance_to(spot) <= 0.5:
-				var def: Dictionary = _structures.get(str(_items[id]["struct"]["kind"]), {})
+			var found_def: Dictionary = _structures.get(str(_items[id]["struct"]["kind"]), {}) if id >= 0 else {}
+
+			if id >= 0 and _shelter_floor(_items[id]["pos"], found_def).distance_to(spot) <= 0.5:
+				var def: Dictionary = found_def
 				var yaw: float = deg_to_rad(float(_items[id]["struct"]["yaw"]))
 				landing = spot + Vector3(cos(yaw), 0.0, sin(yaw)) * (maxf(float(def.get("half_x", 1.0)), float(def.get("half_z", 1.0))) + 1.5)
 		else:
@@ -10485,6 +10485,20 @@ func rest_point_for(peer: int, from: Vector3) -> Vector3:
 			best = landing
 
 	return best if best_d < INF else respawn_for(peer)
+
+
+# Where a shelter is rested in or returned to: its spot, but for a roof panel (its spot is its middle, metres above the floor it covers) the floor under it, the
+# foundation top there else the ground, so a player never wakes or respawns in mid-air under a roof that sits on a wall top.
+func _shelter_floor(pos: Vector3, def: Dictionary) -> Vector3:
+	if str(def.get("piece_kind", "")) != PlacementRules.ROOF_PANEL_KIND:
+		return pos
+
+	var top: float = PlacementRules.foundation_top(_structures_cfg, pos, _foundation_rows())
+
+	if is_nan(top) and ground_height.is_valid():
+		top = float(ground_height.call(pos.x, pos.z))
+
+	return pos if is_nan(top) else Vector3(pos.x, top, pos.z)
 
 
 func _note_shelter(peer: int) -> void:
@@ -10501,9 +10515,9 @@ func _note_shelter(peer: int) -> void:
 
 		return
 
-	_record_rest(str(_peer_key[peer]), _items[id]["pos"], "shelter")
+	var p: Vector3 = _shelter_floor(_items[id]["pos"], _structures.get(str(_items[id]["struct"]["kind"]), {}))
+	_record_rest(str(_peer_key[peer]), p, "shelter")
 
-	var p: Vector3 = _items[id]["pos"]
 	var row: Dictionary = _characters[_peer_key[peer]]
 
 	if row.get("shelter", []) != [p.x, p.y, p.z]:
@@ -10636,10 +10650,11 @@ func respawn_for(peer: int, dying: bool = false) -> Vector3:
 	var spot := Vector3(float(saved[0]), float(saved[1]), float(saved[2]))
 	var id: int = _shelter_near(spot)
 
-	if id < 0 or _items[id]["pos"].distance_to(spot) > 0.5:
+	var def: Dictionary = _structures.get(str(_items[id]["struct"]["kind"]), {}) if id >= 0 else {}
+
+	if id < 0 or _shelter_floor(_items[id]["pos"], def).distance_to(spot) > 0.5:
 		return respawn_point
 
-	var def: Dictionary = _structures.get(str(_items[id]["struct"]["kind"]), {})
 	var yaw: float = deg_to_rad(float(_items[id]["struct"]["yaw"]))
 	var out: float = maxf(float(def.get("half_x", 1.0)), float(def.get("half_z", 1.0))) + 1.5
 	return spot + Vector3(cos(yaw), 0.0, sin(yaw)) * out

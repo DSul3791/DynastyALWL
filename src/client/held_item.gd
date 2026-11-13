@@ -15,6 +15,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const CaveSounds := preload("res://src/client/cave_sounds.gd")   # is_not_rock: what the ghost's ground probe looks through
 const BasicLook := preload("res://src/client/basic_look.gd")
 const FlameRules := preload("res://src/shared/flame_rules.gd")
 const ArmsView := preload("res://src/client/character/arms_view.gd")
@@ -172,7 +173,7 @@ var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
 var _ghost_on_base: bool = false           # the ghost is snapped to a base: a piece on a foundation, or a foundation beside another (the wheel does not lift it)
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
-var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
+var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "crowded", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "wheel_*" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
@@ -1831,19 +1832,23 @@ func _update_blueprint() -> void:
 		if not on_base:
 			blueprint_state = "nopanel"   # a roof panel only rests on a wall top, a ceiling edge or another panel's end, never free on the ground
 		elif blueprint_state == "":
-			var ground_probe: Callable = func(x: float, z: float) -> float:
-				var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, _blueprint_at.y + 0.5, z), Vector3(x, _blueprint_at.y - 12.0, z))
-				var found: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(ray)
-				return float(found["position"].y) if not found.is_empty() else NAN
+			var panel_at: Vector3 = _blueprint_at
+			var ground_probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, panel_at.y, 14.0)   # the terrain alone, as the server reads it (a 65 panel's low end can hang 10 m up)
 			blueprint_state = "buried" if PlacementRules.roof_panel_buried(_placement, kit, _blueprint_at, _blueprint_yaw, ground_probe) else ""
 
 	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at
-		var probe: Callable = func(x: float, z: float) -> float:
-			var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, ground_at.y + 3.0, z), Vector3(x, ground_at.y - 3.0, z))
-			var found: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(ray)
-			return float(found["position"].y) if not found.is_empty() else NAN
-		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, _camera.global_rotation.y, probe)
+		var probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, ground_at.y, 6.0)
+		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe)   # the turn it is placed at, as the server samples it (the camera's turn sampled other corners: BUG-008)
+
+	var fire_on_base: bool = kit == "campfire_kit" and not is_nan(PlacementRules.foundation_top(_placement, _blueprint_at, _inv.foundation_rows()))   # the server lays a fire on a foundation's top and skips the check
+
+	if blueprint_state == "" and not fire_on_base:
+		var lifted: float = float(lift_steps) * PlacementRules.LIFT_STEP_M if (not on_base and bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false))) else 0.0
+		var terrain: float = _terrain_y(_blueprint_at.x, _blueprint_at.z, _blueprint_at.y, 14.0)   # 14 m reaches down past a stack of four foundations
+
+		if not is_nan(terrain):
+			blueprint_state = PlacementRules.off_ground(_placement, kit, _blueprint_at.y - lifted, terrain, on_base and attach != "table", on_grid.size() > 3)   # a platter's base is a table: the server snaps with foundation rows only, so no exemption
 
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
@@ -1863,9 +1868,34 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "buried"
+	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "buried"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
+
+
+# The terrain height under (x, z) as the placement rules read it: the first ground below `near_y` + 3 m and no deeper than `depth` m under `near_y`,
+# not what stands on it (a player, a tree or bush, a placed piece), because the server checks the terrain alone. NAN with no ground there (unknown never blocks).
+func _terrain_y(x: float, z: float, near_y: float, depth: float) -> float:
+	var space: PhysicsDirectSpaceState3D = _camera.get_world_3d().direct_space_state
+	var skip: Array[RID] = []
+
+	for i in 6:
+		var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, near_y + 3.0, z), Vector3(x, near_y - depth, z))
+		ray.exclude = skip
+		var found: Dictionary = space.intersect_ray(ray)
+
+		if found.is_empty():
+			return NAN
+
+		var collider: Object = found.get("collider")
+
+		if collider != null and (collider is CharacterBody3D or CaveSounds.is_not_rock(collider)):
+			skip.append(found["rid"])
+			continue
+
+		return float(found["position"].y)
+
+	return NAN
 
 
 # The sawmill ghost's water wheel (water rules section 10, protocol 105): the server works out what the wheel would give where the ghost stands

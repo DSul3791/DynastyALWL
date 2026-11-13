@@ -126,6 +126,8 @@ func _snap_checks(cfg: Dictionary) -> void:
 				check(absf(middle.z - expect_z) < 0.001 and absf(middle.y - (top.y + (rise * 0.5 if mode == 0 else -rise * 0.5))) < 0.001 and absf(middle.x - 300.0) < 0.001, "%s: the middle is half a run and half a rise from it (%s)" % [label, str(middle)])
 				check(Rules.snap(cfg, kit, answer[0], int(answer[1]), wall, mode)[0] == answer[0], "%s: the answer snaps to itself (the client sends the ghost's middle, the server snaps again)" % label)
 
+		var fell: Array = Rules.snap(cfg, kit, cursor, 0, wall, 1)
+		check(Rules.snap(cfg, kit, fell[0], int(fell[1]), wall, 0)[0] == fell[0], "%d degrees: a falling panel's middle sent with mode 0 (a replayed building plan) is still that falling panel" % slope)
 		var along: Array = Rules.snap(cfg, kit, cursor, 90, wall, 0)
 		check(not bool(along[2]), "%d degrees: looking along the wall top there is no edge across the facing, so it is not placed on one" % slope)
 
@@ -194,6 +196,17 @@ func _server_checks() -> void:
 	var steep: Array = _rows(items, "thatch_roof_65")
 	var rise_65: float = Rules.roof_panel_rise(Rules.load_config()["structures"]["thatch_roof_65"])
 	check(steep.size() == 1 and _near(steep[0], Vector3(200.0, 14.4 + rise_65 * 0.5, 197.0)), "a 65 panel goes on from the 45's high end (%s)" % str(steep))
+
+	# A panel is a shelter whose spot is its middle, metres up a wall: rest and respawn points are the floor under it, never mid-air.
+	var key: String = str(items._peer_key[1])
+	var rests: Array = items._characters[key].get("rests", [])
+	check(rests.size() > 0 and rests.all(func(r): return absf(float(r[1]) - 10.0) < 0.01), "building a panel records its rest point on the ground (%s)" % str(rests))
+	items.report_position(1, Vector3(200.0, 10.0, 202.0))
+	items._note_shelter(1)
+	var saved: Array = items._characters[key].get("shelter", [])
+	check(saved.size() == 3 and absf(float(saved[1]) - 10.0) < 0.01, "sleeping under a panel saves the ground as the shelter point (%s)" % str(saved))
+	check(absf(items.respawn_for(1).y - 10.0) < 0.01, "and a respawn there is on the ground, not at the panel's middle (y %.2f)" % items.respawn_for(1).y)
+	check(absf(items.rest_point_for(1, Vector3(200.0, 10.0, 205.0)).y - 10.0) < 0.01, "so is a rejoin at the nearest rest point")
 
 	# Saved and loaded: the same pieces in the same places.
 	var before: Array = _all_rows(items)

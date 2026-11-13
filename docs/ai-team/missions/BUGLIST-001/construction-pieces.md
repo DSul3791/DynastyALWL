@@ -8,7 +8,7 @@ Catalog change made on the strength of BUG-011, for Dave to confirm: `thatch_roo
 
 | Bug | Status | Why |
 |---|---|---|
-| BUG-010 Crude - Doorway | NEEDS PLAYER VERIFICATION | Open frame, no door leaf, no door state; collider open 1.0 m x 2.0 m. A separate door item does not exist (question below), so the Crude doorway cannot be shut yet. |
+| BUG-010 Crude - Doorway | PARTIAL: open passage done; separate door item pending Dave's authorization (the passage itself NEEDS PLAYER VERIFICATION) | Open frame, no door leaf, no door state; collider open 1.0 m x 2.0 m. A separate door item does not exist (question below), so the Crude doorway cannot be shut yet. |
 | BUG-011 Crude - Roof 45 / 65 | NEEDS PLAYER VERIFICATION | Panel-only meshes and colliders, new snapping on wall tops, ceiling edges and panel ends, both ends, rise and fall, refusals. All tests NOT RUN. |
 
 ## BUG-010
@@ -53,10 +53,21 @@ Not tested: multi-panel assembly with real collision in the engine (the snap and
 
 Regression risks: `placement_rules.snap` gained an optional last argument; the pre-existing roofs of other tiers (`piece_kind: roof`, 2.4 m gable on posts) still snap to foundation anchors and join edge to edge as before. `lift_steps` (the wheel's foundation lift, RPC field `b`) now also carries a roof panel's mode: reset when the picked piece changes to or from a panel. Overlapping combinations (a panel set back over the panel it hangs from) are not refused beyond the identical-middle case.
 
-F6 check: build a 4 m wall run (Crude foundation, two Crude walls opposite each other). Hammer menu: Crude - Roof 45; aim at the top of one wall facing across it: the green ghost is a slab rising from the wall top toward the other wall; wheel flips it to hang from its high end and fall; place two (one from each wall facing each other) and they meet at a ridge with no posts under them. Repeat with Crude - Roof 65 (steep, 4.3 m rise). Looking along the wall, or aiming at open ground, shows a red ghost with the reason. Rain under a panel on a wall top should be sheltered.
+F6 check: build a 4 m wall run (Crude foundation, two Crude walls opposite each other). Hammer menu: Crude - Roof 45; aim at the top of one wall facing across it: the green ghost is a slab rising from the wall top toward the other wall; wheel flips it to hang from its high end and fall; place two (one from each wall facing each other) and they meet at a ridge with no posts under them. Repeat with Crude - Roof 65 (steep, 4.3 m rise). Looking along the wall, or aiming at open ground, shows a red ghost with the reason. Rain under a panel on a wall top should be sheltered. Reach: a second 65 panel chained on the first one's high end is about 8.8 m up, beyond the 6 m place reach from the ground, so it says "Too far to place that" until the player stands on something higher; this is the existing place-reach rule, unchanged.
+
+## Gate review fixes (head after 0e7c53f, merged with `claude/buglist001-placement` 2049426)
+
+- Merge: placement's `off_ground` replaces the old on_wall line (it already exempts a non-foundation piece on a base); `panel` stays for the nopanel and buried refusals; the ghost keeps placement's "float" and my "nopanel" and "buried" in `blocked`.
+- MUST 1 (respawn in mid-air): the roof panel rows keep `shelter: true` because the bed-under-roof rule needs it (`_inside_shelter` and `PlacementRules._bed_in_shelter` use half_x/half_z; a bed under a falling 45 panel is within its 1.5 m height window). Fix: `server_items._shelter_floor(pos, def)` returns the panel's floor (the foundation top under it, else the ground) and `_after_built`, `_note_shelter`, `respawn_for` and `rest_point_for` use it for the recorded and compared rest/shelter points; other shelters (lean-to) are unchanged. Limit: a roof over a ceiling or upper storey is rested at the foundation top or ground below, not at that storey. Test: `test_roof_panels.gd` (rest point, shelter point, `respawn_for`, `rest_point_for` all on the ground).
+- MUST 2: the ghost's buried check now reads the terrain with placement's `_terrain_y` (14 m down, skips the player, trees and placed pieces), as the server does.
+- SHOULD 3 (building plans): a plan replays pieces by position and turn only. `roof_panel_spot` now treats a spot that is exactly the other mode's middle for an edge (within 0.05 m) as that panel, so a falling panel replays falling; tested in `test_roof_panels.gd`.
+- SHOULD 4: `PROTOCOL.md` ACT_PLACE_BLUEPRINT row now says b is 0 or 1 for a roof panel; no version change.
+- 7 (stale art and tooling, art-lane follow-ups): `tools/paint_structure_icons.py` lines 426 (`thatch_roof()` icon draws the old gable on posts), 1199 (`thatch_doorway` icon draws the door: `thatch_wall(DOOR)`) and 1207 (`thatch_roof` icon entry) still paint the old pieces; `tools/look_rig.sh:60` and `art/playthrough/rig.sh:59` examples named the removed `thatch_doorway_open` look (both now `log_doorway_open`); `art/playthrough/build_orders.py:51` ("Thatch house" lists `thatch_roof_kit` and `thatch_doorway_kit`) is a material-cost list, not a placement scenario, so it still computes; but any placement-based playthrough that sets a thatch roof on the ground is now refused ("a roof panel rests on a wall top...") and the roof's step needs a wall top to aim at. Not edited (icons are baked art).
+- 8: state 91 recorded as retired in `docs/mirror/tech/NUMBER_RESERVATIONS.md`.
+- 9: reach note added to the F6 check below.
 
 ## Contract notes
 
-- PROTOCOL.md / `PROTOCOL_VERSION` 117: unchanged. No new action or field. The existing `lift_steps` argument of `ACT_PLACE_BLUEPRINT` (`b`) is reused with a second meaning (0/1 for a roof panel, server-clamped); this is a semantic extension of an existing field, not a wire change. Reported to the lead so a gate reviewer can rule if it counts.
+- PROTOCOL.md / `PROTOCOL_VERSION` 117: no version change. No new action or field. The existing `lift_steps` argument of `ACT_PLACE_BLUEPRINT` (`b`) is reused with a second meaning (0/1 for a roof panel, server-clamped) and the PROTOCOL.md row now says so; this is a semantic extension of an existing field, not a wire change.
 - Save format: unchanged (a structure row is kind, position, yaw). `thatch_doorway_open` is read back as `thatch_doorway` via `legacy_kinds`.
 - Pre-assigned protocol number 119 was not used.

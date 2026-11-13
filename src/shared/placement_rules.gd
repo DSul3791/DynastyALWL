@@ -292,6 +292,8 @@ static func roof_connections(cfg: Dictionary, rows: Array, near: Vector3) -> Arr
 # the panel comes back the other way and falls from the edge. Returns [spot, yaw in degrees, true], or [] when no edge across the facing is near.
 # `spot` is the cursor, or an earlier answer (the client sends the ghost's middle, and the server snaps again): the edge counts by the nearer of its own
 # distance to `spot` and its panel's middle's, across the ground, so an answer snaps to itself. Of tied edges the one nearest the cursor's height wins.
+# A `spot` that is exactly the middle of the panel the OTHER mode would put on an edge (within 0.05 m) is that panel: a saved building plan replays pieces by
+# position and turn only, so a falling panel comes back falling whatever mode the replay sends.
 static func roof_panel_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: int, mode: int, rows: Array) -> Array:
 	var yaw: int = posmod(int(round(float(yaw_deg) / 90.0)) * 90, 360)
 	var rising: Vector2 = Vector2(-sin(deg_to_rad(float(yaw))), -cos(deg_to_rad(float(yaw))))
@@ -306,6 +308,11 @@ static func roof_panel_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw
 			continue
 
 		var at: Vector3 = edge["p"]
+		var other: Vector3 = Vector3(at.x - leave.x * half_run, at.y + (half_rise if mode > 0 else -half_rise), at.z - leave.y * half_run)   # the middle the other mode puts on this edge
+
+		if spot.distance_to(other) < 0.05:
+			return [other, yaw, true]
+
 		var middle: Vector3 = Vector3(at.x + leave.x * half_run, at.y + (-half_rise if mode > 0 else half_rise), at.z + leave.y * half_run)
 		var d: float = minf(Vector2(spot.x - at.x, spot.z - at.z).length(), Vector2(spot.x - middle.x, spot.z - middle.z).length())
 
@@ -749,6 +756,8 @@ static func reason_text(state: String) -> String:
 			return "too many of these here already"
 		"steep":
 			return "the ground is too steep here"
+		"float":
+			return "it is too far above or below the ground"
 		"water":
 			return "you cannot build in water"
 		"shallow":
@@ -815,3 +824,25 @@ static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, he
 
 	var limit: float = float(def.get("max_rise_m", cfg.get("campfire", {}).get("max_rise_m", 0.6) if def.is_empty() else cfg.get("max_rise_m", 1.0)))
 	return "steep" if high - low > limit else ""
+
+
+# "float" when a spot is too far above or below the terrain under it, else "" (the server's "You cannot place that there"; the ghost asks the same, wherever it can read the
+# terrain, so it goes red for it too). `y` is the spot's height with a wheel lift taken off, `ground` the terrain height at its x and z, `on_base` what snap
+# returned (the spot's height comes from a foundation, not the ground), `stacked` that snap stacked a foundation on a foundation (the reach grows by a
+# body per layer). A piece that stands ON a foundation (wall, floor, pillar, railing, wall top, a fire) rests on what the foundation's own check passed: the
+# ground under the edge of a lifted or stacked foundation may lie further below than any reach, and refusing it left a green ghost that never placed (BUG-009).
+const GROUND_REACH_M := 1.0   # a piece set on the ground
+const BASE_REACH_M := 1.5     # a foundation set beside or on another one
+
+static func off_ground(cfg: Dictionary, kit_id: String, y: float, ground: float, on_base: bool, stacked: bool) -> String:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if on_base and not bool(def.get("foundation", false)):
+		return ""
+
+	var reach: float = GROUND_REACH_M
+
+	if on_base:
+		reach = BASE_REACH_M + (stack_rise(cfg, kit_id) * float(STACK_MAX_LAYERS) if stacked else 0.0)
+
+	return "float" if absf(ground - y) > reach else ""
