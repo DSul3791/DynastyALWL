@@ -3731,6 +3731,14 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "A roof panel rests on a wall top, a ceiling edge or another panel's end.")   # never a panel standing free on the ground
 		return
 
+	if str(_structure_of_kit(kit_id).get("attach_to", "")) == PlacementRules.DOOR_ATTACH:   # a door hangs in a doorway of its own shape (BUGLIST-002): `at` is that frame's spot, so it skips the ground checks like a platter on a table
+		var fit: Dictionary = PlacementRules.doorway_fit(_structures_cfg, _structure_of_kit(kit_id), at, _foundation_rows())
+
+		if str(fit["why"]) != "":
+			var why: String = PlacementRules.reason_text(str(fit["why"]), str(fit["opening"]))
+			_say(peer, why.left(1).to_upper() + why.substr(1) + ".")
+			return
+
 	if kit_id == "campfire_kit":   # a fire is laid on top of a foundation it is aimed at (Dave 10 Nov 2026), not on the ground under it
 		var base_top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
 
@@ -9060,6 +9068,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if _platter_on(it):
 		_say(peer, "Take the platter off it first.")   # a table never leaves a platter floating
+		return
+
+	if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH and PlacementRules.door_at(_structures_cfg, it["pos"], _foundation_rows()):
+		_say(peer, "Take the door out first.")   # a doorway frame never leaves its door hanging in the air (BUGLIST-002)
 		return
 
 	if not _struct_empty(id):

@@ -16,6 +16,7 @@ const CarcassLook := preload("res://src/client/carcass_look.gd")
 const RockLook := preload("res://src/client/rock_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")   # DOOR_TAKEN_M: a doorway frame and its door share one spot
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
 # the nearest within reach) and the player key. The server owns all of it; this only shows
@@ -943,8 +944,8 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if state == 33:
 		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
-	if state == 26 or state == 28:
-		return {"prompt": "Press E to open the door" if state == 26 else "Press E to close the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+	if str(_structure_by_state(state).get("piece_kind", "")) == "door":   # a door in a doorway (BUGLIST-002): a shut one has blocks_walk; the empty frame has no use and falls through to "take down"
+		return {"prompt": "Press E to close the door" if not bool(_structure_by_state(state).get("blocks_walk", false)) else "Press E to open the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	var station_def: Dictionary = _structure_by_state(state)
 
@@ -1282,7 +1283,25 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
 			ids.append(id)
 
-	return _aimed_or_nearest(ids, here)
+	return _aimed_or_nearest(_unframed(ids), here)
+
+
+# A doorway frame with a door in it shares the door's spot: the door is the one E works (the frame is taken down after the door).
+func _unframed(ids: Array) -> Array:
+	var out: Array = []
+
+	for id in ids:
+		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+		var holds_door: bool = false
+
+		if str(def.get("opening", "")) != "" and str(def.get("piece_kind", "")) != "door":
+			for other in ids:
+				holds_door = holds_door or (str(_structure_by_state(int(_world[other]["state"])).get("piece_kind", "")) == "door" and (_world[other]["pos"] as Vector3).distance_to(_world[id]["pos"]) < PlacementRules.DOOR_TAKEN_M)
+
+		if not holds_door:
+			out.append(id)
+
+	return out
 
 
 # Of some world ids: the best centred one when the cursor is on any of them, otherwise the nearest; 0 for none.

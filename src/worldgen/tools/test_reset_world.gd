@@ -135,7 +135,7 @@ func _init() -> void:
 	# Construction across the world.
 	var placed: Array = []
 
-	for spec in ["wood_foundation@20,20,0", "wall_section@24,20,0", "door_open@28,20,0", "floor_section@32,20,0", "rough_bed@36,20,0", "workbench@40,20,0", "chest@44,20,0", "campfire@48,20,0,lit", "tilled_bed@52,20,0", "chest@-3000,-3000,0"]:
+	for spec in ["wood_foundation@20,20,0", "wall_section@24,20,0", "doorway_section@28,20,0", "floor_section@32,20,0", "rough_bed@36,20,0", "workbench@40,20,0", "chest@44,20,0", "campfire@48,20,0,lit", "tilled_bed@52,20,0", "chest@-3000,-3000,0"]:
 		var id: int = items.dev_place(spec)
 		check(id > 0, "placed %s" % spec)
 		placed.append(id)
