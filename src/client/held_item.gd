@@ -436,7 +436,7 @@ func _repair_here() -> void:
 		return
 
 	_arm_play("use", 0.6)
-	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, 0, 0, Vector3.ZERO)
+	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, held_slot + 1, 0, Vector3.ZERO)   # the hammer in hand (protocol 117)
 
 
 # Save building plan (hammer menu, then left click): keeps the building you aim at, every blueprint piece joined to it, as a plan in the menu.
@@ -1197,7 +1197,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if carcass != 0:
 				_arm_play("use", 0.6)
-				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # the knife in hand (protocol 117)
 				return true
 
 		return false
@@ -1919,10 +1919,10 @@ func _strike() -> void:
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif not shrub.is_empty():
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 0.7)
-		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(1.0 if _tool_class() == "pick" else 0.0, 0.0, 0.0))
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(float(held_slot + 1), 0.0, 0.0))   # the tool in hand: a pick digs it up, an axe chops it (protocol 117)
 	else:
 		_sound.hits.hit_ground(_hit_tool(), hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])
+		_net.inventory_action.rpc_id(1, Net.ACT_MINE, held_slot + 1, 0, 0, hit["position"])   # the pick or axe in hand (protocol 117)
 
 
 # A spade swing at the ground under the crosshair: the server checks the spade and the reach, cuts the hole and tells

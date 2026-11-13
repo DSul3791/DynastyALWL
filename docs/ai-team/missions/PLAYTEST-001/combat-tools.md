@@ -81,3 +81,26 @@ Gate review 5 (dev merge with the hotbar fix, c5d5d2f..4f7eac1): one must-fix, t
 | `test_flora_density` timeout | yes, alone, at 4f7eac1 and at origin/dev 468ae5b | times out at 300 s on dev too, same place, no failed check: already on dev (it took 104-152 s on 6 Nov), not from this change |
 | Final check after the dev merge (far smoke, protocol 114; this change now 115), `ba96633` | yes, Dave's PC, one at a time | 9/9 pass: test_spear_hold, test_stump_chop, test_server_items, test_flint, test_ore, test_bronze_path, test_hotbar_keys, test_handcart, test_felling_time. local_check: new-warning counts in files of other PRs and in server_items.gd lines that blame to dev, none from this change |
 | Pictures (held_item, inventory_view) | no | cannot be judged headless: Dave's playtest |
+
+## Follow-up: every swing uses the tool in hand (Dave 13 Nov 2026)
+
+Dave: "if you do an attack on anything at anytime it needs to know what weapon is in hand"; "swinging any tool or weapon needs to always check the tool or weapon first because they might have bonuses to be able to hit stuff." Base `origin/dev` 869c5a3 (protocol 116). Status: NEEDS PLAYER VERIFICATION.
+
+Audit of every server swing path (`server_items.gd`):
+
+| Swing | Before | Now |
+|---|---|---|
+| Bare rock ground (ACT_MINE) | first axe on the hotbar | the pick or axe in hand (a = slot + 1, protocol 117); a pick wears 1 a blow, an axe 5 (data) |
+| Bush (ACT_HIT_SHRUB) | first pick or axe on the hotbar, chosen by a pick flag | the tool in hand decides: a pick digs it up, an axe chops it (at.x = slot + 1) |
+| Chopping block (E, ACT_USE_STRUCT) | first axe on the hotbar | the axe in hand (count = slot + 1) |
+| Carcass (ACT_PROCESS) | first knife on the hotbar | the knife in hand (at.x = slot + 1) |
+| Hammer repair, blueprint fill (ACT_REPAIR_STRUCT) | first hammer on the hotbar; reach from the heaviest | the hammer in hand, its tier sets the reach (b = slot + 1) |
+| Spade dig and fill, spade size and tier | first spade on the hotbar | the spade in hand (a, already sent) |
+| Hoe path, smooth, till, grade, survey marker | first hoe on the hotbar | the hoe in hand (a, already sent) |
+| Animal strike, throw, bow, fishing, net, ice hole, planting a bush; trees, trunks, stumps, logs, boulders | already the item in hand | unchanged |
+
+One resolver: `_held_tool` (on the hotbar, not broken, of the class) and `_swing_tool` (the same, saying why not). The replaced lookups are gone (`_say_tool_missing` deleted, the swing paths no longer call `_has_tool` / `_tool_slot` / `_wear_tool`). No bonus system or item property was added.
+
+Left as they are (not swings; reported to Dave): the tool a recipe needs (any on the hotbar), E-key plant gathering and garden-bed harvest, a surveyed road building itself as you walk, the goal hints, and placing a blueprint (the heaviest hammer on the hotbar sets what can be built and the building reach).
+
+Tests: every test call of these actions sends the held slot through `held_tool.gd slot_of` (88 calls in 12 tests); `test_server_items.gd` adds a pickaxe in hand mining bare rock with the axe on the hotbar (pick wears, axe does not), nothing in hand mining nothing, a dig with the spade only on the hotbar refused, and the chopping block with the axe only on the hotbar refused ("in hand").

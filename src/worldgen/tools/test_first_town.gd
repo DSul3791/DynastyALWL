@@ -178,7 +178,7 @@ func _init() -> void:
 
 	for n in range(2):
 		items._last_use.clear()
-		items.action(1, Net.ACT_USE_STRUCT, block, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
 
 	for id in items._items.keys():
 		if int(items._items[id]["number"]) == table.number_of("firewood_soft") and not items._items[id].has("struct"):

@@ -5,6 +5,7 @@ extends SceneTree
 # and sets the piece back to full.
 #   godot --headless --path . --script res://src/worldgen/tools/test_building_wear.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -83,7 +84,7 @@ func _init() -> void:
 
 	check(wall != 0 and is_equal_approx(items.piece_condition(wall), 1.0), "a fresh log wall is in full condition")
 	var before_repair: int = _have("log")
-	items.action(1, Net.ACT_REPAIR_STRUCT, wall, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, wall, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(_have("log") == before_repair, "a wall in good repair is not repaired and costs nothing")
 
 	var rule: Dictionary = Wear.rule_for(items._wear_cfg, "log_wall")
@@ -93,13 +94,13 @@ func _init() -> void:
 
 	_clear()
 	_give("wooden_hammer", 1)
-	items.action(1, Net.ACT_REPAIR_STRUCT, wall, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, wall, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(items.piece_condition(wall) < 0.9, "no materials: nothing is repaired")
 
 	var need_logs: int = int(Wear.repair_needs(bp["cost"], worn, 0.5)[0][1])
 	items.drop_in_world(items.table.number_of("twine"), 2, Vector3(200.0, 10.0, 203.0))
 	_give("log", need_logs)
-	items.action(1, Net.ACT_REPAIR_STRUCT, wall, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, wall, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(is_equal_approx(items.piece_condition(wall), 1.0), "with the logs in the pack and the twine on the ground the wall is mended")
 	check(_have("log") == 0 and _have("wooden_hammer") == 1, "exactly the logs were taken and the hammer kept")
 	print("test_building_wear: %d fail" % failures)

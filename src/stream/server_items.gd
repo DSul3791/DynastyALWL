@@ -1095,7 +1095,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
 		_chest_action(peer, inv, kind, a, b, count)
 	elif kind == Net.ACT_USE_STRUCT:
-		_use_struct(peer, inv, a, b)
+		_use_struct(peer, inv, a, b, count - 1)   # count: the held pack slot + 1, for the chopping block's axe (protocol 117)
 	elif kind == Net.ACT_EAT:
 		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
 		_eat(peer, inv, a, b)
@@ -1145,7 +1145,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PROCESS:
 		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 115)
 	elif kind == Net.ACT_MINE:
-		_mine(peer, inv, at)
+		_mine(peer, inv, at, a - 1)   # a: the held pack slot + 1 (protocol 117)
 	elif kind == Net.ACT_CHEST_CLOSE:
 		_sync_fire_from_box(peer, int(_chest_viewer.get(peer, 0)))
 		_chest_viewer.erase(peer)
@@ -1171,15 +1171,15 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_LITTER:
 		_pick_litter(peer, inv, at)
 	elif kind == Net.ACT_DIG:
-		_dig(peer, inv, at)
+		_dig(peer, inv, at, a)   # a: the held pack slot, -1 for nothing in hand
 	elif kind == Net.ACT_FILL:
-		_fill(peer, inv, at)
+		_fill(peer, inv, at, a)
 	elif kind == Net.ACT_GATHER_EDGE:
 		gather_edge(peer, inv)
 	elif kind == Net.ACT_SET_SPAWN:
 		set_spawn_bed(peer, a)
 	elif kind == Net.ACT_TILL:
-		till(peer, inv, at)
+		till(peer, inv, at, a)
 	elif kind == Net.ACT_SOW:
 		sow(peer, inv, a, b)
 	elif kind == Net.ACT_HARVEST:
@@ -1187,23 +1187,23 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_WATER_BED:
 		water_bed(peer, inv, a)
 	elif kind == Net.ACT_HOE_PATH:
-		_hoe_path(peer, inv, at)
+		_hoe_path(peer, inv, at, a)
 	elif kind == Net.ACT_HOE_SMOOTH:
-		_hoe_smooth(peer, inv, at)
+		_hoe_smooth(peer, inv, at, a)
 	elif kind == Net.ACT_HOE_GRADE_POINT:
-		_hoe_grade_point(peer, inv, b, at)
+		_hoe_grade_point(peer, inv, b, at, a)
 	elif kind == Net.ACT_HOE_GRADE:
-		_hoe_grade(peer, inv, at)
+		_hoe_grade(peer, inv, at, a)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
 	elif kind == Net.ACT_REPAIR_STRUCT:
-		_repair_struct(peer, inv, a)
+		_repair_struct(peer, inv, a, b - 1)   # b: the held pack slot + 1 (protocol 117)
 	elif kind == Net.ACT_PLACE_BLUEPRINT:
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_HIT_SHRUB:
-		_hit_shrub(peer, inv, a, Vector2i(b, count), at.x > 0.5)
+		_hit_shrub(peer, inv, a, Vector2i(b, count), int(at.x) - 1)   # at.x: the held pack slot + 1 (protocol 117)
 	elif kind == Net.ACT_PLANT_BUSH:
 		_plant_bush(peer, inv, a, at)
 	elif kind == Net.ACT_DOUSE:
@@ -2284,10 +2284,15 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 
 
 # One knife blow on a carcass (data/items/carcass.json): the parts are rolled once (luck applies) and handed out over the blows.
-func _process_carcass(peer: int, inv, id: int) -> void:
+func _process_carcass(peer: int, inv, id: int, held_slot: int) -> void:   # held_slot: the pack slot in hand; the knife there does the work
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not _peer_pos.has(peer) or str(it.get("struct", {}).get("kind", "")) != "carcass" or not _has_tool(inv, str(_carcass_cfg.get("tool_class", "knife"))):
+	if it.is_empty() or not _peer_pos.has(peer) or str(it.get("struct", {}).get("kind", "")) != "carcass":
+		return
+
+	var knife: int = _swing_tool(peer, inv, held_slot, str(_carcass_cfg.get("tool_class", "knife")))
+
+	if knife < 0:
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > CARCASS_REACH_M:
@@ -2301,7 +2306,7 @@ func _process_carcass(peer: int, inv, id: int) -> void:
 	_last_process[peer] = now
 	var st: Dictionary = it["struct"]
 	var blows_total: int = int((_carcass_cfg.get("species", {}).get(str(st.get("species", "")), {}) as Dictionary).get("blows", _carcass_cfg.get("blows", 4)))   # per species (carcass.json species row), else the global number
-	_wear_tool(peer, inv, str(_carcass_cfg.get("tool_class", "knife")), "carcass")
+	_wear_slot(peer, inv, knife, "carcass")
 
 	if not st.has("parts"):
 		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -2632,7 +2637,7 @@ func _land_thrown(flight: Dictionary, at: Vector3) -> void:
 # server checks the axe, the reach, the pace and that rock really shows there, and each 8 m patch
 # of outcrop gives only a few stones before it needs time to recover. No ground is dug.
 # One spade dig (ACT_DIG): needs a whole spade in the pack and the point within reach; paced like mining.
-func _dig(peer: int, inv, at: Vector3) -> void:
+func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if not _peer_pos.has(peer) or not dig_ground.is_valid():
 		return
 
@@ -2640,13 +2645,14 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 		_reject(peer, 0)
 		return
 
-	if not _has_tool(inv, "spade"):
-		_say_tool_missing(peer, inv, "spade")
+	var spade: int = _swing_tool(peer, inv, held_slot, "spade")
+
+	if spade < 0:
 		_reject(peer, 1)
 		return
 
 	var now: int = Time.get_ticks_msec()
-	var reach: float = _spade_reach(inv)
+	var reach: float = _spade_reach(inv, spade)
 
 	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * reach:
 		return
@@ -2654,7 +2660,7 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 	_last_dig[peer] = now
 
 	for n in maxi(1, int(round(reach))):
-		_wear_tool(peer, inv, "spade", "dig")
+		_wear_slot(peer, inv, spade, "dig")
 
 	var dug: Variant = dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M * reach)
 
@@ -2665,7 +2671,7 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 
 		return
 
-	_give_dig_yield(peer, at, _spade_tier(inv), _spade_pieces(inv))
+	_give_dig_yield(peer, at, _spade_tier(inv, spade), _spade_pieces(inv, spade))
 
 	# A dig more than 2.5 m under the surface is a tunnel or a cave: the "cave_in" hint (hints.json digging_under_ceiling) warns about roof supports.
 	if ground_height.is_valid() and float(ground_height.call(at.x, at.z)) - at.y > 2.5:
@@ -2684,7 +2690,7 @@ const FILL_UP_M := 0.1         # the fill is centred this far above the point st
 const FILL_SOIL := {"soil": 5, "sand": 1, "gravel": 2, "clay": 4, "stone": 9}   # the ground material each fill item makes (data/tables/soils.json ids)
 
 
-func _fill(peer: int, inv, at: Vector3) -> void:
+func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if not _peer_pos.has(peer) or not fill_ground.is_valid():
 		return
 
@@ -2692,13 +2698,15 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 		_reject(peer, 0)
 		return
 
-	if not _has_tool(inv, "spade"):
+	var spade: int = _swing_tool(peer, inv, held_slot, "spade")
+
+	if spade < 0:
 		_reject(peer, 1)
 		return
 
 	var now: int = Time.get_ticks_msec()
 
-	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * _spade_reach(inv):
+	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * _spade_reach(inv, spade):
 		return
 
 	# Raise mode (Dave 2026-10-22): no load, every raise takes shovelfuls from the pack (one for a small spade, 4 medium, 8 large),
@@ -2719,7 +2727,7 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 	_last_dig[peer] = now
 	var pieces: int = 0
 
-	for n in _spade_pieces(inv):
+	for n in _spade_pieces(inv, spade):
 		if take_fill_item(peer, material_item) < 1:
 			break
 
@@ -2729,7 +2737,7 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 		return
 
 	for n in maxi(1, int(round(pow(float(pieces), 1.0 / 3.0)))):
-		_wear_tool(peer, inv, "spade", "dig")
+		_wear_slot(peer, inv, spade, "dig")
 
 	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), int(FILL_SOIL.get(material_item, 5)))
 
@@ -2752,26 +2760,28 @@ const GRADE_REACH_M := 12.0       # a grade stroke works within this of point A 
 const GRADE_WIDTH_M := 1.5        # and within this of the straight line A to B
 
 
-func _hoe_ready(peer: int, inv, at: Vector3) -> bool:
+# The hoe in hand for a stroke at `at` (-1: refused, out of reach, not a hoe in hand, or too soon after the last stroke).
+func _hoe_ready(peer: int, inv, at: Vector3, held_slot: int) -> int:
 	if not _peer_pos.has(peer):
-		return false
+		return -1
 
 	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
 		_reject(peer, 0)
-		return false
+		return -1
 
-	if not _has_tool(inv, "hoe"):
-		_say_tool_missing(peer, inv, "hoe")
+	var hoe: int = _swing_tool(peer, inv, held_slot, "hoe")
+
+	if hoe < 0:
 		_reject(peer, 1)
-		return false
+		return -1
 
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_last_dig.get(peer, -100000)) < HOE_COOLDOWN_MS:
-		return false
+		return -1
 
 	_last_dig[peer] = now
-	return true
+	return hoe
 
 
 # Path (Dave 2 Nov 2026): the stroke first AVERAGES the ground within PATH_AVERAGE_M of the point (ground moved from the high spots to the low ones,
@@ -2794,8 +2804,13 @@ func _path_blocked_by_boulder(other: Dictionary, spot: Vector3) -> bool:
 	return Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length() < float((other["boulder"] as Dictionary).get("radius", 0.5)) + PATH_BOULDER_MARGIN_M
 
 
-func _hoe_path(peer: int, inv, at: Vector3) -> void:
-	if not ground_height.is_valid() or not _structures.has("path_patch") or not _hoe_ready(peer, inv, at):
+func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
+	if not ground_height.is_valid() or not _structures.has("path_patch"):
+		return
+
+	var hoe: int = _hoe_ready(peer, inv, at, held_slot)
+
+	if hoe < 0:
 		return
 
 	var ground: float = float(ground_height.call(at.x, at.z))
@@ -2856,7 +2871,7 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 		if moved:
 			_last_average[peer] = now
 
-	_wear_tool(peer, inv, "hoe", "dig")
+	_wear_slot(peer, inv, hoe, "dig")
 
 	if moved:
 		# The ground under the patches laid before has moved: they are laid again on the new surface (new ids, so the clients redraw them).
@@ -2938,8 +2953,13 @@ func _average_ground(at: Vector3, spots: Array, min_m: float = SMOOTH_MIN_M, max
 	return worked > 0
 
 
-func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
-	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _hoe_ready(peer, inv, at):
+func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
+	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid():
+		return
+
+	var hoe: int = _hoe_ready(peer, inv, at, held_slot)
+
+	if hoe < 0:
 		return
 
 	var spots: Array = [Vector2.ZERO, Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.0, -1.0)]
@@ -2952,14 +2972,14 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 		_say(peer, "The ground here is already smooth, or worked enough.")
 		return
 
-	_wear_tool(peer, inv, "hoe", "dig")
+	_wear_slot(peer, inv, hoe, "dig")
 	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
 	_dirty = true
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
-func _hoe_grade_point(peer: int, inv, _which: int, at: Vector3) -> void:
-	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or not _has_tool(inv, "hoe"):
+func _hoe_grade_point(peer: int, inv, _which: int, at: Vector3, held_slot: int) -> void:
+	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or _swing_tool(peer, inv, held_slot, "hoe") < 0:
 		return
 
 	var h: float = float(ground_height.call(at.x, at.z))
@@ -3185,14 +3205,19 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 
 
-func _hoe_grade(peer: int, inv, at: Vector3) -> void:
+func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var pair: Array = _grade_points.get(peer, [null, null])
 
 	if pair[1] == null:
 		_say(peer, "Set point A and point B first (Shift + right click).")
 		return
 
-	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _hoe_ready(peer, inv, at):
+	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid():
+		return
+
+	var hoe: int = _hoe_ready(peer, inv, at, held_slot)
+
+	if hoe < 0:
 		return
 
 	var a: Vector3 = pair[0]
@@ -3242,7 +3267,7 @@ func _hoe_grade(peer: int, inv, at: Vector3) -> void:
 		_say(peer, "This ground is worked enough.")
 		return
 
-	_wear_tool(peer, inv, "hoe", "dig")
+	_wear_slot(peer, inv, hoe, "dig")
 	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
 	_dirty = true
 
@@ -3313,22 +3338,20 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 # What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
 # Spade sizes (Dave 2026-10-22, digging.json "spade_sizes"): a small shovel moves 1 piece (shovelful) per stroke, a medium 4, a large 8.
 # The sphere it digs or raises grows with the cube root of the pieces (so its volume goes with them), and so do its pace and its wear.
-func _spade_size(inv) -> Dictionary:
-	var slot: int = _tool_slot(inv, "spade")
+func _spade_size(inv, slot: int) -> Dictionary:   # slot: the spade in hand (_swing_tool)
 	var name: String = str(table.entry(table.id_of(inv.numbers[slot])).get("spade_size", "small")) if slot >= 0 else "small"
 	return _dig_cfg.get("spade_sizes", {}).get(name, {"pieces": 1})
 
 
-func _spade_pieces(inv) -> int:
-	return maxi(1, int(_spade_size(inv).get("pieces", 1)))
+func _spade_pieces(inv, slot: int) -> int:
+	return maxi(1, int(_spade_size(inv, slot).get("pieces", 1)))
 
 
-func _spade_reach(inv) -> float:
-	return pow(float(_spade_pieces(inv)), 1.0 / 3.0)
+func _spade_reach(inv, slot: int) -> float:
+	return pow(float(_spade_pieces(inv, slot)), 1.0 / 3.0)
 
 
-func _spade_tier(inv) -> int:
-	var slot: int = _tool_slot(inv, "spade")
+func _spade_tier(inv, slot: int) -> int:
 	return int(table.entry(table.id_of(inv.numbers[slot])).get("tier", 1)) if slot >= 0 else 1
 
 
@@ -3523,7 +3546,7 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 	_dirty = true
 
 
-func _mine(peer: int, inv, at: Vector3) -> void:
+func _mine(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if not _peer_pos.has(peer) or not rock_at.is_valid():
 		return
 
@@ -3531,18 +3554,21 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 		_reject(peer, 0)
 		return
 
-	var has_axe: bool = _has_tool(inv, "axe")
+	var tool: int = _held_tool(inv, held_slot, "pick")   # the pick or axe in hand breaks a stone off bare rock (an axe wears 5 a blow, drops.json tool_wear rock)
 
-	if not has_axe:
+	if tool < 0:
+		tool = _held_tool(inv, held_slot, "axe")
+
+	if tool < 0:
 		_reject(peer, 1)
 
 	var now: int = Time.get_ticks_msec()
 
-	if not has_axe or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock") or not bool(rock_at.call(at.x, at.z)):
+	if tool < 0 or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock") or not bool(rock_at.call(at.x, at.z)):
 		return
 
 	_last_mine[peer] = now
-	_wear_tool(peer, inv, "axe", "rock")
+	_wear_slot(peer, inv, tool, "rock")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
 	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
@@ -5912,9 +5938,10 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	_sync_in = 0.0   # bug 6: the trunk goes out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
 
 
-# The held pack slot when it is a usable tool of this class on the hotbar, else -1: the tool in hand does the work, not whichever one of the
-# class sits on the hotbar (TEST-013 playtest repair; Dave's playtest notes 12 Nov 2026: "Axes cut wood faster with less durability loss",
-# "Using an inappropriate tool should be less efficient where it is permitted").
+# THE place a swing resolves its tool: the held pack slot when it is a usable tool of this class on the hotbar, else -1. Every hit, strike or
+# stroke goes through here (or _swing_tool, which also says why), never through "the first tool of the class on the hotbar" (Dave 13 Nov
+# 2026: "if you do an attack on anything at anytime it needs to know what weapon is in hand"; "swinging any tool or weapon needs to always
+# check the tool or weapon first because they might have bonuses to be able to hit stuff"). TEST-013 playtest repair.
 func _held_tool(inv, slot: int, tool_class: String) -> int:
 	if slot < 0 or slot >= inv.slot_count or not inv.on_hotbar(slot) or _is_broken(inv, slot):
 		return -1
@@ -5960,23 +5987,20 @@ func _tool_slot(inv, tool_class: String) -> int:
 	return -1
 
 
-# Why a tool-class action did nothing: no tool, the tool is worn out, or it lies in the bag instead of on the hotbar.
-func _say_tool_missing(peer: int, inv, tool_class: String) -> void:
-	var found: int = -1
+# _held_tool for a swing that needs this class, saying why nothing happened when the hand holds something else: the tool in hand is broken,
+# or it is not that tool.
+func _swing_tool(peer: int, inv, slot: int, tool_class: String) -> int:
+	var tool: int = _held_tool(inv, slot, tool_class)
 
-	for slot in range(inv.slot_count):
-		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
-			found = slot
+	if tool >= 0:
+		return tool
 
-			if not _is_broken(inv, slot):
-				break
-
-	if found < 0:
-		_say(peer, "You need a %s for that." % tool_class)
-	elif _is_broken(inv, found):
-		_say(peer, "Your %s is broken. %s" % [table.sentence_name(inv.numbers[found]), _repair_hint(table.entry(table.id_of(inv.numbers[found])))])
+	if slot >= 0 and slot < inv.slot_count and inv.numbers[slot] != 0 and _is_broken(inv, slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
+		_say(peer, "Your %s is broken. %s" % [table.sentence_name(inv.numbers[slot]), _repair_hint(table.entry(table.id_of(inv.numbers[slot])))])
 	else:
-		_say(peer, "Put your %s on the hotbar: select it in the inventory and press E." % table.sentence_name(inv.numbers[found]))
+		_say(peer, "You need a %s in hand for that." % tool_class)
+
+	return -1
 
 
 # Broken: its wear has reached its current maximum durability (the instance's max_d, else items.json durability); items without it never wear.
@@ -6360,7 +6384,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
 	if str(it.get("struct", {}).get("kind", "")) == "carcass":
-		_process_carcass(peer, inv, id)
+		_process_carcass(peer, inv, id, held_slot)
 		return
 
 	var tool: Array = _wood_tool(inv, held_slot)   # wood is worked with the tool in hand: an axe, or (very slowly) a pick (TEST-013)
@@ -7050,7 +7074,7 @@ func dynamic_shrub_info(home: Vector2i, id: int) -> Dictionary:
 
 # Bushes and shrubs (Dave 2 Nov 2026, hazel too). An axe chops one up into leaves and sticks (drops.json shrub_work axe_blows, axe_gives); a pickaxe
 # digs it up whole as <species>_bush, to plant again elsewhere (_plant_bush). Either way the bush is gone from the world.
-func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, pick: bool) -> void:
+func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, held_slot: int) -> void:
 	if not _peer_pos.has(peer) or not shrub_info.is_valid() or not cut_tree.is_valid():
 		return
 
@@ -7059,8 +7083,11 @@ func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, pick: bool) -> v
 	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
 		return
 
-	var tool_class: String = "pick" if pick else "axe"
-	var slot: int = _tool_slot(inv, tool_class)
+	var slot: int = _held_tool(inv, held_slot, "pick")   # the tool in hand: a pick digs the bush up, an axe chops it
+	var pick: bool = slot >= 0
+
+	if slot < 0:
+		slot = _held_tool(inv, held_slot, "axe")
 
 	if slot < 0:
 		_reject(peer, 1)
@@ -8111,9 +8138,9 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 # Better hammers draw building materials from farther (master s2.1: a better hammer gains only sourcing range and durability): building_wear.json
 # hammer_reach_x by the tier of the heaviest working hammer on the hotbar times each building distance (the 12 m stock, the site gather, the heavy
 # stock beside a site, repairs); 1 with no hammer.
-func _hammer_x(peer: int) -> float:
+func _hammer_x(peer: int, held: int = -1) -> float:   # held: the hammer in hand for a swing (a repair), which then sets the reach
 	var inv = inventory_of(peer)
-	var slot: int = _heaviest_hammer_slot(inv) if inv != null else -1
+	var slot: int = held if held >= 0 else (_heaviest_hammer_slot(inv) if inv != null else -1)
 
 	if slot < 0:
 		return 1.0
@@ -8487,7 +8514,7 @@ func piece_condition(id: int) -> float:
 
 # Hammer, Repair mode, left click on a worn piece: spends repair_share of the piece's blueprint materials times what it lost, from loose items near the
 # piece, then containers within reach, then the pack (all or nothing), and sets the piece back to full condition.
-func _repair_struct(peer: int, inv, id: int) -> void:
+func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_slot: the pack slot in hand, the hammer that does it
 	var it: Dictionary = _items.get(id, {})
 
 	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
@@ -8497,12 +8524,13 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 		_say(peer, "Too far to repair that.")
 		return
 
-	if _tool_slot(inv, "hammer") < 0:
-		_say(peer, "You need a hammer in your hand bar to repair.")
+	var hammer: int = _swing_tool(peer, inv, held_slot, "hammer")
+
+	if hammer < 0:
 		return
 
 	if it["struct"].has("site"):
-		_gather_site(peer, inv, id)   # a blue blueprint: the hammer fills it from all around
+		_gather_site(peer, inv, id, hammer)   # a blue blueprint: the hammer fills it from all around
 		return
 
 	var kind: String = str(it["struct"]["kind"])
@@ -8530,8 +8558,8 @@ func _repair_struct(peer: int, inv, id: int) -> void:
 	if log_need > 0:
 		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_fill(table.number_of("log"))))   # shoulder and ground logs count, as for building
 
-	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0)) * _hammer_x(peer)
-	var boxes: Array = _boxes_near(peer, _hammer_x(peer))
+	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0)) * _hammer_x(peer, hammer)
+	var boxes: Array = _boxes_near(peer, _hammer_x(peer, hammer))
 	var short: PackedStringArray = []
 
 	for need in needs:
@@ -8788,11 +8816,11 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 # always on). Takes only what the site still needs: the pack first (any member of a group, a `log` need takes any log), then loose items on the ground and
 # the builder's own containers (CraftStock.owner_ok, not keep out) within building_wear.json site_gather_m of the builder, nearest first. One line says
 # what came and what is still missing; with nothing missing the piece is built.
-func _gather_site(peer: int, inv, id: int) -> void:
+func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the one in hand (its tier sets the reach)
 	var it: Dictionary = _items[id]
 	var site: Dictionary = _site_of(it)
 	var here: Vector3 = _peer_pos[peer]
-	var reach: float = float(_wear_cfg.get("site_gather_m", CraftStock.CRAFT_REACH_M)) * _hammer_x(peer)
+	var reach: float = float(_wear_cfg.get("site_gather_m", CraftStock.CRAFT_REACH_M)) * _hammer_x(peer, hammer)
 	var key: String = str(_peer_key.get(peer, ""))
 	var sources: Array = []   # [distance, world id, is a container], nearest first
 
@@ -9034,7 +9062,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 # E at a chopping block: one log becomes firewood; the axe wears one use. The server checks the reach,
 # a log in the pack, a usable axe on the hotbar and the pace.
-func _use_struct(peer: int, inv, id: int, choice: int = 0) -> void:
+func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) -> void:   # held_slot: the pack slot in hand (the chopping block's axe)
 	var it: Dictionary = _items.get(id, {})
 
 	if it.has("fire"):
@@ -9111,8 +9139,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0) -> void:
 	if block_n == 0:
 		block_n = table.number_of("wooden_block")
 
-	if not _has_tool(inv, "axe"):
-		_say(peer, "You need an axe to split wood.")
+	var axe: int = _held_tool(inv, held_slot, "axe")
+
+	if axe < 0:
+		_say(peer, "You need an axe in hand to split wood.")
 		return
 
 	if not inv.has(block_n, 1):
@@ -9124,7 +9154,7 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0) -> void:
 	var large: bool = block_n == table.number_of("wooden_block_large") or block_n == table.number_of("wooden_block_soft_large")
 	var soft: bool = block_n == table.number_of("wooden_block_soft") or block_n == table.number_of("wooden_block_soft_large")
 	_drop_firewood_beside(it, int(def.get("firewood_per_large_block", 4)) if large else int(def.get("firewood_per_block", 1)), "firewood_soft" if soft else "firewood")
-	_wear_tool(peer, inv, "axe", "split")
+	_wear_slot(peer, inv, axe, "split")
 	practice(peer, "split_log")
 	_dirty = true
 
@@ -14499,8 +14529,13 @@ func _drink_from_tank(peer: int, slot: int, inv, tank: int, v: Dictionary, thirs
 
 
 # One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
-func till(peer: int, inv, at: Vector3) -> int:
-	if not ground_height.is_valid() or not _structures.has("tilled_bed") or not _hoe_ready(peer, inv, at):
+func till(peer: int, inv, at: Vector3, held_slot: int) -> int:
+	if not ground_height.is_valid() or not _structures.has("tilled_bed"):
+		return 0
+
+	var hoe: int = _hoe_ready(peer, inv, at, held_slot)
+
+	if hoe < 0:
 		return 0
 
 	var cell: Vector3 = Vector3(floor(at.x) + 0.5, 0.0, floor(at.z) + 0.5)
@@ -14540,7 +14575,7 @@ func till(peer: int, inv, at: Vector3) -> int:
 		_say(peer, "This ground is tilled enough.")
 		return 0
 
-	_wear_tool(peer, inv, "hoe", "dig")
+	_wear_slot(peer, inv, hoe, "dig")
 	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": 0.0}}
 	_next_id += 1
 	_dirty = true

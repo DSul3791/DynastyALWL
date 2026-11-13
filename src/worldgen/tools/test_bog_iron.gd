@@ -5,6 +5,7 @@ extends SceneTree
 # game days up to its size, the first find is said once, the state survives a save; main's tile 3,4 holds the expected number near the spawn.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bog_iron.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const BogIron := preload("res://src/shared/bog_iron.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
@@ -226,7 +227,7 @@ func _dig_once(items, x: float) -> Array:
 	var ore_was: int = inv.count_of(ore)
 	var soil_was: int = inv.count_of(soil)
 	items._last_dig.clear()
-	items.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(x, 10.0, 0.0))
+	items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "spade"), 0, 0, Vector3(x, 10.0, 0.0))
 	var got: Array = [inv.count_of(ore) - ore_was, inv.count_of(soil) - soil_was]
 	inv.remove(soil, inv.count_of(soil))
 	return got

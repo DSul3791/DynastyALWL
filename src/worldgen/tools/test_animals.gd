@@ -1,5 +1,6 @@
 extends SceneTree
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const TimingScale := preload("res://src/worldgen/tools/timing_scale.gd")
 
 # Animals step B (Radar, 2026-10-21): rabbits spawn out of sight around players and never near one, graze and hop, bolt from a
@@ -329,12 +330,12 @@ func _hunting() -> void:
 	# The knife: four blows give the rolled parts, then the carcass is gone; no knife in hand-reach, no parts.
 	var meat0: int = items.count_for(1, "raw_meat")
 	var held_before: int = items.count_for(1, "hide")
-	items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 	check(items._items.has(carcass), "one blow does not finish it")
 
 	for n in 5:
 		items._last_process.erase(1)
-		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 
 	check(not items._items.has(carcass), "four blows finish the carcass")
 	check(items.count_for(1, "raw_meat") >= meat0 + 1 and items.count_for(1, "hide") == held_before + 1 and items.count_for(1, "bone") >= 1, "it gave meat, a hide and bones (carcass.json)")
