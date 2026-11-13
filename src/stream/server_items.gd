@@ -3731,6 +3731,14 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "A roof panel rests on a wall top, a ceiling edge or another panel's end.")   # never a panel standing free on the ground
 		return
 
+	if str(_structure_of_kit(kit_id).get("attach_to", "")) == PlacementRules.DOOR_ATTACH:   # a door hangs in a doorway of its own shape (BUGLIST-002): `at` is that frame's spot, so it skips the ground checks like a platter on a table
+		var fit: Dictionary = PlacementRules.doorway_fit(_structures_cfg, _structure_of_kit(kit_id), at, _foundation_rows())
+
+		if str(fit["why"]) != "":
+			var why: String = PlacementRules.reason_text(str(fit["why"]), str(fit["opening"]))
+			_say(peer, why.left(1).to_upper() + why.substr(1) + ".")
+			return
+
 	if kit_id == "campfire_kit":   # a fire is laid on top of a foundation it is aimed at (Dave 10 Nov 2026), not on the ground under it
 		var base_top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
 
@@ -8977,7 +8985,7 @@ func _grid_add(id: int, entry: Dictionary) -> void:
 	var def: Dictionary = _structures.get(kind, {})
 
 	if bool(def.get("blocks_walk", false)):
-		_grid.add(id, kind, entry["pos"].x, entry["pos"].z, float(entry["struct"]["yaw"]), float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))
+		_grid.add(id, kind, entry["pos"].x, entry["pos"].z, float(entry["struct"]["yaw"]), float(def.get("grid_x", def.get("footprint_x", 1.0))), float(def.get("footprint_z", 1.0)))   # grid_x: a shut door stops animals across its whole frame, jambs too (BUGLIST-002)
 
 
 # True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
@@ -9034,11 +9042,15 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
 		return
 
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH and PlacementRules.door_at(_structures_cfg, it["pos"], _foundation_rows()):
+		_say(peer, "Take the door out first.")   # a doorway frame, built or still a site, never leaves its door hanging in the air (BUGLIST-002)
+		return
+
 	if it["struct"].has("site"):
 		_take_down_site(peer, inv, id)
 		return
-
-	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 	if def.is_empty() or str(def.get("kit", "")) == "":
 		return

@@ -39,7 +39,7 @@ func _init() -> void:
 	for solid in ["wall_section", "window_section", "thatch_wall", "log_wall", "stone_wall", "brick_wall", "stone_forge", "oven"]:
 		check(bool(kinds[solid].get("blocks_walk", false)), "%s blocks walkers" % solid)
 
-	for open in ["floor_section", "foundation_section", "door_open", "roof_section", "path_patch", "chest"]:
+	for open in ["floor_section", "foundation_section", "doorway_section", "roof_section", "path_patch", "chest"]:
 		check(not bool(kinds[open].get("blocks_walk", false)), "%s does not block walkers" % open)
 
 	# Doors and gates (Steve 10 Nov 2026): the shut one of each pair blocks, the open one ("_open", its toggle) does not, so a wolf cannot walk
@@ -56,13 +56,32 @@ func _init() -> void:
 		var twin: String = str(row["toggle"])
 		check(bool(row.get("blocks_walk", false)) and not bool(kinds.get(twin, {}).get("blocks_walk", false)) and kinds.has(twin), "%s blocks walkers shut, %s does not" % [kind, twin])
 
-	check(pairs >= 17, "every door and gate pair is checked (%d)" % pairs)
+	check(pairs >= 36, "every door and gate pair is checked: 28 doors and the gates (%d)" % pairs)
 
-	# The Crude doorway is an open framed passage with no door of its own (BUG-010): not a door pair, not solid, and the old open twin is gone, a saved one
-	# reading as this piece.
+	# A doorway frame is an open framed passage with no door of its own (BUGLIST-002; Crude: BUG-010): never solid, never a door pair; the old open twin is
+	# gone and a saved one reads as the frame.
 	var crude: Dictionary = kinds["thatch_doorway"]
 	check(not kinds.has("thatch_doorway_open") and (crude.get("legacy_kinds", []) as Array).has("thatch_doorway_open"), "the old open twin is retired into the doorway")
 	check(not bool(crude.get("blocks_walk", false)) and not crude.has("use") and not crude.has("toggle"), "the Crude doorway has no door to shut and does not block walkers")
+
+	# A shut door stops walkers across its whole frame (grid_x: 2 m single, 4 m double, so the frame's jambs block too) and 0.1 m thick, and shutting it again
+	# after it was open keeps one rectangle (the grid forgets a stale kind only when asked).
+	var shut: Dictionary = {7: {"struct": {"kind": "rustic_door"}}}
+	var door = GridScript.new()
+	var single: Dictionary = kinds["rustic_door"]
+	door.add(7, "rustic_door", 100.0, 100.0, 0.0, float(single["grid_x"]), float(single["footprint_z"]))
+	check(door.blocks(100.4, 100.0, 0.0, shut) and door.blocks(100.9, 100.0, 0.0, shut) and not door.blocks(101.2, 100.0, 0.0, shut) and not door.blocks(100.0, 100.2, 0.0, shut), "a shut single door blocks its 2 m frame, jambs too, and nothing beside or in front of it")
+	door.add(7, "rustic_door", 100.0, 100.0, 0.0, float(single["grid_x"]), float(single["footprint_z"]))
+	var rects: int = 0
+
+	for bucket in door._buckets.values():
+		rects += (bucket as Array).size()
+
+	check(rects == 1, "a door shut again keeps one rectangle (%d)" % rects)
+	var wide: Dictionary = kinds["rustic_double_door"]
+	var leaves: Dictionary = {8: {"struct": {"kind": "rustic_double_door"}}}
+	door.add(8, "rustic_double_door", 120.0, 100.0, 90.0, float(wide["grid_x"]), float(wide["footprint_z"]))
+	check(door.blocks(120.0, 100.9, 0.0, leaves) and door.blocks(120.0, 101.9, 0.0, leaves) and not door.blocks(120.0, 102.2, 0.0, leaves), "a double door turned a quarter blocks its 4 m frame along z, jambs too")
 
 	print("test_structure_grid: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

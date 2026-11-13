@@ -407,7 +407,7 @@ func _init() -> void:
 	var fire_back: Vector3 = items.rest_point_for(2, Vector3(450.0, 10.0, 470.0))
 	check(fire_back.distance_to(items._items[fire_id]["pos"]) < 3.0, "from beside the campfire the campfire is the nearest rest point (%s)" % str(fire_back))
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
-	# A door: E opens and shuts it (the structure swaps its kind), and taking it down gives the doorway kit back.
+	# A doorway frame has no door of its own (BUGLIST-002): E on it does nothing, and taking it down gives the doorway kit back. The doors are test_doors.gd.
 	items.report_position(2, Vector3(600.0, 10.0, 600.0))
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("doorway_section_kit"), 0, 1, Vector3.ZERO)
 	items.place_item(2, items.table.number_of("doorway_section_kit"), Vector3(600.0, 10.0, 602.0), 0)
@@ -417,14 +417,9 @@ func _init() -> void:
 		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "doorway_section" and items._items[id]["pos"].distance_to(Vector3(600.0, 10.0, 602.0)) < 1.0:
 			door_id = id
 
-	check(door_id != 0, "a door is placed")
+	check(door_id != 0, "a doorway frame is placed")
 	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
-	check(items._items[door_id]["struct"]["kind"] == "door_open" and items._struct_state(items._items[door_id]) == 28, "E opens the door")
-	OS.delay_msec(450)
-	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
-	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "E shuts it again")
-	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
-	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "the door will not flap faster than its pace")
+	check(items._items[door_id]["struct"]["kind"] == "doorway_section" and items._struct_state(items._items[door_id]) == 26, "E on an empty doorway frame does nothing")
 	# A rock pile: placed from the item, E gives back all 45 stones.
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("rock_pile"), 0, 1, Vector3.ZERO)
 	items.place_item(2, items.table.number_of("rock_pile"), Vector3(600.0, 10.0, 606.0), 0)

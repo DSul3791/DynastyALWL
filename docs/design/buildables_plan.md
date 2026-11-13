@@ -16,6 +16,10 @@ Morgan, 10 Nov 2026. Plan only, no code. Inputs: Jamie's hammer audit (`buildabl
 
 Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; recipes 346, 347), B1a (above), **B2 fences and gates** blueprints 64 to 77, items 580 to 607 (kit then piece), states 92 to 112 (each gate has an open twin state right after it), **B1c pillars and roof corners** blueprints 78 to 87, items 608 to 627, states 113 to 122. Ids follow Kathleen's look names (`wood_fence`, `wood_gate`, `wooden_pillar`, `wooden_roof_corner`). **Final numbers (Jamie, 10 Nov, supersede any numbers in the batch tables below):** B3 furniture blueprints 88-98, items 628-649, states 123-133 (no Iron - Workbench; the ladder stops at Stone, level 3). B1b blueprints 99-106, items 650-665, states 134-144 (open twins for double, iron and steel doorways). B4 components items 666-669 (horn_pane, lamp_oil, wooden_lantern, iron_lantern; recipes 348-351), placed lights blueprints 107-117, items 670-691, states 145-155; a lantern's candle or lamp oil goes in a new blueprint field, "spent", not refunded on take-down. B5 blueprints 118-127, items 692-711, states 156-165. B6a blueprints 128-136, items 712-729, states 166-174; Clay pipe item 730, recipe 352. B6b blueprints 137-149, items 731-756, states 175-187. **Next free: item 757, recipe 353, blueprint 150, state 188. 148 live blueprints.** The Rain barrel is the B3 Wooden - Barrel (no separate piece). The batch tables below were refreshed to these numbers on 10 Nov (kit and piece items shown as a pair).
 
+**Current door/doorway authority:** `docs/design/DYNASTY_MASTER_ITEMS.md` §3.0 and `docs/buglists/BUGLIST-002.md`. Doorway construction builds an **empty framed opening**; independently crafted doors are installed afterward. The older “door built into doorway” behavior and open/closed wall twins are retired design instructions. Legacy IDs/state references in this plan are inventory for migration and are not permissions to preserve the behavior. The doorway costs printed in these older batch tables are **legacy implementation values that may include built-in-door materials**; they are NOT newly approved empty-frame costs. During BUGLIST-002 implementation, inventory each existing doorway blueprint and separate the real structural-frame costs from the removed integral door using existing approved wall rules. Report genuinely new frame recipe decisions rather than inventing prices. The final door ingredient counts are fixed separately in the master catalog. Historical construction batches/numbers remain factual provenance, not new allocations.
+
+**Frame costs ruled (Dave, 13 Nov 2026 14:41Z, project chat: "The empty doorway frames cost the same as a wall"):** every empty doorway frame costs its tier's wall (Crude 3 twine, 20 thatch, 6 stick; Rustic 6 log, 2 twine; Refined 4 lumber, 1 twine; Sturdy 12 cut stone block, 4 mortar; Superior 16 brick, 4 mortar; Engineered 11 concrete; Fortified 13 concrete, 4 iron band); an arched frame the same; a double frame (two wall cells) twice that. `Iron - Doorway` and `Steel - Doorway` have no Iron or Steel wall: they keep their old cost without the hinges (3 lumber, 2 iron ingot, 12 nails; 6 steel ingot), pending Dave. The doorway costs in the batch tables below are superseded by this ruling. Doors are made and fitted like any construction piece (hammer blueprint) and snap into a doorway (Dave, same message).
+
 ## 1. Rulings this plan follows
 
 | Ruling | How it is applied |
@@ -29,7 +33,7 @@ Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; reci
 
 ## 2. Tiers
 
-Five live building tiers, in order: **Thatch, Wooden, Log, Stone, Brick.** Metal pieces (fences, lights, pumps, doors) use **Iron** and **Steel** names. Plank and Mason were decided on 25 Oct but have no pieces today; they are out of scope here and listed in section 8.
+**Current construction tiers:** Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified. Iron and Steel are material names, not additional construction quality tiers. Earlier material-named rows below are an implementation inventory; current door and doorway design/recipes are authoritative in `DYNASTY_MASTER_ITEMS.md` section 3.0.
 
 Look families (Kathleen's four): Thatch family covers Thatch and Log (bark poles, lashed joints); Wood family covers Wooden (planks, pegged joints); Stone family covers Stone (cut stone, mortar joints); Metal family covers Brick and Iron/Steel (brick, tile, riveted iron). Colours, flame colour (1.0, 0.65, 0.15) and "collision is a few boxes" are hers; this plan does not repeat them. Her single-tier tables map as: Fence/Gate -> B2, Lantern/pole -> B4, Garden plot -> B5, Pump/trough/pipe -> B6.
 
@@ -87,15 +91,15 @@ Also removes the workbench-station requirement from existing hammer blueprints (
 |---|---|---|---|---|---|---|
 | 1 | Rustic - Foundation | 10 log, 6 stone, 2 twine | 4 x 4 x 0.3 | foundation anchors (8 wall, 4 ceiling, 5 roof); log sills on stone footings | 1 | 55 / 562/563 (kit / piece) / 79 |
 | 2 | Superior - Foundation | 16 brick, 4 mortar, 4 stone | 4 x 4 x 0.3 | same anchors; brick plinth | 1 | 56 / 564/565 (kit / piece) / 80 |
-| 3 | Rustic - Doorway | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; carries its plank-and-strap door | 1 | 57 / 566/567 (kit / piece) / 81 and 82 (open twin) |
-| 4 | Sturdy - Doorway | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber lintel and door | 1 | 58 / 568/569 (kit / piece) / 83 and 84 (open twin) |
-| 5 | Superior - Doorway | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber door | 1 | 59 / 570/571 (kit / piece) / 85 and 86 (open twin) |
+| 3 | Rustic - Doorway | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; EMPTY rustic doorway frame; door is separately crafted/installed | 1 | 57 / 566/567 (kit / piece) / 81; state 82 is a legacy integral-door state requiring compatibility reconciliation |
+| 4 | Sturdy - Doorway | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; EMPTY sturdy stone doorway frame; door separately installed | 1 | 58 / 568/569 (kit / piece) / 83; state 84 is a legacy integral-door state requiring compatibility reconciliation |
+| 5 | Superior - Doorway | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; EMPTY superior brick doorway frame; door separately installed | 1 | 59 / 570/571 (kit / piece) / 85; state 86 is a legacy integral-door state requiring compatibility reconciliation |
 | 6 | Crude - Window | 15 thatch, 8 stick, 3 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole (as Refined - Window) | 1 | 60 / 572/573 (kit / piece) / 87 |
 | 7 | Rustic - Window | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole | 1 | 61 / 574/575 (kit / piece) / 88 |
 | 8 | Sturdy - Window | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, stone sill | 1 | 62 / 576/577 (kit / piece) / 89 |
 | 9 | Superior - Window | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, brick arch | 1 | 63 / 578/579 (kit / piece) / 90 |
 
-**Numbers confirmed by Jamie, 10 Nov.** Blueprints 55 to 63, items 562 to 579 (each piece has a retired kit item, which the server keys placement on, then the piece item), states 79 to 90. Also state 91 is `thatch_doorway_open`, the fix for thatch doors turning wooden. `wood_foundation` moved to state 78, because 76 and 77 are the fire's coals and ash.
+**Numbers confirmed by Jamie, 10 Nov.** Blueprints 55 to 63, items 562 to 579 (each piece has a retired kit item, which the server keys placement on, then the piece item), states 79 to 90. State 91 `thatch_doorway_open` is retired legacy data; it must not drive an integral door.  `wood_foundation` moved to state 78, because 76 and 77 are the fire's coals and ash.
 
 ### B1b. Stairs, railings, extra doors
 
@@ -108,11 +112,11 @@ Stairs exist only in wood (and are the one name that breaks `Tier - Item`). Uppe
 | 3 | Superior - Stairs | 20 brick, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 101 / 654-655 / 136 |
 | 4 | Wooden - Railing | 2 lumber, 1 twine | 2.0 x 0.1 x 1.0 | ceiling and stair edge; stops falls; end to end | 1 | 102 / 656-657 / 137 |
 | 5 | Iron - Railing | 2 iron ingot, 4 nails | 2.0 x 0.1 x 1.0 | as above; hammer 3 | 3 | 103 / 658-659 / 138 |
-| 6 | Refined - Double doorway | 6 lumber, 2 twine, 2 hinges | 4.0 x 0.25 x 2.4 | two adjacent wall cells; look door_double (already planned) | 1 | 104 / 660-661 / 139-140 |
-| 7 | Iron - Doorway | 3 lumber, 2 iron ingot, 12 nails, 2 hinges | 2.0 x 0.25 x 2.4 | reinforced door; look door_wrought; hammer 3 | 3 | 105 / 662-663 / 141-142 |
-| 8 | Steel - Doorway | 6 steel ingot, 2 hinges | 2.0 x 0.25 x 2.4 | look door_steel; hammer 3 | 3 | 106 / 664-665 / 143-144 |
+| 6 | Refined - Double doorway | 6 lumber, 2 twine, 2 hinges | 4.0 x 0.25 x 2.4 | two adjacent wall cells; EMPTY rectangular double doorway; separate double door | 1 | 104 / 660-661 / 139 (legacy opening state 140 reconciled separately) |
+| 7 | Iron - Doorway | 3 lumber, 2 iron ingot, 12 nails, 2 hinges | 2.0 x 0.25 x 2.4 | empty iron-material doorway; its separate installed door is a different item; hammer 3 | 3 | 105 / 662-663 / 141 (legacy opening state 142 reconciled separately) |
+| 8 | Steel - Doorway | 6 steel ingot, 2 hinges | 2.0 x 0.25 x 2.4 | empty steel-material doorway; its separate installed door is a different item; hammer 3 | 3 | 106 / 664-665 / 143 (legacy opening state 144 reconciled separately) |
 
-Final: blueprints 99-106, items 650-665 (kit, piece), states 134-144 (doors carry an open twin state).
+Final: blueprints 99-106, items 650-665 (kit, piece), states 134-144 (old doorway open-twin states are legacy, not active door design).
 
 ### B1c. Pillars and roof corners
 
@@ -337,7 +341,7 @@ Building pieces use the quality ladder **Crude, Rustic, Refined, Sturdy, Superio
 | Rows | Blueprints | Items (kit, piece) | States |
 |---|---|---|---|
 | Mixer (station "mixer", level 1) | 170 | 860-861 | 210 |
-| Engineered: Foundation, Wall, Doorway, Window, Pillar, Stairs, Ceiling, Roof, Roof corner | 171-179 | 862-879 | 211-220 (213 doorway, 214 its open twin) |
-| Fortified: Foundation, Wall, Doorway, Gate, Pillar, Wall top | 180-185 | 880-891 | 221-228 (223/224 doorway and open, 225/226 gate and open) |
+| Engineered: Foundation, Wall, Doorway, Window, Pillar, Stairs, Ceiling, Roof, Roof corner | 171-179 | 862-879 | 211-220 (213 doorway, 214 legacy open-twin state) |
+| Fortified: Foundation, Wall, Doorway, Gate, Pillar, Wall top | 180-185 | 880-891 | 221-228 (223 doorway; 224 legacy opening state, 225/226 gate and open) |
 
 Materials: items 853 Bark shingle, 854 Wooden shingle, 855 Clay roof tile, 856 Limestone (broken from boulders on limestone, chalk or marble bedrock), 857 Lime powder, 858 Concrete, 859 Iron band; recipes 399-404 (Bark shingle, Wooden shingle, Clay roof tile, Lime powder, Concrete, Iron band). The Engineered roof is Clay roof tile on pinned plank rafters, no Concrete (#972). Retired: Log - Bench, Log - Table, Log - Trough, Log - Shelf. **Next free: item 892, recipe 405, blueprint 186, state 229. 180 live blueprints.**

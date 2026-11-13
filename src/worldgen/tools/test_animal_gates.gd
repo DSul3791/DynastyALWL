@@ -77,12 +77,28 @@ func _swing(gap_id: int, x: float, z: float) -> void:
 	OS.delay_msec(450)   # the door's use pace
 
 
-func _gap_checks(label: String, wall_kit: String, gap_kit: String, gap_kind: String, x: float, z: float) -> void:
+# door_kit: a doorway frame has no door of its own (BUGLIST-002), so the door piece is set into the frame and is the gap that swings.
+func _gap_checks(label: String, wall_kit: String, gap_kit: String, gap_kind: String, x: float, z: float, door_kit: String = "") -> void:
 	var gap_id: int = _line(wall_kit, gap_kit, gap_kind, x, z)
 	check(gap_id != 0, "%s: the line stands with its %s" % [label, gap_kind])
 
 	if gap_id == 0:
 		return
+
+	if door_kit != "":
+		items.report_position(1, items._items[gap_id]["pos"] + Vector3(0.0, 0.0, 2.0))
+		items.place_piece(1, door_kit, items._items[gap_id]["pos"])
+		gap_kind = door_kit   # the door's kind is its kit's name (BUGLIST-002 contract)
+		gap_id = 0
+
+		for id in items._items:
+			if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == gap_kind:
+				gap_id = id
+
+		check(gap_id != 0, "%s: the door hangs in the doorway" % label)
+
+		if gap_id == 0:
+			return
 
 	var shut_run: float = _run_at(x, z)
 	check(shut_run > z, "%s shut: the wolf stays on its side (closest z %.2f, the line at %.2f)" % [label, shut_run, z])
@@ -122,6 +138,6 @@ func _init() -> void:
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)   # as terrain_server wires it
 
 	_gap_checks("palisade gate", "log_palisade_kit", "log_palisade_gate_kit", "log_palisade_gate", 300.0, 300.0)
-	_gap_checks("hut door", "log_wall_kit", "log_doorway_kit", "log_doorway", 300.0, 400.0)
+	_gap_checks("hut door", "log_wall_kit", "log_doorway_kit", "log_doorway", 300.0, 400.0, "rustic_door")
 	print("test_animal_gates: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

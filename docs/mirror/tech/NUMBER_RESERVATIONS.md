@@ -17,3 +17,6 @@ Sal: items 350-399; recipes 180-186; blueprints 17-34; world states 47-75. Items
 
 ## BUGLIST-001 (13 Nov 2026, construction-pieces)
 Structure state 91 (`thatch_doorway_open`) is RETIRED and never reused: the Crude doorway is an open frame with no door (BUG-010); a saved one loads as `thatch_doorway` (`legacy_kinds`). New: blueprint 251, item 1255, state 291 = `thatch_roof_65` (Crude - Roof 65, BUG-011). Next free: blueprint 252, item 1256.
+
+## BUGLIST-002 (13 Nov 2026, separate doors and empty doorway frames)
+Structure states 28 (`door_open`), 82, 84, 86, 140, 142, 144, 214 and 224 are RETIRED and never reused: the nine old open twins are gone (no dead twin); each kind is in `legacy_kinds` of its doorway frame, so a saved one loads as the empty frame (state 91, `thatch_doorway_open`, was retired in BUGLIST-001). New: blueprints 252-271 / items 1256-1275 / states 292-311 = 20 empty doorway frames (double, single arched, double arched per tier; Refined has no new double); blueprints 272-299 / items 1276-1303 / states 312-367 = 28 doors (single, double, single arched, double arched per tier; shut state 312+2i, open 313+2i). Next free: blueprint 300, item 1304, structure state 368.

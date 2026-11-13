@@ -173,7 +173,8 @@ var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
 var _ghost_on_base: bool = false           # the ghost is snapped to a base: a piece on a foundation, or a foundation beside another (the wheel does not lift it)
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
-var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "crowded", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "wheel_*" (tests read it)
+var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "crowded", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "nodoorway", "mismatch", "wheel_*" (tests read it)
+var _door_shape: String = ""                # the opening of the doorway a door's ghost is aimed at ("" for any other piece or no doorway): the words of "mismatch" and "taken"
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
@@ -1690,6 +1691,11 @@ func _ghost_clean(node: Node) -> void:
 		_ghost_clean(child)
 
 
+# The red ghost's reason in words; a door's carries the shape of the doorway it is aimed at (_door_shape).
+func _reason() -> String:
+	return PlacementRules.reason_text(blueprint_state, _door_shape)
+
+
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 # A left click on a red ghost says why it will not go down (Dave 5 Nov 2026: every placement that fails tells you the reason).
@@ -1701,12 +1707,11 @@ func _say_why_not() -> void:
 		"water": "You cannot build in water.",
 		"nofire": "Lay a small fire first: the pot hangs over it.",
 		"notable": "Set it on a table.",
-		"taken": "That fire already has a pot.",
 		"far": "Too far to place that. Step closer.",
 	}.get(blueprint_state, ""))
 
-	if why == "" and PlacementRules.reason_text(blueprint_state) != "":
-		var reason: String = PlacementRules.reason_text(blueprint_state)
+	if why == "" and _reason() != "":
+		var reason: String = _reason()
 		why = reason.left(1).to_upper() + reason.substr(1) + "."
 
 	if why == "" and _blueprinting() and not blueprints.can_afford(_hammer_tier()):
@@ -1825,6 +1830,7 @@ func _update_blueprint() -> void:
 	var on_base: bool = bool(on_grid[2])
 	_ghost_on_base = on_base
 	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows() + _inv.foundation_rows())   # the building pieces too, as the server sees them
+	_door_shape = str(PlacementRules.doorway_fit(_placement, PlacementRules.structure_of_kit(_placement, kit), _blueprint_at, _inv.foundation_rows())["opening"]) if attach == PlacementRules.DOOR_ATTACH else ""
 
 	if attach == "table" and not on_base:
 		blueprint_state = "notable"   # a Serving Platter only goes on a table top (catalog phase 8)
@@ -1869,7 +1875,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "buried"
+	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "buried" or blueprint_state == "nodoorway" or blueprint_state == "mismatch"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
@@ -2249,8 +2255,8 @@ func _caption() -> String:
 		var short: bool = not blueprints.can_afford(_hammer_tier())
 		var text: String = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
 
-		if PlacementRules.reason_text(blueprint_state) != "":
-			return text + "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
+		if _reason() != "":
+			return text + "   (red: %s)" % _reason()
 
 		if wheel_note != "":
 			text += "   (%s)" % wheel_note
@@ -2269,8 +2275,8 @@ func _caption() -> String:
 	if _hammer_tier() > 0 and blueprints.mode == "save":
 		return "Save building plan: left click a building to keep it; right click: the menu"
 
-	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
-		return "Red: %s" % PlacementRules.reason_text(blueprint_state)
+	if _is_placeable() and _reason() != "":
+		return "Red: %s" % _reason()
 
 	if _is_placeable() and wheel_note != "":
 		return wheel_note

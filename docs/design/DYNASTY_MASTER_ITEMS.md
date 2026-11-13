@@ -1,5 +1,7 @@
 # Dynasty master items catalog
 
+**Current door authority:** Section 3.0 contains the complete approved separate-door design and exact recipes. Doorways are empty frames; doors are independent items. The historical Draft 18 totals and generated Appendix A below are an unreconciled older inventory snapshot, **not current door design instructions**. Existing IDs are preserved until catalog implementation reconciles them.
+
 **Status: DRAFT 18 — EVERY CATEGORY HAS AN OWNER DECISION ([D1]–[D17]); NO OPEN OWNER QUESTIONS; SUBMITTED FOR DAVE'S FINAL APPROVAL OF THE COMPLETE CATALOG. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED UNTIL HE APPROVES IT.** All Dave rulings ([B], [D1]–[D17], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 **Companion reference documents (not separate sources of item-approval authority):** [Storage, warehouse cargo and locks](STORAGE_WAREHOUSING_DESIGN.md); [Food preparation, preservation and edible boards](FOOD_PREPARATION_PRESERVATION_SERVING.md). The final audit is [CATALOG_FINAL_AUDIT_2026-11-12.md](CATALOG_FINAL_AUDIT_2026-11-12.md), the implementation plan [CATALOG_IMPLEMENTATION_PLAN.md](CATALOG_IMPLEMENTATION_PLAN.md) and the save rules [CATALOG_SAVE_MIGRATION.md](CATALOG_SAVE_MIGRATION.md); the earlier food and storage audit is [FOOD_STORAGE_AUDIT_2026-11-12.md](FOOD_STORAGE_AUDIT_2026-11-12.md); ChatGPT's brief is [CLAUDE_FOOD_STORAGE_HANDOFF.md](CLAUDE_FOOD_STORAGE_HANDOFF.md). These elaborate owner decisions and list future tests. This master catalog is authoritative for approved items and counts.
@@ -131,7 +133,60 @@ Bellows dropped; Clay bloomery added; Large forge and Master forge parked with t
 
 ## 3. Catalog by row
 
-Stable ids and numbers are kept and never reused, including retired ones (`fine_board` 227 and `rough_plank` 226 stay retired). New rows take numbers from `next_number` at implementation; none are reserved here. Labels as in s1.
+### 3.0 Doors and doorways — BUGLIST-002
+
+**Director-approved functionality (13 Nov 2026):** A doorway is an empty structural opening. A door is a **separately crafted/installed item** that attaches to a compatible doorway, opens and closes, and can be removed/replaced without destroying its doorway. Doorway walls never contain built-in doors. There are four configurations (table below), and seven construction quality tiers in order: **Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified**. **Iron and Steel are materials, not tiers.** Door/frame compatibility depends on opening shape and size, **not matching tier or wall material**. Arched doors can be used in ordinary buildings as well as future ships.
+
+#### Approved configurations and required matching empty doorway
+
+| Door configuration | Matching doorway | Shape and operation |
+|---|---|---|
+| Single Door | Single Doorway | Rectangular with flat top; one hinged or pivoting leaf |
+| Double Door | Double Doorway | Rectangular with flat top; two hinged/pivoting leaves meeting in the middle |
+| Single Arched Door | Single Arched Doorway | One leaf, straight sides and rounded upper edge |
+| Double Arched Door | Double Arched Doorway | Two leaves sharing **one** continuous arch over their combined width; each leaf has one part of that curved top |
+
+All four pairs are in scope for BUGLIST-002. Doorways need visible jambs and a structurally credible header/arch; **they contain no door until a separately made door is installed**.
+
+#### Door appearance and material design by quality tier
+
+**Director's materials ruling (13 Nov 2026):** A **Plank** is 6 inches wide × 4 inches thick, with a **rough surface**. A **Hardwood board** is 6 inches wide × 2 inches thick, with a **smooth, shiny finished surface**. Thus a Plank is twice the thickness of a Hardwood board, but both are the same width. Use these definitions consistently for door art, visual thickness and materials. **Crude:** sticks and twine. **Rustic:** Planks with **wooden hinges**. **Refined:** Hardwood boards with **Nails** and **metal Hinges**. **Sturdy:** thicker, rough-surfaced Planks with **Nails** and **metal Hinges**. Sturdy follows Refined in the construction tier sequence; it is physically thicker and sturdier, not necessarily smoother or more decorative. **Fortified:** all-metal iron and steel joined with rivets, without a wooden core. The exact 28 door crafting recipes are director-approved in the table below. Remaining visual details beyond explicit directions are design references, not permission to add recipe components.
+
+| Quality | Door appearance | Visual component materials (actual ingredient counts are fixed in recipe table below) | Doorway-frame appearance and materials |
+|---|---|---|---|
+| **Crude** | Irregular sticks and split branches tied together, visible twine lashings and one simple cross-brace. Rough gaps, primitive wood pivot or rope-loop attachment. | **Stick + Twine**, with no additional crafting ingredients. Any thatch texture is decorative and is not an extra resource cost. | Stick uprights with lashed crosspiece in a crude thatch/branch wall: **Stick, Twine, Thatch**. Arched variant bends or segments flexible sticks around the opening. |
+| **Rustic** | Simple door made from **rough-surfaced Planks** (6 in wide × 4 in thick), with uncomplicated plank bracing and **wooden hinges**. Looks rugged and hand-built, without polished boards or metal fittings. | **Plank only**; wooden hinges are made within the listed Plank cost. | Plain wooden doorway frame made from existing approved materials; wood hinge mounting must be workable. An arched frame follows a genuinely curved opening. |
+| **Refined** | Neat, closely fitted **Hardwood boards**, 6 in wide × 2 in thick, showing their smooth, shiny finished surfaces, with visible **nails and metal hinges**. The thinner finished boards distinguish it clearly from Rustic and Sturdy. | **Hardwood board + Iron ingot**; the depicted nails and metal hinges are included in the ingot cost. | A clean, fitted doorway frame with properly aligned metal hinge attachments; frame's wall material remains independent of the door material. |
+| **Sturdy** | Heavy-duty door built from **rough-surfaced Planks**, 6 in wide × 4 in thick, with firm bracing, visible **nails** and **metal hinges**. Physically thicker than the Refined Hardwood-board door, but rougher in finish. No stone door leaf. | **Plank + Iron ingot**; the depicted nails and metal hinges are included in the ingot cost. | Strong jamb and hinge fixings appropriate for the door's greater thickness and mass. The wall can be stone, wood or another compatible material; stone masonry may use existing **Cut stone block** and **Mortar**. |
+| **Superior** | An **ornate, elegant, substantial door** suited to a castle, manor or fine house. Made from **two layers of smooth, shiny Hardwood boards** (each board 6 in wide × 2 in thick), for a visually thick, approximately 4-inch wood leaf before any trim; carefully aligned panels, decorative edging, attractive metal hinge details, finely finished visible nail heads, and a handsome handle. Refined and Sturdy remain simpler and less decorative. | **Hardwood board + Iron ingot + Steel ingot**, per the exact recipe. The two board layers, ornate hinges, finished nails, trim and handle are visible details included in those costs, not separate recipe items. | Well-finished doorway trim and suitable hinge mountings, fitting the selected wood, stone or brick wall. A masonry arch uses the existing wall materials; a timber arch uses correctly shaped wood pieces. |
+| **Engineered** | Thick, carefully fitted wooden door with **clearly more metal** than Superior: strong iron straps/brackets, reinforced joints and heavier hinge plates. Recognizably a wood-and-metal door, not a concrete slab or special mechanism. | **Plank + Iron ingot** only, per the exact recipe. Reinforcing bands, brackets, hinges and nails are fabricated/represented from the included metal, not separate ingredient items. | Accurately constructed doorway in the chosen wall material; reinforced mounting points where appropriate. Concrete, if used, belongs to the **wall**, not the swinging door. |
+| **Fortified** | **All-metal door**, with substantial iron framework and steel plate or panel sections, visible riveted joints, reinforced edges and heavy hinges. No wooden core. Single and double leaf shapes follow the selected rectangular or arched doorway. No unapproved locking or defensive mechanism. | **Iron ingot + Steel ingot** only, per the exact recipe. Rivets and hinges are visually and mechanically represented without additional ingredient cost. | Strong doorway in the chosen wall material with mountings capable of supporting the heavy metal door. For arches, the structural arch and hinge positions must fit its curved shape. |
+
+**Hardware vocabulary:** “Wooden hinges” on a Rustic door describe a functioning wooden pivot/hinge built from existing wood resources. They do **not** automatically authorize a new catalog item called Wooden Hinges. “Metal hinges” on Refined, Sturdy and Superior doors are represented in appearance using the metal already included in their approved recipes; do not consume a separate hinge item. Superior's **ornate hinges, nice nails and decorative handle** are visibly higher-quality treatments; they do not automatically authorize new inventory item classes for ornate nails/hinges/handles. Do not substitute metal hinges on Rustic or switch Refined/Sturdy back to wood pivots.
+
+**Construction principles:** A stone, brick or concrete doorway can hold a wooden, reinforced wood-and-metal, or all-metal door. Do not make swinging door leaves out of solid stone, brick or concrete simply to mirror the wall. Crude/Rustic doors can function using wooden pivot or lashings; higher craftsmanship displays metal hinges and nails supplied by its approved metal-ingot ingredient cost. Fasteners, handles, bracing and frame anchors should be visible where appropriate, but they are not automatically new separate item types. **Fortified uses both iron and steel, joined with rivets, and has no wood core.** Steel and iron remain materials, not quality grades. The visible progression from Superior to Engineered to Fortified is finished hardwood → metal-reinforced hardwood → all-metal iron-and-steel construction.
+
+#### Director-approved door crafting recipes — all 28 configurations (13 Nov 2026)
+
+These are **exact ingredient lists and counts approved by Dave**, not proposals. Hardware such as wooden/metal hinges, nails, decorative handles, and rivet details is included in the ingredient costs below; **no extra hardware items are consumed** unless Dave separately approves a revision. The finished door still visually shows its appropriate fittings. These recipes apply to **door items only**, not to the independent doorway-wall frame construction.
+
+**Cost rules:** Double Door = **2 × Single Door** ingredients. Single Arched Door = **Single Door** ingredients, without an arch surcharge. Double Arched Door = **Double Door** ingredients, without an arch surcharge. Shapes do not alter ingredients or counts.
+
+| Quality tier | Single Door = Single Arched Door | Double Door = Double Arched Door |
+|---|---|---|
+| Crude | 50 Stick, 100 Twine | 100 Stick, 200 Twine |
+| Rustic | 5 Plank | 10 Plank |
+| Refined | 6 Hardwood board, 1 Iron ingot | 12 Hardwood board, 2 Iron ingot |
+| Sturdy | 6 Plank, 2 Iron ingot | 12 Plank, 4 Iron ingot |
+| Superior | 12 Hardwood board, 2 Iron ingot, 1 Steel ingot | 24 Hardwood board, 4 Iron ingot, 2 Steel ingot |
+| Engineered | 12 Plank, 4 Iron ingot | 24 Plank, 8 Iron ingot |
+| Fortified | 10 Iron ingot, 10 Steel ingot | 20 Iron ingot, 20 Steel ingot |
+
+These seven rows define **four distinct door configurations per tier = 28 door variants**; arched and rectangular variants use the same ingredients at the same leaf count. All required constituent item definitions already exist in the catalog (`stick`, `twine`, `lumber` / Plank, `hardwood_board`, `iron_ingot`, `steel_ingot`). Make no substitutions or extra resource requirements. Count the listed ingots as the source metal for hinges, nails, rivets, decorative hardware and reinforcement where shown; do not add separate fastener costs. Rustic wooden hinges are fashioned from its Planks.
+
+**Frame construction:** Each configuration has a distinct **empty doorway wall piece** with the appropriate opening. Frame resource costs follow the surrounding wall's selected material/quality progression, not the installed door's recipe. Double openings retain approved 4 m geometry where applicable. Arched openings need an actually curved header and curved clear passage, not an arch decoration above a rectangular invisible collision. Do not invent a one-to-one restriction between door tier and frame tier.
+
+**Catalog and implementation guardrail:** This is a design specification for **seven tiers × four configurations = 28 logical door/doorway pairings**, not authorization to allocate 56 new items. Audit/reuse stable doorway IDs and existing materials, calculate distinct missing door/frame records and assign numbers through the live catalog ledger; do not guess counts. Apply the separate-door change to all existing doorway variants and preserve saved placements under the project's current save policy. Update real recipes, artwork, blueprints, structures and ledger only through the approved BUGLIST-002 implementation/review process, and implement the director-approved door ingredient counts in the table above without adding separate hardware ingredient costs. Doorway-frame recipes and any unspecified crafting-station requirements are distinct decisions; reconcile them against existing approvals before changing data. For implementation/acceptance requirements see [BUGLIST-002](../buglists/BUGLIST-002.md).
 
 ### 3.1 Tools
 
@@ -158,6 +213,8 @@ Stable ids and numbers are kept and never reused, including retired ones (`fine_
 | 807, 344, 75, 260, 557, 12/542, 311, 668/669/892/893, 294 | | Mortar and pestle, Hand mill, Fishing rod, Fishing net, Wooden - Spyglass, Torch, Candle, lanterns, Steel - Striker (future) | KEEP | Unaffected. |
 
 ### 3.2 Wood
+
+**Director-approved physical stock dimensions and finish (13 Nov 2026, BUGLIST-002):** **Plank** (`lumber`) is **6 inches wide × 4 inches thick**, rough-surfaced. **Hardwood board** is **6 inches wide × 2 inches thick**, smooth and shiny. Both share the same width; a Plank is twice as thick. This specifies the cross-section and material finish, not a new item, recipe, species, board length, or automated change to existing build collision/structural dimensions. Apply this material distinction consistently to item descriptions and future art/geometry work; reconcile existing representations without altering unrelated gameplay in BUGLIST-002.
 
 | # | id | Name | Status | Change |
 |---|---|---|---|---|
@@ -1086,7 +1143,11 @@ Durability, repair materials and amounts; sharpening rate and maximum-durability
 
 **Readiness.** Every category is owner-approved: tools, wood and stations, furniture [D4, D5, C7], weapons [D6], armour [D7], clothing [D8], carrying [D9], tack [D10], vehicles [D11], cooking [D12], storage [D13], preservation [D14, D17], boards [D15] and food effects [D16, D17]. The complete catalog is submitted for Dave's final approval. Companion documents ([STORAGE_WAREHOUSING_DESIGN.md](STORAGE_WAREHOUSING_DESIGN.md), [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md)) explain behaviour and tests; the final audit is [CATALOG_FINAL_AUDIT_2026-11-12.md](CATALOG_FINAL_AUDIT_2026-11-12.md). This master remains the source of truth for approval and item IDs. **Do not merge or implement until Dave explicitly approves the completed full catalog.**
 
+**Appendix A is a generated historical item snapshot.** Its old door descriptions, including `thatch_doorway` and material-named variants, are NOT an active specification; the implementation mission must regenerate the appendix from corrected item data, rather than editing generated rows manually.
+
 ## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
+
+**BUGLIST-002 (13 Nov 2026):** the 10 doorway rows below were corrected (empty frames) and 48 rows (items 1256-1303: 20 frames, 28 doors) added by hand under their ADD status, because the repository holds no generator for this appendix (the original was an ad hoc script); the live next free item number is 1304 and blueprint 300. A full regeneration remains open for whoever restores a generator.
 
 Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 53, KEEP 499, RETIRE 23, RETIRED 253, UPDATE 61.
 `RETIRED` = already retired before this document (kept only for its number). `Made at` is the station of the first live recipe that gives the item (`hand` = no station; L = station level); blank = not crafted (gathered, dropped, built from a blueprint, or a group placeholder). Purpose is the live tooltip description. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
@@ -1605,7 +1666,7 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 195 | `floor_section` | Refined - Ceiling | planks |  | KEEP | A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge. |
 | 197 | `roof_section` | Refined - Roof | planks |  | KEEP | A plank roof on four posts, to set over walls and ceilings. |
 | 199 | `foundation_section` | Sturdy - Foundation | stone |  | KEEP | A stone and clay slab, four metres square. Walls and ceilings snap onto it. |
-| 201 | `doorway_section` | Refined - Doorway | planks |  | KEEP | A plank wall with a gap you can walk through, one metre wide and two high. |
+| 201 | `doorway_section` | Refined - Doorway | planks |  | KEEP | A plank wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
 | 203 | `window_section` | Refined - Window | planks |  | KEEP | A plank wall with an opening at chest height to see through. |
 | 205 | `timber_prop` | Post | wood |  | KEEP | A log stood on end to hold up a low roof of earth. Short reach, quick to wear. |
 | 207 | `timber_set` | Beam | wood |  | KEEP | A post and cap frame that braces a tunnel. Longer reach and slower to wear. |
@@ -1620,7 +1681,55 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 262 | `thatch_floor` | Crude - Foundation |  |  | KEEP | A thatch foundation on stakes. Walls and roofs stand on it. |
 | 264 | `thatch_roof` | Crude - Roof 45 |  |  | KEEP | A thatch roof. It keeps the rain off. **BUGLIST-001 BUG-011 (13 Nov 2026): renamed from "Crude - Roof", id and number kept; now a 45 degree sloped panel with no posts.** |
 | 1255 | `thatch_roof_65` | Crude - Roof 65 |  |  | ADD | A steep thatch roof panel. It keeps the rain off. **BUGLIST-001 BUG-011 (13 Nov 2026): the 65 degree panel, blueprint 251, state 291, same materials as Crude - Roof 45. Catalog change made on the strength of BUG-011, for Dave to confirm.** |
-| 266 | `thatch_doorway` | Crude - Doorway |  |  | KEEP | A thatch doorway with a hanging door. **BUGLIST-001 BUG-010 (13 Nov 2026): the piece is now an open framed passage with no door; this text still says "hanging door" and is left for Dave's ruling (see the BUG-010 ledger entry).** |
+| 1256 | `thatch_double_doorway` | Crude - Double doorway |  |  | ADD | A thatch wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 252, state 292.** |
+| 1257 | `thatch_arched_doorway` | Crude - Arched doorway |  |  | ADD | A thatch wall with an empty arched opening, one metre wide and two high. Build the door separately. **BUGLIST-002: blueprint 253, state 293.** |
+| 1258 | `thatch_double_arched_doorway` | Crude - Double arched doorway |  |  | ADD | A thatch wall with an empty arched opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 254, state 294.** |
+| 1259 | `log_double_doorway` | Rustic - Double doorway |  |  | ADD | A log wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 255, state 295.** |
+| 1260 | `log_arched_doorway` | Rustic - Arched doorway |  |  | ADD | A log wall with an empty arched opening, one metre wide and two high. Build the door separately. **BUGLIST-002: blueprint 256, state 296.** |
+| 1261 | `log_double_arched_doorway` | Rustic - Double arched doorway |  |  | ADD | A log wall with an empty arched opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 257, state 297.** |
+| 1262 | `wood_arched_doorway` | Refined - Arched doorway |  |  | ADD | A plank wall with an empty arched opening, one metre wide and two high. Build the door separately. **BUGLIST-002: blueprint 258, state 298.** |
+| 1263 | `wood_double_arched_doorway` | Refined - Double arched doorway |  |  | ADD | A plank wall with an empty arched opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 259, state 299.** |
+| 1264 | `stone_double_doorway` | Sturdy - Double doorway |  |  | ADD | A stone wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 260, state 300.** |
+| 1265 | `stone_arched_doorway` | Sturdy - Arched doorway |  |  | ADD | A stone wall with an empty arched opening, one metre wide and two high. Build the door separately. **BUGLIST-002: blueprint 261, state 301.** |
+| 1266 | `stone_double_arched_doorway` | Sturdy - Double arched doorway |  |  | ADD | A stone wall with an empty arched opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 262, state 302.** |
+| 1267 | `brick_double_doorway` | Superior - Double doorway |  |  | ADD | A brick wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 263, state 303.** |
+| 1268 | `brick_arched_doorway` | Superior - Arched doorway |  |  | ADD | A brick wall with an empty arched opening, one metre wide and two high. Build the door separately. **BUGLIST-002: blueprint 264, state 304.** |
+| 1269 | `brick_double_arched_doorway` | Superior - Double arched doorway |  |  | ADD | A brick wall with an empty arched opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 265, state 305.** |
+| 1270 | `engineered_double_doorway` | Engineered - Double doorway |  |  | ADD | A concrete wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 266, state 306.** |
+| 1271 | `engineered_arched_doorway` | Engineered - Arched doorway |  |  | ADD | A concrete wall with an empty arched opening, one metre wide and two high. Build the door separately. **BUGLIST-002: blueprint 267, state 307.** |
+| 1272 | `engineered_double_arched_doorway` | Engineered - Double arched doorway |  |  | ADD | A concrete wall with an empty arched opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 268, state 308.** |
+| 1273 | `fortified_double_doorway` | Fortified - Double doorway |  |  | ADD | A banded concrete wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 269, state 309.** |
+| 1274 | `fortified_arched_doorway` | Fortified - Arched doorway |  |  | ADD | A banded concrete wall with an empty arched opening, one metre wide and two high. Build the door separately. **BUGLIST-002: blueprint 270, state 310.** |
+| 1275 | `fortified_double_arched_doorway` | Fortified - Double arched doorway |  |  | ADD | A banded concrete wall with an empty arched opening, two metres wide and two high. Build the door separately. **BUGLIST-002: blueprint 271, state 311.** |
+| 1276 | `crude_door` | Crude - Door |  |  | ADD | Sticks lashed with twine and one cross-brace. Fits any doorway. **BUGLIST-002: blueprint 272, states 312 (shut) and 313 (open).** |
+| 1277 | `crude_double_door` | Crude - Double door |  |  | ADD | Sticks lashed with twine and one cross-brace. Fits any double doorway. **BUGLIST-002: blueprint 273, states 314 (shut) and 315 (open).** |
+| 1278 | `crude_arched_door` | Crude - Arched door |  |  | ADD | Sticks lashed with twine and one cross-brace. Fits any arched doorway. **BUGLIST-002: blueprint 274, states 316 (shut) and 317 (open).** |
+| 1279 | `crude_double_arched_door` | Crude - Double arched door |  |  | ADD | Sticks lashed with twine and one cross-brace. Fits any double arched doorway. **BUGLIST-002: blueprint 275, states 318 (shut) and 319 (open).** |
+| 1280 | `rustic_door` | Rustic - Door |  |  | ADD | Rough 6x4 planks with wooden hinges. Fits any doorway. **BUGLIST-002: blueprint 276, states 320 (shut) and 321 (open).** |
+| 1281 | `rustic_double_door` | Rustic - Double door |  |  | ADD | Rough 6x4 planks with wooden hinges. Fits any double doorway. **BUGLIST-002: blueprint 277, states 322 (shut) and 323 (open).** |
+| 1282 | `rustic_arched_door` | Rustic - Arched door |  |  | ADD | Rough 6x4 planks with wooden hinges. Fits any arched doorway. **BUGLIST-002: blueprint 278, states 324 (shut) and 325 (open).** |
+| 1283 | `rustic_double_arched_door` | Rustic - Double arched door |  |  | ADD | Rough 6x4 planks with wooden hinges. Fits any double arched doorway. **BUGLIST-002: blueprint 279, states 326 (shut) and 327 (open).** |
+| 1284 | `refined_door` | Refined - Door |  |  | ADD | Smooth hardwood boards with nails and metal hinges. Fits any doorway. **BUGLIST-002: blueprint 280, states 328 (shut) and 329 (open).** |
+| 1285 | `refined_double_door` | Refined - Double door |  |  | ADD | Smooth hardwood boards with nails and metal hinges. Fits any double doorway. **BUGLIST-002: blueprint 281, states 330 (shut) and 331 (open).** |
+| 1286 | `refined_arched_door` | Refined - Arched door |  |  | ADD | Smooth hardwood boards with nails and metal hinges. Fits any arched doorway. **BUGLIST-002: blueprint 282, states 332 (shut) and 333 (open).** |
+| 1287 | `refined_double_arched_door` | Refined - Double arched door |  |  | ADD | Smooth hardwood boards with nails and metal hinges. Fits any double arched doorway. **BUGLIST-002: blueprint 283, states 334 (shut) and 335 (open).** |
+| 1288 | `sturdy_door` | Sturdy - Door |  |  | ADD | Thick rough planks with nails and metal hinges. Fits any doorway. **BUGLIST-002: blueprint 284, states 336 (shut) and 337 (open).** |
+| 1289 | `sturdy_double_door` | Sturdy - Double door |  |  | ADD | Thick rough planks with nails and metal hinges. Fits any double doorway. **BUGLIST-002: blueprint 285, states 338 (shut) and 339 (open).** |
+| 1290 | `sturdy_arched_door` | Sturdy - Arched door |  |  | ADD | Thick rough planks with nails and metal hinges. Fits any arched doorway. **BUGLIST-002: blueprint 286, states 340 (shut) and 341 (open).** |
+| 1291 | `sturdy_double_arched_door` | Sturdy - Double arched door |  |  | ADD | Thick rough planks with nails and metal hinges. Fits any double arched doorway. **BUGLIST-002: blueprint 287, states 342 (shut) and 343 (open).** |
+| 1292 | `superior_door` | Superior - Door |  |  | ADD | Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any doorway. **BUGLIST-002: blueprint 288, states 344 (shut) and 345 (open).** |
+| 1293 | `superior_double_door` | Superior - Double door |  |  | ADD | Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any double doorway. **BUGLIST-002: blueprint 289, states 346 (shut) and 347 (open).** |
+| 1294 | `superior_arched_door` | Superior - Arched door |  |  | ADD | Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any arched doorway. **BUGLIST-002: blueprint 290, states 348 (shut) and 349 (open).** |
+| 1295 | `superior_double_arched_door` | Superior - Double arched door |  |  | ADD | Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any double arched doorway. **BUGLIST-002: blueprint 291, states 350 (shut) and 351 (open).** |
+| 1296 | `engineered_door` | Engineered - Door |  |  | ADD | Thick planks strapped with iron on heavy hinge plates. Fits any doorway. **BUGLIST-002: blueprint 292, states 352 (shut) and 353 (open).** |
+| 1297 | `engineered_double_door` | Engineered - Double door |  |  | ADD | Thick planks strapped with iron on heavy hinge plates. Fits any double doorway. **BUGLIST-002: blueprint 293, states 354 (shut) and 355 (open).** |
+| 1298 | `engineered_arched_door` | Engineered - Arched door |  |  | ADD | Thick planks strapped with iron on heavy hinge plates. Fits any arched doorway. **BUGLIST-002: blueprint 294, states 356 (shut) and 357 (open).** |
+| 1299 | `engineered_double_arched_door` | Engineered - Double arched door |  |  | ADD | Thick planks strapped with iron on heavy hinge plates. Fits any double arched doorway. **BUGLIST-002: blueprint 295, states 358 (shut) and 359 (open).** |
+| 1300 | `fortified_door` | Fortified - Door |  |  | ADD | All iron and steel, riveted, on heavy hinges. Fits any doorway. **BUGLIST-002: blueprint 296, states 360 (shut) and 361 (open).** |
+| 1301 | `fortified_double_door` | Fortified - Double door |  |  | ADD | All iron and steel, riveted, on heavy hinges. Fits any double doorway. **BUGLIST-002: blueprint 297, states 362 (shut) and 363 (open).** |
+| 1302 | `fortified_arched_door` | Fortified - Arched door |  |  | ADD | All iron and steel, riveted, on heavy hinges. Fits any arched doorway. **BUGLIST-002: blueprint 298, states 364 (shut) and 365 (open).** |
+| 1303 | `fortified_double_arched_door` | Fortified - Double arched door |  |  | ADD | All iron and steel, riveted, on heavy hinges. Fits any double arched doorway. **BUGLIST-002: blueprint 299, states 366 (shut) and 367 (open).** |
+| 266 | `thatch_doorway` | Crude - Doorway |  |  | KEEP | A thatch wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026), supersedes the BUG-010 note: an empty framed opening; its door is a separate item (s3.0).**
 | 267 | `oven` | Oven |  |  | KEEP | A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides. |
 | 277 | `snare_trap` | Snare |  |  | KEEP | A snare set on the ground. |
 | 425 | `tilled_bed` | Tilled bed | earth |  | KEEP | A metre of hoed soil, ready to sow. |
@@ -1654,9 +1763,9 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 559 | `wood_foundation` | Refined - Foundation | wood |  | KEEP | A log and plank base, four metres square. Walls and ceilings snap onto it. |
 | 563 | `log_foundation` | Rustic - Foundation | log |  | KEEP | Log sills on stone footings, four metres square. Walls and ceilings snap onto it. |
 | 565 | `brick_foundation` | Superior - Foundation | brick |  | KEEP | A brick plinth, four metres square. Walls and ceilings snap onto it. |
-| 567 | `log_doorway` | Rustic - Doorway | log |  | KEEP | A log wall with a plank door, one metre wide and two high. |
-| 569 | `stone_doorway` | Sturdy - Doorway | stone |  | KEEP | A stone wall with a timber lintel and a door, one metre wide and two high. |
-| 571 | `brick_doorway` | Superior - Doorway | brick |  | KEEP | A brick wall with a timber door, one metre wide and two high. |
+| 567 | `log_doorway` | Rustic - Doorway | log |  | KEEP | A log wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
+| 569 | `stone_doorway` | Sturdy - Doorway | stone |  | KEEP | A stone wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
+| 571 | `brick_doorway` | Superior - Doorway | brick |  | KEEP | A brick wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
 | 573 | `thatch_window` | Crude - Window | thatch |  | KEEP | A thatch wall with an opening at chest height to see through. |
 | 575 | `log_window` | Rustic - Window | log |  | KEEP | A log wall with an opening at chest height to see through. |
 | 577 | `stone_window` | Sturdy - Window | stone |  | KEEP | A stone wall with a sill and an opening at chest height to see through. |
@@ -1701,9 +1810,9 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 655 | `brick_stairs` | Superior - Stairs |  |  | KEEP | A flight of brick steps up to the next ceiling. |
 | 657 | `wooden_railing` | Wooden - Railing |  |  | KEEP | A plank railing along a ceiling or foundation edge. Stops falls. |
 | 659 | `iron_railing` | Iron - Railing |  |  | KEEP | An iron railing along a ceiling or foundation edge. Stops falls. |
-| 661 | `double_doorway` | Refined - Double doorway |  |  | KEEP | A plank wall four metres wide with a pair of doors. |
-| 663 | `iron_doorway` | Iron - Doorway |  |  | KEEP | A plank wall with an iron-strapped door, one metre wide and two high. |
-| 665 | `steel_doorway` | Steel - Doorway |  |  | KEEP | A wall with a steel door, one metre wide and two high. |
+| 661 | `double_doorway` | Refined - Double doorway |  |  | KEEP | A plank wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
+| 663 | `iron_doorway` | Iron - Doorway |  |  | KEEP | An iron-strapped plank wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
+| 665 | `steel_doorway` | Steel - Doorway |  |  | KEEP | A steel-framed wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
 | 671 | `wooden_hanging_lantern` | Wooden - Hanging lantern |  |  | KEEP | A plank lantern on a hook. Burns a candle a game day; rain cannot reach it. |
 | 673 | `iron_hanging_lantern` | Iron - Hanging lantern |  |  | KEEP | An iron lantern on a hook. Lamp oil lasts three game days. |
 | 675 | `iron_wall_lantern` | Wall lantern |  |  | KEEP | An iron lantern on a bracket arm. Lamp oil lasts three game days. |
@@ -1779,7 +1888,7 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 861 | `mixer` | Mixer |  |  | KEEP | A stone trough with a cranked wooden paddle. Mixes lime powder, sand, stone and water into concrete. |
 | 863 | `engineered_foundation` | Engineered - Foundation |  |  | KEEP | A poured concrete slab on a stone footing, four metres square. Walls and ceilings snap onto it. |
 | 865 | `engineered_wall` | Engineered - Wall |  |  | KEEP | A poured concrete wall, two metres wide. |
-| 867 | `engineered_doorway` | Engineered - Doorway |  |  | KEEP | A concrete wall with a plank door, two metres wide. |
+| 867 | `engineered_doorway` | Engineered - Doorway |  |  | KEEP | A concrete wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
 | 869 | `engineered_window` | Engineered - Window |  |  | KEEP | A concrete wall with a window opening, two metres wide. |
 | 871 | `engineered_pillar` | Engineered - Pillar |  |  | KEEP | A square concrete pillar to hold up a ceiling or a roof. |
 | 873 | `engineered_stairs` | Engineered - Stairs |  |  | KEEP | A flight of poured concrete steps up to the next storey. |
@@ -1788,7 +1897,7 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 879 | `engineered_roof_corner` | Engineered - Roof corner |  |  | KEEP | A clay tile roof corner on pinned plank rafters. |
 | 881 | `fortified_foundation` | Fortified - Foundation |  |  | KEEP | A concrete slab tied with iron bands, four metres square. The base of a fort. |
 | 883 | `fortified_wall` | Fortified - Wall |  |  | KEEP | A concrete wall banded with iron, two metres wide. Built to stand a siege. |
-| 885 | `fortified_doorway` | Fortified - Doorway |  |  | KEEP | A banded concrete wall with a heavy iron-strapped door. |
+| 885 | `fortified_doorway` | Fortified - Doorway |  |  | KEEP | A banded concrete wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
 | 887 | `fortified_gate` | Fortified - Gate |  |  | KEEP | A heavy plank gate strapped with iron, hung between concrete posts. |
 | 889 | `fortified_pillar` | Fortified - Pillar |  |  | KEEP | A concrete pillar bound with iron bands. |
 | 891 | `fortified_wall_top` | Fortified - Wall top |  |  | KEEP | A crenellated concrete parapet with iron ties. Cover for whoever holds the wall. |

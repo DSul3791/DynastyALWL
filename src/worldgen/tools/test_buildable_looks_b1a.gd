@@ -77,20 +77,23 @@ func _run() -> void:
 			"%s: 4 m square, top 0.3 m up, 2 m deep like the stone foundation (%s)" % [look, box])
 		check(_solid_at(node, Vector3(0.0, 0.25, 0.0)) and _solid_at(node, Vector3(1.9, -1.6, 1.9)) and not _solid_at(node, Vector3(0.0, 0.35, 0.0)), "%s: solid from the top down, nothing above it" % look)
 
+	# The doorways (BUGLIST-002): an empty frame, the wall solid either side of and over the gap, nothing in the 0.9 m by 1.9 m clear opening and no open twin look.
 	for look in DOORWAYS:
-		for open in [false, true]:
-			var look_name: String = look + ("_open" if open else "")
-			var node: Node3D = _build(look_name)
-			var box: AABB = _mesh_box(node)
-			check(box.position.x >= -1.04 and box.end.x <= 1.04 and box.position.y >= -0.01 and box.end.y <= 2.56 and box.end.y >= 2.3, "%s: in the 2 m by 2.4 m wall piece (%s)" % [look_name, box])
-			check(_solid_at(node, Vector3(0.75, 1.0, 0.0)) and _solid_at(node, Vector3(-0.75, 1.0, 0.0)) and _solid_at(node, Vector3(0.0, 2.25, 0.0)), "%s: the wall either side of and over the gap is solid" % look_name)
+		var node: Node3D = _build(look)
+		var box: AABB = _mesh_box(node)
+		check(box.position.x >= -1.04 and box.end.x <= 1.04 and box.position.y >= -0.01 and box.end.y <= 2.56 and box.end.y >= 2.3, "%s: in the 2 m by 2.4 m wall piece (%s)" % [look, box])
+		check(_solid_at(node, Vector3(0.75, 1.0, 0.0)) and _solid_at(node, Vector3(-0.75, 1.0, 0.0)) and _solid_at(node, Vector3(0.0, 2.25, 0.0)), "%s: the wall either side of and over the gap is solid" % look)
+		check(box.position.z >= -0.2 and box.end.z <= 0.2, "%s: as thick as a wall (%.2f to %.2f)" % [look, box.position.z, box.end.z])
+		var blocked: Array = []
 
-			if open:
-				check(not _solid_at(node, Vector3(0.0, 1.0, 0.0)) and not _solid_at(node, Vector3(-0.2, 0.3, 0.0)), "%s: the doorway is walkable" % look_name)
-				check(box.end.z <= 1.06, "%s: the open door stays within a metre of the wall" % look_name)
-			else:
-				check(_solid_at(node, Vector3(0.0, 1.0, 0.0)), "%s: the shut door blocks the gap" % look_name)
-				check(box.position.z >= -0.2 and box.end.z <= 0.2, "%s: as thick as a wall (%.2f to %.2f)" % [look_name, box.position.z, box.end.z])
+		for x in [-0.45, -0.2, 0.0, 0.2, 0.45]:
+			for y in [0.1, 1.0, 1.9]:
+				for z in [-0.1, 0.0, 0.1]:
+					if _solid_at(node, Vector3(x, y, z)):
+						blocked.append(Vector3(x, y, z))
+
+		check(blocked.is_empty(), "%s: nothing solid in the opening (%s)" % [look, str(blocked)])
+		check(not LookTable.has_look(look + "_open"), "%s: no open twin look (the door is a separate piece)" % look)
 
 	# The Crude doorway (BUG-010): a framed passage with no door at all. The wall is solid either side of and over the gap and nothing stands in it, at any
 	# height a person passes, over the whole clear width; no mesh stands in the gap either.

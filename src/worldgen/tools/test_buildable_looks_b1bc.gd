@@ -78,14 +78,12 @@ func _run() -> void:
 	for look in ["double_doorway", "iron_doorway", "steel_doorway"]:
 		var half: float = 2.0 if look == "double_doorway" else 1.0
 		var gap: float = 1.0 if look == "double_doorway" else 0.5
-
-		for open in [false, true]:
-			var look_name: String = look + ("_open" if open else "")
-			var node: Node3D = _build(look_name)
-			var box: AABB = _mesh_box(node)
-			check(_inside(box, Vector3(-half - 0.03, -0.01, -0.2), Vector3(half + 0.03, 2.45, 1.1 if open else 0.2)) and box.end.y >= 2.3, "%s: in its %d m wall piece (%s)" % [look_name, int(half * 2.0), box])
-			check(_solid_at(node, Vector3(gap + 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(-gap - 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(0.0, 2.25, 0.0)), "%s: solid beside and over the gap" % look_name)
-			check(_solid_at(node, Vector3(0.0, 1.0, 0.0)) != open, "%s: the gap is %s" % [look_name, "walkable" if open else "shut"])
+		var node: Node3D = _build(look)
+		var box: AABB = _mesh_box(node)
+		check(_inside(box, Vector3(-half - 0.03, -0.01, -0.2), Vector3(half + 0.03, 2.45, 0.2)) and box.end.y >= 2.3, "%s: in its %d m wall piece (%s)" % [look, int(half * 2.0), box])
+		check(_solid_at(node, Vector3(gap + 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(-gap - 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(0.0, 2.25, 0.0)), "%s: solid beside and over the gap" % look)
+		check(not _solid_at(node, Vector3(0.0, 1.0, 0.0)) and not _solid_at(node, Vector3(gap - 0.1, 0.3, 0.0)), "%s: an empty frame, the gap is walkable (BUGLIST-002)" % look)
+		check(not LookTable.has_look(look + "_open"), "%s: no open twin look" % look)
 
 	for kind in ["thatch", "wooden", "log", "stone", "brick"]:
 		var look: String = kind + "_pillar"

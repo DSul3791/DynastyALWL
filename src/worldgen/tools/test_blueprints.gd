@@ -100,6 +100,61 @@ func _gate_swings(gate_id: int, kind: String, spot: Vector3) -> void:
 	OS.delay_msec(450)
 
 
+# BUGLIST-002: a door is its own hammer blueprint costing exactly the approved recipe (master catalog s3.0); a double costs twice a single, an arched door the same as its rectangular twin; a doorway is an empty frame with no door, use or toggle.
+func _cost_key(cost: Array) -> String:
+	return ",".join(cost.map(func(c): return "%s:%d" % [str(c[0]), int(c[1])]))
+
+
+func _scaled(cost: Array, mult: int) -> Array:
+	return cost.map(func(c): return [str(c[0]), int(c[1]) * mult])
+
+
+func _door_data_checks(live: Dictionary) -> void:
+	var structures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))["structures"]
+	var door_cost: Dictionary = {"crude": [["stick", 50], ["twine", 100]], "rustic": [["lumber", 5]], "refined": [["hardwood_board", 6], ["iron_ingot", 1]],
+		"sturdy": [["lumber", 6], ["iron_ingot", 2]], "superior": [["hardwood_board", 12], ["iron_ingot", 2], ["steel_ingot", 1]],
+		"engineered": [["lumber", 12], ["iron_ingot", 4]], "fortified": [["iron_ingot", 10], ["steel_ingot", 10]]}
+	var wall: Dictionary = {"crude": "thatch_wall", "rustic": "log_wall", "refined": "wall_section", "sturdy": "stone_wall", "superior": "brick_wall", "engineered": "engineered_wall", "fortified": "fortified_wall"}   # Dave 13 Nov 2026: an empty doorway frame costs the same as a wall (its tier's); a double frame fills two wall cells
+	var prefix: Dictionary = {"crude": "thatch", "rustic": "log", "refined": "wood", "sturdy": "stone", "superior": "brick", "engineered": "engineered", "fortified": "fortified"}
+	var single: Dictionary = {"crude": "thatch_doorway", "rustic": "log_doorway", "refined": "doorway_section", "sturdy": "stone_doorway", "superior": "brick_doorway", "engineered": "engineered_doorway", "fortified": "fortified_doorway"}
+	var door_ops: Dictionary = {"": ["single", 1, 1.0], "double_": ["double", 2, 2.0], "arched_": ["single_arched", 1, 1.0], "double_arched_": ["double_arched", 2, 2.0]}
+	var doors: int = 0
+	for tier in door_cost:
+		var hammer: int = 3 if tier == "fortified" else 1
+		for op in door_ops:
+			var kind: String = "%s_%sdoor" % [tier, op]
+			var opening: String = str(door_ops[op][0])
+			doors += 1
+			check(live.has(kind) and _cost_key(live[kind]["cost"]) == _cost_key(_scaled(door_cost[tier], int(door_ops[op][1]))), "%s: costs exactly the approved door recipe (x%d)" % [kind, int(door_ops[op][1])])
+			check(live.has(kind) and int(live[kind]["hammer"]) == hammer and str(live[kind]["station"]) == "" and bool(live[kind]["known"]) and str(live[kind]["category"]) == "Walls and doors", "%s: hammer %d, no station, known, Walls and doors" % [kind, hammer])
+			var shut: Dictionary = structures.get(kind, {})
+			var open: Dictionary = structures.get(kind + "_open", {})
+			check(str(shut.get("piece_kind", "")) == "door" and str(shut.get("attach_to", "")) == "doorway" and str(shut.get("opening", "")) == opening and str(shut.get("use", "")) == "door" and str(shut.get("toggle", "")) == kind + "_open" and bool(shut.get("blocks_walk", false)) and not shut.has("variant_group"), "%s: a shut door that attaches to a %s doorway and opens with E" % [kind, opening])
+			check(str(open.get("piece_kind", "")) == "door" and str(open.get("opening", "")) == opening and str(open.get("toggle", "")) == kind and not open.has("blocks_walk") and not open.has("variant_group") and int(open.get("state", 0)) == int(shut.get("state", -9)) + 1 and str(open.get("item", "")) == kind, "%s_open: the open twin, walkable, same item" % kind)
+			check(is_equal_approx(float(shut.get("footprint_x", 0.0)), float(door_ops[op][2])) and is_equal_approx(float(shut.get("footprint_z", 0.0)), 0.1), "%s: leaf as wide as its opening, 0.1 m deep" % kind)
+		var frames: Dictionary = {"single": single[tier], "double": "double_doorway" if tier == "refined" else prefix[tier] + "_double_doorway",
+			"single_arched": prefix[tier] + "_arched_doorway", "double_arched": prefix[tier] + "_double_arched_doorway"}
+		for opening in frames:
+			var fk: String = str(frames[opening])
+			var mult: int = 2 if opening.begins_with("double") else 1
+			check(live.has(fk) and _cost_key(live[fk]["cost"]) == _cost_key(_scaled(live[wall[tier]]["cost"], mult)), "%s: frame costs its tier's wall x%d" % [fk, mult])
+			var frow: Dictionary = structures.get(fk, {})
+			check(str(frow.get("opening", "")) == opening and not frow.has("use") and not frow.has("toggle") and not frow.has("blocks_walk") and not frow.has("use_pace_ms") and str(frow.get("piece_kind", "")) == "wall", "%s: an empty %s frame (no door, no use)" % [fk, opening])
+			check(live.has(fk) and int(live[fk]["hammer"]) == hammer and str(live[fk]["station"]) == "", "%s: hammer as its tier's doorway, no station" % fk)
+	check(doors == 28, "28 doors")
+	check(_cost_key(live["iron_doorway"]["cost"]) == "lumber:3,iron_ingot:2,nails:12" and _cost_key(live["steel_doorway"]["cost"]) == "steel_ingot:6", "Iron and Steel frames lost their hinges (no Iron or Steel wall to cost them by)")
+	var retired_states: Array = [28, 82, 84, 86, 140, 142, 144, 214, 224]
+	var legacy: Array = []
+	for kind in structures:
+		var row: Variant = structures[kind]
+		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		check(not retired_states.has(int(row.get("state", -1))), "%s: state is not one of the retired door twin states" % kind)
+		legacy.append_array(row.get("legacy_kinds", []))
+	for twin in ["door_open", "log_doorway_open", "stone_doorway_open", "brick_doorway_open", "double_doorway_open", "iron_doorway_open", "steel_doorway_open", "engineered_doorway_open", "fortified_doorway_open", "thatch_doorway_open"]:
+		check(not structures.has(twin) and legacy.has(twin), "%s: no row any more, a saved one loads as the empty frame (legacy_kinds)" % twin)
+
+
 func _init() -> void:
 	var dir: String = "user://test_blueprints"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -143,9 +198,10 @@ func _init() -> void:
 		# A retired kit recipe can never be learned (the recipe table skips it), so a blueprint marked unknown could never be built (fireplace, Dino S-place 2 Nov).
 		check(bool(row.get("known", true)) or bool(row.get("locked", false)), "%s: known (or locked), since its kit recipe is retired and cannot be learned" % id)
 
-	check(live.size() == 212 and live.has("thatch_roof_65") and live.has("handcart") and live.has("food_preparation_table") and live.has("fireplace_cooking_crane") and live.has("warehouse_desk") and live.has("large_wooden_chest") and live.has("grindstone") and live.has("leatherworking_table") and live.has("tailors_table") and live.has("loom") and live.has("mixer") and live.has("engineered_wall") and live.has("fortified_wall_top") and not live.has("log_bench") and not live.has("log_shelf") and live.has("wooden_crate") and live.has("iron_chest") and live.has("preserving_jar") and live.has("root_cellar") and not live.has("iron_anvil") and not live.has("clay_bloomery") and live.has("smelter") and live.has("large_forge") and live.has("master_forge") and live.has("bellows") and live.has("quenching_trough") and live.has("storage_jar") and live.has("kiln") and live.has("oil_press") and live.has("stone_raised_cistern") and live.has("stone_well") and live.has("stone_garden_plot") and live.has("wooden_torch_post") and live.has("iron_brazier") and live.has("double_doorway") and live.has("wooden_railing") and live.has("stone_workbench") and live.has("wooden_barrel") and live.has("stone_pillar") and live.has("brick_roof_corner") and live.has("log_foundation") and live.has("brick_window") and live.has("thatch_fence") and live.has("iron_gate") and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and not live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
+	check(live.size() == 260 and live.has("thatch_roof_65") and live.has("handcart") and live.has("food_preparation_table") and live.has("fireplace_cooking_crane") and live.has("warehouse_desk") and live.has("large_wooden_chest") and live.has("grindstone") and live.has("leatherworking_table") and live.has("tailors_table") and live.has("loom") and live.has("mixer") and live.has("engineered_wall") and live.has("fortified_wall_top") and not live.has("log_bench") and not live.has("log_shelf") and live.has("wooden_crate") and live.has("iron_chest") and live.has("preserving_jar") and live.has("root_cellar") and not live.has("iron_anvil") and not live.has("clay_bloomery") and live.has("smelter") and live.has("large_forge") and live.has("master_forge") and live.has("bellows") and live.has("quenching_trough") and live.has("storage_jar") and live.has("kiln") and live.has("oil_press") and live.has("stone_raised_cistern") and live.has("stone_well") and live.has("stone_garden_plot") and live.has("wooden_torch_post") and live.has("iron_brazier") and live.has("double_doorway") and live.has("wooden_railing") and live.has("stone_workbench") and live.has("wooden_barrel") and live.has("stone_pillar") and live.has("brick_roof_corner") and live.has("log_foundation") and live.has("brick_window") and live.has("thatch_fence") and live.has("iron_gate") and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and not live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven") and live.has("vice"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
 
 	# Dave 10 Nov 2026 (docs/design/buildables_plan.md): no hammer blueprint needs a workbench near.
+	_door_data_checks(live)
 	check(live.values().all(func(r): return str(r.get("station", "")) != "workbench"), "no hammer blueprint needs a workbench")
 
 	# Place: a hammer, the station near at its level, every material; a short pack takes nothing. No row names a station any more, so
