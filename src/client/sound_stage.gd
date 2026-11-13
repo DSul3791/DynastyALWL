@@ -17,6 +17,7 @@ extends Node
 # replace them under the same names (name_N.ogg; every variant found is used).
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const RainAudio := preload("res://src/shared/rain_audio.gd")
 const AmbientScript := preload("res://src/client/ambient_life.gd")
 const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
@@ -1441,13 +1442,28 @@ func splash_ground(body: CharacterBody3D) -> String:
 
 	var surface_kind: String = str(SOIL_SURFACE.get(soil, "dirt"))
 
-	if surface_kind == "mud" or (surface_kind in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
+	if _rain_mud(feet, soil, surface_kind, body):
 		return "mud"
 
 	if surface_kind == "dirt" and _grass != null and _grass.grass_at(feet.x, feet.z, soil).x > 0.3:
 		return "grass"
 
 	return {"leaves": "litter", "stone": "stone", "sand": "sand", "gravel": "gravel"}.get(surface_kind, "dirt")
+
+
+# Is the loose ground under the feet soaked mud for the rain sounds? True mud soil always; soaked dirt or leaves only where a puddle is drawn at the feet (puddles.gd water_under, RainAudio.is_mud).
+# Without puddles (headless checks) soaked ground counts as standing water, as before. The puddle test reads nothing when no puddle is shown (BUG-004).
+func _rain_mud(feet: Vector3, soil: int, surface_kind: String, body: CharacterBody3D) -> bool:
+	var soaked: bool = weather.ground_wet >= RAIN_SOAK
+	var standing: float = 0.0
+
+	if surface_kind in ["dirt", "leaves"] and soaked:
+		if puddles == null:
+			standing = 1.0
+		elif puddles.shown > 0.001:
+			standing = puddles.water_under(feet, soil, body.get_floor_normal().y if body.is_on_floor() else 1.0)
+
+	return RainAudio.is_mud(surface_kind, soaked, standing)
 
 
 func rain_ground(body: CharacterBody3D) -> String:
@@ -1457,7 +1473,8 @@ func rain_ground(body: CharacterBody3D) -> String:
 	if floor_surface in ["slab", "plank", "path"]:
 		return "stone"
 
-	var soil: int = _ground_under(body.global_position - Vector3(0.0, FEET_M, 0.0))
+	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
+	var soil: int = _ground_under(feet)
 
 	if soil < 0 or soil >= Layout.MATERIAL_ROCK:
 		return "stone"
@@ -1467,7 +1484,7 @@ func rain_ground(body: CharacterBody3D) -> String:
 	if ground == "stone":
 		return "stone"
 
-	if ground == "mud" or (ground in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
+	if _rain_mud(feet, soil, ground, body):
 		return "mud"
 
 	if ground == "leaves":

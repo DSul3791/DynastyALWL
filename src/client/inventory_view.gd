@@ -41,6 +41,7 @@ const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle 
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
+var _flame_lights: Array = []           # the lit fire lights that are on (nearest MAX_FIRE_LIGHTS), set by _update_fire_lights
 var open: bool = false
 var table
 var inventory
@@ -1177,6 +1178,8 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	_flicker_flames()
+
 	if not _warm_queue.is_empty():
 		var tw: int = FrameProbe.start()
 		_warm_step()
@@ -1645,6 +1648,8 @@ func _update_fire_lights() -> void:
 		if light != null:
 			lit.append([here.distance_to(entry["pos"]), light])
 
+	_flame_lights.clear()
+
 	if lit.is_empty():
 		return   # no fires or lanterns near: nothing to sort or flicker
 
@@ -1655,7 +1660,23 @@ func _update_fire_lights() -> void:
 	for n in lit.size():
 		var light: Light3D = lit[n][1]
 		light.visible = n < limit
-		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(ticks * 0.004 + float(n) * 2.1) + 0.02 * sin(ticks * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
+
+		if light.has_meta("flame_flicker"):
+			if light.visible:
+				_flame_lights.append(light)   # flickered every frame by _flicker_flames: its flame beats at 9 to 11 Hz, a 200 ms step would alias it
+		else:
+			light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(ticks * 0.004 + float(n) * 2.1) + 0.02 * sin(ticks * 0.0091 + float(n)))   # a lantern, coals or fixture: a gentle, slow flicker of a few percent
+
+
+# The switched-on fire lights flicker with their flame, every frame (BUG-002): the energy and the colour together, a phase of each light's own so no two pulse together.
+func _flicker_flames() -> void:
+	var seconds: float = float(Time.get_ticks_msec()) * 0.001
+
+	for light in _flame_lights:
+		if is_instance_valid(light):
+			var swing: float = BuildingLook.flame_flicker(seconds, float((light as Light3D).get_instance_id() % 628) * 0.01)
+			(light as Light3D).light_energy = float(light.get_meta("base_energy")) * swing
+			(light as Light3D).light_color = BuildingLook.flame_flicker_color(light.get_meta("base_color"), swing)
 
 
 # Is a fire light that is switched on within `radius` of the point?
