@@ -383,11 +383,11 @@ Dave approved ChatGPT's Weapons Proposal 2 in full, plus his own Poison Arrow re
 
 **Counts for this category:** 21 existing weapons (2 renamed); 4 existing arrows kept; 29 ADD rows (24 weapons, 3 arrows, 2 bolts); 2 new FUTURE rows (Steel bolt, Iron - Lance); 0 retired. With the 8 cross-listed tools and the poison-arrow rule, this is the 65-entry roster Dave approved.
 
-**3.7 reconciliation against the data (Claude, 12 Nov; desk review of `items.json`, `recipes.json`, `clothing.json` on dev `7f8aabf4`):**
+**3.7 armour data evidence:** the following table records source-data observations and pending gameplay work, updated for the 13 Nov station tiers. A row reporting that an item exists is **static evidence only**, not a pass of the new full production route or real in-game equipment testing.
 
 | Check | Finding | Result / resolution |
 |---|---|---|
-| Ids and names | All 8 core armour rows and all 8 cross-listed clothing rows exist with the names and numbers above. The 6 metal core rows (326, 328, 329, 330, 331, 838) are FUTURE; Leather - Jerkin 325 and Fibre - Gambeson 327 are live. | PASS. Statuses unchanged in Appendix A. |
+| Ids and names | The 12 Nov data contained 8 core armour rows and 8 cross-listed clothing rows; the 6 metal core rows (326, 328, 329, 330, 331, 838) were FUTURE in that snapshot. | **STATIC SNAPSHOT**, not proof they are craftable today or that the newest station requirements are implemented. |
 | Recipes and stations | Primitive hide pieces by hand with Bone Needle and Thread; leather gear at Leatherworking Table, cloth at Tailor's Table. Bronze Helm/Scale at **Primitive Smithy**, Iron armour at **Improved/Advanced Smithy**, Steel armour at **Advanced/Master Smithy**. No standalone Stone Forge, Bronze Smithy detour or steel smelting at a forge. | Use actual item recipe tiers and test each crafted armour family. |
 | Materials for the 14 new rows | Everything they plausibly need already exists: Iron and Steel ingots, Rivets 184 (Smithy), Leather, Heavy leather 235 (Tanning rack), Fibre and Wool cloth (Loom). | PASS. Exact costs in s5. |
 | Locked recipes | The six metal armour recipes (215, 217–220, 397) carry `locked`, like the metal weapons. | NOTE. Unlocking follows the same rule as metal weapons; no armour-only rule. |
@@ -1063,7 +1063,7 @@ The previous 12 Nov Draft 18 static review included earlier forge/smelter assump
 
 Use [PLAYER_GOALS_REWARDS_AUDIT.md](PLAYER_GOALS_REWARDS_AUDIT.md) as the unchanged baseline for the 651 goals and [PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md](PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md) for all 80 finding dispositions. Verify the fresh non-admin route and all newly defined stations/recipes, not legacy code assumptions. No numeric improvement to the original goal audit may be claimed until tests run.
 
-## 7. JSON change list (none made; all wait for Dave's approval of this catalog; order and agents in `CATALOG_IMPLEMENTATION_PLAN.md`)
+## 7. Current target JSON/code reconciliation list (the earlier Mission 001 baseline was implemented; the 13 Nov changes below still require reviewed implementation)
 
 1. **Retire:** items 45, 238, 298, 353, 795, 827 and the 16 species `lumber_*` and `beam_*` rows; recipes 26, 152, 187, 227, 230, 367; blueprints 162 and 164 become `hidden` (not buildable, still used for take-down refunds; `CATALOG_SAVE_MIGRATION.md` rule 6); structures `clay_bloomery` (state 200) and `iron_anvil` (state 204) stay loadable. Each retirement lands in the phase that delivers its replacement. Woodworking table rows: PR #1036.
 2. **Durability:** stone, wooden and primitive tools and weapons (6, 11, 222, 244, 297, 19, 221, 247, 293, 7, 313, 295) and the Bone - Needle 49 lose `repair`; stone tools lose `edge`. Metal tools: `repair_station` per crafting station, `edge` on sharpening-eligible metal tools. `drops.json`: replace `tool_wear.repair_restores` and `tool_wear.hone`.
