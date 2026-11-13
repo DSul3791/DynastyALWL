@@ -24,6 +24,7 @@ R = D("items/recipes.json")["recipes"]; B = D("items/blueprints.json")["blueprin
 
 by_goal = collections.defaultdict(list)
 for fid, f in LF.items():
+    if fid.startswith("_"): continue
     for gid in f.get("goals", []):
         by_goal[gid].append(fid)
 
@@ -54,8 +55,9 @@ for g in goals:
     for fid in fids:
         eff = LF[fid].get("status_effect", "NEEDS_CORRECTION")
         if STATUS_RANK.get(eff, 0) > STATUS_RANK[status]: status = eff
-    runtime = r.get("runtime_support") or kind_rt.get("support") or "UNKNOWN"
-    if status == "PASS" and runtime != "EXISTING": status = "NEEDS_TEST"
+    # runtime support is reported separately from design status (brief: three independent columns).
+    # craft/build are PARTIAL only for the specific paths listed per goal in ws_runtime.json goals.
+    runtime = r.get("runtime_support") or ("EXISTING" if g["kind"] in ("craft", "build") else kind_rt.get("support")) or "UNKNOWN"
     evidence = LF.get("_evidence_overrides", {}).get(gid) if isinstance(LF.get("_evidence_overrides"), dict) else None
     evidence = evidence or ("CODE_VERIFIED" if (c or r or g["kind"] in ("craft", "build")) else "DOCUMENT_ONLY")
     # acquisition evidence for gather goals and raw inputs of this goal
@@ -112,7 +114,7 @@ for x in back:
     if x["recommended_reward_copper"] and not x["recommended_reward_copper"].isdigit(): errs.append("%s bad recommended reward" % x["goal_id"])
     if x["design_status"] not in STATUS_RANK and x["record_type"] == "ORIGINAL": errs.append("%s bad status" % x["goal_id"])
     for f in x["finding_ids"].split():
-        if f not in LF: errs.append("%s unknown finding %s" % (x["goal_id"], f))
+        if f not in LF or f.startswith("_"): errs.append("%s unknown finding %s" % (x["goal_id"], f))
 stats = dict(rows=len(back), original=len(orig), adds=len(back) - len(orig),
              design_status=collections.Counter(x["design_status"] for x in orig),
              evidence_level=collections.Counter(x["evidence_level"] for x in orig),
