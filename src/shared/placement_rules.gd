@@ -706,8 +706,8 @@ static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, he
 	return "steep" if high - low > limit else ""
 
 
-# "float" when a spot is too far above or below the terrain under it, else "" (the server's "You cannot place that there"; the ghost asks the same so a green
-# ghost is never refused for it). `y` is the spot's height with a wheel lift taken off, `ground` the terrain height at its x and z, `on_base` what snap
+# "float" when a spot is too far above or below the terrain under it, else "" (the server's "You cannot place that there"; the ghost asks the same, wherever it can read the
+# terrain, so it goes red for it too). `y` is the spot's height with a wheel lift taken off, `ground` the terrain height at its x and z, `on_base` what snap
 # returned (the spot's height comes from a foundation, not the ground), `stacked` that snap stacked a foundation on a foundation (the reach grows by a
 # body per layer). A piece that stands ON a foundation (wall, floor, pillar, railing, wall top, a fire) rests on what the foundation's own check passed: the
 # ground under the edge of a lifted or stacked foundation may lie further below than any reach, and refusing it left a green ghost that never placed (BUG-009).
