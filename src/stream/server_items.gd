@@ -2978,7 +2978,7 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
-func _hoe_grade_point(peer: int, inv, _which: int, at: Vector3, held_slot: int) -> void:
+func _hoe_grade_point(peer: int, inv, which: int, at: Vector3, held_slot: int) -> void:
 	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or _swing_tool(peer, inv, held_slot, "hoe") < 0:
 		return
 
@@ -2990,7 +2990,7 @@ func _hoe_grade_point(peer: int, inv, _which: int, at: Vector3, held_slot: int) 
 	var here: Vector3 = Vector3(at.x, h, at.z)
 	var before: Array = _grade_points.get(peer, [null, null])
 	_grade_points[peer] = [before[1] if before[1] != null else here, here]   # the last two markers, for the manual grade stroke
-	_road_marker(peer, here)
+	_road_marker(peer, here, which == 1)
 
 
 # The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B follows the ground, averaged in 3 m sections (no straight ramp)
@@ -3004,12 +3004,13 @@ const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := 1.0
 const ROAD_DEPTH_M := 0.5
 const ROAD_SECTION_M := 3.0   # the ground is averaged over sections this long along the line
-var _roads: Dictionary = {}   # peer -> {"head": where the road has got to, "markers": [Vector3] waiting, "seg": null or {"a", "b", "n": stations, "i": next station, "wait": seconds to the next one}}
+var _roads: Dictionary = {}   # peer -> {"head": where the road has got to, "markers": [Vector3] waiting, "built": true once a stretch has been taken up (a job that has not is still being surveyed), "seg": null or {"a", "b", "n": stations, "i": next station, "wait": seconds to the next one}}
 
 
 # Surveyor mode (Dave 3 Nov 2026): the player drops markers while walking. Markers belong to the player who set them (the peer id keys the job, so a
 # builder never chases another player's markers). The first marker of an idle job is where the road starts; after that the builder takes the nearest
-# remaining marker to where it has got to, builds toward it, deletes it on arrival and goes for the next nearest. The job is done when none are left.
+# remaining marker to where it has got to, builds toward it, deletes it on arrival and goes for the next nearest. The job is done when it has built and none are left;
+# before its first stretch it is only being surveyed (the start marker is set, nothing to build toward yet) and waits for the next marker (BUG-007).
 const ROAD_MAX_MARKERS := 24
 
 
@@ -3029,10 +3030,15 @@ func _road_abandon(peer: int, job: Dictionary) -> void:
 		_marker_done(peer, marker)
 
 
-func _road_marker(peer: int, here: Vector3) -> void:
+# chained: the client set this marker within 40 m of the one before it (the road goes on); false starts a road. A survey that has only its start marker is
+# dropped for a marker that starts a road elsewhere (its flag comes down), so a lone start marker can always be walked away from.
+func _road_marker(peer: int, here: Vector3, chained: bool) -> void:
+	if _roads.has(peer) and not chained and not _roads[peer]["built"] and _roads[peer]["seg"] == null and _roads[peer]["markers"].is_empty():
+		_road_abandon(peer, _roads[peer])
+
 	if not _roads.has(peer):
-		_roads[peer] = {"head": here, "markers": [], "seg": null}
-		_say(peer, "Road started at this marker: set more markers as you walk and the road builds toward the nearest one.")
+		_roads[peer] = {"head": here, "markers": [], "built": false, "seg": null}
+		_say(peer, "Survey begun at this marker: set the next marker and the road builds toward it.")
 		return
 
 	var job: Dictionary = _roads[peer]
@@ -3042,7 +3048,7 @@ func _road_marker(peer: int, here: Vector3) -> void:
 		return
 
 	job["markers"].append(here)
-	_say(peer, "Marker set: the road builds toward the nearest one, then the next.")
+	_say(peer, "Marker set: the road builds toward the nearest one, then the next." if job["built"] else "Marker set: the road builds toward it from the first marker.")
 
 
 # Takes the nearest marker to the head as the next stretch; returns false when no markers are left.
@@ -3072,6 +3078,7 @@ func _road_next_segment(peer: int, job: Dictionary) -> bool:
 			continue
 
 		job["seg"] = {"a": head, "b": target, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
+		job["built"] = true
 		return true
 
 	return false
@@ -3090,7 +3097,10 @@ func _road_tick(delta: float) -> void:
 			continue
 
 		if job["seg"] == null and not _road_next_segment(peer, job):
-			_roads.erase(peer)   # no markers left: the road is done
+			if not job["built"]:
+				continue   # only the start marker so far: still being surveyed, there is no road to finish (BUG-007)
+
+			_roads.erase(peer)   # a road was built and no markers are left: the road is done
 			_marker_done(peer, job["head"])
 			_say(peer, "The road is finished.")
 			continue
