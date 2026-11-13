@@ -1,8 +1,10 @@
 # Dynasty master items catalog
 
+**Current progression authority:** Sections **2.1–2.7** and **3.3** contain the consolidated 13 Nov design; newer source reconciliation is detailed in [goal decision recovery](PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md). Historical 12 Nov catalog counts and the generated Appendix A describe **existing data**, not unimplemented target items. No older metalworking or station rule should be treated as a live alternative.
+
 **Current door authority:** Section 3.0 contains the complete approved separate-door design and exact recipes. Doorways are empty frames; doors are independent items. The historical Draft 18 totals and generated Appendix A below are an unreconciled older inventory snapshot, **not current door design instructions**. Existing IDs are preserved until catalog implementation reconciles them.
 
-**Status: DRAFT 18 — EVERY CATEGORY HAS AN OWNER DECISION ([D1]–[D17]); NO OPEN OWNER QUESTIONS; SUBMITTED FOR DAVE'S FINAL APPROVAL OF THE COMPLETE CATALOG. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED UNTIL HE APPROVES IT.** All Dave rulings ([B], [D1]–[D17], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
+**Status:** Owner-approved baseline categories with newer creator-approved metallurgy, resource-bin and smithy-repair target design integrated (13 Nov 2026). Existing code/data may still implement the older system; implementation requires a separate reviewed change, not an old-catalog rule. The item IDs and generated inventory are preserved until the corresponding implementation updates them. All Dave rulings ([B], [D1]–[D17], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 **Companion reference documents (not separate sources of item-approval authority):** [Storage, warehouse cargo and locks](STORAGE_WAREHOUSING_DESIGN.md); [Food preparation, preservation and edible boards](FOOD_PREPARATION_PRESERVATION_SERVING.md). The final audit is [CATALOG_FINAL_AUDIT_2026-11-12.md](CATALOG_FINAL_AUDIT_2026-11-12.md), the implementation plan [CATALOG_IMPLEMENTATION_PLAN.md](CATALOG_IMPLEMENTATION_PLAN.md) and the save rules [CATALOG_SAVE_MIGRATION.md](CATALOG_SAVE_MIGRATION.md); the earlier food and storage audit is [FOOD_STORAGE_AUDIT_2026-11-12.md](FOOD_STORAGE_AUDIT_2026-11-12.md); ChatGPT's brief is [CLAUDE_FOOD_STORAGE_HANDOFF.md](CLAUDE_FOOD_STORAGE_HANDOFF.md). These elaborate owner decisions and list future tests. This master catalog is authoritative for approved items and counts.
 
@@ -52,10 +54,10 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 
 | Family | Ladder | Role |
 |---|---|---|
-| Axe | Stone, Bronze, Iron, Steel | Fells; chops logs into blocks and blocks into firewood [D1]. Sharpened (metal). |
-| Pickaxe | Stone, Bronze, Iron, Steel | Mines. Sharpened (metal). |
+| Axe | Stone, Bronze, Iron, Steel; Copper tool family newly approved but exact variants need a vetted recipe list | Fells and chops wood. No inventing every Copper variant by extrapolation. |
+| Pickaxe | Stone, Bronze, Iron, Steel; Copper candidate requires verified useful mining role | Stone pick mines Copper and Tin; Bronze pick mines Iron. Copper tools must not cause a progression dependency cycle. |
 | Spade | Wooden, Iron, Steel (Stone retired [B]; no Bronze) | Digs, including bog iron. |
-| Hammer | Wooden, Stone, Bronze, Iron, Steel | Builds. Better hammers gain only automatic material-sourcing range and durability. Any metal hammer builds any tier (decision 73). Not needed for smithing: the Smithy has built-in tools [D1]. |
+| Hammer | Wooden, Stone, Bronze, Iron, Steel | Builds and repairs structures. **Right-click → Repair** with any ordinary hammer, NOT War Hammers. Appropriate materials may come from carried items, nearby storage or nearby ground. Any metal hammer builds any tier. Smithy crafting uses built-in tools. |
 | Hoe | Wooden, Stone, Iron, Steel (no Bronze) | Six modes: Flatten, Smooth (slope-preserving averaging), Pathen, Survey a Road (two stakes, pathfinding), Create Garden Plot, Plant. |
 | Knife | Stone, Bronze, Iron, Steel | A weapon too; harvests carcasses progressively by repeated attacks. Sharpened (metal). |
 | Hand saw | Iron, Steel (no Bronze) | Same yields as the sawmill, much slower [D1]. |
@@ -74,6 +76,7 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 6. Sharpening restores sharpness to 100 % and permanently lowers maximum durability, in proportion to the sharpening [D1].
 7. Portable whetstone sharpening and the stationary grindstone are separate mechanics. Whetstone: with accessible water, the player's eligible tools are sharpened automatically one after another, up to five real minutes for a fully dull tool, using nearby seating where there is some. Grindstone: faster, and an NPC can operate it [D1].
 8. Sharpening applies to metal axes, pickaxes and knives, and to other metal edged tools where it fits (saws, sickles, scythes, chisels). It is not applied to hammers, hoes and spades; those follow rules 4 and 5.
+9. **Smithy workstation breakage:** each placed smithy has persistent durability, increased wear when higher-tier metal is forged on a lower-tier anvil, remains in place when it reaches zero and becomes unusable for normal crafting. Attempting normal access shows **"Needs repair"**. Equipped ordinary tool hammer **right-click → Repair** restores the smithy only if the required materials are carried, nearby in eligible storage, or lying on nearby ground per existing sourcing. War Hammers cannot repair. No material consumption on failed repair. Exact restoration and materials remain for balancing.
 
 ### 2.3 Wood and graded furniture [D1][R][B][C][D4]
 
@@ -90,24 +93,33 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 
 Not retired. An optional firewood workstation: players still chop by hand anywhere; open it, choose Soft or Hard Firewood and a quantity; it sources eligible raw wood from storage within a configurable radius and may take logs through blocks to firewood; it never consumes planks, boards or other crafted wood; own input and output capacities; an NPC woodcutter can run it later; look: chopping stump, embedded axe, firewood pile that grows and shrinks with its inventory.
 
-### 2.5 Universal workstation storage and sourcing [D1][R]
+### 2.5 Workstation inventories, resource bins and sourcing
 
-Every workstation where practical (Smelters, Blast Furnaces, Smithies, Kilns, Sawmills, Chopping Blocks, Looms, Tailor's Tables and others): configurable storage capacity; input and output capacities may differ; finished products stay in the station and never drop on the ground; full output pauses production; nearby authorized workstations draw ingredients from station inventories and other accessible storage within sourcing range (automatic material sourcing); players deposit and withdraw; world-visible inventory reflects actual quantities with efficient fill levels and grouped meshes; inputs and outputs look different.
+Production stations ordinarily have separate input and output storage and pause on full output. **Primitive Smelter is the exception: it has NO output inventory and drops each completed ingot on the ground in front**, retaining item conservation. Improved and Advanced Smelters instead keep ingots in their output rack. Normal construction, crafting and repair material sourcing retains the established player-inventory, nearby-storage **and nearby-ground** convention.
+
+**Resource bins — approved sizes/recipes:** Small **1,000 units = 16 Planks + 32 Nails**; Medium **5,000 = 32 Planks + 64 Nails**; Large **10,000 = 64 Planks + 128 Nails**. A newly empty bin takes the type of its **first deposited resource** and holds only that exact type until fully emptied, at which point it can be assigned anew. Coal and Charcoal must not be mixed. Wooden models have solid sides with open top; one resource-surface mesh rises/lowers by fill and vanishes when empty. Preserve and reconcile the existing `open_storage_bin` item ID where possible, rather than adding a duplicate Small bin. The previous 8-slot mixed-material storage rule is not the target for this bin family.
+
+**Automatic fuel loading only:** Every **300 seconds**, each smelter/smithy forge may take **available, already-produced Coal or Charcoal** from eligible dedicated bins, kilns and fires within **30 m** to fill its fuel hopper. Process consumer stations **oldest creation first** (persist order), skip full hoppers, and **do not check ownership/permissions** for this automatic pull. No wood, ground items, mixed chests or currently burning fuel; never auto-fill the Advanced Smelter's separate steel-carbon INPUT from the hopper. The 30 m/300 s/no-permission convention does not alter normal ground/storage material sourcing for repairs and builds.
 
 ### 2.6 Charcoal, fuel and kilns [D1]
 
 Any wood-burning fire or workstation may give a small charcoal byproduct. Charcoal can replace wood as fuel and burns longer. Mined Coal and wood Charcoal are distinct. A Kiln turns 3 m logs into charcoal at 100 per log; a basic kiln holds about six logs (up to 600 per batch); production is gradual, as a batch; if it keeps burning after conversion it slowly consumes its own charcoal; it can be put out and relit like a fire, and putting it out keeps the contents; players take charcoal out, or nearby authorized workstations draw it. Larger kiln tiers can hold more. No exact times or fuel rates are set.
 
-### 2.7 Metalworking [D1][R][B][C]
+### 2.7 Metalworking — owner-approved production tiers
 
-1. **Wilderness route to the first Iron Hand Saw, no purchases [D1]:** find bog iron (dug with any spade in wet ground); gather stone and clay and build a **Smelter**; gather kindling, sticks and firewood; make charcoal; smelt bog iron into Iron ingots; build a **Smithy** from stones, clay, logs and Iron ingots; craft the **Iron Hand Saw at the burning Smithy** from iron and wood.
-2. The Smithy contains a forge, anvil and bench (built-in blacksmithing tools); no player-held smithing hammer and no Saw Blade ingredient [D1].
-3. **Smelter**: copper, tin and iron ore (bog iron) to ingots, and bronze alloy. **Blast Furnace**: its advanced, high-capacity tier, and steel [D1]. No smelting at any forge or smithy [C].
-4. **Bronze before iron [C]:** the **Stone - Forge (88)** stays as the bronze smithy. It shapes bronze items only, has an iron-free cost, and does no smelting. The ordinary Smithy also works bronze, and additionally iron and steel. This keeps Bronze a real rung before Iron and keeps the wilderness route to the Iron Hand Saw.
-5. **Bellows and Quenching Trough are add-ons attached to the Smithy, not workstations [D4].** Bellows: faster warm-up and metalworking, lower fuel use [C]. The **Quenching Trough** upgrades the Smithy so it can make better metal goods; every plain recipe still works without it, so it never blocks progression. **Confirmed [C7]:** with the Quenching Trough attached, the Smithy can make eligible **steel** tools, weapons and armour as **Tempered** items. Tempering is a property of the **individual crafted instance**, not a duplicate master item definition or standalone workstation. It increases suitable maximum durability; slower sharpness loss applies **only to sharp-edged equipment**, never to blunt tools/weapons or armour without a sharpness mechanic. The name may show "Tempered" dynamically. It does not use craftsmanship or magical enhancement slots; it cannot be added by repair/reheating or stacked repeatedly. The normal steel recipe remains available without the add-on. Initial scope excludes bronze and low-carbon iron; specific bonuses, recipe effort and fuel remain balancing decisions.
-6. **Master Smithy**: a distinct, ornate prestige workshop for special and masterwork items with +1/+2 physical craftsmanship. Wizard enchantments are separate [D1].
-7. **Station rows [C]:** Brick - Forge 90 (`blacksmithy`) becomes the Smithy; the never-built Large forge rows 92/93 become the Blast Furnace; the never-built Master forge rows 94/95 become the Master Smithy; the standalone Anvil 827 retires, because the Smithy has its own anvil. Every reference, look, blueprint, recipe, name and test changes with the renames. Retired numbers are never reused.
-8. **No Clay Bloomery.** No public-release migration is needed: Dynasty has never been publicly released or played by other players [D1]. Dave's 12 Nov request still adds a safe one-time migration for local and playtest saves, so no retirement or change loses items (`CATALOG_SAVE_MIGRATION.md`).
+**Three Smelters:** **Primitive → Improved → Advanced**. **Four Smithies:** **Primitive → Improved → Advanced → Master**. Smelters make ingots; smithies shape tools and goods, **never ore**. These are separate buildable stations, not removable forge levels or standalone bellows/quencher/nearby anvil add-ons. No Clay Bloomery step or extra Blast Furnace tier exists.
+
+1. **Primitive Smelter**: built with **stone tools, stone and clay**, no metal, Planks or Nails; tall natural-draft chimney. Hopper **20 Coal/Charcoal**, material input **20**, **no output inventory** (ingots drop on ground). **20 seconds per ingot**; Copper, Tin and Bronze, not Iron.
+2. **Primitive Smithy**: similarly stone-tool accessible with stone anvil; works **Copper and Bronze** including fittings for the next stations; no requirement for an already-produced metal anvil.
+3. **Metal recipes**: no tracked smelter temperature. **1 Copper Ore → 1 Copper Ingot; 1 Tin Ore → 1 Tin Ingot; 1 Iron Ore → 1 Iron Ingot** at its capable tier; **1 Copper Ore + 1 Tin Ore → 2 Bronze Ingots**, not a pre-smelted ingot mix. Fuel in the hopper is separately consumed; exact burn rate is still unapproved.
+4. **Improved Smelter**: bronze fittings, hand-operated bellows; hopper **40**, input **40**, output rack **80**. Without a player on bellows works exactly like Primitive at **20 seconds/ingot** and cannot work iron; with player operating it works **30% faster** (**~15.38 seconds/ingot**) and allows Iron. Unfinished Iron jobs pause safely when bellows stop.
+5. **Improved Smithy**: forge and **bronze anvil**; works Copper/Bronze/Iron, but iron accelerates anvil/station wear. Crafts **Iron Saw** and **Iron Anvil**. Iron Saw makes Planks (6 per suitable 3 m softwood Log) and Hardwood Boards (4 per hardwood Log). No Planks/Boards may be prerequisite to building the first stations.
+6. **Advanced Smithy**: requires **Iron Anvil forged at Improved Smithy**; integrated forge, iron anvil and tool racks. Works Iron/Steel and produces **Steel Anvil**.
+7. **Advanced Smelter**: **ONE integrated station** with Windmill and **TWO mechanically driven bellows**; hopper **80**, input **80**, output rack **160**. Runs only with enough wind: in low/no wind progress is **ZERO**, preserving active batch and queue until wind returns. Nominal per-lane rate is **another 30% faster** than staffed Improved, and it processes **TWO ingots in parallel** (~11.83 seconds/two ingots at nominal sufficient wind). Stronger wind increases throughput according to a later tuned curve, not yields.
+8. **Steel ingredient**: Advanced Smelter requires **Iron Ore plus Coal or Charcoal in its MATERIAL INPUT** as carbon, and **separate Coal/Charcoal in the fuel hopper**. Iron without carbon input remains ordinary Iron. Exact carbon-to-iron ratio is not settled. No temperature simulation, extra yields or auto-mixing of fuel/carbon.
+9. **Master Smithy**: constructed with **Steel Anvil produced at Advanced Smithy**; integrated **Quenching Trough**, ornate equipment and +1/+2 physical masterwork craftsmanship. Eligible Tempered steel items gain suitable individual max-durability benefit and slower edge dulling only for edged items, without adding magic slots or inventing duplicate item IDs.
+10. **Durability and repair**: all Smithies follow s2.2 item 9. **War Hammers cannot repair**. No separate Repair Hammer item.
+11. The physical identifiers for earlier `stone_forge`, `blacksmithy`, `large_forge`, `master_forge`, Bellows/Quenching Trough/Anvil need careful mapping and save consideration. **Those legacy IDs are not additional available stations in this new design.** Keep stable IDs; resolve their mapping with the catalog implementation ledger rather than renumbering.
 
 ### 2.8 Leather and textiles [R][B][D1][C]
 
@@ -127,9 +139,7 @@ Any wood-burning fire or workstation may give a small charcoal byproduct. Charco
 6. **Permanent [DE]:** an enchantment can never be removed, replaced, overwritten, extracted, transferred or refunded. Each of the two magical slots may be filled only while empty, and the effect stays bound to its item for the item's lifetime. Physical craftsmanship is fixed when the item is crafted.
 7. **Eligibility [C]:** at first, individually tracked tools, weapons, shields, armour, clothing and gear. Food, ammunition, bulk materials and other stackable consumables are excluded. The slot schema is the same for every item. Enhanced items never merge with ordinary stacks. Enchanting single units of a normally stackable item is not supported and would need its own approval.
 
-### 2.10 Older rulings superseded
 
-Bellows dropped; Clay bloomery added; Large forge and Master forge parked with the anvil as the steel step; one forge model upgraded in tiers (Dave 25 Oct, superseded by his newer decision); Stone wedge lumber route; Saw blade as saw and sawmill part; hand saw at half the sawmill's yield; hone +25 % with a 75 % cap; repair anywhere restoring 50 %; grindstone skipped; kiln 2 Firewood → 2 Charcoal; planned Bronze Spade, Bronze Hoe, Bronze Saw and Iron Needle; chisel required at the Stonecutter's bench; four-word limit on dynamic names; Twine as sewing thread; enchantment overwrite (draft 4).
 
 ## 3. Catalog by row
 
@@ -238,21 +248,24 @@ These seven rows define **four distinct door configurations per tier = 28 door v
 | 205, 207 | timber_prop, timber_set | Post, Beam | KEEP | Building pieces. |
 | see s3.5 | | Graded furniture | UPDATE ×14, ADD ×6 [D4] | Families, grades, costs and looks in s3.5. |
 
-### 3.3 Metalworking, fuel and kilns
+### 3.3 Metalworking, fuel and kilns — station identity map
 
-| # | id | Name | Status | Change |
-|---|---|---|---|---|
-| new | | Smelter | ADD (APPROVED) | Blueprint: stone and clay. Smelting recipes 190, 191, 192 and alloy 185 move here. |
-| 88 | stone_forge | Stone - Forge | UPDATE (DECIDED) | Bronze smithy: shapes bronze items only, no smelting, iron-free cost (live: 24 Stone, 10 Clay, 2 Hide). |
-| 90 | blacksmithy | Brick - Forge → **Smithy** | UPDATE (DECIDED) | Blueprint 10: stones, clay, logs, Iron ingots; built-in forge, anvil, bench; must be burning to craft. Works bronze, iron and steel. |
-| 93 (92 kit) | large_forge | Large forge → **Blast Furnace** | UPDATE (DECIDED) | Goes live: steel (recipe 193) and advanced, high-capacity smelting. Kit 92 stays an unused future row. |
-| 95 (94 kit) | master_forge | Master forge → **Master Smithy** | UPDATE (DECIDED) | Goes live: prestige workshop, masterwork +1/+2. Kit 94 stays an unused future row. |
-| new | | Bellows, Quenching Trough | ADD (APPROVED) ×2 | Add-on structures to Smithy, NOT independent workstations. Quenching Trough enables better metalworking recipes/outputs in the upgraded Smithy; ordinary recipes remain. |
-| 827 | iron_anvil | Anvil | RETIRE (DECIDED) | Blueprint 164 and structure state 204 retire; kit 826 is already retired. |
-| 795 | clay_bloomery | Clay bloomery | RETIRE (APPROVED) | Structure state 200, blueprint 162, recipe 367 retire. |
-| 771 | kiln | Kiln | UPDATE (APPROVED) | Batch charcoal from logs (2.6); bricks, roof tiles, lime stay. |
-| 547 | charcoal | Charcoal | UPDATE (APPROVED) | 100 per log at the kiln; also a fire byproduct; can replace wood as fuel. |
-| 304 | coal | Coal | KEEP | Distinct mined fuel. |
+| Existing key / item | Current intended station | Function or change |
+|---|---|---|
+| `smelter` | **Primitive Smelter** | Stone/clay; 20 fuel, 20 input, no output rack; copper/tin/bronze. |
+| `stone_forge` #88 | **Primitive Smithy** | Stone anvil, Copper/Bronze working; map to existing ID where feasible. |
+| NEW station | **Improved Smelter** | Human-operated bellows; 40/40/80; staffed Iron and +30% speed. |
+| `blacksmithy` #90 | **Improved Smithy** | Bronze anvil; Iron Saw and Iron Anvil; accelerated wear while working Iron. |
+| NEW station | **Advanced Smithy** | Requires Iron Anvil; forges Iron/Steel and Steel Anvil. |
+| `large_forge` #93 | **Advanced Smelter** | ONE integrated windmill/dual-bellows structure, 80/80/160; Steel. |
+| `master_forge` #95 | **Master Smithy** | Requires Steel Anvil; integrated quencher; eligible Tempered/masterwork. |
+| Legacy Bellows / Quenching Trough add-on item/blueprint rows | **No standalone workstation/add-on progression** | Integrated features instead; retire/reconcile existing placed/saved forms at implementation. |
+| Legacy `iron_anvil` #827 (previously retired) | **Iron Anvil component needed**, plus new Steel Anvil component | Determine safe reactivation/new-ID mapping in catalog ledger; these are station construction materials, not free-standing proximity level-ups. |
+| Legacy `clay_bloomery` #795 | **Retired** | Not part of current gameplay. |
+| `kiln` #771 | **Kiln** | Keep 100 Charcoal per Log batch behavior, other kiln products. |
+| `coal` #304, `charcoal` #547 | **Distinct fuel resources** | Both are valid hopper fuel and steel INPUT carbon; neither mixed in a single assigned bin. |
+
+Exact seven station build material recipes and their component ID mapping remain open for later item-and-recipe design; **do not invent requirements or create circular dependencies**. This section names the approved capabilities, not completed runtime work.
 
 ### 3.4 Leather and textiles
 
@@ -845,7 +858,7 @@ The griddle, spit, grate, pan and cauldron should be **equipment or compatible a
 | Household (5/6) | Apothecary Cabinet | Herbs, tonics, remedies and appropriate medical supplies |
 | Household (6/6) | Bottle & Jar Rack | Stored vessels/preserves visible on shelves, appropriate size/contents |
 | Workshop (1/2) | Tool Cabinet | Real tools and repair equipment; distinct from existing tool-rack workstation upgrade |
-| Workshop (2/2) | Open Storage Bin | Loose stone, clay, ore, charcoal or similar materials, realistic contained bulk |
+| Workshop (2/2) | Resource Bin family (Small, Medium, Large) | **One material type at a time; first deposit assigns type, fully empty permits reassignment.** Existing Open Storage Bin item #1232 should be reconciled as the Small size if safe; upgrade sizes use the approved 1,000/5,000/10,000 capacities and 16/32, 32/64, 64/128 Planks/Nails recipes. |
 | Bulk (1/5) | Firewood Rack | Visibly stacked, drying/protected burn fuel |
 | Bulk (2/5) | Log Rack | Whole logs, substantial bulk and physical limits |
 | Bulk (3/5) | Lumber Rack | Planks, Hardwood Boards and beams without confusing them as interchangeable |
