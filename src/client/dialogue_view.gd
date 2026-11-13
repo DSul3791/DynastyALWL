@@ -41,6 +41,7 @@ var _sell_all_slots: Array = []             # pack slots the button would sell
 var _sell_all_total: int = 0
 var _shop_purse: RichTextLabel
 var _shop_title_label: Label
+var _talk_reply: Label                      # a server notice while talking (Hob's order of the day): the notice line sits behind the talk window now that it is mid-screen
 var _shop_reply: Label                      # the trader's last answer ("Sold ...", "I've bought all I can ..."): the notice line sits behind this window (TEST-003)
 var _name: Label = null
 var _text: Label = null
@@ -98,6 +99,11 @@ func _build(layer: CanvasLayer) -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.custom_minimum_size = Vector2(560, 0)
 	box.add_child(_text)
+	_talk_reply = Label.new()
+	_talk_reply.add_theme_font_size_override("font_size", FONT_PX)
+	_talk_reply.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	_talk_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(_talk_reply)
 	_choices = VBoxContainer.new()
 	box.add_child(_choices)
 	var shops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/shops.json"))
@@ -162,6 +168,7 @@ func _on_say(npc_id: String, npc_name: String, text: String, voice_id: String, c
 
 
 func _choose(index: int) -> void:
+	_talk_reply.text = ""   # cleared here, not in _on_say: the server sends a choice's notice before the next line
 	net.npc_talk.rpc_id(1, _npc_id, index)
 
 
@@ -195,6 +202,9 @@ func close() -> void:
 
 	if _shop_reply != null:
 		_shop_reply.text = ""
+
+	if _talk_reply != null:
+		_talk_reply.text = ""
 
 	if items != null and items.dialogue_open:
 		items.dialogue_open = false
@@ -423,10 +433,12 @@ func _refresh_shop() -> void:
 		_shop_sell_box.add_child(none)
 
 
-# While the trade window is open, the server's notices (the trader's answers to each deal) are shown in it.
+# While the trade or talk window is open, the server's notices (the trader's answers to each deal) are shown in it.
 func _on_notice(text: String) -> void:
 	if _shop_reply != null and _shop_panel != null and _shop_panel.visible:
 		_shop_reply.text = text
+	elif _talk_reply != null and _panel != null and _panel.visible:
+		_talk_reply.text = text
 
 
 func _update_sell_all() -> void:
