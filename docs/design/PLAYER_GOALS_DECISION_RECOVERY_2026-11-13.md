@@ -156,7 +156,32 @@ These can be **deferred without stopping root-fix implementation planning**, but
 - Oak bark historically supplies tannins for tanning, supporting the existing oak `tannin_bark` data; historical literature does **not** authorize adding a new seasonal restriction to the game. https://academic.oup.com/edinburgh-scholarship-online/book/28921/chapter-abstract/240982753
 - Godot community examples recommend persistent per-chunk revealed map masks and separating discovery data from presentation. Dynasty still specifically requires a **charcoal sketch with mapping skill**, not an exact exposed minimap. https://www.reddit.com/r/godot/comments/1t3f87z/minimap_with_fog_of_war_how_it_works/
 
-## 8. Iterative review checklist
+## 8. Independent goal-ID and data-coherence spot checks (second pass)
+
+**Every one of the 651 original goal IDs was parsed from `PLAYER_GOALS_AUDIT_LEDGER.csv`**, with the expected **118 MAIN + 533 ADDITIONAL** split and **323 INDIVIDUAL + 328 RULE** original audit review classifications. Read-only lookup of each `craft:<key>` and `build:<key>` goal against existing `data/items/recipes.json`, `items.json`, `blueprints.json` and `structures.json` found **0 missing matching item/recipe or blueprint/structure keys** in today's data. **This is only a key-existence check; not a claim that current recipes/goal instructions are correct, approved, obtainable, completable, or playtested.** As newer creator designs are implemented, the appropriate IDs, buildables, recipes and links must change together. All 328 RULE-only text rows still need person-level instruction review.
+
+### New creator-directed progression is not represented by existing goal IDs
+
+These goal concepts are **absent as written** from the original 651, because the owner's new metalworking/resource-bin designs came after the audit. They are coverage tasks for the next catalog revision, **not new approved coin payouts**, and preserving/migrating old stable IDs is preferred when semantics permit it:
+
+| Needed tutorial step | Today | Proposed resolution, no implicit game change |
+|---|---|---|
+| Primitive Smelter / Primitive Smithy | `build:smelter` and `build:stone_forge` exist, with old recipes/names | Review whether existing IDs can safely represent the replacement starter stations, or require a migration; do not silently add a duplicate Stone Forge |
+| Copper tools | No `craft:copper_axe`, `craft:copper_pickaxe`, `craft:copper_hammer` goals or associated live catalog items | Define the actually useful Copper tool tier and recipes; teach at least its first meaningful tool and verify its mining performance |
+| Improved Smelter | No `build:improved_smelter` | New distinct station goal and human-operated bellows interaction, only after blueprint/item/interaction exists |
+| Improved/Advanced Smithy | Old `build:blacksmithy`, `build:master_forge`, `build:bellows`, `build:quenching_trough` describe incompatible station/add-on layout; no `build:advanced_smithy` | Map/rename existing IDs safely, add distinct missing tier, fold built-in quencher into Master Smithy, prevent retired add-on goals becoming phantom promises |
+| Iron Anvil / Steel Anvil | No `craft:iron_anvil` or `craft:steel_anvil` goals or full new station prerequisites | Define proper component items/recipes at Improved and Advanced Smithies respectively; teach before the station requiring them |
+| Small/Medium/Large resource bins | Existing `build:open_storage_bin`, but no size-specific goal IDs | **Reuse existing Open Storage Bin where possible** rather than duplicating an approved storage role; new size upgrades and new use/assignment teaching require reviewed ID mapping |
+| Manually operate bellows and repair failed smithy | No matching goal IDs `activity:operate_bellows` or `activity:repair_smithy` | Consider short action-oriented activity steps; the audit already proposes a generic building-repair goal; avoid two redundant payouts for one repair |
+| Exploration / Map Scroll | No new map/scroll goal IDs | Defer new goals until skill/cartography mechanics and scroll recipe have been approved and genuinely run in game |
+
+**Concrete existing-bin conflict:** today's `open_storage_bin` is item **#1232**, blueprint **#227** (`6 Planks + 8 Wooden Pins`), with `8 slots`, `300 kg`, and an allow-list of mixed stone/ore/coal/charcoal material types. The newer owner-approved resource-bin sizes use **16 Planks + 32 Nails / 32 + 64 / 64 + 128**, item-count capacity **1,000/5,000/10,000**, and **ONE assigned resource at a time until emptied**. Do not create a duplicate `Small Resource Bin` alongside the legacy Open Storage Bin without a specific backward-compatible consolidation strategy. **Recommended, not yet an item-ID approval:** migrate/reuse the existing Open Storage Bin as the small size, then add medium and large; preserve any existing placed-bin contents during save migration, including legacy bins holding mixed items. Test this before renaming/disabling old IDs.
+
+**Concrete farming data inconsistency:** nine records (`oats, carrot, potato, cabbage, onion, peas, beet, flax, parsnip`) have singular `sow_season: "summer"` while their plural `sow_seasons: ["spring"]` specifies spring. This may be a stale legacy alias or a real seasonal rule conflict. Determine **which field the live server reads**, preserve its actual intended growing behavior, then consolidate to a single source and correct the instructions/tests. Do not introduce arbitrary restrictions on harvesting to hide the client-side missing sow/water/harvest controls.
+
+**Further static blind spots:** exact new build recipes for Primitive/Improved/Advanced/Master stations, Copper tool durability/rates, smelter fuel burn, steel carbon amount, smithy repair materials, mapping skills/scrolls, and output drop placement remain data/implementation work. The absence of a bad ID does NOT close any of the 144 original blocked-goal verdicts.
+
+## 9. Iterative review checklist
 
 - **Pass A, authority:** every `OWNER SETTLED` maps to an actual creator decision; suggestions are unmistakably labelled defaults. Historic audit and currency amounts unchanged.
 - **Pass B, dependency:** no iron-first tutorial, temperature tracking, separate windmill, early steel without carbon INPUT, automatic wood pull, invented Repair Hammer, mixed bins, or third-party/unknown world map.
@@ -164,4 +189,4 @@ These can be **deferred without stopping root-fix implementation planning**, but
 - **Pass D, UX:** simple Inventory/Crafting-style Journal, charcoal Map content, thin-border two-goal HUD, actual named interactions with no unnecessary new screens, no key conflicts.
 - **Pass E, external reality:** historical/reddit references only support feasibility and implementation techniques, never replace creator's simplified recipes or game rules.
 
-**Exit:** All 80 GA IDs have a disposition; all 11 original creator questions are answered, defaulted or transparently deferred; remaining owner dependencies are isolated. Implementation and final economy/goal activation remain separately gated.
+**Second-pass corroboration:** all 651 draft IDs structurally checked, newly missing milestone concepts identified, existing Open Storage Bin identity checked for collision, nine crop season-field disagreements flagged. **Exit:** All 80 GA IDs have a disposition; all 11 original creator questions are answered, defaulted or transparently deferred; remaining owner dependencies are isolated. Implementation and final economy/goal activation remain separately gated.
