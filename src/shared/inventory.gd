@@ -155,14 +155,18 @@ func add(number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}
 			counts[i] += put
 			left -= put
 
-	for pass_from in [maxi(bag_from, first), first]:
-		left = _fill_empty(number, left, stack, item_wear, item_inst, pass_from)
+	left = _fill_empty(number, left, stack, item_wear, item_inst, maxi(bag_from, first))
 
+	# A pack grows its backpack before anything new goes into an empty hotbar slot: the hotbar holds what the player puts there and the
+	# tools that go up by themselves (Dave 12 Nov 2026 23:03Z and 23:06Z). Only a pack at MAX_SLOTS falls back to the hotbar.
 	if left > 0 and grows and slot_count < MAX_SLOTS:
 		var from: int = slot_count
 		var stacks: int = ceili(float(left) / float(maxi(stack, 1)))
 		_resize(mini(slot_count + ceili(float(stacks) / float(GROW_STEP)) * GROW_STEP, MAX_SLOTS))
 		left = _fill_empty(number, left, stack, item_wear, item_inst, from)
+
+	if left > 0 and first < bag_from:
+		left = _fill_empty(number, left, stack, item_wear, item_inst, first)
 
 	return left
 
@@ -309,11 +313,10 @@ func take_from_slot(slot: int, count: int) -> Dictionary:
 	return {"number": number, "count": take, "wear": item_wear, "inst": item_inst}
 
 
-# Move a slot onto another: merge when the same item, else swap. A pack takes a move to just past its end (free_bag_slot on a full one)
-# by growing.
+# Move a slot onto another: merge when the same item, else swap. A full pack takes a move to just past its end (free_bag_slot) by growing.
 func move(from_slot: int, to_slot: int) -> void:
-	if grows and to_slot == slot_count and to_slot < MAX_SLOTS and from_slot >= 0 and from_slot < slot_count and numbers[from_slot] != 0:
-		_resize(mini(slot_count + GROW_STEP, MAX_SLOTS))
+	if to_slot == slot_count and from_slot >= 0 and from_slot < slot_count and numbers[from_slot] != 0 and free_bag_slot() == slot_count:
+		make_room()
 
 	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= slot_count or to_slot >= slot_count or numbers[from_slot] == 0:
 		return
@@ -376,6 +379,16 @@ func free_bag_slot() -> int:
 			return slot
 
 	return slot_count if grows and slot_count < MAX_SLOTS else -1
+
+
+# An empty backpack slot to put something in, growing a full pack by a step for it; -1 when there is none (a full container, MAX_SLOTS).
+func make_room() -> int:
+	var free: int = free_bag_slot()
+
+	if free == slot_count:
+		_resize(mini(slot_count + GROW_STEP, MAX_SLOTS))
+
+	return free
 
 
 # One byte per slot, 1 for a favourite: what the client is sent (protocol 99 favourites).

@@ -1664,16 +1664,26 @@ func fire_light_near(point: Vector3, radius: float) -> bool:
 	return false
 
 
+# The whole pack: at hello, and whenever the pack grows or shrinks (protocol 113), so it is handled like a slot update of every slot.
 func _on_full(bytes: PackedByteArray) -> void:
-	inventory.from_bytes(bytes)
+	var was: Array = []
+
+	for slot in inventory.slot_count:
+		was.append([inventory.numbers[slot], inventory.wear[slot], is_broken(slot), inventory.max_durability(slot)])
+
+	if not inventory.from_bytes(bytes):
+		return
 
 	if _selected >= inventory.slot_count:
-		_selected = -1   # the pack gave that slot back (protocol 113)
+		_selected = -1   # the pack gave that slot back
 
 	if _hover >= inventory.slot_count:
 		_hover = -1
-	_refresh()
-	refresh_hotbar()
+
+	for slot in mini(was.size(), inventory.slot_count):
+		_tool_cue(slot, int(was[slot][0]), int(was[slot][1]), bool(was[slot][2]), int(was[slot][3]))
+
+	_after_slots()
 
 
 # Protocol 106: a count byte, 9 bytes per changed slot (slot, u32 number, u16 count, u16 wear), then the instance data of those slots (Inventory.inst_bytes).
@@ -1697,16 +1707,27 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			inventory.counts[slot] = bytes.decode_u16(at + 5)
 			inventory.wear[slot] = bytes.decode_u16(at + 7)
 			inventory.inst[slot] = insts.get(slot, {}) if inventory.numbers[slot] != 0 else {}
+			_tool_cue(slot, was_number, was_wear, was_broken, was_most)
 
-			if tool_event.is_valid() and inventory.numbers[slot] == was_number and was_number != 0:
-				if is_broken(slot) and not was_broken:
-					tool_event.call("broke")
-				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
-					tool_event.call("repaired")
-			elif tool_event.is_valid() and was_number != 0 and inventory.numbers[slot] == 0 and SmithingRules.disposable(table.entry(table.id_of(was_number))) and was_wear + DISPOSABLE_BREAK_WEAR >= was_most:
-				# shortcut: a disposable tool that leaves its slot within one heavy use of its end is taken as broken (the server clears it at zero); dropping one that worn plays the break sound too, revisit if that is heard in play
-				tool_event.call("broke")
+	_after_slots()
 
+
+# The break and repair sounds of a slot that just changed.
+func _tool_cue(slot: int, was_number: int, was_wear: int, was_broken: bool, was_most: int) -> void:
+	if not tool_event.is_valid():
+		return
+
+	if inventory.numbers[slot] == was_number and was_number != 0:
+		if is_broken(slot) and not was_broken:
+			tool_event.call("broke")
+		elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
+			tool_event.call("repaired")
+	elif was_number != 0 and inventory.numbers[slot] == 0 and SmithingRules.disposable(table.entry(table.id_of(was_number))) and was_wear + DISPOSABLE_BREAK_WEAR >= was_most:
+		# shortcut: a disposable tool that leaves its slot within one heavy use of its end is taken as broken (the server clears it at zero); dropping one that worn plays the break sound too, revisit if that is heard in play
+		tool_event.call("broke")
+
+
+func _after_slots() -> void:
 	_queue_refresh()
 	_container_part.refresh()
 	_storage_ui.refresh_view()   # the storage window's pack list follows the pack

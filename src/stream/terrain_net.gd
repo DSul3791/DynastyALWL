@@ -723,7 +723,7 @@ func breath(deciseconds: int) -> void:
 	breath_received.emit(deciseconds)
 
 
-# The contents of a chest the player opened (30 slots in the inventory byte format).
+# The contents of a chest the player opened (its slots in the inventory byte format: a body's remains may hold more than 30, protocol 113).
 @rpc("authority", "call_remote", "reliable")
 func chest_contents(id: int, bytes: PackedByteArray) -> void:
 	chest_received.emit(id, bytes)

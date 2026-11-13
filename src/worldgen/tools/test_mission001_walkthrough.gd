@@ -390,7 +390,7 @@ func make_charcoal(wanted: int) -> void:
 	craft("charcoal", crafts)
 
 
-# What the player has no more use for is put down a few steps off, out of reach of the next pickups (a 30-slot pack fills).
+# What the player has no more use for is put down a few steps off, out of reach of the next pickups (the carry limit fills).
 func leave(keep: Dictionary) -> void:
 	for id in keep:
 		while slot_of(id) >= 0 and have(id) > int(keep[id]):

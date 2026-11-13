@@ -556,7 +556,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 	FoodEffects.resume(_food_of(peer), _now_game_s())   # and run on from where they stopped
 
-	if str(_characters[key].get("shoulder", "")) != "":   # before 1 Nov 2026 the large log was kept apart from the pack: it moves into the pack (kept aside while the pack is full)
+	if str(_characters[key].get("shoulder", "")) != "":   # before 1 Nov 2026 the large log was kept apart from the pack: it moves into the pack (kept aside only for a pack at MAX_SLOTS)
 		var legacy: int = table.number_of(str(_characters[key]["shoulder"]))
 
 		if legacy <= 0 or _inventories[key].add(legacy, 1) == 0:
@@ -3513,10 +3513,7 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 
 	_last_gather[peer] = now_ms
 	var before: Array = _snapshot(inv)
-	var left: int = inv.add(table.number_of("stick"), 1)
-
-	if left > 0:
-		drop_in_world(table.number_of("stick"), left, _peer_pos[peer])
+	_take_in(peer, inv, table.number_of("stick"), 1)
 
 	_send_changes(peer, inv, before)
 	_dirty = true
@@ -3557,11 +3554,8 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 	state["taken"] = int(state["taken"]) + 1
 	_mined[patch] = state
 	var before: Array = _snapshot(inv)
-	var left: int = inv.add(table.number_of("stone"), 1)
+	_take_in(peer, inv, table.number_of("stone"), 1)
 	practice(peer, "mine_rock")
-
-	if left > 0:
-		drop_in_world(table.number_of("stone"), left, _peer_pos[peer])
 
 	_send_changes(peer, inv, before)
 	_dirty = true
@@ -4691,7 +4685,7 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 		wanted -= share - over
 
 		if over > 0:
-			break   # the pack is full
+			break   # the pack is at MAX_SLOTS
 
 	if taken == 0:
 		_reject(peer, 2)
@@ -5575,7 +5569,7 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 			ore_item = table.number_of(piece_id)
 
 	if ore_item > 0:
-		inv.add(ore_item, 1)
+		_take_in(peer, inv, ore_item, 1)
 		out = 1
 
 	# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule is one piece, never a double.
@@ -5589,10 +5583,10 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	if ore_item > 0:
 		pass   # the piece was ore
 	elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
-		inv.add(flint_n, 1)
+		_take_in(peer, inv, flint_n, 1)
 		out = 1
 	else:
-		inv.add(stone, out)
+		_take_in(peer, inv, stone, out)
 
 	practice(peer, "mine_rock")   # breaking a boulder is Mining too
 	it["count"] = int(it["count"]) - out
@@ -7120,19 +7114,21 @@ func peers_near(position: Vector3, radius: float) -> Array:
 	return out
 
 
-# Splits `count` off a stack into the first empty slot, the backpack's first in a pack (the stack keeps at least one).
+# Splits `count` off a stack into the backpack's first empty slot; a full pack grows a step for it (protocol 113). The stack keeps at least one.
 func _split(inv, slot: int, count: int) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or count < 1 or count >= inv.counts[slot]:
 		return
 
-	for target in range(inv.bag_from, inv.slot_count) + range(0, inv.bag_from):
-		if inv.numbers[target] == 0:
-			inv.numbers[target] = inv.numbers[slot]
-			inv.inst[target] = inv.inst[slot].duplicate(true)   # each unit of an instance stack carries it, so both halves keep it
-			inv.counts[target] = count
-			inv.counts[slot] -= count
-			inv.set_fav(target, inv.is_fav(slot))   # both halves of a favourite stay favourites
-			return
+	var target: int = inv.make_room()
+
+	if target < 0:
+		return
+
+	inv.numbers[target] = inv.numbers[slot]
+	inv.inst[target] = inv.inst[slot].duplicate(true)   # each unit of an instance stack carries it, so both halves keep it
+	inv.counts[target] = count
+	inv.counts[slot] -= count
+	inv.set_fav(target, inv.is_fav(slot))   # both halves of a favourite stay favourites
 
 
 # --- Fire tiers (Dave 24 Oct, cooking.json fire_tiers): the wood in a fire is kept as burning seconds per class (log, firewood, weak),
@@ -7482,10 +7478,7 @@ func _cook(peer: int, inv, id: int) -> void:
 			var left_units: float = float(table.shelf_units(int(raw["number"])) - int(raw.get("wear", 0))) if table.shelf_units(int(raw["number"])) > 0 else 1.0e9
 			var life: int = table.shelf_units(cooked)
 			var age: int = maxi(life - int(minf(left_units * float(_cooking.get("cooked_life_mult", 2.0)), float(life))), 0)
-			var left: int = inv.add(cooked, 1, age)
-
-			if left > 0:
-				drop_in_world(cooked, left, _peer_pos[peer])
+			_take_in(peer, inv, cooked, 1, age)
 
 			return
 
@@ -8160,8 +8153,16 @@ func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false
 			for put in given:
 				inv.remove(int(put[0]), int(put[1]))
 
-			_say(peer, "Make room in your pack first.")
+			_say(peer, "Make room in your pack first.")   # a pack at MAX_SLOTS
 			return false
+
+	if taken_down and _load_over_cap(peer, inv):   # the pack grows, so the carry limit decides (protocol 113)
+		for put in given:
+			inv.remove(int(put[0]), int(put[1]))
+
+		_say(peer, "Too heavy to carry what it gives back.")
+		_reject(peer, 2)
+		return false
 
 	return true
 
@@ -8900,8 +8901,16 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
-	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
-		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out
+	else:
+		var kit_n: int = table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"]))   # a placed torch comes back burning, or doused when it burned out or the rain put it out
+
+		if _fit(peer, inv, kit_n, 1) < 1:
+			_say(peer, "Too heavy to carry more")
+			_reject(peer, 2)
+			return
+
+		if inv.add(kit_n, 1, int(it.get("wear", 0))) > 0:
+			return
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))
@@ -9403,7 +9412,7 @@ func _struct_empty(id: int) -> bool:
 	return true
 
 
-# --- Chest contents: server-owned; the actor gets the full 30 slots after every open, put and take ---
+# --- Chest contents: server-owned; the actor gets every slot after every open, put and take ---
 
 # A campfire's own little store (Dave 2026-10-22, F beside a fire): a few slots for wood that feeds it and food that cooks on it.
 # Made the first time anyone opens it. _tend_fire does the feeding and cooking.
@@ -9698,7 +9707,10 @@ func _chest_of(peer: int, id: int):
 	var chest = _chests.get(int(it["struct"]["uid"]))
 
 	if chest != null:
-		chest.usable = clampi(int(_structures.get(str(it["struct"]["kind"]), {}).get("slots", chest.slot_count)), 1, chest.slot_count)
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+		# A take-only store (a body's remains) never takes anything in, and holds the whole pack it came from, which may have grown past its
+		# slots (protocol 113): every slot is in use, so Take all reaches them all.
+		chest.usable = chest.slot_count if bool(def.get("take_only", false)) else clampi(int(def.get("slots", chest.slot_count)), 1, chest.slot_count)
 
 	return chest
 
@@ -9922,6 +9934,26 @@ func _fit(peer: int, inv, number: int, count: int, item_inst: Dictionary = {}) -
 	var body: float = _carry_body(peer)
 	var carried: float = CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer) + CarryRules.bag_kg(item_inst, table, _carry_cfg)
 	return CarryRules.fit_count(table.id_of(number), count, carried, body, _carry_cfg)
+
+
+# Into the pack as many as the carry limit allows, the rest dropped at `at` (the player's feet when INF); returns how many went in. A pack grows
+# (protocol 113), so weight is what stops a gain: every add of something new to a player's pack goes through here, give() or a weight check.
+func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: Vector3 = Vector3.INF) -> int:
+	var fits: int = _fit(peer, inv, number, count)
+	var left: int = inv.add(number, fits, item_wear) + (count - fits)
+
+	if left > 0:
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO) if at == Vector3.INF else at, item_wear)
+
+	return count - left
+
+
+# Whether the player's whole load, with `pack` as their pack, is over the carry limit: an all-or-nothing gain (a piece taken down) checks this.
+func _load_over_cap(peer: int, pack) -> bool:
+	if _carry_cfg.is_empty():
+		return false
+
+	return CarryRules.carried_kg(pack, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer) > CarryRules.cap_kg(_carry_body(peer), _carry_cfg) + CarryRules.SLACK_KG
 
 
 # The whole load: the pack (with the bags in it) and what the worn bags hold (worn pieces themselves weigh nothing, as before).
@@ -10954,11 +10986,7 @@ func give_to(peer: int, id: String, count: int) -> void:
 		return
 
 	var before: Array = _snapshot(inv)
-	var left: int = inv.add(table.number_of(id), count)
-
-	if left > 0:
-		drop_in_world(table.number_of(id), left, _peer_pos.get(peer, Vector3.ZERO))
-
+	_take_in(peer, inv, table.number_of(id), count)
 	_gain_source = SRC_REWARD
 	_send_changes(peer, inv, before)
 	_gain_source = SRC_PICKUP
@@ -11755,8 +11783,8 @@ func _carry_body(peer: int) -> float:
 
 
 # ACT_WEAR: the piece in a pack slot goes to its slot-and-layer. Every worn piece sharing a position with it comes off into the pack (the one in
-# that layer; a Dress filling body and legs base), each needing a free pack slot (worn pieces never stack; the slot the new piece leaves counts).
-# Without room nothing moves, so nothing is lost or doubled.
+# that layer; a Dress filling body and legs base), each into a pack slot (worn pieces never stack; the slot the new piece leaves counts, and the
+# pack grows for the rest, protocol 113). Only a pack at MAX_SLOTS can lack the room: then nothing moves, so nothing is lost or doubled.
 func _wear(peer: int, inv, slot: int) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not _characters.has(_peer_key.get(peer, "")):
 		return
@@ -11783,6 +11811,17 @@ func _wear(peer: int, inv, slot: int) -> void:
 		if int(worn[i][0]) > 0 and _covers(int(worn[i][0]), i).any(func(at: int) -> bool: return covers.has(at)):
 			off.append(i)
 
+	var room: int = (1 if inv.counts[slot] == 1 else 0) + (InventoryScript.MAX_SLOTS - inv.slot_count if inv.grows else 0)
+
+	for i in inv.usable:
+		if inv.numbers[i] == 0:
+			room += 1
+
+	if off.size() > room:
+		_say(peer, "Your pack has no room for what that replaces.")
+		_reject(peer, 3)
+		return
+
 	var piece: Dictionary = inv.take_from_slot(slot, 1)
 
 	for i in off:
@@ -11795,7 +11834,8 @@ func _wear(peer: int, inv, slot: int) -> void:
 	_sync_worn(peer, true)
 
 
-# ACT_UNWEAR: the piece in one worn position back into the pack (each layer comes off on its own); a full pack refuses.
+# ACT_UNWEAR: the piece in one worn position back into the pack (each layer comes off on its own); the pack grows for it, and only one at
+# MAX_SLOTS refuses.
 func _unwear(peer: int, inv, place: int) -> void:
 	var worn: Array = worn_slots_of(peer)
 
@@ -13294,11 +13334,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 		if fate(peer, "fish", chance):
 			_fish_stock[cell_key][0] = int(_fish_stock[cell_key][0]) - 1
 			var species: String = _fish_species(cell, hit)
-			var left: int = inv.add(table.number_of(species), 1)
-
-			if left > 0:
-				drop_in_world(table.number_of(species), left, _peer_pos[peer])
-
+			_take_in(peer, inv, table.number_of(species), 1)
 			caught.append(table.sentence_name(table.number_of(species)))
 
 	_wear_slot(peer, inv, slot, "net")
@@ -13375,10 +13411,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 		var key: String = "%d,%d" % [cell.x, cell.y]
 		_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
 		var species: String = _fish_species(cell)
-		var left: int = inv.add(table.number_of(species), 1)
-
-		if left > 0:
-			drop_in_world(table.number_of(species), left, pos)
+		_take_in(peer, inv, table.number_of(species), 1, 0, pos)
 
 		practice(peer, "fish")
 		_goal_event(peer, "fish_caught")
@@ -13578,11 +13611,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 
 	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
 	var species: String = _fish_species(cell, {"species": str(state.get("species", ""))})
-	var left: int = inv.add(table.number_of(species), 1)
-
-	if left > 0:
-		drop_in_world(table.number_of(species), left, _peer_pos[peer])
-
+	_take_in(peer, inv, table.number_of(species), 1)
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
 	var landed: String = "You land a %s." % table.sentence_name(table.number_of(species))

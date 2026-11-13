@@ -25,3 +25,6 @@ All Godot runs on Dave's PC (ManlandRyzen5), voxel build `C:\GodotInstaller\godo
 
 ## For Dave's next playtest
 Drag an axe and a food stack into the hotbar: each leaves the backpack. Drag them back. Eat or sell the last of a hotbar stack: the slot empties. Pick up a new tool: it goes into the first empty hotbar slot.
+
+## Follow-up: the growing backpack (PR #1064, protocol 113)
+Dave, this thread, 12 Nov 2026 23:06Z: "slots should be almost endless. we dont limit people by how many things they have. just have a minimum of 20 and if they add more stuff just start adding more slots to accomadate them. they are limited by weight really." A pack starts at the hotbar 10 and a backpack of 20, grows 5 slots at a time when nothing fits (up to 250), gives empty end slots back down to 30, and every gain stops at the carry limit. Containers keep their fixed 30. Save files from this build may hold more than 30 rows; an older build would drop the rows past 30 (one-way upgrade).
