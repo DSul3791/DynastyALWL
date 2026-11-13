@@ -1,44 +1,51 @@
-# BUGLIST-002 — Door / Doorway Design Correction
+# BUGLIST-002 — Separate Doors and Doorways
 
-**Status:** ACTIVE — DIRECTOR-APPROVED design requirements; implementation and audit assignment  
+**Status:** Active — approved design correction; implementation pending  
 **Date:** 2026-11-13  
-**Scope:** Exactly one issue, DOOR-001. BUGLIST-001 is retired.  
-**Authoritative catalog:** `docs/design/DYNASTY_MASTER_ITEMS.md`, section 3.0 (BUGLIST-002 director-approved amendment).  
-**Design provenance:** Dave's direct conversation decisions, 13 Nov 2026. Earlier automatic integral-door walls were an AI-generated interpretation, not Dave's approved design.
+**Scope:** DOOR-001 only  
+**Catalog authority:** [Master Items Catalog, section 3.0](../design/DYNASTY_MASTER_ITEMS.md)
 
-## DOOR-001 — Every door is a separate item installed in a matching empty doorway
+## DOOR-001 — Doors must be separate from doorway walls
 
-### Four door/doorway pairs — ALL required now
+### Approved design
+- Construct a **doorway wall** with an empty, usable opening and frame. Building the wall does not create a door.
+- A **door** is a distinct craftable/installable item. Place it into a compatible built doorway, open and close it, and remove or replace it without demolishing the doorway.
+- Follow the separate doorway-and-door construction model used in ARK and Atlas. This is a design reference, not permission to copy unrelated systems.
+- **All four configurations are in scope now**:
 
-| Door item | Separate matching structural wall item | Opening |
+| Door | Matching empty doorway | Shape |
 |---|---|---|
-| Single Door | Single Doorway | Rectangular, straight lintel, one hinged leaf |
-| Double Door | Double Doorway | Rectangular, straight lintel, two leaves |
-| Single Arched Door | Single Arched Doorway | Rounded top, one leaf shaped to fit |
-| Double Arched Door | Double Arched Doorway | Rounded top, two leaves shaped to fit |
+| Single Door | Single Doorway | Rectangular, one leaf |
+| Double Door | Double Doorway | Rectangular, two leaves |
+| Single Arched Door | Single Arched Doorway | Rounded top, one leaf |
+| Double Arched Door | Double Arched Doorway | Rounded top, two leaves |
 
-**The first two are NOT arched.** Arches are general building features for timber, stone, brick and other suitable walls; not reserved for ships. Ships themselves are outside this ticket. "Shingle door" was an apparent typo for "single door"; do not add a shingle door.
+- The first two have **straight rectangular tops**, not arches. Arched openings are available for suitable ordinary buildings, including wood and stone construction; they are not exclusive to future ships.
+- The established quality progression is **Crude → Rustic → Refined → Superior → Engineered → Fortified**. **Iron and Steel are materials**, not quality tiers. Material, quality and configuration are separate attributes.
+- Compatible doors and frames must match their **geometry and dimensions**. Do **not** require identical materials or quality tiers unless an independently approved rule requires it. A matching door must not be rejected merely because its tier or material differs from the frame.
+- Preserve the approved building grid and the existing 4 m double-door opening wherever applicable. Keep door dimensions aligned with the actual frame geometry; do not invent new universal sizes.
 
-### Established quality progression
-Crude → Rustic → Refined → Superior → Engineered → Fortified. Those are quality tiers. Iron and steel are **materials**, not extra tiers. Door shape/leaf count is separate from material and tier. The catalog section specifies the four pairs as item families across the six tiers. Reconcile existing doorway item rows rather than duplicating or renumbering them. Do not promise a particular recipe or material progression that Dave has not approved.
+### Implementation requirements
+1. Audit the live `dev` catalog, master list, ledger, recipes, blueprints, structures, existing doorway variants and opening/closing states **before editing**.
+2. Create a reconciliation table showing which existing item IDs and records can be reused, which require corrected descriptions or behavior, and which separate door/doorway entries must actually be added. **The design does not authorize automatically creating 48 new IDs.** Follow official number allocation; never reuse an ID.
+3. Correct all legacy doorway variants that automatically include a door. Keep the structural opening, remove integral door operation, and provide a separate compatible door item.
+4. Door placement must validate the built frame and correctly match single/double width and rectangular/arched profile. Preview and actual placement decisions must agree, with a meaningful refusal when invalid.
+5. Opening, closing, collision, movement through the opening, ownership of interaction state, multiplayer synchronization, and save/reload must work correctly. For double doors, ensure both leaves function as a double-door assembly.
+6. Removal or replacement of a door leaves the doorway wall intact. Do not create duplicate doors or lose existing structures during save/load. Follow the **current approved save policy** rather than inventing a new migration requirement.
+7. Update the master catalog, live catalog ledger, applicable item/blueprint/recipe/structure definitions, descriptions, icons and implementation documentation consistently. Reconcile actual craft costs and construction methods with existing approved item progression; **do not invent a new material or recipe design**.
+8. This is **specific owner authorization** for the door/doorway corrections and additions stated here. It does not lift the catalog freeze for other items or authorize changing unrelated tiers, construction pieces, or game systems.
 
-### Required behavior / acceptance
-1. Building a doorway creates only the wall segment, jamb/frame and an open passage. It has no door leaf, door toggle or door-specific interaction.
-2. Each door is independently crafted/acquired, held and installed into an existing compatible doorway using normal item/build placement. Do not construct the door automatically with the wall.
-3. The installed door owns open/closed state and interaction (existing E-key convention). Closed obstructs passage, open clears it; doorway stays in place on removal/replacement.
-4. Match single vs double widths and rectangular vs arched top shapes. Incorrect combinations show an invalid preview and a truthful reason. A matching door fits the matching frame; no unsupported placement into arbitrary walls or free space.
-5. Preserve current 2 m grid and approved 4 m double-door opening where applicable. Investigate geometry, hinge, snapping, occlusion, collision, placement preview/final parity, multiplayer/state replication, persistence, animal collision / structure grid, and replacement / dismantle.
-6. Every one of the six quality levels must be represented in the catalog family specification. Exact existing IDs, new IDs and per-tier material recipes must be inventoried against current `dev`; allocate through the official catalog rules, never reuse/guess numbers. Flag only true design gaps; do not quietly invent names or extra classes.
-7. Legacy doorway-with-built-in-door implementations are incorrect. Audit **all** tiers, 4 m double doorways, any iron/steel-named material variants, engineered and fortified; separate their integral door leaves/states. Preserve ids and saved-world semantics via tested explicit migration/compatibility; don't delete existing player structures or reuse retired IDs.
-8. Update all authoritative item/catalog entries, ledger/implementation contract, blueprint/recipe/structure data, graphics/icons/tooltips, tests and relevant design documentation. This task is a narrow **owner-authorized exception** to the discretionary item-catalog freeze for these explicitly approved door/doorway families only. Keep the frozen unrelated catalog intact. Follow existing independent review and PR gates.
-9. Do not add locks, keys, permission controls, automatic closing, ship systems, new construction tiers, or a larger redesign without separate approval. Existing functionality must not be unintentionally removed.
+### Verification and delivery
+- Test all four configurations, including at least one instance at every established quality tier where supported by the reconciled catalog.
+- Verify correct shape, snapping, empty opening, opening/closing, passability, door removal/replacement, persistence, and mismatched-door rejection.
+- Test an appropriately sized compatible door in a frame made from a different material/quality; do not introduce a same-tier-only rule.
+- Check existing placed doorways and save/reload under the current save policy. Run catalog consistency checks and relevant building regression tests.
+- Record automated test evidence, independent review, integration commit/PR and an F6 checklist for player acceptance.
 
-### Required engineering plan and evidence
-- Establish fresh `origin/dev` baseline and current master/ledger; document the exact existing doorways, IDs, state twins, recipe/blueprint data, door item gaps and item-reservation/ledger requirements.
-- Build a reconciliation matrix by **tier × configuration**: existing doorway reused/updated, missing doorway added, separate door added, match anchor, craft path, state/persistence, tests. One semantic entity per stable ID, no duplicates.
-- Implement on scoped task branches, with review/test gates and PRs targeting **dev**, NOT main. Do not commit gameplay changes to this documentation branch. Reconcile catalogue section 3.0 into the approved master in the work itself; don't leave runtime/catalog inconsistent.
-- Automated checks: each pairing accepts only matching frame, both leaves on double types, correct rectangular/arched geometry, empty doorway passability, mounted closed/open passability, removal/replacement, server/client placement agreement, save/reload, catalog ledger checker, old existing structures and unrelated walls/roofs/gates.
-- Run applicable tests on actual test PC and produce F6 checklist. Never claim game acceptance without running it and Dave verifying visually.
+**Workflow:** Read the active `CLAUDE.md`, team authorities and test gates; develop on focused branches, submit reviewed PRs to `dev`, and leave `main` unchanged. Do not claim player verification from automated checks.
 
-### Coordinator handoff
-Coordinate DOOR-001 as the **only** BUGLIST-002 issue. Read this report and the master catalog amendment, current approved repository instructions and records, and reconcile the legacy design contradiction with explicit director provenance. Carry the work through validated `dev` integration, with evidence and concise status for Dave. Escalate only material uncovered conflicts or design questions; preserve independent progress.
+### Out of scope
+Locks, permissions, keys, automatic closing, ships, unrelated catalog items, and new quality tiers. Report genuinely unresolved design choices rather than inventing restrictions.
+
+### Design provenance
+Dave's direct decisions on 13 November 2026 supersede earlier AI-authored descriptions of doors permanently integrated into doorway walls. The earlier records remain historical evidence, not instructions to retain integral doors.
