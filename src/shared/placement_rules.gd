@@ -25,6 +25,10 @@ const FENCE_TURNS := [0, 45, -45, 90, -90]   # how a new section may leave a sta
 const FENCE_TAKEN_M := 0.3           # a section already this close to a candidate's middle takes it
 const WALL_TOP_KIND := "wall_top"    # structures.json piece_kind of a wall top (the Fortified battlement, Dave 10 Nov 2026): it sits on a wall's top
 const WALL_HEIGHT_M := 2.4           # a wall's top above its spot unless its row has height_m (piece_look walls are 2.4 m)
+const ROOF_PANEL_KIND := "roof_panel"   # structures.json piece_kind of a sloped roof panel (Crude - Roof 45 and 65, BUG-011): it rests by either end on a wall top, a ceiling edge or another panel's end
+const ROOF_PANEL_WIDTH_M := 2.0      # a panel is as wide as a wall (and a ceiling cell), so a row of them roofs a wall's length
+const ROOF_ROW_REACH_M := 6.0        # roof edges are looked for only on pieces this near the cursor (an edge within ANCHOR_REACH_M, or a panel middle with its run and a wall cell)
+const ROOF_BURY_M := 0.1             # a panel's low edge may sink this far into the ground before it is "buried"
 
 
 static func load_config() -> Dictionary:
@@ -49,9 +53,9 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 # a quarter circle, so neighbours meet edge to edge. A wall, floor or roof near a foundation (rows: {"pos", "state"}) snaps to the
 # nearest of the foundation's anchors instead and stands on its top; a pillar snaps to the middle or a corner of a foundation or a ceiling
 # (pillar_anchors). Where two bases offer the same point (a ceiling laid on a foundation), the one whose top is nearest the cursor's height
-# wins. Anything else keeps its spot and turn.
+# wins. Anything else keeps its spot and turn. `mode` is a roof panel's rise or fall from where it rests (0 rises, 1 falls: roof_panel_spot).
 # Returns [spot, yaw in degrees, on_foundation].
-static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, rows: Array = []) -> Array:
+static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, rows: Array = [], mode: int = 0) -> Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 
 	if str(def.get("attach_to", "")) == "fire":
@@ -82,6 +86,12 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 		if not crown.is_empty():
 			return crown
+
+	if piece_kind == ROOF_PANEL_KIND:
+		var rested: Array = roof_panel_spot(cfg, def, spot, yaw_deg, mode, rows)
+
+		if not rested.is_empty():
+			return rested
 
 	var step: int = FENCE_TURN_DEG if piece_kind == FENCE_KIND else 90
 	var turned: int = posmod(int(round(float(yaw_deg) / float(step))) * step, 360)
@@ -210,7 +220,7 @@ static func _kind_at(cfg: Dictionary, at: Vector3, rows: Array, piece_kind: Stri
 
 # Pieces that take a point to themselves: a second one on the same point is refused ("close"), by the ghost and the server alike.
 static func one_to_a_point(piece_kind: String) -> bool:
-	return piece_kind == PILLAR_KIND or piece_kind == WALL_TOP_KIND
+	return piece_kind == PILLAR_KIND or piece_kind == WALL_TOP_KIND or piece_kind == ROOF_PANEL_KIND
 
 
 # A wall top (Dave 10 Nov 2026: the battlement sits on top of a wall) goes on the top of the nearest wall (piece_kind "wall", any tier) whose middle is
@@ -232,6 +242,112 @@ static func wall_top_spot(cfg: Dictionary, spot: Vector3, rows: Array) -> Array:
 			best = [Vector3(row["pos"].x, row["pos"].y + float(base.get("height_m", WALL_HEIGHT_M)), row["pos"].z), posmod(int(round(float(row.get("yaw", 0.0)))), 360), true]
 
 	return best
+
+
+# The rise of a roof panel `def` (structures.json "run_m" and "slope_deg"): the height it gains over its horizontal run.
+static func roof_panel_rise(def: Dictionary) -> float:
+	return float(def.get("run_m", ROOF_PANEL_WIDTH_M)) * tan(deg_to_rad(float(def.get("slope_deg", 45.0))))
+
+
+# The horizontal edges a roof panel may rest on, as {"p": the edge's middle, "n": the ground direction across it (a unit Vector2; a panel may leave either
+# way)}: a wall's top (each 2 m cell of it, whatever its tier or opening), a ceiling's four edges (piece_kind "floor", on its top) and both ends of a standing
+# roof panel, of the pieces within ROOF_ROW_REACH_M of `near` across the ground. rows: {"pos", "state", "yaw" degrees}. A foundation's edge is not one: a wall
+# stands there and the roof meets that wall's top.
+static func roof_connections(cfg: Dictionary, rows: Array, near: Vector3) -> Array:
+	var out: Array = []
+
+	for row in rows:
+		if Vector2(row["pos"].x - near.x, row["pos"].z - near.z).length() > ROOF_ROW_REACH_M:
+			continue   # a piece this far off has no edge within reach (a wall cell, a panel and its half run are all inside it)
+
+		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+		var kind: String = str(base.get("piece_kind", ""))
+		var pos: Vector3 = row["pos"]
+		var turn: float = deg_to_rad(float(row.get("yaw", 0.0)))
+		var along: Vector2 = Vector2(cos(turn), -sin(turn))
+		var across: Vector2 = Vector2(sin(turn), cos(turn))
+
+		if kind == "wall":
+			var cells: int = maxi(int(round(float(base.get("footprint_x", WALL_CELL_M)) / WALL_CELL_M)), 1)
+
+			for k in cells:
+				var shift: Vector2 = along * ((float(k) - float(cells - 1) * 0.5) * WALL_CELL_M)
+				out.append({"p": Vector3(pos.x + shift.x, pos.y + float(base.get("height_m", WALL_HEIGHT_M)), pos.z + shift.y), "n": across})
+		elif kind == "floor":
+			for edge in edge_anchors(base):
+				out.append({"p": Vector3(pos.x + float(edge[0]), pos.y + anchor_top(base), pos.z + float(edge[1])), "n": Vector2(float(edge[0]), float(edge[1])).normalized()})
+		elif kind == ROOF_PANEL_KIND:
+			var half_run: float = float(base.get("run_m", ROOF_PANEL_WIDTH_M)) * 0.5
+			var half_rise: float = roof_panel_rise(base) * 0.5
+			var rising: Vector2 = Vector2(-sin(turn), -cos(turn))   # the way the panel rises: its -Z, the way the player faced when it was set down
+			out.append({"p": Vector3(pos.x + rising.x * half_run, pos.y + half_rise, pos.z + rising.y * half_run), "n": rising})   # its high end
+			out.append({"p": Vector3(pos.x - rising.x * half_run, pos.y - half_rise, pos.z - rising.y * half_run), "n": rising})   # its low end
+
+	return out
+
+
+# A roof panel rests by one end on a horizontal edge (roof_connections) and runs across it, so either end can be the anchored one. Its spot is its middle and
+# it rises the way the player faces (its -Z; `yaw_deg` is that facing in quarter turns, and comes back unchanged): so the edge must lie across the facing.
+# `mode` 0: the anchored end is the low one, the panel goes on past the edge and rises (a roof leaving a wall top); `mode` 1: the anchored end is the high one,
+# the panel comes back the other way and falls from the edge. Returns [spot, yaw in degrees, true], or [] when no edge across the facing is near.
+# `spot` is the cursor, or an earlier answer (the client sends the ghost's middle, and the server snaps again): the edge counts by the nearer of its own
+# distance to `spot` and its panel's middle's, across the ground, so an answer snaps to itself. Of tied edges the one nearest the cursor's height wins.
+# A `spot` that is exactly the middle of the panel the OTHER mode would put on an edge (within 0.05 m) is that panel: a saved building plan replays pieces by
+# position and turn only, so a falling panel comes back falling whatever mode the replay sends.
+static func roof_panel_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: int, mode: int, rows: Array) -> Array:
+	var yaw: int = posmod(int(round(float(yaw_deg) / 90.0)) * 90, 360)
+	var rising: Vector2 = Vector2(-sin(deg_to_rad(float(yaw))), -cos(deg_to_rad(float(yaw))))
+	var half_run: float = float(def.get("run_m", ROOF_PANEL_WIDTH_M)) * 0.5
+	var half_rise: float = roof_panel_rise(def) * 0.5
+	var leave: Vector2 = -rising if mode > 0 else rising   # the way the panel goes on from the edge
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_d: float = ANCHOR_REACH_M
+
+	for edge in roof_connections(cfg, rows, spot):
+		if absf(rising.dot(edge["n"])) < 0.99:
+			continue
+
+		var at: Vector3 = edge["p"]
+		var other: Vector3 = Vector3(at.x - leave.x * half_run, at.y + (half_rise if mode > 0 else -half_rise), at.z - leave.y * half_run)   # the middle the other mode puts on this edge
+
+		if spot.distance_to(other) < 0.05:
+			return [other, yaw, true]
+
+		var middle: Vector3 = Vector3(at.x + leave.x * half_run, at.y + (-half_rise if mode > 0 else half_rise), at.z + leave.y * half_run)
+		var d: float = minf(Vector2(spot.x - at.x, spot.z - at.z).length(), Vector2(spot.x - middle.x, spot.z - middle.z).length())
+
+		if d >= ANCHOR_REACH_M:
+			continue
+
+		if is_nan(best.x) or d < best_d - ANCHOR_TIE_M or (d <= best_d + ANCHOR_TIE_M and absf(middle.y - spot.y) < absf(best.y - spot.y)):
+			best = middle
+			best_d = d
+
+	return [] if is_nan(best.x) else [best, yaw, true]
+
+
+# True when the low edge of a roof panel of `kit_id` at `spot` (its middle), turned `yaw_deg`, would sink into the ground: `height` is Callable(x, z) -> ground
+# height (NAN where unknown). The low edge's middle and both its ends are sampled; a panel falling away from a wall top can run into the ground.
+static func roof_panel_buried(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, height: Callable) -> bool:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if str(def.get("piece_kind", "")) != ROOF_PANEL_KIND:
+		return false
+
+	var turn: float = deg_to_rad(float(yaw_deg))
+	var rising: Vector2 = Vector2(-sin(turn), -cos(turn))
+	var along: Vector2 = Vector2(cos(turn), -sin(turn))
+	var low_mid: Vector2 = Vector2(spot.x, spot.z) - rising * (float(def.get("run_m", ROOF_PANEL_WIDTH_M)) * 0.5)
+	var low_y: float = spot.y - roof_panel_rise(def) * 0.5
+
+	for s in [-1.0, 0.0, 1.0]:
+		var at: Vector2 = low_mid + along * (s * ROOF_PANEL_WIDTH_M * 0.5)
+		var ground: float = float(height.call(at.x, at.y))
+
+		if not is_nan(ground) and ground > low_y + ROOF_BURY_M:
+			return true
+
+	return false
 
 
 # Aiming at the middle of a foundation's top puts a new one on it: the same spot, one body (def "stack_m", 2 m) higher, up to STACK_MAX_LAYERS
@@ -654,6 +770,10 @@ static func reason_text(state: String) -> String:
 			return "that fire already has a pot"
 		"far":
 			return "too far away: step closer"
+		"nopanel":
+			return "a roof panel rests on a wall top, a ceiling edge or another panel's end: aim at one and face across it"
+		"buried":
+			return "that end would sink into the ground"
 		"wheel_dry":
 			return "the wheel needs running water under all of it"
 		"wheel_river":

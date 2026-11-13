@@ -1618,8 +1618,9 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 255 | `campfire_pot` | Campfire pot |  |  | KEEP | A pot hung over a small fire. It cooks while the fire is lit. The fire stays at firewood. |
 | 257 | `clay_hearth` | Clay hearth |  |  | KEEP | A clay hearth with a spit. |
 | 262 | `thatch_floor` | Crude - Foundation |  |  | KEEP | A thatch foundation on stakes. Walls and roofs stand on it. |
-| 264 | `thatch_roof` | Crude - Roof |  |  | KEEP | A thatch roof. It keeps the rain off. |
-| 266 | `thatch_doorway` | Crude - Doorway |  |  | KEEP | A thatch doorway with a hanging door. |
+| 264 | `thatch_roof` | Crude - Roof 45 |  |  | KEEP | A thatch roof. It keeps the rain off. **BUGLIST-001 BUG-011 (13 Nov 2026): renamed from "Crude - Roof", id and number kept; now a 45 degree sloped panel with no posts.** |
+| 1255 | `thatch_roof_65` | Crude - Roof 65 |  |  | ADD | A steep thatch roof panel. It keeps the rain off. **BUGLIST-001 BUG-011 (13 Nov 2026): the 65 degree panel, blueprint 251, state 291, same materials as Crude - Roof 45. Catalog change made on the strength of BUG-011, for Dave to confirm.** |
+| 266 | `thatch_doorway` | Crude - Doorway |  |  | KEEP | A thatch doorway with a hanging door. **BUGLIST-001 BUG-010 (13 Nov 2026): the piece is now an open framed passage with no door; this text still says "hanging door" and is left for Dave's ruling (see the BUG-010 ledger entry).** |
 | 267 | `oven` | Oven |  |  | KEEP | A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides. |
 | 277 | `snare_trap` | Snare |  |  | KEEP | A snare set on the ground. |
 | 425 | `tilled_bed` | Tilled bed | earth |  | KEEP | A metre of hoed soil, ready to sow. |

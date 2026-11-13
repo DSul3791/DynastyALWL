@@ -10,7 +10,7 @@ Morgan, 10 Nov 2026; brought up to date with main by Jamie, 11 Nov 2026. Docs on
 
 **You have:** your hands, sticks, stones, plant fibre, twine.
 **You make by hand:** Stone - Axe, Stone - Knife, Stone - Pickaxe, Wooden and Stone - Hammer, Wooden - Spade and Hoe, Stone - Wedge, Whetstone, Bone - Needle, Fishing rod, Snare.
-**You build (hammer, no station):** Campfire, Crude - Foundation, Crude - Wall, Crude - Doorway, Crude - Window, Crude - Roof, Thatch - Bed, Seat, Lean-to. Thatch is one storey.
+**You build (hammer, no station):** Campfire, Crude - Foundation, Crude - Wall, Crude - Doorway, Crude - Window, Crude - Roof 45, Crude - Roof 65, Thatch - Bed, Seat, Lean-to. Thatch is one storey.
 **You wear:** Fibre - Sandals, Fibre - Skirt, Fibre - Cloak (woven, no needle).
 **You cook:** the campfire. It also gives your first charcoal, bricks and clay pots.
 **What you now want:** a roof, fire that lasts, hide for warmer clothes, a bench.

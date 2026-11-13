@@ -24,7 +24,7 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 - Corners are hip ends (`*_roof_corner`), built by clipping the same rows (`_clip_band`), so the courses line up with the straight piece.
 - Rows are real geometry (no texture tiles): the edge of every course shows against the sky.
 - Triangle caps: default 300; clay-tile roofs 350 and their corners 400 (`TILE_ROOFS` in `test_look_table.gd`).
-- Crude keeps the older thatch builder (`thatch_roof`).
+- Crude keeps the older thatch builder (`thatch_roof`), now a sloped panel with no posts: `Crude - Roof 45` (`thatch_roof`) and `Crude - Roof 65` (`thatch_roof_65`), BUG-011; it rests on wall tops and ceiling edges (`placement_rules.gd` `roof_panel_spot`). The Crude doorway is an open frame with no door (BUG-010).
 
 ## Fortified (#989; world shots by Dino 10 Nov, passed)
 

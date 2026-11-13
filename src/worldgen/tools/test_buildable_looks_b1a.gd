@@ -8,7 +8,7 @@ const LookTable := preload("res://src/client/look_table.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 
 const FOUNDATIONS := ["log_foundation", "brick_foundation"]
-const DOORWAYS := ["log_doorway", "stone_doorway", "brick_doorway", "thatch_doorway"]
+const DOORWAYS := ["log_doorway", "stone_doorway", "brick_doorway"]
 const WINDOWS := ["thatch_window", "log_window", "stone_window", "brick_window"]
 
 var failures: int = 0
@@ -91,6 +91,32 @@ func _run() -> void:
 			else:
 				check(_solid_at(node, Vector3(0.0, 1.0, 0.0)), "%s: the shut door blocks the gap" % look_name)
 				check(box.position.z >= -0.2 and box.end.z <= 0.2, "%s: as thick as a wall (%.2f to %.2f)" % [look_name, box.position.z, box.end.z])
+
+	# The Crude doorway (BUG-010): a framed passage with no door at all. The wall is solid either side of and over the gap and nothing stands in it, at any
+	# height a person passes, over the whole clear width; no mesh stands in the gap either.
+	var crude: Node3D = _build("thatch_doorway")
+	var crude_box: AABB = _mesh_box(crude)
+	check(crude_box.position.x >= -1.04 and crude_box.end.x <= 1.04 and crude_box.position.y >= -0.01 and crude_box.end.y <= 2.56 and crude_box.end.y >= 2.3 and crude_box.position.z >= -0.2 and crude_box.end.z <= 0.2,
+		"thatch_doorway: in the 2 m by 2.4 m wall piece, as thick as a wall (%s)" % crude_box)
+	check(_solid_at(crude, Vector3(0.75, 1.0, 0.0)) and _solid_at(crude, Vector3(-0.75, 1.0, 0.0)) and _solid_at(crude, Vector3(0.0, 2.25, 0.0)), "thatch_doorway: the wall either side of and over the gap is solid")
+	var blocked_at: Array = []
+
+	for x in [-0.45, -0.3, 0.0, 0.3, 0.45]:
+		for y in [0.1, 0.5, 1.0, 1.5, 1.9]:
+			for z in [-0.1, 0.0, 0.1]:
+				if _solid_at(crude, Vector3(x, y, z)):
+					blocked_at.append(Vector3(x, y, z))
+
+	check(blocked_at.is_empty(), "thatch_doorway: nothing solid in the 0.9 m by 1.9 m opening (%s)" % str(blocked_at))
+	var leaf_in_gap: bool = false
+
+	for child in crude.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = child
+		var b: AABB = (crude.global_transform.affine_inverse() * mi.global_transform) * mi.get_aabb()
+		leaf_in_gap = leaf_in_gap or (b.position.x > -0.44 and b.end.x < 0.44 and b.position.y < 1.9 and b.end.y > 0.1)   # a mesh wholly inside the opening: a door leaf
+
+	check(not leaf_in_gap, "thatch_doorway: no door leaf hangs in the opening")
+	check(not LookTable.has_look("thatch_doorway_open"), "thatch_doorway: the open twin look is retired")
 
 	for look in WINDOWS:
 		var node: Node3D = _build(look)

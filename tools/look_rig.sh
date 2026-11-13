@@ -57,7 +57,7 @@ fi
 # Defaults changed on 24 Oct 2026: printed on every run so a before/after picture is not mistaken for a game change.
 echo "rig defaults: --gy $GY (was 28.0 until 24 Oct; the spawn ground is 31.17 in the current world, 31.25 clears flat items, pass --gy 28 to repeat an old picture)"
 # --piece-views NAME: one piece, four close views (front, side, top, diag) at 3 to 6 m, judged like the item views (one name per run).
-#   --look NAME  one look straight from look_table.gd (plank_wall, thatch_doorway_open, ...), four views like --piece-views; --looks a,b,c  a row of looks. Both need no structure.
+#   --look NAME  one look straight from look_table.gd (plank_wall, log_doorway_open, ...), four views like --piece-views; --looks a,b,c  a row of looks. Both need no structure.
 # --pieces: refuse a name that is not a structures.json key before the scene starts (a typo costs seconds, not a launch).
 if [ -n "$PIECES" ]; then
   KEYS=$(grep -oE '^		"[a-z_0-9]+": \{' data/items/structures.json | sed -E 's/^\s*"([a-z_0-9]+)".*/\1/' | grep -vE '^(campfire)$' | tr '\n' ' ')

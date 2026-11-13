@@ -958,6 +958,11 @@ func work_clip() -> String:
 
 
 
+# Whether `kit` places a sloped roof panel (structures.json piece_kind "roof_panel"): its ghost rests on an edge and the wheel flips rise and fall.
+func _is_roof_panel(kit: String) -> bool:
+	return str(PlacementRules.structure_of_kit(_placement, kit).get("piece_kind", "")) == PlacementRules.ROOF_PANEL_KIND
+
+
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
 	if _hoe_menu_open:
@@ -979,6 +984,11 @@ func wheel(down: bool) -> bool:
 
 			lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
 			_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+			return true
+
+		if str(picked_def.get("piece_kind", "")) == PlacementRules.ROOF_PANEL_KIND:
+			lift_steps = 1 - clampi(lift_steps, 0, 1)   # the wheel flips which end rests on the edge: the low one (the panel rises from it) or the high one (it falls)
+			_inv._on_notice("Roof panel rests on its %s end and %s from the edge" % [("high" if lift_steps == 1 else "low"), ("falls" if lift_steps == 1 else "rises")])
 			return true
 
 		return false
@@ -1780,6 +1790,9 @@ func _update_blueprint() -> void:
 			_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			_ghost_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
+		if _is_roof_panel(_blueprint_kit) or _is_roof_panel(kit):
+			lift_steps = 0   # a roof panel's mode (rise or fall) and a foundation's lift share the number: neither carries over to the other piece
+
 		_blueprint_kit = kit
 
 		for child in _blueprint.get_children():
@@ -1801,7 +1814,7 @@ func _update_blueprint() -> void:
 		return
 
 	var attach: String = str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", ""))
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()))
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()), clampi(lift_steps, 0, 1))
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
@@ -1815,6 +1828,14 @@ func _update_blueprint() -> void:
 
 	if attach == "table" and not on_base:
 		blueprint_state = "notable"   # a Serving Platter only goes on a table top (catalog phase 8)
+
+	if _is_roof_panel(kit):
+		if not on_base:
+			blueprint_state = "nopanel"   # a roof panel only rests on a wall top, a ceiling edge or another panel's end, never free on the ground
+		elif blueprint_state == "":
+			var panel_at: Vector3 = _blueprint_at
+			var ground_probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, panel_at.y, 14.0)   # the terrain alone, as the server reads it (a 65 panel's low end can hang 10 m up)
+			blueprint_state = "buried" if PlacementRules.roof_panel_buried(_placement, kit, _blueprint_at, _blueprint_yaw, ground_probe) else ""
 
 	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at
@@ -1848,7 +1869,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far"
+	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "buried"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 

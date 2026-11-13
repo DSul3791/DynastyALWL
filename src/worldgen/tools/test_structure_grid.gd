@@ -56,7 +56,13 @@ func _init() -> void:
 		var twin: String = str(row["toggle"])
 		check(bool(row.get("blocks_walk", false)) and not bool(kinds.get(twin, {}).get("blocks_walk", false)) and kinds.has(twin), "%s blocks walkers shut, %s does not" % [kind, twin])
 
-	check(pairs >= 18, "every door and gate pair is checked (%d)" % pairs)
+	check(pairs >= 17, "every door and gate pair is checked (%d)" % pairs)
+
+	# The Crude doorway is an open framed passage with no door of its own (BUG-010): not a door pair, not solid, and the old open twin is gone, a saved one
+	# reading as this piece.
+	var crude: Dictionary = kinds["thatch_doorway"]
+	check(not kinds.has("thatch_doorway_open") and (crude.get("legacy_kinds", []) as Array).has("thatch_doorway_open"), "the old open twin is retired into the doorway")
+	check(not bool(crude.get("blocks_walk", false)) and not crude.has("use") and not crude.has("toggle"), "the Crude doorway has no door to shut and does not block walkers")
 
 	print("test_structure_grid: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
