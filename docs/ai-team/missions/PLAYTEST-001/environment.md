@@ -7,7 +7,7 @@ Dave's playtest findings of 12 Nov 2026, environmental realism (priority 4). Bas
 | Test | Status | Evidence |
 |---|---|---|
 | TEST-007 Tree canopies missing central foliage | NEEDS PLAYER VERIFICATION | Cause found and fixed in the tree models; `test_canopy_cover` written. Tests PASS on the PC (50b05ed5); not yet seen on screen. |
-| TEST-011 Campfire smoke disappears at canopy height | NEEDS PLAYER VERIFICATION | Tall plume in dev (PR #1060, PC PASS at 50b05ed5). Second round (13 Nov, this branch): twice-the-average-tree height, wind rules, far smoke to 2 km (protocol 114); `test_fire_smoke` extended, `test_far_smoke` new. PC run pending; not yet seen on screen. |
+| TEST-011 Campfire smoke disappears at canopy height | NEEDS PLAYER VERIFICATION | Tall plume in dev (PR #1060, PC PASS at 50b05ed5). Second round (13 Nov, this branch): twice-the-average-tree height, wind rules, far smoke to 2 km (protocol 114); `test_fire_smoke` extended, `test_far_smoke` new. In dev at 48b321e7 (PR #1063). Test machine (David4) 360/360 PASS at 6a7b9b44; not yet seen on screen. |
 
 ## TEST-007: cause
 
@@ -63,8 +63,8 @@ Dave's rules: smoke can be seen up to 2 km (he approved the far-fires plan); "sm
 | Test | What | Run |
 |---|---|---|
 | `test_canopy_cover` (new) | builds the near models of maple, beech, oak, sweet chestnut and walnut as the game does and checks leaves cover at least 92% (oak 82%, all four oak variants) of the sky within 20 degrees of overhead (card shapes); no leaves, so no core, on the winter model; the core is near-only and inside the crown | PASS (PC, 50b05ed5) |
-| `test_far_smoke` (new) | the server's far list (100 m to 2048 m, nearest first, at most 32, tiers, cold fires and coals left out), protocol 114, the client's plumes (one per fire, nearest 8 drawn, none past the view distance, gone fires dropped, a grown fire gets the bigger plume, the near fires' materials, smoke only) | pending (PC) |
-| `test_fire_smoke` (extended) | the tall plume: unseen at the fire, above 35 m in a calm and 25 m in a breeze, stops at about 30 m on a still night, spreads, cull box holds it, warm start no dearer than the near plume; the nearest-six cap and its hand-over when a fire goes out; 13 Nov: at twice the average tree still 60% thick (tiers 1 to 3, calm and 2 m/s), an 8 m/s wind lays it low, sideways and thins it sooner, it goes with the wind heading | PASS (PC, 50b05ed5); 13 Nov checks pending (PC) |
+| `test_far_smoke` (new) | the server's far list (100 m to 2048 m, nearest first, at most 32, tiers, cold fires and coals left out), protocol 114, the client's plumes (one per fire, nearest 8 drawn, none past the view distance, gone fires dropped, a grown fire gets the bigger plume, the near fires' materials, smoke only) | PASS (David4, 6a7b9b44) |
+| `test_fire_smoke` (extended) | the tall plume: unseen at the fire, above 35 m in a calm and 25 m in a breeze, stops at about 30 m on a still night, spreads, cull box holds it, warm start no dearer than the near plume; the nearest-six cap and its hand-over when a fire goes out; 13 Nov: at twice the average tree still 60% thick (tiers 1 to 3, calm and 2 m/s), an 8 m/s wind lays it low, sideways and thins it sooner, it goes with the wind heading | PASS (PC, 50b05ed5); 13 Nov checks PASS (David4, 6a7b9b44) |
 
 PC run, 12 Nov 2026, Dave's PC (ManlandRyzen5), Godot 4.7.2 voxel build, separate worktree at `50b05ed5a9145cd18f75dceac283424ab5584477`: **68/68 PASS** (68 distinct tests after removing the names on both lists). Scoped plan agreed by the gate reviewer: the selector's set for the non-trigger files (60, the always set included) plus test_fire_state_look, test_lit_fixture, test_forge_models, test_flora_budget, test_flora_load_order, test_flora_close, test_fruit_tree, test_fruit_share, test_season_fruit, test_fell_autosplit, test_bare_winter, test_tree_sway, test_leanto_collider, test_cave_not_rock, test_buildable_looks_b4. The full selection (202, from the shared `tree_builder.gd` and `building_look.gd`) is deferred to the broad run before `main`.
 
@@ -74,6 +74,14 @@ PC run, 12 Nov 2026, Dave's PC (ManlandRyzen5), Godot 4.7.2 voxel build, separat
 - Warnings: no file this change touches is over `tools/warning_baseline.txt`; five other files already on dev are over (server_items.gd and four from M001/B001 work), not from this change.
 - Startup/world-load smoke (headless, play role): world loaded and joined in 33 s, 17 flora chunks, client frames 11.3 ms on average; the known abnormal headless exit (139). The log's "already initialized RID" and null-parameter errors were not compared with a dev baseline.
 - Not checked: anything on screen (both items stay NEEDS PLAYER VERIFICATION), frame time with many fires.
+
+Test run, 13 Nov 2026, David4 (Godot 4.7.2 voxel build, Linux headless, fresh clone, merge-base dev 12cc6657b) at `6a7b9b446950a07129a381f742a75ffad5920928`: **360/360 PASS** (the selector's 352 fast + 8 timing; the protocol change selects every fast test), no retries, 795 s. Then merged with dev 22c06df (hotbar, protocol 112: a protocol-number and PROTOCOL.md text conflict only) at f391f98e, CI green, merged into dev at `48b321e7ab3556ae8ed4054cd5a2b236fce56d52`.
+
+- Smoke printed: at twice the average tree (37 m) 94 to 97% as thick as at its thickest for tiers 1 to 3 in a calm and at 2 m/s; calm about half as thick at 63 m; 2 m/s breeze 59 m up and 50 m downwind; still night stops at about 45 m; 8 m/s wind 9 m up and 122 m downwind halfway through its life, torn apart sooner; follows the wind heading.
+- Far smoke printed: the far list [150, 400, 900, 1500, 2040] m with tiers [1, 2, 3, 2, 2], at most 32; 2 shown a second, nearest 8 drawn; smoke only.
+- Warnings: the same five files over the baseline as on dev; none new.
+- Startup smoke (play role): 0 SCRIPT ERRORs (dev merge-base on the same machine had 1), the known headless quit abort.
+- Not checked: anything on screen, frame time with far plumes, readability at 2 km through fog. Far smoke is drawn to the terrain view distance: 2 km on High and up, about 1.3 km on Medium, 770 m on Low; far plumes have no fire glow at night.
 
 ## What Dave should look at
 
