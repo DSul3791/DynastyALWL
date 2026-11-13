@@ -41,6 +41,8 @@ const PILE_LIFETIME_S := 7200.0          # a pile lives this long after the last
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
 const CHUNK_M := 256.0
 const NEAR_M := 100.0                    # items this close are sent to a player
+const FAR_FIRE_M := 2048.0               # lit campfires out to this far are sent as smoke only (far_fires, protocol 114; the High terrain view; the client drops those past its own view)
+const FAR_FIRE_COUNT := 32               # at most this many, nearest first
 const PICKUP_M := 3.0
 const DROP_REACH_M := 6.0                # a drop lands at most this far from where the server last saw the player
 const SYNC_EVERY_S := 1.0
@@ -219,6 +221,7 @@ var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
+var _far_fire_spots: Array = []     # [pos Vector3, fire tier 1..3] of every lit campfire at the last world sync (far_fires_near)
 var _sync_grid: Dictionary = {}     # the last world sync's NEAR_M grid, cell -> [world ids] (at most SYNC_EVERY_S old); the hammer list's stock polls read it
 var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent (a hammer poll that would send the same is skipped)
 var _stock_poll_ms: Dictionary = {} # peer -> msec of the last hammer poll answered
@@ -4704,9 +4707,13 @@ func _sync_world_items() -> void:
 	var send_usec: int = 0
 	var sent: int = 0
 	var grid: Dictionary = {}
+	var lit: Array = []
 
 	for id in _items:
 		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
+
+		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
+			lit.append([_items[id]["pos"], fire_tier_of(int(_items[id]["fire"]["state"]))])
 
 		if not grid.has(cell):
 			grid[cell] = []
@@ -4715,6 +4722,7 @@ func _sync_world_items() -> void:
 
 	var t_scan: int = Time.get_ticks_usec()
 	_sync_grid = grid
+	_far_fire_spots = lit
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
@@ -7133,6 +7141,34 @@ func _split(inv, slot: int, count: int) -> void:
 # that wood is gone. A lit fire's world-item state is its tier (40 survival, 1 campfire, 41 bonfire).
 static func fire_is_lit(state: int) -> bool:
 	return state == 1 or state == FIRE_STATE_SURVIVAL or state == FIRE_STATE_BONFIRE
+
+
+# A lit fire's tier for its look: 1 survival (40), 2 campfire (1), 3 bonfire (41), as the client's inventory_view._fire_tier.
+static func fire_tier_of(state: int) -> int:
+	return 1 if state == FIRE_STATE_SURVIVAL else (3 if state == FIRE_STATE_BONFIRE else 2)
+
+
+# Far campfire smoke (TEST-011, Dave approved 13 Nov 2026: smoke seen up to 2 km so a camp can be found from a hill): the lit campfires
+# farther than NEAR_M (closer ones come whole with world_items) and within far_m of `at`, nearest first, at most `count`, as
+# [positions, tiers] (protocol 114 far_fires). From the last world sync (at most SYNC_EVERY_S old).
+func far_fires_near(at: Vector3, far_m: float = FAR_FIRE_M, count: int = FAR_FIRE_COUNT) -> Array:
+	var rows: Array = []
+
+	for fire in _far_fire_spots:
+		var d: float = (fire[0] as Vector3).distance_to(at)
+
+		if d > NEAR_M and d <= far_m:
+			rows.append([d, fire[0], fire[1]])
+
+	rows.sort_custom(func(p: Array, q: Array) -> bool: return float(p[0]) < float(q[0]))
+	var points: PackedVector3Array = PackedVector3Array()
+	var tiers: PackedByteArray = PackedByteArray()
+
+	for row in rows.slice(0, count):
+		points.append(row[1])
+		tiers.append(int(row[2]))
+
+	return [points, tiers]
 
 
 func _fire_wood(fire: Dictionary) -> Dictionary:

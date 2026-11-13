@@ -1439,9 +1439,10 @@ const SMOKE_DEFAULTS := {"rise_m_s": [0.30, 0.39, 0.53], "amount": [90, 130, 190
 	"far_grey": 0.74, "fade": [[0.0, 0.0], [0.05, 1.0], [0.3, 0.65], [0.7, 0.25], [1.0, 0.0]], "wind_start_share": 0.25, "waver_m": 0.6,
 	"grow_shape": [[0.0, 0.0], [1.0, 1.0]], "density": [1.0, 1.0, 1.0], "life_share": [1.0, 1.0, 1.0], "light_grey": 0.7, "fire_light": 0.45,
 	"coals": {"amount": 30, "puff_m": 0.15, "rise_m_s": 0.25, "density": 0.45, "grow_to": 6.0},
-	"tall": {"amount": [24, 36, 48], "life_s": 60.0, "rise_m_s": [0.8, 1.0, 1.2], "calm_rise_m_s": 1.3, "rise_end_share": 0.45, "puff_m": [1.2, 1.6, 2.0],
-		"grow_to": 10.0, "alpha": 0.2, "near_grey": 0.55, "far_grey": 0.78, "waver_m": 2.0, "spread_deg": [4.0, 8.0], "night_top_m": 30.0,
-		"fade": [[0.0, 0.0], [0.06, 0.0], [0.15, 0.8], [0.35, 0.6], [0.7, 0.25], [1.0, 0.0]], "max_fires": 6, "fixed_fps": 10, "view_wide_m": 400.0, "view_high_m": 80.0}}
+	"tall": {"amount": [28, 42, 56], "life_s": 70.0, "rise_m_s": [1.2, 1.5, 1.8], "calm_rise_m_s": 1.6, "rise_end_share": 0.45, "puff_m": [1.2, 1.6, 2.0],
+		"grow_to": 10.0, "alpha": 0.2, "near_grey": 0.55, "far_grey": 0.78, "waver_m": 2.0, "spread_deg": [4.0, 8.0], "night_top_m": 45.0,
+		"fade": [[0.0, 0.0], [0.06, 0.0], [0.15, 0.8], [0.55, 0.75], [0.8, 0.4], [1.0, 0.0]], "max_fires": 6, "fixed_fps": 8, "view_wide_m": 450.0, "view_high_m": 100.0,
+		"wind_low_mps": 2.0, "wind_rise_mps": 1.5, "wind_fade_mps": 4.0, "min_rise_m_s": 0.15, "far_max_fires": 8}}
 const COALS_TIER := 0                     # _campfire_smoke(COALS_TIER): the thin wisp off a bed of glowing coals (fire_smoke.json "coals")
 static var _smoke_cfg: Dictionary = {}
 const FORGE_SMOKE_RISE := 0.7
@@ -1559,9 +1560,34 @@ static func smoke_brake(velocity: Vector3, still_night: float) -> float:
 # The tall plume's start velocity for fire tier 1 to 3: the wind as for the near plume, its own rise (calm at least "tall" calm_rise_m_s). On a still
 # clear night it rises only to "tall" night_top_m (the cold air over the ground holds it down), there spreading flat, still above most crowns.
 static func tall_velocity(wind_ms: float, heading: float, tier: int, still_night: float) -> Vector3:
-	var v: Vector3 = plume_velocity(wind_ms, heading, tall_tier("rise_m_s", tier), 0.0, tall_tier("calm_rise_m_s", tier))
+	var v: Vector3 = plume_velocity(wind_ms, heading, tall_rise(tier, wind_ms), 0.0, tall_tier("calm_rise_m_s", tier))
 	v.y = lerpf(v.y, 2.0 * tall_tier("night_top_m", tier) / maxf(tall_tier("life_s", tier), 0.1), clampf(still_night, 0.0, 1.0))
 	return v
+
+
+# The tall plume's rise in a wind (Dave 13 Nov 2026: "strong wind the smoke stays low and sideways. low wind it climbs higher and dissipates
+# slower"): the tier's rise_m_s up to wind_low_mps, then cut to 1 / (1 + the wind over that / wind_rise_mps), never under min_rise_m_s. So a medium
+# fire's smoke rises 1.5 m/s in a 2 m/s breeze, 0.5 m/s at 5 m/s and 0.3 m/s at 8 m/s, and the wind lays it over.
+static func tall_rise(tier: int, wind_ms: float) -> float:
+	var over: float = maxf(wind_ms - tall_tier("wind_low_mps", tier), 0.0)
+	return maxf(tall_tier("rise_m_s", tier) / (1.0 + over / maxf(tall_tier("wind_rise_mps", tier), 0.01)), tall_tier("min_rise_m_s", tier))
+
+
+# The share of its life the tall plume keeps its fade over: 1 up to wind_low_mps, then 1 / (1 + the wind over that / wind_fade_mps): a strong wind
+# tears the smoke apart sooner (0.5 at 6 m/s, 0.4 at 8 m/s).
+static func tall_fade_share(wind_ms: float) -> float:
+	return 1.0 / (1.0 + maxf(wind_ms - tall_tier("wind_low_mps", 1), 0.0) / maxf(tall_tier("wind_fade_mps", 1), 0.01))
+
+
+# The tall plume's fade (fire_smoke.json "tall" fade) with everything after its thickest point (0.15 of its life) squeezed into `share` of the rest.
+static func tall_fade(share: float) -> Gradient:
+	var rows: Array = []
+
+	for row in (smoke_cfg()["tall"] as Dictionary).get("fade", (SMOKE_DEFAULTS["tall"] as Dictionary)["fade"]):
+		var at: float = float(row[0])
+		rows.append([at if at <= 0.15 else 0.15 + (at - 0.15) * clampf(share, 0.05, 1.0), float(row[1])])
+
+	return smoke_fade(1.0, rows)
 
 
 # The tall plume's downward pull: by day the rise slows to "tall" rise_end_share of its start over its life; on a still clear night it stops at the end of
@@ -1608,6 +1634,12 @@ static func set_fire_air(wind_ms: float, heading: float, still_night: float) -> 
 	for tier in _tall_smoke:
 		var tall: Vector3 = tall_velocity(wind_ms, heading, tier, still_night)
 		_aim_smoke(_tall_smoke[tier], tall, tall_brake(tall, still_night), tall_tier("life_s", tier), (smoke_cfg()["tall"] as Dictionary).get("spread_deg", [4.0, 8.0]))
+		var ramp: GradientTexture1D = (_tall_smoke[tier] as ParticleProcessMaterial).color_ramp as GradientTexture1D
+		var share: float = snappedf(tall_fade_share(wind_ms), 0.05)   # rebuilt only when it moves a step (a new ramp texture)
+
+		if not is_equal_approx(float(ramp.get_meta("share", 1.0)), share):
+			ramp.gradient = tall_fade(share)
+			ramp.set_meta("share", share)
 
 	_cap_tall_plumes()
 
@@ -1700,8 +1732,9 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 	return plume
 
 
-# shortcut: a fire is drawn only while the server sends it (server_items.gd NEAR_M, 100 m), so its smoke is not seen from a hill farther off; revisit with a far list of lit fires from the server if Dave wants camps found from farther.
-static func _tall_smoke_plume(tier: int) -> GPUParticles3D:
+# A fire within world_items' 100 m (server_items.gd NEAR_M) gets this with its flames; one 100 m to 2 km off gets it alone (far_smoke_plume).
+# register false: the caller caps it (far_smoke.gd), not _cap_tall_plumes.
+static func _tall_smoke_plume(tier: int, register: bool = true) -> GPUParticles3D:
 	var tall: Dictionary = smoke_cfg()["tall"]
 
 	if not _tall_smoke.has(tier):
@@ -1717,7 +1750,7 @@ static func _tall_smoke_plume(tier: int) -> GPUParticles3D:
 		grow_tex.curve = smoke_grow(tall_tier("grow_to", tier))
 		material.scale_curve = grow_tex
 		var fade_tex: GradientTexture1D = GradientTexture1D.new()
-		fade_tex.gradient = smoke_fade(1.0, tall.get("fade", (SMOKE_DEFAULTS["tall"] as Dictionary)["fade"]))
+		fade_tex.gradient = tall_fade(1.0)
 		material.color_ramp = fade_tex
 		material.angle_min = -180.0
 		material.angle_max = 180.0
@@ -1753,6 +1786,11 @@ static func _tall_smoke_plume(tier: int) -> GPUParticles3D:
 	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var box: float = tall_tier("view_wide_m", tier)
 	plume.visibility_aabb = AABB(Vector3(-box * 0.5, -2.0, -box * 0.5), Vector3(box, tall_tier("view_high_m", tier), box))   # 60 s downwind in a breeze, up over the canopy
+
+	if not register:
+		plume.visible = false   # far_smoke.gd shows the nearest few (and restarts them warm)
+		return plume
+
 	var live: int = 0
 
 	for ref in _tall_plumes:
@@ -1760,6 +1798,13 @@ static func _tall_smoke_plume(tier: int) -> GPUParticles3D:
 
 	plume.visible = live < int(tall_tier("max_fires", tier))   # past the cap it starts hidden (no warm start paid); the cap corrects it within a second
 	_tall_plumes.append(weakref(plume))
+	return plume
+
+
+# A far campfire's smoke (protocol 114 far_fires, src/client/far_smoke.gd): the same tall column and materials (so the same wind), started hidden.
+static func far_smoke_plume(tier: int) -> GPUParticles3D:
+	var plume: GPUParticles3D = _tall_smoke_plume(tier, false)
+	plume.name = "FarSmoke"
 	return plume
 
 

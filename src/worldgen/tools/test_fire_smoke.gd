@@ -157,7 +157,7 @@ func _check_tall() -> void:
 	_check(not mat.turbulence_enabled and mat.damping_max == 0.0, "no turbulence or damping steals its rise")
 	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
 	var calm: Vector2 = _tall_at(mat, life, 0.7)
-	_check(calm.y >= 35.0 and absf(calm.x) < 0.01, "calm: still a fifth as thick at %.0f m straight up, over the tallest crowns about it" % calm.y)
+	_check(calm.y >= 35.0 and absf(calm.x) < 0.01, "calm: still about half as thick at %.0f m straight up, over the tallest crowns about it" % calm.y)
 	BuildingLook.set_fire_air(2.0, 0.0, 0.0)
 	var breeze: Vector2 = _tall_at(mat, life, 0.7)
 	_check(breeze.y >= 25.0 and breeze.x > 20.0, "a 2 m/s breeze: %.0f m up and %.0f m downwind, bent over but above the canopy" % [breeze.y, breeze.x])
@@ -166,6 +166,68 @@ func _check_tall() -> void:
 	var night_top: float = _tall_at(mat, life, 1.0).y
 	var night_end_v: float = (mat.direction * mat.initial_velocity_max).y + mat.gravity.y * life
 	_check(absf(night_top - BuildingLook.tall_tier("night_top_m", 2)) < 3.5 and night_end_v < 0.15, "a still clear night: it stops at about %.0f m and spreads there" % night_top)
+	# Dave 13 Nov 2026: "smoke should rise at least twice the height of the average tree before it starts to dissipate to much". The average
+	# tree: the middle of each species' height range, weighted by its plants per hectare over every biome (flora.json; about 19 m).
+	var table: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
+	var weight: float = 0.0
+	var height_sum: float = 0.0
+
+	for entry in table["entries"]:
+		if str(entry.get("kind", "")) != "tree" or bool(entry.get("retired", false)):
+			continue
+
+		var per: float = 0.0
+
+		for biome in (entry.get("per_hectare", {}) as Dictionary):
+			per += float(entry["per_hectare"][biome])
+
+		weight += per
+		height_sum += per * 0.5 * (float(entry["height_m"][0]) + float(entry["height_m"][1]))
+
+	var twice: float = 2.0 * height_sum / maxf(weight, 1.0)
+	var peak: float = 0.0
+
+	for k in range(101):
+		peak = maxf(peak, ramp.sample(float(k) / 100.0).a)
+
+	for air in [[2, 0.0], [3, 0.0], [1, 0.0], [2, 2.0], [3, 2.0], [1, 2.0]]:   # calm and a light breeze; a strong wind lays it low (below)
+		var tier_probe: Node3D = BuildingLook.fire(true, false, int(air[0]))
+		var tier_plume: GPUParticles3D = tier_probe.get_node("TallSmoke") as GPUParticles3D
+		var tier_mat: ParticleProcessMaterial = tier_plume.process_material as ParticleProcessMaterial
+		BuildingLook.set_fire_air(float(air[1]), 0.0, 0.0)
+		var share: float = 1.0
+
+		for k in range(1, 201):
+			if _tall_at(tier_mat, tier_plume.lifetime, float(k) / 200.0).y >= twice:
+				share = float(k) / 200.0
+				break
+
+		var thick: float = (tier_mat.color_ramp as GradientTexture1D).gradient.sample(share).a / maxf(peak, 0.001)
+		_check(share < 1.0 and thick >= 0.6, "tier %d fire, wind %.0f m/s: at twice the average tree (%.0f m) its smoke is still %.0f%% as thick as at its thickest" % [int(air[0]), float(air[1]), twice, thick * 100.0])
+		tier_probe.free()
+
+	# Dave 13 Nov 2026: "strong wind the smoke stays low and sideways. low wind it climbs higher and dissipates slower", and "it also needs to
+	# go with the wind direction".
+	BuildingLook.set_fire_air(2.0, 0.0, 0.0)
+	var light_half: Vector2 = _tall_at(mat, life, 0.5)
+	var light_ramp: Gradient = (mat.color_ramp as GradientTexture1D).gradient
+	var light_thick: float = light_ramp.sample(0.6).a
+	BuildingLook.set_fire_air(8.0, 0.0, 0.0)
+	var strong_half: Vector2 = _tall_at(mat, life, 0.5)
+	var strong_thick: float = (mat.color_ramp as GradientTexture1D).gradient.sample(0.6).a
+	_check(strong_half.y < 15.0 and strong_half.x > 5.0 * strong_half.y, "an 8 m/s wind: the smoke lies low (%.0f m up) and streams sideways (%.0f m downwind) halfway through its life" % [strong_half.y, strong_half.x])
+	_check(light_half.y > 2.5 * strong_half.y, "a light breeze lifts it far higher (%.0f m against %.0f m)" % [light_half.y, strong_half.y])
+	_check(strong_thick < 0.5 * light_thick, "and the strong wind tears it apart sooner (%.2f against %.2f thick at 60%% of its life)" % [strong_thick, light_thick])
+	BuildingLook.set_fire_air(5.0, PI * 0.5, 0.0)
+	var south: Vector3 = mat.direction * mat.initial_velocity_max + mat.gravity * life
+	_check(south.z > 3.0 and absf(south.x) < 0.01, "it goes the way the wind blows (toward +z here, %.1f m/s at the end)" % south.z)
+	var near_mat: ParticleProcessMaterial = near_plume.process_material as ParticleProcessMaterial
+	var near_end: Vector3 = near_mat.direction * near_mat.initial_velocity_max + near_mat.gravity * near_plume.lifetime
+	_check(near_end.z > 3.0 and absf(near_end.x) < 0.01, "and the near plume with it, both from the same world wind (%.1f m/s)" % near_end.z)
+	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
+	var calm_thick: float = (mat.color_ramp as GradientTexture1D).gradient.sample(0.6).a
+	_check(is_equal_approx(calm_thick, light_thick), "calm and a light breeze keep the full, slow fade")
+
 	var grow: Curve = (mat.scale_curve as CurveTexture).curve
 	_check(grow.sample(1.0) / grow.sample(0.0) >= 5.0 and mat.scale_max * grow.sample(1.0) >= 8.0, "it spreads: each puff %.0f m wide by the end" % (mat.scale_max * grow.sample(1.0)))
 	_check(plume.preprocess == life and float(plume.fixed_fps) * life <= 30.0 * float(cfg["life_s"]) + 0.5, "warm start no dearer than the near plume's (%d steps)" % int(float(plume.fixed_fps) * life))
