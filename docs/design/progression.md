@@ -1,110 +1,57 @@
-# Progression: from first stick to steel
+# Dynasty — Playable progression and tutorial dependency map
 
-Morgan, 10 Nov 2026; brought up to date with main by Jamie, 11 Nov 2026. Docs only. A two-page walk through the whole item and building system for Dave, gate by gate. It is drawn from `item_system.md` (draft 7) and `buildables_plan.md`; those two are the detail, this is the story. Costs are first pass. Names are "Tier - Item" only where an item comes in more than one material.
+**Current design: 13 November 2026; creator-approved tier capabilities, mechanics and naming. Implementation is not implied.** This is the practical progression outline for Goal instructions; exact new station blueprint costs not yet approved. Full item authority: [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md) §§2.1–2.7, 3.0, 3.3, 3.13. Detailed root-blocker work: [PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md](PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md). Do not treat this outline as a linear unlock gate: the Goals page automatically tracks all eligible goals and players may perform any working action out of order.
 
-**The shape:** seven gates. Each gate is a station you build, a material you can now work, and a set of things you now want. Nothing is locked by a tech tree: you pass a gate when you find the ore, build the station and own the tool.
+## Gate 1 — Hands and stone tools
 
----
+Collect sticks, stone, plant fibre, twine and suitable logs; make the Wooden/Stone Hammer and Stone Axe/Pickaxe. Construct a Campfire, Crude building pieces (including separate empty doorways and independently placed doors), Thatch Bed, Lean-to and Workbench with accessible materials. Craft basic charcoal at the campfire; a Kiln is a later bulk charcoal upgrade, **not** mandatory to access first metal. A full-grown tree produces a real log while tiny trees may yield only firewood/kindling. Building/repair materials follow existing player inventory, nearby storage and nearby ground sourcing. A repair action requires an equipped ordinary hammer's **right-click → Repair** (never a War Hammer).
 
-## Gate 1. Hand (the first hour)
+## Gate 2 — Campsite, leather and early production
 
-**You have:** your hands, sticks, stones, plant fibre, twine.
-**You make by hand:** Stone - Axe, Stone - Knife, Stone - Pickaxe, Wooden and Stone - Hammer, Wooden - Spade and Hoe, Stone - Wedge, Whetstone, Bone - Needle, Fishing rod, Snare.
-**You build (hammer, no station):** Campfire, Crude - Foundation, Crude - Wall, Crude - Doorway, Crude - Window, Crude - Roof 45, Crude - Roof 65, Thatch - Bed, Seat, Lean-to. Thatch is one storey.
-**You wear:** Fibre - Sandals, Fibre - Skirt, Fibre - Cloak (woven, no needle).
-**You cook:** the campfire. It also gives your first charcoal, bricks and clay pots.
-**What you now want:** a roof, fire that lasts, hide for warmer clothes, a bench.
+Build working Workbench, Tanning Rack and useful shelter and cooking facilities. Harvest suitable **oak** for Tannin Bark through the approved-to-be-implemented tree extraction, and **Scots Pine** for Pine Tar through its existing trunk/drop route once repaired. Process Hide into Leather using verified real water-filled containers; do not claim a loose free-standing Water item spawns in a way unsupported by game code. Sow, water and harvest real crops using client controls wired to the server, rather than showing nonfunctional menu options. Leatherwork, weaving and preservation branches are available as their actual materials/tools arrive. These are repair dependencies, not newly invented special XP gates.
 
-## Gate 2. Camp (the first days)
+## Gate 3 — First copper and bronze
 
-**New station:** Wooden - Workbench (16 Stick, 6 Twine, 4 Stone). Tool rack and Vice raise its level.
-**You make there (level 1):** Stone block (8 Stone), Cobblestone, Stone shingle, Wooden - Bow, Stone - Spade, Stone - Hoe, Stone - Sickle, Scraper, Javelin. Later at level 2: Leather - Jerkin, Fibre - Gambeson, Wooden - Shield, Wooden - Longbow, Leather - Quiver.
-**You wear:** the Hide set (Hood, Tunic, Trousers, Gloves, Mittens, Boots, Cloak). Everything sewn needs the **Bone - Needle**, a kept tool, one Bone and one Stone by hand.
-**You build:** Refined - Foundation, Wall, Doorway, Window, Ceiling, Roof, Stairs, Wooden - Chair, Table, Bench, Bed (Straw - Bed), Wooden - Chest; fences and gates (B2).
-**What you now want:** leather, bigger storage, a way to keep food.
+With **stone tools**, build **Primitive Smelter** (natural draft) and **Primitive Smithy** (stone anvil), without Planks, Nails, Iron or pre-existing metal equipment. Stone Pick can find Copper/Tin-bearing boulders. Primitive Smelter:
+- Hopper **20 Coal/Charcoal**, input **20 material units**, **NO output inventory**; completed ingots drop safely on the ground in front.
+- **20 seconds per ingot**. **1 Copper Ore → 1 Copper Ingot**, **1 Tin Ore → 1 Tin Ingot**, **1 Copper Ore + 1 Tin Ore → 2 Bronze Ingots**.
+- No tracked temperature mechanic. Hopper fuel quantity and per-ingot consumption are distinct; fuel rates need tuning.
+The Primitive Smithy shapes copper tools and bronze items/fittings. Use Bronze tools to reach iron-bearing deposits as the existing ore data requires. Copper tool roster and performance need actual recipes/tool definitions; do not imagine all material families must have a copper rung.
 
-## Gate 3. Log house (settling)
+## Gate 4 — Improved stations and iron
 
-**New stations:** Carpenter's bench (level 2), Tanning rack (hide → leather), Drying rack (jerky, dried fruit, herbs), Kiln (bricks at 2 Clay → 6, charcoal 2 Firewood → 2).
-**You make:** Leather set (Cap, Jerkin, Trousers, Boots, Gloves, Backpack), Fur and Wool clothes where the animals live, Sling, Longbow.
-**You build:** the Rustic tier (Foundation, Wall, Doorway, Window, Ceiling, Roof), Clay - Pot at the campfire, Preserving jar, Smoker.
-**Farming begins:** Tilled bed, Bucket (8 L), Wicker - Fish trap, Scarecrow, Compost.
-**What you now want:** metal.
+Construct **Improved Smithy** with integrated **Bronze Anvil**, forge and bellows; it can work iron, at accelerated station wear. Use Bronze fittings for **Improved Smelter**: hopper **40**, input **40**, finished-ingot rack **80**. With no player operating the bellows it produces Copper/Tin/Bronze at the **Primitive baseline 20 s/ingot**, no iron. A player operating the bellows allows **Iron Ingots** and raises throughput by **30%** (~**15.38 s/ingot**); leaving pauses unfinished Iron work. **1 Iron Ore → 1 Iron Ingot**. Forge **Iron Saw** and **Iron Anvil** at Improved Smithy. Iron Saw cuts a suitable 3 m softwood Log into **6 Planks**, or hardwood Log into **4 Hardwood Boards**, with no material substitution. Never require those boards to build the pre-saw stations.
 
-## Gate 4. Bronze
+## Gate 5 — Advanced steel production and craftwork
 
-**World check:** tin and copper both lie within about 500 m of the temporary spawn. No coal within 4 km, so early fuel is **charcoal**. Rock iron is scarce (skarns only; none on the land of the starter tiles). **Bog iron**, dug with a spade from fen, marsh, swamp and bog mud, is the land source near camp (live 11 Nov, #996 and #997).
-**New station:** Stone - Forge (level 1): copper and tin ore to Bronze ingot (3 Copper + 1 Tin → 4). **Stone - Workbench** (level 3) is stonework and cold-climate clothing.
-**You make:** Bronze - Axe, Pickaxe, Knife, Hammer (builder tier 3, so **any metal hammer lets you build any tier**), Spade, Hoe, Sickle, Saw, Chisel, Spear, Sword, Dagger, Mace, Shield, Arrow, Helm, Greaves, Scale shirt, Spyglass (level 4), Compass, **Bronze nails** and **Bronze hinges** (1 ingot → 100 or 20; they fill any nails or hinges cost, #1001).
-**You build:** the Sturdy tier (Foundation, Wall, Doorway, Window, Ceiling, Roof) with the Stonecutter's bench for carved stone, the **Superior tier** (bricks come from the campfire and kiln), every gate, door and chest that needs nails or hinges, Well, Wooden - Hand pump, Wooden - Channel, standing torches, Wooden - Lantern.
-**Alternative:** the Clay bloomery smelts iron ore or bog iron directly (5 ore → 1 ingot, slowly) before you can afford a Brick - Forge.
-**What you now want:** iron, a forge that can work it.
+Use the Iron Anvil as a component to construct **Advanced Smithy**; this smithy crafts a **Steel Anvil** later. Build **Advanced Smelter** as **ONE combined station** with windmill and two mechanically driven bellows. Hopper **80**, material input **80**, finished-ingot output **160**. When wind is strong enough, its nominal throughput is **2 ingots per ~11.83-second cycle** (each lane 30% faster than actively staffed Improved); more wind may increase throughput, but **too little wind = ZERO processing** until it returns. For Steel put **Iron Ore and a separately consumed Coal/Charcoal carbon ingredient together in the material input**, with additional Coal/Charcoal in the **fuel hopper**. Carbon:iron quantity still needs review; never copy old 2 Iron Ingots + fuel or old temperature rules.
 
-## Gate 5. Iron
+## Gate 6 — Master Smithy and high-tier industry
 
-**New station:** Brick - Forge (level 2; 20 Brick, 10 Stone, 4 Clay mortar) smelts iron and works iron nails, hinges and rivets; with an Anvil (level 3) it makes Iron bands.
-**You make:** Iron tools, weapons and mail (Axe, Pickaxe, Hammer, Scythe, Saw, Chisel, Spear, Sword, Dagger, Battle axe, Shield, Bolt, Helm, Greaves, Mail shirt, Gauntlets), Iron - Chest, Needle, Jaw trap, Iron - Hand pump, Iron - Pipe, Tap, Deep-well pump (force pump, up to 10 m), Iron - Lantern.
-**You build:** metal fences and gates, Raised cistern for gravity water, lamp posts, Iron - Brazier.
-**What you now want:** the best steel, the best armour.
+Create Steel Anvil at **Advanced Smithy**, use it to build ornate **Master Smithy**, with its **integrated quencher**. Masterwork equipment supports +1/+2 physical craftsmanship, separately from enchantment effects. Tempering where suitable is a property of the specific crafted steel item, not a second catalog item or an add-on station. Smithies break into an unusable **"Needs repair"** state at zero durability while remaining placed; use an equipped ordinary hammer's right-click **Repair** with required materials carried, stored nearby or lying on the ground. War Hammers are not construction tools. Repairs do not delete station contents; actual material cost/restoration are pending balance.
 
-## Gate 6. Steel
+## Gate 7 — Settlement, trade, storage and discovery
 
-**Needs:** a Brick - Forge **with an Anvil within 5 m** (level 3). The anvil costs 5 Iron ingot + 1 Log, so it needs the level-2 forge first. A Stone - Forge never reaches steel or iron, whatever its add-ons.
-**You make:** Steel tools (Axe, Pickaxe, Hammer, Saw, Chisel, Scythe), Sword, Greatsword, Battle axe, Halberd, Shield, Crossbow, Cuirass, Greaves, Gauntlets, Helm, Spyglass (level 5).
-**What you now want:** trade, comfort, the wider world.
+Use **Small/Medium/Large Resource Bins**, each holding only one type at a time, assigned by first item and freed for reassignment only when emptied. Capacities **1,000 / 5,000 / 10,000 units**; construction **16 Planks + 32 Nails / 32 + 64 / 64 + 128**. Solid sides/open top show a single vertically moving material-surface mesh. Never mix Coal and Charcoal in one bin. Smithy/Smelter hopper fuel auto-pulls available Coal/Charcoal from appropriate bins, kilns and fires within **30 m** every **300 s**, oldest consumer first, without permission checks; it never pulls wood, ground items or generic chests, and never uses the steel carbon INPUT automatically.
 
-## Gate 7. Trade and comfort
+Production branches include Leather, Tailoring, Farming, Water, Sawmill, high-tier construction and approved storage/warehousing. Where buildables in these branches remain locked or their actions missing, the corresponding tutorial goal is **not ready** until its actual gameplay is repaired. Keep all goals automatically eligible and completion-aware, never requiring manual acceptance.
 
-**Silver and Gold:** ingots, Silver - Ring, Gold - Ring, coins (Copper, Bronze, Silver, Gold). Claw and Bone necklaces, Cloth banners and tapestries, Feather - Bed and Canopy bed, Mead, Ale, Cider.
-**Boats and carts** (separate design): Log - Raft, Wooden - Rowboat, Sailboat, Cart, Saddle.
+The Journal **Map** page does **not** display an existing omniscient world map. Each player discovers the world while travelling and sees a **charcoal-drawn map**, initially rough, whose accuracy grows with **Mapping skill** from exploration and drawing Map Scrolls. Revisit older explored territory to improve the drawing with new skill. Scrolls may later be shared/sold. The Journal keeps clean existing Inventory/Crafting styling, with no cluttered separate mapping screen. Full [Map design](PLAYER_CARTOGRAPHY_MAP_DESIGN.md).
 
----
+## Buildings: seven material tiers, separate from smithy/smelter tiers
 
-## What carries you between gates
-
-| From | To | The unlock |
-|---|---|---|
-| 1 → 2 | Camp | Wooden - Workbench |
-| 2 → 3 | Log house | a needle, then a Tanning rack for leather, then a Kiln |
-| 3 → 4 | Bronze | find copper and tin, build a Stone - Forge, charcoal for fuel |
-| 4 → 5 | Iron | iron ore or bog iron, a Brick - Forge (or the Clay bloomery first) |
-| 5 → 6 | Steel | an Anvil beside the Brick - Forge |
-
-## The ladders in one table
-
-| Family | Ladder |
+| Building quality | First availability / principle |
 |---|---|
-| Tools and weapons | Wooden, Stone, Bronze, Iron, Steel (copper tools: a future option, decision 70) |
-| Building | Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified (metal pieces: Iron, Steel) |
-| Clothes | Fibre, Hide, Leather, Fur, Wool, Linen (a property table, not a strict ladder) |
-| Armour | Bronze, Iron, Steel |
-| Workbench | Wooden - Workbench, Carpenter's bench, Stone - Workbench; Vice and Tool rack raise the level (1 to 5) |
-| Forge | Stone (1), Brick (2), Brick plus Anvil (3) |
+| Crude | First gathered resources; 45° and 65° roof panels attach to wall tops and horizontal ends, not freestanding legs. |
+| Rustic | Logs and elementary carpentry; doors separate from empty frames. |
+| Refined | Planks/Hardwood Boards after Iron Saw, according to actual recipes (never interchangeable). |
+| Sturdy | Stonework and relevant metal fittings. |
+| Superior | Brick/advanced masonry; exact door recipes in master §3.0. |
+| Engineered | Concrete and iron fittings where the blueprint requires. |
+| Fortified | Concrete/strong iron fittings, defensive structures. |
 
-## What is still open
+Do not teach one isolated foundation or a decorative fake-doorway as a functioning complete tier. Check Foundation, Wall, Doorway, Door, Window and both roof slopes as a family at each tier that actually supports them.
 
-- Hot-stone numbers (heat duration), and whether brick arrives at the bronze gate (it does, because a Bronze - Hammer is tier 3 and bricks come from the campfire).
-- Resolved 11 Nov: land iron is bog iron (#996, #997); the boulder ore lookup is fixed (#913).
-- The station-body code rule (Steve). (Slots `outer` and `waist` shipped in #921.)
-- Bone - Needle stays as a kept tool for all sewn clothes. This reverses Dave's 25 Oct trim of the sewing needle (coordinator ruling; Dave to see it in the morning summary).
-- Bedding stays as a material (the "Any bedding" group); only the straw variant is retired.
-- Section 16 of the master list, now ruled; renames and recipe changes are with Jamie.
+## Playability proof required
 
-
----
-
-## Building tier ladder (Dave, locked 10 Nov): seven quality words
-
-**Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified** (all seven live) for building pieces only (Foundation, Wall, Doorway, Window, Ceiling, Roof, Roof corner, Stairs, Pillar, Fence, Gate). Furniture, stations, tools keep material words. Palisade stays a plain name.
-
-| Tier | Gate | Material | Roof |
-|---|---|---|---|
-| Crude | 1 Hand | scrounged: sticks, thatch, stones | thatch |
-| Rustic | 2/3 Axe and hammer | logs (2 m log-frame foundation) | bark shingle |
-| Refined | 3 Saw or sawmill | planks and timber | wooden shakes |
-| Sturdy | 4 Bronze | cut stone, clay mortar | stone slab |
-| Superior | 4/5 Kiln | fired brick, clay mortar | clay roof tile |
-| Engineered | after 5 Iron | Concrete (Lime powder + Sand + Stone at the Mixer) | clay roof tile |
-| Fortified | Iron bands (Brick - Forge with an Anvil) | Concrete + Iron bands | none (defensive) |
-
-Concrete chain (live): Limestone, Kiln, Lime powder; Mixer; Iron band from an ingot at a Brick - Forge with an Anvil. Details in wood_tier_note.md.
+Use a fresh non-admin character; gather all inputs legitimately; build the exact stations in prerequisite order; operate bellows by player input; stop/restart windmill machinery; save/reload all inventories and queues; check unit conservation, Repair interactions, bin assignments and mixed storage/ground repair sourcing, roof and door placement. Validate each associated automatic goal triggers exactly once regardless of what the HUD shows. **No design document is proof of a working F6 playthrough.**
