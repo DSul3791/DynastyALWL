@@ -10,7 +10,7 @@ Authority: `docs/buglists/BUGLIST-002.md`, `docs/design/DYNASTY_MASTER_ITEMS.md`
 
 ## Reconciliation: existing records
 
-| Tier | Single doorway (kept id) | Change | Old open twin (state retired, kind -> legacy_kinds) |
+| Tier | Doorway (kept id) | Change (costs here superseded by decision 2: every frame = its tier's wall) | Old open twin (state retired, kind -> legacy_kinds) |
 |---|---|---|---|
 | Crude | `thatch_doorway` bp 32, item 266, state 44 | already empty (BUG-010); cost 6 twine 25 thatch 12 stick -> 15 thatch 8 stick 3 twine; description fixed | `thatch_doorway_open` 91 (already retired) |
 | Rustic | `log_doorway` bp 57, item 567, state 81 | door removed; cost unchanged 5 log 2 twine | `log_doorway_open` 82 |
@@ -43,7 +43,7 @@ Order: tiers Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified; wi
 | Engineered | `engineered_double_doorway` | `engineered_arched_doorway` | `engineered_double_arched_doorway` | 8 concrete |
 | Fortified | `fortified_double_doorway` | `fortified_arched_doorway` | `fortified_double_arched_doorway` | 9 concrete, 5 iron_band |
 
-Names: `<Tier> - Double doorway`, `<Tier> - Arched doorway`, `<Tier> - Double arched doorway` (existing singles keep `<Tier> - Doorway`). Hammer level as the tier's doorway (Fortified 3, others 1). Category "Walls and doors". Structure rows copy the tier's single doorway row (material, sound, cap, max_rise, piece_kind `wall`, variant_group `wall`, footprint_z) with footprint_x 2.0 (single) or 4.0 (double) and NO `use`, `toggle`, `blocks_walk`.
+Names: `<Tier> - Double doorway`, `<Tier> - Arched doorway`, `<Tier> - Double arched doorway` (existing doorways keep `<Tier> - Doorway`). Hammer level as the tier's doorway (Fortified 3, others 1). Category "Walls and doors". Structure rows copy the tier's single doorway row (material, sound, cap, max_rise, piece_kind `wall`, variant_group `wall`, footprint_z) with footprint_x 2.0 (single) or 4.0 (double) and NO `use`, `toggle`, `blocks_walk`.
 
 ### 28 doors: blueprints 272-299, items 1276-1303, states 312-367
 

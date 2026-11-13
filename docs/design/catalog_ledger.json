@@ -16462,7 +16462,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): empty single arched doorway frame, blueprint 253, structure state 293; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): empty arched doorway frame, blueprint 253, structure state 293; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Crude - Double arched doorway",
@@ -16516,7 +16516,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): empty single arched doorway frame, blueprint 256, structure state 296; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): empty arched doorway frame, blueprint 256, structure state 296; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Rustic - Double arched doorway",
@@ -16552,7 +16552,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): empty single arched doorway frame, blueprint 258, structure state 298; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): empty arched doorway frame, blueprint 258, structure state 298; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Refined - Double arched doorway",
@@ -16606,7 +16606,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): empty single arched doorway frame, blueprint 261, structure state 301; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): empty arched doorway frame, blueprint 261, structure state 301; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Sturdy - Double arched doorway",
@@ -16660,7 +16660,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): empty single arched doorway frame, blueprint 264, structure state 304; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): empty arched doorway frame, blueprint 264, structure state 304; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Superior - Double arched doorway",
@@ -16714,7 +16714,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): empty single arched doorway frame, blueprint 267, structure state 307; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): empty arched doorway frame, blueprint 267, structure state 307; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Engineered - Double arched doorway",
@@ -16768,7 +16768,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): empty single arched doorway frame, blueprint 270, structure state 310; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): empty arched doorway frame, blueprint 270, structure state 310; no door in it, the door is a separate item. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Fortified - Double arched doorway",
@@ -16804,7 +16804,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single door, blueprint 272, structure states 312 (shut) and 313 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): door, blueprint 272, structure states 312 (shut) and 313 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Crude - Double door",
@@ -16840,7 +16840,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single arched door, blueprint 274, structure states 316 (shut) and 317 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): arched door, blueprint 274, structure states 316 (shut) and 317 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Crude - Double arched door",
@@ -16876,7 +16876,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single door, blueprint 276, structure states 320 (shut) and 321 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): door, blueprint 276, structure states 320 (shut) and 321 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Rustic - Double door",
@@ -16912,7 +16912,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single arched door, blueprint 278, structure states 324 (shut) and 325 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): arched door, blueprint 278, structure states 324 (shut) and 325 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Rustic - Double arched door",
@@ -16948,7 +16948,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single door, blueprint 280, structure states 328 (shut) and 329 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): door, blueprint 280, structure states 328 (shut) and 329 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Refined - Double door",
@@ -16984,7 +16984,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single arched door, blueprint 282, structure states 332 (shut) and 333 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): arched door, blueprint 282, structure states 332 (shut) and 333 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Refined - Double arched door",
@@ -17020,7 +17020,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single door, blueprint 284, structure states 336 (shut) and 337 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): door, blueprint 284, structure states 336 (shut) and 337 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Sturdy - Double door",
@@ -17056,7 +17056,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single arched door, blueprint 286, structure states 340 (shut) and 341 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): arched door, blueprint 286, structure states 340 (shut) and 341 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Sturdy - Double arched door",
@@ -17092,7 +17092,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single door, blueprint 288, structure states 344 (shut) and 345 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): door, blueprint 288, structure states 344 (shut) and 345 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Superior - Double door",
@@ -17128,7 +17128,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single arched door, blueprint 290, structure states 348 (shut) and 349 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): arched door, blueprint 290, structure states 348 (shut) and 349 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Superior - Double arched door",
@@ -17164,7 +17164,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single door, blueprint 292, structure states 352 (shut) and 353 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): door, blueprint 292, structure states 352 (shut) and 353 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Engineered - Double door",
@@ -17200,7 +17200,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single arched door, blueprint 294, structure states 356 (shut) and 357 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): arched door, blueprint 294, structure states 356 (shut) and 357 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Engineered - Double arched door",
@@ -17236,7 +17236,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single door, blueprint 296, structure states 360 (shut) and 361 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): door, blueprint 296, structure states 360 (shut) and 361 (open); fits any doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Fortified - Double door",
@@ -17272,7 +17272,7 @@
     "test_hammer_list"
    ],
    "accepted_commit": null,
-   "note": "BUGLIST-002 (13 Nov 2026): single arched door, blueprint 298, structure states 364 (shut) and 365 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+   "note": "BUGLIST-002 (13 Nov 2026): arched door, blueprint 298, structure states 364 (shut) and 365 (open); fits any arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Fortified - Double arched door",

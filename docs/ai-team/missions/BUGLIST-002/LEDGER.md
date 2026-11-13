@@ -29,13 +29,14 @@ States: VERIFIED FIXED / STILL FAILING / NEEDS PLAYER VERIFICATION / BLOCKED. No
 - Old docs still describing door looks: `art/BUILDING_TIERS_LOOKS.md`, `art/ITEM_ART_STATUS.md`.
 
 ## Review
-- Gate review of `1118b8a`: PASS WITH FIXES. MUST 1 = frame costs need Dave's approval (decision 2, open). SHOULD 2 (a frame still a site with a door could be taken down) and SHOULD 3 (shut double door left jambs passable to animals) fixed in `df27ad0` (`grid_x` = frame width on shut doors; take-down guard before the site branch). Re-review of `df27ad0`: PASS.
+- Gate review of `1118b8a`: PASS WITH FIXES. MUST 1 = frame costs need Dave's approval (decision 2: resolved by Dave 13 Nov, frames cost a wall). SHOULD 2 (a frame still a site with a door could be taken down) and SHOULD 3 (shut double door left jambs passable to animals) fixed in `df27ad0` (`grid_x` = frame width on shut doors; take-down guard before the site branch). Re-review of `df27ad0`: PASS.
 - Test-only fixes after the PC run: `73c83f7` (review FAIL: the look-test tolerance was a no-op), `066c46d` (real cause: `_clear_half` at y = 2.0). Re-review of `066c46d`: PASS.
 
 ## Test evidence (David4: Linux, Godot 4.7.2 voxel build, headless, fresh import, 2 jobs)
-- `df27ad0` (base dev `bd5a00b`), selector plan `tests_for_diff.py bd5a00b df27ad0`: 257/259 pass, timing 4/4, no flakes, 265 s. Failures: test_doors (2), test_door_looks (14 rectangular doors), all test-side faults, fixed above. Checks: lanes, selftest, check_look_names (305 looks) PASS; warnings: none new; validate_items: 28 errors, all the arched name-length rule (decision 3, open). Startup smoke: 0 script errors, known exit 134. Logs: /work/lanerun/bl002_plan, /work/lanerun/bl002_extra.
+- `df27ad0` (base dev `bd5a00b`), selector plan `tests_for_diff.py bd5a00b df27ad0`: 257/259 pass, timing 4/4, no flakes, 265 s. Failures: test_doors (2), test_door_looks (14 rectangular doors), all test-side faults, fixed above. Checks: lanes, selftest, check_look_names (305 looks) PASS; warnings: none new; validate_items: 28 errors, all the arched name-length rule (decision 3: resolved by Dave 13 Nov in 79669de). Startup smoke: 0 script errors, known exit 134. Logs: /work/lanerun/bl002_plan, /work/lanerun/bl002_extra.
 - `066c46d` (diff from df27ad0: those two test files only): test_doors PASS, test_door_looks PASS (28 frames, 28 doors, 0 failures); validate_items the same 28 known errors only; no new warnings. Logs: /work/lanerun/bl002b_tests, /work/lanerun/bl002b_extra.
 - NOT RUN: picture lanes, any visual, sound or frame-rate check (headless lane). Every item stays NEEDS PLAYER VERIFICATION until Dave's F6 check.
 
-## Decision 3 (open)
-validate_items allows four space-separated words and counts the tier "-": "Crude - Arched door" / "... doorway" are five (28 names, Dave's approved configuration names). Recommended: the check stops counting the tier dash. Nothing renamed meanwhile; dev does not take a failing validator.
+- `79669de` (Dave's rulings: frame costs = wall, no "Single", tier dash not a word): gate review PASS WITH FIXES (docs only, fixed in the next commit). Needs a PC re-run of test_blueprints, test_doors, test_door_looks and validate_items (expected 0 errors). NOT RUN yet.
+- Open confirmations with Dave: double frame = two walls; Iron/Steel doorways keep old cost minus hinges.
+- Note: old doorways placed before this change refund the new (wall) cost on take-down.
