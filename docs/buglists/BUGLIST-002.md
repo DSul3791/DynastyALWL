@@ -23,9 +23,25 @@
 - The first two have **straight rectangular tops**, not arches. Arched openings are available for suitable ordinary buildings, including wood and stone construction; they are not exclusive to future ships.
 - The established quality progression is **Crude → Rustic → Refined → Sturdy → Superior → Engineered → Fortified**. **Iron and Steel are materials**, not quality tiers. Sturdy is an existing normal construction tier and must not be omitted. Material, quality and configuration are separate attributes.
 - **Approved wood-stock definitions:** Plank (`lumber`) = **6 inches wide × 4 inches thick**, rough surface. Hardwood board = **6 inches wide × 2 inches thick**, smooth, shiny surface. Same width; Plank is twice as thick. These are cross-sectional dimensions, not door size or board length.
-- **Approved door materials:** Rustic = **Plank with wooden hinges**; Refined = **Hardwood boards + Nails + metal Hinges**; Sturdy = **Plank + Nails + metal Hinges**; Superior = **two layers of smooth, shiny Hardwood boards, attractive nails, ornate metal hinges and a handsome handle**; Fortified = **all-metal iron + steel + rivets**, no wooden core. Superior must look thick and elegant, appropriate for a castle or fine house. Ornate hardware does not automatically require new item types. Engineered remains wood with iron reinforcement. Exact ingredient quantities remain to be approved by Dave, not delegated to Claude.
+- **Approved door materials:** Rustic = **Plank with wooden hinges**; Refined = **Hardwood boards + Nails + metal Hinges**; Sturdy = **Plank + Nails + metal Hinges**; Superior = **two layers of smooth, shiny Hardwood boards, attractive nails, ornate metal hinges and a handsome handle**; Fortified = **all-metal iron + steel + rivets**, no wooden core. Superior must look thick and elegant, appropriate for a castle or fine house. Ornate hardware does not automatically require new item types. Engineered remains wood with iron reinforcement. Exact door ingredient quantities are now approved in Master Items Catalog section 3.0; implement them without adding separate hinges, nails, rivets or handles as ingredient costs.
 - Compatible doors and frames must match their **geometry and dimensions**. Do **not** require identical materials or quality tiers unless an independently approved rule requires it. A matching door must not be rejected merely because its tier or material differs from the frame.
 - Preserve the approved building grid and the existing 4 m double-door opening wherever applicable. Keep door dimensions aligned with the actual frame geometry; do not invent new universal sizes.
+
+### Approved door crafting costs
+
+These ingredients and counts are **director-approved** for the door items; doorway-wall costs are separate. Hinges, nails, rivets and handles are incorporated into the listed materials, not additional ingredient requirements. Keep the visual hardware on the model.
+
+| Tier | Single Door / Single Arched Door | Double Door / Double Arched Door |
+|---|---|---|
+| Crude | 50 Stick, 100 Twine | 100 Stick, 200 Twine |
+| Rustic | 5 Plank | 10 Plank |
+| Refined | 6 Hardwood board, 1 Iron ingot | 12 Hardwood board, 2 Iron ingot |
+| Sturdy | 6 Plank, 2 Iron ingot | 12 Plank, 4 Iron ingot |
+| Superior | 12 Hardwood board, 2 Iron ingot, 1 Steel ingot | 24 Hardwood board, 4 Iron ingot, 2 Steel ingot |
+| Engineered | 12 Plank, 4 Iron ingot | 24 Plank, 8 Iron ingot |
+| Fortified | 10 Iron ingot, 10 Steel ingot | 20 Iron ingot, 20 Steel ingot |
+
+**Simple invariant:** Double doors use exactly twice the same-tier single-door ingredients. Arched doors cost exactly the same as their corresponding rectangular doors. Do not introduce arch premiums or extra material classes. See the master catalog for art/geometry design.
 
 ### Implementation requirements
 1. Audit the live `dev` catalog, master list, ledger, recipes, blueprints, structures, existing doorway variants and opening/closing states **before editing**.
@@ -34,7 +50,7 @@
 4. Door placement must validate the built frame and correctly match single/double width and rectangular/arched profile. Preview and actual placement decisions must agree, with a meaningful refusal when invalid.
 5. Opening, closing, collision, movement through the opening, ownership of interaction state, multiplayer synchronization, and save/reload must work correctly. For double doors, ensure both leaves function as a double-door assembly.
 6. Removal or replacement of a door leaves the doorway wall intact. Do not create duplicate doors or lose existing structures during save/load. Follow the **current approved save policy** rather than inventing a new migration requirement.
-7. Update the master catalog, live catalog ledger, applicable item/blueprint/recipe/structure definitions, descriptions, icons and implementation documentation consistently. **Dave and ChatGPT will settle each door's complete crafting ingredient list and quantities before recipe implementation.** Claude must inventory existing item IDs, identify technical constraints, and implement the subsequently approved recipes exactly; it must not choose ingredients or quantities by itself. Rustic wooden hinges should use the existing wood material chain if possible, not automatically a new item.
+7. Update the master catalog, live catalog ledger, applicable item/blueprint/recipe/structure definitions, descriptions, icons and implementation documentation consistently. **Door ingredient lists and quantities are approved above; implement them exactly.** Audit item IDs and report technical conflicts rather than changing recipes. Separate doorway-frame costs remain subject to existing approved catalog definitions. Rustic wooden hinges should use the existing wood material chain if possible, not automatically a new item.
 8. This is **specific owner authorization** for the door/doorway corrections and additions stated here. It does not lift the catalog freeze for other items or authorize changing unrelated tiers, construction pieces, or game systems.
 
 ### Verification and delivery
