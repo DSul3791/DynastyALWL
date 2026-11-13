@@ -535,6 +535,18 @@ static func clean_inst(raw: Variant, in_bag: bool = false) -> Dictionary:
 	return out
 
 
+# clean_inst for the instance of item `number` as a save loads it: an item that is not a bag (items.json bag_slots 0 or absent) never carries a `bag`.
+# This is how an older save's backpack contents are dropped: the two backpacks lost their slots (Dave 13 Nov 2026, "Backpacks do not have slots.
+# The only thing they do is give you more carry weight."). A real bag keeps its contents. No table (a bare test inventory): nothing is dropped.
+static func clean_inst_of(table, number: int, raw: Variant) -> Dictionary:
+	var out: Dictionary = clean_inst(raw)
+
+	if out.has("bag") and table != null and int(table.entry(table.id_of(number)).get("bag_slots", 0)) <= 0:
+		out.erase("bag")
+
+	return out
+
+
 # One row of a bag's contents, cleaned: [number, count, wear] and, with an instance, [.., 0, inst] (no favourites in a bag); [0, 0, 0] if unreadable.
 static func _clean_row(row: Variant) -> Array:
 	if typeof(row) != TYPE_ARRAY or (row as Array).size() < 3 or not (row as Array).slice(0, 3).all(func(v: Variant) -> bool: return typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT):
@@ -638,6 +650,6 @@ func from_json_array(data: Array) -> void:
 		counts[i] = clampi(int(data[i][1]), 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0
 		fav[i] = numbers[i] if data[i].size() > 3 and int(data[i][3]) == 1 else 0
-		inst[i] = clean_inst(data[i][4]) if data[i].size() > 4 and numbers[i] != 0 else {}
+		inst[i] = clean_inst_of(table, numbers[i], data[i][4]) if data[i].size() > 4 and numbers[i] != 0 else {}
 
 	trim()

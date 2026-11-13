@@ -7,8 +7,8 @@ extends SceneTree
 #   2. wood and metal: bog iron dug with a Wooden spade, charcoal, the Smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
 #      boards, nothing bought;
 #   3. construction and equipment: Leatherworking table, Loom, Tailor's table; Thread, Leather strap, Fibre cloth, a Fibre - Gambeson; a Rustic - Chest
-#      and a Crude - Chair from boards; an iron weapon and an iron armour piece at the Smithy; gambeson + mail worn in layers; a backpack filled and
-#      worn (capacity); wear from use and repair at the station; a Tempered steel item from Blast furnace steel;
+#      and a Crude - Chair from boards; an iron weapon and an iron armour piece at the Smithy; gambeson + mail worn in layers; a backpack
+#      worn (it has no slots: it cannot be opened); wear from use and repair at the station; a Tempered steel item from Blast furnace steel;
 #   4. cooking and preservation: Food preparation table, Flatbread, a Sauerkraut batch sealed and matured, Smoked meat, Dried mushrooms, a board set
 #      on a Serving platter on the table, a portion eaten, portions conserved;
 #   5. food effects: three groups active, XP only when earned, expiry, an energy aid costs no Fitness;
@@ -700,43 +700,18 @@ func step3_construction_and_equipment() -> void:
 	alone_m = float(items.table.entry("mail_shirt")["protect"]["slashing"]) * float(items.table.entry("mail_shirt").get("cover", 1.0)) * float(items._protection_cfg["slots"]["body"])
 	check(both > alone_g and both > alone_m - 0.0001 and both < alone_g + alone_m + 0.0001, "3o. layered they stop %.3f of a cut: more than the gambeson alone (%.3f), not more than both summed" % [both, alone_g])
 
-	# The backpack: worn, filled, its capacity (slots) holds; what it holds counts in the carried weight.
+	# The backpack: worn. It has no slots (Dave 13 Nov 2026: only carry weight), so it cannot be opened or filled as a container.
 	items.action(1, Net.ACT_WEAR, slot_of("backpack"), 0, 0, Vector3.ZERO)
 	var back_at: int = items._worn_places().find("back:base")
 	check(back_at >= 0 and items.worn_of(1)[back_at] == n("backpack"), "3p. the backpack is worn on the back with the gambeson and mail")
 	var pack_id: int = -1 - back_at
-	var room: int = BagRules.slots_of(items.table, n("backpack"))
-	# Stackable things stack without limit; a bag's capacity is its slots: one more kind than it has slots is refused.
-	var kinds: Array = ["stone", "stick", "plant_fibre", "clay", "sand", "flint", "leaves", "firewood", "bone", "charcoal", "twine", "soil"].slice(0, room + 1)
-
-	for id in kinds:
-		items.give(1, n(id), 3)   # gathered things (test_first_hour, test_server_items, test_flint) and the route's own
-
-	var kg_before: float = items.carried_kg_of(1)
+	items.give(1, n("stone"), 3)
+	var stone_before: int = have("stone")
+	var sends_before: int = int(chest_sends.get(1, 0))
 	items.action(1, Net.ACT_CHEST_OPEN, pack_id, 0, 0, Vector3.ZERO)
-
-	for id in kinds:
-		items.action(1, Net.ACT_CHEST_PUT, slot_of(id), pack_id, have(id), Vector3.ZERO)
-
-	var held: Dictionary = {}
-
-	for row in items.worn_slots_of(1)[back_at][3].get("bag", []):
-		held[int(row[0])] = int(held.get(int(row[0]), 0)) + int(row[1])
-
-	var last: String = str(kinds[-1])
-	check(room > 0 and held.size() == room and not held.has(n(last)) and have(last) > 0, "3q. capacity: the %d-slot backpack takes %d kinds and refuses the %s (it stays in the pack)" % [room, held.size(), last])
-	check(absf(items.carried_kg_of(1) - kg_before) < 0.001 and items.carried_kg_of(1) > 0.0, "3q. what the worn bag holds still counts in the carried weight (%.2f kg)" % items.carried_kg_of(1))
-
-	for k in range(room - 2):   # most of it is taken out again; two stacks ride on to the save in step 7
-		items.action(1, Net.ACT_CHEST_TAKE, k, pack_id, 99, Vector3.ZERO)
-
-	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
-	var spare: Dictionary = {}
-
-	for id in kinds:
-		spare[id] = 0
-
-	leave(spare)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("stone"), pack_id, have("stone"), Vector3.ZERO)
+	check(BagRules.slots_of(items.table, n("backpack")) == 0 and int(chest_sends.get(1, 0)) == sends_before and have("stone") == stone_before and items.worn_slots_of(1)[back_at][3].get("bag", []).is_empty(), "3q. the worn backpack has no slots: it is not opened, takes nothing and the stones stay in the pack")
+	leave({"stone": 0, "stick": 0, "plant_fibre": 0, "clay": 0, "sand": 0, "flint": 0, "leaves": 0, "firewood": 0, "bone": 0, "charcoal": 0, "twine": 0})   # the gathered kinds are put down, as before this check lost its bag
 
 	# Wear from use and repair at the station: a wolf bite wears the mail shirt; away from a Smithy it is not mended, at the Smithy it is.
 	var mail_at: int = items._place_of(n("mail_shirt"))

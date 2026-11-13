@@ -5102,8 +5102,11 @@ func _load_world_items() -> void:
 		if row.size() > 8:
 			entry["wear"] = int(row[8])
 
-		if row.size() > 9 and int(row[6]) == 0 and typeof(row[row.size() - 1]) == TYPE_DICTIONARY and not InventoryScript.clean_inst(row[row.size() - 1]).is_empty():
-			entry["inst"] = InventoryScript.clean_inst(row[row.size() - 1])
+		if row.size() > 9 and int(row[6]) == 0 and typeof(row[row.size() - 1]) == TYPE_DICTIONARY:
+			var row_inst: Dictionary = InventoryScript.clean_inst_of(table, int(entry["number"]), row[row.size() - 1])   # a non-bag drops an older save's `bag`
+
+			if not row_inst.is_empty():
+				entry["inst"] = row_inst
 
 		if row.size() > 9 and int(row[6]) == 0 and typeof(row[9]) == TYPE_FLOAT:
 			entry["rot_y"] = float(row[9])
@@ -11884,7 +11887,7 @@ func _clean_worn(raw: Variant) -> Array:
 		if number <= 0 or table.id_of(number) == "":
 			continue
 
-		var piece: Array = [number, 1, int(entry[2]), InventoryScript.clean_inst(entry[3])]
+		var piece: Array = [number, 1, int(entry[2]), InventoryScript.clean_inst_of(table, number, entry[3])]   # a worn non-bag drops an older save's `bag`
 		var own: int = _place_of(number)
 
 		if own == i:
@@ -11980,8 +11983,8 @@ func rain_shed(peer: int) -> float:
 
 
 # The body weight the carry limit is worked out from (cap = ratio x body): the real weight plus what the worn pack's weight spreading adds
-# (items.json carry_bonus_kg, 12 Hide - Backpack and 18 Leather - Backpack; DESIGN-001, BUGLIST-001). Slots are not touched: a bag's own slots are
-# separate, and the pack's slot count only follows what it holds (protocol 116).
+# (items.json carry_bonus_kg, 12 Hide - Backpack and 18 Leather - Backpack; DESIGN-001, BUGLIST-001). The backpacks have no slots of their own (Dave 13 Nov 2026), and
+# the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
 	return CarryRules.carry_body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)
 

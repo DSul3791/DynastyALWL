@@ -580,7 +580,7 @@
 			"value": 8,
 			"look_alikes": []
 		},
-		"backpack": {"number": 50, "name": "Hide - Backpack", "description": "A hide pack worn on the back. It holds more in order, but its load still weighs on you.", "kind": "gear", "stack": 1, "unstackable": true, "value": 40, "look_alikes": [], "slot": "back", "carry_bonus_kg": 12, "bag_slots": 10, "bag_takes": "any"},
+		"backpack": {"number": 50, "name": "Hide - Backpack", "description": "A hide pack worn on the back. It lets you carry more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 40, "look_alikes": [], "slot": "back", "carry_bonus_kg": 12},
 		"energy_bar": {
 			"number": 51,
 			"name": "Nut cake",
@@ -7976,7 +7976,7 @@
 			"leather_trousers": {"number": 764, "name": "Leather - Trousers", "description": "Leather trousers laced with straps. Tougher than hide and better in the wet.", "kind": "clothing", "slot": "legs", "wear_layer": "base", "fabric": "leather", "warmth": 0.16, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Trousers"], "value": 55, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.06, "projectile": 0.1}, "cover": 0.9},
 			"leather_boots": {"number": 765, "name": "Leather - Boots", "description": "Leather boots with a strapped ankle. They keep the feet dry for longer.", "kind": "clothing", "slot": "feet", "wear_layer": "footwear", "fabric": "leather", "warmth": 0.13, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Boots"], "value": 40, "protect": {"slashing": 0.15, "piercing": 0.1, "blunt": 0.08, "projectile": 0.1}, "cover": 1.0},
 			"leather_gloves": {"number": 766, "name": "Leather - Gloves", "description": "Leather gloves with fingers. For work, the bowstring and the cold.", "kind": "clothing", "slot": "hands", "wear_layer": "base", "fabric": "leather", "warmth": 0.09, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Gloves"], "value": 30, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.05, "projectile": 0.08}, "cover": 1.0},
-			"leather_backpack": {"number": 767, "name": "Leather - Backpack", "description": "A leather pack worn on the back. Holds more than a hide pack and sheds a little rain.", "kind": "gear", "slot": "back", "stack": 1, "unstackable": true, "value": 90, "look_alikes": ["Hide - Backpack"], "carry_bonus_kg": 18, "bag_slots": 15, "bag_takes": "any"},
+			"leather_backpack": {"number": 767, "name": "Leather - Backpack", "description": "A leather pack worn on the back. Lets you carry more weight than a hide pack, and sheds a little rain.", "kind": "gear", "slot": "back", "stack": 1, "unstackable": true, "value": 90, "look_alikes": ["Hide - Backpack"], "carry_bonus_kg": 18},
 			"straw_hat": {
 				"number": 768,
 				"name": "Straw - Hat",

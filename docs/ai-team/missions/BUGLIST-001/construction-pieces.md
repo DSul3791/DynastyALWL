@@ -27,6 +27,8 @@ Questions (recorded decisions):
 1. No separate door item exists for any doorway (every tier has an integral door twin). Per the catalog freeze I did NOT add a door item. Exact missing dependency: a "door" piece (blueprint, item, recipe, structures.json row with `use: door` and `toggle`/open state) plus an attach-to-doorway rule in `placement_rules.gd` (the doorway's opening as an anchor), which does not exist. Needs Dave's authorization; until then the Crude doorway is a permanent open passage.
 2. The catalog text for 266 `thatch_doorway` still says "A thatch doorway with a hanging door." (items.json, encyclopedia.json, DYNASTY_MASTER_ITEMS.md; the retired kit says "a hanging door" too). Left as is per the lead; a note was added to the master catalog row so it is visible. Decision: leave until Dave rules on question 1.
 
+3. The separate door item is with Dave (Dave 13 Nov 2026 11:36Z: "I will deal with the separate door item"). BUG-010 stays an open passage until he does; nothing waits on this branch.
+
 F6 check: place a Crude - Doorway on a Crude foundation next to Crude walls, walk straight through it without pressing anything (a mouse-aimed ghost, then walking). You should see an empty framed opening, no door, and not be stopped; E on it does nothing.
 
 Regression risks: any already placed `thatch_doorway` (closed) is now open (intended); a placed `thatch_doorway_open` loads as `thatch_doorway`. Wolves/foxes now pass a Crude doorway.

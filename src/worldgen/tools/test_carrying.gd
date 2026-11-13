@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Carrying equipment (catalog Phase 5, M001-T15; master s3.9 rules 1-5, CATALOG_SAVE_MIGRATION.md rules 10-11): a bag is an item instance holding
-# its own contents (instance data `bag`, src/shared/bag_rules.gd). Real server state throughout: a worn backpack fills through its container
+# its own contents (instance data `bag`, src/shared/bag_rules.gd). Real server state throughout: a worn Wicker - Pack basket (a bag with slots; the two backpacks have none, Dave 13 Nov 2026) fills through its container
 # window, is dropped, picked up, put in a chest and taken out by another player with nothing lost or doubled; a bag refuses a bag; a quiver holds
 # its 40 arrows beside a backpack and the bow draws from it; a pouch refuses a log and needs a belt with a free point; contents spoil where the bag
 # is, count toward the carry weight, and survive a save and reload worn and on the ground.
@@ -148,7 +148,8 @@ func _init() -> void:
 			wrong.append(id)
 
 	check(wrong.is_empty(), "each carrying row is live, has its own worn position and a carry_bonus_kg only on the two backpacks (%s)" % str(wrong))
-	check(BagRules.slots_of(table, n.call("backpack")) == 10 and BagRules.slots_of(table, n.call("leather_backpack")) == 15 and BagRules.slots_of(table, n.call("quiver")) == 2 and int(table.entry("quiver").get("ammo_capacity", 0)) == 40, "volume: Hide - Backpack 10 slots, Leather - Backpack 15, Hide - Quiver 40 arrows")
+	check(BagRules.slots_of(table, n.call("backpack")) == 0 and BagRules.slots_of(table, n.call("leather_backpack")) == 0 and not table.entry("backpack").has("bag_takes") and not table.entry("leather_backpack").has("bag_takes"), "the two backpacks have no slots (Dave 13 Nov 2026: they only give carry weight)")
+	check(BagRules.slots_of(table, n.call("wicker_pack_basket")) == 10 and BagRules.slots_of(table, n.call("quiver")) == 2 and int(table.entry("quiver").get("ammo_capacity", 0)) == 40, "volume: Wicker - Pack basket 10 slots, Hide - Quiver 40 arrows")
 
 	# 2. A backpack and a quiver are worn together; the pack spreads the load (its carry_bonus_kg raises the limit, test_backpack_carry measures it).
 	var body_before: float = items._carry_body(1)
@@ -160,7 +161,22 @@ func _init() -> void:
 	check(worn[place(items, "back:base")] == n.call("backpack") and worn[place(items, "waist:quiver")] == n.call("quiver") and inv.count_of(n.call("backpack")) == 0, "a backpack and a quiver are worn together")
 	check(is_equal_approx(items._carry_body(1), body_before + 12.0 / 0.7), "the worn Hide - Backpack raises the carry limit by its 12 kg")
 
-	# 3. Fill the backpack through its window (a worn bag is container -1 - its worn position).
+	# The worn backpack cannot be opened or filled: it has no slots.
+	var back_id: int = -1 - place(items, "back:base")
+	chest_sent = []
+	give(items, 1, "stone")
+	items.action(1, Net.ACT_CHEST_OPEN, back_id, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_PUT, inv.numbers.find(n.call("stone")), back_id, 1, Vector3.ZERO)
+	check(chest_sent.is_empty() and held(items, 1, "back:base").is_empty() and inv.count_of(n.call("stone")) == 1, "the worn Hide - Backpack is not opened and takes nothing")
+	inv.clear_slot(inv.numbers.find(n.call("stone")))
+
+	# A pack basket put on instead is the bag the rest of this test uses: the backpack goes to the pack and is put away.
+	give(items, 1, "wicker_pack_basket")
+	wear(items, 1, "wicker_pack_basket")
+	check(items.worn_of(1)[place(items, "back:base")] == n.call("wicker_pack_basket") and inv.count_of(n.call("backpack")) == 1, "a Wicker - Pack basket worn in its place (a bag with 10 slots)")
+	inv.clear_slot(inv.numbers.find(n.call("backpack")))
+
+	# 3. Fill the pack basket through its window (a worn bag is container -1 - its worn position).
 	var pack_id: int = -1 - place(items, "back:base")
 	var stone: int = n.call("stone")
 	var berries: int = n.call("berries")
@@ -189,7 +205,7 @@ func _init() -> void:
 	notices.clear()
 	items.action(1, Net.ACT_CHEST_PUT, inv.numbers.find(n.call("fibre_shoulder_bag")), pack_id, 1, Vector3.ZERO)
 	check(inv.count_of(n.call("fibre_shoulder_bag")) == 1 and not held(items, 1, "back:base").has(n.call("fibre_shoulder_bag")) and notices.has("A bag cannot go inside another bag."), "a bag refuses another bag")
-	check(not InventoryScript.clean_inst({"bag": [[n.call("backpack"), 1, 0, 0, {"bag": [[stone, 3, 0]], "craft": 1}]]})["bag"][0][4].has("bag"), "saved or sent data with a bag inside a bag loses the inner contents' key (clean_inst), never nests")
+	check(not InventoryScript.clean_inst({"bag": [[n.call("wicker_pack_basket"), 1, 0, 0, {"bag": [[stone, 3, 0]], "craft": 1}]]})["bag"][0][4].has("bag"), "saved or sent data with a bag inside a bag loses the inner contents' key (clean_inst), never nests")
 
 	# 5. The quiver holds its 40 arrows and takes nothing else; the bow draws from it first.
 	var arrow: int = n.call("wooden_arrow")
@@ -251,19 +267,19 @@ func _init() -> void:
 	var berries_all: int = everywhere(items, berries)
 	var kg_worn: float = items.carried_kg_of(1)
 	items.action(1, Net.ACT_UNWEAR, place(items, "back:base"), 0, 0, Vector3.ZERO)
-	var pack_slot: int = inv.numbers.find(n.call("backpack"))
+	var pack_slot: int = inv.numbers.find(n.call("wicker_pack_basket"))
 	check(pack_slot >= 0 and rows_count(inv.inst_of(pack_slot).get("bag", [])) == full and items.worn_of(1)[place(items, "back:base")] == 0, "taken off, the full pack goes to the pack with its contents")
-	check(absf(items.carried_kg_of(1) - kg_worn - CarryRules.weight_of("backpack", items._carry_cfg)) < 0.0001, "its load weighs the same in the pack; only the pack's own weight is added, as for any piece taken off (%.2f -> %.2f kg)" % [kg_worn, items.carried_kg_of(1)])
+	check(absf(items.carried_kg_of(1) - kg_worn - CarryRules.weight_of("wicker_pack_basket", items._carry_cfg)) < 0.0001, "its load weighs the same in the pack; only the pack's own weight is added, as for any piece taken off (%.2f -> %.2f kg)" % [kg_worn, items.carried_kg_of(1)])
 	items.action(1, Net.ACT_DROP, pack_slot, 0, 1, Vector3(1.0, 10.0, 0.0))
 	var ground: int = -1
 
 	for id in items._items:
-		if int(items._items[id].get("number", 0)) == n.call("backpack"):
+		if int(items._items[id].get("number", 0)) == n.call("wicker_pack_basket"):
 			ground = id
 
-	check(ground >= 0 and rows_count(items._items[ground].get("inst", {}).get("bag", [])) == full and inv.count_of(n.call("backpack")) == 0, "dropped, the pack lies on the ground with its contents")
+	check(ground >= 0 and rows_count(items._items[ground].get("inst", {}).get("bag", [])) == full and inv.count_of(n.call("wicker_pack_basket")) == 0, "dropped, the pack lies on the ground with its contents")
 	items.action(1, Net.ACT_PICKUP, ground, 0, 0, Vector3.ZERO)
-	pack_slot = inv.numbers.find(n.call("backpack"))
+	pack_slot = inv.numbers.find(n.call("wicker_pack_basket"))
 	check(pack_slot >= 0 and rows_count(inv.inst_of(pack_slot).get("bag", [])) == full and not items._items.has(ground), "picked up, its contents are identical")
 	check(everywhere(items, stone) == stones_all and everywhere(items, berries) == berries_all and stones_all == 15, "nothing lost or duplicated by drop and pick-up (%d stones)" % stones_all)
 
@@ -272,17 +288,17 @@ func _init() -> void:
 	var chest = items._chests.get(int(items._items.get(chest_id, {}).get("struct", {}).get("uid", -1)))
 	items.action(1, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, pack_slot, chest_id, 1, Vector3.ZERO)
-	var in_chest: int = chest.numbers.find(n.call("backpack")) if chest != null else -1
-	check(in_chest >= 0 and rows_count(chest.inst_of(in_chest).get("bag", [])) == full and inv.count_of(n.call("backpack")) == 0, "in a chest the pack keeps its contents")
+	var in_chest: int = chest.numbers.find(n.call("wicker_pack_basket")) if chest != null else -1
+	check(in_chest >= 0 and rows_count(chest.inst_of(in_chest).get("bag", [])) == full and inv.count_of(n.call("wicker_pack_basket")) == 0, "in a chest the pack keeps its contents")
 	items.peer_connected_hello(2, KEY2)
 	items.report_position(2, Vector3(0.0, 10.0, 0.0))
 	var inv2 = items.inventory_of(2)
 	empty(inv2)
 	items.action(2, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
 	items.action(2, Net.ACT_CHEST_TAKE, in_chest, chest_id, 1, Vector3.ZERO)
-	var slot2: int = inv2.numbers.find(n.call("backpack"))
-	check(slot2 >= 0 and rows_count(inv2.inst_of(slot2).get("bag", [])) == full and chest.count_of(n.call("backpack")) == 0, "the second player takes it out full")
-	check(everywhere(items, stone) == stones_all and everywhere(items, berries) == berries_all and everywhere(items, n.call("backpack")) == 1, "nothing lost or duplicated by the hand-over through the chest")
+	var slot2: int = inv2.numbers.find(n.call("wicker_pack_basket"))
+	check(slot2 >= 0 and rows_count(inv2.inst_of(slot2).get("bag", [])) == full and chest.count_of(n.call("wicker_pack_basket")) == 0, "the second player takes it out full")
+	check(everywhere(items, stone) == stones_all and everywhere(items, berries) == berries_all and everywhere(items, n.call("wicker_pack_basket")) == 1, "nothing lost or duplicated by the hand-over through the chest")
 	check(items.carried_kg_of(2) >= 15.0, "its contents weigh on the second player (%.2f kg)" % items.carried_kg_of(2))
 
 	# 9. Spoilage continues inside a bag, worn, on the ground and in a chest.
@@ -304,7 +320,7 @@ func _init() -> void:
 	items.action(2, Net.ACT_DROP, slot2, 0, 1, Vector3(1.0, 10.0, 1.0))
 
 	for id in items._items:
-		if int(items._items[id].get("number", 0)) == n.call("backpack"):
+		if int(items._items[id].get("number", 0)) == n.call("wicker_pack_basket"):
 			ground = id
 
 	var ground_age: int = berry_age.call(items._items[ground]["inst"]["bag"])
@@ -325,7 +341,7 @@ func _init() -> void:
 	var back_ground: Dictionary = {}
 
 	for id in back._items:
-		if int(back._items[id].get("number", 0)) == n.call("backpack"):
+		if int(back._items[id].get("number", 0)) == n.call("wicker_pack_basket"):
 			back_ground = rows_count(back._items[id].get("inst", {}).get("bag", []))
 
 	check(held(back, 1, "waist:pouch") == pouch_saved and not pouch_saved.is_empty(), "after a restart the worn pouch holds the same (%s)" % str(held(back, 1, "waist:pouch")))
@@ -400,7 +416,7 @@ func _init() -> void:
 	for id in back._items:
 		lying[int(back._items[id].get("number", 0))] = true
 
-	check(lying.has(n.call("wooden_pack_frame")) and lying.has(n.call("backpack")) and not lying.has(n.call("fibre_shoulder_bag")), "after the despawn time the full frame and pack still lie there; the empty shoulder bag is gone")
+	check(lying.has(n.call("wooden_pack_frame")) and lying.has(n.call("wicker_pack_basket")) and not lying.has(n.call("fibre_shoulder_bag")), "after the despawn time the full frame and pack still lie there; the empty shoulder bag is gone")
 
 	# 19. A trader never buys a bag with something in it; empty, it sells.
 	var trade = TradeScript.new()
