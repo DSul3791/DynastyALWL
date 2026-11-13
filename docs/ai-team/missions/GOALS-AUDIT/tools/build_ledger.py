@@ -34,6 +34,15 @@ COLS = ["goal_id", "record_type", "draft_line", "title", "route", "draft_section
 SEV = {"HIGH": 3, "MED": 2, "LOW": 1}
 STATUS_RANK = {"PASS": 0, "NEEDS_TEST": 1, "NEEDS_CORRECTION": 2, "BLOCKED": 3}
 
+def default_completion(g):
+    if g["kind"] == "craft":
+        return "Craft %s once (any recipe: %s); server counts made:%s when the craft finishes" % (g["key"], ",".join(g.get("listed_recipes", [])), g["key"])
+    if g["kind"] == "build":
+        return "Place structure %s once with the hammer; server counts event placed:%s" % (g["ref"].get("structure", g["key"]), g["ref"].get("structure", g["key"]))
+    if g["kind"] == "gather":
+        return "Obtain %s by gathering (no gather event exists; see runtime findings)" % g["key"]
+    return g["how"][:200]
+
 rows = []
 for g in goals:
     gid = g["goal_id"]
@@ -65,7 +74,7 @@ for g in goals:
         "goal_id": gid, "record_type": "ORIGINAL", "draft_line": g["line"], "title": g["title"], "route": g["route"],
         "draft_section": g["section"], "content_status": c.get("content_status", "UNKNOWN"),
         "proposed_reward_copper": g["coin_copper"],
-        "required_action_and_completion": (r.get("completion_condition") or g.get("completion") or "").replace("\n", " "),
+        "required_action_and_completion": (r.get("completion_condition") or default_completion(g)).replace("\n", " "),
         "materials_exact": g.get("materials", ""), "tools_required": g.get("tools", ""), "stations_required": g.get("station", ""),
         "dependency_goal_ids": " ".join(deps.get(gid, {}).get("dep_goal_ids", [])),
         "acquisition_source_evidence": " || ".join(acq_txt),
