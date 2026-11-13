@@ -51,7 +51,18 @@ func outcrop(items, ore: String) -> void:
 func blows(items, n: int) -> void:
 	for k in range(n):
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, in_hand(items), Vector3.ZERO)
+
+
+# The pack slot + 1 of the one pick or axe the player was given: the tool in hand (protocol 115).
+func in_hand(items) -> int:
+	var inv = items.inventory_of(1)
+
+	for slot in range(inv.SLOTS):
+		if str(items.table.entry(items.table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["pick", "axe"]:
+			return slot + 1
+
+	return 0
 
 
 func count(items, id: String) -> int:

@@ -3694,6 +3694,11 @@ func _inspect_target() -> String:
 	var collider: Object = hit["collider"]
 	var species: int = -1
 
+	# A boulder (TEST-013, Dave 12 Nov 2026): it is drawn apart from the world items, so the look fell through to the ground under it and read
+	# "Forest humus". It is rock to break with a pick.
+	if collider != null and collider.has_meta("boulder"):
+		return "Rock"
+
 	# A tree trunk: its shape number says which species it is.
 	if collider != null and collider.has_meta("species_ids"):
 		var ids: PackedInt32Array = collider.get_meta("species_ids")
@@ -3998,6 +4003,7 @@ func _update_view(delta: float) -> void:
 	if held != null:
 		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
+		held.carrying_log = items != null and items.shoulder_id != ""
 		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 	if _avatar.animation_player != null:
 		_avatar.animation_player.active = _avatar.visible      # no animation cost in first person

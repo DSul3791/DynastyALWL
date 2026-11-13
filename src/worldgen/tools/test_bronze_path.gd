@@ -96,7 +96,12 @@ func pick_out(ore: String, item: String, want: int, blows: int) -> void:
 			break
 
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, OUTCROP_ID, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		var pick: int = items.inventory_of(1).numbers.find(items.table.number_of("bronze_pickaxe"))   # the best pick made so far is the one in hand (protocol 115)
+
+		if pick < 0:
+			pick = items.inventory_of(1).numbers.find(items.table.number_of("stone_pickaxe"))
+
+		items.action(1, Net.ACT_HIT, OUTCROP_ID, Net.HIT_BOULDER, pick + 1, Vector3.ZERO)
 		# The plain stones the blows break off are not under test: dropping them keeps a run of bad ore luck from filling the carry limit
 		# ("Too heavy to carry any more", 3 of 17 runs on 12 Nov 2026), which left the ore steps short.
 		items.inventory_of(1).remove(items.table.number_of("stone"), have("stone"))

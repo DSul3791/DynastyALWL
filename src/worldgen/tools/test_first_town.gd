@@ -5,6 +5,7 @@ extends SceneTree
 # Every step runs on the real server code (items, NPCs, dialogue, trade). Fails loudly when any step is impossible.
 #   godot --headless --path . --script res://src/worldgen/tools/test_first_town.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
@@ -167,7 +168,7 @@ func _init() -> void:
 			lying = id
 
 	items._last_process.clear()
-	items.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(items))
 
 	for id in items._items.keys():
 		if int(items._items[id]["number"]) == table.number_of("wooden_block_soft"):

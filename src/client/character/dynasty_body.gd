@@ -785,7 +785,7 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	cyl.radial_segments = 12
 	_log.mesh = cyl
 	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)
-	_log.position = Vector3(-18.0, 9.0, -12.0)      # the right shoulder, a little behind (model space: right is -X, front +Z), in centimetres
+	_log.position = Vector3(-17.0, 24.0, -4.0)      # on top of the right shoulder beside the head (TEST-010, Dave 12 Nov 2026: it rode at chest height): the shoulder joint is 18.7 cm right and 1.6 cm above Spine2, the log's 14 cm radius rests on the muscle above it (model space: right is -X, front +Z), in centimetres
 	_log.visible = true
 
 

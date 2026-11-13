@@ -1,20 +1,20 @@
 {
-	"note": "Boulders (Dave 2026-10-21): not rocks; a pick (or a stone axe, 3 times slower) breaks them into rough stones. The yield is plain math from the size: volume (an ellipsoid of the boulder's radius and height_ratio x radius high, the buried part included) x density x yield, divided by the mass of one stone (weights.json, 1 kg), is the number of stones; a 1 m radius boulder makes about 4600, 0.3 m about 125, 1.2 m about 7900 at yield 0.5. One blow with an iron or steel pick takes one stone; whacks_per_stone is by the tool's material (items.json material) and applies to the best tool on the hotbar; a stone axe takes 3 blows per stone. The boulder shrinks as stones come out (cube root of what is left) and is gone with the last one; what is left is saved (world_items.json boulders). Every blow wears the tool like other work (durability in items.json, drops.json tool_wear per_use may add more). Boulders are server-owned and laid out like loose stones: per 32 m cell, up to max_per_cell, only where the ground rises more than min_slope or at a water bank, deterministic from the cell. size: radius_min..radius_max, radius_power > 1 makes small ones commoner. luck_extra: the chance that a blow's stone comes away as two (and takes two from the boulder), passed through the luck function (0 switches it off; 0.05 means about 5 percent at luck 0, about 7 percent at +10, 3.5 percent at -10).",
+	"note": "Boulders (Dave 2026-10-21): not rocks; a pick (or an axe, half as fast) breaks them into rough stones. The yield is plain math from the size: volume (an ellipsoid of the boulder's radius and height_ratio x radius high, the buried part included) x density x yield, divided by the mass of one stone (weights.json, 1 kg), is the number of stones; a 1 m radius boulder makes about 4600, 0.3 m about 125, 1.2 m about 7900 at yield 0.5. STONES PER BLOW (tools; Dave 12 Nov 2026, TEST-013: \"a stone pickaxe ... at least 1 rock per swing and higher tiers more rocks per swing ... destroy the rock faster and still get the same amount of rock while degrading the durability less for higher tiers\") are by the tool class and material (items.json) of the tool IN HAND, which must be on the hotbar: pick stone 1, bronze 2, iron 3, steel 4. A fraction carries over between blows (the boulder's progress). Every blow wears the tool once (drops.json tool_wear rock), so a better pick wears less for the same stone. An axe is the wrong tool: half the pick's stones of its material, and tool_wear rock wears it 5 per blow. The stones in a boulder are fixed by its size whatever the tool. Each piece rolls its own luck double, ore and flint. The boulder shrinks as stones come out (cube root of what is left) and is gone with the last one; what is left is saved (world_items.json boulders). Every blow wears the tool like other work (durability in items.json, drops.json tool_wear per_use may add more). Boulders are server-owned and laid out like loose stones: per 32 m cell, up to max_per_cell, only where the ground rises more than min_slope or at a water bank, deterministic from the cell. size: radius_min..radius_max, radius_power > 1 makes small ones commoner. luck_extra: the chance that a blow's stone comes away as two (and takes two from the boulder), passed through the luck function (0 switches it off; 0.05 means about 5 percent at luck 0, about 7 percent at +10, 3.5 percent at -10).",
 	"density_kg_m3": 2600,
 	"yield": 0.5,
 	"height_ratio": 0.85,
 	"tools": {
 		"pick": {
-			"iron": 1,
-			"steel": 1,
-			"stone": 3,
-			"bronze": 2
+			"stone": 1,
+			"bronze": 2,
+			"iron": 3,
+			"steel": 4
 		},
 		"axe": {
-			"stone": 3,
-			"bronze": 2,
-			"iron": 1,
-			"steel": 1
+			"stone": 0.5,
+			"bronze": 1,
+			"iron": 1.5,
+			"steel": 2
 		}
 	},
 	"radius_min": 0.3,

@@ -291,6 +291,39 @@
 			{"rows": [["firewood", 3, 5], ["kindling", 3, 5], ["stick", 2, 3]]}
 		]
 	},
+	"wood_tools": {
+		"note": "The tool in hand on wood (Dave 12 Nov 2026, TEST-013: \"the axe should be the same for wood ... I also would expect the pickaxe to give me more thatch, sticks, kindling from a tree and to take longer to cut it down\"). speed is how much of the work one blow does, by the held tool's class and items.json material: the blows a tree, a stump or a log cut needs are divided by it (a stone axe, 1.0, is the timing everything was tuned with). With an axe the logs, branches and stump yields are the tree's own whatever its material. A pickaxe is the wrong tool (Dave 12 Nov 2026: \"it would take a very very long time for a pickaxe to cut down a tree\"): about a seventh of a stone axe's speed, and it only tears the wood up (Dave 12 Nov 2026: \"using a pickaxe on a tree or a log will give you thatch, and kindling. not sticks or wood. if you break a log with a pickaxe it will just leave a pile of kindling\"): every pick blow on a tree, trunk, stump or log gives pick_splinters (kindling and thatch) and nothing else (no branches, sticks, firewood or bark); a trunk length cut through with a pick, and a log on the ground broken with one (1 / speed blows), leave a pile of pick_log_kindling.big (a shoulder log or trunk length) or .small (a small log) kindling on the ground; a stump broken up with a pick gives pick_log_kindling.small kindling. A tree a pick fells falls and breaks into logs as any felled tree does. Wood cannot dull or wear a pick (Dave 12 Nov 2026: \"a tree cant dull a pickaxe but it just takes much longer to cut\"; tool_wear pick tree, trunk and split 0). pick_log_kindling counts are a first guess for Dave to tune.",
+		"speed": {
+			"axe": {
+				"stone": 1.0,
+				"bronze": 1.5,
+				"iron": 2.0,
+				"steel": 2.5
+			},
+			"pick": {
+				"stone": 0.15,
+				"bronze": 0.2,
+				"iron": 0.25,
+				"steel": 0.3
+			}
+		},
+		"pick_splinters": [
+			[
+				"kindling",
+				1,
+				2
+			],
+			[
+				"thatch",
+				1,
+				1
+			]
+		],
+		"pick_log_kindling": {
+			"small": 5,
+			"big": 10
+		}
+	},
 	"felling": {
 		"note": "Axe timing (balance, 31 Oct, for Dave to tune). The swing now takes swing_s_now seconds, it was swing_s_before, so every blow count was scaled by about swing_s_before / swing_s_now (0.55) to keep the real time per tree. Felling a standing tree: blows = round(tree_base + trunk_radius_m x tree_per_trunk_m) between tree_min and tree_max, divided by the fell skill. Cutting logs off a trunk: trunk.blows_per_log is a fraction (1.6: a log every 1 or 2 blows, 8 ft in about 1.7 s); trunk.branch_blows and small_blows and the stump numbers are scaled the same way. tools/ test_felling_time.gd checks the time per tree stays within 10 percent of the old one (old_* values).",
 		"swing_s_before": 0.55,
@@ -445,7 +478,7 @@
 		}
 	},
 	"tool_wear": {
-		"note": "Tool wear tuning (job 74; catalog Phase 2c). Each use of a tool adds per_use[tool class][kind of work] to its wear (1 when not listed; whetstone.sharpen is one tool sharpened); the tool breaks at its current maximum durability (the instance max_d, else items.json durability). A row with no repair is gone when it breaks; any other stays broken until a repair at its repair_station with the items.json repair materials sets its wear back to 0. Sharpness, sharpening and the smithing variants: data/items/smithing.json. Kinds of work: gather (a plant yield that needs the tool), rock (stone from an outcrop), tree (one blow on a standing tree), trunk (one blow on a felled trunk), split (one log at the chopping block), dig (one spade dig of the ground). Read the sheet: /mnt/project-files/items/TOOL_WEAR.md (tools/tool_wear_sheet.py rewrites it from this data).",
+		"note": "Tool wear tuning (job 74; catalog Phase 2c). Each use of a tool adds per_use[tool class][kind of work] to its wear (1 when not listed, 0 for work that cannot wear that tool; whetstone.sharpen is one tool sharpened); the tool breaks at its current maximum durability (the instance max_d, else items.json durability). A row with no repair is gone when it breaks; any other stays broken until a repair at its repair_station with the items.json repair materials sets its wear back to 0. Sharpness, sharpening and the smithing variants: data/items/smithing.json. Kinds of work: gather (a plant yield that needs the tool), rock (stone from an outcrop), tree (one blow on a standing tree), trunk (one blow on a felled trunk), split (one log at the chopping block), dig (one spade dig of the ground). Read the sheet: /mnt/project-files/items/TOOL_WEAR.md (tools/tool_wear_sheet.py rewrites it from this data).",
 		"per_use": {
 			"axe": {
 				"gather": 1,
@@ -453,6 +486,11 @@
 				"tree": 1,
 				"trunk": 1,
 				"split": 1
+			},
+			"pick": {
+				"tree": 0,
+				"trunk": 0,
+				"split": 0
 			},
 			"knife": {
 				"gather": 1
