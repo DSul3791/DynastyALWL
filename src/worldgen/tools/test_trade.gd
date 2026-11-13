@@ -182,7 +182,7 @@ func _init() -> void:
 	check(trade.deal(1, "hob", 1, sell_axe, 1).begins_with("Sold"), "and he buys again")
 	npcs["npcs"]["hob"]["pos"] = Vector3(30.0, 10.0, 0.0)
 	var away_msg: String = trade.deal(1, "hob", 1, 0, 1)
-	check(away_msg.contains("walked off"), "a trader who walked off (meal, bed, rain) says so instead of nothing (%s)" % away_msg)
+	check(away_msg.begins_with("You are too far from"), "out of talk range the deal says so instead of nothing (%s)" % away_msg)
 	npcs["npcs"]["hob"]["pos"] = Vector3(1.0, 10.0, 0.0)
 
 	# Persistence: shelf and purse survive a restart.
