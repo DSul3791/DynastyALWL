@@ -37,6 +37,7 @@ States: VERIFIED FIXED / STILL FAILING / NEEDS PLAYER VERIFICATION / BLOCKED. No
 - `066c46d` (diff from df27ad0: those two test files only): test_doors PASS, test_door_looks PASS (28 frames, 28 doors, 0 failures); validate_items the same 28 known errors only; no new warnings. Logs: /work/lanerun/bl002b_tests, /work/lanerun/bl002b_extra.
 - NOT RUN: picture lanes, any visual, sound or frame-rate check (headless lane). Every item stays NEEDS PLAYER VERIFICATION until Dave's F6 check.
 
-- `79669de` (Dave's rulings: frame costs = wall, no "Single", tier dash not a word): gate review PASS WITH FIXES (docs only, fixed in the next commit). Needs a PC re-run of test_blueprints, test_doors, test_door_looks and validate_items (expected 0 errors). NOT RUN yet.
+- `79669de` (Dave's rulings: frame costs = wall, no "Single", tier dash not a word): gate review PASS WITH FIXES (docs only, fixed in the next commit). PC re-run on `94596ec` (selector 066c46d..94596ec): 214 pass, 0 fail (209 fast + test_door_looks + 4 timing), 233 s; validate_items 0 errors; no new warnings; startup smoke 0 script errors (known exit 134). Logs: /work/lanerun/bl002c_plan, /work/lanerun/bl002c_extra. check_look_names.py run in the cloud on 94596ec: all 305 structure looks drawable.
 - Open confirmations with Dave: double frame = two walls; Iron/Steel doorways keep old cost minus hinges.
 - Note: old doorways placed before this change refund the new (wall) cost on take-down.
+- Deferred broad run (`tools/release_check.sh` on Dave's PC when free) is still owed after the dev merge, before any promotion to main (TEST_GATES risk-based policy).
