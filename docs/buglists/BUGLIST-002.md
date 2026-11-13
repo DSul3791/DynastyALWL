@@ -22,6 +22,8 @@
 
 - The first two have **straight rectangular tops**, not arches. Arched openings are available for suitable ordinary buildings, including wood and stone construction; they are not exclusive to future ships.
 - The established quality progression is **Crude → Rustic → Refined → Sturdy → Superior → Engineered → Fortified**. **Iron and Steel are materials**, not quality tiers. Sturdy is an existing normal construction tier and must not be omitted. Material, quality and configuration are separate attributes.
+- **Approved wood-stock definitions:** Plank (`lumber`) = **6 inches wide × 4 inches thick**, rough surface. Hardwood board = **6 inches wide × 2 inches thick**, smooth, shiny surface. Same width; Plank is twice as thick. These are cross-sectional dimensions, not door size or board length.
+- **Approved door materials:** Rustic = **Plank with wooden hinges**; Refined = **Hardwood boards + Nails + metal Hinges**; Sturdy = **Plank + Nails + metal Hinges**. Fortified = **all-metal iron + steel + rivets**, no wooden core. Do not substitute rough timber, logs, or new material types for these directions. Engineered remains wood with increased metal reinforcement. Ingredient counts are still proposed, not approved.
 - Compatible doors and frames must match their **geometry and dimensions**. Do **not** require identical materials or quality tiers unless an independently approved rule requires it. A matching door must not be rejected merely because its tier or material differs from the frame.
 - Preserve the approved building grid and the existing 4 m double-door opening wherever applicable. Keep door dimensions aligned with the actual frame geometry; do not invent new universal sizes.
 
@@ -32,12 +34,13 @@
 4. Door placement must validate the built frame and correctly match single/double width and rectangular/arched profile. Preview and actual placement decisions must agree, with a meaningful refusal when invalid.
 5. Opening, closing, collision, movement through the opening, ownership of interaction state, multiplayer synchronization, and save/reload must work correctly. For double doors, ensure both leaves function as a double-door assembly.
 6. Removal or replacement of a door leaves the doorway wall intact. Do not create duplicate doors or lose existing structures during save/load. Follow the **current approved save policy** rather than inventing a new migration requirement.
-7. Update the master catalog, live catalog ledger, applicable item/blueprint/recipe/structure definitions, descriptions, icons and implementation documentation consistently. Reconcile actual craft costs and construction methods with existing approved item progression; **do not invent a new material or recipe design**.
+7. Update the master catalog, live catalog ledger, applicable item/blueprint/recipe/structure definitions, descriptions, icons and implementation documentation consistently. Reconcile actual craft costs and construction methods with existing approved item progression; **do not invent a new material or recipe design**. Rustic wooden hinges should be implemented using the existing wood material chain if possible, not automatically as a new item.
 8. This is **specific owner authorization** for the door/doorway corrections and additions stated here. It does not lift the catalog freeze for other items or authorize changing unrelated tiers, construction pieces, or game systems.
 
 ### Verification and delivery
 - Test all four configurations, covering all seven approved construction tiers (7 × 4 = 28 logical pairings); report any unsupported combination as incomplete rather than excluding it.
 - Verify correct shape, snapping, empty opening, opening/closing, passability, door removal/replacement, persistence, and mismatched-door rejection.
+- Verify Rustic uses rough 4-inch Planks and wooden hinges; Refined uses polished 2-inch Hardwood boards with nails and metal hinges; Sturdy returns to rough 4-inch Planks with nails and metal hinges. Check in-game material appearance and thickness; document any existing rendering-scale conflict rather than quietly changing global building geometry.
 - Test an appropriately sized compatible door in a frame made from a different material/quality; do not introduce a same-tier-only rule.
 - Check existing Sturdy/stone and other placed doorways and save/reload under the current save policy. Run catalog consistency checks and relevant building regression tests.
 - Record automated test evidence, independent review, integration commit/PR and an F6 checklist for player acceptance.
