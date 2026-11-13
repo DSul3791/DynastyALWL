@@ -7,7 +7,7 @@ extends Node
 #   sound.itemfx.play("item_pickup")   or any name below, directly
 #
 # While a craft runs (the panel's progress) the work sound of its recipe type plays from the start,
-# `craft_<type>` (twine, knap, bind, carve, stack, pound, wrap), and stops when it finishes, then craft_done.
+# `craft_<type>` (twine, knap, bind, carve, stack, pound, wrap), clip after clip until the queue is done (or the craft waits), then craft_done.
 # The type comes from the recipe's own "sound" field when it has one, else from its id (WORK_TYPES, then
 # a name prefix), else "knap". A new recipe only needs a "sound" field to get the right work sound.
 # Cues: item_pickup (stacks grew), item_drop (stacks shrank), inv_open, inv_close, item_swap (slots
@@ -66,6 +66,7 @@ var _total: int = -1
 var _numbers: PackedInt32Array = PackedInt32Array()
 var _was_crafting: int = 0
 var _work: AudioStreamPlayer
+var _work_recipe: int = 0   # the recipe the work sound is playing for (0 none)
 var work_played: int = 0
 var eat_played: int = 0
 var _mouth: AudioStreamPlayer
@@ -178,10 +179,21 @@ func watch(items) -> void:
 
 	if _was_crafting == 0 and crafting != 0:
 		play("craft_start")
-		_start_work(items, crafting)
+
+	# The work sound lasts as long as the craft runs, window open or shut (Dave 12 Nov 2026, PLAYTEST-001 TEST-012): each clip is about 4.5 s,
+	# so another starts when one ends. A craft that waits (away from its station, no room for the product) stops it; the next queue update
+	# from the server starts it again.
+	if work_running(crafting, Time.get_ticks_msec(), int(items.get("_craft_head_end_msec"))):
+		if crafting != _work_recipe or not _work.playing:
+			_start_work(items, crafting, crafting != _work_recipe)
+			_work_recipe = crafting
+	elif _work.playing:
+		_work.stop()
+
+	if crafting == 0:
+		_work_recipe = 0
 
 	if _was_crafting != 0 and crafting == 0:
-		_work.stop()
 		play("craft_done")
 
 	_was_crafting = crafting
@@ -337,12 +349,21 @@ func work_type(recipe: Dictionary) -> String:
 	return "knap"
 
 
-func _start_work(items, number: int) -> void:
+const WORK_GRACE_MSEC := 1500   # how long past the head craft's expected end the work sound keeps on before the craft counts as waiting
+
+
+# Does a craft run now: one at the head of the queue and not past its expected end (the server's time left) by more than WORK_GRACE_MSEC.
+static func work_running(crafting: int, now_msec: int, head_end_msec: int) -> bool:
+	return crafting != 0 and now_msec <= head_end_msec + WORK_GRACE_MSEC
+
+
+# `fresh`: a new recipe began (the lashing clip plays once for it, not with every repeat of the work sound).
+func _start_work(items, number: int, fresh: bool = true) -> void:
 	var kind: String = work_type(items.recipes.recipe(number))
 
 	var stage = get_parent()
 
-	if kind == "bind" and stage != null and stage.get("slots") != null and get_viewport().get_camera_3d() != null:
+	if fresh and kind == "bind" and stage != null and stage.get("slots") != null and get_viewport().get_camera_3d() != null:
 		stage.slots.play("twine_lash", get_viewport().get_camera_3d().global_position)   # lashing with twine (R1 clip)
 
 	var list: Array = _variants("craft_" + kind)
@@ -392,7 +413,7 @@ func _variants(sound_name: String) -> Array:
 	if _streams.has(sound_name):
 		return _streams[sound_name]
 
-	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done"
+	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done" and sound_name != "craft_start"   # the two cues live with the item sounds
 	var eating: bool = sound_name.begins_with("eat_") or sound_name == "drink_gulp" or sound_name.begins_with("heal_")
 	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), sound_name)
 

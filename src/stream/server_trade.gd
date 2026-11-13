@@ -7,6 +7,7 @@ extends RefCounted
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TALK_RANGE_M := 4.5
+const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
 
 var items                       # ServerItems
 var npcs                        # ServerNpcs
@@ -284,8 +285,11 @@ func _near(peer: int, npc_id: String) -> bool:
 
 # kind 0 buy: a = index into the shop's stock list as opened; kind 1 sell: a = pack slot. Returns a short text for the player.
 func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
-	if not has_shop(npc_id) or not _near(peer, npc_id):
+	if not has_shop(npc_id):
 		return ""
+
+	if not _near(peer, npc_id):   # out of talk range with the window still open: say so rather than nothing (TEST-003). Usually the player's distance: Hob is held at his post by npcs.json test_hold unless the NPC AI is down (unwell: he sits)
+		return "You are too far from %s to trade. Close this window and go closer." % str(npcs.npcs.get(npc_id, {}).get("name", "the trader"))
 
 	count = clampi(count, 1, 999)
 	var inv = items.inventory_of(peer)
@@ -374,7 +378,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		count = mini(count, buy_room(npc_id, item_id))
 
 		if count <= 0:
-			return "He has all the %s he wants today." % (items.table.sentence_name(number2))
+			return "He has all the %s he wants for now. Come back in a little while." % (items.table.sentence_name(number2))
 
 	var left_over: int = count % lot if lot > 1 else 0
 
@@ -406,8 +410,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	paid_for -= paid_for % lot
 
-	if paid_for <= 0:
-		return "He cannot pay for that just now." if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
+	if paid_for <= 0:   # his purse is spent (it refills purse_regen_per_day a game day, one real hour)
+		return PURSE_EMPTY_SAY if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
 
 	count = paid_for
 	st2["purse"] = float(st2["purse"]) - float(total)
@@ -448,6 +452,7 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 	var buys: Array = _shops[npc_id].get("buys", [])
 	var before_coins: int = items.coins_of(peer)
 	var sold: int = 0
+	var refused: String = ""
 
 	for slot in range(inv.SLOTS):
 		if inv.numbers[slot] == 0:
@@ -463,12 +468,15 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 			continue
 
 		var number_before: int = inv.counts[slot]
+		var said: String = deal(peer, npc_id, 1, slot, 999)
 
-		if deal(peer, npc_id, 1, slot, 999) != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
+		if said != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
 			sold += 1
+		elif said == PURSE_EMPTY_SAY or said.contains("Come back in a little while"):
+			refused = said
 
-	if sold == 0:
-		return "You have no extra stuff he will buy."
+	if sold == 0:   # a spent purse or a day's limit is said as itself, not as "nothing to sell" (TEST-003)
+		return refused if refused != "" else "You have no extra stuff he will buy."
 
 	return "Sold %d kinds of extra stuff for %s." % [sold, items._coin_words(items.coins_of(peer) - before_coins)]
 

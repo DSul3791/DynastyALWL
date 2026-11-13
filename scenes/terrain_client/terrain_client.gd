@@ -1522,7 +1522,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 	# The server's one "received" event for every gain (pickup, quest reward, craft, harvest); Items adds the RPC.
 	if net.has_signal("item_received"):
-		net.connect("item_received", func(item_id: String, count: int, _source: String): pickup_feed.push_id(item_id, count))
+		net.connect("item_received", func(item_id: String, count: int, source: String): pickup_feed.push_id(item_id, count, source))
 
 	if test_items:
 		items.run_test()
