@@ -13326,6 +13326,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), float(_fishing_data().get("min_chance", 0.02)), float(cfg.get("max_chance", 0.95)))
 	var caught: Array = []
+	var before: Array = _snapshot(inv)   # a timed haul, outside any action: it sends its own changes (a catch can grow the pack, protocol 113)
 
 	for n in want:
 		if fish_stock(cell) <= 0:
@@ -13337,6 +13338,10 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 			_take_in(peer, inv, table.number_of(species), 1)
 			caught.append(table.sentence_name(table.number_of(species)))
 
+	var was_quiet: bool = _gain_quiet
+	_gain_quiet = true   # the haul line below names the catch
+	_send_changes(peer, inv, before)
+	_gain_quiet = was_quiet
 	_wear_slot(peer, inv, slot, "net")
 	_dirty = true
 
