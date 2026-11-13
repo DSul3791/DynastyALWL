@@ -545,6 +545,7 @@ def skin(part, material):
 
 
 _tones = {}
+WOODS = {"hard": (0.54, 0.35, 0.2), "rich": (0.34, 0.19, 0.1), "rough": (0.5, 0.36, 0.21), "heavy": (0.4, 0.29, 0.17), "eng": (0.3, 0.22, 0.14)}   # a door's wood surfaces (piece_look _wood_mat)
 
 
 def _tone_mat(c):
@@ -569,6 +570,7 @@ RUNTIME = {
     "deg_to_rad": math.radians, "fposmod": lambda a, b: a % b, "posmod": lambda a, b: a % b,
     "_box": _box, "_box_rot": _box_rot, "_solid": _solid, "_cyl": _cyl, "_dome": _dome, "_torus_at": _torus_at, "_rod": _rod, "_log_mesh": _log_mesh,
     "_log_at": _log_at, "_log_along": _log_along, "_tone_mat": _tone_mat, "_materials": _noop, "_tier_materials": _noop,
+    "_wood_mat": lambda kind: _tones.setdefault("wood_" + kind, Material(Color(*WOODS[kind]), "_wood_" + kind)), "_brass_mat": lambda: _tones.setdefault("brass", Material(Color(0.76, 0.6, 0.26), "_brass")),
     "_iron_mat": lambda: _iron, "_horn_mat": lambda: _horn, "_soil_mat": lambda: _soil, "_still_water": lambda: _mat("_water"), "brick_skin": lambda: _bricks,
     "_planks": _planks, "_frame": _frame, "_roof": _roof, "_earth": _earth, "_stone": _stone, "_tar": _tar, "_steel": _steel, "_log": _log,
     "_thatch": _thatch, "_clay": _clay, "_pot": _pot, "_blocks": _blocks, "_bricks": _bricks, "_logs": _logs, "_daub": _daub, "_brick": _brick,

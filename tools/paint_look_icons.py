@@ -30,11 +30,11 @@ PLOT_VIEW = rot_y(math.radians(-20.0)) @ rot_x(math.radians(14.0))
 WALL_HUNG = rot_y(math.radians(-30.0))
 CORNER_VIEW = rot_y(math.radians(-45.0))
 
-# item: (look, view). Doorways show their open look (the gap reads at slot size; a shut door reads as a wall), gates their shut one.
+# item: (look, view). Doorways are empty frames since BUGLIST-002 (the gap reads at slot size), gates show their shut look.
 ITEMS = {
     # B1a: foundations, doorways, windows
     "log_foundation": ("log_foundation", SLAB_VIEW), "brick_foundation": ("brick_foundation", SLAB_VIEW),
-    "log_doorway": ("log_doorway_open", WALL_VIEW), "stone_doorway": ("stone_doorway_open", WALL_VIEW), "brick_doorway": ("brick_doorway_open", WALL_VIEW),
+    "log_doorway": ("log_doorway", WALL_VIEW), "stone_doorway": ("stone_doorway", WALL_VIEW), "brick_doorway": ("brick_doorway", WALL_VIEW),
     "thatch_window": ("thatch_window", WALL_VIEW), "log_window": ("log_window", WALL_VIEW), "stone_window": ("stone_window", WALL_VIEW),
     "brick_window": ("brick_window", WALL_VIEW),
     # B2: fences and gates
@@ -57,7 +57,7 @@ ITEMS = {
     # B1b: stairs, railings, the double and metal doorways
     "log_stairs": ("log_stairs", STAIR_VIEW), "stone_stairs": ("stone_stairs", STAIR_VIEW), "brick_stairs": ("brick_stairs", STAIR_VIEW),
     "wooden_railing": ("wooden_railing", FENCE_VIEW), "iron_railing": ("iron_railing", FENCE_VIEW),
-    "double_doorway": ("double_doorway_open", WALL_VIEW), "iron_doorway": ("iron_doorway_open", WALL_VIEW), "steel_doorway": ("steel_doorway_open", WALL_VIEW),
+    "double_doorway": ("double_doorway", WALL_VIEW), "iron_doorway": ("iron_doorway", WALL_VIEW), "steel_doorway": ("steel_doorway", WALL_VIEW),
     # B4: lights
     "wooden_hanging_lantern": ("wooden_hanging_lantern", STATION_VIEW), "iron_hanging_lantern": ("iron_hanging_lantern", STATION_VIEW),
     "iron_wall_lantern": ("iron_wall_lantern", WALL_HUNG), "wooden_torch_post": ("wooden_torch_post", STATION_VIEW),
@@ -158,7 +158,7 @@ ITEMS["iron_chest"] = ("iron_chest", FURNITURE_VIEW)
 ITEMS["wooden_crate"] = ("wooden_crate", FURNITURE_VIEW)
 for _tier in ("engineered", "fortified"):   # the seven-tier ladder's concrete tiers (10 Nov 2026); Fortified is the same model with iron bands
     for _piece, _view in (("foundation", SLAB_VIEW), ("wall", WALL_VIEW), ("doorway", WALL_VIEW), ("pillar", STATION_VIEW)):
-        ITEMS[_tier + "_" + _piece] = (_tier + "_" + _piece + ("_open" if _piece == "doorway" else ""), _view)
+        ITEMS[_tier + "_" + _piece] = (_tier + "_" + _piece, _view)
 ITEMS["engineered_window"] = ("engineered_window", WALL_VIEW)
 ITEMS["engineered_stairs"] = ("engineered_stairs", STAIR_VIEW)
 ITEMS["engineered_floor"] = ("engineered_floor", SLAB_VIEW)
