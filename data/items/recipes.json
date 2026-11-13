@@ -1112,16 +1112,16 @@
 			"category": "Shelter and building",
 			"needs": [
 				[
-					"twine",
-					6
-				],
-				[
 					"thatch",
-					25
+					15
 				],
 				[
 					"stick",
-					12
+					8
+				],
+				[
+					"twine",
+					3
 				]
 			],
 			"gives": [
