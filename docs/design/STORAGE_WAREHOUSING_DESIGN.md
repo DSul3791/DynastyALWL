@@ -26,19 +26,35 @@ Avoid settlement interiors filled with stacked generic chests. Storage should be
 
 **Cross-references only:** Rock Pile #235 is a physical 45-stone resource; Tool Rack #82 is a workbench upgrade, **not** the Tool Cabinet.
 
-## 3. Sixteen approved ADD concepts — not yet catalog/runtime data
+## 3. Sixteen established storage concepts and their current roles
 
 | Group | Items |
 |---|---|
 | Household (6) | Large Wooden Chest; Wardrobe; Dresser; Bookcase; Apothecary Cabinet; Bottle & Jar Rack |
-| Workshop (2) | Tool Cabinet; Open Storage Bin |
+| Workshop (2) | Tool Cabinet; **Resource Bin family** (existing Open Storage Bin identity should map to Small, with Medium/Large as two size upgrades) |
 | Bulk-material storage (5) | Firewood Rack; Log Rack; Lumber Rack; Mason's Pallet; Ore & Metal Rack |
 | Shared zone interface (1) | Storage Sign / Ledger |
 | Freight (2) | **Warehouse Crate**; **Warehouse Desk** |
 
-Count = **16**. The Woodshed, Materials Yard and Storehouse are construction layouts (with the Granary, 4), not master item IDs. No separate crate label, warehouse membership token, lock/key or four-digit-code item. The Granary is a fourth layout of these pieces [D17], not a row. The Captain's Table belongs to a **future ship category**, not this 16-item list.
+The original storage family roster contained **16 concept types**; the existing Open Storage Bin is now a **three-size resource-bin family**, so do not use the old count as a final current item-total calculation. The Woodshed, Materials Yard and Storehouse are construction layouts (with the Granary, 4), not master item IDs. No separate crate label, warehouse membership token, lock/key or four-digit-code item. The Granary is a fourth layout of these pieces [D17], not a row. The Captain's Table belongs to a **future ship category**, not this 16-item list.
 
 **Known design reconciliation before implementation:** §3.5 already provides graded Crude/Rustic/Fine/Ornate Chests. **Decided [D17]:** the Large Wooden Chest keeps greater weight capacity and a larger footprint, within the 30-slot limit; do not silently duplicate the Fine/Ornate grade. A large chest is eligible for the same code-lock mechanic as all approved chests. Existing #850 Crate remains and can join warehouse views; Warehouse Crate must have a meaningful stronger shipping/handling/stacking role, not just another differently named 10-slot crate. **Actual capacities, craft costs and stack height are unapproved tuning values.**
+
+## 3.1 Approved Resource Bins — dedicated materials, not mixed chests
+
+Resource bins are physical solid-sided/open-top wooden containers with **one visible material-surface mesh** whose height follows the actual fill fraction. They are not an inventory of interchangeable slots or a new full 3D volume mesh.
+
+| Size | Units of ONE item | Exact construction |
+|---|---:|---|
+| **Small** | **1,000** | **16 Planks + 32 Nails** |
+| **Medium** | **5,000** | **32 Planks + 64 Nails** |
+| **Large** | **10,000** | **64 Planks + 128 Nails** |
+
+**Assignment:** first successfully deposited resource determines what the bin holds; mixed types are refused until quantity reaches zero. When fully empty it automatically becomes unassigned; the next deposited item can be a different resource. Coal and Charcoal are separate types. Apply the same rule on multiplayer transfers and when smelter/smithy fuel automation empties a bin. No separate bin-type blueprints or manual assignment popup.
+
+**Existing identity reconciliation:** `open_storage_bin` (#1232, blueprint #227) exists in current data as mixed loose-item storage (8 slots, 300 kg, old build cost 6 Planks+8 Wooden Pins). The creator's later size/fill rule replaces that **intended role**. Prefer mapping it to the Small size while preserving existing item numbers and safely handling any legacy placed contents. Do not add a duplicate Small bin without necessity. Existing mixed general chests/racks/warehouse freight remain separate and unchanged. Actual conversion and save handling need code/tests in a reviewed implementation.
+
+**Fuel automatic sourcing, distinct from ordinary locked storage:** every 5 minutes (300 s), smelter/smithy fuel hoppers pull **only produced Coal/Charcoal** from eligible dedicated material bins, kiln or fires within **30m**, in **station creation order** with no permission check. The shared coal/charcoal filter is on the fuel hopper; any saved existing crate code and locked chest permissions still govern regular browsing and crafting. Never pull raw Wood/ground drops/generic mixed chests or silently add fuel to steel recipe INPUT.
 
 ## 4. Core physical-storage rules [D13]
 
@@ -49,7 +65,7 @@ Count = **16**. The Woodshed, Materials Yard and Storehouse are construction lay
 5. A crate joins its destination desk **from physical location**, not by a permanent ledger link. Move it from Warehouse A → cart → ship hold → Warehouse B and the eligible active view changes along the route. A ship's Captain's Table can use the same system *when separately approved and implemented*.
 6. A crate never remains accessible through Warehouse A's interface after leaving A. At most **one active locality/context per crate** (Warehouse Desk, Storage Sign / Ledger, future Captain's Table); overlaps must resolve deterministically with ownership/physical position rules. Recommended: a desk takes priority over a sign covering the same crate, and a desk covers a stated radius or its enclosing building. No remote teleporting of goods, unlimited range, infinite load or duplicate transactions.
 7. Stackable crates, material racks, shelves and wardrobe/weapon displays show reasonable **fill states** through low-cost grouped meshes, not thousands of physical item meshes. Actual inventory data and perishability remain authoritative.
-8. A player's approved local workstation ingredient-sourcing rules still apply; this system must not silently allow every crafting station to pull from every warehouse on an island. Recommended: locked containers feed crafting and NPC jobs only for players with access, and only the owner or a player with access may lift, load or take down a locked container.
+8. A player's **ordinary local** workstation ingredient-sourcing rules still apply; this system must not allow crafting from every warehouse remotely. Locked containers feed normal crafting/NPC jobs only for players with access, and only the owner or authorized user may lift/load/take down a locked container. **Exception: automatic SMELTER/SMITHY fuel hopper collection is explicitly authorized by the creator WITHOUT permission checks** (only already-produced Coal/Charcoal in matching dedicated bins, kilns or fires, within 30m, every 300s, oldest station first). This exception is **not** permission to browse/unlock warehouse containers and does not apply to manual crafting or repair.
 
 ## 5. Crate/chest ownership, four-digit codes and lockout [D13]
 
