@@ -43,6 +43,7 @@ const CHUNK_M := 256.0
 const NEAR_M := 100.0                    # items this close are sent to a player
 const FAR_FIRE_M := 2048.0               # lit campfires out to this far are sent as smoke only (far_fires, protocol 114; the High terrain view; the client drops those past its own view)
 const FAR_FIRE_COUNT := 32               # at most this many, nearest first
+const FAR_OVERLAP_M := 10.0              # far_fires starts this much inside NEAR_M: world_items goes by the position at the last sync (up to a second old), so a fire is never in neither list (a short double plume is not seen)
 const PICKUP_M := 3.0
 const DROP_REACH_M := 6.0                # a drop lands at most this far from where the server last saw the player
 const SYNC_EVERY_S := 1.0
@@ -7157,7 +7158,7 @@ func far_fires_near(at: Vector3, far_m: float = FAR_FIRE_M, count: int = FAR_FIR
 	for fire in _far_fire_spots:
 		var d: float = (fire[0] as Vector3).distance_to(at)
 
-		if d > NEAR_M and d <= far_m:
+		if d > NEAR_M - FAR_OVERLAP_M and d <= far_m:
 			rows.append([d, fire[0], fire[1]])
 
 	rows.sort_custom(func(p: Array, q: Array) -> bool: return float(p[0]) < float(q[0]))

@@ -2455,7 +2455,11 @@ func _send_npcs(delta: float) -> void:
 			net.ice_holes.rpc_id(peer, hole_rows[0], hole_rows[1])
 
 		var far_rows: Array = items.far_fires_near(at)   # their smoke seen from a hill (TEST-011)
-		var far_sig: int = hash([far_rows[0], far_rows[1]])
+		var far_sig: int = 1 + far_rows[0].size()
+
+		for i in range(far_rows[0].size()):
+			far_sig += hash([far_rows[0][i], far_rows[1][i]])   # order-free: two fires swapping rank as the player walks send nothing (the client ranks them itself)
+
 
 		if int(_far_fires_sent.get(peer, 0)) != far_sig:
 			_far_fires_sent[peer] = far_sig

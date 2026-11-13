@@ -7,6 +7,8 @@ extends Node3D
 
 const BuildingLook := preload("res://src/client/building_look.gd")
 
+const SHOW_PER_REFRESH := 2   # plumes newly shown per refresh (each pays a warm start)
+
 var view_m: Callable    # () -> float: how far the terrain is drawn (terrain_client: terrain.view_distance); unset = all that come
 var _plumes: Dictionary = {}   # Vector3i (the fire's position to the decimetre) -> GPUParticles3D
 
@@ -65,16 +67,18 @@ func refresh() -> void:
 
 	ranked.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	var cap: int = int(BuildingLook.tall_tier("far_max_fires", 1))
+	var warm_left: int = SHOW_PER_REFRESH
 
 	for i in range(ranked.size()):
 		var plume: GPUParticles3D = ranked[i][1]
 		var on: bool = i < cap
 
-		if on != plume.visible:
-			plume.visible = on
-
-			if on:
-				plume.restart()
+		if on and not plume.visible and warm_left > 0:
+			warm_left -= 1
+			plume.visible = true
+			plume.restart()   # its warm start (life_s x fixed_fps steps): at most SHOW_PER_REFRESH a second, so arriving on a hill is no hitch
+		elif not on and plume.visible:
+			plume.visible = false
 
 
 func plume_count() -> int:

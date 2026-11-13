@@ -1429,7 +1429,8 @@ static var _camp_smoke_mesh: QuadMesh
 # campfire: a few dozen big soft puffs that leave the flames with the near plume, unseen for their first moments (the near plume is the smoke there), keep
 # rising for fire_smoke.json "tall" life_s, slowing as they go, spread wide and fade: the column carries on over the canopy and drifts off as a haze.
 # Limits: tens of puffs per fire, not hundreds; stepped at "tall" fixed_fps (its warm start is life_s x fixed_fps steps, the near plume's count); and only
-# the "tall" max_fires fires nearest the camera draw it (set_fire_air, once a second), so a camp of many fires costs no more than a few.
+# the "tall" max_fires fires nearest the camera draw it (set_fire_air, once a second), so a camp of many fires costs no more than a few. Fires 100 m to
+# 2 km off (protocol 114 far_fires) get this column alone (far_smoke_plume, src/client/far_smoke.gd, its own cap far_max_fires).
 static var _tall_smoke: Dictionary = {}           # tier -> ParticleProcessMaterial
 static var _tall_smoke_mesh: QuadMesh
 static var _tall_plumes: Array = []               # a WeakRef to every tall plume made (the nearest-fires cap); freed ones drop out

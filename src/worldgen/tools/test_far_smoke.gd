@@ -86,8 +86,13 @@ func _client() -> void:
 
 	far.on_far_fires(points, tiers)
 	check(far.plume_count() == 12, "a plume for each far fire (%d)" % far.plume_count())
+	check(far.shown_count() == FarSmokeScript.SHOW_PER_REFRESH, "a few shown at a time, each paying its warm start (%d)" % far.shown_count())
+
+	for k in range(10):
+		far.refresh()
+
 	var cap: int = int(BuildingLook.tall_tier("far_max_fires", 1))
-	check(far.shown_count() == cap, "only the nearest %d draw (%d)" % [cap, far.shown_count()])
+	check(far.shown_count() == cap, "then only the nearest %d draw (%d)" % [cap, far.shown_count()])
 	var nearest: GPUParticles3D = null
 	var farthest: GPUParticles3D = null
 
@@ -108,7 +113,7 @@ func _client() -> void:
 
 	far.view_m = func() -> float: return 400.0
 	far.refresh()
-	check(far.shown_count() == 3, "past the terrain's view distance none draw (%d within 400 m)" % far.shown_count())
+	check(far.shown_count() == 3, "past the terrain's view distance none draw: %d within 400 m" % far.shown_count())
 	far.view_m = Callable()
 
 	tiers[0] = 3
