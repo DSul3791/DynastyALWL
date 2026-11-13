@@ -16,10 +16,12 @@ Every How-to must truthfully identify where materials come from, exact recipe in
 - **Wood route:** fell a tree, cut a loose log into wooden blocks with an axe; Wooden - Hammer requires 1 wooden block, 1 stick and 1 twine. The Chopping Block can split blocks into firewood. **Discrepancy requiring audit:** the `chopping_hard_firewood` recipe instead lists an oak log; do not teach them as the exact same action until reconciled.
 - **Metal and boards:** Smelter must exist for iron ingots; Smithy requires 3 iron ingots; Iron - Saw requires 2 iron ingots and 2 sticks at Smithy. The saw makes Planks (6 per softwood log) or Hardwood Boards (4 per hardwood log) by hand before the advanced Sawmill exists. The Sawmill requires Planks, nails, a water wheel and iron ingots. Do not present the Sawmill as the only way to produce its own required Planks.
 - **Higher tiers:** Brick → Kiln → Lime powder; Mixer + sand/stone/water → Concrete; Blast furnace + iron → Steel ingots; Iron/steel tools and metal hammer; Master smithy; Engineered construction; Fortified construction. Verify each intermediate recipe and station/add-on in play.
-- **Important:** The progression order below is not an in-game unlock gate. The first table is a guided main route; subsequent tables cover the remaining available craft/build achievements, including alternate activities, so the first two HUD goals stay useful. This **ordering approach is a design proposal** pending creator confirmation; it does not modify the automatic completion rules.
+- **Important:** The progression order below is not an in-game unlock gate. The first table is a guided main route with explicit source and dependency steps; subsequent tables cover the remaining available craft/build achievements, including alternate activities, so the first two HUD goals stay useful. This **ordering approach is a design proposal** pending creator confirmation; it does not modify the automatic completion rules.
 - **Not complete until tested:** The source-aware dependency sort is a static check, not an AI playthrough. Every recipe variant, station level, material source, door/roof variant and all unlisted gather-only/loot/animal/crop items must be audited before this catalog can be marked approved.
 
 ## 1. Guided main journey — essential progression and manufacturing chain
+
+This ordered route explicitly covers hand gathering, primitive tools, first fire and both size upgrades, the initial shelter and Crude building pieces, processing, woodworking, metalworking, stations, weapons, and the ultimate building tiers. Each step automatically records completion; none locks the next recipe.
 
 | Goal | Reward |
 |---|---|
@@ -30,14 +32,18 @@ Every How-to must truthfully identify where materials come from, exact recipe in
 | **Twist twine** — Use E on tall grass or nettles to gather plant fibre. Press I for Inventory/Crafting, select Twine, and make 2: each Twine costs 3 plant fibre (6 total). <!-- existing:twine --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Stone - Knife** — Materials: 2 Stone, 1 Stick. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:stone_knife; recipes:stone_knife --> | 3 copper <!-- coin_copper:3 --> |
 | **Make a Stone - Axe** — From your gathered resources, craft a Stone - Axe in Inventory/Crafting (I): 1 Stone, 1 Stick and 2 Twine. Equip it to cut trees. <!-- existing:axe --> | 5 copper <!-- coin_copper:5 --> |
+| **Craft Stone - Pickaxe** — Materials: 2 Stick, 3 Stone, 2 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:stone_pickaxe; recipes:stone_pickaxe --> | 4 copper <!-- coin_copper:4 --> |
 | **Fell a tree** — Hold your Stone - Axe and strike a standing tree until it falls into logs and other wood resources. <!-- existing:fell --> | 6 copper <!-- coin_copper:6 --> |
+| **Collect a log** — Fell a standing tree with a Stone - Axe, then collect the resulting logs. <!-- gather:log --> | 3 copper <!-- coin_copper:3 --> |
 | **Chop a felled log into wooden blocks** — Drop a felled log onto the ground. Hold your Stone - Axe and strike the loose log to obtain wooden blocks; keep one for your Wooden - Hammer. This is a separate action from felling a standing tree. <!-- activity:chop_log_blocks --> | 4 copper <!-- coin_copper:4 --> |
 | **Make a Wooden - Hammer** — Chop a felled log lying on the ground with your axe for wooden blocks. In Inventory/Crafting (I), craft a Wooden - Hammer from 1 wooden block, 1 stick and 1 twine; equip it to build. <!-- existing:hammer --> | 3 copper <!-- coin_copper:3 --> |
 | **Craft Campfire** — Gather sticks and stones to build your first fire. Materials: 6 Stick, 3 Stone. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:campfire_kit; recipes:campfire --> | 3 copper <!-- coin_copper:3 --> |
 | **Place your first campfire** — Craft the Campfire from 6 sticks and 3 stones. Use its placement action to set it on reasonably level ground. This goal requires a placed fire, not merely carrying a kit. <!-- activity:place_campfire --> | 4 copper <!-- coin_copper:4 --> |
 | **Light a fire** — Craft a Campfire (6 sticks, 3 stones), place it, open its fuel storage with F, add sticks and press E near it to light it. <!-- existing:fire --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Chopping block** — Materials: 1 Large wooden block. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:chopping_block; recipes:chopping_block --> | 6 copper <!-- coin_copper:6 --> |
-| **Craft Hard firewood** — Use an axe to chop a fallen log into wooden blocks, then split blocks at the Chopping Block. Check whether the separate chopping recipe also needs whole logs. Materials: 1 Oak log. Use the Chopping block. Keep available (not consumed): 1 Axe. This recipe produces 12 units. <!-- craft:firewood; recipes:chopping_hard_firewood --> | 5 copper <!-- coin_copper:5 --> |
+| **Place and prepare your Chopping Block** — After crafting a Chopping Block from a large wooden block, place it on valid ground. Keep an axe equipped to split wooden blocks into firewood at this station. Completion should be the placed Chopping Block, not just the crafted item. <!-- activity:place_chopping_block --> | 3 copper <!-- coin_copper:3 --> |
+| **Obtain hardwood logs** — Fell an oak or other supported hardwood tree with an axe and collect its hardwood log. <!-- gather:log_oak --> | 5 copper <!-- coin_copper:5 --> |
+| **Split your first firewood** — First chop a felled log into wooden blocks with an axe. Place your Chopping Block, hold the axe, and use the block to split firewood. Note for reviewers: the separate chopping recipe currently consumes an oak log, while the direct station interaction consumes wooden blocks. Resolve both paths and emit one consistent goal-completion event for firewood production. <!-- craft:firewood; recipes:chopping_hard_firewood --> | 5 copper <!-- coin_copper:5 --> |
 | **Grow your fire into a medium campfire** — Make or obtain at least 3 pieces of firewood. Open the existing fire's storage with F and add all three pieces. The lit fire should reach medium (tier 2). Wet wood may delay its effective size. <!-- activity:medium_fire --> | 5 copper <!-- coin_copper:5 --> |
 | **Grow your fire into a large bonfire** — Fell more trees and add at least 3 whole logs to the lit fire through its fuel storage. Ensure no cooking pot is hanging over the fire, since a pot caps its size at medium. Confirm it grows to the large bonfire (tier 3). <!-- activity:bonfire --> | 1 bronze <!-- coin_copper:10 --> |
 | **Eat something wild** — Find an edible wild plant or berry, gather it and consume it from your inventory/hotbar. <!-- existing:berries --> | 3 copper <!-- coin_copper:3 --> |
@@ -46,11 +52,14 @@ Every How-to must truthfully identify where materials come from, exact recipe in
 | **Build a lean-to** — With your hammer equipped, press R and choose the Lean-to blueprint; gather and consume the materials displayed by the active blueprint. Build a simple sheltered sleeping spot. <!-- existing:shelter --> | 8 copper <!-- coin_copper:8 --> |
 | **Make a bed** — Gather thatch (e.g. tall grass or heather). Craft a Thatch - Bed from 10 thatch, 4 sticks and 2 twine, then place it under cover. <!-- existing:bed --> | 8 copper <!-- coin_copper:8 --> |
 | **Build a Workbench** — Craft a Wooden - Hammer first. Equip it, press R and place the Wooden - Workbench using 16 sticks, 6 twine and 4 stones. This station enables additional recipes. <!-- existing:workbench --> | 1 bronze <!-- coin_copper:10 --> |
+| **Build Crude - Foundation** — Equip a building hammer, press R and choose Crude - Foundation. Materials: 4 Twine, 20 Thatch. Place it where the building ghost is valid. <!-- build:thatch_floor; structure:thatch_floor --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Wall** — Equip a building hammer, press R and choose Crude - Wall. Materials: 3 Twine, 20 Thatch, 6 Stick. Place it where the building ghost is valid. <!-- build:thatch_wall; structure:thatch_wall --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Doorway** — Equip a building hammer, press R and choose Crude - Doorway. Materials: 3 Twine, 20 Thatch, 6 Stick. Place it where the building ghost is valid. <!-- build:thatch_doorway; structure:thatch_doorway --> | 7 copper <!-- coin_copper:7 --> |
+| **Build Crude - Window** — Equip a building hammer, press R and choose Crude - Window. Materials: 15 Thatch, 8 Stick, 3 Twine. Place it where the building ghost is valid. <!-- build:thatch_window; structure:thatch_window --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Roof 45** — Equip a building hammer, press R and choose Crude - Roof 45. Materials: 6 Twine, 30 Thatch, 12 Stick. Place it where the building ghost is valid. <!-- build:thatch_roof; structure:thatch_roof --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Roof 65** — Equip a building hammer, press R and choose Crude - Roof 65. Materials: 6 Twine, 30 Thatch, 12 Stick. Place it where the building ghost is valid. <!-- build:thatch_roof_65; structure:thatch_roof_65 --> | 7 copper <!-- coin_copper:7 --> |
 | **Gather clay** — Dig clay-rich ground with a spade; verify the specific terrain/material shown by the game. <!-- gather:clay --> | 3 copper <!-- coin_copper:3 --> |
+| **Gather sand** — Dig sandy ground using a spade. <!-- gather:sand --> | 3 copper <!-- coin_copper:3 --> |
 | **Craft Brick** — Materials: 2 Clay. Use a lit campfire. This recipe produces 3 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:brick; recipes:brick,kiln_brick --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Clay - Pot** — Materials: 6 Clay. Use a lit campfire. <!-- craft:clay_pot; recipes:clay_pot --> | 4 copper <!-- coin_copper:4 --> |
 | **Build Campfire pot** — Equip a building hammer, press R and choose Campfire pot. Materials: 3 Stick, 3 Twine, 1 Clay - Pot. Place it where the building ghost is valid. <!-- build:campfire_pot; structure:campfire_pot --> | 2 bronze <!-- coin_copper:20 --> |
@@ -60,6 +69,11 @@ Every How-to must truthfully identify where materials come from, exact recipe in
 | **Build Clay hearth** — Equip a building hammer, press R and choose Clay hearth. Materials: 10 Brick, 6 Clay, 4 Stone. Place it where the building ghost is valid. <!-- build:clay_hearth; structure:clay_hearth --> | 2 bronze <!-- coin_copper:20 --> |
 | **Build Oven** — Equip a building hammer, press R and choose Oven. Materials: 24 Brick, 10 Clay, 8 Stone. Build near Clay hearth. Place it where the building ghost is valid. <!-- build:oven; structure:oven --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Thread** — Materials: 2 Plant fibre. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:thread; recipes:thread --> | 3 copper <!-- coin_copper:3 --> |
+| **Obtain hide** — Hunt an animal and process its carcass with the appropriate knife/tool. <!-- gather:hide --> | 3 copper <!-- coin_copper:3 --> |
+| **Find flint for a hide scraper** — Find a valid in-game source of Flint and collect one; the exact spawn/gather interaction is still under source verification. Flint is used with a Stick and Twine to craft a Scraper at a Workbench. <!-- gather:flint --> | 3 copper <!-- coin_copper:3 --> |
+| **Craft Scraper** — Materials: 1 Flint, 1 Stick, 1 Twine. Use a Workbench. <!-- craft:hide_scraper; recipes:hide_scraper --> | 5 copper <!-- coin_copper:5 --> |
+| **Craft Scraped hide** — Materials: 1 Hide. Use Drying rack. Keep available (not consumed): 1 Scraper. <!-- craft:processed_hide; recipes:processed_hide --> | 7 copper <!-- coin_copper:7 --> |
+| **Find tannin bark for tanning leather** — Find a tree that provides Tannin bark (the flora table identifies mangrove). Gather it before attempting to tan hide. Confirm the species and gathering method in a real playthrough. <!-- gather:tannin_bark --> | 5 copper <!-- coin_copper:5 --> |
 | **Build Tanning rack** — Equip a building hammer, press R and choose Tanning rack. Materials: 6 Log, 4 Twine. Place it where the building ghost is valid. <!-- build:tanning_rack; structure:tanning_rack --> | 1 bronze + 4 copper <!-- coin_copper:14 --> |
 | **Craft Leather** — Materials: 1 Scraped hide, 2 Tanbark, 1 Water. Use the Tanning rack. <!-- craft:leather; recipes:leather --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Leatherworking table** — Equip a building hammer, press R and choose Leatherworking table. Materials: 4 Log, 4 Stick, 4 Twine, 2 Stone. Place it where the building ghost is valid. <!-- build:leatherworking_table; structure:leatherworking_table --> | 1 bronze + 4 copper <!-- coin_copper:14 --> |
@@ -71,10 +85,10 @@ Every How-to must truthfully identify where materials come from, exact recipe in
 | **Build Smelter** — Equip a building hammer, press R and choose Smelter. Materials: 24 Clay, 10 Stone. Place it where the building ghost is valid. <!-- build:smelter; structure:smelter --> | 1 bronze <!-- coin_copper:10 --> |
 | **Craft Iron ingot** — Materials: 4 Iron ore, 5 Fuel. Use Smelter. <!-- craft:iron_ingot; recipes:smelt_iron --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Smithy** — Equip a building hammer, press R and choose Smithy. Materials: 16 Stone, 10 Clay, 4 Log, 3 Iron ingot. Place it where the building ghost is valid. <!-- build:blacksmithy; structure:blacksmithy --> | 4 bronze <!-- coin_copper:40 --> |
+| **Craft Iron - Hammer** — Materials: 2 Iron ingot, 1 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_hammer; recipes:iron_hammer --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Saw** — Materials: 2 Iron ingot, 2 Stick. Use the Smithy. <!-- craft:hand_saw; recipes:hand_saw --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Obtain softwood logs** — Fell a spruce or other supported softwood tree with an axe and collect its softwood log. <!-- gather:log_spruce --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Plank** — Fell a softwood tree, keep its log, and first forge an Iron - Saw at the Smithy. Materials: 1 Spruce log. Open Inventory/Crafting (I) and use the hand-crafting recipe. Keep available (not consumed): 1 Saw. This recipe produces 6 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:lumber; recipes:lumber,lumber_by_hand --> | 2 bronze <!-- coin_copper:20 --> |
-| **Obtain hardwood logs** — Fell an oak or other supported hardwood tree with an axe and collect its hardwood log. <!-- gather:log_oak --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Hardwood board** — Fell an oak/hardwood tree and prepare an Iron - Saw first. Materials: 1 Oak log. Open Inventory/Crafting (I) and use the hand-crafting recipe. Keep available (not consumed): 1 Saw. This recipe produces 4 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:hardwood_board; recipes:hardwood_board,hardwood_board_by_hand --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Wooden pin** — Materials: 1 Plank. Use a Workbench. This recipe produces 20 units. <!-- craft:wooden_pin; recipes:wooden_pin --> | 3 bronze <!-- coin_copper:30 --> |
 | **Craft Cobblestone** — Materials: 3 Stone. Use a Workbench. <!-- craft:cobblestone; recipes:cobblestone --> | 5 copper <!-- coin_copper:5 --> |
@@ -82,8 +96,16 @@ Every How-to must truthfully identify where materials come from, exact recipe in
 | **Build Stone - Workbench** — Equip a building hammer, press R and choose Stone - Workbench. Materials: 20 Cobblestone, 4 Clay mortar, 6 Plank. Place it where the building ghost is valid. <!-- build:stone_workbench; structure:stone_workbench --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
 | **Build Stonecutter's bench** — Equip a building hammer, press R and choose Stonecutter's bench. Materials: 20 Cobblestone, 4 Log. Place it where the building ghost is valid. <!-- build:stonecutters_bench; structure:stonecutters_bench --> | 3 bronze <!-- coin_copper:30 --> |
 | **Craft Nails** — Materials: 1 Iron ingot. Use the Smithy (workstation level 2). This recipe produces 100 units. <!-- craft:nails; recipes:nails --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Craft Hinges** — Materials: 1 Iron ingot. Use the Smithy (workstation level 2). This recipe produces 20 units. <!-- craft:hinges; recipes:hinges --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Craft Iron band** — Materials: 1 Iron ingot. Use the Smithy. This recipe produces 2 units. <!-- craft:iron_band; recipes:iron_band --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Gather pine tar for mechanical parts** — Harvest a tree species that gives Pine tar (the flora table includes Scots pine). Collect 5 Pine tar to make 1 Tar at a campfire, needed in the later Water wheel recipe. <!-- gather:pine_tar --> | 5 copper <!-- coin_copper:5 --> |
+| **Craft Tar** — Materials: 5 Pine tar. Use a lit campfire. <!-- craft:tar; recipes:tar --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Water wheel** — Materials: 20 Plank, 80 Nails, 4 Tar. Use a Workbench (workstation level 3). <!-- craft:water_wheel; recipes:water_wheel --> | 4 bronze <!-- coin_copper:40 --> |
 | **Build Sawmill** — Equip a building hammer, press R and choose Sawmill. Materials: 40 Plank, 100 Nails, 1 Water wheel, 4 Iron ingot. Place it where the building ghost is valid. <!-- build:saw_mill; structure:saw_mill --> | 2 silver + 4 bronze <!-- coin_copper:240 --> |
+| **Build Refined - Foundation** — Equip a building hammer, press R and choose Refined - Foundation. Materials: 8 Plank, 2 Twine. Place it where the building ghost is valid. <!-- build:wood_foundation; structure:wood_foundation --> | 6 bronze <!-- coin_copper:60 --> |
+| **Build Rustic - Foundation** — Equip a building hammer, press R and choose Rustic - Foundation. Materials: 10 Log, 6 Stone, 2 Twine. Place it where the building ghost is valid. <!-- build:log_foundation; structure:log_foundation --> | 7 copper <!-- coin_copper:7 --> |
+| **Build Sturdy - Foundation** — Equip a building hammer, press R and choose Sturdy - Foundation. Materials: 8 Stone, 2 Clay. Place it where the building ghost is valid. <!-- build:foundation_section; structure:foundation_section --> | 5 copper <!-- coin_copper:5 --> |
+| **Build Superior - Foundation** — Equip a building hammer, press R and choose Superior - Foundation. Materials: 16 Brick, 4 Clay mortar, 4 Stone. Place it where the building ghost is valid. <!-- build:brick_foundation; structure:brick_foundation --> | 1 bronze <!-- coin_copper:10 --> |
 | **Gather copper ore** — Find copper-bearing deposits and mine them with a suitable pickaxe. <!-- gather:copper_ore --> | 5 copper <!-- coin_copper:5 --> |
 | **Gather tin ore** — Find tin-bearing deposits and mine them with a suitable pickaxe. <!-- gather:tin_ore --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Copper ingot** — Materials: 3 Copper ore, 5 Fuel. Use Smelter. <!-- craft:copper_ingot; recipes:smelt_copper --> | 7 copper <!-- coin_copper:7 --> |
@@ -91,27 +113,39 @@ Every How-to must truthfully identify where materials come from, exact recipe in
 | **Craft Bronze ingot** — Materials: 3 Copper ingot, 1 Tin ingot. Use Smelter. This recipe produces 4 units. <!-- craft:bronze_ingot; recipes:bronze_ingot --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Stone - Forge** — Equip a building hammer, press R and choose Stone - Forge. Materials: 24 Stone, 10 Clay, 2 Hide. Place it where the building ghost is valid. <!-- build:stone_forge; structure:stone_forge --> | 1 bronze <!-- coin_copper:10 --> |
 | **Craft Bronze - Hammer** — Materials: 2 Bronze ingot, 1 Stick. Use the Stone - Forge. <!-- craft:bronze_hammer; recipes:bronze_hammer --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Iron - Hammer** — Materials: 2 Iron ingot, 1 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_hammer; recipes:iron_hammer --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Craft Bronze - Pickaxe** — Materials: 3 Bronze ingot, 2 Stick. Use the Stone - Forge. <!-- craft:bronze_pickaxe; recipes:bronze_pickaxe --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Craft Bronze - Sword** — Materials: 2 Bronze ingot, 1 Leather. Use the Stone - Forge. <!-- craft:bronze_sword; recipes:bronze_sword --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Craft Iron - Pickaxe** — Materials: 3 Iron ingot, 2 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_pickaxe; recipes:iron_pickaxe --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Craft Iron - Sword** — Materials: 2 Iron ingot, 1 Leather. Use the Smithy (workstation level 2). <!-- craft:iron_sword; recipes:iron_sword --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Build Kiln** — Equip a building hammer, press R and choose Kiln. Materials: 30 Brick, 8 Clay, 4 Clay mortar. Place it where the building ghost is valid. <!-- build:kiln; structure:kiln --> | 2 bronze <!-- coin_copper:20 --> |
 | **Find limestone for advanced construction** — Locate a source of limestone and mine or collect it with the appropriate tool. Later, use the Kiln to turn limestone into Lime powder for Concrete. Confirm the exact mining source and tool in gameplay before finalizing. <!-- gather:limestone --> | 1 bronze <!-- coin_copper:10 --> |
 | **Craft Lime powder** — Materials: 3 Limestone. Use Kiln. This recipe produces 2 units. <!-- craft:lime_powder; recipes:lime_powder --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Mixer** — Equip a building hammer, press R and choose Mixer. Materials: 9 Plank, 8 Cobblestone, 2 Clay mortar. Place it where the building ghost is valid. <!-- build:mixer; structure:mixer --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
 | **Craft Concrete** — Materials: 1 Lime powder, 2 Sand, 3 Stone, 1 Water. Use the Mixer. This recipe produces 3 units. <!-- craft:concrete; recipes:concrete --> | 4 bronze <!-- coin_copper:40 --> |
+| **Craft Clay roof tile** — Materials: 2 Clay. Use Kiln. This recipe produces 3 units. <!-- craft:clay_roof_tile; recipes:clay_roof_tile --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Blast furnace** — Equip a building hammer, press R and choose Blast furnace. Materials: 40 Brick, 20 Stone, 8 Clay mortar, 6 Iron ingot. Place it where the building ghost is valid. <!-- build:large_forge; structure:large_forge --> | 4 bronze <!-- coin_copper:40 --> |
 | **Craft Steel ingot** — Materials: 2 Iron ingot, 5 Fuel. Use the Blast furnace. <!-- craft:steel_ingot; recipes:smelt_steel --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Steel - Hammer** — Materials: 2 Steel ingot, 1 Stick. Use the Smithy. <!-- craft:steel_hammer; recipes:steel_hammer --> | 2 bronze <!-- coin_copper:20 --> |
+| **Craft Steel - Pickaxe** — Materials: 3 Steel ingot, 2 Stick. Use the Smithy. <!-- craft:steel_pickaxe; recipes:steel_pickaxe --> | 2 bronze <!-- coin_copper:20 --> |
+| **Craft Steel - Sword** — Materials: 2 Steel ingot, 1 Leather. Use the Smithy. <!-- craft:steel_sword; recipes:steel_sword --> | 2 bronze <!-- coin_copper:20 --> |
 | **Build Master smithy** — Equip a metal hammer, press R and choose Master smithy. Materials: 30 Brick, 20 Stone, 6 Log, 10 Iron ingot, 4 Steel ingot. Place it where the building ghost is valid. <!-- build:master_forge; structure:master_forge --> | 8 bronze <!-- coin_copper:80 --> |
+| **Build Refined - Door** — Equip a building hammer, press R and choose Refined - Door. Materials: 6 Hardwood board, 1 Iron ingot. Place it where the building ghost is valid. <!-- build:refined_door; structure:refined_door --> | 6 bronze <!-- coin_copper:60 --> |
+| **Build Rustic - Door** — Equip a building hammer, press R and choose Rustic - Door. Materials: 5 Plank. Place it where the building ghost is valid. <!-- build:rustic_door; structure:rustic_door --> | 6 bronze <!-- coin_copper:60 --> |
+| **Build Sturdy - Door** — Equip a building hammer, press R and choose Sturdy - Door. Materials: 6 Plank, 2 Iron ingot. Place it where the building ghost is valid. <!-- build:sturdy_door; structure:sturdy_door --> | 6 bronze <!-- coin_copper:60 --> |
+| **Build Superior - Door** — Equip a building hammer, press R and choose Superior - Door. Materials: 12 Hardwood board, 2 Iron ingot, 1 Steel ingot. Place it where the building ghost is valid. <!-- build:superior_door; structure:superior_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Engineered - Foundation** — Equip a building hammer, press R and choose Engineered - Foundation. Materials: 14 Concrete, 4 Stone. Place it where the building ghost is valid. <!-- build:engineered_foundation; structure:engineered_foundation --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
 | **Build Engineered - Wall** — Equip a building hammer, press R and choose Engineered - Wall. Materials: 11 Concrete. Place it where the building ghost is valid. <!-- build:engineered_wall; structure:engineered_wall --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
 | **Build Engineered - Roof** — Equip a building hammer, press R and choose Engineered - Roof. Materials: 5 Plank, 24 Clay roof tile, 8 Wooden pin. Place it where the building ghost is valid. <!-- build:engineered_roof; structure:engineered_roof --> | 8 bronze <!-- coin_copper:80 --> |
+| **Build Engineered - Door** — Equip a building hammer, press R and choose Engineered - Door. Materials: 12 Plank, 4 Iron ingot. Place it where the building ghost is valid. <!-- build:engineered_door; structure:engineered_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Fortified - Foundation** — Equip a metal hammer, press R and choose Fortified - Foundation. Materials: 16 Concrete, 4 Iron band. Place it where the building ghost is valid. <!-- build:fortified_foundation; structure:fortified_foundation --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
 | **Build Fortified - Wall** — Equip a metal hammer, press R and choose Fortified - Wall. Materials: 13 Concrete, 4 Iron band. Place it where the building ghost is valid. <!-- build:fortified_wall; structure:fortified_wall --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
 | **Build Fortified - Doorway** — Equip a metal hammer, press R and choose Fortified - Doorway. Materials: 13 Concrete, 4 Iron band. Place it where the building ghost is valid. <!-- build:fortified_doorway; structure:fortified_doorway --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
+| **Build Fortified - Door** — Equip a metal hammer, press R and choose Fortified - Door. Materials: 10 Iron ingot, 10 Steel ingot. Place it where the building ghost is valid. <!-- build:fortified_door; structure:fortified_door --> | 4 bronze <!-- coin_copper:40 --> |
 | **Build Fortified - Gate** — Equip a metal hammer, press R and choose Fortified - Gate. Materials: 6 Concrete, 7 Iron band, 5 Plank, 2 Hinges. Place it where the building ghost is valid. <!-- build:fortified_gate; structure:fortified_gate --> | 1 silver + 2 bronze <!-- coin_copper:120 --> |
 
 ## 2. All remaining goals — manufacturing, building and activities
 
-These goals remain eligible and earn coins automatically even when their titles do not appear in the upper-right guide. The guide covers them as a full crafting/construction encyclopedia, rather than implying each is a technology lock.
+Every other goal remains fully automatic and earns its own coins whether it is visible or not. These detailed recipes and building instructions form the optional branches and remaining breadth of the complete game guide.
 
 ### Early survival and first crafts (dependency level 1) (16 goals)
 
@@ -134,7 +168,7 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Wooden - Spear** — Materials: 1 Stick. Open Inventory/Crafting (I) and use the hand-crafting recipe. Keep available (not consumed): 1 Stone. <!-- craft:wooden_spear; recipes:wooden_spear --> | 3 copper <!-- coin_copper:3 --> |
 | **Build Vice** — Equip a building hammer, press R and choose Vice. Materials: 8 Stick, 4 Stone. Place it where the building ghost is valid. <!-- build:vice; structure:vice --> | 5 copper <!-- coin_copper:5 --> |
 
-### Early survival and first crafts (dependency level 2) (38 goals)
+### Early survival and first crafts (dependency level 2) (36 goals)
 
 | Goal | Reward |
 |---|---|
@@ -157,9 +191,7 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Splint** — Materials: 2 Stick, 1 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:splint; recipes:splint --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Stone - Hammer** — Materials: 1 Stone, 1 Stick, 1 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:stone_hammer; recipes:stone_hammer --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Stone - Mace** — Materials: 1 Stone, 1 Stick, 2 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:stone_mace; recipes:stone_mace --> | 4 copper <!-- coin_copper:4 --> |
-| **Craft Stone - Pickaxe** — Materials: 2 Stick, 3 Stone, 2 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:stone_pickaxe; recipes:stone_pickaxe --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Straw - Hat** — Materials: 6 Straw, 2 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:straw_hat; recipes:straw_hat --> | 4 copper <!-- coin_copper:4 --> |
-| **Craft Tar** — Materials: 5 Pine tar. Use a lit campfire. <!-- craft:tar; recipes:tar --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Thatch - Bed** — Materials: 10 Thatch, 4 Stick, 2 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:rough_bed_kit; recipes:rough_bed_kit,rough_bed_bedding --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Wicker - Pack basket** — Materials: 12 Stick, 4 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:wicker_pack_basket; recipes:wicker_pack_basket --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Wooden - Hoe** — Materials: 2 Stick, 1 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. Keep available (not consumed): 1 Stone. <!-- craft:wooden_hoe; recipes:wooden_hoe --> | 4 copper <!-- coin_copper:4 --> |
@@ -177,12 +209,10 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Trellis** — Equip a building hammer, press R and choose Trellis. Materials: 10 Stick, 4 Twine. Place it where the building ghost is valid. <!-- build:wooden_trellis; structure:wooden_trellis --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Wicker - Chest** — Equip a building hammer, press R and choose Wicker - Chest. Materials: 10 Stick, 4 Twine. Place it where the building ghost is valid. <!-- build:chest; structure:chest --> | 7 copper <!-- coin_copper:7 --> |
 
-### Basic materials, shelter and stations (dependency level 3) (16 goals)
+### Basic materials, shelter and stations (dependency level 3) (13 goals)
 
 | Goal | Reward |
 |---|---|
-| **Collect a log** — Fell a standing tree with a Stone - Axe, then collect the resulting logs. <!-- gather:log --> | 3 copper <!-- coin_copper:3 --> |
-| **Gather sand** — Dig sandy ground using a spade. <!-- gather:sand --> | 3 copper <!-- coin_copper:3 --> |
 | **Catch a fish** — Craft a fishing tool from its active recipe, including any required hook or bait; then catch a fish at suitable water. Review the live fishing UI rather than relying on older hints that omit the hook. <!-- existing:fish --> | 1 bronze <!-- coin_copper:10 --> |
 | **Make a spear** — Craft a Wooden - Spear with 1 stick (keep 1 stone available), then craft a Stone - Spear with that spear, 2 Twine and 1 Stone. <!-- existing:spear --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Dried apples** — Materials: 3 Autumn apple. Use Drying rack. This recipe produces 3 units. <!-- craft:dried_apples; recipes:cook_dried_apples --> | 5 copper <!-- coin_copper:5 --> |
@@ -191,20 +221,18 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Horn pane** — Materials: 1 Horn. Use a Workbench. This recipe produces 2 units. <!-- craft:horn_pane; recipes:horn_pane --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Javelin** — Materials: 2 Stick, 1 Flint. Use a Workbench. This recipe produces 2 units. <!-- craft:javelin; recipes:javelin --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Rosemary joint** — Materials: 2 Raw meat, 1 Rosemary, 1 Wild garlic leaves. Use Oven. This recipe produces 2 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:roast_joint; recipes:cook_roast_joint,cook_roast_joint_campfire_roasting_spit --> | 5 copper <!-- coin_copper:5 --> |
-| **Craft Scraper** — Materials: 1 Flint, 1 Stick, 1 Twine. Use a Workbench. <!-- craft:hide_scraper; recipes:hide_scraper --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Shortbow** — Materials: 2 Stick, 3 Twine. Use a Workbench. <!-- craft:wooden_bow; recipes:wooden_bow --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Softwood block** — Materials: 1 Large softwood block. Open Inventory/Crafting (I) and use the hand-crafting recipe. Keep available (not consumed): 1 Axe. This recipe produces 4 units. <!-- craft:wooden_block_soft; recipes:small_soft_blocks_from_large --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Stone - Hoe** — Materials: 1 Wooden - Hoe, 2 Stone, 1 Twine. Use a Workbench. <!-- craft:stone_hoe; recipes:stone_hoe --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Stone block** — Materials: 8 Stone. Use a Workbench. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:cut_stone_block; recipes:cut_stone_block,bench_stone_block --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Stone shingle** — Materials: 2 Stone. Use a Workbench. <!-- craft:stone_shingle; recipes:stone_shingle --> | 5 copper <!-- coin_copper:5 --> |
 
-### Basic materials, shelter and stations (dependency level 4) (42 goals)
+### Basic materials, shelter and stations (dependency level 4) (37 goals)
 
 | Goal | Reward |
 |---|---|
 | **Obtain animal fat** — Obtain fat when processing suitable animal carcasses. <!-- gather:animal_fat --> | 5 copper <!-- coin_copper:5 --> |
 | **Obtain bone** — Process an animal carcass with the appropriate knife/tool. <!-- gather:bone --> | 3 copper <!-- coin_copper:3 --> |
-| **Obtain hide** — Hunt an animal and process its carcass with the appropriate knife/tool. <!-- gather:hide --> | 3 copper <!-- coin_copper:3 --> |
 | **Fill Hob's order** — Ask Hob: Any order for today? Pick what he wants and bring it back. He pays once a day. Completion target: 1. <!-- existing:order --> | 3 copper <!-- coin_copper:3 --> |
 | **Make a Stone - Knife and work a kill** — Craft a Stone - Knife from 2 stones and 1 stick. Hunt suitable prey and use the knife to work the carcass. <!-- existing:knife --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Grindstone** — Equip a building hammer, press R and choose Grindstone. Materials: 12 Stone, 2 Log. Place it where the building ghost is valid. <!-- build:grindstone; structure:grindstone --> | 1 bronze <!-- coin_copper:10 --> |
@@ -217,9 +245,7 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Crude - Arched doorway** — Equip a building hammer, press R and choose Crude - Arched doorway. Materials: 3 Twine, 20 Thatch, 6 Stick. Place it where the building ghost is valid. <!-- build:thatch_arched_doorway; structure:thatch_arched_doorway --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Double arched doorway** — Equip a building hammer, press R and choose Crude - Double arched doorway. Materials: 6 Twine, 40 Thatch, 12 Stick. Place it where the building ghost is valid. <!-- build:thatch_double_arched_doorway; structure:thatch_double_arched_doorway --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Double doorway** — Equip a building hammer, press R and choose Crude - Double doorway. Materials: 6 Twine, 40 Thatch, 12 Stick. Place it where the building ghost is valid. <!-- build:thatch_double_doorway; structure:thatch_double_doorway --> | 7 copper <!-- coin_copper:7 --> |
-| **Build Crude - Foundation** — Equip a building hammer, press R and choose Crude - Foundation. Materials: 4 Twine, 20 Thatch. Place it where the building ghost is valid. <!-- build:thatch_floor; structure:thatch_floor --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Roof corner** — Equip a building hammer, press R and choose Crude - Roof corner. Materials: 4 Twine, 18 Thatch, 8 Stick. Place it where the building ghost is valid. <!-- build:thatch_roof_corner; structure:thatch_roof_corner --> | 7 copper <!-- coin_copper:7 --> |
-| **Build Crude - Window** — Equip a building hammer, press R and choose Crude - Window. Materials: 15 Thatch, 8 Stick, 3 Twine. Place it where the building ghost is valid. <!-- build:thatch_window; structure:thatch_window --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Firewood rack** — Equip a building hammer, press R and choose Firewood rack. Materials: 2 Log, 10 Stick, 2 Twine. Place it where the building ghost is valid. <!-- build:firewood_rack; structure:firewood_rack --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Flower pot** — Equip a building hammer, press R and choose Flower pot. Materials: 2 Clay, 1 Soil. Place it where the building ghost is valid. <!-- build:flower_pot; structure:flower_pot --> | 5 copper <!-- coin_copper:5 --> |
 | **Build Log rack** — Equip a building hammer, press R and choose Log rack. Materials: 4 Log, 4 Twine. Place it where the building ghost is valid. <!-- build:log_rack; structure:log_rack --> | 7 copper <!-- coin_copper:7 --> |
@@ -231,7 +257,6 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Rustic - Double arched doorway** — Equip a building hammer, press R and choose Rustic - Double arched doorway. Materials: 12 Log, 4 Twine. Place it where the building ghost is valid. <!-- build:log_double_arched_doorway; structure:log_double_arched_doorway --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Rustic - Double doorway** — Equip a building hammer, press R and choose Rustic - Double doorway. Materials: 12 Log, 4 Twine. Place it where the building ghost is valid. <!-- build:log_double_doorway; structure:log_double_doorway --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Rustic - Fence** — Equip a building hammer, press R and choose Rustic - Fence. Materials: 3 Log, 1 Twine. Place it where the building ghost is valid. <!-- build:log_fence; structure:log_fence --> | 7 copper <!-- coin_copper:7 --> |
-| **Build Rustic - Foundation** — Equip a building hammer, press R and choose Rustic - Foundation. Materials: 10 Log, 6 Stone, 2 Twine. Place it where the building ghost is valid. <!-- build:log_foundation; structure:log_foundation --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Rustic - Gate** — Equip a building hammer, press R and choose Rustic - Gate. Materials: 4 Log, 2 Twine. Place it where the building ghost is valid. <!-- build:log_gate; structure:log_gate --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Rustic - Pillar** — Equip a building hammer, press R and choose Rustic - Pillar. Materials: 1 Log, 1 Twine. Place it where the building ghost is valid. <!-- build:log_pillar; structure:log_pillar --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Rustic - Roof** — Equip a building hammer, press R and choose Rustic - Roof. Materials: 4 Log, 14 Bark shingle, 2 Twine. Place it where the building ghost is valid. <!-- build:log_roof; structure:log_roof --> | 1 bronze <!-- coin_copper:10 --> |
@@ -243,9 +268,8 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Seat** — Equip a building hammer, press R and choose Seat. Materials: 1 Log. Place it where the building ghost is valid. <!-- build:log_seat; structure:log_seat --> | 5 copper <!-- coin_copper:5 --> |
 | **Build Storage jar** — Equip a building hammer, press R and choose Storage jar. Materials: 8 Clay. Place it where the building ghost is valid. <!-- build:storage_jar; structure:storage_jar --> | 5 copper <!-- coin_copper:5 --> |
 | **Build Sturdy - Fence** — Equip a building hammer, press R and choose Sturdy - Fence. Materials: 10 Cobblestone. Place it where the building ghost is valid. <!-- build:stone_fence; structure:stone_fence --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Build Sturdy - Foundation** — Equip a building hammer, press R and choose Sturdy - Foundation. Materials: 8 Stone, 2 Clay. Place it where the building ghost is valid. <!-- build:foundation_section; structure:foundation_section --> | 5 copper <!-- coin_copper:5 --> |
 
-### Basic materials, shelter and stations (dependency level 5) (68 goals)
+### Basic materials, shelter and stations (dependency level 5) (66 goals)
 
 | Goal | Reward |
 |---|---|
@@ -267,7 +291,6 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Lamp oil** — Materials: 3 Herring. Use a campfire pot. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:lamp_oil; recipes:lamp_oil,press_lamp_oil_linseed,press_lamp_oil_walnuts --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Nut cake** — Materials: 3 Nuts, 1 Honey. Use the Food preparation table. This recipe produces 2 units. <!-- craft:energy_bar; recipes:energy_bar --> | 5 copper <!-- coin_copper:5 --> |
 | **Craft Roast beast** — Materials: 2 Raw meat, 2 Wild herbs, 1 Animal fat. Use a lit campfire. This recipe produces 2 units. <!-- craft:feast_roast; recipes:cook_feast_roast --> | 4 copper <!-- coin_copper:4 --> |
-| **Craft Scraped hide** — Materials: 1 Hide. Use Drying rack. Keep available (not consumed): 1 Scraper. <!-- craft:processed_hide; recipes:processed_hide --> | 7 copper <!-- coin_copper:7 --> |
 | **Craft Sling** — Materials: 1 Hide, 1 Twine. Open Inventory/Crafting (I) and use the hand-crafting recipe. <!-- craft:sling; recipes:sling --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Toggle** — Materials: 1 Bone. Open Inventory/Crafting (I) and use the hand-crafting recipe. This recipe produces 2 units. <!-- craft:toggle; recipes:toggle --> | 3 copper <!-- coin_copper:3 --> |
 | **Craft Unbaked apple pie** — Materials: 2 Cooking apple, 1 Flour, 1 Animal fat. Use the Food preparation table. This recipe produces 2 units. <!-- craft:unbaked_apple_pie; recipes:prep_apple_pie --> | 5 copper <!-- coin_copper:5 --> |
@@ -312,13 +335,12 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Superior - Double arched doorway** — Equip a building hammer, press R and choose Superior - Double arched doorway. Materials: 32 Brick, 8 Clay mortar. Place it where the building ghost is valid. <!-- build:brick_double_arched_doorway; structure:brick_double_arched_doorway --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Superior - Double doorway** — Equip a building hammer, press R and choose Superior - Double doorway. Materials: 32 Brick, 8 Clay mortar. Place it where the building ghost is valid. <!-- build:brick_double_doorway; structure:brick_double_doorway --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Superior - Fence** — Equip a building hammer, press R and choose Superior - Fence. Materials: 10 Brick, 2 Clay mortar. Place it where the building ghost is valid. <!-- build:brick_fence; structure:brick_fence --> | 1 bronze <!-- coin_copper:10 --> |
-| **Build Superior - Foundation** — Equip a building hammer, press R and choose Superior - Foundation. Materials: 16 Brick, 4 Clay mortar, 4 Stone. Place it where the building ghost is valid. <!-- build:brick_foundation; structure:brick_foundation --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Superior - Pillar** — Equip a building hammer, press R and choose Superior - Pillar. Materials: 8 Brick, 2 Clay mortar. Place it where the building ghost is valid. <!-- build:brick_pillar; structure:brick_pillar --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Superior - Stairs** — Equip a building hammer, press R and choose Superior - Stairs. Materials: 20 Brick, 4 Clay mortar. Place it where the building ghost is valid. <!-- build:brick_stairs; structure:brick_stairs --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Superior - Wall** — Equip a building hammer, press R and choose Superior - Wall. Materials: 16 Brick, 4 Clay mortar. Place it where the building ghost is valid. <!-- build:brick_wall; structure:brick_wall --> | 1 bronze <!-- coin_copper:10 --> |
 | **Build Superior - Window** — Equip a building hammer, press R and choose Superior - Window. Materials: 12 Brick, 3 Clay mortar. Place it where the building ghost is valid. <!-- build:brick_window; structure:brick_window --> | 1 bronze <!-- coin_copper:10 --> |
 
-### Early processing, iron and woodworking (dependency level 6) (77 goals)
+### Early processing, iron and woodworking (dependency level 6) (76 goals)
 
 | Goal | Reward |
 |---|---|
@@ -340,7 +362,6 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Cabbage stew** — Materials: 1 Cabbage, 1 Raw meat, 1 Onion. Use a campfire pot. This recipe produces 2 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:cabbage_stew; recipes:cook_cabbage_stew,cook_cabbage_stew_iron_cauldron --> | 7 copper <!-- coin_copper:7 --> |
 | **Craft Cactus fry** — Materials: 1 Prickly pears, 1 Onion. Use the Clay hearth. <!-- craft:cactus_fry; recipes:cook_cactus_fry --> | 7 copper <!-- coin_copper:7 --> |
 | **Craft Chestnut cakes** — Materials: 3 Unbaked chestnut cakes. Use the Clay hearth. This recipe produces 3 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:chestnut_cakes; recipes:cook_chestnut_cakes,cook_chestnut_cakes_clay_griddle --> | 7 copper <!-- coin_copper:7 --> |
-| **Craft Clay roof tile** — Materials: 2 Clay. Use Kiln. This recipe produces 3 units. <!-- craft:clay_roof_tile; recipes:clay_roof_tile --> | 7 copper <!-- coin_copper:7 --> |
 | **Craft Crab cakes** — Materials: 2 Uncooked crab cakes. Use a lit campfire. Keep available (not consumed): 1 Clay - Griddle. This recipe produces 2 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:crab_cakes; recipes:cook_crab_cakes,cook_crab_cakes_iron_frying_pan --> | 7 copper <!-- coin_copper:7 --> |
 | **Craft Fibre - Gambeson** — Materials: 3 Fibre cloth, 2 Plant fibre. Use the Tailor's table. <!-- craft:gambeson; recipes:gambeson --> | 7 copper <!-- coin_copper:7 --> |
 | **Craft Fish pie** — Materials: 2 Unbaked fish pie. Use Oven. This recipe produces 2 units. <!-- craft:fish_pie; recipes:cook_fish_pie --> | 7 copper <!-- coin_copper:7 --> |
@@ -493,7 +514,7 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Bellows** — Equip a building hammer, press R and choose Bellows. Materials: 3 Leather, 2 Log, 1 Iron ingot. Place it where the building ghost is valid. <!-- build:bellows; structure:bellows --> | 3 bronze <!-- coin_copper:30 --> |
 | **Build Quenching trough** — Equip a building hammer, press R and choose Quenching trough. Materials: 12 Stone, 2 Log, 2 Iron ingot. Place it where the building ghost is valid. <!-- build:quenching_trough; structure:quenching_trough --> | 2 bronze <!-- coin_copper:20 --> |
 
-### Advanced equipment and building (dependency level 13) (51 goals)
+### Advanced equipment and building (dependency level 13) (45 goals)
 
 | Goal | Reward |
 |---|---|
@@ -504,17 +525,14 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Bronze - Helm** — Materials: 3 Bronze ingot, 1 Leather. Use the Stone - Forge. <!-- craft:bronze_helm; recipes:bronze_helm --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze - Knife** — Materials: 1 Bronze ingot, 1 Stick. Use the Stone - Forge. <!-- craft:bronze_knife; recipes:bronze_knife --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze - Mace** — Materials: 2 Bronze ingot, 1 Stick. Use the Stone - Forge. <!-- craft:bronze_mace; recipes:bronze_mace --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Bronze - Pickaxe** — Materials: 3 Bronze ingot, 2 Stick. Use the Stone - Forge. <!-- craft:bronze_pickaxe; recipes:bronze_pickaxe --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze - Scale shirt** — Materials: 4 Bronze ingot, 1 Leather. Use the Stone - Forge. <!-- craft:bronze_scale_shirt; recipes:bronze_scale_shirt --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze - Scythe** — Materials: 2 Bronze ingot, 2 Stick. Use the Stone - Forge. <!-- craft:bronze_scythe; recipes:bronze_scythe --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze - Shield** — Materials: 1 Wicker - Shield, 1 Bronze ingot, 1 Hide. Use the Stone - Forge. <!-- craft:bronze_shield; recipes:bronze_shield --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze - Sickle** — Materials: 1 Bronze ingot, 1 Stick. Use the Stone - Forge. <!-- craft:bronze_sickle; recipes:bronze_sickle --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze - Spear** — Materials: 1 Bronze ingot, 2 Stick. Use the Stone - Forge. <!-- craft:bronze_spear; recipes:bronze_spear --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Bronze - Sword** — Materials: 2 Bronze ingot, 1 Leather. Use the Stone - Forge. <!-- craft:bronze_sword; recipes:bronze_sword --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze hinges** — Materials: 1 Bronze ingot. Use the Stone - Forge. This recipe produces 20 units. <!-- craft:bronze_hinges; recipes:bronze_hinges --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Bronze nails** — Materials: 1 Bronze ingot. Use the Stone - Forge. This recipe produces 100 units. <!-- craft:bronze_nails; recipes:bronze_nails --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Heavy crossbow** — Materials: 2 Iron ingot, 1 Hardwood block, 2 Sinew. Use the Smithy. <!-- craft:heavy_crossbow; recipes:heavy_crossbow --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Hinges** — Materials: 1 Iron ingot. Use the Smithy (workstation level 2). This recipe produces 20 units. <!-- craft:hinges; recipes:hinges --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Arrow** — Materials: 1 Iron ingot, 8 Stick, 8 Feather. Use the Smithy. This recipe produces 8 units. <!-- craft:iron_arrow; recipes:iron_arrow --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Axe** — Materials: 2 Iron ingot, 1 Stick, 1 Leather strap. Use the Smithy (workstation level 2). <!-- craft:iron_axe; recipes:iron_axe --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Iron - Battleaxe** — Materials: 2 Iron ingot, 1 Stick, 1 Leather strap. Use the Smithy. <!-- craft:iron_battleaxe; recipes:iron_battleaxe --> | 2 bronze <!-- coin_copper:20 --> |
@@ -535,7 +553,6 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Iron - Knife** — Materials: 1 Iron ingot, 1 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_knife; recipes:iron_knife --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Lantern** — Materials: 1 Iron ingot, 2 Horn pane, 1 Lamp oil. Use the Smithy (workstation level 2). <!-- craft:iron_lantern; recipes:iron_lantern --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Mace** — Materials: 2 Iron ingot, 1 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_mace; recipes:iron_mace --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Iron - Pickaxe** — Materials: 3 Iron ingot, 2 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_pickaxe; recipes:iron_pickaxe --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Pike** — Materials: 2 Iron ingot, 4 Stick. Use the Smithy. <!-- craft:iron_pike; recipes:iron_pike --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Sabatons** — Materials: 2 Iron ingot, 1 Leather. Use the Smithy. <!-- craft:iron_sabatons; recipes:iron_sabatons --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Scythe** — Materials: 2 Iron ingot, 2 Stick. Use the Smithy (workstation level 2). <!-- craft:scythe; recipes:scythe --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
@@ -543,13 +560,11 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Iron - Sickle** — Materials: 1 Iron ingot, 1 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_sickle; recipes:iron_sickle --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Spade** — Materials: 2 Iron ingot, 2 Stick. Use the Smithy (workstation level 2). <!-- craft:iron_spade; recipes:iron_spade --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Spear** — Materials: 1 Iron ingot, 2 Stick. Use the Smithy. <!-- craft:iron_spear; recipes:iron_spear --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Iron - Sword** — Materials: 2 Iron ingot, 1 Leather. Use the Smithy (workstation level 2). <!-- craft:iron_sword; recipes:iron_sword --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Trident** — Materials: 2 Iron ingot, 2 Stick. Use the Smithy. <!-- craft:iron_trident; recipes:iron_trident --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Warhammer** — Materials: 2 Iron ingot, 1 Stick. Use the Smithy. <!-- craft:iron_warhammer; recipes:iron_warhammer --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Iron band** — Materials: 1 Iron ingot. Use the Smithy. This recipe produces 2 units. <!-- craft:iron_band; recipes:iron_band --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Rivets** — Materials: 1 Iron ingot. Use the Smithy (workstation level 2). This recipe produces 50 units. <!-- craft:rivets; recipes:rivets --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 
-### Advanced equipment and building (dependency level 14) (57 goals)
+### Advanced equipment and building (dependency level 14) (54 goals)
 
 | Goal | Reward |
 |---|---|
@@ -577,7 +592,6 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Steel - Knife** — Materials: 1 Steel ingot, 1 Stick. Use the Smithy. <!-- craft:steel_knife; recipes:steel_knife --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Mace** — Materials: 2 Steel ingot, 1 Stick. Use the Smithy. <!-- craft:steel_mace; recipes:steel_mace --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Maul** — Materials: 3 Steel ingot, 2 Stick. Use the Smithy. <!-- craft:steel_maul; recipes:steel_maul --> | 2 bronze <!-- coin_copper:20 --> |
-| **Craft Steel - Pickaxe** — Materials: 3 Steel ingot, 2 Stick. Use the Smithy. <!-- craft:steel_pickaxe; recipes:steel_pickaxe --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Plate harness** — Materials: 9 Steel ingot, 2 Heavy leather, 20 Rivets. Use the Smithy. <!-- craft:steel_plate_harness; recipes:steel_plate_harness --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Rapier** — Materials: 1 Steel ingot, 1 Leather. Use the Smithy. <!-- craft:steel_rapier; recipes:steel_rapier --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Sabatons** — Materials: 2 Steel ingot, 1 Leather, 5 Rivets. Use the Smithy. <!-- craft:steel_sabatons; recipes:steel_sabatons --> | 2 bronze <!-- coin_copper:20 --> |
@@ -588,11 +602,9 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Craft Steel - Sickle** — Materials: 1 Steel ingot, 1 Stick. Use the Smithy. <!-- craft:steel_sickle; recipes:steel_sickle --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Spade** — Materials: 2 Steel ingot, 2 Stick. Use the Smithy. <!-- craft:steel_spade; recipes:steel_spade --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Spear** — Materials: 1 Steel ingot, 2 Stick. Use the Smithy. <!-- craft:steel_spear; recipes:steel_spear --> | 2 bronze <!-- coin_copper:20 --> |
-| **Craft Steel - Sword** — Materials: 2 Steel ingot, 1 Leather. Use the Smithy. <!-- craft:steel_sword; recipes:steel_sword --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Warhammer** — Materials: 2 Steel ingot, 1 Stick. Use the Smithy. <!-- craft:steel_warhammer; recipes:steel_warhammer --> | 2 bronze <!-- coin_copper:20 --> |
 | **Build Deep-well pump** — Equip a metal hammer, press R and choose Deep-well pump. Materials: 8 Iron ingot, 2 Hide, 2 Hinges, 12 Nails. Place it where the building ghost is valid. <!-- build:iron_deep_well_pump; structure:iron_deep_well_pump --> | 4 bronze <!-- coin_copper:40 --> |
 | **Build Fortified - Arched door** — Equip a metal hammer, press R and choose Fortified - Arched door. Materials: 10 Iron ingot, 10 Steel ingot. Place it where the building ghost is valid. <!-- build:fortified_arched_door; structure:fortified_arched_door --> | 4 bronze <!-- coin_copper:40 --> |
-| **Build Fortified - Door** — Equip a metal hammer, press R and choose Fortified - Door. Materials: 10 Iron ingot, 10 Steel ingot. Place it where the building ghost is valid. <!-- build:fortified_door; structure:fortified_door --> | 4 bronze <!-- coin_copper:40 --> |
 | **Build Fortified - Double arched door** — Equip a metal hammer, press R and choose Fortified - Double arched door. Materials: 20 Iron ingot, 20 Steel ingot. Place it where the building ghost is valid. <!-- build:fortified_double_arched_door; structure:fortified_double_arched_door --> | 4 bronze <!-- coin_copper:40 --> |
 | **Build Fortified - Double door** — Equip a metal hammer, press R and choose Fortified - Double door. Materials: 20 Iron ingot, 20 Steel ingot. Place it where the building ghost is valid. <!-- build:fortified_double_door; structure:fortified_double_door --> | 4 bronze <!-- coin_copper:40 --> |
 | **Build Iron - Brazier** — Equip a metal hammer, press R and choose Iron - Brazier. Materials: 3 Iron ingot. Place it where the building ghost is valid. <!-- build:iron_brazier; structure:iron_brazier --> | 4 bronze <!-- coin_copper:40 --> |
@@ -611,7 +623,7 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Torch stand** — Equip a metal hammer, press R and choose Torch stand. Materials: 2 Iron ingot, 2 Tallow. Place it where the building ghost is valid. <!-- build:iron_torch_stand; structure:iron_torch_stand --> | 4 bronze <!-- coin_copper:40 --> |
 | **Build Wall lantern** — Equip a metal hammer, press R and choose Wall lantern. Materials: 1 Iron ingot, 2 Horn pane, 1 Lamp oil. Place it where the building ghost is valid. <!-- build:iron_wall_lantern; structure:iron_wall_lantern --> | 4 bronze <!-- coin_copper:40 --> |
 
-### Advanced equipment and building (dependency level 15) (90 goals)
+### Advanced equipment and building (dependency level 15) (84 goals)
 
 | Goal | Reward |
 |---|---|
@@ -635,7 +647,6 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Cupboard** — Equip a building hammer, press R and choose Cupboard. Materials: 6 Hardwood board, 12 Nails, 2 Hinges. Place it where the building ghost is valid. <!-- build:wooden_cupboard; structure:wooden_cupboard --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Dresser** — Equip a building hammer, press R and choose Dresser. Materials: 6 Hardwood board, 12 Nails. Place it where the building ghost is valid. <!-- build:dresser; structure:dresser --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Engineered - Arched door** — Equip a building hammer, press R and choose Engineered - Arched door. Materials: 12 Plank, 4 Iron ingot. Place it where the building ghost is valid. <!-- build:engineered_arched_door; structure:engineered_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
-| **Build Engineered - Door** — Equip a building hammer, press R and choose Engineered - Door. Materials: 12 Plank, 4 Iron ingot. Place it where the building ghost is valid. <!-- build:engineered_door; structure:engineered_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Engineered - Double arched door** — Equip a building hammer, press R and choose Engineered - Double arched door. Materials: 24 Plank, 8 Iron ingot. Place it where the building ghost is valid. <!-- build:engineered_double_arched_door; structure:engineered_double_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Engineered - Double door** — Equip a building hammer, press R and choose Engineered - Double door. Materials: 24 Plank, 8 Iron ingot. Place it where the building ghost is valid. <!-- build:engineered_double_door; structure:engineered_double_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Fine - Bench** — Equip a metal hammer, press R and choose Fine - Bench. Materials: 4 Hardwood board, 12 Nails, 1 Leather. Place it where the building ghost is valid. <!-- build:iron_bench; structure:iron_bench --> | 6 bronze <!-- coin_copper:60 --> |
@@ -653,14 +664,12 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Refined - Arched door** — Equip a building hammer, press R and choose Refined - Arched door. Materials: 6 Hardwood board, 1 Iron ingot. Place it where the building ghost is valid. <!-- build:refined_arched_door; structure:refined_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Arched doorway** — Equip a building hammer, press R and choose Refined - Arched doorway. Materials: 4 Plank, 1 Twine. Place it where the building ghost is valid. <!-- build:wood_arched_doorway; structure:wood_arched_doorway --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Ceiling** — Equip a building hammer, press R and choose Refined - Ceiling. Materials: 4 Plank, 1 Twine. Place it where the building ghost is valid. <!-- build:floor_section; structure:floor_section --> | 6 bronze <!-- coin_copper:60 --> |
-| **Build Refined - Door** — Equip a building hammer, press R and choose Refined - Door. Materials: 6 Hardwood board, 1 Iron ingot. Place it where the building ghost is valid. <!-- build:refined_door; structure:refined_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Doorway** — Equip a building hammer, press R and choose Refined - Doorway. Materials: 4 Plank, 1 Twine. Place it where the building ghost is valid. <!-- build:doorway_section; structure:doorway_section --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Double arched door** — Equip a building hammer, press R and choose Refined - Double arched door. Materials: 12 Hardwood board, 2 Iron ingot. Place it where the building ghost is valid. <!-- build:refined_double_arched_door; structure:refined_double_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Double arched doorway** — Equip a building hammer, press R and choose Refined - Double arched doorway. Materials: 8 Plank, 2 Twine. Place it where the building ghost is valid. <!-- build:wood_double_arched_doorway; structure:wood_double_arched_doorway --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Double door** — Equip a building hammer, press R and choose Refined - Double door. Materials: 12 Hardwood board, 2 Iron ingot. Place it where the building ghost is valid. <!-- build:refined_double_door; structure:refined_double_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Double doorway** — Equip a building hammer, press R and choose Refined - Double doorway. Materials: 8 Plank, 2 Twine. Place it where the building ghost is valid. <!-- build:double_doorway; structure:double_doorway --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Fence** — Equip a building hammer, press R and choose Refined - Fence. Materials: 3 Plank, 1 Twine. Place it where the building ghost is valid. <!-- build:wood_fence; structure:wood_fence --> | 6 bronze <!-- coin_copper:60 --> |
-| **Build Refined - Foundation** — Equip a building hammer, press R and choose Refined - Foundation. Materials: 8 Plank, 2 Twine. Place it where the building ghost is valid. <!-- build:wood_foundation; structure:wood_foundation --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Gate** — Equip a building hammer, press R and choose Refined - Gate. Materials: 3 Plank, 1 Twine, 1 Hinges. Place it where the building ghost is valid. <!-- build:wood_gate; structure:wood_gate --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Pillar** — Equip a building hammer, press R and choose Refined - Pillar. Materials: 2 Plank, 1 Twine. Place it where the building ghost is valid. <!-- build:wooden_pillar; structure:wooden_pillar --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Refined - Stairs** — Equip a building hammer, press R and choose Refined - Stairs. Materials: 8 Plank, 2 Twine. Place it where the building ghost is valid. <!-- build:stairs_wood; structure:stairs_wood --> | 6 bronze <!-- coin_copper:60 --> |
@@ -669,7 +678,6 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Rustic - Arched door** — Equip a building hammer, press R and choose Rustic - Arched door. Materials: 5 Plank. Place it where the building ghost is valid. <!-- build:rustic_arched_door; structure:rustic_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Rustic - Chair** — Equip a building hammer, press R and choose Rustic - Chair. Materials: 3 Hardwood board, 8 Nails. Place it where the building ghost is valid. <!-- build:chair; structure:chair --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Rustic - Chest** — Equip a building hammer, press R and choose Rustic - Chest. Materials: 6 Hardwood board, 12 Nails, 2 Hinges. Place it where the building ghost is valid. <!-- build:plank_chest; structure:plank_chest --> | 6 bronze <!-- coin_copper:60 --> |
-| **Build Rustic - Door** — Equip a building hammer, press R and choose Rustic - Door. Materials: 5 Plank. Place it where the building ghost is valid. <!-- build:rustic_door; structure:rustic_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Rustic - Double arched door** — Equip a building hammer, press R and choose Rustic - Double arched door. Materials: 10 Plank. Place it where the building ghost is valid. <!-- build:rustic_double_arched_door; structure:rustic_double_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Rustic - Double door** — Equip a building hammer, press R and choose Rustic - Double door. Materials: 10 Plank. Place it where the building ghost is valid. <!-- build:rustic_double_door; structure:rustic_double_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Rustic - Table** — Equip a building hammer, press R and choose Rustic - Table. Materials: 4 Hardwood board, 12 Nails. Place it where the building ghost is valid. <!-- build:table; structure:table --> | 6 bronze <!-- coin_copper:60 --> |
@@ -678,14 +686,12 @@ These goals remain eligible and earn coins automatically even when their titles 
 | **Build Stone - Table** — Equip a building hammer, press R and choose Stone - Table. Materials: 14 Cobblestone, 3 Clay mortar, 2 Plank. Place it where the building ghost is valid. <!-- build:stone_table; structure:stone_table --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Storage sign** — Equip a building hammer, press R and choose Storage sign. Materials: 2 Plank, 1 Stick, 1 Charcoal. Place it where the building ghost is valid. <!-- build:storage_sign; structure:storage_sign --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Sturdy - Arched door** — Equip a building hammer, press R and choose Sturdy - Arched door. Materials: 6 Plank, 2 Iron ingot. Place it where the building ghost is valid. <!-- build:sturdy_arched_door; structure:sturdy_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
-| **Build Sturdy - Door** — Equip a building hammer, press R and choose Sturdy - Door. Materials: 6 Plank, 2 Iron ingot. Place it where the building ghost is valid. <!-- build:sturdy_door; structure:sturdy_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Sturdy - Double arched door** — Equip a building hammer, press R and choose Sturdy - Double arched door. Materials: 12 Plank, 4 Iron ingot. Place it where the building ghost is valid. <!-- build:sturdy_double_arched_door; structure:sturdy_double_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Sturdy - Double door** — Equip a building hammer, press R and choose Sturdy - Double door. Materials: 12 Plank, 4 Iron ingot. Place it where the building ghost is valid. <!-- build:sturdy_double_door; structure:sturdy_double_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Sturdy - Gate** — Equip a building hammer, press R and choose Sturdy - Gate. Materials: 6 Cobblestone, 3 Plank, 2 Hinges. Place it where the building ghost is valid. <!-- build:stone_gate; structure:stone_gate --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Sturdy - Roof** — Equip a building hammer, press R and choose Sturdy - Roof. Materials: 20 Stone shingle, 6 Plank. Place it where the building ghost is valid. <!-- build:stone_roof; structure:stone_roof --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Sturdy - Roof corner** — Equip a building hammer, press R and choose Sturdy - Roof corner. Materials: 12 Stone shingle, 4 Plank. Place it where the building ghost is valid. <!-- build:stone_roof_corner; structure:stone_roof_corner --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Superior - Arched door** — Equip a building hammer, press R and choose Superior - Arched door. Materials: 12 Hardwood board, 2 Iron ingot, 1 Steel ingot. Place it where the building ghost is valid. <!-- build:superior_arched_door; structure:superior_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
-| **Build Superior - Door** — Equip a building hammer, press R and choose Superior - Door. Materials: 12 Hardwood board, 2 Iron ingot, 1 Steel ingot. Place it where the building ghost is valid. <!-- build:superior_door; structure:superior_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Superior - Double arched door** — Equip a building hammer, press R and choose Superior - Double arched door. Materials: 24 Hardwood board, 4 Iron ingot, 2 Steel ingot. Place it where the building ghost is valid. <!-- build:superior_double_arched_door; structure:superior_double_arched_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Superior - Double door** — Equip a building hammer, press R and choose Superior - Double door. Materials: 24 Hardwood board, 4 Iron ingot, 2 Steel ingot. Place it where the building ghost is valid. <!-- build:superior_double_door; structure:superior_double_door --> | 6 bronze <!-- coin_copper:60 --> |
 | **Build Superior - Gate** — Equip a building hammer, press R and choose Superior - Gate. Materials: 6 Brick, 2 Clay mortar, 3 Plank, 2 Hinges. Place it where the building ghost is valid. <!-- build:brick_gate; structure:brick_gate --> | 6 bronze <!-- coin_copper:60 --> |
@@ -753,15 +759,22 @@ These goals remain eligible and earn coins automatically even when their titles 
 
 ## 3. Accuracy and completeness audit — mandatory before approval
 
-- Two-column goal rows: **648** (85 main-route, 563 additional). Original 642 catalog goals retained; 6 new action/raw-resource milestones proposed where necessary.
-- New server-observable action goals: Chop a felled log into wooden blocks; Place your first campfire; Grow your fire into a medium campfire; Grow your fire into a large bonfire. No new event is to be faked by inventory possession.
+- Two-column goal rows: **652** (117 main-route, 535 additional). Original 642 catalog goals retained; 10 explicit action/resource milestones added.
+- New server-observable action goals include processing a loose log, placing the Campfire, placing the Chopping Block, and achieving medium/large lit-fire sizes. Completion checks must use actual verified world state, never merely an inventory item. The new resource milestones require verified acquisition checks.
 - Current source data is authoritative for recipe quantities, station IDs and blueprint costs; however descriptions of some resource acquisition steps are provisional. **Unconfirmed external ingredient sources:** 43 distinct raw source IDs. Those must be reconciled with gathering, mining, NPC/trade, drops, animal and agriculture code before release.
 - Key first-pass source gaps (sorted by number of dependent recipes/blueprints): raw_meat (13 uses), feather (10 uses), soil (7 uses), sinew (7 uses), egg (5 uses), herbs (4 uses), fur (4 uses), fish (3 uses), oats (3 uses), shellfish (3 uses), barley (2 uses), flint (2 uses), perch (2 uses), seal_meat (2 uses), rotten_food (1 uses), worm (1 uses), gravel (1 uses), quill (1 uses), pitch (1 uses), wheat (1 uses), rye (1 uses), seed_bundle (1 uses), horn (1 uses), wooden_block_soft_large (1 uses), fruit (1 uses), herring (1 uses), nuts (1 uses), trout (1 uses), crab_meat (1 uses), mushrooms (1 uses), berries (1 uses), sea_water (1 uses), seaweed (1 uses), down (1 uses), roast_meat (1 uses), roast_fish (1 uses), roast_shellfish (1 uses), gut (1 uses), flax (1 uses), wool (1 uses), antler (1 uses), tusk (1 uses), crystal_lens (1 uses).
 - A large set of active objects are acquired from non-recipe actions, loot, vendors, animals, or agriculture. These need a separate audited acquisition-goal pass, with gameplay events/credit and no duplicate rewards, to meet true *all available content* coverage.
 - Goal `fibre` is currently a have-at-once count of 12 and `twine` counts 2 crafted. Verify gathering detection and ensure early crafting does not make the first two HUD goals stick if the player has already consumed the fibre; preserve historical acquisition counts instead of requiring current possession where appropriate.
-- The currency model is 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold. All displayed rewards are proposed. Total first-ever payout from the draft catalog would be 15625 copper equivalents, with implications for the game economy. Review vs the harvesting wage model and shop prices before approval.
+- The currency model is 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold. All displayed rewards are proposed. Total first-ever payout from the draft catalog would be 15641 copper equivalents, with implications for the game economy. Review vs the harvesting wage model and shop prices before approval.
 - Existing `data/items/starter_goals.json` and `camp_goals.json` are **legacy runtime filenames only**; these are to be reconciled into the canonical full-game goal data and its state synchronization on approval. Do not keep a separate small tutorial/quest system or make their titles the visible category name.
 - Placeholder/source-audit comments in this review document are not text to show to players. No player-facing instruction may ship until the acquisition source, interaction and completion event are actually verified.
 - Compare to `docs/design/DYNASTY_MASTER_ITEMS.md`, `CATALOG_IMPLEMENTATION_PLAN.md`, `catalog_ledger.json`, `PLAYER_JOURNAL_GOALS_UI.md`, actual recipes, live UI, station add-ons, source files, and the creator's separate-door rules. Correct all contradictions in one versioned authority document; never silently inherit outdated agent-made rules.
 - All 28 independent door configurations and both Crude roof pitches remain in the construction coverage. Doorways must stay empty frames; placing a door is a distinct goal/action.
 - This draft authorizes **documentation review only**, not gameplay or reward changes; finalize through iterative creator review first.
+
+## 4. Iterative sequence-audit findings (13 Nov 2026)
+
+- This revision moved the Stone Pickaxe before any ore-gathering target; moved actual gathered logs before block splitting and the Chopping Block; added a distinct placed-Chopping-Block condition; and moved the first source of oak logs before the hard-firewood recipe.
+- Resolved omitted recipe intermediates in the main journey by including **Flint → Scraper → Scraped hide**, **Pine tar → Tar → Water wheel**, **Kiln → Clay roof tile → Engineered roof**, and **Smithy → Hinges / Iron bands → Fortified construction**. Basic Sand gathering now precedes Mortar and Concrete.
+- The explicit manufacturing chain ends with multiple Engineered and Fortified items. All remaining approved craft/build outputs remain in the other goal tables, with ingredients, required tools and workstation statements from the active definitions.
+- Some manually added actions and resource sources still lack verified server events or a precise gathering implementation. The correct next pass is to verify each one against gameplay and make the completion system observable, rather than invent a success condition. This is still an **unapproved design review draft**.
