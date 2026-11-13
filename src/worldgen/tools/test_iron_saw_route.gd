@@ -10,6 +10,7 @@ extends SceneTree
 #   6. with the saw: a spruce log gives 6 Planks, an oak log 4 Hardwood boards.
 #   godot --headless --path . --script res://src/worldgen/tools/test_iron_saw_route.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -154,7 +155,7 @@ func _init() -> void:
 			break
 
 		items._last_dig.clear()
-		items.action(1, Net.ACT_DIG, 0, 0, 0, HERE + Vector3(1.0, 0.0, 0.0))
+		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "spade"), 0, 0, HERE + Vector3(1.0, 0.0, 0.0))
 		items.inventory_of(1).remove(items.table.number_of("soil"), have("soil"))
 
 	check(have("iron_ore") >= ore_n, "1. a wooden spade digs %d bog iron ore out of wet ground (%d)" % [ore_n, have("iron_ore")])

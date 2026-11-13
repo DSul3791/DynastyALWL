@@ -6,6 +6,7 @@ extends SceneTree
 # where the body fell. test_first_hour.gd covers the axe, the tree, the water and the shelter; this one covers the hunt and the end.
 #   godot --headless --path . --script res://src/worldgen/tools/test_new_player_day.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -139,7 +140,7 @@ func _init() -> void:
 
 	for n in 6:
 		items._last_process.erase(1)
-		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 
 	check(count("raw_meat") >= 1 and count("hide") >= 1, "the knife gives raw meat and a hide (%d meat)" % count("raw_meat"))
 

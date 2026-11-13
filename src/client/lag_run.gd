@@ -151,6 +151,11 @@ func _walk() -> void:
 	_end("walked %.0f m at %.1f m/s, %d turns" % [walked, client.run_speed, turns])
 
 
+# The pack slot holding the given item (the tool the run holds for a swing), -1 when it is not in the pack.
+func _slot_of(item: String) -> int:
+	return client.items.inventory.numbers.find(client.items.table.number_of(item))
+
+
 func _dig() -> void:
 	_begin("dig")
 	var done: int = 0
@@ -160,7 +165,7 @@ func _dig() -> void:
 		var spot: Vector3 = _ground_at(here.x + 1.5 + 0.4 * float(n % 3), here.z + 0.5 * floorf(float(n) / 3.0))
 
 		if not is_nan(spot.y):
-			client.net.inventory_action.rpc_id(1, NetScript.ACT_DIG, 0, 0, 0, spot)
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_DIG, _slot_of("wooden_spade"), 0, 0, spot)   # a: the spade in hand
 			done += 1
 
 		await _wait(0.9)   # the server's spade pace is 0.7 s
@@ -196,7 +201,7 @@ func _hoe() -> void:
 		var spot: Vector3 = _ground_at(here.x + 1.2, here.z + 0.7 * float(n % 4) - 1.0)
 
 		if not is_nan(spot.y):
-			client.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH if n % 3 != 2 else NetScript.ACT_HOE_SMOOTH, 0, 0, 0, spot)
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH if n % 3 != 2 else NetScript.ACT_HOE_SMOOTH, _slot_of("stone_hoe"), 0, 0, spot)   # a: the hoe in hand
 			done += 1
 
 		await _wait(0.7)   # the server's hoe pace is 0.5 s

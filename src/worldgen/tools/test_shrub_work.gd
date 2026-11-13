@@ -4,6 +4,7 @@ extends SceneTree
 # the dug bush plants again elsewhere as a full-size bush (dynamic flora), which is a shrub, never a tree to fell.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shrub_work.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -48,9 +49,9 @@ func _init() -> void:
 	check(hazel_bush != 0, "hazel_bush is an item")
 
 	# No tool: nothing happens.
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	check(cut.is_empty(), "with no axe the bush stays")
 
 	# The axe: two blows chop it into leaves and sticks.
@@ -58,27 +59,27 @@ func _init() -> void:
 	var leaves_before: int = inv.count_of(leaves)
 	var sticks_before: int = inv.count_of(stick)
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	check(cut.is_empty(), "one axe blow does not finish it")
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	check(cut == [11], "the second axe blow chops the bush away (%s)" % str(cut))
 	check(inv.count_of(leaves) > leaves_before and inv.count_of(stick) > sticks_before, "and gives leaves and sticks (%d leaves, %d sticks)" % [inv.count_of(leaves) - leaves_before, inv.count_of(stick) - sticks_before])
 	check(inv.count_of(hazel_bush) == 0, "an axe never gives the bush whole")
 
-	# A pickaxe in hand (at.x = 1) with no pickaxe in the pack: refused.
+	# No pickaxe, nothing in hand (at.x = 0; the axe stays on the hotbar): refused, the axe is not used.
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	check(cut == [11], "no pickaxe: the second bush stays")
 
 	# The pickaxe: two blows dig it up whole.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	check(cut == [11, 12] and inv.count_of(hazel_bush) == 1, "a pickaxe digs the hazel up whole into the pack (%s, %d)" % [str(cut), inv.count_of(hazel_bush)])
 
 	# Planting it: a full-size hazel stands where the player aimed, as a shrub.

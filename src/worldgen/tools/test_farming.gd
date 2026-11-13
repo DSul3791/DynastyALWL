@@ -5,6 +5,7 @@ extends SceneTree
 # grows on); compost speeds growth by 20 percent; harvest gives the yields and seeds back, half without the sickle for grain; an unripe crop is refused; crops are saved.
 #   godot --headless --path . --script res://src/worldgen/tools/test_farming.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -161,12 +162,12 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 
 	# Till.
-	check(items.till(1, items.inventory_of(1), Vector3(1.0, 10.0, 1.0)) == 0, "no hoe: nothing is tilled")
+	check(items.till(1, items.inventory_of(1), Vector3(1.0, 10.0, 1.0), HeldTool.slot_of(items, "hoe")) == 0, "no hoe: nothing is tilled")
 	give("wooden_hoe" if items.table.has_id("wooden_hoe") else "stone_hoe", 1)
-	var made: int = items.till(1, items.inventory_of(1), Vector3(1.2, 10.0, 1.2))
+	var made: int = items.till(1, items.inventory_of(1), Vector3(1.2, 10.0, 1.2), HeldTool.slot_of(items, "hoe"))
 	check(made != 0 and bed_id() != 0, "with a hoe a bed is tilled")
 	items._last_dig.clear()
-	check(items.till(1, items.inventory_of(1), Vector3(1.3, 10.0, 1.3)) == 0 and items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed").size() == 1, "the same metre is not tilled twice")
+	check(items.till(1, items.inventory_of(1), Vector3(1.3, 10.0, 1.3), HeldTool.slot_of(items, "hoe")) == 0 and items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed").size() == 1, "the same metre is not tilled twice")
 
 	# Sow: wheat is a spring crop.
 	var bed: int = bed_id()

@@ -1121,9 +1121,14 @@ func _open_station() -> void:
 		toggle()
 
 
+# The pack slot in the right hand (-1 for empty hands or no client wired, as in tests): what a tool use at a station sends.
+func _hand_slot() -> int:
+	return int(held_slot_now.call()) if held_slot_now.is_valid() else -1
+
+
 # E on the chopping block the cursor is on: split a log there, nothing else (the wood lying around stays where it is).
 func _use_block(id: int) -> void:
-	net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, _hand_slot() + 1, Vector3.ZERO)   # count: the axe in hand (protocol 117)
 	_block_next_msec = Time.get_ticks_msec() + 600
 
 
@@ -1138,7 +1143,7 @@ func pick_up_nearest() -> bool:
 		return false
 
 	if _world[id]["state"] == 7 and not Input.is_key_pressed(KEY_SHIFT):   # before the chest test: the chopping block has a store now (master s2.4)
-		net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+		net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, _hand_slot() + 1, Vector3.ZERO)   # count: the axe in hand (protocol 117)
 		_block_next_msec = Time.get_ticks_msec() + 600
 		return true
 

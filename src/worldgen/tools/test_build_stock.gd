@@ -4,6 +4,7 @@ extends SceneTree
 # of the builder first, then the pack, so a stone wall (12 blocks of 25 kg) can be carried over in trips and stacked beside the site.
 #   godot --headless --path . --script res://src/worldgen/tools/test_build_stock.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -146,7 +147,7 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	# The 20 m stack is out of reach: nothing comes, and the line says what is missing.
 	items.inventory_of(1).remove(items.table.number_of("mortar"), _have("mortar"))
 	said.clear()
-	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(_on_ground("cut_stone_block") == blocks and said.size() == 1 and str(said[0]).begins_with("Nothing within 12 m"), "stock 20 m away is not taken (%s)" % str(said))
 	# Half the blocks 8 m away on the ground, a few in the pack, the mortar in the builder's own chest 6 m away, more mortar in a stranger's chest.
 	items.drop_in_world(block_n, half, site3 + Vector3(8.0, 0.0, 0.0))
@@ -160,7 +161,7 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	own_box.add(items.table.number_of("mortar"), mortar + 3)
 	stranger_box.add(items.table.number_of("mortar"), mortar)
 	said.clear()
-	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	var have: Dictionary = items._site_of(items._items[site])["have"]
 	check(int(have.get("cut_stone_block", 0)) == 2 + half, "the pack's 2 blocks and the 8 m stack went in (%s)" % str(have))
 	check(_have("cut_stone_block") == 0 and _on_ground("cut_stone_block") == blocks, "the pack first, then the near stack; the 20 m stack untouched")
@@ -170,7 +171,7 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	# The rest carried to within reach: the next hit finishes it.
 	items.drop_in_world(block_n, blocks, site3 + Vector3(-3.0, 0.0, 2.0))
 	said.clear()
-	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "with nothing missing the wall is built")
 	check(said.size() == 1 and str(said[0]).ends_with("Built."), "and the line says so (%s)" % str(said))
 	check(_on_ground("cut_stone_block") == blocks + blocks - (blocks - 2 - half), "only what was missing came off the new stack (%d on the ground)" % _on_ground("cut_stone_block"))
@@ -332,7 +333,7 @@ func _check_spend_lowest(spot: Vector3) -> void:
 	if site != 0:
 		items.drop_in_world(nails_n, 6, site_spot + Vector3(2.0, 0.0, 0.0))
 		items.drop_in_world(bronze_n, 6, site_spot + Vector3(8.0, 0.0, 0.0))
-		items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 		var have: Dictionary = items._site_of(items._items[site])["have"]
 		check(int(have.get("nails", 0)) == 8 and _on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "a site gather takes the lowest first from the ground (%d iron, %d bronze left; site %s)" % [_on_ground("nails"), _on_ground("bronze_nails"), str(have)])
 

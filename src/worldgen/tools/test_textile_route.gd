@@ -12,6 +12,7 @@ extends SceneTree
 # covered by other tests (test_first_hour, test_server_items).
 #   godot --headless --path . --script res://src/worldgen/tools/test_textile_route.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -177,7 +178,7 @@ func _init() -> void:
 
 		for blow in range(6):
 			items._last_process.erase(1)
-			items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+			items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 
 	check(have("hide") >= 2 and have("bone") >= 1, "1c. the knife takes %d hides and %d bones from two rabbits" % [have("hide"), have("bone")])
 	craft("sewing_needle", 1, 20)

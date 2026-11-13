@@ -20,6 +20,7 @@ extends SceneTree
 # PASS/FAIL line; the test exits non-zero on any failure.
 #   godot --headless --path . --script res://src/worldgen/tools/test_mission001_walkthrough.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
@@ -359,7 +360,7 @@ func make_iron(wanted: int) -> bool:
 		go(spot)
 		var before: int = have("iron_ore")
 		items._last_dig.clear()
-		items.action(1, Net.ACT_DIG, 0, 0, 0, spot + Vector3(1.0, 0.0, 0.0))
+		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "spade"), 0, 0, spot + Vector3(1.0, 0.0, 0.0))
 		items.inventory_of(1).remove(n("soil"), have("soil"))   # the peat and soil dug with it are left in the bog
 		dry = dry + 1 if have("iron_ore") == before else 0
 
@@ -496,7 +497,7 @@ func step1_early_survival() -> void:
 
 	for blow in range(12):
 		items._last_process.erase(1)
-		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 
 	pick_up_all(4)
 	check(not items._items.has(carcass) and have("raw_meat") >= 6 and have("hide") >= 1 and have("animal_fat") >= 1, "1h. the knife dresses the deer: %d raw meat, %d hide, %d fat, %d bone" % [have("raw_meat"), have("hide"), have("animal_fat"), have("bone")])
@@ -589,7 +590,7 @@ func step3_construction_and_equipment() -> void:
 
 		for blow in range(12):
 			items._last_process.erase(1)
-			items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+			items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 
 	pick_up_all(4)
 	check(have("hide") >= hides_n and have("bone") >= 1, "3a. more deer dressed: %d hides, %d bones" % [have("hide"), have("bone")])
@@ -847,7 +848,7 @@ func step4_cooking_and_preservation() -> void:
 
 	for blow in range(12):
 		items._last_process.erase(1)
-		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 
 	pick_up_all(4)
 	leave({"sinew": 0, "antler": 0, "gut": 0, "bone": 0, "hide": 0, "animal_fat": need_of("cook_onion_roast", "animal_fat"), "plant_fibre": 0})
