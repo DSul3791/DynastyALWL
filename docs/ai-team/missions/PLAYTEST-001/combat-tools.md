@@ -1,5 +1,7 @@
 # Playtest Repair Mission 001: combat and tools (TEST-004, TEST-010, TEST-013)
 
+Protocol: 113 (the hotbar fix took 112).
+
 Owner: thread "Fix spear combat, log carrying, tools". Base: `origin/dev` at `b922cc88a59586dfbd41f806744d9ccedfe2bf26`. Branch `claude/project-thread-r7u4ds`. `main` untouched.
 
 ## Ledger
@@ -67,10 +69,13 @@ Gate review 2 (32530ba): no new must-fix. Done: checks that an axe only on the h
 
 Gate review 4 (73aeadc, tool tiers): PASS, no must-fix. Fixed after it: the boulder tool is read before its wear (a stone pick breaking on a blow kept that blow's ore); a pick on a trunk gives no seeds or roots either (kindling and thatch only); the iron and steel pickaxe descriptions say three and four stones a blow (text only, no item change); the stale boulders.json note line; no slot snapshot for zero wear.
 
+Gate review 5 (dev merge with the hotbar fix, c5d5d2f..4f7eac1): one must-fix, the 113 note in PROTOCOL.md still said an old client is refused by version 112; fixed, and 113 put first (newest first). Net change against dev is the same 32 files as before the merge.
+
 ## Test evidence
 
 | Check | Ran | Result |
 |---|---|---|
 | `tools/merge_check.py` (base origin/dev) | yes, cloud (Python only) | all clear |
 | `tools/tests_for_diff.py` selection | yes | 350 fast + 8 timing + 2 pictures + 3 checks (protocol change: all fast tests; kept per TEST_GATES) |
-| Godot tests | NO | pending a PC run with Dave's go |
+| Godot tests, full plan (352 fast, 8 timing, 3 checks) | yes, Dave's PC ManlandRyzen5, headless, separate worktree, at `3a7808c` (dev with the hotbar fix merged) | 358 pass, 2 fail: `test_server_items` did not compile (a local declared twice, my test edit; fixed in `4f7eac1`, then PASS); `test_flora_density` (timing lane, not touched here) timed out at 300 s with all its checks passing so far, rerun alone below. The seven tests for this change pass: test_spear_hold, test_stump_chop, test_server_items (at 4f7eac1), test_flint, test_ore, test_bronze_path, test_felling_time. Checks: validate_items 0 errors, look names all drawable, no new warnings. |
+| Pictures (held_item, inventory_view) | no | cannot be judged headless: Dave's playtest |
