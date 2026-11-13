@@ -1,110 +1,37 @@
-# Catalog save migration rules
+# Dynasty — Catalog, Storage and Progression Save Compatibility
 
-**Status: DESIGN ONLY. Not implemented.** Written by Claude for PR #1035 at Dave's 12 Nov request.
+**Updated 13 November 2026.** Current implementation safety rules. This replaces the obsolete mandatory one-time pre-release migration proposal; the old version remains in Git history, **not** as an active process requirement. No game code is changed by this file.
 
-- This design comes from a read-only audit of dev `7f8aabf4`. An independent review checked it, and its findings are fixed below. `si` means `src/stream/server_items.gd`.
-- No save was opened and no test was run. The repository contains no live save files.
-- The master catalog [D1] says Dynasty has never been publicly released. These rules protect local and playtest saves anyway.
-- **The rule above all others: a migration never deletes or hides a player's item.**
-- Every rule here is DELEGATED engineering. None needs an owner decision.
+## Policy
 
-## 1. How saves work today
+Dynasty has not had a public release. The creator does **not require a blanket migration of every previous experimental world**, and may start a new playtest world when a deliberately versioned format changes. But old item IDs and structure numbers must **never** be reused, and **any existing save the new game claims to support must load without silent loss, wrong items, duplication or unauthorized changes**.
 
-| File (in `user://server_store/<world>`) | Holds | Version |
-|---|---|---|
-| `inventories.json` | Packs. A slot is `[number, count, wear(, 1 if favourite)]` (`inventory.gd:314-341`). | `INVENTORY_VERSION` 2 |
-| `chests.json` | Placed-container contents by uid, in the same slot arrays (si:8923-8956). | literal 1 |
-| `world_items.json` | Placed structures, ground items and fires as positional rows: number, count, position, left, state, yaw, wear, kind, uid, owner, born, cave, coins, site, keep_out (si:1427). | `VERSION` 1 |
-| `characters.json` | Worn slots as bare item numbers, indexed by the `clothing.json` slot order (head, body, legs, feet, hands, back, outer, waist). Also the hotbar (item-number keys), learned recipes and Fitness `train` (si:10386, 14038-14081, 14368, 15466-15650). | literal 1 |
-| `craft_queues.json` | Station craft queues. | 1 |
+Normal steps:
+1. Inspect the current `dev` structures, item IDs, inventory formats, item-instance wear and saved station creation ordering; base decisions on actual code/data, not old 12 Nov inventory estimates.
+2. Determine whether a scoped data/format upgrade can retain placed objects and contents safely. Where feasible, implement deterministic, one-time versioned migration; otherwise explicitly refuse unsupported older saves and instruct the playtester to create a new world **before** loading a destructive interpretation.
+3. Always save/load newly created worlds correctly, including multiple item stacks, nonstacking enhanced items, worn gear, placed structures, station inventories, multiplayer ownership and progression state; persist no incompatible magic default.
+4. On wire-format changes, update documented protocol and `PROTOCOL_VERSION` together with serializer/deserializer and tests, and keep stable item identifiers.
+5. When a structure's gameplay role changes, do not automatically reinterpret its old stored contents in a way that destroys material, leaks locked inventory or doubles rewards. All changes must have tests and a recovery/rejection policy. The old rejected proposals are not implicit permissions for compensating items.
 
-**Load order:** `_load_characters` (si:472, which runs `_clean_worn`), then craft queues, `_load_inventories` (si:474), chests, and `_load_world_items` (si:476).
+## New source-specific save cases
 
-**Load behaviour:**
-- **Version check.** `_read_json_version(name, version, oldest = -1)` (si:4804-4833) accepts only versions from `oldest` (or the current version) up to the current version. Any other file is renamed `.bad` and loads empty. Only the inventories loader passes an `oldest`.
-- **Renames.** `renames.json` maps a retired id to its successor. It is applied on load to packs, chests, ground items, worn slots and the hotbar (`item_table.gd:34-60`). `wood_species.json retired_to` is data that no code reads.
-- **Retired rows.** Retired rows stay in `items.json`, and their numbers load as they are.
-  - Retired recipes are skipped at load (`recipe_table.gd:28`), so their ingredient lists cannot be read then.
-  - Retired blueprints are skipped entirely (si:7425). Taking down a structure whose blueprint is gone gives back its kit item instead of materials (si:8365-8368).
-- **Existing loss paths.**
-  - Dead kits are silently emptied (`_strip_dead_kits`, si:8933-8944).
-  - `_clean_worn` blanks any worn item whose slot no longer matches.
-  - A worn item loses its wear, because worn slots hold bare numbers.
-- **Refunds.** Refund code needs a connected peer (`_refund_entry`, si:14843). Nothing runs offline at load.
+**Resource bin remap:** the existing `open_storage_bin` (#1232, blueprint #227) currently stores mixed resources via slots/weight limits. The new intended Small Resource Bin holds **1,000 units of exactly one material**, assigned by first deposit and unassigned only when empty; Medium and Large hold **5,000 and 10,000**. Reuse existing identity where safe, but **do not silently discard mixed legacy contents** or choose a first item while losing the rest. For old mixed bins, either design a safe explicit conversion/overflow recovery under review or reject that incompatible world with a clear notice. A new-world-only implementation needs no forced old-world migration.
 
-## 2. Rules
+**Smithy station remap:** legacy `stone_forge`, `blacksmithy`, `large_forge`, `master_forge`, and standalone Bellows, Quenching Trough/Anvil keys do not form the current Primitive/Improved/Advanced Smelter and Primitive/Improved/Advanced/Master Smithy ladder. Preserve existing IDs as needed; avoid aliasing one old placed object to the wrong station tier or treating retired add-ons as extra stations. Test broken-station durability, **"Needs repair"** state, normal hammer right-click Repair with inventory/nearby storage/ground materials, and preserved station contents after save/reload.
 
-1. **One gated pass, `migrate_catalog`.**
-   - **Versions.** Raise `INVENTORY_VERSION`, `VERSION` and the chest and character literals by one. `inventories.json` keeps its existing `oldest` of 1; the other loaders pass their old version as `oldest`, so every existing file still loads. Without that, every existing save loads empty.
-   - **Stamp.** Each file carries its own `catalog_v` stamp: the number of the last migration step applied to it. The pass runs on every load, and each phase appends a numbered step that runs once when the stamp is below it. A crash mid-save cannot leave files half-migrated, and a step added in a later phase (for example the food step in phase 6) still runs.
-   - **Backup.** Write a create-once backup named `*.catalog.bak`, not `*.v1.bak`. The skills migration already owns `characters.json.v1.bak`.
-   - **Repeat runs.** The pass is idempotent.
-2. **Order inside the pass** (after all files have loaded, before the first player joins):
-   1. Cancel queued crafts of retired or moved recipes. Return their inputs, after renaming them.
-   2. Apply renames.
-   3. Make refunds.
-   4. Move worn items whose slot changed.
-   5. Fix container capacity.
-   6. Mark old food stacks.
-   7. Save.
+**Smelter contents and processing:** Primitive Smelter has **20 Coal/Charcoal hopper, 20 ore input, NO output inventory; completed ingots drop physically in front**. Improved 40/40/80, Advanced 80/80/160. Save queued inputs, selected recipe and partial work; manual bellows losing its operator pauses unfinished Iron, and Advanced wind falling below threshold pauses all production until wind returns. Never produce duplicate ingots from a restarted queue or silent output-rack conversion.
 
-   Offline refunds and moves use a key-based `Inventory.add` path with no peer.
-3. **Never delete rows.** Retired items, recipes, blueprints and structures keep their rows. Numbers are never reused.
-4. **Retired item with a successor → rename** in `renames.json`. This is the live mechanism; update `retired_to` to match.
-   - Softwood `lumber_*` and all `beam_*` become Plank.
-   - Hardwood `lumber_*` becomes Hardwood board.
-   - These rows were FUTURE, so few saves hold them.
-5. **Retired item with no successor → refund from a stored list.** The pass cannot read retired recipes, so each retired item row gets a `refund` list in data. Each refund item lands in the same container; overflow follows rule 9.
-   - **Stone - Spade 45:** Wooden spade, 2 Stone, Twine. The Wooden spade comes back with the old spade's wear fraction.
-   - **Stone - Sickle 298:** Flint, Stick, Twine.
-   - **Stone - Wedge 353:** 2 Stone, Stick.
-   - **Saw blade 238:** 2 Iron ingot.
-   - **Carried Clay bloomery 795 and Anvil 827:** the cost of blueprint 162 or 164.
-6. **Retired placed structures stay and still refund.** This covers the Clay bloomery (state 200), the Anvil (state 204) and the Woodworking table 243 (PR #1036).
-   - They keep loading and working.
-   - Their blueprints 162 and 164 (and blueprint 12, if PR #1036 does the same) are marked **`hidden: true`** (not buildable) instead of `retired`, so `_blueprint_of_kit` still refunds materials on take-down.
-   - This needs a small loader and menu change. Master s7 item 1 is updated to match.
-   - Structure rows are never deleted. If one ever must be, the loader first gets a `_structures.has(kind)` guard (hard lookups at si:3397, 10551 and 11921).
-7. **Worn slots.**
-   - Append any new slot (neck, strap, quiver) at the **end** of `clothing.json slots`. (Since M001-T11 the append-only list that orders a saved `worn` array is `clothing.json worn`, one "slot:layer" position each; `slots` is the set of body slots. Neck was added there; strap and quiver wait for Phase 5.)
-   - Before `_load_characters` calls `_clean_worn`, the pass reads the raw worn array and moves every item whose slot changed (for example a quiver leaving the waist) into a `worn_moved` list on the character row.
-   - After `_load_inventories`, the items in `worn_moved` go into the pack. If the pack is full, they are handed over at the next join and dropped at the player's feet. They are never blanked.
-8. **Worn instance data.** `worn` changes from bare numbers to slot arrays `[number, 1, wear(, instance data)]`. An old bare number reads as `[n, 1, 0]`. This lands in the slot-format phase, before Tempered armour or enhancements exist.
-9. **Capacity changes.** If a container's `slots` drop, or its `max_kg` falls below its contents:
-   - move the excess to the owner's pack;
-   - if that is full, drop it as ground items beside the container.
+**Fuel automation:** if multiple smithies/smelters compete for Coal/Charcoal from dedicated bins, kilns or fires, save each station's **creation order** and hopper state, and source the next scheduled **300-second** pull in the correct oldest-station-first order. The 30 m no-permission rule applies only to this fuel hopper action. Never silently backfill separate Steel INPUT carbon using the fuel hopper.
 
-   Never clamp contents or leave them beyond `usable`, where they would be invisible and weightless.
-10. **Backpack `carry_bonus_kg` removal.** No migration is needed. An over-cap player is slowed, not stripped, and gets a one-time notice.
-11. **New per-instance fields** (sharpness, current maximum durability, Tempered, enhancement slots).
-    - They need a new slot column, a format bump, a `PROTOCOL.md` change and a `PROTOCOL_VERSION` bump.
-    - Defaults: full sharpness, current maximum = durability, not Tempered, no enhancements.
-    - Bag contents are not a column. They are a nested inventory saved with the bag instance, designed in the carrying phase.
-12. **Food.**
-    - Existing stacks keep their age.
-    - Existing passive-maturing stacks (Sauerkraut) are set to `wear = max(wear, ready_age)` once, so they stay eatable. This shortens their remaining shelf life by at most `ready_age`, which is accepted.
-    - No food changes ID.
-    - The moved preserve recipes affect only new crafts.
-13. **Energy aids [D17].** The permanent Fitness cost is removed from the data. Saved `train` values are left unchanged; players who lost points regain them by training.
-14. **Learned recipes and the hotbar.** Retired recipe numbers in `learned`, and hotbar keys for retired numbers with no successor, are kept and ignored. They are dead keys that cannot hold or lose an item.
-15. **Locks and ownership.** Every container loads unlocked. A saved `owner` is kept. A container saved with no owner keeps today's rule (its first opener becomes the owner), and the existing "keep out" tick is kept.
+**Goals and character state:** persist automatic completed-goal IDs, counters and coin payment together with adequate crash consistency. Rejoin and world restart must not repay awards, replay old placards or erase exploration/mapping records. Old-character retrospective payout migration remains a distinct later approval, **not** a default rule. The new skill-based charcoal Map must save only per-character observed/recorded territory (and its accuracy) rather than granting a pre-revealed World Map.
 
-## 3. Automated tests (headless, on Dave's PC)
+## Tests before merging into dev
 
-These extend `test_save_compat.gd`, `test_item_renames.gd` and `test_server_items.gd`.
+- New character builds the full metalwork progression, breaks/repairs a Smithy, saves and loads inventories and physical drops with exact counts.
+- Mixed old bin saved under an older version is safely converted with all contents or rejected explicitly; empty and occupied current bins round-trip type assignment.
+- Interrupt each recipe/smelter queue during wind loss, bellows loss, full output racks and server restart; no duplicate/lost items or accidental Steel from hopper-only fuel.
+- Save and reload two competing nearby stations; confirm first-created priority persists for their next 300-second fuel pulls.
+- Validate per-character goal completion and payout exactly once after reconnect/server restart and any implemented sparse map records without unexplored-area disclosure.
+- Verify older versions are either read with intentionally supported defaults or refused **before** destructive writes, with readable operator guidance.
 
-| Test | Pass condition |
-|---|---|
-| A v1 file of each kind with the bumped loaders | Loads in full and is not set aside as `.bad`. |
-| A save holding every retired item, in a pack, a chest, worn and on the ground | Item count by successor and refund is conserved, nothing is deleted, and the load has no errors. |
-| A queued craft of a retired recipe | Cancelled, with renamed inputs returned. |
-| A placed Clay bloomery, Anvil and Woodworking table | They still load. Take-down refunds their materials, not a dead kit. |
-| A chest shrunk from 30 slots to 10 | Every item is in the chest, the pack or on the ground. |
-| A worn quiver on the waist in an 8-slot bare-number worn array, with the character offline | After join, the quiver is in the pack or at the player's feet. The other worn items keep their slots. |
-| An old Sauerkraut stack | Loads Ready and eatable. |
-| A character with negative `train` | Value unchanged; no energy aid lowers it again. |
-| A skills-migrated world | Its `characters.json.v1.bak` is untouched, and a `.catalog.bak` is written. |
-| Run the pass twice, or crash between file writes | The second run changes nothing, and no file is half-migrated. |
-| A future-version file | Set aside as `.bad`, with the backup intact. |
-
-**In-game check:** Dave loads his latest playtest world after the migration build. Every chest, his pack and his worn items match a list printed before the build.
+Retirement history and the older 12 Nov proposed multi-file migration are accessible in Git commits. **No new save migration feature is authorized merely by this design document.**
