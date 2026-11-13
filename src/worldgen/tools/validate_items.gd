@@ -985,11 +985,11 @@ func _init() -> void:
 		var entry: Dictionary = items_file["items"][id]
 		var is_future: bool = bool(entry.get("future", false))
 
-		if renamed_away.has(id):
-			continue
-
 		if is_future:
 			future.append(id)
+
+		if renamed_away.has(id):
+			continue
 
 		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future:
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
