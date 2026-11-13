@@ -895,8 +895,7 @@ var _shoulder_sent: Dictionary = {}
 
 # Puts one large log in the pack (it shows on the shoulder); with a log already carried the new one lies at the player's feet. Returns how many were taken.
 # `drop_rest` false: a caller that keeps its source (a ground pile, a chest) takes only what went in, so nothing is laid down and nothing is doubled.
-# `weighed`: the log is carried already (out of a worn pack frame), so the carry limit is not asked again.
-func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = {}, drop_rest: bool = true, weighed: bool = false) -> int:
+func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = {}, drop_rest: bool = true) -> int:
 	var key: String = str(_peer_key.get(peer, ""))
 	var inv = inventory_of(peer)
 
@@ -914,7 +913,7 @@ func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = 
 		return 0
 
 	var before: Array = _snapshot(inv)
-	var took: int = 1 if (weighed or _fit(peer, inv, number, 1, item_inst) > 0) and inv.add(number, 1, 0, item_inst) == 0 else 0
+	var took: int = 1 if _fit(peer, inv, number, 1, item_inst) > 0 and inv.add(number, 1, 0, item_inst) == 0 else 0
 	_send_changes(peer, inv, before)
 	_dirty = true
 
@@ -2252,7 +2251,7 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_strike.get(peer, -100000)) < float(entry.get("recover_ms", STRIKE_COOLDOWN_MS)) / CarryRules.worn_speed_mult(worn_of(peer), table):   # a greatsword recovers slower than a shortsword; a pack frame fights slower (master s3.9 rule 2)
+	if now - int(_last_strike.get(peer, -100000)) < float(entry.get("recover_ms", STRIKE_COOLDOWN_MS)):   # a greatsword recovers slower than a shortsword
 		return
 
 	_last_strike[peer] = now
@@ -2379,7 +2378,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_shot.get(peer, -100000)) < float(BowAim.pace_ms(_bow.cfg, bow_id)) / CarryRules.worn_speed_mult(worn_of(peer), table):
+	if now - int(_last_shot.get(peer, -100000)) < float(BowAim.pace_ms(_bow.cfg, bow_id)):
 		var wait_line: String = BowAim.say(_bow.cfg, bow_id, "say_not_spanned")   # a crossbow says it is not spanned yet; a bow stays silent
 
 		if wait_line != "":
@@ -10052,7 +10051,7 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 	if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
 		if shoulder_of(peer) != "":
 			_say(peer, "Put your log down first (Q).")
-		elif _give_shoulder(peer, number, 1, held_inst, false, weighed) == 1:
+		elif _give_shoulder(peer, number, 1, held_inst, false) == 1:
 			chest.take_from_slot(a, 1)
 			_dirty = true
 			return 1
@@ -10168,23 +10167,6 @@ func _worn_bags_kg(peer: int) -> float:
 	return total
 
 
-# A worn bag whose items.json row has loaded_effort (Traveller's rucksack, Wooden - Pack frame; master s3.9 rule 2 and table: movement cost when
-# loaded) is work to move with even under the free load: loaded_effort x its load as a share of the free carry (CarryRules.comfort_kg), at most 1.
-func _loaded_bag_effort(peer: int) -> float:
-	var extra: float = 0.0
-	var free_kg: float = 0.0   # worked out at the first loaded bag only: most players wear none
-
-	for raw in _characters.get(_peer_key.get(peer, ""), {}).get("worn", []):
-		if typeof(raw) == TYPE_ARRAY and (raw as Array).size() > 3 and typeof(raw[3]) == TYPE_DICTIONARY and raw[3].has("bag"):
-			var effort: float = float(table.entry(table.id_of(int(raw[0]))).get("loaded_effort", 0.0))
-
-			if effort > 0.0:
-				free_kg = free_kg if free_kg > 0.0 else maxf(CarryRules.comfort_kg(_carry_body(peer), _carry_cfg), 1.0)
-				extra += effort * minf(CarryRules.bag_kg(raw[3], table, _carry_cfg) / free_kg, 1.0)
-
-	return extra
-
-
 # Migration rule 10 (CATALOG_SAVE_MIGRATION.md): a player over the carry limit is slowed (the client's walk), never stripped, and told once.
 func _carry_notice(peer: int) -> void:
 	if _carry_cfg.is_empty():
@@ -10272,7 +10254,7 @@ func effort_of(peer: int) -> float:
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
 		level += float(_moving.get(peer, 0.0)) * float(_carry_cfg.get("load_effort", 0.45)) * pow(_load_ratio(peer), float(_carry_cfg.get("load_effort_power", 1.5)))
-		level += float(_moving.get(peer, 0.0)) * (_loaded_bag_effort(peer) + _carts.pull_effort(peer))   # a loaded bag, a loaded cart in hand
+		level += float(_moving.get(peer, 0.0)) * _carts.pull_effort(peer)   # a loaded cart in hand
 
 	return level
 
@@ -11995,7 +11977,7 @@ func rain_shed(peer: int) -> float:
 
 
 # The body weight the carry limit is worked out from (cap = ratio x body): the real weight plus what the worn pack's weight spreading adds
-# (items.json carry_bonus_kg, 12 Hide - Backpack and 18 Leather - Backpack; DESIGN-001, BUGLIST-001). The backpacks have no slots of their own (Dave 13 Nov 2026), and
+# (items.json carry_bonus_kg on the four back packs: 12 Hide, 18 Leather, 8 basket, 24 rucksack; DESIGN-001, BUGLIST-001). No back pack has slots of its own (Dave 13 Nov 2026), and
 # the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
 	return CarryRules.carry_body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)

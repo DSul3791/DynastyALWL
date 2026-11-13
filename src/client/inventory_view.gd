@@ -1869,12 +1869,7 @@ var limp_share: float = 1.0   # server: a crippling injury slows the walker (pro
 
 
 func speed_factor() -> float:
-	return (CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0) * limp_share * worn_speed()
-
-
-# What the worn pieces leave of every gait and of climbing (items.json worn_speed_mult: the pack frame, master s3.9 rule 2).
-func worn_speed() -> float:
-	return CarryRules.worn_speed_mult(worn, table)
+	return (CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0) * limp_share
 
 
 # --- The Handcart (catalog Phase 10, M001-T17; server_carts.gd): the server moves carts, the client draws them gliding to each new place ---

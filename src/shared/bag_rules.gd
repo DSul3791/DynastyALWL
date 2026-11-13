@@ -49,8 +49,7 @@ static func room(table, bag_number: int, inv) -> int:
 
 # Why the bag does not take an item ("" when it does). `rules` is clothing.json `bags`: small_kg, small_tool_kg, blade_classes, consumable_kinds.
 # bag_takes: any (anything that is not too big for a pack), small (each at most small_kg: coins, herbs, potions), small_tool (a tool of at most
-# small_tool_kg), consumable (food or medicine of at most small_kg), arrow (ammo_class arrow), blade (a weapon of a blade class), awkward (anything,
-# a large log too: the pack frame).
+# small_tool_kg), consumable (food or medicine of at most small_kg), arrow (ammo_class arrow), blade (a weapon of a blade class).
 static func refusal(table, carry_cfg: Dictionary, rules: Dictionary, bag_number: int, number: int) -> String:
 	var bag: Dictionary = table.entry(table.id_of(bag_number))
 	var entry: Dictionary = table.entry(table.id_of(number))
@@ -60,9 +59,6 @@ static func refusal(table, carry_cfg: Dictionary, rules: Dictionary, bag_number:
 
 	if slots_of(table, number) > 0:
 		return "A bag cannot go inside another bag."
-
-	if takes == "awkward":
-		return ""
 
 	if takes == "arrow":
 		return "" if str(entry.get("ammo_class", "")) == "arrow" else "Only arrows go in a quiver."

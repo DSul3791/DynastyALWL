@@ -355,7 +355,7 @@ func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 		host.send_cart_pull.call(int(rec["peer"]), id, tenths)
 
 
-# The extra effort of pulling (exertion, as a loaded pack frame's): the vehicle's pull_effort times its load share.
+# The extra effort of pulling (exertion): the vehicle's pull_effort times its load share.
 func pull_effort(peer: int) -> float:
 	var id: int = int(puller_of.get(peer, 0))
 

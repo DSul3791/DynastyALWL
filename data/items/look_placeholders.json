@@ -74,7 +74,7 @@
   "belt_pouch": "Mission 001 phase 5 carrying row, live (M001-T15): grey chunk until Art draws it; worn look is a placeholder (worn.json placeholder); NOT visually complete",
   "tool_roll": "Mission 001 phase 5 carrying row, live (M001-T15): grey chunk until Art draws it; worn look is a placeholder (worn.json placeholder); NOT visually complete",
   "travellers_rucksack": "Mission 001 phase 5 carrying row, live (M001-T15): grey chunk until Art draws it; worn look is a placeholder (worn.json placeholder); NOT visually complete",
-  "wooden_pack_frame": "Mission 001 phase 5 carrying row, live (M001-T15): grey chunk until Art draws it; worn look is a placeholder (worn.json placeholder); NOT visually complete",
+  "wooden_pack_frame": "Retired 13 Nov 2026 (Dave, BUGLIST-001): never drawn, no art wanted; the row stays for its number and validate_items wants a looks row for every gear item",
   "weapon_scabbard": "Mission 001 phase 5 carrying row, live (M001-T15): grey chunk until Art draws it; worn look is a placeholder (worn.json placeholder); NOT visually complete",
   "utility_bandolier": "Mission 001 phase 5 carrying row, live (M001-T15): grey chunk until Art draws it; worn look is a placeholder (worn.json placeholder); NOT visually complete",
   "rope_halter": "Mission 001 phase 1 catalog row, inactive (future): no model until its phase lands",
