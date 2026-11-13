@@ -84,6 +84,6 @@ PC run, 12 Nov 2026, Dave's PC (ManlandRyzen5), Godot 4.7.2 voxel build, separat
 
 ## Review
 
-Independent gate review of 23df315 (PR #1063): PASS WITH FIXES, no must-fix; fixed next: 10 m overlap at the 100 m hand-over, at most 2 far plumes newly shown a second (warm start), the PROTOCOL.md table row, an order-free resend hash, stale notes.
+Independent gate review of 23df315 (PR #1063): PASS WITH FIXES, no must-fix; fixed next: 10 m overlap at the 100 m hand-over, at most 2 far plumes newly shown a second (warm start), the PROTOCOL.md table row, an order-free resend hash, stale notes. Re-review of a5bd21b: PASS (code read; Godot not run).
 
 Independent gate review of c7175588: PASS WITH FIXES. Fixed in the next commit: the cap test now builds its fires after the scene tree starts (`_initialize` + `await process_frame`); a tall plume past the cap starts hidden; each plume is ranked by its own viewport's camera; per-species canopy thresholds, oak variants 2 and 3, and a winter check. Open for Dave's look: the small (one-rock-ring) fire now also sends smoke up over the trees; TEST-011 is partial past 100 m.
