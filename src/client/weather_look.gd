@@ -194,6 +194,11 @@ static func wind_ms(wind: float) -> float:
 	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
 
 
+# How much the sky has clouded over for this rain or snow: 0 clear, about 0.8 at rain 0.15, 1 from 0.2. The rain sounds (rain_audio.gd AUDIBLE_FROM) are held until it is high.
+static func wet_sky_share(rain: float, snow: float) -> float:
+	return smoothstep(0.02, 0.2, maxf(rain, snow))
+
+
 # How fast the drops fall at a rain strength (drizzle 2.5 m/s, a downpour 9 m/s).
 static func rain_fall(hard: float) -> float:
 	return lerpf(float(RAIN_LOOK_FALL[0]), float(RAIN_LOOK_FALL[1]), smoothstep(0.1, 0.9, hard))
@@ -651,7 +656,7 @@ func _process_body(delta: float) -> void:
 	# Any rain or snow means heavy cloud (owner, 2026-10-20: "the weather still doesn't get darker when it
 	# rains"): the old cover barely moved in light rain and the sky's lighting cubemap is drawn once, so
 	# the sun and the ambient light below carry the darkening.
-	var wet_sky: float = smoothstep(0.02, 0.2, maxf(rain, snow))
+	var wet_sky: float = wet_sky_share(rain, snow)
 	cloud_cover = clampf(maxf(float(_s["cloud"]), maxf(wet_sky * (RAIN_OVERCAST + (1.0 - RAIN_OVERCAST) * maxf(rain, snow * 0.9)), storm)), 0.0, 1.0)
 	gloom = clampf(0.3 * cloud_cover + 0.45 * rain + 0.2 * snow + 0.6 * storm, 0.0, 1.0)
 	_dark = clampf(0.5 * cloud_cover + 0.35 * rain + 0.15 * snow + 0.35 * storm, 0.0, 1.0)

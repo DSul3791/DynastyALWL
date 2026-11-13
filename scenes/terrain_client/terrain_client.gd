@@ -6000,6 +6000,7 @@ func _process(delta: float) -> void:
 		@warning_ignore("shadowed_variable")
 		var weather = sound.weather
 		weather.rain = 1.0
+		weather.rain_heard = 1.0   # the drops read the level the sky shows (BUG-004)
 		weather.covered = 0.0
 		weather.roofed = 0.0
 		weather.ground_snow = 0.0
@@ -6030,6 +6031,7 @@ func _process(delta: float) -> void:
 		var roofed_drops: int = sp.drops_played - before
 		weather.roofed = 0.0
 		weather.rain = 0.5
+		weather.rain_heard = 0.5
 		before = sp.drops_played
 
 		for n in 50:
@@ -6038,6 +6040,7 @@ func _process(delta: float) -> void:
 
 		var half_drops: int = sp.drops_played - before
 		weather.rain = 0.0
+		weather.rain_heard = 0.0
 		weather.covered = 0.0
 		print("Terrain client: splash check: %d grounds played, unknown %s, burst %d of 40 (cap %d, live %d), 5 s of heavy rain %d, covered %d, roofed %d, half rain %d, rate %.1f %.1f %.1f, last %s" % [
 			played, str(unknown), burst, cap_now, live_now, open_drops, covered_drops, roofed_drops, half_drops, sp.rate(1.0, 0.0, 0.0, false), sp.rate(1.0, 0.0, 0.0, true), sp.rate(0.05, 0.0, 0.0, false), sp.last])

@@ -102,6 +102,8 @@ var forced: bool = false                # --weather=KIND on the command line: th
 var kind: String = "clear"
 var intensity: float = 1.0
 var rain: float = 0.0                   # smoothed levels the sound stage and HUD read
+var rain_heard: float = 0.0             # the same level for the rain layers and drops only: held at 0 until the world's rain is RainAudio.AUDIBLE_FROM (BUG-004)
+var rain_audible: bool = true           # the world's rain has passed AUDIBLE_FROM (apply_state)
 var wind: float = 0.0
 var hush: float = 0.0
 var calls: float = 1.0
@@ -131,8 +133,6 @@ var game_seconds: Callable              # () -> the game clock's seconds
 var _thunder_t: float = NAN             # game second the schedule was last read to
 var ground_class: String = "soft"       # what the rain falls on under the player (HUD): stone, mud, litter, snow or soft
 var _ground_w: Dictionary = {"stone": 0.0, "mud": 0.0, "litter": 0.0, "snow": 0.0}
-var _standing: float = 0.0              # water standing at the player's feet (eased): the puddly mud bed needs it (RainAudio.layers)
-var _standing_target: float = 0.0
 var _pending: Array = []                # [seconds left, AudioStreamPlayer3D] thunder waiting for its delay
 var _cover_in: float = 0.0
 var _tick_acc: float = 0.0
@@ -167,6 +167,7 @@ func setup(stage, ambient) -> void:
 			forced = true
 			set_weather(arg.get_slice("=", 1), 1.0)
 			rain = float(KINDS[kind]["rain"]) * intensity
+			rain_heard = rain
 			wind = float(KINDS[kind]["wind"]) * intensity
 			calls = float(KINDS[kind]["calls"])
 			ground_wet = 1.0 if float(KINDS[kind]["rain"]) > 0.0 else 0.0
@@ -203,6 +204,7 @@ func set_weather(new_kind: String, new_intensity: float = 1.0) -> void:
 
 	kind = new_kind
 	intensity = clampf(new_intensity, 0.0, 1.0)
+	rain_audible = true   # a kind set by hand (the sound test, --weather=) is heard as it is; apply_state sets it from the world's rain after this
 
 
 # Plays the world's weather state (src/shared/weather.gd: rain, snow, storm, wind, each 0 to 1).
@@ -223,10 +225,12 @@ func apply_state(state: Dictionary) -> void:
 		set_weather("storm", clampf(storm, 0.4, 1.0))
 	elif rain_level > 0.5:
 		set_weather("rain", clampf(rain_level, 0.5, 1.0))
-	elif RainAudio.state_audible(rain_level):   # not before the sky shows it (BUG-004): this was 0.08, a drizzle too faint to see
+	elif rain_level > 0.08:
 		set_weather("drizzle", clampf(rain_level * 2.5, 0.3, 1.0))
 	else:
 		set_weather("clear", 1.0)
+
+	rain_audible = RainAudio.state_audible(rain_level)   # the kind (birds and frogs stop for any rain) is as it was; the rain layers and drops wait for the sky to show it (BUG-004)
 
 
 # Looping weather beds that are audible: [[name, volume_db]] (for the "what is that sound" list).
@@ -262,6 +266,7 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	var step: float = FADE_PER_SEC * delta
 	world_wind = move_toward(world_wind, maxf(_wind_target, wind) if forced else _wind_target, 0.1 * delta)
 	rain = move_toward(rain, float(target["rain"]) * intensity, step)
+	rain_heard = move_toward(rain_heard, float(target["rain"]) * intensity if rain_audible else 0.0, step)
 	wind = move_toward(wind, float(target["wind"]) * intensity, step)
 	hush = move_toward(hush, float(target["hush"]) * intensity, step)
 	calls = move_toward(calls, calls_for(kind, intensity), step)
@@ -276,7 +281,6 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 		_cover_target = 1.0 if forced_cover or _stage.interior.amount > 0.5 else _stage.under_cover(body)
 		_roof_target = 1.0 if forced_roof or _roof_over(body.global_position) else 0.0
 		ground_class = forced_ground if forced_ground != "" else _stage.rain_ground(body)
-		_standing_target = _stage.standing_water(body)
 
 	covered = move_toward(covered, _cover_target, delta / 1.5)
 	roofed = move_toward(roofed, _roof_target, delta / 1.5)
@@ -287,8 +291,7 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	for key in _ground_w:
 		_ground_w[key] = move_toward(_ground_w[key], 1.0 if ground_class == key else 0.0, delta / GROUND_EASE_SEC)
 
-	_standing = move_toward(_standing, _standing_target, delta / GROUND_EASE_SEC)
-	var layers: Dictionary = RainAudio.layers(rain, cover, roof, water, _ground_w, _standing)   # which rain sounds, by the rain and what water stands (BUG-004)
+	var layers: Dictionary = RainAudio.layers(rain_heard, cover, roof, water, _ground_w)   # which rain sounds, by the rain the sky shows (BUG-004)
 
 	for loop_name in layers:
 		_loop(loop_name, layers[loop_name])

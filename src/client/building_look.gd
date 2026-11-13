@@ -749,12 +749,13 @@ const FLAME_TONGUES := {
 	3: [[Vector3(0.0, 0.1, 0.0), 1.4, 0.34, 0.0], [Vector3(0.2, 0.1, 0.12), 1.0, 0.24, 0.4], [Vector3(-0.18, 0.1, -0.1), 0.95, 0.22, 2.2],
 		[Vector3(0.06, 0.1, -0.22), 0.75, 0.18, 3.6], [Vector3(-0.22, 0.1, 0.16), 0.66, 0.16, 5.0]],
 }
-# Light by tier: [range m, energy, omni_attenuation]. Dave 1 Nov: the small and medium fires step up in radius and brightness; the shared falloff is 2 (inverse-square style).
-# The large fire is held to Dave's BUG-002 rule: its output is at least 4 times the held torch's (not 4 times the radius). Godot's omni gives energy x (1 - (d/range)^4)^2 / d^attenuation,
-# and the torch is 2 (+-0.4) at range 12 with attenuation 1 (FlameRules.TORCH_*), so a bonfire at 14 m / energy 4 / attenuation 2 was dimmer than the torch beyond about 2 m. The large fire is 20 m, energy 16,
-# attenuation 1.5: a softer core and a longer tail than the inverse square, still dark past its reach. test_fire_light_vs_torch.gd holds it to 4x by emitted flux and by light on the ground (ledger BUGLIST-001 BUG-002).
+# Light range and energy by tier (Dave 1 Nov): each step up is twice the radius and twice the brightness; flames about twice as tall; the bonfire's light is warmer.
+# Short range with a real falloff (omni_attenuation 2 = inverse-square style), centred on the flame; the nearest-lights pass flickers it a few percent around meta base_energy (Dave 31 Oct).
+# [range m, energy, omni_attenuation]. The large fire (tier 3) is the exception, held to Dave's BUG-002 rule: its output is at least 4 times the held torch's (not 4 times the radius).
+# Godot's omni gives energy x (1 - (d/range)^4)^2 / d^attenuation, and the torch is 2 (+-0.4) at range 12 with attenuation 1 (FlameRules.TORCH_*), so a bonfire at 14 m / energy 4 / attenuation 2 was dimmer than the torch beyond about 2 m.
+# The large fire is 20 m, energy 18, attenuation 1.5: a softer core and a longer tail than the inverse square, still dark past its reach. test_fire_light_vs_torch.gd holds it to 4x by source, emitted flux and light on the ground, against the torch's mean and its flicker peak (ledger BUGLIST-001 BUG-002).
 # Smoke, sparks and flames are unchanged (TEST-011). No shadows on any fire light: a shadow-casting omni is six shadow passes, too dear at three fires on a GTX 1050.
-const FIRE_LIGHT := {1: [3.5, 1.0, 2.0], 2: [7.0, 2.0, 2.0], 3: [20.0, 16.0, 1.5]}
+const FIRE_LIGHT := {1: [3.5, 1.0, 2.0], 2: [7.0, 2.0, 2.0], 3: [20.0, 18.0, 1.5]}
 const FIRE_LIGHT_COLOR := {1: Color(1.0, 0.64, 0.34), 2: Color(1.0, 0.62, 0.3), 3: Color(1.0, 0.54, 0.2)}
 const LIGHT_FALLOFF := 2.0
 const FIRE_HALO_SCALE := {1: 1.0, 2: 1.2, 3: 1.5}   # the fog halo round a fire, as a share of a torch's (firelight_weather_design.md)
@@ -927,8 +928,10 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		light.light_energy = float(FIRE_LIGHT[tier][1])
 		light.omni_attenuation = float(FIRE_LIGHT[tier][2])
 		light.set_meta("base_energy", light.light_energy)
-		light.set_meta("base_color", light.light_color)
-		light.set_meta("flame_flicker", true)   # inventory_view flickers it with the flame (flame_flicker)
+
+		if tier == 3:
+			light.set_meta("base_color", light.light_color)
+			light.set_meta("flame_flicker", true)   # the large fire only (BUG-002): inventory_view flickers it with its flame every frame; tiers 1 and 2 keep the gentle flicker
 		light.shadow_enabled = false
 		light.position = Vector3(0.0, 0.8, 0.0)
 		light.visible = false
