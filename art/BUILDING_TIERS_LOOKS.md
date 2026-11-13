@@ -1,6 +1,6 @@
-# Building tiers: the looks as built (current to main bd3146aa, 11 Nov 2026)
+# Building tiers: appearance record (baseline 11 Nov 2026; doors updated 13 Nov)
 
-Owner: Kathleen (art). This page says how each building tier LOOKS in the game today and where that look lives in code. Costs, ids, stations and rules are not here; they are in `docs/design/item_system.md` (s13, s17), `docs/design/progression.md` and `data/items/blueprints.json`. The 22 Oct design pictures this page used to describe (old tier names Basic, Plank, Fine wood, Log, Cobblestone, Mason) are superseded and archived in `docs/archive/2026-11/BUILDING_TIERS_LOOKS_2026-10-22.md`.
+Owner: Kathleen (art). This page records the building tier looks and their code locations. Non-door descriptions include an 11 Nov historical baseline; **BUGLIST-002 separate-door changes are already implemented on `dev` but still require player visual verification**. Costs, ids, stations and rules are not here; they are in `docs/design/item_system.md` (s13, s17), `docs/design/progression.md` and `data/items/blueprints.json`. The 22 Oct design pictures this page used to describe (old tier names Basic, Plank, Fine wood, Log, Cobblestone, Mason) are superseded and archived in `docs/archive/2026-11/BUILDING_TIERS_LOOKS_2026-10-22.md`.
 
 ## The ladder (shipped)
 
@@ -29,11 +29,11 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 ## Fortified (#989; world shots by Dino 10 Nov, passed)
 
 - `concrete_wall(true)`: 0.3 m thick, plinth course at the foot, two iron bands across both faces with bolt heads, an iron strap up each end.
-- `concrete_gap` banded (Fortified doorway): iron-clad door (`_iron_door`), drop-bar brackets and the bar; open twin swings the leaf in.
+- **Fortified doorway (`fortified_doorway`) is an empty, banded concrete frame**; the earlier iron-clad leaf, bar and integral open-twin behavior have been removed. A separate **Fortified - Door** is a riveted all-metal iron-and-steel door, built and attached by hammer blueprint. The same empty-frame/separate-door distinction applies to all seven tiers and four configurations; details are in `docs/design/DYNASTY_MASTER_ITEMS.md` §3.0 and `docs/buglists/BUGLIST-002.md`. Actual appearance is pending F6 verification.
 - `fortified_gate`: lintel 2.0 x 0.24 x 0.3 at 2.52 m, iron stiles, diagonal brace, pintles; open twin swings it out.
 - `fortified_wall_top`: merlons at x ±0.5 (0.6 wide) with arrow slits; reads as a continuous battlement over pillars (joint check `kathleen/fortified_wall_top_joint.png`).
 - `concrete_foundation(true)`: banded footing battered out; since #1017 both footing steps run down to the body's foot, so a dipped corner shows no ledge (Dino's beach shot read it as a 0.2 m float).
-- Caps: Fortified doorway 450 (`FORTIFIED`); gate under the 300 c3c4 cap (264).
+- Historical (#989) geometry cap: old Fortified doorway 450 triangles; the separate-door implementation now has different geometry and needs F6 frame-rate/triangle review. The gate remains a separate construction type.
 
 ## Icons
 
@@ -45,4 +45,4 @@ Roof and corner icons are drawn from their looks (`tools/paint_look_icons.py`, `
 
 ## Not built yet (future looks, in design notes)
 
-Log bridge, Mine brace, Wooden ladder, half-timber Refined wall, Plank and Mason tiers, 65° roofs, shutters, chimneys, gutters. Large forge look is parked (code parked).
+Log bridge, Mine brace, Wooden ladder, half-timber Refined wall, shutters, chimneys and gutters were pending in this historical art pass. **Crude - Roof 65 is implemented** (BUGLIST-001 BUG-011); do not treat its construction piece as future. Any other entries need fresh verification against `dev` before assigning work.
