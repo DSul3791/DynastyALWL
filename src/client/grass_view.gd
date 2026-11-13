@@ -321,10 +321,18 @@ var _scan_now: int = 0
 const ROOF_CHECK_M := 14.0                # rock or a roof this close above a cell's ground means it is a cave or a room: no grass or litter there
 const CHECK_PROBES := 5                  # ground hits kept per cell
 const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
+# BUG-006 (BUGLIST-001): grass built on the coarse ground collision (LOD 1 and 2, 2 m and 4 m blocks) beyond the fine ground's reach was only looked at again
+# in the first 94.5 s after its build (CHECK_TIMES are gaps: checks at 1.5, 4.5, 10.5, 22.5, 46.5 and 94.5 s), so a cell that waited longer dropped or rose
+# in one jump when the player came near and a rebuild read the fine ground. A built cell is now also looked at again, on this ladder of gaps, the first
+# time the player comes within FINE_GROUND_M of it. VoxelLodTerrain's lod_distance is not set in terrain_client.gd, so the fine level reaches the module's
+# default (48 m, unverified on the PC); the ring is 56 m, so the checks (1, 4 and 12 s after crossing) land when the cell reaches 48 m at a run (about
+# 1 s), a jog (about 1.5 s) and a walk (4 to 5 s), with the last one catching late blocks. Cost stays under CHECK_CELLS_PER_FRAME / CHECK_USEC.
+const FINE_GROUND_M := 56.0
+const FINE_CHECK_TIMES := [1000, 3000, 8000]
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
 const CHECK_CELLS_PER_FRAME := 3
 const CHECK_USEC := 300                    # and at most this long a frame (Steve 5 Nov 2026, PC lag run #402: the check rays were still 0.81 ms a frame, the biggest grass part)
-var _checks: Array = []                  # [cell, due msec, check number]
+var _checks: Array = []                  # [cell, due msec, check number, ladder (CHECK_TIMES or FINE_CHECK_TIMES)]
 # The earliest due time in _checks once a full pass has seen them all (0: not known, look). Steve 5 Nov 2026 (Dave's PC lag run, #401): "grass: check
 # ground" was 56% of the grass time, 1.07 ms every frame, walking the whole list (thousands of cells) to find the few due ones.
 var _checks_due: int = 0
@@ -1516,6 +1524,11 @@ func _rescan_step() -> void:
 				entry["busy"] = true
 				entry["built"] = true
 				_pending.append(cell)
+			elif entry["built"] and not entry["busy"] and not entry.get("fine", true) and centre.distance_to(Vector2(_center.x, _center.z)) < FINE_GROUND_M:
+				# First time in reach of the fine ground: its probes are cast again soon (BUG-006).
+				entry["fine"] = true
+				_checks.append([cell, _scan_now + int(FINE_CHECK_TIMES[0]), 0, FINE_CHECK_TIMES])
+				_checks_due = mini(_checks_due, _scan_now + int(FINE_CHECK_TIMES[0]))
 
 	if _scan_row <= span:
 		return
@@ -1614,9 +1627,9 @@ func _check_ground(now: int) -> void:
 			_pending.push_front(check[0])
 			_checks.remove_at(n)
 			ground_rebuilds += 1
-		elif int(check[2]) + 1 < CHECK_TIMES.size():
+		elif int(check[2]) + 1 < (check[3] as Array).size():
 			check[2] = int(check[2]) + 1
-			check[1] = now + int(CHECK_TIMES[check[2]])
+			check[1] = now + int((check[3] as Array)[check[2]])
 			next_due = mini(next_due, int(check[1]))
 			n += 1
 		else:
@@ -1642,6 +1655,18 @@ static func ground_moved(space: PhysicsDirectSpaceState3D, x: float, z: float, o
 		return false
 
 	return absf(float((found["position"] as Vector3).y) - old_y) > CHECK_MOVE_M
+
+
+# The height of the ground at (x, z) on the plane through a ground hit `point` with surface normal `normal` (BUG-006). A card is scattered up to half a sample
+# spacing from the hit it was given (0.7 m near, up to 2.9 m in the very far band, where a 6 m cell has one ray), and laid at the hit's height it hung
+# above the slope on one side and sank into it on the other: far hillsides drew as flat terraces that snapped onto the slope as finer cells replaced them.
+# The plane is only a local guide: past a crest or into a gully it points the wrong way, and the caller has refused normals flatter than MIN_SLOPE_Y, so the
+# raw lift could reach 4.9 m. It is limited to LIE_MAX_M: the exact lift on ground up to about 27 degrees (the grass thins from 30) at the 2.85 m reach of a
+# far card, so ordinary hills are not touched, while a sharp ridge or gully errs by a bounded amount instead of several metres.
+const LIE_MAX_M := 1.5
+static func lie_y(point: Vector3, normal: Vector3, x: float, z: float) -> float:
+	var lift: float = -(normal.x * (x - point.x) + normal.z * (z - point.z)) / maxf(normal.y, 0.01)
+	return point.y + clampf(lift, -LIE_MAX_M, LIE_MAX_M)
 
 
 # Rays for one cell; returns how many were cast.
@@ -1895,7 +1920,7 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 4] = 0.0
 					buffer[o + 5] = sy
 					buffer[o + 6] = 0.0
-					buffer[o + 7] = point.y - 0.03
+					buffer[o + 7] = lie_y(point, hit["normal"], ox, oz) - 0.03
 					buffer[o + 8] = -sny
 					buffer[o + 9] = 0.0
 					buffer[o + 10] = cy
@@ -1933,7 +1958,8 @@ func _build(cell: Vector2i) -> int:
 			probes.append_array(PackedFloat32Array([hits[n][0], hits[n][1], heights[n]]))
 
 	entry["probes"] = probes
-	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0])
+	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0, CHECK_TIMES])
+	entry["fine"] = Vector2(_center.x, _center.z).distance_to((Vector2(cell) + Vector2(0.5, 0.5)) * CELL_M) < FINE_GROUND_M
 	_checks_due = mini(_checks_due, Time.get_ticks_msec() + int(CHECK_TIMES[0]))
 	_free_cell_nodes(entry)      # a rebuilt cell swaps its cards in the same frame
 
