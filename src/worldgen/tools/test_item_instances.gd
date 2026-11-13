@@ -70,7 +70,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(DIR + "/" + file)
 
 	check(Net.PROTOCOL_VERSION >= 106, "PROTOCOL_VERSION is 106 or later (%d)" % Net.PROTOCOL_VERSION)
-	check(InventoryScript.FORMAT == 4, "Inventory.FORMAT is 4 (protocol 113: the slot count after the format byte)")
+	check(InventoryScript.FORMAT == 4, "Inventory.FORMAT is 4 (protocol 115: the slot count after the format byte)")
 
 	var items = make()
 	var table = items.table
@@ -298,7 +298,7 @@ func _init() -> void:
 	check(took_logs == 2 and slot_with(inv, low, {"craft": 1}) >= 0 and inv.count_of(high) == 0, "a blueprint's _stock_take(plain_only) does the same from the pack (took %d)" % took_logs)
 	inv.clear_slot(slot_with(inv, low, {"craft": 1}))
 
-	# A large log into a pack with every slot taken is never doubled: the pack grows for it (Dave 12 Nov 2026 23:06Z, protocol 113), so it moves
+	# A large log into a pack with every slot taken is never doubled: the pack grows for it (Dave 12 Nov 2026 23:06Z, protocol 115), so it moves
 	# once, from the chest or the ground, and nothing is laid at the player's feet.
 	var big: int = table.number_of("log_oak")
 	var filler: Array = []

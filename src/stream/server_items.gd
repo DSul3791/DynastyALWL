@@ -41,6 +41,9 @@ const PILE_LIFETIME_S := 7200.0          # a pile lives this long after the last
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
 const CHUNK_M := 256.0
 const NEAR_M := 100.0                    # items this close are sent to a player
+const FAR_FIRE_M := 2048.0               # lit campfires out to this far are sent as smoke only (far_fires, protocol 114; the High terrain view; the client drops those past its own view)
+const FAR_FIRE_COUNT := 32               # at most this many, nearest first
+const FAR_OVERLAP_M := 10.0              # far_fires starts this much inside NEAR_M: world_items goes by the position at the last sync (up to a second old), so a fire is never in neither list (a short double plume is not seen)
 const PICKUP_M := 3.0
 const DROP_REACH_M := 6.0                # a drop lands at most this far from where the server last saw the player
 const SYNC_EVERY_S := 1.0
@@ -218,6 +221,7 @@ var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
+var _far_fire_spots: Array = []     # [pos Vector3, fire tier 1..3] of every lit campfire at the last world sync (far_fires_near)
 var _sync_grid: Dictionary = {}     # the last world sync's NEAR_M grid, cell -> [world ids] (at most SYNC_EVERY_S old); the hammer list's stock polls read it
 var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent (a hammer poll that would send the same is skipped)
 var _stock_poll_ms: Dictionary = {} # peer -> msec of the last hammer poll answered
@@ -4698,9 +4702,13 @@ func _sync_world_items() -> void:
 	var send_usec: int = 0
 	var sent: int = 0
 	var grid: Dictionary = {}
+	var lit: Array = []
 
 	for id in _items:
 		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
+
+		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
+			lit.append([_items[id]["pos"], fire_tier_of(int(_items[id]["fire"]["state"]))])
 
 		if not grid.has(cell):
 			grid[cell] = []
@@ -4709,6 +4717,7 @@ func _sync_world_items() -> void:
 
 	var t_scan: int = Time.get_ticks_usec()
 	_sync_grid = grid
+	_far_fire_spots = lit
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
@@ -4824,7 +4833,7 @@ func _send_changes(peer: int, inv, before: Array) -> void:
 	if not _gain_quiet and send_received.is_valid():
 		_report_gains(peer, inv, before)
 
-	# A pack that grew or shrank: the whole pack, since a slot update cannot add or take away slots (protocol 113).
+	# A pack that grew or shrank: the whole pack, since a slot update cannot add or take away slots (protocol 115).
 	if inv.slot_count != before[0].size():
 		send_full.call(peer, inv.to_bytes())
 		_send_favs(peer, inv)
@@ -7114,7 +7123,7 @@ func peers_near(position: Vector3, radius: float) -> Array:
 	return out
 
 
-# Splits `count` off a stack into the backpack's first empty slot; a full pack grows a step for it (protocol 113). The stack keeps at least one.
+# Splits `count` off a stack into the backpack's first empty slot; a full pack grows a step for it (protocol 115). The stack keeps at least one.
 func _split(inv, slot: int, count: int) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or count < 1 or count >= inv.counts[slot]:
 		return
@@ -7136,6 +7145,34 @@ func _split(inv, slot: int, count: int) -> void:
 # that wood is gone. A lit fire's world-item state is its tier (40 survival, 1 campfire, 41 bonfire).
 static func fire_is_lit(state: int) -> bool:
 	return state == 1 or state == FIRE_STATE_SURVIVAL or state == FIRE_STATE_BONFIRE
+
+
+# A lit fire's tier for its look: 1 survival (40), 2 campfire (1), 3 bonfire (41), as the client's inventory_view._fire_tier.
+static func fire_tier_of(state: int) -> int:
+	return 1 if state == FIRE_STATE_SURVIVAL else (3 if state == FIRE_STATE_BONFIRE else 2)
+
+
+# Far campfire smoke (TEST-011, Dave approved 13 Nov 2026: smoke seen up to 2 km so a camp can be found from a hill): the lit campfires
+# farther than NEAR_M (closer ones come whole with world_items) and within far_m of `at`, nearest first, at most `count`, as
+# [positions, tiers] (protocol 114 far_fires). From the last world sync (at most SYNC_EVERY_S old).
+func far_fires_near(at: Vector3, far_m: float = FAR_FIRE_M, count: int = FAR_FIRE_COUNT) -> Array:
+	var rows: Array = []
+
+	for fire in _far_fire_spots:
+		var d: float = (fire[0] as Vector3).distance_to(at)
+
+		if d > NEAR_M - FAR_OVERLAP_M and d <= far_m:
+			rows.append([d, fire[0], fire[1]])
+
+	rows.sort_custom(func(p: Array, q: Array) -> bool: return float(p[0]) < float(q[0]))
+	var points: PackedVector3Array = PackedVector3Array()
+	var tiers: PackedByteArray = PackedByteArray()
+
+	for row in rows.slice(0, count):
+		points.append(row[1])
+		tiers.append(int(row[2]))
+
+	return [points, tiers]
 
 
 func _fire_wood(fire: Dictionary) -> Dictionary:
@@ -8156,7 +8193,7 @@ func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false
 			_say(peer, "Make room in your pack first.")   # a pack at MAX_SLOTS
 			return false
 
-	if taken_down and _load_over_cap(peer, inv):   # the pack grows, so the carry limit decides (protocol 113)
+	if taken_down and _load_over_cap(peer, inv):   # the pack grows, so the carry limit decides (protocol 115)
 		for put in given:
 			inv.remove(int(put[0]), int(put[1]))
 
@@ -9709,7 +9746,7 @@ func _chest_of(peer: int, id: int):
 	if chest != null:
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 		# A take-only store (a body's remains) never takes anything in, and holds the whole pack it came from, which may have grown past its
-		# slots (protocol 113): every slot is in use, so Take all reaches them all.
+		# slots (protocol 115): every slot is in use, so Take all reaches them all.
 		chest.usable = chest.slot_count if bool(def.get("take_only", false)) else clampi(int(def.get("slots", chest.slot_count)), 1, chest.slot_count)
 
 	return chest
@@ -9937,7 +9974,7 @@ func _fit(peer: int, inv, number: int, count: int, item_inst: Dictionary = {}) -
 
 
 # Into the pack as many as the carry limit allows, the rest dropped at `at` (the player's feet when INF); returns how many went in. A pack grows
-# (protocol 113), so weight is what stops a gain: every add of something new to a player's pack goes through here, give() or a weight check.
+# (protocol 115), so weight is what stops a gain: every add of something new to a player's pack goes through here, give() or a weight check.
 func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: Vector3 = Vector3.INF) -> int:
 	var fits: int = _fit(peer, inv, number, count)
 	var left: int = inv.add(number, fits, item_wear) + (count - fits)
@@ -11784,7 +11821,7 @@ func _carry_body(peer: int) -> float:
 
 # ACT_WEAR: the piece in a pack slot goes to its slot-and-layer. Every worn piece sharing a position with it comes off into the pack (the one in
 # that layer; a Dress filling body and legs base), each into a pack slot (worn pieces never stack; the slot the new piece leaves counts, and the
-# pack grows for the rest, protocol 113). Only a pack at MAX_SLOTS can lack the room: then nothing moves, so nothing is lost or doubled.
+# pack grows for the rest, protocol 115). Only a pack at MAX_SLOTS can lack the room: then nothing moves, so nothing is lost or doubled.
 func _wear(peer: int, inv, slot: int) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not _characters.has(_peer_key.get(peer, "")):
 		return
@@ -13326,7 +13363,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), float(_fishing_data().get("min_chance", 0.02)), float(cfg.get("max_chance", 0.95)))
 	var caught: Array = []
-	var before: Array = _snapshot(inv)   # a timed haul, outside any action: it sends its own changes (a catch can grow the pack, protocol 113)
+	var before: Array = _snapshot(inv)   # a timed haul, outside any action: it sends its own changes (a catch can grow the pack, protocol 115)
 
 	for n in want:
 		if fish_stock(cell) <= 0:

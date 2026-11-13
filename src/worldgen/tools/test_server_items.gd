@@ -2489,7 +2489,7 @@ func _init() -> void:
 	rq2._craft_tick(0.75)
 	check(rq2.inventory_of(1).count_of(cord) == 1, "the restored craft finishes after the rest of its time")
 
-	for k in range(5000):   # the pack grows (protocol 113): only its carry limit leaves no room
+	for k in range(5000):   # the pack grows (protocol 115): only its carry limit leaves no room
 		if rq2._fit(1, rq2.inventory_of(1), fibre, 1) <= 0:
 			break
 

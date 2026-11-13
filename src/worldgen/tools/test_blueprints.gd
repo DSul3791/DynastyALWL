@@ -207,7 +207,7 @@ func _init() -> void:
 	# come back as 8 bronze nails and the 8 refused at the hammer-2 row stay as nails.
 	check(_ids_standing("wooden_crate").is_empty() and _have(1, "lumber") == 10 and _have(1, "nails") == 8 and _have(1, "bronze_nails") == 8 and _have(1, "wooden_crate_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, bronze nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "bronze_nails")])
 
-	# Takedown into a pack whose 30 slots are all taken: the pack grows (Dave 12 Nov 2026 23:06Z, protocol 113) and the materials come back.
+	# Takedown into a pack whose 30 slots are all taken: the pack grows (Dave 12 Nov 2026 23:06Z, protocol 115) and the materials come back.
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
 	_give(1, "lumber", 5)

@@ -59,7 +59,7 @@ func setup(net_ref, items_ref, npc_view_ref, layer: CanvasLayer, player_pos: Cal
 	net.shop_received.connect(_on_shop)
 	net.purse_received.connect(func(_c): _refresh_shop())
 	net.inventory_slots_received.connect(func(_b): _refresh_shop())
-	net.inventory_full_received.connect(func(_b): _refresh_shop())   # a sale that shrinks the pack comes as the whole pack (protocol 113)
+	net.inventory_full_received.connect(func(_b): _refresh_shop())   # a sale that shrinks the pack comes as the whole pack (protocol 115)
 	net.notice_received.connect(_on_notice)
 	items.register_interactable("npc", 25, _probe)
 	items.dialogue_key = _key

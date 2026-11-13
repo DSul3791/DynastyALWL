@@ -1664,7 +1664,7 @@ func fire_light_near(point: Vector3, radius: float) -> bool:
 	return false
 
 
-# The whole pack: at hello, and whenever the pack grows or shrinks (protocol 113), so it is handled like a slot update of every slot.
+# The whole pack: at hello, and whenever the pack grows or shrinks (protocol 115), so it is handled like a slot update of every slot.
 func _on_full(bytes: PackedByteArray) -> void:
 	var was: Array = []
 

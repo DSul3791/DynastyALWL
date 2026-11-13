@@ -1,7 +1,7 @@
 extends SceneTree
 
 # The hotbar as real slots (Dave's playtest 12 Nov 2026, TEST-008 and TEST-006; replaces the 8 Nov pointer hotbar, OVERNIGHT_DECISIONS_8NOV.md row 24).
-# Keys 1 to 9 and 0 are the pack's slots 0 to 9 and the backpack is slots 10 and up (20 at least, more as it fills, protocol 113): an item is in one place only. Pickups fill the backpack first. A tool or
+# Keys 1 to 9 and 0 are the pack's slots 0 to 9 and the backpack is slots 10 and up (20 at least, more as it fills, protocol 115): an item is in one place only. Pickups fill the backpack first. A tool or
 # weapon whose kind is new in the pack moves into the first empty hotbar slot; food, materials and a second axe do not. ACT_MOVE moves a stack into the
 # hotbar and back. A hotbar slot whose item is dropped, sold or used up is empty. "On the hotbar" for tools means in slots 0 to 9. Sort leaves the
 # hotbar. The slots are saved with the pack; characters.json keeps no "hotbar". A craft of several is one queue request (test_craft_click.gd has the click rule).
