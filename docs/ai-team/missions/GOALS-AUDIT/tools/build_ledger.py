@@ -57,7 +57,7 @@ for g in goals:
         if STATUS_RANK.get(eff, 0) > STATUS_RANK[status]: status = eff
     # runtime support is reported separately from design status (brief: three independent columns).
     # craft/build are PARTIAL only for the specific paths listed per goal in ws_runtime.json goals.
-    runtime = r.get("runtime_support") or ("EXISTING" if g["kind"] in ("craft", "build") else kind_rt.get("support")) or "UNKNOWN"
+    runtime = LF.get("_runtime_overrides", {}).get(gid) or r.get("runtime_support") or ("EXISTING" if g["kind"] in ("craft", "build") else kind_rt.get("support")) or "UNKNOWN"
     evidence = LF.get("_evidence_overrides", {}).get(gid) if isinstance(LF.get("_evidence_overrides"), dict) else None
     evidence = evidence or ("CODE_VERIFIED" if (c or r or g["kind"] in ("craft", "build")) else "DOCUMENT_ONLY")
     # acquisition evidence for gather goals and raw inputs of this goal

@@ -3,10 +3,10 @@
  "original": 651,
  "adds": 26,
  "design_status": {
-  "PASS": 235,
-  "NEEDS_CORRECTION": 253,
+  "PASS": 230,
+  "NEEDS_CORRECTION": 247,
   "BLOCKED": 144,
-  "NEEDS_TEST": 19
+  "NEEDS_TEST": 30
  },
  "evidence_level": {
   "CODE_VERIFIED": 640,
@@ -14,8 +14,8 @@
  },
  "runtime_support": {
   "NEW_EVENT_REQUIRED": 23,
-  "EXISTING": 622,
-  "OTHER_IMPLEMENTATION_REQUIRED": 6
+  "EXISTING": 624,
+  "OTHER_IMPLEMENTATION_REQUIRED": 4
  },
  "content_status": {
   "IMPLEMENTED": 627,

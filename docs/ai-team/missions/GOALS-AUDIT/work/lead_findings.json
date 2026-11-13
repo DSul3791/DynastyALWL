@@ -236,8 +236,9 @@
   "severity": "MED",
   "cls": "CONFIRMED_DEFECT",
   "title": "Gather instructions that are wrong, placeholder or incomplete",
-  "evidence": "iron ore: rock outcrops need a bronze/iron/steel pick (boulders.json#ore.needs_material.iron; server_items.gd:5616-5622); the early route is bog iron with any spade (digging.json#bog_iron; server_items.gd:3405-3445); flint and limestone How-tos still say 'under verification' although both are sourced (drops.json#ground_scatter.bank.flint; boulders.json#flint, #ore.rocks); copper/tin need a pick held in hand; wool comes only from bighorn (carcass.json; wild sheep never spawns); logs are shoulder items, Q puts one down, crafts use logs within 3 m (server_items.gd:898-927, 15839-15925); Tanbark is the data name (gathered.json tannin_bark).",
+  "evidence": "iron ore: rock outcrops need a bronze/iron/steel pick (boulders.json#ore.needs_material.iron; server_items.gd:5616-5622); the early route is bog iron with any spade (digging.json#bog_iron; server_items.gd:3405-3445); flint and limestone How-tos still say 'under verification' although both are sourced (drops.json#ground_scatter.bank.flint; boulders.json#flint, #ore.rocks); copper/tin need a pick held in hand; wool comes only from bighorn (carcass.json; wild sheep never spawns); logs are shoulder items, Q puts one down, crafts use logs within 3 m (server_items.gd:898-927, 15839-15925); Tanbark is the data name (gathered.json tannin_bark); clay's How-to still carries the placeholder 'verify the specific terrain/material shown by the game' (loam, silt and alluvium give clay under the topsoil: digging.json).",
   "goals": [
+   "gather:clay",
    "gather:copper_ore",
    "gather:flint",
    "gather:iron_ore",
@@ -430,8 +431,8 @@
  "GA-10": {
   "severity": "HIGH",
   "cls": "CONFIRMED_DEFECT",
-  "title": "Wooden - Hammer step cannot be done as written: axing a species log gives LARGE blocks; the hammer needs small blocks",
-  "evidence": "server_items.gd:9223-9276 (_chop_loose_log: shoulder/species log -> 3 Large wooden blocks); recipes.json wooden_hammer needs the wooden_block group (Hardwood/Softwood block) (wood_species.json ingredient_groups.wooden_block); 'Small wooden blocks' (small_blocks_from_large) is the missing step, used by test_mission001_walkthrough.gd:482-484 (passed on David4 at dc2fa52). CONTROLS.md:72 says 4/12 blocks (stale; data 3/3).",
+  "title": "Wooden - Hammer and Chopping block steps depend on which tree was felled: the 8 key species give LARGE blocks (hammer needs small), other trees give the plain Log and only small blocks (chopping block needs large)",
+  "evidence": "server_items.gd:9223-9276 (_chop_loose_log: a shoulder log of the 8 key species oak, beech, birch, maple, walnut, Scots pine, spruce, tropical hardwood -> 3 Large wooden blocks; the plain Log (stack 5, not shoulder) -> 3 small softwood blocks); server_items.gd:6627-6633 (_log_number: a retired or missing species log falls back to the plain Log: alder, willow, rowan, balsam fir, acacia, mangrove, sweet chestnut, fruit trees); recipes.json chopping_block needs a Large wooden block and no recipe turns small blocks into large; recipes.json wooden_hammer needs the wooden_block group (Hardwood/Softwood block) (wood_species.json ingredient_groups.wooden_block); 'Small wooden blocks' (small_blocks_from_large) is the missing step, used by test_mission001_walkthrough.gd:482-484 (passed on David4 at dc2fa52). CONTROLS.md:72 says 4/12 blocks (stale; data 3/3).",
   "goals": [
    "activity:chop_log_blocks",
    "craft:chopping_block",
@@ -440,7 +441,7 @@
    "hammer"
   ],
   "status_effect": "NEEDS_CORRECTION",
-  "correction": "Correct main row 11's yield; move craft:wooden_block (and _soft) into the main route between rows 11 and 12.",
+  "correction": "Name a key-species tree in rows 9-11 and 16; correct row 11's yield; move craft:wooden_block (and _soft) into the main route between rows 11 and 12.",
   "test": "",
   "sources": "W-01"
  },
@@ -465,19 +466,16 @@
  "GA-12": {
   "severity": "MED",
   "cls": "CONFIRMED_DEFECT",
-  "title": "Logs are never explained: shoulder carry one at a time, Q to put down, recipes/blueprints use logs within 3 m",
-  "evidence": "items.json log_* carry shoulder, stack 1; server_items.gd:898-927, 15839-15925, 8164, 17005-17006; key_bindings.gd:30 (Q).",
+  "title": "Logs are never explained: species logs are shoulder-carried one at a time (the plain Log stacks to 5), Q puts one down, recipes and blueprints use logs within 3 m",
+  "evidence": "items.json log_<species> carry shoulder, stack 1; items.json log stack 5; server_items.gd:898-927, 15839-15925, 8164, 17005-17006; key_bindings.gd:30 (Q).",
   "goals": [
-   "activity:bonfire",
    "activity:chop_log_blocks",
-   "build:food_preparation_table",
-   "build:tanning_rack",
    "gather:log",
    "gather:log_oak",
    "gather:log_spruce"
   ],
   "status_effect": "NEEDS_CORRECTION",
-  "correction": "Add one sentence on shoulder logs and the 3 m rule to the first log row; reference it from later log rows.",
+  "correction": "Add one sentence on shoulder logs and the 3 m rule to the first log row and to the Journal's building basics (GA-33); later log-cost rows then need no change.",
   "test": "",
   "sources": "W-04, A-14"
  },
@@ -488,9 +486,7 @@
   "evidence": "Two real firewood paths: E-split at the chopping block (server_items.gd:9170-9207, 2/4 firewood per block, no _goal_made) and the block's F Craft recipe chopping_hard_firewood (1 hardwood log -> 12, recipes.json). Main row 19 teaches the E split but cites the recipe; only the queued craft calls _goal_made (server_items.gd:17414). Axe on a loose log (9223-9278) is also uncredited. Title 'Split your first firewood' differs from the item name 'Hard firewood'.",
   "goals": [
    "craft:firewood",
-   "craft:firewood_soft",
-   "craft:wooden_block",
-   "craft:wooden_block_soft"
+   "craft:firewood_soft"
   ],
   "status_effect": "NEEDS_CORRECTION",
   "correction": "Teach the recipe path (F at the block) or credit the hand split with a made/unit event; name the item 'Hard firewood'.",
@@ -558,10 +554,8 @@
   "title": "Roof panels: must rest on a wall top or panel edge; mouse wheel flips rise/fall; never explained",
   "evidence": "server_items.gd:3730; placement_rules.gd:306-338; held_item.gd:990-992; CONTROLS.md lacks the roof wheel.",
   "goals": [
-   "build:thatch_floor",
    "build:thatch_roof",
-   "build:thatch_roof_65",
-   "build:thatch_wall"
+   "build:thatch_roof_65"
   ],
   "status_effect": "NEEDS_CORRECTION",
   "correction": "Add the snapping rule and the wheel control.",
@@ -595,7 +589,7 @@
  "GA-20": {
   "severity": "HIGH",
   "cls": "CONFIRMED_DEFECT",
-  "title": "Burning stations: Smithy, Blast furnace and Master smithy craft only while lit; fuel in the pack is never mentioned",
+  "title": "Burning stations: Smithy, Blast furnace and Master smithy craft only while lit; a cold one needs Charcoal or Coal in the pack to light it, which the guide never mentions",
   "evidence": "structures.json blacksmithy/large_forge/master_forge craft_needs_lit, fuel 'fuel', fuel_s 1800; server_items.gd:13066-13092, 13209-13220; test_stations.gd:131, 162-163 (passed on David4 at dc2fa52).",
   "goals": [
    "build:blacksmithy",
@@ -679,20 +673,20 @@
    "craft:steel_warhammer"
   ],
   "status_effect": "NEEDS_CORRECTION",
-  "correction": "Add 'keep Charcoal or Coal in your pack; crafting here lights it (1 fuel per 30 min)' to the station rows and the Journal station detail.",
+  "correction": "Add 'the station must be lit, or keep Charcoal or Coal in your pack and crafting here lights it (1 fuel per 30 min)' to the station rows and the Journal station detail.",
   "test": "",
   "sources": "W-L02"
  },
  "GA-21": {
   "severity": "HIGH",
   "cls": "CONFIRMED_DEFECT",
-  "title": "Sawmill placement rules (raised foundation over a fast deep river) are not taught, and its foundations come after it",
-  "evidence": "structures.json saw_mill needs_base_lift_m 0.5, needs_running_water; server_items.gd:3786-3792, 3835-3875 (refusals); data/water_flow.json.",
+  "title": "Sawmill placement rules (a foundation raised at least 0.5 m beside fast deep water) are not taught",
+  "evidence": "structures.json saw_mill needs_base_lift_m 0.5, needs_running_water; server_items.gd:3786-3792, 3835-3875 (refusals; _station_site accepts any foundation:true piece lifted 0.5 m, so the Crude - Foundation of main row 28 qualifies: structures.json thatch_floor max_rise_m 0.6); data/water_flow.json.",
   "goals": [
    "build:saw_mill"
   ],
   "status_effect": "NEEDS_CORRECTION",
-  "correction": "Teach a raised river-bank foundation first; say the Sawmill is optional (hand saw yields are equal).",
+  "correction": "Tell the player to raise a Crude - Foundation 0.5 m at a fast river bank first; say the Sawmill is optional (hand saw yields are equal).",
   "test": "Place a Sawmill in a typical world; record whether a qualifying river is usually reachable.",
   "sources": "W-L03"
  },
@@ -713,9 +707,9 @@
  },
  "GA-23": {
   "severity": "MED",
-  "cls": "CONFIRMED_DEFECT",
-  "title": "Bronze comes after iron in the main route, contrary to the approved catalog; the Stone - Forge adds nothing at that point",
-  "evidence": "DYNASTY_MASTER_ITEMS.md s2.7 item 4 [C] (bronze is a real rung before iron); structures.json blacksmithy also forge 1 (the Smithy already serves bronze recipes); test_stations.gd:103-122.",
+  "cls": "OWNER_DECISION",
+  "title": "Bronze comes after iron in the main route; the approved catalog supports both orders, and the Stone - Forge adds nothing at that point",
+  "evidence": "DYNASTY_MASTER_ITEMS.md s2.7 item 1 [D1] (Dave: a wilderness route to the Iron Hand Saw with no bronze step) and item 4 [C] (bronze is a real rung before iron, keeping that wilderness route); the draft follows item 1; structures.json blacksmithy also forge 1 (the Smithy already serves bronze recipes); test_stations.gd:103-122.",
   "goals": [
    "build:stone_forge",
    "craft:bronze_hammer",
@@ -727,15 +721,15 @@
    "gather:copper_ore",
    "gather:tin_ore"
   ],
-  "status_effect": "NEEDS_CORRECTION",
-  "correction": "Move main rows 83-91 directly after the Smelter (row 58), as the approved catalog orders it.",
+  "status_effect": "NONE",
+  "correction": "Creator decision (Q11): keep iron first (item 1) and present bronze as an optional side rung, or move main rows 83-91 directly after the Smelter (item 4).",
   "test": "",
-  "sources": "W-L05"
+  "sources": "W-L05, reviewer round 1"
  },
  "GA-24": {
   "severity": "HIGH",
   "cls": "CONFIRMED_DEFECT",
-  "title": "Doors: listed before their frames, How-to never says 'aim at an empty doorway', and the main route asks for five single doors with one single doorway",
+  "title": "Doors: listed before their frames, How-to never says 'aim at an empty doorway', and each main-route single door needs its own empty single doorway",
   "evidence": "placement_rules.gd:32, 587-627 (doorway_fit: a door needs an empty doorway of the same opening shape, any tier, one per frame); server_items.gd:3733-3740; test_doors.gd (passed on David4 at dc2fa52). Crude arched/double/double-arched doors sit at draft level 2, their doorways at level 4.",
   "goals": [
    "build:crude_arched_door",
@@ -1014,8 +1008,8 @@
  "GA-34": {
   "severity": "LOW",
   "cls": "DESIGN_RECOMMENDATION",
-  "title": "Fire row text: the placed kit already holds sticks; 'add sticks with F' is unnecessary; the kit description still says 'light it with fibre'",
-  "evidence": "server_items.gd:3822-3828; CONTROLS.md:73; items.json campfire_kit description.",
+  "title": "Fire row text: the placed kit already holds sticks; 'add sticks with F' is unnecessary; the kit description still says 'light it with fibre'; rain is never mentioned",
+  "evidence": "server_items.gd:3822-3828; CONTROLS.md:73; items.json campfire_kit description; server_items.gd:7589-7611 (an uncovered fire in rain goes out; drizzle makes lighting a chance roll).",
   "goals": [
    "craft:campfire_kit",
    "fire"
@@ -1035,10 +1029,8 @@
    "bed",
    "berries",
    "candle",
-   "drink",
    "dry_berries",
    "fell",
-   "fibre",
    "fire",
    "fish",
    "fur_for_winter",
@@ -1094,7 +1086,7 @@
    "twine"
   ],
   "status_effect": "NEEDS_CORRECTION",
-  "correction": "Recommend twine 4 copper, fell 3 copper, drop rep (Q3).",
+  "correction": "Recommend the draft's own coin values (twine 4, fell 6, story 3 copper) replace the item and reputation rewards (Q3).",
   "test": "",
   "sources": "R-03, E-09"
  },
@@ -2052,8 +2044,8 @@
  "GA-70": {
   "severity": "HIGH",
   "cls": "OWNER_DECISION",
-  "title": "Total payout 15,670 copper is far above ordinary earning (14.6x the picking wage over the modeled work; 1.76x everything Hob could pay)",
-  "evidence": "tools/economy.py -> work/ws_economy.json totals; picking wage 0.2 copper/min (docs/ECONOMY_FIRST_DAY.md, creator rule as recorded by Sal); Hob purse cap 300 + 100/real hour (data/npcs/shops.json; server_trade.gd:397-414); goal coin bypasses the purse (server_items.gd:15771-15772).",
+  "title": "Total payout 15,670 copper is far above ordinary earning (ASSUMED model: 14.6x the picking wage over the modeled work; 1.70x the net coin Hob could pay one player)",
+  "evidence": "tools/economy.py -> work/ws_economy.json totals. Picking wage: Dave's rule '4 hours of full-time picking pays about 40 to 60 copper' (0.17-0.25/min; docs/ECONOMY_FIRST_DAY.md:3-6), 0.2/min is the midpoint used by Sal (line 38). Hob: purse 300 then +100 per real hour (data/npcs/shops.json; server_trade.gd:397-414), so over the modeled 89 h at most 300 + 8,915 = 9,215 net (buying from Hob refills the purse: server_trade.gd:335, 517; the purse is shared by all players, so this is a single-player ceiling). Goal coin bypasses the purse (server_items.gd:15771-15772). Both ratios rest on the ASSUMED effort model (a lower bound): if real play takes 1.7x the modeled time or more, Hob's ceiling exceeds the draft total, though the picking-wage ratio stays above 8x until play takes 1.8x longer.",
   "goals": [],
   "status_effect": "NONE",
   "correction": "Recommended ~3,056 copper (main route 1,304) with class bands and a family-lead model (Q2).",
@@ -2126,6 +2118,122 @@
   "correction": "For the catalog owner; no change proposed here (catalog freeze).",
   "test": "",
   "sources": "E-08, E-10, E-12, C-08, C-09"
+ },
+ "GA-35": {
+  "severity": "LOW",
+  "cls": "CONFIRMED_DEFECT",
+  "title": "A tree too short for one log gives no log at all",
+  "evidence": "server_items.gd:6683, 6748 (split_trunk count <= 0 -> _split_small: firewood, kindling and sticks only).",
+  "goals": [
+   "fell",
+   "gather:log"
+  ],
+  "status_effect": "NEEDS_CORRECTION",
+  "correction": "Say 'fell a full-grown tree'.",
+  "test": "",
+  "sources": "reviewer round 1"
+ },
+ "GA-36": {
+  "severity": "MED",
+  "cls": "CONFIRMED_DEFECT",
+  "title": "Drink and eat goals only count when the player is thirsty or hungry, and a new character starts full",
+  "evidence": "_new_vitals sets fed and wet to their caps (server_items.gd:10218-10219); _drink_water refuses at the cap ('You have had enough water.', 18408-18412) and refuses salt water (18386-18387); a held container with room fills instead (18396-18406); ACT_DRINK / ACT_EAT emit the goal only if the vital rose (1098-1109); test_goals.gd:85 lowers wet first.",
+  "goals": [
+   "berries",
+   "drink"
+  ],
+  "status_effect": "NEEDS_CORRECTION",
+  "correction": "Say 'when you are thirsty, drink fresh water (not the sea) with no empty container in hand' and 'once you are hungry'.",
+  "test": "First minutes of a new character at a river.",
+  "sources": "reviewer round 1"
+ },
+ "GA-37": {
+  "severity": "LOW",
+  "cls": "DESIGN_RECOMMENDATION",
+  "title": "Log-cost builds rely on the 3 m log rule taught once (GA-12)",
+  "evidence": "server_items.gd:8164, 15895-15928 (_pull_nearby_logs serves every blueprint and recipe that costs logs).",
+  "goals": [
+   "build:bellows",
+   "build:blacksmithy",
+   "build:board_rack",
+   "build:firewood_rack",
+   "build:food_preparation_table",
+   "build:grindstone",
+   "build:leatherworking_table",
+   "build:log_arched_doorway",
+   "build:log_doorway",
+   "build:log_double_arched_doorway",
+   "build:log_double_doorway",
+   "build:log_fence",
+   "build:log_floor",
+   "build:log_foundation",
+   "build:log_gate",
+   "build:log_palisade",
+   "build:log_palisade_gate",
+   "build:log_pillar",
+   "build:log_rack",
+   "build:log_roof",
+   "build:log_roof_corner",
+   "build:log_seat",
+   "build:log_stairs",
+   "build:log_wall",
+   "build:log_window",
+   "build:loom",
+   "build:master_forge",
+   "build:oil_press",
+   "build:quenching_trough",
+   "build:stonecutters_bench",
+   "build:tailors_table",
+   "build:tanning_rack",
+   "build:timber_prop",
+   "build:wooden_torch_post"
+  ],
+  "status_effect": "NONE",
+  "correction": "No per-row change once GA-12 is fixed; the Journal can link the rule.",
+  "test": "",
+  "sources": "reviewer round 1"
+ },
+ "GA-38": {
+  "severity": "MED",
+  "cls": "DESIGN_RECOMMENDATION",
+  "title": "One carcass dressing would pay several goals at once (legacy knife plus hide, bone, animal fat once got: counters exist); site-finish credit goes to the finisher, not the placer",
+  "evidence": "carcass_worked (server_items.gd:2335) completes the legacy knife goal; the same dressing yields hide, bone, fat and sinew (carcass.json); site finish 8452-8474, 8954.",
+  "goals": [
+   "gather:animal_fat",
+   "gather:bone",
+   "gather:hide",
+   "knife"
+  ],
+  "status_effect": "NONE",
+  "correction": "Accept as a teaching burst with small gather rewards, or merge into one 'dress your first carcass' goal (part of Q2).",
+  "test": "",
+  "sources": "reviewer round 1"
+ },
+ "GA-39": {
+  "severity": "LOW",
+  "cls": "UNVERIFIED_ASSUMPTION",
+  "title": "Wool goods depend on bighorn only (alpine and bare rock); whether a typical start can reach them is untested",
+  "evidence": "carcass.json wool from bighorn; data/animals/spawn_plan.json wild_sheep 'needs: spawn + model'.",
+  "goals": [
+   "build:ornate_chair",
+   "craft:travellers_rucksack",
+   "craft:wool_cap",
+   "craft:wool_cloak",
+   "craft:wool_cloth",
+   "craft:wool_coat",
+   "craft:wool_dress",
+   "craft:wool_mittens",
+   "craft:wool_robe",
+   "craft:wool_scarf",
+   "craft:wool_socks",
+   "craft:wool_trousers",
+   "craft:wool_tunic",
+   "gather:wool"
+  ],
+  "status_effect": "NEEDS_TEST",
+  "correction": "Keep; confirm a wool route in play or mark the wool family as regional.",
+  "test": "Find and hunt a bighorn from a typical start.",
+  "sources": "A-16, reviewer round 1"
  },
  "GA-80": {
   "severity": "HIGH",
@@ -2680,6 +2788,10 @@
    "recommended_correction": "ADD (creator approval required; catalog freeze)"
   }
  ],
+ "_runtime_overrides": {
+  "craft:wooden_block": "EXISTING",
+  "craft:wooden_block_soft": "EXISTING"
+ },
  "_evidence_overrides": {
   "drink": "AUTOMATED_TESTED",
   "fibre": "AUTOMATED_TESTED",

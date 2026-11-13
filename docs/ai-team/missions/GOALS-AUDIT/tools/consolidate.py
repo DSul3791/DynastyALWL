@@ -76,6 +76,8 @@ for k in blocked_by: blocked_by[k] = [x for x in blocked_by[k] if x not in locke
 CROPS = {"wheat", "barley", "oats", "rye", "flax"}
 h, b, _ = fixpoint(CROPS, force_ok=ALLMISS - CROPS)
 blocked_by["crops"] = sorted(g["goal_id"] for g in goals if goal_doable(g, h_fix, b_fix) and not goal_doable(g, h, b) and g["goal_id"] not in locked_bp)
+h, b, _ = fixpoint({"wool"}, force_ok=ALLMISS)
+WOOL_GOALS = sorted(g["goal_id"] for g in goals if goal_doable(g, h_fix, b_fix) and not goal_doable(g, h, b) and g["goal_id"] not in locked_bp)
 still_blocked_when_fixed = sorted(g["goal_id"] for g in goals if not goal_doable(g, h_fix, b_fix) and g["goal_id"] not in locked_bp)
 
 # untaught inputs (pass 2) excluding the items handled by source findings
@@ -110,6 +112,7 @@ doorways = sorted(g["goal_id"] for g in goals if g["kind"] == "build" and "doorw
 group_key = sorted(g["goal_id"] for g in goals if "GROUP_SHOWN_AS_KEY_ITEM" in g["static_flags"])
 cat_c02 = sorted(k for k, v in cat["goals"].items() if any("C-02" in n for n in (v.get("notes") or [])) or k in doors or k in doorways or k == "build:thatch_roof_65")
 legacy = [g["goal_id"] for g in goals if g["kind"] == "existing"]
+LEGACY_WITH_AFTER = [x["id"] for f in ("starter_goals", "camp_goals") for x in D("items/%s.json" % f)["goals"] if x.get("after")]
 gathers = [g["goal_id"] for g in goals if g["kind"] == "gather"]
 non_legacy = [g["goal_id"] for g in goals if g["kind"] != "existing"]
 
@@ -135,8 +138,8 @@ add("GA-04", "HIGH", "CONFIRMED_DEFECT", "The `water` ingredient is obtainable o
     blocked_by["water"], "BLOCKED",
     "Creator/engineering decision: let a filled container supply the `water` ingredient (recommended) or remove water from these recipes; until then mark blocked for non-desert starts.", "Draw water at a river and craft Leather / Concrete.", "A-03")
 add("GA-05", "MED", "CONFIRMED_DEFECT", "Gather instructions that are wrong, placeholder or incomplete",
-    "iron ore: rock outcrops need a bronze/iron/steel pick (boulders.json#ore.needs_material.iron; server_items.gd:5616-5622); the early route is bog iron with any spade (digging.json#bog_iron; server_items.gd:3405-3445); flint and limestone How-tos still say 'under verification' although both are sourced (drops.json#ground_scatter.bank.flint; boulders.json#flint, #ore.rocks); copper/tin need a pick held in hand; wool comes only from bighorn (carcass.json; wild sheep never spawns); logs are shoulder items, Q puts one down, crafts use logs within 3 m (server_items.gd:898-927, 15839-15925); Tanbark is the data name (gathered.json tannin_bark).",
-    ids("gather:iron_ore", "gather:flint", "gather:limestone", "gather:copper_ore", "gather:tin_ore", "gather:wool", "gather:log", "gather:log_oak", "gather:log_spruce", "gather:tannin_bark", "gather:stone"),
+    "iron ore: rock outcrops need a bronze/iron/steel pick (boulders.json#ore.needs_material.iron; server_items.gd:5616-5622); the early route is bog iron with any spade (digging.json#bog_iron; server_items.gd:3405-3445); flint and limestone How-tos still say 'under verification' although both are sourced (drops.json#ground_scatter.bank.flint; boulders.json#flint, #ore.rocks); copper/tin need a pick held in hand; wool comes only from bighorn (carcass.json; wild sheep never spawns); logs are shoulder items, Q puts one down, crafts use logs within 3 m (server_items.gd:898-927, 15839-15925); Tanbark is the data name (gathered.json tannin_bark); clay's How-to still carries the placeholder 'verify the specific terrain/material shown by the game' (loam, silt and alluvium give clay under the topsoil: digging.json).",
+    ids("gather:iron_ore", "gather:flint", "gather:limestone", "gather:copper_ore", "gather:tin_ore", "gather:wool", "gather:log", "gather:log_oak", "gather:log_spruce", "gather:tannin_bark", "gather:stone", "gather:clay"),
     "NEEDS_CORRECTION", "Rewrite each How-to from the acquisition evidence (ledger column acquisition_source_evidence).", "", "A-06..A-10, A-14..A-16, W-L01, W-L14, C-05")
 add("GA-06", "HIGH", "CONFIRMED_DEFECT", "Ingredients whose source no goal teaches (the guide silently assumes them)",
     "pass2_deps.json 'untaught' (no goal teaches acquiring the input); sources per ws_acquisition.json, e.g. feather/raw_meat/sinew/fur (carcass.json, needs a weapon and knife), soil/worm/gravel (digging.json), honeyspindle_nectar (summer only, knife on hotbar by the accidental 'tar' suffix rule, drops.json#tool_rules), egg/shellfish/crab/seaweed (shore nodes, blocked while a water container is carried: server_items.gd:13969-13977), wild herbs, fruit, nuts, mushrooms (season and biome locked).",
@@ -148,21 +151,21 @@ add("GA-07", "MED", "CONFIRMED_DEFECT", "Side-branch goals listed before the goa
     "Recompute section order from the position of each prerequisite's teaching goal; move hunting into the main route (GA-11).", "", "W-18, W-L side branches")
 
 # ---------------- B. main-route walkthrough
-add("GA-10", "HIGH", "CONFIRMED_DEFECT", "Wooden - Hammer step cannot be done as written: axing a species log gives LARGE blocks; the hammer needs small blocks",
-    "server_items.gd:9223-9276 (_chop_loose_log: shoulder/species log -> 3 Large wooden blocks); recipes.json wooden_hammer needs the wooden_block group (Hardwood/Softwood block) (wood_species.json ingredient_groups.wooden_block); 'Small wooden blocks' (small_blocks_from_large) is the missing step, used by test_mission001_walkthrough.gd:482-484 (passed on David4 at dc2fa52). CONTROLS.md:72 says 4/12 blocks (stale; data 3/3).",
+add("GA-10", "HIGH", "CONFIRMED_DEFECT", "Wooden - Hammer and Chopping block steps depend on which tree was felled: the 8 key species give LARGE blocks (hammer needs small), other trees give the plain Log and only small blocks (chopping block needs large)",
+    "server_items.gd:9223-9276 (_chop_loose_log: a shoulder log of the 8 key species oak, beech, birch, maple, walnut, Scots pine, spruce, tropical hardwood -> 3 Large wooden blocks; the plain Log (stack 5, not shoulder) -> 3 small softwood blocks); server_items.gd:6627-6633 (_log_number: a retired or missing species log falls back to the plain Log: alder, willow, rowan, balsam fir, acacia, mangrove, sweet chestnut, fruit trees); recipes.json chopping_block needs a Large wooden block and no recipe turns small blocks into large; recipes.json wooden_hammer needs the wooden_block group (Hardwood/Softwood block) (wood_species.json ingredient_groups.wooden_block); 'Small wooden blocks' (small_blocks_from_large) is the missing step, used by test_mission001_walkthrough.gd:482-484 (passed on David4 at dc2fa52). CONTROLS.md:72 says 4/12 blocks (stale; data 3/3).",
     ids("activity:chop_log_blocks", "hammer", "craft:chopping_block", "craft:wooden_block", "craft:wooden_block_soft"), "NEEDS_CORRECTION",
-    "Correct main row 11's yield; move craft:wooden_block (and _soft) into the main route between rows 11 and 12.", "", "W-01")
+    "Name a key-species tree in rows 9-11 and 16; correct row 11's yield; move craft:wooden_block (and _soft) into the main route between rows 11 and 12.", "", "W-01")
 add("GA-11", "HIGH", "CONFIRMED_DEFECT", "'Obtain hide' (main 45) has no hunting step before it: no main-route item can strike an animal",
     "server_items.gd:2243-2259 (_strike accepts kind weapon with damage only); stone axe/pickaxe/knife are kind tool (items.json); dressing needs a knife in hand (server_items.gd:2288-2296). Spear, snare and the legacy 'knife' kill goal are all in the additional sections.",
     ids("gather:hide", "gather:bone", "gather:animal_fat", "spear", "knife", "craft:wooden_spear"), "NEEDS_CORRECTION",
     "Move craft:wooden_spear (or craft:snare) and the legacy knife kill-and-dress goal into the main route before row 45.", "Hunt and dress a deer/rabbit with the listed tools.", "W-02")
-add("GA-12", "MED", "CONFIRMED_DEFECT", "Logs are never explained: shoulder carry one at a time, Q to put down, recipes/blueprints use logs within 3 m",
-    "items.json log_* carry shoulder, stack 1; server_items.gd:898-927, 15839-15925, 8164, 17005-17006; key_bindings.gd:30 (Q).",
-    ids("gather:log", "activity:chop_log_blocks", "gather:log_oak", "gather:log_spruce", "activity:bonfire", "build:food_preparation_table", "build:tanning_rack"), "NEEDS_CORRECTION",
-    "Add one sentence on shoulder logs and the 3 m rule to the first log row; reference it from later log rows.", "", "W-04, A-14")
+add("GA-12", "MED", "CONFIRMED_DEFECT", "Logs are never explained: species logs are shoulder-carried one at a time (the plain Log stacks to 5), Q puts one down, recipes and blueprints use logs within 3 m",
+    "items.json log_<species> carry shoulder, stack 1; items.json log stack 5; server_items.gd:898-927, 15839-15925, 8164, 17005-17006; key_bindings.gd:30 (Q).",
+    ids("gather:log", "activity:chop_log_blocks", "gather:log_oak", "gather:log_spruce"), "NEEDS_CORRECTION",
+    "Add one sentence on shoulder logs and the 3 m rule to the first log row and to the Journal's building basics (GA-33); later log-cost rows then need no change.", "", "W-04, A-14")
 add("GA-13", "HIGH", "CONFIRMED_DEFECT", "Firewood and small blocks: the taught action never completes the goal",
     "Two real firewood paths: E-split at the chopping block (server_items.gd:9170-9207, 2/4 firewood per block, no _goal_made) and the block's F Craft recipe chopping_hard_firewood (1 hardwood log -> 12, recipes.json). Main row 19 teaches the E split but cites the recipe; only the queued craft calls _goal_made (server_items.gd:17414). Axe on a loose log (9223-9278) is also uncredited. Title 'Split your first firewood' differs from the item name 'Hard firewood'.",
-    ids("craft:firewood", "craft:firewood_soft", "craft:wooden_block", "craft:wooden_block_soft"), "NEEDS_CORRECTION",
+    ids("craft:firewood", "craft:firewood_soft"), "NEEDS_CORRECTION",
     "Teach the recipe path (F at the block) or credit the hand split with a made/unit event; name the item 'Hard firewood'.", "Split firewood both ways and confirm the goal completes.", "W-05, R-05, C-05")
 add("GA-14", "MED", "CONFIRMED_DEFECT", "Placing kits (campfire, chopping block, Thatch - Bed) is never explained",
     "kind placeable goes to the pack, not the hotbar; I, select, Use (E) to hold, left-click (CONTROLS.md:59, 67; hints.json place_fire). 2.5 m gap between structures, 2 m between fires (server_items.gd:8418; structures.json gap_m).",
@@ -178,27 +181,27 @@ add("GA-17", "MED", "UNVERIFIED_ASSUMPTION", "Thatch - Bed 'under cover' may be 
     ids("bed"), "NEEDS_TEST", "Say 'inside your lean-to'; confirm in play.", "Place a Thatch - Bed beside Crude walls and inside a lean-to.", "W-09")
 add("GA-18", "MED", "CONFIRMED_DEFECT", "Roof panels: must rest on a wall top or panel edge; mouse wheel flips rise/fall; never explained",
     "server_items.gd:3730; placement_rules.gd:306-338; held_item.gd:990-992; CONTROLS.md lacks the roof wheel.",
-    ids("build:thatch_roof", "build:thatch_roof_65", "build:thatch_floor", "build:thatch_wall"), "NEEDS_CORRECTION", "Add the snapping rule and the wheel control.", "", "W-10")
+    ids("build:thatch_roof", "build:thatch_roof_65"), "NEEDS_CORRECTION", "Add the snapping rule and the wheel control.", "", "W-10")
 add("GA-19", "MED", "CONFIRMED_DEFECT", "Quantities the player needs are not stated (fibre, thatch, bricks, iron, pine tar, fasteners, concrete)",
     "Main rows 5-43 need 55 twine (165 fibre) and 145 thatch and 34 bricks (blueprints.json costs); row 4 asks for 12 fibre. Pine tar: Water wheel needs 4 Tar = 20 pine tar, How-to says 5 (recipes.json tar, water_wheel). Main route needs ~108 iron ingots, ~22 steel, ~690 fuel (ws_walk_late.md W-L12).",
     ids("fibre", "gather:thatch", "craft:brick", "build:clay_hearth", "build:oven", "craft:iron_ingot", "gather:pine_tar", "craft:tar", "craft:nails", "craft:iron_band", "craft:concrete", "craft:clay_roof_tile"),
     "NEEDS_CORRECTION", "State the needed count on each producing row.", "", "W-11, W-L12")
-add("GA-20", "HIGH", "CONFIRMED_DEFECT", "Burning stations: Smithy, Blast furnace and Master smithy craft only while lit; fuel in the pack is never mentioned",
+add("GA-20", "HIGH", "CONFIRMED_DEFECT", "Burning stations: Smithy, Blast furnace and Master smithy craft only while lit; a cold one needs Charcoal or Coal in the pack to light it, which the guide never mentions",
     "structures.json blacksmithy/large_forge/master_forge craft_needs_lit, fuel 'fuel', fuel_s 1800; server_items.gd:13066-13092, 13209-13220; test_stations.gd:131, 162-163 (passed on David4 at dc2fa52).",
     ids("build:blacksmithy", "build:large_forge", "build:master_forge") + by_station("brick_forge", "blast_furnace", "master_smithy"), "NEEDS_CORRECTION",
-    "Add 'keep Charcoal or Coal in your pack; crafting here lights it (1 fuel per 30 min)' to the station rows and the Journal station detail.", "", "W-L02")
-add("GA-21", "HIGH", "CONFIRMED_DEFECT", "Sawmill placement rules (raised foundation over a fast deep river) are not taught, and its foundations come after it",
-    "structures.json saw_mill needs_base_lift_m 0.5, needs_running_water; server_items.gd:3786-3792, 3835-3875 (refusals); data/water_flow.json.",
-    ids("build:saw_mill"), "NEEDS_CORRECTION", "Teach a raised river-bank foundation first; say the Sawmill is optional (hand saw yields are equal).",
+    "Add 'the station must be lit, or keep Charcoal or Coal in your pack and crafting here lights it (1 fuel per 30 min)' to the station rows and the Journal station detail.", "", "W-L02")
+add("GA-21", "HIGH", "CONFIRMED_DEFECT", "Sawmill placement rules (a foundation raised at least 0.5 m beside fast deep water) are not taught",
+    "structures.json saw_mill needs_base_lift_m 0.5, needs_running_water; server_items.gd:3786-3792, 3835-3875 (refusals; _station_site accepts any foundation:true piece lifted 0.5 m, so the Crude - Foundation of main row 28 qualifies: structures.json thatch_floor max_rise_m 0.6); data/water_flow.json.",
+    ids("build:saw_mill"), "NEEDS_CORRECTION", "Tell the player to raise a Crude - Foundation 0.5 m at a fast river bank first; say the Sawmill is optional (hand saw yields are equal).",
     "Place a Sawmill in a typical world; record whether a qualifying river is usually reachable.", "W-L03")
 add("GA-22", "MED", "DESIGN_RECOMMENDATION", "Kiln charcoal (the catalog's main fuel route) has no goal and the Kiln comes after the fuel-hungry metal steps",
     "structures.json kiln use kiln, per_log 100, batch_logs 6 (server_items.gd:9163-9164, 9400, 9421-9449, which also does not credit goals); master s2.6; the main route needs ~690 fuel (W-L04).",
     ids("craft:charcoal", "build:kiln", "craft:mortar"), "NEEDS_CORRECTION", "Move mortar and the Kiln before the Smelter; ADD 'Burn charcoal in the Kiln'.", "", "W-L04, R-05, C add #18")
-add("GA-23", "MED", "CONFIRMED_DEFECT", "Bronze comes after iron in the main route, contrary to the approved catalog; the Stone - Forge adds nothing at that point",
-    "DYNASTY_MASTER_ITEMS.md s2.7 item 4 [C] (bronze is a real rung before iron); structures.json blacksmithy also forge 1 (the Smithy already serves bronze recipes); test_stations.gd:103-122.",
-    ids("gather:copper_ore", "gather:tin_ore", "craft:copper_ingot", "craft:tin_ingot", "craft:bronze_ingot", "build:stone_forge", "craft:bronze_hammer", "craft:bronze_pickaxe", "craft:bronze_sword"), "NEEDS_CORRECTION",
-    "Move main rows 83-91 directly after the Smelter (row 58), as the approved catalog orders it.", "", "W-L05")
-add("GA-24", "HIGH", "CONFIRMED_DEFECT", "Doors: listed before their frames, How-to never says 'aim at an empty doorway', and the main route asks for five single doors with one single doorway",
+add("GA-23", "MED", "OWNER_DECISION", "Bronze comes after iron in the main route; the approved catalog supports both orders, and the Stone - Forge adds nothing at that point",
+    "DYNASTY_MASTER_ITEMS.md s2.7 item 1 [D1] (Dave: a wilderness route to the Iron Hand Saw with no bronze step) and item 4 [C] (bronze is a real rung before iron, keeping that wilderness route); the draft follows item 1; structures.json blacksmithy also forge 1 (the Smithy already serves bronze recipes); test_stations.gd:103-122.",
+    ids("gather:copper_ore", "gather:tin_ore", "craft:copper_ingot", "craft:tin_ingot", "craft:bronze_ingot", "build:stone_forge", "craft:bronze_hammer", "craft:bronze_pickaxe", "craft:bronze_sword"), "NONE",
+    "Creator decision (Q11): keep iron first (item 1) and present bronze as an optional side rung, or move main rows 83-91 directly after the Smelter (item 4).", "", "W-L05, reviewer round 1")
+add("GA-24", "HIGH", "CONFIRMED_DEFECT", "Doors: listed before their frames, How-to never says 'aim at an empty doorway', and each main-route single door needs its own empty single doorway",
     "placement_rules.gd:32, 587-627 (doorway_fit: a door needs an empty doorway of the same opening shape, any tier, one per frame); server_items.gd:3733-3740; test_doors.gd (passed on David4 at dc2fa52). Crude arched/double/double-arched doors sit at draft level 2, their doorways at level 4.",
     doors + ids("build:thatch_doorway"), "NEEDS_CORRECTION",
     "Every door How-to: 'aim at the empty opening of a matching doorway (any tier); the door snaps in'; order each door after a frame of its shape; say a doorway is an empty frame.", "", "W-03, W-L06, C-02")
@@ -231,20 +234,20 @@ add("GA-32", "LOW", "DESIGN_RECOMMENDATION", "Main-route rows without a purpose 
     "Move each next to its first use or state its purpose.", "", "W-13, W-L18")
 add("GA-33", "LOW", "DESIGN_RECOMMENDATION", "Generic station rules (2.5 m spacing, hotbar tools, oven near the hearth) should appear once in the guide",
     "structures.json gap_m 2.5; server_items.gd:8418, 5979-5983, 8155-8156.", ids("build:oven", "workbench", "axe"), "NONE", "Add a short 'building basics' Journal entry.", "", "W-15, W-16")
-add("GA-34", "LOW", "DESIGN_RECOMMENDATION", "Fire row text: the placed kit already holds sticks; 'add sticks with F' is unnecessary; the kit description still says 'light it with fibre'",
-    "server_items.gd:3822-3828; CONTROLS.md:73; items.json campfire_kit description.", ids("fire", "craft:campfire_kit"), "NONE", "Simplify to 'Press E on the laid fire'.", "", "W-12, R-13")
+add("GA-34", "LOW", "DESIGN_RECOMMENDATION", "Fire row text: the placed kit already holds sticks; 'add sticks with F' is unnecessary; the kit description still says 'light it with fibre'; rain is never mentioned",
+    "server_items.gd:3822-3828; CONTROLS.md:73; items.json campfire_kit description; server_items.gd:7589-7611 (an uncovered fire in rain goes out; drizzle makes lighting a chance roll).", ids("fire", "craft:campfire_kit"), "NONE", "Simplify to 'Press E on the laid fire'.", "", "W-12, R-13")
 
 # ---------------- C. runtime, persistence, migration
 add("GA-40", "HIGH", "CONFIRMED_DEFECT", "`after` prerequisites gate completion, contrary to 'goals are guidance, not locks'",
     "server_items.gd:15740-15747 (_goal_open) used at 15763; legacy chain fibre -> twine -> axe -> fell -> ...; counters keep counting so event/made goals pay late, possession goals can be lost; test_goals.gd 'a goal done early waits for its after' (passed on David4).",
-    legacy, "NONE", "Drop `after` from the completion test; keep it only for display order and Journal prerequisite links.", "Out-of-order: build a lean-to before gathering 12 fibre; confirm immediate credit.", "R-01, U-13")
+    LEGACY_WITH_AFTER, "NONE", "Drop `after` from the completion test; keep it only for display order and Journal prerequisite links.", "Out-of-order: build a lean-to before gathering 12 fibre; confirm immediate credit.", "R-01, U-13")
 add("GA-41", "HIGH", "CONFIRMED_DEFECT", "Possession checks lose credit and accept bought/admin/chest items",
     "server_items.gd:15715-15734 (have_item, have_item_any, or_have); starter_goals.json fibre have 12, hammer/hoe have_item_any, winter_store hold 5, fish fallback, axe or_have; Hob sells plant fibre, stone axe, twine, torch (data/npcs/shops.json).",
     ids("fibre", "hammer", "hoe", "winter_store", "fish", "axe"), "NEEDS_CORRECTION",
     "Use history counters (made:, got:) instead of current possession; winter_store's 'hold 5' is a creator call.", "Make twine as fibre arrives; confirm the fibre goal still completes.", "R-02, C-11")
 add("GA-42", "HIGH", "OWNER_DECISION", "Legacy item rewards conflict with money-only rewards (twine pays 4 sticks, fell pays 3 kindling, story's +1 reputation is ignored)",
     "starter_goals.json twine/fell reward.item; camp_goals.json story reward.rep (ignored at server_items.gd:15766-15775); test_goals.gd asserts the sticks and kindling (passed on David4). Dave's standing ruling: coin rewards stay as they are until he says otherwise. Item rewards save to inventories.json before characters.json (server_items.gd:1490, 1545): a crash between them can pay an item reward twice.",
-    ids("twine", "fell", "story"), "NEEDS_CORRECTION", "Recommend twine 4 copper, fell 3 copper, drop rep (Q3).", "", "R-03, E-09")
+    ids("twine", "fell", "story"), "NEEDS_CORRECTION", "Recommend the draft's own coin values (twine 4, fell 6, story 3 copper) replace the item and reputation rewards (Q3).", "", "R-03, E-09")
 add("GA-43", "MED", "CONFIRMED_DEFECT", "Some item-making paths never credit craft goals (kiln charcoal, fire cooking, pick yields, legacy instant craft)",
     "_goal_made is called only from _craft_tick (server_items.gd:17414); uncredited: 9170-9203, 9223-9278, 9421-9449, 9834-9864, 7650-7668, 1218 (ACT_CRAFT).",
     ids("craft:charcoal", "craft:roast_forage"), "NONE", "Add one made-credit helper to the player-driven paths; decide whether purchases count (they should not).", "Make charcoal in the Kiln; roast food on a fire.", "R-05")
@@ -298,8 +301,8 @@ add("GA-59", "LOW", "CONFIRMED_DEFECT", "Draft self-audit statements are inaccur
     [], "NONE", "Replace section 3 with this audit's results.", "", "A, E-13")
 
 # ---------------- D. economy (owner decisions; per-goal recommendations live in the ledger)
-add("GA-70", "HIGH", "OWNER_DECISION", "Total payout 15,670 copper is far above ordinary earning (14.6x the picking wage over the modeled work; 1.76x everything Hob could pay)",
-    "tools/economy.py -> work/ws_economy.json totals; picking wage 0.2 copper/min (docs/ECONOMY_FIRST_DAY.md, creator rule as recorded by Sal); Hob purse cap 300 + 100/real hour (data/npcs/shops.json; server_trade.gd:397-414); goal coin bypasses the purse (server_items.gd:15771-15772).",
+add("GA-70", "HIGH", "OWNER_DECISION", "Total payout 15,670 copper is far above ordinary earning (ASSUMED model: 14.6x the picking wage over the modeled work; 1.70x the net coin Hob could pay one player)",
+    "tools/economy.py -> work/ws_economy.json totals. Picking wage: Dave's rule '4 hours of full-time picking pays about 40 to 60 copper' (0.17-0.25/min; docs/ECONOMY_FIRST_DAY.md:3-6), 0.2/min is the midpoint used by Sal (line 38). Hob: purse 300 then +100 per real hour (data/npcs/shops.json; server_trade.gd:397-414), so over the modeled 89 h at most 300 + 8,915 = 9,215 net (buying from Hob refills the purse: server_trade.gd:335, 517; the purse is shared by all players, so this is a single-player ceiling). Goal coin bypasses the purse (server_items.gd:15771-15772). Both ratios rest on the ASSUMED effort model (a lower bound): if real play takes 1.7x the modeled time or more, Hob's ceiling exceeds the draft total, though the picking-wage ratio stays above 8x until play takes 1.8x longer.",
     [], "NONE", "Recommended ~3,056 copper (main route 1,304) with class bands and a family-lead model (Q2).", "Time real play to calibrate.", "E-01")
 add("GA-71", "HIGH", "DESIGN_RECOMMENDATION", "Rewards follow dependency depth, not effort or significance; variants take most of the money; stations are not monotone",
     "Spearman reward vs level 0.886, vs effort 0.319 (additional route); L15 79/84 pay 60, L17 all 120; Crude chair/table/bench/stool 80 each vs Smithy 40; Stone - Workbench 120 vs Blast furnace 40; furniture/placeables 4,827 and building pieces 4,275 of 15,670 (ws_economy.md E-02..E-04).",
@@ -314,6 +317,22 @@ add("GA-74", "LOW", "DESIGN_RECOMMENDATION", "Bonfire pays twice the medium fire
 add("GA-75", "LOW", "DESIGN_RECOMMENDATION", "Catalog/economy notes outside this audit's authority (report only)",
     "Crude door 50 stick + 100 twine (350 copper of inputs) vs Rustic 5 planks; Fortified double door 1,800 of inputs; charcoal value 0.15 rounds to 0 (server_trade.gd:371); species logs sell for 24-48 with no lot rule (E-10); steel_striker live recipe for a FUTURE item (recipes.json #183; recipe_table.gd:49 no future filter); four Log furniture items live while their structures are retired.",
     [], "NONE", "For the catalog owner; no change proposed here (catalog freeze).", "", "E-08, E-10, E-12, C-08, C-09")
+
+add("GA-35", "LOW", "CONFIRMED_DEFECT", "A tree too short for one log gives no log at all", "server_items.gd:6683, 6748 (split_trunk count <= 0 -> _split_small: firewood, kindling and sticks only).",
+    ids("fell", "gather:log"), "NEEDS_CORRECTION", "Say 'fell a full-grown tree'.", "", "reviewer round 1")
+add("GA-36", "MED", "CONFIRMED_DEFECT", "Drink and eat goals only count when the player is thirsty or hungry, and a new character starts full",
+    "_new_vitals sets fed and wet to their caps (server_items.gd:10218-10219); _drink_water refuses at the cap ('You have had enough water.', 18408-18412) and refuses salt water (18386-18387); a held container with room fills instead (18396-18406); ACT_DRINK / ACT_EAT emit the goal only if the vital rose (1098-1109); test_goals.gd:85 lowers wet first.",
+    ids("drink", "berries"), "NEEDS_CORRECTION", "Say 'when you are thirsty, drink fresh water (not the sea) with no empty container in hand' and 'once you are hungry'.", "First minutes of a new character at a river.", "reviewer round 1")
+add("GA-37", "LOW", "DESIGN_RECOMMENDATION", "Log-cost builds rely on the 3 m log rule taught once (GA-12)",
+    "server_items.gd:8164, 15895-15928 (_pull_nearby_logs serves every blueprint and recipe that costs logs).",
+    [g["goal_id"] for g in goals if g["kind"] == "build" and g["key"] in B and any(n.startswith("log") for n, _ in B[g["key"]]["cost"])],
+    "NONE", "No per-row change once GA-12 is fixed; the Journal can link the rule.", "", "reviewer round 1")
+add("GA-38", "MED", "DESIGN_RECOMMENDATION", "One carcass dressing would pay several goals at once (legacy knife plus hide, bone, animal fat once got: counters exist); site-finish credit goes to the finisher, not the placer",
+    "carcass_worked (server_items.gd:2335) completes the legacy knife goal; the same dressing yields hide, bone, fat and sinew (carcass.json); site finish 8452-8474, 8954.",
+    ids("knife", "gather:hide", "gather:bone", "gather:animal_fat"), "NONE", "Accept as a teaching burst with small gather rewards, or merge into one 'dress your first carcass' goal (part of Q2).", "", "reviewer round 1")
+add("GA-39", "LOW", "UNVERIFIED_ASSUMPTION", "Wool goods depend on bighorn only (alpine and bare rock); whether a typical start can reach them is untested",
+    "carcass.json wool from bighorn; data/animals/spawn_plan.json wild_sheep 'needs: spawn + model'.",
+    WOOL_GOALS, "NEEDS_TEST", "Keep; confirm a wool route in play or mark the wool family as regional.", "Find and hunt a bighorn from a typical start.", "A-16, reviewer round 1")
 
 # ---------------- E. Journal, HUD, placard, keyboard (system-level)
 U = [("GA-80", "HIGH", "CONFIRMED_DEFECT", "J, G and M are taken or unwired: J = jitter test, bare G = Admin Fly (and Store All in the inventory), Ctrl+Shift+G = GPU probe; M unused",
@@ -364,6 +383,8 @@ add("GA-63", "MED", "DESIGN_RECOMMENDATION", "Eligible content and interactions 
 out = dict(F)
 out["_adds"] = adds
 # legacy goals whose completion test_goals.gd asserts (David4 run at dc2fa52, 20/20 pass: work/david4_evidence_dc2fa52.md)
+# reviewer round 1: the small-block recipe runs through _craft_tick, so it is credited today
+out["_runtime_overrides"] = {"craft:wooden_block": "EXISTING", "craft:wooden_block_soft": "EXISTING"}
 out["_evidence_overrides"] = {k: "AUTOMATED_TESTED" for k in ("drink", "fibre", "twine", "axe", "fell", "fire", "shelter", "workbench", "story", "night_walk", "fish")}
 out["_computed"] = dict(nosrc_items=NOSRC, blocked_nosrc=blocked_nosrc, blocked_water_extra=blocked_water_extra, locked_bp=locked_bp,
                         blocked_by={k: len(v) for k, v in blocked_by.items()}, still_blocked_when_fixed=still_blocked_when_fixed, untaught_goals=len(untaught),

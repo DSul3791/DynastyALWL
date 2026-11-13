@@ -47,12 +47,13 @@ P("")
 P("- **%d original goals reviewed** (%d main route, %d additional), plus **%d recommended ADD goals** kept as separate records." % (len(orig), len(main), len(orig) - len(main), len(adds)))
 P("- **Design status:** PASS %d, NEEDS_CORRECTION %d, NEEDS_TEST %d, BLOCKED %d. On the main route: PASS %d, NEEDS_CORRECTION %d, NEEDS_TEST %d, BLOCKED %d." % (ds["PASS"], ds["NEEDS_CORRECTION"], ds["NEEDS_TEST"], ds["BLOCKED"], dsm["PASS"], dsm["NEEDS_CORRECTION"], dsm["NEEDS_TEST"], dsm["BLOCKED"]))
 P("- **Evidence:** %d goals CODE_VERIFIED (data and code read at the baseline), %d AUTOMATED_TESTED (legacy goals asserted by `test_goals.gd`, passed on David4 at the baseline), 0 GAMEPLAY_VERIFIED. No goal has been seen completing in a played game." % (ev["CODE_VERIFIED"], ev["AUTOMATED_TESTED"]))
-P("- **Runtime:** %d goals can be detected by the existing goal engine; %d need a new server event (gather and fire/chop activities); %d need other implementation (paths that make the item without crediting the goal)." % (rs_["EXISTING"], rs_.get("NEW_EVENT_REQUIRED", 0), rs_.get("OTHER_IMPLEMENTATION_REQUIRED", 0)))
+pass_rt = sum(1 for r in orig if r["design_status"] == "PASS" and r["runtime_support"] != "EXISTING")
+P("- **Runtime:** %d goals can be detected by the existing goal engine; %d need a new server event (gather and fire/chop activities); %d need other implementation (paths that make the item without crediting the goal). Design status and runtime support are separate: %d PASS goals still need runtime work before they can complete." % (rs_["EXISTING"], rs_.get("NEW_EVENT_REQUIRED", 0), rs_.get("OTHER_IMPLEMENTATION_REQUIRED", 0), pass_rt))
 P("- **Blocked content:** %d goals cannot be completed in play today: %d because a raw ingredient has no in-game source (Tanbark, pine tar, grain crops and flax, obsidian, quill), %d more because the `water` ingredient exists only as desert cactus water, and %d because they target locked blueprints. %d of them are on the main route (Leather, Tar, Water wheel, Sawmill, Concrete, the three swords and every Engineered/Fortified piece that needs concrete)." % (ds["BLOCKED"], len(C["blocked_nosrc"]), len(C["blocked_water_extra"]), len(C["locked_bp"]), len(C["main_blocked"])))
 P("- **Top tutorial problems:** the Wooden - Hammer step cannot be done as written (axing a log gives large blocks; small blocks are never taught); no hunting step precedes 'Obtain hide'; firewood is taught by a path that never completes the goal; doors come before their frames and never say to aim at an empty doorway; burning stations (Smithy, Blast furnace, Master smithy) need fuel in the pack and the guide never says so; bronze comes after iron, contrary to the approved catalog; legacy `after` gating withholds credit for out-of-order play.")
-P("- **Top economy concerns:** the draft pays %s copper in total (main route %s): %.1f times the picking wage over the modeled work and %.2f times everything Hob could ever pay. Rewards follow dependency depth, not effort or significance; variants take most of the money. Recommended per-goal values (ledger column `recommended_reward_copper`) total %s (main route %s). Coin values are unchanged by this audit (Dave's standing ruling)." % (tot["draft_total"], tot["draft_main"], 14.6, 1.76, tot["recommended_total"], tot["recommended_main"]))
+P("- **Top economy concerns:** the draft pays %s copper in total (main route %s). On the ASSUMED effort model that is %.1f times the picking wage over the modeled work and %.2f times the net coin Hob could pay one player; real play time is unmeasured. Rewards follow dependency depth, not effort or significance; variants take most of the money. Recommended per-goal values (ledger column `recommended_reward_copper`) total %s (main route %s). Coin values are unchanged by this audit (Dave's standing ruling)." % (tot["draft_total"], tot["draft_main"], 14.6, 1.70, tot["recommended_total"], tot["recommended_main"]))
 P("- **Journal and HUD:** J, G and M are taken or unwired today; modifier handling would make Ctrl+Shift+G run Store All in the inventory; the client receives no goal state (protocol change needed); the upper-right HUD corner is occupied; no fanfare audio exists.")
-P("- **Readiness: NOT READY for implementation.** See section 18. The goal list needs its BLOCKED and NEEDS_CORRECTION rows resolved and %d creator decisions (section 17) before the goal data can be written." % 10)
+P("- **Readiness: NOT READY for implementation.** See section 18. The goal list needs its BLOCKED and NEEDS_CORRECTION rows resolved and %d creator decisions (section 17) before the goal data can be written." % 11)
 P("")
 
 # 2
@@ -121,12 +122,12 @@ for i, r in enumerate(main, 1):
     P("| %d | `%s` | %s | %s | %s |" % (i, r["goal_id"], r["title"].replace("|", "/"), r["design_status"], r["finding_ids"]))
 P("")
 P("**Walkthrough summary (new character, empty pack):**")
-P("- Steps 1-10 (sticks, stones, drink, fibre, twine, knife, axe, pickaxe, fell, log) work as written, apart from logs never being explained (shoulder carry, Q to put down, recipes use logs within 3 m: GA-12).")
-P("- Step 11-12: the player cannot make the Wooden - Hammer from what step 11 gives (GA-10). With the missing 'Small wooden blocks' step added, the route continues.")
+P("- Steps 1-10 (sticks, stones, drink, fibre, twine, knife, axe, pickaxe, fell, log) work, with gaps: drinking counts only when thirsty and a new character starts full (GA-36); a sapling gives no log (GA-35); logs are never explained (shoulder carry, Q to put down, recipes use logs within 3 m: GA-12).")
+P("- Steps 11-16: what the axe gives depends on the tree. A key-species log gives large blocks, so the Wooden - Hammer needs the untaught 'Small wooden blocks' step; any other tree gives the plain Log and only small blocks, so the Chopping block (step 16) cannot be made (GA-10).")
 P("- Steps 13-43 (campfire, fires, lean-to, workbench, Crude building set, clay, bricks, hearth, oven) work with explanation gaps: kit placement (GA-14), the pot needs a small fire (GA-15), lean-to leaves (GA-16), roof snapping (GA-18), firewood credit (GA-13), quantities (GA-19), door order and aiming (GA-24).")
 P("- Step 45 'Obtain hide' is a hard stop for a player who follows only the main route: nothing on it can kill an animal (GA-11).")
 P("- Steps 46-79 (hide work, Smelter, bog iron, iron tools, Smithy, plank and board, Stone - Workbench) work once bog iron is taught (GA-05) and the Smithy's fuel is explained (GA-20). Leather (main) is BLOCKED by Tanbark and water (GA-01, GA-04).")
-P("- Steps 80-118 (bronze, construction tiers, steel, Blast furnace, Sawmill, Master smithy, Fortified set) contain the remaining blocks: Tar, Water wheel and Sawmill need pine tar (GA-02), concrete needs water (GA-04), the three swords need Leather. Bronze is placed after iron (GA-23) and the construction tiers are taught as lone foundations (GA-26).")
+P("- Steps 80-118 (bronze, construction tiers, steel, Blast furnace, Sawmill, Master smithy, Fortified set) contain the remaining blocks: Tar, Water wheel and Sawmill need pine tar (GA-02), concrete needs water (GA-04), the three swords need Leather. Bronze is placed after iron, which the approved catalog allows either way (GA-23, creator question Q11), and the construction tiers are taught as lone foundations (GA-26).")
 P("- No circular requirement exists. Every station in the route is reachable when the source gaps are closed. Highest outputs reachable today: steel tools and Engineered pieces that need no concrete; with the gaps closed, the Fortified gate.")
 P("")
 P("**Side branches:** %d side-branch goals are listed before the goal that teaches a prerequisite (GA-07); %d goals need an ingredient whose source no goal teaches (GA-06, section 7)." % (len(F["GA-07"]["goals"]), len(F["GA-06"]["goals"])))
@@ -135,7 +136,7 @@ P("Milestones on the main route (cumulative draft copper vs modeled hands-on min
 P("")
 P("| Milestone | Main step | Draft copper | Recommended | Modeled work (min) |")
 P("|---|---|---|---|---|")
-for k, m in ms.items():
+for k, m in sorted(ms.items(), key=lambda kv: kv[1].get("main_index", 0)):
     if "draft_cum" not in m: continue
     P("| %s | %s | %s | %s | %s |" % (k.replace("_", " "), m["main_index"], m["draft_cum"], m["recommended_cum"], m["effort_cum_min"]))
 P("")
@@ -143,7 +144,7 @@ P("")
 # 6
 P("## 6. Dependency findings")
 P("")
-P(flist(["GA-06", "GA-07", "GA-10", "GA-11", "GA-22", "GA-23", "GA-26", "GA-27", "GA-40"]))
+P(flist(["GA-06", "GA-07", "GA-10", "GA-11", "GA-22", "GA-23", "GA-26", "GA-27", "GA-35", "GA-37", "GA-39", "GA-40"]))
 P("")
 P("Untaught ingredients, by number of goals that need them: water %s; honeyspindle nectar, feather, raw meat, wild garlic, soil, sinew, onion, hazelnuts, wild carrot, fur, herbs, egg, nettles and 27 more (pass 2, `work/pass2_report.txt`)." % 20)
 P("")
@@ -164,7 +165,7 @@ P("")
 # 8
 P("## 8. Invalid instructions")
 P("")
-P(flist(["GA-05", "GA-10", "GA-12", "GA-13", "GA-14", "GA-15", "GA-16", "GA-17", "GA-18", "GA-19", "GA-24", "GA-30", "GA-34", "GA-51", "GA-52"]))
+P(flist(["GA-05", "GA-10", "GA-12", "GA-13", "GA-14", "GA-15", "GA-16", "GA-17", "GA-18", "GA-19", "GA-24", "GA-30", "GA-34", "GA-36", "GA-51", "GA-52"]))
 P("")
 
 # 9
@@ -194,7 +195,7 @@ P("## 11. Server completion, persistence and payout")
 P("")
 P("How the engine works today: goals live in `starter_goals.json` and `camp_goals.json`; `_goal_event` and `_goal_made` increment per-character counters (`event:<name>[:<what>]`, `made:<item>`); `_goals_check` tests every goal for the player after each event and on the 0.25 s slow tick; a completed id goes into `goals_done` and its reward is paid once. Goals, counters and coins are saved together in one atomic `characters.json` write. The client receives only the notice text.")
 P("")
-P(flist(["GA-40", "GA-41", "GA-42", "GA-43", "GA-44", "GA-45", "GA-46", "GA-47", "GA-48", "GA-49", "GA-50", "GA-53", "GA-54", "GA-55", "GA-56", "GA-57"]))
+P(flist(["GA-40", "GA-41", "GA-42", "GA-43", "GA-44", "GA-45", "GA-46", "GA-47", "GA-48", "GA-49", "GA-50", "GA-53", "GA-54", "GA-55", "GA-56", "GA-57", "GA-38"]))
 P("")
 P("Migration plan (recommended): keep the 28 legacy ids and counter formats (hints and tests depend on them); add a `goals_v` version to the character; on first join after the change, run one catch-up check from the stored counters and decide (creator) whether those completions pay; never pay a done id twice; queue the resulting notices (GA-89).")
 P("")
@@ -210,9 +211,11 @@ P("| All goals | %d | %d | %d |" % (tot["goal_count"], tot["draft_total"], tot["
 P("| Main route | %d | %d | %d |" % (len(main), tot["draft_main"], tot["recommended_main"]))
 P("| Additional | %d | %d | %d |" % (len(orig) - len(main), tot["draft_additional"], tot["recommended_additional"]))
 P("")
-P("Reference wages: picking 0.2 copper/min (creator rule as recorded in `docs/ECONOMY_FIRST_DAY.md`); Hob's daily wanted order about 8.4/h; Hob's purse ceiling 300 then +100 per real hour (`data/npcs/shops.json`, `server_trade.gd:397-414`). Goal coin bypasses the purse (`server_items.gd:15771-15772`).")
+P("Reference wages: picking about 0.2 copper/min (Dave's rule: 4 hours of full-time picking pays about 40 to 60 copper, `docs/ECONOMY_FIRST_DAY.md:3-6`; 0.2 is the midpoint Sal used); Hob's daily wanted order about 8.4/h; Hob's purse ceiling 300 then +100 per real hour (`data/npcs/shops.json`, `server_trade.gd:397-414`). Goal coin bypasses the purse (`server_items.gd:15771-15772`).")
 P("")
-P(flist(["GA-70", "GA-71", "GA-72", "GA-73", "GA-74", "GA-75", "GA-42"]))
+P(flist(["GA-70", "GA-71", "GA-72", "GA-73", "GA-74", "GA-75"]))
+P("")
+P("Legacy item rewards: see GA-42 in section 11.")
 P("")
 P("Recommended bands (copper):")
 P("")
@@ -341,6 +344,9 @@ Q = [
   "(a)."),
  ("Q10", "Should the 24 goals on locked blueprints stay in the guide?",
   "(a) Hide them as future goals until the blueprints are learnable. (b) Drop them.", "(a)."),
+ ("Q11", "Should bronze come before or after iron on the main route?",
+  "(a) Keep iron first (catalog s2.7 item 1, the wilderness route to the Iron Hand Saw) and show bronze as an optional side rung. (b) Move bronze directly after the Smelter (s2.7 item 4).",
+  "(a): it keeps the route the draft already teaches and costs no reordering; the Stone - Forge then becomes optional."),
 ]
 P("| # | Decision | Alternatives | Recommendation |")
 P("|---|---|---|---|")
@@ -355,7 +361,7 @@ P("- %d goals (%s) are BLOCKED: they cannot be completed in play today (sections
 P("- %d goals (%s) need their instruction, order, completion rule or text corrected (sections 6, 8, 11)." % (ds["NEEDS_CORRECTION"], pct(ds["NEEDS_CORRECTION"], len(orig))))
 P("- On the main route only %d of %d goals PASS; %d are BLOCKED and the route has a hard stop at step 45." % (dsm["PASS"], len(main), dsm["BLOCKED"]))
 P("- %d goals need new server events or other implementation before they can complete (section 11)." % (rs_.get("NEW_EVENT_REQUIRED", 0) + rs_.get("OTHER_IMPLEMENTATION_REQUIRED", 0)))
-P("- 10 creator decisions are open (section 17), including the reward budget.")
+P("- 11 creator decisions are open (section 17), including the reward budget.")
 P("- The Journal needs a protocol change, key moves and a server-authority fix first (section 13).")
 P("- No goal has been played (section 16).")
 P("")
