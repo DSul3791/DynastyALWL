@@ -35,7 +35,7 @@ The creator instructed us to **remove obsolete instructions directly from active
 
 **First authority pass:** compared creator's later explicit decisions with master, progression, old item system, buildables, warehouse, 651-goal draft, Journal, Map, repair plan and historical audit; rewrote active source sections in place instead of layering contradictory instructions.
 
-**Independent structure pass:** after edits, checked 14 active documents for live imperative old Stone/Brick Forge directions, obsolete ingot recipes, detached smithy add-ons, false existing World Map, and obsolete fuel/hammer rules; **zero matches**. Checked the master plan and storage agree on capacities/speeds and all three bin sizes.
+**Independent structure pass:** after edits, checked 14 active documents for live imperative old Stone/Brick Forge directions, obsolete ingot recipes, detached smithy add-ons, false existing World Map, and obsolete fuel/hammer rules; the original pass reported **zero matches**, but follow-up review found surviving weapon/armour instructions and obsolete Appendix A station values. That original result was incomplete and must not be cited as project-wide clearance. The follow-up below addresses those residuals. Checked the master plan and storage agree on capacities/speeds and all three bin sizes.
 
 **Goal integrity pass:** confirmed **651 goal rows, 651 distinct identifiers and unchanged reward field values**. Compared against original 651 ledger IDs; 28 pre-existing legacy plain IDs are represented in draft by `existing:<id>` presentation markers, and **two proposed replacements** `build:bellows → activity:operate_bellows` and `build:quenching_trough → activity:temper_steel` require stable-ID review before runtime work. No new paid goal silently activated.
 
@@ -51,3 +51,9 @@ The creator instructed us to **remove obsolete instructions directly from active
 6. **Goal conversion** 2 legacy add-on goal identifiers + missing new-tier goal concepts require review; 651 original baseline goal audit still needs full play validation. Reward rebalance and retroactive payouts remain deferred by creator.
 
 **Exit for this mission:** obsolete rules cleaned from surveyed active documents; the next team may prepare reviewed gameplay changes against **one current set of design specifications**, but must not claim live systems are fixed from docs alone.
+
+## Gameplay-rule follow-up — residual master-catalog conflicts (13 Nov 2026)
+
+On the creator's instruction, replaced obsolete weapon, Bronze helmet/greaves and animal-armour station directions with the approved Primitive/Improved/Advanced/Master Smithy progression. Appendix A is now explicitly a curated identity inventory, not a verbatim generated current-data table: removed obsolete metalworking station cells in favor of §2.7, and replaced old proximity-anvil, standalone Blast Furnace, Clay Bloomery and forge-smelting instructions directly. Corrected the stale Tempered sword, unconditional best-armour and construction-chisel descriptions under already approved rules. The existing Iron Anvil number remains recorded with explicit component/legacy-form reconciliation pending; no ID or live retirement status was changed.
+
+Verification: compared all numbered Appendix A item ID/number pairs before and after (unchanged); no old `forge`/`brick_forge L2/L3` station cells remain. Read replacements against §2.7/§3.3; retained legacy IDs solely for traceability and implementation mapping. Historical audit/ledger and live JSON remain unchanged. No gameplay or PC tests run; independent PR review pending. This follow-up does not assert the entire repository is free of obsolete references.

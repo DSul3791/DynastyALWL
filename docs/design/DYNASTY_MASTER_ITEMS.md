@@ -337,7 +337,7 @@ Existing rows are reused for grades wherever one fits, so only 6 rows are new.
 
 Dave approved ChatGPT's Weapons Proposal 2 in full, plus his own Poison Arrow request (PR #1035 comment of 12 Nov 01:49Z). This is approval of the category only, not of the whole catalog. All metal weapon rows stay FUTURE until their metal is live in game. Balance numbers (damage, reach, speed, stamina, armour penetration, reload) are not set here (s5).
 
-**Roles every weapon row carries:** one or two hands, and whether a torch or shield can be held with it; reach; recovery and stamina; armour penetration; for ranged weapons, reload time and the space they need. Durability, repair, sharpening, Tempered, craftsmanship and enchantments follow s2.2, 2.7 and 2.9 unchanged. Bronze weapons are made at the Stone - Forge or the Smithy, iron and steel weapons at the Smithy, and wooden weapons at hand or at the workbench like today's bows.
+**Roles every weapon row carries:** one or two hands, and whether a torch or shield can be held with it; reach; recovery and stamina; armour penetration; for ranged weapons, reload time and the space they need. Durability, repair, sharpening, Tempered, craftsmanship and enchantments follow s2.2, 2.7 and 2.9 unchanged. Bronze weapons are shaped at Primitive/Improved Smithy, iron at Improved/Advanced Smithy, and steel at Advanced/Master Smithy. Wooden weapons use their approved hand/workbench recipes.
 
 **Existing weapon rows (21 KEEP or UPDATE; ids unchanged):**
 
@@ -420,7 +420,7 @@ Preserved foods keep today's rows; [D17] adds Smoked Meat and Dried Mushrooms (s
 | 838 | `bronze_scale_shirt` | Bronze - Scale shirt | Early flexible metal torso armour |
 | 329 | `mail_shirt` | Iron - Mail shirt | Cut-resistant, flexible, heavy torso armour |
 | 331 | `plate_cuirass` | Steel - Cuirass | Rigid advanced chest/back protection; still useful alongside full plate |
-| 326 | `bronze_helm` | Bronze - Helm | First metal helmet, Stone Forge |
+| 326 | `bronze_helm` | Bronze - Helm | First metal helmet, Primitive/Improved Smithy |
 | 328 | `iron_helm` | Iron - Helm | Riveted general-purpose helmet, Smithy |
 | 330 | `steel_helm` | Steel - Helm | Advanced steel helmet with fitting/possible visor, Smithy |
 
@@ -436,7 +436,7 @@ Preserved foods keep today's rows; [D17] adds Smoked Meat and Dried Mushrooms (s
 | Head | Iron - Mail coif | Smithy | Flexible head/neck mail, different blunt defence from rigid helms |
 | Hands | Iron - Gauntlets | Smithy | Metal hand/finger armour with dexterity trade-offs |
 | Hands | Steel - Gauntlets | Smithy | Advanced articulated gauntlets |
-| Legs | Bronze - Greaves | Stone Forge | Early metal lower-leg defence |
+| Legs | Bronze - Greaves | Primitive/Improved Smithy | Early metal lower-leg defence |
 | Legs | Iron - Mail chausses | Smithy | Flexible extended chainmail leg coverage |
 | Legs | Iron - Greaves | Smithy | Rigid lower-leg protection |
 | Legs | Steel - Greaves | Smithy | Advanced articulated lower-leg protection |
@@ -655,7 +655,7 @@ Existing quivers have `slot: waist` although descriptions say worn on back. Choo
 
 **Related approved cross-references (NOT part of 20 ADD):** Riding - Boots is the previously approved **FUTURE** clothing/mounted accessory (count once here); Iron - Lance is the Weapons [D6] FUTURE weapon (counted there); animal feed and water troughs already in current data; player personal quivers, satchels and packs from [D9] are NOT horse cargo items. Do not invent saddlebags left/right variants or multiple cosmetic-grade IDs.
 
-**Rules:** Saddle for riding OR pack use; compatible bridle/halter, harness and animal type; add-on storage requires compatible fitted saddle. Animal body mass, health, individual stamina, terrain, training, hydration, load mass/volume/balance govern practical hauling. Saddlebags improve storage organization, **not muscle strength**. Visible equipped gear, condition/wetness, repair and safe per-animal inventory persistence are required; animal loss/unloading must not silently destroy or duplicate bags and contents. A full Pack Saddle competes with normal riding; cannot wear conflicting double saddles, draft rig and impossible additional loads. Horseshoes and protective barding should not be mandatory for every horse. Iron/Steel armour construction retains ordinary Smithy/Blast Furnace/Quenching rules (only eligible steel can be optionally Tempered, no extra master IDs). Barding protected by Armour rules [D7] but remains animal tack, not duplicate human armour rows.
+**Rules:** Saddle for riding OR pack use; compatible bridle/halter, harness and animal type; add-on storage requires compatible fitted saddle. Animal body mass, health, individual stamina, terrain, training, hydration, load mass/volume/balance govern practical hauling. Saddlebags improve storage organization, **not muscle strength**. Visible equipped gear, condition/wetness, repair and safe per-animal inventory persistence are required; animal loss/unloading must not silently destroy or duplicate bags and contents. A full Pack Saddle competes with normal riding; cannot wear conflicting double saddles, draft rig and impossible additional loads. Horseshoes and protective barding should not be mandatory for every horse. Iron animal armour is shaped at Improved/Advanced Smithy and steel at Advanced/Master Smithy. Ingots come from the capable Smelter tier in §2.7; optional Tempered outputs use Master's integrated quencher, with no duplicate item IDs. Barding protected by Armour rules [D7] but remains animal tack, not duplicate human armour rows.
 
 **Owner-approved simplified paired draft physics (mandatory [D10]):**
 - Hitch **two suitable draft animals as one logical draft unit** for movement, with **one controller** for heading, acceleration, speed, steering, stopping, reversing and turning. Both animal visuals maintain fixed left/right side-by-side formation aligned in the same direction; vehicle connects to the single team controller.
@@ -1097,12 +1097,12 @@ The remaining nontrivial gameplay choices are **Steel carbon:Iron Ore input rati
 
 The old 12 Nov static catalog totals and generated Appendix A below reflect the earlier **actual inventory snapshot**, not the item counts after new stations/components are implemented. Keep the generated ledger stable, regenerate from committed data when the new system is built, and use [PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md](PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md) for implementation scope and gameplay validation. Protect stable `main`.
 
-## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
+## Appendix A. Existing-item identity inventory (curated from an earlier data snapshot)
 
 **BUGLIST-002 (13 Nov 2026):** the 10 doorway rows below were corrected (empty frames) and 48 rows (items 1256-1303: 20 frames, 28 doors) added by hand under their ADD status, because the repository holds no generator for this appendix (the original was an ad hoc script); the live next free item number is 1304 and blueprint 300. A full regeneration remains open for whoever restores a generator.
 
 Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 53, KEEP 499, RETIRE 23, RETIRED 253, UPDATE 61. **BUGLIST-002 (13 Nov 2026):** Iron - Doorway (663) and Steel - Doorway (665) moved from KEEP to RETIRE (Dave), so KEEP is now 497 and RETIRE 25 (`tools/catalog_ledger.py`).
-`RETIRED` = already retired before this document (kept only for its number). `Made at` is the station of the first live recipe that gives the item (`hand` = no station; L = station level); blank = not crafted (gathered, dropped, built from a blueprint, or a group placeholder). Purpose is the live tooltip description. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
+`RETIRED` = already retired before this document (kept only for its number). `Made at` retains earlier recipe evidence for unaffected stations; obsolete metalworking station values have been removed and replaced with a §2.7 reference. These references specify the approved target, not completed data migration. Blank = not crafted in that snapshot (gathered, dropped, built from a blueprint, or a group placeholder). Purpose notes are curated to remove obsolete instructions; exact earlier tooltips remain in Git history. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
 
 ### A.tool (54 rows)
 
@@ -1112,43 +1112,43 @@ Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status count
 | 11 | `stone_knife` | Stone - Knife | t1 | hand | UPDATE | **APPROVED: disposable (s2.2).** A flaked stone on a handle. Dresses a kill and cuts bark. |
 | 12 | `torch` | Torch | t1 | hand | KEEP | A stick wrapped in fibre and dipped in pitch. Lights your way after dark. |
 | 19 | `wooden_spade` | Wooden - Spade |  | hand | UPDATE | **DECIDED: disposable (s2.2).** A sharpened wooden blade. Digs roots and bulbs. |
-| 33 | `iron_pickaxe` | Iron - Pickaxe | iron t2 | brick_forge L2 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** An iron head on a hardwood handle. One blow breaks one stone off a boulder. |
-| 34 | `steel_pickaxe` | Steel - Pickaxe | steel t3 | brick_forge L3 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest. |
+| 33 | `iron_pickaxe` | Iron - Pickaxe | iron t2 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** An iron head on a hardwood handle. One blow breaks one stone off a boulder. |
+| 34 | `steel_pickaxe` | Steel - Pickaxe | steel t3 | See §2.7 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest. |
 | 45 | `stone_spade` | Stone - Spade | stone t2 | workbench | RETIRE | **APPROVED: retired (s3.1).** A spade with a stone blade. Digs deeper and lasts longer than wood. |
-| 46 | `iron_spade` | Iron - Spade | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A spade with an iron blade. |
-| 47 | `steel_spade` | Steel - Spade | steel t4 | brick_forge L3 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A spade with a steel blade. |
+| 46 | `iron_spade` | Iron - Spade | iron t3 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A spade with an iron blade. |
+| 47 | `steel_spade` | Steel - Spade | steel t4 | See §2.7 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A spade with a steel blade. |
 | 49 | `sewing_needle` | Bone - Needle |  | hand | UPDATE | **DECIDED: the one reusable needle; replaced, not repaired (s2.2).** A needle carved from bone. For sewing hide and cloth. |
 | 75 | `fishing_rod` | Fishing rod |  | hand | KEEP | A stick, line and hook. Cast at water, then click again when something bites. |
 | 221 | `wooden_hoe` | Wooden - Hoe |  | hand | UPDATE | **DECIDED: disposable (s2.2).** A flat blade on a long handle. Paths the ground and tills beds. |
 | 222 | `stone_hoe` | Stone - Hoe | stone t2 | workbench | UPDATE | **APPROVED: disposable (s2.2).** A hoe with a stone blade. Lasts longer than wood. |
-| 223 | `iron_hoe` | Iron - Hoe | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A hoe with an iron blade. |
-| 224 | `steel_hoe` | Steel - Hoe | steel t4 | brick_forge L3 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A hoe with a steel blade. |
+| 223 | `iron_hoe` | Iron - Hoe | iron t3 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A hoe with an iron blade. |
+| 224 | `steel_hoe` | Steel - Hoe | steel t4 | See §2.7 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A hoe with a steel blade. |
 | 244 | `stone_hammer` | Stone - Hammer | stone t2 | hand | UPDATE | **APPROVED: disposable (s2.2).** A hafted stone hammer. Hold it to place big builds from blueprints. |
 | 245 | `hand_saw` | Iron - Saw | iron t3 | workbench L2 | UPDATE | **APPROVED: Smithy recipe, sawmill yields (s3.1).** A bow saw. Keep it on the hotbar to saw a log into 2 planks by hand, slower than a mill. |
 | 247 | `wooden_hammer` | Wooden - Hammer | wood t1 | hand | UPDATE | **DECIDED: disposable (s2.2).** A wooden head on a stick. The weakest hammer; it wears out fast. |
 | 260 | `shore_net` | Fishing net |  | hand | KEEP | A weighted twine net. Throw it on water, pull it back; a bigger school fills it more. |
 | 293 | `hide_scraper` | Scraper | t1 | workbench | UPDATE | **DECIDED: disposable (s2.2).** A flint blade on a handle. Scrapes flesh and hair off a raw hide. |
-| 294 | `steel_striker` | Steel - Striker | t4 | brick_forge L3 | FUTURE | A strip of hard steel. Strike flint on it for a shower of sparks. |
+| 294 | `steel_striker` | Steel - Striker | t4 | See §2.7 | FUTURE | A strip of hard steel. Strike flint on it for a shower of sparks. |
 | 296 | `obsidian_knife` | Obsidian - Knife | obsidian t2 | workbench | FUTURE | A razor-sharp black glass blade. Cuts better than flint, but chips more easily. |
 | 297 | `stone_pickaxe` | Stone - Pickaxe | stone t2 | hand | UPDATE | **APPROVED: disposable (s2.2).** A heavy stone head on a haft. Breaks boulders and ore, slowly. |
 | 298 | `sickle` | Stone - Sickle | stone t1 | workbench | RETIRE | **APPROVED: Stone Sickle retired (s2.1).** A curved flint blade on a short handle. Cuts grain and grass by the handful. |
-| 299 | `scythe` | Iron - Scythe | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps. |
+| 299 | `scythe` | Iron - Scythe | iron t3 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps. |
 | 311 | `candle` | Candle | t1 | hand | KEEP | A wick dipped in tallow. A small steady light, and what a wooden lantern burns. |
 | 344 | `quern` | Hand mill |  | hand | KEEP | Two flat stones for grinding grain by hand. Slow but steady. |
 | 353 | `stone_wedge` | Stone - Wedge |  | hand | RETIRE | **APPROVED: no wedges (s2.3).** A flaked stone wedge. Driven into a log at a workbench, it splits two planks. |
-| 458 | `bronze_pickaxe` | Bronze - Pickaxe | bronze t2 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder. |
-| 459 | `bronze_axe` | Bronze - Axe | bronze t2 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone. |
-| 460 | `bronze_hammer` | Bronze - Hammer | bronze t3 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A cast bronze head on a short haft. Hold it to place big builds from blueprints. |
-| 461 | `bronze_knife` | Bronze - Knife | bronze t2 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark. |
+| 458 | `bronze_pickaxe` | Bronze - Pickaxe | bronze t2 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder. |
+| 459 | `bronze_axe` | Bronze - Axe | bronze t2 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone. |
+| 460 | `bronze_hammer` | Bronze - Hammer | bronze t3 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A cast bronze head on a short haft. Hold it to place big builds from blueprints. |
+| 461 | `bronze_knife` | Bronze - Knife | bronze t2 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark. |
 | 542 | `torch_doused` | Torch | t1 |  | KEEP | A stick wrapped in fibre. Lights your way after dark. |
 | 557 | `spyglass` | Wooden - Spyglass | t1 | workbench L3 | KEEP | A wooden tube with a crystal lens. Hold it and right-click to see three times closer. |
-| 560 | `iron_hammer` | Iron - Hammer | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A forged iron head on a short haft. Hold it to place big builds from blueprints. |
-| 561 | `steel_hammer` | Steel - Hammer | steel t3 | brick_forge L3 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A forged steel head on a short haft. Hold it to place big builds from blueprints. |
+| 560 | `iron_hammer` | Iron - Hammer | iron t3 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A forged iron head on a short haft. Hold it to place big builds from blueprints. |
+| 561 | `steel_hammer` | Steel - Hammer | steel t3 | See §2.7 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A forged steel head on a short haft. Hold it to place big builds from blueprints. |
 | 668 | `wooden_lantern` | Wooden - Lantern |  | workbench L1 | KEEP | A plank lantern with horn panes. Takes a candle; does not go out in the rain. |
-| 669 | `iron_lantern` | Iron - Lantern |  | brick_forge L2 | KEEP | An iron lantern with horn panes. Burns lamp oil; does not go out in the rain. |
-| 798 | `bronze_chisel` | Bronze - Chisel | bronze t2 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench. |
-| 799 | `iron_chisel` | Iron - Chisel | iron t3 | brick_forge L2 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** An iron chisel. Keeps its edge on stone far longer than bronze. |
-| 800 | `steel_chisel` | Steel - Chisel | steel t4 | brick_forge L3 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A steel chisel. Cuts the hardest stone cleanly. |
+| 669 | `iron_lantern` | Iron - Lantern |  | See §2.7 | KEEP | An iron lantern with horn panes. Burns lamp oil; does not go out in the rain. |
+| 798 | `bronze_chisel` | Bronze - Chisel | bronze t2 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A solid cast bronze chisel. For sculpture and art, not a prerequisite for stone construction (§2.1). |
+| 799 | `iron_chisel` | Iron - Chisel | iron t3 | See §2.7 | UPDATE | **APPROVED: metal break/repair rule (s2.2).** An iron chisel. Keeps its edge on stone far longer than bronze. |
+| 800 | `steel_chisel` | Steel - Chisel | steel t4 | See §2.7 | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A steel chisel. Cuts the hardest stone cleanly. |
 | 807 | `mortar_pestle` | Mortar and pestle |  | hand | KEEP | A hollowed stone and a round grinder for crushing herbs into poultices and cures. |
 | 815 | `whetstone` | Whetstone |  | hand | UPDATE | **APPROVED: portable sharpening (s2.2).** A fine flat stone for honing an edge. Brings a worn blade back without new parts. |
 | 892 | `wooden_lantern_dark` | Wooden - Lantern |  |  | KEEP | A lantern gone out. Press its key to light it, with a candle in your pack if it burned out. |
@@ -1168,15 +1168,15 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 312 | `wicker_shield` | Wicker - Shield | t1 | hand | KEEP | Sticks woven tight with fibre. Light, and good for a few hits. |
 | 313 | `stone_mace` | Stone - Mace | t2 | hand | UPDATE | **DECIDED: disposable (s2.2).** A heavy stone lashed to a stick. Cracks armour and bone. |
 | 314 | `plank_shield` | Wooden - Shield | t2 | workbench L2 | KEEP | Boards bound with hide. Sturdier than wicker. |
-| 315 | `bronze_sword` | Bronze - Sword | t3 | forge | FUTURE | A bronze blade on a short grip. Quick and sharp. |
-| 316 | `bronze_mace` | Bronze - Mace | t3 | forge | FUTURE | A cast bronze head on a stout haft. |
-| 317 | `bronze_shield` | Bronze - Shield | t3 | forge | FUTURE | **APPROVED [D6]: rework without pre-saw Planks (s3.6).** A plank shield with a bronze rim and boss. |
-| 318 | `iron_sword` | Iron - Sword | t4 | brick_forge L2 | FUTURE | A forged iron blade with a leather grip. |
-| 319 | `iron_mace` | Iron - Mace | t4 | brick_forge L2 | FUTURE | A flanged iron head that breaks armour. |
-| 320 | `iron_shield` | Iron - Shield | t4 | brick_forge L2 | FUTURE | Boards held by iron bands. Hard to break. |
-| 321 | `steel_sword` | Steel - Sword | t5 | brick_forge L3 | FUTURE | **APPROVED [D6]: description must not say tempered (s3.6).** A tempered steel blade. Keeps its edge. |
-| 322 | `steel_mace` | Steel - Mace | t5 | brick_forge L3 | FUTURE | A steel flanged head on a long haft. |
-| 323 | `steel_shield` | Steel - Shield | t5 | brick_forge L3 | FUTURE | A long steel-faced shield that covers shoulder to shin. |
+| 315 | `bronze_sword` | Bronze - Sword | t3 | See §2.7 | FUTURE | A bronze blade on a short grip. Quick and sharp. |
+| 316 | `bronze_mace` | Bronze - Mace | t3 | See §2.7 | FUTURE | A cast bronze head on a stout haft. |
+| 317 | `bronze_shield` | Bronze - Shield | t3 | See §2.7 | FUTURE | **APPROVED [D6]: rework without pre-saw Planks (s3.6).** A plank shield with a bronze rim and boss. |
+| 318 | `iron_sword` | Iron - Sword | t4 | See §2.7 | FUTURE | A forged iron blade with a leather grip. |
+| 319 | `iron_mace` | Iron - Mace | t4 | See §2.7 | FUTURE | A flanged iron head that breaks armour. |
+| 320 | `iron_shield` | Iron - Shield | t4 | See §2.7 | FUTURE | Boards held by iron bands. Hard to break. |
+| 321 | `steel_sword` | Steel - Sword | t5 | See §2.7 | FUTURE | A steel blade. Keeps its edge. Optional Tempered property follows §2.7. |
+| 322 | `steel_mace` | Steel - Mace | t5 | See §2.7 | FUTURE | A steel flanged head on a long haft. |
+| 323 | `steel_shield` | Steel - Shield | t5 | See §2.7 | FUTURE | A long steel-faced shield that covers shoulder to shin. |
 | 761 | `bone_club` | Bone - Club | t1 | hand | KEEP | A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer. |
 | 763 | `wooden_longbow` | Wooden - Longbow | t2 | workbench L2 | UPDATE | **APPROVED [D6]: rename Longbow (s3.6).** A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows. |
 | 813 | `sling` | Sling | t1 | hand | KEEP | A hide pouch on two cords. Whirl it and let go to throw a stone fast and far. |
@@ -1198,8 +1198,8 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 26 | `firewood` | Firewood |  |  | UPDATE | **ENGINEERING: rename Hard firewood (s3.2).** Split wood. Burns long and steady. |
 | 27 | `lumber` | Plank |  | saw_mill | UPDATE | **APPROVED: 6 per softwood log (s2.3).** Boards from a log. Make them at a saw mill, or wedge them at a workbench. |
 | 30 | `driftwood` | Driftwood |  |  | KEEP | A bleached branch washed up on a bank. Dry, so it burns well. |
-| 31 | `iron_ingot` | Iron ingot |  | brick_forge L2 | KEEP | A bar of smelted iron. Hard, for tools and nails. |
-| 32 | `steel_ingot` | Steel ingot |  | brick_forge L3 | FUTURE | A bar of steel. Placeholder until smelting exists. |
+| 31 | `iron_ingot` | Iron ingot |  | See §2.7 | KEEP | A bar of smelted iron. Hard, for tools and nails. |
+| 32 | `steel_ingot` | Steel ingot |  | See §2.7 | FUTURE | A bar of steel. Placeholder until smelting exists. |
 | 35 | `soil` | Soil |  |  | KEEP | A shovelful of dark earth, dug from the ground. |
 | 36 | `clay` | Clay |  |  | KEEP | A heavy, sticky shovelful of clay. Fire it for bricks and pots. |
 | 37 | `sand` | Sand |  |  | KEEP | A shovelful of sand. |
@@ -1238,16 +1238,16 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 208 | `cut_stone_block` | Stone block |  | workbench L1 | KEEP | A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar. |
 | 209 | `brick` | Brick |  | campfire | KEEP | A fired clay brick. Builds the clay hearth and the oven. |
 | 210 | `mortar` | Clay mortar |  | hand | KEEP | A bucketful of sand and clay paste that binds stone blocks and bricks. |
-| 228 | `nails` | Nails | iron | brick_forge L2 | KEEP | Small iron nails. Fix boards in builds; bronze ones do the same job. |
+| 228 | `nails` | Nails | iron | See §2.7 | KEEP | Small iron nails. Fix boards in builds; bronze ones do the same job. |
 | 229 | `cobblestone` | Cobblestone |  | workbench L1 | KEEP | A rounded stone, dressed to lay in a wall or a floor. |
 | 230 | `stone_shingle` | Stone shingle |  | workbench L1 | KEEP | A thin flat slab of stone for a roof. |
 | 231 | `tar` | Tar |  | campfire | KEEP | Thick black tar, boiled down. Seals a flat roof and soaks logs against rot. |
-| 232 | `hinges` | Hinges | iron | brick_forge L2 | KEEP | A pair of iron hinges for a door, a gate or a lid. |
+| 232 | `hinges` | Hinges | iron | See §2.7 | KEEP | A pair of iron hinges for a door, a gate or a lid. |
 | 233 | `wooden_pin` | Wooden pin |  | workbench L1 | KEEP | A hardwood pin or dowel that joins logs and beams without iron. |
 | 234 | `wooden_block` | Wooden block |  | hand | UPDATE | **ENGINEERING: rename Hardwood block (s3.2).** A short round of a small log, bark still on. Burns longer than firewood, or split it on a chopping block. |
 | 236 | `firewood_soft` | Softwood firewood |  |  | UPDATE | **ENGINEERING: rename Soft firewood (s3.2).** Split pine, spruce or fir. It catches fast and burns out quick. |
 | 237 | `wooden_block_soft` | Softwood block |  | hand | KEEP | A short round of a small softwood log. Burns longer than soft firewood, or split it on a chopping block. |
-| 238 | `saw_blade` | Saw blade |  | brick_forge L2 | RETIRE | **APPROVED: no saw-blade intermediates (s2.3).** A pair of iron saw blades for a sawmill frame. |
+| 238 | `saw_blade` | Saw blade |  | See §2.7 | RETIRE | **APPROVED: no saw-blade intermediates (s2.3).** A pair of iron saw blades for a sawmill frame. |
 | 239 | `water_wheel` | Water wheel |  | workbench L3 | KEEP | A wooden wheel with paddles. It turns where running water pushes it. |
 | 270 | `wooden_arrow` | Wooden - Arrow |  | hand | KEEP | A hardened stick with feather fletching. Needs a bow. |
 | 271 | `stone_arrow` | Stone - Arrow |  | hand | KEEP | An arrow with a flaked stone point. Hits harder than wood. |
@@ -1258,15 +1258,15 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 283 | `leather` | Leather |  | tanning_rack | KEEP | Tanned hide: tough and supple. |
 | 284 | `fine_leather` | Fine leather |  | campfire_pot | KEEP | The best of a batch of leather, soft and even. |
 | 285 | `heavy_leather` | Heavy leather |  | tanning_rack | KEEP | Thick, stiff leather for armour and harness. |
-| 286 | `rivets` | Rivets |  | brick_forge L2 | KEEP | Small iron pins that hold layers of leather or metal together. |
-| 287 | `copper_ingot` | Copper ingot |  | forge | KEEP | Smelted copper. Soft, but good for early tools. |
-| 288 | `tin_ingot` | Tin ingot |  | forge | KEEP | Smelted tin. Mixed with copper it makes bronze. |
-| 289 | `bronze_ingot` | Bronze ingot |  | forge | KEEP | Copper and tin melted together. Harder than copper. |
+| 286 | `rivets` | Rivets |  | See §2.7 | KEEP | Small iron pins that hold layers of leather or metal together. |
+| 287 | `copper_ingot` | Copper ingot |  | See §2.7 | KEEP | Smelted copper. Soft, but good for early tools. |
+| 288 | `tin_ingot` | Tin ingot |  | See §2.7 | KEEP | Smelted tin. Mixed with copper it makes bronze. |
+| 289 | `bronze_ingot` | Bronze ingot |  | See §2.7 | KEEP | Copper and tin melted together. Harder than copper. |
 | 290 | `flour` | Flour |  | hand | KEEP | Ground grain. The start of bread. |
 | 291 | `yeast` | Yeast |  |  | FUTURE | A frothy starter that makes dough rise and ale ferment. |
-| 301 | `copper_ore` | Copper ore |  |  | KEEP | A heavy lump streaked green and red. Smelts to copper in a forge. |
-| 302 | `tin_ore` | Tin ore |  |  | KEEP | A dark, very heavy lump. Smelts to tin in a forge. |
-| 303 | `iron_ore` | Iron ore |  |  | KEEP | A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge. |
+| 301 | `copper_ore` | Copper ore |  |  | KEEP | A heavy lump streaked green and red. Smelts to copper at Primitive or a higher capable Smelter (§2.7). |
+| 302 | `tin_ore` | Tin ore |  |  | KEEP | A dark, very heavy lump. Smelts to tin at Primitive or a higher capable Smelter (§2.7). |
+| 303 | `iron_ore` | Iron ore |  |  | KEEP | A rusty brown lump. Smelts to iron at player-operated Improved Smelter or wind-powered Advanced Smelter (§2.7). |
 | 304 | `coal` | Coal |  |  | KEEP | **APPROVED: distinct from Charcoal.** A black lump that burns hot. Smelts iron and makes steel. |
 | 332 | `wheat` | Wheat |  |  | KEEP | Golden heads of grain. Thresh and grind for flour. |
 | 333 | `barley` | Barley |  |  | KEEP | Hardy grain for bread and brewing. |
@@ -1343,7 +1343,7 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 551 | `mushrooms` | Mushrooms |  |  | KEEP | Any edible mushroom: porcini, chanterelles, morels or puffball. |
 | 552 | `nuts` | Nuts |  |  | KEEP | Any nuts: hazelnuts, chestnuts, walnuts or beechnuts. |
 | 553 | `berries` | Berries |  |  | KEEP | Any sweet berries: raspberries, blueberries, strawberries and the rest. |
-| 554 | `fuel` | Fuel |  |  | KEEP | Charcoal or coal: what a forge burns to smelt. |
+| 554 | `fuel` | Fuel |  |  | KEEP | Coal or Charcoal for approved fuel hoppers; steel carbon is a separate material input (§2.7). |
 | 555 | `pitch` | Pitch |  |  | KEEP | Resin, pine tar or animal fat: what a torch head burns. |
 | 556 | `crystal_lens` | Crystal lens |  |  | KEEP | Clear quartz worn smooth into a lens. A rare find when digging rock or gravel. |
 | 666 | `horn_pane` | Horn pane |  | workbench L1 | KEEP | A thin pane of scraped horn. Lets lantern light through. |
@@ -1372,9 +1372,9 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 856 | `limestone` | Limestone |  |  | KEEP | A pale lump of soft rock. Burnt in a kiln it crumbles to lime. |
 | 857 | `lime_powder` | Lime powder |  | kiln | KEEP | Burnt limestone ground to a white powder. The binder in concrete. |
 | 858 | `concrete` | Concrete |  | mixer | KEEP | Lime powder, sand and stone mixed wet. Sets hard as rock in a mould or a wall. |
-| 859 | `iron_band` | Iron band |  | brick_forge L3 | KEEP | A flat iron strap with nail holes. Ties concrete walls and gates against a siege. |
-| 894 | `bronze_nails` | Bronze nails | bronze | forge | KEEP | Small bronze nails. Fix boards in builds, the same as iron ones. |
-| 895 | `bronze_hinges` | Bronze hinges | bronze | forge | KEEP | A pair of bronze hinges for a door, a gate or a lid. |
+| 859 | `iron_band` | Iron band |  | See §2.7 | KEEP | A flat iron strap with nail holes. Ties concrete walls and gates against a siege. |
+| 894 | `bronze_nails` | Bronze nails | bronze | See §2.7 | KEEP | Small bronze nails. Fix boards in builds, the same as iron ones. |
+| 895 | `bronze_hinges` | Bronze hinges | bronze | See §2.7 | KEEP | A pair of bronze hinges for a door, a gate or a lid. |
 
 Already retired (56; numbers never reused): 115 `log_alder` Alder log; 116 `lumber_alder` Alder lumber; 117 `beam_alder` Alder beam; 118 `log_willow` Willow log; 119 `lumber_willow` Willow lumber; 120 `beam_willow` Willow beam; 121 `log_coconut_palm` Coconut palm log; 122 `lumber_coconut_palm` Coconut palm lumber; 123 `beam_coconut_palm` Coconut palm beam; 127 `log_acacia` Acacia log; 128 `lumber_acacia` Acacia lumber; 129 `beam_acacia` Acacia beam; 130 `log_mangrove` Mangrove log; 131 `lumber_mangrove` Mangrove lumber; 132 `beam_mangrove` Mangrove beam; 133 `log_rowan` Rowan log; 134 `lumber_rowan` Rowan lumber; 135 `beam_rowan` Rowan beam; 136 `log_wild_apple` Crab apple log; 137 `lumber_wild_apple` Crab apple lumber; 138 `beam_wild_apple` Crab apple beam; 139 `log_wild_pear` Wild pear log; 140 `lumber_wild_pear` Wild pear lumber; 141 `beam_wild_pear` Wild pear beam; 142 `log_wild_cherry` Wild cherry log; 143 `lumber_wild_cherry` Wild cherry lumber; 144 `beam_wild_cherry` Wild cherry beam; 145 `log_sweet_chestnut` Sweet chestnut log; 146 `lumber_sweet_chestnut` Sweet chestnut lumber; 147 `beam_sweet_chestnut` Sweet chestnut beam; 151 `log_date_palm` Date palm log; 152 `lumber_date_palm` Date palm lumber; 153 `beam_date_palm` Date palm beam; 154 `log_mirrorbark` Mirrorbark log; 155 `lumber_mirrorbark` Mirrorbark lumber; 156 `beam_mirrorbark` Mirrorbark beam; 157 `log_wardpine` Wardpine log; 158 `lumber_wardpine` Wardpine lumber; 159 `beam_wardpine` Wardpine beam; 160 `log_hearthwood` Hearthwood log; 161 `lumber_hearthwood` Hearthwood lumber; 162 `beam_hearthwood` Hearthwood beam; 163 `log_everember` Everember log; 164 `lumber_everember` Everember lumber; 165 `beam_everember` Everember beam; 166 `log_witness_tree` Witness tree log; 167 `lumber_witness_tree` Witness tree lumber; 168 `beam_witness_tree` Witness tree beam; 169 `log_balsam_fir` Balsam fir log; 170 `lumber_balsam_fir` Balsam fir lumber; 171 `beam_balsam_fir` Balsam fir beam; 226 `rough_plank` Rough plank; 227 `fine_board` Fine board; 278 `kindling_duplicate` Kindling; 292 `salt` Salt; 354 `fibre_arrow` Fibre - Arrow.
 
@@ -1394,12 +1394,12 @@ Already retired (56; numbers never reused): 115 `log_alder` Alder log; 116 `lumb
 | 307 | `hide_gloves` | Hide - Gloves |  | hand | KEEP | Stitched hide gloves with fingers. For work and cold. |
 | 324 | `leather_cap` | Leather - Cap |  | workbench L2 | KEEP | A close leather cap. Better than bare hide. |
 | 325 | `leather_jerkin` | Leather - Jerkin |  | workbench L2 | KEEP | A stiff leather vest. Turns a glancing blow. |
-| 326 | `bronze_helm` | Bronze - Helm |  | forge | FUTURE | A beaten bronze cap with a nose guard. |
+| 326 | `bronze_helm` | Bronze - Helm |  | See §2.7 | FUTURE | A beaten bronze cap with a nose guard. |
 | 327 | `gambeson` | Fibre - Gambeson |  | workbench L2 | KEEP | Quilted cloth padding. Cheap armour that soaks a blow. |
-| 328 | `iron_helm` | Iron - Helm |  | brick_forge L2 | FUTURE | A riveted iron helmet. |
-| 329 | `mail_shirt` | Iron - Mail shirt |  | brick_forge L2 | FUTURE | Rings of iron riveted together. Heavy but sound. |
-| 330 | `steel_helm` | Steel - Helm |  | brick_forge L3 | FUTURE | A fitted steel helm with leather lining. |
-| 331 | `plate_cuirass` | Steel - Cuirass |  | brick_forge L3 | FUTURE | **APPROVED [D7]: description must not say best (s3.7).** Shaped steel plates over a leather harness. The best body armour. |
+| 328 | `iron_helm` | Iron - Helm |  | See §2.7 | FUTURE | A riveted iron helmet. |
+| 329 | `mail_shirt` | Iron - Mail shirt |  | See §2.7 | FUTURE | Rings of iron riveted together. Heavy but sound. |
+| 330 | `steel_helm` | Steel - Helm |  | See §2.7 | FUTURE | A fitted steel helm with leather lining. |
+| 331 | `plate_cuirass` | Steel - Cuirass |  | See §2.7 | FUTURE | Shaped steel plates over a leather harness; protection and trade-offs follow §3.7. |
 | 366 | `wool_tunic` | Wool - Tunic |  | workbench L3 | KEEP | A woven wool shirt. Warm. |
 | 367 | `wool_trousers` | Wool - Trousers |  | workbench L3 | KEEP | Heavy woven wool trousers. |
 | 368 | `wool_cap` | Wool - Cap |  | workbench L3 | KEEP | A snug knitted wool cap. |
@@ -1413,7 +1413,7 @@ Already retired (56; numbers never reused): 115 `log_alder` Alder log; 116 `lumb
 | 766 | `leather_gloves` | Leather - Gloves |  | workbench L2 | KEEP | Leather gloves with fingers. For work, the bowstring and the cold. |
 | 768 | `straw_hat` | Straw - Hat |  | hand | KEEP | A wide hat of plaited straw. Light, and it keeps sun and a little rain off. |
 | 820 | `wooden_snowshoes` | Snowshoes |  | workbench | KEEP | Bent-wood frames laced with leather. Spread your weight so you sink less in snow. |
-| 838 | `bronze_scale_shirt` | Bronze - Scale shirt |  | forge | FUTURE | Bronze scales laced over leather. Bronze body armour, lighter than mail. |
+| 838 | `bronze_scale_shirt` | Bronze - Scale shirt |  | See §2.7 | FUTURE | Bronze scales laced over leather. Bronze body armour, lighter than mail. |
 
 Already retired (1; numbers never reused): 67 `hide_leggings` Hide - Leggings.
 
@@ -1438,7 +1438,7 @@ Already retired (1; numbers never reused): 67 `hide_leggings` Hide - Leggings.
 | 42 | `waterskin` | Waterskin |  | hand | KEEP | A sewn skin bag for carrying a drink. |
 | 308 | `clay_jug` | Clay jug |  | campfire | KEEP | A tall fired jug with a handle and a narrow mouth. Holds water, ale or mead. |
 | 812 | `mug` | Mug |  | campfire | KEEP | A small fired clay cup with a handle. Holds a drink. |
-| 835 | `copper_pot` | Copper - Pot |  | forge | FUTURE | A hammered copper pot. Holds three litres and cooks soups over a fire. |
+| 835 | `copper_pot` | Copper - Pot |  | See §2.7 | FUTURE | A hammered copper pot. Holds three litres and cooks soups over a fire. |
 
 ### A.medicine (5 rows)
 
@@ -1609,11 +1609,11 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 82 | `tool_rack` | Tool rack |  |  | KEEP | A tool rack. Beside a camp bench it raises the bench a level. |
 | 84 | `vice` | Vice |  |  | KEEP | A wooden vice. Beside a camp bench it raises the bench a level. |
 | 86 | `log_workbench` | Carpenter's bench |  |  | KEEP | A pinned plank bench with its own rack and vice. Stand near it to make the things that need a work table. |
-| 88 | `stone_forge` | Stone - Forge |  |  | UPDATE | **DECIDED: bronze smithing only, no smelting (s2.7).** A clay and rough stone forge under a log lean-to. Stand near it to work metal. |
-| 90 | `blacksmithy` | Brick - Forge |  |  | UPDATE | **DECIDED: becomes the Smithy (s2.7).** A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel. |
+| 88 | `stone_forge` | Stone - Forge |  |  | UPDATE | **TARGET: Primitive Smithy (§2.7/§3.3), stone anvil, Copper/Bronze shaping.** Existing ID mapping requires implementation review. |
+| 90 | `blacksmithy` | Brick - Forge |  |  | UPDATE | **TARGET: Improved Smithy (§2.7/§3.3), integrated bronze anvil and forge; shapes Copper/Bronze/Iron.** Iron Saw and Iron Anvil are made here; no ore smelting or proximity-anvil upgrade. |
 | 91 | `carcass` | Carcass |  |  | KEEP | A freshly killed animal. Work it with a knife for meat, hide and bones. |
-| 93 | `large_forge` | Large forge |  |  | UPDATE | **DECIDED: becomes the Blast Furnace, goes live (s2.7).** A big arched forge with a riveted iron frame and a brick-lined firebox. |
-| 95 | `master_forge` | Master forge |  |  | UPDATE | **DECIDED: becomes the Master Smithy, goes live (s2.7).** An ornate black iron and gold forge set with red gems, always glowing. |
+| 93 | `large_forge` | Large forge |  |  | UPDATE | **TARGET: Advanced Smelter (§2.7/§3.3), integrated windmill and dual bellows.** Existing ID mapping requires implementation review; no separate Blast Furnace. |
+| 95 | `master_forge` | Master forge |  |  | UPDATE | **TARGET: Master Smithy (§2.7/§3.3), Steel Anvil and integrated quencher.** Existing ID mapping requires implementation review. |
 | 193 | `wall_section` | Refined - Wall | planks |  | KEEP | A plank wall, two metres wide. Set pieces edge to edge to build a house. |
 | 195 | `floor_section` | Refined - Ceiling | planks |  | KEEP | A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge. |
 | 197 | `roof_section` | Refined - Roof | planks |  | KEEP | A plank roof on four posts, to set over walls and ceilings. |
@@ -1820,11 +1820,11 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 789 | `armour_stand` | Armour stand |  |  | UPDATE | **DECIDED [D4]: Hardwood Boards (s3.5).** A plank figure to hang a set of armour and clothes on. |
 | 791 | `sign` | Sign |  |  | KEEP | A plank board on a stick to mark a camp or a path. |
 | 793 | `tusk_mount` | Tusk mount |  |  | KEEP | A pair of boar tusks on a plank. Hang it on a wall for comfort. |
-| 795 | `clay_bloomery` | Clay bloomery |  |  | RETIRE | **APPROVED: no Clay Bloomery (s2.7).** A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge. |
+| 795 | `clay_bloomery` | Clay bloomery |  |  | RETIRE | **RETIRE: no Clay Bloomery in the approved progression (§2.7).** Stable number retained; no player construction or smelting step. |
 | 797 | `stonecutters_bench` | Stonecutter's bench |  |  | KEEP | A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel. |
 | 823 | `fish_trap_set` | Fish trap |  |  | KEEP | A fish trap set in the water. |
 | 825 | `bird_trap_set` | Bird trap |  |  | KEEP | A bird trap set on the ground. |
-| 827 | `iron_anvil` | Anvil |  |  | RETIRE | **DECIDED: the Smithy has a built-in anvil (s2.7).** A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel. |
+| 827 | `iron_anvil` | Anvil |  |  | RETIRE | **ID RECONCILIATION REQUIRED (§2.7/§3.3):** Iron Anvil is a component forged at Improved Smithy to construct Advanced Smithy. The legacy placed proximity-upgrade form is obsolete; this snapshot's RETIRE status does not retire the approved component. |
 | 830 | `preserving_jar` | Preserving jar |  |  | KEEP | A wide-mouthed clay jar with a lid, for pickling and preserving. |
 | 832 | `root_cellar` | Root cellar |  |  | KEEP | A stone-lined store dug into the ground. Cool all year, so food keeps far longer. |
 | 840 | `chicken_coop` | Chicken coop |  |  | FUTURE | A thatched coop for four chickens. They lay eggs. |
