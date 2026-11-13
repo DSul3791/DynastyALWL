@@ -1,6 +1,6 @@
 # Food and storage cross-document audit, 12 November 2026
 
-**Status: DOCUMENTATION AUDIT ONLY. Its s5 questions were all resolved by Dave's [D17] decisions (12 Nov 04:49Z); see the master catalog and `CATALOG_FINAL_AUDIT_2026-11-12.md`. Kept as the record of rounds 1 to 4.** Written by Claude on PR #1035 for `CLAUDE_FOOD_STORAGE_HANDOFF.md` and Dave's 12 Nov consolidation request.
+**Status: DOCUMENTATION AUDIT ONLY. Its s5 questions were all resolved by Dave's [D17] decisions (12 Nov 04:49Z); see the current master catalog for approved food rules. Kept only as dated evidence for the 12 Nov food/storage review; the obsolete companion static catalog audit was removed from active documents and remains in Git history.** Written by Claude on PR #1035 for `CLAUDE_FOOD_STORAGE_HANDOFF.md` and Dave's 12 Nov consolidation request.
 
 - Data and code were read only, from `dev` `7f8aabf4`: `data/items/*.json`, `inventory.gd`, `recipe_table.gd`, `craft_stock.gd`, `src/stream/server_items.gd`, `PROTOCOL.md` and `tools/gen_dishes.py`.
 - No game file was changed and no Godot test was run. Every scenario is a design walkthrough.
