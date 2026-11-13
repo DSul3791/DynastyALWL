@@ -245,7 +245,7 @@ Dave asked where a fortified wall (iron-banded masonry) would fit. Answer: a **s
 | Why a tier, not a variant | it is a clear step up (higher hit points against raids and siege) and the pieces differ; Dave's "half-timber" idea stays a Refined wall variant, adobe is not a tier |
 | Not now | no code, data or looks; waits for raids and siege to exist, and for Steve's hit-point rules |
 
-Adjacent rule: metal pieces (Iron - Doorway, Iron - Gate) stay by metal word; Fortified is the masonry-plus-iron wall, so a Fortified - Doorway would be the heavy iron-banded door in a masonry frame and replaces nothing today. Nothing is changed.
+Adjacent rule: metal pieces (Iron - Gate; Iron - Doorway was retired 13 Nov 2026) stay by metal word; Fortified is the masonry-plus-iron wall, so a Fortified - Doorway would be the heavy iron-banded door in a masonry frame and replaces nothing today. Nothing is changed.
 
 ### Fortified: inputs (Dave: raw iron or banding?) — recorded 10 Nov 12:06, future only
 

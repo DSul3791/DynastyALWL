@@ -5,7 +5,7 @@ Authority: `docs/buglists/BUGLIST-002.md`, `docs/design/DYNASTY_MASTER_ITEMS.md`
 ## Dave's decisions (13 Nov 2026, project chat 14:41-14:43Z)
 
 1. **How a door is made (Dave: "the same way they make a wall or any other construction piece, but it has to snap into a doorway").** A door is a **hammer blueprint** like every placed piece (buildables plan ruling "Hammer blueprints, no kits"; kits retired 5 Nov; decision 60: building pieces are placed by hammer blueprint). The blueprint cost is the director-approved door recipe exactly. It places only into a matching empty doorway; take-down refunds the cost in full (existing rule) and leaves the doorway standing. Door hammer level = its tier's doorway (Crude..Engineered 1, Fortified 3). No station.
-2. **Empty frame costs (Dave: "The empty doorway frames cost the same as a wall").** Each frame costs its tier's wall; arched the same; a double (two wall cells) twice that. Iron/Steel doorways have no matching wall: old cost minus hinges, pending Dave.
+2. **Empty frame costs (Dave: "The empty doorway frames cost the same as a wall").** Each frame costs its tier's wall; arched the same; a double (two wall cells) twice that. Dave confirmed doubles ("Double is double"). Iron/Steel doorways are retired (Dave 13 Nov: "There is no iron or steel door"); see the last section.
 3. **Names (Dave: "We don't use the word single it's implied"; "That is only four words").** No "Single" in any name (`<Tier> - Door`, `<Tier> - Arched door`, `<Tier> - Arched doorway`); validate_items does not count the tier "-" as a word.
 
 ## Reconciliation: existing records
@@ -20,8 +20,8 @@ Authority: `docs/buglists/BUGLIST-002.md`, `docs/design/DYNASTY_MASTER_ITEMS.md`
 | Engineered | `engineered_doorway` bp 173, item 867, state 213 | door removed; 8 concrete 2 lumber 2 hinges -> 8 concrete | `engineered_doorway_open` 214 |
 | Fortified | `fortified_doorway` bp 182, item 885, state 223 | door removed; 9 concrete 5 iron band 3 lumber 2 hinges -> 9 concrete 5 iron band | `fortified_doorway_open` 224 |
 | Refined double | `double_doorway` bp 104, item 661, state 139 | door removed; 6 lumber 2 twine 2 hinges -> 6 lumber 2 twine | `double_doorway_open` 140 |
-| (material row) | `iron_doorway` bp 105, item 663, state 141 | kept as an empty single frame; 3 lumber 2 iron ingot 12 nails 2 hinges -> 3 lumber 2 iron ingot 12 nails | `iron_doorway_open` 142 |
-| (material row) | `steel_doorway` bp 106, item 665, state 143 | kept as an empty single frame; 6 steel ingot 2 hinges -> 6 steel ingot | `steel_doorway_open` 144 |
+| (material row) | `iron_doorway` bp 105, item 663, state 141 | RETIRED 13 Nov 2026 (Dave): blueprint and item retired, structure row removed, state 141 retired; a saved one (and `iron_doorway_open`) loads as `doorway_section` (Refined - Doorway) | `iron_doorway_open` 142 |
+| (material row) | `steel_doorway` bp 106, item 665, state 143 | RETIRED 13 Nov 2026 (Dave): blueprint and item retired, structure row removed, state 143 retired; a saved one (and `steel_doorway_open`) loads as `fortified_doorway` (Fortified - Doorway) | `steel_doorway_open` 144 |
 
 Retired kit items (200, 265, 566, 568, 570, 660, 662, 664, 866, 884) stay retired. Gates (`*_gate`, fence pieces) are NOT doorways and are out of scope.
 
@@ -83,3 +83,7 @@ Costs (blueprint `cost`, exactly; double and double arched = the double column):
 - E on a door toggles shut/open (existing `use: door` / `toggle`). Frames have no `use`.
 - Take-down of a door refunds its blueprint cost and leaves the frame. Take-down of a frame holding a door, built or still a blueprint site, is refused: "Take the door out first."
 - Saved worlds: rows are kind/pos/yaw; old `*_open` doorway kinds load as the empty frame through `legacy_kinds` (`_kind_now`). A legacy doorway does not get a door added; the player builds one. No save-format or protocol change.
+
+## Iron and Steel doorways retired (13 Nov 2026)
+
+Iron - Doorway and Steel - Doorway are retired (Dave, 13 Nov 2026 15:14Z: "There is no iron or steel door. The tier names match the standard construction tiers"; 15:15Z: "Yes remove them please"). A saved Iron - Doorway loads as the empty Refined - Doorway (it was a plank wall, the same 2 m single opening); a saved Steel - Doorway loads as the empty Fortified - Doorway (the only metal-bearing wall tier). Dave can change either mapping. Item rows 662-665 and blueprints 105, 106 stay in the files, retired, so their numbers are never reused; `renames.json` maps items 663 -> `doorway_section` and 665 -> `fortified_doorway`; the kinds are `legacy_kinds` of those frames. Removed: the two structure rows, their looks (`metal_doorway` builder), icons. 28 frames remain (7 tiers x 4 openings).

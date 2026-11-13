@@ -57,7 +57,7 @@ ITEMS = {
     # B1b: stairs, railings, the double and metal doorways
     "log_stairs": ("log_stairs", STAIR_VIEW), "stone_stairs": ("stone_stairs", STAIR_VIEW), "brick_stairs": ("brick_stairs", STAIR_VIEW),
     "wooden_railing": ("wooden_railing", FENCE_VIEW), "iron_railing": ("iron_railing", FENCE_VIEW),
-    "double_doorway": ("double_doorway", WALL_VIEW), "iron_doorway": ("iron_doorway", WALL_VIEW), "steel_doorway": ("steel_doorway", WALL_VIEW),
+    "double_doorway": ("double_doorway", WALL_VIEW),
     # B4: lights
     "wooden_hanging_lantern": ("wooden_hanging_lantern", STATION_VIEW), "iron_hanging_lantern": ("iron_hanging_lantern", STATION_VIEW),
     "iron_wall_lantern": ("iron_wall_lantern", WALL_HUNG), "wooden_torch_post": ("wooden_torch_post", STATION_VIEW),

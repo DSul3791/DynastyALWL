@@ -99,8 +99,6 @@ const GOLDEN := {
 	"wooden_railing": "wooden_railing",
 	"iron_railing": "iron_railing",
 	"double_doorway": "double_doorway",
-	"iron_doorway": "iron_doorway",
-	"steel_doorway": "steel_doorway",
 	"wooden_hanging_lantern": "wooden_hanging_lantern",
 	"iron_hanging_lantern": "iron_hanging_lantern",
 	"iron_wall_lantern": "iron_wall_lantern",

@@ -6,19 +6,19 @@ States: VERIFIED FIXED / STILL FAILING / NEEDS PLAYER VERIFICATION / BLOCKED. No
 
 | Item | State | Notes |
 |---|---|---|
-| 10 existing doorways are empty frames (no integral door, no E, walkable) | NEEDS PLAYER VERIFICATION | data + looks; open twins retired via `legacy_kinds` |
+| 8 existing doorways are empty frames (Iron and Steel retired 13 Nov) (no integral door, no E, walkable) | NEEDS PLAYER VERIFICATION | data + looks; open twins retired via `legacy_kinds` |
 | 20 new frames (double, single arched, double arched per tier; Refined double existed) | NEEDS PLAYER VERIFICATION | blueprints 252-271 |
 | 28 doors at the approved costs | NEEDS PLAYER VERIFICATION | blueprints 272-299; doubles 2x, arched = rectangular |
 | Door placement: snap to matching frame, refusals nodoorway / mismatch / taken, any tier in any frame | NEEDS PLAYER VERIFICATION | `PlacementRules.doorway_fit`, shared by ghost and server |
 | E opens/closes; double door one assembly; sync | NEEDS PLAYER VERIFICATION | existing toggle path |
 | Door take-down refunds, frame stays; frame with door refuses take-down | NEEDS PLAYER VERIFICATION | |
-| Save/reload; old `*_doorway_open` saves load as the empty frame | NEEDS PLAYER VERIFICATION | no save-format or protocol change |
+| Save/reload; old `*_doorway_open` saves load as the empty frame; saved Iron/Steel doorways load as Refined/Fortified frames | NEEDS PLAYER VERIFICATION | no save-format or protocol change |
 | Appearance per tier (materials, thickness, hardware), arched curves | NEEDS PLAYER VERIFICATION | headless lane has no pictures |
 | Icons for new frames and doors | BLOCKED (art lane) | not baked; pieces show their name |
 
 ## Dave's decisions (13 Nov 2026, 14:41-14:43Z, project chat)
 1. Doors are made and fitted like any construction piece (hammer blueprint) and snap into a doorway.
-2. Empty frames cost the same as a wall (the tier's wall; arched the same; double 2x as two wall cells). Iron/Steel doorways: no matching wall, old cost minus hinges, pending Dave.
+2. Empty frames cost the same as a wall (the tier's wall; arched the same; double 2x as two wall cells; Dave confirmed "Double is double"). Iron/Steel doorways retired (Dave 15:15Z); saved ones load as Refined - Doorway / Fortified - Doorway.
 3. No "Single" in names; the tier "-" is not a word (validate_items).
 
 ## Known limits
@@ -38,6 +38,6 @@ States: VERIFIED FIXED / STILL FAILING / NEEDS PLAYER VERIFICATION / BLOCKED. No
 - NOT RUN: picture lanes, any visual, sound or frame-rate check (headless lane). Every item stays NEEDS PLAYER VERIFICATION until Dave's F6 check.
 
 - `79669de` (Dave's rulings: frame costs = wall, no "Single", tier dash not a word): gate review PASS WITH FIXES (docs only, fixed in the next commit). PC re-run on `94596ec` (selector 066c46d..94596ec): 214 pass, 0 fail (209 fast + test_door_looks + 4 timing), 233 s; validate_items 0 errors; no new warnings; startup smoke 0 script errors (known exit 134). Logs: /work/lanerun/bl002c_plan, /work/lanerun/bl002c_extra. check_look_names.py run in the cloud on 94596ec: all 305 structure looks drawable.
-- Open confirmations with Dave: double frame = two walls; Iron/Steel doorways keep old cost minus hinges.
+- Confirmed by Dave: double frame = two walls. Iron/Steel doorways retired; the save mapping (Iron -> Refined, Steel -> Fortified) is Dave's to change.
 - Note: old doorways placed before this change refund the new (wall) cost on take-down.
 - Deferred broad run (`tools/release_check.sh` on Dave's PC when free) is still owed after the dev merge, before any promotion to main (TEST_GATES risk-based policy).

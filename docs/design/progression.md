@@ -43,7 +43,7 @@ Morgan, 10 Nov 2026; brought up to date with main by Jamie, 11 Nov 2026. Docs on
 ## Gate 5. Iron
 
 **New station:** Brick - Forge (level 2; 20 Brick, 10 Stone, 4 Clay mortar) smelts iron and works iron nails, hinges and rivets; with an Anvil (level 3) it makes Iron bands.
-**You make:** Iron tools, weapons and mail (Axe, Pickaxe, Hammer, Scythe, Saw, Chisel, Spear, Sword, Dagger, Battle axe, Shield, Bolt, Helm, Greaves, Mail shirt, Gauntlets), Iron - Chest, Needle, Jaw trap, iron doorways, Iron - Hand pump, Iron - Pipe, Tap, Deep-well pump (force pump, up to 10 m), Iron - Lantern.
+**You make:** Iron tools, weapons and mail (Axe, Pickaxe, Hammer, Scythe, Saw, Chisel, Spear, Sword, Dagger, Battle axe, Shield, Bolt, Helm, Greaves, Mail shirt, Gauntlets), Iron - Chest, Needle, Jaw trap, Iron - Hand pump, Iron - Pipe, Tap, Deep-well pump (force pump, up to 10 m), Iron - Lantern.
 **You build:** metal fences and gates, Raised cistern for gravity water, lamp posts, Iron - Brazier.
 **What you now want:** the best steel, the best armour.
 

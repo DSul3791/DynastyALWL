@@ -260,10 +260,25 @@ func _init() -> void:
 		var def_no_kit: Dictionary = structure_defs[kind].duplicate(true)
 		def_no_kit.erase("kit")
 		def_no_kit.erase("takes_kinds")   # items.json kinds, not item ids ("medicine" is also a retired item id); checked below
+		def_no_kit.erase("legacy_kinds")   # old structure kinds an old save may hold ("iron_doorway" is also a retired item id); checked below (Dave 13 Nov 2026)
 
 		for ref in JSON.stringify(def_no_kit).split("\""):
 			if retired_ids.has(ref):
 				fail("structures.json %s names the retired item %s" % [kind, ref])
+
+	# legacy_kinds (server_items.gd _kind_now): each old kind is no structure row any more (a live row would win and the mapping would never run)
+	# and is claimed by one row only (or which row a save loads as would depend on file order).
+	var legacy_owner: Dictionary = {}
+
+	for kind in structure_defs:
+		for old in structure_defs[kind].get("legacy_kinds", []):
+			if structure_defs.has(String(old)):
+				fail("structures.json %s: legacy kind %s is still a structure row" % [kind, old])
+
+			if legacy_owner.has(String(old)):
+				fail("structures.json: legacy kind %s is claimed by both %s and %s" % [old, legacy_owner[String(old)], kind])
+
+			legacy_owner[String(old)] = String(kind)
 
 	var no_key: Array = []
 
@@ -952,6 +967,20 @@ func _init() -> void:
 	for kind in structures:
 		placed_forms[String(structures[kind].get("item", ""))] = true
 
+	# A retired item that renames.json replaces with a live item needs no source: a save that holds it loads the replacement (item_table.gd load_renames).
+	var renamed_away: Dictionary = {}
+	var renames: Dictionary = _read("renames.json").get("renames", {})
+
+	for old_id in renames:
+		var new_id: String = String(renames[old_id])
+		var old_row: Dictionary = items_file["items"].get(String(old_id), {})
+		var new_row: Dictionary = items_file["items"].get(new_id, {})
+
+		if not bool(old_row.get("retired", false)) or new_row.is_empty() or bool(new_row.get("retired", false)):
+			fail("renames.json %s -> %s: the old row must be retired and the new one a live item" % [old_id, new_id])
+		else:
+			renamed_away[String(old_id)] = true
+
 	for id in items_file.get("items", {}):
 		var entry: Dictionary = items_file["items"][id]
 		var is_future: bool = bool(entry.get("future", false))
@@ -959,7 +988,7 @@ func _init() -> void:
 		if is_future:
 			future.append(id)
 
-		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future:
+		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)

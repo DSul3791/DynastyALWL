@@ -6909,13 +6909,14 @@
 			},
 			"iron_doorway": {
 				"number": 663,
+				"retired": true,
 				"name": "Iron - Doorway",
 				"description": "An iron-strapped plank wall with an empty opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 141."
+				"note": "Retired 13 Nov 2026 (Dave: there is no Iron or Steel tier). A saved one becomes the Refined - Doorway (renames.json, structures legacy_kinds)."
 			},
 			"steel_doorway_kit": {
 				"number": 664,
@@ -6930,13 +6931,14 @@
 			},
 			"steel_doorway": {
 				"number": 665,
+				"retired": true,
 				"name": "Steel - Doorway",
 				"description": "A steel-framed wall with an empty opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 143."
+				"note": "Retired 13 Nov 2026 (Dave: there is no Iron or Steel tier). A saved one becomes the Fortified - Doorway (renames.json, structures legacy_kinds)."
 			},
 			"horn_pane": {
 				"number": 666,

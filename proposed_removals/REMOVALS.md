@@ -99,6 +99,11 @@ No whole files. Removed inside live files (git history keeps them; why, and what
 | assets/audio/make_swing.py | Kathleen | 10 Nov | generated the whoosh | none |
 Also removed inside live files: hit_sounds.gd swing() with its SWING_* constants and counters, the call in held_item.gd _start_swing, the "swing" row of tools/sound_check.py, and the hit_swing rows of the sound manifest, SOUND_PACK.md and LOUDNESS.md.
 
+## Retired Iron and Steel doorways, 13 Nov 2026
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/iron_doorway.png, steel_doorway.png | Claude (BUGLIST-002) | 13 Nov | Dave: "There is no iron or steel door" / "Yes remove them please": Iron - Doorway and Steel - Doorway are retired (their .import files deleted) | none: a saved one loads as Refined - Doorway / Fortified - Doorway, which have their own icons |
+
 ## Replaced code (deleted outright, Decision 61 as clarified by Dave, 12 Nov 2026)
 Code that new code replaced is deleted, not moved here. Add one row per deleted file in the same PR; `tools/merge_check.py` checks that the replacement exists and that nothing still uses the old file. Code with no replacement is an ordinary unused file: move it aside as above.
 | deleted path | replaced by (path at HEAD) | who | date | why |

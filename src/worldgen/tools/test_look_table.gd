@@ -14,7 +14,7 @@ const BIG := {"rock_pile": 900, "rough_bed": 1300, "log_wall": 1500, "saw_mill":
 const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "log_window": 800,
 	"stone_doorway": 450, "brick_doorway": 450, "stone_window": 450, "brick_window": 450}
 # Buildables B1b to B6 (Kathleen, 10 Nov 2026), again the cap of the piece each matches. The log stairs are the stone stairs' ten steps (240) on two log
-# stringers, 350. The iron and steel doorways are the stone doorway's family, 450. The thatch and log roof corners are their straight roofs (log 300)
+# stringers, 350. The thatch and log roof corners are their straight roofs (log 300)
 # with a third eave or a fascia and a corner post, 400 (the thatch doorway's). A fence section or gate is a 2 m wall piece between two shared
 # eight-sided posts, 600 (door_double's); the log palisade is six whole sharpened stakes, a log wall stood upright, 900 (under log_wall's 1500). The
 # barrel, the stone well and the deep well pump are round builds like the clay hearth and flower pot, 500 (the well 550); the stone torch pillar
@@ -22,14 +22,14 @@ const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "
 # a 2 m bed with four lashed stakes and a woven edge, 600 (the foundation's).
 const FENCES := ["thatch_fence", "thatch_gate", "thatch_gate_open", "wood_fence", "wood_gate", "wood_gate_open", "log_fence", "log_gate", "log_gate_open",
 	"stone_fence", "stone_gate", "stone_gate_open", "brick_fence", "brick_gate", "brick_gate_open", "iron_fence", "iron_gate", "iron_gate_open"]
-const B1B_B6 := {"log_stairs": 350, "iron_doorway": 450, "steel_doorway": 450,
+const B1B_B6 := {"log_stairs": 350,
 	"thatch_roof_corner": 400, "log_roof_corner": 400, "log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
 	"wooden_barrel": 500, "stone_well": 550, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
 	"stone_lamp_post": 450, "thatch_garden_plot": 600}
 # The pitched tier roofs (Kathleen, 10 Nov 2026): the clay tile roofs add a rib down the slope every 0.24 m and a round ridge tile to the courses, 350;
 # their hip corners carry the ribs over three faces and two hip caps, 400 (the thatch and log corners').
 const TILE_ROOFS := {"brick_roof": 350, "engineered_roof": 350, "brick_roof_corner": 400, "engineered_roof_corner": 400}
-# The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with bolted bands, 450 (the iron and steel doorways').
+# The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with bolted bands, 450.
 const FORTIFIED := {"fortified_doorway": 450}
 # BUGLIST-002 (13 Nov 2026): the new empty doorway frames. The double is the single's wall twice as wide, so the single's cap; an arched frame adds the wall steps and
 # a ring of voussoirs, bent sticks or timbers round the curve (measured with tools/look_runtime.py at 252 to 1056). A door is one parametric builder: a single leaf
