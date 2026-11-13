@@ -48,7 +48,7 @@ func _arched(opening: String) -> bool:
 func _clear_half(opening: String, y: float) -> float:
 	var half: float = _gap(opening) * 0.5
 
-	if y >= 2.0:
+	if y > 2.0 + 1e-6:   # at 2.0 a rectangular opening is still full width: a shut leaf's solid ends exactly on its top edge
 		return 0.0
 
 	if not _arched(opening) or y <= 1.5:
@@ -243,7 +243,7 @@ func _door_checks(tier: String, opening: String) -> void:
 				var x: float = -half - 0.4 + 0.05 * float(ix)
 				ix += 1
 
-				if absf(x) <= _clear_half(opening, y) + 0.001 and y <= 2.0 + 0.001:   # 0.05 * 40 is a hair over 2.0
+				if absf(x) <= _clear_half(opening, y) + 0.001 and y <= 2.0:
 					continue
 
 				if _solid_at(shut, Vector3(x, y, z)):
