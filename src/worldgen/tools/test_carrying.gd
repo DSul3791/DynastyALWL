@@ -136,7 +136,7 @@ func _init() -> void:
 	var places: Array = items._worn_places()
 	var n: Callable = func(id: String) -> int: return table.number_of(id)
 
-	# 1. The model: seven appended positions, every carrying row live with its own place, carry_bonus_kg gone.
+	# 1. The model: seven appended positions, every carrying row live with its own place; only the two backpacks spread weight (carry_bonus_kg 12 and 18, DESIGN-001).
 	check(places.size() == 27 and places[19] == "body:mail" and places.slice(20) == ["back:roll", "waist:pouch", "waist:quiver", "waist:scabbard", "waist:tools", "shoulder:base", "strap:base"], "worn gains seven positions after body:mail (%s)" % str(places.slice(19)))
 	var homes: Dictionary = {"backpack": "back:base", "leather_backpack": "back:base", "wicker_pack_basket": "back:base", "travellers_rucksack": "back:base", "wooden_pack_frame": "back:base",
 		"quiver": "waist:quiver", "leather_quiver": "waist:quiver", "leather_belt": "waist:base", "belt_pouch": "waist:pouch", "weapon_scabbard": "waist:scabbard", "tool_roll": "waist:tools",
@@ -144,13 +144,13 @@ func _init() -> void:
 	var wrong: Array = []
 
 	for id in homes:
-		if items._place_of(n.call(id)) != place(items, homes[id]) or bool(table.entry(id).get("future", false)) or table.entry(id).has("carry_bonus_kg"):
+		if items._place_of(n.call(id)) != place(items, homes[id]) or bool(table.entry(id).get("future", false)) or table.entry(id).has("carry_bonus_kg") != (id in ["backpack", "leather_backpack"]):
 			wrong.append(id)
 
-	check(wrong.is_empty(), "each carrying row is live, has its own worn position and no carry_bonus_kg (%s)" % str(wrong))
+	check(wrong.is_empty(), "each carrying row is live, has its own worn position and a carry_bonus_kg only on the two backpacks (%s)" % str(wrong))
 	check(BagRules.slots_of(table, n.call("backpack")) == 10 and BagRules.slots_of(table, n.call("leather_backpack")) == 15 and BagRules.slots_of(table, n.call("quiver")) == 2 and int(table.entry("quiver").get("ammo_capacity", 0)) == 40, "volume: Hide - Backpack 10 slots, Leather - Backpack 15, Hide - Quiver 40 arrows")
 
-	# 2. A backpack and a quiver are worn together; the pack adds room, not strength.
+	# 2. A backpack and a quiver are worn together; the pack spreads the load (its carry_bonus_kg raises the limit, test_backpack_carry measures it).
 	var body_before: float = items._carry_body(1)
 	give(items, 1, "backpack")
 	give(items, 1, "quiver")
@@ -158,7 +158,7 @@ func _init() -> void:
 	wear(items, 1, "quiver")
 	var worn: Array = items.worn_of(1)
 	check(worn[place(items, "back:base")] == n.call("backpack") and worn[place(items, "waist:quiver")] == n.call("quiver") and inv.count_of(n.call("backpack")) == 0, "a backpack and a quiver are worn together")
-	check(is_equal_approx(items._carry_body(1), body_before), "the worn pack does not raise the carry limit")
+	check(is_equal_approx(items._carry_body(1), body_before + 12.0 / 0.7), "the worn Hide - Backpack raises the carry limit by its 12 kg")
 
 	# 3. Fill the backpack through its window (a worn bag is container -1 - its worn position).
 	var pack_id: int = -1 - place(items, "back:base")

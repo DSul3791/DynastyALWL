@@ -10137,13 +10137,14 @@ func _worn_bags_kg(peer: int) -> float:
 # loaded) is work to move with even under the free load: loaded_effort x its load as a share of the free carry (CarryRules.comfort_kg), at most 1.
 func _loaded_bag_effort(peer: int) -> float:
 	var extra: float = 0.0
-	var free_kg: float = maxf(CarryRules.comfort_kg(_carry_body(peer), _carry_cfg), 1.0)
+	var free_kg: float = 0.0   # worked out at the first loaded bag only: most players wear none
 
 	for raw in _characters.get(_peer_key.get(peer, ""), {}).get("worn", []):
 		if typeof(raw) == TYPE_ARRAY and (raw as Array).size() > 3 and typeof(raw[3]) == TYPE_DICTIONARY and raw[3].has("bag"):
 			var effort: float = float(table.entry(table.id_of(int(raw[0]))).get("loaded_effort", 0.0))
 
 			if effort > 0.0:
+				free_kg = free_kg if free_kg > 0.0 else maxf(CarryRules.comfort_kg(_carry_body(peer), _carry_cfg), 1.0)
 				extra += effort * minf(CarryRules.bag_kg(raw[3], table, _carry_cfg) / free_kg, 1.0)
 
 	return extra
@@ -11941,10 +11942,11 @@ func rain_shed(peer: int) -> float:
 	return clampf(best, 0.0, 1.0)
 
 
-# The body weight the carry limit is worked out from (cap = ratio x body). A pack adds room, never strength (master s3.9 rule 2; catalog Phase 5
-# retired carry_bonus_kg).
+# The body weight the carry limit is worked out from (cap = ratio x body): the real weight plus what the worn pack's weight spreading adds
+# (items.json carry_bonus_kg, 12 Hide - Backpack and 18 Leather - Backpack; DESIGN-001, BUGLIST-001). Slots are not touched: a bag's own slots are
+# separate, and the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
-	return float(vitals_of(peer).get("weight", 75.0))
+	return CarryRules.carry_body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)
 
 
 # ACT_WEAR: the piece in a pack slot goes to its slot-and-layer. Every worn piece sharing a position with it comes off into the pack (the one in

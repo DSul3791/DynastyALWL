@@ -146,7 +146,7 @@ func _init() -> void:
 	var kg_before: float = items._carry_body(1)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("backpack"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_WEAR, inv.numbers.find(items.table.number_of("backpack")), 0, 0, Vector3.ZERO)
-	check(is_equal_approx(items._carry_body(1), kg_before) and items.worn_of(1)[5] == items.table.number_of("backpack"), "a worn pack adds room, not carrying strength (catalog Phase 5)")
+	check(is_equal_approx(items._carry_body(1), kg_before + 12.0 / 0.7) and items.worn_of(1)[5] == items.table.number_of("backpack"), "a worn Hide - Backpack spreads the load: the carry limit rises by its 12 kg (DESIGN-001)")
 	items.action(1, Net.ACT_UNWEAR, 6, 0, 0, Vector3.ZERO)   # the cloak is in the body's outer layer (worn position 6, #921, protocol 107)
 	check(items.worn_of(1)[6] == 0 and inv.count_of(items.table.number_of("hide_cloak")) == 1, "taking a piece off returns it to the pack")
 	items._dirty = true
