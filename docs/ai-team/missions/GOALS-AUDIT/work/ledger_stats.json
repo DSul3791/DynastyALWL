@@ -1,0 +1,24 @@
+{
+ "rows": 651,
+ "original": 651,
+ "adds": 0,
+ "design_status": {
+  "NEEDS_TEST": 651
+ },
+ "evidence_level": {
+  "DOCUMENT_ONLY": 53,
+  "CODE_VERIFIED": 598
+ },
+ "runtime_support": {
+  "UNKNOWN": 651
+ },
+ "content_status": {
+  "UNKNOWN": 651
+ },
+ "route": {
+  "MAIN": 118,
+  "ADDITIONAL": 533
+ },
+ "reward_total": 15670,
+ "recommended_total": 15670
+}
