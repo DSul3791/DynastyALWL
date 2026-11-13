@@ -8,6 +8,11 @@
   "BLOCKED": 144,
   "NEEDS_TEST": 30
  },
+ "review_method": {
+  "INDIVIDUAL": 323,
+  "RULE": 328
+ },
+ "individual_main": 118,
  "evidence_level": {
   "CODE_VERIFIED": 640,
   "AUTOMATED_TESTED": 11

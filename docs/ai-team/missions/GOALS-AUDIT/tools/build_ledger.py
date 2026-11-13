@@ -22,6 +22,25 @@ LF = J("lead_findings.json", {})
 D = lambda p: json.load(open(os.path.join(ROOT, "data", p)))
 R = D("items/recipes.json")["recipes"]; B = D("items/blueprints.json")["blueprints"]
 
+# ---- how each goal was examined (individually, by a named record; otherwise by rule only)
+import re
+def table_ids(path, start, end):
+    txt = open(os.path.join(W, path)).read()
+    seg = txt.split(start, 1)[1].split(end, 1)[0]
+    return set(re.findall(r"^\| \d+ \| `?([a-z_:0-9]+)`? \|", seg, re.M))
+GIDS = {g["goal_id"] for g in goals}
+METHOD = collections.defaultdict(list)
+for gid in table_ids("ws_walk_early.md", "## (a)", "## (b)") | table_ids("ws_walk_late.md", "## (a)", "## (b)"):
+    METHOD[gid].append("walkthrough step (ws_walk_early/late section a)")
+early_c = open(os.path.join(W, "ws_walk_early.md")).read().split("## (c)", 1)[1].split("## Verified", 1)[0]
+for gid in re.findall(r"^- L\d+ `([^`]+)`", early_c, re.M):
+    METHOD[gid].append("side goal read one by one (ws_walk_early section c)")
+for gid in J("ws_runtime.json", {}).get("goals", {}):
+    METHOD[gid].append("completion rule read in code (ws_runtime)")
+for gid in J("review_log.json", {}).get("checked_goals_round1", []):
+    METHOD[gid].append("independent reviewer re-check")
+METHOD = {k: v for k, v in METHOD.items() if k in GIDS}
+
 by_goal = collections.defaultdict(list)
 for fid, f in LF.items():
     if fid.startswith("_"): continue
@@ -31,7 +50,7 @@ for fid, f in LF.items():
 COLS = ["goal_id", "record_type", "draft_line", "title", "route", "draft_section", "content_status", "proposed_reward_copper",
         "required_action_and_completion", "materials_exact", "tools_required", "stations_required", "dependency_goal_ids",
         "acquisition_source_evidence", "completion_event_support", "design_status", "evidence_level", "runtime_support",
-        "source_refs", "finding_ids", "recommended_correction", "recommended_reward_copper", "gameplay_test_required"]
+        "source_refs", "review_method", "finding_ids", "recommended_correction", "recommended_reward_copper", "gameplay_test_required"]
 SEV = {"HIGH": 3, "MED": 2, "LOW": 1}
 STATUS_RANK = {"PASS": 0, "NEEDS_TEST": 1, "NEEDS_CORRECTION": 2, "BLOCKED": 3}
 
@@ -83,6 +102,7 @@ for g in goals:
         "completion_event_support": (r.get("event_support") or kind_rt.get("summary") or "").replace("\n", " "),
         "design_status": status, "evidence_level": evidence, "runtime_support": runtime,
         "source_refs": " ".join(g.get("evidence", []) + ["PLAYER_GOALS_REWARDS_DRAFT.md:%d" % g["line"]]),
+        "review_method": ("INDIVIDUAL: " + "; ".join(METHOD[gid])) if gid in METHOD else "RULE: script cross-check of the row against the named data sources (recipes/blueprints/structures/items/groups), dependency graph and obtainability fixed point; not read one by one",
         "finding_ids": " ".join(fids), "recommended_correction": corr,
         "recommended_reward_copper": e.get("recommended_copper", ""),
         "gameplay_test_required": tests or g.get("test", ""),
@@ -117,6 +137,8 @@ for x in back:
         if f not in LF or f.startswith("_"): errs.append("%s unknown finding %s" % (x["goal_id"], f))
 stats = dict(rows=len(back), original=len(orig), adds=len(back) - len(orig),
              design_status=collections.Counter(x["design_status"] for x in orig),
+             review_method=collections.Counter(x["review_method"].split(":")[0] for x in orig),
+             individual_main=sum(1 for x in orig if x["route"] == "MAIN" and x["review_method"].startswith("INDIVIDUAL")),
              evidence_level=collections.Counter(x["evidence_level"] for x in orig),
              runtime_support=collections.Counter(x["runtime_support"] for x in orig),
              content_status=collections.Counter(x["content_status"] for x in orig),

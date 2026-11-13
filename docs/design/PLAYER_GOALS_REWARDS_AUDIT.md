@@ -30,6 +30,12 @@ Method, in six passes (brief, section 'Passes'):
 
 Design status of a goal is the most severe effect among its findings: BLOCKED (cannot be completed in play today), NEEDS_CORRECTION (the instruction, ordering, completion rule or text is wrong or incomplete), NEEDS_TEST (believed correct but depends on content not yet verified in play), PASS (instruction, materials, stations and prerequisites match the code and data). Design status is independent of runtime support: a PASS gather goal still needs a new event before it can complete (column `runtime_support`). Economy findings never change design status; recommended coin values sit in their own column.
 
+**Depth of review, per goal (ledger column `review_method`).** 323 goals (all 118 main-route goals) were examined individually: a walkthrough step, a side goal read one by one, a completion rule read in the server code, or an independent reviewer's re-check (the column names which). The other 328 goals (side branches at dependency levels 6-17, including about 68 cooking and food rows) were assessed **by rule only**: a script compared each row's materials, quantities, kept tools, station and level, blueprint status and hammer tier with the named data files, then placed it in the dependency graph and the obtainability fixed point. Those rows were not read one by one by a person or agent; mechanism-level findings (for example GA-20 fuel, GA-24 doors) were applied to them by station or family.
+
+**Evidence level, per goal.** CODE_VERIFIED means the named data sources in `source_refs` were read for that row (by script for rule-only rows) and the mechanism code was read once for the family; it does not mean the goal was seen working. AUTOMATED_TESTED is given only to the 11 legacy goals whose completion `test_goals.gd` asserts (one of the 20 David4 scripts). GAMEPLAY_VERIFIED is given to none: nobody has seen any of these goals on screen. No row is DOCUMENT_ONLY, because every row was compared with at least one named data file.
+
+**Ledger integrity (machine-checked by `tools/build_ledger.py` on every build):** 651 ORIGINAL rows, exactly one per draft row (the parsed draft has 651 rows and the ID sets are compared for equality, so a missing or extra goal fails the build); no duplicate `goal_id` across all 677 rows; every required field present; every reward an integer copper value; every finding ID defined. Every count in this report is computed from the CSV by `tools/write_report.py`, not typed.
+
 Evidence classes: CREATOR (Dave's own rulings), IMPLEMENTED (code and data at the baseline), PROPOSAL (the draft and agent documents), UNKNOWN. Godot was not run in the cloud. Automated evidence comes from one David4 run relayed by the coordinator (section 3).
 
 Supporting material (not part of the deliverable, kept for review): `docs/ai-team/missions/GOALS-AUDIT/` (tools, workstream reports `work/ws_*.md`, machine results `work/*.json`, `STATE.md`).
@@ -190,6 +196,140 @@ Main route as written, with each step's audit verdict. The full reasoning for ea
 | 116 | `build:fortified_doorway` | Build Fortified - Doorway | BLOCKED | GA-04 GA-25 GA-57 |
 | 117 | `build:fortified_door` | Build Fortified - Door | NEEDS_CORRECTION | GA-24 GA-25 GA-57 |
 | 118 | `build:fortified_gate` | Build Fortified - Gate | BLOCKED | GA-04 GA-57 |
+
+### Phase C walkthrough, step by step
+
+The new-player walkthrough was written one step at a time, from an empty pack (main 1-45, then 44-118), by two separate workstreams reading code and data. Their step tables are reproduced below unchanged, apart from cutting the evidence column. Where the independent review corrected a step (section 15: GA-10 tree species, GA-21 foundation order, GA-23 bronze order, GA-36 drink), the correction in this report supersedes the table. Verdicts: YES; YES-WITH-UNTAUGHT-PREREQ (doable, but the guide leaves out something the player needs); NO; UNKNOWN.
+
+**Main steps 1-45** (from `work/ws_walk_early.md`):
+
+| # | goal_id | Can do now? | What the guide fails to explain |
+|---|---|---|---|
+| 1 | gather:stick | YES | The prompt says only "Press E to gather". Hold E picks up everything within 2 m. Auto pickup is the P key. Tap or hold is not explained (LOW). |
+| 2 | gather:stone | YES | "Or break an appropriate boulder": the player has no tool yet. A stone axe blow on bare rock gives a stone, but the axe is step 7 (LOW). |
+| 3 | drink | YES | Nothing missing. |
+| 4 | fibre | YES | Asks for 12 fibre. The tools up to the hammer need 5 twine = 15 fibre (2 axe + 2 pickaxe + 1 hammer), and the twine goal's 2 twine are used by the axe (W-11). |
+| 5 | twine | YES | Nothing missing for the craft. The I key, queue and Craft button match the live screen. |
+| 6 | craft:stone_knife | YES | That the knife is the carcass tool is not mentioned until step 45 (W-02). |
+| 7 | axe | YES | "Equip it": a new tool goes into the first empty hotbar slot by itself. The player must press that number key to hold it, and tools work only from the hotbar (LOW, W-15). |
+| 8 | craft:stone_pickaxe | YES | Needs 2 more twine. The fibre count of step 4 is short (W-11). Purpose not stated: boulders and ore. A pick on wood only makes kindling. |
+| 9 | fell | YES | A tree takes 3-22 blows by trunk size. "Strike a thin tree first" is missing (LOW). When the trunk lands it breaks into logs by itself, and the crown drops sticks and leaves (broadleaves, not in winter). The leaves are needed at step 25 and the guide never says so (W-08). |
+| 10 | gather:log | YES-WITH-UNTAUGHT-PREREQ | "Collect the resulting logs" (plural) cannot be done. A species log (Oak, Birch, Spruce, ...) is a shoulder item, one at a time. A second pickup says "Put your log down first (Q)". Q, which puts it down, is never taught. Whether the goal key `log` counts species logs is per runtime workstream (W-04, W-20). |
+| 11 | activity:chop_log_blocks | YES-WITH-UNTAUGHT-PREREQ | "Drop a felled log onto the ground": felled logs already lie on the ground, so no drop is needed. Q, F F or D drops a carried one. The yield is not explained. A species (shoulder) log gives 3 Large wooden blocks. Only a plain `Log` (species whose own log is retired, e.g. alder, willow, rowan) gives 3 small blocks. "Keep one for your Wooden - Hammer" is therefore usually wrong (W-01). |
+| 12 | hammer | NO, as written, for most first trees | The recipe needs `wooden_block` (group: Hardwood block or Softwood block). A Large block does not satisfy it. Hidden step: Inventory, "Small wooden blocks" (1 Large wooden block, axe kept, gives 4 Hardwood blocks) or "Small softwood blocks". That step is a side goal at level 5 / 3 (W-01). |
+| 13 | craft:campfire_kit | YES | Nothing missing. |
+| 14 | activity:place_campfire | YES-WITH-UNTAUGHT-PREREQ | "Use its placement action": the kit is not a tool and lands in the backpack. The player must open I, Use (E) on the kit to hold it, then left-click where the ring shows. Also missing: 2 m from another fire, 2.5 m from structures, a yellow ring means rain puts it out, a green ring means under a crown (W-06). |
+| 15 | fire | YES | "Open its fuel storage with F, add sticks" is not needed. A placed kit already holds its first sticks, and E lights it. The kit's own description still says "light it with fibre", but no starter is used (LOW, W-12). |
+| 16 | craft:chopping_block | YES-WITH-UNTAUGHT-PREREQ | "1 Large wooden block": the guide never said where it comes from. Step 11 said only "wooden blocks" (W-01; also pass2_report.txt). |
+| 17 | activity:place_chopping_block | YES-WITH-UNTAUGHT-PREREQ | Same placement gap as step 14 (I, Use E, left click) (W-06). Missing: 2.5 m clear of the fire and other structures. "Keep an axe equipped": it must be in hand (held hotbar slot), not merely owned. |
+| 18 | gather:log_oak | YES | "Oak or other supported hardwood" is not listed: beech, birch, maple, walnut and mahogany also count. Spruce, Scots pine and the plain Log are softwood (W-14). One at a time on the shoulder (W-04). |
+| 19 | craft:firewood | YES-WITH-UNTAUGHT-PREREQ | The text mixes two real actions. (1) E at the block splits one wooden block from the pack. A small block gives 2 firewood and a large block gives 4, on the ground beside the block. (2) F opens the block's Craft tab, where "Hard firewood" turns 1 hardwood log (shoulder, or on the ground within 3 m) into 12 firewood in the block's own store. The goal cites recipe (2) but tells the player to do (1) (W-05). |
+| 20 | activity:medium_fire | YES | Firewood made through F sits in the chopping block's store tab and must be taken out first (W-05). Any wooden block also counts as firewood class, so blocks alone can make the medium fire. Fine, but a shortcut worth stating. |
+| 21 | activity:bonfire | YES-WITH-UNTAUGHT-PREREQ | 3 logs means 3 trips with one shoulder log each: E to pick up, walk, F at the fire, move it in. Not explained (W-04). The next pot step cannot use this fire while logs remain (W-07). |
+| 22 | berries | YES | Nothing missing (right click or Eat / use). |
+| 23 | craft:wooden_spade | YES | Nothing missing. Right click switches Dig and Raise. Default is Dig. |
+| 24 | gather:thatch | YES | Quantity: rows 26-33 need 145 thatch (bed 10, foundation 20, wall 20, doorway 20, window 15, two roofs 60). Tall grass gives 2 a plant, heather 4, reeds 8, thatch grass 10. "Enough for the selected recipe" hides the scale (W-11). Sources per acquisition workstream. |
+| 25 | shelter | YES-WITH-UNTAUGHT-PREREQ | The cost is not given: 20 sticks, 60 leaves, 6 twine. Leaves are never taught. They come from a felled broadleaf's crown (none from conifers, none in winter) or from axing a bush. Also missing: open side faces you, 2.5 m gap (W-08). |
+| 26 | bed | YES-WITH-UNTAUGHT-PREREQ | "Place it under cover": the server lets a non-furniture bed stand within 2.5 m of a structure only inside a lean-to's box. Near a Crude foundation or walls it says "Something is in the way." The client ghost checks only states 5/6/7 and may show green. Say "inside your lean-to". Placement controls as in step 14 (W-06, W-09). |
+| 27 | workbench | YES | 2.5 m spacing not stated (W-16). Otherwise matches blueprints.json:237 (16 stick, 6 twine, 4 stone, hammer 1). |
+| 28 | build:thatch_floor | YES | Mouse wheel lifts a lone foundation. A second one snaps edge to edge. Not explained (LOW). |
+| 29 | build:thatch_wall | YES | Walls do not need a foundation: on bare ground they snap to a 1 m grid. Aimed near a foundation's edge they snap to its anchors. Not explained. |
+| 30 | build:thatch_doorway | YES | This is an empty frame. The door is a separate piece, Crude - Door (50 stick, 100 twine, CREATOR cost), that snaps into the opening. MAIN never asks for it (W-03). |
+| 31 | build:thatch_window | YES | Nothing missing beyond the generic text. |
+| 32 | build:thatch_roof | YES-WITH-UNTAUGHT-PREREQ | The panel must rest on a wall top, a ceiling edge or another panel's end, aimed across it. The server refuses a free-standing panel. The wheel flips rise or fall. "Where the building ghost is valid" hides all of this (W-10). |
+| 33 | build:thatch_roof_65 | YES-WITH-UNTAUGHT-PREREQ | Same as 32. |
+| 34 | gather:clay | YES | The inspection key (/) names the ground (Clay). Loam, silt and alluvium also give clay 35-50% of the time under the topsoil. "Verify the terrain shown by the game" could say this. |
+| 35 | gather:sand | YES | No purpose in rows 1-45. Sand is first used by Clay mortar at draft line 96 (W-13). |
+| 36 | craft:brick | YES | "Use a lit campfire" means stand within the fire's use reach while it burns. 3 bricks per craft. The hearth and oven need 34 bricks, about 12 crafts and 24 clay, which is not said (W-11). |
+| 37 | craft:clay_pot | YES | Nothing missing (6 clay at a lit campfire). |
+| 38 | build:campfire_pot | YES-WITH-UNTAUGHT-PREREQ | It must be aimed onto a small fire within 2 m. It is refused on the bonfire and on any fire still holding logs: "The fire is too big for a pot. Let the logs burn down first." "Where the ghost is valid" misleads, and the bonfire built at row 21 is the wrong fire for 3+ real hours (W-07). |
+| 39 | build:drying_rack | YES | 2.5 m spacing (W-16). Purpose (MAIN 48 scraped hide, dried foods) is not stated. |
+| 40 | build:smoker | YES | 2.5 m spacing (W-16). |
+| 41 | build:food_preparation_table | YES-WITH-UNTAUGHT-PREREQ | "3 Log": logs are drawn from the shoulder and from log items on the ground within 3 m of the player ("Using nearby logs"), or from a blueprint site filled with E. Never explained (W-04). |
+| 42 | build:clay_hearth | YES | 10 bricks means 4 brick crafts (W-11). The hearth also counts as a campfire station (`also`). Not mentioned, but harmless. |
+| 43 | build:oven | YES-WITH-UNTAUGHT-PREREQ | "Build near Clay hearth": the player must stand within about 4 m of the hearth (its reach 3 m + 1 m grace), and the oven must stand at least 2.5 m from it. 24 bricks means 8 crafts (W-16, W-11). |
+| 44 | craft:thread | YES | No consumer in rows 1-45. Its purpose is not stated (W-13). |
+| 45 | gather:hide | NO with what MAIN taught | No MAIN step makes a weapon or a snare. Only `kind: weapon` items with damage can strike an animal. The stone axe, pickaxe and knife are `kind: tool`. The knife must then be in hand to dress the carcass (left click), and rabbits give 1 hide. Hunting (Wooden - Spear L1, Snare L2, "spear" L3, "knife" L4) is all off-route (W-02). |
+
+**Main steps 44-118** (from `work/ws_walk_late.md`):
+
+| Step | goal_id | Can do now? | What the guide fails to explain |
+|---|---|---|---|
+| 44 | craft:thread | YES | — |
+| 45 | gather:hide | YES-WITH-UNTAUGHT-PREREQ | Hunting and carcass dressing are not taught (per acquisition workstream). The knife from step 6 is enough. |
+| 46 | gather:flint | YES-WITH-UNTAUGHT-PREREQ | The draft itself says the source is unverified (per acquisition workstream). Lead: `boulders.json flint`, `drops.json ground_scatter.bank.flint`. |
+| 47 | craft:hide_scraper | YES | — |
+| 48 | craft:processed_hide | YES | — |
+| 49 | gather:tannin_bark | YES-WITH-UNTAUGHT-PREREQ | The How-to points to mangrove, but `items.json items.log_mangrove` is RETIRED/FUTURE. Data gives Tanbark from oak (`drops.json harvest_yield.oak.item` = tannin_bark). Per acquisition workstream. |
+| 50 | build:tanning_rack | YES | — |
+| 51 | craft:leather | YES-WITH-UNTAUGHT-PREREQ | Needs 1 **water**, and no goal teaches how to get water as an item (per acquisition workstream). |
+| 52 | build:leatherworking_table | YES | Does not say what the table is for. No later main step uses it; Leather strap is side L439. |
+| 53 | build:tailors_table | YES | No later main step uses it. |
+| 54 | build:loom | YES | No later main step uses it. |
+| 55 | build:preserving_jar | YES | A food station placed inside the manufacturing chain; nothing later in the route uses it. |
+| 56 | craft:charcoal | YES | 1) "Hard firewood" is really the group `firewood`, which soft firewood also fills. 2) It does not say how much fuel the metal chain burns: 5 per ingot, plus 1 to fire each burning station. 3) It does not mention coal (any pick) or Kiln charcoal at 100 per log. |
+| 57 | gather:iron_ore | YES-WITH-UNTAUGHT-PREREQ (rock route: **NO**) | "Iron-bearing rock deposits" is offered first, but at this point the player has only a Stone - Pickaxe, and **iron ore cannot be taken with a stone pick**. Only bog iron dug with the Wooden - Spade works here. The How-to names neither the spade nor wet/peat ground, and does not say 4 ore make 1 ingot. |
+| 58 | build:smelter | YES | — |
+| 59 | craft:iron_ingot | YES | Does not say "Fuel" means Charcoal or Coal. Does not say to make **at least 3 ingots** (step 60), or 7 by step 62. |
+| 60 | build:blacksmithy | YES-WITH-UNTAUGHT-PREREQ | Needs 3 iron ingots, but step 59 teaches one craft. Does not say the Smithy must be burning to craft and fires itself from 1 fuel in the pack. |
+| 61 | craft:iron_hammer | YES-WITH-UNTAUGHT-PREREQ | Fuel (charcoal or coal) must be in the pack, or the cold Smithy serves nothing. |
+| 62 | craft:hand_saw | YES-WITH-UNTAUGHT-PREREQ | Same fuel gap as step 61. |
+| 63 | gather:log_spruce | YES | "Softwood" means spruce, Scots pine or the plain Log. |
+| 64 | craft:lumber | YES | The How-to says "Spruce log"; the group label is "Softwood log". Hand saw and Sawmill give the same yield (6). |
+| 65 | craft:hardwood_board | YES | The How-to says "Oak log"; the group is "Hardwood log" (oak, beech, birch, mahogany, walnut, maple). |
+| 66 | craft:wooden_pin | YES | — |
+| 67 | build:log_workbench | YES | Workbench L2 is used by nothing later in the main route. Draft s4 says the Carpenter's bench was inserted "before the level-3 Stone Workbench", which implies a dependency that does not exist (see W-L10). |
+| 68 | craft:cobblestone | YES | Quantity: steps 70, 71 and 97 need 48 cobblestone (144 stone). |
+| 69 | craft:mortar | YES | — |
+| 70 | build:stone_workbench | YES | Does not say this gives **workbench level 3**, which step 77 needs. |
+| 71 | build:stonecutters_bench | YES (build). It is useless at this point. | All three of its recipes keep a **Bronze - Chisel**. The chisel is never in the main route (side L522), and bronze first appears at step 87. |
+| 72 | craft:nails | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel (as step 61). Quantity: 180 nails (steps 77 + 78) = 2 crafts. Bronze nails also fill `nails`. |
+| 73 | craft:hinges | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel. |
+| 74 | craft:iron_band | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel. Quantity: steps 114-118 need 19 bands = 10 crafts. |
+| 75 | gather:pine_tar | YES-WITH-UNTAUGHT-PREREQ | Says to collect 5, but the Water wheel needs 4 Tar = **20 Pine tar**. Source per acquisition workstream (lead: `drops.json trunk.by_species.scots_pine`). |
+| 76 | craft:tar | YES | Same quantity gap (4 crafts needed). |
+| 77 | craft:water_wheel | YES | Says "Workbench (workstation level 3)" without naming the source: the Stone - Workbench (step 70), or a Wooden workbench with Tool rack + Vice beside it (side L208, L170). |
+| 78 | build:saw_mill | YES-WITH-UNTAUGHT-PREREQ (NO if followed literally; site availability UNKNOWN) | Leaves out both placement rules: it must stand **on a foundation lifted ≥0.5 m**, with its 2 m wheel span **over a running river** (≥0.4 m deep, turned across the current, ≥150 W). The foundation goals come later (79-82); only the Crude foundation (step 28) exists. Whether a suitable river is near the player depends on the world. |
+| 79 | build:wood_foundation | YES | — (planks from step 64) |
+| 80 | build:log_foundation | YES | Buildable since step ~33; it sits after the Sawmill only because of route order. |
+| 81 | build:foundation_section | YES | Buildable since step 34 (stone 8, clay 2). |
+| 82 | build:brick_foundation | YES | Buildable since step 69. |
+| 83 | gather:copper_ore | YES | Locating deposits is per acquisition workstream. The stone pick works. |
+| 84 | gather:tin_ore | YES | Same as step 83. |
+| 85 | craft:copper_ingot | YES | Fuel = charcoal or coal. |
+| 86 | craft:tin_ingot | YES | Same. |
+| 87 | craft:bronze_ingot | YES | — |
+| 88 | build:stone_forge | YES (redundant) | The Smithy from step 60 already does forge L1 bronze work. The Stone - Forge only adds a no-fuel bronze station. The catalog intends it as the bronze rung **before** iron; here it comes after. |
+| 89 | craft:bronze_hammer | YES | — (Stone - Forge, or the burning Smithy) |
+| 90 | craft:bronze_pickaxe | YES | Does not say this is the first pick that can mine **rock iron ore**. |
+| 91 | craft:bronze_sword | YES | — (leather from step 51) |
+| 92 | craft:iron_pickaxe | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel. |
+| 93 | craft:iron_sword | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel. |
+| 94 | build:kiln | YES | Buildable since step 69 (brick, clay, mortar). The guide never teaches the Kiln's charcoal function (logs → 100 charcoal each, lit with E) or Kiln bricks (6 per 2 clay instead of 3). |
+| 95 | gather:limestone | YES | Any pick takes it from limestone/chalk/marble bedrock boulders. Locating them is per acquisition workstream. |
+| 96 | craft:lime_powder | YES | — |
+| 97 | build:mixer | YES | — |
+| 98 | craft:concrete | YES-WITH-UNTAUGHT-PREREQ | Needs 1 **water**, which is never taught (per acquisition workstream). Quantity: steps 110-118 need 73 concrete = 25 crafts. |
+| 99 | craft:clay_roof_tile | YES | Quantity: 24 tiles for step 112 = 8 crafts. |
+| 100 | build:large_forge | YES | Does not say the Blast furnace must burn (fuel in pack) or that it also smelts ore. |
+| 101 | craft:steel_ingot | YES-WITH-UNTAUGHT-PREREQ | Needs 1 fuel to fire the furnace plus 5 as ingredient. |
+| 102 | craft:steel_hammer | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel. |
+| 103 | craft:steel_pickaxe | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel. |
+| 104 | craft:steel_sword | YES-WITH-UNTAUGHT-PREREQ | Smithy fuel. |
+| 105 | build:master_forge | YES | The Iron - Hammer from step 61 (tier 4) meets hammer 3. **Does not say what the Master smithy does:** the +1/+2 craftsmanship variants of any forge/smithy recipe. No later step uses it. |
+| 106 | build:refined_door | YES-WITH-UNTAUGHT-PREREQ | Never says a door hangs only in an **empty doorway frame with the same opening**: any tier, one door per frame. The only single doorway the route has built is the Crude doorway (step 30). Needs no Master smithy, only boards + iron (from step 65). |
+| 107 | build:rustic_door | YES-WITH-UNTAUGHT-PREREQ | Same doorway gap. Possible from step 64 (5 planks). The Crude doorway is already taken if step 106 used it. |
+| 108 | build:sturdy_door | YES-WITH-UNTAUGHT-PREREQ | Same. Possible from step 64. |
+| 109 | build:superior_door | YES-WITH-UNTAUGHT-PREREQ | Same. The only door that really depends on a late step: steel from step 101. |
+| 110 | build:engineered_foundation | YES | — |
+| 111 | build:engineered_wall | YES | — |
+| 112 | build:engineered_roof | YES | — (pins from step 66: 20 − 6 used = 14 ≥ 8) |
+| 113 | build:engineered_door | YES-WITH-UNTAUGHT-PREREQ | Needs a free single doorway. The Engineered - Doorway is only in side L746. |
+| 114 | build:fortified_foundation | YES | "Metal hammer" = tier ≥3: bronze, iron or steel (all three exist by now). |
+| 115 | build:fortified_wall | YES | — |
+| 116 | build:fortified_doorway | YES | — |
+| 117 | build:fortified_door | YES | — (the Fortified doorway from step 116 takes it) |
+| 118 | build:fortified_gate | YES | — |
 
 **Walkthrough summary (new character, empty pack):**
 - Steps 1-10 (sticks, stones, drink, fibre, twine, knife, axe, pickaxe, fell, log) work, with gaps: drinking counts only when thirsty and a new character starts full (GA-36); a sapling gives no log (GA-35); logs are never explained (shoulder carry, Q to put down, recipes use logs within 3 m: GA-12).
@@ -544,6 +684,8 @@ Severity: HIGH (blocks a player or pays wrongly), MED (misleads or needs a decis
 ## 16. Evidence gaps and required tests
 
 - **No goal is GAMEPLAY_VERIFIED.** Every completion claim needs a played check before the goal list ships.
+- **Partly met: individual review.** 323 of 651 goals were examined individually (all main-route goals); 328 side-branch goals at dependency levels 6-17 were assessed by rule only (section 2). Their PASS verdicts mean 'the row matches the data and its inputs are obtainable', not 'a person read it'. A sampled re-check of about 40 of them by the independent reviewer found no wrong materials, but the remaining rule-only rows (column `review_method` = RULE) should be read before their text is published.
+- **Partly met: walkthrough.** The step-by-step walkthrough covers the 118 main-route steps; side branches were checked per goal (levels 1-5) or by rule (levels 6-17), not walked as a player.
 - AUTOMATED_TESTED covers only the 11 legacy goals asserted by `test_goals.gd`: `drink`, `fibre`, `twine`, `axe`, `fell`, `fire`, `shelter`, `workbench`, `story`, `night_walk`, `fish`.
 - Gathering rates and play time are ASSUMED; time a real first session before setting rewards (GA-70).
 - The goal-check cost at 651 goals is estimated, not measured (GA-49).

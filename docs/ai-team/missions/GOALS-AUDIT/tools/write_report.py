@@ -71,6 +71,14 @@ P("6. **Correction and consistency**: the findings are consolidated into stable 
 P("")
 P("Design status of a goal is the most severe effect among its findings: BLOCKED (cannot be completed in play today), NEEDS_CORRECTION (the instruction, ordering, completion rule or text is wrong or incomplete), NEEDS_TEST (believed correct but depends on content not yet verified in play), PASS (instruction, materials, stations and prerequisites match the code and data). Design status is independent of runtime support: a PASS gather goal still needs a new event before it can complete (column `runtime_support`). Economy findings never change design status; recommended coin values sit in their own column.")
 P("")
+
+ind = [r for r in orig if r["review_method"].startswith("INDIVIDUAL")]
+P("**Depth of review, per goal (ledger column `review_method`).** %d goals (all %d main-route goals) were examined individually: a walkthrough step, a side goal read one by one, a completion rule read in the server code, or an independent reviewer's re-check (the column names which). The other %d goals (side branches at dependency levels 6-17, including about 68 cooking and food rows) were assessed **by rule only**: a script compared each row's materials, quantities, kept tools, station and level, blueprint status and hammer tier with the named data files, then placed it in the dependency graph and the obtainability fixed point. Those rows were not read one by one by a person or agent; mechanism-level findings (for example GA-20 fuel, GA-24 doors) were applied to them by station or family." % (len(ind), sum(1 for r in ind if r["route"] == "MAIN"), len(orig) - len(ind)))
+P("")
+P("**Evidence level, per goal.** CODE_VERIFIED means the named data sources in `source_refs` were read for that row (by script for rule-only rows) and the mechanism code was read once for the family; it does not mean the goal was seen working. AUTOMATED_TESTED is given only to the 11 legacy goals whose completion `test_goals.gd` asserts (one of the 20 David4 scripts). GAMEPLAY_VERIFIED is given to none: nobody has seen any of these goals on screen. No row is DOCUMENT_ONLY, because every row was compared with at least one named data file.")
+P("")
+P("**Ledger integrity (machine-checked by `tools/build_ledger.py` on every build):** %d ORIGINAL rows, exactly one per draft row (the parsed draft has %d rows and the ID sets are compared for equality, so a missing or extra goal fails the build); no duplicate `goal_id` across all %d rows; every required field present; every reward an integer copper value; every finding ID defined. Every count in this report is computed from the CSV by `tools/write_report.py`, not typed." % (len(orig), len(orig), len(rows)))
+P("")
 P("Evidence classes: CREATOR (Dave's own rulings), IMPLEMENTED (code and data at the baseline), PROPOSAL (the draft and agent documents), UNKNOWN. Godot was not run in the cloud. Automated evidence comes from one David4 run relayed by the coordinator (section 3).")
 P("")
 P("Supporting material (not part of the deliverable, kept for review): `docs/ai-team/missions/GOALS-AUDIT/` (tools, workstream reports `work/ws_*.md`, machine results `work/*.json`, `STATE.md`).")
@@ -121,6 +129,21 @@ P("|---|---|---|---|---|")
 for i, r in enumerate(main, 1):
     P("| %d | `%s` | %s | %s | %s |" % (i, r["goal_id"], r["title"].replace("|", "/"), r["design_status"], r["finding_ids"]))
 P("")
+P("### Phase C walkthrough, step by step")
+P("")
+P("The new-player walkthrough was written one step at a time, from an empty pack (main 1-45, then 44-118), by two separate workstreams reading code and data. Their step tables are reproduced below unchanged, apart from cutting the evidence column. Where the independent review corrected a step (section 15: GA-10 tree species, GA-21 foundation order, GA-23 bronze order, GA-36 drink), the correction in this report supersedes the table. Verdicts: YES; YES-WITH-UNTAUGHT-PREREQ (doable, but the guide leaves out something the player needs); NO; UNKNOWN.")
+P("")
+import re as _re
+def walk_table(path, title):
+    txt = open(os.path.join(W, path)).read().split("## (a)", 1)[1].split("## (b)", 1)[0]
+    lines = [l for l in txt.splitlines() if l.startswith("|")]
+    P(title); P("")
+    for l in lines:
+        cells = l.strip().strip("|").split("|")
+        P("|" + "|".join(cells[:4]) + "|")
+    P("")
+walk_table("ws_walk_early.md", "**Main steps 1-45** (from `work/ws_walk_early.md`):")
+walk_table("ws_walk_late.md", "**Main steps 44-118** (from `work/ws_walk_late.md`):")
 P("**Walkthrough summary (new character, empty pack):**")
 P("- Steps 1-10 (sticks, stones, drink, fibre, twine, knife, axe, pickaxe, fell, log) work, with gaps: drinking counts only when thirsty and a new character starts full (GA-36); a sapling gives no log (GA-35); logs are never explained (shoulder carry, Q to put down, recipes use logs within 3 m: GA-12).")
 P("- Steps 11-16: what the axe gives depends on the tree. A key-species log gives large blocks, so the Wooden - Hammer needs the untaught 'Small wooden blocks' step; any other tree gives the plain Log and only small blocks, so the Chopping block (step 16) cannot be made (GA-10).")
@@ -296,6 +319,8 @@ P("")
 P("## 16. Evidence gaps and required tests")
 P("")
 P("- **No goal is GAMEPLAY_VERIFIED.** Every completion claim needs a played check before the goal list ships.")
+P("- **Partly met: individual review.** %d of %d goals were examined individually (all main-route goals); %d side-branch goals at dependency levels 6-17 were assessed by rule only (section 2). Their PASS verdicts mean 'the row matches the data and its inputs are obtainable', not 'a person read it'. A sampled re-check of about 40 of them by the independent reviewer found no wrong materials, but the remaining rule-only rows (column `review_method` = RULE) should be read before their text is published." % (len(ind), len(orig), len(orig) - len(ind)))
+P("- **Partly met: walkthrough.** The step-by-step walkthrough covers the 118 main-route steps; side branches were checked per goal (levels 1-5) or by rule (levels 6-17), not walked as a player.")
 P("- AUTOMATED_TESTED covers only the 11 legacy goals asserted by `test_goals.gd`: %s." % ", ".join("`%s`" % k for k in LF["_evidence_overrides"]))
 P("- Gathering rates and play time are ASSUMED; time a real first session before setting rewards (GA-70).")
 P("- The goal-check cost at 651 goals is estimated, not measured (GA-49).")
