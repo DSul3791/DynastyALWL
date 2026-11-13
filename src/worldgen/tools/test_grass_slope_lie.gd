@@ -4,12 +4,14 @@ extends SceneTree
 # (4 x 4 near, 3 x 3, 2 x 2, and 1 in the very far band of a 6 m cell) and scatters its cards up to half a sample spacing round each hit. The cards
 # were laid at the hit's height, so on a slope a far cell was a horizontal sheet over the hill. GrassView.lie_y lays each card on the plane of its hit.
 # This checks, on a tilted plane of ground, that at every sample density the card heights match the ground found by a ray at the card's own x and z,
-# that the old flat height did not, and that a built cell is looked at again when the player first comes within FINE_GROUND_M of it.
+# that the old flat height did not, that the lift stays within LIE_MAX_M on a crest, in a gully and on steep ground, that _build calls lie_y (a text guard),
+# and that a built cell is looked at again when the player first comes within FINE_GROUND_M of it.
 #   godot --headless --path . --script res://src/worldgen/tools/test_grass_slope_lie.gd
 
 const GrassView := preload("res://src/client/grass_view.gd")
 const TOLERANCE_M := 0.05      # the ground here is an exact plane; the lie must reproduce it to a few cm
-const SLOPE_Y := 0.8           # normal y of the tilted ground (about 37 degrees; steeper than MIN_SLOPE_Y 0.58 is bare rock and gets no grass)
+const SLOPE_Y := 0.9           # normal y of the tilted ground (about 26 degrees: the grass thins from 30, so this is a hillside it grows on)
+const STEEP_Y := 0.8           # about 37 degrees, where the lift limit binds
 
 var failures: int = 0
 
@@ -21,16 +23,16 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-# A slab whose top face is the plane through (0, 10, 0), tilted about z by `tilt`: the slab centre sits 10 m under that point along the tilted normal.
-func _slope(tilt: float) -> StaticBody3D:
+# A slab `width` m wide whose top face is centred on `top` (x, y) and tilted about z by `tilt` (positive rises toward +x); the slab centre sits 10 m under it.
+func _slab(top: Vector2, tilt: float, width: float) -> StaticBody3D:
 	var body: StaticBody3D = StaticBody3D.new()
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var box: BoxShape3D = BoxShape3D.new()
-	box.size = Vector3(400.0, 20.0, 400.0)
+	box.size = Vector3(width, 20.0, 400.0)
 	shape.shape = box
 	body.add_child(shape)
 	body.rotation.z = tilt
-	body.position = Vector3(10.0 * sin(tilt), 10.0 - 10.0 * cos(tilt), 0.0)
+	body.position = Vector3(top.x + 10.0 * sin(tilt), top.y - 10.0 * cos(tilt), 0.0)
 	return body
 
 
@@ -46,7 +48,7 @@ func _run() -> void:
 	var world: Node3D = Node3D.new()
 	get_root().add_child(world)
 	var tilt: float = acos(SLOPE_Y)
-	var ground: StaticBody3D = _slope(tilt)
+	var ground: StaticBody3D = _slab(Vector2(0.0, 10.0), tilt, 400.0)
 	world.add_child(ground)
 	await physics_frame
 	await physics_frame
@@ -99,6 +101,57 @@ func _run() -> void:
 
 		if pps == 1:
 			check(flat_err > 0.5, "the very far band laid flat hung or sank more than half a metre on this slope (%.2f m): the symptom" % flat_err)
+
+	# A hit in each of the four bands finds the card heights above; now ground where the plane misleads: a crest and a gully, 37 degrees on both sides,
+	# the hit 0.3 m from the line and the card on the other side of it (the worst case of a far cell). The lift is limited, the lie stays near the hit.
+	var steep: float = acos(STEEP_Y)
+	var half: float = 100.0
+	var crest: Node3D = Node3D.new()
+	world.add_child(crest)
+	crest.position = Vector3(0.0, 0.0, 400.0)     # clear of the plane above
+	var left_c: StaticBody3D = _slab(Vector2(-half * cos(steep), 10.0 - half * sin(steep)), steep, 2.0 * half)
+	var right_c: StaticBody3D = _slab(Vector2(half * cos(steep), 10.0 - half * sin(steep)), -steep, 2.0 * half)
+	crest.add_child(left_c)
+	crest.add_child(right_c)
+	var gully: Node3D = Node3D.new()
+	world.add_child(gully)
+	gully.position = Vector3(0.0, 0.0, -400.0)
+	var left_g: StaticBody3D = _slab(Vector2(-half * cos(steep), 10.0 + half * sin(steep)), -steep, 2.0 * half)
+	var right_g: StaticBody3D = _slab(Vector2(half * cos(steep), 10.0 + half * sin(steep)), steep, 2.0 * half)
+	gully.add_child(left_g)
+	gully.add_child(right_g)
+	await physics_frame
+	await physics_frame
+
+	for kind in [["crest", 400.0], ["gully", -400.0]]:
+		var zz: float = float(kind[1])
+		var at: Dictionary = _hit(space, -0.3, zz)
+		var across: Dictionary = _hit(space, 2.5, zz)
+		check(not at.is_empty() and not across.is_empty(), "the %s has ground on both sides of its line" % kind[0])
+
+		if at.is_empty() or across.is_empty():
+			continue
+
+		var lift: float = GrassView.lie_y(at["position"], at["normal"], 2.5, zz) - (at["position"] as Vector3).y
+		print("     %s: card 2.8 m across the line, lift %.2f m (limit %.2f), ground there %.2f m from the hit" % [kind[0], lift, GrassView.LIE_MAX_M, (across["position"] as Vector3).y - (at["position"] as Vector3).y])
+		check(absf(lift) <= GrassView.LIE_MAX_M + 0.0001, "%s: the lift is limited to %.1f m" % [kind[0], GrassView.LIE_MAX_M])
+
+	# Steep but grassy 37 degree ground: the plane would lift a far card 2.1 m; the limit holds it, and still lands nearer the ground than flat did.
+	var steep_ground: StaticBody3D = _slab(Vector2(0.0, 10.0), steep, 400.0)
+	steep_ground.position.z = 800.0
+	world.add_child(steep_ground)
+	await physics_frame
+	await physics_frame
+	var s_at: Dictionary = _hit(space, -2.8, 800.0)
+	var s_to: Dictionary = _hit(space, 0.0, 800.0)
+	var s_lie: float = GrassView.lie_y(s_at["position"], s_at["normal"], 0.0, 800.0)
+	var s_truth: float = (s_to["position"] as Vector3).y
+	check(absf(s_lie - (s_at["position"] as Vector3).y) <= GrassView.LIE_MAX_M + 0.0001 and absf(s_lie - s_truth) < absf((s_at["position"] as Vector3).y - s_truth), "37 degree ground, card 2.8 m uphill: limited, and nearer the ground than the flat height")
+
+	# The cell build must use it: the card height line of grass_view.gd calls lie_y (a headless test cannot build a cell without the voxel terrain).
+	var source: String = FileAccess.get_file_as_string("res://src/client/grass_view.gd")
+	check(source.contains("buffer[o + 7] = lie_y(point, hit[\"normal\"], ox, oz)"), "_build lays the grass cards by lie_y, not at the hit's height")
+	check(not source.contains("buffer[o + 7] = point.y - 0.03"), "no grass card is still laid at the flat hit height")
 
 	# Far and near agree: the same point of the slope gets the same card height whichever cell density drew it.
 	var anchor: Vector3 = (_hit(space, 1.0, 20.0)["position"] as Vector3)

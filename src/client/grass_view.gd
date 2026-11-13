@@ -322,11 +322,13 @@ const ROOF_CHECK_M := 14.0                # rock or a roof this close above a ce
 const CHECK_PROBES := 5                  # ground hits kept per cell
 const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
 # BUG-006 (BUGLIST-001): grass built on the coarse ground collision (LOD 1 and 2, 2 m and 4 m blocks) beyond the fine ground's reach was only looked at again
-# in the 48 s after its build, so a cell that waited longer dropped or rose in one jump when the player came near and a rebuild read the fine ground.
-# A built cell is looked at again, on this shorter ladder, the first time the player comes within FINE_GROUND_M of it. VoxelLodTerrain's lod_distance is
-# not set in terrain_client.gd, so the fine level reaches the module's default (48 m, unmeasured on the PC) plus a block; 64 m covers that.
-const FINE_GROUND_M := 64.0
-const FINE_CHECK_TIMES := [2000, 8000]
+# in the first 94.5 s after its build (CHECK_TIMES are gaps: checks at 1.5, 4.5, 10.5, 22.5, 46.5 and 94.5 s), so a cell that waited longer dropped or rose
+# in one jump when the player came near and a rebuild read the fine ground. A built cell is now also looked at again, on this ladder of gaps, the first
+# time the player comes within FINE_GROUND_M of it. VoxelLodTerrain's lod_distance is not set in terrain_client.gd, so the fine level reaches the module's
+# default (48 m, unverified on the PC); the ring is 56 m, so the checks (1, 4 and 12 s after crossing) land when the cell reaches 48 m at a run (about
+# 1 s), a jog (about 1.5 s) and a walk (4 to 5 s), with the last one catching late blocks. Cost stays under CHECK_CELLS_PER_FRAME / CHECK_USEC.
+const FINE_GROUND_M := 56.0
+const FINE_CHECK_TIMES := [1000, 3000, 8000]
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
 const CHECK_CELLS_PER_FRAME := 3
 const CHECK_USEC := 300                    # and at most this long a frame (Steve 5 Nov 2026, PC lag run #402: the check rays were still 0.81 ms a frame, the biggest grass part)
@@ -1658,9 +1660,13 @@ static func ground_moved(space: PhysicsDirectSpaceState3D, x: float, z: float, o
 # The height of the ground at (x, z) on the plane through a ground hit `point` with surface normal `normal` (BUG-006). A card is scattered up to half a sample
 # spacing from the hit it was given (0.7 m near, up to 2.9 m in the very far band, where a 6 m cell has one ray), and laid at the hit's height it hung
 # above the slope on one side and sank into it on the other: far hillsides drew as flat terraces that snapped onto the slope as finer cells replaced them.
-# The caller has already refused normals flatter than MIN_SLOPE_Y, so the division is by at least 0.58.
+# The plane is only a local guide: past a crest or into a gully it points the wrong way, and the caller has refused normals flatter than MIN_SLOPE_Y, so the
+# raw lift could reach 4.9 m. It is limited to LIE_MAX_M: the exact lift on ground up to about 27 degrees (the grass thins from 30) at the 2.85 m reach of a
+# far card, so ordinary hills are not touched, while a sharp ridge or gully errs by a bounded amount instead of several metres.
+const LIE_MAX_M := 1.5
 static func lie_y(point: Vector3, normal: Vector3, x: float, z: float) -> float:
-	return point.y - (normal.x * (x - point.x) + normal.z * (z - point.z)) / maxf(normal.y, 0.01)
+	var lift: float = -(normal.x * (x - point.x) + normal.z * (z - point.z)) / maxf(normal.y, 0.01)
+	return point.y + clampf(lift, -LIE_MAX_M, LIE_MAX_M)
 
 
 # Rays for one cell; returns how many were cast.
