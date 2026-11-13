@@ -168,7 +168,7 @@ func _init() -> void:
 	items._repair(1, inv_r, pick_slot)
 	check(inv_r.wear[pick_slot] == 1000, "an iron pickaxe cannot be mended by hand without a forge")
 
-	# Playtest 12 Nov 2026 TEST-003: a spent purse says so in Dave's words, refills over game time, and a trader who walked off says so too.
+	# Playtest 12 Nov 2026 TEST-003: a spent purse says so in Dave's words, refills over game time, and a player out of talk range is told so.
 	items.give_to(1, "stone_axe", 1)
 	var sell_axe: int = inv_r.numbers.find(items.table.number_of("stone_axe"))
 	trade._refresh("hob")["purse"] = 0.0
