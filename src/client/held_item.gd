@@ -1445,7 +1445,7 @@ func _process_body(delta: float) -> void:
 		if flicker != null:
 			# Own light: one, shadowless. At Low it gives way to a fire light within 8 m, so no more than one lamp lights the same spot.
 			flicker.visible = rig_lit or not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
-			flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
+			flicker.light_energy = FlameRules.TORCH_LIGHT_ENERGY + FlameRules.TORCH_LIGHT_FLICKER * sin(float(Time.get_ticks_msec()) * 0.017)
 
 		if not _mounted:
 			_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
@@ -2460,7 +2460,7 @@ func _show_off_model(delta: float) -> void:
 	if flicker != null:
 		flicker.visible = rig_lit or not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 		# A lantern's flame is behind horn: it barely flickers.
-		flicker.light_energy = (1.6 + 0.06 * sin(float(Time.get_ticks_msec()) * 0.011)) if lantern else 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
+		flicker.light_energy = (1.6 + 0.06 * sin(float(Time.get_ticks_msec()) * 0.011)) if lantern else FlameRules.TORCH_LIGHT_ENERGY + FlameRules.TORCH_LIGHT_FLICKER * sin(float(Time.get_ticks_msec()) * 0.017)
 
 	if lantern:
 		_hang_lantern()
@@ -3019,6 +3019,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
+	light.omni_attenuation = FlameRules.TORCH_LIGHT_ATTENUATION
 	light.shadow_enabled = false
 	light.light_volumetric_fog_energy = 0.0
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
@@ -3028,8 +3029,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)
-	hand_light.omni_range = 1.6
-	hand_light.light_energy = 0.7
+	hand_light.omni_range = FlameRules.TORCH_HAND_RANGE_M
+	hand_light.light_energy = FlameRules.TORCH_HAND_ENERGY
 	hand_light.shadow_enabled = false
 	hand_light.light_volumetric_fog_energy = 0.0   # no glowing ball in the fog around the hand
 	hand_light.light_cull_mask = 0xFFFFFFFD

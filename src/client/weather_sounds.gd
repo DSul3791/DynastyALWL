@@ -42,6 +42,7 @@ signal lightning(at: Vector3, distance_m: float)
 
 const FADE_PER_SEC := 0.15              # about 7 s from none to full
 const ThunderScript := preload("res://src/shared/thunder.gd")
+const RainAudio := preload("res://src/shared/rain_audio.gd")
 const THUNDER_HEARD_ALL_M := 3000.0     # every shared strike this near is played (the server's birds flush within 1 km of a player)
 const THUNDER_FAR_KEEP := 0.015         # the share of shared strikes past that played as far rolls (about one a minute at storm 1)
 const THUNDER_CATCH_UP_S := 120.0       # game seconds; a longer gap (login, a clock jump) starts the schedule fresh, no backlog of claps
@@ -75,9 +76,7 @@ const KINDS := {
 }
 const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_woodroof_light": -14.0, "rain_woodroof_heavy": -13.0, "rain_water": -17.0, "wind_storm": -18.0,
 	"rain_stone": -14.0, "rain_mud": -15.0, "rain_litter": -16.0, "rain_snow": -23.0}
-# Rain on the ground under the player (open sky only; under a canopy the leaves take it): how much of the plain
-# open-ground bed (rain_light / rain_heavy) stays when that ground has its own loop.
-const GROUND_BED_KEEP := {"stone": 0.35, "mud": 0.4, "litter": 0.5, "snow": 0.2}
+# Rain on the ground under the player (open sky only; under a canopy the leaves take it): which loops play and how loud is RainAudio.layers.
 const GROUND_EASE_SEC := 1.5
 const THUNDER_DB := -4.0
 # The ground remembers the weather (owner's job 17): it soaks in rain and dries slowly, snow settles
@@ -132,6 +131,8 @@ var game_seconds: Callable              # () -> the game clock's seconds
 var _thunder_t: float = NAN             # game second the schedule was last read to
 var ground_class: String = "soft"       # what the rain falls on under the player (HUD): stone, mud, litter, snow or soft
 var _ground_w: Dictionary = {"stone": 0.0, "mud": 0.0, "litter": 0.0, "snow": 0.0}
+var _standing: float = 0.0              # water standing at the player's feet (eased): the puddly mud bed needs it (RainAudio.layers)
+var _standing_target: float = 0.0
 var _pending: Array = []                # [seconds left, AudioStreamPlayer3D] thunder waiting for its delay
 var _cover_in: float = 0.0
 var _tick_acc: float = 0.0
@@ -222,7 +223,7 @@ func apply_state(state: Dictionary) -> void:
 		set_weather("storm", clampf(storm, 0.4, 1.0))
 	elif rain_level > 0.5:
 		set_weather("rain", clampf(rain_level, 0.5, 1.0))
-	elif rain_level > 0.08:
+	elif RainAudio.state_audible(rain_level):   # not before the sky shows it (BUG-004): this was 0.08, a drizzle too faint to see
 		set_weather("drizzle", clampf(rain_level * 2.5, 0.3, 1.0))
 	else:
 		set_weather("clear", 1.0)
@@ -275,28 +276,23 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 		_cover_target = 1.0 if forced_cover or _stage.interior.amount > 0.5 else _stage.under_cover(body)
 		_roof_target = 1.0 if forced_roof or _roof_over(body.global_position) else 0.0
 		ground_class = forced_ground if forced_ground != "" else _stage.rain_ground(body)
+		_standing_target = _stage.standing_water(body)
 
 	covered = move_toward(covered, _cover_target, delta / 1.5)
 	roofed = move_toward(roofed, _roof_target, delta / 1.5)
 	var cover: float = covered
 	var roof: float = minf(roofed, cover)
 	var water: float = float(_ambient.weights["water"])
-	var heavy: float = smoothstep(0.4, 0.9, rain)
-	var light: float = minf(rain * 2.0, 1.0) * (1.0 - 0.6 * heavy)
-	var keep: float = 1.0
 
 	for key in _ground_w:
 		_ground_w[key] = move_toward(_ground_w[key], 1.0 if ground_class == key else 0.0, delta / GROUND_EASE_SEC)
-		keep -= (1.0 - float(GROUND_BED_KEEP[key])) * float(_ground_w[key])
-		_loop("rain_" + key, minf(rain * 1.6, 1.0) * float(_ground_w[key]) * (1.0 - cover))
 
-	_loop("rain_light", light * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
-	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
-	_loop("rain_leaves", minf(rain * 1.6, 1.0) * (cover - roof))
-	# Rain on a wooden roof: the clacky loops (Dave 2026-10-23, they sound like rain on a metal roof in the open).
-	_loop("rain_woodroof_light", light * roof)
-	_loop("rain_woodroof_heavy", heavy * roof)
-	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
+	_standing = move_toward(_standing, _standing_target, delta / GROUND_EASE_SEC)
+	var layers: Dictionary = RainAudio.layers(rain, cover, roof, water, _ground_w, _standing)   # which rain sounds, by the rain and what water stands (BUG-004)
+
+	for loop_name in layers:
+		_loop(loop_name, layers[loop_name])
+
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)
 	_thunder(delta, body.global_position)
 	_ground(delta)

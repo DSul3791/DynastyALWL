@@ -1450,6 +1450,15 @@ func splash_ground(body: CharacterBody3D) -> String:
 	return {"leaves": "litter", "stone": "stone", "sand": "sand", "gravel": "gravel"}.get(surface_kind, "dirt")
 
 
+# Water standing under the player's feet, 0..1, for the puddly rain sounds (rain_audio.gd): the puddle the ground shows (puddles.gd). Without puddles (headless checks) soaked ground counts as standing water.
+func standing_water(body: CharacterBody3D) -> float:
+	if puddles == null:
+		return 1.0 if weather != null and weather.ground_wet >= RAIN_SOAK else 0.0
+
+	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
+	return puddles.water_under(feet, _ground_under(feet), body.get_floor_normal().y if body.is_on_floor() else 1.0)
+
+
 func rain_ground(body: CharacterBody3D) -> String:
 	if weather.ground_snow >= SNOW_COVER:
 		return "snow"

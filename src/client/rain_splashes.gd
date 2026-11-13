@@ -7,11 +7,12 @@ extends Node
 # Rate: RATE_MAX drops a second at full rain, rising a little faster than the rain itself, none under a canopy or a roof
 # (the leaf patter and drips take over there), none when snow lies, in a cave or under water. Each drop lands 1 to 7 m
 # away (nearer more often). Drops over water (a pond or river within reach) are plips, the rest take the ground under the
-# player, from stage.splash_ground(). One-shots in the group world_sounds on the Weather bus, so they are the first cut when the
+# player, from stage.splash_ground(); which surface a drop is (leaf ticks first, then soil and rock, a puddle plop only where water stands) is RainAudio.drop_surface. One-shots in the group world_sounds on the Weather bus, so they are the first cut when the
 # voice cap bites; the layer also keeps to nature_calls + 2 drops at once and asks has_room() before every drop.
 # Sounds: assets/audio/splash/rain_splash_<ground>_N (make_splash.py); recordings in recorded/splash/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const RainAudio := preload("res://src/shared/rain_audio.gd")
 const GENERATED_DIR := "res://assets/audio/splash/"
 const RECORDED_DIR := "res://assets/audio/recorded/splash/"
 
@@ -28,6 +29,7 @@ var drops_played: int = 0
 var by_ground: Dictionary = {}          # ground -> drops played (checks)
 var last: String = ""                   # ground and file of the last drop
 var ground: String = ""                 # what the player stands on at the last scan ("" none: snow lying)
+var standing: float = 0.0               # water standing at the player's feet at the last scan (Puddles); a plop in mud needs it
 
 var _stage                              # SoundStage (budget, ground, water)
 var _streams: Dictionary = {}
@@ -60,6 +62,7 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	if _scan_left <= 0.0:
 		_scan_left = GROUND_SCAN_SEC
 		ground = _stage.splash_ground(body)
+		standing = _stage.standing_water(body)
 
 	var weather = _stage.weather
 	var snow: bool = ground == "" or weather.ground_snow >= 0.35
@@ -75,8 +78,10 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 		var angle: float = _rng.randf() * TAU
 		var distance: float = lerpf(NEAR_M, FAR_M, pow(_rng.randf(), 1.6))
 		var at: Vector3 = body.global_position + Vector3(cos(angle) * distance, -0.9, sin(angle) * distance)
-		var surface: String = "water" if _stage.water_depth_at(at) > 0.0 else ground
-		drop(surface, at, weather.rain)
+		var surface: String = RainAudio.drop_surface(weather.rain, ground, standing, _stage.water_depth_at(at) > 0.0, _rng.randf())   # leaves first, then the ground; water only where it is (BUG-004)
+
+		if surface != "":
+			drop(surface, at, weather.rain)
 
 
 # One drop of `surface` at `at`. False when over the budget or no sound exists.
