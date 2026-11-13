@@ -1892,8 +1892,8 @@ func _strike() -> void:
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty():
-		# A swing at nothing is still a swing and tires (BUG-001): tell the server, with a point in the air, so it holds the tool's effort as it does for a blow that lands.
-		_net.inventory_action.rpc_id(1, Net.ACT_MINE, held_slot + 1, 0, 0, from - _camera.global_transform.basis.z * MISS_POINT_M)
+		# A swing at nothing is still a swing and tires (BUG-001): tell the server (b = 1: struck nothing, protocol 118), with a point in the air, so it holds the tool's effort as it does for a blow that lands.
+		_net.inventory_action.rpc_id(1, Net.ACT_MINE, held_slot + 1, 1, 0, from - _camera.global_transform.basis.z * MISS_POINT_M)
 		return
 
 	if _sound == null:

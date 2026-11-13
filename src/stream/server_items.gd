@@ -1145,7 +1145,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PROCESS:
 		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 115)
 	elif kind == Net.ACT_MINE:
-		_mine(peer, inv, at, a - 1)   # a: the held pack slot + 1 (protocol 117)
+		_mine(peer, inv, at, a - 1, b == 1)   # a: the held pack slot + 1 (protocol 117); b = 1: the swing struck nothing (protocol 118)
 	elif kind == Net.ACT_CHEST_CLOSE:
 		_sync_fire_from_box(peer, int(_chest_viewer.get(peer, 0)))
 		_chest_viewer.erase(peer)
@@ -3548,7 +3548,7 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 	_dirty = true
 
 
-func _mine(peer: int, inv, at: Vector3, held_slot: int) -> void:
+func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = false) -> void:   # struck_nothing: the client's ray hit nothing (a swing into the air): effort only, whatever lies under the point
 	if not _peer_pos.has(peer):
 		return
 
@@ -3571,8 +3571,8 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 	_last_mine[peer] = now
 
-	if not rock_at.is_valid() or not bool(rock_at.call(at.x, at.z)):
-		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a swing at soil or into empty air (the client sends a point 2.5 m ahead): it tires, it breaks no stone and wears nothing
+	if struck_nothing or not rock_at.is_valid() or not bool(rock_at.call(at.x, at.z)):
+		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a swing at soil or into empty air (b = 1, a point 2.5 m ahead: rock_at is x/z only, so over bare rock a claimed miss still gives nothing): it tires, it breaks no stone, wears nothing, trains nothing
 		return
 
 	_wear_slot(peer, inv, tool, "rock")
@@ -11473,7 +11473,7 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
 func _effort_at_speed(speed: float) -> float:
-	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [3.2, 0.5], [9.0, 1.0]])
+	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [3.2, 0.4], [9.0, 1.0]])
 
 	if speed <= float(anchors[0][0]):
 		return float(anchors[0][1])
@@ -18178,7 +18178,7 @@ var _train_rest: Dictionary = {}     # peer -> seconds continuously at rest (bel
 
 
 # Fitness XP (Dave 4 Nov, BUG-023). Every 10-second tick above min_effort (0.1) gives xp_base + xp_per_effort x effort XP (1 at the line,
-# 2 at a steady walk, 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
+# 1.8 at a steady walk (effort 0.4), 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
 # bucket is turned into points (xp_per_point = 1000 XP, the same at every level) and the player is told. A midnight that passes while
 # the player is offline is paid at the next tick after login (one bucket only, saved with the character).
 # Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral, and so is sleep.

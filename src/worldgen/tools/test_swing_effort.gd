@@ -1,7 +1,7 @@
 extends SceneTree
 
 # BUGLIST-001 (Dave's playtest report), swings and effort:
-# BUG-001: every swing that is really made costs effort once, a miss as much as a hit; a swing blocked by the cooldown is not a swing.
+# BUG-001 (protocol 118: ACT_MINE b = 1 is a swing that struck nothing): every swing that is really made costs effort once, a miss as much as a hit; a swing blocked by the cooldown is not a swing.
 # BUG-003: an axe right-clicked away from water says nothing about ice; at the water, off the ice, it says so; on the ice it cuts.
 # BUG-005: a walk recovers strain slowly, standing faster; a jog and a sprint build it; strenuous work to a walk to standing falls in steps.
 #   godot --headless --path . --script res://src/worldgen/tools/test_swing_effort.gd
@@ -31,6 +31,7 @@ class FakeAction:
 
 class FakeNet:
 	extends RefCounted
+	signal road_marker_reached(at: Vector3)   # HeldItem.setup connects it on any net it is given
 	var inventory_action: FakeAction = FakeAction.new()
 
 
@@ -126,6 +127,8 @@ func _server() -> void:
 	# BUG-001: a hit on bare rock, a swing at soil and a swing into the air each cost the same, once.
 	var costs: Dictionary = {}
 	var wears: Dictionary = {}
+	var stones: Dictionary = {}
+	var practised: Dictionary = {}
 
 	for kind in ["rock", "soil", "air"]:
 		rock = kind == "rock"
@@ -133,19 +136,37 @@ func _server() -> void:
 		w._work_level.clear()
 		w._last_mine.clear()
 		var wear_before: int = int(inv.wear[slot])
-		w.action(1, Net.ACT_MINE, slot + 1, 0, 0, air if kind == "air" else ground)
+		var stone_before: int = inv.count_of(w.table.number_of("stone"))
+		w._last_practice.clear()
+		w.action(1, Net.ACT_MINE, slot + 1, 1 if kind == "air" else 0, 0, air if kind == "air" else ground)
 		costs[kind] = _cost(w)
 		wears[kind] = int(inv.wear[slot]) - wear_before
+		stones[kind] = inv.count_of(w.table.number_of("stone")) - stone_before
+		practised[kind] = w._last_practice.has(1)
 
 	check(is_equal_approx(float(costs["rock"][0]), axe_effort) and costs["rock"][1] > 2000, "a hit on rock holds the axe's effort (%s)" % str(costs["rock"]))
 	check(is_equal_approx(float(costs["soil"][0]), float(costs["rock"][0])) and absi(int(costs["soil"][1]) - int(costs["rock"][1])) < 200, "a swing at soil costs what the hit does, a miss as much as a hit (%s)" % str(costs["soil"]))
 	check(is_equal_approx(float(costs["air"][0]), float(costs["rock"][0])) and absi(int(costs["air"][1]) - int(costs["rock"][1])) < 200, "a swing into the air costs what the hit does (%s)" % str(costs["air"]))
 	check(int(wears["rock"]) > 0 and int(wears["soil"]) == 0 and int(wears["air"]) == 0, "only the stone struck wears the axe (%s)" % str(wears))
+	check(int(stones["rock"]) == 1 and practised["rock"], "a real blow on rock (b = 0) still gives a stone and trains mining (%s, %s)" % [str(stones), str(practised)])
+	check(int(stones["soil"]) == 0 and int(stones["air"]) == 0 and not practised["soil"] and not practised["air"], "a swing at soil or into the air gives no stone and trains nothing")
+
+	# Protocol 118: b = 1 (struck nothing) over bare rock: the rock lookup is x and z only, so the point may lie over rock. Effort only: no stone, no wear, no practice.
+	rock = true
+	w._work_until.clear()
+	w._work_level.clear()
+	w._last_mine.clear()
+	w._last_practice.clear()
+	var wear_air: int = int(inv.wear[slot])
+	var stone_air: int = inv.count_of(w.table.number_of("stone"))
+	w.action(1, Net.ACT_MINE, slot + 1, 1, 0, air)
+	check(is_equal_approx(float(_cost(w)[0]), axe_effort) and _cost(w)[1] > 2000, "a miss over bare rock (b = 1) holds the effort (%s)" % str(_cost(w)))
+	check(inv.count_of(w.table.number_of("stone")) == stone_air and int(inv.wear[slot]) == wear_air and not w._last_practice.has(1), "and breaks no stone, wears nothing, trains nothing")
 	rock = false
 	w._work_until.clear()
 	w._work_level.clear()
 	w._last_mine.clear()
-	w.action(1, Net.ACT_MINE, slot + 1, 0, 0, air)
+	w.action(1, Net.ACT_MINE, slot + 1, 1, 0, air)
 	check(w.effort_of(1) >= 1.0, "after one swing into the air the body works as hard as running (%.2f)" % w.effort_of(1))
 
 	# A swing inside the cooldown is not a swing: it holds nothing new.
@@ -306,4 +327,4 @@ func _client() -> void:
 	held._strike()
 	var calls: Array = net.inventory_action.calls
 	var ahead: Vector3 = camera.global_position - camera.global_basis.z * HeldItem.MISS_POINT_M
-	check(calls.size() == 1 and calls[0][0] == Net.ACT_MINE and calls[0][1] == 2 and (calls[0][4] as Vector3).distance_to(ahead) < 0.001, "a swing at nothing sends ACT_MINE with the held slot and a point in the air (%s)" % str(calls))
+	check(calls.size() == 1 and calls[0][0] == Net.ACT_MINE and calls[0][1] == 2 and calls[0][2] == 1 and (calls[0][4] as Vector3).distance_to(ahead) < 0.001, "a swing at nothing sends ACT_MINE with the held slot, b = 1 (struck nothing) and a point in the air (%s)" % str(calls))
