@@ -243,7 +243,7 @@ func _door_checks(tier: String, opening: String) -> void:
 				var x: float = -half - 0.4 + 0.05 * float(ix)
 				ix += 1
 
-				if absf(x) <= _clear_half(opening, y) + 0.001 and y <= 2.0:
+				if absf(x) <= _clear_half(opening, y) + 0.001 and y <= 2.0 + 0.001:   # 0.05 * 40 is a hair over 2.0
 					continue
 
 				if _solid_at(shut, Vector3(x, y, z)):

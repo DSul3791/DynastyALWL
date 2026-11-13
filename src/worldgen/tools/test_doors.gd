@@ -416,6 +416,7 @@ func _server_checks(cfg: Dictionary) -> void:
 		check(_find(items, door_kind, spot) == 0 and refunded, "%s: taken down it gives back exactly its blueprint cost %s" % [door_kind, str(bp["cost"])])
 		check(_find(items, str(case[1]), spot) != 0, "%s: the %s is left standing" % [door_kind, case[1]])
 
+	_stand(items, mix)   # the take-down cases above left the player at the last of their spots, out of reach of this doorway
 	frame_id = _find(items, "thatch_doorway", mix)
 	items.action(1, Net.ACT_PICKUP, frame_id, 0, 0, Vector3.ZERO)
 	check(_find(items, "thatch_doorway", mix) == 0, "with the door out the doorway comes down")
@@ -465,7 +466,7 @@ func _server_checks(cfg: Dictionary) -> void:
 
 	expect.sort()
 	check(after == expect and after.size() == before_save.size(), "every frame and door stands again after a save and a reload, none twice (%d rows)" % after.size())
-	check(_count(again, "superior_double_door_open") == 1 and _count(again, "superior_double_door") == 0 and _count(again, "stone_doorway") == 1 and _count(again, "stone_doorway_open") == 0, "the open double door is still open, the legacy open twin is its empty frame")
+	check(_find(again, "superior_double_door_open", turned_at) != 0 and _find(again, "superior_double_door", turned_at) == 0 and _find(again, "stone_doorway", legacy_at) != 0 and _count(again, "stone_doorway_open") == 0, "the open double door is still open, the legacy open twin is its empty frame")   # by spot: the 28-door run above left other doors and frames of these kinds standing
 	check(_find(again, "superior_double_door_open", turned_at) != 0 and int(again._items[_find(again, "superior_double_door_open", turned_at)]["struct"]["yaw"]) == 90, "and keeps its turn")
 	check(not again.structure_blocks(turned_at.x, turned_at.z, 0.0), "an open door still lets walkers through after a reload")
 	check(again.structure_blocks(100.0, 100.0, 0.0), "a shut door is solid again after a reload")
