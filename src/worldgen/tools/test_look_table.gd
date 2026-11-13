@@ -8,10 +8,10 @@ const LookTable := preload("res://src/client/look_table.gd")
 const NEAR_TRIANGLES := 300
 const BIG := {"rock_pile": 900, "rough_bed": 1300, "log_wall": 1500, "saw_mill": 1500, "water_wheel": 800, "woodworking_table": 600, "door_double": 600, "foundation": 600, "clay_hearth": 600, "oven": 450, "thatch_floor": 300, "thatch_doorway": 400, "log_seat": 400, "wool_rug": 950, "hide_rug": 520, "straw_bed": 400, "feather_bed": 500, "canopy_bed": 1150, "chandelier": 600, "flower_pot": 720}   # the comfort furniture (Kathleen, 2026-10-31)
 # Buildables B1a (Kathleen, 10 Nov 2026): each new piece gets the cap of the piece it matches. The log foundation the stone foundation's (600); the thatch
-# doorway's open twin and the thatch window the thatch doorway's (400); the log doorway and window are log courses split either side of a gap, so nearly
+# window the thatch doorway's (400); the log doorway and window are log courses split either side of a gap, so nearly
 # twice a log wall's logs (log_wall itself 1500), 800; the stone and brick doorways and windows are masonry_wall with jamb blocks or a brick arch and a
 # door, 450 (the oven's).
-const B1A := {"log_foundation": 600, "thatch_doorway_open": 400, "thatch_window": 400, "log_doorway": 800, "log_doorway_open": 800, "log_window": 800,
+const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "log_doorway_open": 800, "log_window": 800,
 	"stone_doorway": 450, "stone_doorway_open": 450, "brick_doorway": 450, "brick_doorway_open": 450, "stone_window": 450, "brick_window": 450}
 # Buildables B1b to B6 (Kathleen, 10 Nov 2026), again the cap of the piece each matches. The log stairs are the stone stairs' ten steps (240) on two log
 # stringers, 350. The iron and steel doorways are the stone doorway's family, 450. The thatch and log roof corners are their straight roofs (log 300)
