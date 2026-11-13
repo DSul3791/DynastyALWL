@@ -1159,8 +1159,8 @@ func _init() -> void:
 	# TEST-013 (Dave 12 Nov 2026): the tool in hand does the wood work. A held pickaxe (the axe still on the hotbar) only tears the trunk up:
 	# kindling and thatch, no sticks or branches, and neither the pick nor the axe on the hotbar wears.
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
-	var pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
-	var pick_at: Vector3 = Vector3(float(pick_slot + 1), 0.0, 0.0)
+	var trunk_pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
+	var pick_at: Vector3 = Vector3(float(trunk_pick_slot + 1), 0.0, 0.0)
 	var axe_wear: int = int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1])
 	var sticks_before: int = w.inventory_of(1).count_of(sticks)
 	var kindling_before: int = w.inventory_of(1).count_of(w.table.number_of("kindling"))
@@ -1169,7 +1169,7 @@ func _init() -> void:
 	w._last_process.clear()
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, pick_at)
 	check(w.inventory_of(1).count_of(sticks) == sticks_before and w.inventory_of(1).count_of(w.table.number_of("kindling")) > kindling_before and w.inventory_of(1).count_of(w.table.number_of("thatch")) > thatch_before, "a pickaxe in hand tears kindling and thatch off a trunk, no sticks")
-	check(int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear and int(w.inventory_of(1).wear[pick_slot]) == 0 and int(w.inventory_of(1).inst[pick_slot].get("sharp", 0)) == 0, "wood neither wears nor dulls the pick, and the axe on the hotbar is not used")
+	check(int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear and int(w.inventory_of(1).wear[trunk_pick_slot]) == 0 and int(w.inventory_of(1).inst[trunk_pick_slot].get("sharp", 0)) == 0, "wood neither wears nor dulls the pick, and the axe on the hotbar is not used")
 	w._items[trunk_id] = trunk_before_pick   # the axe checks below start from the untouched trunk
 	w.inventory_of(1).remove(w.table.number_of("stone_pickaxe"), 1)
 	w._last_process.clear()
@@ -2877,21 +2877,21 @@ func _init() -> void:
 	# TEST-013 (Dave 12 Nov 2026): the tool IN HAND does the work, not the best one on the hotbar. With the iron pick still on the hotbar,
 	# a held stone axe takes half a stone a blow (half a stone pick's one; Dave 12 Nov 2026) and wears five a blow (drops.json tool_wear axe rock: it dulls fast on stone).
 	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
-	var axe_slot: int = bo.inventory_of(1).numbers.find(bo.table.number_of("stone_axe"))
+	var boulder_axe_slot: int = bo.inventory_of(1).numbers.find(bo.table.number_of("stone_axe"))
 
 	for n in range(12):
 		bo._last_hit.clear()
-		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, axe_slot + 1, Vector3.ZERO)
+		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, boulder_axe_slot + 1, Vector3.ZERO)
 
 	check(bo.inventory_of(1).count_of(stone_id) == 36, "a held stone axe takes a stone every two blows even with an iron pick on the hotbar: 12 blows, 6 stones (%d)" % (bo.inventory_of(1).count_of(stone_id) - 30))
-	check(int(bo.inventory_of(1).wear[axe_slot]) == 60 and int(bo.inventory_of(1).wear[pick_slot]) == 10, "the held axe wears five a blow on rock and the pick on the hotbar not at all (axe %d, pick %d)" % [int(bo.inventory_of(1).wear[axe_slot]), int(bo.inventory_of(1).wear[pick_slot])])
+	check(int(bo.inventory_of(1).wear[boulder_axe_slot]) == 60 and int(bo.inventory_of(1).wear[pick_slot]) == 10, "the held axe wears five a blow on rock and the pick on the hotbar not at all (axe %d, pick %d)" % [int(bo.inventory_of(1).wear[boulder_axe_slot]), int(bo.inventory_of(1).wear[pick_slot])])
 	var left_before: int = int(bo._items[900001]["count"])
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, bo.inventory_of(1).numbers.find(stone_id) + 1, Vector3.ZERO)
 	check(bo_rejects[-1] == 1 and int(bo._items[900001]["count"]) == left_before, "a stone in hand is no tool: refused, nothing taken")
-	var spent_axe: Dictionary = bo.inventory_of(1).take_from_slot(axe_slot, 1)   # the axe goes to the backpack: off the hotbar it cannot be swung
+	var spent_axe: Dictionary = bo.inventory_of(1).take_from_slot(boulder_axe_slot, 1)   # the axe goes to the backpack: off the hotbar it cannot be swung
 	bo._last_hit.clear()
-	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, axe_slot + 1, Vector3.ZERO)
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, boulder_axe_slot + 1, Vector3.ZERO)
 	check(bo_rejects[-1] == 1 and int(bo._items[900001]["count"]) == left_before and not spent_axe.is_empty(), "an empty slot in hand: refused")
 	bo.report_position(1, Vector3(40.0, 22.0, 40.0))
 	bo._last_hit.clear()
