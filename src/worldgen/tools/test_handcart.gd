@@ -236,7 +236,11 @@ func _init() -> void:
 	check(have(1, "wooden_cart_wheel") == 2 and have(1, "axle") == 1 and have(1, "lumber") == 0 and have(1, "iron_band") == 0, "two wheels and an axle made at the bench, their Planks and iron bands used (%d wheels, %d axles)" % [have(1, "wooden_cart_wheel"), have(1, "axle")])
 	items.report_position(1, Vector3(15.0, 10.0, 4.0))
 	give(1, "wooden_hammer", 1)
-	act(1, Net.ACT_HOTBAR_SET, 0, items.table.number_of("wooden_hammer"))   # the hammer on hotbar key 1 (the hand bar)
+	var hammer_at: int = items.inventory_of(1).numbers.find(items.table.number_of("wooden_hammer"))
+
+	if not items.inventory_of(1).on_hotbar(hammer_at):
+		act(1, Net.ACT_MOVE, hammer_at, 0)   # the hammer into hotbar slot 0 (key 1), as a player would drag it
+
 	give(1, "lumber", 6)
 	give(1, "wooden_pin", 12)
 	act(1, Net.ACT_PLACE_BLUEPRINT, 250, 0, 0, Vector3(17.0, 10.0, 4.0))

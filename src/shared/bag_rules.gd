@@ -32,21 +32,6 @@ static func store(inv, item_inst: Dictionary) -> Dictionary:
 	return InventoryScript.clean_inst(out.merged({"bag": inv.to_json_array()}))
 
 
-# Where a hotbar key finds its item in the worn quick-use bags (positions `quick`, worn position indices): [worn position, bag slot], or [].
-static func quick_take(worn_inst: Dictionary, quick: Array, number: int) -> Array:
-	if number <= 0:
-		return []
-
-	for at in quick:
-		var rows: Array = worn_inst.get(at, {}).get("bag", [])
-
-		for i in rows.size():
-			if int(rows[i][0]) == number:
-				return [int(at), i]
-
-	return []
-
-
 # How many more of an item a quiver takes: its items.json ammo_capacity (40, 60 arrows) less what it holds; any number for other bags.
 static func room(table, bag_number: int, inv) -> int:
 	var cap: int = int(table.entry(table.id_of(bag_number)).get("ammo_capacity", 0))

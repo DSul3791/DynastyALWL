@@ -12,12 +12,12 @@ var table
 var numbers: PackedInt32Array = PackedInt32Array()
 var counts: PackedInt32Array = PackedInt32Array()
 var usable: int = SLOTS               # slots in use: a small container only fills its first few
-var bag_from: int = 0                 # new items go to slots from here first, then from slot 0 (the pack fills from slot 0 since the pointer hotbar, inventory step 4)
+var bag_from: int = 0                 # new items go to slots from here first, then from slot 0 (a pack: the backpack slots after the hotbar, see pack())
 var stack_all: bool = false           # a store that stacks every item to the u16 count (a fire's wood store); not saved, the owner sets it each time
 var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
 var fav: PackedInt32Array = PackedInt32Array()       # favourites (inventory step 3, a pack only): the item number a slot was favourited with, 0 none; see is_fav
 const HOTBAR_KEYS := 10
-var hotbar: PackedInt32Array = PackedInt32Array()    # the pointer hotbar (inventory step 4, a pack only): keys 1 to 9 and 0 each hold an item number, 0 none; see key_slot
+var hotbar_slots: int = 0             # a pack's first slots are its hotbar (keys 1 to 9 and 0 are slots 0 to 9; Dave, playtest 12 Nov 2026 TEST-008); 0 for a container
 # Per-instance data (catalog Phase 1b, master s2.2, s2.9, s4 items 2, 15, 16): {} for a plain item, else only the keys that are not default:
 # sharp (sharpness used, int), max_d (current maximum durability, int; absent = the row's durability), temper (1), craft (1 or 2, fixed at craft time),
 # magic (two Strings, "" empty; a slot is filled only while empty and nothing clears it), bag (a bag's contents, catalog Phase 5: rows in the
@@ -31,11 +31,19 @@ func _init(item_table = null) -> void:
 	counts.resize(SLOTS)
 	wear.resize(SLOTS)
 	fav.resize(SLOTS)
-	hotbar.resize(HOTBAR_KEYS)
 	inst.resize(SLOTS)
 
 	for i in SLOTS:
 		inst[i] = {}
+
+
+# A player's pack: slots 0 to 9 are the hotbar, real slots (an item is in the hotbar or in the backpack, never both); pickups fill the
+# backpack first (Dave, playtest 12 Nov 2026 TEST-008; this replaces the 8 Nov pointer hotbar, row 24 of OVERNIGHT_DECISIONS_8NOV.md).
+static func pack(item_table):
+	var inv = load("res://src/shared/inventory.gd").new(item_table)
+	inv.hotbar_slots = HOTBAR_KEYS
+	inv.bag_from = HOTBAR_KEYS
+	return inv
 
 
 # Add as many as fit (fills partial stacks first). Returns how many were left over.
@@ -277,59 +285,23 @@ func set_fav(slot: int, on: bool) -> void:
 		fav[slot] = numbers[slot] if on else 0
 
 
-# The pointer hotbar (inventory step 4): a key holds an item number, not a slot, so sorting and moving never change it. The key points at the pack
-# slot holding that item, an unbroken one first, then the first in pack order; -1 when the key is empty or none is in the pack (the key keeps its
-# item, dimmed, and the next one picked up comes back to it).
+# The pack slot a hotbar key is (keys 1 to 9 and 0 are slots 0 to 9), -1 when that slot is empty or this is not a pack.
 func key_slot(key: int) -> int:
-	if key < 0 or key >= hotbar.size() or hotbar[key] == 0:
-		return -1
+	return key if key >= 0 and key < hotbar_slots and numbers[key] != 0 else -1
 
-	var first: int = -1
-	var number: int = hotbar[key]
 
-	for slot in SLOTS:
-		if numbers[slot] != number:
-			continue
+# Whether this slot is a hotbar slot holding an item (the server's "on the hotbar" for tools: an axe to chop, a hammer to build).
+func on_hotbar(slot: int) -> bool:
+	return slot >= 0 and slot < hotbar_slots and numbers[slot] != 0
 
-		if max_durability(slot) <= 0 or wear[slot] < max_durability(slot):
+
+# The first empty backpack slot (after the hotbar), -1 when the backpack is full.
+func free_bag_slot() -> int:
+	for slot in range(hotbar_slots, usable):
+		if numbers[slot] == 0:
 			return slot
 
-		if first < 0:
-			first = slot
-
-	if first < 0 and table != null:
-		var other: int = _flame_twin(number)
-
-		if other > 0:
-			return numbers.find(other)
-
-	return first
-
-
-# A torch and the same torch put out (items.json "doused_item" and "relit_item") are one item to a key: rain turns the slot into the other one
-# while the key keeps the number it was given, and "Press its key to light it again" must still find it (the doused torch was lost to its key).
-func _flame_twin(number: int) -> int:
-	var entry: Dictionary = table.entry(table.id_of(number))
-	var twin: String = str(entry.get("doused_item", entry.get("relit_item", "")))
-	return table.number_of(twin) if twin != "" else 0
-
-
-# Whether a hotbar key points at the item in this slot (the server's "on the hotbar" for tools: an axe to chop, a hammer to build).
-func on_hotbar(slot: int) -> bool:
-	return slot >= 0 and slot < SLOTS and numbers[slot] != 0 and hotbar.has(numbers[slot])
-
-
-# The key whose pointer lands on this pack slot (the gold key number on the pack slot), or -1.
-func key_of_slot(slot: int) -> int:
-	if slot < 0 or slot >= SLOTS or numbers[slot] == 0:
-		return -1
-
-	var key: int = hotbar.find(numbers[slot])
-
-	if key < 0 and table != null and _flame_twin(numbers[slot]) > 0:
-		key = hotbar.find(_flame_twin(numbers[slot]))   # a torch whose key was given its lit or doused twin
-
-	return key if key >= 0 and key_slot(key) == slot else -1
+	return -1
 
 
 # One byte per slot, 1 for a favourite: what the client is sent (protocol 99 favourites).

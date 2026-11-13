@@ -288,8 +288,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if not has_shop(npc_id):
 		return ""
 
-	if not _near(peer, npc_id):   # he keeps his hours (meals, bed, rain shelter) and walks off with the window still open: say so (playtest 12 Nov 2026 TEST-003)
-		return "%s has walked off. Close this window and find them to trade." % str(npcs.npcs.get(npc_id, {}).get("name", "The trader"))
+	if not _near(peer, npc_id):   # out of talk range with the window still open: say so rather than nothing (TEST-003). Usually the player's distance: Hob is held at his post by npcs.json test_hold unless the NPC AI is down (unwell: he sits)
+		return "You are too far from %s to trade. Close this window and go closer." % str(npcs.npcs.get(npc_id, {}).get("name", "the trader"))
 
 	count = clampi(count, 1, 999)
 	var inv = items.inventory_of(peer)

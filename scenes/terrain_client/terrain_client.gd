@@ -479,7 +479,7 @@ var fall_growth                       # FallGrowth: ferns around the foot of the
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the left of the screen
-var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (keys hold items: inventory step 4)
+var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (the keys are pack slots 0 to 9)
 var heart_pulse                       # HeartPulse: the line of light over the hotbar that pulses with the heartbeat (heartbeat_design.md)
 var hud_fade                          # HudFade: passing out fades the whole HUD but the heartbeat line (heartbeat_design.md "Passing out")
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw

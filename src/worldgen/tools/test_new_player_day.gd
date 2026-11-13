@@ -104,7 +104,7 @@ func _init() -> void:
 	pass_time(10.0, 0.2)   # craft times raised by the pacing pass
 	check(count("campfire_kit") == 1, "a campfire kit is made by hand")
 
-	# The player puts the knife and the spear on the hotbar (new items no longer land there by themselves).
+	# The knife and the spear went into hotbar slots by themselves (new tools); the player moves them to keys 1 and 2.
 	items.action(1, Net.ACT_MOVE, slot_of("stone_knife"), 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_MOVE, slot_of("wooden_spear"), 1, 0, Vector3.ZERO)
 

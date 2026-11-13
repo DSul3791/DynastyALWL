@@ -310,9 +310,9 @@ func _refresh_look_slot(i: int, filter: String) -> void:
 	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
 	slot.set_favourite(view.inventory.is_fav(i))
 	slot.set_station_glow(number != 0 and station.has(number))   # the station here can use it (Dave 10 Nov 2026)
-	slot.set_linked_key(view.linked_key(i))
 	_note_arrival(i, slot, number)
-	slot.visible = (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
+	# The hotbar slots (0 to 9) are shown in the hotbar strip, not again here: an item is in one place only (TEST-008).
+	slot.visible = i >= view.inventory.hotbar_slots and (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
 
 
 # What the queue is making, so its arrival in the pack can fly in from the queue (look doc section 9).
@@ -390,6 +390,12 @@ func arrange_slots() -> void:
 	order.sort_custom(func(a, b):
 		var empty_a: bool = view.inventory.numbers[a] == 0
 		var empty_b: bool = view.inventory.numbers[b] == 0
+
+		var bar_a: bool = a < view.inventory.hotbar_slots   # the hidden hotbar slots go after the backpack
+		var bar_b: bool = b < view.inventory.hotbar_slots
+
+		if bar_a != bar_b:
+			return bar_b
 
 		if empty_a != empty_b:
 			return empty_b

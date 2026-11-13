@@ -1069,7 +1069,12 @@ func step6_storage_and_warehousing() -> void:
 	craft("iron_hammer", 1)
 	craft("iron_band", crafts_for("iron_band", bands))
 	check(have("iron_hammer") == 1 and have("iron_band") >= bands, "6a. an Iron - Hammer and %d iron bands at the Smithy" % have("iron_band"))
-	items.action(1, Net.ACT_HOTBAR_SET, 1, n("iron_hammer"), 0, Vector3.ZERO)
+	var iron_at: int = items.inventory_of(1).numbers.find(n("iron_hammer"))
+	var free_key: int = items.inventory_of(1).numbers.slice(0, 10).find(0)
+
+	if not items.inventory_of(1).on_hotbar(iron_at):
+		items.action(1, Net.ACT_MOVE, iron_at, free_key if free_key >= 0 else 1, 0, Vector3.ZERO)   # the iron hammer into a hotbar slot, as a player would drag it
+
 	var boards_n: int = 2 * cost_of("warehouse_desk", "hardwood_board") + cost_of("warehouse_crate", "hardwood_board")
 	var planks_n: int = cost_of("log_workbench", "lumber") + 2 * need_of("wooden_cart_wheel", "lumber") + need_of("axle", "lumber") + cost_of("handcart", "lumber") + 2
 

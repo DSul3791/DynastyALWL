@@ -18,7 +18,7 @@ Automated tests pass on Dave's PC (below); merged into `dev` by PR #1058 (merge 
 Two faults in the trade path, both silent to the player:
 
 1. **Every trader answer was hidden.** The server answers each deal with a notice (`server_items._say`). The client draws notices on the HUD prompt line (`inventory_view._prompt`, centre of the screen). The trade window (`dialogue_view._build_shop`) is added to the same canvas layer later, covers 90% of the screen with a 95% opaque panel, and so is drawn over the prompt. "He cannot pay for that just now", "He has all the planks he wants today", even "Sold ..." were all invisible.
-2. **Hob walks away with the window open.** Hob keeps a schedule (`data/npcs/npcs.json`: work, eat at 12:00 and 18:00, sleep from 21:00, rain shelter from `work`). A game hour is 2.5 real minutes, so he leaves his post every few minutes of play. The window stays open, and `server_trade.deal` returned `""` once he was over 4.5 m away, so the server sent nothing at all.
+2. ~~Hob walks away with the window open.~~ **Withdrawn (13 Nov 2026).** Dave reported that Hob does not move at all, and he is right: `data/npcs/npcs.json` `test_hold` (its note: "Dave 2026-10-21, TEST") holds Hob at his post all day, and `server_npcs.package_of` returns the hold before the schedule and the rain shelter. Only the NPC-AI outage mode ("unwell", Hob walks to a chair) overrides it. The schedule reading was wrong. What remains true: `server_trade.deal` returned `""` (nothing said) whenever the player was over 4.5 m from the trader, which now gets a plain line.
 
 The real buying limits exist and do replenish (no new restriction was invented):
 - Purse: 300 copper cap, refills 100 copper per game day (one real hour) (`shops.json` hob `purse_cap`, `purse_regen_per_day`).
@@ -27,9 +27,8 @@ The real buying limits exist and do replenish (no new restriction was invented):
 
 Fix:
 - `dialogue_view.gd`: a reply line in the trade window shows the server's latest notice while the window is open.
-- `server_trade.gd`: the "Would you like to buy my extra stuff?" button says the refusal too, not "no extra stuff" (gate review finding 1); a spent purse says Dave's words, "I've bought all I can for now. Come back in a little while."; the board limit says "He has all the planks he wants for now. Come back in a little while."; a trader out of reach says "Hob has walked off. Close this window and find them to trade." instead of nothing.
+- `server_trade.gd`: the "Would you like to buy my extra stuff?" button says the refusal too, not "no extra stuff" (gate review finding 1); a spent purse says Dave's words, "I've bought all I can for now. Come back in a little while."; the board limit says "He has all the planks he wants for now. Come back in a little while."; out of talk range the deal says "You are too far from Hob to trade. Close this window and go closer." instead of nothing (first worded as "Hob has walked off", corrected 13 Nov 2026 because Hob does not move).
 
-Not changed (would be new behaviour, Dave's call): Hob still keeps his hours while a player trades.
 
 ## TEST-002
 
@@ -59,6 +58,5 @@ Results (Dave's PC ManlandRyzen5, 12 Nov 2026, worktree `E:/Software/godotDev/wt
 ## What Dave should check in play
 
 1. Sell to Hob until he stops: the window says why (purse or "wants for now"), and his purse fills again after a while.
-2. Keep the window open past noon or into rain: it says Hob walked off.
-3. Purse and prices read gold, silver, bronze, copper from left to right.
-4. On a new character, fell the first tree after lighting a fire: the line says "Goal done: Light a fire. You earn 5 copper." and the feed says "(goal reward)".
+2. Purse and prices read gold, silver, bronze, copper from left to right.
+3. On a new character, fell the first tree after lighting a fire: the line says "Goal done: Light a fire. You earn 5 copper." and the feed says "(goal reward)".
