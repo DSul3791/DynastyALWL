@@ -45,8 +45,8 @@ static func _stack_kg(number: int, count: int, wear: int, table, cfg: Dictionary
 	return kg
 
 
-# Kilograms of what a bag holds (its instance data's `bag` rows, src/shared/bag_rules.gd): a bag adds room, never strength (master s3.9 rule 2),
-# so its load counts in full wherever the bag is, worn or in the pack.
+# Kilograms of what a bag holds (its instance data's `bag` rows, src/shared/bag_rules.gd): a bag's load counts in full wherever the bag is, worn or in the pack
+# (a backpack's carry_bonus_kg raises the limit, not the load).
 static func bag_kg(item_inst: Dictionary, table, cfg: Dictionary) -> float:
 	var total: float = 0.0
 
@@ -67,6 +67,18 @@ static func worn_speed_mult(numbers, table) -> float:
 			mult *= clampf(float(table.entry(table.id_of(int(number))).get("worn_speed_mult", 1.0)), 0.1, 1.0)
 
 	return mult
+
+
+# Extra kilograms the worn pieces let the body carry (items.json carry_bonus_kg: a worn backpack spreads its load, a better one more), 0 for none.
+# Only the carry limit moves: the comfortable load is free_ratio of it, so both rise together.
+static func carry_bonus_kg(numbers, table) -> float:
+	var total: float = 0.0
+
+	for number in numbers:
+		if int(number) > 0:
+			total += float(table.entry(table.id_of(int(number))).get("carry_bonus_kg", 0.0))
+
+	return total
 
 
 # The most a body carries (the server refuses to pick up more).

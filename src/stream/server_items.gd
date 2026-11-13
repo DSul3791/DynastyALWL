@@ -11931,10 +11931,12 @@ func rain_shed(peer: int) -> float:
 	return clampf(best, 0.0, 1.0)
 
 
-# The body weight the carry limit is worked out from (cap = ratio x body). A pack adds room, never strength (master s3.9 rule 2; catalog Phase 5
-# retired carry_bonus_kg).
+# The body weight the carry limit is worked out from (cap = ratio x body): the real weight plus what the worn pack's weight spreading adds
+# (items.json carry_bonus_kg, 12 Hide - Backpack and 18 Leather - Backpack; DESIGN-001, BUGLIST-001). Slots are not touched: a bag's own slots are
+# separate, and the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
-	return float(vitals_of(peer).get("weight", 75.0))
+	var ratio: float = maxf(float(_carry_cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
+	return float(vitals_of(peer).get("weight", 75.0)) + CarryRules.carry_bonus_kg(worn_of(peer), table) / ratio
 
 
 # ACT_WEAR: the piece in a pack slot goes to its slot-and-layer. Every worn piece sharing a position with it comes off into the pack (the one in

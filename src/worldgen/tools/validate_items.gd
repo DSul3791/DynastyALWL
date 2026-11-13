@@ -1183,8 +1183,8 @@ func _init() -> void:
 			if row.has("bag_slots") and (int(row["bag_slots"]) < 1 or int(row["bag_slots"]) > 30 or not String(row.get("bag_takes", "")) in ["any", "small", "small_tool", "consumable", "arrow", "blade", "awkward"]):
 				fail("items.json: bag '%s' needs bag_slots 1 to 30 and a known bag_takes" % id)
 
-			if row.has("carry_bonus_kg"):
-				fail("items.json: '%s' has carry_bonus_kg, retired in catalog Phase 5 (a pack adds room, not strength)" % id)
+			if row.has("carry_bonus_kg") and (float(row["carry_bonus_kg"]) <= 0.0 or float(row["carry_bonus_kg"]) > 60.0 or slot != "back"):
+				fail("items.json: '%s' carry_bonus_kg must be a number of kilograms above 0 up to 60, on a back piece" % id)
 
 		for hung in clothing_cfg.get("attach", {}):
 			if not places.has(hung) or not places.has(String(clothing_cfg["attach"][hung][0])):

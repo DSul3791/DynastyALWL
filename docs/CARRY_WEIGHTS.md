@@ -14,7 +14,7 @@ Source figures (REI, "How Much Should Your Pack Weigh?", rei.com/learn/expert-ad
 | Hard load | 22 to 30 kg | 42 to 52 kg is slowed |
 | Real maximum, short distance | about 75 kg, strong people more | 52.5 kg refused |
 
-The game is already **more generous than reality** for a normal adult, so raising `carry_kg_per_body_kg` (0.7) or `free_ratio` (0.8) is not needed and would let players carry impossible loads. Gameplay comes first: Dave should feel unburdened picking a meadow, and with the weights fixed below he does. Strength and fitness scaling is unchanged. (Since catalog Phase 5, M001-T15, 12 Nov 2026, a worn pack no longer adds `carry_bonus_kg`: a bag adds its own slots and its load counts in full, master s3.9 rule 2.) Not changed: `carry_kg_per_body_kg`, `free_ratio`, `min_speed`, `load_effort`.
+The game is already **more generous than reality** for a normal adult, so raising `carry_kg_per_body_kg` (0.7) or `free_ratio` (0.8) is not needed and would let players carry impossible loads. Gameplay comes first: Dave should feel unburdened picking a meadow, and with the weights fixed below he does. Strength and fitness scaling is unchanged. (Catalog Phase 5, M001-T15, 12 Nov 2026, retired `carry_bonus_kg`; DESIGN-001 in BUGLIST-001, 13 Nov 2026, restores it for the two backpacks only: a worn Hide - Backpack lets you carry 12 kg more and a Leather - Backpack 18 kg more, so the limit and the comfortable load both rise, while the pack's slot count never changes. Its load still counts in full.) Not changed: `carry_kg_per_body_kg`, `free_ratio`, `min_speed`, `load_effort`.
 
 ## Weight changes (kg of ONE item; `data/items/weights.json`)
 | Item | Old | New | Reasoning (estimates unless stated) |

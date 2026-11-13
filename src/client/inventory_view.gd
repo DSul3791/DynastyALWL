@@ -4649,9 +4649,10 @@ func worn_top(slot: String, skip: Array = []) -> int:
 	return -1
 
 
-# The body weight the carry limit is worked out from (the server does the same): a pack adds room, never strength (catalog Phase 5).
+# The body weight the carry limit is worked out from (the server does the same): the real weight plus what the worn pack's weight spreading
+# adds (items.json carry_bonus_kg; DESIGN-001, BUGLIST-001), so the comfortable load and the limit both rise by it.
 func carry_body_kg() -> float:
-	return weight_kg
+	return weight_kg + CarryRules.carry_bonus_kg(worn, table) / maxf(float(_carry_cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
 
 
 # Opens the bag worn at a worn position beside the pack (the container screen); the server answers with its contents.
@@ -5105,6 +5106,9 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 
 		if float(entry.get("warmth", 0.0)) > 0.0:
 			text += " Keeps %d%% of your body heat in." % int(round(float(entry["warmth"]) * 100.0))
+
+		if float(entry.get("carry_bonus_kg", 0.0)) > 0.0:
+			text += " Spreads the weight: you can carry %.0f kg more." % float(entry["carry_bonus_kg"])
 
 		if BagRules.slots_of(table, number) > 0:
 			var held: int = (item_inst.get("bag", []) as Array).filter(func(row: Array) -> bool: return int(row[0]) != 0).size()
