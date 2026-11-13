@@ -1209,7 +1209,7 @@ func _init() -> void:
 				fail("items.json: '%s' fabric '%s' is not a warmth.json layers fabric" % [id, row["fabric"]])
 
 			# Bags (catalog Phase 5, src/shared/bag_rules.gd): their own slots fit an inventory, bag_takes is a known rule, carry_bonus_kg is kilograms on a back piece.
-			if row.has("bag_slots") and (int(row["bag_slots"]) < 1 or int(row["bag_slots"]) > 30 or not String(row.get("bag_takes", "")) in ["any", "small", "small_tool", "consumable", "arrow", "blade", "awkward"]):
+			if row.has("bag_slots") and (int(row["bag_slots"]) < 1 or int(row["bag_slots"]) > 30 or not String(row.get("bag_takes", "")) in ["any", "small", "small_tool", "consumable", "arrow", "blade"]):
 				fail("items.json: bag '%s' needs bag_slots 1 to 30 and a known bag_takes" % id)
 
 			if row.has("carry_bonus_kg") and (float(row["carry_bonus_kg"]) <= 0.0 or float(row["carry_bonus_kg"]) > 60.0 or slot != "back"):

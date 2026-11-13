@@ -57,19 +57,7 @@ static func bag_kg(item_inst: Dictionary, table, cfg: Dictionary) -> float:
 	return total
 
 
-# The walk, run and sprint multiplier of what is worn: the product of the worn pieces' items.json worn_speed_mult (the Wooden - Pack frame's
-# restriction, master s3.9 rule 2), 1 for none.
-static func worn_speed_mult(numbers, table) -> float:
-	var mult: float = 1.0
-
-	for number in numbers:
-		if int(number) > 0:
-			mult *= clampf(float(table.entry(table.id_of(int(number))).get("worn_speed_mult", 1.0)), 0.1, 1.0)
-
-	return mult
-
-
-# Extra kilograms the worn pieces let the body carry (items.json carry_bonus_kg: a worn backpack spreads its load, a better one more), 0 for none.
+# Extra kilograms the worn pieces let the body carry (items.json carry_bonus_kg: a worn back pack spreads its load, a better one more; one back:base piece is worn at a time), 0 for none.
 # Only the carry limit moves: the comfortable load is free_ratio of it, so both rise together.
 static func carry_bonus_kg(numbers, table) -> float:
 	var total: float = 0.0

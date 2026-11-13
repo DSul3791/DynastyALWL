@@ -14702,7 +14702,7 @@
     "test_mission001_walkthrough"
    ],
    "accepted_commit": "aa8113c33",
-   "note": "M001-T15 (phase 5): live; back:base, 10 slots, any; recipe 601 by hand (wet-weather penalty not modelled); worn look placeholder"
+   "note": "M001-T15 (phase 5): live; back:base, 10 slots, any; recipe 601 by hand (wet-weather penalty not modelled); worn look placeholder. 13 Nov 2026 16:19Z (Dave: no backpacks have slots, they only improve the weight you can carry): bag_slots and bag_takes removed, carry_bonus_kg 8 (starting value for Dave to tune); BUGLIST-001 Follow-up 2"
   },
   {
    "key": "new:Leather - Satchel",
@@ -14778,7 +14778,7 @@
     "test_mission001_walkthrough"
    ],
    "accepted_commit": "aa8113c33",
-   "note": "M001-T15 (phase 5): live; back:base, 20 slots, any; recipe 607 Tailor's table; loaded_effort 0.15 (movement cost when loaded); worn look placeholder"
+   "note": "M001-T15 (phase 5): live; back:base, 20 slots, any; recipe 607 Tailor's table; loaded_effort 0.15 (movement cost when loaded); worn look placeholder. 13 Nov 2026 16:19Z (Dave: no backpacks have slots, they only improve the weight you can carry): bag_slots, bag_takes and loaded_effort removed, carry_bonus_kg 24 (starting value for Dave to tune); BUGLIST-001 Follow-up 2"
   },
   {
    "key": "new:Wooden - Pack frame",
@@ -14797,7 +14797,7 @@
     "test_mission001_walkthrough"
    ],
    "accepted_commit": "aa8113c33",
-   "note": "M001-T15 (phase 5): live; back:base, 4 slots, awkward loads incl. large logs; recipe 608 Carpenter's bench; worn_speed_mult 0.85 (walk, run, sprint, ladder climb, strike and bow pace) and loaded_effort 0.25; worn look placeholder"
+   "note": "M001-T15 (phase 5): live; back:base, 4 slots, awkward loads incl. large logs; recipe 608 Carpenter's bench; worn_speed_mult 0.85 (walk, run, sprint, ladder climb, strike and bow pace) and loaded_effort 0.25; worn look placeholder. 13 Nov 2026 16:19Z (Dave): no back pack has slots. 13 Nov 2026 16:21Z (Dave: \"I think we need to do away with wooden.\", read by the lead as retiring this item): RETIRED in items.json and recipe 608, number 988 never reused, worn_speed_mult and loaded_effort removed from data and code, worn row removed; ledger state left as accepted for the original catalog add; BUGLIST-001 Follow-up 2"
   },
   {
    "key": "new:Weapon scabbard",

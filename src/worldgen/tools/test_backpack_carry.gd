@@ -1,9 +1,10 @@
 extends SceneTree
 
-# DESIGN-001 (BUGLIST-001): a worn backpack improves the comfortable carry weight and the limit (items.json carry_bonus_kg: 12 Hide - Backpack,
-# 18 Leather - Backpack, so quality matters) and never changes the pack's inventory slot count. A backpack has no slots of its own and cannot be
-# opened (Dave 13 Nov 2026: "Backpacks do not have slots. The only thing they do is give you more carry weight."); an older save's backpack that
-# still carries bag contents loads plain, and a real bag (the Wicker - Pack basket) keeps its contents. Real server state: slots and thresholds measured
+# DESIGN-001 (BUGLIST-001): a worn back pack improves the comfortable carry weight and the limit (items.json carry_bonus_kg: 12 Hide - Backpack,
+# 18 Leather - Backpack, 8 Wicker - Pack basket, 24 Traveller's rucksack, so quality matters) and never changes the pack's inventory slot count.
+# No back pack has slots of its own or can be opened (Dave 13 Nov 2026: "Backpacks do not have slots. The only thing they do is give you more
+# carry weight." and "no backpacks have slots they only improve the weight you can carry due to ergonomics"); an older save's back pack that
+# still carries bag contents loads plain, and a real bag (the Fibre - Shoulder bag) keeps its contents. Real server state: slots and thresholds measured
 # before equipping, equipped and after unequipping; near capacity nothing is lost or doubled (the pack's slots follow what it holds, protocol 116);
 # and the worn backpack and its thresholds survive a save and reload.
 #   godot --headless --path . --script res://src/worldgen/tools/test_backpack_carry.gd
@@ -121,6 +122,24 @@ func _init() -> void:
 	check(hide > 0 and leather > 0 and hide_kg == 12.0 and leather_kg == 18.0 and leather_kg > hide_kg, "carry_bonus_kg: Hide - Backpack %.0f, Leather - Backpack %.0f (quality matters)" % [hide_kg, leather_kg])
 	check(BagRules.slots_of(table, hide) == 0 and BagRules.slots_of(table, leather) == 0 and not table.entry("backpack").has("bag_takes") and not table.entry("leather_backpack").has("bag_takes"), "neither backpack has slots (no bag_slots, no bag_takes): they only give carry weight")
 
+	# 1b. The other back packs (basket 8, rucksack 24; the Wooden - Pack frame is retired): no slots, a carry bonus that raises the server's limit, never opened.
+	var back_packs: Dictionary = {"backpack": 12.0, "leather_backpack": 18.0, "wicker_pack_basket": 8.0, "travellers_rucksack": 24.0}
+	var body_plain: float = items._carry_body(1)
+
+	for id in back_packs:
+		var number: int = table.number_of(id)
+		items.give(1, number, 1)
+		put_on(items, number)
+		var entry: Dictionary = table.entry(id)
+		check(BagRules.slots_of(table, number) == 0 and not entry.has("bag_slots") and not entry.has("bag_takes") and not entry.has("loaded_effort") and float(entry.get("carry_bonus_kg", 0.0)) == back_packs[id], "%s: no slots, carry_bonus_kg %.0f" % [id, back_packs[id]])
+		check(items.worn_of(1)[back_place(items)] == number and is_equal_approx(items._carry_body(1), body_plain + float(back_packs[id]) / 0.7), "%s worn raises the carry limit by %.0f kg" % [id, back_packs[id]])
+		check(refuses_container(items), "%s worn is not opened and takes nothing" % id)
+		take_off(items)
+
+	check(is_equal_approx(items._carry_body(1), body_plain), "with none worn the limit is the plain one")
+	check(not table.entry("wooden_pack_frame").has("slot") and bool(table.entry("wooden_pack_frame").get("retired", false)) and not table.entry("wooden_pack_frame").has("worn_speed_mult"), "the Wooden - Pack frame is retired (Dave 13 Nov 2026): no slot to wear it in, no speed penalty left")
+	empty(inv)
+
 	# 2. Before: 30 slots, the plain limit and comfortable load of a 75 kg body.
 	var bare: Array = measure(items)
 	print("INFO bare: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg" % bare)
@@ -210,10 +229,12 @@ func _init() -> void:
 	# 9. An older save: backpacks that still carry `bag` rows load plain (a pack row, a worn one and one on the ground), their contents add no
 	# weight, and a real bag with contents keeps them through the same load.
 	var wicker: int = table.number_of("wicker_pack_basket")
+	var real_bag: int = table.number_of("fibre_shoulder_bag")
 	var kg_stone: float = CarryRules.weight_of("stone", cfg)
 	empty(back_inv)
 	back.give(1, hide, 1)
 	back.give(1, wicker, 1)
+	back.give(1, real_bag, 1)
 	back.give(1, leather, 1)
 	put_on(back, leather)
 	back.give(1, hide, 1)
@@ -221,6 +242,8 @@ func _init() -> void:
 	back_inv.inst[hide_at] = {"bag": [[stone, 5, 0]]}   # written straight into the instance, as an older save would hold it
 	var wicker_at: int = back_inv.numbers.find(wicker)
 	back_inv.inst[wicker_at] = {"bag": [[stone, 2, 0]]}
+	var real_at: int = back_inv.numbers.find(real_bag)
+	back_inv.inst[real_at] = {"bag": [[stone, 2, 0]]}
 	var worn_row: Array = back._characters[back._peer_key[1]]["worn"]
 	worn_row[back_place(back)] = [leather, 1, 0, {"bag": [[stone, 4, 0]]}]
 	back.action(1, Net.ACT_DROP, back_inv.numbers.find(hide, hide_at + 1), 0, 1, Vector3(1.0, 10.0, 0.0))
@@ -239,6 +262,7 @@ func _init() -> void:
 	var older_inv = older.inventory_of(1)
 	var older_hide: int = older_inv.numbers.find(hide)
 	var older_wicker: int = older_inv.numbers.find(wicker)
+	var older_real: int = older_inv.numbers.find(real_bag)
 	var older_ground: Dictionary = {}
 
 	for id in older._items:
@@ -248,8 +272,9 @@ func _init() -> void:
 	check(older_hide >= 0 and not older_inv.inst_of(older_hide).has("bag"), "an older save's Hide - Backpack in the pack loads with no bag contents")
 	check(older.worn_of(1)[back_place(older)] == leather and not older.worn_slots_of(1)[back_place(older)][3].has("bag"), "an older save's worn Leather - Backpack loads with no bag contents")
 	check(on_ground >= 0 and not older_ground.has("bag"), "an older save's Hide - Backpack on the ground loads with no bag contents")
-	check(absf(kg_with_bags - older.carried_kg_of(1) - 9.0 * kg_stone) < 0.001, "the dropped contents leave no invisible weight (%.2f kg before, %.2f after: the 9 kg of the pack and the worn backpack are gone)" % [kg_with_bags, older.carried_kg_of(1)])
-	check(older_wicker >= 0 and older_inv.inst_of(older_wicker).get("bag", []) == [[stone, 2, 0]], "a real bag (the Wicker - Pack basket) keeps its contents through the same load")
+	check(older_wicker >= 0 and not older_inv.inst_of(older_wicker).has("bag"), "an older save's Wicker - Pack basket (no slots now) loads with no bag contents")
+	check(absf(kg_with_bags - older.carried_kg_of(1) - 11.0 * kg_stone) < 0.001, "the dropped contents leave no invisible weight (%.2f kg before, %.2f after: the 11 kg of the Hide pack, the worn backpack and the basket are gone)" % [kg_with_bags, older.carried_kg_of(1)])
+	check(older_real >= 0 and older_inv.inst_of(older_real).get("bag", []) == [[stone, 2, 0]], "a real bag (the Fibre - Shoulder bag) keeps its contents through the same load")
 
 	print("FAILURES: %d" % failures)
 	quit(1 if failures > 0 else 0)
