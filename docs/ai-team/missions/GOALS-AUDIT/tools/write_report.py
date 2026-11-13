@@ -20,6 +20,7 @@ cnt = lambda key, rs=orig: collections.Counter(r[key] for r in rs)
 ds = cnt("design_status"); ev = cnt("evidence_level"); rs_ = cnt("runtime_support"); cs = cnt("content_status")
 main = [r for r in orig if r["route"] == "MAIN"]; dsm = cnt("design_status", main)
 by_id = {r["goal_id"]: r for r in orig}
+ind = [r for r in orig if r["review_method"].startswith("INDIVIDUAL")]
 def n(s): return "%d" % s
 def fl(fid): f = F[fid]; return "**%s** (%s, %s): %s" % (fid, f["severity"], f["cls"].replace("_", " ").lower(), f["title"])
 def flist(ids, show_goals=True):
@@ -46,12 +47,13 @@ P("## 1. Executive summary")
 P("")
 P("- **%d original goals reviewed** (%d main route, %d additional), plus **%d recommended ADD goals** kept as separate records." % (len(orig), len(main), len(orig) - len(main), len(adds)))
 P("- **Design status:** PASS %d, NEEDS_CORRECTION %d, NEEDS_TEST %d, BLOCKED %d. On the main route: PASS %d, NEEDS_CORRECTION %d, NEEDS_TEST %d, BLOCKED %d." % (ds["PASS"], ds["NEEDS_CORRECTION"], ds["NEEDS_TEST"], ds["BLOCKED"], dsm["PASS"], dsm["NEEDS_CORRECTION"], dsm["NEEDS_TEST"], dsm["BLOCKED"]))
+P("- **Depth:** %d goals (all %d main-route goals) were examined individually; %d side-branch goals (dependency levels 6-17) were assessed by rule only, by a script against the named data files (section 2). %d of the %d PASS verdicts are rule-only." % (len(ind), len(main), len(orig) - len(ind), sum(1 for r in orig if r["design_status"] == "PASS" and r["review_method"].startswith("RULE")), ds["PASS"]))
 P("- **Evidence:** %d goals CODE_VERIFIED (data and code read at the baseline), %d AUTOMATED_TESTED (legacy goals asserted by `test_goals.gd`, passed on David4 at the baseline), 0 GAMEPLAY_VERIFIED. No goal has been seen completing in a played game." % (ev["CODE_VERIFIED"], ev["AUTOMATED_TESTED"]))
 pass_rt = sum(1 for r in orig if r["design_status"] == "PASS" and r["runtime_support"] != "EXISTING")
 P("- **Runtime:** %d goals can be detected by the existing goal engine; %d need a new server event (gather and fire/chop activities); %d need other implementation (paths that make the item without crediting the goal). Design status and runtime support are separate: %d PASS goals still need runtime work before they can complete." % (rs_["EXISTING"], rs_.get("NEW_EVENT_REQUIRED", 0), rs_.get("OTHER_IMPLEMENTATION_REQUIRED", 0), pass_rt))
-P("- **Blocked content:** %d goals cannot be completed in play today: %d because a raw ingredient has no in-game source (Tanbark, pine tar, grain crops and flax, obsidian, quill), %d more because the `water` ingredient exists only as desert cactus water, and %d because they target locked blueprints. %d of them are on the main route (Leather, Tar, Water wheel, Sawmill, Concrete, the three swords and every Engineered/Fortified piece that needs concrete)." % (ds["BLOCKED"], len(C["blocked_nosrc"]), len(C["blocked_water_extra"]), len(C["locked_bp"]), len(C["main_blocked"])))
+P("- **Blocked content:** %d goals cannot be completed in play today: %d because a raw ingredient has no in-game source (Tanbark, pine tar, grain crops and flax; obsidian and quill also have none but block no goal on their own), %d more because the `water` ingredient exists only as desert cactus water, and %d because they target locked blueprints. %d of them are on the main route (Leather, Tar, Water wheel, Sawmill, Concrete, the three swords and every Engineered/Fortified piece that needs concrete)." % (ds["BLOCKED"], len(C["blocked_nosrc"]), len(C["blocked_water_extra"]), len(C["locked_bp"]), len(C["main_blocked"])))
 P("- **Top tutorial problems:** the Wooden - Hammer step cannot be done as written (axing a log gives large blocks; small blocks are never taught); no hunting step precedes 'Obtain hide'; firewood is taught by a path that never completes the goal; doors come before their frames and never say to aim at an empty doorway; burning stations (Smithy, Blast furnace, Master smithy) need fuel in the pack and the guide never says so; bronze comes after iron, contrary to the approved catalog; legacy `after` gating withholds credit for out-of-order play.")
-P("- **Top economy concerns:** the draft pays %s copper in total (main route %s). On the ASSUMED effort model that is %.1f times the picking wage over the modeled work and %.2f times the net coin Hob could pay one player; real play time is unmeasured. Rewards follow dependency depth, not effort or significance; variants take most of the money. Recommended per-goal values (ledger column `recommended_reward_copper`) total %s (main route %s). Coin values are unchanged by this audit (Dave's standing ruling)." % (tot["draft_total"], tot["draft_main"], 14.6, 1.70, tot["recommended_total"], tot["recommended_main"]))
+P("- **Top economy concerns:** the draft pays %s copper in total (main route %s). On the ASSUMED effort model that is %.1f times the picking wage over the modeled work and %.2f times the net coin Hob could pay one player; real play time is unmeasured. Rewards follow dependency depth, not effort or significance; variants take most of the money. Recommended per-goal values (ledger column `recommended_reward_copper`) total %s (main route %s). Coin values are unchanged by this audit (creator ruling relayed with the brief: coin rewards stay until Dave says otherwise)." % (tot["draft_total"], tot["draft_main"], 14.6, 1.70, tot["recommended_total"], tot["recommended_main"]))
 P("- **Journal and HUD:** J, G and M are taken or unwired today; modifier handling would make Ctrl+Shift+G run Store All in the inventory; the client receives no goal state (protocol change needed); the upper-right HUD corner is occupied; no fanfare audio exists.")
 P("- **Readiness: NOT READY for implementation.** See section 18. The goal list needs its BLOCKED and NEEDS_CORRECTION rows resolved and %d creator decisions (section 17) before the goal data can be written." % 11)
 P("")
@@ -69,7 +71,7 @@ P("4. **Walkthrough** from an empty pack to the Fortified gate (section 5).")
 P("5. **Independent challenge** by reviewers who did not write the findings (section 15).")
 P("6. **Correction and consistency**: the findings are consolidated into stable IDs (GA-xx) by `tools/consolidate.py`; `tools/build_ledger.py` writes and validates the ledger; this report is generated from it.")
 P("")
-P("Design status of a goal is the most severe effect among its findings: BLOCKED (cannot be completed in play today), NEEDS_CORRECTION (the instruction, ordering, completion rule or text is wrong or incomplete), NEEDS_TEST (believed correct but depends on content not yet verified in play), PASS (instruction, materials, stations and prerequisites match the code and data). Design status is independent of runtime support: a PASS gather goal still needs a new event before it can complete (column `runtime_support`). Economy findings never change design status; recommended coin values sit in their own column.")
+P("Design status of a goal is the most severe effect among its findings: BLOCKED (cannot be completed in play today), NEEDS_CORRECTION (the instruction, ordering, completion rule or text is wrong or incomplete), NEEDS_TEST (believed correct but depends on content not yet verified in play), PASS (instruction, materials, stations and prerequisites match the code and data). Design status is independent of runtime support: a PASS gather goal still needs a new event before it can complete (column `runtime_support`). Economy findings never change design status; recommended coin values sit in their own column. Engine-wide completion defects that affect every goal of a kind (GA-40 `after` gating, GA-43 uncredited paths, GA-45 missing events, GA-46 gather events) are recorded with no status effect on purpose and appear in `runtime_support` instead; a completion defect specific to one goal's taught path (for example GA-13 firewood) is NEEDS_CORRECTION.")
 P("")
 
 ind = [r for r in orig if r["review_method"].startswith("INDIVIDUAL")]
@@ -77,7 +79,7 @@ P("**Depth of review, per goal (ledger column `review_method`).** %d goals (all 
 P("")
 P("**Evidence level, per goal.** CODE_VERIFIED means the named data sources in `source_refs` were read for that row (by script for rule-only rows) and the mechanism code was read once for the family; it does not mean the goal was seen working. AUTOMATED_TESTED is given only to the 11 legacy goals whose completion `test_goals.gd` asserts (one of the 20 David4 scripts). GAMEPLAY_VERIFIED is given to none: nobody has seen any of these goals on screen. No row is DOCUMENT_ONLY, because every row was compared with at least one named data file.")
 P("")
-P("**Ledger integrity (machine-checked by `tools/build_ledger.py` on every build):** %d ORIGINAL rows, exactly one per draft row (the parsed draft has %d rows and the ID sets are compared for equality, so a missing or extra goal fails the build); no duplicate `goal_id` across all %d rows; every required field present; every reward an integer copper value; every finding ID defined. Every count in this report is computed from the CSV by `tools/write_report.py`, not typed." % (len(orig), len(orig), len(rows)))
+P("**Ledger integrity (machine-checked by `tools/build_ledger.py` on every build):** %d ORIGINAL rows, exactly one per draft row (the parsed draft has %d rows and the ID sets are compared for equality, so a missing or extra goal fails the build); no duplicate `goal_id` across all %d rows; every required field present; every reward an integer copper value; every finding ID defined. Goal counts, status counts and copper totals in this report are computed from the CSV and the model outputs by `tools/write_report.py`. A few figures are quoted from the workstream records rather than recomputed here: the 14.6x and 1.70x economy ratios (GA-70, `work/ws_economy.md`), the 36 overlapping goals and 70 intermediates (`work/ws_catalog.md` sections 5-6), and the draft self-audit figures (`work/ws_acquisition.md`)." % (len(orig), len(orig), len(rows)))
 P("")
 P("Evidence classes: CREATOR (Dave's own rulings), IMPLEMENTED (code and data at the baseline), PROPOSAL (the draft and agent documents), UNKNOWN. Godot was not run in the cloud. Automated evidence comes from one David4 run relayed by the coordinator (section 3).")
 P("")
@@ -115,7 +117,7 @@ kc = collections.Counter(r["goal_id"].split(":")[0] if ":" in r["goal_id"] else 
 P("- By kind: %s." % ", ".join("%s %d" % (k, v) for k, v in kc.most_common()))
 P("- Coverage of eligible content: every live tool ladder (knife, axe, pickaxe, hammer, saw, spade, hoe, sickle) is covered by a goal. Content with no goal is listed as %d ADD records (section 7)." % len(adds))
 P("- Goal IDs: the draft has none. The ledger assigns stable IDs: the legacy runtime id for the 28 live goals, otherwise `<kind>:<key>` from each row's marker. All %d are unique (validated)." % len(orig))
-P("- 70 craft goals are intermediate components (GA-58); 36 goals overlap another goal (GA-47, GA-48).")
+P("- 70 craft goals are intermediate components (GA-58); 36 goals are in a duplicate or overlap relation (`work/ws_catalog.md` section 5; the clearest cases are GA-47 and GA-48).")
 P("- The draft's own self-audit (its section 3, 43 'unconfirmed' sources) is inaccurate: 37 of the 43 are sourced; Tanbark, pine tar and obsidian, which it did not list, have no source (GA-59).")
 P("")
 
@@ -131,7 +133,7 @@ for i, r in enumerate(main, 1):
 P("")
 P("### Phase C walkthrough, step by step")
 P("")
-P("The new-player walkthrough was written one step at a time, from an empty pack (main 1-45, then 44-118), by two separate workstreams reading code and data. Their step tables are reproduced below unchanged, apart from cutting the evidence column. Where the independent review corrected a step (section 15: GA-10 tree species, GA-21 foundation order, GA-23 bronze order, GA-36 drink), the correction in this report supersedes the table. Verdicts: YES; YES-WITH-UNTAUGHT-PREREQ (doable, but the guide leaves out something the player needs); NO; UNKNOWN.")
+P("The new-player walkthrough was written one step at a time, from an empty pack (main 1-45, then 44-118), by two separate workstreams reading code and data. Their step tables are reproduced below unchanged, apart from cutting the evidence column. These tables are the walkers' first-pass reading and are **not** the verdicts: the Status column of the main-route table above and the ledger are authoritative. In particular, a YES cell is superseded wherever a goal is BLOCKED by a source or a locked blueprint (GA-01 to GA-04, GA-31: e.g. Leather, the swords, Concrete, the Engineered and Fortified pieces) and wherever the independent review corrected a step (section 15: GA-10 tree species, GA-21 foundation order, GA-23 bronze order, GA-36 drink). Verdicts: YES; YES-WITH-UNTAUGHT-PREREQ (doable, but the guide leaves out something the player needs); NO; UNKNOWN.")
 P("")
 import re as _re
 def walk_table(path, title):
@@ -346,10 +348,10 @@ Q = [
   "(a) Engineering fixes that follow existing data: strip Tanbark from felled oak, roll every pine trunk drop, let a filled bucket or waterskin supply the `water` ingredient, wire the farming client actions. (b) Remove the affected goals until the content works. (c) Change the recipes (catalog change).",
   "(a). Each fix follows data that already says the item comes from that source; until fixed, keep these %d goals out of the active guide." % (len(C["blocked_nosrc"]) + len(C["blocked_water_extra"]))),
  ("Q2", "What total should goals pay, and should variants pay like their family lead?",
-  "(a) Keep the draft (15,670 copper). (b) The recommended bands (about 3,056; main route 1,304). (c) Group variants into family goals with one payment.",
+  "(a) Keep the draft (15,670 copper). (b) The recommended bands (about %d; main route %d)." % (tot["recommended_total"], tot["recommended_main"]) + " (c) Group variants into family goals with one payment.",
   "(b), with (c) for the largest variant families (building sets, doors, furniture)."),
  ("Q3", "Should the legacy item rewards become coin?",
-  "(a) Keep twine = 4 sticks, fell = 3 kindling, story = reputation (ignored today). (b) Twine 4 copper, fell 3 copper, drop the reputation.",
+  "(a) Keep twine = 4 sticks, fell = 3 kindling, story's extra reputation (ignored today). (b) Use the draft's own coin values: twine 4, fell 6, story 3 copper, and drop the reputation.",
   "(b): one reward type, and no double payment on a crash (GA-42)."),
  ("Q4", "On migration, should goals that existing characters already earned by their counters pay out?",
   "(a) Pay them all at once (queued placards). (b) Mark them done without payment. (c) Pay main-route goals only.",
@@ -392,7 +394,7 @@ P("- No goal has been played (section 16).")
 P("")
 P("Recommended order: (1) creator decisions Q1-Q4; (2) fix the acquisition gaps and corrected route order in the approved goal list; (3) engine work: no award gating, history counters, new events, event index, protocol messages; (4) key moves and server checks; (5) the Journal and HUD from Dave's design; (6) a played first-session check with timings, then set rewards.")
 P("")
-P("What already works: %d goals PASS on code and data (%d on the main route); the tool ladders and station chains have no circular requirements; the legacy engine pays once and persists atomically; 11 legacy goals are automated-tested." % (ds["PASS"], dsm["PASS"]))
+P("What already works: %d goals PASS on code and data (%d on the main route; %d of the PASS verdicts are rule-only, section 2); the tool ladders and station chains have no circular requirements; the legacy engine pays once and persists atomically; 11 legacy goals are automated-tested." % (ds["PASS"], dsm["PASS"], sum(1 for r in orig if r["design_status"] == "PASS" and r["review_method"].startswith("RULE"))))
 P("")
 open(OUT, "w", encoding="utf-8").write("\n".join(L))
 print("wrote", OUT, len(L), "lines")

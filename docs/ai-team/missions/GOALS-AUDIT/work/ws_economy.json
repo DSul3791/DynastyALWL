@@ -62,7 +62,7 @@
    "reward_in_picking_minutes": 10.0,
    "effort_note": "0.5 min marginal hands-on work (materials none, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 2,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 2)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 2)."
   },
   "fibre": {
    "reward": 3,
@@ -88,7 +88,7 @@
    "reward_in_picking_minutes": 15.0,
    "effort_note": "1.2 min marginal hands-on work (materials plant_fibre x12, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 3,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 3)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 3)."
   },
   "twine": {
    "reward": 4,
@@ -114,7 +114,7 @@
    "reward_in_picking_minutes": 20.0,
    "effort_note": "0.7 min marginal hands-on work (materials plant_fibre x6, recipe twine); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 4,
-   "rationale": "Live reward is 4 stick (items, not coins, value 4); if Dave converts it to coins: 4 (item value, floor 3 like other first-hour goals). His decision."
+   "rationale": "Live reward is 4 stick (items, not coins, value 4); recommend the draft's own coin value 4 (Q3). His decision."
   },
   "craft:stone_knife": {
    "reward": 3,
@@ -178,7 +178,7 @@
    "reward_in_picking_minutes": 25.0,
    "effort_note": "1.1 min marginal hands-on work (materials stone x1+stick x1+twine x2, recipe stone_axe); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 5,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 5)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 5)."
   },
   "craft:stone_pickaxe": {
    "reward": 4,
@@ -232,8 +232,8 @@
    "picking_wage_for_effort": 0.2,
    "reward_in_picking_minutes": 30.0,
    "effort_note": "1.0 min marginal hands-on work (materials none, recipe -); excludes prerequisite goals, walking, waiting, rest",
-   "recommended_copper": 3,
-   "rationale": "Live reward is 3 kindling (items, not coins, value 1); if Dave converts it to coins: 3 (item value, floor 3 like other first-hour goals). His decision."
+   "recommended_copper": 6,
+   "rationale": "Live reward is 3 kindling (items, not coins, value 1); recommend the draft's own coin value 6 (Q3). His decision."
   },
   "gather:log": {
    "reward": 3,
@@ -314,7 +314,7 @@
    "reward_in_picking_minutes": 15.0,
    "effort_note": "0.6 min marginal hands-on work (materials wooden_block x1+stick x1+twine x1, recipe wooden_hammer); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 3,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 3)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 3)."
   },
   "craft:campfire_kit": {
    "reward": 3,
@@ -391,7 +391,7 @@
    "reward_in_picking_minutes": 25.0,
    "effort_note": "0.8 min marginal hands-on work (materials stick x3, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 5,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 5)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 5)."
   },
   "craft:chopping_block": {
    "reward": 6,
@@ -558,7 +558,7 @@
    "reward_in_picking_minutes": 15.0,
    "effort_note": "0.5 min marginal hands-on work (materials none, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 3,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 3)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 3)."
   },
   "craft:wooden_spade": {
    "reward": 3,
@@ -639,7 +639,7 @@
    "reward_in_picking_minutes": 40.0,
    "effort_note": "9.2 min marginal hands-on work (materials stick x20+leaves x60+twine x6, recipe lean_to); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 8,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 8)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 8)."
   },
   "bed": {
    "reward": 8,
@@ -673,7 +673,7 @@
    "reward_in_picking_minutes": 40.0,
    "effort_note": "2.4 min marginal hands-on work (materials thatch x10+stick x4+twine x2, recipe rough_bed_kit); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 8,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 8)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 8)."
   },
   "workbench": {
    "reward": 10,
@@ -707,7 +707,7 @@
    "reward_in_picking_minutes": 50.0,
    "effort_note": "4.5 min marginal hands-on work (materials stick x16+twine x6+stone x4, recipe workbench); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 10,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 10)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 10)."
   },
   "build:thatch_floor": {
    "reward": 7,
@@ -3887,7 +3887,7 @@
    "reward_in_picking_minutes": 10.0,
    "effort_note": "1.0 min marginal hands-on work (materials none, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 2,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 2)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 2)."
   },
   "craft:bark_shingle": {
    "reward": 4,
@@ -4949,7 +4949,7 @@
    "reward_in_picking_minutes": 50.0,
    "effort_note": "0.5 min marginal hands-on work (materials trout x1, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 10,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 10)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 10)."
   },
   "spear": {
    "reward": 5,
@@ -4983,7 +4983,7 @@
    "reward_in_picking_minutes": 25.0,
    "effort_note": "1.2 min marginal hands-on work (materials wooden_spear x1+twine x2+stone x1, recipe spear); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 5,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 5)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 5)."
   },
   "craft:dried_apples": {
    "reward": 5,
@@ -5413,7 +5413,7 @@
    "reward_in_picking_minutes": 15.0,
    "effort_note": "7.3 min marginal hands-on work (materials nettles x1.43+raspberries x2.86+plant_fibre x4.29+thatch x2.86+blackberries x3.57+leaves x2.86+fiddleheads x2.14+bark x1.43+blueberries x3.57+stick x2.86+chanterelles x0.86+wild_garlic_bulbs x0.86+clay x2.86+stone x2.86, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 3,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 3)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 3)."
   },
   "knife": {
    "reward": 10,
@@ -5443,7 +5443,7 @@
    "reward_in_picking_minutes": 50.0,
    "effort_note": "3.5 min marginal hands-on work (materials stone x2+stick x1, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 10,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 10)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 10)."
   },
   "build:grindstone": {
    "reward": 10,
@@ -6477,7 +6477,7 @@
    "reward_in_picking_minutes": 100.0,
    "effort_note": "42.9 min marginal hands-on work (materials hide x3+thread x2+hide x2+thread x2+hide x1+thread x2+hide x1+thread x1+hide x3+thread x2+hide x3+thread x2, recipe hide set); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 20,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 20)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 20)."
   },
   "story": {
    "reward": 3,
@@ -6498,7 +6498,7 @@
    "reward_in_picking_minutes": 15.0,
    "effort_note": "3.0 min marginal hands-on work (materials none, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 3,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 3)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 3)."
   },
   "torch_night": {
    "reward": 4,
@@ -6532,7 +6532,7 @@
    "reward_in_picking_minutes": 20.0,
    "effort_note": "0.5 min marginal hands-on work (materials stick x1+plant_fibre x1+pitch x1, recipe torch); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 4,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 4)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 4)."
   },
   "hoe": {
    "reward": 3,
@@ -6562,7 +6562,7 @@
    "reward_in_picking_minutes": 15.0,
    "effort_note": "0.6 min marginal hands-on work (materials stick x2+twine x1, recipe wooden_hoe); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 3,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 3)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 3)."
   },
   "craft:banana_fritter_batter": {
    "reward": 5,
@@ -8459,7 +8459,7 @@
    "reward_in_picking_minutes": 20.0,
    "effort_note": "1.5 min marginal hands-on work (materials none, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 4,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 4)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 4)."
   },
   "dry_berries": {
    "reward": 8,
@@ -8485,7 +8485,7 @@
    "reward_in_picking_minutes": 40.0,
    "effort_note": "2.8 min marginal hands-on work (materials berries x9, recipe cook_dried_berries); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 8,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 8)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 8)."
   },
   "path": {
    "reward": 5,
@@ -8506,7 +8506,7 @@
    "reward_in_picking_minutes": 25.0,
    "effort_note": "1.5 min marginal hands-on work (materials none, recipe -); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 5,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 5)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 5)."
   },
   "craft:acorn_mash": {
    "reward": 7,
@@ -10748,7 +10748,7 @@
    "reward_in_picking_minutes": 75.0,
    "effort_note": "6.7 min marginal hands-on work (materials raw_meat x2+sea_salt x1, recipe cook_jerky); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 15,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 15)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 15)."
   },
   "salted_fish": {
    "reward": 12,
@@ -10778,7 +10778,7 @@
    "reward_in_picking_minutes": 60.0,
    "effort_note": "1.2 min marginal hands-on work (materials trout x1+sea_salt x1, recipe cook_salted_fish); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 12,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 12)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 12)."
   },
   "smoke_fish": {
    "reward": 12,
@@ -10808,7 +10808,7 @@
    "reward_in_picking_minutes": 60.0,
    "effort_note": "1.2 min marginal hands-on work (materials fish x1+sea_salt x1, recipe cook_smoked_fish); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 12,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 12)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 12)."
   },
   "candle": {
    "reward": 8,
@@ -10838,7 +10838,7 @@
    "reward_in_picking_minutes": 40.0,
    "effort_note": "6.5 min marginal hands-on work (materials tallow x1+plant_fibre x1, recipe tallow_candle); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 8,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 8)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 8)."
   },
   "craft:chamomile_tea": {
    "reward": 10,
@@ -11516,7 +11516,7 @@
    "reward_in_picking_minutes": 150.0,
    "effort_note": "4.6 min marginal hands-on work (materials berries x15, recipe cook_dried_berries); excludes prerequisite goals, walking, waiting, rest",
    "recommended_copper": 30,
-   "rationale": "Dave's standing ruling: legacy coin reward stays (live 30)."
+   "rationale": "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live 30)."
   },
   "craft:leather_apron": {
    "reward": 20,
@@ -19726,16 +19726,16 @@
  "totals": {
   "goal_count": 651,
   "draft_total": 15670,
-  "recommended_total": 3056,
+  "recommended_total": 3059,
   "draft_main": 2826,
-  "recommended_main": 1304,
+  "recommended_main": 1307,
   "draft_additional": 12844,
   "recommended_additional": 1752,
   "by_section": {
    "1. Guided main journey \u2014 essential progression and manufacturing chain": {
     "goals": 118,
     "draft": 2826,
-    "recommended": 1304
+    "recommended": 1307
    },
    "Early survival and first crafts (dependency level 1) (16 goals)": {
     "goals": 16,
@@ -19817,7 +19817,7 @@
    "main": {
     "goals": 118,
     "draft": 2826,
-    "recommended": 1304
+    "recommended": 1307
    },
    "1": {
     "goals": 16,
@@ -19941,7 +19941,7 @@
    "legacy": {
     "goals": 28,
     "draft": 211,
-    "recommended": 208,
+    "recommended": 211,
     "effort_min": 108.9
    },
    "material": {
@@ -20187,10 +20187,10 @@
    "draft_total_hours_at_hob_ceiling": 156.7,
    "draft_main_hours_of_picking": 235.5,
    "draft_main_hours_at_hob_ceiling": 28.3,
-   "recommended_total_hours_of_picking": 254.7,
+   "recommended_total_hours_of_picking": 254.9,
    "recommended_total_hours_at_hob_ceiling": 30.6,
-   "recommended_main_hours_of_picking": 108.7,
-   "recommended_main_hours_at_hob_ceiling": 13.0
+   "recommended_main_hours_of_picking": 108.9,
+   "recommended_main_hours_at_hob_ceiling": 13.1
   },
   "effort": {
    "catalog_effort_min": 5349.2,
@@ -20226,7 +20226,7 @@
    "goal": "shelter",
    "main_index": 25,
    "draft_cum": 106,
-   "recommended_cum": 92,
+   "recommended_cum": 95,
    "live_legacy_coin_cum": 29,
    "effort_cum_min": 31.0,
    "picking_wage_cum": 6.2,
@@ -20236,7 +20236,7 @@
    "goal": "workbench",
    "main_index": 27,
    "draft_cum": 124,
-   "recommended_cum": 110,
+   "recommended_cum": 113,
    "live_legacy_coin_cum": 47,
    "effort_cum_min": 37.9,
    "picking_wage_cum": 7.6,
@@ -20246,7 +20246,7 @@
    "goal": "craft:iron_ingot",
    "main_index": 59,
    "draft_cum": 409,
-   "recommended_cum": 362,
+   "recommended_cum": 365,
    "live_legacy_coin_cum": 47,
    "effort_cum_min": 157.9,
    "picking_wage_cum": 31.6,
@@ -20256,7 +20256,7 @@
    "goal": "craft:steel_ingot",
    "main_index": 101,
    "draft_cum": 1546,
-   "recommended_cum": 1009,
+   "recommended_cum": 1012,
    "live_legacy_coin_cum": 47,
    "effort_cum_min": 440.6,
    "picking_wage_cum": 88.1,
@@ -20266,7 +20266,7 @@
    "goal": "build:fortified_foundation",
    "main_index": 114,
    "draft_cum": 2426,
-   "recommended_cum": 1257,
+   "recommended_cum": 1260,
    "live_legacy_coin_cum": 47,
    "effort_cum_min": 649.5,
    "picking_wage_cum": 129.9,
@@ -20276,7 +20276,7 @@
    "goal": "build:fortified_gate",
    "main_index": 118,
    "draft_cum": 2826,
-   "recommended_cum": 1304,
+   "recommended_cum": 1307,
    "live_legacy_coin_cum": 47,
    "effort_cum_min": 797.3,
    "picking_wage_cum": 159.5,
@@ -20286,7 +20286,7 @@
    "goal": "build:thatch_roof_65",
    "main_index": 33,
    "draft_cum": 166,
-   "recommended_cum": 142,
+   "recommended_cum": 145,
    "live_legacy_coin_cum": 47,
    "effort_cum_min": 66.4,
    "picking_wage_cum": 13.3,
@@ -20298,13 +20298,13 @@
    "cum": 200
   },
   "recommended_cum_buys_one_of_all_hob_stock_at": {
-   "goal": "build:clay_hearth",
-   "main_index": 42,
-   "cum": 215
+   "goal": "build:food_preparation_table",
+   "main_index": 41,
+   "cum": 198
   },
   "first_10_main_goals": {
    "draft": 36,
-   "recommended": 32,
+   "recommended": 35,
    "effort_min": 10.5
   }
  },
@@ -23759,7 +23759,7 @@
   "spearman_draft_reward_vs_effort": 0.405,
   "spearman_draft_reward_vs_dep_level": 0.886,
   "spearman_draft_reward_vs_effort_additional": 0.319,
-  "spearman_recommended_vs_effort": 0.366,
+  "spearman_recommended_vs_effort": 0.363,
   "legacy_draft_vs_live": {
    "twine": {
     "draft_coin": 4,

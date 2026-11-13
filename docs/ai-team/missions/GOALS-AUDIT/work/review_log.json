@@ -101,6 +101,49 @@
      "resolution": "Accepted. Fixed in the report generator."
     }
    ]
+  },
+  {
+   "name": "Round 2, gate review of 84ebc66",
+   "reviewer": "independent gate-reviewer agent, read-only (no git tool); re-checked counts, round-1 resolutions, 15 PASS rows against data, section list, secrets",
+   "summary": "Verdict NOT MERGE-READY on two items: SHA binding (the branch moved during the review) and one half-applied round-1 resolution. Counts reconcile; no inflated PASS in its sample; all 18 sections present; no secrets or model identifiers.",
+   "objections": [
+    {
+     "objection": "SHA binding: review started at cd9b8c7, branch moved to 84ebc66.",
+     "resolution": "Accepted. A fresh gate review is run on the final head with the SHA, status and diff scope supplied."
+    },
+    {
+     "objection": "GA-42 / Q3 / ledger still recommended fell 3 copper while the text said the draft's 6.",
+     "resolution": "Accepted. tools/economy.py now recommends the draft's own values for converted legacy rewards (twine 4, fell 6, story 3); totals regenerated (3,059; main 1,307); Q3 and ws_economy.md corrected."
+    },
+    {
+     "objection": "Walkthrough YES cells contradict BLOCKED statuses.",
+     "resolution": "Accepted. The preface now states the tables are first-pass readings and the Status column and ledger are authoritative, naming GA-01..04 and GA-31."
+    },
+    {
+     "objection": "Depth of review not in the headline numbers.",
+     "resolution": "Accepted. Section 1 and section 18 now state 323 individual / 328 rule-only and how many PASS verdicts are rule-only."
+    },
+    {
+     "objection": "'Every count is computed, not typed' is untrue; '36 overlap (GA-47, GA-48)' does not match those findings.",
+     "resolution": "Accepted. Claim narrowed and the quoted figures named with their sources; 36 now cited to ws_catalog.md section 5."
+    },
+    {
+     "objection": "Effect rules inconsistent: engine-wide completion defects carry no status effect.",
+     "resolution": "Accepted. Section 2 now says this is deliberate and where those defects are recorded (runtime_support)."
+    },
+    {
+     "objection": "Provenance of the 'coin rewards stay' ruling not cited.",
+     "resolution": "Accepted. Cited as the creator ruling relayed with the mission brief and recorded in project memory."
+    },
+    {
+     "objection": "STATE.md stale.",
+     "resolution": "Accepted. Updated."
+    },
+    {
+     "objection": "Obsidian and quill listed as blockers though they block no goal alone.",
+     "resolution": "Accepted. Wording corrected."
+    }
+   ]
   }
  ],
  "checked_goals_round1": [

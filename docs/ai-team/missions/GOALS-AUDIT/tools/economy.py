@@ -353,10 +353,11 @@ def recommend(g, cls, fam, sub, ins, ctx):
     ctx["seen"].add(fam)
     if cls == "legacy":
         live = LIVE[gid]["reward"]
-        if "coin_copper" in live: return live["coin_copper"], "Dave's standing ruling: legacy coin reward stays (live %d)." % live["coin_copper"]
+        if "coin_copper" in live: return live["coin_copper"], "Creator ruling relayed with the mission brief (coin rewards stay until Dave says otherwise): legacy coin reward stays (live %d)." % live["coin_copper"]
+        if "item" not in live:
+            return draft, "Live reward is reputation only (ignored by the engine); recommend the draft's own %d copper (Q3). His decision." % draft
         it, n = live["item"]
-        v = max(int(round(unit_value(it)[0] * n)), 3)
-        return v, "Live reward is %d %s (items, not coins, value %.0f); if Dave converts it to coins: %d (item value, floor 3 like other first-hour goals). His decision." % (n, it, unit_value(it)[0] * n, v)
+        return draft, "Live reward is %d %s (items, not coins, value %.0f); recommend the draft's own coin value %d (Q3). His decision." % (n, it, unit_value(it)[0] * n, draft)
     if cls == "gather":
         v = 5 if key in ORES or key in ("pine_tar", "tannin_bark", "hide", "animal_fat", "wool", "flax") else 3
         return v, "First find of a raw material: %d copper = %d min of picking wage (0.2/min)." % (v, v * 5)

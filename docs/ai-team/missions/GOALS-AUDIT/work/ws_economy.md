@@ -167,7 +167,7 @@ Recommendation: the milestone list in the bands table below.
 | `story` | 3 copper + 1 rep (`camp_goals.json` reward.rep) | 3 copper; the rep is dropped |
 
 - The creator rule "monetary goal rewards only" points to converting twine and fell to coins. Dave's standing ruling keeps legacy rewards as they are; **he decides**.
-- If he converts them, I recommend twine 4 and fell 3 (the item value, with the floor of 3 that the other first-hour goals use).
+- If he converts them, recommend the draft's own coin values: twine 4, fell 6, story 3. (Revised after independent review round 2: this workstream first proposed fell 3, which contradicted the draft; `tools/economy.py` now uses the draft value and the recommended totals moved from 3056/1304 to 3059/1307. `work/ws_economy.json` is authoritative for all totals.)
 - The live `_about` notes say "read by nothing yet", but the code reads both files (`server_items.gd:15635-15637`), so the notes are stale.
 
 **E-10 MEDIUM (economy context for catalog review): ordinary income for anyone with an axe is the purse cap, not 0.2/min.**

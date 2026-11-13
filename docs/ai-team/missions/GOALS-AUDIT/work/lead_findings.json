@@ -1079,7 +1079,7 @@
   "severity": "HIGH",
   "cls": "OWNER_DECISION",
   "title": "Legacy item rewards conflict with money-only rewards (twine pays 4 sticks, fell pays 3 kindling, story's +1 reputation is ignored)",
-  "evidence": "starter_goals.json twine/fell reward.item; camp_goals.json story reward.rep (ignored at server_items.gd:15766-15775); test_goals.gd asserts the sticks and kindling (passed on David4). Dave's standing ruling: coin rewards stay as they are until he says otherwise. Item rewards save to inventories.json before characters.json (server_items.gd:1490, 1545): a crash between them can pay an item reward twice.",
+  "evidence": "starter_goals.json twine/fell reward.item; camp_goals.json story reward.rep (ignored at server_items.gd:15766-15775); test_goals.gd asserts the sticks and kindling (passed on David4). Creator ruling relayed with this mission's brief (recorded in project memory for the PLAYTEST-001 goals, 13 Nov 2026): coin rewards stay as they are until Dave says otherwise. Item rewards save to inventories.json before characters.json (server_items.gd:1490, 1545): a crash between them can pay an item reward twice.",
   "goals": [
    "fell",
    "story",
@@ -2048,7 +2048,7 @@
   "evidence": "tools/economy.py -> work/ws_economy.json totals. Picking wage: Dave's rule '4 hours of full-time picking pays about 40 to 60 copper' (0.17-0.25/min; docs/ECONOMY_FIRST_DAY.md:3-6), 0.2/min is the midpoint used by Sal (line 38). Hob: purse 300 then +100 per real hour (data/npcs/shops.json; server_trade.gd:397-414), so over the modeled 89 h at most 300 + 8,915 = 9,215 net (buying from Hob refills the purse: server_trade.gd:335, 517; the purse is shared by all players, so this is a single-player ceiling). Goal coin bypasses the purse (server_items.gd:15771-15772). Both ratios rest on the ASSUMED effort model (a lower bound): if real play takes 1.7x the modeled time or more, Hob's ceiling exceeds the draft total, though the picking-wage ratio stays above 8x until play takes 1.8x longer.",
   "goals": [],
   "status_effect": "NONE",
-  "correction": "Recommended ~3,056 copper (main route 1,304) with class bands and a family-lead model (Q2).",
+  "correction": "Recommended ~3059 copper (main route 1307) with class bands and a family-lead model (Q2).",
   "test": "Time real play to calibrate.",
   "sources": "E-01"
  },
