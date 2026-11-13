@@ -8985,7 +8985,7 @@ func _grid_add(id: int, entry: Dictionary) -> void:
 	var def: Dictionary = _structures.get(kind, {})
 
 	if bool(def.get("blocks_walk", false)):
-		_grid.add(id, kind, entry["pos"].x, entry["pos"].z, float(entry["struct"]["yaw"]), float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))
+		_grid.add(id, kind, entry["pos"].x, entry["pos"].z, float(entry["struct"]["yaw"]), float(def.get("grid_x", def.get("footprint_x", 1.0))), float(def.get("footprint_z", 1.0)))   # grid_x: a shut door stops animals across its whole frame, jambs too (BUGLIST-002)
 
 
 # True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
@@ -9042,11 +9042,15 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
 		return
 
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH and PlacementRules.door_at(_structures_cfg, it["pos"], _foundation_rows()):
+		_say(peer, "Take the door out first.")   # a doorway frame, built or still a site, never leaves its door hanging in the air (BUGLIST-002)
+		return
+
 	if it["struct"].has("site"):
 		_take_down_site(peer, inv, id)
 		return
-
-	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 	if def.is_empty() or str(def.get("kit", "")) == "":
 		return
@@ -9068,10 +9072,6 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if _platter_on(it):
 		_say(peer, "Take the platter off it first.")   # a table never leaves a platter floating
-		return
-
-	if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH and PlacementRules.door_at(_structures_cfg, it["pos"], _foundation_rows()):
-		_say(peer, "Take the door out first.")   # a doorway frame never leaves its door hanging in the air (BUGLIST-002)
 		return
 
 	if not _struct_empty(id):

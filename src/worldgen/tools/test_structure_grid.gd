@@ -64,14 +64,14 @@ func _init() -> void:
 	check(not kinds.has("thatch_doorway_open") and (crude.get("legacy_kinds", []) as Array).has("thatch_doorway_open"), "the old open twin is retired into the doorway")
 	check(not bool(crude.get("blocks_walk", false)) and not crude.has("use") and not crude.has("toggle"), "the Crude doorway has no door to shut and does not block walkers")
 
-	# A shut door stops walkers across its opening only: its rectangle is the opening wide (1 m single, 2 m double) and 0.1 m thick, and shutting it again
+	# A shut door stops walkers across its whole frame (grid_x: 2 m single, 4 m double, so the frame's jambs block too) and 0.1 m thick, and shutting it again
 	# after it was open keeps one rectangle (the grid forgets a stale kind only when asked).
 	var shut: Dictionary = {7: {"struct": {"kind": "rustic_door"}}}
 	var door = GridScript.new()
 	var single: Dictionary = kinds["rustic_door"]
-	door.add(7, "rustic_door", 100.0, 100.0, 0.0, float(single["footprint_x"]), float(single["footprint_z"]))
-	check(door.blocks(100.4, 100.0, 0.0, shut) and not door.blocks(100.6, 100.0, 0.0, shut) and not door.blocks(100.0, 100.2, 0.0, shut), "a shut single door blocks its 1 m opening and nothing beside or in front of it")
-	door.add(7, "rustic_door", 100.0, 100.0, 0.0, float(single["footprint_x"]), float(single["footprint_z"]))
+	door.add(7, "rustic_door", 100.0, 100.0, 0.0, float(single["grid_x"]), float(single["footprint_z"]))
+	check(door.blocks(100.4, 100.0, 0.0, shut) and door.blocks(100.9, 100.0, 0.0, shut) and not door.blocks(101.2, 100.0, 0.0, shut) and not door.blocks(100.0, 100.2, 0.0, shut), "a shut single door blocks its 2 m frame, jambs too, and nothing beside or in front of it")
+	door.add(7, "rustic_door", 100.0, 100.0, 0.0, float(single["grid_x"]), float(single["footprint_z"]))
 	var rects: int = 0
 
 	for bucket in door._buckets.values():
@@ -80,8 +80,8 @@ func _init() -> void:
 	check(rects == 1, "a door shut again keeps one rectangle (%d)" % rects)
 	var wide: Dictionary = kinds["rustic_double_door"]
 	var leaves: Dictionary = {8: {"struct": {"kind": "rustic_double_door"}}}
-	door.add(8, "rustic_double_door", 120.0, 100.0, 90.0, float(wide["footprint_x"]), float(wide["footprint_z"]))
-	check(door.blocks(120.0, 100.9, 0.0, leaves) and not door.blocks(120.0, 101.2, 0.0, leaves), "a double door turned a quarter blocks its 2 m opening along z")
+	door.add(8, "rustic_double_door", 120.0, 100.0, 90.0, float(wide["grid_x"]), float(wide["footprint_z"]))
+	check(door.blocks(120.0, 100.9, 0.0, leaves) and door.blocks(120.0, 101.9, 0.0, leaves) and not door.blocks(120.0, 102.2, 0.0, leaves), "a double door turned a quarter blocks its 4 m frame along z, jambs too")
 
 	print("test_structure_grid: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

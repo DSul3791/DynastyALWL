@@ -92,6 +92,7 @@ func _data_checks(structures: Dictionary) -> void:
 		check(str(row.get("toggle", "")) == "%s_open" % kind and not open.is_empty() and str(open.get("toggle", "")) == kind, "%s: shut and open twin toggle to each other" % kind)
 		check(bool(row.get("piece", false)) and str(row.get("piece_kind", "")) == "door" and str(row.get("use", "")) == "door" and OPENING_WIDTH.has(shape), "%s: a door piece that E works, with an opening" % kind)
 		check(str(open.get("opening", "")) == shape and str(open.get("attach_to", "")) == "doorway" and str(open.get("piece_kind", "")) == "door" and str(open.get("use", "")) == "door", "%s: the open twin is the same door" % kind)
+		check(float(row.get("grid_x", 0.0)) == float(FRAME_WIDTH.get(shape, -1.0)) and not open.has("grid_x"), "%s: shut, it blocks animals across its whole frame (grid_x)" % kind)
 		check(float(row.get("footprint_x", 0.0)) == float(OPENING_WIDTH.get(shape, -1.0)) and float(row.get("footprint_z", 0.0)) == 0.1 and float(open.get("footprint_x", 0.0)) == float(row.get("footprint_x", 0.0)), "%s: as wide as its opening, 0.1 m thick" % kind)
 		check(bool(row.get("blocks_walk", false)) and not open.has("blocks_walk") and not open.has("variant_group") and not row.has("variant_group"), "%s: shut it stops walkers, open it does not, and it is no wall variant" % kind)
 		check(int(row.get("use_pace_ms", 0)) == 400 and float(row.get("use_reach_m", 0.0)) == 3.0 and bool(row.get("gap_exempt", false)) and int(row.get("cap_per_chunk", 0)) == 200, "%s: pace, reach, gap exemption and cap" % kind)
@@ -288,8 +289,10 @@ func _server_checks(cfg: Dictionary) -> void:
 		check(str(items._items[id]["struct"]["kind"]) == door_kind, "%s: E shuts it again" % door_kind)
 		var along: Vector3 = Vector3(cos(deg_to_rad(float(yaw))), 0.0, -sin(deg_to_rad(float(yaw))))   # the frame's x axis in the world
 		var half: float = float(OPENING_WIDTH[shape]) * 0.5
+		var frame_half: float = float(FRAME_WIDTH[shape]) * 0.5   # grid_x: shut, the door stops animals across its whole frame, jambs too (the frame itself has no blocks_walk)
 		check(items.structure_blocks(at.x, at.z, 0.0) and items.structure_blocks(at.x + along.x * (half - 0.05), at.z + along.z * (half - 0.05), 0.0), "%s: shut, it stops walkers across its opening" % door_kind)
-		check(not items.structure_blocks(at.x + along.x * (half + 0.2), at.z + along.z * (half + 0.2), 0.0) and not items.structure_blocks(at.x - along.z * 0.6, at.z + along.x * 0.6, 0.0), "%s: and only across it" % door_kind)
+		check(items.structure_blocks(at.x + along.x * (frame_half - 0.05), at.z + along.z * (frame_half - 0.05), 0.0) and items.structure_blocks(at.x - along.x * (frame_half - 0.05), at.z - along.z * (frame_half - 0.05), 0.0), "%s: shut, its frame's jambs stop walkers too" % door_kind)
+		check(not items.structure_blocks(at.x + along.x * (frame_half + 0.2), at.z + along.z * (frame_half + 0.2), 0.0) and not items.structure_blocks(at.x - along.z * 0.6, at.z + along.x * 0.6, 0.0), "%s: and nothing past its frame or in front of it" % door_kind)
 		_use(items, id)
 		check(not items.structure_blocks(at.x, at.z, 0.0), "%s: open, walkers pass" % door_kind)
 		_use(items, id)
@@ -363,6 +366,13 @@ func _server_checks(cfg: Dictionary) -> void:
 	said.clear()
 	items.action(1, Net.ACT_PICKUP, frame_id, 0, 0, Vector3.ZERO)
 	check(_find(items, "thatch_doorway", mix) != 0 and _find(items, "fortified_door_open", mix) != 0 and said.size() > 0 and str(said[-1]) == "Take the door out first.", "a doorway with a door in it will not come down: Take the door out first. (%s)" % (str(said[-1]) if said.size() > 0 else "nothing said"))
+
+	# The same frame while it is still a blueprint site: it will not come down either (the site path used to skip the guard and leave the door floating).
+	items._items[frame_id]["struct"]["site"] = {"bp": 32, "have": {}}
+	said.clear()
+	items.action(1, Net.ACT_PICKUP, frame_id, 0, 0, Vector3.ZERO)
+	check(_find(items, "thatch_doorway", mix) != 0 and said.size() > 0 and str(said[-1]) == "Take the door out first.", "a doorway still a site with a door in it will not come down either (%s)" % (str(said[-1]) if said.size() > 0 else "nothing said"))
+	items._items[frame_id]["struct"].erase("site")
 
 	var cases: Array = [["fortified_door_open", "thatch_doorway", mix]]
 
