@@ -134,7 +134,7 @@ func _init() -> void:
 	wear(items, "hide_trousers")
 	check(items.worn_of(1)[at(items, "legs:base")] == n(items, "hide_trousers") and items.worn_of(1)[at(items, "body:base")] == 0 and inv.count_of(n(items, "linen_dress")) == 1, "trousers take the dress off")
 
-	# 5. Every pack slot taken: the pack grows for what comes off (Dave 12 Nov 2026 23:06Z, protocol 115); nothing is refused, lost or doubled.
+	# 5. Every pack slot taken: the pack grows for what comes off (Dave 12 Nov 2026 23:06Z, protocol 116); nothing is refused, lost or doubled.
 	wear(items, "hide_tunic")
 	var dress_slot: int = inv.numbers.find(n(items, "linen_dress"))
 

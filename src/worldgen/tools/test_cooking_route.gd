@@ -336,7 +336,7 @@ func _init() -> void:
 	var chest: int = build("chest", jar_at + Vector3(-2.0, 0.0, 0.0))
 	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
 
-	for k in range(2000):   # the pack grows (protocol 115), so only its carry limit leaves no room: pots until one Sauerkraut is too heavy
+	for k in range(2000):   # the pack grows (protocol 116), so only its carry limit leaves no room: pots until one Sauerkraut is too heavy
 		if items._fit(1, inv, num("sauerkraut"), 1) <= 0:
 			break
 

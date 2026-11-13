@@ -42,7 +42,7 @@ func _init() -> void:
 	var full = Inventory.new(table)
 	check(full.add(axe, 35) == 5, "a container's 30 slots hold 30 axes, 5 left over")
 
-	# A pack grows (Dave 12 Nov 2026 23:06Z: "a minimum of 20 and if they add more stuff just start adding more slots"; protocol 115):
+	# A pack grows (Dave 12 Nov 2026 23:06Z: "a minimum of 20 and if they add more stuff just start adding more slots"; protocol 116):
 	# never full by slots (the server's carry limit is the cap), and empty slots at its end go back, GROW_STEP at a time, down to 30.
 	var bag = Inventory.pack(table)
 	check(bag.slot_count == 30 and bag.slot_count - bag.hotbar_slots == 20, "a new pack has the hotbar 10 and a backpack of 20")

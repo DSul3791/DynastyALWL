@@ -5,6 +5,7 @@ extends SceneTree
 # Each step is asserted, and the vitals curve (hunger, thirst, exertion) is printed as "first hour:" lines.
 #   godot --headless --path . --script res://src/worldgen/tools/test_first_hour.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -123,7 +124,7 @@ func _init() -> void:
 
 	for n in range(30):
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	check(standing.is_empty(), "the tree falls to the axe")
 	pass_time(60.0, 0.8)
@@ -141,7 +142,7 @@ func _init() -> void:
 			items.report_position(1, items.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
 
 		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(items))
 		guard += 1
 
 	pass_time(120.0, 0.8)

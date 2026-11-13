@@ -3,6 +3,7 @@ extends SceneTree
 # Bug 11 and the auto-split (Dave 2 Nov): a felled tree keeps the standing tree's size, and breaks into its logs by itself once it has landed.
 #   godot --headless --path . --script res://src/worldgen/tools/test_fell_autosplit.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const FellPose := preload("res://src/flora/fell_pose.gd")
@@ -53,7 +54,7 @@ func loose_logs(w, number: int) -> Array:
 func fell_one(w, standing: Dictionary, id: int) -> void:
 	for n in range(40):
 		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_HIT, id, 0, 0, HeldTool.at_axe(w))
 
 		if not standing.has(id):
 			return
@@ -341,7 +342,7 @@ func _init() -> void:
 
 		while up.has(30) and n < 60:
 			h._last_hit.clear()
-			h.action(1, Net.ACT_HIT, 30, 0, 0, Vector3.ZERO)
+			h.action(1, Net.ACT_HIT, 30, 0, 0, HeldTool.at_axe(h))
 			n += 1
 
 		return n

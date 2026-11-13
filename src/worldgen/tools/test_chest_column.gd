@@ -49,7 +49,7 @@ class FakeStore:
 	func max_durability(_slot: int) -> int:   # catalog Phase 2c: 0 = the row's durability
 		return 0
 
-	func resize_to(n: int) -> void:   # a store with another slot count (a body's remains holding a grown pack, protocol 115)
+	func resize_to(n: int) -> void:   # a store with another slot count (a body's remains holding a grown pack, protocol 116)
 		slot_count = n
 		numbers.resize(n)
 		counts.resize(n)
@@ -144,7 +144,7 @@ func _initialize() -> void:
 	check(view._pack_view.size() == FakeStore.SLOTS and view._pack_buttons.is_empty(), "a chest shows every pack slot in place, in the Pack column")
 	view.chest_inv.resize_to(45)
 	part.refresh()
-	check(view._chest_buttons.size() == 45 and view._chest_buttons[44].get_parent() == view._chest_buttons[0].get_parent(), "a store with more slots gets a well for each, in the same grid (protocol 115)")
+	check(view._chest_buttons.size() == 45 and view._chest_buttons[44].get_parent() == view._chest_buttons[0].get_parent(), "a store with more slots gets a well for each, in the same grid (protocol 116)")
 	view.chest_inv.resize_to(FakeStore.SLOTS)
 	part.refresh()
 	await process_frame

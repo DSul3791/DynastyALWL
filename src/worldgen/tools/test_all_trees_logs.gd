@@ -4,6 +4,7 @@ extends SceneTree
 # by the cut line, sticks and bark still go to the pack, the last cut removes the trunk, a partly cut trunk survives a restart, and a big tree's logs are not lost to the drop cap.
 #   godot --headless --path . --script res://src/worldgen/tools/test_all_trees_logs.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -62,7 +63,7 @@ func one(species: String) -> void:
 
 	for n in range(40):
 		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
 	var trunk_id: int = 0
 
@@ -85,7 +86,7 @@ func one(species: String) -> void:
 	while w._items.has(trunk_id) and loose_logs(w, log_n).is_empty() and guard < 40:
 		w.report_position(1, w.cut_line_point(trunk_id))
 		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 		guard += 1
 
 	check(loose_logs(w, log_n).size() >= 1, "%s: a log lands on the ground (blows %d)" % [species, guard])

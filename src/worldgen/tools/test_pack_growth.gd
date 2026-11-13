@@ -1,7 +1,7 @@
 extends SceneTree
 
 # The pack grows (Dave 12 Nov 2026 23:06Z: "a minimum of 20 and if they add more stuff just start adding more slots... they are limited by weight
-# really"; protocol 115), as the server runs it: a change that grows or shrinks the pack is sent as the whole pack, a same-size change as slot
+# really"; protocol 116), as the server runs it: a change that grows or shrinks the pack is sent as the whole pack, a same-size change as slot
 # updates; gains stop at the carry limit, not at a slot count; Split grows a full pack; a body's remains hold every slot of a grown pack and Take
 # all reaches them all, and the pack starts over at 30.
 #   godot --headless --path . --script res://src/worldgen/tools/test_pack_growth.gd

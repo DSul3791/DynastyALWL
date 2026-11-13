@@ -135,6 +135,7 @@ var lift_steps: int = 0                  # a held foundation stands this many 0.
 var _blueprint_yaw: int = 0               # the turn (degrees) the ghost will be placed at
 var _first_person: bool = true
 var _avatar_rig                          # the full body (ragdoll_body.gd) drawn in third person, or null
+var carrying_log: bool = false             # a large log on the shoulder (terrain_client sets it every frame): the right hand steadies it, so its tool is put away and comes back when the log is laid down (TEST-010)
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
 var _jab_t: float = -1.0
@@ -395,7 +396,7 @@ func select(slot: int) -> void:
 func held_number() -> int:
 	var slot: int = held_slot
 
-	if not holding or slot < 0:
+	if not holding or slot < 0 or carrying_log:
 		return 0
 
 	var number: int = _inv.inventory.numbers[slot]
@@ -1043,7 +1044,7 @@ func _placing_id() -> String:
 
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
-	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
+	if button == MOUSE_BUTTON_RIGHT and pressed and held_number() != 0 and _inv.edible_slot(held_slot):   # nothing to eat in a hand that steadies a log
 		_inv.eat_slot(held_slot)
 		return true
 
@@ -1393,6 +1394,7 @@ func _process_body(delta: float) -> void:
 	# "awkwardly shaking").
 	_place_arms(delta)
 	_pose_bow(bow_state(), bow_draw(), delta)
+	_aim_spear()
 
 	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing() and not _bow_posing():
 		_arms.play("idle")
@@ -1426,6 +1428,17 @@ func _process_body(delta: float) -> void:
 		if _pause_t <= 0.0 and holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			_start_swing()
 
+	# The jab runs on its own clock whatever draws the spear (TEST-004, 12 Nov 2026): it was only advanced in the no-arms branch below, so with
+	# the arms (always) the first jab never ended and every later click was refused.
+	var jab_u: float = -1.0
+
+	if _jab_t >= 0.0:
+		_jab_t += delta
+		jab_u = clampf(_jab_t / JAB_S, 0.0, 1.0)
+
+		if _jab_t >= JAB_S:
+			_jab_t = -1.0
+
 	if _model != null and _is_torch():
 		var flicker: OmniLight3D = _model.get_node_or_null("Light")
 
@@ -1452,13 +1465,8 @@ func _process_body(delta: float) -> void:
 		if _draw_t >= 0.0:
 			offset += Vector3(0.0, 0.0, minf(_draw_t, 1.2) * 0.1)   # the hand comes back as the string is drawn
 
-		if _jab_t >= 0.0:
-			_jab_t += delta
-			var u: float = clampf(_jab_t / JAB_S, 0.0, 1.0)
-			offset += Vector3(0.0, 0.0, -JAB_REACH * sin(u * PI))
-
-			if _jab_t >= JAB_S:
-				_jab_t = -1.0
+		if jab_u >= 0.0:
+			offset += Vector3(0.0, 0.0, -JAB_REACH * sin(jab_u * PI))
 
 		_model.position = _model.position.lerp(offset, clampf(delta * 14.0, 0.0, 1.0))
 		_model.rotation.x = lerpf(_model.rotation.x, deg_to_rad(35.0) if aiming else 0.0, clampf(delta * 14.0, 0.0, 1.0))
@@ -1896,19 +1904,19 @@ func _strike() -> void:
 
 	if log_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # wood work: the tool in hand, an axe or (slowly) a pick (protocol 115)
 	elif boulder_id != 0:
 		_sound.hits.hit(_hit_tool(), "stone", hit["position"], 1.0)   # a boulder is stone whatever the ground under it
-		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, held_slot + 1, Vector3.ZERO)   # the tool in hand does the work (TEST-013)
 	elif trunk_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif stump_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif not tree.is_empty():
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif not shrub.is_empty():
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 0.7)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(1.0 if _tool_class() == "pick" else 0.0, 0.0, 0.0))
@@ -2276,13 +2284,18 @@ func _mount_model() -> void:
 		return
 
 	_arms.hand_mount_r.add_child(_model)
-	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG if kind in ["spear", "kit"] else TOOL_TILT_SLIGHT_DEG))
+
+	if kind == "spear":
+		_aim_spear()   # placed every frame from the view, not along the fingers
+		return
+
+	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG if kind == "kit" else TOOL_TILT_SLIGHT_DEG))
 	var turn: Basis = Basis.IDENTITY
-	var grip: Vector3 = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
+	var grip: Vector3
 
 	if kind == "kit":
 		grip = Vector3(0.0, -0.03, -0.14)   # carried in the palm, a little ahead of the hand
-	elif kind != "spear":
+	else:
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
 
 		if str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
@@ -2300,6 +2313,11 @@ func _mount_model() -> void:
 # Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
+
+	if kind == "spear":
+		_aim_spear()
+		return
+
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
 	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * THIRD_CHOKE, 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
@@ -2314,10 +2332,7 @@ func _mount_model_third(kind: String) -> void:
 	elif carried == "rod":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_ROD_PITCH_DEG))
 
-	if kind == "spear":
-		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))
-		grip = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
-	elif kind == "kit":
+	if kind == "kit":
 		turn = Basis.IDENTITY
 		grip = Vector3(0.0, -0.03, -0.14)
 
@@ -2325,6 +2340,48 @@ func _mount_model_third(kind: String) -> void:
 	_model.position = turn * grip
 
 	if kind != "kit":
+		_third_fist().visible = true
+
+
+# A spear is held as a spear, not a knife (TEST-004, Dave's playtest 12 Nov 2026): the shaft runs through the fist pointing ahead, the hand
+# SPEAR_GRIP_Z behind the model's middle, whatever the hand bone's own angle (the jab clip is a punch, which turned a spear laid along the
+# fingers into a dagger grip). Third person: the body's facing (the avatar root faces -Z, as the game does), lifted SPEAR_LIFT_DEG. First
+# person: the facing tipped down SPEAR_REST_DOWN_DEG at rest, so the spear hangs below the view with the arms (Dave 21 and 25 Oct: the arms
+# show only when working or looking down), turning to the view as the arms come up to jab or aim (_arm_up). Placed every frame after the arms.
+const SPEAR_LIFT_DEG := 8.0
+const SPEAR_REST_DOWN_DEG := 35.0
+
+
+func _aim_spear() -> void:
+	if _model == null or not _mounted or not _is_spear() or not _model.is_inside_tree():
+		return
+
+	var mount: Node3D = _model.get_parent() as Node3D
+	var lift: Vector3 = Vector3.UP * tan(deg_to_rad(SPEAR_LIFT_DEG))
+	var tip: Vector3
+
+	if _first_person:
+		var rest: Vector3 = Basis(Vector3.UP, _camera.global_rotation.y) * Basis(Vector3.RIGHT, -deg_to_rad(SPEAR_REST_DOWN_DEG)) * Vector3.FORWARD
+		tip = rest.slerp(-_camera.global_transform.basis.z, clampf(_arm_up, 0.0, 1.0))
+	else:
+		var avatar: Node3D = _avatar_rig as Node3D
+
+		if avatar == null:
+			return
+
+		var front: Vector3 = avatar.global_basis * Vector3.FORWARD
+		front.y = 0.0
+
+		if front.length_squared() < 1e-12:
+			return
+
+		tip = (front.normalized() + lift).normalized()
+
+	var z: Vector3 = -tip                                          # the spear's point is its model -Z
+	var x: Vector3 = (Vector3.UP if absf(tip.y) < 0.99 else Vector3.BACK).cross(z).normalized()
+	_model.global_transform = Transform3D(Basis(x, z.cross(x), z), mount.global_position + tip * SPEAR_GRIP_Z)
+
+	if not _first_person:
 		_third_fist().visible = true
 
 

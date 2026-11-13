@@ -326,7 +326,7 @@
 		"iron_pickaxe": {
 			"number": 33,
 			"name": "Iron - Pickaxe",
-			"description": "An iron head on a hardwood handle. One blow breaks one stone off a boulder.",
+			"description": "An iron head on a hardwood handle. One blow breaks three stones off a boulder.",
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "iron",
@@ -352,7 +352,7 @@
 		"steel_pickaxe": {
 			"number": 34,
 			"name": "Steel - Pickaxe",
-			"description": "A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest.",
+			"description": "A steel head on a hardwood handle. One blow breaks four stones off a boulder, and it lasts longest.",
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "steel",
