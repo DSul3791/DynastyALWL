@@ -538,10 +538,10 @@ static func clean_inst(raw: Variant, in_bag: bool = false) -> Dictionary:
 # clean_inst for the instance of item `number` as a save loads it: an item that is not a bag (items.json bag_slots 0 or absent) never carries a `bag`.
 # This is how an older save's backpack contents are dropped: the two backpacks lost their slots (Dave 13 Nov 2026, "Backpacks do not have slots.
 # The only thing they do is give you more carry weight."). A real bag keeps its contents. No table (a bare test inventory): nothing is dropped.
-static func clean_inst_of(table, number: int, raw: Variant) -> Dictionary:
+static func clean_inst_of(item_table, number: int, raw: Variant) -> Dictionary:
 	var out: Dictionary = clean_inst(raw)
 
-	if out.has("bag") and table != null and int(table.entry(table.id_of(number)).get("bag_slots", 0)) <= 0:
+	if out.has("bag") and item_table != null and int(item_table.entry(item_table.id_of(number)).get("bag_slots", 0)) <= 0:
 		out.erase("bag")
 
 	return out
