@@ -391,7 +391,7 @@ static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardM
 	parent.add_child(mesh)
 
 
-static func _solid(parent: Node3D, size: Vector3, at: Vector3) -> void:
+static func _solid(parent: Node3D, size: Vector3, at: Vector3, rotation: Vector3 = Vector3.ZERO) -> void:
 	var body: StaticBody3D = StaticBody3D.new()
 	body.set_meta("placed_structure", true)   # a roof you stand under is not ground over your head (the elevation ruler skips it)
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -399,6 +399,7 @@ static func _solid(parent: Node3D, size: Vector3, at: Vector3) -> void:
 	box.size = size
 	shape.shape = box
 	shape.position = at
+	shape.rotation = rotation
 	body.add_child(shape)
 	parent.add_child(body)
 
@@ -1067,9 +1068,10 @@ static func _dome(parent: Node3D, radius: float, at: Vector3, scale: Vector3, ma
 	parent.add_child(mesh)
 
 
-# A thatch doorway (Dave 24 Oct: the thatch wall with a gap), 2 m by 2.4 m, 0.25 m thick: straw courses either side of a one metre gap and over it, a timber frame round the gap,
-# and a door leaf of lashed sticks with twine bands and a rope pull.
-static func thatch_doorway(open: bool = false) -> Node3D:
+# A thatch doorway (Dave 24 Oct: the thatch wall with a gap), 2 m by 2.4 m, 0.25 m thick: straw courses either side of a one metre gap and over it, and a timber
+# frame round the gap. An open passage with no door (BUG-010, Dave 12 Nov 2026: a doorway is a framed opening, the door a separate item): the solids stand only
+# beside and over the gap (_gap_solids), so a player walks straight through it.
+static func thatch_doorway() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 
@@ -1093,51 +1095,39 @@ static func thatch_doorway(open: bool = false) -> Node3D:
 			_box(root, Vector3(1.9, 0.3, depth), Vector3(shift, y, 0.0), _thatch)                        # and over the gap
 
 	_box(root, Vector3(1.0, 0.1, 0.22), Vector3(0.0, 2.05, 0.0), _frame)            # the lintel
-
-	var leaf: Node3D = Node3D.new()   # open, the leaf stands swung back against the jamb like door()
-	root.add_child(leaf)
-
-	if open:
-		leaf.position = Vector3(0.47, 0.0, 0.5)
-		leaf.rotation = Vector3(0.0, -PI * 0.5, 0.0)
-
-	for k in 7:
-		_box(leaf, Vector3(0.06, 2.0, 0.05), Vector3(-0.42 + 0.14 * float(k), 1.0, 0.02), _log)   # the door's sticks
-
-	for y in [0.4, 1.0, 1.6]:
-		_box(leaf, Vector3(0.96, 0.04, 0.06), Vector3(0.0, y, 0.05), _frame)      # lashed cross-rails
-
-	_box(leaf, Vector3(0.04, 0.2, 0.05), Vector3(0.35, 1.0, 0.09), _thatch)       # the rope pull
-
-	if open:
-		_gap_solids(root, 0.0, 2.0, 0.25)
-		_solid(root, Vector3(0.06, 2.0, 1.0), Vector3(0.47, 1.0, 0.5))
-	else:
-		_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
-
+	_gap_solids(root, 0.0, 2.0, 0.25)
 	return root
 
 
-# A thatch roof (2.4 m square, ridge 2.8 m up) on four posts: two sloping slabs of straw bundles meeting at a ridge, rafters under them, a shaggy eave on every side.
-static func thatch_roof() -> Node3D:
+# A thatch roof panel (Crude - Roof 45 and 65, BUG-011): a sloped panel only, no posts or legs, 2 m wide (a wall's length) over a 2 m horizontal run, rising
+# `slope_deg` from its low edge. The piece's spot is its middle and it rises toward -Z, so its low edge's middle is (0, -rise / 2, +1) and its high edge's
+# (0, +rise / 2, -1), the two ends that rest on a wall top, a ceiling edge or another panel (placement_rules.gd roof_panel_spot). Straw bundles laid down the
+# slope over three rafters of sticks, a shaggy row along the low eave, and a slab collider as thick as the thatch, tilted with it.
+static func thatch_roof(slope_deg: float = 45.0) -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
+	var tilt: float = deg_to_rad(slope_deg)
+	var length: float = 2.0 / cos(tilt)         # down the slope, for a 2 m run
 
-	for x in [-1.1, 1.1]:
-		for z in [-1.1, 1.1]:
-			_box(root, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
+	_box_rot(root, Vector3(2.0, 0.16, length), Vector3.ZERO, Vector3(tilt, 0.0, 0.0), _thatch)               # the slab of straw bundles
 
-	for side in [-1.0, 1.0]:
-		_box_rot(root, Vector3(1.4, 0.16, 2.5), Vector3(side * 0.62, 2.62, 0.0), Vector3(0.0, 0.0, -side * 0.3), _thatch)       # a sloping slab
-		_box_rot(root, Vector3(0.1, 0.1, 2.4), Vector3(side * 0.62, 2.5, 0.0), Vector3(0.0, 0.0, -side * 0.3), _frame)          # a rafter under it
+	for x in [-0.85, 0.0, 0.85]:
+		_box_rot(root, Vector3(0.1, 0.1, length), Vector3(x, 0.0, 0.0) + _roof_off(tilt, -0.1), Vector3(tilt, 0.0, 0.0), _frame)   # a rafter under it
 
-		for k in 6:
-			_box_rot(root, Vector3(0.16, 0.18, 0.14), Vector3(side * 1.22, 2.45, -1.15 + 0.46 * float(k)), Vector3(0.0, 0.0, -side * 0.3), _thatch)   # the shaggy eave
+	for k in 6:
+		_box_rot(root, Vector3(0.16, 0.18, 0.14), Vector3(-0.85 + 0.34 * float(k), 0.0, 0.0) + _roof_along(tilt, length * 0.5), Vector3(tilt, 0.0, 0.0), _thatch)   # the shaggy low eave
 
-	_box(root, Vector3(0.26, 0.16, 2.5), Vector3(0.0, 2.82, 0.0), _thatch)          # the ridge bundle
-	_box(root, Vector3(0.1, 0.1, 2.4), Vector3(0.0, 2.7, 0.0), _frame)               # the ridge pole
-	_solid(root, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
+	_solid(root, Vector3(2.0, 0.16, length), Vector3.ZERO, Vector3(tilt, 0.0, 0.0))
 	return root
+
+
+# A point `d` metres down the slope of a panel tilted `tilt` about X (its +Z end is the low one), and `d` metres off its face, in the panel's own space.
+static func _roof_along(tilt: float, d: float) -> Vector3:
+	return Vector3(0.0, -sin(tilt) * d, cos(tilt) * d)
+
+
+static func _roof_off(tilt: float, d: float) -> Vector3:
+	return Vector3(0.0, cos(tilt) * d, sin(tilt) * d)
 
 
 # A thatch foundation (tier 1, Dave and Tyler 24 Oct). Dave 10 Nov 2026: it works exactly like the stone foundation, so it has the same body, 4 m square

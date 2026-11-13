@@ -51,7 +51,6 @@ const GOLDEN := {
 	"stone_doorway_open": "stone_doorway_open",
 	"brick_doorway": "brick_doorway",
 	"brick_doorway_open": "brick_doorway_open",
-	"thatch_doorway_open": "thatch_doorway_open",
 	"thatch_window": "thatch_window",
 	"log_window": "log_window",
 	"stone_window": "stone_window",
@@ -176,6 +175,7 @@ const GOLDEN := {
 	"iron_chest": "iron_chest",
 	"thatch_roof": "thatch_roof",
 	"thatch_doorway": "thatch_doorway",
+	"thatch_roof_65": "thatch_roof_65",
 	"rock_pile": "rock_pile",
 }
 const TIERS := {

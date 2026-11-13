@@ -3880,7 +3880,7 @@
   {
    "key": "thatch_roof_kit",
    "number": 263,
-   "name": "Crude - Roof",
+   "name": "Crude - Roof 45",
    "category": "placeable",
    "catalog": "RETIRED",
    "section": null,
@@ -3894,7 +3894,7 @@
   {
    "key": "thatch_roof",
    "number": 264,
-   "name": "Crude - Roof",
+   "name": "Crude - Roof 45",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
@@ -3903,7 +3903,7 @@
    "state": "NO CHANGE",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "BUGLIST-001 BUG-011: renamed from Crude - Roof (id, number and state 43 kept); now a 45 degree roof panel, no posts. Catalog change made on the strength of BUG-011, for Dave to confirm."
   },
   {
    "key": "thatch_doorway_kit",
@@ -16410,6 +16410,23 @@
    "tests": [],
    "accepted_commit": null,
    "note": "gated: dairy (Cheese #418) and Pickled Vegetables #834 are FUTURE"
+  },
+  {
+   "key": "new:Crude - Roof 65",
+   "id": "thatch_roof_65",
+   "number": 1255,
+   "name": "Crude - Roof 65",
+   "category": null,
+   "catalog": "BUGLIST-001",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels"
+   ],
+   "accepted_commit": null,
+   "note": "BUGLIST-001 BUG-011 (13 Nov 2026): the 65 degree roof panel, blueprint 251, structure state 291, same materials as Crude - Roof 45. Catalog change made on the strength of BUG-011, for Dave to confirm. Not run: the Godot tests wait for the test PC."
   }
  ],
  "acceptance_note": "Mission 001 (12 Nov 2026): TESTED - ACCEPTED means implemented, independently reviewed and passing automated server-side tests (per-phase tests, the integrated walkthrough test_mission001_walkthrough, full suite 358/360 with 2 known flakes at aa8113c33). NOT included: in-game visual, UI and two-client checks, which were not run, and final art: most new pieces use marked placeholder looks. RETIRED - MIGRATION VERIFIED: retired with numbers kept and tests passing; Dave ruled no old-save migration is needed (new game)."

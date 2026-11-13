@@ -1577,7 +1577,8 @@
 				"Used in Scarecrow",
 				"Used in Crude - Doorway",
 				"Used in Crude - Foundation",
-				"Used in Crude - Roof",
+				"Used in Crude - Roof 45",
+				"Used in Crude - Roof 65",
 				"Used in Crude - Roof corner",
 				"Used in Crude - Wall",
 				"Used in Crude - Window"
@@ -1978,7 +1979,8 @@
 				"Used in Crude - Fence",
 				"Used in Crude - Gate",
 				"Used in Crude - Pillar",
-				"Used in Crude - Roof",
+				"Used in Crude - Roof 45",
+				"Used in Crude - Roof 65",
 				"Used in Crude - Roof corner",
 				"Used in Crude - Wall",
 				"Used in Crude - Window",
@@ -2101,7 +2103,8 @@
 				"Used in Crude - Foundation",
 				"Used in Crude - Gate",
 				"Used in Crude - Pillar",
-				"Used in Crude - Roof",
+				"Used in Crude - Roof 45",
+				"Used in Crude - Roof 65",
 				"Used in Crude - Roof corner",
 				"Used in Crude - Wall",
 				"Used in Crude - Window",
@@ -4579,7 +4582,7 @@
 			"obtainable_now": true
 		},
 		"thatch_roof_kit": {
-			"name": "Crude - Roof",
+			"name": "Crude - Roof 45",
 			"kind": "placeable",
 			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
 			"how_to_get": [
@@ -4589,9 +4592,17 @@
 			"obtainable_now": true
 		},
 		"thatch_roof": {
-			"name": "Crude - Roof",
+			"name": "Crude - Roof 45",
 			"kind": "structure",
 			"description": "A thatch roof. It keeps the rain off.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_roof_65": {
+			"name": "Crude - Roof 65",
+			"kind": "structure",
+			"description": "A steep thatch roof panel. It keeps the rain off.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true

@@ -3703,11 +3703,16 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "Too far to place that.")   # every refusal below says why, so the ghost doing nothing is never a mystery (Dave 31 Oct 2026)
 		return
 
-	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _foundation_rows())
+	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _foundation_rows(), clampi(lift_steps, 0, 1))   # lift_steps is also a roof panel's rise (0) or fall (1) from where it rests
 	at = on_grid[0]
 	yaw_deg = int(on_grid[1])
 	var on_base: bool = bool(on_grid[2])
 	var lift: float = 0.0
+	var panel: bool = str(_structure_of_kit(kit_id).get("piece_kind", "")) == PlacementRules.ROOF_PANEL_KIND
+
+	if panel and not on_base:
+		_say(peer, "A roof panel rests on a wall top, a ceiling edge or another panel's end.")   # never a panel standing free on the ground
+		return
 
 	if kit_id == "campfire_kit":   # a fire is laid on top of a foundation it is aimed at (Dave 10 Nov 2026), not on the ground under it
 		var base_top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
@@ -3730,13 +3735,17 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground is too wet here.")
 		return
 
-	var on_wall: bool = on_base and str(_structure_of_kit(kit_id).get("piece_kind", "")) == PlacementRules.WALL_TOP_KIND   # a wall top sits on a standing wall's top, however high that wall is
+	var on_wall: bool = on_base and (panel or str(_structure_of_kit(kit_id).get("piece_kind", "")) == PlacementRules.WALL_TOP_KIND)   # a wall top or a roof panel sits on a standing wall's top, however high that wall is
 
 	if not on_wall and absf(ground - at.y) > (1.0 if not on_base else 1.5 + (PlacementRules.stack_rise(_structures_cfg, kit_id) * float(PlacementRules.STACK_MAX_LAYERS) if on_grid.size() > 3 else 0.0)):
 		_say(peer, "You cannot place that there.")
 		return
 
 	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
+
+	if panel and ground_height.is_valid() and PlacementRules.roof_panel_buried(_structures_cfg, kit_id, spot, yaw_deg, func(x, z): return float(ground_height.call(x, z))):
+		_say(peer, "That end of the roof panel would sink into the ground.")
+		return
 
 	if not on_base and not _structure_of_kit(kit_id).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
 		_say(peer, "You cannot build in water.")
