@@ -186,6 +186,7 @@ const HIT_STOP_S := 0.045
 const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
 const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
 const REACH_M := 3.0
+const MISS_POINT_M := 2.5   # the point a swing at nothing reports (inside the server's MINE_REACH_M from the feet even looking straight up)
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
@@ -1890,7 +1891,12 @@ func _strike() -> void:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
-	if hit.is_empty() or _sound == null:
+	if hit.is_empty():
+		# A swing at nothing is still a swing and tires (BUG-001): tell the server, with a point in the air, so it holds the tool's effort as it does for a blow that lands.
+		_net.inventory_action.rpc_id(1, Net.ACT_MINE, held_slot + 1, 0, 0, from - _camera.global_transform.basis.z * MISS_POINT_M)
+		return
+
+	if _sound == null:
 		return
 
 	struck.emit(1.0, 1.2 if _tool_class() == "pick" else 1.0)

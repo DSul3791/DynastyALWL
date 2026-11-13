@@ -2264,6 +2264,8 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if hit:
 		hit_number(peer, eye + direction.normalized() * minf(reach, 1.5), damage)
 		_wear_slot(peer, inv, slot, "strike")
+	else:
+		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
 
 
 # A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
@@ -3547,7 +3549,7 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 
 
 func _mine(peer: int, inv, at: Vector3, held_slot: int) -> void:
-	if not _peer_pos.has(peer) or not rock_at.is_valid():
+	if not _peer_pos.has(peer):
 		return
 
 	if _peer_pos[peer].distance_to(at) > MINE_REACH_M:
@@ -3564,10 +3566,15 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if tool < 0 or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock") or not bool(rock_at.call(at.x, at.z)):
+	if tool < 0 or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock"):
 		return
 
 	_last_mine[peer] = now
+
+	if not rock_at.is_valid() or not bool(rock_at.call(at.x, at.z)):
+		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a swing at soil or into empty air (the client sends a point 2.5 m ahead): it tires, it breaks no stone and wears nothing
+		return
+
 	_wear_slot(peer, inv, tool, "rock")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
@@ -6015,16 +6022,22 @@ func _wear_tool(peer: int, inv, tool_class: String, use: String = "") -> void:
 	_wear_slot(peer, inv, _tool_slot(inv, tool_class), use)
 
 
+# A swing was made with a tool of this class: it holds the body at the class's effort for work_s (exertion.json tool_effort). Every swing that is
+# really executed calls this once, on a hit through _wear_slot, on a miss (bare ground, empty air, a jab at nothing) directly: a miss tires
+# as much as a hit (BUGLIST-001 BUG-001).
+func _note_work(peer: int, tool_class: String) -> void:
+	var work_cfg: Dictionary = _exertion_cfg.get("tool_effort", {})
+	_work_until[peer] = Time.get_ticks_msec() + int(float(_exertion_cfg.get("work_s", 2.5)) * 1000.0)
+	_work_level[peer] = float(work_cfg.get(tool_class, work_cfg.get("default", 0.6)))
+
+
 func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	if slot < 0 or inv.max_durability(slot) <= 0:
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 	var tool_class: String = str(entry.get("tool_class", ""))
-
-	var work_cfg: Dictionary = _exertion_cfg.get("tool_effort", {})
-	_work_until[peer] = Time.get_ticks_msec() + int(float(_exertion_cfg.get("work_s", 2.5)) * 1000.0)
-	_work_level[peer] = float(work_cfg.get(tool_class, work_cfg.get("default", 0.6)))
+	_note_work(peer, tool_class)
 	# A skilled crafter looks after their tools: wear is spread by the tool_care factor (1.0 for everyone at first), a deterministic
 	# carry of the fraction so no dice are involved.
 	var per_use: int = maxi(0, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))   # 0: work that cannot wear or dull this tool (a pick on wood)
@@ -11500,7 +11513,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var dt: float = float(now - int(last[1])) / 1000.0
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		_speed3[peer] = lerpf(float(_speed3.get(peer, 0.0)), Vector3(position.x - last[0].x, position.y - last[0].y, position.z - last[0].z).length() / dt, clampf(dt * 2.0, 0.0, 1.0))
-		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.5, running 1 (data)
+		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.4, running 1 (data)
 
 		if _on_path(peer, position):
 			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
@@ -13632,7 +13645,10 @@ func _cut_hole(peer: int, inv, slot: int) -> void:
 		return
 
 	if not _on_ice(_peer_pos[peer]):
-		_say(peer, str(cfg.get("say_no_ice", "")))
+		# Only by the water: an axe right-clicked anywhere else (a swing at the air, in a wood) is not asking for a hole (BUG-003).
+		if water_near.is_valid() and bool(water_near.call(_peer_pos[peer], float(cfg.get("no_ice_water_m", 6.0)))):
+			_say(peer, str(cfg.get("say_no_ice", "")))
+
 		return
 
 	var now: int = Time.get_ticks_msec()

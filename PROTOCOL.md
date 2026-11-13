@@ -67,7 +67,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 5 | ACT_THROW | a = slot, at = aim direction (the server starts the throw from the player) | 10 |
 | 6 | ACT_PLACE | a = slot of a placeable item, at = where (a campfire kit becomes a fire) | 10 |
 | 7 | ACT_HIT | a = tree id, b = flora chunk x, count = flora chunk z, at.x = held pack slot + 1 (from 115): one blow on a standing tree with the axe in hand | 12 |
-| 8 | ACT_MINE | a = the held pack slot + 1 (from 117), at = the point struck; on bare rock the pick or axe in hand gives stone | 10 |
+| 8 | ACT_MINE | a = the held pack slot + 1 (from 117), at = the point struck (a point in the air for a swing at nothing); the swing tires whatever it meets, on bare rock the pick or axe in hand gives stone | 10 |
 | 9 | ACT_PROCESS | a = world item id of a felled trunk (also a stump, a loose log, a carcass), at.x = held pack slot + 1 for wood work (from 115) and a carcass (from 117, the knife in hand): one blow with the axe in hand gives branches, leaves, bark, logs | 13 |
 | 10 | ACT_SPLIT | a = slot, count = how many go to the first empty slot | 13 |
 | 11 | ACT_FUEL | a = fire world id: burn one stick (or a log) in the fire | 13 |

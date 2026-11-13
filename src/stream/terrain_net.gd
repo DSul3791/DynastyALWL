@@ -148,7 +148,7 @@ const ACT_PICKUP := 2     # a = world item id
 const ACT_ADMIN_GIVE := 3 # a = item number, count (admin tool; tests only)
 const ACT_CRAFT := 4      # a = recipe number (data/items/recipes.json)
 const ACT_PLACE := 6      # a = slot of a placeable item, at = where (a campfire kit becomes a fire)
-const ACT_MINE := 8       # a = the held pack slot + 1 (from 117), at = the point struck; on bare rock the pick or axe in hand gives stone
+const ACT_MINE := 8       # a = the held pack slot + 1 (from 117), at = the point struck (a point in the air for a swing at nothing); the swing tires whatever it meets, on bare rock the pick or axe in hand gives stone
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z, at.x = the held pack slot + 1: one blow on a standing tree with the axe in hand; with b = HIT_BOULDER, a = a boulder's world id, count = the held pack slot + 1: one blow on a boulder with the pick or axe in hand
 const HIT_BOULDER := -1000000   # the b of an ACT_HIT that strikes a boulder, not a tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk, stump, loose log or carcass, at.x = the held pack slot + 1 (wood work; a carcass from 117): one blow with the axe in hand gives branches, leaves, bark, logs
