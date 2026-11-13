@@ -25,7 +25,7 @@ Normal gameplay shortcuts are **J** → Journal Index, **G** → Journal Goals a
 | `admin_dig` | **Ctrl+Shift+X** |  |
 | `admin_spyglass` | **Ctrl+Shift+L** |  |
 | `jitter_test` | **Ctrl+Shift+J** | Releases plain J for the Journal Index |
-| `gpu_probe` | **Ctrl+Shift+F9** | Move from Ctrl+Shift+G, now reserved for Fly |
+| `gpu_probe` | **Ctrl+Shift+P** | Move from Ctrl+Shift+G, now reserved for Fly |
 | `water_hide` | **Ctrl+Shift+F7** | Already compliant; preserve |
 | `water_debug` | **Ctrl+Shift+F8** | Already compliant; preserve |
 
@@ -39,7 +39,7 @@ The default proposal is a *primary-key map*: when inspection reveals an engine, 
 4. Ensure no normal gameplay inputs fire when their key is part of an admin chord, and no admin actions activate on plain keys; verify no unintended character movement/interaction in chord handling.
 5. Maintain existing *admin role and server-side authority*; ordinary players must not acquire debug powers merely by knowing the shortcut.
 6. Update `CONTROLS.md`, the built-in help, in-game Controls page, keybind labels, tests, and affected authoritative docs **in the same implementation PR**, once code actually changes. Do not document new chords as working before they are implemented.
-7. Test each mapping above and all project-specific admin/debug paths in the running Godot editor, including keyboard layouts for =, - and ], inventory G, Journal G/J/M, Ctrl+Shift+G Fly vs Ctrl+Shift+F9 GPU Probe, F3 vs F5, conflicting custom rebinds, reconnect and saved settings.
+7. Test each mapping above and all project-specific admin/debug paths in the running Godot editor, including keyboard layouts for =, - and ], inventory G, Journal G/J/M, Ctrl+Shift+G Fly vs Ctrl+Shift+P GPU Probe, F3 vs F5, conflicting custom rebinds, reconnect and saved settings.
 8. Develop through the project's existing feature branch → independent review → `dev` integration workflow, keeping `main` untouched unless explicitly approved.
 
 **Scope boundary:** This is a uniform shortcut-safety and discoverability rule, not permission to redesign admin functions, remove tooling, change admin privileges, or make the Journal/Goals feature a prerequisite for testing admin controls.
