@@ -905,7 +905,7 @@ func _fell_tick(now: int) -> void:
 			return
 
 		var blows: int = int(items._world[_fell_stump].get("blows", 0)) + 1
-		items.net.inventory_action.rpc_id(1, Net.ACT_PROCESS, _fell_stump, 0, 0, Vector3(float(items.inventory.numbers.find(items.table.number_of("stone_axe")) + 1), 0.0, 0.0))   # the axe given at step 0 is the one in hand (protocol 113)
+		items.net.inventory_action.rpc_id(1, Net.ACT_PROCESS, _fell_stump, 0, 0, Vector3(float(items.inventory.numbers.find(items.table.number_of("stone_axe")) + 1), 0.0, 0.0))   # the axe given at step 0 is the one in hand (protocol 115)
 		_fell_t = now - 1900
 		items._world[_fell_stump]["blows"] = blows
 

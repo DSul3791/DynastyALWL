@@ -105,6 +105,7 @@ var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last se
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
+var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -1054,6 +1055,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_burrows_sent.erase(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
+	_far_fires_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -2450,6 +2452,17 @@ func _send_npcs(delta: float) -> void:
 		if int(_holes_sent.get(peer, 0)) != hole_sig:
 			_holes_sent[peer] = hole_sig
 			net.ice_holes.rpc_id(peer, hole_rows[0], hole_rows[1])
+
+		var far_rows: Array = items.far_fires_near(at)   # their smoke seen from a hill (TEST-011)
+		var far_sig: int = 1 + far_rows[0].size()
+
+		for i in range(far_rows[0].size()):
+			far_sig += hash([far_rows[0][i], far_rows[1][i]])   # order-free: two fires swapping rank as the player walks send nothing (the client ranks them itself)
+
+
+		if int(_far_fires_sent.get(peer, 0)) != far_sig:
+			_far_fires_sent[peer] = far_sig
+			net.far_fires.rpc_id(peer, far_rows[0], far_rows[1])
 
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.

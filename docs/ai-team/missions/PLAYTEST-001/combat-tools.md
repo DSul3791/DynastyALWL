@@ -1,6 +1,6 @@
 # Playtest Repair Mission 001: combat and tools (TEST-004, TEST-010, TEST-013)
 
-Protocol: 113 (the hotbar fix took 112).
+Protocol: 115 (the hotbar fix took 112, the far campfire smoke 114 while this was in test; 113 unused).
 
 Owner: thread "Fix spear combat, log carrying, tools". Base: `origin/dev` at `b922cc88a59586dfbd41f806744d9ccedfe2bf26`. Branch `claude/project-thread-r7u4ds`. `main` untouched.
 
@@ -48,7 +48,7 @@ Why the axe and pick seemed equal:
 2. `boulders.json` gave the stone axe and stone pick the same 3 blows per stone.
 3. The wear used work kind `"boulder"`, which has no `drops.json tool_wear` entry, so the existing "axe on rock wears 5" rule never applied.
 
-Fix (protocol 113, approved by Dave in the thread, 12 Nov 2026: "yes it needs to know what tool I am using"):
+Fix (protocol 115, approved by Dave in the thread, 12 Nov 2026: "yes it needs to know what tool I am using"):
 - The client sends the held pack slot + 1: in the boulder ACT_HIT `count`, and in at.x of the tree ACT_HIT and the trunk, stump and log ACT_PROCESS (`PROTOCOL.md`). The server uses and wears only that tool, which must be on the hotbar and not broken; anything else is refused as no tool.
 
 Tool tiers (Dave 12 Nov 2026, in the thread):
@@ -63,7 +63,7 @@ Dave to check: look at a boulder (it says Rock). Hold the Stone - Pickaxe on a b
 
 ## Review
 
-Gate review 1 (independent gate-reviewer agent) of d7c936e: FAIL on gate rules: (1) the protocol change needs Dave's approval (RULES.md "Big changes need Dave's approval first: ... the network protocol"; Class C in DECISION_AUTHORITY.md); asked on the thread, pending; (2) no Godot run yet. Code findings 3 (third-person facing from the skeleton, wrong for the fallback body), 4 (first-person spear in view at rest), 5 (eating with a log on the shoulder) and 9 (stale comment) fixed. The boulder and wood changes share one bump (113; the hotbar fix took 112).
+Gate review 1 (independent gate-reviewer agent) of d7c936e: FAIL on gate rules: (1) the protocol change needs Dave's approval (RULES.md "Big changes need Dave's approval first: ... the network protocol"; Class C in DECISION_AUTHORITY.md); asked on the thread, pending; (2) no Godot run yet. Code findings 3 (third-person facing from the skeleton, wrong for the fallback body), 4 (first-person spear in view at rest), 5 (eating with a log on the shoulder) and 9 (stale comment) fixed. The boulder and wood changes share one bump (now 115; the hotbar fix took 112, far smoke 114).
 
 Gate review 2 (32530ba): no new must-fix. Done: checks that an axe only on the hotbar (nothing in hand) chops no tree, trunk, stump or log; a "You need an axe in hand to work wood." line when wood is struck without one; comment provenance quotes Dave's notes; FELLING_DESIGN.md network line updated. Follow-up (reported, not in this PR): `_mine` (swinging at bare rock ground) still needs and wears the first axe on the hotbar, so a held pick there wears the axe.
 

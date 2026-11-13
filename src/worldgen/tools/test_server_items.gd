@@ -2870,7 +2870,7 @@ func _init() -> void:
 
 	for n in range(10):
 		bo._last_hit.clear()
-		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)   # count: the held pack slot + 1 (protocol 113)
+		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)   # count: the held pack slot + 1 (protocol 115)
 
 	check(bo.inventory_of(1).count_of(stone_id) == 30 and int(bo._items[900001]["count"]) == small_total - 30, "an iron pick takes three stones a blow (boulders.json tools: stone 1, bronze 2, iron 3, steel 4): 10 blows, 30 stones (%d stones, %d left)" % [bo.inventory_of(1).count_of(stone_id), int(bo._items[900001]["count"])])
 	check(int(bo.inventory_of(1).wear[pick_slot]) == 10, "every blow wears the pick one (%d)" % int(bo.inventory_of(1).wear[pick_slot]))

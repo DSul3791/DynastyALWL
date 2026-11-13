@@ -96,7 +96,7 @@ func pick_out(ore: String, item: String, want: int, blows: int) -> void:
 			break
 
 		items._last_hit.clear()
-		var pick: int = items.inventory_of(1).numbers.find(items.table.number_of("bronze_pickaxe"))   # the best pick made so far is the one in hand (protocol 113)
+		var pick: int = items.inventory_of(1).numbers.find(items.table.number_of("bronze_pickaxe"))   # the best pick made so far is the one in hand (protocol 115)
 
 		if pick < 0:
 			pick = items.inventory_of(1).numbers.find(items.table.number_of("stone_pickaxe"))
