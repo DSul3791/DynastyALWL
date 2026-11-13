@@ -158,7 +158,7 @@ func _wall_corner_checks(cfg: Dictionary) -> void:
 		_walls_on(cfg, anchors, upper["pos"], (upper["pos"] as Vector3).y + float(cfg["structures"][BASE_KIND]["top_m"]), "stacked foundation")
 
 
-func _walls_on(cfg: Dictionary, anchors: Array, base: Vector3, top: float, label: String) -> void:
+func _walls_on(_cfg: Dictionary, anchors: Array, base: Vector3, top: float, label: String) -> void:
 	var walls_before: int = rows_of(WALL_KIND).size()
 	var placed: int = 0
 	var why: Array = []

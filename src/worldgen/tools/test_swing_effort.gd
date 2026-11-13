@@ -31,6 +31,7 @@ class FakeAction:
 
 class FakeNet:
 	extends RefCounted
+	@warning_ignore("unused_signal")
 	signal road_marker_reached(at: Vector3)   # HeldItem.setup connects it on any net it is given
 	var inventory_action: FakeAction = FakeAction.new()
 
@@ -258,13 +259,13 @@ func _rate(w, speed: float, extra: float) -> float:
 func _strain() -> void:
 	var w = _make("b")
 	var walk: float = float(load("res://scenes/terrain_client/terrain_client.gd").get_script_constant_map()["WALK_SPEED"])
-	var run: float = float(load("res://scenes/terrain_client/terrain_client.gd").get_script_constant_map()["RUN_SPEED"])
+	var run_speed: float = float(load("res://scenes/terrain_client/terrain_client.gd").get_script_constant_map()["RUN_SPEED"])
 
 	for extra in [0.0, 0.06]:
 		var idle: float = _rate(w, 0.0, extra)
 		var stroll: float = _rate(w, walk, extra)
 		var jog: float = _rate(w, 6.0, extra)
-		var sprint: float = _rate(w, run, extra)
+		var sprint: float = _rate(w, run_speed, extra)
 		check(idle < stroll and stroll < 0.0 and 0.0 < jog and jog < sprint, "idle %.4f < walk %.4f < 0 < jog %.4f < sprint %.4f a second (extra effort %.2f)" % [idle, stroll, jog, sprint, extra])
 		check(stroll > idle * 0.5, "a walk recovers slowly, well under the standing pace (%.4f against %.4f)" % [stroll, idle])
 
@@ -272,7 +273,7 @@ func _strain() -> void:
 	w._strain[1] = {"s": 0.2, "state": 0, "t": 0.0}
 	w._overheat[1] = 0.0
 	w._moving[1] = 1.0
-	w._exertion[1] = w._effort_at_speed(run)
+	w._exertion[1] = w._effort_at_speed(run_speed)
 
 	for n in range(60):
 		w._strain_tick(1, 0.25)
