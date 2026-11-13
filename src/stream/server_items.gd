@@ -8193,14 +8193,6 @@ func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false
 			_say(peer, "Make room in your pack first.")   # a pack at MAX_SLOTS
 			return false
 
-	if taken_down and _load_over_cap(peer, inv):   # the pack grows, so the carry limit decides (protocol 115)
-		for put in given:
-			inv.remove(int(put[0]), int(put[1]))
-
-		_say(peer, "Too heavy to carry what it gives back.")
-		_reject(peer, 2)
-		return false
-
 	return true
 
 
@@ -8938,16 +8930,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
-	else:
-		var kit_n: int = table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"]))   # a placed torch comes back burning, or doused when it burned out or the rain put it out
-
-		if _fit(peer, inv, kit_n, 1) < 1:
-			_say(peer, "Too heavy to carry more")
-			_reject(peer, 2)
-			return
-
-		if inv.add(kit_n, 1, int(it.get("wear", 0))) > 0:
-			return
+	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
+		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out (only a pack at MAX_SLOTS refuses)
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))
@@ -9974,7 +9958,8 @@ func _fit(peer: int, inv, number: int, count: int, item_inst: Dictionary = {}) -
 
 
 # Into the pack as many as the carry limit allows, the rest dropped at `at` (the player's feet when INF); returns how many went in. A pack grows
-# (protocol 115), so weight is what stops a gain: every add of something new to a player's pack goes through here, give() or a weight check.
+# (protocol 115), so weight is what stops a gain: what a player gathers (litter, mining, boulders, fish, cooking) goes through here or give().
+# What the game hands back or awards (a piece taken down, a handcart taken apart, a goal reward) is given whatever the load, as before.
 func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: Vector3 = Vector3.INF) -> int:
 	var fits: int = _fit(peer, inv, number, count)
 	var left: int = inv.add(number, fits, item_wear) + (count - fits)
@@ -9983,14 +9968,6 @@ func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: V
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO) if at == Vector3.INF else at, item_wear)
 
 	return count - left
-
-
-# Whether the player's whole load, with `pack` as their pack, is over the carry limit: an all-or-nothing gain (a piece taken down) checks this.
-func _load_over_cap(peer: int, pack) -> bool:
-	if _carry_cfg.is_empty():
-		return false
-
-	return CarryRules.carried_kg(pack, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer) > CarryRules.cap_kg(_carry_body(peer), _carry_cfg) + CarryRules.SLACK_KG
 
 
 # The whole load: the pack (with the bags in it) and what the worn bags hold (worn pieces themselves weigh nothing, as before).
@@ -11023,7 +11000,11 @@ func give_to(peer: int, id: String, count: int) -> void:
 		return
 
 	var before: Array = _snapshot(inv)
-	_take_in(peer, inv, table.number_of(id), count)
+	var left: int = inv.add(table.number_of(id), count)   # a reward is handed over whatever the load (as before protocol 115); only MAX_SLOTS leaves any
+
+	if left > 0:
+		drop_in_world(table.number_of(id), left, _peer_pos.get(peer, Vector3.ZERO))
+
 	_gain_source = SRC_REWARD
 	_send_changes(peer, inv, before)
 	_gain_source = SRC_PICKUP

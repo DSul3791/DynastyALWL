@@ -82,12 +82,13 @@ func _init() -> void:
 	items._send_changes(1, pack(), before)
 	check(pack().slot_count == grown_to and full_sent.is_empty() and slots_sent.size() == 1, "emptying a slot short of the last item: same size, a slot update")
 
-	for slot in range(pack().slot_count - 1, 29, -1):
-		before = items._snapshot(pack())
-		pack().clear_slot(slot)
-		items._send_changes(1, pack(), before)
+	before = items._snapshot(pack())
 
-	check(pack().slot_count == 30 and full_sent.size() >= 1 and wire.from_bytes(full_sent.back()) and wire.slot_count == 30, "emptying the new slots gives them back: the whole pack is sent at 30 slots")
+	for slot in range(30, pack().slot_count):
+		pack().clear_slot(slot)
+
+	items._send_changes(1, pack(), before)
+	check(pack().slot_count == 30 and full_sent.size() == 1 and wire.from_bytes(full_sent.back()) and wire.slot_count == 30, "emptying the new slots gives them back: the whole pack is sent at 30 slots")
 
 	# 2. Split: a full backpack grows a step for the half that comes off.
 	for slot in range(pack().hotbar_slots, pack().slot_count):

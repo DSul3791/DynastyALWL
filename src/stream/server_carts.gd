@@ -557,10 +557,6 @@ func dismantle(peer: int, inv, id: int) -> void:
 		host._say(peer, "Make room in your pack first: the handcart's load and its parts must all fit.")
 		return
 
-	if host._load_over_cap(peer, trial):   # the pack grows (protocol 115): the carry limit is what must hold the parts and the load
-		host._say(peer, "Too heavy: you cannot carry the handcart's parts and its load.")
-		return
-
 	release(peer, "")
 	_unpack(inv, box, row)
 
