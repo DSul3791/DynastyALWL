@@ -118,7 +118,7 @@ func _init() -> void:
 
 	for b in range(5):
 		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, carcass_id, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, carcass_id, 0, 0, Vector3(float(knife_in_hand() + 1), 0.0, 0.0))
 
 	step("dressing with the stone knife (4 blows): meat, hide, bone", count("raw_meat") >= 1 and count("hide") >= 1 and count("bone") >= 1, "raw_meat %d, hide %d, bone %d" % [count("raw_meat"), count("hide"), count("bone")])
 	step("the carcass is used up", not items._items.has(carcass_id), "")
@@ -148,7 +148,7 @@ func _init() -> void:
 
 		for b in range(5):
 			items._last_process.clear()
-			items.action(1, Net.ACT_PROCESS, deer_carcass, 0, 0, Vector3.ZERO)
+			items.action(1, Net.ACT_PROCESS, deer_carcass, 0, 0, Vector3(float(knife_in_hand() + 1), 0.0, 0.0))
 
 		step("deer dressed: meat, hide, bone, sinew, fat, antler", count("raw_meat") >= 3 and count("sinew") >= 1 and count("animal_fat") >= 0, "raw_meat %d, hide %d, bone %d, sinew %d, animal_fat %d, antler %d" % [count("raw_meat"), count("hide"), count("bone"), count("sinew"), count("animal_fat"), count("antler")])
 
@@ -181,3 +181,14 @@ func _init() -> void:
 	step("a waterskin from two hides and a twine", count("waterskin") == 1, "waterskins %d, hides left %d" % [count("waterskin"), count("hide")])
 	print("probe6: ", failures, " breaks")
 	quit(0)
+
+
+# The knife's pack slot (-1 none): carcass work uses the knife in hand (protocol 117).
+func knife_in_hand() -> int:
+	var inv = items.inventory_of(1)
+
+	for slot in range(inv.numbers.size()):
+		if inv.numbers[slot] != 0 and inv.on_hotbar(slot) and str(items.table.entry(items.table.id_of(inv.numbers[slot])).get("tool_class", "")) == "knife":
+			return slot
+
+	return -1
