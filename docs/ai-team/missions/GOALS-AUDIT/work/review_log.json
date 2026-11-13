@@ -1,0 +1,220 @@
+{
+ "rounds": [
+  {
+   "name": "Round 1, challenger A",
+   "reviewer": "independent general-purpose agent, read-only, did not author findings; checked HIGH findings, economy and main steps 1-20 at bc66eff",
+   "summary": "Confirmed GA-11, GA-13, GA-24 rule, GA-40, GA-41, GA-44, GA-45, GA-81, GA-88 and the draft totals (15,670; main 2,826). Ten objections, all accepted in whole or part.",
+   "objections": [
+    {
+     "objection": "GA-10 overstated: only the 8 key species give large blocks; other trees drop the plain Log, which chops to small blocks, so the hammer works for them.",
+     "resolution": "Accepted. GA-10 rewritten to cover both cases; GA-12 corrected (plain Log stacks to 5)."
+    },
+    {
+     "objection": "Missed: a player who felled a plain-Log tree cannot make the Chopping block (needs a Large block; no small-to-large recipe).",
+     "resolution": "Accepted. Folded into GA-10 (name a key-species tree in rows 9-11 and 16)."
+    },
+    {
+     "objection": "Missed: a tree too short for one log gives no log (server_items.gd:6683, 6748).",
+     "resolution": "Accepted as GA-35 (fell, gather:log)."
+    },
+    {
+     "objection": "GA-21: 'its foundations come after it' is false; a Crude - Foundation raised 0.5 m qualifies.",
+     "resolution": "Accepted. Ordering claim removed; correction names the Crude - Foundation."
+    },
+    {
+     "objection": "GA-23: the approved catalog item 1 [D1] (Dave) supports the iron-first wilderness route; bronze order is a creator choice.",
+     "resolution": "Accepted. Reclassified OWNER_DECISION with no status effect; new creator question Q11."
+    },
+    {
+     "objection": "GA-20: a lit station needs no fuel; only a cold one needs Charcoal or Coal to light it.",
+     "resolution": "Accepted. Wording corrected."
+    },
+    {
+     "objection": "GA-70: Hob ceiling omits the starting 300 (1.70x, not 1.76x); depends on the ASSUMED effort model; single-player; net of purchases; picking wage is Dave's 40-60 per 4 h with 0.2 as Sal's midpoint.",
+     "resolution": "Accepted. GA-70 and the summary now say 1.70x, label both ratios ASSUMED, give the sensitivity and cite the wage's true origin."
+    },
+    {
+     "objection": "GA-42 recommended fell 3 copper though the draft already proposes 6.",
+     "resolution": "Accepted. Recommendation is now the draft's own values (twine 4, fell 6, story 3)."
+    },
+    {
+     "objection": "activity:medium_fire is PASS though GA-45 says it has no completion event.",
+     "resolution": "Kept by design: the brief makes design status and runtime support independent columns. The row is runtime NEW_EVENT_REQUIRED; section 1 now states how many PASS goals need runtime work."
+    },
+    {
+     "objection": "Fire row never mentions rain.",
+     "resolution": "Accepted into GA-34 (LOW)."
+    }
+   ]
+  },
+  {
+   "name": "Round 1, challenger B (gate-reviewer)",
+   "reviewer": "independent gate-reviewer agent, read-only; checked all 28 main PASS rows, about 40 additional PASS rows, 20 BLOCKED/NC rows and report/ledger consistency at bc66eff",
+   "summary": "GA-01 to GA-04 source claims held against a code-wide search; headline counts reconcile; overall NOT READY verdict stands. Twelve objections; PASS inflation found on drink and berries.",
+   "objections": [
+    {
+     "objection": "drink is over-passed: a new character starts with full water, so drinking at once does not count; salt water and held containers also block it.",
+     "resolution": "Accepted (verified server_items.gd:10218, 18408-18412, 1104-1109). New GA-36; drink and berries now NEEDS_CORRECTION."
+    },
+    {
+     "objection": "berries: same mechanism with hunger.",
+     "resolution": "Accepted into GA-36."
+    },
+    {
+     "objection": "GA-12 applied to two log-cost builds but not the other ~20.",
+     "resolution": "Accepted. GA-12 now applies only where logs are first taught; the shared rule is GA-37 (no status effect) on every log-cost build."
+    },
+    {
+     "objection": "gather:clay How-to still holds a placeholder.",
+     "resolution": "Accepted. Added to GA-05; now NEEDS_CORRECTION."
+    },
+    {
+     "objection": "craft:wooden_block(_soft) runtime is EXISTING: the small-block recipe runs through _craft_tick.",
+     "resolution": "Accepted. Runtime overridden to EXISTING; removed from GA-13 (GA-10 still applies)."
+    },
+    {
+     "objection": "GA-10 over-generalised (same as challenger A).",
+     "resolution": "Accepted (see above)."
+    },
+    {
+     "objection": "GA-40 attributed to 28 goals; drink and fibre have no after.",
+     "resolution": "Accepted. Now computed from the data (26)."
+    },
+    {
+     "objection": "GA-24 door/doorway counts imprecise.",
+     "resolution": "Accepted. Count claim removed from the title."
+    },
+    {
+     "objection": "Missed: one carcass dressing pays knife plus hide, bone and fat; site finish credits the finisher.",
+     "resolution": "Accepted as GA-38 (design recommendation)."
+    },
+    {
+     "objection": "Wool goods rest on bighorn only.",
+     "resolution": "Accepted as GA-39: the wool family is NEEDS_TEST (computed from the dependency graph)."
+    },
+    {
+     "objection": "GA-18 evidence is roof-only but was attached to floor and wall.",
+     "resolution": "Accepted. Narrowed to the two roof goals."
+    },
+    {
+     "objection": "GA-42 duplicated in sections 11 and 12; milestone table order.",
+     "resolution": "Accepted. Fixed in the report generator."
+    }
+   ]
+  },
+  {
+   "name": "Round 2, gate review of 84ebc66",
+   "reviewer": "independent gate-reviewer agent, read-only (no git tool); re-checked counts, round-1 resolutions, 15 PASS rows against data, section list, secrets",
+   "summary": "Verdict NOT MERGE-READY on two items: SHA binding (the branch moved during the review) and one half-applied round-1 resolution. Counts reconcile; no inflated PASS in its sample; all 18 sections present; no secrets or model identifiers.",
+   "objections": [
+    {
+     "objection": "SHA binding: review started at cd9b8c7, branch moved to 84ebc66.",
+     "resolution": "Accepted. A fresh gate review is run on the final head with the SHA, status and diff scope supplied."
+    },
+    {
+     "objection": "GA-42 / Q3 / ledger still recommended fell 3 copper while the text said the draft's 6.",
+     "resolution": "Accepted. tools/economy.py now recommends the draft's own values for converted legacy rewards (twine 4, fell 6, story 3); totals regenerated (3,059; main 1,307); Q3 corrected; ws_economy.md annotated (work/ws_economy.json is authoritative for all totals)."
+    },
+    {
+     "objection": "Walkthrough YES cells contradict BLOCKED statuses.",
+     "resolution": "Accepted. The preface now states the tables are first-pass readings and the Status column and ledger are authoritative, naming GA-01..04 and GA-31."
+    },
+    {
+     "objection": "Depth of review not in the headline numbers.",
+     "resolution": "Accepted. Section 1 and section 18 now state 323 individual / 328 rule-only and how many PASS verdicts are rule-only."
+    },
+    {
+     "objection": "'Every count is computed, not typed' is untrue; '36 overlap (GA-47, GA-48)' does not match those findings.",
+     "resolution": "Accepted. Claim narrowed and the quoted figures named with their sources; 36 now cited to ws_catalog.md section 5."
+    },
+    {
+     "objection": "Effect rules inconsistent: engine-wide completion defects carry no status effect.",
+     "resolution": "Accepted. Section 2 now says this is deliberate and where those defects are recorded (runtime_support)."
+    },
+    {
+     "objection": "Provenance of the 'coin rewards stay' ruling not cited.",
+     "resolution": "Accepted. Cited as the creator ruling relayed with the mission brief and recorded in project memory."
+    },
+    {
+     "objection": "STATE.md stale.",
+     "resolution": "Accepted. Updated."
+    },
+    {
+     "objection": "Obsidian and quill listed as blockers though they block no goal alone.",
+     "resolution": "Accepted. Wording corrected."
+    }
+   ]
+  }
+ ],
+ "checked_goals_round1": [
+  "activity:medium_fire",
+  "berries",
+  "build:drying_rack",
+  "build:engineered_roof",
+  "build:fireplace",
+  "build:iron_brazier",
+  "build:iron_fence",
+  "build:iron_gate",
+  "build:iron_railing",
+  "build:leatherworking_table",
+  "build:loom",
+  "build:mixer",
+  "build:preserving_jar",
+  "build:root_cellar",
+  "build:smelter",
+  "build:smoker",
+  "build:stone_bench",
+  "build:stone_brazier",
+  "build:tailors_table",
+  "build:thatch_window",
+  "craft:backpack",
+  "craft:bronze_chisel",
+  "craft:bronze_hinges",
+  "craft:bronze_knife",
+  "craft:bronze_mace",
+  "craft:bronze_nails",
+  "craft:bronze_scythe",
+  "craft:bronze_shield",
+  "craft:bronze_sickle",
+  "craft:bronze_spear",
+  "craft:campfire_kit",
+  "craft:carved_stone_block",
+  "craft:clay_pot",
+  "craft:cobblestone",
+  "craft:cut_stone_block",
+  "craft:fishing_rod",
+  "craft:grass_cloak",
+  "craft:grass_skirt",
+  "craft:hide_boots",
+  "craft:hide_cloak",
+  "craft:hide_gloves",
+  "craft:hide_glue",
+  "craft:hide_hood",
+  "craft:hide_mittens",
+  "craft:hide_scraper",
+  "craft:hide_trousers",
+  "craft:hide_tunic",
+  "craft:hinges",
+  "craft:lime_powder",
+  "craft:nails",
+  "craft:processed_hide",
+  "craft:rock_pile",
+  "craft:rope",
+  "craft:sewing_needle",
+  "craft:shore_net",
+  "craft:snare",
+  "craft:stone_hammer",
+  "craft:stone_knife",
+  "craft:stone_pickaxe",
+  "craft:tallow",
+  "craft:thread",
+  "craft:waterskin",
+  "craft:wooden_pin",
+  "craft:wooden_spade",
+  "drink",
+  "fire",
+  "gather:clay",
+  "gather:sand",
+  "gather:stick"
+ ]
+}

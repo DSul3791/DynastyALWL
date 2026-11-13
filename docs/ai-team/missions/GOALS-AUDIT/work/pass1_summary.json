@@ -1,0 +1,133 @@
+{
+ "goal_count": 651,
+ "main": 118,
+ "additional": 533,
+ "by_kind": {
+  "gather": 20,
+  "existing": 28,
+  "craft": 342,
+  "activity": 5,
+  "build": 256
+ },
+ "total_copper": 15670,
+ "main_copper": 2826,
+ "reward_text_bad": [],
+ "reward_text_noncanonical": [],
+ "flag_counts": {
+  "MATERIALS_MISMATCH": 1,
+  "UNITS_MISMATCH": 1,
+  "KEEPS_MISMATCH": 1,
+  "TITLE_NAME_DIFFERS": 1,
+  "GROUP_SHOWN_AS_KEY_ITEM": 24,
+  "MATERIALS_NOT_STATED": 1,
+  "BLUEPRINT_LOCKED": 24,
+  "BLUEPRINT_NOT_KNOWN": 24,
+  "STRUCT_NOT_BUILDABLE_STATIC": 24
+ },
+ "uncovered_items": [
+  "candle",
+  "dried_berries",
+  "jerky",
+  "kindling",
+  "salted_fish",
+  "smoked_fish",
+  "spear",
+  "stone_axe",
+  "tinder",
+  "torch",
+  "twine",
+  "wooden_hammer",
+  "wooden_hoe"
+ ],
+ "uncovered_structs": [
+  "lean_to",
+  "workbench"
+ ],
+ "unsourced_inputs": [
+  [
+   "rotten_food",
+   1
+  ]
+ ],
+ "unreachable_stations": [],
+ "station_levels": {
+  "chopping_block": [
+   1
+  ],
+  "workbench": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "forge": [
+   1
+  ],
+  "tanning_rack": [
+   1
+  ],
+  "drying_rack": [
+   1
+  ],
+  "smoker": [
+   1
+  ],
+  "oil_press": [
+   1
+  ],
+  "preserving_jar": [
+   1
+  ],
+  "smelter": [
+   1
+  ],
+  "leatherworking_table": [
+   1
+  ],
+  "tailors_table": [
+   1
+  ],
+  "loom": [
+   1
+  ],
+  "grindstone": [
+   1
+  ],
+  "food_preparation_table": [
+   1
+  ],
+  "campfire": [
+   1
+  ],
+  "brick_forge": [
+   2
+  ],
+  "blast_furnace": [
+   1
+  ],
+  "campfire_pot": [
+   1
+  ],
+  "clay_hearth": [
+   2
+  ],
+  "oven": [
+   3
+  ],
+  "kiln": [
+   1
+  ],
+  "stonecutters_bench": [
+   1
+  ],
+  "master_smithy": [
+   1
+  ],
+  "mixer": [
+   1
+  ],
+  "saw_mill": [
+   1
+  ]
+ }
+}
