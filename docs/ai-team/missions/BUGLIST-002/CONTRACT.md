@@ -5,7 +5,7 @@ Authority: `docs/buglists/BUGLIST-002.md`, `docs/design/DYNASTY_MASTER_ITEMS.md`
 ## Dave's decisions (13 Nov 2026, project chat 14:41-14:43Z)
 
 1. **How a door is made (Dave: "the same way they make a wall or any other construction piece, but it has to snap into a doorway").** A door is a **hammer blueprint** like every placed piece (buildables plan ruling "Hammer blueprints, no kits"; kits retired 5 Nov; decision 60: building pieces are placed by hammer blueprint). The blueprint cost is the director-approved door recipe exactly. It places only into a matching empty doorway; take-down refunds the cost in full (existing rule) and leaves the doorway standing. Door hammer level = its tier's doorway (Crude..Engineered 1, Fortified 3). No station.
-2. **Empty frame costs (Dave: "The empty doorway frames cost the same as a wall").** Each frame costs its tier's wall; arched the same; a double (two wall cells) twice that. Iron/Steel doorways have no matching wall: old cost minus hinges, pending Dave.
+2. **Empty frame costs (Dave: "The empty doorway frames cost the same as a wall").** Each frame costs its tier's wall; arched the same; a double (two wall cells) twice that. Dave confirmed doubles ("Double is double"). Iron/Steel doorways are retired (Dave 13 Nov: "There is no iron or steel door"); see the last section.
 3. **Names (Dave: "We don't use the word single it's implied"; "That is only four words").** No "Single" in any name (`<Tier> - Door`, `<Tier> - Arched door`, `<Tier> - Arched doorway`); validate_items does not count the tier "-" as a word.
 
 ## Reconciliation: existing records
