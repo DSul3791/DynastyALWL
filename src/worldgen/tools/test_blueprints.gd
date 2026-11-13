@@ -222,8 +222,9 @@ func _init() -> void:
 			inv.counts[slot] = 1
 
 	var slots_before: int = inv.slot_count
+	items.report_position(1, Vector3(196.0, 10.0, 204.0))   # within the take-down reach (Interact.server_reach_m, 3.5 m); the place reach is 6 m
 	items.action(1, Net.ACT_PICKUP, _ids_standing("wooden_crate")[0], 0, 0, Vector3.ZERO)
-	check(_ids_standing("wooden_crate").is_empty() and inv.slot_count > slots_before and _have(1, "lumber") > 0, "every slot taken: the pack grows (%d to %d slots) and the crate's materials come back" % [slots_before, inv.slot_count])
+	check(_ids_standing("wooden_crate").is_empty() and inv.slot_count > slots_before and _have(1, "lumber") == 5 and _have(1, "bronze_nails") == 8, "every slot taken: the pack grows (%d to %d slots) and the crate's materials come back (crates standing %d, lumber %d, bronze nails %d)" % [slots_before, inv.slot_count, _ids_standing("wooden_crate").size(), _have(1, "lumber"), _have(1, "bronze_nails")])
 
 	# A snare: the kit places as the snare_trap structure and takes down into the kit.
 	_clear(1)
