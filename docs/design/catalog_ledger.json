@@ -789,7 +789,7 @@
     "test_mission001_walkthrough"
    ],
    "accepted_commit": "aa8113c33",
-   "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 10 (organized volume), contents per instance, back:base"
+   "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 10 (organized volume), contents per instance, back:base. 13 Nov 2026 (Dave: backpacks have no slots, only carry weight): bag_slots and bag_takes removed, carry_bonus_kg 12 restored (BUGLIST-001)"
   },
   {
    "key": "energy_bar",
@@ -11134,7 +11134,7 @@
     "test_mission001_walkthrough"
    ],
    "accepted_commit": "aa8113c33",
-   "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 15, back:base"
+   "note": "M001-T15 (phase 5): carry_bonus_kg retired; bag_slots 15, back:base. 13 Nov 2026 (Dave: backpacks have no slots, only carry weight): bag_slots and bag_takes removed, carry_bonus_kg 18 restored (BUGLIST-001)"
   },
   {
    "key": "straw_hat",

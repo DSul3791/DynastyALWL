@@ -2785,7 +2785,7 @@
 		"backpack": {
 			"name": "Hide - Backpack",
 			"kind": "gear",
-			"description": "A hide pack worn on the back. It holds more in order, but its load still weighs on you.",
+			"description": "A hide pack worn on the back. It lets you carry more weight.",
 			"how_to_get": [
 				"Craft: 4 Hide, 1 Rope (keep Bone - Needle)"
 			],
@@ -9546,7 +9546,7 @@
 		"leather_backpack": {
 			"name": "Leather - Backpack",
 			"kind": "gear",
-			"description": "A leather pack worn on the back. Holds more than a hide pack and sheds a little rain.",
+			"description": "A leather pack worn on the back. Lets you carry more weight than a hide pack, and sheds a little rain.",
 			"how_to_get": [
 				"Craft at a workbench: 4 Leather, 4 Leather strap (keep Bone - Needle)"
 			],
