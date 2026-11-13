@@ -133,20 +133,48 @@ Bellows dropped; Clay bloomery added; Large forge and Master forge parked with t
 
 ## 3. Catalog by row
 
-### 3.0 Doors and doorways — BUGLIST-002 (director-approved, 13 Nov 2026)
+### 3.0 Doors and doorways — BUGLIST-002
 
-**Current approved requirement:** Doorway walls are empty structural openings. Doors are separate craftable/installable items, mounted in compatible existing doorway frames. A built doorway must never automatically contain a door. This decision **supersedes the integral-door behavior/descriptions** in older doorway entries throughout this catalog. Follow [BUGLIST-002](../buglists/BUGLIST-002.md) for implementation and acceptance criteria.
+**Director-approved functionality (13 Nov 2026):** A doorway is an empty structural opening. A door is a **separately crafted/installed item** that attaches to a compatible doorway, opens and closes, and can be removed/replaced without destroying its doorway. The earlier integral-door wall descriptions are superseded. There are four configurations (table below), and six quality tiers in order: **Crude, Rustic, Refined, Superior, Engineered, Fortified**. **Iron and Steel are materials, not tiers.** Door/frame compatibility depends on opening shape and size, **not matching tier or wall material**. Arched doors can be used in ordinary buildings as well as future ships.
 
-| Door configuration | Matching doorway | Profile |
+#### Approved configurations and required matching empty doorway
+
+| Door configuration | Matching doorway | Shape and operation |
 |---|---|---|
-| Single Door | Single Doorway | Rectangular; one leaf |
-| Double Door | Double Doorway | Rectangular; two leaves |
-| Single Arched Door | Single Arched Doorway | Rounded top; one leaf |
-| Double Arched Door | Double Arched Doorway | Rounded top; two leaves |
+| Single Door | Single Doorway | Rectangular with flat top; one hinged or pivoting leaf |
+| Double Door | Double Doorway | Rectangular with flat top; two hinged/pivoting leaves meeting in the middle |
+| Single Arched Door | Single Arched Doorway | One leaf, straight sides and rounded upper edge |
+| Double Arched Door | Double Arched Doorway | Two leaves sharing **one** continuous arch over their combined width; each leaf has one part of that curved top |
 
-**Quality tiers, in order:** Crude, Rustic, Refined, Superior, Engineered, Fortified. **Iron/Steel are materials, not tiers.** Doors, doorway shapes, materials and quality must be represented without assuming a new item ID for every theoretical combination. Door/frame compatibility is determined by suitable opening shape and dimensions, not automatically by matching quality or material. Arched construction is available outside ships.
+All four pairs are in scope for BUGLIST-002. Doorways need visible jambs and a structurally credible header/arch; **they contain no door until a separately made door is installed**.
 
-**Catalog reconciliation required:** Audit existing doorway rows, aliases, retired state variants and live `catalog_ledger.json`. Reuse stable item IDs where correct; add only genuinely absent catalog entities, using the approved allocation and test rules. Do not renumber or silently duplicate material-named legacy variants. The historical generated Appendix A and Draft 18 counts below predate this amendment; update them through the proper catalog pipeline during implementation, not by manual guesswork. This amendment authorizes only the named door/doorway changes; unrelated catalog changes remain outside scope.
+#### Proposed visual designs and material recipes by quality tier (for Dave's design approval)
+
+The materials and construction choices below are **ChatGPT's recommended design**, informed by the existing Dynasty resource chain. They are **not yet approved exact recipes or item quantities**. Reconcile ingredient keys and existing approved item progression before implementing costs; do not add invented material items. The visual direction for **Engineered and Fortified specifically reflects Dave's clarification: they are increasingly metal-heavy doors, not a different mechanism or concrete door leaf.**
+
+| Quality | Door appearance | Materials to make one basic single door (candidate ingredients; counts to balance) | Doorway-frame appearance and materials |
+|---|---|---|---|
+| **Crude** | Irregular sticks and split branches tied together, visible twine lashings and one simple cross-brace. Rough gaps, primitive wood pivot or rope-loop attachment. | **Stick + Twine**; optional **Thatch** infill to reduce gaps. No mandatory metal. | Stick uprights with lashed crosspiece in a crude thatch/branch wall: **Stick, Twine, Thatch**. Arched variant bends or segments flexible sticks around the opening. |
+| **Rustic** | Heavy, roughly split timber slabs with visible axe marks, two rough cross-braces, wooden pegs or a wooden pivot. Stronger than Crude but not neatly sawn. | **Log**, **Stick/Wooden pin**, optional **Twine** lashings. Can use timber pivots without requiring metal fittings. | Rough hewn log jambs and lintel: **Log, Twine** or wooden pegs. An arched version uses short timber pieces joined into a curved header. |
+| **Refined** | Straight, closely aligned sawn planks, tidy horizontal rails and a diagonal Z brace; plain functional hinges and handle. Familiar cottage/workshop door. | **Plank** (`lumber`) + **Nails + Hinges** (use existing generic fastener items and approved bronze/iron production chain). | Neatly built plank/timber jambs and header: **Plank**, suitable existing joining materials; segmented/laminated timber header for an arch. |
+| **Superior** | Smooth-finished hardwood panels in a solid timber frame, precise joints, neat trim and well-fitted hinges. Attractive manor-house quality without needing metal plating. | **Hardwood board + Nails + Hinges**; use existing approved hardwood production. Metal trim optional, not inherent to this tier. | Well-finished timber lining fitted into the supporting wood, stone or brick wall. Masonry frames use wall materials such as **Cut stone block, Brick and Mortar**; arched lintels have properly arranged stones/bricks or shaped timber members. |
+| **Engineered** | Thick, carefully fitted wooden door with **clearly more metal** than Superior: strong iron straps/brackets, reinforced joints and heavier hinge plates. Recognizably a wood-and-metal door, not a concrete slab or special mechanism. | **Hardwood board/Plank + Iron band + Nails + Hinges**; additional **Iron ingot** where approved fabrication actually needs it. Metal coverage is moderate, with exposed timber still visible. | Accurately constructed doorway in the chosen wall material; reinforced mounting points where appropriate. Concrete, if used, belongs to the **wall**, not the swinging door. |
+| **Fortified** | The same practical door construction carried further: **substantially more metal reinforcement** than Engineered. Heavy iron straps, metal-edged panels and robust hinges, but still a believable door with a wooden core. May show more metal than wood. No invented lock or defensive mechanism. | **Hardwood board/Plank + significantly more Iron band/metal than Engineered + Nails + Hinges**; **Iron ingot** or **Steel ingot** may supply the stronger hardware according to established progression. Steel is an optional material choice, **not a quality tier**. | Strong existing wall frame with appropriately reinforced hinge mounting; materials follow the chosen wall construction. A fortified arched opening uses a real structural arch and matching mounting locations. |
+
+**Construction principles:** A stone, brick or concrete doorway can hold a wooden or metal-reinforced door. Do not make swinging door leaves out of solid stone, brick or concrete simply to mirror the wall. Crude/Rustic doors can function using wooden pivot or lashings; higher craftsmanship uses fitted existing **Hinges** and **Nails**. Fasteners, handles, bracing and frame anchors should be visible where appropriate, but they are not automatically new separate item types. If Steel is used in a door, do not make “Steel” another grade. The **principal visual difference between Superior → Engineered → Fortified is increasing metal reinforcement**.
+
+#### How each configuration changes the design and ingredient demand
+
+| Configuration | Visual construction | Material adjustment from same-tier Single Door |
+|---|---|---|
+| **Single Door** | One leaf with a straight rectangular top. | Base one-leaf materials and one hinge/pivot set. |
+| **Double Door** | **Two rectangular leaves**, each separately attached to its own jamb, meeting at a central seam. | Two leaves, more supporting wood/metal and two hinge/pivot sets. Cost should reflect approximately double the leaf area, then be balanced against the actual 4 m opening. |
+| **Single Arched Door** | One leaf with a **truly rounded upper edge**; boards or sticks are trimmed to the opening curve. | Base materials plus the additional shaped top members and offcuts appropriate to the tier. No new “arched material” resource. |
+| **Double Arched Door** | **Two leaves under one common rounded top**. Their outer tops follow the arch, and the two leaves meet under the crown at the center. Never two separate small arches. | Two-leaf materials and hinge/pivot sets plus accurately shaped upper sections. |
+
+**Frame construction:** Each configuration has a distinct **empty doorway wall piece** with the appropriate opening. Frame resource costs follow the surrounding wall's selected material/quality progression, not the installed door's recipe. Double openings retain approved 4 m geometry where applicable. Arched openings need an actually curved header and curved clear passage, not an arch decoration above a rectangular invisible collision. Do not invent a one-to-one restriction between door tier and frame tier.
+
+**Catalog and implementation guardrail:** This is a design specification, not a list of 48 newly allocated items. Audit/reuse stable doorway IDs and existing materials, calculate distinct missing door/frame records and assign numbers through the live catalog ledger; do not guess counts. Apply the separate-door change to all existing doorway variants and preserve saved placements under the project's current save policy. Update real recipes, artwork, blueprints, structures and ledger only through the approved BUGLIST-002 implementation/review process, and do not silently treat the proposed ingredients above as owner-approved numeric costs. For implementation/acceptance requirements see [BUGLIST-002](../buglists/BUGLIST-002.md).
 
 ### 3.1 Tools
 
