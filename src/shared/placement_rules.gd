@@ -33,7 +33,7 @@ const DOOR_ATTACH := "doorway"       # structures.json attach_to of a door (BUGL
 const DOORWAY_HEIGHT_M := 2.0        # a doorway's clear height: the cursor is "in" the opening from the frame's foot up to here
 const DOORWAY_ROW_REACH_M := 4.0     # frames are looked for only this near the cursor across the ground (half a 4 m double frame and the reach to its edge)
 const DOOR_TAKEN_M := 0.3            # a door this close to a frame's spot already hangs in it
-const OPENING_WORDS := {"single": "single", "double": "double", "single_arched": "single arched", "double_arched": "double arched"}
+const OPENING_DOORS := {"single": "a door", "double": "a double door", "single_arched": "an arched door", "double_arched": "a double arched door"}   # Dave 13 Nov 2026: "single" is never said, it is implied
 
 
 static func load_config() -> Dictionary:
@@ -813,7 +813,7 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 		"nodoorway":
 			return "a door goes in a doorway: aim at the empty opening of one"
 		"mismatch":
-			return "this doorway takes a %s door" % str(OPENING_WORDS.get(opening, opening))
+			return "this doorway takes %s" % str(OPENING_DOORS.get(opening, opening))
 		"close":
 			return "too close to another fire or building"
 		"crowded":

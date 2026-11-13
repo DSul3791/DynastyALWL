@@ -16,9 +16,10 @@ States: VERIFIED FIXED / STILL FAILING / NEEDS PLAYER VERIFICATION / BLOCKED. No
 | Appearance per tier (materials, thickness, hardware), arched curves | NEEDS PLAYER VERIFICATION | headless lane has no pictures |
 | Icons for new frames and doors | BLOCKED (art lane) | not baked; pieces show their name |
 
-## Decisions pending with Dave (working on the recommended option)
-1. Doors are hammer blueprints (not pack items crafted at a station).
-2. Frame costs: existing doorway minus door-only parts; Crude = Crude - Window; double 2x; arched = rectangular.
+## Dave's decisions (13 Nov 2026, 14:41-14:43Z, project chat)
+1. Doors are made and fitted like any construction piece (hammer blueprint) and snap into a doorway.
+2. Empty frames cost the same as a wall (the tier's wall; arched the same; double 2x as two wall cells). Iron/Steel doorways: no matching wall, old cost minus hinges, pending Dave.
+3. No "Single" in names; the tier "-" is not a word (validate_items).
 
 ## Known limits
 - Triangle cost: doors 180-744 triangles, doubles twice that (above the old 300 piece budget); frame-rate check in F6.
@@ -37,4 +38,4 @@ States: VERIFIED FIXED / STILL FAILING / NEEDS PLAYER VERIFICATION / BLOCKED. No
 - NOT RUN: picture lanes, any visual, sound or frame-rate check (headless lane). Every item stays NEEDS PLAYER VERIFICATION until Dave's F6 check.
 
 ## Decision 3 (open)
-validate_items allows four space-separated words and counts the tier "-": "Crude - Single arched door" / "... doorway" are five (28 names, Dave's approved configuration names). Recommended: the check stops counting the tier dash. Nothing renamed meanwhile; dev does not take a failing validator.
+validate_items allows four space-separated words and counts the tier "-": "Crude - Arched door" / "... doorway" are five (28 names, Dave's approved configuration names). Recommended: the check stops counting the tier dash. Nothing renamed meanwhile; dev does not take a failing validator.

@@ -61,7 +61,7 @@ func _walk(id: String, path: Array, edges: Dictionary, state: Dictionary) -> voi
 	state[id] = 2
 
 
-# Every name in the data must be a plain noun phrase: no leading verb, no article, at most four words, capital first letter.
+# Every name in the data must be a plain noun phrase: no leading verb, no article, at most four words (a tier name's "-" is not a word), capital first letter.
 func _check_name(name: String, where: String) -> void:
 	var words: PackedStringArray = name.strip_edges().split(" ", false)
 
@@ -76,7 +76,7 @@ func _check_name(name: String, where: String) -> void:
 	if first in VERB_FIRST_WORDS or first in ["a", "an", "the"]:
 		fail("%s: name '%s' starts with a verb or an article (names are plain nouns)" % [where, name])
 
-	if words.size() > 4:
+	if words.size() - words.count("-") > 4:   # the "-" of a tier name ("Crude - Double arched door") is not a word (Dave 13 Nov 2026)
 		fail("%s: name '%s' is longer than four words" % [where, name])
 
 	if words[0].substr(0, 1) != words[0].substr(0, 1).to_upper():

@@ -10112,7 +10112,7 @@
 			},
 			"thatch_arched_doorway": {
 				"number": 1257,
-				"name": "Crude - Single arched doorway",
+				"name": "Crude - Arched doorway",
 				"description": "A thatch wall with an empty arched opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
@@ -10142,7 +10142,7 @@
 			},
 			"log_arched_doorway": {
 				"number": 1260,
-				"name": "Rustic - Single arched doorway",
+				"name": "Rustic - Arched doorway",
 				"description": "A log wall with an empty arched opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
@@ -10162,7 +10162,7 @@
 			},
 			"wood_arched_doorway": {
 				"number": 1262,
-				"name": "Refined - Single arched doorway",
+				"name": "Refined - Arched doorway",
 				"description": "A plank wall with an empty arched opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
@@ -10192,7 +10192,7 @@
 			},
 			"stone_arched_doorway": {
 				"number": 1265,
-				"name": "Sturdy - Single arched doorway",
+				"name": "Sturdy - Arched doorway",
 				"description": "A stone wall with an empty arched opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
@@ -10222,7 +10222,7 @@
 			},
 			"brick_arched_doorway": {
 				"number": 1268,
-				"name": "Superior - Single arched doorway",
+				"name": "Superior - Arched doorway",
 				"description": "A brick wall with an empty arched opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
@@ -10252,7 +10252,7 @@
 			},
 			"engineered_arched_doorway": {
 				"number": 1271,
-				"name": "Engineered - Single arched doorway",
+				"name": "Engineered - Arched doorway",
 				"description": "A concrete wall with an empty arched opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
@@ -10282,7 +10282,7 @@
 			},
 			"fortified_arched_doorway": {
 				"number": 1274,
-				"name": "Fortified - Single arched doorway",
+				"name": "Fortified - Arched doorway",
 				"description": "A banded concrete wall with an empty arched opening, one metre wide and two high. Build the door separately.",
 				"kind": "structure",
 				"stack": 1,
@@ -10302,13 +10302,13 @@
 			},
 			"crude_door": {
 				"number": 1276,
-				"name": "Crude - Single door",
-				"description": "Sticks lashed with twine and one cross-brace. Fits any single doorway.",
+				"name": "Crude - Door",
+				"description": "Sticks lashed with twine and one cross-brace. Fits any doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 312 (shut) and 313 (open) (BUGLIST-002): a door that fits any single doorway, built with the hammer (blueprint 272). Take-down refunds its cost."
+				"note": "Placed piece: row states 312 (shut) and 313 (open) (BUGLIST-002): a door that fits any doorway, built with the hammer (blueprint 272). Take-down refunds its cost."
 			},
 			"crude_double_door": {
 				"number": 1277,
@@ -10322,13 +10322,13 @@
 			},
 			"crude_arched_door": {
 				"number": 1278,
-				"name": "Crude - Single arched door",
-				"description": "Sticks lashed with twine and one cross-brace. Fits any single arched doorway.",
+				"name": "Crude - Arched door",
+				"description": "Sticks lashed with twine and one cross-brace. Fits any arched doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 316 (shut) and 317 (open) (BUGLIST-002): a door that fits any single arched doorway, built with the hammer (blueprint 274). Take-down refunds its cost."
+				"note": "Placed piece: row states 316 (shut) and 317 (open) (BUGLIST-002): a door that fits any arched doorway, built with the hammer (blueprint 274). Take-down refunds its cost."
 			},
 			"crude_double_arched_door": {
 				"number": 1279,
@@ -10342,13 +10342,13 @@
 			},
 			"rustic_door": {
 				"number": 1280,
-				"name": "Rustic - Single door",
-				"description": "Rough 6x4 planks with wooden hinges. Fits any single doorway.",
+				"name": "Rustic - Door",
+				"description": "Rough 6x4 planks with wooden hinges. Fits any doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 320 (shut) and 321 (open) (BUGLIST-002): a door that fits any single doorway, built with the hammer (blueprint 276). Take-down refunds its cost."
+				"note": "Placed piece: row states 320 (shut) and 321 (open) (BUGLIST-002): a door that fits any doorway, built with the hammer (blueprint 276). Take-down refunds its cost."
 			},
 			"rustic_double_door": {
 				"number": 1281,
@@ -10362,13 +10362,13 @@
 			},
 			"rustic_arched_door": {
 				"number": 1282,
-				"name": "Rustic - Single arched door",
-				"description": "Rough 6x4 planks with wooden hinges. Fits any single arched doorway.",
+				"name": "Rustic - Arched door",
+				"description": "Rough 6x4 planks with wooden hinges. Fits any arched doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 324 (shut) and 325 (open) (BUGLIST-002): a door that fits any single arched doorway, built with the hammer (blueprint 278). Take-down refunds its cost."
+				"note": "Placed piece: row states 324 (shut) and 325 (open) (BUGLIST-002): a door that fits any arched doorway, built with the hammer (blueprint 278). Take-down refunds its cost."
 			},
 			"rustic_double_arched_door": {
 				"number": 1283,
@@ -10382,13 +10382,13 @@
 			},
 			"refined_door": {
 				"number": 1284,
-				"name": "Refined - Single door",
-				"description": "Smooth hardwood boards with nails and metal hinges. Fits any single doorway.",
+				"name": "Refined - Door",
+				"description": "Smooth hardwood boards with nails and metal hinges. Fits any doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 328 (shut) and 329 (open) (BUGLIST-002): a door that fits any single doorway, built with the hammer (blueprint 280). Take-down refunds its cost."
+				"note": "Placed piece: row states 328 (shut) and 329 (open) (BUGLIST-002): a door that fits any doorway, built with the hammer (blueprint 280). Take-down refunds its cost."
 			},
 			"refined_double_door": {
 				"number": 1285,
@@ -10402,13 +10402,13 @@
 			},
 			"refined_arched_door": {
 				"number": 1286,
-				"name": "Refined - Single arched door",
-				"description": "Smooth hardwood boards with nails and metal hinges. Fits any single arched doorway.",
+				"name": "Refined - Arched door",
+				"description": "Smooth hardwood boards with nails and metal hinges. Fits any arched doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 332 (shut) and 333 (open) (BUGLIST-002): a door that fits any single arched doorway, built with the hammer (blueprint 282). Take-down refunds its cost."
+				"note": "Placed piece: row states 332 (shut) and 333 (open) (BUGLIST-002): a door that fits any arched doorway, built with the hammer (blueprint 282). Take-down refunds its cost."
 			},
 			"refined_double_arched_door": {
 				"number": 1287,
@@ -10422,13 +10422,13 @@
 			},
 			"sturdy_door": {
 				"number": 1288,
-				"name": "Sturdy - Single door",
-				"description": "Thick rough planks with nails and metal hinges. Fits any single doorway.",
+				"name": "Sturdy - Door",
+				"description": "Thick rough planks with nails and metal hinges. Fits any doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 336 (shut) and 337 (open) (BUGLIST-002): a door that fits any single doorway, built with the hammer (blueprint 284). Take-down refunds its cost."
+				"note": "Placed piece: row states 336 (shut) and 337 (open) (BUGLIST-002): a door that fits any doorway, built with the hammer (blueprint 284). Take-down refunds its cost."
 			},
 			"sturdy_double_door": {
 				"number": 1289,
@@ -10442,13 +10442,13 @@
 			},
 			"sturdy_arched_door": {
 				"number": 1290,
-				"name": "Sturdy - Single arched door",
-				"description": "Thick rough planks with nails and metal hinges. Fits any single arched doorway.",
+				"name": "Sturdy - Arched door",
+				"description": "Thick rough planks with nails and metal hinges. Fits any arched doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 340 (shut) and 341 (open) (BUGLIST-002): a door that fits any single arched doorway, built with the hammer (blueprint 286). Take-down refunds its cost."
+				"note": "Placed piece: row states 340 (shut) and 341 (open) (BUGLIST-002): a door that fits any arched doorway, built with the hammer (blueprint 286). Take-down refunds its cost."
 			},
 			"sturdy_double_arched_door": {
 				"number": 1291,
@@ -10462,13 +10462,13 @@
 			},
 			"superior_door": {
 				"number": 1292,
-				"name": "Superior - Single door",
-				"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any single doorway.",
+				"name": "Superior - Door",
+				"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 344 (shut) and 345 (open) (BUGLIST-002): a door that fits any single doorway, built with the hammer (blueprint 288). Take-down refunds its cost."
+				"note": "Placed piece: row states 344 (shut) and 345 (open) (BUGLIST-002): a door that fits any doorway, built with the hammer (blueprint 288). Take-down refunds its cost."
 			},
 			"superior_double_door": {
 				"number": 1293,
@@ -10482,13 +10482,13 @@
 			},
 			"superior_arched_door": {
 				"number": 1294,
-				"name": "Superior - Single arched door",
-				"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any single arched doorway.",
+				"name": "Superior - Arched door",
+				"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any arched doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 348 (shut) and 349 (open) (BUGLIST-002): a door that fits any single arched doorway, built with the hammer (blueprint 290). Take-down refunds its cost."
+				"note": "Placed piece: row states 348 (shut) and 349 (open) (BUGLIST-002): a door that fits any arched doorway, built with the hammer (blueprint 290). Take-down refunds its cost."
 			},
 			"superior_double_arched_door": {
 				"number": 1295,
@@ -10502,13 +10502,13 @@
 			},
 			"engineered_door": {
 				"number": 1296,
-				"name": "Engineered - Single door",
-				"description": "Thick planks strapped with iron on heavy hinge plates. Fits any single doorway.",
+				"name": "Engineered - Door",
+				"description": "Thick planks strapped with iron on heavy hinge plates. Fits any doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 352 (shut) and 353 (open) (BUGLIST-002): a door that fits any single doorway, built with the hammer (blueprint 292). Take-down refunds its cost."
+				"note": "Placed piece: row states 352 (shut) and 353 (open) (BUGLIST-002): a door that fits any doorway, built with the hammer (blueprint 292). Take-down refunds its cost."
 			},
 			"engineered_double_door": {
 				"number": 1297,
@@ -10522,13 +10522,13 @@
 			},
 			"engineered_arched_door": {
 				"number": 1298,
-				"name": "Engineered - Single arched door",
-				"description": "Thick planks strapped with iron on heavy hinge plates. Fits any single arched doorway.",
+				"name": "Engineered - Arched door",
+				"description": "Thick planks strapped with iron on heavy hinge plates. Fits any arched doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 356 (shut) and 357 (open) (BUGLIST-002): a door that fits any single arched doorway, built with the hammer (blueprint 294). Take-down refunds its cost."
+				"note": "Placed piece: row states 356 (shut) and 357 (open) (BUGLIST-002): a door that fits any arched doorway, built with the hammer (blueprint 294). Take-down refunds its cost."
 			},
 			"engineered_double_arched_door": {
 				"number": 1299,
@@ -10542,13 +10542,13 @@
 			},
 			"fortified_door": {
 				"number": 1300,
-				"name": "Fortified - Single door",
-				"description": "All iron and steel, riveted, on heavy hinges. Fits any single doorway.",
+				"name": "Fortified - Door",
+				"description": "All iron and steel, riveted, on heavy hinges. Fits any doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 360 (shut) and 361 (open) (BUGLIST-002): a door that fits any single doorway, built with the hammer (blueprint 296). Take-down refunds its cost."
+				"note": "Placed piece: row states 360 (shut) and 361 (open) (BUGLIST-002): a door that fits any doorway, built with the hammer (blueprint 296). Take-down refunds its cost."
 			},
 			"fortified_double_door": {
 				"number": 1301,
@@ -10562,13 +10562,13 @@
 			},
 			"fortified_arched_door": {
 				"number": 1302,
-				"name": "Fortified - Single arched door",
-				"description": "All iron and steel, riveted, on heavy hinges. Fits any single arched doorway.",
+				"name": "Fortified - Arched door",
+				"description": "All iron and steel, riveted, on heavy hinges. Fits any arched doorway.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row states 364 (shut) and 365 (open) (BUGLIST-002): a door that fits any single arched doorway, built with the hammer (blueprint 298). Take-down refunds its cost."
+				"note": "Placed piece: row states 364 (shut) and 365 (open) (BUGLIST-002): a door that fits any arched doorway, built with the hammer (blueprint 298). Take-down refunds its cost."
 			},
 			"fortified_double_arched_door": {
 				"number": 1303,

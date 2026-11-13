@@ -169,7 +169,7 @@ func _rule_checks(cfg: Dictionary) -> void:
 			var wrong_rows: Array = _rows_of(int(frames[wrong]["state"]), at, 0.0)
 			var fit: Dictionary = Rules.doorway_fit(cfg, structures[door_kind], at, wrong_rows)
 			var words: String = Rules.reason_text("mismatch", other)
-			check(Rules.blocked(cfg, kit, at, wrong_rows) == "mismatch" and str(fit["opening"]) == other and words.contains(str(Rules.OPENING_WORDS[other])) and words.contains("door"), "a %s door in a %s doorway: mismatch, '%s'" % [shape, other, words])
+			check(Rules.blocked(cfg, kit, at, wrong_rows) == "mismatch" and str(fit["opening"]) == other and words.ends_with("takes " + str(Rules.OPENING_DOORS[other])) and not words.contains("single"), "a %s door in a %s doorway: mismatch, '%s'" % [shape, other, words])
 			check(bool(Rules.snap(cfg, kit, at + Vector3(0.1, 0.5, 0.1), 0, wrong_rows)[2]), "and its ghost sits on that doorway, red")
 
 	# Tier and material never matter: a Fortified door in a Crude frame and a Crude door in a Fortified frame.
@@ -338,7 +338,7 @@ func _server_checks(cfg: Dictionary) -> void:
 			var before: int = items._items.size()
 			said.clear()
 			_hang(items, str(doors[pairs[door_shape]]["kit"]), spot)
-			check(items._items.size() == before and said.size() > 0 and str(said[-1]).contains(str(Rules.OPENING_WORDS[frame_shape]) + " door"), "a %s door in a %s doorway is refused (%s)" % [door_shape, frame_shape, str(said[-1]) if said.size() > 0 else "nothing said"])
+			check(items._items.size() == before and said.size() > 0 and str(said[-1]).contains("takes " + str(Rules.OPENING_DOORS[frame_shape]) + "."), "a %s door in a %s doorway is refused (%s)" % [door_shape, frame_shape, str(said[-1]) if said.size() > 0 else "nothing said"])
 
 	# A Fortified door in a Crude frame, a Crude door in a Fortified one; a second door in the same doorway is refused.
 	var mix: Vector3 = Vector3(100.0, 10.0, 400.0)

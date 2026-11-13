@@ -114,8 +114,7 @@ func _door_data_checks(live: Dictionary) -> void:
 	var door_cost: Dictionary = {"crude": [["stick", 50], ["twine", 100]], "rustic": [["lumber", 5]], "refined": [["hardwood_board", 6], ["iron_ingot", 1]],
 		"sturdy": [["lumber", 6], ["iron_ingot", 2]], "superior": [["hardwood_board", 12], ["iron_ingot", 2], ["steel_ingot", 1]],
 		"engineered": [["lumber", 12], ["iron_ingot", 4]], "fortified": [["iron_ingot", 10], ["steel_ingot", 10]]}
-	var frame_cost: Dictionary = {"crude": [["thatch", 15], ["stick", 8], ["twine", 3]], "rustic": [["log", 5], ["twine", 2]], "refined": [["lumber", 3], ["twine", 1]],
-		"sturdy": [["cut_stone_block", 9], ["mortar", 3]], "superior": [["brick", 12], ["mortar", 3]], "engineered": [["concrete", 8]], "fortified": [["concrete", 9], ["iron_band", 5]]}
+	var wall: Dictionary = {"crude": "thatch_wall", "rustic": "log_wall", "refined": "wall_section", "sturdy": "stone_wall", "superior": "brick_wall", "engineered": "engineered_wall", "fortified": "fortified_wall"}   # Dave 13 Nov 2026: an empty doorway frame costs the same as a wall (its tier's); a double frame fills two wall cells
 	var prefix: Dictionary = {"crude": "thatch", "rustic": "log", "refined": "wood", "sturdy": "stone", "superior": "brick", "engineered": "engineered", "fortified": "fortified"}
 	var single: Dictionary = {"crude": "thatch_doorway", "rustic": "log_doorway", "refined": "doorway_section", "sturdy": "stone_doorway", "superior": "brick_doorway", "engineered": "engineered_doorway", "fortified": "fortified_doorway"}
 	var door_ops: Dictionary = {"": ["single", 1, 1.0], "double_": ["double", 2, 2.0], "arched_": ["single_arched", 1, 1.0], "double_arched_": ["double_arched", 2, 2.0]}
@@ -138,12 +137,12 @@ func _door_data_checks(live: Dictionary) -> void:
 		for opening in frames:
 			var fk: String = str(frames[opening])
 			var mult: int = 2 if opening.begins_with("double") else 1
-			check(live.has(fk) and _cost_key(live[fk]["cost"]) == _cost_key(_scaled(frame_cost[tier], mult)), "%s: frame cost is the tier's single frame x%d" % [fk, mult])
+			check(live.has(fk) and _cost_key(live[fk]["cost"]) == _cost_key(_scaled(live[wall[tier]]["cost"], mult)), "%s: frame costs its tier's wall x%d" % [fk, mult])
 			var frow: Dictionary = structures.get(fk, {})
 			check(str(frow.get("opening", "")) == opening and not frow.has("use") and not frow.has("toggle") and not frow.has("blocks_walk") and not frow.has("use_pace_ms") and str(frow.get("piece_kind", "")) == "wall", "%s: an empty %s frame (no door, no use)" % [fk, opening])
 			check(live.has(fk) and int(live[fk]["hammer"]) == hammer and str(live[fk]["station"]) == "", "%s: hammer as its tier's doorway, no station" % fk)
 	check(doors == 28, "28 doors")
-	check(live["double_doorway"]["cost"].size() == 2 and _cost_key(live["iron_doorway"]["cost"]) == "lumber:3,iron_ingot:2,nails:12" and _cost_key(live["steel_doorway"]["cost"]) == "steel_ingot:6", "Refined double, Iron and Steel frames lost their hinges")
+	check(_cost_key(live["iron_doorway"]["cost"]) == "lumber:3,iron_ingot:2,nails:12" and _cost_key(live["steel_doorway"]["cost"]) == "steel_ingot:6", "Iron and Steel frames lost their hinges (no Iron or Steel wall to cost them by)")
 	var retired_states: Array = [28, 82, 84, 86, 140, 142, 144, 214, 224]
 	var legacy: Array = []
 	for kind in structures:
