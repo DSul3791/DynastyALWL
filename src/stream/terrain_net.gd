@@ -798,7 +798,7 @@ func bulk_done(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -
 	bulk_done_received.emit(kind, stacks, containers, ids)
 
 
-# One item gain for the pickup feed (protocol 60): sent to the player who gained it. source: pickup, harvest, craft, quest.
+# One item gain for the pickup feed (protocol 60): sent to the player who gained it. source: pickup, harvest, craft, quest, trade, goal (the feed marks goal coins).
 @rpc("authority", "call_remote", "reliable")
 func item_gain(item_id: String, count: int, source: String) -> void:
 	item_received.emit(item_id, count, source)

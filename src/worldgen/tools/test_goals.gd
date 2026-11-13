@@ -86,6 +86,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
 	check(done("drink") and items.coins_of(1) >= 2, "drinking at the water completes the first goal and pays 2 copper (%d)" % items.coins_of(1))
 	check(said.any(func(t): return t.begins_with("Goal done: ")), "the player is told: %s" % str(said.filter(func(t): return t.begins_with("Goal done")).slice(0, 1)))
+	check(said.any(func(t): return t.begins_with("Goal done: Drink") and t.contains("You earn 2 copper.")), "the goal's coins are named in its line, so they are not taken for a find (TEST-009): %s" % str(said.filter(func(t): return t.begins_with("Goal done")).slice(0, 1)))
 
 	# Twine made before fibre was held: twine waits for "fibre" (after), then completes as soon as it opens.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("plant_fibre"), 0, 40, Vector3.ZERO)
@@ -94,7 +95,7 @@ func _init() -> void:
 	var sticks_before: int = count("stick")
 	craft("twine", 2)
 	check(done("twine") and count("stick") >= sticks_before + 4, "two crafts of twine complete the twine goal and give 4 sticks (reward)")
-	check(said.any(func(t): return t.begins_with("Next: ")), "and the next goal's hint is said")
+	check(said.any(func(t): return t.begins_with("Goal done: ") and t.contains(" Next: ")), "and the next goal's hint is said in the same line")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 6, Vector3.ZERO)

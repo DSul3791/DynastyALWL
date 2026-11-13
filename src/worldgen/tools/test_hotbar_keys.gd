@@ -4,12 +4,11 @@ extends SceneTree
 # Keys 1 to 9 and 0 are the pack's slots 0 to 9 and the backpack is slots 10 to 29: an item is in one place only. Pickups fill the backpack first. A tool or
 # weapon whose kind is new in the pack moves into the first empty hotbar slot; food, materials and a second axe do not. ACT_MOVE moves a stack into the
 # hotbar and back. A hotbar slot whose item is dropped, sold or used up is empty. "On the hotbar" for tools means in slots 0 to 9. Sort leaves the
-# hotbar. The slots are saved with the pack; characters.json keeps no "hotbar". Craft clicks: 1, shift 5 (or fewer), held as many as the stock allows.
+# hotbar. The slots are saved with the pack; characters.json keeps no "hotbar". A craft of several is one queue request (test_craft_click.gd has the click rule).
 #   godot --headless --path . --script res://src/worldgen/tools/test_hotbar_keys.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
-const InventoryView := preload("res://src/client/inventory_view.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 
@@ -165,9 +164,6 @@ func _init() -> void:
 	give(stone, 3)
 	check(pack().numbers[0] == stone and pack().count_of(stone) == 3, "an admin give fills from slot 0")
 
-	# 8. Craft clicks: 1, shift 5 (or fewer), held all the stock makes; none makeable asks once, as before.
-	check(InventoryView.click_count(12, false, false) == 1 and InventoryView.click_count(12, true, false) == 5 and InventoryView.click_count(3, true, false) == 3, "click 1, shift-click 5, or 3 when only 3 can be made")
-	check(InventoryView.click_count(12, false, true) == 12 and InventoryView.click_count(12, true, true) == 12 and InventoryView.click_count(0, true, true) == 1, "held makes all 12; with none makeable a click asks for one as before")
 	var pot_recipe: int = 0
 
 	for k in items.recipes.numbers():
@@ -180,9 +176,9 @@ func _init() -> void:
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 5, Vector3.ZERO)
 	var queued: Array = items.craft_queue_of(1)
-	check(pot_recipe > 0 and queued.size() == 1 and int(queued[0][1]) == 5, "shift-click's five pots go in one queue request (%s)" % str(queued))
+	check(pot_recipe > 0 and queued.size() == 1 and int(queued[0][1]) == 5, "five pots (the Craft button's quantity) go in one queue request (%s)" % str(queued))
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
-	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why each click is one request")
+	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why a craft of several is one request")
 
 	# 9. A torch put out by the rain stays in its hotbar slot: the key is the slot, so pressing it finds the doused torch to light again.
 	var torch: int = items.table.number_of("torch")

@@ -1853,8 +1853,9 @@ func _glide_tick(delta: float) -> void:
 			_gliding.erase(id)
 
 
-# The purse as words, cheapest coin first: "4 copper, 3 bronze, 2 silver" (copper = items.json value unit). Used where only text fits
-# (tooltips, notices); windows draw coin icons instead (fill_coin_line).
+# The purse as words, richest coin first: "2 silver, 3 bronze, 4 copper" (copper = items.json value unit; Dave, playtest 12 Nov 2026 TEST-002:
+# highest to lowest, left to right, everywhere, as the server's _coin_words). Used where only text fits (tooltips, notices); windows draw
+# coin icons instead (fill_coin_line).
 func coin_text(copper: int) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 	var left: int = copper
@@ -1867,7 +1868,7 @@ func coin_text(copper: int) -> String:
 
 		if left >= each:
 			@warning_ignore("integer_division")
-			parts.insert(0, "%d %s" % [left / each, str(row["name"])])
+			parts.append("%d %s" % [left / each, str(row["name"])])
 			left = left % each
 
 	return ", ".join(parts) if not parts.is_empty() else "nothing"
@@ -1915,12 +1916,12 @@ func make_coin_label(px: int) -> RichTextLabel:
 
 
 # Fills the label with segments: a String is text, an int is a coin amount in copper drawn as "4 (copper icon) 3 (bronze icon) ...",
-# cheapest coin first (copper, bronze, silver, gold, left to right). A zero amount reads "nothing".
+# richest coin first (gold, silver, bronze, copper, left to right; TEST-002). A zero amount reads "nothing".
 func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
 	label.clear()
 	var px: int = int(label.get_meta("px", 24))
 	var rows: Array = _coins_cfg.get("ladder", []).duplicate()
-	rows.sort_custom(func(x, y): return int(x["copper"]) < int(y["copper"]))
+	rows.sort_custom(func(x, y): return int(x["copper"]) > int(y["copper"]))
 
 	for segment in segments:
 		if typeof(segment) == TYPE_STRING:
@@ -1933,7 +1934,7 @@ func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
 		for row in rows.duplicate():
 			amounts.append([row, 0])
 
-		for n in range(amounts.size() - 1, -1, -1):
+		for n in amounts.size():
 			var each: int = maxi(int(amounts[n][0]["copper"]), 1)
 			@warning_ignore("integer_division")
 			amounts[n][1] = left / each
@@ -3046,47 +3047,6 @@ func _free_craft() -> bool:
 
 func _can_craft(number: int) -> bool:
 	return _free_craft() or _stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
-
-
-# Craft clicks (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions row 24): a click makes one, shift-click five (fewer when the stock
-# makes fewer), a hold (recipe_list CRAFT_HOLD_MS) as many as the stock allows, up to the queue's 20. Each is one queue request, so the server's
-# pacing never refuses part of it. With nothing makeable the click does what it did before (the server says what is missing or makes the parts first).
-const CRAFT_SHIFT_COUNT := 5
-const CRAFT_MOST := 20          # the server's CRAFT_QUEUE_MAX_COUNT and the count box's top
-
-
-# How many times recipe `number` can be made from the pack and the stock in reach now (0 when not at all, at most CRAFT_MOST).
-func max_makeable(number: int) -> int:
-	var r: Dictionary = recipes.recipe(number)
-
-	if r.is_empty() or not (_station_ok(r) or station_in_reach(r)):
-		return 0
-
-	if _free_craft():
-		return CRAFT_MOST
-
-	var most: int = CRAFT_MOST
-
-	for need in r["needs"]:
-		most = mini(most, floori(float(stock_fill(int(need[0]))) / float(maxi(int(need[1]), 1))))
-
-	for keep in r["keeps"]:
-		if stock_fill(int(keep[0])) < int(keep[1]):
-			return 0
-
-	return maxi(most, 0)
-
-
-func craft_click(number: int, shift: bool, held: bool) -> void:
-	_start_craft(number, click_count(max_makeable(number), shift, held))
-
-
-# How many one click asks for, `most` being how many the stock makes: 1, shift 5 (or fewer), held all of them; 1 when none (as before).
-static func click_count(most: int, shift: bool, held: bool) -> int:
-	if most <= 0:
-		return 1
-
-	return most if held else (mini(CRAFT_SHIFT_COUNT, most) if shift else 1)
 
 
 # --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 12 m

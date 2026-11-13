@@ -28,11 +28,15 @@ func setup(items, layer: CanvasLayer) -> void:
 
 
 # By item id (as the server sends it); unknown ids show as they are.
-func push_id(item_id: String, count: int) -> void:
+# A goal's coins say so ("+5 Copper coin (goal reward)"): unmarked, they looked like a find from the tree being cut (TEST-009).
+func push_id(item_id: String, count: int, source: String = "") -> void:
 	var shown: String = item_id
 
 	if _items != null and _items.table != null and _items.table.has_id(item_id):
 		shown = _items.table.name_of(_items.table.number_of(item_id))
+
+	if source == "goal":
+		shown += " (goal reward)"
 
 	push(shown, count)
 
