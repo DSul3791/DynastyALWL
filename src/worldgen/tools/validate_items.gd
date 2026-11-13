@@ -988,10 +988,7 @@ func _init() -> void:
 		if is_future:
 			future.append(id)
 
-		if renamed_away.has(id):
-			continue
-
-		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future:
+		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)
