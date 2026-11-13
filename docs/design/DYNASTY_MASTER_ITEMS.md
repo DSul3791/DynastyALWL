@@ -1,5 +1,7 @@
 # Dynasty master items catalog
 
+**Current scoped amendment:** Section 3.0 records Dave's 13 November 2026 approved door/doorway correction (BUGLIST-002). This overrides older built-in-door descriptions only. The Draft 18 summary and generated Appendix A below describe the earlier catalog baseline until formally reconciled.
+
 **Status: DRAFT 18 — EVERY CATEGORY HAS AN OWNER DECISION ([D1]–[D17]); NO OPEN OWNER QUESTIONS; SUBMITTED FOR DAVE'S FINAL APPROVAL OF THE COMPLETE CATALOG. NO GAMEPLAY IMPLEMENTATION OR MERGE AUTHORIZED UNTIL HE APPROVES IT.** All Dave rulings ([B], [D1]–[D17], [DE]) and ChatGPT's delegated decisions ([C], [C7]) are written into the catalog. This document changes nothing in `data/items/*.json`, `data/npcs/*.json`, recipes, station behaviour or game code. The item catalog stays frozen until Dave approves this catalog.
 
 **Companion reference documents (not separate sources of item-approval authority):** [Storage, warehouse cargo and locks](STORAGE_WAREHOUSING_DESIGN.md); [Food preparation, preservation and edible boards](FOOD_PREPARATION_PRESERVATION_SERVING.md). The final audit is [CATALOG_FINAL_AUDIT_2026-11-12.md](CATALOG_FINAL_AUDIT_2026-11-12.md), the implementation plan [CATALOG_IMPLEMENTATION_PLAN.md](CATALOG_IMPLEMENTATION_PLAN.md) and the save rules [CATALOG_SAVE_MIGRATION.md](CATALOG_SAVE_MIGRATION.md); the earlier food and storage audit is [FOOD_STORAGE_AUDIT_2026-11-12.md](FOOD_STORAGE_AUDIT_2026-11-12.md); ChatGPT's brief is [CLAUDE_FOOD_STORAGE_HANDOFF.md](CLAUDE_FOOD_STORAGE_HANDOFF.md). These elaborate owner decisions and list future tests. This master catalog is authoritative for approved items and counts.
@@ -131,53 +133,20 @@ Bellows dropped; Clay bloomery added; Large forge and Master forge parked with t
 
 ## 3. Catalog by row
 
-### 3.0 Door and doorway families — BUGLIST-002 [D18], DIRECTOR-APPROVED AMENDMENT (13 Nov 2026)
+### 3.0 Doors and doorways — BUGLIST-002 (director-approved, 13 Nov 2026)
 
-> **Scope and authority:** Dave explicitly corrected the old integral-door wall design as an AI mistake and approved all four separate door/doorway pairs below, using established quality tiers. This section is an **amendment to the approved catalog**, not a replacement for the historical Draft 18 inventory/counts. Read [BUGLIST-002](../buglists/BUGLIST-002.md) for the acceptance requirements and scope boundary. Numbers and IDs below are **not invented**: the implementation must reconcile/reuse existing doorway items and allocate only genuinely missing separate item identities according to the live catalog ledger before updating exact totals.
+**Current approved requirement:** Doorway walls are empty structural openings. Doors are separate craftable/installable items, mounted in compatible existing doorway frames. A built doorway must never automatically contain a door. This decision **supersedes the integral-door behavior/descriptions** in older doorway entries throughout this catalog. Follow [BUGLIST-002](../buglists/BUGLIST-002.md) for implementation and acceptance criteria.
 
-**Owner-approved rule:** Build a doorway wall with an EMPTY opening. The independently craftable/installable door is another actual item that snaps into its compatible doorway; it can open/close and be removed/replaced without destroying the wall. The wall is never automatically built with a door. Earlier descriptions of integral hanging, plank, iron-strapped, steel or fortified doors in doorway-wall entries are **superseded** on this specific point, not evidence of approval for built-in doors.
+| Door configuration | Matching doorway | Profile |
+|---|---|---|
+| Single Door | Single Doorway | Rectangular; one leaf |
+| Double Door | Double Doorway | Rectangular; two leaves |
+| Single Arched Door | Single Arched Doorway | Rounded top; one leaf |
+| Double Arched Door | Double Arched Doorway | Rounded top; two leaves |
 
-**Approved quality sequence:** Crude → Rustic → Refined → Superior → Engineered → Fortified. Iron and steel describe materials, **not quality tiers**. Shape/leaf count, tier and material are distinct properties. Do not create Sturdy/Iron/Steel as extra quality grades merely because legacy wall entries had those labels; retain or appropriately map their existing stable IDs as required by the current catalog and migration contracts.
+**Quality tiers, in order:** Crude, Rustic, Refined, Superior, Engineered, Fortified. **Iron/Steel are materials, not tiers.** Doors, doorway shapes, materials and quality must be represented without assuming a new item ID for every theoretical combination. Door/frame compatibility is determined by suitable opening shape and dimensions, not automatically by matching quality or material. Arched construction is available outside ships.
 
-**Four supported door/doorway configurations (all in the current BUGLIST-002 scope):**
-- Single Door + Single Doorway: RECTANGULAR (flat top), one leaf.
-- Double Door + Double Doorway: RECTANGULAR (flat top), two leaves.
-- Single Arched Door + Single Arched Doorway: ROUNDED TOP, one leaf.
-- Double Arched Door + Double Arched Doorway: ROUNDED TOP, two leaves.
-
-Arched doorways may be wooden, stone, brick or another suitable building material, and also suit future ships; they are not ship-exclusive. **Do not add ships in this assignment.** “Shingle door” was a misspoken/typed “single door”, not a new item. The table below records **24 quality × configuration PAIRS** (48 door/doorway item roles) as the approved design families, **not 48 newly allocated rows**: existing doorways must be mapped/reused, and any distinct additional catalog identities must be supported by the current item architecture, de-duplicated, assigned valid new IDs, ledger entries and tests. If a particular material/tier needs different recipe or construction specifics not yet approved, mark them explicitly for review rather than silently guessing.
-
-| Quality tier | Structural wall/frame item (doorway) | Separate installable door item | Shape / leaves |
-|---|---|---|---|
-| Crude | Crude - Single Doorway | Crude - Single Door | rectangular; one leaf |
-| Crude | Crude - Double Doorway | Crude - Double Door | rectangular; two leaves |
-| Crude | Crude - Single Arched Doorway | Crude - Single Arched Door | arched top; one leaf |
-| Crude | Crude - Double Arched Doorway | Crude - Double Arched Door | arched top; two leaves |
-| Rustic | Rustic - Single Doorway | Rustic - Single Door | rectangular; one leaf |
-| Rustic | Rustic - Double Doorway | Rustic - Double Door | rectangular; two leaves |
-| Rustic | Rustic - Single Arched Doorway | Rustic - Single Arched Door | arched top; one leaf |
-| Rustic | Rustic - Double Arched Doorway | Rustic - Double Arched Door | arched top; two leaves |
-| Refined | Refined - Single Doorway | Refined - Single Door | rectangular; one leaf |
-| Refined | Refined - Double Doorway | Refined - Double Door | rectangular; two leaves |
-| Refined | Refined - Single Arched Doorway | Refined - Single Arched Door | arched top; one leaf |
-| Refined | Refined - Double Arched Doorway | Refined - Double Arched Door | arched top; two leaves |
-| Superior | Superior - Single Doorway | Superior - Single Door | rectangular; one leaf |
-| Superior | Superior - Double Doorway | Superior - Double Door | rectangular; two leaves |
-| Superior | Superior - Single Arched Doorway | Superior - Single Arched Door | arched top; one leaf |
-| Superior | Superior - Double Arched Doorway | Superior - Double Arched Door | arched top; two leaves |
-| Engineered | Engineered - Single Doorway | Engineered - Single Door | rectangular; one leaf |
-| Engineered | Engineered - Double Doorway | Engineered - Double Door | rectangular; two leaves |
-| Engineered | Engineered - Single Arched Doorway | Engineered - Single Arched Door | arched top; one leaf |
-| Engineered | Engineered - Double Arched Doorway | Engineered - Double Arched Door | arched top; two leaves |
-| Fortified | Fortified - Single Doorway | Fortified - Single Door | rectangular; one leaf |
-| Fortified | Fortified - Double Doorway | Fortified - Double Door | rectangular; two leaves |
-| Fortified | Fortified - Single Arched Doorway | Fortified - Single Arched Door | arched top; one leaf |
-| Fortified | Fortified - Double Arched Doorway | Fortified - Double Arched Door | arched top; two leaves |
-
-**Inventory and change control:** Existing `doorway_section`, `thatch_doorway`, `double_doorway`, `log_doorway`, `stone_doorway`, `brick_doorway`, `iron_doorway`, `steel_doorway`, `engineered_doorway`, `fortified_doorway` and related open-twin states must be individually mapped to the target doorFRAME role and migrated rather than duplicated or deleted casually. Existing naming reflecting construction materials need not imply additional quality tiers; reconcile before renaming. This amendment is Dave's explicit **narrow approval** to add/correct the stated door and doorway catalog families despite the discretionary item catalog freeze. It does **not** approve unrelated catalog edits, newly invented locking/security features, novel crafting materials, tier progression changes, or old-save destruction. The original Draft 18 Appendix A remains a historical generated snapshot until the authorized implementation regenerates it and updates totals and the live `catalog_ledger.json` checker. Do not hand-edit the generated Appendix A or claim original Draft 18 counts already include this amendment.
-
-
-Stable ids and numbers are kept and never reused, including retired ones (`fine_board` 227 and `rough_plank` 226 stay retired). New rows take numbers from `next_number` at implementation; none are reserved here. Labels as in s1.
+**Catalog reconciliation required:** Audit existing doorway rows, aliases, retired state variants and live `catalog_ledger.json`. Reuse stable item IDs where correct; add only genuinely absent catalog entities, using the approved allocation and test rules. Do not renumber or silently duplicate material-named legacy variants. The historical generated Appendix A and Draft 18 counts below predate this amendment; update them through the proper catalog pipeline during implementation, not by manual guesswork. This amendment authorizes only the named door/doorway changes; unrelated catalog changes remain outside scope.
 
 ### 3.1 Tools
 
