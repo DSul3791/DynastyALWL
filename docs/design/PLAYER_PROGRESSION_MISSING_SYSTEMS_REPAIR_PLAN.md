@@ -16,7 +16,7 @@ Restore a coherent, genuinely playable path from first gathering to highest-tier
 
 ## 2. Evidence and tracking
 
-Read first: `docs/design/PLAYER_GOALS_REWARDS_AUDIT.md`, `docs/design/PLAYER_GOALS_AUDIT_LEDGER.csv`, `docs/design/PLAYER_GOALS_REWARDS_DRAFT.md`, `docs/design/PLAYER_JOURNAL_GOALS_UI.md`, `docs/design/DYNASTY_MASTER_ITEMS.md`, `docs/design/CATALOG_IMPLEMENTATION_PLAN.md`, `docs/design/catalog_ledger.json`, current `CLAUDE.md` and related approved authority files. Source-of-truth data: `data/items/{items,recipes,blueprints,structures,cooking,drops,gathered,crops}.json`, `data/tables/flora.json`, and actual server/client runtime.
+Read first: `docs/design/PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md` (newer disposition of all 80 audit findings and 11 old creator questions), `docs/design/PLAYER_CARTOGRAPHY_MAP_DESIGN.md` (new map direction), `docs/design/PLAYER_GOALS_REWARDS_AUDIT.md` (historical baseline), `docs/design/PLAYER_GOALS_AUDIT_LEDGER.csv`, `docs/design/PLAYER_GOALS_REWARDS_DRAFT.md`, `docs/design/PLAYER_JOURNAL_GOALS_UI.md`, `docs/design/DYNASTY_MASTER_ITEMS.md`, `docs/design/CATALOG_IMPLEMENTATION_PLAN.md`, `docs/design/catalog_ledger.json`, current `CLAUDE.md` and related approved authority files. Source-of-truth data: `data/items/{items,recipes,blueprints,structures,cooking,drops,gathered,crops}.json`, `data/tables/flora.json`, and actual server/client runtime.
 
 **Audit baseline:** 651 proposed goals: 230 PASS, 247 NEEDS_CORRECTION, 30 NEEDS_TEST, 144 BLOCKED; 26 additional candidate activity goals are recommendations, not yet approved. 323 were read individually and 328 only rule-checked; no goal has been gameplay-verified. The 144 BLOCKED are not 144 independent fixes: about 120 have source-chain blockers and 24 refer to locked blueprints (source counts overlap). Do not claim the status improves without re-running the verified ledger on a new commit.
 
@@ -136,6 +136,8 @@ Create/maintain a separate repair execution tracker at `docs/ai-team/missions/GO
 - Avoid 651 per-player goal checks every quarter second; evaluate indexed affected goals on events, reconstruct once on join, persist reward and completion atomically and promptly; benchmark on representative multiplayer sessions.
 - Maintain goal rewards as coins only per earlier creator decision; **do not rebalance their amounts yet**. Any conversion of legacy item rewards or retroactive rewards, migration payout policy and HUD display behavior must be separately approved and regression-tested before release.
 - Add goal-state synchronization and placard-ready completion events to the deferred Journal/HUD implementation only after the content/engine gate; prevent celebratory replay on join and avoid notification floods.
+- **Clean/simple UI is a creator constraint:** the Journal/Goals content uses the existing Inventory/Crafting visual family, with one J/G/M window, concise instructional details and clickable prerequisites; the small upper-right HUD has a thin border, title **Goals** and exactly the two earliest unfinished goal titles. No new panels, action-claim buttons, progress dashboards, optional trackers or extra popups. The separate earned-goal placard uses approved art and correct server-provided awards.
+- **Mapping is a NEW feature, not an existing map widget:** the **Map** chapter will show a player-discovered charcoal drawing, with Mapping skill growing via exploration and drawing shareable/sellable Map Scrolls; accuracy improves as higher-skilled characters **revisit** old territory. See `docs/design/PLAYER_CARTOGRAPHY_MAP_DESIGN.md`. The Map's rendering and skills/scrolls must be scoped and tested as their own new implementation; do not invent an omniscient world map or simply leave the final Map chapter permanently disabled. The missing map backend is not evidence that old existing goals were playable.
 
 **Gate:** Verified goal catalog, corrected how-to text, reliable completion and regression tests; separate explicit creator approval to make the new catalog live.
 
@@ -200,6 +202,8 @@ Tag discrepancies as **DEFECT AGAINST EXISTING APPROVED RULE**, **DESIGN COHEREN
 - **Implementation findings and proposed design decisions:** `docs/ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md`.
 - **Post-repair evidence/report:** `docs/design/PLAYER_PROGRESSION_REPAIR_VERIFICATION.md` (created when actual tests begin).
 - **Baseline immutable comparison:** `docs/design/PLAYER_GOALS_REWARDS_AUDIT.md` and `docs/design/PLAYER_GOALS_AUDIT_LEDGER.csv` at merge `950af5a`.
+
+**Decision recovery (13 Nov):** all 80 GA audit findings and all 11 old creator questions have been examined in `docs/design/PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md`. Historical audit statuses remain unchanged until tested. Later explicit owner choices supersede stale master/guide language; engineering defaults are clearly marked and are not independently approved content. Before gameplay implementation, use the recovery report's conflict-deletion checklist and map specification; preserve approved stone-tool copper/bronze-first metalworking and uncomplicated player UI.
 
 ## 8. Required iterative review before execution
 
