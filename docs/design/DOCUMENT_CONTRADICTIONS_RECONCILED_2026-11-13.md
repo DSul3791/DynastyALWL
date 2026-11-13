@@ -51,3 +51,14 @@ The creator instructed us to **remove obsolete instructions directly from active
 6. **Goal conversion** 2 legacy add-on goal identifiers + missing new-tier goal concepts require review; 651 original baseline goal audit still needs full play validation. Reward rebalance and retroactive payouts remain deferred by creator.
 
 **Exit for this mission:** obsolete rules cleaned from surveyed active documents; the next team may prepare reviewed gameplay changes against **one current set of design specifications**, but must not claim live systems are fixed from docs alone.
+
+## 5. Follow-up: agent entry points and process references (13 Nov 2026)
+
+Continued CCR05 cleanup from `dev` baseline `1382118`. Scope is documentation only.
+
+- `docs/START_HERE.md`: removed the obsolete named roster and superseded self-assignment rhythm; current responsibilities route to `ROLE_CATALOG.md`, task ownership to coordinator checkpoints, and item designs to the current master/progression. Replaced missing mandatory handoff/QA navigation with available repository sources; retained dated handoffs as historical evidence.
+- `docs/ai-team/WORKFLOW.md`: removed the contradictory permission to promote routine releases to `main` without Dave; retained the explicit approval rule already recorded in `DECISION_AUTHORITY.md` and `RULES.md`.
+- `docs/ai-team/DOCUMENT_AUTHORITY.md`: replaced obsolete claims that START_HERE still prohibits daily branches and DOC_MAP awaits refresh; current navigation and design-vs-runtime distinction now stated directly.
+- `RULES.md`: current role/decision routing now points to the in-force team documents; recorded the scoped 13 Nov active-document cleanup direction without granting general deletion authority.
+
+Validation: manually compared replacements with the in-force Constitution, decision rulings, role catalog, install record and current documentation map; checked newly introduced repository paths exist. No gameplay, item data or reward changes. No Godot or PC tests run. Independent review remains pending on the follow-up PR; this does not certify a project-wide cleanup or update historical install/package copies.
