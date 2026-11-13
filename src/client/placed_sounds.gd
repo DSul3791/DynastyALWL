@@ -177,17 +177,17 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 	_primed = true
 
 
-# A door piece (structures.json look door_shut or door_open).
+# A door piece (structures.json piece_kind "door": the shut door and its open twin, whose look ends in "_open").
 func _is_door(state: int) -> bool:
-	return StructureLook.look_of(state) in ["door_shut", "door_open"]
+	return str(StructureLook.table().get(state, {}).get("piece_kind", "")) == "door"
 
 
-# A door swung: heard as the door opening (state look door_open) or shutting.
+# A door swung: heard as the door opening (an open-twin state) or shutting.
 func _swing(row: Array, here: Vector3) -> void:
 	if here.distance_to(row[1]) > NEAR_M:
 		return
 
-	var opened: bool = StructureLook.look_of(int(row[2])) == "door_open"
+	var opened: bool = StructureLook.look_of(int(row[2])).ends_with("_open")
 	var slot: String = "door_%s_%s" % [StructureLook.material_of(int(row[2])), "open" if opened else "close"]      # the door's own material (data), the clips are Kathleen's slots
 
 	if not _stage.slots.play(slot, row[1], here):

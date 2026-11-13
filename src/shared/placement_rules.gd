@@ -29,6 +29,11 @@ const ROOF_PANEL_KIND := "roof_panel"   # structures.json piece_kind of a sloped
 const ROOF_PANEL_WIDTH_M := 2.0      # a panel is as wide as a wall (and a ceiling cell), so a row of them roofs a wall's length
 const ROOF_ROW_REACH_M := 6.0        # roof edges are looked for only on pieces this near the cursor (an edge within ANCHOR_REACH_M, or a panel middle with its run and a wall cell)
 const ROOF_BURY_M := 0.1             # a panel's low edge may sink this far into the ground before it is "buried"
+const DOOR_ATTACH := "doorway"       # structures.json attach_to of a door (BUGLIST-002): it hangs in the opening of a doorway frame, whose row has "opening"
+const DOORWAY_HEIGHT_M := 2.0        # a doorway's clear height: the cursor is "in" the opening from the frame's foot up to here
+const DOORWAY_ROW_REACH_M := 4.0     # frames are looked for only this near the cursor across the ground (half a 4 m double frame and the reach to its edge)
+const DOOR_TAKEN_M := 0.3            # a door this close to a frame's spot already hangs in it
+const OPENING_WORDS := {"single": "single", "double": "double", "single_arched": "single arched", "double_arched": "double arched"}
 
 
 static func load_config() -> Dictionary:
@@ -64,6 +69,10 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 	if str(def.get("attach_to", "")) == "table":   # a Serving Platter: onto the table top under it (rows with yaw: the tables near)
 		var top: Vector3 = table_spot(cfg, def, spot, rows)
 		return [spot if is_nan(top.y) else top, yaw_deg, not is_nan(top.y)]
+
+	if str(def.get("attach_to", "")) == DOOR_ATTACH:   # a door: into the nearest doorway frame, at its spot and turn (blocked() says why when it does not fit)
+		var fit: Dictionary = doorway_fit(cfg, def, spot, rows)
+		return [spot, yaw_deg, false] if is_nan((fit["spot"] as Vector3).y) else [fit["spot"], int(fit["yaw"]), true]
 
 	if def.is_empty() or not bool(def.get("piece", false)):
 		return [spot, yaw_deg, false]
@@ -570,6 +579,54 @@ static func over_table(table_def: Dictionary, at: Vector3, yaw_deg: float, spot:
 	return absf(local.x) <= float(table_def.get("footprint_x", 1.0)) * 0.5 + margin and absf(local.y) <= float(table_def.get("footprint_z", 1.0)) * 0.5 + margin
 
 
+# A door (structures.json attach_to "doorway", BUGLIST-002) hangs in a doorway frame: a row whose structure has an "opening" ("single", "double",
+# "single_arched", "double_arched") and is not itself a door. Door and frame must have the same opening; tier and material never matter. The nearest frame
+# the cursor is at (within ANCHOR_REACH_M of its footprint across the ground and of its DOORWAY_HEIGHT_M span upwards) takes it, at its spot and turn.
+# Returns {"spot" (NAN y when no frame is near), "yaw" degrees, "opening" of that frame, "why": "" or "nodoorway", "mismatch" (that frame is another
+# shape) or "taken" (a door, shut or open, hangs there already)}. rows: [{pos, state, yaw degrees}]. The ghost and the server (_place) share it.
+static func doorway_fit(cfg: Dictionary, def: Dictionary, spot: Vector3, rows: Array) -> Dictionary:
+	var out: Dictionary = {"spot": Vector3(spot.x, NAN, spot.z), "yaw": 0, "opening": "", "why": "nodoorway"}
+	var best_d: float = ANCHOR_REACH_M
+
+	for row in rows:
+		var at: Vector3 = row["pos"]
+
+		if absf(at.x - spot.x) > DOORWAY_ROW_REACH_M or absf(at.z - spot.z) > DOORWAY_ROW_REACH_M:
+			continue
+
+		var frame: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if str(frame.get("opening", "")) == "" or str(frame.get("attach_to", "")) == DOOR_ATTACH:
+			continue
+
+		var local: Vector2 = Vector2(spot.x - at.x, spot.z - at.z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
+		var along: float = maxf(absf(local.x) - float(frame.get("footprint_x", 2.0)) * 0.5, 0.0)
+		var up: float = maxf(maxf(at.y - spot.y, spot.y - at.y - DOORWAY_HEIGHT_M), 0.0)
+		var d: float = Vector3(along, local.y, up).length()
+
+		if d >= best_d:
+			continue
+
+		best_d = d
+		out["spot"] = at
+		out["yaw"] = posmod(int(round(float(row.get("yaw", 0.0)))), 360)
+		out["opening"] = str(frame["opening"])
+
+	if str(out["opening"]) != "":
+		out["why"] = "mismatch" if str(out["opening"]) != str(def.get("opening", "")) else ("taken" if door_at(cfg, out["spot"], rows) else "")
+
+	return out
+
+
+# Whether a door (any kind, shut or open, built or a blueprint) already hangs at a frame's spot; the server also refuses to take down a frame that holds one.
+static func door_at(cfg: Dictionary, at: Vector3, rows: Array) -> bool:
+	for row in rows:
+		if (row["pos"] as Vector3).distance_to(at) < DOOR_TAKEN_M and str(structure_of_state(cfg, int(row["state"])).get("attach_to", "")) == DOOR_ATTACH:
+			return true
+
+	return false
+
+
 # The structure states a table-top piece of `kit_id` may sit on (its attach_kinds), for the ghost's rows.
 static func attach_states(cfg: Dictionary, kit_id: String) -> Dictionary:
 	var out: Dictionary = {}
@@ -668,6 +725,9 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	if one_to_a_point(str(def.get("piece_kind", ""))) and _kind_at(cfg, spot, rows, str(def.get("piece_kind", ""))):
 		return "close"   # one pillar to a point, one wall top to a wall (the server says the same)
 
+	if str(def.get("attach_to", "")) == DOOR_ATTACH:   # a door: the doorway under it decides (no gap, no cap: it stands inside the frame)
+		return str(doorway_fit(cfg, def, spot, rows)["why"])
+
 	if str(def.get("attach_to", "")) == "fire":
 		var over_fire: bool = false
 
@@ -748,8 +808,12 @@ static func water_short(cfg: Dictionary, kit_id: String, spot: Vector3, depth: C
 
 
 # Why a spot is red in words (the ghost's caption; the server says it too when it refuses).
-static func reason_text(state: String) -> String:
+static func reason_text(state: String, opening: String = "") -> String:   # opening: given for a door's refusal ("nodoorway", "mismatch", "taken"): the doorway's shape, doorway_fit's "opening"
 	match state:
+		"nodoorway":
+			return "a door goes in a doorway: aim at the empty opening of one"
+		"mismatch":
+			return "this doorway takes a %s door" % str(OPENING_WORDS.get(opening, opening))
 		"close":
 			return "too close to another fire or building"
 		"crowded":
@@ -767,7 +831,7 @@ static func reason_text(state: String) -> String:
 		"notable":
 			return "set it on a table"
 		"taken":
-			return "that fire already has a pot"
+			return "that doorway has a door already" if opening != "" else "that fire already has a pot"
 		"far":
 			return "too far away: step closer"
 		"nopanel":

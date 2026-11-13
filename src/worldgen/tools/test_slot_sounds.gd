@@ -150,7 +150,7 @@ func _check_sites(names: Array) -> void:
 	var doors: Dictionary = {}
 
 	for state in StructureLook.table():
-		if StructureLook.look_of(int(state)) in ["door_shut", "door_open"]:
+		if str(StructureLook.table().get(state, {}).get("piece_kind", "")) == "door":
 			doors[StructureLook.material_of(int(state))] = true
 
 	for material in doors:
