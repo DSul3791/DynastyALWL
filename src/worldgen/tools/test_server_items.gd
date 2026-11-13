@@ -991,6 +991,32 @@ func _init() -> void:
 
 	check(m._roads.is_empty(), "the road is done when no markers are left")
 	check(flags_down.size() >= 3, "each marker's flag is taken down once the builder reaches it (%d)" % flags_down.size())
+	# BUG-007: a fresh survey is only the start marker; it is not "finished" before a road is built. Surveying, building and finished are distinct.
+	var road_says: Array = []
+	m.send_notice = func(_p, text): road_says.append(text)
+	flags_down.clear()
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
+
+	for step in 20:
+		m._road_tick(0.6)   # many ticks with only the start marker: early repeated ticks never finish it
+
+	check(m._roads.has(1) and not m._roads[1]["built"] and m._roads[1]["seg"] == null, "a fresh survey stays a survey while only its start marker is set")
+	check(road_says.size() == 1 and road_says[0].begins_with("Survey begun") and road_says.find("The road is finished.") < 0, "a fresh survey says it has begun, never that the road is finished (%s)" % str(road_says))
+	check(flags_down.is_empty(), "and its start flag stays up")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(8.0, 10.0, 0.0))
+	check(m._roads.has(1) and Vector2(m._roads[1]["head"].x, m._roads[1]["head"].z).is_equal_approx(Vector2(8.0, 0.0)) and flags_down.size() == 1 and Vector2(flags_down[0].x, flags_down[0].z).is_equal_approx(Vector2(4.0, 0.0)), "a marker that starts a new road replaces a lone start marker (its flag comes down): the survey can be restarted")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 2.0))
+	check(m._roads[1]["markers"].size() == 1 and road_says[road_says.size() - 1].begins_with("Marker set"), "the next marker joins the survey")
+	m._road_tick(0.6)
+	check(m._roads[1]["built"] and m._roads[1]["seg"] != null and road_says.find("The road is finished.") < 0, "with a marker to build toward the road is being built, not finished")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(5.0, 10.0, -2.0))
+	check(m._roads.has(1) and m._roads[1]["built"], "a road already being built is not restarted by an unchained marker")
+
+	for step in 120:
+		m._road_tick(0.6)
+
+	check(m._roads.is_empty() and road_says.count("The road is finished.") == 1 and road_says[road_says.size() - 1] == "The road is finished.", "the road is finished, once, after it was built and no markers are left")
+	m.send_notice = Callable()
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
 
