@@ -1,5 +1,8 @@
 # GOALS-AUDIT workstream: reward economics (ws_economy)
 
+> **Revision note (independent review rounds 1-2, 13 Nov 2026).** Figures in this file are the workstream's first pass. Authoritative values are in `work/ws_economy.json` and the audit report: recommended totals are now 3,059 (main route 1,307) because converted legacy rewards use the draft's coin values (fell 6, not 3); the Hob-ceiling ratio is 1.70x, not 1.76x, because Hob's starting purse of 300 was omitted (300 + 8,915 = 9,215). Milestone recommended figures below are from the first pass.
+
+
 **Status:** this is an audit only. It is a PROPOSAL and changes no live value. Every number below comes from `tools/economy.py` → `work/ws_economy.json`. Reproduce it with:
 `python3 docs/ai-team/missions/GOALS-AUDIT/tools/economy.py . docs/ai-team/missions/GOALS-AUDIT/work` (Python 3.13.18).
 **Tree:** branch `claude/project-thread-d8jals`, HEAD `7c3aed3`, baseline dev `dc2fa52`. There is no `data/` or `src/` diff between them. Inputs are `work/goals_parsed.json` (651 rows) and `work/pass2_deps.json`.

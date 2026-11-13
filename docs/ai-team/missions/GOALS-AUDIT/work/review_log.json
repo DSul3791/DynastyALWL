@@ -113,7 +113,7 @@
     },
     {
      "objection": "GA-42 / Q3 / ledger still recommended fell 3 copper while the text said the draft's 6.",
-     "resolution": "Accepted. tools/economy.py now recommends the draft's own values for converted legacy rewards (twine 4, fell 6, story 3); totals regenerated (3,059; main 1,307); Q3 and ws_economy.md corrected."
+     "resolution": "Accepted. tools/economy.py now recommends the draft's own values for converted legacy rewards (twine 4, fell 6, story 3); totals regenerated (3,059; main 1,307); Q3 corrected; ws_economy.md annotated (work/ws_economy.json is authoritative for all totals)."
     },
     {
      "objection": "Walkthrough YES cells contradict BLOCKED statuses.",
