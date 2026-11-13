@@ -426,6 +426,7 @@ func _init() -> void:
 	clear_pack(1)
 	hold_tool(1, "wooden_hammer")
 	items.give(1, n("steel_hammer"), 1)
+	items.inventory_of(1).move(items.inventory_of(1).numbers.find(n("steel_hammer")), 1)   # onto the hotbar, key 2 (a give lands in the backpack)
 	var wood_at: int = items.inventory_of(1).numbers.find(n("wooden_hammer"))
 	var steel_at: int = items.inventory_of(1).numbers.find(n("steel_hammer"))
 	check(items.inventory_of(1).on_hotbar(steel_at) and items._hammer_x(1, wood_at) < items._hammer_x(1, steel_at) and items._hammer_x(1) == items._hammer_x(1, steel_at), "the wooden hammer in hand sets the reach, not the steel one on the hotbar (x%.2f vs x%.2f)" % [items._hammer_x(1, wood_at), items._hammer_x(1, steel_at)])
