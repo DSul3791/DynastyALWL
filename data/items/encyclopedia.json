@@ -1581,7 +1581,10 @@
 				"Used in Crude - Roof 65",
 				"Used in Crude - Roof corner",
 				"Used in Crude - Wall",
-				"Used in Crude - Window"
+				"Used in Crude - Window",
+				"Used in Crude - Double doorway",
+				"Used in Crude - Single arched doorway",
+				"Used in Crude - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -1984,7 +1987,14 @@
 				"Used in Crude - Roof corner",
 				"Used in Crude - Wall",
 				"Used in Crude - Window",
-				"Used in Trellis"
+				"Used in Trellis",
+				"Used in Crude - Double doorway",
+				"Used in Crude - Single arched doorway",
+				"Used in Crude - Double arched doorway",
+				"Used in Crude - Single door",
+				"Used in Crude - Double door",
+				"Used in Crude - Single arched door",
+				"Used in Crude - Double arched door"
 			],
 			"obtainable_now": true
 		},
@@ -2044,7 +2054,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -2136,7 +2149,19 @@
 				"Used in Rustic - Window",
 				"Used in Shelf",
 				"Used in Torch post",
-				"Used in Trellis"
+				"Used in Trellis",
+				"Used in Crude - Double doorway",
+				"Used in Crude - Single arched doorway",
+				"Used in Crude - Double arched doorway",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway",
+				"Used in Refined - Single arched doorway",
+				"Used in Refined - Double arched doorway",
+				"Used in Crude - Single door",
+				"Used in Crude - Double door",
+				"Used in Crude - Single arched door",
+				"Used in Crude - Double arched door"
 			],
 			"obtainable_now": true
 		},
@@ -2433,10 +2458,8 @@
 				"Used in Crate",
 				"Used in Cupboard",
 				"Used in Engineered - Ceiling",
-				"Used in Engineered - Doorway",
 				"Used in Engineered - Roof",
 				"Used in Engineered - Roof corner",
-				"Used in Fortified - Doorway",
 				"Used in Fortified - Gate",
 				"Used in Mixer",
 				"Used in Planter box",
@@ -2464,7 +2487,21 @@
 				"Used in Superior - Roof",
 				"Used in Superior - Roof corner",
 				"Used in Well",
-				"Used in Wooden shingle"
+				"Used in Wooden shingle",
+				"Used in Refined - Single arched doorway",
+				"Used in Refined - Double arched doorway",
+				"Used in Rustic - Single door",
+				"Used in Rustic - Double door",
+				"Used in Rustic - Single arched door",
+				"Used in Rustic - Double arched door",
+				"Used in Sturdy - Single door",
+				"Used in Sturdy - Double door",
+				"Used in Sturdy - Single arched door",
+				"Used in Sturdy - Double arched door",
+				"Used in Engineered - Single door",
+				"Used in Engineered - Double door",
+				"Used in Engineered - Single arched door",
+				"Used in Engineered - Double arched door"
 			],
 			"obtainable_now": true
 		},
@@ -2526,7 +2563,27 @@
 				"Used in Anvil",
 				"Used in Ornate - Chest",
 				"Used in Iron band",
-				"Used in Torch pillar"
+				"Used in Torch pillar",
+				"Used in Refined - Single door",
+				"Used in Refined - Double door",
+				"Used in Refined - Single arched door",
+				"Used in Refined - Double arched door",
+				"Used in Sturdy - Single door",
+				"Used in Sturdy - Double door",
+				"Used in Sturdy - Single arched door",
+				"Used in Sturdy - Double arched door",
+				"Used in Superior - Single door",
+				"Used in Superior - Double door",
+				"Used in Superior - Single arched door",
+				"Used in Superior - Double arched door",
+				"Used in Engineered - Single door",
+				"Used in Engineered - Double door",
+				"Used in Engineered - Single arched door",
+				"Used in Engineered - Double arched door",
+				"Used in Fortified - Single door",
+				"Used in Fortified - Double door",
+				"Used in Fortified - Single arched door",
+				"Used in Fortified - Double arched door"
 			],
 			"obtainable_now": true
 		},
@@ -2548,7 +2605,15 @@
 				"Used in Steel - Striker",
 				"Used in Steel - Hammer",
 				"Used in Steel - Doorway",
-				"Used in Steel - Chisel"
+				"Used in Steel - Chisel",
+				"Used in Superior - Single door",
+				"Used in Superior - Double door",
+				"Used in Superior - Single arched door",
+				"Used in Superior - Double arched door",
+				"Used in Fortified - Single door",
+				"Used in Fortified - Double door",
+				"Used in Fortified - Single arched door",
+				"Used in Fortified - Double arched door"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3361,7 +3426,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -3415,7 +3483,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -3469,7 +3540,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -3523,7 +3597,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -3577,7 +3654,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -3631,7 +3711,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -3685,7 +3768,10 @@
 				"Used in Rustic - Wall",
 				"Used in Rustic - Window",
 				"Used in Seat",
-				"Used in Torch post"
+				"Used in Torch post",
+				"Used in Rustic - Double doorway",
+				"Used in Rustic - Single arched doorway",
+				"Used in Rustic - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -3956,7 +4042,7 @@
 		"doorway_section_kit": {
 			"name": "Refined - Doorway",
 			"kind": "placeable",
-			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"description": "A plank wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
 				"Build with a hammer (press R): 3 Plank, 1 Twine"
 			],
@@ -3966,7 +4052,7 @@
 		"doorway_section": {
 			"name": "Refined - Doorway",
 			"kind": "structure",
-			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"description": "A plank wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -4039,7 +4125,10 @@
 				"Used in Root cellar",
 				"Used in Sturdy - Doorway",
 				"Used in Sturdy - Wall",
-				"Used in Sturdy - Window"
+				"Used in Sturdy - Window",
+				"Used in Sturdy - Double doorway",
+				"Used in Sturdy - Single arched doorway",
+				"Used in Sturdy - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -4065,7 +4154,10 @@
 				"Used in Superior - Pillar",
 				"Used in Superior - Stairs",
 				"Used in Superior - Wall",
-				"Used in Superior - Window"
+				"Used in Superior - Window",
+				"Used in Superior - Double doorway",
+				"Used in Superior - Single arched doorway",
+				"Used in Superior - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -4113,7 +4205,13 @@
 				"Used in Superior - Window",
 				"Used in Torch pillar",
 				"Used in Well",
-				"Used in Stone - Planter"
+				"Used in Stone - Planter",
+				"Used in Sturdy - Double doorway",
+				"Used in Sturdy - Single arched doorway",
+				"Used in Sturdy - Double arched doorway",
+				"Used in Superior - Double doorway",
+				"Used in Superior - Single arched doorway",
+				"Used in Superior - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -4303,18 +4401,13 @@
 			],
 			"used_for": [
 				"Used in Iron - Gate",
-				"Used in Iron - Doorway",
-				"Used in Steel - Doorway",
 				"Used in Iron - Hand pump",
 				"Used in Deep-well pump",
 				"Used in Tap",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
-				"Used in Engineered - Doorway",
-				"Used in Fortified - Doorway",
 				"Used in Fortified - Gate",
 				"Used in Palisade gate",
-				"Used in Refined - Double doorway",
 				"Used in Refined - Gate",
 				"Used in Sluice",
 				"Used in Sturdy - Gate",
@@ -4610,9 +4703,9 @@
 		"thatch_doorway_kit": {
 			"name": "Crude - Doorway",
 			"kind": "placeable",
-			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
+			"description": "A thatch wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Twine, 25 Thatch, 12 Stick"
+				"Build with a hammer (press R): 15 Thatch, 8 Stick, 3 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4620,7 +4713,7 @@
 		"thatch_doorway": {
 			"name": "Crude - Doorway",
 			"kind": "structure",
-			"description": "A thatch doorway with a hanging door.",
+			"description": "A thatch wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -7554,7 +7647,7 @@
 		"log_doorway_kit": {
 			"name": "Rustic - Doorway",
 			"kind": "placeable",
-			"description": "A log wall with a plank door, one metre wide and two high.",
+			"description": "A log wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
 				"Build with a hammer (press R): 5 Log, 2 Twine"
 			],
@@ -7564,7 +7657,7 @@
 		"log_doorway": {
 			"name": "Rustic - Doorway",
 			"kind": "structure",
-			"description": "A log wall with a plank door, one metre wide and two high.",
+			"description": "A log wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -7572,7 +7665,7 @@
 		"stone_doorway_kit": {
 			"name": "Sturdy - Doorway",
 			"kind": "placeable",
-			"description": "A stone wall with a timber lintel and a door, one metre wide and two high.",
+			"description": "A stone wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
 				"Build with a hammer (press R): 9 Stone block, 3 Clay mortar"
 			],
@@ -7582,7 +7675,7 @@
 		"stone_doorway": {
 			"name": "Sturdy - Doorway",
 			"kind": "structure",
-			"description": "A stone wall with a timber lintel and a door, one metre wide and two high.",
+			"description": "A stone wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -7590,7 +7683,7 @@
 		"brick_doorway_kit": {
 			"name": "Superior - Doorway",
 			"kind": "placeable",
-			"description": "A brick wall with a timber door, one metre wide and two high.",
+			"description": "A brick wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
 				"Build with a hammer (press R): 12 Brick, 3 Clay mortar"
 			],
@@ -7600,7 +7693,7 @@
 		"brick_doorway": {
 			"name": "Superior - Doorway",
 			"kind": "structure",
-			"description": "A brick wall with a timber door, one metre wide and two high.",
+			"description": "A brick wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -8425,9 +8518,9 @@
 		"double_doorway_kit": {
 			"name": "Refined - Double doorway",
 			"kind": "placeable",
-			"description": "A plank wall four metres wide with a pair of doors.",
+			"description": "A plank wall with an empty opening, two metres wide and two high. Build the door separately.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Plank, 2 Twine, 2 Hinges"
+				"Build with a hammer (press R): 6 Plank, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8435,7 +8528,7 @@
 		"double_doorway": {
 			"name": "Refined - Double doorway",
 			"kind": "structure",
-			"description": "A plank wall four metres wide with a pair of doors.",
+			"description": "A plank wall with an empty opening, two metres wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -8443,9 +8536,9 @@
 		"iron_doorway_kit": {
 			"name": "Iron - Doorway",
 			"kind": "placeable",
-			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+			"description": "An iron-strapped plank wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 2 Iron ingot, 12 Nails, 2 Hinges"
+				"Build with a hammer (press R): 3 Plank, 2 Iron ingot, 12 Nails"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8453,7 +8546,7 @@
 		"iron_doorway": {
 			"name": "Iron - Doorway",
 			"kind": "structure",
-			"description": "A plank wall with an iron-strapped door, one metre wide and two high.",
+			"description": "An iron-strapped plank wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -8461,9 +8554,9 @@
 		"steel_doorway_kit": {
 			"name": "Steel - Doorway",
 			"kind": "placeable",
-			"description": "A wall with a steel door, one metre wide and two high.",
+			"description": "A steel-framed wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Steel ingot, 2 Hinges"
+				"Build with a hammer (press R): 6 Steel ingot"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -8472,7 +8565,7 @@
 		"steel_doorway": {
 			"name": "Steel - Doorway",
 			"kind": "structure",
-			"description": "A wall with a steel door, one metre wide and two high.",
+			"description": "A steel-framed wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
@@ -10426,9 +10519,9 @@
 		"engineered_doorway_kit": {
 			"name": "Engineered - Doorway",
 			"kind": "placeable",
-			"description": "A concrete wall with a plank door, two metres wide.",
+			"description": "A concrete wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Concrete, 2 Plank, 2 Hinges"
+				"Build with a hammer (press R): 8 Concrete"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10436,7 +10529,7 @@
 		"engineered_doorway": {
 			"name": "Engineered - Doorway",
 			"kind": "structure",
-			"description": "A concrete wall with a plank door, two metres wide.",
+			"description": "A concrete wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -10588,9 +10681,9 @@
 		"fortified_doorway_kit": {
 			"name": "Fortified - Doorway",
 			"kind": "placeable",
-			"description": "A banded concrete wall with a heavy iron-strapped door.",
+			"description": "A banded concrete wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [
-				"Build with a hammer (press R): 9 Concrete, 5 Iron band, 3 Plank, 2 Hinges"
+				"Build with a hammer (press R): 9 Concrete, 5 Iron band"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10598,7 +10691,7 @@
 		"fortified_doorway": {
 			"name": "Fortified - Doorway",
 			"kind": "structure",
-			"description": "A banded concrete wall with a heavy iron-strapped door.",
+			"description": "A banded concrete wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -10742,7 +10835,13 @@
 				"Used in Fortified - Gate",
 				"Used in Fortified - Pillar",
 				"Used in Fortified - Wall",
-				"Used in Fortified - Wall top"
+				"Used in Fortified - Wall top",
+				"Used in Engineered - Double doorway",
+				"Used in Engineered - Single arched doorway",
+				"Used in Engineered - Double arched doorway",
+				"Used in Fortified - Double doorway",
+				"Used in Fortified - Single arched doorway",
+				"Used in Fortified - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -10759,7 +10858,10 @@
 				"Used in Fortified - Gate",
 				"Used in Fortified - Pillar",
 				"Used in Fortified - Wall",
-				"Used in Fortified - Wall top"
+				"Used in Fortified - Wall top",
+				"Used in Fortified - Double doorway",
+				"Used in Fortified - Single arched doorway",
+				"Used in Fortified - Double arched doorway"
 			],
 			"obtainable_now": true
 		},
@@ -10798,23 +10900,498 @@
 			],
 			"used_for": [
 				"Used in Iron - Gate",
-				"Used in Iron - Doorway",
-				"Used in Steel - Doorway",
 				"Used in Iron - Hand pump",
 				"Used in Deep-well pump",
 				"Used in Tap",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
-				"Used in Engineered - Doorway",
-				"Used in Fortified - Doorway",
 				"Used in Fortified - Gate",
 				"Used in Palisade gate",
-				"Used in Refined - Double doorway",
 				"Used in Refined - Gate",
 				"Used in Sluice",
 				"Used in Sturdy - Gate",
 				"Used in Superior - Gate"
 			],
+			"obtainable_now": true
+		},
+		"thatch_double_doorway": {
+			"name": "Crude - Double doorway",
+			"kind": "structure",
+			"description": "A thatch wall with an empty opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Thatch, 16 Stick, 6 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_arched_doorway": {
+			"name": "Crude - Single arched doorway",
+			"kind": "structure",
+			"description": "A thatch wall with an empty arched opening, one metre wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 15 Thatch, 8 Stick, 3 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_double_arched_doorway": {
+			"name": "Crude - Double arched doorway",
+			"kind": "structure",
+			"description": "A thatch wall with an empty arched opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Thatch, 16 Stick, 6 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_double_doorway": {
+			"name": "Rustic - Double doorway",
+			"kind": "structure",
+			"description": "A log wall with an empty opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Log, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_arched_doorway": {
+			"name": "Rustic - Single arched doorway",
+			"kind": "structure",
+			"description": "A log wall with an empty arched opening, one metre wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 5 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_double_arched_doorway": {
+			"name": "Rustic - Double arched doorway",
+			"kind": "structure",
+			"description": "A log wall with an empty arched opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Log, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood_arched_doorway": {
+			"name": "Refined - Single arched doorway",
+			"kind": "structure",
+			"description": "A plank wall with an empty arched opening, one metre wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood_double_arched_doorway": {
+			"name": "Refined - Double arched doorway",
+			"kind": "structure",
+			"description": "A plank wall with an empty arched opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_double_doorway": {
+			"name": "Sturdy - Double doorway",
+			"kind": "structure",
+			"description": "A stone wall with an empty opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 18 Stone block, 6 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_arched_doorway": {
+			"name": "Sturdy - Single arched doorway",
+			"kind": "structure",
+			"description": "A stone wall with an empty arched opening, one metre wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 9 Stone block, 3 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_double_arched_doorway": {
+			"name": "Sturdy - Double arched doorway",
+			"kind": "structure",
+			"description": "A stone wall with an empty arched opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 18 Stone block, 6 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_double_doorway": {
+			"name": "Superior - Double doorway",
+			"kind": "structure",
+			"description": "A brick wall with an empty opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Brick, 6 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_arched_doorway": {
+			"name": "Superior - Single arched doorway",
+			"kind": "structure",
+			"description": "A brick wall with an empty arched opening, one metre wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Brick, 3 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_double_arched_doorway": {
+			"name": "Superior - Double arched doorway",
+			"kind": "structure",
+			"description": "A brick wall with an empty arched opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Brick, 6 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_double_doorway": {
+			"name": "Engineered - Double doorway",
+			"kind": "structure",
+			"description": "A concrete wall with an empty opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 16 Concrete"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_arched_doorway": {
+			"name": "Engineered - Single arched doorway",
+			"kind": "structure",
+			"description": "A concrete wall with an empty arched opening, one metre wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Concrete"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_double_arched_doorway": {
+			"name": "Engineered - Double arched doorway",
+			"kind": "structure",
+			"description": "A concrete wall with an empty arched opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 16 Concrete"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_double_doorway": {
+			"name": "Fortified - Double doorway",
+			"kind": "structure",
+			"description": "A banded concrete wall with an empty opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 18 Concrete, 10 Iron band"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_arched_doorway": {
+			"name": "Fortified - Single arched doorway",
+			"kind": "structure",
+			"description": "A banded concrete wall with an empty arched opening, one metre wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 9 Concrete, 5 Iron band"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_double_arched_doorway": {
+			"name": "Fortified - Double arched doorway",
+			"kind": "structure",
+			"description": "A banded concrete wall with an empty arched opening, two metres wide and two high. Build the door separately.",
+			"how_to_get": [
+				"Build with a hammer (press R): 18 Concrete, 10 Iron band"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"crude_door": {
+			"name": "Crude - Single door",
+			"kind": "structure",
+			"description": "Sticks lashed with twine and one cross-brace. Fits any single doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 50 Stick, 100 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"crude_double_door": {
+			"name": "Crude - Double door",
+			"kind": "structure",
+			"description": "Sticks lashed with twine and one cross-brace. Fits any double doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 100 Stick, 200 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"crude_arched_door": {
+			"name": "Crude - Single arched door",
+			"kind": "structure",
+			"description": "Sticks lashed with twine and one cross-brace. Fits any single arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 50 Stick, 100 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"crude_double_arched_door": {
+			"name": "Crude - Double arched door",
+			"kind": "structure",
+			"description": "Sticks lashed with twine and one cross-brace. Fits any double arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 100 Stick, 200 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rustic_door": {
+			"name": "Rustic - Single door",
+			"kind": "structure",
+			"description": "Rough 6x4 planks with wooden hinges. Fits any single doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 5 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rustic_double_door": {
+			"name": "Rustic - Double door",
+			"kind": "structure",
+			"description": "Rough 6x4 planks with wooden hinges. Fits any double doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rustic_arched_door": {
+			"name": "Rustic - Single arched door",
+			"kind": "structure",
+			"description": "Rough 6x4 planks with wooden hinges. Fits any single arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 5 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rustic_double_arched_door": {
+			"name": "Rustic - Double arched door",
+			"kind": "structure",
+			"description": "Rough 6x4 planks with wooden hinges. Fits any double arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Plank"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"refined_door": {
+			"name": "Refined - Single door",
+			"kind": "structure",
+			"description": "Smooth hardwood boards with nails and metal hinges. Fits any single doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Hardwood board, 1 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"refined_double_door": {
+			"name": "Refined - Double door",
+			"kind": "structure",
+			"description": "Smooth hardwood boards with nails and metal hinges. Fits any double doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Hardwood board, 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"refined_arched_door": {
+			"name": "Refined - Single arched door",
+			"kind": "structure",
+			"description": "Smooth hardwood boards with nails and metal hinges. Fits any single arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Hardwood board, 1 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"refined_double_arched_door": {
+			"name": "Refined - Double arched door",
+			"kind": "structure",
+			"description": "Smooth hardwood boards with nails and metal hinges. Fits any double arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Hardwood board, 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sturdy_door": {
+			"name": "Sturdy - Single door",
+			"kind": "structure",
+			"description": "Thick rough planks with nails and metal hinges. Fits any single doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sturdy_double_door": {
+			"name": "Sturdy - Double door",
+			"kind": "structure",
+			"description": "Thick rough planks with nails and metal hinges. Fits any double doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Plank, 4 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sturdy_arched_door": {
+			"name": "Sturdy - Single arched door",
+			"kind": "structure",
+			"description": "Thick rough planks with nails and metal hinges. Fits any single arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Plank, 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sturdy_double_arched_door": {
+			"name": "Sturdy - Double arched door",
+			"kind": "structure",
+			"description": "Thick rough planks with nails and metal hinges. Fits any double arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Plank, 4 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"superior_door": {
+			"name": "Superior - Single door",
+			"kind": "structure",
+			"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any single doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Hardwood board, 2 Iron ingot, 1 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"superior_double_door": {
+			"name": "Superior - Double door",
+			"kind": "structure",
+			"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any double doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Hardwood board, 4 Iron ingot, 2 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"superior_arched_door": {
+			"name": "Superior - Single arched door",
+			"kind": "structure",
+			"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any single arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Hardwood board, 2 Iron ingot, 1 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"superior_double_arched_door": {
+			"name": "Superior - Double arched door",
+			"kind": "structure",
+			"description": "Two layers of hardwood boards, ornate hinges and a handsome handle. Fits any double arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Hardwood board, 4 Iron ingot, 2 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_door": {
+			"name": "Engineered - Single door",
+			"kind": "structure",
+			"description": "Thick planks strapped with iron on heavy hinge plates. Fits any single doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Plank, 4 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_double_door": {
+			"name": "Engineered - Double door",
+			"kind": "structure",
+			"description": "Thick planks strapped with iron on heavy hinge plates. Fits any double doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Plank, 8 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_arched_door": {
+			"name": "Engineered - Single arched door",
+			"kind": "structure",
+			"description": "Thick planks strapped with iron on heavy hinge plates. Fits any single arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Plank, 4 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_double_arched_door": {
+			"name": "Engineered - Double arched door",
+			"kind": "structure",
+			"description": "Thick planks strapped with iron on heavy hinge plates. Fits any double arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Plank, 8 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_door": {
+			"name": "Fortified - Single door",
+			"kind": "structure",
+			"description": "All iron and steel, riveted, on heavy hinges. Fits any single doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Iron ingot, 10 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_double_door": {
+			"name": "Fortified - Double door",
+			"kind": "structure",
+			"description": "All iron and steel, riveted, on heavy hinges. Fits any double doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Iron ingot, 20 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_arched_door": {
+			"name": "Fortified - Single arched door",
+			"kind": "structure",
+			"description": "All iron and steel, riveted, on heavy hinges. Fits any single arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Iron ingot, 10 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_double_arched_door": {
+			"name": "Fortified - Double arched door",
+			"kind": "structure",
+			"description": "All iron and steel, riveted, on heavy hinges. Fits any double arched doorway.",
+			"how_to_get": [
+				"Build with a hammer (press R): 20 Iron ingot, 20 Steel ingot"
+			],
+			"used_for": [],
 			"obtainable_now": true
 		}
 	},
