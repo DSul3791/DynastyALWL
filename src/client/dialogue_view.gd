@@ -85,8 +85,8 @@ func _build(layer: CanvasLayer) -> void:
 	_panel.visible = false
 	_panel.anchor_left = 0.2
 	_panel.anchor_right = 0.8
-	_panel.anchor_top = 0.62
-	_panel.anchor_bottom = 0.95
+	_panel.anchor_top = 0.3   # the middle of the screen, clear of the hotbar at the bottom (Dave, 13 Nov 2026)
+	_panel.anchor_bottom = 0.7
 	var box: VBoxContainer = VBoxContainer.new()
 	_panel.add_child(box)
 	_name = Label.new()
