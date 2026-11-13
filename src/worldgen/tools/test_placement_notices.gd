@@ -83,7 +83,7 @@ func _init() -> void:
 	check(said.has("The ground there is not ready yet. Try again in a moment.") and rows("campfire_kit") == 0, "ground not streamed in: told so (%s)" % str(said))
 	ground[0] = 10.0
 	place("campfire_kit", Vector3(2.0, 14.0, 0.0))
-	check(said.has("You cannot place that there."), "a point 4 m off its ground: told so (%s)" % str(said))
+	check(said.has("You cannot place that there: it is too far above or below the ground."), "a point 4 m off its ground: told so (%s)" % str(said))
 	place("campfire_kit", Vector3(2.0, 10.0, 0.0))
 	check(rows("campfire_kit") == 1 and said.is_empty(), "a good spot places the fire with no complaint")
 	place("campfire_kit", Vector3(2.5, 10.0, 0.5))
