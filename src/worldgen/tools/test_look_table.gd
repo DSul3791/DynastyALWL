@@ -22,7 +22,7 @@ const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "
 # a 2 m bed with four lashed stakes and a woven edge, 600 (the foundation's).
 const FENCES := ["thatch_fence", "thatch_gate", "thatch_gate_open", "wood_fence", "wood_gate", "wood_gate_open", "log_fence", "log_gate", "log_gate_open",
 	"stone_fence", "stone_gate", "stone_gate_open", "brick_fence", "brick_gate", "brick_gate_open", "iron_fence", "iron_gate", "iron_gate_open"]
-const B1B_B6 := {"log_stairs": 350, "iron_doorway": 450, "steel_doorway": 450,
+const B1B_B6 := {"log_stairs": 350,
 	"thatch_roof_corner": 400, "log_roof_corner": 400, "log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
 	"wooden_barrel": 500, "stone_well": 550, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
 	"stone_lamp_post": 450, "thatch_garden_plot": 600}

@@ -142,17 +142,17 @@ func _door_data_checks(live: Dictionary) -> void:
 			check(str(frow.get("opening", "")) == opening and not frow.has("use") and not frow.has("toggle") and not frow.has("blocks_walk") and not frow.has("use_pace_ms") and str(frow.get("piece_kind", "")) == "wall", "%s: an empty %s frame (no door, no use)" % [fk, opening])
 			check(live.has(fk) and int(live[fk]["hammer"]) == hammer and str(live[fk]["station"]) == "", "%s: hammer as its tier's doorway, no station" % fk)
 	check(doors == 28, "28 doors")
-	check(_cost_key(live["iron_doorway"]["cost"]) == "lumber:3,iron_ingot:2,nails:12" and _cost_key(live["steel_doorway"]["cost"]) == "steel_ingot:6", "Iron and Steel frames lost their hinges (no Iron or Steel wall to cost them by)")
-	var retired_states: Array = [28, 82, 84, 86, 140, 142, 144, 214, 224]
+	check(not live.has("iron_doorway") and not live.has("steel_doorway") and not structures.has("iron_doorway") and not structures.has("steel_doorway"), "no Iron or Steel doorway (Dave 13 Nov 2026: there is no Iron or Steel tier)")
+	var retired_states: Array = [28, 82, 84, 86, 140, 141, 142, 143, 144, 214, 224]
 	var legacy: Array = []
 	for kind in structures:
 		var row: Variant = structures[kind]
 		if typeof(row) != TYPE_DICTIONARY:
 			continue
-		check(not retired_states.has(int(row.get("state", -1))), "%s: state is not one of the retired door twin states" % kind)
+		check(not retired_states.has(int(row.get("state", -1))), "%s: state is not one of the retired door twin or metal doorway states" % kind)
 		legacy.append_array(row.get("legacy_kinds", []))
-	for twin in ["door_open", "log_doorway_open", "stone_doorway_open", "brick_doorway_open", "double_doorway_open", "iron_doorway_open", "steel_doorway_open", "engineered_doorway_open", "fortified_doorway_open", "thatch_doorway_open"]:
-		check(not structures.has(twin) and legacy.has(twin), "%s: no row any more, a saved one loads as the empty frame (legacy_kinds)" % twin)
+	for twin in ["door_open", "log_doorway_open", "stone_doorway_open", "brick_doorway_open", "double_doorway_open", "iron_doorway", "iron_doorway_open", "steel_doorway", "steel_doorway_open", "engineered_doorway_open", "fortified_doorway_open", "thatch_doorway_open"]:
+		check(not structures.has(twin) and legacy.has(twin), "%s: no row any more, a saved one loads as a standard-tier empty frame (legacy_kinds)" % twin)
 
 
 func _init() -> void:

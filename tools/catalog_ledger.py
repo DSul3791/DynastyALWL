@@ -100,7 +100,8 @@ NEW_ROWS = [
 ]
 
 # Headline totals of Draft 18 (master catalog header and Appendix A).
-EXPECT = {"ADD": 176, "NEW FUTURE": 4, "KEEP": 499, "UPDATE": 61, "RETIRE": 23, "FUTURE": 53, "RETIRED": 253}
+# BUGLIST-002 (Dave 13 Nov 2026): Iron - Doorway and Steel - Doorway moved from KEEP to RETIRE (no Iron or Steel tier).
+EXPECT = {"ADD": 176, "NEW FUTURE": 4, "KEEP": 497, "UPDATE": 61, "RETIRE": 25, "FUTURE": 53, "RETIRED": 253}
 EXPECT_ADD_BY_SECTION = {"3.1": 11, "3.2": 1, "3.3": 3, "3.4": 3, "3.5": 6, "3.6": 29, "3.7": 14, "3.8": 17,
                          "3.9": 9, "3.10": 20, "3.11": 13, "3.12": 23, "3.13": 16, "3.14": 2, "3.15": 9}
 

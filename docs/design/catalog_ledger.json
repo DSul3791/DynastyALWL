@@ -9659,14 +9659,17 @@
    "number": 663,
    "name": "Iron - Doorway",
    "category": "structure",
-   "catalog": "KEEP",
-   "section": null,
-   "phase": null,
+   "catalog": "RETIRE",
+   "section": "3.0",
+   "phase": "BUGLIST-002",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+   "test_blueprints",
+   "test_doors"
+  ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Dave 13 Nov 2026: no Iron or Steel tier, remove them. Retired; a saved one loads as the Refined - Doorway (doorway_section) (renames.json, legacy_kinds)."
   },
   {
    "key": "steel_doorway_kit",
@@ -9687,14 +9690,17 @@
    "number": 665,
    "name": "Steel - Doorway",
    "category": "structure",
-   "catalog": "KEEP",
-   "section": null,
-   "phase": null,
+   "catalog": "RETIRE",
+   "section": "3.0",
+   "phase": "BUGLIST-002",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+   "test_blueprints",
+   "test_doors"
+  ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Dave 13 Nov 2026: no Iron or Steel tier, remove them. Retired; a saved one loads as the Fortified - Doorway (fortified_doorway) (renames.json, legacy_kinds)."
   },
   {
    "key": "horn_pane",

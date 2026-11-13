@@ -21,7 +21,8 @@ const OPENING_WIDTH := {"single": 1.0, "double": 2.0, "single_arched": 1.0, "dou
 const FRAME_WIDTH := {"single": 2.0, "double": 4.0, "single_arched": 2.0, "double_arched": 4.0}
 const LEGACY := {"thatch_doorway_open": "thatch_doorway", "log_doorway_open": "log_doorway", "door_open": "doorway_section", "stone_doorway_open": "stone_doorway",
 	"brick_doorway_open": "brick_doorway", "engineered_doorway_open": "engineered_doorway", "fortified_doorway_open": "fortified_doorway",
-	"double_doorway_open": "double_doorway", "iron_doorway_open": "iron_doorway", "steel_doorway_open": "steel_doorway"}
+	"double_doorway_open": "double_doorway",
+	"iron_doorway": "doorway_section", "iron_doorway_open": "doorway_section", "steel_doorway": "fortified_doorway", "steel_doorway_open": "fortified_doorway"}   # Dave 13 Nov 2026: no Iron or Steel tier; a saved one is the nearest standard-tier frame
 
 var failures: int = 0
 var said: Array = []
@@ -442,6 +443,18 @@ func _server_checks(cfg: Dictionary) -> void:
 	items.place_piece(1, "stone_doorway_kit", legacy_at, 0)
 	var legacy_id: int = _find(items, "stone_doorway", legacy_at)
 	items._items[legacy_id]["struct"]["kind"] = "stone_doorway_open"   # what an old save holds
+	# Retired Iron and Steel doorways (Dave 13 Nov 2026: no Iron or Steel tier): an old save holds their kind and item number.
+	var metal_at: Dictionary = {"iron_doorway": Vector3(120.0, 10.0, 500.0), "steel_doorway_open": Vector3(130.0, 10.0, 500.0)}
+	var metal_kit: Dictionary = {"iron_doorway": "doorway_section_kit", "steel_doorway_open": "fortified_doorway_kit"}
+
+	for old in metal_at:
+		_stand(items, metal_at[old])
+		items.place_piece(1, metal_kit[old], metal_at[old], 0)
+		var metal_id: int = _find(items, LEGACY[old], metal_at[old])
+		check(metal_id != 0, "a frame stands in for the saved %s" % old)
+		items._items[metal_id]["struct"]["kind"] = old
+		items._items[metal_id]["number"] = items.table.number_of(str(old).trim_suffix("_open"))
+
 	var turned_at: Vector3 = Vector3(110.0, 10.0, 500.0)
 	_stand(items, turned_at)
 	items.place_piece(1, "double_doorway_kit", turned_at, 90)
@@ -462,6 +475,9 @@ func _server_checks(cfg: Dictionary) -> void:
 		if copy[0] == "stone_doorway_open":
 			copy[0] = "stone_doorway"
 
+		if copy[0] in ["iron_doorway", "steel_doorway_open"]:
+			copy[0] = LEGACY[copy[0]]
+
 		expect.append(copy)
 
 	expect.sort()
@@ -473,3 +489,8 @@ func _server_checks(cfg: Dictionary) -> void:
 
 	for old in LEGACY:
 		check(again._kind_now(old) == LEGACY[old], "a saved %s loads as %s" % [old, LEGACY[old]])
+
+	for old in metal_at:
+		var now_id: int = _find(again, LEGACY[old], metal_at[old])
+		check(now_id != 0 and int(again._items[now_id]["number"]) == again.table.number_of(LEGACY[old]), "a saved %s loads as the empty %s, its item too" % [old, LEGACY[old]])
+		check(_find(again, old, metal_at[old]) == 0, "and no %s is left" % old)

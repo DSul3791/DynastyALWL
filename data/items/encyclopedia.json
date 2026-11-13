@@ -8537,11 +8537,10 @@
 			"name": "Iron - Doorway",
 			"kind": "placeable",
 			"description": "An iron-strapped plank wall with an empty opening, one metre wide and two high. Build the door separately.",
-			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 2 Iron ingot, 12 Nails"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_doorway": {
 			"name": "Iron - Doorway",
@@ -8549,18 +8548,17 @@
 			"description": "An iron-strapped plank wall with an empty opening, one metre wide and two high. Build the door separately.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"steel_doorway_kit": {
 			"name": "Steel - Doorway",
 			"kind": "placeable",
 			"description": "A steel-framed wall with an empty opening, one metre wide and two high. Build the door separately.",
-			"how_to_get": [
-				"Build with a hammer (press R): 6 Steel ingot"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"steel_doorway": {
 			"name": "Steel - Doorway",
@@ -8569,7 +8567,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"horn_pane": {
 			"name": "Horn pane",

@@ -1811,8 +1811,8 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 657 | `wooden_railing` | Wooden - Railing |  |  | KEEP | A plank railing along a ceiling or foundation edge. Stops falls. |
 | 659 | `iron_railing` | Iron - Railing |  |  | KEEP | An iron railing along a ceiling or foundation edge. Stops falls. |
 | 661 | `double_doorway` | Refined - Double doorway |  |  | KEEP | A plank wall with an empty opening, two metres wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
-| 663 | `iron_doorway` | Iron - Doorway |  |  | KEEP | An iron-strapped plank wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
-| 665 | `steel_doorway` | Steel - Doorway |  |  | KEEP | A steel-framed wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
+| 663 | `iron_doorway` | Iron - Doorway |  |  | RETIRE | **Retired 13 Nov 2026 (Dave: "There is no iron or steel door. The tier names match the standard construction tiers"; "Yes remove them please").** A saved one loads as the empty Refined - Doorway. |
+| 665 | `steel_doorway` | Steel - Doorway |  |  | RETIRE | **Retired 13 Nov 2026 (Dave: "There is no iron or steel door. The tier names match the standard construction tiers"; "Yes remove them please").** A saved one loads as the empty Fortified - Doorway. |
 | 671 | `wooden_hanging_lantern` | Wooden - Hanging lantern |  |  | KEEP | A plank lantern on a hook. Burns a candle a game day; rain cannot reach it. |
 | 673 | `iron_hanging_lantern` | Iron - Hanging lantern |  |  | KEEP | An iron lantern on a hook. Lamp oil lasts three game days. |
 | 675 | `iron_wall_lantern` | Wall lantern |  |  | KEEP | An iron lantern on a bracket arm. Lamp oil lasts three game days. |

@@ -2452,42 +2452,6 @@ static func plank_frame(opening: String = "single") -> Node3D:
 	return root
 
 
-# A metal doorway, the 2 m wall piece, an empty frame. "iron": a plank wall with an iron frame round the 1 m gap and iron corner plates. "steel": a riveted steel plate wall.
-static func metal_doorway(kind: String = "iron") -> Node3D:
-	_materials()
-	var root: Node3D = Node3D.new()
-	var steel: bool = kind == "steel"
-	var wall_mat: StandardMaterial3D = _steel if steel else _planks
-	var trim: StandardMaterial3D = _iron_mat()
-
-	for x in [-0.75, 0.75]:
-		_box(root, Vector3(0.5, 2.4, 0.14), Vector3(x, 1.2, 0.0), wall_mat)
-
-	_box(root, Vector3(1.0, 0.4, 0.14), Vector3(0.0, 2.2, 0.0), wall_mat)
-
-	for x in [-0.95, 0.95]:
-		_box(root, Vector3(0.1, 2.4, 0.2), Vector3(x, 1.2, 0.0), trim if steel else _frame)
-
-	_box(root, Vector3(2.0, 0.1, 0.2), Vector3(0.0, 2.35, 0.0), trim if steel else _frame)
-
-	for x in [-0.53, 0.53]:
-		_box(root, Vector3(0.06, 2.06, 0.22), Vector3(x, 1.03, 0.0), trim)         # the iron frame round the gap
-
-	_box(root, Vector3(1.12, 0.08, 0.22), Vector3(0.0, 2.04, 0.0), trim)
-
-	if steel:
-		for y in [0.6, 1.2, 1.8]:
-			for x in [-0.75, 0.75]:
-				_box(root, Vector3(0.5, 0.015, 0.16), Vector3(x, y, 0.0), trim)    # riveted plate seams
-	else:
-		for y in [0.15, 2.25]:
-			for x in [-0.9, 0.9]:
-				_box(root, Vector3(0.16, 0.16, 0.16), Vector3(x, y, 0.0), trim)    # corner plates
-
-	_frame_solids(root, "single", 0.2)
-	return root
-
-
 # A pillar of a tier, standing on the spot, 2.6 m high (foundation or ceiling to the roof). Solid.
 # "thatch": five sticks lashed into a bundle with twine bands. "wood": a squared post with a base block and a cap plate. "log": a round log with a sawn cap.
 # "stone": blocks laid in alternate courses on a wider plinth under a cap slab. "brick": a brick shaft on a stone base under a stone cap.

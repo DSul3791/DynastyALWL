@@ -80,8 +80,6 @@ const LOOKS := {
 	"wooden_railing": {"builder": "railing", "args": ["wood"]},
 	"iron_railing": {"builder": "railing", "args": ["iron"]},
 	"double_doorway": {"builder": "plank_frame", "args": ["double"]},
-	"iron_doorway": {"builder": "metal_doorway", "args": ["iron"]},
-	"steel_doorway": {"builder": "metal_doorway", "args": ["steel"]},
 	"thatch_pillar": {"builder": "pillar", "args": ["thatch"]},
 	"wooden_pillar": {"builder": "pillar", "args": ["wood"]},
 	"log_pillar": {"builder": "pillar", "args": ["log"]},

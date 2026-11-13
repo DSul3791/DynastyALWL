@@ -2,6 +2,8 @@
 	"_note": "A retired item -> the item that took its place (src/shared/item_table.gd load_renames, current_number). When a save loads, every pack, chest, ground item, worn slot and hotbar key holding the old number gets the new one. A pair counts only while the old row in items.json is \"retired\": true and the new row exists. Keep the old row in items.json: its number must never be reused.",
 	"renames": {
 		"hide_leggings": "hide_trousers",
-		"salt": "sea_salt"
+		"salt": "sea_salt",
+		"iron_doorway": "doorway_section",
+		"steel_doorway": "fortified_doorway"
 	}
 }

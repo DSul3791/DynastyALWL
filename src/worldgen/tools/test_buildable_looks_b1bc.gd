@@ -75,9 +75,9 @@ func _run() -> void:
 		check(_inside(box, Vector3(-1.01, -0.01, -0.08), Vector3(1.01, 1.07, 0.08)), "%s: 2 m long, 1 m high, thin (%s)" % [look, box])
 		check(_solid_at(node, Vector3(0.0, 0.9, 0.0)) and not _solid_at(node, Vector3(0.0, 0.5, 0.2)), "%s: stops a fall, nothing beside it" % look)
 
-	for look in ["double_doorway", "iron_doorway", "steel_doorway"]:
-		var half: float = 2.0 if look == "double_doorway" else 1.0
-		var gap: float = 1.0 if look == "double_doorway" else 0.5
+	for look in ["double_doorway"]:
+		var half: float = 2.0
+		var gap: float = 1.0
 		var node: Node3D = _build(look)
 		var box: AABB = _mesh_box(node)
 		check(_inside(box, Vector3(-half - 0.03, -0.01, -0.2), Vector3(half + 0.03, 2.45, 0.2)) and box.end.y >= 2.3, "%s: in its %d m wall piece (%s)" % [look, int(half * 2.0), box])
