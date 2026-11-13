@@ -9,7 +9,6 @@ extends Control
 #   slot.set_wear(fraction)                1.0 whole: no bar; below that a 3 px bar, green -> amber -> red
 #   slot.set_favourite(on)                 a gold wax seal, top-left (not on the hotbar)
 #   slot.set_key_number(n)                 hotbar strip: its own key, small, top-left (-1 none)
-#   slot.set_linked_key(n)                 pack: the hotbar key that points at this item, gold, bottom-left (-1 none)
 #   slot.set_greyed(on)                    icon 70 % desaturated at 60 % opacity (a recipe ingredient you lack)
 #   slot.flash_refused()                   a 150 ms heraldic-red flash for a drop that is refused
 #   slot.flash_new()                       a gold shimmer fading over 2 s, the first time an item appears
@@ -58,7 +57,6 @@ var count: int = 0
 var wear: float = 1.0
 var favourite: bool = false
 var key_number: int = -1
-var linked_key: int = -1
 var greyed: bool = false
 var caption: String = ""
 var station_glow: bool = false
@@ -132,11 +130,6 @@ func set_favourite(on: bool) -> void:
 
 func set_key_number(n: int) -> void:
 	key_number = n
-	_refresh()
-
-
-func set_linked_key(n: int) -> void:
-	linked_key = n
 	_refresh()
 
 
@@ -363,13 +356,6 @@ func _draw_over() -> void:
 		_over.draw_circle(c, radius + maxf(1.0, unit), DynastyTheme.GOLD_DIM.darkened(0.3))
 		_over.draw_circle(c, radius, DynastyTheme.GOLD)
 		_over.draw_circle(c + Vector2(-0.25, -0.25) * radius, radius * 0.3, DynastyTheme.GOLD_BRIGHT)
-
-	if linked_key >= 0 and cinzel != null:
-		var kpx: int = maxi(8, roundi(KEY_PX * unit))
-		var at2: Vector2 = Vector2(4.0 * unit, s.y - 6.0 * unit)
-		var ktext: String = key_text(linked_key)
-		_over.draw_string_outline(cinzel, at2, ktext, HORIZONTAL_ALIGNMENT_LEFT, -1, kpx, maxi(2, roundi(2.0 * unit)), Color(0.0, 0.0, 0.0, 0.85))
-		_over.draw_string(cinzel, at2, ktext, HORIZONTAL_ALIGNMENT_LEFT, -1, kpx, DynastyTheme.GOLD)
 
 
 func _draw_key(top_left: Vector2, colour: Color) -> void:

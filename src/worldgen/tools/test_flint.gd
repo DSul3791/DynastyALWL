@@ -48,7 +48,7 @@ func make(dir_name: String):
 func blows(items, n: int) -> void:
 	for k in range(n):
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, items.inventory_of(1).numbers.find(items.table.number_of("stone_pickaxe")) + 1, Vector3.ZERO)   # the pick in hand (protocol 112)
+		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, items.inventory_of(1).numbers.find(items.table.number_of("stone_pickaxe")) + 1, Vector3.ZERO)   # the pick in hand (protocol 113)
 
 
 func count(items, id: String) -> int:

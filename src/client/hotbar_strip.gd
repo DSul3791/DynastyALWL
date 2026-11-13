@@ -1,9 +1,9 @@
 extends RefCounted
 
 # The hotbar on screen (Dave 2026-10-21): keys 1 to 9 and 0 in one strip across the bottom of the screen. The held one is lit. Pressing its
-# key holds it (a tool is drawn in the hand), pressing it again puts it away. Since inventory step 4 a key holds an item, not a
-# pack slot (the server keeps the keys with the character): it shows the stack of that item in the pack, wherever it lies, and
-# dims when none is left. Dragging an item here from the inventory puts it on that key; dragging one key onto another swaps them.
+# key holds it (a tool is drawn in the hand), pressing it again puts it away. The keys are the pack's slots 0 to 9, real slots (Dave's
+# playtest 12 Nov 2026, TEST-008): an item here is not also in the backpack, and a slot whose item is dropped, sold or used up is empty.
+# Dragging a stack here from the inventory moves it into that slot (swapping with what was there); dragging a key out moves it back.
 
 const SLOTS := 10
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the same slot as the pack (look doc section 3)
@@ -56,20 +56,18 @@ func refresh() -> void:
 	for key in range(SLOTS):
 		var cell: Dictionary = _cells[key]
 		var slot: int = _items.key_slot(key)
-		var number: int = _items.inventory.numbers[slot] if slot >= 0 else _items.key_number(key)
+		var number: int = _items.inventory.numbers[slot] if slot >= 0 else 0
 		var count: int = _items.inventory.counts[slot] if slot >= 0 else 0
 
 		if _is_bow(number) and _held != null:
 			count = _items.inventory.count_of(_held.arrow_to_shoot()) if _held.arrow_to_shoot() != 0 else 0   # a bow shows the arrows it will shoot
 
-		var dimmed: bool = slot < 0 and number != 0   # the key keeps its item while none is in the pack
 		var off_here: bool = _held != null and _held.off_holding and _held.off_key == key
 		var held_here: bool = (_held != null and _held.holding and _held.held_key == key) or off_here
 
 		var look = cell["look"]
 		InventoryLook.show_stack(_items, look, number, count, _items.inventory.wear[slot] if slot >= 0 else 0, _items.hotbar_tip(key), _items.inventory.max_durability(slot) if slot >= 0 else 0)
 		look.set_marked((ItemSlot.MARK_CREAM if off_here else ItemSlot.MARK_GOLD) if held_here else 0)
-		look.modulate = Color(1.0, 1.0, 1.0, 0.45) if dimmed else Color.WHITE
 
 
 # Ten item slots, each with its key at the top-left; the held one has the bright gold edge (the off hand cream).
@@ -86,30 +84,27 @@ func _build_look() -> void:
 			if _items.key_number(slot) == 0:
 				return null
 
-			return {"key": slot}
+			return {"slot": slot}   # a pack slot like any other: the pack, a container or another key takes it
 		look.can_drop = func(data: Variant) -> bool: return _can_drop(Vector2.ZERO, data, slot)
 		look.on_drop = func(data: Variant) -> void: _drop(Vector2.ZERO, data, slot)
 		_row.add_child(look)
 		_cells.append({"look": look})
 
 
-# A pack stack ({"slot"}) or another key ({"key"}) may be dropped on a key.
+# A pack stack ({"slot"}, a backpack slot or another key) may be dropped on a key.
 func _can_drop(_at: Vector2, data: Variant, _key: int) -> bool:
-	return typeof(data) == TYPE_DICTIONARY and (data.has("slot") or data.has("key"))
+	return typeof(data) == TYPE_DICTIONARY and data.has("slot")
 
 
 func _drop(_at: Vector2, data: Variant, key: int) -> void:
-	var dragged: int = _items.key_number(int(data["key"])) if data.has("key") else _items.inventory.numbers[int(data["slot"])]
+	var dragged: int = _items.inventory.numbers[int(data["slot"])]
 
 	if _is_bow(_items.key_number(key)) and _items.is_ammo_for(dragged, _items.key_number(key)):
 		_items.load_bow(dragged, _items.key_number(key))   # arrows dropped on the bow load it with that arrow (Dave 10 Nov 2026); they stay in the pack
 		refresh()
 		return
 
-	if data.has("key"):
-		_items.swap_keys(int(data["key"]), key)
-	else:
-		_items.set_key_to_slot(key, int(data["slot"]))
+	_items.move_slot(int(data["slot"]), key)
 
 
 func _is_bow(number: int) -> bool:

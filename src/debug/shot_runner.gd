@@ -370,17 +370,17 @@ func _process(delta: float) -> void:
 
 	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 90000):
 		_selected = true
-		# The key the server put the given item on (a tool or weapon goes on the first empty key when it arrives). Wait for it: a left-hand item
+		# The hotbar slot the server put the given item in (a tool or weapon goes into the first empty one when it arrives). Wait for it: a left-hand item
 		# (torch, lantern, shield) is chosen once, by what the key points at when it is selected, so selecting before the pack and keys arrived left
 		# both hands empty (Dino 10 Nov 2026, "held id  ... lit nothing in hand"); the right hand follows its key later, which is why a bow worked.
 		var key: int = _given_key()
 
 		if key < 0 and _given_keyed() and client.items.inventory != null and client.items.inventory.numbers.has(client.items.table.number_of(give_item)):
 			key = 0
-			client.items.set_key(0, client.items.table.number_of(give_item))   # in the pack but on no key: put it on key 1
+			client.items.move_slot(client.items.inventory.numbers.find(client.items.table.number_of(give_item)), 0)   # in the backpack: move it to key 1
 
 		print("shot runner: %s on key %d after %.1f s; pack %s; keys %s" % [give_item, key + 1, float(now - client.connected_msec) / 1000.0,
-			str(client.items.inventory.numbers.slice(0, 12)) if client.items.inventory != null else "none", str(client.items.inventory.hotbar) if client.items.inventory != null else "none"])
+			str(client.items.inventory.numbers.slice(10, 22)) if client.items.inventory != null else "none", str(client.items.inventory.numbers.slice(0, 10)) if client.items.inventory != null else "none"])
 		client.held.rig_keep_dark = not shot_lit and client.items.table.entry(give_item).has("relit_item")   # --give wooden_lantern_dark: picture it unlit
 		client.held.select(maxi(key, 0))      # key index 0 = key 1: hold what was given
 		client.held.bow_force = bow_pose
@@ -905,7 +905,7 @@ func _fell_tick(now: int) -> void:
 			return
 
 		var blows: int = int(items._world[_fell_stump].get("blows", 0)) + 1
-		items.net.inventory_action.rpc_id(1, Net.ACT_PROCESS, _fell_stump, 0, 0, Vector3(float(items.inventory.numbers.find(items.table.number_of("stone_axe")) + 1), 0.0, 0.0))   # the axe given at step 0 is the one in hand (protocol 112)
+		items.net.inventory_action.rpc_id(1, Net.ACT_PROCESS, _fell_stump, 0, 0, Vector3(float(items.inventory.numbers.find(items.table.number_of("stone_axe")) + 1), 0.0, 0.0))   # the axe given at step 0 is the one in hand (protocol 113)
 		_fell_t = now - 1900
 		items._world[_fell_stump]["blows"] = blows
 
@@ -2039,17 +2039,15 @@ func _given_keyed() -> bool:
 	return str(client.items.table.entry(give_item).get("kind", "")) in ["tool", "weapon"]
 
 
-# The hotbar key (0 for key 1) holding the given item, or -1 while the pack or the keys have not arrived or it is on none.
+# The hotbar key (0 for key 1) holding the given item, or -1 while the pack has not arrived or it is in none.
 func _given_key() -> int:
 	if client.items.inventory == null:
 		return -1
 
 	var number: int = client.items.table.number_of(give_item)
 
-	if client.items.inventory.hotbar.size() == 0 or not client.items.inventory.numbers.has(number):
-		return -1
-
-	return client.items.inventory.hotbar.find(number)
+	var key: int = client.items.inventory.numbers.slice(0, client.items.inventory.hotbar_slots).find(number)
+	return key
 
 
 # Where a held model is in the picture: "in frame at (x, y) px" from the drawn camera, "out of frame (below)" and the like, or "not drawn", so a picture

@@ -336,9 +336,8 @@ func _init() -> void:
 	var chest: int = build("chest", jar_at + Vector3(-2.0, 0.0, 0.0))
 	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
 
-	for i in inv.SLOTS:
-		if inv.numbers[i] == 0:
-			inv.add(num("clay_pot"), 1)   # one unstackable pot per free slot: the pack has no room for anything new
+	while inv.add(num("clay_pot"), 1) == 0:
+		pass   # one unstackable pot per free slot, hotbar slots too (they are pack slots, TEST-008): the pack has no room for anything new
 
 	var cab_need: int = int(recipe("cook_sauerkraut")["needs"].filter(func(c): return int(c[0]) == cabbage)[0][1])
 	var salt_need: int = int(recipe("cook_sauerkraut")["needs"].filter(func(c): return int(c[0]) == num("sea_salt"))[0][1])

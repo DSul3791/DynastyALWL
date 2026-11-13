@@ -96,7 +96,7 @@ func pick_out(ore: String, item: String, want: int, blows: int) -> void:
 			break
 
 		items._last_hit.clear()
-		var pick: int = items.inventory_of(1).numbers.find(items.table.number_of("bronze_pickaxe"))   # the best pick made so far is the one in hand (protocol 112)
+		var pick: int = items.inventory_of(1).numbers.find(items.table.number_of("bronze_pickaxe"))   # the best pick made so far is the one in hand (protocol 113)
 
 		if pick < 0:
 			pick = items.inventory_of(1).numbers.find(items.table.number_of("stone_pickaxe"))
@@ -225,10 +225,10 @@ func _init() -> void:
 	check(have("bronze_pickaxe") == 1, "7. a Bronze - Pickaxe is made at the Stone - Forge")
 	var inv = items.inventory_of(1)
 	var bronze_slot: int = inv.numbers.find(items.table.number_of("bronze_pickaxe"))
-	check(bronze_slot >= 0 and inv.on_hotbar(bronze_slot), "7b. it goes on a hotbar key by itself (a new tool)")
+	check(bronze_slot >= 0 and inv.on_hotbar(bronze_slot), "7b. it goes into a hotbar slot by itself (a new tool)")
 
 	if bronze_slot >= 0 and not inv.on_hotbar(bronze_slot):
-		items.action(1, Net.ACT_HOTBAR_SET, 9, items.table.number_of("bronze_pickaxe"), 0, Vector3.ZERO)   # as a player would, so step 8 still runs
+		items.action(1, Net.ACT_MOVE, bronze_slot, 9, 0, Vector3.ZERO)   # as a player would drag it, so step 8 still runs
 
 	# 8. Iron ore out of an iron outcrop with it.
 	pick_out("iron", "iron_ore", 4, 400)

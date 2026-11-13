@@ -1,6 +1,6 @@
 extends Node
 
-# What the player holds (hotbar keys 1 to 9 and 0 choose the item each key points at, wherever it lies in the pack: inventory step 4; the key again puts it away) and how it is used.
+# What the player holds (hotbar keys 1 to 9 and 0 choose the item in pack slots 0 to 9, the hotbar slots; the key again puts it away) and how it is used.
 # Client only; the server decides what happens (throws are server actions).
 #
 # Spear (Dave, 2026-10-20): held and jabbed by default with the normal attack key (left click).
@@ -99,8 +99,8 @@ const JAB_S := 0.28
 const THROW_SPEED := 24.0
 const THROW_GRAVITY := 9.8
 
-var held_key: int = 0                     # the hotbar key (0 to 9) in the right hand; keys hold items, not slots (inventory step 4)
-var held_slot: int:                       # the pack slot that key points at (InventoryView.key_slot), -1 for none
+var held_key: int = 0                     # the hotbar key (0 to 9) in the right hand; key k is pack slot k
+var held_slot: int:                       # that key's pack slot (InventoryView.key_slot), -1 when it is empty
 	get:
 		return int(_inv.key_slot(held_key)) if _inv != null else -1
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
@@ -109,7 +109,7 @@ var aiming: bool = false
 const LANTERN_BAIL_M := 0.18             # basic_look.gd "lantern": the bail's top is this far above the look's middle; the fist holds the bail, the lantern hangs below
 const TORCH_PLACE_M := 3.0                # how far the crosshair reaches to stick a torch in the ground or on a wall
 var off_key: int = -1                     # the hotbar key carried in the left hand (items with "offhand": true: torch, shield), -1 for none
-var off_slot: int:                        # the pack slot that key points at, -1 for none
+var off_slot: int:                        # that key's pack slot, -1 when it is empty or none
 	get:
 		return int(_inv.key_slot(off_key)) if _inv != null and off_key >= 0 else -1
 var off_holding: bool = false             # false after its key is pressed again: left hand empty
@@ -284,17 +284,14 @@ func _arm_play(clip: String, seconds: float) -> void:
 		_arms.play(clip, length / maxf(seconds, 0.05))
 
 
-# The item a hotbar key points at in the pack, 0 when the key is empty or none of its item is in the pack.
+# The item in a hotbar key's slot, 0 when it is empty.
 func _key_number(key: int) -> int:
 	var slot: int = int(_inv.key_slot(clampi(key, 0, HOTBAR_SLOTS - 1)))
 	return _inv.inventory.numbers[slot] if slot >= 0 else 0
 
 
-# A hotbar key (0 to 9): hold what it points at, or put it away when it is the one already held.
+# A hotbar key (0 to 9): hold what is in its slot, or put it away when it is the one already held.
 func press_slot(slot: int) -> void:
-	if _inv.has_method("draw_from_quick_bag"):
-		_inv.draw_from_quick_bag(clampi(slot, 0, HOTBAR_SLOTS - 1))   # an item kept in a worn pouch, bandolier or scabbard comes to hand
-
 	# Torch and shield go in the left hand beside whatever the right hand holds (Dave 2026-10-23); the same key again stows it.
 	if is_offhand(_key_number(slot)):
 		slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
@@ -1907,7 +1904,7 @@ func _strike() -> void:
 
 	if log_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # wood work: the tool in hand, an axe or (slowly) a pick (protocol 112)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # wood work: the tool in hand, an axe or (slowly) a pick (protocol 113)
 	elif boulder_id != 0:
 		_sound.hits.hit(_hit_tool(), "stone", hit["position"], 1.0)   # a boulder is stone whatever the ground under it
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, held_slot + 1, Vector3.ZERO)   # the tool in hand does the work (TEST-013)

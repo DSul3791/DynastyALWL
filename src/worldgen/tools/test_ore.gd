@@ -54,7 +54,7 @@ func blows(items, n: int) -> void:
 		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, in_hand(items), Vector3.ZERO)
 
 
-# The pack slot + 1 of the one pick or axe the player was given: the tool in hand (protocol 112).
+# The pack slot + 1 of the one pick or axe the player was given: the tool in hand (protocol 113).
 func in_hand(items) -> int:
 	var inv = items.inventory_of(1)
 

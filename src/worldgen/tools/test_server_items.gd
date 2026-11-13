@@ -76,7 +76,7 @@ func _init() -> void:
 	feed.give(9, feed.table.number_of("stick"), 3)
 	check(gains == [[9, "stick", 3, "harvest"]], "a give is reported as a harvest gain (%s)" % str(gains))
 	gains.clear()
-	feed.action(9, Net.ACT_MOVE, 0, 20, 0, Vector3.ZERO)
+	feed.action(9, Net.ACT_MOVE, feed.inventory_of(9).numbers.find(feed.table.number_of("stick")), 20, 0, Vector3.ZERO)
 	check(gains.is_empty(), "moving a stack reports no gain (%s)" % str(gains))
 
 	# Money and reputation: coins pay into the purse as copper, richest coin first in the feed; reputation ranks and discounts.
@@ -1303,7 +1303,7 @@ func _init() -> void:
 	sp.peer_connected_hello(1, "abcdef123456")
 	sp.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 10, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 4, Vector3.ZERO)
-	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).counts[1] == 4 and sp.inventory_of(1).numbers[1] == stone, "split moves a part to the next empty slot")
+	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).counts[10] == 4 and sp.inventory_of(1).numbers[10] == stone, "split moves a part to the first empty backpack slot (slot 10, after the hotbar)")
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 6, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 0, Vector3.ZERO)
 	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).count_of(stone) == 10, "cannot split everything or nothing")
@@ -1339,8 +1339,8 @@ func _init() -> void:
 	wr._last_mine.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "with no axe a blow on rock does nothing")
-	wr.inventory_of(1).add(axe_n, 1, ceili(durability * 0.5))   # a fresh half-worn axe in slot 0 (= durability - durability / 2, as the checks below expect)
-	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
+	wr.inventory_of(1).add(axe_n, 1, ceili(durability * 0.5))   # a fresh half-worn axe in the backpack (= durability - durability / 2, as the checks below expect)
+	wr.action(1, Net.ACT_DROP, wr.inventory_of(1).numbers.find(axe_n), 0, 1, Vector3(0.5, 10.0, 0.0))
 	var dropped: int = 0
 
 	for k in wr._items:
@@ -2870,7 +2870,7 @@ func _init() -> void:
 
 	for n in range(10):
 		bo._last_hit.clear()
-		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)   # count: the held pack slot + 1 (protocol 112)
+		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)   # count: the held pack slot + 1 (protocol 113)
 
 	check(bo.inventory_of(1).count_of(stone_id) == 30 and int(bo._items[900001]["count"]) == small_total - 30, "an iron pick takes three stones a blow (boulders.json tools: stone 1, bronze 2, iron 3, steel 4): 10 blows, 30 stones (%d stones, %d left)" % [bo.inventory_of(1).count_of(stone_id), int(bo._items[900001]["count"])])
 	check(int(bo.inventory_of(1).wear[pick_slot]) == 10, "every blow wears the pick one (%d)" % int(bo.inventory_of(1).wear[pick_slot]))

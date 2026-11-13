@@ -1,6 +1,6 @@
 extends SceneTree
 # Headless check of the left hand (src/client/held_item.gd): a torch or a shield goes in the left hand beside the right-hand tool,
-# the same key stows it, a shield raises with B, and the hotbar key picks the item up (keys point at items: inventory step 4).
+# the same key stows it, a shield raises with B, and the hotbar key picks the item up (the keys are the pack's slots 0 to 9).
 
 const HeldItem := preload("res://src/client/held_item.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -39,10 +39,8 @@ class FakeView:
 	func is_broken(_slot: int) -> bool:
 		return false
 
-	var keys: Array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]   # the pointer hotbar (inventory step 4): each key holds an item number
-
-	func key_slot(key: int) -> int:
-		return inventory.numbers.find(keys[key]) if key >= 0 and key < keys.size() and int(keys[key]) != 0 else -1
+	func key_slot(key: int) -> int:   # the hotbar keys are the pack's slots 0 to 9 (TEST-008)
+		return key if key >= 0 and key < 10 and inventory.numbers[key] != 0 else -1
 
 
 func _check(ok: bool, what: String) -> void:
@@ -67,9 +65,6 @@ func run() -> void:
 	view.inventory.counts.fill(0)
 	view.inventory.numbers[0] = table.number_of("stone_axe")
 	view.inventory.numbers[1] = table.number_of("torch")
-	view.keys[0] = table.number_of("stone_axe")
-	view.keys[1] = table.number_of("torch")
-	view.keys[2] = 9999
 	root.add_child(view)
 	var camera: Camera3D = Camera3D.new()
 	view.add_child(camera)
@@ -126,7 +121,6 @@ func run() -> void:
 	table._by_id["test_lantern_dark"] = dark
 	table._by_number[9997] = dark
 	view.inventory.numbers[3] = 9998
-	view.keys[3] = 9998
 	held.press_slot(3)
 	_check(held.off_holding and held.off_id() == "test_lantern", "a lantern goes in the left hand")
 	held._process(0.1)
@@ -134,7 +128,6 @@ func run() -> void:
 	_check(lamp != null and is_equal_approx(lamp.omni_range, 8.0), "the lantern gives one light of its light_m")
 	_check(held._off_model != null and held._off_model.is_inside_tree() and held._off_model.global_basis.y.dot(Vector3.UP) > 0.99, "it hangs upright from the fist")
 	view.inventory.numbers[3] = 9997
-	view.keys[3] = 9997   # the game's key follows the flame twin (Inventory._flame_twin); this stand-in view only finds the number it holds
 	held._process(0.1)
 	_check(held._off_model != null and held._off_model.get_node_or_null("Light") == null, "a dark lantern has no light")
 	print("offhand: %d failures" % failures)

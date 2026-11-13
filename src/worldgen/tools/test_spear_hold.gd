@@ -21,7 +21,6 @@ class FakeView:
 	extends Node
 	var table
 	var inventory = FakeInventory.new()
-	var keys: Array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 	func refresh_hotbar() -> void:
 		pass
@@ -42,7 +41,7 @@ class FakeView:
 		return false
 
 	func key_slot(key: int) -> int:
-		return inventory.numbers.find(keys[key]) if key >= 0 and key < keys.size() and int(keys[key]) != 0 else -1
+		return key if key >= 0 and key < 10 and int(inventory.numbers[key]) != 0 else -1   # hotbar keys are the pack's slots 0 to 9 (protocol 112)
 
 
 # Third person stand-in for the body: the avatar root faces -Z as the game does; a hand mount turned at an odd angle (the jab clip's fist).
@@ -79,8 +78,6 @@ func run() -> void:
 	view.inventory.counts.fill(0)
 	view.inventory.numbers[0] = table.number_of("wooden_spear")
 	view.inventory.numbers[1] = table.number_of("stone_axe")
-	view.keys[0] = table.number_of("wooden_spear")
-	view.keys[1] = table.number_of("stone_axe")
 	root.add_child(view)
 	var camera: Camera3D = Camera3D.new()
 	view.add_child(camera)
