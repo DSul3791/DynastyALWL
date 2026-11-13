@@ -21,13 +21,13 @@
 | Double Arched Door | Double Arched Doorway | Rounded top, two leaves |
 
 - The first two have **straight rectangular tops**, not arches. Arched openings are available for suitable ordinary buildings, including wood and stone construction; they are not exclusive to future ships.
-- The established quality progression is **Crude → Rustic → Refined → Superior → Engineered → Fortified**. **Iron and Steel are materials**, not quality tiers. Material, quality and configuration are separate attributes.
+- The established quality progression is **Crude → Rustic → Refined → Sturdy → Superior → Engineered → Fortified**. **Iron and Steel are materials**, not quality tiers. Sturdy is an existing normal construction tier and must not be omitted. Material, quality and configuration are separate attributes.
 - Compatible doors and frames must match their **geometry and dimensions**. Do **not** require identical materials or quality tiers unless an independently approved rule requires it. A matching door must not be rejected merely because its tier or material differs from the frame.
 - Preserve the approved building grid and the existing 4 m double-door opening wherever applicable. Keep door dimensions aligned with the actual frame geometry; do not invent new universal sizes.
 
 ### Implementation requirements
 1. Audit the live `dev` catalog, master list, ledger, recipes, blueprints, structures, existing doorway variants and opening/closing states **before editing**.
-2. Create a reconciliation table showing which existing item IDs and records can be reused, which require corrected descriptions or behavior, and which separate door/doorway entries must actually be added. **The design does not authorize automatically creating 48 new IDs.** Follow official number allocation; never reuse an ID.
+2. Create a reconciliation table showing which existing item IDs and records can be reused, which require corrected descriptions or behavior, and which separate door/doorway entries must actually be added. **Seven tiers × four configurations require 28 logical door/doorway pairings, not automatically 56 new item IDs.** Follow official number allocation; never reuse an ID.
 3. Correct all legacy doorway variants that automatically include a door. Keep the structural opening, remove integral door operation, and provide a separate compatible door item.
 4. Door placement must validate the built frame and correctly match single/double width and rectangular/arched profile. Preview and actual placement decisions must agree, with a meaningful refusal when invalid.
 5. Opening, closing, collision, movement through the opening, ownership of interaction state, multiplayer synchronization, and save/reload must work correctly. For double doors, ensure both leaves function as a double-door assembly.
@@ -36,10 +36,10 @@
 8. This is **specific owner authorization** for the door/doorway corrections and additions stated here. It does not lift the catalog freeze for other items or authorize changing unrelated tiers, construction pieces, or game systems.
 
 ### Verification and delivery
-- Test all four configurations, including at least one instance at every established quality tier where supported by the reconciled catalog.
+- Test all four configurations, covering all seven approved construction tiers (7 × 4 = 28 logical pairings); report any unsupported combination as incomplete rather than excluding it.
 - Verify correct shape, snapping, empty opening, opening/closing, passability, door removal/replacement, persistence, and mismatched-door rejection.
 - Test an appropriately sized compatible door in a frame made from a different material/quality; do not introduce a same-tier-only rule.
-- Check existing placed doorways and save/reload under the current save policy. Run catalog consistency checks and relevant building regression tests.
+- Check existing Sturdy/stone and other placed doorways and save/reload under the current save policy. Run catalog consistency checks and relevant building regression tests.
 - Record automated test evidence, independent review, integration commit/PR and an F6 checklist for player acceptance.
 
 **Workflow:** Read the active `CLAUDE.md`, team authorities and test gates; develop on focused branches, submit reviewed PRs to `dev`, and leave `main` unchanged. Do not claim player verification from automated checks.
