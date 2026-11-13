@@ -75,7 +75,7 @@ Morgan, 10 Nov 2026; brought up to date with main by Jamie, 11 Nov 2026. Docs on
 | Family | Ladder |
 |---|---|
 | Tools and weapons | Wooden, Stone, Bronze, Iron, Steel (copper tools: a future option, decision 70) |
-| Building | Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified (metal pieces: Iron, Steel) |
+| Building | Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified (Iron/Steel may name other material-specific items, **not additional building tiers or live Iron/Steel doorways**) |
 | Clothes | Fibre, Hide, Leather, Fur, Wool, Linen (a property table, not a strict ladder) |
 | Armour | Bronze, Iron, Steel |
 | Workbench | Wooden - Workbench, Carpenter's bench, Stone - Workbench; Vice and Tool rack raise the level (1 to 5) |

@@ -1,5 +1,8 @@
 # BUGLIST-002 implementation contract (lead, 13 Nov 2026)
 
+**Status: IMPLEMENTED ON `dev` — historical engineering contract, not a new work order.** The data/system/look changes and revised names/frame costs in this contract were merged by PR #1077. Iron - Doorway and Steel - Doorway retirement was merged by PR #1078. Preserve this contract as the technical implementation record; for **current implementation status, automated checks and unverified F6/art work**, use [LEDGER.md](LEDGER.md) and `docs/buglists/BUGLIST-002.md`. Do not re-run completed item allocations or reopen resolved frame-cost/naming decisions.
+
+
 Authority: `docs/buglists/BUGLIST-002.md`, `docs/design/DYNASTY_MASTER_ITEMS.md` s3.0 and s3.2, `docs/design/buildables_plan.md`, `art/BUILDING_PLAN.md` (Dave's corrected documents, branch `buglist/002-door-system`). This file fixes the shared names, numbers and data shapes so the data, systems and look work can be built in parallel. Base: `origin/buglist/002-door-system` (= dev `bd5a00b` + Dave's 21 doc commits).
 
 ## Dave's decisions (13 Nov 2026, project chat 14:41-14:43Z)

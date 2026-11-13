@@ -1,5 +1,8 @@
 # BUGLIST-002 ledger (DOOR-001: separate doors and empty doorway frames)
 
+**Integration status (13 Nov 2026):** The separate-door system was merged into `dev` in **PR #1077** (merge `36a32500`); the owner-approved Iron/Steel doorway retirements followed in **PR #1078** (merge `62c24e5d`). This is a record of implementation and automated/headless evidence, **not proof of completed player F6 testing**. The per-row NEEDS PLAYER VERIFICATION and art/icon limits below remain in force until updated by new evidence.
+
+
 Lead thread "Build the door system", 13 Nov 2026. Contract: [CONTRACT.md](CONTRACT.md). Branch `claude/project-thread-gs34p5` (base `buglist/002-door-system` = dev `bd5a00b` + Dave's door documents). Worker commits: data `e856cd3`, systems `0099b4e`, looks `940bcb6`.
 
 States: VERIFIED FIXED / STILL FAILING / NEEDS PLAYER VERIFICATION / BLOCKED. Nothing is passed on compile alone.
