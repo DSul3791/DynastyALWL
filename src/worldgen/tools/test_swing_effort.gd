@@ -273,7 +273,7 @@ func _strain() -> void:
 	w._strain[1] = {"s": 0.2, "state": 0, "t": 0.0}
 	w._overheat[1] = 0.0
 	w._moving[1] = 1.0
-	w._exertion[1] = w._effort_at_speed(run)
+	w._exertion[1] = w._effort_at_speed(run_speed)
 
 	for n in range(60):
 		w._strain_tick(1, 0.25)
