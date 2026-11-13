@@ -640,6 +640,8 @@ static func reason_text(state: String) -> String:
 			return "too many of these here already"
 		"steep":
 			return "the ground is too steep here"
+		"float":
+			return "it is too far above or below the ground"
 		"water":
 			return "you cannot build in water"
 		"shallow":
@@ -702,3 +704,25 @@ static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, he
 
 	var limit: float = float(def.get("max_rise_m", cfg.get("campfire", {}).get("max_rise_m", 0.6) if def.is_empty() else cfg.get("max_rise_m", 1.0)))
 	return "steep" if high - low > limit else ""
+
+
+# "float" when a spot is too far above or below the terrain under it, else "" (the server's "You cannot place that there"; the ghost asks the same so a green
+# ghost is never refused for it). `y` is the spot's height with a wheel lift taken off, `ground` the terrain height at its x and z, `on_base` what snap
+# returned (the spot's height comes from a foundation, not the ground), `stacked` that snap stacked a foundation on a foundation (the reach grows by a
+# body per layer). A piece that stands ON a foundation (wall, floor, pillar, railing, wall top, a fire) rests on what the foundation's own check passed: the
+# ground under the edge of a lifted or stacked foundation may lie further below than any reach, and refusing it left a green ghost that never placed (BUG-009).
+const GROUND_REACH_M := 1.0   # a piece set on the ground
+const BASE_REACH_M := 1.5     # a foundation set beside or on another one
+
+static func off_ground(cfg: Dictionary, kit_id: String, y: float, ground: float, on_base: bool, stacked: bool) -> String:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if on_base and not bool(def.get("foundation", false)):
+		return ""
+
+	var reach: float = GROUND_REACH_M
+
+	if on_base:
+		reach = BASE_REACH_M + (stack_rise(cfg, kit_id) * float(STACK_MAX_LAYERS) if stacked else 0.0)
+
+	return "float" if absf(ground - y) > reach else ""
