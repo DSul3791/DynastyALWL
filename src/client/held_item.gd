@@ -194,6 +194,7 @@ const MISS_POINT_M := 2.5   # the point a swing at nothing reports (inside the s
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const HammerBlueprints := preload("res://src/client/hammer_blueprints.gd")
 const FlameUp := preload("res://src/client/flame_up.gd")
+const FarmRules := preload("res://src/shared/farm_rules.gd")   # the hoe's Garden list and click (plantables, garden_action)
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
@@ -967,7 +968,7 @@ func _is_roof_panel(kit: String) -> bool:
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
 	if _hoe_menu_open:
-		_hoe_menu_index = posmod(_hoe_menu_index + (1 if down else -1), HOE_MODES.size())
+		_hoe_menu_index = posmod(_hoe_menu_index + (1 if down else -1), maxi(1, _hoe_menu_size()))
 		_hoe_menu_refresh()
 		return true
 
@@ -1167,10 +1168,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if _hoe_menu_open:
 				if button == MOUSE_BUTTON_LEFT:
-					hoe_mode = str(HOE_MODES[_hoe_menu_index]["id"])
-					_inv._on_notice("Hoe: %s" % str(HOE_MODES[_hoe_menu_index]["name"]))
+					_hoe_menu_choose()   # closes the list, or goes on to the Garden list
+				else:
+					_hoe_menu_close()
 
-				_hoe_menu_close()
 				return true
 
 			if button == MOUSE_BUTTON_RIGHT:
@@ -2034,8 +2035,8 @@ func _hoe_repeat(delta: float) -> void:
 
 	_hoe_t += delta
 
-	if _hoe_t >= HOE_REPEAT_S and hoe_mode == "survey":
-		_hoe_t = 0.0   # a held click sets one marker, not a line of them
+	if _hoe_t >= HOE_REPEAT_S and (hoe_mode == "survey" or hoe_mode == "garden"):
+		_hoe_t = 0.0   # a held click sets one marker (or plants one thing), not a line of them
 	elif _hoe_t >= HOE_REPEAT_S:
 		_hoe_t = 0.0
 		_arm_play("use", 0.6)
@@ -2048,8 +2049,12 @@ const HOE_MODES := [
 	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
+	{"id": "garden", "name": "Garden", "note": "plant seeds or a dug-up bush from your pack (the next list picks which)"},
 ]
 var hoe_mode: String = "path"
+var garden_pick: String = ""             # Garden mode: the item id picked to plant (seeds or a dug-up bush), "" for none (tests read it)
+var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what the pack can plant, FarmRules.plantables)
+var _garden_rows: Array = []             # the Garden list as opened: [{"id", "kind"}]
 var _hoe_menu_open: bool = false
 var _hoe_menu_index: int = 0
 var _hoe_menu_panel: PanelContainer = null
@@ -2064,6 +2069,8 @@ func _hoe_apply() -> void:
 		_hoe_here(Net.ACT_TILL)
 	elif hoe_mode == "survey":
 		_grade_point_here()   # one marker a click, never repeated while the button is held
+	elif hoe_mode == "garden":
+		_garden_here()   # one planting a click
 	else:
 		_hoe_here(Net.ACT_HOE_PATH)
 
@@ -2084,6 +2091,7 @@ func _hoe_menu_open_now() -> void:
 		_hoe_menu_panel.add_child(_hoe_menu_label)
 		_hud_layer.add_child(_hoe_menu_panel)
 
+	_hoe_menu_page = "modes"
 	_hoe_menu_index = 0
 
 	for n in HOE_MODES.size():
@@ -2098,10 +2106,83 @@ func _hoe_menu_open_now() -> void:
 func _hoe_menu_refresh() -> void:
 	var text: String = "What should the hoe do?   (wheel: move, left click: choose, right click: close)\n\n"
 
-	for n in HOE_MODES.size():
-		text += "%s %s: %s\n" % ["->" if n == _hoe_menu_index else "    ", str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+	if _hoe_menu_page == "garden":
+		text = "What to plant?   (wheel: move, left click: choose, right click: close)\n\n"
+
+	for n in _hoe_menu_size():
+		text += "%s %s\n" % ["->" if n == _hoe_menu_index else "    ", _hoe_menu_line(n)]
 
 	_hoe_menu_label.text = text
+
+
+func _hoe_menu_size() -> int:
+	return _garden_rows.size() if _hoe_menu_page == "garden" else HOE_MODES.size()
+
+
+func _hoe_menu_line(n: int) -> String:
+	if _hoe_menu_page != "garden":
+		return "%s: %s" % [str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+
+	var row: Dictionary = _garden_rows[n]
+	var hint: String = "click a bed or garden plot to sow, open ground to till a bed first" if str(row["kind"]) == "seed" else "click open ground to plant it"
+	return "%s (%d): %s" % [_inv.table.name_of(_inv.table.number_of(str(row["id"]))), _pack_count(str(row["id"])), hint]
+
+
+func _pack_count(id: String) -> int:
+	var total: int = 0
+
+	for slot in range(_inv.inventory.slot_count):
+		if _inv.inventory.numbers[slot] != 0 and _inv.table.id_of(_inv.inventory.numbers[slot]) == id:
+			total += int(_inv.inventory.counts[slot])
+
+	return total
+
+
+func _pack_slot_of(id: String) -> int:
+	for slot in range(_inv.inventory.slot_count):
+		if _inv.inventory.numbers[slot] != 0 and _inv.table.id_of(_inv.inventory.numbers[slot]) == id:
+			return slot
+
+	return -1
+
+
+# Left click in the hoe's list: on the first page it sets the mode (Garden goes on to the list of what to plant); on the Garden page it picks what to plant.
+func _hoe_menu_choose() -> void:
+	if _hoe_menu_page == "garden":
+		if _hoe_menu_index < _garden_rows.size():
+			garden_pick = str(_garden_rows[_hoe_menu_index]["id"])
+			_inv._on_notice("Hoe: plant %s" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
+
+		_hoe_menu_close()
+		return
+
+	hoe_mode = str(HOE_MODES[_hoe_menu_index]["id"])
+
+	if hoe_mode != "garden":
+		_inv._on_notice("Hoe: %s" % str(HOE_MODES[_hoe_menu_index]["name"]))
+		_hoe_menu_close()
+		return
+
+	var ids: Array = []
+
+	for slot in range(_inv.inventory.slot_count):
+		ids.append(_inv.table.id_of(_inv.inventory.numbers[slot]) if _inv.inventory.numbers[slot] != 0 else "")
+
+	_garden_rows = FarmRules.plantables(_inv.crop_table(), ids)
+
+	if _garden_rows.is_empty():
+		_inv._on_notice("Hoe: Garden. Carry seeds or a dug-up bush to plant them")
+		_hoe_menu_close()
+		return
+
+	_hoe_menu_page = "garden"
+	_hoe_menu_index = 0
+
+	for n in _garden_rows.size():
+		if str(_garden_rows[n]["id"]) == garden_pick:
+			_hoe_menu_index = n
+
+	_hoe_menu_refresh()
 
 
 func _hoe_menu_close() -> void:
@@ -2209,6 +2290,45 @@ func _hoe_here(action: int) -> void:
 		_sound.hits.hit("spade", "soil", hit["position"], 0.7 if action == Net.ACT_TILL else 0.4)
 
 
+# A Garden-mode click (hoe): the picked seeds sow the bed or garden plot under the crosshair, or till open ground into a bed first; a picked dug-up bush is
+# planted in open ground. The pack slot sent is the first one holding the picked item; the server checks reach, season, ground and spacing and says why it refuses.
+func _garden_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
+		_inv._on_notice("Aim the hoe at the ground or a bed within reach to plant")
+		return
+
+	var slot: int = _pack_slot_of(garden_pick) if garden_pick != "" else -1
+	var kind: String = ""
+
+	if slot >= 0:
+		kind = "seed" if FarmRules.crop_of_seed(_inv.crop_table(), garden_pick) != "" else ("bush" if garden_pick.ends_with("_bush") else "")
+
+	var bed: int = _inv.bed_id_at(hit["position"])
+	var plant_name: String = _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower() if garden_pick != "" else ""
+	var plan: Dictionary = FarmRules.garden_action(kind, plant_name, bed != 0, _inv.bed_crop(bed) if bed != 0 else "")
+
+	if garden_pick != "" and slot < 0:
+		plan["say"] = "No %s left in your pack: right click and pick something else to plant" % plant_name
+
+	match str(plan["act"]):
+		"sow":
+			_net.inventory_action.rpc_id(1, Net.ACT_SOW, bed, slot, 0, Vector3.ZERO)   # b: the seed's pack slot
+		"till":
+			_net.inventory_action.rpc_id(1, Net.ACT_TILL, held_slot, 0, 0, hit["position"])   # the hoe in hand tills, as in Till mode
+
+			if _sound != null:
+				_sound.hits.hit("spade", "soil", hit["position"], 0.7)
+		"plant_bush":
+			_net.inventory_action.rpc_id(1, Net.ACT_PLANT_BUSH, slot, 0, 0, hit["position"])   # a: the bush's pack slot (it need not be in hand)
+
+	if str(plan["say"]) != "":
+		_inv._on_notice(str(plan["say"]))
+
+
 # A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
 	var from: Vector3 = _camera.global_position
@@ -2235,7 +2355,7 @@ func _other_tool_hint() -> String:
 		"net":
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
-			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till or survey a path. It uses no items, only its own wear" % hoe_mode
+			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till, survey a path or garden (plant seeds or a dug-up bush from your pack). Only Garden uses items" % hoe_mode
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"spade":
@@ -2293,6 +2413,9 @@ func _caption() -> String:
 
 
 func _hoe_mode_name() -> String:
+	if hoe_mode == "garden":
+		return "Garden: %s" % (_inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower() if garden_pick != "" else "pick what to plant")
+
 	for mode in HOE_MODES:
 		if str(mode["id"]) == hoe_mode:
 			return str(mode["name"])

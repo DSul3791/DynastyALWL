@@ -1030,6 +1030,36 @@ func _is_bed_def(def: Dictionary) -> bool:
 	return str(def.get("item", "")) == "tilled_bed" or bool(def.get("plot", false))
 
 
+# The tilled bed or garden plot whose square footprint holds `point` (flat), 0 for none: the hoe's Garden mode sows it (held_item._garden_here).
+func bed_id_at(point: Vector3) -> int:
+	for id in _world:
+		if not _world[id].has("yaw") or int(_world[id]["state"]) < 5:
+			continue
+
+		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+
+		if not _is_bed_def(def):
+			continue
+
+		var half: float = float(def.get("footprint_x", 1.0)) * 0.5 + 0.05
+		var at: Vector3 = _world[id]["pos"]
+
+		if absf(at.x - point.x) <= half and absf(at.z - point.z) <= half:
+			return int(id)
+
+	return 0
+
+
+# The crop on a bed from its world row ("" for an empty bed or an unknown id).
+func bed_crop(id: int) -> String:
+	return str(_world.get(id, {}).get("crop", ""))
+
+
+# The crops.json table, for the hoe's Garden list (which seeds sow a crop).
+func crop_table() -> Dictionary:
+	return _crop_cfg()
+
+
 # crops.json, read once: the client's wording needs the crop names, seeds and harvest tools (the server rules on all of it).
 func _crop_cfg() -> Dictionary:
 	if _crops_cfg.is_empty():
