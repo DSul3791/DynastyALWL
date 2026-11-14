@@ -17706,7 +17706,14 @@ func _craft_tick(spent: float) -> void:
 				if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 					_say(peer, "Needs repair")   # the smithy wore out under the queue: the craft waits, nothing is lost
 				else:
-					_say(peer, ("The %s is cold: carry charcoal or coal to fire it" if _cold_station_near(peer, str(recipe["station"])) else "Your craft waits: go back to the %s") % _station_name(str(recipe["station"])))
+					var station_name: String = _station_name(str(recipe["station"]))
+					var waiting: int = _variant_of(head)
+					if _cold_station_near(peer, str(recipe["station"])):
+						_say(peer, "The %s is cold: carry charcoal or coal to fire it" % station_name)
+					elif waiting != 0:
+						_say(peer, "Your %s %s waits: go back to the %s" % [SmithingRules.label(waiting), str(recipe.get("name", "craft")), station_name])   # a Tempered or +1/+2 craft names the item it waits for
+					else:
+						_say(peer, "Your craft waits: go back to the %s" % station_name)
 
 			continue
 
