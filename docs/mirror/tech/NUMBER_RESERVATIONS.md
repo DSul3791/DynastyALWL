@@ -33,3 +33,6 @@ Block from the lead (items from 1320, blueprints from 310, states from 380, reci
 
 ## GOALS-REPAIR WP-GUIDE-UI (14 Nov 2026, Fortified - Roof 45 and 65)
 Dave (14 Nov 2026 05:29Z): "all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof". Fortified had no roof: items 1325 `fortified_roof` (Fortified - Roof 45), 1326 `fortified_roof_65` (Fortified - Roof 65); blueprints 315, 316; structure states 391, 392 (385-390 are held for the A-37 roof corners' 65 degree shapes). Cost PROVISIONAL (GOALS-REPAIR A-39). No recipes (blueprint-only). Next free: item 1327, blueprint 317, structure state 393.
+
+## Gardening on the hoe (14 Nov 2026, tree seeds)
+The coordinator gave the block items 1360-1399, blueprints 350-359 and structure states 440-459. Used here: items 1360 `birch_seeds`, 1361 `pine_cones`, 1362 `spruce_cones`, 1363 `alder_cones`, 1364 `willow_seeds`, 1365 `hardwood_seeds`, 1366 `acacia_pods`, 1367 `mangrove_propagules`, 1368 `fir_cones` and 1369 `maple_keys`. No blueprints, states or recipes are used. The rest of the block (items 1370-1399, blueprints 350-359, states 440-459) stays held for gardening. next_number is now 1370 in items.json and in gathered.json, above every number in use. Numbers below the block that nobody has used yet, including the plumbing block 1350-1359, stay free for whoever reserves them here.
