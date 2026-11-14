@@ -550,14 +550,15 @@ func _make_snow() -> GPUParticles3D:
 	return particles
 
 
-# The look the weather asks for: the sound stage's test kind when one is selected, else the world.
+# The look the weather asks for: the sound stage's test kind when one is selected (the Esc sound test, or --weather=KIND on the command
+# line, so a headless run can force fog), else the world.
 func _target() -> Dictionary:
 	var out: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0, "mist_depth_m": 0.0, "sea_fog": 0.0, "sea_fog_land": 0.0, "sea_fog_top_m": 0.0, "water_steam": 0.0}
 
 	if clear_day:
 		return out
 
-	if int(_client.sound_tests.weather_at) >= 0 and _client.sound != null and _client.sound.weather != null:
+	if _client.sound != null and _client.sound.weather != null and (int(_client.sound_tests.weather_at) >= 0 or bool(_client.sound.weather.forced)):
 		return TEST.get(_client.sound.weather.kind, out)
 
 	var world: Dictionary = _client.weather
