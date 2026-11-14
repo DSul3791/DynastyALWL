@@ -144,6 +144,7 @@ func _server_checks() -> void:
 	var items = _server(dir)
 	items.peer_connected_hello(1, "tierpieceskey1")
 	var x: float = 300.0
+	check(items._refund_number(items.table.number_of("hinges")) == items.table.number_of("bronze_hinges"), "a Hinges cost is refunded as Bronze hinges, the group's lowest member (item_table.spend_order)")
 
 	for id in PIECES:
 		var p: Array = PIECES[id]
