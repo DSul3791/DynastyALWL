@@ -1,6 +1,6 @@
 # Player progression repair: verification report (GOALS-REPAIR R9)
 
-**Status: DRAFT, updated as work lands.** This PR also adds the map goal events (code) and applies the catalog recheck. Written 14 Nov 2026 against `dev` `54b2c51c` (last merge #1101). R4 (#1102), R5, R6 and the building work are not in `dev` yet. Their rows say so and will be filled in when they merge.
+**Status: DRAFT, updated as work lands.** Since this was written, `dev` has taken #1102 (R4, protocol 121) and #1103 at `e2c21b5b`; the R4 rows below still read as of `54b2c51c` and are updated in the follow-up PR. This PR also adds the map goal events (code) and applies the catalog recheck. Written 14 Nov 2026 against `dev` `54b2c51c` (last merge #1101). R4 (#1102), R5, R6 and the building work are not in `dev` yet. Their rows say so and will be filled in when they merge.
 
 This is the R9 report that Dave's 14 Nov brief and [CATALOG_IMPLEMENTATION_PLAN.md](CATALOG_IMPLEMENTATION_PLAN.md) §2 R9 and §5 call for. The tracker is `docs/ai-team/missions/GOALS-REPAIR/STATE.md`, with its decisions in `REPAIR_DECISIONS.md`. The original audit (`PLAYER_GOALS_REWARDS_AUDIT.md`, `PLAYER_GOALS_AUDIT_LEDGER.csv`) is kept unchanged. Section 5 lists what this mission changed against it. The play checklist is [PLAYER_PROGRESSION_REPAIR_F6.md](PLAYER_PROGRESSION_REPAIR_F6.md).
 

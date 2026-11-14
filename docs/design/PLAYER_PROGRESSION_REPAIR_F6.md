@@ -1,6 +1,6 @@
 # Progression repair: F6 play checklist (GOALS-REPAIR)
 
-**DRAFT, updated as work lands.** Written against `dev` `54b2c51c`. Pull `dev`, press F6 and play. The client and the server must be on the same build: protocol 120 now, and 121 once R4 lands. Every step is NEEDS PLAYER VERIFICATION. Tests have passed headless, but nothing has been seen in a running game. The evidence for each item is in [PLAYER_PROGRESSION_REPAIR_VERIFICATION.md](PLAYER_PROGRESSION_REPAIR_VERIFICATION.md).
+**DRAFT, updated as work lands.** Written against `dev` `54b2c51c`. Pull `dev`, press F6 and play. The client and the server must be on the same build: protocol 121 (R4, #1102, is in `dev`; its checks are added to this list in the follow-up update). Every step is NEEDS PLAYER VERIFICATION. Tests have passed headless, but nothing has been seen in a running game. The evidence for each item is in [PLAYER_PROGRESSION_REPAIR_VERIFICATION.md](PLAYER_PROGRESSION_REPAIR_VERIFICATION.md).
 
 Play with **Admin mode off**. While Admin mode is on, goals count nothing. Start from a **new character with an empty pack**. Each line says what to do, then what you should see. Tick it, or note what you saw.
 
