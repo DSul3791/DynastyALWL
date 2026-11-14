@@ -17,9 +17,9 @@ Ledger states: NOT STARTED / IN PROGRESS / IN REVIEW / IN DEV / BLOCKED. Evidenc
 | Item | Value |
 |---|---|
 | Starting `dev` | `1382118e` (13 Nov 22:34 -04:00) |
-| PR #1085 (CCR05 doc cleanup, head `86d23cf`) | Independent gate review PASS WITH MINOR NOTES (7 minor); merge-check green; merged to `dev` at **`d990abd`** (14 Nov). Minor findings 1-6 fixed on the lead branch (this PR); 7 optional, left. |
+| PR #1085 (CCR05 doc cleanup, head `86d23cf`) | Independent gate review PASS WITH MINOR NOTES (7 minor); merge-check green; merged to `dev` at **`d990abd`** (14 Nov). Minor findings 1-6 fixed in #1086; 7 optional, left. |
 | Overlapping doc PRs | #1084 (claude/docs-cleanup-gameplay-rules-20261113): competing edit of the same Appendix A; its useful points (Appendix retitle, `forge` labelling, item 827 note) are now carried by the #1085 follow-up, so #1084 is **superseded** (left open for its owner to close). #1083 (entry-point docs: START_HERE, RULES, WORKFLOW, DOCUMENT_AUTHORITY): no overlap with this mission's files except one table row in DOCUMENT_CONTRADICTIONS; not reviewed here. #1082 (door docs, based on older `cdd7eca`): not in this mission's path; door behaviour itself is in `dev` (PRs #1077, #1078). |
-| Protocol | 118 (`src/stream/terrain_net.gd`) |
+| Protocol at baseline | 118 (`src/stream/terrain_net.gd`); now 119 in dev (#1088) |
 | Already in `dev` and retained | Door system (empty frames, 28 separate doors, Iron/Steel doorways retired; #1077/#1078); packs without slots (#1079); BUGLIST-001 and PLAYTEST-001 fixes; Admin Reset World; catalog Mission 001 baseline. All still NEEDS PLAYER VERIFICATION per their ledgers. |
 | Earlier "Add current goal display" thread | Stopped by Dave pending his design; PLAYER_JOURNAL_GOALS_UI.md is that design now. Branch check in baseline below. |
 
@@ -31,7 +31,6 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 
 | Shared file / section | Current owner | Since |
 |---|---|---|
-| server_items.gd: tree/trunk processing, ingredient stock counting/taking (`_stock_of` and the ingredient-take helpers; shared `Inventory` fill helpers), water_bed | lead → WP-R1A worker | 14 Nov |
 | server_items.gd: farming handlers + world-item row extras for crops | lead → WP-R1B (farming) | 14 Nov |
 | server_items.gd: goals section (`_goals_*`, `_goal_event`, `_goal_made`, `goals_state`) | thread "Build the Journal, goal HUD and placard" | 14 Nov |
 | server_items.gd: smelting/craft-queue stations (`_queue_craft`, queue tick, `station_near`/`serving_station`, `_speed_factor`/`_addon_factor`), station stores/out-slots, kiln, `_repair_struct`/structure wear, hopper/fuel pulls. Boundary: queue code calls the WP-R1A ingredient helpers and does not edit them | thread "Build the metalworking progression" | 14 Nov |
@@ -53,7 +52,7 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 | WP-R1B | R1 | GA-03 client farming: sow, water, harvest, crop stage looks (A-6, A-7) | lead worker | WP-R1A (water_bed adapter) | IN REVIEW (rebase after #1091) | #1089 | | gate CHANGES REQUIRED; fixes 2/4/5/6 at `835cb0f`, 1 after rebase |
 | WP-METAL | R2–R6 | Smelters, Smithies, Copper tools, Anvils, wear/repair, bins, fuel pulls (A-8..A-11 so far) | thread "Build the metalworking progression" | — | IN REVIEW (PR 1: R2a + Improved smelter) | #1092 | | |
 | WP-GUIDE-UI | R7 runtime + R8 | Goal sync (protocol 119), Journal J/G/M, HUD, placard (A-12) | thread "Build the Journal, goal HUD and placard" | WP-KEYS for J/G/M | IN DEV | #1088, #1093 | #1088 → `e7d4919`; #1093 → `55b1254` | #1088 David4 371/371; #1093 David4 73/73 + test_goal_ui, check_look_names, validate_items 0 errors (HEADLESS_GODOT); picture lane not run; look/motion/sound NEEDS PLAYER VERIFICATION |
-| WP-MAP | R8 | Discovered charcoal Map foundation (protocol 120, A-5) | thread "Build the discovered charcoal map" | #1088 | IN REVIEW (lane B queued on `5f81dce`); follow-up wires map_page into Journal `_show_map()` | #1090 | | gate PASS WITH NOTES (4 passes) |
+| WP-MAP | R8 | Discovered charcoal Map foundation (protocol 120, A-5) | thread "Build the discovered charcoal map" | #1088 | IN REVIEW (Journal map hookup folded in; new head and lane B pending) | #1090 | | gate PASS WITH NOTES (4 passes, on `0788ed1`; merge to `5f81dce` re-checked PASS) |
 | WP-PRIM | R1/R2 | Primitive route: F1 site goal kind, F2 3 m logs, F3 manual firewood credit, F4 fire tier events, F5/P2 route tests, F9 text (baseline/PRIMITIVE_ROUTE_d990abd.md); F6-F8, F10 proposals only | lead worker | #1088, #1091 (both in dev) | IN PROGRESS | goals-repair/wp-prim | | |
 | WP-GOALS | R7 | 651-row catalog correction (328 rule-only rows individually), new-station coverage, completion conditions, migration; creator-review package | lead worker | mechanics PRs (content work started in parallel) | IN PROGRESS | goals-repair/wp-goals | | |
 
