@@ -1033,9 +1033,9 @@ func _seed_slot() -> int:
 # E on a bed: the one request FarmRules.bed_action words (sow the seed in hand or pack, water with the filled container in hand, harvest a ripe crop). The server does
 # the checking; a refusal (not the season, not ripe, too far) comes back as its notice.
 func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictionary:
-	var seed_slot: int = _seed_slot()
-	var water_slot: int = held_container_slot() if held_container_has_water() else -1
 	var row: Dictionary = _world[id]
+	var seed_slot: int = _seed_slot() if str(row.get("crop", "")) == "" else -1   # only an empty bed takes a seed (this probe runs every frame the bed is aimed at)
+	var water_slot: int = held_container_slot() if held_container_has_water() else -1
 	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot >= 0)
 	var found: Dictionary = {"prompt": plan["prompt"], "tap": func():
 		match str(plan["act"]):
