@@ -73,7 +73,7 @@ func _init() -> void:
 	# A cistern spills from its base outlet into an open stone channel and corner, which pour over the rim of a stone trough standing lower.
 	var c2: int = put("stone_cistern", Vector3(500.0, 10.0, 500.0))
 	var run: int = put("stone_channel", Vector3(500.0, 10.0, 502.05), 90.0)
-	var bend: int = put("stone_channel_corner", Vector3(500.0, 10.0, 504.05), 90.0)
+	var bend: int = put("stone_channel_corner", Vector3(500.0, 10.0, 504.05), 180.0)
 	check(items._water.downstream(c2).has(run) and items._water.downstream(run).has(bend), "a cistern feeds a stone channel, the channel its corner")
 	var spill: Vector3 = items._water.pieces[bend]["outlet"]
 	var basin: int = put("stone_trough", Vector3(spill.x, 9.4, spill.z))
@@ -81,7 +81,7 @@ func _init() -> void:
 	items._water.set_litres(c2, 1000.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
-	check(items._water.inflow_lpm(basin) > 0.0 and items._water.inflow_lpm(basin) <= 300.0, "the stone trough fills through the channels (%.2f L/min)" % items._water.inflow_lpm(basin))
+	check(absf(items._water.inflow_lpm(basin) - 300.0) < 0.01, "the stone trough fills through the channels at their full 300 L/min (%.2f)" % items._water.inflow_lpm(basin))
 
 	# The raised cistern's tank stands 2.5 m over its outlet: a level clay pipe from it runs full.
 	var raised: int = put("stone_raised_cistern", Vector3(300.0, 10.0, 300.0))
