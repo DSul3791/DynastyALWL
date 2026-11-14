@@ -70,7 +70,7 @@ func _init() -> void:
 	items.ground_height = func(_x, _z): return 10.0
 	items.admin_ok = func(p: int) -> bool: return p == 1   # peer 1 is an admin (local play: everybody is); peer 2 is not
 	items.setup(ItemTableScript.load_default(), dir)
-	items._goals_loaded = true   # no goals here: a goal's own reward or line (4 sticks for twine, "Goal done" for a bed) would change what this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
+	items._goals_loaded = true   # no goals here: a goal's own coins or line ("Goal done" for a bed) would change what this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, KEY)
 	items.peer_connected_hello(2, "adminmodekey02")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
