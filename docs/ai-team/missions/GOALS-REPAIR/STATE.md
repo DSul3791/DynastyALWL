@@ -9,6 +9,7 @@ Ledger states: NOT STARTED / IN PROGRESS / IN REVIEW / IN DEV / BLOCKED. Evidenc
 - Dave 14 Nov 00:34Z: the brief (implement, independently review and integrate the approved repairs and player guide into `dev`; `main` untouched).
 - Dave 14 Nov 00:35Z: work autonomously from the documents; he checks in for updates.
 - Dave 14 Nov 00:36Z (verbatim in REPAIR_DECISIONS.md §3 intro): questions meant for him are answered from his earlier rulings with a reasonable assumption and logged in REPAIR_DECISIONS.md, section "Assumed on Dave's behalf, for his review". Not for `main`, destructive or security-sensitive actions, or live/retrospective payouts. Reach into catalog data: ruling R-1.
+- Dave 14 Nov 00:43:53Z (verbatim: "OK, we will not be doing any plate here until we get all of this settled"; coordinator reads "plate" as "play"): no interim F6 checks from Dave. Items stay NEEDS PLAYER VERIFICATION; one consolidated playtest checklist is produced at the end.
 - Godot tests only on Dave's machines (lane B David4 preferred, via the coordinator with an exact reviewed SHA). Never in the cloud.
 
 ## Baseline (R0)
