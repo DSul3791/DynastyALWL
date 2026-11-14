@@ -31,10 +31,10 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 
 | Shared file / section | Current owner | Since |
 |---|---|---|
-| server_items.gd: tree/trunk processing, crafting ingredient count/consume, water_bed | lead → WP-R1A worker | 14 Nov |
+| server_items.gd: tree/trunk processing, ingredient stock counting/taking (`_stock_of` and the ingredient-take helpers; shared `Inventory` fill helpers), water_bed | lead → WP-R1A worker | 14 Nov |
 | server_items.gd: farming handlers + world-item row extras for crops | lead → WP-R1B (farming) | 14 Nov |
 | server_items.gd: goals section (`_goals_*`, `_goal_event`, `_goal_made`, `goals_state`) | thread "Build the Journal, goal HUD and placard" | 14 Nov |
-| server_items.gd: smelting/craft-queue stations, station stores, kiln, `_repair_struct`/structure wear, hopper/fuel pulls | thread "Build the metalworking progression" | 14 Nov |
+| server_items.gd: smelting/craft-queue stations (`_queue_craft`, queue tick, `station_near`/`serving_station`, `_speed_factor`/`_addon_factor`), station stores/out-slots, kiln, `_repair_struct`/structure wear, hopper/fuel pulls. Boundary: queue code calls the WP-R1A ingredient helpers and does not edit them | thread "Build the metalworking progression" | 14 Nov |
 | server_items.gd: one hook for discovery record (new module) | thread "Build the discovered charcoal map" | on request |
 | data/items/{items,structures,blueprints,recipes,boulders,smithing,building_wear}.json | metalworking thread | 14 Nov |
 | data/items/drops.json, inventory shared code | WP-R1A | 14 Nov |

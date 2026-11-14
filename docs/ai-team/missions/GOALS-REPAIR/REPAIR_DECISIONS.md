@@ -44,5 +44,5 @@ Each entry: question; answer chosen; precedent it was reasoned from; what it aff
 
 ## 5. Findings outside this mission (reported, not fixed)
 
-- `data/items/crops.json`: nine crops carry a stale singular `sow_season: "summer"` that disagrees with the `sow_seasons` list the server actually reads (server_items.gd ~14664). Reported; left unchanged pending the catalog owner (R1 baseline).
-- `data/items/terrain_preview.gd` / client: bare `KEY_G` in terrain_preview.gd (tool scene) noted by the keys baseline.
+- `data/items/crops.json`: 15 crops carry a singular `sow_season`; for nine of them (oats, carrot, potato, cabbage, onion, peas, beet, flax, parsnip) it disagrees with the `sow_seasons` list the server actually reads (server_items.gd ~14664). Reported; left unchanged pending the catalog owner (R1 baseline).
+- `scenes/terrain_preview/terrain_preview.gd`: bare `KEY_G` (tool scene), handled in WP-KEYS.
