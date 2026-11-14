@@ -1170,6 +1170,18 @@ func _init() -> void:
 	for id in food.get("by_id", {}):
 		used[String(id)] = true
 
+	# Planting is a use (gardening, 14 Nov 2026): a crop seed is sown (crops.json seed), a dug-up bush and a felled tree's seed are planted with the hoe
+	# (server_items._plant_bush), so none of them is a dead end.
+	for crop_id in crops_file.get("crops", {}):
+		used[String(crops_file["crops"][crop_id].get("seed", ""))] = true
+
+	for entry in _read("../tables/flora.json").get("entries", []):
+		if String(entry.get("kind", "")) == "shrub" and shrub_work.has("dig_suffix"):
+			used[String(entry["name"]) + String(shrub_work["dig_suffix"])] = true
+
+	for species_name in felled_seeds.get("by_species", {}):
+		used[String(felled_seeds["by_species"][species_name])] = true
+
 	var dead_core: Array = []
 
 	for id in items_file.get("items", {}):
