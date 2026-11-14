@@ -1113,7 +1113,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count), int(at.x) - 1)   # a tree blow's at.x is the held pack slot + 1 (protocol 115)
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
-		_chest_action(peer, inv, kind, a, b, count)
+		_chest_action(peer, inv, kind, a, b, count, int(at.x) - 1 if kind == Net.ACT_CHEST_PUT else -1)   # a put's at.x: the store slot it was dragged onto + 1 (protocol 121)
 	elif kind == Net.ACT_USE_STRUCT:
 		_use_struct(peer, inv, a, b, count - 1)   # count: the held pack slot + 1, for the chopping block's axe (protocol 117)
 	elif kind == Net.ACT_EAT:
@@ -10046,7 +10046,7 @@ func _chest_of(peer: int, id: int):
 	return chest
 
 
-func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> void:
+func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, target: int = -1) -> void:
 	if kind == Net.ACT_CHEST_OPEN:
 		id = a
 
@@ -10087,7 +10087,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		_say(peer, "A fire takes wood and food.")
 		_reject(peer, 3)
 	elif kind == Net.ACT_CHEST_PUT:
-		_box_put(peer, inv, id, chest, a, count)
+		_box_put(peer, inv, id, chest, a, count, target)
 	elif kind == Net.ACT_CHEST_TAKE:
 		_box_take(peer, inv, chest, a, count, id < 0)
 
@@ -10110,7 +10110,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 # One put from pack slot `a` into container `id` (its inventory `chest`), up to `count`: the container's own rules (take-only, what it takes,
 # its max_kg). The caller has already checked reach and access (_chest_of, or a storage view's _view_boxes). Returns how many went in.
-func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
+# `target`: the store slot the stack was dragged onto (-1: none). Only a smelter reads it: Coal or Charcoal dragged onto an Advanced smelter's
+# input goes in as steel carbon (server_smelter.part_for).
+func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = -1) -> int:
 	var kind: String = str(_items.get(id, {}).get("struct", {}).get("kind", ""))
 
 	if bool(_structures.get(kind, {}).get("take_only", false)):
@@ -10141,10 +10143,10 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 	var smelter: bool = id >= 0 and _smelters.is_smelter(_structures.get(kind, {}))
 
 	if smelter:   # a Smelter's hopper holds smelt.hopper units of fuel and its input smelt.input units of ore (master s2.7)
-		amount = _smelters.room(_structures[kind], chest, number, amount)
+		amount = _smelters.room(_structures[kind], chest, number, amount, target)
 
 		if amount == 0:
-			_say(peer, _smelters.refusal(_structures[kind], chest, number))
+			_say(peer, _smelters.refusal(_structures[kind], chest, number, target))
 			_reject(peer, 3)
 			return 0
 
@@ -10173,7 +10175,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 	var left: int = 0
 
 	if amount > 0:
-		left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst) if smelter else chest.add(number, amount, held_wear, held_inst)
+		left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst, target) if smelter else chest.add(number, amount, held_wear, held_inst)
 
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
@@ -13211,7 +13213,7 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_within(it["pos"], "fireplace", float(def.get("attach_m", 2.5))):
 				continue   # the Fireplace cooking crane (master s3.12) hangs its pot over a fireplace: only while that fireplace burns
 
-			# A station that must be burning to craft (the Smithy, Blast furnace and Master smithy, master s4 item 10): a cold one serves while the crafter
+			# A station that must be burning to craft (the Smithies and the Master smithy, master s4 item 10): a cold one serves while the crafter
 			# carries its fuel, and the craft itself (light_it) fires it from the pack. Without fuel the craft waits and nothing is lost.
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
 				if d < cold_d:
@@ -17377,7 +17379,9 @@ func craft_variants(peer: int, recipe: Dictionary) -> Array:
 	if station != "" and made_id != "":
 		var master_id: int = serving_station(peer, str(c.get("craft", {}).get("station", "master_smithy")))
 		master = master_id >= 0 and _station_serves(master_id, station, level)
-		var smithy_id: int = serving_station(peer, str(c.get("temper", {}).get("station", "brick_forge")))
+		var temper_station: String = str(c.get("temper", {}).get("station", "brick_forge"))
+		# The nearest smithy at the recipe's own level (a lit Improved smithy beside an Advanced smithy must not hide the steel one).
+		var smithy_id: int = serving_station(peer, temper_station, level if temper_station == station else 1)
 		trough = smithy_id >= 0 and _station_serves(smithy_id, station, level) and _addon_beside(smithy_id, str(c.get("temper", {}).get("addon", "")))
 
 	return SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)

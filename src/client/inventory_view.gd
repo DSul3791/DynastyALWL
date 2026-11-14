@@ -3449,13 +3449,17 @@ func station_in_reach(r: Dictionary) -> bool:
 	return str(r.get("station", "")) != "" and station_near(str(r["station"]), int(r.get("station_level", 1)), CraftStock.CRAFT_REACH_M)
 
 
+# The station that makes a recipe, by name: the first structure whose own station serves it at the recipe's level (steel at brick forge level 3
+# names the Advanced smithy, not the Improved one; GOALS-REPAIR R4), else one that carries it as an "also" station at that level.
 func _station_label(r: Dictionary) -> String:
+	var level: int = int(r.get("station_level", 1))
+
 	for kind in _structure_kinds():
-		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")):
+		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")) and int(_structures_cfg[kind].get("station_level", 1)) >= level and not bool(_structures_cfg[kind].get("retired", false)):
 			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	for kind in _structure_kinds():
-		if _structures_cfg[kind].get("also", {}).has(str(r.get("station", ""))):
+		if int(_structures_cfg[kind].get("also", {}).get(str(r.get("station", "")), 0)) >= level and not bool(_structures_cfg[kind].get("retired", false)):
 			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	return str(r.get("station", "")).replace("_", " ")
@@ -3763,7 +3767,8 @@ func craft_variants(r: Dictionary) -> Array:
 		var c: Dictionary = SmithingRules.cfg()
 		# As the server: the nearest Master smithy and the nearest Smithy within reach (ServerItems.serving_station), each serving the recipe.
 		var master_id: int = _nearest_serving(str(c.get("craft", {}).get("station", "master_smithy")))
-		var smithy_id: int = _nearest_serving(str(c.get("temper", {}).get("station", "brick_forge")))
+		var temper_station: String = str(c.get("temper", {}).get("station", "brick_forge"))
+		var smithy_id: int = _nearest_serving(temper_station, level if temper_station == station else 1)   # as the server: at the recipe's level
 		var master: bool = master_id >= 0 and _def_serves(_structure_by_state(int(_world[master_id]["state"])), station, level)
 		var trough: bool = false
 
@@ -3780,8 +3785,8 @@ func craft_variants(r: Dictionary) -> Array:
 	return _near_memo[key]
 
 
-# The world id of the nearest placed structure within its reach that serves `station` (its own or "also"), or -1.
-func _nearest_serving(station: String) -> int:
+# The world id of the nearest placed structure within its reach that serves `station` (its own or "also") at `level` or above, or -1.
+func _nearest_serving(station: String, level: int = 1) -> int:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 	var best: int = -1
 	var best_d: float = INF
@@ -3790,7 +3795,7 @@ func _nearest_serving(station: String) -> int:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 		var d: float = here.distance_to(_world[id]["pos"])
 
-		if not def.is_empty() and d <= float(def.get("reach_m", 3.0)) + 1.0 and d < best_d and _def_serves(def, station, 1):
+		if not def.is_empty() and d <= float(def.get("reach_m", 3.0)) + 1.0 and d < best_d and _def_serves(def, station, level):
 			best = int(id)
 			best_d = d
 
