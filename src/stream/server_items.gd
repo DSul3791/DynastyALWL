@@ -7534,7 +7534,9 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s if tree_species != "" else now_s - SAPLING_GROWN_S})   # a dug bush goes in full size; a seed starts as a sapling and grows like wild regrowth
 	_dirty = true
-	_goal_event(peer, "bush_replanted")   # ADD-07: a dug-up bush (only digging gives a <species>_bush) planted again
+
+	if tree_species == "":   # a tree seed is not a replanted bush (no goal counts tree planting yet)
+		_goal_event(peer, "bush_replanted")   # ADD-07: a dug-up bush (only digging gives a <species>_bush) planted again
 
 	if flora_changed.is_valid():
 		flora_changed.call(home)
