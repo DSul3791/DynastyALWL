@@ -371,8 +371,7 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	items._items[920006] = {"number": items.table.number_of("flower_pot"), "count": 1, "pos": Vector3(2.3, 10.0, 2.3), "left": 1.0e9, "struct": {"kind": "flower_pot", "yaw": 0.0}}
 	notes.clear()
 	var before: int = items._items.size()
-	give("flower_pot_kit", 1)
-	items.action(1, Net.ACT_PLACE, slot_of("flower_pot_kit"), 0, 0, Vector3(2.7, 10.0, 2.7))
+	items.place_piece(1, "flower_pot_kit", Vector3(2.7, 10.0, 2.7))   # free build, as from the hammer (the Flower pot kit itself is retired)
 	check(items._items.size() == before and notes.has("A bed or planter is already in that spot."), "a second flower pot in the same metre cell is refused (%s)" % str(notes))
 	items._items.erase(920006)
 
