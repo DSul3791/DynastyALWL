@@ -308,23 +308,23 @@ func _init() -> void:
 	act(Net.ACT_USE_STRUCT, imp)
 	check(not items._smelters.bellows_worked(imp), "E again leaves the bellows")
 
-	# A full rack (smelt.output ingots across its slots) makes it wait.
+	# A full rack makes it wait. A slot holds any number (item_table.stack_of), so the rack's size is smelt.output: one stack of that many in its
+	# first slot fills it, the other slots empty. The paused Iron job above holds the furnace (server_smelter._pick), so start clean.
+	empty(imp)
 	var first_out: int = int(idef["slots"])
 	var rack_n: int = int(idef["smelt"]["output"])
-
-	for i in range(first_out, first_out + int(idef["out_slots"])):
-		box(imp).clear_slot(i)
-		box(imp).numbers[i] = n("stone")
-		box(imp).counts[i] = rack_n / int(idef["out_slots"]) + (rack_n % int(idef["out_slots"]) if i == first_out else 0)
-
+	box(imp).numbers[first_out] = n("stone")
+	box(imp).counts[first_out] = rack_n
+	items.give(1, charcoal, 4)
 	items.give(1, cu_ore, 1)
+	put_in(imp, "charcoal", 4)
 	put_in(imp, "copper_ore", 1)
 	var hopper_before: int = part(imp, "hopper")
 	run(p_s * 2.0)
-	check(part(imp, "input", cu_ore) == 1 and part(imp, "hopper") == hopper_before and in_front(imp, cu) == 0, "a full rack: the finished ingot waits, nothing taken, nothing on the ground")
-	box(imp).clear_slot(first_out)
+	check(hopper_before == 4 and part(imp, "input", cu_ore) == 1 and part(imp, "hopper") == hopper_before and part(imp, "output", cu) == 0 and in_front(imp, cu) == 0 and float(items._items[imp]["struct"].get("smelt_t", 0.0)) >= p_s, "a full rack (%d of %d, three slots empty): the finished ingot waits, nothing taken, nothing on the ground" % [rack_n, rack_n])
+	box(imp).counts[first_out] = rack_n - 1
 	run(2.0)
-	check(part(imp, "output", cu) == 1 and part(imp, "input", cu_ore) == 0, "room in the rack: it delivers (rack copper %d, copper ore in %d, banked %.1f s on '%s')" % [part(imp, "output", cu), part(imp, "input", cu_ore), float(items._items[imp]["struct"].get("smelt_t", 0.0)), str(items._items[imp]["struct"].get("smelt_job", ""))])
+	check(part(imp, "output", cu) == 1 and part(imp, "input", cu_ore) == 0 and part(imp, "hopper") == hopper_before - 1, "room for one in the rack: it delivers (rack copper %d, copper ore in %d, banked %.1f s on '%s')" % [part(imp, "output", cu), part(imp, "input", cu_ore), float(items._items[imp]["struct"].get("smelt_t", 0.0)), str(items._items[imp]["struct"].get("smelt_job", ""))])
 
 	# --- 3b. Two players at one smelter ---
 	empty(imp)

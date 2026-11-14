@@ -218,9 +218,9 @@ func _init() -> void:
 		items.tick(1.0)
 
 	take_all(smelter)
+	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again, still beside it: leave the bellows
 	items.report_position(1, HERE)
-	check(have("iron_ingot") >= smithy_iron + saw_iron, "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d)" % [smithy_iron + saw_iron, manned_s, have("iron_ingot")])
-	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again: leave the bellows
+	check(have("iron_ingot") >= smithy_iron + saw_iron and not items._smelters.bellows_worked(smelter), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); E again leaves them" % [smithy_iron + saw_iron, manned_s, have("iron_ingot")])
 
 	# 4. The Smithy from stones, clay, logs and Iron ingots; it must burn to craft.
 	var iron_before: int = have("iron_ingot")
