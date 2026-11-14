@@ -64,6 +64,7 @@ class Reach:
         self.recipes = read("recipes.json")["recipes"]
         self.blueprints = read("blueprints.json")["blueprints"]
         self.structures = read("structures.json")["structures"]
+        self.smelting = read("structures.json").get("smelting", {})
         self.drops = read("drops.json")
         self.digging = read("digging.json")
         self.boulders = read("boulders.json")
@@ -277,6 +278,15 @@ class Reach:
             d = self.structures[kind]
             changed |= g(d.get("item"), "the placed %s (%s)" % (kind, self.built[kind]))
             changed |= g(d.get("kit"), "built: %s" % self.built[kind], True)
+        # server_smelter.gd: a built Smelter does its jobs by itself (structures.json "smelting"; the old smelt recipes retired in PR #1092):
+        # a job's ingot is reached when its ores and a hopper fuel (and, for steel, the carbon, also Coal or Charcoal) are.
+        fuel = any(self.has(f) for f in self.smelting.get("fuel", []))
+        for kind in list(self.built):
+            sm = self.structures[kind].get("smelt", {}) if self.structures[kind].get("use") == "smelt" else {}
+            for jid in sm.get("jobs", []) if fuel else []:
+                job = self.smelting.get("jobs", {}).get(jid, {})
+                if job.get("out") and all(self.has(row[0]) for row in job.get("in", [])):
+                    changed |= g(job["out"][0], "smelted at the %s (job %s)" % (kind, jid))
         # server_items.gd: a log chopped on the ground with an axe gives wooden blocks (large from a shoulder log) of its class.
         if axe and self.has("log"):
             for cls, steps in self.wood.get("class_items", {}).items():
@@ -331,6 +341,13 @@ class Reach:
                     if b.get(key) and self.station_level(b[key]) < int(b.get(lvl, 1)):
                         lack.append("%s %s L%d" % (key, b[key], int(b.get(lvl, 1))))
                 out.append("blueprint %s lacks %s" % (bid, ", ".join(lack) or "a hammer of tier %s" % b.get("hammer", 1)))
+        for jid, job in self.smelting.get("jobs", {}).items():
+            if job.get("out", [""])[0] == iid:
+                at = [k for k, d in self.structures.items() if d.get("use") == "smelt" and jid in d.get("smelt", {}).get("jobs", [])]
+                lack = [row[0] for row in job.get("in", []) if not self.has(row[0])]
+                lack += [] if any(self.has(f) for f in self.smelting.get("fuel", [])) else ["fuel (%s)" % ", ".join(self.smelting.get("fuel", []))]
+                lack += [] if any(k in self.built for k in at) else ["a built %s" % " or ".join(at)]
+                out.append("smelting job %s lacks %s" % (jid, ", ".join(lack) or "nothing?"))
         return out or ["no recipe and no world source"]
 
 
