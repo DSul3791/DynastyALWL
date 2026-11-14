@@ -701,7 +701,7 @@
 		"note": "The Smelters (master s2.5, s2.7; src/stream/server_smelter.gd). A structure with \"use\": \"smelt\" lists its jobs in \"smelt\".jobs; it does the first whose ore is in its input (a \"bellows\" job only while a player works its bellows). A job takes its \"in\", gives its \"out\" (ingot_s seconds an ingot) and burns fuel_per_ore hopper fuel a unit of ore, all when it delivers. Coal and Charcoal are the only fuel (s2.5).",
 		"fuel": ["charcoal", "coal"],
 		"fuel_per_ore": 1,
-		"note_fuel_per_ore": "PROVISIONAL (GOALS-REPAIR A-3): master s2.7 item 3 leaves the burn rate open. One fuel a unit of ore matches each tier's approved hopper and input sizes (20/20, 40/40, 80/80): a full hopper smelts a full input.",
+		"note_fuel_per_ore": "PROVISIONAL (GOALS-REPAIR A-10): master s2.7 item 3 leaves the burn rate open. One fuel a unit of ore matches each tier's approved hopper and input sizes (20/20, 40/40, 80/80): a full hopper smelts a full input.",
 		"jobs": {
 			"iron": {"in": [["iron_ore", 1]], "out": ["iron_ingot", 1], "bellows": true},
 			"bronze": {"in": [["copper_ore", 1], ["tin_ore", 1]], "out": ["bronze_ingot", 2]},
