@@ -9,7 +9,7 @@ Rerun this after any data change instead of hand-editing obtainable_now:
     python3 tools/encyclopedia_reach.py --check   # exit 1 when encyclopedia.json is out of date
 
 An item is obtainable now when a player can get it today, starting with empty hands:
-  * a world source the data names (flora yields, harvest and berry rows, tree, stump and shrub drops, digging, boulders,
+  * a world source the data names (flora yields, harvest and berry rows, tree, stump and shrub drops, felled tree seeds, digging, boulders,
     flint, shore nodes, fishing and fish schools, carcass parts, nests, the validator's CODE_SOURCES), gated on the tool
     the code asks for where that tool might not exist yet (a pick of the right material for ore, a spade to dig, a hoe
     and the seed to farm, an axe to fell);
@@ -187,6 +187,8 @@ class Reach:
                     changed |= g(r[0], "a felled %s trunk" % sp)
             for r in trunk.get("branch", []):
                 changed |= g(r[0], "a felled trunk's branches")
+            for sp, seed in trunk.get("felled_seeds", {}).get("by_species", {}).items():   # every felled tree drops 1 to 5 of its seed (server_items._felled_seeds)
+                changed |= g(seed, "the seeds of a felled %s" % sp)
         pick = self.tool("pick")
         if pick and self.drops.get("shrub_work", {}).get("dig_suffix"):
             for e in self.flora:

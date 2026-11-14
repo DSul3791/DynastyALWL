@@ -40,3 +40,6 @@ Fortified - Roof corner (lead, 14 Nov 2026; cost PROVISIONAL A-40): item 1327 `f
 
 ## GOALS-REPAIR tier pieces (14 Nov 2026, A-40)
 Block from the lead: items 1330-1349, blueprints 320-339, structure states 400-419. Used: items 1330-1335 `fortified_window`, `fortified_floor` (Fortified - Ceiling), `fortified_stairs`, `fortified_fence`, `engineered_fence`, `engineered_gate`; blueprints 320-325 (same order); states 400-405 (same order) and 406 `engineered_gate_open`. No recipes (blueprint-only). next_number is now at least items 1336, blueprints 326.
+
+## Gardening on the hoe (14 Nov 2026, tree seeds)
+The coordinator gave the block items 1360-1399, blueprints 350-359 and structure states 440-459. Used here: items 1360 `birch_seeds`, 1361 `pine_cones`, 1362 `spruce_cones`, 1363 `alder_cones`, 1364 `willow_seeds`, 1365 `hardwood_seeds`, 1366 `acacia_pods`, 1367 `mangrove_propagules`, 1368 `fir_cones` and 1369 `maple_keys`. No blueprints, states or recipes are used. The rest of the block (items 1370-1399, blueprints 350-359, states 440-459) stays held for gardening. next_number is now 1370 in items.json and in gathered.json, above every number in use. Numbers below the block that nobody has used yet, including the plumbing block 1350-1359, stay free for whoever reserves them here.

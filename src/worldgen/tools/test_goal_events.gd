@@ -194,6 +194,9 @@ func bush_checks() -> void:
 	admin_then_real("bush_replanted", do_bush, "a dug bush replanted")
 	items.action(1, Net.ACT_PLANT_BUSH, slot_of("hazel_bush"), 0, 0, Vector3(40.0, 10.0, 40.0))
 	check(ev("bush_replanted") == 1 and items._saplings.size() == 2, "a bush too far away is not planted: still 1 (%d planted)" % items._saplings.size())
+	items.give(1, n("acorns"), 1)
+	items.action(1, Net.ACT_PLANT_BUSH, slot_of("acorns"), 0, 0, Vector3(0.0, 10.0, 3.0))
+	check(items._saplings.size() == 3 and ev("bush_replanted") == 1, "an acorn planted as a sapling is not a replanted bush: still 1 (%d planted)" % items._saplings.size())
 
 
 # --- ADD-08 snare_set: server_traps.on_placed (the Bird trap is another kind) ---
