@@ -300,7 +300,7 @@ Every row has a `condition`, a `runtime_check` in the goal engine's own JSON, an
     - `hammer` uses `made:wooden_hammer` and drops `wooden_hammer_soft`, which is not an item.
     - `hoe` uses `made:wooden_hoe`.
     - `workbench` checks for the workbench only.
-  - **The HUD order** (Dave 14 Nov 06:26Z): the first goal is the one the player can do next, so a blocked goal takes no HUD slot.
+  - **The HUD order** (Dave 14 Nov 06:26Z): the first goal is the one the player can do next; the coordinator's reading is that a blocked goal therefore takes no HUD slot.
   - **Optional:** add the item to `ate_food`. Indexing goals by event (GA-49) is a performance shortcut, not a gap.
 - **WP-PRIM (PR #1095, in dev since `b94b1e7`):**
   - **F1.** `_finish_site` lost the structure kind; #1095 fixed this and is in dev, so the build rows rely on code that is in dev.
