@@ -8,31 +8,31 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 
 ## 0. Before you start
 
-- [ ] **Admin keys.** Plain G opens the Journal's Goals page; Ctrl+Shift+G toggles flying. Try Ctrl+Shift with F2, F3, F4, F5, F7, F8, =, -, ], N, R, X, L, J and P. Each works only with both Ctrl and Shift held. Check that = - ] work on your keyboard, and that the editor doesn't swallow F5 or F8.
+- [ ] **Admin keys** (do this in a spare world, or after the run: Ctrl+Shift+J moves you far away, and X, R and N dig, spawn and teleport). Plain G opens the Journal's Goals page; Ctrl+Shift+G toggles flying. Try Ctrl+Shift with F2, F3, F4, F5, F7, F8, =, -, ], N, R, X, L, J and P. Each works only with both Ctrl and Shift held. Check that = - ] work on your keyboard, and that the editor doesn't swallow F5 or F8.
 - [ ] **Journal is empty for a new character.** J opens the Index, G opens Goals, M opens Map, and Esc closes. The Map page reads "Nothing mapped yet. Explore to fill this page." Opening the inventory closes the Journal, and the other way round.
 - [ ] **Goals box.** At the upper right, a thin cream border, the heading "Goals" and the first two unfinished goals. It sits clear of the Comfort and food lines and hides while any screen is open.
 
 ## 1. First minutes: gathering, tools, fire, shelter
 
-- [ ] **Drink and eat.** Within about 10 s you can drink at water (E) and eat a berry. The first goal completes, and the **Goal Achieved** placard spins in with the goal's name and the coins actually paid. You hear a short fanfare, it holds about 4 s and spins out. The game never pauses. Check the look and the sound.
+- [ ] **Drink and eat.** Within about 10 s you can drink at water (E); eat a berry once you find a bush. The first goal completes, and the **Goal Achieved** placard spins in with the goal's name and the coins actually paid. You hear a short fanfare, it holds about 4 s and spins out. The game never pauses. Check the look and the sound.
 - [ ] **Placard queue.** Do two goals at once if you can, for example two pickups. The placards come one after the other and never overlap.
 - [ ] **Gather.** Pick up stones, sticks, plant fibre and thatch with E. Make twine from fibre, then a Stone Axe (1 stone, 1 stick, 2 twine). Put the axe on the hotbar.
 - [ ] **Fell an oak.** Repeated axe blows fell it into a trunk. The logs that come off are **3 m long**. Check the lying log, the shoulder log and the next-cut band. The plain Log mesh is still 1 m and is known. At the **first axe blow on an oak log, 3 Tannin Bark** drop, once per tree (A-2). Hitting the standing tree gives no bark.
 - [ ] **Carry logs.** An oak log rides on the shoulder (45 kg). Q lays it down. Spruce is 32 kg, light woods 26, and the plain Log is 18.4 (A-25). Does carrying feel right?
-- [ ] **Blocks and hammer.** The axe on a ground log gives large wooden blocks. Make a Wooden Hammer and a Chopping Block.
+- [ ] **Blocks and hammer.** The axe on a ground log gives large wooden blocks. Craft Small wooden blocks (1 large gives 4 small, keeps the axe), then a Wooden Hammer (small block, stick, twine) and a Chopping Block (1 large block).
 - [ ] **Firewood.** E at the Chopping Block with the axe in hand splits firewood, one per press. F at the block chops from stored logs (12 firewood from a 3 m species log).
-- [ ] **Fire sizes.** Make a campfire kit, place it, and light it with E (small). Three firewood make it medium, and three logs make a bonfire. Check that the flames and warmth grow with each size and that the fire-size goals complete once.
+- [ ] **Fire sizes.** Make a campfire kit, place it, and light it with E (small). Add wood with F (the fire's store): three firewood make it medium, and three logs make a bonfire. Check that the flames and warmth grow with each size. Only the goal "Light a fire" shows today; the fire-size counts are server-side only, for the corrected catalog.
 - [ ] **Charcoal.** Make charcoal at the lit fire from 2 firewood.
-- [ ] **Shelter.** Build a Lean-to with the hammer (20 sticks, 60 leaves, 6 twine) and a thatch floor. Try one placed short of materials and finished by pressing E to deposit the rest: its goal still completes.
+- [ ] **Shelter.** Build a Lean-to with the hammer (20 sticks, 60 leaves, 6 twine) and a Crude - Foundation. Try one placed short of materials and finished by pressing E to deposit the rest: its goal still completes.
 - [ ] **Scots pine.** Fell a Scots pine and cut its logs. Pine Tar drops sometimes. Make Tar at a campfire from 5 Pine Tar.
 
 ## 2. Water, leather and farming
 
 - [ ] **Fill a container.** Hold a bowl, pot, bucket or waterskin and press E at the water. Each press adds 500 mL.
 - [ ] **Recipe water.** Craft something that needs Water, for example Leather at a tanning rack (processed hide + 2 Tannin Bark + 1 Water). The water comes out of your filled container (500 mL per Water, A-1), and the container stays. Salt or sea water never counts. Cancel a queued craft: the water goes back into the container.
-- [ ] **Leather route.** Hide → processed hide (drying rack) → Leather (tanning rack) → Leather strap (Leatherworking table). The strap is needed for the Copper and Bronze axes.
+- [ ] **Leather route.** Hunt for a Hide (it is also needed for the Improved smelter). Build a Drying rack (8 stick, 4 twine), a Tanning rack (6 log, 4 twine; heavy, several trips) and a Leatherworking table (4 log, 4 stick, 4 twine, 2 stone). Then: Scraped hide at the drying rack (keeps a Hide scraper) → Leather at the tanning rack → Leather strap at the table (keeps a Knife). The strap is needed for the Copper and Bronze axes.
 - [ ] **Farming.** Till a bed with the hoe.
-  - **Sow:** with a seed in hand, E shows "Press E to sow <seed>". A new world starts in **summer**, so radish, lettuce or wild seed will sow and grains will not; the server says "Not the season for <crop>." (A-4, A-6).
+  - **Sow:** with a seed in hand, E shows "Press E to sow <seed>". A new world starts in **summer**, so seeds from wild radish or prickly lettuce sow and the grains, carrot and flax do not; the server says "Not the season for <crop>." (A-4, A-6).
   - **Water:** hold a filled container, then "Press E to water the <crop>" (up to 8 L, A-3, A-7).
   - **Harvest:** when ripe, "Press E to harvest the <crop>".
   - **Looks:** the crop stages show as coloured boxes, which are placeholders. Check that they grow.
@@ -43,13 +43,13 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - [ ] **Exploring fills the map.** Walk a few hundred metres, then press M. A charcoal sketch shows only the ground within about 40 m of where you walked: hills hatched, contour lines, water and shore, tree scribbles. A small cross marks you. Everywhere else stays bare paper.
 - [ ] **Page controls.** The mouse wheel zooms and dragging moves the page. Each opening starts on where you stand.
 - [ ] **Big map opens smoothly.** After a long walk, open and close the Map a few times. It should not stutter, because blocks fill in one at a time while the page is open.
-- [ ] **Low skill draws rough.** At low Mapping the lines are light and wobbly and the contours coarse. Raise Mapping by exploring new ground, then come back to an old area. It redraws steadier only after you **walk there again**; a skill gain alone changes nothing.
-- [ ] **Nothing from caves, standing still or fast travel.** Standing still, walking over known ground, being in a cave, or a teleport or respawn adds nothing.
+- [ ] **Low skill draws rough.** At low Mapping the lines are light and wobbly and the contours coarse. Raise Mapping by exploring new ground, then come back to an old area. It redraws steadier only after you **walk there again**, and only once Mapping is 3 levels above what it was when you drew it (practice is capped per day, so this takes a while); a skill gain alone changes nothing.
+- [ ] **Nothing from caves, standing still or jumps.** Standing still, walking over known ground, being in a cave, or a teleport or respawn adds nothing.
 - [ ] **Persistence and privacy.** Quit and rejoin: your map is still there. A second player sees only their own map.
 
 ## 4. Metal: copper, bronze, iron
 
-- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on boulders gives copper ore, tin ore and coal. It does not give iron.
+- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on ore outcrop boulders (not every boulder) gives copper ore, tin ore and coal. It does not give iron.
 - [ ] **Primitive smelter** (bp 200: 24 clay, 10 stone).
   - **Build and load:** build it and press E to open its store. Coal or Charcoal goes in the fuel part; ore goes in the ore part, one kind per slot.
   - **Smelting:** it smelts by itself, one ingot every 20 s. 1 copper ore makes 1 copper ingot; 1 copper ore + 1 tin ore make 2 bronze.
@@ -62,7 +62,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
   - **Bellows:** press E and stay beside it to work the bellows. It smelts 1.3 times faster.
   - **Iron:** iron ore (mined with a Bronze pickaxe) smelts only while someone is working the bellows. Walk away and it pauses without losing time.
   - **Looks:** the look is a placeholder.
-- [ ] **Improved smithy** (bp 10: stone 16, clay 10, log 4, bronze ingot 6, bronze nails 20, bronze hinges 2; A-15). It is built with no iron. Make Hinges from iron, and the **Iron anvil** (5 iron ingot + 1 log, A-16).
+- [ ] **Improved smithy** (bp 10: stone 16, clay 10, log 4, bronze ingot 6, bronze nails 20, bronze hinges 2; A-15). It is built with no iron. It must be fired to craft: keep Coal or Charcoal in your pack and the first craft lights it (the Primitive smithy needs no fuel). Make Hinges from iron, and the **Iron anvil** (5 iron ingot + 1 log, A-16).
 - [ ] **Carry feel.** The Improved smithy needs about 101 kg of materials, and the Primitive smithy and the Improved smelter about 62 kg each, against your 52.5 kg carry. Place the blueprint and deposit in 2–3 trips with E. Is that fair?
 - [ ] **Two players at one smelter.** A second player can't work the bellows while you do, but can take ore out. Logging out pauses the iron.
 - [ ] **Save.** Quit mid-smelt and rejoin. Nothing in the store is lost or doubled, and the banked time carries on.
