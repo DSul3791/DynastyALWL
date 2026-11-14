@@ -103,6 +103,7 @@ var _pass: Dictionary = {}       # the running pass: rows to sort, how far it go
 var _again: bool = false         # a refresh came in while a pass ran: run one more when it ends
 var _rows: Dictionary = {}       # recipe number -> its row on screen {"button", "makeable", "ready", "two_line", "lit"}
 var _waiting: Label              # "Looking over what you can make" while the very first pass runs
+var _all_by_name: Array = []     # every recipe, alphabetical by name (sorted once)
 var _admin_nodes: Array = []     # the Admin heading and kit rows at the foot of the list (Admin mode), made again at the end of each pass
 
 
@@ -162,13 +163,19 @@ func step() -> void:
 			return
 
 	if not bool(_pass["ordered"]):
-		var groups: Array = RecipeFilter.order_groups(rows, func(r): return bool(_pass["can"][int(r["number"])]), func(r): return bool(_pass["reach"][int(r["number"])]))
+		if _all_by_name.size() != view.recipes.numbers().size():   # every recipe in name order, sorted once (names do not change): a pass only picks its rows out
+			_all_by_name = RecipeFilter.by_name(view.recipes.numbers().map(func(n): return view.recipes.recipe(n)))
+			return
+
+		var in_order: Array = _all_by_name.filter(func(r): return (_pass["can"] as Dictionary).has(int(r["number"])))
+		var groups: Array = RecipeFilter.groups_of(in_order, func(r): return bool(_pass["can"][int(r["number"])]), func(r): return bool(_pass["reach"][int(r["number"])]))
 		_pass["ready"] = (groups[0] as Array).size() + (groups[1] as Array).size()
 		_pass["shown"] = groups[0] + groups[1] + groups[2]
 		_pass["ordered"] = true
 
 		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
 			view._selected_recipe = _pass["shown"][0]["number"] if not (_pass["shown"] as Array).is_empty() else 0
+			_refresh_detail()   # the first recipe's card, now that there is one
 
 		if _waiting != null and is_instance_valid(_waiting):
 			view._recipe_list.remove_child(_waiting)   # the rows come in from the top now
@@ -226,6 +233,10 @@ func step() -> void:
 		if Time.get_ticks_usec() - t0 > SLICE_USEC:
 			return
 
+	if int(_pass["cleared"]) != 2:
+		_pass["cleared"] = 2   # the last part, the selection and the Admin kits, gets a step of its own
+		return
+
 	_finish_pass()
 
 
@@ -259,7 +270,7 @@ func _drop_row(number: int, button: Node) -> void:
 	button.queue_free()
 
 
-# The pass is done: the selection lit on the right row, the Admin kits at the foot, the card.
+# The pass is done: the selection lit on the right row, the Admin kits at the foot (the card was drawn when the pass started, and again by a click).
 func _finish_pass() -> void:
 	_pass = {}
 
@@ -277,7 +288,6 @@ func _finish_pass() -> void:
 
 	_admin_nodes.clear()
 	_add_admin_builds()
-	_refresh_detail()
 
 	if _again:
 		_again = false
