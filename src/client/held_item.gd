@@ -2415,7 +2415,7 @@ func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 
 	if kind == "":
 		if not quiet:
-			_inv._on_notice("No %s left in your pack: right click and pick something else to plant" % plant_name if garden_pick != "" else str(FarmRules.garden_action("", "", false, "")["say"]))
+			_inv._on_notice("No %s left in your pack: right click and pick something else to plant" % plant_name if garden_pick != "" else str(FarmRules.garden_action("", false, "")["say"]))
 
 		return []
 
@@ -2430,7 +2430,7 @@ func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 		var bed: int = _inv.bed_in(beds, pos)
 		spots.append([pos, bed, _inv.bed_crop(bed) if bed != 0 else ""])
 
-	return FarmRules.garden_plan(kind, plant_name, spots, feet, GARDEN_REACH_M, have)
+	return FarmRules.garden_plan(kind, spots, feet, GARDEN_REACH_M, have)
 
 
 const GARDEN_REACH_M := 3.7   # inside the server's PLANT_BUSH_REACH_M (4 m flat; DIG_REACH_M 4.5 for tilling and sowing), flat from the player's feet, with room for the server's position lagging a tick

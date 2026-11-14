@@ -51,9 +51,9 @@ func _init() -> void:
 	var rows: Array = FarmRules.plantables(crops, ["", "stick", "hazel_bush", "wheat_seeds", "hazel_bush", "flax_seeds", "bronze_sickle"])
 	check(rows.size() == 3 and rows[0] == {"id": "hazel_bush", "kind": "bush"} and rows[1] == {"id": "wheat_seeds", "kind": "seed"} and rows[2]["id"] == "flax_seeds", "plantables: hazel bush, wheat seeds, flax seeds once each in pack order; sticks and sickles are not")
 	check(FarmRules.plantables(crops, ["", "stick"]).is_empty(), "plantables: nothing to plant in a pack of sticks")
-	check(FarmRules.garden_action("seed", "wheat seeds", true, "")["act"] == "sow", "garden: seeds on an empty bed sow it")
-	check(FarmRules.garden_action("seed", "wheat seeds", true, "flax")["act"] == "none", "garden: seeds on a growing bed do nothing and say so")
-	plan = FarmRules.garden_action("seed", "wheat seeds", false, "")
+	check(FarmRules.garden_action("seed", true, "")["act"] == "sow", "garden: seeds on an empty bed sow it")
+	check(FarmRules.garden_action("seed", true, "flax")["act"] == "none", "garden: seeds on a growing bed do nothing and say so")
+	plan = FarmRules.garden_action("seed", false, "")
 	check(plan["act"] == "till" and str(plan["say"]) == "", "garden: seeds on open ground till a bed (and are sown when it is there)")
 	# Rows and grids: one cell, a row of 5 along the way the player faces, 3 by 3 and 5 by 5 on the 1 m cells for seeds; bushes 2 m apart; nearest the aim first.
 	var one: Array = FarmRules.garden_cells(0, "seed", Vector3(3.7, 10.0, -2.2), Vector3(1.0, 0.0, 0.0))
@@ -65,20 +65,20 @@ func _init() -> void:
 	check(FarmRules.garden_cells(2, "seed", Vector3.ZERO, Vector3.FORWARD).size() == 9 and FarmRules.garden_cells(3, "seed", Vector3.ZERO, Vector3.FORWARD).size() == 25, "garden cells: 3 by 3 is 9 cells, 5 by 5 is 25")
 	var bushes: Array = FarmRules.garden_cells(2, "bush", Vector3(0.3, 0.0, 0.3), Vector3.FORWARD)
 	check(bushes[0] == Vector2(0.3, 0.3) and bushes.any(func(c): return c.is_equal_approx(Vector2(2.3, 2.3))), "garden cells: bushes round the aim itself, 2 m apart")
-	check(FarmRules.garden_action("bush", "hazel bush", false, "")["act"] == "plant_bush", "garden: a bush on open ground is planted")
-	check(FarmRules.garden_action("bush", "hazel bush", true, "")["act"] == "none", "garden: a bush is not planted in a bed")
-	check(FarmRules.garden_action("", "", false, "")["act"] == "none", "garden: nothing picked sends nothing")
+	check(FarmRules.garden_action("bush", false, "")["act"] == "plant_bush", "garden: a bush on open ground is planted")
+	check(FarmRules.garden_action("bush", true, "")["act"] == "none", "garden: a bush is not planted in a bed")
+	check(FarmRules.garden_action("", false, "")["act"] == "none", "garden: nothing picked sends nothing")
 	# Tree seeds (a felled tree drops 1 to 5): a fruit or nut is its tree's seed; planted in open ground through the bush action, 3 m apart.
 	var trees: Dictionary = {"acorns": "oak", "maple_keys": "maple"}
 	var with_trees: Array = FarmRules.plantables(crops, ["acorns", "wheat_seeds", "maple_keys", "stone"], "_bush", trees)
 	check(with_trees.size() == 3 and with_trees[0] == {"id": "acorns", "kind": "tree"} and with_trees[1]["kind"] == "seed" and with_trees[2] == {"id": "maple_keys", "kind": "tree"}, "plantables: tree seeds list as trees (%s)" % str(with_trees))
 	check(FarmRules.plantables(crops, ["acorns"]).is_empty(), "plantables: no tree seed table, no tree rows")
-	check(FarmRules.garden_action("tree", "acorns", false, "")["act"] == "plant_bush" and FarmRules.garden_action("tree", "acorns", true, "")["act"] == "none", "garden: a tree seed goes in open ground, not a bed")
+	check(FarmRules.garden_action("tree", false, "")["act"] == "plant_bush" and FarmRules.garden_action("tree", true, "")["act"] == "none", "garden: a tree seed goes in open ground, not a bed")
 	var tree_cells: Array = FarmRules.garden_cells(1, "tree", Vector3(0.3, 0.0, 0.3), Vector3(1.0, 0.0, 0.0))
 	check(tree_cells[0] == Vector2(0.3, 0.3) and tree_cells.any(func(c): return c.is_equal_approx(Vector2(6.3, 0.3))), "garden cells: a row of tree seeds 3 m apart round the aim (%s)" % str(tree_cells))
 	# A click's plan: a 2 m plot holding several 1 m cells takes one seed (its first cell); reach from the feet, no ground, and the pack's count stop the rest.
 	var spots: Array = [[Vector3(0.5, 1.0, 0.5), 7, ""], [Vector3(1.5, 1.0, 0.5), 7, ""], [Vector3(0.5, 1.0, 1.5), 0, ""], [Vector3(1.5, NAN, 1.5), 0, ""], [Vector3(9.5, 1.0, 0.5), 0, ""], [Vector3(-0.5, 1.0, 0.5), 8, "flax"], [Vector3(2.5, 1.0, 0.5), 0, ""]]
-	var made: Array = FarmRules.garden_plan("seed", "wheat seeds", spots, Vector3.ZERO, 3.7, 2)
+	var made: Array = FarmRules.garden_plan("seed", spots, Vector3.ZERO, 3.7, 2)
 	check(made.size() == 5 and made[0]["act"] == "sow" and int(made[0]["bed"]) == 7 and made.filter(func(c): return int(c["bed"]) == 7).size() == 1, "garden plan: the plot is sown once, from its first cell (%s)" % str(made))
 	check(made[1]["act"] == "till" and made[2]["act"] == "none" and str(made[2]["say"]) == "No ground to plant there" and made[3]["act"] == "none" and str(made[3]["say"]).begins_with("Too far"), "garden plan: open ground tills; no ground and out of reach say why")
 	check(made[4]["act"] == "none" and int(made[4]["bed"]) == 8, "garden plan: a growing bed is shown, not sown")

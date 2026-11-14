@@ -73,7 +73,7 @@ static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bu
 # picked or none is left in the pack); `bed`: a tilled bed or garden plot is under the crosshair; `bed_crop`: what grows on it ("" for empty). The server rules on the
 # rest (reach, season, ground, spacing) and says why it refuses.
 # PROVISIONAL (gardening, 14 Nov 2026): a seed clicked on open ground tills a bed there and then sows it.
-static func garden_action(kind: String, name: String, bed: bool, bed_crop: String) -> Dictionary:
+static func garden_action(kind: String, bed: bool, bed_crop: String) -> Dictionary:
 	if kind == "":
 		return {"act": "none", "say": "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, then right click and pick it"}
 
@@ -120,7 +120,7 @@ static func garden_cells(grid: int, kind: String, aim: Vector3, facing: Vector3)
 # One Garden click's plan from its grid's spots (garden_cells, nearest first), as [[position, bed id (0 for none), that bed's crop]]: a bed or garden plot takes one
 # cell (its first spot: a 2 m plot holds several 1 m cells but one crop), a cell needs ground (y not NAN) within `reach` m flat of `feet`, and at most `have` cells
 # plant. -> [{"act", "say", "pos", "bed", "ok"}]; a cell that will not plant has act "none" and says why.
-static func garden_plan(kind: String, name: String, spots: Array, feet: Vector3, reach: float, have: int) -> Array:
+static func garden_plan(kind: String, spots: Array, feet: Vector3, reach: float, have: int) -> Array:
 	var used: Dictionary = {}
 	var out: Array = []
 
@@ -134,7 +134,7 @@ static func garden_plan(kind: String, name: String, spots: Array, feet: Vector3,
 
 			used[bed] = true
 
-		var cell: Dictionary = garden_action(kind, name, bed != 0, str(spot[2]))
+		var cell: Dictionary = garden_action(kind, bed != 0, str(spot[2]))
 		cell["pos"] = pos
 		cell["bed"] = bed
 		cell["ok"] = str(cell["act"]) != "none" and not is_nan(pos.y) and Vector2(pos.x - feet.x, pos.z - feet.z).length() <= reach
