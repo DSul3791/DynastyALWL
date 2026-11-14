@@ -26,7 +26,7 @@ The master items catalog (s2.1) already lists the hoe's "Create Garden Plot" and
    - Requests go out paced: tills 600 ms apart, sows 150 ms apart (`FarmRules.garden_step`).
 5. **Tree seeds.**
    - When a felled tree breaks up, it drops a random 1 to 5 of its seed as one heap in its crown circle (`drops.json trunk.felled_seeds`). The feller is credited like the split logs.
-   - A trunk cut by hand gives its seeds into the pack with its first branch blow. A pick gives none, as it gives only thatch and kindling.
+   - A trunk cut by hand gives its seeds into the pack with its first axe blow on the branches. A pick gives none, since it gives only thatch and kindling. A trunk whose branch blows were all made with a pick loses its seeds, as it loses its sticks and leaves.
    - A species' own fruit or nut is its seed. Ten new items (1360-1369) are for the trees that have none.
    - The Garden list plants a tree seed in open ground as a sapling (`_saplings`, planted now) that grows like wild regrowth.
 
@@ -44,10 +44,9 @@ These are PROVISIONAL values the thread or the coordinator chose under Dave's st
 | G-6 | Grid sizes are one, a row of 5, 3 by 3 and 5 by 5. Seeds go 1 m apart and bushes 2 m apart. | `FarmRules.GARDEN_GRIDS`, `SEED_SPACING_M`, `BUSH_SPACING_M` |
 | G-7 | Client planting reach is 3.7 m from the feet, inside the server's 4 m. | `held_item.GARDEN_REACH_M` |
 | G-8 | Garden pacing: tills 600 ms apart (the server's hoe pace is 500 ms), sows 150 ms apart. A sow waits up to 3 s for the bed its till asked for. | `FarmRules.GARDEN_*_MSEC` |
-
 | G-9 | The new seed names: Birch seeds, Scots pine cones, Spruce cones, Alder cones, Willow seeds, Hardwood seeds, Acacia pods, Mangrove propagules, Balsam fir cones and Maple keys. Ids are permanent; names can change. | `items.json` 1360-1369 |
 | G-10 | The five fantasy trees (mirrorbark, wardpine, hearthwood, everember, witness tree) drop no seeds for now, because magic content is deferred. This is an open question for Dave. | `drops.json trunk.felled_seeds.by_species` |
 | G-11 | Tree seeds go 3 m apart in a grid. The server keeps a tree seed 2 m from other plants (bushes 1 m). The heap lands within half the crown radius. | `FarmRules.TREE_SPACING_M`, `server_items.PLANT_TREE_GAP_M` |
 | G-12 | The existing per-log seed roll (`trunk.seed_chance`: a species' fruit or nut, else Wild grain) is unchanged. It comes on top of the 1 to 5 felled seeds. | `drops.json trunk.seed_chance` |
 
-G-4 is the coordinator's ruling "a species' own fruit or nut is its seed".
+G-4 (the coordinator's ruling) is that a species' own fruit or nut is its seed.

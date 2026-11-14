@@ -121,6 +121,12 @@ func _init() -> void:
 	if items._saplings.size() == 2:
 		var oak: Dictionary = items._saplings[1]
 		check(int(oak["species"]) == int(items._flora_by_name["oak"]["id"]) and is_equal_approx(float(oak["planted_at"]), 5000000.0), "it is an oak sapling planted now, to grow (%s)" % str(oak))
+		var oak_home: Vector2i = Vector2i(oak["chunk"][0], oak["chunk"][1])
+		var oak_id: int = (int(oak["species"]) << 16) | (0xFFFF - int(oak["slot"]))
+		check(items.dynamic_tree_info(oak_home, oak_id).is_empty() and items.dynamic_shrub_info(oak_home, oak_id).is_empty(), "a new sapling is not yet a tree to fell")
+		items.game_seconds = func(): return 5000000.0 + ItemsScript.SAPLING_GROWN_S
+		check(str(items.dynamic_tree_info(oak_home, oak_id).get("name", "")) == "oak", "grown, it is an oak to fell (%s)" % str(items.dynamic_tree_info(oak_home, oak_id)))
+		items.game_seconds = func(): return 5000000.0
 
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("crab_apples"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(items.table.number_of("crab_apples")), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
