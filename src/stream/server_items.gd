@@ -606,6 +606,10 @@ func forget_key(peer: int, key: String) -> bool:
 	_vitals.erase(key)
 	_craft_queues.erase(key)
 	_dirty = true
+
+	if forgot_key.is_valid():
+		forgot_key.call(key)   # the charcoal Map's record goes with the character (server_map.gd, protocol 120)
+
 	return true
 
 
@@ -1326,6 +1330,7 @@ var floor_below: Callable               # set by the server: (Vector3) -> float,
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
+var forgot_key: Callable                # set by the server: (key) -> void, a deleted character's other records go too (server_map.forget_key)
 var restore_flora: Callable             # set by the server: () -> void, forgets every felled tree and removed plant (server_flora.restore_all), for reset_world
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
 var spyglass: Dictionary = {}          # peer -> the animal id an admin watches through the spyglass (0 none, -1 refused: not an admin); absent when not looking (ACT_SPYGLASS)

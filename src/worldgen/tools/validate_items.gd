@@ -563,8 +563,8 @@ func _init() -> void:
 	for action in _read("skills.json").get("actions", {}):
 		var def: Dictionary = _read("skills.json")["actions"][action]
 
-		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet"]:   # quiet: less noise (stalk, server_animals brush noise)
-			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness or quiet" % action)
+		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet", "accuracy"]:   # quiet: less noise (stalk, server_animals brush noise); accuracy: the Map sketch (survey, server_map.gd)
+			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness, quiet or accuracy" % action)
 
 	# smithing.json (catalog Phase 2c): its whetstone is an item, its grindstone, Master smithy and Smithy are stations and the temper add-on a structure.
 	var smithing: Dictionary = _read("smithing.json")
