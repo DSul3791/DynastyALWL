@@ -63,6 +63,10 @@ const FoodEffectsUIScript := preload("res://src/client/ui/inventory/food_effects
 const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the window's look (steps B and C)
 const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
+const GoalBookScript := preload("res://src/client/ui/goals/goal_book.gd")          # the goal list from the server (protocol 119)
+const GoalsHudScript := preload("res://src/client/ui/goals/goals_hud.gd")           # the upper-right Goals box
+const GoalPlacardScript := preload("res://src/client/ui/goals/goal_placard.gd")     # the Goal Achieved placard
+const JournalScript := preload("res://src/client/ui/goals/journal_view.gd")         # the Journal: Index, Goals, Map (J, G, M)
 const InventoryFrameScript := preload("res://src/client/ui/inventory/inventory_frame.gd")   # the redesign's three panels (step 3a)
 const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd")             # the gear wells and the live character (step 3d)
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
@@ -311,6 +315,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 		if _weight_label != null:
 			_refresh_weight())
 	net.reputation_received.connect(func(_ids, names, points): rep_names = names; rep_points = points)
+	_setup_goals()
 	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	_coins_cfg = coins_parsed if typeof(coins_parsed) == TYPE_DICTIONARY else {}
 	var rep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/reputation.json"))
@@ -444,6 +449,9 @@ func toggle() -> void:
 	if not open and character_open():
 		_character.toggle()
 
+	if not open and journal != null and journal.open:
+		journal.close()   # one window at a time
+
 	open = not open
 
 	if not open and _recipe_search != null:
@@ -487,6 +495,9 @@ func close() -> void:
 	if dialogue_open and dialogue_close.is_valid():
 		dialogue_close.call()
 
+	if journal != null and journal.open:
+		journal.close()
+
 	if open:
 		toggle()
 
@@ -501,6 +512,9 @@ func toggle_character() -> void:
 
 	if open:
 		toggle()
+
+	if journal != null and journal.open:
+		journal.close()
 
 	if _character == null:
 		_character = CharacterScreenScript.new()
@@ -4776,6 +4790,32 @@ func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String =
 	_comfort_label.self_modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
 
 
+# Goals (protocol 119; docs/design/PLAYER_JOURNAL_GOALS_UI.md): the server's list and completions feed one book; the upper-right Goals box sits on the HUD
+# layer under the comfort line, and the placard on its own layer above every window (it takes no input).
+var goal_book
+var goals_hud: Control
+var goal_placard: Control
+var journal
+
+
+func _setup_goals() -> void:
+	goal_book = GoalBookScript.new()
+	net.goals_received.connect(goal_book.on_goals)
+	net.goal_done_received.connect(goal_book.on_done)
+	goals_hud = GoalsHudScript.new()
+	_layer.add_child(goals_hud)
+	goals_hud.setup(self, goal_book)
+	var top: CanvasLayer = CanvasLayer.new()
+	top.name = "GoalPlacardLayer"
+	top.layer = _layer.layer + 5
+	_layer.add_child(top)
+	goal_placard = GoalPlacardScript.new()
+	top.add_child(goal_placard)
+	goal_placard.setup(self, goal_book)
+	journal = JournalScript.new()
+	journal.setup(self, _layer, goal_book)
+
+
 # The words of the comfort line: "" when there is nothing to say.
 static func comfort_text(level: int, rested_tier_level: int, minutes: int) -> String:
 	var parts: PackedStringArray = PackedStringArray()
@@ -4964,7 +5004,7 @@ var dialogue_close: Callable = Callable()
 
 
 func screen_open() -> bool:
-	return open or chest_mode or character_open() or dialogue_open or _storage_ui.is_open() or _food_ui.is_open()
+	return open or chest_mode or character_open() or (journal != null and journal.open) or dialogue_open or _storage_ui.is_open() or _food_ui.is_open()
 
 
 const CHEST_KEYS := [["take_all", 0], ["store_all", 1], ["stack_nearby", 2], ["sort_both", 3]]    # action id, Net.ACT_BULK kind
