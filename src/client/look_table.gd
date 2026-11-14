@@ -190,7 +190,9 @@ const LOOKS := {
 	"apothecary_cabinet": {"builder": "cupboard", "args": []},
 	"bottle_and_jar_rack": {"builder": "shelf", "args": []},
 	"tool_cabinet": {"builder": "cupboard", "args": []},
-	"open_storage_bin": {"builder": "crate", "args": []},
+	"open_storage_bin": {"builder": "resource_bin", "args": [1.0]},      # PLACEHOLDER looks (GOALS-REPAIR R6): open plank bins at the
+	"medium_resource_bin": {"builder": "resource_bin", "args": [1.5]},   # structures.json footprints, the resource surface inside
+	"large_resource_bin": {"builder": "resource_bin", "args": [2.0]},
 	"firewood_rack": {"builder": "log_shelf", "args": []},
 	"log_rack": {"builder": "log_shelf", "args": []},
 	"board_rack": {"builder": "shelf", "args": []},

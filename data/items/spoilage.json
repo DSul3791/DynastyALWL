@@ -41,6 +41,8 @@
 		"bottle_and_jar_rack": 0.8,
 		"tool_cabinet": 0.8,
 		"open_storage_bin": 1.0,
+		"medium_resource_bin": 1.0,
+		"large_resource_bin": 1.0,
 		"firewood_rack": 1.0,
 		"log_rack": 1.0,
 		"board_rack": 1.0,
