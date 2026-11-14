@@ -18,10 +18,12 @@ var practice: Callable        # (peer) -> practice once at the "survey" action (
 var observe: Callable         # (x, z) -> [ground height m, water (map_codec WATER_*)], or [] where the ground is not loaded yet
 var trees_near: Callable      # (Vector3, radius) -> Array of tree root positions (Vector3); unset: no trees are drawn
 var in_cave: Callable         # (Vector3) -> true inside a cave (nothing to survey there); unset: never
+var now_msec: Callable        # () -> msec clock for the speed check; unset: Time.get_ticks_msec (tests set their own)
 
 var _records: Dictionary = {} # character key -> {"blocks": {Vector2i: {"cells": {idx: [q, h, water, trees]}, "ver": int}}, "tally": int, "dirty": bool}
 var _peer_key: Dictionary = {}   # peer -> the key its record is under (kept so a record can be unloaded when its last peer leaves)
-var _last_at: Dictionary = {}    # peer -> Vector3 of its last survey
+var _last_at: Dictionary = {}    # peer -> Vector3 of its last survey (or of where it was first seen or landed)
+var _last_ms: Dictionary = {}    # peer -> msec when _last_at was set
 var _sent: Dictionary = {}       # peer -> {Vector2i: [version sent, msec sent]}
 var _dir: String = ""
 var _save_acc: float = 0.0
@@ -78,20 +80,31 @@ func note_position(peer: int, pos: Vector3) -> void:
 
 	_peer_key[peer] = key
 
-	var step: float = float(cfg.get("survey_step_m", 8.0))
-	var moved: float = Vector2(pos.x, pos.z).distance_to(Vector2(_last_at[peer].x, _last_at[peer].z)) if _last_at.has(peer) else 0.0
+	var now: int = int(now_msec.call()) if now_msec.is_valid() else Time.get_ticks_msec()
 
-	if _last_at.has(peer) and moved < step:
+	if not _last_at.has(peer):
+		_last_at[peer] = pos   # the first position of a connection only sets the start: the client chose it, nobody walked there
+		_last_ms[peer] = now
 		return
 
-	if moved > step * float(cfg.get("jump_steps", 4.0)):
-		_last_at[peer] = pos   # a jump (respawn, teleport, or a client claiming one): nothing surveyed until it walks on from here
+	var step: float = float(cfg.get("survey_step_m", 8.0))
+	var moved: float = Vector2(pos.x, pos.z).distance_to(Vector2(_last_at[peer].x, _last_at[peer].z))
+
+	if moved < step:
+		return
+
+	var seconds: float = maxf(float(now - int(_last_ms.get(peer, now))) / 1000.0, 0.001)
+
+	if moved > step * float(cfg.get("jump_steps", 4.0)) or moved / seconds > float(cfg.get("max_speed_mps", 30.0)):
+		_last_at[peer] = pos   # a jump or a dash no one can walk (respawn, teleport, or a client claiming one): nothing surveyed until it walks on
+		_last_ms[peer] = now
 		return
 
 	if in_cave.is_valid() and bool(in_cave.call(pos)):
 		return   # no view of the land from inside a cave; the next step outside surveys
 
 	_last_at[peer] = pos
+	_last_ms[peer] = now
 	survey(peer, pos)
 
 
@@ -261,6 +274,7 @@ func forget_peer(peer: int) -> void:
 	var key: String = str(_peer_key.get(peer, ""))
 	_peer_key.erase(peer)
 	_last_at.erase(peer)
+	_last_ms.erase(peer)
 	_sent.erase(peer)
 
 	if key == "" or not _records.has(key):

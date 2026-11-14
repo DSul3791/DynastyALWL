@@ -19,6 +19,7 @@ var practised: Array = []     # peers practised
 var skill: Dictionary = {}    # peer -> Mapping level the fake skill system reports
 var keys: Dictionary = {}     # peer -> key
 var cave: bool = false
+var walk_ms: int = 0      # the position clock: each report is 1 s after the last
 var clock_ms: int = 0     # the send clock: each look at the sends is 10 s later (past resend_s)
 var held: bool = false   # ground west of x = 0 "not made yet" while set
 
@@ -58,6 +59,7 @@ func make(dir: String):
 	m.observe = ground
 	m.trees_near = trees
 	m.in_cave = func(_p): return cave
+	m.now_msec = func(): walk_ms += 1000; return walk_ms   # one second between reports
 	m.setup(dir)
 	return m
 
@@ -121,11 +123,11 @@ func _init() -> void:
 	for p in path:
 		m.note_position(1, p)
 
-	var surveyed_at: Array = []   # positions that actually surveyed (every survey_step_m)
-	var last: Variant = null
+	var surveyed_at: Array = []   # positions that actually surveyed (every survey_step_m; the first report only sets the start)
+	var last: Variant = path[0]
 
 	for p in path:
-		if last == null or Vector2(p.x, p.z).distance_to(Vector2(last.x, last.z)) >= float(cfg["survey_step_m"]):
+		if Vector2(p.x, p.z).distance_to(Vector2(last.x, last.z)) >= float(cfg["survey_step_m"]):
 			surveyed_at.append(p)
 			last = p
 
@@ -248,9 +250,22 @@ func _init() -> void:
 	m.note_position(1, Vector3(3010.0, 10.0, 3000.0))
 	check(m.surveys == s_jump + 1 and m.blocks_of("map-key-0001").has(Vector2i(5, 5)), "walking on from there surveys")
 
-	# Caves: nothing to survey.
-	cave = true
+	# A dash nobody can walk (40 m/s claimed) surveys nothing either.
+	var s_dash: int = m.surveys
+	walk_ms -= 800   # the next report comes 0.2 s after this one
+	m.note_position(1, Vector3(3018.0, 10.0, 3000.0))
+	check(m.surveys == s_dash, "a claimed dash at 40 m/s surveys nothing")
+
+	# A connection's first position only sets the start.
 	m._last_at.erase(1)
+	var s_first: int = m.surveys
+	m.note_position(1, Vector3(-4000.0, 10.0, 4000.0))
+	check(m.surveys == s_first, "the first position of a connection surveys nothing")
+
+	# Caves: nothing to survey.
+	m._last_at.erase(1)
+	m.note_position(1, Vector3(-3010.0, -20.0, -3000.0))
+	cave = true
 	var s0: int = m.surveys
 	m.note_position(1, Vector3(-3000.0, -20.0, -3000.0))
 	check(m.surveys == s0 and not m.blocks_of("map-key-0001").has(Vector2i(-6, -6)), "no survey inside a cave")
@@ -258,10 +273,13 @@ func _init() -> void:
 
 	# Ground not loaded yet (or its trees not made yet): skipped, surveyed on a later step once it is.
 	m._last_at.erase(1)
+	m.note_position(1, Vector3(5490.0, 10.0, 0.0))
+	var s_unloaded: int = m.surveys
 	m.note_position(1, Vector3(5500.0, 10.0, 0.0))
-	check(not m.blocks_of("map-key-0001").has(Vector2i(10, 0)), "ground that is not loaded is not invented")
-	held = true
+	check(m.surveys == s_unloaded + 1 and not m.blocks_of("map-key-0001").has(Vector2i(10, 0)), "ground that is not loaded is not invented")
 	m._last_at.erase(1)
+	m.note_position(1, Vector3(-1000.0, 10.0, 1990.0))
+	held = true
 	m.note_position(1, Vector3(-1000.0, 10.0, 2000.0))
 	var deferred: Vector2i = Vector2i(-2, 3)
 	check(not m.blocks_of("map-key-0001").has(deferred), "a cell whose flora is not made yet is not recorded (no permanent false 'no trees')")
