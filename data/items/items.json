@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1305,
+	"next_number": 1307,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -4841,6 +4841,60 @@
 			"look_alikes": [],
 			"value": 30,
 			"edge": true
+		},
+		"copper_pickaxe": {
+			"number": 1305,
+			"name": "Copper - Pickaxe",
+			"description": "A copper head on a hardwood handle. Breaks rock and takes copper, tin and coal, but not iron ore.",
+			"kind": "tool",
+			"stack": 1,
+			"unstackable": true,
+			"material": "copper",
+			"tool_class": "pick",
+			"tier": 2,
+			"durability": 5750,
+			"repair": [
+				[
+					"copper_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 55,
+			"edge": true,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-13): Copper pickaxe and axe only (master s2: no Copper variant without a verified role); knife and hammer are a question for Dave. PROVISIONAL (GOALS-REPAIR A-14): stats midway between Stone and Bronze (durability, value; per-material rates in boulders.json and drops.json)."
+		},
+		"copper_axe": {
+			"number": 1306,
+			"name": "Copper - Axe",
+			"description": "A copper blade on a hardwood handle. Fells trees faster than stone; bronze is faster still.",
+			"kind": "tool",
+			"stack": 1,
+			"unstackable": true,
+			"material": "copper",
+			"tool_class": "axe",
+			"tier": 2,
+			"durability": 1700,
+			"repair": [
+				[
+					"copper_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 40,
+			"edge": true,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-13): Copper pickaxe and axe only (master s2: no Copper variant without a verified role); knife and hammer are a question for Dave. PROVISIONAL (GOALS-REPAIR A-14): stats midway between Stone and Bronze (durability, value; per-material rates in boulders.json and drops.json)."
 		},
 		"stairs_wood_kit": {
 			"number": 462,
