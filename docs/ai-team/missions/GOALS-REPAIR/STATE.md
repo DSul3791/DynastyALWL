@@ -37,7 +37,8 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 | server_items.gd: smelting/craft-queue stations (`_queue_craft`, queue tick, `station_near`/`serving_station`, `_speed_factor`/`_addon_factor`), station stores/out-slots, kiln, `_repair_struct`/structure wear, hopper/fuel pulls. Boundary: queue code calls the WP-R1A ingredient helpers and does not edit them | thread "Build the metalworking progression" | 14 Nov |
 | server_items.gd: one hook for discovery record (new module) | thread "Build the discovered charcoal map" | on request |
 | data/items/{items,structures,blueprints,recipes,boulders,smithing,building_wear}.json | metalworking thread | 14 Nov |
-| data/items/drops.json, inventory shared code | WP-R1A | 14 Nov |
+| data/items/drops.json, tree/trunk/log processing, `_after_built`/site paths, chopping-block split branch, fire tier hooks | WP-PRIM (from WP-R1A) | 14 Nov |
+| server_items.gd ingredient stock helpers, shared `Inventory` fill helpers | WP-R1A (in dev; changes via the lead) | 14 Nov |
 | src/client/key_bindings.gd, key_bindings_page.gd, game_menu.gd, CONTROLS.md, terrain_client.gd input dispatch | WP-KEYS (lead) | 14 Nov |
 | src/client/held_item.gd, harvest.gd | WP-R1B (farming) | 14 Nov |
 | PROTOCOL_VERSION | 119 → guide-UI thread (#1088); 120 → map thread (#1090, after 119); 121 → WP-METAL R4 (slot-targeted station put, after 120); next number on request | 14 Nov |
@@ -48,12 +49,12 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 |---|---|---|---|---|---|---|---|---|
 | WP-00 | R0 | #1085 review + merge, follow-up fixes, tracker, ruling R-1, briefs | lead | — | IN DEV | lead branch / #1086 | #1085 → `d990abd`; #1086 → `303980d` | gate review 14 Nov |
 | WP-KEYS | R8 | Every admin/debug key Ctrl+Shift (defaults, saved binds, hardcoded paths), free J/G, keep inventory G | lead worker | — | IN DEV | goals-repair/wp-keys / #1087 | `a17bb4b` | gate PASS after fixes; David4 73/73, validate_items 0 errors (HEADLESS_GODOT) |
-| WP-R1A | R1 | GA-02 pine tar drop, GA-01 oak bark once per felled tree, GA-04 recipe water from containers (A-1..A-3) | lead worker | — | IN REVIEW (lane B requested on `a50d304`) | goals-repair/wp-r1a / #1091 | | gate PASS WITH FIXES, re-review PASS WITH FIXES (fixed in `a50d304`) |
+| WP-R1A | R1 | GA-02 pine tar drop, GA-01 oak bark once per felled tree, GA-04 recipe water from containers (A-1..A-3) | lead worker | — | IN DEV | goals-repair/wp-r1a / #1091 | `77460e3` | gate PASS WITH FIXES (fixed); David4 a50d304 FAILED 3 (refund rows lost liquid keys on load: real bug; 2 test faults), fixed; David4 `c619968` 219/219, validate_items 0 errors, smoke clean (HEADLESS_GODOT). Full fast run owed to post-merge broad run (terrain_net comment edit) |
 | WP-R1B | R1 | GA-03 client farming: sow, water, harvest, crop stage looks (A-6, A-7) | lead worker | WP-R1A (water_bed adapter) | IN REVIEW (rebase after #1091) | #1089 | | gate CHANGES REQUIRED; fixes 2/4/5/6 at `835cb0f`, 1 after rebase |
 | WP-METAL | R2–R6 | Smelters, Smithies, Copper tools, Anvils, wear/repair, bins, fuel pulls (A-8..A-11 so far) | thread "Build the metalworking progression" | — | IN REVIEW (PR 1: R2a + Improved smelter) | #1092 | | |
 | WP-GUIDE-UI | R7 runtime + R8 | Goal sync (protocol 119), Journal J/G/M, HUD, placard (A-12) | thread "Build the Journal, goal HUD and placard" | WP-KEYS for J/G/M | server IN DEV; client IN REVIEW | #1088; client #1093 (`43e0f53`) | #1088 → `e7d4919` | #1088: gate PASS on `0cca037`, David4 371/371 (HEADLESS_GODOT); smoke/validate_items not run |
 | WP-MAP | R8 | Discovered charcoal Map foundation (protocol 120, A-5) | thread "Build the discovered charcoal map" | #1088 merges first | IN REVIEW | #1090 | | |
-| WP-PRIM | R1/R2 | Primitive route: logs/blocks, hammer, firewood, fire sizes, shelter, doors/roofs (verify, fix gaps) | lead | — | NOT STARTED | | | |
+| WP-PRIM | R1/R2 | Primitive route: F1 site goal kind, F2 3 m logs, F3 manual firewood credit, F4 fire tier events, F5/P2 route tests, F9 text (baseline/PRIMITIVE_ROUTE_d990abd.md); F6-F8, F10 proposals only | lead worker | #1088, #1091 (both in dev) | IN PROGRESS | goals-repair/wp-prim | | |
 | WP-GOALS | R7 | 651-row catalog correction (328 rule-only rows individually), new-station coverage, completion conditions, migration; creator-review package | lead | mechanics PRs | NOT STARTED | | | |
 
 ## Next actions
