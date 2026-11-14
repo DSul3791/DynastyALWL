@@ -2,7 +2,7 @@
 
 **Status: REVIEW DRAFT. Not activated.** Dave approved the 26 audit ADD goals and the coins-only rewards on 14 Nov 2026; the A-42 amounts are provisional, and the catalog goes into the game only on his explicit go. This is the GOALS-REPAIR R7 (WP-GOALS) package for Dave's catalog review, made under the item catalog freeze (`docs/ai-team/DECISION_AUTHORITY.md`). Nothing in it changes game code, `starter_goals.json`, `camp_goals.json` or `PLAYER_GOALS_REWARDS_DRAFT.md`. Values tagged A-n are provisional engineering assumptions from `docs/ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md` §4. They are not Dave-approved.
 
-- **Rows:** `PLAYER_GOALS_CATALOG_CORRECTED.csv` has one row per goal, 699 in all: the draft's 651 goals (`status` ORIGINAL), 22 new goals (`status` PROPOSED NEW: the 11 of R7, the five tier Roof 65 panels and the six tier pieces of PR #1113) and the audit's 26 ADD goals, approved by Dave: 25 `status` APPROVED NEW and ADD-16, `status` MERGED into `activity:temper_steel` (A-43). See "Approved new goals" below.
+- **Rows:** `PLAYER_GOALS_CATALOG_CORRECTED.csv` has one row per goal, 702 in all: the draft's 651 goals (`status` ORIGINAL), 25 new goals (`status` PROPOSED NEW: the 11 of R7, the five tier Roof 65 panels, the Fortified Roof 45, Roof 65 and Roof corner, and the six tier pieces of PR #1113) and the audit's 26 ADD goals, approved by Dave: 25 `status` APPROVED NEW and ADD-16, `status` MERGED into `activity:temper_steel` (A-43). See "Approved new goals" below.
 - **Sources:**
   - Draft: `PLAYER_GOALS_REWARDS_DRAFT.md` (651 rows, 15,670 copper in total).
   - Audit: `PLAYER_GOALS_AUDIT_LEDGER.csv` (audit at `dc2fa52`).
@@ -20,7 +20,7 @@
   - **Roof 45 and 65 (#1110; naming CONFIRMED by Dave (14 Nov 2026 05:29Z: "all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof", Fortified included)):** every tier has a "<Tier> - Roof 45" and a "<Tier> - Roof 65". A Roof 65 costing the same as its Roof 45 is still an assumption (A-35). The five `build:*roof` rows for Rustic, Sturdy, Superior, Refined and Engineered now say "choose <Tier> - Roof 45" and are FIX (they were OK). Goal ids and structure ids are unchanged. The Crude pair (`build:thatch_roof`, `build:thatch_roof_65`) already had both goals. The five new 65 panels are PROPOSED rows now (the R9 reward pass), and the Fortified pair follows when its data is in dev. The roofs PR is #1110. `PLAYER_GOALS_REWARDS_DRAFT.md` and the audit CSVs are the historical review inputs and are left as they were; this catalog supersedes them.
     - Still blocked (28): the 24 locked water and garden blueprints (all now UNASSIGNED; their materials are reachable; Dave 14 Nov 06:26Z keeps them as future goals, still locked), R5 (`build:master_forge`, `activity:temper_steel`), R6 (`build:open_storage_bin`) and `activity:chop_log_blocks` (no `made_item_any` check type). `activity:operate_bellows` is OK since the reward pass: `server_smelter.gd` emits `bellows_iron` in dev. R5, R6 and `made_item_any` have since landed in dev too; their rows are rechecked in the final R9 docs update, not here.
   - The counts below include these changes.
-- **Rewards:** every row now pays the A-42 coin scale (section "Rewards (A-42)" below): 6,460 copper over the 698 paying rows, 6,010 of it on the 651 ORIGINAL rows. The draft's 15,670 copper is replaced.
+- **Rewards:** every row now pays the A-42 coin scale (section "Rewards (A-42)" below): 6,520 copper over the 701 paying rows, 6,010 of it on the 651 ORIGINAL rows. The draft's 15,670 copper is replaced.
 - **Wording:** "go live" means the day the corrected catalog replaces the live goal files. It is not a player action; the player never activates anything.
 
 ## Rewards (A-42)
@@ -40,8 +40,8 @@
 | Stone | 5 copper | the start, stone tools, Crude | 416 |
 | Bronze | 10 copper (1 bronze) | Copper, Bronze, Improved | 27 |
 | Iron | 15 copper (1 bronze + 5 copper) | Iron, Refined, Advanced | 198 |
-| Steel | 20 copper (2 bronze) | Steel, Fortified, Master | 57 |
-| **All** | **6,460 copper** | 698 paying rows (651 ORIGINAL: 6,010; 22 PROPOSED: 300; 25 APPROVED: 150); the MERGED ADD-16 row pays nothing | **698** |
+| Steel | 20 copper (2 bronze) | Steel, Fortified, Master | 60 |
+| **All** | **6,520 copper** | 701 paying rows (651 ORIGINAL: 6,010; 25 PROPOSED: 360; 25 APPROVED: 150); the MERGED ADD-16 row pays nothing | **701** |
 
 **How a row gets its stage.** A row pays the higher of two stages:
 
@@ -62,7 +62,7 @@ A row with no stage of its own (an event such as drinking or selling) takes the 
 
 The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_reward_stages.py .` prints the counts, the total and these rows (`--write` rewrites `reward_copper` and `reward_text`). It is a static read of the data, not play.
 
-**Still to add:** the Fortified Roof 45 and Roof 65 goals, once their data (PR #1112) is in dev. They pay steel, 20 copper each.
+**Roof corners (A-37, #1118):** a corner now has a 45 and a 65 shape, and one placed at 65 records its `<kind>_65` twin, so the six corner goals and the new Fortified one count either shape (`what_any`).
 
 ## What Dave ruled on 14 Nov (06:26Z), and what it means here
 
@@ -127,7 +127,7 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 | **Total** | **651** | **328** | **323** |
 
 - **Blocked rows that also have text corrections:** 5, of which 3 are rule-only rows.
-- **New goals:** 22 PROPOSED (verdict PROPOSED), 25 APPROVED NEW (2 OK, 23 BLOCKED-BY-MECHANIC until their new event is built) and 1 MERGED (ADD-16). They are not in the table above.
+- **New goals:** 25 PROPOSED (verdict PROPOSED), 25 APPROVED NEW (2 OK, 23 BLOCKED-BY-MECHANIC until their new event is built) and 1 MERGED (ADD-16). They are not in the table above.
 - **Rows with a play test or player-verification note:**
   - 109 need player verification of the PR #1091 sources (Tanbark, Pine tar, water from containers).
   - 58 are F6 door, doorway and bed checks.
@@ -199,10 +199,11 @@ A `runtime_check` that contains `count: "N"` is a placeholder. It is **not loada
 | `build:fortified_floor` | Build Fortified - Ceiling | placed:fortified_floor | item fortified_floor #1331, state 401, bp 321 (PR #1113) | 20 |
 | `build:fortified_stairs` | Build Fortified - Stairs | placed:fortified_stairs | item fortified_stairs #1332, state 402, bp 322 (PR #1113) | 20 |
 | `build:fortified_fence` | Build Fortified - Fence | placed:fortified_fence | item fortified_fence #1333, state 403, bp 323 (PR #1113) | 20 |
+| `build:fortified_roof` | Build Fortified - Roof 45 | placed:fortified_roof | item fortified_roof #1325, state 391, bp 315 (dev, #1112) | 20 |
+| `build:fortified_roof_65` | Build Fortified - Roof 65 | placed:fortified_roof_65 | item fortified_roof_65 #1326, state 392, bp 316 (dev, #1112) | 20 |
+| `build:fortified_roof_corner` | Build Fortified - Roof corner | placed:fortified_roof_corner or fortified_roof_corner_65 | item fortified_roof_corner #1327, state 393 and 394, bp 317 (dev, #1118) | 20 |
 | `build:engineered_fence` | Build Engineered - Fence | placed:engineered_fence | item engineered_fence #1334, state 404, bp 324 (PR #1113) | 15 |
 | `build:engineered_gate` | Build Engineered - Gate | placed:engineered_gate | item engineered_gate #1335, state 405, bp 325 (PR #1113) | 15 |
-
-**Still to add:** `build:<Fortified Roof 45>` and `build:<Fortified Roof 65>` (Build Fortified - Roof 45 / 65), when PR #1112 is in dev. Steel stage, 20 copper each.
 
 ## Approved new goals (audit ADD, Dave 14 Nov 2026 06:26Z)
 
@@ -276,7 +277,9 @@ Also still owed by earlier rows: `tempered` (`activity:temper_steel`, which now 
 
 ### Order of the rows (the HUD)
 
-The live HUD shows the first goal not yet done, in authored order, and the Journal thread's test guards that no goal is listed before a goal it follows. So the CSV order is the authored order, and every new row sits right after the row for what it needs: for example `craft:kindling` after placing the first campfire, the Improved smelter before the first Iron ingot, each Roof 65 after its Roof 45, the tier pieces after their tier's last piece, sowing after the hoe, and setting a snare after crafting one. New side goals that need nothing beyond the start (map, tinder, cooking, sleeping and the rest) open the side goals, right after the main route. The kiln and jar goals close the stone-stage side goals, after the main route has built both. `PLAYER_GOALS_REWARDS_DRAFT.md` keeps the draft's order for the record.
+The live HUD shows the first goal not yet done, in authored order. `test_goals.gd` (#1118) guards the live goals: every goal a goal follows (`after`) comes before it. This CSV has no `after` column, so the same rule was applied by reading each new row's needs (its blueprint cost or recipe) against the rows that make them. So the CSV order is the authored order, and every new row sits right after the row for what it needs: for example `craft:kindling` after placing the first campfire, the Improved smelter before the first Iron ingot, each Roof 65 after its Roof 45, the tier pieces after their tier's last piece, sowing after the hoe, and setting a snare after crafting one. New side goals that need nothing beyond the start (map, tinder, cooking, sleeping and the rest) open the side goals, right after the main route. The kiln and jar goals close the stone-stage side goals, after the main route has built both. The Fortified Roof 45, Roof 65 and Roof corner follow the Fortified tier pieces. `PLAYER_GOALS_REWARDS_DRAFT.md` keeps the draft's order for the record.
+
+**Order gaps found (not changed; the main route's order is the authored order):** three materials the main route needs have their goal only in the side goals, after the pieces that use them. `build:improved_smelter` (new) and `build:blacksmithy` (original) need Bronze nails and Bronze hinges (`craft:bronze_nails`, `craft:bronze_hinges`), and `craft:copper_axe` (new) needs a Leather strap (`craft:leather_strap`). When these goals go live with `after` links, either those three material goals move into the main route ahead of the smelter, or the links point only at goals earlier in the list.
 
 ### Coverage of the required stations
 

@@ -82,6 +82,14 @@ const GOLDEN := {
 	"log_roof_corner": "log_roof_corner",
 	"stone_roof_corner": "stone_roof_corner",
 	"brick_roof_corner": "brick_roof_corner",
+	"thatch_roof_corner_65": "thatch_roof_corner_65",       # GOALS-REPAIR A-37: each corner's 65 degree shape
+	"wooden_roof_corner_65": "wooden_roof_corner_65",
+	"log_roof_corner_65": "log_roof_corner_65",
+	"stone_roof_corner_65": "stone_roof_corner_65",
+	"brick_roof_corner_65": "brick_roof_corner_65",
+	"engineered_roof_corner_65": "engineered_roof_corner_65",
+	"fortified_roof_corner": "fortified_roof_corner",   # the Fortified corner (lead, 14 Nov 2026; cost A-40)
+	"fortified_roof_corner_65": "fortified_roof_corner_65",
 	"log_bench": "log_bench",
 	"log_table": "log_table",
 	"stone_bench": "stone_bench",
@@ -186,6 +194,8 @@ const TIERS := {
 	"roof_section_65": "roof_65",              # GOALS-REPAIR A-36: each tier roof's 65 degree panel
 	"engineered_roof": "engineered_roof",
 	"engineered_roof_65": "engineered_roof_65",
+	"fortified_roof": "fortified_roof",        # Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65
+	"fortified_roof_65": "fortified_roof_65",
 }
 
 var _failures: int = 0

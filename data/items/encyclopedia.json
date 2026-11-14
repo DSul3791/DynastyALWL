@@ -2463,6 +2463,9 @@
 				"Used in Engineered - Ceiling",
 				"Used in Engineered - Roof 45",
 				"Used in Engineered - Roof 65",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65",
+				"Used in Fortified - Roof corner",
 				"Used in Engineered - Roof corner",
 				"Used in Fortified - Gate",
 				"Used in Mixer",
@@ -4461,6 +4464,9 @@
 				"Used in Superior - Ceiling",
 				"Used in Engineered - Roof 45",
 				"Used in Engineered - Roof 65",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65",
+				"Used in Fortified - Roof corner",
 				"Used in Engineered - Roof corner"
 			],
 			"obtainable_now": true
@@ -10723,6 +10729,30 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"fortified_roof": {
+			"name": "Fortified - Roof 45",
+			"kind": "structure",
+			"description": "A sloped roof panel of clay tiles on pinned plank rafters, strapped with iron bands. Does not burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_roof_65": {
+			"name": "Fortified - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of clay tiles on pinned plank rafters, strapped with iron bands. Does not burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_roof_corner": {
+			"name": "Fortified - Roof corner",
+			"kind": "structure",
+			"description": "A clay tile roof corner on pinned plank rafters, strapped with iron bands. Does not burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"engineered_fence": {
 			"name": "Engineered - Fence",
 			"kind": "structure",
@@ -10935,6 +10965,9 @@
 			"used_for": [
 				"Used in Engineered - Roof 45",
 				"Used in Engineered - Roof 65",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65",
+				"Used in Fortified - Roof corner",
 				"Used in Engineered - Roof corner",
 				"Used in Superior - Roof 45",
 				"Used in Superior - Roof 65",
@@ -11019,6 +11052,9 @@
 				"Used in Fortified - Double doorway",
 				"Used in Fortified - Arched doorway",
 				"Used in Fortified - Double arched doorway",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65",
+				"Used in Fortified - Roof corner",
 				"Used in Fortified - Window",
 				"Used in Fortified - Ceiling",
 				"Used in Fortified - Stairs",
