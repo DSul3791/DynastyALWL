@@ -92,7 +92,8 @@ func _init() -> void:
 	# A log on the shoulder never blocks the chopping.
 	w._give_shoulder(1, log_n, 1)
 	check(w.shoulder_of(1) == "log_oak", "a log is on the shoulder")
-	var cut_point: Vector3 = base + along * (length0 - 1.2)
+	var log_len: float = float(w._drops["trunk"]["log_length_m"])   # 3.0 m (Master s2.3 item 1)
+	var cut_point: Vector3 = base + along * (length0 - log_len * 0.5)
 	w.report_position(1, cut_point)
 
 	for n in range(3):
@@ -101,7 +102,7 @@ func _init() -> void:
 
 	check(loose_logs(w, log_n).size() == 1, "the cut drops one log on the ground, not into the pack (loose logs: %d)" % loose_logs(w, log_n).size())
 	check(w.shoulder_of(1) == "log_oak" and w.inventory_of(1).count_of(log_n) == 1, "the carried log (a pack item) is unchanged and the cut log did not join it")
-	check(absf(float(tree["length"]) - (length0 - 2.44)) < 0.01, "the trunk is one log shorter (%.2f from %.2f)" % [float(tree["length"]), length0])
+	check(absf(float(tree["length"]) - (length0 - log_len)) < 0.01, "the trunk is one log shorter (%.2f from %.2f)" % [float(tree["length"]), length0])
 
 	# Save and load mid-way keeps the shortened trunk.
 	w.save()
@@ -125,7 +126,7 @@ func _init() -> void:
 
 	check(not w._items.has(trunk_id), "the last cut removes the trunk")
 	var logs: int = loose_logs(w, log_n).size()
-	check(logs == int(18.0 / 2.44), "every log of the tree lies on the ground: %d of %d" % [logs, int(18.0 / 2.44)])
+	check(logs == int(18.0 / log_len), "every log of the tree lies on the ground: %d of %d" % [logs, int(18.0 / log_len)])
 	check(w.inventory_of(1).count_of(log_n) == 1, "no cut log went into the pack (only the carried one)")
 	var stumps: int = 0
 
@@ -134,6 +135,35 @@ func _init() -> void:
 			stumps += 1
 
 	check(stumps == 1, "the stump stays")
+
+	# A trunk saved while logs were 2.44 m holds logs_left 6 at 15 m, but 15 m holds only 5 logs of 3 m: the clamp leaves 5, none of them 0 m long.
+	standing[8] = true
+	w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(60.0, 10.0, 0.0), "height": 15.0, "trunk": 0.3} if standing.has(id) else {}
+	w.report_position(1, Vector3(58.0, 10.0, 0.0))
+
+	for n in range(20):
+		w._last_hit.clear()
+		w.action(1, Net.ACT_HIT, 8, 0, 0, HeldTool.at_axe(w))
+
+	var old_trunk: int = 0
+
+	for k in w._items:
+		if w._items[k].has("tree") and int(w._items[k]["tree"]["state"]) == 3:
+			old_trunk = k
+
+	check(old_trunk != 0 and is_equal_approx(float(w._items[old_trunk]["tree"]["length"]), 15.0), "a 15 m oak is felled for the stale-count case")
+	w._items[old_trunk]["tree"]["logs_left"] = 6
+	w._items[old_trunk]["tree"]["blows"] = 0
+	var logs_before: int = loose_logs(w, log_n).size()
+	guard = 0
+
+	while w._items.has(old_trunk) and guard < 80:
+		w.report_position(1, w.cut_line_point(old_trunk))
+		w._last_process.clear()
+		w.action(1, Net.ACT_PROCESS, old_trunk, 0, 0, HeldTool.at_axe(w))
+		guard += 1
+
+	check(not w._items.has(old_trunk) and loose_logs(w, log_n).size() - logs_before == 5, "a saved trunk with 6 logs left at 15 m gives 5 logs and no 0 m log (%d)" % (loose_logs(w, log_n).size() - logs_before))
 
 	print("trunk cutting tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -21,6 +21,7 @@ var _lock: Control        # the lock beside the tick while the container is kept
 var opened_bag: int = 0   # the item number of the worn bag the screen last showed (0 for a chest), so a bag swapped in its place is asked for again
 var _code_lock: Button    # the owner's code-lock controls for a lockable chest or crate (catalog phase 9; storage_dialogs.gd)
 var _grid: GridContainer  # the container's wells, one per slot of chest_inv (a body's remains can hold a pack that grew past 30)
+var _parts: Label         # a Smelter's parts under its wells: which slots are the fuel hopper, the ore input and the rack (master s2.7)
 
 
 func _init(owner_view) -> void:
@@ -95,6 +96,13 @@ func build() -> void:
 	_grid.add_theme_constant_override("v_separation", int(ArtKit.SLOT_GAP))
 	scroll.add_child(_grid)
 	_fit_wells()
+	_parts = Label.new()
+	_parts.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_parts.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+	_parts.add_theme_font_size_override("font_size", view._px(18))
+	_parts.add_theme_color_override("font_color", ArtKit.CREAM)
+	_parts.visible = false
+	box.add_child(_parts)
 
 	# The tools under the grid.
 	var tools: HBoxContainer = HBoxContainer.new()
@@ -248,12 +256,36 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 		_code_lock.visible = not fire and storage_ui != null and storage_ui.may_manage(view.chest_id)
 		_code_lock.text = "Locked" if storage_ui != null and bool(storage_ui.lock_state.get("locked", false)) else "Lock"
 
+	if is_instance_valid(_parts):
+		_parts.text = smelter_parts()
+		_parts.visible = _parts.text != ""
+
 	for i in view.chest_inv.slot_count:
 		var slot = view._chest_buttons[i]
 		slot.visible = i < capacity
 		var number: int = view.chest_inv.numbers[i]
 		var tip: String = view._tooltip(number, view.chest_inv.counts[i], view.chest_inv.wear[i], view.chest_inv.inst_of(i)) if number != 0 else ""
 		InventoryLook.show_stack(view, slot, number, view.chest_inv.counts[i], view.chest_inv.wear[i], tip, view.chest_inv.max_durability(i))
+
+
+# A Smelter's parts in words (structures.json "smelt"), "" for any other container: its first slots are the fuel hopper, the next the ore
+# input, the last the output rack; the Primitive smelter has no rack and drops its ingots in front (master s2.5, s2.7).
+func smelter_parts() -> String:
+	if view.chest_id < 0 or not view._world.has(view.chest_id) or not view.has_method("_structure_by_state"):   # the tests' stand-in views have no table of rows
+		return ""
+
+	var def: Dictionary = view._structure_by_state(int(view._world[view.chest_id].get("state", -1)))
+	var smelt: Dictionary = def.get("smelt", {}) if typeof(def.get("smelt", null)) == TYPE_DICTIONARY else {}
+
+	if str(def.get("use", "")) != "smelt" or smelt.is_empty():
+		return ""
+
+	var hs: int = int(smelt.get("hopper_slots", 1))
+	var slots: int = int(def.get("slots", 0))
+	var out: int = int(def.get("out_slots", 0))
+	var text: String = "Slot%s 1%s: fuel, Coal or Charcoal (%d). Slots %d to %d: ore (%d)." % ["s" if hs > 1 else "", " to %d" % hs if hs > 1 else "", int(smelt.get("hopper", 0)), hs + 1, slots, int(smelt.get("input", 0))]
+	text += " Slots %d to %d: the ingots." % [slots + 1, slots + out] if out > 0 else " The ingots drop in front of it."
+	return text
 
 
 # The name on the Craft plate while the container shows: "FIRE", the container's name, or "CHEST".

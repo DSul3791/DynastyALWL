@@ -368,6 +368,7 @@ const FishSchoolsScript := preload("res://src/server/server_fish.gd")
 const BowScript := preload("res://src/stream/server_bow.gd")
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const TrapsScript := preload("res://src/stream/server_traps.gd")
+const SmelterScript := preload("res://src/stream/server_smelter.gd")   # the Smelters: hopper, input, output or ground, bellows (master s2.5, s2.7)
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const FoodEffects := preload("res://src/shared/food_effects.gd")   # temporary food effects in three group slots (catalog Phase 7)
 const CarryRules := preload("res://src/shared/carry_rules.gd")
@@ -391,6 +392,7 @@ var season_stamp: Callable            # set by the server: () -> int, game year 
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
 var _traps = null                   # server_traps.gd (snares), made in setup
+var _smelters = null                # server_smelter.gd (the Smelters), made in setup
 const CartsScript := preload("res://src/stream/server_carts.gd")
 var _carts = null                   # server_carts.gd (the Handcart and crates riding on it, catalog Phase 10), made in setup
 var send_cart_pull: Callable        # (peer, cart world id or 0, pace in tenths of m/s): the cart this player holds the handle of (protocol 111)
@@ -457,6 +459,9 @@ func setup(item_table, store_dir: String) -> void:
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
 
+	_smelters = SmelterScript.new()
+	_smelters.host = self
+	_smelters.setup(_structures_cfg)
 	_load_blueprints()
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
@@ -503,6 +508,7 @@ func setup(item_table, store_dir: String) -> void:
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
+	_smelters.load_rows(_read_json_version("smelters.json", 1))
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
@@ -1136,7 +1142,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
+		var fuel_tier: int = _lit_tier_at(a)
 		_fuel(peer, inv, a)
+		_goal_fire_tier(peer, a, fuel_tier)
 	elif kind == Net.ACT_STANCE:
 		_set_stance(peer, a)
 	elif kind == Net.ACT_SLEEP:
@@ -1147,6 +1155,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 
 		if was_laid and _items.has(a) and _items[a].has("fire") and fire_is_lit(int(_items[a]["fire"]["state"])):
 			_goal_event(peer, "fire_lit")
+			_goal_fire_tier(peer, a, 0)   # lit straight to a bigger tier (wood already in the store) credits it too
 	elif kind == Net.ACT_COOK:
 		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
@@ -1156,7 +1165,10 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at, a - 1, b == 1)   # a: the held pack slot + 1 (protocol 117); b = 1: the swing struck nothing (protocol 118)
 	elif kind == Net.ACT_CHEST_CLOSE:
-		_sync_fire_from_box(peer, int(_chest_viewer.get(peer, 0)))
+		var closed: int = int(_chest_viewer.get(peer, 0))
+		var close_tier: int = _lit_tier_at(closed)
+		_sync_fire_from_box(peer, closed)   # a burning fire's store counts when its window closes: the wood put in may lift the tier
+		_goal_fire_tier(peer, closed, close_tier)
 		_chest_viewer.erase(peer)
 	elif kind == Net.ACT_CHEST_KEEP_OUT:
 		_set_keep_out(peer, a, b == 1)
@@ -1400,6 +1412,7 @@ func tick(delta: float) -> void:
 		_water_tick(spent)
 		_slow_mark("crops-water", t0)
 		_lights_tick(spent)
+		_smelters.tick_all(spent)
 		_dev_pending_tick(spent)
 		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
@@ -1559,6 +1572,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
+	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
 
 
@@ -4830,7 +4844,7 @@ func _sync_world_items() -> void:
 				if it.has("struct"):
 					signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
 
-				var fill: int = _store_fill(it) if it.has("struct") and _out_slots(str(it["struct"]["kind"])) > 0 else -1
+				var fill: int = _store_fill(it) if it.has("struct") and (_out_slots(str(it["struct"]["kind"])) > 0 or _smelters.is_smelter(_structures.get(str(it["struct"]["kind"]), {}))) else -1
 
 				if fill >= 0:
 					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
@@ -6476,11 +6490,15 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	var from_base: Vector3 = _peer_pos[peer] - it["pos"]
 	var flat: float = cos(float(tree.get("pitch", 0.0)))
 	var length_now: float = float(tree["length"])
+
+	if tree.has("logs_left"):   # a trunk saved when logs were 2.44 m holds more logs than its length now has: the last one would be 0 m long
+		tree["logs_left"] = mini(int(tree["logs_left"]), maxi(int(length_now / float(cfg.get("log_length_m", 3.0))), 1))
+
 	var logs_phase: bool = int(tree.get("blows", 0)) >= int(cfg.get("branch_blows", 3)) and int(tree.get("logs_left", 0)) > 0
 	var t: float = clampf(from_base.dot(along), 0.0, length_now * flat)
 
 	if logs_phase:   # logs come off the far end: the player stands by the next cut line (the middle of the piece that comes off)
-		var piece: float = length_now if int(tree["logs_left"]) <= 1 else minf(float(cfg.get("log_length_m", 2.44)), length_now)
+		var piece: float = length_now if int(tree["logs_left"]) <= 1 else minf(float(cfg.get("log_length_m", 3.0)), length_now)
 		t = (length_now - piece * 0.5) * flat
 
 	var nearest: Vector3 = it["pos"] + along * t
@@ -6503,7 +6521,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	tree["landed"] = true   # the client draws it lying from now on (a shorter trunk is not felled again)
 
 	if not tree.has("logs_left"):
-		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.44))), 0, int(cfg.get("max_logs", 20)))   # whole 8 ft (2.44 m) lengths only
+		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 3.0))), 0, int(cfg.get("max_logs", 20)))   # whole 3 m lengths only (Master s2.3 item 1)
 		tree["blows"] = 0   # every tree makes logs (Dave 1 Nov); a species without its own log item drops the plain Log (_cut_log_off)
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -6653,7 +6671,7 @@ func cut_line_point(id: int) -> Vector3:
 		return Vector3.ZERO
 
 	var tree: Dictionary = it["tree"]
-	var log_len: float = float(_drops.get("trunk", {}).get("log_length_m", 2.44))
+	var log_len: float = float(_drops.get("trunk", {}).get("log_length_m", 3.0))
 	var length_now: float = float(tree["length"])
 	var piece: float = length_now if int(tree.get("logs_left", 1)) <= 1 else minf(log_len, length_now)
 	var yaw: float = float(tree["yaw"])
@@ -6670,7 +6688,7 @@ func _log_number(species: String) -> int:
 	return log_n
 
 
-# A felled tree breaks into its logs by itself once it has hit the ground (Dave 2 Nov): the same whole 2.44 m lengths as cutting it would give
+# A felled tree breaks into its logs by itself once it has hit the ground (Dave 2 Nov): the same whole 3 m lengths as cutting it would give
 # (_process_trunk: logs_left), the same species log, lying along the line where the trunk fell. The trunk record goes, so the client drops one
 # mesh and shows the logs as ordinary loose items (one cached mesh per species): no repeated trunk rebuild as in bug 6. A trunk already worked with
 # the axe (it has blows), one with no whole log in it, or one with no room for all its logs is left as a trunk to cut by hand.
@@ -6713,7 +6731,7 @@ func split_trunk(id: int) -> bool:
 
 	var tree: Dictionary = it["tree"]
 	var cfg: Dictionary = _drops.get("trunk", {})
-	var log_len: float = float(cfg.get("log_length_m", 2.44))
+	var log_len: float = float(cfg.get("log_length_m", 3.0))
 	var length: float = float(tree["length"])
 	var count: int = clampi(int(length / log_len), 0, int(cfg.get("max_logs", 20)))
 
@@ -6983,7 +7001,7 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_b
 # dropped log item beside the trunk, so it obeys the drop rules; false (nothing changes, the next blow tries again) when the spot is too crowded. The last log takes whatever is left of the trunk.
 func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kindling: bool = false) -> bool:   # as_kindling: cut with a pick, the piece is a pile of kindling
 	var it: Dictionary = _items[id]
-	var log_len: float = float(cfg.get("log_length_m", 2.44))
+	var log_len: float = float(cfg.get("log_length_m", 3.0))
 	var length_now: float = float(tree["length"])
 	var seg: float = length_now if int(tree.get("logs_left", 1)) <= 1 else minf(log_len, length_now)
 	var yaw: float = float(tree["yaw"])
@@ -7367,6 +7385,25 @@ static func fire_is_lit(state: int) -> bool:
 # A lit fire's tier for its look: 1 survival (40), 2 campfire (1), 3 bonfire (41), as the client's inventory_view._fire_tier.
 static func fire_tier_of(state: int) -> int:
 	return 1 if state == FIRE_STATE_SURVIVAL else (3 if state == FIRE_STATE_BONFIRE else 2)
+
+
+# The tier of the lit fire `id` (1 small, 2 medium, 3 large), 0 when it is not a lit fire.
+func _lit_tier_at(id: int) -> int:
+	var fire: Dictionary = _items.get(id, {}).get("fire", {})
+	return fire_tier_of(int(fire["state"])) if not fire.is_empty() and fire_is_lit(int(fire["state"])) else 0
+
+
+# A player action took the fire `id` up from tier `before` (0: not burning): each tier newly reached from medium up is a goal event, so a fire
+# lit straight to large credits medium too (GOALS-REPAIR F4). Each tier is credited at most once per character, so a fire that burned down and is
+# lifted again through the store window cannot farm it. Called only after player actions: burning down credits nothing.
+func _goal_fire_tier(peer: int, id: int, before: int) -> void:
+	var counts: Dictionary = _goal_state_of(peer).get("goal_counts", {})
+
+	for tier in range(maxi(before, 1) + 1, _lit_tier_at(id) + 1):
+		var what: String = ["small", "medium", "large"][tier - 1]
+
+		if int(counts.get(_goal_count_key("fire_tier", what), 0)) == 0:
+			_goal_event(peer, "fire_tier", what)
 
 
 # Far campfire smoke (TEST-011, Dave approved 13 Nov 2026: smoke seen up to 2 km so a camp can be found from a hill): the lit campfires
@@ -8526,6 +8563,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
+
+	if _smelters.is_smelter(_structures.get(str(def["kind"]), {})):
+		_smelters.note(_next_id)
+
 	_next_id += 1
 	_add_roof(entry)
 
@@ -8567,7 +8608,7 @@ func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 	if bool(def.get("shelter", false)):
 		_record_rest(str(_peer_key.get(peer, "")), _shelter_floor(spot, def), "shelter")   # a lean-to you built is a place to come back to
 
-	_goal_event(peer, "placed", str(def.get("kind", "")))
+	_goal_event(peer, "placed", str(entry["struct"]["kind"]))   # the piece's own kind: a finished site passes the raw structures row, which has none (GOALS-REPAIR F1)
 
 
 # A campfire pot goes onto the nearest small fire (laid, lit or burnt out; never a bonfire) within POT_ATTACH_M of where it was put and
@@ -9241,6 +9282,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		_kiln_use(peer, it, def)
 		return
 
+	if _smelters.is_smelter(def):   # E at a Smelter: works its bellows (Improved), or says how it is fed (master s2.7)
+		_smelters.use(peer, id, it, def)
+		return
+
 	if str(def.get("use", "")) != "split_log":
 		return
 
@@ -9274,7 +9319,9 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 	inv.remove(block_n, 1)
 	var large: bool = block_n == table.number_of("wooden_block_large") or block_n == table.number_of("wooden_block_soft_large")
 	var soft: bool = block_n == table.number_of("wooden_block_soft") or block_n == table.number_of("wooden_block_soft_large")
-	_drop_firewood_beside(it, int(def.get("firewood_per_large_block", 4)) if large else int(def.get("firewood_per_block", 1)), "firewood_soft" if soft else "firewood")
+	var firewood: String = "firewood_soft" if soft else "firewood"
+	_drop_firewood_beside(it, int(def.get("firewood_per_large_block", 4)) if large else int(def.get("firewood_per_block", 1)), firewood)
+	_goal_made(peer, table.number_of(firewood))   # splitting by hand counts like one craft of the firewood, as the block's F queue does (GOALS-REPAIR F3)
 	_wear_slot(peer, inv, axe, "split")
 	practice(peer, "split_log")
 	_dirty = true
@@ -9350,7 +9397,9 @@ func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: 
 		_items.erase(id)
 
 	_wear_slot(peer, inv, int(tool[0]), "split")
-	drop_in_world(table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
+	var block_n: int = table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", ""))))
+	drop_in_world(block_n, blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
+	_goal_made(peer, block_n)   # chopping a log by hand counts like one craft of its block (GOALS-REPAIR F3); the pick's kindling above counts nothing
 	practice(peer, "split_log")
 	_dirty = true
 
@@ -10086,6 +10135,16 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 	var held_inst: Dictionary = inv.inst_of(a)
 	var amount: int = mini(count, inv.counts[a])
 	var max_kg: float = float(_structures.get(kind, {}).get("max_kg", 0.0))
+	var smelter: bool = id >= 0 and _smelters.is_smelter(_structures.get(kind, {}))
+
+	if smelter:   # a Smelter's hopper holds smelt.hopper units of fuel and its input smelt.input units of ore (master s2.7)
+		amount = _smelters.room(_structures[kind], chest, number, amount)
+
+		if amount == 0:
+			_say(peer, _smelters.refusal(_structures[kind], chest, number))
+			_reject(peer, 3)
+			return 0
+
 	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
 		amount = _kiln_room(id, chest, amount)
 
@@ -10108,7 +10167,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 			_say(peer, "It is too heavy for the chest" if cart_room >= room else "The handcart cannot carry more.")
 			_reject(peer, 2)
 
-	var left: int = chest.add(number, amount, held_wear, held_inst) if amount > 0 else 0
+	var left: int = 0
+
+	if amount > 0:
+		left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst) if smelter else chest.add(number, amount, held_wear, held_inst)
+
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
 	return amount - left
@@ -15450,6 +15513,10 @@ func dev_place(spec: String) -> int:
 
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
+
+	if _smelters.is_smelter(def):
+		_smelters.note(_next_id)
+
 	_next_id += 1
 	_add_roof(entry)
 	_dirty = true
@@ -16251,7 +16318,7 @@ func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String, reach_
 	if _is_loose(s):
 		if d <= CraftStock.LOOSE_STOCK_M * reach_x:
 			(stock["near"] as Array).append([sid, d])
-	elif _is_storage(s) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
+	elif _is_storage(s) and not _smelters.is_smelter(_structures.get(str(s["struct"]["kind"]), {})) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
 		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _out_slots(str(s["struct"]["kind"])) > 0 else 0])
 
 
@@ -17024,6 +17091,10 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
 	amount = _kiln_room(sid, box, amount)
+	var sdef: Dictionary = _structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {})
+
+	if _smelters.is_smelter(sdef):
+		amount = _smelters.room(sdef, box, number, amount)
 
 	if max_kg <= 0.0 or _carry_cfg.is_empty() or box == null:
 		return amount
@@ -17075,7 +17146,11 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 				continue   # only chests that already hold it, and take it (structures.json takes)
 
 			var amount: int = _box_room(int(box[0]), number, inv.counts[slot])
-			var put: int = amount - (box[1].add(number, amount, inv.wear[slot]) if amount > 0 else 0)
+			var box_def: Dictionary = _structures.get(str(_items[int(box[0])]["struct"]["kind"]), {})
+			var put: int = 0
+
+			if amount > 0:
+				put = amount - (_smelters.put(box_def, box[1], number, amount, inv.wear[slot]) if _smelters.is_smelter(box_def) else box[1].add(number, amount, inv.wear[slot]))
 
 			if put > 0:
 				inv.take_from_slot(slot, put)

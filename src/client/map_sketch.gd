@@ -21,8 +21,13 @@ static func render_block(knowledge, block: Vector2i, px: int = PX) -> Image:
 
 # Any rectangle of world sketch pixels (origin in world pixels: world metres / cell_m * px).
 static func render_rect(knowledge, origin: Vector2i, extent: Vector2i, px: int = PX) -> Image:
-	var image: Image = Image.create(extent.x, extent.y, false, Image.FORMAT_RGBA8)
-	image.fill(Color(0, 0, 0, 0))
+	return paint(gather(knowledge, origin, extent, px))
+
+
+# The cells a rectangle's sketch reads, copied out of the store (main thread, cheap: about 40 x 40 lookups a block), so paint() can run on
+# a worker thread while new blocks keep arriving: {"origin", "extent", "px", "c0", "cw", "ch", "known", "heights", "water", "quality",
+# "trees", "any"}.
+static func gather(knowledge, origin: Vector2i, extent: Vector2i, px: int = PX) -> Dictionary:
 	# The cells under the rectangle plus a two-cell border (bilinear corners and the contour neighbours).
 	var c0: Vector2i = Vector2i(int(floor(float(origin.x) / px)) - 2, int(floor(float(origin.y) / px)) - 2)
 	var cw: int = int(ceil(float(extent.x) / px)) + 5
@@ -54,7 +59,27 @@ static func render_rect(knowledge, origin: Vector2i, extent: Vector2i, px: int =
 			water[n] = int(cell[2])
 			trees[n] = int(cell[3])
 
-	if not any:
+	return {"origin": origin, "extent": extent, "px": px, "c0": c0, "cw": cw, "ch": ch, "known": known, "heights": heights, "water": water,
+		"quality": quality, "trees": trees, "any": any}
+
+
+# The charcoal marks for gathered cells: touches nothing but its argument, so it may run on any thread (about 55 ms a 128 px block on David4).
+static func paint(grid: Dictionary) -> Image:
+	var origin: Vector2i = grid["origin"]
+	var extent: Vector2i = grid["extent"]
+	var px: int = int(grid["px"])
+	var c0: Vector2i = grid["c0"]
+	var cw: int = int(grid["cw"])
+	var ch: int = int(grid["ch"])
+	var known: PackedByteArray = grid["known"]
+	var heights: PackedFloat32Array = grid["heights"]
+	var water: PackedByteArray = grid["water"]
+	var quality: PackedByteArray = grid["quality"]
+	var trees: PackedByteArray = grid["trees"]
+	var image: Image = Image.create(extent.x, extent.y, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+
+	if not bool(grid["any"]):
 		return image
 
 	# Unknown cells borrow a known neighbour's height, so a slope does not plunge to 0 at the edge of the known ground.

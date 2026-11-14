@@ -4,12 +4,12 @@ extends Control
 # charcoal sketch of what THIS character has surveyed, nothing else. A fresh character sees a blank page. The Journal (journal_view.gd)
 # puts this control in its Map panel and sets `knowledge` (map_knowledge.gd) and `where` (the body's position, for the small cross).
 # Mouse wheel zooms, dragging pans; nothing else on the page. Block sketches are cached and only changed blocks (and their neighbours,
-# whose edges read them) are drawn again, a few milliseconds a frame while the page is visible.
+# whose edges read them) are drawn again, one at a time on a worker thread (a block is about 55 ms of work, David4 14 Nov 2026: on the
+# main thread every opening of a big map would stutter); the main thread only copies a block's cells out and makes the texture.
 
 const Sketch := preload("res://src/client/map_sketch.gd")
 
 const PAPER := Color(0.86, 0.81, 0.69)
-const BUDGET_USEC := 6000          # sketch work per frame while visible
 const ZOOM_MIN := 0.5
 const ZOOM_MAX := 6.0
 
@@ -23,6 +23,9 @@ var follow: bool = true             # stays on the player until the page is drag
 var _textures: Dictionary = {}      # Vector2i block -> ImageTexture
 var _dirty: Dictionary = {}         # Vector2i block -> true
 var _dragging: bool = false
+var _job: int = -1                  # the WorkerThreadPool task drawing _job_block, -1 none
+var _job_block: Vector2i = Vector2i.ZERO
+var _job_out: Array = [null]        # the task's Image
 
 
 func _ready() -> void:
@@ -42,6 +45,7 @@ func set_knowledge(store) -> void:
 	knowledge = store
 	_textures.clear()
 	_dirty.clear()
+	_job_out = [null]   # a block still being drawn from the old store is dropped when it finishes
 
 	if knowledge != null:
 		knowledge.block_changed.connect(_on_block_changed)
@@ -87,27 +91,47 @@ func _process(_delta: float) -> void:
 			centre = want
 			queue_redraw()
 
-	if _dirty.is_empty():
+	if _job >= 0:
+		if not WorkerThreadPool.is_task_completed(_job):
+			return
+
+		WorkerThreadPool.wait_for_task_completion(_job)
+		_job = -1
+
+		if knowledge.blocks.has(_job_block) and _job_out[0] != null:
+			_textures[_job_block] = ImageTexture.create_from_image(_job_out[0])
+			queue_redraw()
+
+	# The dirty block nearest the middle of the page next.
+	var size_px: float = float(knowledge.block_cells * Sketch.PX)
+	var mid: Vector2 = centre / size_px - Vector2(0.5, 0.5)
+
+	while not _dirty.is_empty():
+		var best: Vector2i = _dirty.keys()[0]
+
+		for block in _dirty:
+			if Vector2(block).distance_squared_to(mid) < Vector2(best).distance_squared_to(mid):
+				best = block
+
+		_dirty.erase(best)
+
+		if not knowledge.blocks.has(best):
+			_textures.erase(best)
+			queue_redraw()
+			continue
+
+		var side: int = knowledge.block_cells * Sketch.PX
+		var grid: Dictionary = Sketch.gather(knowledge, Vector2i(best.x * side, best.y * side), Vector2i(side, side))
+		var out: Array = [null]
+		_job_out = out
+		_job_block = best
+		_job = WorkerThreadPool.add_task(func() -> void: out[0] = Sketch.paint(grid), false, "map sketch")
 		return
 
-	# Nearest the middle of the page first, within the frame budget.
-	var started: int = Time.get_ticks_usec()
-	var size_px: float = float(knowledge.block_cells * Sketch.PX)
-	var order: Array = _dirty.keys()
-	order.sort_custom(func(a, b): return (Vector2(a) + Vector2(0.5, 0.5)).distance_squared_to(centre / size_px) < (Vector2(b) + Vector2(0.5, 0.5)).distance_squared_to(centre / size_px))
 
-	for block in order:
-		_dirty.erase(block)
-
-		if knowledge.blocks.has(block):
-			_textures[block] = ImageTexture.create_from_image(Sketch.render_block(knowledge, block))
-		else:
-			_textures.erase(block)
-
-		if Time.get_ticks_usec() - started > BUDGET_USEC:
-			break
-
-	queue_redraw()
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and _job >= 0:
+		WorkerThreadPool.wait_for_task_completion(_job)   # a task is never left running on a freed page
 
 
 func _draw() -> void:
