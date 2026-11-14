@@ -1810,6 +1810,9 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 725 | `wooden_channel_corner` | Wooden - Channel corner |  |  | KEEP | A flume that turns a quarter circle. |
 | 727 | `wooden_channel_tee` | Wooden - Channel tee |  |  | KEEP | A flume that splits its water two ways. |
 | 729 | `wooden_sluice` | Sluice |  |  | KEEP | A flume with a gate. E opens or shuts it. |
+| 1352 | `wooden_pipe` | Wooden - Pipe |  |  | ADD | A bored log, two metres long. A closed pipe that carries water downhill. **Plumbing PR 2 (Dave 14 Nov 2026 06:30Z: "pipes were originally made from wood"): blueprint 342, state 423; 60 L a minute under head; cost 1 Log, 1 Twine. PROVISIONAL.** |
+| 1353 | `wooden_pipe_elbow` | Wooden - Pipe elbow |  |  | ADD | A bored log pipe that turns a quarter circle. **Plumbing PR 2: blueprint 343, state 424; cost 1 Log, 1 Twine. PROVISIONAL.** |
+| 1354 | `wooden_pipe_tee` | Wooden - Pipe tee |  |  | ADD | A bored log pipe that splits its water two ways. **Plumbing PR 2: blueprint 344, state 425; cost 2 Log, 1 Twine. PROVISIONAL.** |
 | 732 | `stone_trough` | Stone - Trough |  |  | KEEP | A carved stone trough that holds two hundred litres. |
 | 734 | `stone_channel` | Stone - Channel |  |  | KEEP | An open stone channel, two metres long. Carries more than a flume. |
 | 736 | `stone_channel_corner` | Stone - Channel corner |  |  | KEEP | A stone channel that turns a quarter circle. |

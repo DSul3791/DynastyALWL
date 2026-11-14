@@ -7598,7 +7598,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 167. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 167. Live in the water network since plumbing PR 2 (unlocked)."
 			},
 			"iron_hand_pump_kit": {
 				"number": 716,
@@ -7661,7 +7661,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 170. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 170. Live in the water network since plumbing PR 2 (unlocked)."
 			},
 			"wooden_channel_kit": {
 				"number": 722,
@@ -7682,7 +7682,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 171. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 171. Live in the water network since plumbing PR 2 (unlocked)."
 			},
 			"wooden_channel_corner_kit": {
 				"number": 724,
@@ -7703,7 +7703,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 172. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 172. Live in the water network since plumbing PR 2 (unlocked)."
 			},
 			"wooden_channel_tee_kit": {
 				"number": 726,
@@ -7724,7 +7724,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 173. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 173. Live in the water network since plumbing PR 2 (unlocked)."
 			},
 			"wooden_sluice_kit": {
 				"number": 728,
@@ -7745,7 +7745,37 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 174. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 174 (shut); its open twin is state 422 (wooden_sluice_open). Live since plumbing PR 2 (unlocked); E opens or shuts it."
+			},
+			"wooden_pipe": {
+				"number": 1352,
+				"name": "Wooden - Pipe",
+				"description": "A bored log, two metres long. A closed pipe that carries water downhill.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 423 (PROVISIONAL, plumbing PR 2, docs/design/PLUMBING_DESIGN.md): built with the hammer (blueprint 342)."
+			},
+			"wooden_pipe_elbow": {
+				"number": 1353,
+				"name": "Wooden - Pipe elbow",
+				"description": "A bored log pipe that turns a quarter circle.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 424 (PROVISIONAL, plumbing PR 2, docs/design/PLUMBING_DESIGN.md): built with the hammer (blueprint 343)."
+			},
+			"wooden_pipe_tee": {
+				"number": 1354,
+				"name": "Wooden - Pipe tee",
+				"description": "A bored log pipe that splits its water two ways.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 425 (PROVISIONAL, plumbing PR 2, docs/design/PLUMBING_DESIGN.md): built with the hammer (blueprint 344)."
 			},
 			"clay_pipe": {
 				"number": 730,

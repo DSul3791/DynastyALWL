@@ -9494,6 +9494,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		_toggle_pump(peer, id)
 		return
 
+	if str(def.get("use", "")) == "water_gate":
+		_toggle_water_gate(peer, id, def)
+		return
+
 	if str(def.get("use", "")) == "door":
 		# A door opens and shuts: the structure turns into its other kind (structures.json "toggle"), the row's state follows.
 		var now_ms: int = Time.get_ticks_msec()
@@ -14702,6 +14706,8 @@ var _water_next_s: float = INF          # the network's next event, real seconds
 var _water_tanks_saved: Dictionary = {} # crops.json "tanks": position key -> litres, read at load
 var _wells_saved: Dictionary = {}       # crops.json "wells": position key -> [litres, game second], read at load
 var _well_store: Dictionary = {}        # item id of a well with a daily yield -> [litres it held, game second then]
+var _water_relink_due: bool = false     # a channel or pipe came or went: turn them all again before the next solve
+var _water_loading: bool = false        # _water_rebuild is adding the standing pieces: one relink at the end
 
 
 func _water_now_s() -> float:
@@ -14722,10 +14728,137 @@ func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float) -> Dictionary:
 
 		if (key == "inlet" or key == "outlet") and typeof(value) == TYPE_ARRAY and (value as Array).size() == 3:
 			piece[key] = pos + Vector3(float(value[0]), float(value[1]), float(value[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg))
+		elif key == "ports" and typeof(value) == TYPE_ARRAY:
+			var ends: Array = []
+
+			for port in value:
+				ends.append(pos + Vector3(float(port[0]), float(port[1]), float(port[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg)))
+
+			piece[key] = ends
 		elif key != "note":
 			piece[key] = value
 
-	return piece
+	return piece if not piece.has("ports") else _with_inlet(piece, 0)
+
+
+# Channels and pipes (plumbing PR 2, docs/design/PLUMBING_DESIGN.md s2): a block with "ports" (its ends, [x, y, z] from its middle) has no fixed way
+# round. The port a piece in the network feeds is its inlet and the others its outlets (a tee's second outlet in "outlets"), an open channel's set
+# fall_m lower (its built-in fall: 1 cm in 2 m is the network's 0.5 %, full flow on a level run). With no feeder, the first port is the inlet;
+# _water_relink turns every one again from the sources down whenever a piece comes or goes, so the order things were built in does not matter.
+# shortcut: the relink rebuilds the whole world's water network (every channel tried against every piece, about N squared) on each water piece
+# built or taken away once any channel or pipe exists; fine for a few hundred pieces, a per-network relink when worlds hold thousands.
+func _with_inlet(piece: Dictionary, inlet_port: int) -> Dictionary:
+	var ports: Array = piece["ports"]
+	var out: Dictionary = piece.duplicate()
+
+	if ports.size() < 2:
+		return out   # a block needs two ends; validated data never has fewer
+
+	var fall: float = 0.0 if bool(piece.get("closed", false)) else float(piece.get("fall_m", 0.0))
+	var rest: Array = []
+
+	for n in ports.size():
+		if n != inlet_port:
+			rest.append((ports[n] as Vector3) - Vector3(0.0, fall, 0.0))
+
+	out["inlet"] = ports[inlet_port]
+	out["outlet"] = rest[0]
+	out.erase("outlets")
+
+	if rest.size() > 1:
+		out["outlets"] = rest.slice(1)
+
+	return out
+
+
+func _water_has_ports() -> bool:
+	for id in _water.pieces:
+		if _water.pieces[id].has("ports"):
+			return true
+
+	return false
+
+
+# `piece` turned so its inlet is the first port a piece in the network feeds; {} when none does.
+func _fed_turn(piece: Dictionary) -> Dictionary:
+	for n in (piece["ports"] as Array).size():
+		var turned: Dictionary = _with_inlet(piece, n)
+
+		if not _water.feeders_of(turned).is_empty():
+			return turned
+
+	return {}
+
+
+# Builds the network again from the pieces standing: sources, tanks and plots as they are, then channels and pipes turned from the water down
+# (each round turns those a piece already in feeds), the rest as built. Tank litres and the rates of wells and pumps being worked carry over.
+func _water_relink() -> void:
+	_water_prune()   # a piece taken down since the last tick (placing comes between ticks) must not be resolved or rebuilt
+	var now_s: float = _water_now_s()
+
+	if _water_at_s >= 0.0:
+		_water_resolve(now_s)   # the water that flowed into plots until now is credited, and the tanks are brought to now, before the rates go
+
+	var rates: Dictionary = {}
+
+	for id in _water_kind:
+		if _water.pieces.get(id, {}).has("rate_lpm"):
+			rates[id] = _water.pieces[id]["rate_lpm"]
+
+	var old = _water
+	var still: float = _water.still_after_s
+	_water = WaterNetwork.new()
+	_water.still_after_s = still
+	var waiting: Array = []
+
+	for id in _water_kind.keys():
+		var piece: Dictionary = water_piece(_structures.get(str(_water_kind[id]), {}), _items[id]["pos"], float(_items[id]["struct"].get("yaw", 0.0)))
+
+		if piece.has("ports"):
+			waiting.append([id, piece])
+		else:
+			_water.add(id, piece)
+
+	var turned_any: bool = true
+
+	while turned_any and not waiting.is_empty():
+		turned_any = false
+
+		for row in waiting.duplicate():
+			var turned: Dictionary = _fed_turn(row[1])
+
+			if not turned.is_empty():
+				_water.add(int(row[0]), turned)
+				waiting.erase(row)
+				turned_any = true
+
+	for row in waiting:
+		_water.add(int(row[0]), row[1])
+
+	_water.carry_from(old, now_s)
+
+	for id in rates:
+		_water.pieces[id]["rate_lpm"] = rates[id]
+
+	_water_relink_due = false
+	_water_dirty = true
+
+	if _water_at_s >= 0.0:
+		_water_resolve(now_s)   # the new network's rates start now, so the next solve credits plots from this second
+
+
+# Pieces taken down (or changed) since they joined leave the network.
+func _water_prune() -> void:
+	for id in _water_kind.keys():
+		var it: Dictionary = _items.get(id, {})
+
+		if it.is_empty() or not it.has("struct") or str(it["struct"]["kind"]) != str(_water_kind[id]) or it["struct"].has("site"):
+			_water.remove(id)
+			_water_kind.erase(id)
+			_water_depth.erase(id)
+			_well_store.erase(id)
+			_water_dirty = true
+			_water_relink_due = _water_relink_due or _water_has_ports()   # what a channel or pipe turned to may be gone
 
 
 # Why a water piece may not go here ("" when it may): more than WATER_SOURCES_PER_CHUNK sources in the chunk, a loop, or a network past 256 pieces.
@@ -14734,6 +14867,12 @@ func _water_refusal(def: Dictionary, spot: Vector3, yaw_deg: int) -> String:
 
 	if piece.is_empty():
 		return ""
+
+	if piece.has("ports"):
+		var turned: Dictionary = _fed_turn(piece)
+
+		if not turned.is_empty():
+			piece = turned   # judged the way it will be turned when built
 
 	var dry: String = _ground_water_refusal(piece, spot)
 
@@ -14775,6 +14914,12 @@ func _water_add(id: int) -> void:
 	_water.add(id, piece)
 	_water_kind[id] = kind
 
+	if piece.has("ports") or _water_has_ports():
+		_water_relink_due = true
+
+		if not _water_loading:
+			_water_relink()   # channels and pipes turn to the water now (a new one, or one a new pump or tank now feeds), so the next piece sees which way they run
+
 	if str(piece.get("role", "")) == "tank":
 		_water.set_litres(id, float(_water_tanks_saved.get(_water_key(it["pos"]), 0.0)))
 		_water_tanks_saved.erase(_water_key(it["pos"]))
@@ -14798,14 +14943,22 @@ func _water_rebuild(tanks: Dictionary, wells: Dictionary = {}) -> void:
 	_water_kind.clear()
 	_water_depth.clear()
 	_pumping.clear()
+	_water_relink_due = false
 	_water_tanks_saved = tanks.duplicate()
 	_wells_saved = wells.duplicate()
 	_well_store.clear()
 	_water_at_s = -1.0
 
+	_water_loading = true
+
 	for id in _items:
 		if _items[id].has("struct") and _structures.get(str(_items[id]["struct"]["kind"]), {}).has("water"):
 			_water_add(id)
+
+	_water_loading = false
+
+	if _water_relink_due:
+		_water_relink()
 
 	_water_tanks_saved.clear()
 	_wells_saved.clear()
@@ -14836,15 +14989,10 @@ func _water_tick(spent: float = 0.0) -> void:
 		_pumping.clear()
 		return
 
-	for id in _water_kind.keys():
-		var it: Dictionary = _items.get(id, {})
+	_water_prune()
 
-		if it.is_empty() or not it.has("struct") or str(it["struct"]["kind"]) != str(_water_kind[id]) or it["struct"].has("site"):
-			_water.remove(id)
-			_water_kind.erase(id)
-			_water_depth.erase(id)
-			_well_store.erase(id)
-			_water_dirty = true
+	if _water_relink_due:
+		_water_relink()
 
 	_pump_tick(spent)
 	var now_s: float = _water_now_s()
@@ -14983,6 +15131,28 @@ func _toggle_pump(peer: int, id: int) -> void:
 		_say(peer, "You start drawing water (%d L a minute, %d L left in the well today). Press E again to stop." % [int(round(rate)), int(_well_left(id))])
 	else:
 		_say(peer, "You start working it (%d L a minute). Press E again to stop." % int(round(rate)))
+
+
+# E on a Sluice or Tap (plumbing PR 2): it turns into its other kind (structures.json "toggle", the doors' pattern, so the look follows the row's
+# state with no new message) and its piece in the network opens or shuts.
+func _toggle_water_gate(peer: int, id: int, def: Dictionary) -> void:
+	var now_ms: int = Time.get_ticks_msec()
+	var other: String = str(def.get("toggle", ""))
+
+	if now_ms - int(_last_use.get(peer, -100000)) < int(def.get("use_pace_ms", 400)) or not _structures.has(other):
+		return
+
+	_last_use[peer] = now_ms
+	_items[id]["struct"]["kind"] = other
+	var open: bool = bool(_structures[other].get("water", {}).get("open", true))
+
+	if _water_kind.has(id):
+		_water_kind[id] = other
+		_water.pieces[id]["open"] = open
+		_water_dirty = true
+
+	_dirty = true
+	_say(peer, "You open the %s." % table.sentence_name(_items[id]["number"]) if open else "You shut the %s." % table.sentence_name(_items[id]["number"]))
 
 
 func _stop_pump(peer: int, say: String) -> void:
