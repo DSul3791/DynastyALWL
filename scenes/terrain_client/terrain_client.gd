@@ -3478,7 +3478,7 @@ K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise an
 Ctrl+Shift+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+Shift+L or Esc to lower it)
 Spyglass in hand: hold the right mouse button to look through it (3x), let go to lower it
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
-I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
+J: Journal   G: goals   M: map   I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode
 Admin and debug shortcuts always need Ctrl+Shift together with the key (Esc > Settings > Controls changes the key, never the Ctrl+Shift):
 Ctrl+Shift+F2: quality   F3: debug details   F4: all screen text on or off   F5: sound panel   F7 / F8: water debug   P: GPU probe table (press again to close)   J: jitter test
@@ -4286,6 +4286,24 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "character") and items != null:
 		items.toggle_character()
 		return
+
+	# The Journal (docs/design/PLAYER_JOURNAL_GOALS_UI.md): J the index, G goals, M map, from the world or inside the Journal. With the inventory up
+	# these keys stay the inventory's (plain G is Store all there); I and Tab above swap the Journal for their own screen.
+	if event is InputEventKey and event.pressed and not event.echo and items != null and items.journal != null and (items.journal.open or not items.screen_open()):
+		if KeyBindings.matches(event, "journal"):
+			items.journal.press_journal()
+			return
+
+		if KeyBindings.matches(event, "goals"):
+			items.journal.show_page("goals")
+			return
+
+		if KeyBindings.matches(event, "map"):
+			items.journal.show_page("map")
+			return
+
+	if items != null and items.journal != null and items.journal.open:
+		return   # the Journal takes no other key (Esc is handled above)
 
 	if items != null and items.screen_open():
 		if event is InputEventKey and event.pressed and not event.echo:
@@ -5230,7 +5248,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, KeyBindings.held("interact") and not items.open)
+		harvest.update(delta, KeyBindings.held("interact") and not items.screen_open())   # no harvest under any screen (the Journal, Tab), not only the inventory
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
