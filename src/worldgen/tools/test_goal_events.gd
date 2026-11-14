@@ -455,24 +455,32 @@ func station_checks() -> void:
 	check(ev("building_repaired") == 0, "and a smithy is not a building piece: building_repaired stays 0")
 
 
-# --- ADD-18 kiln_charcoal: the batch's last log is charcoal, credited to the kiln's owner ---
+# --- ADD-18 kiln_charcoal: the batch's last log is charcoal, credited to the character who lit the kiln ---
+# A kiln holding one log, lit with E when `by_hand` (stamps the lighter), else placed already lit (a restart: nobody stamped).
+func kiln_with_log(by_hand: bool) -> int:
+	var kiln: int = items.dev_place("kiln@0.0,2.0,0" + ("" if by_hand else ",lit"))
+	items._items[kiln]["struct"]["owner"] = "goalevents001"   # the owner alone earns nothing: only the one who lit it (the unlit-by-hand kiln checks that)
+	items._chests[int(items._items[kiln]["struct"]["uid"])].add(n("log"), 1)
+
+	if by_hand:
+		items.action(1, Net.ACT_USE_STRUCT, kiln, 0, 0, Vector3.ZERO)
+
+	return kiln
+
+
+func burn(kiln: int, seconds: float) -> int:
+	items._kiln_burn(kiln, items._items[kiln], items._structures["kiln"], seconds)
+	return items._chests[int(items._items[kiln]["struct"]["uid"])].count_of(n("charcoal"))
+
+
 func do_kiln(_i: int) -> void:
-	var kiln: int = items.dev_place("kiln@-3.0,3.0,0,lit")
-	items._items[kiln]["struct"]["owner"] = "goalevents001"
-	var box = items._chests[int(items._items[kiln]["struct"]["uid"])]
-	box.add(n("log"), 1)
-	items._kiln_burn(kiln, items._items[kiln], items._structures["kiln"], 400.0)
-	check(box.count_of(n("charcoal")) > 0, "the batch burned: %d charcoal" % box.count_of(n("charcoal")))
+	check(burn(kiln_with_log(true), 400.0) > 0, "the batch burned")
 
 
 func kiln_checks() -> void:
-	var kiln: int = items.dev_place("kiln@3.0,-3.0,0,lit")
-	items._items[kiln]["struct"]["owner"] = "goalevents001"
-	var box = items._chests[int(items._items[kiln]["struct"]["uid"])]
-	box.add(n("log"), 1)
-	items._kiln_burn(kiln, items._items[kiln], items._structures["kiln"], 60.0)
-	check(ev("kiln_charcoal") == 0 and box.count_of(n("charcoal")) > 0, "a log burnt part way (%d charcoal) is not a finished batch: kiln_charcoal stays 0" % box.count_of(n("charcoal")))
-	admin_then_real("kiln_charcoal", do_kiln, "a kiln batch burnt out")
+	check(burn(kiln_with_log(true), 60.0) > 0 and ev("kiln_charcoal") == 0, "a log burnt part way is not a finished batch: kiln_charcoal stays 0")
+	check(burn(kiln_with_log(false), 400.0) > 0 and ev("kiln_charcoal") == 0, "a batch from a kiln nobody lit this session (its owner placed it) credits no one: stays 0")
+	admin_then_real("kiln_charcoal", do_kiln, "a kiln batch burnt out that this character lit")
 
 
 # --- ADD-19 bought: a purchase from a trader's shelf (a refused one fires nothing) ---
@@ -515,6 +523,9 @@ func eat_checks() -> void:
 	eat("sauerkraut")
 	check(ev("jar_matured") == 0 and inv().count_of(n("sauerkraut")) == 1, "a Maturing jar is refused and not eaten: jar_matured stays 0")
 	inv().clear_slot(slot_of("sauerkraut"))
+	do_jar(0)
+	check(ev("jar_matured") == 0 and inv().count_of(n("sauerkraut")) == 0, "a Ready jar this character never sealed (found, not made) is eaten but fires nothing")
+	items._goal_state_of(1)["goal_counts"]["made:sauerkraut"] = 1   # what _goal_made counts when the batch is sealed here
 	admin_then_real("jar_matured", do_jar, "a Ready jar of sauerkraut eaten")
 
 
