@@ -2,8 +2,9 @@ extends SceneTree
 
 # Starter goals (data/items/starter_goals.json, Sal; code by Tyler 31 Oct 2026): the real first-hour goals, played on the server logic. Drink at the water, gather
 # fibre, twist twine, make the axe, fell a tree, make and light a fire, build a lean-to and a workbench. Checks: each goal completes when its check is met, its reward
-# is given (coins or items), a goal done early waits for its `after` and completes the moment it opens, the player is told "Goal done" and the next hint, the done goals
-# are saved with the character and still done after a restart, and goals_state lists locked / open / done.
+# is given (coins or items), a goal completes out of its authored order (`after` is no lock, GA-40), the player is told "Goal done" and the next goal, goal_done
+# goes to the client once per completion with the copper paid, the done goals are saved with the character and still done after a restart, a rejoin sends the
+# list silently and pays nothing again, the next tick saves (GA-55), and Admin mode and admin gives earn nothing (GA-54). Protocol 119.
 #   godot --headless --path . --script res://src/worldgen/tools/test_goals.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
@@ -14,6 +15,8 @@ const Net := preload("res://src/stream/terrain_net.gd")
 var failures: int = 0
 var items
 var said: Array = []
+var done_sent: Array = []   # [id, copper] per goal_done
+var lists_sent: Array = []  # the rows of each goals message
 
 
 func check(ok: bool, what: String) -> void:
@@ -32,6 +35,8 @@ func make(dir: String, standing: Dictionary, near_water: Array):
 	it.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	it.send_notice = func(_p, t): said.append(str(t))
 	it.send_purse = func(_p, _c): pass
+	it.send_goal_done = func(_p, id, copper): done_sent.append([id, copper])
+	it.send_goals = func(_p, rows): lists_sent.append(rows)
 	it.ground_height = func(_x, _z): return 10.0
 	it.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
 	it.cut_tree = func(_chunk, id): standing.erase(id); return true
@@ -77,9 +82,11 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
 	items.admin_mode_on = func(_p): return false
-	var rows: Array = items.goals_state(1)
-	check(rows.size() >= 10 and rows[0][3] == 1 and rows.any(func(r): return r[0] == "axe" and r[3] == 0), "goals_state lists the goals: the first open, the axe locked (%d goals)" % rows.size())
-	check(rows.any(func(r): return r[0] == "hoe" and r[3] == 0) and rows.any(func(r): return r[0] == "path" and r[3] == 0), "the hoe and path goals are listed, locked until the fire (Dave 4 Nov 2026)")
+	check(lists_sent.size() == 1 and (lists_sent[0] as Array).size() == items._goals_data().size(), "the join sends the whole goal list once (%d lists)" % lists_sent.size())
+	var rows: Array = items.goals_rows(1)
+	check(rows.size() >= 10 and rows[0][0] == "drink" and rows[0][3] == 2 and rows[0][7] == false and rows.all(func(r): return r.size() == 8 and r[7] == false), "goals_rows lists every goal in the authored order, drink first paying 2 copper, none done (%d goals)" % rows.size())
+	check(rows.any(func(r): return r[0] == "twine" and r[3] == 0 and r[4] == "stick" and r[5] == 4) and rows.any(func(r): return r[0] == "axe" and r[6].has("twine") and r[2] != ""), "a row carries its item reward, its how-to and the goals taught before it")
+	check(rows.any(func(r): return r[0] == "hoe") and rows.any(func(r): return r[0] == "path"), "the hoe and path goals are listed (Dave 4 Nov 2026)")
 
 	# Drink: needs the water and a drop in thirst room.
 	items.vitals_of(1)["wet"] = 1000.0
@@ -88,15 +95,31 @@ func _init() -> void:
 	check(done("drink") and items.coins_of(1) >= 2, "drinking at the water completes the first goal and pays 2 copper (%d)" % items.coins_of(1))
 	check(said.any(func(t): return t.begins_with("Goal done: ")), "the player is told: %s" % str(said.filter(func(t): return t.begins_with("Goal done")).slice(0, 1)))
 	check(said.any(func(t): return t.begins_with("Goal done: Drink") and t.contains("You earn 2 copper.")), "the goal's coins are named in its line, so they are not taken for a find (TEST-009): %s" % str(said.filter(func(t): return t.begins_with("Goal done")).slice(0, 1)))
+	check(done_sent.size() == 1 and done_sent[0] == ["drink", 2], "goal_done goes to the client once, with the copper paid (%s)" % str(done_sent))
+	check(items._save_in <= 0.0, "a completion saves on the next tick (GA-55)")
+	var coins_drunk: int = items.coins_of(1)
+	items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	items._goal_event(1, "drink")
+	items._goals_check(1)
+	check(items.coins_of(1) == coins_drunk and done_sent.size() == 1, "drinking again and a repeated check pay nothing and send nothing (%d copper, %d sent)" % [items.coins_of(1), done_sent.size()])
+	# A sale and a filled order (server_trade.gd) are goal events too: their goals pay their own copper on top of the trade, once (the trade tests opt out of goals).
+	items._goal_event(1, "sold")
+	items._goal_event(1, "wanted_order")
+	check(done("sell") and done("order") and items.coins_of(1) == coins_drunk + 5, "a sale and a filled order complete the sell and order goals out of order and pay 2 + 3 copper (%d)" % (items.coins_of(1) - coins_drunk))
+	items._goal_event(1, "sold")
+	check(items.coins_of(1) == coins_drunk + 5, "a second sale pays no goal again")
 
-	# Twine made before fibre was held: twine waits for "fibre" (after), then completes as soon as it opens.
+	# Admin-given fibre does not count (GA-54); twine made from it does, before the fibre goal it is taught after (out of order, GA-40).
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("plant_fibre"), 0, 40, Vector3.ZERO)
 	items._goals_tick()
-	check(done("fibre") and not done("twine"), "12 plant fibre in the pack completes the fibre goal; twine is not done yet")
+	check(not done("fibre"), "40 admin-given plant fibre do not complete the fibre goal")
 	var sticks_before: int = count("stick")
 	craft("twine", 2)
-	check(done("twine") and count("stick") >= sticks_before + 4, "two crafts of twine complete the twine goal and give 4 sticks (reward)")
-	check(said.any(func(t): return t.begins_with("Goal done: ") and t.contains(" Next: ")), "and the next goal's hint is said in the same line")
+	check(done("twine") and not done("fibre") and count("stick") >= sticks_before + 4, "two crafts of twine complete the twine goal before the fibre goal and give 4 sticks (reward)")
+	check(said.any(func(t): return t.begins_with("Goal done: ") and t.contains(" Next: Gather plant fibre.")), "and the line names the first unfinished goal in the authored order")
+	items.give(1, items.table.number_of("plant_fibre"), 12)   # as a harvest gives them
+	items._goals_tick()
+	check(done("fibre"), "12 gathered plant fibre on top of the admin-given ones complete the fibre goal")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 6, Vector3.ZERO)
@@ -146,8 +169,65 @@ func _init() -> void:
 	var again = make(dir, {}, [false])
 	again.peer_connected_hello(1, "goals0000001")
 	check(again._goal_state_of(1)["goals_done"].has("drink") and again._goal_state_of(1)["goals_done"].has("workbench") and not again._goal_state_of(1)["goals_done"].has("bed"), "the done goals are saved with the character and still done after a restart")
-	var states: Array = again.goals_state(1)
-	check(states.any(func(r): return r[0] == "workbench" and r[3] == 2) and states.any(func(r): return r[0] == "bed" and r[3] == 1), "goals_state shows workbench done and the bed goal open")
+	var states: Array = again.goals_rows(1)
+	check(states.any(func(r): return r[0] == "workbench" and r[7] == true) and states.any(func(r): return r[0] == "bed" and r[7] == false), "goals_rows shows workbench done and the bed goal not done")
+	var sent_before: int = done_sent.size()
+	var coins_saved: int = again.coins_of(1)
+	again._goals_check(1)
+	check(lists_sent.size() >= 2 and (lists_sent[-1] as Array).any(func(r): return r[0] == "workbench" and r[7] == true), "the rejoin sends the list with the done goals marked")
+	check(done_sent.size() == sent_before and again.coins_of(1) == coins_saved, "the rejoin and a fresh check send no goal_done and pay nothing again (%d copper)" % coins_saved)
+	var sent_ids: Dictionary = {}
+
+	for row in done_sent:
+		sent_ids[row[0]] = int(sent_ids.get(row[0], 0)) + 1
+
+	check(sent_ids.size() == done_sent.size() and sent_ids.size() == items._goal_state_of(1)["goals_done"].size(), "each done goal was announced exactly once (%s)" % str(sent_ids))
+	# Admin mode: nothing counts, nothing completes, and turning it off does not complete what was done in it (GA-54).
+	var admin = make("user://test_goals_admin", {}, [true])
+	admin.admin_ok = func(_p): return true
+	var admin_on: Array = [true]
+	admin.admin_mode_on = func(_p): return admin_on[0]
+	admin.peer_connected_hello(1, "goalsadmin001")
+	admin.report_position(1, Vector3(0.0, 10.0, 0.0))
+	admin.vitals_of(1)["weight"] = 2000.0
+	admin.vitals_of(1)["wet"] = 1000.0
+	admin._goal_event(1, "drink")
+	admin._goal_made(1, admin.table.number_of("twine"), 3)
+	admin._goals_check(1)
+	check(admin._goal_state_of(1)["goals_done"].is_empty() and int(admin._goal_state_of(1)["goal_counts"].get("event:drink", 0)) == 0, "in Admin mode a drink and a craft count nothing")
+	admin_on[0] = false
+	admin._goals_check(1)
+	check(admin._goal_state_of(1)["goals_done"].is_empty(), "turning Admin mode off completes nothing done in it")
+	admin._goal_made(1, admin.table.number_of("twine"), 2)
+	check(admin._goal_state_of(1)["goals_done"].has("twine"), "a sealed batch of two crafts counts as two (the twine goal needs 2)")
+	# A free craft's product in the pack, a talk and a night walk in Admin mode earn nothing after it is switched off (GA-54).
+	var hoe: int = admin.table.number_of("wooden_hoe")
+	var hoe_recipe: int = -1
+
+	for k in admin.recipes.numbers():
+		if int(admin.recipes.recipe(int(k)).get("gives", [0])[0]) == hoe:
+			hoe_recipe = int(k)
+
+	admin_on[0] = true
+	admin._last_queue_act.clear()
+	admin.action(1, Net.ACT_CRAFT_QUEUE, hoe_recipe, 0, 1, Vector3.ZERO)
+
+	for s in range(60):
+		admin.tick(1.0)
+
+	admin.game_seconds = func(): return 21.0 * 3600.0
+	admin.note_talked(1, "edda")
+	admin.give(1, admin.table.number_of("torch"), 1)
+
+	for n in range(12):
+		admin.report_position(1, Vector3(float(n + 1) * 10.0, 10.0, 0.0))
+		admin._night_walk_tick()
+
+	admin_on[0] = false
+	admin._goals_check(1)
+	var gone: Dictionary = admin._goal_state_of(1)
+	check(hoe_recipe >= 0 and admin.count_for(1, "wooden_hoe") == 1, "Admin mode crafted a Wooden - Hoe for free (recipe %d)" % hoe_recipe)
+	check(not gone["goals_done"].has("hoe") and not gone["goals_done"].has("story") and float(gone["goal_counts"].get("moved_lit_night", 0.0)) == 0.0, "and neither the free hoe, a talk at 21:00 nor a night walk in Admin mode counts once it is off (%s)" % str(gone["goals_done"].keys()))
 	# Hints: said once when their trigger holds, saved with the character, repeated only for a goal still open after 5 minutes.
 	said.clear()
 	var hinter = make("user://test_goals_hints", {}, [false])
@@ -200,7 +280,7 @@ func _init() -> void:
 	check(not other._goal_state_of(1)["goals_done"].has("story"), "at noon the same talk does not count")
 
 	# A night walk with a torch in the pack: 100 m.
-	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("torch"), 0, 1, Vector3.ZERO)
+	camp.give(1, camp.table.number_of("torch"), 1)   # a crafted or bought torch (an admin-given one lights no goal)
 	camp._night_walk_tick()
 
 	for n in range(12):
@@ -247,6 +327,8 @@ func _init() -> void:
 	check(not camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "no tree near: no fell hint")
 	var bought_before: bool = camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	check(not camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "an admin-given stone axe does not complete the axe goal")
+	camp.give(1, camp.table.number_of("stone_axe"), 1)   # as Hob's sale gives it
 	check(camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "a bought stone axe in the pack completes the axe goal (was %s before)" % str(bought_before))
 	camp.trees_near = func(_p, _r): return [[Vector2i.ZERO, 1]]
 	check(camp._tool_slot(camp.inventory_of(1), "axe") < 0 or camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "an axe on the hotbar beside a tree fires the fell hint")

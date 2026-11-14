@@ -325,6 +325,8 @@ func _ready() -> void:
 	items.cut_tree = _cut_tree
 	@warning_ignore("confusable_local_declaration")
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
+	items.send_goals = func(peer, rows): net.goals.rpc_id(peer, rows)
+	items.send_goal_done = func(peer, id, copper): net.goal_done.rpc_id(peer, id, copper)
 	items.send_marker_done = func(peer, at): net.road_marker_done.rpc_id(peer, at)
 	@warning_ignore("confusable_local_declaration")
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)

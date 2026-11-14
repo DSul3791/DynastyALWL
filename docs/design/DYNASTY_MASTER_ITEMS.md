@@ -1097,14 +1097,15 @@ The remaining nontrivial gameplay choices are **Steel carbon:Iron Ore input rati
 
 The old 12 Nov static catalog totals and generated Appendix A below reflect the earlier **actual inventory snapshot**, not the item counts after new stations/components are implemented. Keep the generated ledger stable, regenerate from committed data when the new system is built, and use [PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md](PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md) for implementation scope and gameplay validation. Protect stable `main`.
 
-## Appendix A. Full catalog of existing items (generated from `data/items/items.json`)
+## Appendix A. Existing-item identity inventory (curated from an earlier data snapshot)
 
 **BUGLIST-002 (13 Nov 2026):** the 10 doorway rows below were corrected (empty frames) and 48 rows (items 1256-1303: 20 frames, 28 doors) added by hand under their ADD status, because the repository holds no generator for this appendix (the original was an ad hoc script); the live next free item number is 1304 and blueprint 300. A full regeneration remains open for whoever restores a generator.
 
 Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status counts: FUTURE 53, KEEP 499, RETIRE 23, RETIRED 253, UPDATE 61. **BUGLIST-002 (13 Nov 2026):** Iron - Doorway (663) and Steel - Doorway (665) moved from KEEP to RETIRE (Dave), so KEEP is now 497 and RETIRE 25 (`tools/catalog_ledger.py`).
-**Appendix interpretation:** legacy station names and `Made at` keys are source-data evidence, not target crafting instructions. Corrected metalworking notes below refer to §2.7; their ID mappings remain pending.
 
-`RETIRED` = already retired before this document (kept only for its number). `Made at` is the station of the first live recipe that gives the item (`hand` = no station; L = station level); blank = not crafted (gathered, dropped, built from a blueprint, or a group placeholder). Purpose is the live tooltip description. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
+**Appendix interpretation:** legacy station names and `Made at` keys are source-data evidence, not target crafting instructions. Both bare `forge` and `brick_forge Lx` keys are legacy snapshot values, not current station names. Corrected metalworking notes below refer to §2.7; their ID mappings remain pending.
+
+`RETIRED` = already retired before this document (kept only for its number). `Made at` is the station of the first live recipe that gives the item (`hand` = no station; L = station level); blank = not crafted (gathered, dropped, built from a blueprint, or a group placeholder). Purpose is the snapshot tooltip description, except rows beginning "Legacy station ID" or carrying a §2.7 note, which are corrective notes rather than tooltips. Gathered wild items (`gathered.json`, numbers 1000+) are outside this catalog.
 
 ### A.tool (54 rows)
 
@@ -1611,10 +1612,10 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 82 | `tool_rack` | Tool rack |  |  | KEEP | A tool rack. Beside a camp bench it raises the bench a level. |
 | 84 | `vice` | Vice |  |  | KEEP | A wooden vice. Beside a camp bench it raises the bench a level. |
 | 86 | `log_workbench` | Carpenter's bench |  |  | KEEP | A pinned plank bench with its own rack and vice. Stand near it to make the things that need a work table. |
-| 88 | `stone_forge` | Stone - Forge |  |  | UPDATE | Legacy station ID; target mapping pending (§2.7 item 11). Use the current Smithy tiers for metal shaping; no ore smelting at a Smithy. |
+| 88 | `stone_forge` | Stone - Forge |  |  | UPDATE | Legacy station ID; target mapping pending (§2.7 item 11). Use the approved Smithy tiers for metal shaping; no ore smelting at a Smithy. |
 | 90 | `blacksmithy` | Brick - Forge |  |  | UPDATE | Legacy station ID; target mapping pending (§2.7 item 11). Smithies shape metal; Smelters produce ingots. No proximity-anvil upgrade. |
 | 91 | `carcass` | Carcass |  |  | KEEP | A freshly killed animal. Work it with a knife for meat, hide and bones. |
-| 93 | `large_forge` | Large forge |  |  | UPDATE | Legacy station ID; target mapping pending (§2.7 item 11). No standalone Blast Furnace; current production uses three Smelters and four Smithies. |
+| 93 | `large_forge` | Large forge |  |  | UPDATE | Legacy station ID; target mapping pending (§2.7 item 11). No standalone Blast Furnace; the approved design uses three Smelters and four Smithies. |
 | 95 | `master_forge` | Master forge |  |  | UPDATE | Legacy station ID; target mapping pending (§2.7 item 11). Master Smithy requires a Steel Anvil and has an integrated Quenching Trough; no automatic ID remap is approved here. |
 | 193 | `wall_section` | Refined - Wall | planks |  | KEEP | A plank wall, two metres wide. Set pieces edge to edge to build a house. |
 | 195 | `floor_section` | Refined - Ceiling | planks |  | KEEP | A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge. |
@@ -1826,7 +1827,7 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 797 | `stonecutters_bench` | Stonecutter's bench |  |  | KEEP | A heavy stone bench for squaring and carving stone. Gets more blocks from the stone, but needs a metal chisel. |
 | 823 | `fish_trap_set` | Fish trap |  |  | KEEP | A fish trap set in the water. |
 | 825 | `bird_trap_set` | Bird trap |  |  | KEEP | A bird trap set on the ground. |
-| 827 | `iron_anvil` | Anvil |  |  | RETIRE | Legacy standalone blueprint retirement is recorded here; component/ID reconciliation remains pending (§2.7). The current Iron Anvil is crafted at Improved Smithy and required to construct Advanced Smithy; it is not a proximity upgrade. |
+| 827 | `iron_anvil` | Anvil |  |  | RETIRE | Legacy standalone blueprint retirement is recorded here; component/ID reconciliation remains pending (§2.7). The current Iron Anvil is crafted at Improved Smithy and required to construct Advanced Smithy; it is not a proximity upgrade. This RETIRE status applies only to the legacy placed proximity-upgrade form and does not retire the approved Iron Anvil component; ID reconciliation is pending (§2.7 item 11). |
 | 830 | `preserving_jar` | Preserving jar |  |  | KEEP | A wide-mouthed clay jar with a lid, for pickling and preserving. |
 | 832 | `root_cellar` | Root cellar |  |  | KEEP | A stone-lined store dug into the ground. Cool all year, so food keeps far longer. |
 | 840 | `chicken_coop` | Chicken coop |  |  | FUTURE | A thatched coop for four chickens. They lay eggs. |

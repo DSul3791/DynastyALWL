@@ -8,7 +8,7 @@ extends Node3D
 #   W A S D        move
 #   Space / Ctrl   up and down while flying, Space jumps while walking
 #   Shift          fast
-#   G              switch between flying and walking
+#   Ctrl+Shift+G   switch between flying and walking (the client's Admin fly key)
 #   Esc            free the mouse (click to capture it again)
 #
 # The player starts at the starter spawn point of the tile named by
@@ -21,6 +21,7 @@ extends Node3D
 # Headless check: --frames=N runs N frames, prints what was generated and
 # quits; with --move=M the player flies east at M m/s, 20 m above the ground.
 
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -225,7 +226,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		elif event.keycode == KEY_G:
+		elif KeyBindings.matches(event, "fly"):
 			flying = not flying
 			body.velocity = Vector3.ZERO
 
@@ -279,7 +280,7 @@ func _process(_delta: float) -> void:
 		var soil: int = tool.get_voxel(below)
 		under = "%s%s" % [rock_names.get(rock, str(rock)), "" if soil == 0 else " (%s)" % soil_names.get(soil, str(soil))]
 
-	hud.text = "%s  %d fps\nx %.0f  y %.1f  z %.0f   tile %s\nground %.1f m   under foot: %s\nflora: %d drawn, %d colliders\nG: fly/walk  Shift: fast  Esc: mouse" % [
+	hud.text = "%s  %d fps\nx %.0f  y %.1f  z %.0f   tile %s\nground %.1f m   under foot: %s\nflora: %d drawn, %d colliders\nCtrl+Shift+G: fly/walk  Shift: fast  Esc: mouse" % [
 		"flying" if flying else "walking", Engine.get_frames_per_second(), p.x, p.y, p.z,
 		str(generator.tile_of(p.x, p.z)), ground, under, flora.instances, flora.colliders
 	]
