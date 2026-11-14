@@ -58,7 +58,8 @@ Call it **about 20 L a person a day** with a couple of beds.
 campfire Clay - Pot, which hauls 3 L at a time); the Improved and Advanced wells need Planks (and a Bucket, itself 6 Planks), and Planks need
 the Iron saw, so they arrive at the iron stage; the Advanced well also needs Bark shingles and twice the stone.
 
-The Improved and Advanced windlass hauls a 10 L bucket; at 5 m down that is about 40 L a minute, so a full Primitive well is drawn in under three real
-minutes and is full again an hour later. Wells are a source of clean water and keep the engine's 4-sources-a-chunk limit.
+The Improved and Advanced windlass hauls a 10 L bucket: at 5 m down about 52 L a real minute, so a full Improved well (200 L) is drawn in about four
+real minutes. The Primitive well's 3 L clay pot gives about 16 L a minute there, so its 100 L take about six. Each is full again a game day (one real
+hour) later. Wells are a source of clean water and keep the engine's 4-sources-a-chunk limit.
 
 Goals: `build:stone_well` (Build Well) keeps its id; its title follows the rename. Goals for the two new wells belong to the goals thread.

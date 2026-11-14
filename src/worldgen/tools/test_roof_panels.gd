@@ -14,9 +14,10 @@ const Cover := preload("res://src/shared/cover.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 
 const KITS := {45: "thatch_roof_kit", 65: "thatch_roof_65"}
-# The tier roofs: id -> [tier, item number, blueprint number, state] of the 45 (all kept from the old gable on posts); the 65 is id + "_65".
+# The tier roofs: id -> [tier, item number, blueprint number, state] of the 45 (kept from the old gable on posts; Fortified's new, Dave 14 Nov 2026: every
+# tier has a Roof 45 and a Roof 65); the 65 is id + "_65".
 const TIERS := {"log_roof": ["Rustic", 469, 18, 52], "roof_section": ["Refined", 197, 3, 24], "stone_roof": ["Sturdy", 475, 38, 55],
-	"brick_roof": ["Superior", 481, 22, 58], "engineered_roof": ["Engineered", 877, 178, 219]}
+	"brick_roof": ["Superior", 481, 22, 58], "engineered_roof": ["Engineered", 877, 178, 219], "fortified_roof": ["Fortified", 1325, 315, 391]}
 
 var failures: int = 0
 
