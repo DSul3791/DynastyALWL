@@ -61,8 +61,8 @@ func setup(items, book) -> void:
 	_reward = _items.make_coin_label(32)
 	_reward.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_reward.bbcode_enabled = false
-	_reward.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_reward.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_reward.set("horizontal_alignment", HORIZONTAL_ALIGNMENT_CENTER)   # RichTextLabel alignment (Godot 4.4 and later); set by name so an older build only loses the centring
+	_reward.set("vertical_alignment", VERTICAL_ALIGNMENT_CENTER)
 	_reward.add_theme_font_override("normal_font", ArtKit.font("garamond_semibold"))
 	_reward.add_theme_color_override("default_color", REWARD_GOLD)
 	_reward.add_theme_constant_override("outline_size", 4)
