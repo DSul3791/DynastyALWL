@@ -38,7 +38,7 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 
 ## Icons
 
-Roof and corner icons are drawn from their looks (`tools/paint_look_icons.py`, `CORNER_VIEW`, `SHORTEN (0.1, 0.6, 0.3)`), not painted flat. Counts in `docs/ui/item_icons.md`.
+Roof and corner icons are drawn from their looks (`tools/paint_look_icons.py`, `CORNER_VIEW`, `SHORTEN (0.1, 0.6, 0.3)`), not painted flat The roof panels (A-35/A-36) are not in that tool yet (no `tier_panel` in `tools/look_runtime.py`); their old gable icons wait for a PC re-render. Counts in `docs/ui/item_icons.md`.
 
 ## Pictures (shared folder)
 

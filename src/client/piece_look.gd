@@ -1,7 +1,7 @@
 extends RefCounted
 # The look of the building pieces (Radar, 2026-10-22; Dave: a full wall, floor and roof kit so players design their own houses).
-# Timber look (Mandy_002): generated board textures, no files. Shapes: a plank wall 2 m wide and 2.4 m high, a plank floor 2 by 2 m, a roof slab 2.4 m square at
-# 2.5 m with four short posts. Each piece is solid (a StaticBody3D box) so you walk round a wall and stand on a floor. Pieces turn in
+# Timber look (Mandy_002): generated board textures, no files. Shapes: a plank wall 2 m wide and 2.4 m high, a plank floor 2 by 2 m, a sloped roof panel 2 m wide
+# with no posts (tier_panel). Each piece is solid (a StaticBody3D box) so you walk round a wall and stand on a floor. Pieces turn in
 # quarter circles and sit on a 1 m grid (placement_rules.gd snap), so neighbours meet edge to edge.
 
 const RockLook := preload("res://src/client/rock_look.gd")
@@ -1467,7 +1467,7 @@ static func tier_panel(kind: String = "stone", slope_deg: float = 45.0) -> Node3
 
 
 # --- Tier roofs (seven-tier ladder, Kathleen 10 Nov 2026; Dave: a roof is its own weatherproof cover, not the wall material). The straight roofs are
-# sloped panels (tier_panel, GOALS-REPAIR A-35/A-36); the corners (pitched_roof with `corner`, until A-37) are the 2.4 m square on four posts, the ridge along Z, both slopes at 0.3 rad (so two tiers side by side meet at the same
+# sloped panels (tier_panel, GOALS-REPAIR A-35/A-36); the corners (pitched_roof, until A-37) are the 2.4 m square on four posts, the ridge along Z, both slopes at 0.3 rad (so two tiers side by side meet at the same
 # valley), eaves 2.45 m up at x = -1.2 and +1.2. The cover is laid in courses parallel to the ridge; each course's lower edge stands proud of the next
 # by its thickness, so the slope reads as shingles, shakes, slates or tiles from any side. A corner piece is the thatch corner's hip end: the ridge
 # stops at the middle and the cover slopes down to the +Z eave as well.
@@ -1631,8 +1631,9 @@ static func _mesh_of(root: Node3D, st: SurfaceTool, material: StandardMaterial3D
 	root.add_child(mesh)
 
 
-# A pitched tier roof corner (ROOF_SPEC `kind`), the hip end on four posts; the straight roofs are panels now (tier_panel). `corner` false is no longer drawn.
-static func pitched_roof(kind: String, corner: bool = false) -> Node3D:
+# A tier roof corner (ROOF_SPEC `kind`): the hip end on four posts, the 2.4 m square, the ridge along Z stopping at the middle and the cover sloping down to
+# the +Z eave as well as both side eaves (the straight roofs are panels, tier_panel; the corners are redone for both slopes in A-37).
+static func pitched_roof(kind: String) -> Node3D:
 	_tier_materials()
 	var spec: Array = ROOF_SPEC.get(kind, ROOF_SPEC["wood"])
 	var cover_mat: StandardMaterial3D = _tone_mat(spec[0])
@@ -1647,15 +1648,12 @@ static func pitched_roof(kind: String, corner: bool = false) -> Node3D:
 	var e: float = ROOF_EAVE
 	var r: float = e + h * tan(ROOF_PITCH)
 	var root: Node3D = Node3D.new()
-	var top_end: Vector3 = Vector3(0.0, r, 0.0) if corner else Vector3(0.0, r, h)
+	var top_end: Vector3 = Vector3(0.0, r, 0.0)
 	var faces: Array = [
 		[Vector3(0.0, r, -h), top_end, Vector3(h, e, h), Vector3(h, e, -h)],
 		[Vector3(0.0, r, -h), Vector3(-h, e, -h), Vector3(-h, e, h), top_end],
+		[top_end, Vector3(-h, e, h), Vector3(h, e, h)],
 	]
-
-	if corner:
-		faces.append([top_end, Vector3(-h, e, h), Vector3(h, e, h)])
-
 	var cover: SurfaceTool = SurfaceTool.new()
 	cover.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var under: SurfaceTool = SurfaceTool.new()
@@ -1669,19 +1667,15 @@ static func pitched_roof(kind: String, corner: bool = false) -> Node3D:
 
 	for x in [-1.1, 1.1]:   # the posts; the outer corner's is heavier
 		for z in [-1.1, 1.1]:
-			var w: float = post_w + (0.06 if corner and x > 0.0 and z > 0.0 else 0.0)
+			var w: float = post_w + (0.06 if x > 0.0 and z > 0.0 else 0.0)
 			_box(root, Vector3(w, e - 0.04, w), Vector3(x, (e - 0.04) * 0.5, z), post_mat)
 
-	var ridge_len: float = h + (0.0 if corner else h)
-	var ridge_z: float = -h * 0.5 if corner else 0.0
+	var ridge_len: float = h
+	var ridge_z: float = -h * 0.5
 	_box(root, Vector3(0.1, 0.14, ridge_len), Vector3(0.0, r - deck - 0.07, ridge_z), post_mat)          # the ridge beam under the ridge
-
-	for z in ([-1.1] if corner else [-1.1, 1.1]):
-		_box(root, Vector3(2.3, 0.1, 0.1), Vector3(0.0, e - 0.09, z), post_mat)                            # a tie beam across each gable end
-
-	if corner:
-		_box(root, Vector3(0.1, 0.1, 2.3), Vector3(1.1, e - 0.09, 0.0), post_mat)                             # and along the two eaves that meet at the hip
-		_box(root, Vector3(2.3, 0.1, 0.1), Vector3(0.0, e - 0.09, 1.1), post_mat)
+	_box(root, Vector3(2.3, 0.1, 0.1), Vector3(0.0, e - 0.09, -1.1), post_mat)                             # a tie beam across the gable end
+	_box(root, Vector3(0.1, 0.1, 2.3), Vector3(1.1, e - 0.09, 0.0), post_mat)                              # and along the two eaves that meet at the hip
+	_box(root, Vector3(2.3, 0.1, 0.1), Vector3(0.0, e - 0.09, 1.1), post_mat)
 
 	match spec[4]:   # the ridge
 		"log":
@@ -1695,17 +1689,13 @@ static func pitched_roof(kind: String, corner: bool = false) -> Node3D:
 			var ridge_tile: MeshInstance3D = _cyl(root, 0.08, ridge_len + 0.04, Vector3(0.0, r + 0.01, ridge_z), cover_mat, 8)
 			ridge_tile.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 
-	if corner:   # a cap along each hip, the cover's ridge material
-		for c in [Vector3(h, e, h), Vector3(-h, e, h)]:
-			var hip_mat: StandardMaterial3D = _flag if spec[4] == "slab" else (_log if spec[4] == "log" else (_frame if spec[4] == "boards" else cover_mat))
-			_rod(root, (c as Vector3) + Vector3(0.0, thick + 0.02, 0.0), top_end + Vector3(0.0, 0.03, 0.0), 0.1, hip_mat)
+	for c in [Vector3(h, e, h), Vector3(-h, e, h)]:   # a cap along each hip, the cover's ridge material
+		var hip_mat: StandardMaterial3D = _flag if spec[4] == "slab" else (_log if spec[4] == "log" else (_frame if spec[4] == "boards" else cover_mat))
+		_rod(root, (c as Vector3) + Vector3(0.0, thick + 0.02, 0.0), top_end + Vector3(0.0, 0.03, 0.0), 0.1, hip_mat)
 
-	var gables: Array = [-h] if corner else [-h, h]
-
-	for z in gables:   # a verge board up each gable edge hides the cover's cut end
-		for side in [-1.0, 1.0]:
-			var mid: Vector3 = Vector3(side * h * 0.5, (e + r) * 0.5 + (thick - deck) * 0.5, z)
-			_box_rot(root, Vector3(h / cos(ROOF_PITCH) + 0.04, thick + deck + 0.05, 0.05), mid, Vector3(0.0, 0.0, -side * ROOF_PITCH), verge_mat)
+	for side in [-1.0, 1.0]:   # a verge board up each edge of the gable end hides the cover's cut end
+		var mid: Vector3 = Vector3(side * h * 0.5, (e + r) * 0.5 + (thick - deck) * 0.5, -h)
+		_box_rot(root, Vector3(h / cos(ROOF_PITCH) + 0.04, thick + deck + 0.05, 0.05), mid, Vector3(0.0, 0.0, -side * ROOF_PITCH), verge_mat)
 
 	_solid(root, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
 	return root
@@ -2517,12 +2507,12 @@ static func pillar(kind: String = "wood") -> Node3D:
 # A roof corner (B1c), the straight roof's 2.4 m square, for the corner of a building. "thatch": a hip end: the ridge of the straight thatch roof (along Z)
 # comes in from -Z and stops at the middle, and from its end the thatch slopes down to the +Z eave as well as to both side eaves, all at the straight roof's
 # 0.3 rad pitch; straw bundles along the three eaves, a hip rafter under each hip, a knot on the ridge end. "wood", "log", "stone", "brick", "engineered": the
-# same hip end in the tier's own roof cover (pitched_roof with `corner`).
+# same hip end in the tier's own roof cover (pitched_roof).
 static func roof_corner(kind: String = "wood") -> Node3D:
 	_tier_materials()
 
 	if kind != "thatch":
-		return pitched_roof(kind, true)
+		return pitched_roof(kind)
 
 	var hip: Node3D = Node3D.new()
 
