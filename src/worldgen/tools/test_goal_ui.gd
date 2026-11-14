@@ -47,7 +47,7 @@ func _collect(node: Node, into: Array) -> void:
 		_collect(child, into)
 
 
-func _initialize() -> void:   # not _init: the root is in the tree only from here, and the Journal's text sizing reads the viewport
+func _initialize() -> void:   # nodes added to root enter the tree only after a frame (as test_art_kit / test_inventory_frame wait); the Journal's text sizing reads the viewport
 	var net: Node = Net.new()
 	var methods: Array = net.get_method_list().map(func(m): return str(m["name"]))
 	net.free()
@@ -80,6 +80,8 @@ func _initialize() -> void:   # not _init: the root is in the tree only from her
 	view.table = preload("res://src/shared/item_table.gd").load_default()
 	var placard = GoalPlacard.new()
 	root.add_child(placard)
+	await process_frame
+	check(placard.is_inside_tree(), "the placard is in the tree before it is used")
 	placard.setup(view, book)
 	check(placard.mouse_filter == Control.MOUSE_FILTER_IGNORE and placard._card.mouse_filter == Control.MOUSE_FILTER_IGNORE, "the placard takes no mouse input")
 	check(placard.get_child(0).get_child(0).texture != null, "Dave's blank Goal Achieved art loads (%s)" % GoalPlacard.ART)
@@ -110,6 +112,8 @@ func _initialize() -> void:   # not _init: the root is in the tree only from her
 	# The Journal: one window, J / G / M pages, Esc closes, view-only selection with prerequisite links and Back.
 	var layer: CanvasLayer = CanvasLayer.new()
 	root.add_child(layer)
+	await process_frame
+	check(layer.is_inside_tree() and layer.get_viewport() != null, "the Journal's layer is in the tree with a viewport before it is shown")
 	view._layer = layer
 	var coins: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	view._coins_cfg = coins
