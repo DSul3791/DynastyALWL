@@ -35,7 +35,7 @@ These are PROVISIONAL values the thread or the coordinator chose under Dave's st
 |---|---|---|
 | G-1 | A seed clicked on open ground tills a bed there and then sows it, with no second click. | `FarmRules.garden_action`, `held_item._garden_here` |
 | G-2 | Levelling reach 3 m (was 1.5); up to 4 edits a stroke of up to 0.5 m each (was 0.25), with 2.5 m spheres. On a piece, it levels to 0.1 m under the feet, at most 1.5 m above the ground under them. The soil is free (not volume balanced), Valheim-style. | `server_items.gd` `SMOOTH_REACH_M`, `LEVEL_MAX_OPS`, `LEVEL_MAX_M`, `LEVEL_SPHERE_M`, `LEVEL_BELOW_PIECE_M`, `LEVEL_MAX_RAISE_M` |
-| G-3 | The Garden list holds plots first, then seeds, bushes and tree seeds in pack order. | `held_item._open_garden_list` |
+| G-3 | The Garden list holds plots first, then seeds, bushes and tree seeds in pack order. | `held_item._hoe_menu_choose` |
 | G-5 | The hoe lays out garden plot blueprints. The Thatch plot (hammer tier 1) needs no hammer; plots of a higher tier keep their hammer. | `server_items._can_blueprint` |
 | G-6 | Grid sizes are one, a row of 5, 3 by 3 and 5 by 5. Seeds go 1 m apart and bushes 2 m apart. | `FarmRules.GARDEN_GRIDS`, `SEED_SPACING_M`, `BUSH_SPACING_M` |
 | G-7 | Client planting reach is 3.7 m from the feet, inside the server's 4 m. | `held_item.GARDEN_REACH_M` |
