@@ -72,4 +72,5 @@ Each entry: question; answer chosen; precedent it was reasoned from; what it aff
 - `data/items/crops.json`: 15 crops carry a singular `sow_season`; for nine of them (oats, carrot, potato, cabbage, onion, peas, beet, flax, parsnip) it disagrees with the `sow_seasons` list the server actually reads (server_items.gd ~14664). Reported; left unchanged pending the catalog owner (R1 baseline).
 - From WP-METAL (#1092): `tools/encyclopedia_reach.py` is stale on dev; `large_forge` still has `also: smelter`; no encyclopedia row for `improved_smelter`; the blacksmithy still costs 3 iron (R3 will fix).
 - From WP-GUIDE-UI (#1088/#1093): Space (jump) still acts while any screen is open (inventory, Tab, Journal). Pre-existing.
+- `tools/check_warnings.sh --changed` compares against origin/main, not dev, so it reports every dev-branch warning as "changed" (exit 1) and is not a PR signal; lanes use a full before/after comparison (WP-MAP).
 - `scenes/terrain_preview/terrain_preview.gd`: bare `KEY_G` (tool scene), handled in WP-KEYS.
