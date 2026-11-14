@@ -11,6 +11,7 @@ extends Node3D
 const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
 const ARMS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
+static var _loaded_here: Dictionary = {}   # path -> Resource: the files warm() read on the main thread (headless only)
 const WornLook := preload("res://src/client/worn_look.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
@@ -92,13 +93,40 @@ var _mount_rest: Dictionary = {}              # Marker3D -> its transform before
 # Dave 3 Nov 2026 (log: a 3 s freeze at the welcome): the body file (two 4096 textures) and the arm parts file (365 thousand triangles) were read on
 # the main thread when the player was made. warm() starts both on loader threads as the client starts, long before the welcome; load_warm()
 # takes the finished one (waiting only if it is still loading), or reads it the old way when nothing was started.
+# Headless (the lane's smokes and tests) loads them on the main thread instead: the headless renderer's mesh, material and texture stores are not thread
+# safe in Godot 4.7.2 (servers/rendering/dummy/storage: RID_Owner without THREAD_SAFE; the GLES3 and Vulkan stores are), and the loader threads making
+# meshes while the main thread made its own broke the store ("Attempting to initialize the wrong RID", "m" is null, signal 11; David4 smokes, 14 Nov 2026).
 static func warm() -> void:
 	for path in [GLB, ARMS_GLB]:
-		if ResourceLoader.exists(path) and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		if not ResourceLoader.exists(path):
+			continue
+
+		if headless():
+			if not _loaded_here.has(path):
+				var t0: int = Time.get_ticks_msec()
+				_loaded_here[path] = load(path)
+				print("dynasty body: %s read on the main thread (headless) in %d ms" % [path.get_file(), Time.get_ticks_msec() - t0])
+		elif ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 			ResourceLoader.load_threaded_request(path, "", true)
 
 
+# The same test ground_material.start_early uses: no window, the dummy renderer.
+static func headless() -> bool:
+	return DisplayServer.get_name() == "headless"
+
+
+# The load state of a warmed file as ResourceLoader.load_threaded_get_status gives it; a file warm() read on the main thread (headless) counts as loaded.
+static func load_status(path: String) -> int:
+	if _loaded_here.get(path) != null:
+		return ResourceLoader.THREAD_LOAD_LOADED
+
+	return ResourceLoader.load_threaded_get_status(path)
+
+
 static func load_warm(path: String) -> Resource:
+	if _loaded_here.get(path) != null:
+		return _loaded_here[path]
+
 	var status: int = ResourceLoader.load_threaded_get_status(path)
 
 	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS or status == ResourceLoader.THREAD_LOAD_LOADED:
