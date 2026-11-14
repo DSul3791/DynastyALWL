@@ -223,6 +223,8 @@ const LOOKS := {
 	"fortified_roof_65": {"builder": "tier_panel", "args": ["fortified", 65.0]},
 	"engineered_roof_corner": {"builder": "roof_hip", "args": ["engineered", 45.0]},
 	"engineered_roof_corner_65": {"builder": "roof_hip", "args": ["engineered", 65.0]},
+	"fortified_roof_corner": {"builder": "roof_hip", "args": ["fortified", 45.0]},
+	"fortified_roof_corner_65": {"builder": "roof_hip", "args": ["fortified", 65.0]},
 	"fortified_foundation": {"builder": "concrete_foundation", "args": [true]},
 	"fortified_wall": {"builder": "concrete_wall", "args": [true]},
 	"fortified_doorway": {"builder": "concrete_frame", "args": [true, "single"]},

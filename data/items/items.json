@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1327,
+	"next_number": 1328,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -10732,6 +10732,16 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 392 (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL (GOALS-REPAIR A-39)): the 65 degree twin of Fortified - Roof 45 (fortified_roof), built with the hammer (blueprint 316)."
+			},
+			"fortified_roof_corner": {
+				"number": 1327,
+				"name": "Fortified - Roof corner",
+				"description": "A clay tile roof corner on pinned plank rafters, strapped with iron bands. Does not burn.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row states 393 (45 degrees) and 394 (65 degrees, fortified_roof_corner_65), A-37; built with the hammer (blueprint 317); cost PROVISIONAL (GOALS-REPAIR A-40)."
 			}
 	}
 }

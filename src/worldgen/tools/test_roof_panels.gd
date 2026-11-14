@@ -22,7 +22,8 @@ const TIERS := {"log_roof": ["Rustic", 469, 18, 52], "roof_section": ["Refined",
 # The roof corners: id -> [blueprint name, state of the 45 shape, state of the 65 shape] (one item and blueprint each, two placed shapes, A-37).
 const CORNERS := {"thatch_roof_corner": ["Crude - Roof corner", 118, 385], "wooden_roof_corner": ["Refined - Roof corner", 119, 386],
 	"log_roof_corner": ["Rustic - Roof corner", 120, 387], "stone_roof_corner": ["Sturdy - Roof corner", 121, 388],
-	"brick_roof_corner": ["Superior - Roof corner", 122, 389], "engineered_roof_corner": ["Engineered - Roof corner", 220, 390]}
+	"brick_roof_corner": ["Superior - Roof corner", 122, 389], "engineered_roof_corner": ["Engineered - Roof corner", 220, 390],
+	"fortified_roof_corner": ["Fortified - Roof corner", 393, 394]}
 
 var failures: int = 0
 

@@ -88,6 +88,8 @@ const GOLDEN := {
 	"stone_roof_corner_65": "stone_roof_corner_65",
 	"brick_roof_corner_65": "brick_roof_corner_65",
 	"engineered_roof_corner_65": "engineered_roof_corner_65",
+	"fortified_roof_corner": "fortified_roof_corner",   # the Fortified corner (lead, 14 Nov 2026; cost A-40)
+	"fortified_roof_corner_65": "fortified_roof_corner_65",
 	"log_bench": "log_bench",
 	"log_table": "log_table",
 	"stone_bench": "stone_bench",
