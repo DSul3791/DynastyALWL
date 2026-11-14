@@ -1878,7 +1878,6 @@ func _sync_cleared() -> void:
 
 			if loose_id == "log" or loose_id.begins_with("log_"):
 				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): pressed like a felled trunk.
-				var plain: bool = loose_id == "log"
 				var node: Node3D = row["node"]
 				var seg: Array
 
