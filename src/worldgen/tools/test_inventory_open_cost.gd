@@ -1,15 +1,23 @@
 extends SceneTree
 
-# Opening the inventory stalls for a few seconds (Dave 14 Nov 2026). This times what opening does, piece by piece, on a camp-like setup:
-# 3000 loose things on the ground, one placed structure of every station kind and a few chests within 10 m, and a pack holding 30 of each of the
-# 60 ingredients the recipes use most. It prints one "OPENCOST" line per piece so the slow part is named before anything is changed.
+# Opening the inventory stalled for a few seconds (Dave 14 Nov 2026: "I would prefer it opened the inventory immediately and asynchronously did
+# the check and caught up"). On a camp-like setup (3000 loose stones on the ground, one placed structure of every station kind and four chests
+# within 10 m, a pack holding 30 of each of the 60 ingredients the recipes use most) this prints one "OPENCOST" line per piece of the open, and pins:
+#   the window is up within OPEN_MS of the key (the recipe list is not worked out in that frame),
+#   the recipe list then catches up in slices, none longer than SLICE_MS, and ends with every shown recipe in the list,
+#   a click on a recipe only redraws its card (no new pass).
 #   godot --headless --path . --script res://src/worldgen/tools/test_inventory_open_cost.gd
+
+const OPEN_MS := 150.0    # the open itself: the pack grid and the You column (headless gate PC; generous)
+const SLICE_MS := 60.0    # one frame's slice of the recipe pass: its 4 ms budget plus the one row that ran over it
 
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
+const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 
 var failures: int = 0
 
@@ -33,8 +41,7 @@ func _initialize() -> void:
 	root.add_child(layer)
 	var world_root: Node3D = Node3D.new()
 	root.add_child(world_root)
-	var view = InventoryViewScript.new()
-	root.add_child(view)
+	var view = InventoryViewScript.new()   # not in the tree: its _process (prompts, pickups) needs the whole client; the test steps the pass itself
 	view.table = ItemTableScript.load_default()
 	view.inventory = InventoryScript.pack(view.table)
 	view.recipes = RecipeTableScript.load_default(view.table)
@@ -42,30 +49,82 @@ func _initialize() -> void:
 	view._root = world_root
 	view._player_position = func() -> Vector3: return Vector3.ZERO
 	view._ground_below = func(_at: Vector3) -> float: return 0.0
+	view._carry_cfg = CarryRules.load_config()   # as setup(): the weight line and carry bar are part of the pack's refresh
+	view._vitals_cfg = VitalsRules.load_config()
 	_stock_pack(view)
 	_lay_out_camp(view)
 
 	var t0: int = Time.get_ticks_usec()
 	view._build_panel()
-	line("build panel (first open only)", ms_since(t0))
+	line("build panel (first open only)", ms_since(t0), "(includes the body model's first load, which the game warms at start)")
 
-	t0 = Time.get_ticks_usec()
-	view.toggle()
-	line("toggle open, first", ms_since(t0))
-	check(view.open, "the window is open")
-	view.toggle()
-	t0 = Time.get_ticks_usec()
-	view.toggle()
-	line("toggle open, again", ms_since(t0))
+	for which in ["first", "again"]:
+		t0 = Time.get_ticks_usec()
+		view.toggle()
+		var open_ms: float = ms_since(t0)
+		line("toggle open, %s" % which, open_ms, "(the window is up)")
+		check(view.open and view._panel.visible, "the window is open")
+		check(open_ms < OPEN_MS, "the window opens within %.0f ms (%.1f ms)" % [OPEN_MS, open_ms])
+		await _catch_up(view, which)
+		view.toggle()
 
+	view.toggle()
+	view.toggle()
+	check(not view.open and not view._recipe_part.running(), "shutting the window at once drops the running pass")
+	view.toggle()
+	await _catch_up(view, "settled")
 	t0 = Time.get_ticks_usec()
 	view._refresh()
 	line("refresh while open", ms_since(t0), "(a pickup or the craft stock answer)")
+	await _catch_up(view, "after a refresh")
+
+	var rows: Array = view._recipe_list.get_children()
+	var other: int = int(view._recipe_part._rows.keys()[1]) if view._recipe_part._rows.size() > 1 else 0
+	t0 = Time.get_ticks_usec()
+	view._recipe_part.row_clicked(other, false)
+	line("click a recipe", ms_since(t0))
+	check(view._selected_recipe == other and not view._recipe_part.running() and view._recipe_list.get_children() == rows, "a click selects the recipe and keeps the list as it is")
 
 	_pieces(view)
 	view.toggle()
+	view.free()
 	print("test_inventory_open_cost: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
+
+
+# Runs the recipe pass a frame's slice at a time, as the view's _process does, and checks it ends with every shown recipe listed.
+func _catch_up(view, which: String) -> void:
+	var slices: int = 0
+	var worst: float = 0.0
+	var total: float = 0.0
+
+	var worst_frame: float = 0.0
+
+	while slices < 5000:   # a real frame between slices: the layout of the swapped-in rows and the window's draw land in those frames
+		var t0: int = Time.get_ticks_usec()
+		view._recipe_part.step()
+		var ms: float = ms_since(t0)
+		worst = maxf(worst, ms)
+		total += ms
+		slices += 1
+		await process_frame
+		worst_frame = maxf(worst_frame, ms_since(t0))
+
+		if not view._recipe_part.running():
+			break
+
+	line("recipe list catch-up, %s" % which, total, "%d slices, worst slice %.1f ms, worst frame %.1f ms" % [slices, worst, worst_frame])
+	check(not view._recipe_part.running(), "the recipe pass ends")
+	check(worst < SLICE_MS, "no slice of the recipe pass takes %.0f ms or more (%.1f ms)" % [SLICE_MS, worst])
+	var shown: int = 0
+
+	for number in view.recipes.numbers():
+		var r: Dictionary = view.recipes.recipe(number)
+
+		if r["known"] and view._recipe_part._recipe_shown(r):
+			shown += 1
+
+	check(view._recipe_part._rows.size() == shown, "the list holds every shown recipe once it caught up (%d of %d)" % [view._recipe_part._rows.size(), shown])
 
 
 # Each piece the open does, timed alone (the per-refresh memos and plan cache cleared first, as _refresh clears them).
@@ -117,6 +176,7 @@ func _pieces(view) -> void:
 
 	line("station near, all rows", ms_since(t0))
 
+	view._label_memo.clear()
 	t0 = Time.get_ticks_usec()
 
 	for r in shown:
@@ -139,13 +199,15 @@ func _pieces(view) -> void:
 
 	t0 = Time.get_ticks_usec()
 	view._recipe_part.refresh()
-	line("recipe list refresh (warm)", ms_since(t0), "plans cached: the rest is building rows")
+	view._recipe_part.finish_now()
+	line("recipe list, all at once (warm)", ms_since(t0), "plans cached: the rest is building rows")
 
 	view._plan_cache.clear()
 	view._forget_near()
 	t0 = Time.get_ticks_usec()
 	view._recipe_part.refresh()
-	line("recipe list refresh (cold)", ms_since(t0))
+	view._recipe_part.finish_now()
+	line("recipe list, all at once (cold)", ms_since(t0))
 
 	t0 = Time.get_ticks_usec()
 	view._recipe_part._refresh_detail()
@@ -178,7 +240,7 @@ func _stock_pack(view) -> void:
 	print("OPENCOST pack: %d stacks" % (view.inventory.numbers.size() - view.inventory.numbers.count(0)))
 
 
-# 3000 loose stones and sticks within 60 m, one structure of every station kind and four chests within 10 m.
+# 3000 loose stones within 60 m (a worst case for the world walks), one structure of every station kind and four chests within 10 m.
 func _lay_out_camp(view) -> void:
 	var parsed: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
 	var kinds: Dictionary = parsed["structures"]

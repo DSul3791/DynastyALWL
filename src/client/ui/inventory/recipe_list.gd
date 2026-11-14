@@ -89,18 +89,30 @@ func build(queue_root: Control) -> Control:
 	return root
 
 
+# Opening the inventory stalled for seconds (Dave 14 Nov 2026: "I would prefer it opened the inventory immediately and asynchronously did the check
+# and caught up"): working out what about 490 recipes can make (each with its auto-make plan and station checks) and building a row for each ran in
+# the one frame the window opened. Now refresh() starts a pass that step() carries on, a slice of at most SLICE_USEC each frame, on the main
+# thread (no threads: the rows build controls and styleboxes). The rows of the last finished pass stay on screen, and clickable, until the new
+# ones are ready; then one frame swaps them in. A refresh asked while a pass runs (a pickup, the server's craft stock answer) lets that pass
+# finish and starts one more, so a steady stream of pickups still shows each finished list and never starves it.
+const SLICE_USEC := 4000
+
+var _pass: Dictionary = {}       # the running pass: rows to sort, how far it got, the groups, the rows built so far; {} while none runs
+var _again: bool = false         # a refresh came in while a pass ran: run one more when it ends
+var _rows: Dictionary = {}       # recipe number -> its row on screen {"button", "makeable"} (selection restyles two rows, not the list)
+var _waiting: Label              # "Looking over what you can make" while the very first pass runs
+
+
+func running() -> bool:
+	return not _pass.is_empty()
+
+
 func refresh() -> void:
-	# Recipes (Dave 10 Nov 2026, every tab): what the hands make now on top, then what a working station within 12 m makes now (a craft
-	# there moves you to it), both with the golden line; then the rest. Each group alphabetical (RecipeFilter.order_groups).
-	view._hover_recipe = 0
-
-	for child in view._recipe_list.get_children():
-		child.queue_free()
-
-	var rows: Array = []
-
 	for tab_name in _category_buttons:
 		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+
+	var rows: Array = []
+	var numbers: PackedInt32Array = PackedInt32Array()
 
 	for number in view.recipes.numbers():
 		var r: Dictionary = view.recipes.recipe(number)
@@ -109,54 +121,153 @@ func refresh() -> void:
 			continue
 
 		rows.append(r)
+		numbers.append(int(number))
 
-	var groups: Array = RecipeFilter.order_groups(rows, func(r): return view._can_craft(int(r["number"])), func(r): return view.station_in_reach(r))
-	var ready_count: int = (groups[0] as Array).size() + (groups[1] as Array).size()
-	var shown_recipes: Array = groups[0] + groups[1] + groups[2]
+	if running() and numbers == _pass["numbers"]:
+		_again = true   # the same rows: this pass ends, then one more catches up with what changed
+		return
 
-	if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
-		view._selected_recipe = shown_recipes[0]["number"] if not shown_recipes.is_empty() else 0
+	stop()   # a new search or tab: the rows the running pass works on are not the ones asked for now
+	_pass = {"rows": rows, "numbers": numbers, "at": 0, "can": {}, "reach": {}, "shown": [], "ready": 0, "built": 0, "list": null}
 
-	for k in shown_recipes.size():
-		var r: Dictionary = shown_recipes[k]
-		var ready: bool = k < ready_count
-		var makeable: bool = ready or (view._can_craft(r["number"]) and view._station_ok(r))
-		var entry: Button = Button.new()
-		# A row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line,
-		# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 226 px list ends in "...".
-		entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) and not ready else "")
-		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		entry.clip_text = true
-		entry.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		entry.icon = InventoryLook.icon_for(view.table.id_of(int(r["gives"][0]))) if not (r["gives"] as Array).is_empty() else null
-		entry.expand_icon = false
-		entry.add_theme_constant_override("icon_max_width", 32)
-		entry.custom_minimum_size = Vector2(0.0, 64.0 if not view._station_ok(r) and not ready else 44.0)
-		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color(0.55, 1.0, 0.55) if makeable else Color(0.55, 0.55, 0.55, 0.6)
-		entry.flat = r["number"] != view._selected_recipe
-		view._style(entry, view.BODY_PX - 12)
+	if view._recipe_list.get_child_count() == 0 and _waiting == null:
+		_waiting = _text("Looking over what you can make...", view.BODY_PX - 12, ArtKit.CREAM)
+		view._recipe_list.add_child(_waiting)
 
-		# Look doc section 9: a makeable row has the gold bar on its left; the others are dim and say what they still need.
-		InventoryLook.style_recipe_row(entry, makeable, r["number"] == view._selected_recipe, InventoryLook.unit_of(view))
+	_refresh_detail()   # the card's have / need counts follow at once; the list catches up
+	step()   # a short list (a search, one tab) is done in this frame
 
-		if ready:
-			InventoryLook.glow_recipe_row(entry, ItemSlot.glow_cfg(), InventoryLook.unit_of(view))
 
-			if str(r.get("station", "")) != "" and not view.station_near(str(r["station"]), int(r.get("station_level", 1))):
-				entry.tooltip_text = "Crafting this takes you to the %s nearby" % view._station_label(r)
+# One slice of the running pass. Called by refresh() and every frame by the view while running().
+func step() -> void:
+	if not running():
+		return
 
-		if not makeable and view._station_ok(r):
-			entry.tooltip_text = missing_text(r)
+	var t0: int = Time.get_ticks_usec()
+	var rows: Array = _pass["rows"]
 
-		entry.pressed.connect(func(): row_clicked(int(r["number"]), Input.is_key_pressed(KEY_SHIFT)))
+	# First what each recipe can do here (the slow part: plans and station checks), then the rows in their order.
+	while int(_pass["at"]) < rows.size():
+		var r: Dictionary = rows[int(_pass["at"])]
+		var can: bool = view._can_craft(int(r["number"]))
+		_pass["can"][int(r["number"])] = can
+		_pass["reach"][int(r["number"])] = can and view.station_in_reach(r)
+		_pass["at"] = int(_pass["at"]) + 1
 
-		entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
-		entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
-		view._recipe_list.add_child(entry)
+		if Time.get_ticks_usec() - t0 > SLICE_USEC:
+			return
+
+	if _pass["list"] == null:
+		var groups: Array = RecipeFilter.order_groups(rows, func(r): return bool(_pass["can"][int(r["number"])]), func(r): return bool(_pass["reach"][int(r["number"])]))
+		_pass["ready"] = (groups[0] as Array).size() + (groups[1] as Array).size()
+		_pass["shown"] = groups[0] + groups[1] + groups[2]
+		_pass["list"] = VBoxContainer.new()   # the new rows are built off screen; the old rows stay up meanwhile
+		_pass["rows_built"] = {}
+		_pass["chosen"] = view._selected_recipe
+
+		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
+			view._selected_recipe = _pass["shown"][0]["number"] if not (_pass["shown"] as Array).is_empty() else 0
+
+	var shown: Array = _pass["shown"]
+
+	while int(_pass["built"]) < shown.size():
+		var k: int = int(_pass["built"])
+		var r: Dictionary = shown[k]
+		var ready: bool = k < int(_pass["ready"])
+		var makeable: bool = ready or (bool(_pass["can"][int(r["number"])]) and view._station_ok(r))
+		var entry: Button = _make_row(r, ready, makeable)
+		(_pass["list"] as VBoxContainer).add_child(entry)
+		_pass["rows_built"][int(r["number"])] = {"button": entry, "makeable": makeable, "ready": ready}
+		_pass["built"] = k + 1
+
+		if Time.get_ticks_usec() - t0 > SLICE_USEC:
+			return
+
+	_swap_in()
+
+
+# Runs the pass to its end at once (the headless checks, which count rows right after a refresh).
+func finish_now() -> void:
+	while running():
+		step()
+
+
+# The window shut: the pass is dropped (the next open starts a new one).
+func stop() -> void:
+	if running() and _pass["list"] != null:
+		(_pass["list"] as Node).free()
+
+	_pass = {}
+	_again = false
+
+
+# The finished rows replace the shown ones in one frame, in the same list (its scroll box keeps its place).
+func _swap_in() -> void:
+	var built: VBoxContainer = _pass["list"]
+	var was_chosen: int = int(_pass["chosen"])
+	_rows = _pass["rows_built"]
+	_pass = {}
+	_waiting = null
+	view._hover_recipe = 0
+
+	for child in view._recipe_list.get_children():
+		view._recipe_list.remove_child(child)
+		child.queue_free()
+
+	for row in built.get_children():
+		built.remove_child(row)
+		view._recipe_list.add_child(row)
+
+	built.free()
+
+	for chosen in [was_chosen, view._selected_recipe]:   # a recipe clicked while the rows were being built: light the right one
+		var row: Dictionary = _rows.get(chosen, {})
+
+		if was_chosen != view._selected_recipe and not row.is_empty():
+			_style_row(row["button"], chosen, bool(row["makeable"]), bool(row["ready"]))
 
 	_add_admin_builds()
 	_refresh_detail()
+
+	if _again:
+		_again = false
+		refresh()
+
+
+# One recipe row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line,
+# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 226 px list ends in "...".
+func _make_row(r: Dictionary, ready: bool, makeable: bool) -> Button:
+	var entry: Button = Button.new()
+	entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) and not ready else "")
+	entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	entry.clip_text = true
+	entry.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	entry.icon = InventoryLook.icon_for(view.table.id_of(int(r["gives"][0]))) if not (r["gives"] as Array).is_empty() else null
+	entry.expand_icon = false
+	entry.add_theme_constant_override("icon_max_width", 32)
+	entry.custom_minimum_size = Vector2(0.0, 64.0 if not view._station_ok(r) and not ready else 44.0)
+	entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	view._style(entry, view.BODY_PX - 12)
+	_style_row(entry, int(r["number"]), makeable, ready)
+
+	if ready and str(r.get("station", "")) != "" and not view.station_near(str(r["station"]), int(r.get("station_level", 1))):
+		entry.tooltip_text = "Crafting this takes you to the %s nearby" % view._station_label(r)
+
+	if not makeable and view._station_ok(r):
+		entry.tooltip_text = missing_text(r)
+
+	entry.pressed.connect(func(): row_clicked(int(r["number"]), Input.is_key_pressed(KEY_SHIFT)))
+	entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
+	entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
+	return entry
+
+
+# Look doc section 9: a makeable row has the gold bar on its left, the chosen one is lit; the others are dim and say what they still need.
+func _style_row(entry: Button, number: int, makeable: bool, ready: bool) -> void:
+	InventoryLook.style_recipe_row(entry, makeable, number == view._selected_recipe, InventoryLook.unit_of(view))
+
+	if ready:
+		InventoryLook.glow_recipe_row(entry, ItemSlot.glow_cfg(), InventoryLook.unit_of(view))
 
 
 # The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
@@ -252,9 +363,18 @@ func row_clicked(number: int, shift: bool) -> void:
 	_select_recipe(number)
 
 
+# Choosing a recipe restyles the old and the new row and redraws the card; the list itself is not worked out again.
 func _select_recipe(number: int) -> void:
+	var was: int = view._selected_recipe
 	view._selected_recipe = number
-	view._refresh()
+
+	for chosen in [was, number]:
+		var row: Dictionary = _rows.get(chosen, {})
+
+		if not row.is_empty() and is_instance_valid(row["button"]):
+			_style_row(row["button"], chosen, bool(row["makeable"]), bool(row["ready"]))
+
+	_refresh_detail()
 
 
 # Queue the chosen recipe `quantity` times. The server takes the ingredients now and makes the crafts in order.

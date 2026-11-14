@@ -86,10 +86,40 @@ func _open_listed(path: String) -> void:
 			open_unknown.append(str(id))
 
 
+# The recipe numbers in order, and item number -> the recipes that make it (in that order), worked out once: the craft planner asked for the
+# makers of every missing part by sorting and walking all 554 recipes, hundreds of times each time the inventory opened (Dave 14 Nov 2026).
+# Callers only read these arrays.
+var _sorted: Array = []
+var _makers: Dictionary = {}
+
+
 func numbers() -> Array:
-	var out: Array = _by_number.keys()
-	out.sort()
-	return out
+	if _sorted.size() != _by_number.size():
+		_index()
+
+	return _sorted
+
+
+# Every recipe whose output is `item`, known or not, in number order.
+func makers_of(item: int) -> Array:
+	if _sorted.size() != _by_number.size():
+		_index()
+
+	return _makers.get(item, [])
+
+
+func _index() -> void:
+	_sorted = _by_number.keys()
+	_sorted.sort()
+	_makers.clear()
+
+	for number in _sorted:
+		var gives: Array = _by_number[number]["gives"]
+
+		if not _makers.has(int(gives[0])):
+			_makers[int(gives[0])] = []
+
+		_makers[int(gives[0])].append(number)
 
 
 func recipe(number: int) -> Dictionary:

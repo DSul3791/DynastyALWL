@@ -458,6 +458,9 @@ func toggle() -> void:
 
 	open = not open
 
+	if not open:
+		_recipe_part.stop()   # a half-worked recipe list is dropped; the next open starts again
+
 	if not open and _recipe_search != null:
 		_recipe_search.release_focus()   # the keys go back to the game
 		_recipe_search.text = ""         # the filter lasts until the menu is closed
@@ -1355,6 +1358,11 @@ func _process(_delta: float) -> void:
 
 func _process_body(_delta: float) -> void:
 	_flicker_flames()
+
+	if _recipe_part.running():
+		var tr: int = FrameProbe.start()
+		_recipe_part.step()
+		FrameProbe.stop("inventory: recipe list", tr)
 
 	if not _warm_queue.is_empty():
 		var tw: int = FrameProbe.start()
@@ -3562,9 +3570,22 @@ func station_in_reach(r: Dictionary) -> bool:
 	return str(r.get("station", "")) != "" and station_near(str(r["station"]), int(r.get("station_level", 1)), CraftStock.CRAFT_REACH_M)
 
 
+var _label_memo: Dictionary = {}   # "station|level" -> _station_label's answer (structures.json does not change while the game runs)
+
+
 # The station that makes a recipe, by name: the first structure whose own station serves it at the recipe's level (steel at brick forge level 3
 # names the Advanced smithy, not the Improved one; GOALS-REPAIR R4), else one that carries it as an "also" station at that level.
+# Each recipe row asked this twice, each a walk over all 346 structure kinds; the answer is kept per station and level.
 func _station_label(r: Dictionary) -> String:
+	var key: String = "%s|%d" % [str(r.get("station", "")), int(r.get("station_level", 1))]
+
+	if not _label_memo.has(key):
+		_label_memo[key] = _station_label_now(r)
+
+	return _label_memo[key]
+
+
+func _station_label_now(r: Dictionary) -> String:
 	var level: int = int(r.get("station_level", 1))
 
 	for kind in _structure_kinds():
@@ -3818,6 +3839,9 @@ func _forget_near() -> void:
 
 
 func _memo_frame() -> void:
+	if _recipe_part.running():
+		return   # the recipe list works over several frames (recipe_list.gd step): its answers hold for the whole pass, until the world changes
+
 	if Engine.get_process_frames() != _near_memo_frame:
 		_near_memo_frame = Engine.get_process_frames()
 		_forget_near()
@@ -5526,6 +5550,7 @@ func run_test() -> void:
 	toggle()
 	_recipe_search.text = "stone"
 	_refresh()
+	_recipe_part.finish_now()
 	var shown: int = 0
 
 	for child in _recipe_list.get_children():
