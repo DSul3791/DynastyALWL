@@ -585,6 +585,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	sync_purse(peer)
 	sync_reputation(peer)
 	sync_shoulder(peer)
+	_sync_goals(peer)
 	_sync_craft_queue(peer)
 
 
@@ -1235,6 +1236,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			inv.bag_from = 0   # an admin give fills from the first slot (tests and the admin tool); player pickups keep to the bag
 			var left: int = inv.add(a, clampi(count, 1, 100))
 			inv.bag_from = bag_was
+			_goal_admin_gave(peer, a, clampi(count, 1, 100) - left)
 
 			if left > 0:
 				drop_in_world(a, left, _peer_pos.get(peer, Vector3.ZERO))
@@ -15200,7 +15202,7 @@ func _game_hour() -> float:
 func note_talked(peer: int, npc_id: String) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
-	if st.is_empty():
+	if st.is_empty() or _goals_paused(peer):
 		return
 
 	var hour: float = _game_hour()
@@ -15235,7 +15237,7 @@ func _night_walk_tick() -> void:
 		_night_last_pos[peer] = _peer_pos[peer]
 		var st: Dictionary = _goal_state_of(peer)
 
-		if st.is_empty() or not night:
+		if st.is_empty() or not night or _goals_paused(peer):
 			continue
 
 		var step: float = Vector2(_peer_pos[peer].x - last.x, _peer_pos[peer].z - last.z).length()
@@ -15244,7 +15246,7 @@ func _night_walk_tick() -> void:
 			continue   # standing still, or a jump (respawn, teleport)
 
 		var inv = inventory_of(peer)
-		var lit: bool = _lit_fire_within(_peer_pos[peer], 4.0) or (inv != null and inv.count_of(table.number_of("torch")) > 0)
+		var lit: bool = _lit_fire_within(_peer_pos[peer], 4.0) or (inv != null and _goal_have(st, inv, "torch") > 0)   # an admin-given torch lights no goal (GA-54)
 
 		if lit:
 			st["goal_counts"]["moved_lit_night"] = float(st["goal_counts"].get("moved_lit_night", 0.0)) + step
@@ -15619,14 +15621,19 @@ func _hints_check(peer: int) -> void:
 		return   # one hint at a time
 
 
-# Starter goals (data/items/starter_goals.json by Sal; Tyler 31 Oct 2026): an ordered list of small first-hour goals. A goal is open when every goal in its `after` is done.
-# Checks: {event, count, what?} (the server calls _goal_event: drink, tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that
-# finished), {have_item, count} and {have_item_any: [ids], count} (true while the pack holds that many, looked at every slow tick). Events and crafts are counted from the
-# start of the character, so an early fire counts when its goal opens. A goal is done once and saved per character (characters.json goals_done and goal_counts); the reward
-# ({coin_copper: n} into the purse, or {item: [id, n]} into the pack) is given when it completes, and the player is told the goal and the next hint through the notice line.
-# The goal list on the screen needs a protocol message and a client list; until then the notices carry it, and goals_state(peer) is what that message would send.
+# Goals (data/items/starter_goals.json by Sal, camp_goals.json; Tyler 31 Oct 2026; GOALS-REPAIR WP-GUIDE-UI 14 Nov 2026): the guide's goals in their authored order.
+# Every goal tracks on its own from the start of the character and completes the moment its check is met, in any order (GA-40): `after` names the goals
+# taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
+# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished), {have_item, count} and {have_item_any: [ids], count}
+# (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
+# goal_counts, the same atomic file as the coins); the reward ({coin_copper: n} into the purse, or {item: [id, n]} into the pack) is paid in the same step and a
+# save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
+# pack units an admin gave are taken off the have checks. The client gets the whole list at the join (goals, silent) and goal_done for each new completion
+# (the placard; protocol 119).
 var _goals: Array = []
 var _goals_loaded: bool = false
+var send_goals: Callable       # (peer, rows Array): the whole goal list at the join, rows as goals_rows (protocol 119)
+var send_goal_done: Callable   # (peer, id String, copper int): a goal this character has just completed and the copper it paid (protocol 119)
 
 
 func _goals_data() -> Array:
@@ -15637,7 +15644,7 @@ func _goals_data() -> Array:
 		var camp: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/camp_goals.json")) if FileAccess.file_exists("res://data/items/camp_goals.json") else {}
 
 		if typeof(camp) == TYPE_DICTIONARY:
-			_goals = _goals + (camp.get("goals", []) as Array)   # the camp and winter goals follow the starter ones (their `after` may name a starter goal)
+			_goals = _goals + (camp.get("goals", []) as Array)   # the camp and winter goals follow the starter ones in the authored order
 
 	return _goals
 
@@ -15659,10 +15666,15 @@ func _goal_count_key(name: String, what: String) -> String:
 	return "event:" + name + (":" + what if what != "" else "")
 
 
+# Admin mode on: crafting and building are free, so nothing done then is progress (GA-54).
+func _goals_paused(peer: int) -> bool:
+	return free_craft_for(peer)
+
+
 func _goal_event(peer: int, name: String, what: String = "") -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
-	if st.is_empty() or _goals_data().is_empty():
+	if st.is_empty() or _goals_data().is_empty() or _goals_paused(peer):
 		return
 
 	var plain: String = _goal_count_key(name, "")
@@ -15676,16 +15688,49 @@ func _goal_event(peer: int, name: String, what: String = "") -> void:
 	_goals_check(peer)
 
 
-func _goal_made(peer: int, item: int) -> void:
+# crafts: how many crafts of the item finished at once (a sealed batch makes them all in one step).
+func _goal_made(peer: int, item: int, crafts: int = 1) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
-	if st.is_empty() or _goals_data().is_empty():
+	if st.is_empty() or _goals_data().is_empty() or _goals_paused(peer):
 		return
 
 	var k: String = "made:" + table.id_of(item)
-	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + 1
+	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + maxi(crafts, 1)
 	_dirty = true
 	_goals_check(peer)
+
+
+# An admin give (ACT_ADMIN_GIVE): those units do not count towards a have check.
+func _goal_admin_gave(peer: int, item: int, n: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or n <= 0:
+		return
+
+	var k: String = "admin:" + table.id_of(item)
+	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + n
+	_dirty = true
+
+
+# How many of the item the pack holds that count for a goal: the admin-given units are taken off. They are taken to be the first to leave the pack, so the
+# record never exceeds what is held and later gathered units count.
+# shortcut: units are not tagged; an admin give followed by gathering and then using the gathered ones undercounts, admin testers only; revisit with GA-41 origin events.
+func _goal_have(st: Dictionary, inv, id: String) -> int:
+	var held: int = inv.count_of(table.number_of(id))
+	var k: String = "admin:" + id
+
+	if not st["goal_counts"].has(k):
+		return held
+
+	var gave: int = mini(int(st["goal_counts"][k]), held)
+
+	if gave <= 0:
+		st["goal_counts"].erase(k)
+	else:
+		st["goal_counts"][k] = gave
+
+	return held - gave
 
 
 func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "") -> bool:
@@ -15716,7 +15761,7 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		var made: int = int(st["goal_counts"].get("made:" + str(check["made_item"]), 0))
 
 		if bool(check.get("or_have", false)) and inv != null:   # a bought one counts too (Hob sells the stone axe; Dino round 6)
-			made = maxi(made, inv.count_of(table.number_of(str(check["made_item"]))))
+			made = maxi(made, _goal_have(st, inv, str(check["made_item"])))
 
 		return made >= need
 
@@ -15724,32 +15769,33 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		return false
 
 	if check.has("have_item"):
-		return inv.count_of(table.number_of(str(check["have_item"]))) >= need
+		return _goal_have(st, inv, str(check["have_item"])) >= need
 
 	if check.has("have_item_any"):
 		var total: int = int(st["goal_counts"].get(_goal_count_key(str(check["or_event"]), ""), 0)) if check.has("or_event") else 0   # a catch counts though the fish was eaten
 
 		for id in check["have_item_any"]:
-			total += inv.count_of(table.number_of(str(id)))
+			total += _goal_have(st, inv, str(id))
 
 		return total >= need
 
 	return false
 
 
-func _goal_open(st: Dictionary, goal: Dictionary) -> bool:
-	for before in goal.get("after", []):
-		if not st["goals_done"].has(str(before)):
-			return false
+# The first goal in the authored order this character has not done, or {}.
+func _goal_next(st: Dictionary) -> Dictionary:
+	for goal in _goals_data():
+		if not st["goals_done"].has(str(goal["id"])):
+			return goal
 
-	return true
+	return {}
 
 
-# Completes every open goal that is met (one pass can open the next, so it loops until nothing changes).
+# Completes every goal that is met, pays its reward and tells the client (one completion can meet another's check, so it loops until nothing changes).
 func _goals_check(peer: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
-	if st.is_empty():
+	if st.is_empty() or _goals_paused(peer):
 		return
 
 	var changed: bool = true
@@ -15760,31 +15806,39 @@ func _goals_check(peer: int) -> void:
 		for goal in _goals_data():
 			var id: String = str(goal["id"])
 
-			if st["goals_done"].has(id) or not _goal_open(st, goal) or not _goal_met(peer, st, goal.get("check", {}), id):
+			if st["goals_done"].has(id) or not _goal_met(peer, st, goal.get("check", {}), id):
 				continue
 
+			# Done before paying, in the same step and the same record as the coins: no retry, reconnect or reload pays twice.
 			st["goals_done"][id] = true
 			changed = true
 			_dirty = true
+			_save_in = 0.0   # the next tick saves (GA-55)
 			var reward: Dictionary = goal.get("reward", {})
+			var paid: int = coins_of(peer)
 
 			if reward.has("coin_copper"):
 				add_coins(peer, int(reward["coin_copper"]), "goal")
 
+			paid = coins_of(peer) - paid
+
 			if reward.has("item"):
 				give(peer, table.number_of(str(reward["item"][0])), int(reward["item"][1]))
 
-			# One notice for the goal, its reward and the next hint: two lines in a row left only the second on screen, so a goal's coins
+			if send_goal_done.is_valid():
+				send_goal_done.call(peer, id, paid)
+
+			# One notice for the goal, its reward and the next goal: two lines in a row left only the second on screen, so a goal's coins
 			# looked like they came from the tree or plant being worked (playtest 12 Nov 2026 TEST-009).
 			var line: String = "Goal done: %s." % str(goal.get("title", id))
 
-			if reward.has("coin_copper"):
-				line += " You earn %s." % _coin_words(int(reward["coin_copper"]))
+			if paid > 0:
+				line += " You earn %s." % _coin_words(paid)
 
-			for next in _goals_data():
-				if not st["goals_done"].has(str(next["id"])) and (next.get("after", []) as Array).has(id) and _goal_open(st, next):
-					line += " Next: %s. %s" % [str(next.get("title", "")), str(next.get("hint", ""))]
-					break
+			var next: Dictionary = _goal_next(st)
+
+			if not next.is_empty():
+				line += " Next: %s. %s" % [str(next.get("title", "")), str(next.get("hint", ""))]
 
 			_say(peer, line)
 
@@ -15808,6 +15862,7 @@ func _goals_tick() -> void:
 	if hints_now:
 		_hint_ticks = 0
 
+	# shortcut: every goal is looked at for every player each slow tick (the have and worn checks read the pack); fine for 28 goals, the full catalog needs indexed events (GA-49).
 	for peer in _peer_key.keys():
 		var tg: int = Time.get_ticks_usec()
 		_goals_check(peer)
@@ -15821,8 +15876,9 @@ func _goals_tick() -> void:
 		float(Time.get_ticks_usec() - t1 - goals_usec) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
 
 
-# What the goal list would show: [[id, title, hint, state]] with state 0 locked, 1 open, 2 done.
-func goals_state(peer: int) -> Array:
+# The goal list as the client gets it, in the authored order: [id, title, how-to, reward copper, reward item id ("" none), reward item count, after ids
+# (PackedStringArray: the goals taught first, for the Journal's links), done (bool)].
+func goals_rows(peer: int) -> Array:
 	var st: Dictionary = _goal_state_of(peer)
 	var rows: Array = []
 
@@ -15830,10 +15886,18 @@ func goals_state(peer: int) -> Array:
 		return rows
 
 	for goal in _goals_data():
-		var state: int = 2 if st["goals_done"].has(str(goal["id"])) else (1 if _goal_open(st, goal) else 0)
-		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), state])
+		var reward: Dictionary = goal.get("reward", {})
+		var item: Array = reward.get("item", ["", 0])
+		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), int(reward.get("coin_copper", 0)), str(item[0]), int(item[1]),
+			PackedStringArray(goal.get("after", [])), st["goals_done"].has(str(goal["id"]))])
 
 	return rows
+
+
+# The whole list to the client, silently (the join and a reconnect: no placards for goals already done).
+func _sync_goals(peer: int) -> void:
+	if send_goals.is_valid() and not _goal_state_of(peer).is_empty():
+		send_goals.call(peer, goals_rows(peer))
 
 
 # --- Logs from the shoulder and the ground (guide finding F-16, moderator decision for Dave, 31 Oct 2026) ---
@@ -17408,10 +17472,16 @@ func _craft_tick(spent: float) -> void:
 				if int(head[1]) - times <= 0:
 					_say(peer, "%s done: it is in the %s." % [str(recipe.get("name", "Your craft")), table.sentence_name(int(_items[store_id]["number"]))])
 			else:
-				give(peer, made_n, _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count, made_inst, made_age)
+				var gave_n: int = _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count
+				give(peer, made_n, gave_n, made_inst, made_age)
+
+				if free_entry:   # an admin-mode craft's product earns no goal by being held (GA-54)
+					_goal_admin_gave(peer, made_n, gave_n)
 
 			_gain_source = SRC_PICKUP
-			_goal_made(peer, int(recipe["gives"][0]))
+
+			if not free_entry:   # an admin-mode craft earns no goal (GA-54)
+				_goal_made(peer, int(recipe["gives"][0]), times)
 
 			if wears_tool != "" and not free_entry:
 				_wear_tool(peer, inv, wears_tool, "craft")
