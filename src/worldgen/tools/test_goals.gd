@@ -217,7 +217,7 @@ func _init() -> void:
 		return counts
 
 	# Every item a split lays on the ground is credited to the feller, item by item and once (Dave 14 Nov: "gathering counts when you ... cut it down").
-	var laid_matches: Callable = func(ground_was: Dictionary, got_was: Dictionary) -> String:
+	var laid_matches: Callable = func(ground_before: Dictionary, got_before: Dictionary) -> String:
 		var ground_now: Dictionary = ground.call()
 		var got_now: Dictionary = got_all.call()
 		var bad: Array = []
@@ -226,8 +226,8 @@ func _init() -> void:
 		numbers.merge(got_now)
 
 		for number in numbers:
-			var laid_n: int = int(ground_now.get(number, 0)) - int(ground_was.get(number, 0))
-			var got_n: int = int(got_now.get(number, 0)) - int(got_was.get(number, 0))
+			var laid_n: int = int(ground_now.get(number, 0)) - int(ground_before.get(number, 0))
+			var got_n: int = int(got_now.get(number, 0)) - int(got_before.get(number, 0))
 
 			if laid_n != got_n:
 				bad.append("%s laid %d got %d" % [items.table.id_of(int(number)), laid_n, got_n])
