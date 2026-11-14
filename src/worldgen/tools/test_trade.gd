@@ -29,7 +29,7 @@ func _init() -> void:
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
 	items.setup(ItemTableScript.load_default(), dir)
-	items._goals_loaded = true   # no goals here: a goal's own reward (coins, or 4 sticks for twine) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
+	items._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "tradekey0001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items._characters["tradekey0001"]["luck"] = 0

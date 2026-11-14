@@ -1345,6 +1345,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
 var water_wheel: Callable               # set by the server: (a: Vector3, b: Vector3) -> {"w": watts, "why": "" or dry/river/still/shallow, "along": bool}, a water wheel spanning a to b (WaterFlow.wheel)
+var edits_near: Callable                # set by the server: (point, radius) -> [[kind 0 dig / 1 fill, centre, radius]], the saved ground edits near a point, oldest first (ground_ops.gd); ground_height does not know them
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
@@ -2788,10 +2789,21 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 # --- The garden hoe (Dave 2026-10-22, items/HOE_AND_SHOVEL_DESIGN.md) ---
 # Path: one stroke treads the metre of ground under the crosshair: a path patch (state 32) clears the grass and draws flat tan; the height does
-# not change. Smooth: ground is MOVED within SMOOTH_REACH_M of the point, cut from the spots above the average height and put on the spots
-# below it (volume balanced), at most SMOOTH_MAX_M a stroke. No items go in or out; the only cost is the hoe's own wear.
+# not change. Smooth (the levelling stroke, _hoe_smooth): the ground within SMOOTH_REACH_M of the point is cut or filled toward the height the player
+# stands at. No items go in or out; the only cost is the hoe's own wear.
 const HOE_COOLDOWN_MS := 500
-const SMOOTH_REACH_M := 1.5
+# Levelling (Dave 14 Nov 2026: "its to small an area and its too week"; "make the ground level with where you are standing and if you are standing on say a
+# foundation it make the ground just a little bit below your feet so it stays below the top of the foundation", the Valheim feel). PROVISIONAL values for Dave
+# to tune. Before: 5 spots (the point and 1 m each way), toward their own average, at most 0.25 m a spot a stroke, 0.9 m spheres.
+const SMOOTH_REACH_M := 3.0       # the spots of a 1 m grid within this of the point (29 spots over a 6 m circle) are levelled
+const LEVEL_MAX_M := 0.5          # at most this much cut or filled at a spot by one edit
+const LEVEL_MIN_M := 0.05         # a spot this close to the target height counts as level
+const LEVEL_SPHERE_M := 2.5       # the cut and fill spheres: on a 1 m grid the ground between spots is within about 0.1 m of level
+const LEVEL_MAX_OPS := 4          # at most this many ground edits a stroke (every edit is a message to every client and a remesh; a path averages 4 per 1.5 s)
+const LEVEL_ON_PIECE_M := 0.2     # feet this far above the ground under them stand on something built (a foundation, a floor)...
+const LEVEL_BELOW_PIECE_M := 0.1  # ...and the ground is levelled this far below the feet, so the soil stays under the top of the piece
+const LEVEL_MAX_RAISE_M := 1.5    # but never more than this above the ground under the feet (a jump, a log or a cart is not a foundation to build up to)
+const GRADE_CLEAR_M := 2.5        # a grade stroke takes up the path patches this close to it (the ground under them moved)
 const SMOOTH_MAX_M := 0.25
 const SMOOTH_MIN_M := 0.04
 const SMOOTH_SPHERE_M := 0.9
@@ -3001,19 +3013,104 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if hoe < 0:
 		return
 
-	var spots: Array = [Vector2.ZERO, Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.0, -1.0)]
+	var feet: Vector3 = _peer_pos[peer]
+	var near: Array = edits_near.call(at, DIG_REACH_M + 1.5) if edits_near.is_valid() else []   # one scan of the edit log: the feet are within DIG_REACH_M of the point
+	var under: float = _edited_height(feet.x, feet.z, near)   # the ground as dug and filled under the feet
 
-	for offset in spots:
-		if is_nan(float(ground_height.call(at.x + offset.x, at.z + offset.y))):
-			return
+	if is_nan(under):
+		return
 
-	if not _average_ground(at, spots):
-		_say(peer, "The ground here is already smooth, or worked enough.")
+	var edits: Array = near.filter(func(op): return Vector2(op[1].x - at.x, op[1].z - at.z).length() < SMOOTH_REACH_M + float(op[2]))   # the edits over the circle, for the spot loops
+
+	var target: float = minf(feet.y - LEVEL_BELOW_PIECE_M, under + LEVEL_MAX_RAISE_M) if feet.y - under > LEVEL_ON_PIECE_M else under   # on a foundation: a little below the feet; on the ground: the ground the player stands on
+	var spots: Array = []
+	var reach: int = int(floor(SMOOTH_REACH_M))
+
+	for i in range(-reach, reach + 1):
+		for j in range(-reach, reach + 1):
+			if float(i * i + j * j) <= SMOOTH_REACH_M * SMOOTH_REACH_M:
+				spots.append(Vector2(float(i), float(j)))
+
+	var worked: int = _level_ground(at, spots, target, edits)
+
+	if worked < 0:
+		return   # the ground there is not loaded
+
+	if worked == 0:
+		_say(peer, str(dig_refusal.call()) if _level_refused and dig_refusal.is_valid() else "The ground here is already level with where you stand.")
 		return
 
 	_wear_slot(peer, inv, hoe, "dig")
 	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
 	_dirty = true
+
+
+# The ground height at a column with the saved edits laid over the generated surface, oldest first: a dig sphere the surface passes through lowers it to the
+# sphere's bottom, a fill sphere that reaches the surface raises it to the sphere's top (a pocket under the surface or a blob in the air leaves it). NAN where not loaded.
+func _edited_height(x: float, z: float, edits: Array) -> float:
+	var surface: float = float(ground_height.call(x, z))
+
+	if is_nan(surface):
+		return NAN
+
+	for op in edits:
+		var centre: Vector3 = op[1]
+		var radius: float = float(op[2])
+		var flat_sq: float = (centre.x - x) * (centre.x - x) + (centre.z - z) * (centre.z - z)
+
+		if flat_sq >= radius * radius:
+			continue
+
+		var half: float = sqrt(radius * radius - flat_sq)
+
+		if int(op[0]) == 0:
+			if surface > centre.y - half and surface <= centre.y + half:
+				surface = centre.y - half
+		elif centre.y - half <= surface + 0.05 and centre.y + half > surface:
+			surface = centre.y + half
+
+	return surface
+
+
+# Cuts or fills the ground toward `target` at the spots (offsets from `at`), at most LEVEL_MAX_OPS edits, each time at the spot now farthest from level
+# (heights read through the edits, the ones made in this stroke included, so strokes add up and every spot gets its turn), at most LEVEL_MAX_M an edit.
+# Not volume balanced (the Valheim feel Dave asked for): the soil is the hoe's to move. Returns the edits made, -1 when a spot is not loaded.
+var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
+
+
+func _level_ground(at: Vector3, spots: Array, target: float, edits: Array) -> int:
+	var worked: int = 0
+	_level_refused = false
+
+	for n in LEVEL_MAX_OPS:
+		var best: Vector3 = Vector3.ZERO
+		var best_off: float = 0.0
+
+		for offset in spots:
+			var h: float = _edited_height(at.x + offset.x, at.z + offset.y, edits)
+
+			if is_nan(h):
+				return -1
+
+			if absf(h - target) > absf(best_off):
+				best_off = h - target
+				best = Vector3(at.x + offset.x, h, at.z + offset.y)
+
+		if absf(best_off) < LEVEL_MIN_M:
+			break
+
+		var depth: float = minf(absf(best_off), LEVEL_MAX_M)
+		var centre: Vector3 = Vector3(best.x, best.y - depth + LEVEL_SPHERE_M, best.z) if best_off > 0.0 else Vector3(best.x, best.y + depth - LEVEL_SPHERE_M, best.z)
+		var done: Variant = dig_ground.call(centre, LEVEL_SPHERE_M) if best_off > 0.0 else fill_ground.call(centre, LEVEL_SPHERE_M, int(FILL_SOIL["soil"]))
+
+		if typeof(done) == TYPE_BOOL and not bool(done):
+			_level_refused = true
+			break   # the ground took no more (a full block, a refusal): the next stroke tries again
+
+		edits.append([0 if best_off > 0.0 else 1, centre, LEVEL_SPHERE_M])
+		worked += 1
+
+	return worked
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
@@ -3317,7 +3414,7 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	_wear_slot(peer, inv, hoe, "dig")
-	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
+	_remove_paths_near(at, GRADE_CLEAR_M)
 	_dirty = true
 
 
@@ -16055,12 +16152,13 @@ func _hints_check(peer: int) -> void:
 # taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
 # tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {have_item, count} and {have_item_any: [ids], count}
 # (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
-# goal_counts, the same atomic file as the coins); the reward ({coin_copper: n} into the purse, or {item: [id, n]} into the pack) is paid in the same step and a
+# goal_counts, the same atomic file as the coins); the reward (its stage's copper, goal_rewards.json; coins only, Dave 14 Nov) is paid in the same step and a
 # save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
 # pack units an admin gave are taken off the have checks. The client gets the whole list at the join (goals, silent) and goal_done for each new completion
 # (the placard; protocol 119).
 var _goals: Array = []
 var _goals_loaded: bool = false
+var _goal_stage_copper: Dictionary = {}   # stage -> copper a goal of that stage pays (data/items/goal_rewards.json; GOALS-REPAIR A-42)
 var send_goals: Callable       # (peer, rows Array): the whole goal list at the join, rows as goals_rows (protocol 119)
 var send_goal_done: Callable   # (peer, id String, copper int): a goal this character has just completed and the copper it paid (protocol 119)
 
@@ -16075,7 +16173,19 @@ func _goals_data() -> Array:
 		if typeof(camp) == TYPE_DICTIONARY:
 			_goals = _goals + (camp.get("goals", []) as Array)   # the camp and winter goals follow the starter ones in the authored order
 
+		var rewards: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/goal_rewards.json"))
+		_goal_stage_copper = rewards.get("stages", {}) if typeof(rewards) == TYPE_DICTIONARY else {}
+
+		for goal in _goals:
+			if not _goal_stage_copper.has(str(goal.get("stage", ""))):
+				push_error("goal %s: stage '%s' is not in goal_rewards.json, it pays nothing" % [str(goal.get("id", "")), str(goal.get("stage", ""))])
+
 	return _goals
+
+
+# The copper a goal pays: its stage's amount (Dave 14 Nov 2026: "all goals only payout coins"; coins only, no items or reputation).
+func _goal_copper(goal: Dictionary) -> int:
+	return int(_goal_stage_copper.get(str(goal.get("stage", "")), 0))
 
 
 func _goal_state_of(peer: int) -> Dictionary:
@@ -16272,19 +16382,9 @@ func _goals_check(peer: int) -> void:
 			changed = true
 			_dirty = true
 			_save_in = 0.0   # the next tick saves (GA-55)
-			var reward: Dictionary = goal.get("reward", {})
 			var paid: int = coins_of(peer)
-
-			if reward.has("coin_copper"):
-				add_coins(peer, int(reward["coin_copper"]), "goal")
-
+			add_coins(peer, _goal_copper(goal), "goal")
 			paid = coins_of(peer) - paid
-
-			if reward.has("item"):
-				var was_src: String = _gain_source
-				_gain_source = SRC_REWARD   # a reward is not gathered (goal got: counter)
-				give(peer, table.number_of(str(reward["item"][0])), int(reward["item"][1]))
-				_gain_source = was_src
 
 			if send_goal_done.is_valid():
 				send_goal_done.call(peer, id, paid)
@@ -16347,9 +16447,7 @@ func goals_rows(peer: int) -> Array:
 		return rows
 
 	for goal in _goals_data():
-		var reward: Dictionary = goal.get("reward", {})
-		var item: Array = reward.get("item", ["", 0])
-		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), int(reward.get("coin_copper", 0)), str(item[0]), int(item[1]),
+		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), _goal_copper(goal), "", 0,   # reward item fields stay in the protocol 119 row, always empty: goals pay coins only
 			PackedStringArray(goal.get("after", [])), st["goals_done"].has(str(goal["id"]))])
 
 	return rows

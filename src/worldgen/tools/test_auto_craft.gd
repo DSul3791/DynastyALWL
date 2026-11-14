@@ -39,7 +39,7 @@ func make(dir: String):
 	made.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	made.ground_height = func(_x, _z): return 10.0
 	made.setup(ItemTableScript.load_default(), dir)
-	made._goals_loaded = true   # no goals here: a goal's own reward (coins, or 4 sticks for twine) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
+	made._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	return made
 
 

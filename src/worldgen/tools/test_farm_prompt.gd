@@ -1,7 +1,7 @@
 extends SceneTree
 
 # The client half of farming (GOALS-REPAIR WP-R1B): what E on a tilled bed says and asks for (FarmRules.bed_action, held by inventory_view._bed_interaction), which seed sows which crop, and
-# that every crop in crops.json has a placeholder stage look (CropLook). The server's own checks are in test_farming.gd.
+# that every crop in crops.json has a placeholder stage look (CropLook), and the hoe's Garden list and click (FarmRules.plantables, garden_action). The server's own checks are in test_farming.gd.
 #   godot --headless --path . --script res://src/worldgen/tools/test_farm_prompt.gd
 
 const FarmRules := preload("res://src/shared/farm_rules.gd")
@@ -46,6 +46,18 @@ func _init() -> void:
 	check(plan["act"] == "harvest" and plan["prompt"] == "Press E to harvest the carrot", "ripe carrot is harvested by hand: no tool in the line")
 	plan = FarmRules.bed_action(crops, "unknown_crop", 3, -1, "", -1)
 	check(plan["act"] == "harvest", "a crop this client has no data for still harvests (the server decides)")
+
+	# The hoe's Garden mode: what the pack can plant (seeds and dug-up bushes, once each, in pack order) and what one click does.
+	var rows: Array = FarmRules.plantables(crops, ["", "stick", "hazel_bush", "wheat_seeds", "hazel_bush", "flax_seeds", "bronze_sickle"])
+	check(rows.size() == 3 and rows[0] == {"id": "hazel_bush", "kind": "bush"} and rows[1] == {"id": "wheat_seeds", "kind": "seed"} and rows[2]["id"] == "flax_seeds", "plantables: hazel bush, wheat seeds, flax seeds once each in pack order; sticks and sickles are not")
+	check(FarmRules.plantables(crops, ["", "stick"]).is_empty(), "plantables: nothing to plant in a pack of sticks")
+	check(FarmRules.garden_action("seed", "wheat seeds", true, "")["act"] == "sow", "garden: seeds on an empty bed sow it")
+	check(FarmRules.garden_action("seed", "wheat seeds", true, "flax")["act"] == "none", "garden: seeds on a growing bed do nothing and say so")
+	plan = FarmRules.garden_action("seed", "wheat seeds", false, "")
+	check(plan["act"] == "till" and str(plan["say"]).contains("click it again"), "garden: seeds on open ground till a bed first")
+	check(FarmRules.garden_action("bush", "hazel bush", false, "")["act"] == "plant_bush", "garden: a bush on open ground is planted")
+	check(FarmRules.garden_action("bush", "hazel bush", true, "")["act"] == "none", "garden: a bush is not planted in a bed")
+	check(FarmRules.garden_action("", "", false, "")["act"] == "none", "garden: nothing picked sends nothing")
 
 	# Placeholder looks: every crop, every stage, a tuft grid for a 1 m bed and a 2 m plot, taller with the stage.
 	var all_built: bool = true
