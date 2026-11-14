@@ -145,7 +145,7 @@ func _begin_wait(id: String) -> void:
 	_cancel_wait()
 	_waiting_id = id
 	_capture.arm()
-	_say("Press the new key for \"%s\" (Esc cancels, Ctrl or Shift held gives a combination)." % KeyBindings.label_of_action(id))
+	_say("Press the new key for \"%s\" (Esc cancels, Ctrl or Shift held gives a combination)." % KeyBindings.label_of_action(id) if not KeyBindings.is_admin(id) else "Press the new key for \"%s\" (Esc cancels). Admin and debug shortcuts always need Ctrl+Shift with it, so just press the key." % KeyBindings.label_of_action(id))
 	refresh()
 
 
@@ -182,7 +182,7 @@ func _on_captured(key: int, ctrl: bool, shift: bool) -> void:
 	if other != "":
 		_pending = [id, other, key, ctrl, shift]
 		_conflict_row.visible = true
-		var shown: String = KeyBindings.key_label({"key": key, "ctrl": ctrl, "shift": shift})
+		var shown: String = KeyBindings.key_label(KeyBindings.forced_binding(id, key, ctrl, shift))
 		_say("Warning: %s is already used for \"%s\". Swap gives that action your old key (%s); Cancel keeps things as they were." % [shown, KeyBindings.label_of_action(other), KeyBindings.label(id)])
 		refresh()
 		return
