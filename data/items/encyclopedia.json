@@ -2463,6 +2463,8 @@
 				"Used in Engineered - Ceiling",
 				"Used in Engineered - Roof 45",
 				"Used in Engineered - Roof 65",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65",
 				"Used in Engineered - Roof corner",
 				"Used in Fortified - Gate",
 				"Used in Mixer",
@@ -4458,6 +4460,8 @@
 				"Used in Superior - Ceiling",
 				"Used in Engineered - Roof 45",
 				"Used in Engineered - Roof 65",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65",
 				"Used in Engineered - Roof corner"
 			],
 			"obtainable_now": true
@@ -10900,6 +10904,8 @@
 			"used_for": [
 				"Used in Engineered - Roof 45",
 				"Used in Engineered - Roof 65",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65",
 				"Used in Engineered - Roof corner",
 				"Used in Superior - Roof 45",
 				"Used in Superior - Roof 65",
@@ -10957,7 +10963,9 @@
 				"Used in Engineered - Double arched doorway",
 				"Used in Fortified - Double doorway",
 				"Used in Fortified - Arched doorway",
-				"Used in Fortified - Double arched doorway"
+				"Used in Fortified - Double arched doorway",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65"
 			],
 			"obtainable_now": true
 		},
@@ -10977,7 +10985,9 @@
 				"Used in Fortified - Wall top",
 				"Used in Fortified - Double doorway",
 				"Used in Fortified - Arched doorway",
-				"Used in Fortified - Double arched doorway"
+				"Used in Fortified - Double arched doorway",
+				"Used in Fortified - Roof 45",
+				"Used in Fortified - Roof 65"
 			],
 			"obtainable_now": true
 		},
