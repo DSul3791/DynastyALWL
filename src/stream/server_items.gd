@@ -2171,6 +2171,7 @@ func reset_world() -> int:
 	_chops.clear()
 	_split_due.clear()
 	_fellers.clear()
+	_kiln_lit_by.clear()
 	_saplings.clear()
 
 	if restore_flora.is_valid():
@@ -9186,6 +9187,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
 		return
+
+	_kiln_lit_by.erase(id)   # a kiln taken down forgets who lit it (ADD-18)
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
