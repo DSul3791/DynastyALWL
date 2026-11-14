@@ -87,6 +87,7 @@ const MODIFIER_KEYS := [KEY_CTRL, KEY_SHIFT, KEY_ALT, KEY_META]
 
 static var _changed: Dictionary = {}        # id -> {"key": int, "ctrl": bool, "shift": bool}
 static var _loaded: bool = false
+static var _chord_lock: bool = false        # an admin chord fired: Ctrl (down) and Shift (run) are ignored by held() until both are let go
 static var path: String = PATH              # tests point this at their own file with use_path() (use_path keeps the file, loaded choices and statics together)
 
 
@@ -142,6 +143,9 @@ static func ensure_loaded() -> void:
 		var row: Array = _row(str(id))
 
 		var key: int = int(entry.get("key", KEY_NONE))
+		if row[2] == ADMIN_GROUP and key != KEY_NONE and _plain_refusal(str(id), key) != "":
+			continue   # Esc, a hotbar digit or a lone modifier cannot be an admin key: the default
+
 		var mods: Array = _forced(row, bool(entry.get("ctrl", false)), bool(entry.get("shift", false)))   # an old bare-G fly keeps G and gains Ctrl+Shift
 		var bind: Dictionary = {"key": key, "ctrl": mods[0], "shift": mods[1]}
 
@@ -259,7 +263,15 @@ static func matches(event: InputEventKey, id: String) -> bool:
 	if not row.is_empty() and bool(row[7]):
 		return not (event.ctrl_pressed and event.shift_pressed and _admin_key(event.keycode))   # held-type actions ignore modifiers (Shift+W is run), but never fire on an admin chord (Ctrl+Shift+G is not Store all)
 
-	return event.ctrl_pressed == bool(bind["ctrl"]) and event.shift_pressed == bool(bind["shift"])
+	if row[2] == ADMIN_GROUP and (event.alt_pressed or event.meta_pressed):
+		return false   # AltGr (Ctrl+Alt on Windows) types characters on some layouts: never an admin chord
+
+	var hit: bool = event.ctrl_pressed == bool(bind["ctrl"]) and event.shift_pressed == bool(bind["shift"])
+
+	if hit and row[2] == ADMIN_GROUP:
+		_chord_lock = true
+
+	return hit
 
 
 static func _admin_key(key: int) -> bool:
@@ -272,8 +284,18 @@ static func _admin_key(key: int) -> bool:
 
 # A held key (movement, interact hold, photo camera raise and lower).
 static func held(id: String) -> bool:
-	var bind: Dictionary = binding(id)
-	return int(bind["key"]) != KEY_NONE and Input.is_key_pressed(int(bind["key"]))
+	var key: int = int(binding(id)["key"])
+
+	if key == KEY_NONE:
+		return false
+
+	if _chord_lock and (key == KEY_CTRL or key == KEY_SHIFT):   # Ctrl is "down" and Shift is "run": an admin chord must not also dive, fly down or run
+		_chord_lock = Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_SHIFT)
+
+		if _chord_lock:
+			return false
+
+	return Input.is_key_pressed(key)
 
 
 static func released(event: InputEventKey, id: String) -> bool:
@@ -318,16 +340,26 @@ static func label_of_action(id: String) -> String:
 
 # Why a key cannot be bound to this action, or "" when it can.
 static func refusal(id: String, key: int) -> String:
-	if key == KEY_ESCAPE or (key >= KEY_0 and key <= KEY_9):   # the menu and the hotbar
-		return "%s is kept for the menu and the hotbar." % OS.get_keycode_string(key)
+	var why: String = _plain_refusal(id, key)
 
-	if key in MODIFIER_KEYS and not bool(_row(id)[7]):
-		return "Shift, Ctrl, Alt are only used as part of a combination here. Press the key you want with them held."
+	if why != "":
+		return why
 
 	var other: String = _held_admin_clash(id, key)
 
 	if other != "":
 		return "%s is also used for \"%s\", a key that works with any Ctrl or Shift held. Pick another key." % [OS.get_keycode_string(key), label_of_action(other)]
+
+	return ""
+
+
+# The refusals that depend on the key alone (the held-key clash needs the other bindings, which are not all loaded yet when a file is read).
+static func _plain_refusal(id: String, key: int) -> String:
+	if key == KEY_ESCAPE or (key >= KEY_0 and key <= KEY_9):   # the menu and the hotbar
+		return "%s is kept for the menu and the hotbar." % OS.get_keycode_string(key)
+
+	if key in MODIFIER_KEYS and not bool(_row(id)[7]):
+		return "Shift, Ctrl, Alt are only used as part of a combination here. Press the key you want with them held."
 
 	return ""
 

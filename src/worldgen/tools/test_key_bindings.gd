@@ -61,15 +61,38 @@ func _admin_defaults() -> void:
 
 	check(count == table.size(), "the policy table covers every Admin and debug action (%d)" % count)
 
+	# No normal action fires on any admin chord (held-type ones included: they ignore modifiers, but not on an admin key).
+	for row in Bindings.ACTIONS:
+		if row[2] == Bindings.ADMIN_GROUP:
+			continue
+
+		for key in seen:
+			check(not Bindings.matches(_key(int(key), true, true), row[0]), "%s does not fire on Ctrl+Shift+%s" % [row[0], OS.get_keycode_string(int(key))])
+
+	check(not Bindings.matches(_key(KEY_P, true, true), "auto_pickup") and Bindings.matches(_key(KEY_P), "auto_pickup"), "auto pickup is plain P, Ctrl+Shift+P is the GPU probe only")
+	check(Bindings.matches(_key(KEY_E, true, true), "interact"), "Ctrl+Shift+E still interacts (E is no admin key and the held action ignores modifiers)")
+
+	# AltGr / Meta never make an admin chord; an admin chord locks Ctrl and Shift out of held() until both are let go.
+	var altgr: InputEventKey = _key(KEY_G, true, true)
+	altgr.alt_pressed = true
+	var meta: InputEventKey = _key(KEY_G, true, true)
+	meta.meta_pressed = true
+	check(not Bindings.matches(altgr, "fly") and not Bindings.matches(meta, "fly"), "Ctrl+Shift+G with Alt or Meta is not Fly")
+	Bindings._chord_lock = false
+	check(Bindings.matches(_key(KEY_N, true, true), "admin_npc") and Bindings._chord_lock, "an admin chord sets the lock")
+	check(not Bindings.held("down") and not Bindings._chord_lock, "with Ctrl and Shift let go (none pressed here) held() clears the lock")
+
 
 # The group rule on a saved file, rebinding, reset and swap; the inventory keys.
 func _admin_rules() -> void:
 	# An old file: bare G fly, Ctrl+N npc, Shift+F3 sound panel (F3 is Debug details now), a held key (W) as an admin key, a disabled action.
-	_write({"fly": {"key": KEY_G}, "admin_npc": {"key": KEY_N, "ctrl": true}, "sound_panel": {"key": KEY_F3, "shift": true}, "admin_dig": {"key": KEY_W, "ctrl": true}, "admin_rabbit": {"key": KEY_NONE}})
+	_write({"quality": {"key": KEY_ESCAPE}, "hud_text": {"key": KEY_5}, "debug_details": {"key": KEY_SHIFT}, "fly": {"key": KEY_G}, "admin_npc": {"key": KEY_N, "ctrl": true}, "sound_panel": {"key": KEY_F3, "shift": true}, "admin_dig": {"key": KEY_W, "ctrl": true}, "admin_rabbit": {"key": KEY_NONE}})
 	check(Bindings.label("fly") == "Ctrl+Shift+G" and Bindings.is_default("fly"), "an old bare-G fly becomes Ctrl+Shift+G (its default)")
 	check(Bindings.label("admin_npc") == "Ctrl+Shift+N", "an old Ctrl+N npc becomes Ctrl+Shift+N")
 	check(Bindings.label("sound_panel") == "Ctrl+Shift+F5" and Bindings.is_default("sound_panel"), "an old Shift+F3 sound panel would clash with Debug details, so it goes back to Ctrl+Shift+F5")
 	check(Bindings.label("debug_details") == "Ctrl+Shift+F3", "Debug details keeps Ctrl+Shift+F3")
+	check(Bindings.label("quality") == "Ctrl+Shift+F2" and Bindings.label("hud_text") == "Ctrl+Shift+F4", "an Esc or hotbar digit admin entry in the file is dropped")
+	check(Bindings.label("debug_details") == "Ctrl+Shift+F3", "a lone modifier as an admin key is dropped")
 	check(Bindings.label("admin_dig") == "Ctrl+Shift+X", "a held key (W) cannot be an admin key: back to the default")
 	check(Bindings.label("admin_rabbit") == "(none)", "a disabled admin action stays disabled")
 	check(Bindings.conflicts().is_empty(), "the sanitized file leaves no clashes (found %s)" % str(Bindings.conflicts()))

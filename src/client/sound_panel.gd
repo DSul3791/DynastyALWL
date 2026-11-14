@@ -11,6 +11,7 @@ extends CanvasLayer
 # Debug only, nothing is saved.
 
 const SoundNow := preload("res://src/client/sound_now.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const MUTE_BUS := "SoundPanelOff"
 const REFRESH_SEC := 0.5
 const ENFORCE_SEC := 0.25
@@ -68,7 +69,7 @@ func _build() -> void:
 	all_off.pressed.connect(unmute_all)
 	bar.add_child(all_off)
 	var hint: Label = Label.new()
-	hint.text = "  Ctrl+Shift+F5 closes. Switch off = muted."
+	hint.text = "  %s closes. Switch off = muted." % KeyBindings.label("sound_panel")
 	bar.add_child(hint)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(380.0, 320.0)

@@ -8,7 +8,7 @@ Goal (Dave): hold a spade, dig the ground in front of you, the hole is real for 
 - Server checks, then digs: the player holds a spade (any slot of the 8 hotbar slots, not broken), the point is within 3.5 m of the player's last reported position, one dig per 0.7 s per player, point inside the loaded world. Wears the spade (`drops.json` tool_wear, use "dig"). A refused dig answers with `reject`.
 - Server digs a sphere of 0.9 m radius centred 0.25 m below the point (a shovel-sized pit; a few digs make a hole), tells everyone with the existing `dug(center, radius)` and `tile_changed`, and calls `water_live.dig` so water can fall in.
 - Client on `dug`: unchanged (`_on_dug` edits the voxels, plays the dig sound, calls `GrassView.ground_changed`, so pebbles and grass vanish).
-- The old `dig` RPC (any peer, radius up to 8 m) stays for the admin Ctrl+X tool only and is refused for a normal player once the spade works (server checks the admin flag).
+- The old `dig` RPC (any peer, radius up to 8 m) stays for the admin Ctrl+Shift+X tool only and is refused for a normal player once the spade works (server checks the admin flag).
 
 ## How edits are saved (the part that has to survive re-bakes)
 
