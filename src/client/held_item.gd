@@ -423,15 +423,9 @@ func _blueprinting() -> bool:
 	return holding and blueprints.picked > 0 and _build_tier() > 0
 
 
-# The tier a picked blueprint is built with: the hammer in hand's, or 1 for a hoe in Garden mode with a garden plot picked (the hoe lays out plots; master s2.1
-# "Create Garden Plot"; the server takes a hoe on the hand bar for plot blueprints only). 0 when nothing in hand builds.
+# The tier a picked blueprint is built with: the hammer in hand's, 0 when nothing in hand builds.
 func _build_tier() -> int:
-	var hammer: int = _hammer_tier()
-
-	if hammer > 0:
-		return hammer
-
-	return 1 if _hoe_in_hand() and hoe_mode == "garden" and blueprints.picked > 0 and blueprints.plan_picked < 0 and garden_pick == "bp:%d" % blueprints.picked else 0
+	return _hammer_tier()
 
 
 func _hoe_in_hand() -> bool:
@@ -993,7 +987,7 @@ func wheel(down: bool) -> bool:
 		_hoe_menu_refresh()
 		return true
 
-	if _hoe_in_hand() and hoe_mode == "garden" and garden_pick != "" and not garden_pick.begins_with("bp:"):   # Garden planting: the wheel steps the grid (one, a row of 5, 3 by 3, 5 by 5)
+	if _hoe_in_hand() and hoe_mode == "garden" and garden_pick != "":   # Garden planting: the wheel steps the grid (one, a row of 5, 3 by 3, 5 by 5)
 		garden_grid = posmod(garden_grid + (1 if down else -1), FarmRules.GARDEN_GRIDS.size())
 		_inv._on_notice("Garden: plant %s at a time" % str(FarmRules.GARDEN_GRIDS[garden_grid]["name"]))
 		return true
@@ -1118,7 +1112,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
-	if _blueprinting() and not (_hoe_in_hand() and (_hoe_menu_open or button == MOUSE_BUTTON_RIGHT)):   # the hoe's right click and its open list stay the hoe's
+	if _blueprinting():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
 			if blueprints.plan_picked >= 0:
 				_start_plan_place()
@@ -1798,11 +1792,8 @@ func _hammer_stock(delta: float) -> void:
 
 
 func _update_blueprint() -> void:
-	if blueprints.picked == 0 and _hoe_in_hand() and hoe_mode == "garden" and garden_pick.begins_with("bp:"):
-		_pick_plot(int(garden_pick.trim_prefix("bp:")))   # the hoe taken up again keeps its garden plot, as it keeps a seed pick
-
 	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _build_tier() <= 0:
-		blueprints.clear()   # the hammer is put away (or the hoe leaves its garden plot): the pick and the list go with it
+		blueprints.clear()   # the hammer is put away: the pick and the list go with it
 		_plan_queue.clear()
 
 	if not _is_placeable() and not _blueprinting():
@@ -2103,7 +2094,7 @@ const HOE_MODES := [
 	{"id": "smooth", "name": "Smooth", "note": "levels the ground about 3 m round to where you stand (a little under your feet on a foundation), no path"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
-	{"id": "garden", "name": "Garden", "note": "lay out a garden plot, or plant seeds, a dug-up bush or a tree's seed from your pack (the next list picks which)"},
+	{"id": "garden", "name": "Garden", "note": "plant seeds, a dug-up bush or a tree's seed from your pack (the next list picks which); seeds till open ground first"},
 ]
 var hoe_mode: String = "path"
 var garden_pick: String = ""             # Garden mode: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
@@ -2179,9 +2170,6 @@ func _hoe_menu_line(n: int) -> String:
 
 	var row: Dictionary = _garden_rows[n]
 
-	if str(row["kind"]) == "plot":
-		return "%s: lay out a 2 m garden plot (%s)" % [str(row["name"]), str(row["text"])]
-
 	var hint: String = "click a bed or garden plot to sow, open ground to till and sow" if str(row["kind"]) == "seed" else "click open ground to plant it"
 	var number: int = _inv.table.number_of(str(row["id"]))
 	return "%s (%d): %s" % [_inv.table.name_of(number), _inv.inventory.count_of(number), hint]
@@ -2202,13 +2190,7 @@ func _hoe_menu_choose() -> void:
 			var row: Dictionary = _garden_rows[_hoe_menu_index]
 			garden_pick = str(row["id"])
 			_garden_queue.clear()   # what was queued for the last pick is dropped, not sent with the new pick's slot
-
-			if str(row["kind"]) == "plot":
-				_pick_plot(int(row["number"]))
-				_inv._on_notice("Hoe: lay out %s (left click places it; a blue plot takes the materials later)" % str(row["name"]))
-			else:
-				blueprints.picked = 0
-				_inv._on_notice("Hoe: plant %s" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
+			_inv._on_notice("Hoe: plant %s" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
 
 		_hoe_menu_close()
 		return
@@ -2225,7 +2207,7 @@ func _hoe_menu_choose() -> void:
 	for slot in range(_inv.inventory.slot_count):
 		ids.append(_inv.table.id_of(_inv.inventory.numbers[slot]) if _inv.inventory.numbers[slot] != 0 else "")
 
-	_garden_rows = _garden_plot_rows() + FarmRules.plantables(_inv.crop_table(), ids, "_bush", _inv.tree_seed_table())
+	_garden_rows = FarmRules.plantables(_inv.crop_table(), ids, "_bush", _inv.tree_seed_table())
 
 	if _garden_rows.is_empty():
 		_inv._on_notice("Hoe: Garden. Carry seeds, a dug-up bush or a tree's seed to plant them")
@@ -2240,25 +2222,6 @@ func _hoe_menu_choose() -> void:
 			_hoe_menu_index = n
 
 	_hoe_menu_refresh()
-
-
-# A garden plot picked for the hoe: the ghost and the left click are the blueprint's, as with a hammer (_blueprinting); "place" mode, so a hammer taken up
-# afterwards places it too instead of repairing.
-func _pick_plot(number: int) -> void:
-	blueprints.picked = number
-	blueprints.plan_picked = -1
-	blueprints.mode = "place"
-
-
-# The garden plot blueprints the player knows (blueprints.json rows whose structure is a "plot": Thatch, Wooden, Stone, Brick), with what they cost and what is to hand.
-func _garden_plot_rows() -> Array:
-	var out: Array = []
-
-	for row in blueprints.rows(1):
-		if bool(PlacementRules.structure_of_kit(_placement, str(row["kit"])).get("plot", false)):
-			out.append({"id": "bp:%d" % int(row["number"]), "kind": "plot", "number": int(row["number"]), "name": str(row["name"]), "text": str(row["text"])})
-
-	return out
 
 
 func _hoe_menu_close() -> void:
@@ -2496,7 +2459,7 @@ var garden_preview_cells: int = 0        # how many markers show now
 
 
 func _garden_preview() -> void:
-	var on: bool = _hoe_in_hand() and hoe_mode == "garden" and garden_pick != "" and not garden_pick.begins_with("bp:") and not _hoe_menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	var on: bool = _hoe_in_hand() and hoe_mode == "garden" and garden_pick != "" and not _hoe_menu_open and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 	if not on:
 		if garden_preview_cells > 0:
@@ -2628,9 +2591,6 @@ func _caption() -> String:
 
 
 func _hoe_mode_name() -> String:
-	if hoe_mode == "garden" and garden_pick.begins_with("bp:"):
-		return "Garden: %s" % blueprints.name_of(int(garden_pick.trim_prefix("bp:")))
-
 	if hoe_mode == "garden":
 		return "Garden: %s" % ("%s, %s at a time (wheel changes)" % [_inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower(), str(FarmRules.GARDEN_GRIDS[garden_grid]["name"])] if garden_pick != "" else "pick what to plant")
 

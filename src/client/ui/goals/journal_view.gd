@@ -13,6 +13,7 @@ extends RefCounted
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const MapPageScript := preload("res://src/client/map_page.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
+const GoalBook := preload("res://src/client/ui/goals/goal_book.gd")
 const INDEX := "index"
 const GOALS := "goals"
 const MAP := "map"
@@ -268,7 +269,7 @@ func _show_index() -> void:
 
 	for row in _book.unfinished(2):
 		var id: String = str(row["id"])
-		_right.add_child(_link("Next:  " + str(row["title"]), func() -> void:
+		_right.add_child(_link("Next:  " + GoalBook.label(row), func() -> void:
 			selected = id
 			history.clear()
 			show_page(GOALS)))
@@ -291,7 +292,7 @@ func _show_goal_list() -> void:
 	for row in _book.rows:
 		var id: String = str(row["id"])
 		var done: bool = bool(row["done"])
-		var entry: Button = _row(str(row["title"]), id == selected, not done, InventoryLook.tick_mark(_items.text_px(22), done), func() -> void: select(id))
+		var entry: Button = _row(GoalBook.label(row), id == selected, not done, InventoryLook.tick_mark(_items.text_px(22), done), func() -> void: select(id))
 		entry.tooltip_text = "Done" if done else "Not done yet"
 		list.add_child(entry)
 
@@ -325,7 +326,12 @@ func _show_details() -> void:
 	card.add_theme_constant_override("separation", 10)
 	scroll.add_child(card)
 	card.add_child(_text(str(row["title"]), 34, ArtKit.HEADING, "cinzel_bold"))
-	card.add_child(_text("Done" if bool(row["done"]) else "Not done yet: it counts on its own as you play.", 22, ArtKit.WEAR_GOOD if bool(row["done"]) else ArtKit.CREAM))
+	var open_text: String = "Not done yet: it counts on its own as you play."
+
+	if int(row.get("need", 1)) > 1:   # the count, as the list row shows it beside the title
+		open_text = "Not done yet: %d of %d so far. It counts on its own as you play." % [mini(int(row.get("have", 0)), int(row["need"])), int(row["need"])]
+
+	card.add_child(_text("Done" if bool(row["done"]) else open_text, 22, ArtKit.WEAR_GOOD if bool(row["done"]) else ArtKit.CREAM))
 	card.add_child(_section("Reward"))
 	var reward: RichTextLabel = _items.make_coin_label(_items.text_px(24))
 	reward.add_theme_color_override("default_color", ArtKit.CREAM)
@@ -372,7 +378,7 @@ func _goal_link(id: String) -> Control:
 	if row.is_empty():
 		return _text(id, 22, ArtKit.DIM)
 
-	return _link(("✓  " if bool(row["done"]) else "•  ") + str(row["title"]), func() -> void: select(id))
+	return _link(("✓  " if bool(row["done"]) else "•  ") + GoalBook.label(row), func() -> void: select(id))
 
 
 func _show_map() -> void:

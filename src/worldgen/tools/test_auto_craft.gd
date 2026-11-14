@@ -24,6 +24,9 @@ class FakeRecipes extends RefCounted:
 	func recipe(number: int) -> Dictionary:
 		return rows.get(number, {})
 
+	func makers_of(item: int) -> Array:   # as RecipeTable.makers_of: every recipe that makes the item, in number order
+		return numbers().filter(func(n): return int(rows[n]["gives"][0]) == item)
+
 
 func check(ok: bool, what: String) -> void:
 	if not ok:

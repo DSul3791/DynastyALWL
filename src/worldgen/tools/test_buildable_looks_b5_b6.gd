@@ -19,7 +19,6 @@ const SIZES := {
 const CONDUITS := {
 	"wooden_channel": ["straight", 0.4, 0.3], "wooden_channel_corner": ["corner", 0.4, 0.3], "wooden_channel_tee": ["tee", 0.4, 0.3],
 	"stone_channel": ["straight", 0.5, 0.3], "stone_channel_corner": ["corner", 0.5, 0.3], "stone_channel_tee": ["tee", 0.5, 0.3],
-	"clay_pipe_run": ["straight", 0.3, 0.3], "clay_pipe_elbow": ["corner", 0.3, 0.3], "clay_pipe_tee": ["tee", 0.3, 0.3],
 	"iron_pipe": ["straight", 0.2, 0.2], "iron_pipe_elbow": ["corner", 0.2, 0.2],
 }
 

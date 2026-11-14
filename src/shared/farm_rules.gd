@@ -49,7 +49,7 @@ static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_slot
 # The hoe's Garden mode (Dave 14 Nov 2026: "gardening should also be another option on the right click of the Hoe ... make garden plots or plant seeds, plants, shrubs";
 # master s2.1 "Create Garden Plot, Plant"). What the pack carries that the hoe can plant, one row per kind, in pack order: {"id", "kind": "seed" | "bush" | "tree"}.
 # `ids`: the item id in each pack slot ("" for an empty slot). A bush is a dug-up shrub (`<species>_bush`, drops.json shrub_work dig_suffix); a tree seed is any item
-# in `tree_seeds` (item id -> species, from drops.json trunk.felled_seeds: a species' own fruit or nut, or its own seed). A crop seed is a crop seed first.
+# in `tree_seeds` (item id -> species, from drops.json trunk.felled_seeds: each tree's own "<Tree> seed" item). A crop seed is a crop seed first.
 static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bush", tree_seeds: Dictionary = {}) -> Array:
 	var rows: Array = []
 	var seen: Dictionary = {}

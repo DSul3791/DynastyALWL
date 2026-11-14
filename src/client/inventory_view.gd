@@ -459,6 +459,9 @@ func toggle() -> void:
 
 	open = not open
 
+	if not open:
+		_recipe_part.stop()   # a half-worked recipe list is dropped; the next open starts again
+
 	if not open and _recipe_search != null:
 		_recipe_search.release_focus()   # the keys go back to the game
 		_recipe_search.text = ""         # the filter lasts until the menu is closed
@@ -1356,6 +1359,11 @@ func _process(_delta: float) -> void:
 
 func _process_body(_delta: float) -> void:
 	_flicker_flames()
+
+	if _recipe_part.running():
+		var t_list: int = FrameProbe.start()
+		_recipe_part.step()
+		FrameProbe.stop("inventory: recipe list", t_list)
 
 	if not _warm_queue.is_empty():
 		var tw: int = FrameProbe.start()
@@ -2619,6 +2627,7 @@ func _close_chest() -> void:
 
 	chest_mode = false
 	open = false
+	_recipe_part.stop()   # the window shut: a half-worked recipe list is dropped
 	_show_tab()
 
 	if _you_part != null:
@@ -2898,6 +2907,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
 
 	_note_slowest_row(row_usec, row_name)
+	_forget_near()   # and again once the rows are in: nothing kept while they went in (the placed list) outlives them
 	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
 
 	if total_ms > 30.0:
@@ -3503,6 +3513,17 @@ func nearby_logs() -> int:
 	return _logs_memo
 
 
+# The saw recipes' Softwood and Hardwood logs lying within 3 m, kept like station_near's answers (each saw recipe asked for a walk over the world).
+func _nearby_logs_of(group_id: String) -> int:
+	_memo_frame()
+	var key: String = "logs|" + group_id
+
+	if not _near_memo.has(key):
+		_near_memo[key] = _nearby_logs_now(group_id)
+
+	return int(_near_memo[key])
+
+
 func _nearby_logs_now(group_id: String = "log") -> int:
 	var total: int = 0   # the carried log is a pack item and counted with the pack
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
@@ -3536,7 +3557,7 @@ func _logs_cover(number: int) -> bool:
 				return false
 		elif int(need[0]) > 0 and (int(need[0]) == soft_n or int(need[0]) == hard_n):   # the saw recipes' Softwood and Hardwood logs (Mission 001 phase 2a)
 			uses_log = true
-			if inventory.count_fill(int(need[0])) + _nearby_logs_now("log_spruce" if int(need[0]) == soft_n else "log_oak") < int(need[1]):
+			if inventory.count_fill(int(need[0])) + _nearby_logs_of("log_spruce" if int(need[0]) == soft_n else "log_oak") < int(need[1]):
 				return false
 		elif not inventory.has_fill(int(need[0]), int(need[1])):
 			return false
@@ -3583,9 +3604,22 @@ func station_in_reach(r: Dictionary) -> bool:
 	return str(r.get("station", "")) != "" and station_near(str(r["station"]), int(r.get("station_level", 1)), CraftStock.CRAFT_REACH_M)
 
 
+var _label_memo: Dictionary = {}   # "station|level" -> _station_label's answer (structures.json does not change while the game runs)
+
+
 # The station that makes a recipe, by name: the first structure whose own station serves it at the recipe's level (steel at brick forge level 3
 # names the Advanced smithy, not the Improved one; GOALS-REPAIR R4), else one that carries it as an "also" station at that level.
+# Each recipe row asked this twice, each a walk over all 346 structure kinds; the answer is kept per station and level.
 func _station_label(r: Dictionary) -> String:
+	var key: String = "%s|%d" % [str(r.get("station", "")), int(r.get("station_level", 1))]
+
+	if not _label_memo.has(key):
+		_label_memo[key] = _station_label_now(r)
+
+	return _label_memo[key]
+
+
+func _station_label_now(r: Dictionary) -> String:
 	var level: int = int(r.get("station_level", 1))
 
 	for kind in _structure_kinds():
@@ -3775,7 +3809,7 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 func _lit_structure_near(pos: Vector3, kind: String, r: float) -> bool:
 	var state: int = int(_structures_cfg.get(kind, {}).get("state", -2))
 
-	for id in _world:
+	for id in _placed():
 		if int(_world[id]["state"]) == state and _world[id].get("light") != null and pos.distance_to(_world[id]["pos"]) <= r:
 			return true
 
@@ -3783,7 +3817,7 @@ func _lit_structure_near(pos: Vector3, kind: String, r: float) -> bool:
 
 
 func _lit_fire_near(pos: Vector3, r: float) -> bool:
-	for fire_id in _world:
+	for fire_id in _placed():
 		if _lit_state(int(_world[fire_id]["state"])) and pos.distance_to(_world[fire_id]["pos"]) <= r:
 			return true
 
@@ -3839,9 +3873,29 @@ func _forget_near() -> void:
 
 
 func _memo_frame() -> void:
+	if _recipe_part.running():
+		return   # the recipe list works over several frames (recipe_list.gd step): its answers hold for the whole pass, until the world changes
+
 	if Engine.get_process_frames() != _near_memo_frame:
 		_near_memo_frame = Engine.get_process_frames()
 		_forget_near()
+
+
+# The world ids of placed things (every row with a state: structures, fires, stations; loose items are state 0), kept like the answers above.
+# The station checks walked every world row, thousands of loose stones included, once per station asked (about 50 ms a pass on David4).
+func _placed() -> Array:
+	_memo_frame()
+
+	if not _near_memo.has("placed"):
+		var ids: Array = []
+
+		for id in _world:
+			if int(_world[id]["state"]) != 0:
+				ids.append(id)
+
+		_near_memo["placed"] = ids
+
+	return _near_memo["placed"]
 
 
 func station_near(station: String, level: int = 1, reach_m: float = 0.0) -> bool:
@@ -3858,11 +3912,11 @@ func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
 	if station == "campfire":   # a lit campfire (state 1) within reach, or a clay hearth or oven beside you ("also")
-		for fire_id in _world:
+		for fire_id in _placed():
 			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= maxf(4.5, reach_m):
 				return true
 
-	for id in _world:
+	for id in _placed():
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
 		if def.is_empty() or here.distance_to(_world[id]["pos"]) > maxf(float(def.get("reach_m", 3.0)), reach_m):
@@ -3916,7 +3970,7 @@ func _nearest_serving(station: String, level: int = 1) -> int:
 	var best: int = -1
 	var best_d: float = INF
 
-	for id in _world:
+	for id in _placed():
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 		var d: float = here.distance_to(_world[id]["pos"])
 
@@ -3934,7 +3988,7 @@ func _def_serves(def: Dictionary, station: String, level: int) -> bool:
 func _addons_near(bench_id: int, station: String, reach: float) -> int:
 	var kinds: Dictionary = {}
 
-	for id in _world:
+	for id in _placed():
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
 		if not def.is_empty() and str(def.get("addon_of", "")) == station and _world[bench_id]["pos"].distance_to(_world[id]["pos"]) <= reach:
@@ -4581,6 +4635,7 @@ func set_text_scale(scale: float) -> void:
 
 	if _panel != null:
 		var was_open: bool = open
+		_recipe_part.panel_gone()   # the rows and the card go with the panel; a running pass would build for a list that is gone
 		_panel.queue_free()
 		_panel = null
 		_frame = null
@@ -5025,6 +5080,7 @@ func _setup_goals() -> void:
 	goal_book = GoalBookScript.new()
 	net.goals_received.connect(goal_book.on_goals)
 	net.goal_done_received.connect(goal_book.on_done)
+	net.goal_progress_received.connect(goal_book.on_progress)
 	goals_hud = GoalsHudScript.new()
 	_layer.add_child(goals_hud)
 	goals_hud.setup(self, goal_book)
@@ -5547,6 +5603,7 @@ func run_test() -> void:
 	toggle()
 	_recipe_search.text = "stone"
 	_refresh()
+	_recipe_part.finish_now()
 	var shown: int = 0
 
 	for child in _recipe_list.get_children():

@@ -4,7 +4,8 @@ extends SceneTree
 # fibre, twist twine, make the axe, fell a tree, make and light a fire, build a lean-to and a workbench. Checks: each goal completes when its check is met, it pays its
 # stage's copper (coins only), a goal completes out of its authored order (`after` is no lock, GA-40), the player is told "Goal done" and the next goal, goal_done
 # goes to the client once per completion with the copper paid, the done goals are saved with the character and still done after a restart, a rejoin sends the
-# list silently and pays nothing again, the next tick saves (GA-55), and Admin mode and admin gives earn nothing (GA-54). Protocol 119.
+# list silently and pays nothing again, the next tick saves (GA-55), and Admin mode and admin gives earn nothing (GA-54). Protocol 119. A goal row carries its
+# amount and count, and goal_progress sends the counts of unfinished goals with an amount as they move (protocol 122, Dave 14 Nov 2026: "Gather plant fiber 0/50").
 #   godot --headless --path . --script res://src/worldgen/tools/test_goals.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
@@ -17,6 +18,7 @@ var items
 var said: Array = []
 var done_sent: Array = []   # [id, copper] per goal_done
 var lists_sent: Array = []  # the rows of each goals message
+var progress_sent: Array = []   # the changes of each goal_progress message
 
 
 func check(ok: bool, what: String) -> void:
@@ -37,6 +39,7 @@ func make(dir: String, standing: Dictionary, near_water: Array):
 	it.send_purse = func(_p, _c): pass
 	it.send_goal_done = func(_p, id, copper): done_sent.append([id, copper])
 	it.send_goals = func(_p, rows): lists_sent.append(rows)
+	it.send_goal_progress = func(_p, changes): progress_sent.append(changes)
 	it.ground_height = func(_x, _z): return 10.0
 	it.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
 	it.cut_tree = func(_chunk, id): standing.erase(id); return true
@@ -84,11 +87,18 @@ func _init() -> void:
 	items.admin_mode_on = func(_p): return false
 	check(lists_sent.size() == 1 and (lists_sent[0] as Array).size() == items._goals_data().size(), "the join sends the whole goal list once (%d lists)" % lists_sent.size())
 	var rows: Array = items.goals_rows(1)
-	check(rows.size() >= 10 and rows[0][0] == "drink" and rows[0][3] == 5 and rows[0][7] == false and rows.all(func(r): return r.size() == 8 and r[7] == false), "goals_rows lists every goal in the authored order, drink first paying 5 copper (start stage), none done (%d goals)" % rows.size())
+	check(rows.size() >= 10 and rows[0][0] == "drink" and rows[0][3] == 5 and rows[0][7] == false and rows.all(func(r): return r.size() == 10 and r[7] == false), "goals_rows lists every goal in the authored order, drink first paying 5 copper (start stage), none done (%d goals)" % rows.size())
 	check(rows.all(func(r): return r[3] == 5 and r[4] == "" and r[5] == 0) and rows.any(func(r): return r[0] == "axe" and r[6].has("twine") and r[2] != ""), "every live goal pays 5 copper and no item (coins only, Dave 14 Nov; A-42 start stage); a row carries its how-to and the goals taught before it")
 	var stages: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/goal_rewards.json")) as Dictionary).get("stages", {})
 	check(not stages.is_empty() and items._goals_data().all(func(g): return stages.has(str(g.get("stage", ""))) and not g.has("reward")), "every goal names a stage from the one table in goal_rewards.json and carries no reward of its own")
 	check(rows.any(func(r): return r[0] == "hoe") and rows.any(func(r): return r[0] == "path"), "the hoe and path goals are listed (Dave 4 Nov 2026)")
+	var amounts: Dictionary = {}
+
+	for r in rows:
+		amounts[r[0]] = [r[8], r[9]]
+
+	check(amounts.get("fibre") == [12, 0] and amounts.get("twine") == [2, 0] and amounts.get("path") == [15, 0] and amounts.get("axe") == [1, 0], "a row carries its amount and count so far: fibre 0 of 12, twine 0 of 2, path 0 of 15, the axe 0 of 1 (%s)" % str([amounts.get("fibre"), amounts.get("twine"), amounts.get("axe")]))
+	check(amounts.get("night_walk") == [100, 0], "the night walk counts whole metres, 100 (%s)" % str(amounts.get("night_walk")))
 
 	# Drink: needs the water and a drop in thirst room.
 	items.vitals_of(1)["wet"] = 1000.0
@@ -129,8 +139,14 @@ func _init() -> void:
 	items._gain_source = items.SRC_PICKUP
 	items._goals_tick()
 	check(got.call("plant_fibre") == 0 and not done("fibre"), "bought and handed-back fibre are not gathered either, though held (%d held)" % count("plant_fibre"))
+	check(not progress_sent.any(func(c): return (c as Dictionary).has("fibre")), "admin-given, bought and handed-back fibre sent no fibre count (%s)" % str(progress_sent))
+	progress_sent.clear()
 	items.give(1, items.table.number_of("plant_fibre"), 11)   # as a harvest gives them
 	check(got.call("plant_fibre") == 11 and not done("fibre"), "11 gathered first-hand: not yet")
+	check(progress_sent.size() == 1 and progress_sent[0].get("fibre") == 11 and not progress_sent[0].has("axe"), "the gathering sends the fibre count that moved, 11, at once, and no single-item goal (%s)" % str(progress_sent))
+	progress_sent.clear()
+	items._goals_tick()
+	check(progress_sent.is_empty(), "a check where nothing moved sends nothing (%s)" % str(progress_sent))
 	items.give(1, items.table.number_of("plant_fibre"), 1)
 	items._goals_tick()
 	check(got.call("plant_fibre") == 12 and done("fibre"), "the 12th gathered plant fibre completes the fibre goal: history, not what is held (got_item)")
