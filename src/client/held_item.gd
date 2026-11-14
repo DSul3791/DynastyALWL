@@ -419,7 +419,22 @@ func placing() -> bool:
 
 # A hammer in hand and a blueprint picked from its list (R): the ghost and the click work like a kit's, but the materials come from the pack.
 func _blueprinting() -> bool:
-	return holding and blueprints.picked > 0 and _hammer_tier() > 0
+	return holding and blueprints.picked > 0 and _build_tier() > 0
+
+
+# The tier a picked blueprint is built with: the hammer in hand's, or 1 for a hoe in Garden mode with a garden plot picked (the hoe lays out plots; master s2.1
+# "Create Garden Plot"; the server takes a hoe on the hand bar for plot blueprints only). 0 when nothing in hand builds.
+func _build_tier() -> int:
+	var hammer: int = _hammer_tier()
+
+	if hammer > 0:
+		return hammer
+
+	return 1 if _hoe_in_hand() and hoe_mode == "garden" and blueprints.picked > 0 and garden_pick == "bp:%d" % blueprints.picked else 0
+
+
+func _hoe_in_hand() -> bool:
+	return holding and held_number() != 0 and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe"
 
 
 func _hammer_tier() -> int:
@@ -1715,7 +1730,7 @@ func _say_why_not() -> void:
 		var reason: String = _reason()
 		why = reason.left(1).to_upper() + reason.substr(1) + "."
 
-	if why == "" and _blueprinting() and not blueprints.can_afford(_hammer_tier()):
+	if why == "" and _blueprinting() and not blueprints.can_afford(_build_tier()):
 		why = "You do not have all the materials for that."
 
 	if why == "":
@@ -1738,7 +1753,7 @@ var _hammer_stock_pack: int = 0
 
 
 func _hammer_stock(delta: float) -> void:
-	if not holding or _hammer_tier() <= 0 or not (blueprints.is_open or blueprints.picked > 0) or not _inv.has_method("ask_stock_now"):
+	if not holding or _build_tier() <= 0 or not (blueprints.is_open or blueprints.picked > 0) or not _inv.has_method("ask_stock_now"):
 		_hammer_stock_age = HAMMER_STOCK_S   # the first frame with the list open asks at once
 		_hammer_stock_at = Vector3(INF, INF, INF)
 		return
@@ -1750,7 +1765,7 @@ func _hammer_stock(delta: float) -> void:
 		return
 
 	_hammer_stock_age = 0.0
-	blueprints.refresh(_hammer_tier())   # the counts the last answer brought
+	blueprints.refresh(_build_tier())   # the counts the last answer brought
 	var here: Vector3 = _camera.global_position if _camera != null else Vector3.ZERO
 	var pack: int = hash([_inv.inventory.numbers, _inv.inventory.counts]) if _inv.inventory != null else 0
 	var moved: bool = not _hammer_stock_at.is_finite() or here.distance_to(_hammer_stock_at) >= HAMMER_STOCK_MOVE_M
@@ -1765,8 +1780,8 @@ func _hammer_stock(delta: float) -> void:
 
 
 func _update_blueprint() -> void:
-	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _hammer_tier() <= 0:
-		blueprints.clear()   # the hammer is put away: the pick and the list go with it
+	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _build_tier() <= 0:
+		blueprints.clear()   # the hammer is put away (or the hoe leaves its garden plot): the pick and the list go with it
 		_plan_queue.clear()
 
 	if not _is_placeable() and not _blueprinting():
@@ -1877,7 +1892,7 @@ func _update_blueprint() -> void:
 		blueprint_state = "far"
 
 	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "buried" or blueprint_state == "nodoorway" or blueprint_state == "mismatch"
-	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
+	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_build_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
 
@@ -2049,7 +2064,7 @@ const HOE_MODES := [
 	{"id": "smooth", "name": "Smooth", "note": "levels the ground about 3 m round to where you stand (a little under your feet on a foundation), no path"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
-	{"id": "garden", "name": "Garden", "note": "plant seeds or a dug-up bush from your pack (the next list picks which)"},
+	{"id": "garden", "name": "Garden", "note": "lay out a garden plot, or plant seeds or a dug-up bush from your pack (the next list picks which)"},
 ]
 var hoe_mode: String = "path"
 var garden_pick: String = ""             # Garden mode: the item id picked to plant (seeds or a dug-up bush), "" for none (tests read it)
@@ -2124,6 +2139,10 @@ func _hoe_menu_line(n: int) -> String:
 		return "%s: %s" % [str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
 
 	var row: Dictionary = _garden_rows[n]
+
+	if str(row["kind"]) == "plot":
+		return "%s: lay out a 2 m garden plot (%s)" % [str(row["name"]), str(row["text"])]
+
 	var hint: String = "click a bed or garden plot to sow, open ground to till a bed first" if str(row["kind"]) == "seed" else "click open ground to plant it"
 	var number: int = _inv.table.number_of(str(row["id"]))
 	return "%s (%d): %s" % [_inv.table.name_of(number), _inv.inventory.count_of(number), hint]
@@ -2141,8 +2160,15 @@ func _pack_slot_of(id: String) -> int:
 func _hoe_menu_choose() -> void:
 	if _hoe_menu_page == "garden":
 		if _hoe_menu_index < _garden_rows.size():
-			garden_pick = str(_garden_rows[_hoe_menu_index]["id"])
-			_inv._on_notice("Hoe: plant %s" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
+			var row: Dictionary = _garden_rows[_hoe_menu_index]
+			garden_pick = str(row["id"])
+
+			if str(row["kind"]) == "plot":
+				blueprints.picked = int(row["number"])   # the ghost and the left click are the blueprint's, as with a hammer (_blueprinting)
+				_inv._on_notice("Hoe: lay out %s (left click places it; a blue plot takes the materials later)" % str(row["name"]))
+			else:
+				blueprints.picked = 0
+				_inv._on_notice("Hoe: plant %s" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
 
 		_hoe_menu_close()
 		return
@@ -2159,7 +2185,7 @@ func _hoe_menu_choose() -> void:
 	for slot in range(_inv.inventory.slot_count):
 		ids.append(_inv.table.id_of(_inv.inventory.numbers[slot]) if _inv.inventory.numbers[slot] != 0 else "")
 
-	_garden_rows = FarmRules.plantables(_inv.crop_table(), ids)
+	_garden_rows = _garden_plot_rows() + FarmRules.plantables(_inv.crop_table(), ids)
 
 	if _garden_rows.is_empty():
 		_inv._on_notice("Hoe: Garden. Carry seeds or a dug-up bush to plant them")
@@ -2174,6 +2200,17 @@ func _hoe_menu_choose() -> void:
 			_hoe_menu_index = n
 
 	_hoe_menu_refresh()
+
+
+# The garden plot blueprints the player knows (blueprints.json rows whose structure is a "plot": Thatch, Wooden, Stone, Brick), with what they cost and what is to hand.
+func _garden_plot_rows() -> Array:
+	var out: Array = []
+
+	for row in blueprints.rows(1):
+		if bool(PlacementRules.structure_of_kit(_placement, str(row["kit"])).get("plot", false)):
+			out.append({"id": "bp:%d" % int(row["number"]), "kind": "plot", "number": int(row["number"]), "name": str(row["name"]), "text": str(row["text"])})
+
+	return out
 
 
 func _hoe_menu_close() -> void:
@@ -2361,7 +2398,7 @@ func _caption() -> String:
 		return ""
 
 	if _blueprinting():
-		var short: bool = not blueprints.can_afford(_hammer_tier())
+		var short: bool = not blueprints.can_afford(_build_tier())
 		var text: String = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
 
 		if _reason() != "":
@@ -2402,6 +2439,9 @@ func _caption() -> String:
 
 
 func _hoe_mode_name() -> String:
+	if hoe_mode == "garden" and garden_pick.begins_with("bp:"):
+		return "Garden: %s" % blueprints.name_of(int(garden_pick.trim_prefix("bp:")))
+
 	if hoe_mode == "garden":
 		return "Garden: %s" % (_inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower() if garden_pick != "" else "pick what to plant")
 
