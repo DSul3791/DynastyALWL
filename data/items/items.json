@@ -7805,7 +7805,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 175. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 175. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"stone_channel_kit": {
 				"number": 733,
@@ -7826,7 +7826,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 176. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 176. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"stone_channel_corner_kit": {
 				"number": 735,
@@ -7847,7 +7847,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 177. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 177. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"stone_channel_tee_kit": {
 				"number": 737,
@@ -7868,7 +7868,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 178. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 178. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"clay_pipe_run_kit": {
 				"number": 739,
@@ -7889,7 +7889,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 179. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 179. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"clay_pipe_elbow_kit": {
 				"number": 741,
@@ -7910,7 +7910,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 180. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 180. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"clay_pipe_tee_kit": {
 				"number": 743,
@@ -7931,7 +7931,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 181. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 181. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"iron_pipe_kit": {
 				"number": 745,
@@ -8036,7 +8036,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 186. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 186. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"stone_raised_cistern_kit": {
 				"number": 755,
@@ -8057,7 +8057,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 187. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 187. Live in the water network since plumbing PR 3 (unlocked)."
 			},
 			"horn": {
 				"number": 757,

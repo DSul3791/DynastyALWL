@@ -37,7 +37,8 @@ cisterns: hold litres; drink or fill a container at them with E) or straight int
    already stones, clay mortar and planks), Advanced - Well (new). Daily yield store, saved with the tanks in `crops.json`. Unlocked.
 2. **Wooden plumbing.** Wooden - Channel / corner / tee, Sluice (E opens and shuts it, doors' toggle-twin pattern), Wooden - Trough,
    Wooden - Hand pump, and new Wooden - Pipe / Pipe elbow / Pipe tee (bored logs: the first closed pipe). Unlocked.
-3. **Stone channels, clay pipes, cisterns** (the same data conversion). Unlocked.
+3. **Stone channels, clay pipes, cisterns** (the same data conversion). Unlocked, except the Raised cistern: only a force pump fills it, so it
+   stays locked until PR 4 brings the Deep-well pump.
 4. **Iron plumbing, gated on the Master smithy.** A new material, Iron pipe section, forged only at the Master smithy (learned there by
    discovery); Iron - Pipe / Pipe elbow / new Pipe tee, Tap (E toggle), Iron - Hand pump and Deep-well pump cost it. Unlocked once the
    recipe exists, so the gate is the Master smithy itself.
@@ -83,3 +84,17 @@ How it fits together:
   ground gives a small head (12 cm gives 12 % of 60 L/min); a cistern (PR 3) gives more.
 - What a player does: build a well or hand pump, lay channels from its spout downhill to a trough, open the sluices, and work the pump (E).
   Drink or fill a container at the trough (E). Lay log pipes from a trough's base downhill to another trough.
+
+## 6. Stone channels, clay pipes and cisterns (PR 3), PROVISIONAL values
+
+| Piece | Water block | Cost |
+|---|---|---|
+| Stone - Channel / corner / tee | open, 300 L/min, ends 0.13 m up, 1 cm fall a piece, catches like a flume | unchanged |
+| Clay - Pipe / elbow / tee | closed, 120 L/min under head, ends 0.15 m up | unchanged (Clay pipe sections from the campfire) |
+| Stone - Trough | tank 200 L, rim 0.58 m, base outlet like the wooden trough | unchanged |
+| Cistern | tank 2,000 L; catches over its 1 m rim from up to 1.2 m across and 2 m above; base outlet at +Z; its water stands 0.5 m over the outlet (`head_m`), so a level clay pipe from it runs at half cap | unchanged |
+| Raised cistern (locked until PR 4) | tank 2,000 L on a 2 m plinth; outlet at its foot with the tank 2.5 m over it (a level pipe runs full); fills only through its riser at the foot (-Z) from a pipe whose water surface reaches its top (`lift_m` 2.85: a force pump, PR 4), never from a hand pump | unchanged |
+
+Engine additions (water_network.gd): a tank's `head_m` (its water over its base outlet) and `lift_m` (a riser-fed tank takes water only from a
+surface that high over its inlet). The cisterns' "overflow" is not modelled: a full tank backs up, as the engine already does.
+

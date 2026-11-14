@@ -10674,10 +10674,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "stone_channel_kit",
@@ -10702,10 +10705,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "stone_channel_corner_kit",
@@ -10730,10 +10736,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "stone_channel_tee_kit",
@@ -10758,10 +10767,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "clay_pipe_run_kit",
@@ -10786,10 +10798,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "clay_pipe_elbow_kit",
@@ -10814,10 +10829,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "clay_pipe_tee_kit",
@@ -10842,10 +10860,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "iron_pipe_kit",
@@ -10982,10 +11003,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "stone_raised_cistern_kit",
@@ -11010,10 +11034,13 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_clay_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, locked until the Deep-well pump of PR 4 can fill it. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "horn",

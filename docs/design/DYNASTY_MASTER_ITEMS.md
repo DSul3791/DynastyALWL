@@ -1802,30 +1802,30 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 1350 | `primitive_well` | Primitive - Well |  |  | ADD | A log-lined well with a windlass and clay pot. Gives a household's water each day. **Plumbing PR 1 (Dave 14 Nov 2026 06:35Z, three well tiers): blueprint 340, state 420; 100 L a game day, 6 m down; cost 8 Log, 4 Twine, 1 Clay - Pot; draws 3 L a haul. PROVISIONAL (docs/design/PLUMBING_DESIGN.md s4).** |
 | 713 | `stone_well` | Improved - Well |  |  | UPDATE | A stone well with a windlass and bucket. E draws ten litres. **Plumbing PR 1 (Dave 14 Nov 2026 06:35Z): renamed from "Well", id, number, blueprint 128 and cost kept (stones, clay mortar, planks); 200 L a game day, 25 m down; unlocked. PROVISIONAL.** |
 | 1351 | `advanced_well` | Advanced - Well |  |  | ADD | A wide round stone well under a four-posted roof. Gives a village's water each day. **Plumbing PR 1: blueprint 341, state 421; twice the size, 600 L a game day, 40 m down; cost 60 Cobblestone, 16 Clay mortar, 12 Plank, 4 Log, 16 Bark shingle, 2 Rope, 2 Bucket. PROVISIONAL.** |
-| 715 | `wooden_hand_pump` | Wooden - Hand pump |  |  | KEEP | An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough. |
+| 715 | `wooden_hand_pump` | Wooden - Hand pump |  |  | UPDATE | An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough. **Plumbing PR 2 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
 | 717 | `iron_hand_pump` | Iron - Hand pump |  |  | KEEP | A cast-iron pitcher pump. Hold E to pump water into a bucket or trough. |
 | 719 | `log_trough` | Log - Trough |  |  | KEEP | A hollowed log that holds sixty litres. Animals drink from it. |
-| 721 | `wooden_trough` | Wooden - Trough |  |  | KEEP | A plank trough that holds a hundred litres. Can sit at a channel's end. |
-| 723 | `wooden_channel` | Wooden - Channel |  |  | KEEP | An open plank flume on trestles, two metres long. Water runs downhill along it. |
-| 725 | `wooden_channel_corner` | Wooden - Channel corner |  |  | KEEP | A flume that turns a quarter circle. |
-| 727 | `wooden_channel_tee` | Wooden - Channel tee |  |  | KEEP | A flume that splits its water two ways. |
-| 729 | `wooden_sluice` | Sluice |  |  | KEEP | A flume with a gate. E opens or shuts it. |
+| 721 | `wooden_trough` | Wooden - Trough |  |  | UPDATE | A plank trough that holds a hundred litres. Can sit at a channel's end. **Plumbing PR 2 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 723 | `wooden_channel` | Wooden - Channel |  |  | UPDATE | An open plank flume on trestles, two metres long. Water runs downhill along it. **Plumbing PR 2 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 725 | `wooden_channel_corner` | Wooden - Channel corner |  |  | UPDATE | A flume that turns a quarter circle. **Plumbing PR 2 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 727 | `wooden_channel_tee` | Wooden - Channel tee |  |  | UPDATE | A flume that splits its water two ways. **Plumbing PR 2 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 729 | `wooden_sluice` | Sluice |  |  | UPDATE | A flume with a gate. E opens or shuts it. **Plumbing PR 2 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
 | 1352 | `wooden_pipe` | Wooden - Pipe |  |  | ADD | A bored log, two metres long. A closed pipe that carries water downhill. **Plumbing PR 2 (Dave 14 Nov 2026 06:30Z: "pipes were originally made from wood"): blueprint 342, state 423; 60 L a minute under head; cost 1 Log, 1 Twine. PROVISIONAL.** |
 | 1353 | `wooden_pipe_elbow` | Wooden - Pipe elbow |  |  | ADD | A bored log pipe that turns a quarter circle. **Plumbing PR 2: blueprint 343, state 424; cost 1 Log, 1 Twine. PROVISIONAL.** |
 | 1354 | `wooden_pipe_tee` | Wooden - Pipe tee |  |  | ADD | A bored log pipe that splits its water two ways. **Plumbing PR 2: blueprint 344, state 425; cost 2 Log, 1 Twine. PROVISIONAL.** |
-| 732 | `stone_trough` | Stone - Trough |  |  | KEEP | A carved stone trough that holds two hundred litres. |
-| 734 | `stone_channel` | Stone - Channel |  |  | KEEP | An open stone channel, two metres long. Carries more than a flume. |
-| 736 | `stone_channel_corner` | Stone - Channel corner |  |  | KEEP | A stone channel that turns a quarter circle. |
-| 738 | `stone_channel_tee` | Stone - Channel tee |  |  | KEEP | A stone channel that splits its water two ways. |
-| 740 | `clay_pipe_run` | Clay - Pipe |  |  | KEEP | A closed clay pipe, two metres long. Drain it before a hard frost. |
-| 742 | `clay_pipe_elbow` | Clay - Pipe elbow |  |  | KEEP | A clay pipe that turns a quarter circle. |
-| 744 | `clay_pipe_tee` | Clay - Pipe tee |  |  | KEEP | A clay pipe that splits its water two ways. |
+| 732 | `stone_trough` | Stone - Trough |  |  | UPDATE | A carved stone trough that holds two hundred litres. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 734 | `stone_channel` | Stone - Channel |  |  | UPDATE | An open stone channel, two metres long. Carries more than a flume. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 736 | `stone_channel_corner` | Stone - Channel corner |  |  | UPDATE | A stone channel that turns a quarter circle. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 738 | `stone_channel_tee` | Stone - Channel tee |  |  | UPDATE | A stone channel that splits its water two ways. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 740 | `clay_pipe_run` | Clay - Pipe |  |  | UPDATE | A closed clay pipe, two metres long. Drain it before a hard frost. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 742 | `clay_pipe_elbow` | Clay - Pipe elbow |  |  | UPDATE | A clay pipe that turns a quarter circle. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 744 | `clay_pipe_tee` | Clay - Pipe tee |  |  | UPDATE | A clay pipe that splits its water two ways. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
 | 746 | `iron_pipe` | Iron - Pipe |  |  | KEEP | A closed iron pipe, two metres long. A force pump can push water up it. |
 | 748 | `iron_pipe_elbow` | Iron - Pipe elbow |  |  | KEEP | An iron pipe that turns a quarter circle. |
 | 750 | `iron_tap` | Tap |  |  | KEEP | A shut-off tap for a pipe's end. E opens or shuts it. |
 | 752 | `iron_deep_well_pump` | Deep-well pump |  |  | KEEP | A force pump for a stone well. Lifts from deep and pushes water up an iron pipe. |
-| 754 | `stone_cistern` | Cistern |  |  | KEEP | A stone tank that holds two thousand litres, with an overflow at the rim. |
-| 756 | `stone_raised_cistern` | Raised cistern |  |  | KEEP | A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity. |
+| 754 | `stone_cistern` | Cistern |  |  | UPDATE | A stone tank that holds two thousand litres, with an overflow at the rim. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
+| 756 | `stone_raised_cistern` | Raised cistern |  |  | UPDATE | A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity. **Plumbing PR 3 (14 Nov 2026): live in the water network, locked until the Deep-well pump of PR 4 can fill it (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
 | 771 | `kiln` | Kiln |  |  | UPDATE | **APPROVED: batch charcoal from logs (s2.6).** A domed brick kiln. Fires bricks twice as well as a campfire and burns wood to charcoal. |
 | 773 | `tanning_rack` | Tanning rack |  |  | KEEP | **APPROVED: tanning.** A log frame to stretch scraped hides on while bark tannin turns them to leather. |
 | 775 | `drying_rack` | Drying rack |  |  | UPDATE | **APPROVED: adds hide drying (s3.4).** A rack of sticks in the air and sun. Dries meat into jerky and fruit to keep. |
