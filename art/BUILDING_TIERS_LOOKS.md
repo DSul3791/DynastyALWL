@@ -21,10 +21,9 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 ## Roofs (#973)
 
 - Straight roofs above Crude (GOALS-REPAIR A-35/A-36, 14 Nov 2026): `piece_look.tier_panel(kind, slope_deg)`, the Crude panel's shape (no posts, 2 m wide over a 2 m run) in the tier's `ROOF_SPEC` cover: boards, courses with proud low edges, tile ribs on the clay tiers, three rafters, a fascia; `<Tier> - Roof 45` and `<Tier> - Roof 65` (`*_roof_65`, `roof_65`). Placeholder look, NEEDS PLAYER VERIFICATION.
-- Corners: `piece_look.pitched_roof(kind, true)`, driven by `ROOF_SPEC` (cover colour, rows of shingles or tiles, thickness, underside material, ridge style, posts, verges, post width). Pitch `ROOF_PITCH` 0.3 rad, half span 1.2 m, eaves at 2.45 m.
-- Corners are hip ends (`*_roof_corner`), built by clipping the same rows (`_clip_band`), so the courses line up with the straight piece.
+- Corners (GOALS-REPAIR A-37, 14 Nov 2026): `piece_look.roof_hip(kind, slope_deg)`, a hip over the 2 m corner square where two wall tops, ceiling edges or panel ends meet, no posts: two triangular faces at 45 or 65 degrees (`*_roof_corner`, `*_roof_corner_65`) in the tier's `ROOF_SPEC` cover (thatch for Crude), a cap along the hip, eaves along both low edges, one convex collider per face. Placeholder look, NEEDS PLAYER VERIFICATION.
 - Rows are real geometry (no texture tiles): the edge of every course shows against the sky.
-- Triangle caps: default 300; clay-tile roofs (45 and 65) 350 and their corners 400 (`TILE_ROOFS` in `test_look_table.gd`).
+- Triangle caps: every roof panel and corner is under the default 300 (`test_look_table.gd`).
 - Crude keeps the older thatch builder (`thatch_roof`), now a sloped panel with no posts: `Crude - Roof 45` (`thatch_roof`) and `Crude - Roof 65` (`thatch_roof_65`), BUG-011; it rests on wall tops and ceiling edges (`placement_rules.gd` `roof_panel_spot`). The Crude doorway is an open frame with no door (BUG-010).
 
 ## Fortified (#989; world shots by Dino 10 Nov, passed)
@@ -38,7 +37,7 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 
 ## Icons
 
-Roof and corner icons are drawn from their looks (`tools/paint_look_icons.py`, `CORNER_VIEW`, `SHORTEN (0.1, 0.6, 0.3)`), not painted flat The roof panels (A-35/A-36) are not in that tool yet (no `tier_panel` in `tools/look_runtime.py`); their old gable icons wait for a PC re-render. Counts in `docs/ui/item_icons.md`.
+Roof and corner icons: neither the roof panels (A-35/A-36) nor the hip corners (A-37) are in `tools/paint_look_icons.py` yet (no `tier_panel` or `roof_hip` in `tools/look_runtime.py`); their old icons wait for a PC re-render. Counts in `docs/ui/item_icons.md`.
 
 ## Pictures (shared folder)
 

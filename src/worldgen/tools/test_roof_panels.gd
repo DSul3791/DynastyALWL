@@ -4,7 +4,8 @@ extends SceneTree
 # panel's end, rising or falling from it. Data (names, ids, numbers kept), the shared snap rules (both slopes x both anchored ends x both facings, the answer
 # snapping to itself, ceiling edges, a chain of panels, a ridge), the server's refusals (nothing to rest on, into the ground, a second on the same spot),
 # saved and loaded, the cover box under it, and the mesh and collider (no legs, the slab's two ends where the rules say). GOALS-REPAIR A-35/A-36: every
-# tier's roof above Crude is the same panel at 45 and 65 degrees (ids, numbers and states of the 45s kept), checked the same way (_tier_checks).
+# tier's roof above Crude is the same panel at 45 and 65 degrees (ids, numbers and states of the 45s kept), checked the same way (_tier_checks). A-37: every
+# tier's roof corner is a hip over a corner square, resting where two wall tops meet, its 45 or 65 shape following the panel beside it (_hip_checks).
 #   godot --headless --path . --script res://src/worldgen/tools/test_roof_panels.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -17,6 +18,10 @@ const KITS := {45: "thatch_roof_kit", 65: "thatch_roof_65"}
 # The tier roofs: id -> [tier, item number, blueprint number, state] of the 45 (all kept from the old gable on posts); the 65 is id + "_65".
 const TIERS := {"log_roof": ["Rustic", 469, 18, 52], "roof_section": ["Refined", 197, 3, 24], "stone_roof": ["Sturdy", 475, 38, 55],
 	"brick_roof": ["Superior", 481, 22, 58], "engineered_roof": ["Engineered", 877, 178, 219]}
+# The roof corners: id -> [blueprint name, state of the 45 shape, state of the 65 shape] (one item and blueprint each, two placed shapes, A-37).
+const CORNERS := {"thatch_roof_corner": ["Crude - Roof corner", 118, 385], "wooden_roof_corner": ["Refined - Roof corner", 119, 386],
+	"log_roof_corner": ["Rustic - Roof corner", 120, 387], "stone_roof_corner": ["Sturdy - Roof corner", 121, 388],
+	"brick_roof_corner": ["Superior - Roof corner", 122, 389], "engineered_roof_corner": ["Engineered - Roof corner", 220, 390]}
 
 var failures: int = 0
 
@@ -367,6 +372,146 @@ func _tier_checks(cfg: Dictionary) -> void:
 	check(_all_rows(again) == before and before.size() == TIERS.size() * 4, "every tier's walls and panels stand again after a save and a reload (%d rows)" % before.size())
 
 
+# A-37: each tier's roof corner rests where two wall tops meet at a corner (a wall along X and one turning the corner), covering the square between
+# them; its shape is its 45 row or its 65 twin: the panel beside it decides, else the wheel (mode). Same item and blueprint for both; saved and loaded.
+func _hip_checks(cfg: Dictionary) -> void:
+	var blueprints: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json")) as Dictionary)["blueprints"]
+	var wall_state: int = int(cfg["structures"]["wall_section"]["state"])
+	var walls: Array = [{"pos": Vector3(300.0, 10.3, 300.0), "state": wall_state, "yaw": 0.0}, {"pos": Vector3(299.0, 10.3, 301.0), "state": wall_state, "yaw": 90.0}]
+	var middle: Vector2 = Vector2(300.0, 301.0)   # the corner square between them: one run on from each wall top, rising +Z and +X (turned 180)
+	var top: float = 12.7
+
+	for id in CORNERS:
+		var base: Dictionary = cfg["structures"][id]
+		var twin_id: String = id + "_65"
+		var twin: Dictionary = cfg["structures"].get(twin_id, {})
+		var kit: String = str(base["kit"])
+		check(str(base["piece_kind"]) == Rules.ROOF_HIP_KIND and float(base["slope_deg"]) == 45.0 and str(base["slope_twin"]) == twin_id and int(base["state"]) == int(CORNERS[id][1]), "%s: a roof corner at 45 degrees, its 65 shape %s, state kept" % [id, twin_id])
+		check(str(twin.get("piece_kind", "")) == Rules.ROOF_HIP_KIND and float(twin.get("slope_deg", 0.0)) == 65.0 and str(twin.get("kit", "")) == kit and str(twin.get("item", "")) == str(base["item"]) and int(twin.get("state", 0)) == int(CORNERS[id][2]), "%s: the 65 shape is the same kit and item, state %d" % [twin_id, int(CORNERS[id][2])])
+		check(str(blueprints[id]["name"]) == str(CORNERS[id][0]) and str(Rules.structure_of_kit(cfg, kit)["kind"]) == id and not blueprints.has(twin_id), "%s: one blueprint (%s), no second one for the 65" % [id, str(CORNERS[id][0])])
+		var def: Dictionary = Rules.structure_of_kit(cfg, kit)
+		var r45: float = Rules.roof_panel_rise(base) * 0.5
+		var r65: float = Rules.roof_panel_rise(twin) * 0.5
+		var plain: Array = Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 0, walls)
+		check(plain.size() == 3 and str(plain[2]) == id and _near(plain[0], Vector3(middle.x, top + r45, middle.y)) and int(plain[1]) == 180, "%s: on the corner of two wall tops, no panel beside it, the wheel's first shape is 45 (%s)" % [id, str(plain)])
+		var steep: Array = Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 1, walls)
+		check(steep.size() == 3 and str(steep[2]) == twin_id and _near(steep[0], Vector3(middle.x, top + r65, middle.y)), "%s: the wheel turns it to its 65 shape (%s)" % [id, str(steep)])
+		check(_near(Rules.roof_hip_pick(cfg, def, steep[0], 1, walls)[0], steep[0]) and _near(Rules.roof_hip_pick(cfg, def, plain[0], 0, walls)[0], plain[0]), "%s: an answer snaps to itself" % id)
+		var snapped: Array = Rules.snap(cfg, kit, Vector3(300.2, 13.0, 300.8), 0, walls)
+		check(bool(snapped[2]) and snapped[0] == plain[0] and int(snapped[1]) == 180, "%s: snap puts it there too" % id)
+		check(Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 0, [walls[0]]).is_empty(), "%s: one wall top alone is no corner" % id)
+
+		for slope in [45, 65]:   # a panel already standing beside it (continuing the +Z face, one run along +X) sets the shape whatever the wheel says
+			var panel_kind: String = "thatch_roof" if slope == 45 else "thatch_roof_65"
+			var rise: float = Rules.roof_panel_rise(cfg["structures"][panel_kind]) * 0.5
+			var beside: Array = walls + [{"pos": Vector3(302.0, top + rise, 301.0), "state": int(cfg["structures"][panel_kind]["state"]), "yaw": 180.0}]
+			var want: String = id if slope == 45 else twin_id
+
+			for mode in [0, 1]:
+				var picked: Array = Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), mode, beside)
+				check(picked.size() == 3 and str(picked[2]) == want and absf((picked[0] as Vector3).y - (top + rise)) < 0.001, "%s: beside a Roof %d panel it takes %d degrees (wheel %d: %s)" % [id, slope, slope, mode, str(picked)])
+
+			var other: Array = walls + [{"pos": Vector3(300.0, top + rise, 303.0), "state": int(cfg["structures"][panel_kind]["state"]), "yaw": 270.0}]   # beside the other face: one run along +Z, rising +X
+			check(str(Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 1 if slope == 45 else 0, other)[2]) == want, "%s: so does a Roof %d panel beside its other face" % [id, slope])
+
+	# A real server: each corner on its own corner of two walls, by the wheel 45 or 65 in turn; the shape is saved and loads again.
+	var dir: String = "user://test_roof_panels_hips"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var server = _server(dir)
+	server.peer_connected_hello(1, "roofpanelkey3")
+	var x: float = 500.0
+	var n: int = 0
+
+	for id in CORNERS:
+		var kit: String = str(cfg["structures"][id]["kit"])
+		var mode: int = n % 2
+		var kind: String = id if mode == 0 else id + "_65"
+		server.report_position(1, Vector3(x, 10.0, 504.0))
+		server.place_piece(1, "wall_section_kit", Vector3(x, 10.0, 500.0), 0)
+		server.place_piece(1, "wall_section_kit", Vector3(x - 1.0, 10.0, 501.0), 90)
+		server.place_piece(1, kit, Vector3(x, 13.0, 501.0), 0, mode)
+		var placed: Array = _rows(server, kind)
+		var rise: float = Rules.roof_panel_rise(cfg["structures"][kind]) * 0.5
+		check(placed.size() == 1 and _near(placed[0], Vector3(x, 12.4 + rise, 501.0)), "%s: placed by the wheel's %s shape on the corner of two walls (%s)" % [id, "45" if mode == 0 else "65", str(placed)])
+		server.place_piece(1, kit, Vector3(x, 13.0, 501.0), 0, mode)
+		check(_count(server, id) + _count(server, id + "_65") == 1, "%s: a second corner on the same square is refused" % id)
+		x += 10.0
+		n += 1
+
+	var before: Array = _all_rows(server)
+	server._dirty = true
+	server.save()
+	var again = _server(dir)
+	again.peer_connected_hello(1, "roofpanelkey3")
+	check(_all_rows(again) == before and before.size() == CORNERS.size() * 3, "every corner keeps its shape after a save and a reload (%d rows)" % before.size())
+
+	# The looks: no posts, two convex faces, solid on each face, open air over and under them.
+	for id in CORNERS:
+		for kind in [id, id + "_65"]:
+			var def: Dictionary = cfg["structures"][kind]
+			var look: String = str(def["look"])
+			check(LookTable.has_look(look), "%s is in the look table" % look)
+			var node: Node3D = LookTable.build(look)
+			get_root().add_child(node)
+			var half_rise: float = Rules.roof_panel_rise(def) * 0.5
+			var box: AABB = _mesh_box(node)
+			check(box.position.x >= -1.2 and box.end.x <= 1.2 and box.position.z >= -1.2 and box.end.z <= 1.2 and box.position.y >= -half_rise - 0.3 and box.end.y <= half_rise + 0.3, "%s: the mesh is the corner square and nothing else, no posts (%s)" % [look, box])
+			check(node.find_children("*", "CollisionShape3D", true, false).size() == 2, "%s: two colliders, one per face" % look)
+			var face_z: Vector3 = Vector3(-1.0 / 3.0, -half_rise / 3.0, 1.0 / 3.0)    # the middle of the face rising toward -Z
+			var face_x: Vector3 = Vector3(1.0 / 3.0, -half_rise / 3.0, -1.0 / 3.0)    # and of the one rising toward -X
+			check(_hull_at(node, face_z) and _hull_at(node, face_x), "%s: solid on both faces" % look)
+			check(not _hull_at(node, face_z + Vector3(0.0, 0.5, 0.0)) and not _hull_at(node, Vector3(0.0, -half_rise - 0.5, 0.0)) and not _hull_at(node, Vector3(0.9, -half_rise * 0.5, 0.9)), "%s: open air over a face, under the corner and over the low outer corner" % look)
+			node.queue_free()
+
+
+# Whether `point` (in `node`'s space) is inside any convex collider of `node`: inside every plane of its hull (the planes through three of its points
+# with all the others on one side).
+func _hull_at(node: Node3D, point: Vector3) -> bool:
+	for child in node.find_children("*", "CollisionShape3D", true, false):
+		var cs: CollisionShape3D = child
+		var hull: ConvexPolygonShape3D = cs.shape as ConvexPolygonShape3D
+
+		if hull == null:
+			continue
+
+		var local: Vector3 = (node.global_transform.affine_inverse() * cs.global_transform).affine_inverse() * point
+		var pts: PackedVector3Array = hull.points
+		var inside: bool = true
+
+		for i in pts.size():
+			for j in range(i + 1, pts.size()):
+				for k in range(j + 1, pts.size()):
+					var plane: Plane = Plane(pts[i], pts[j], pts[k])
+
+					if plane.normal.length() < 0.5:
+						continue
+
+					var above: int = 0
+					var below: int = 0
+
+					for q in pts:
+						var d: float = plane.distance_to(q)
+						above += 1 if d > 0.001 else 0
+						below += 1 if d < -0.001 else 0
+
+					if above > 0 and below > 0:
+						continue   # not a face of the hull
+
+					var side: float = plane.distance_to(local)
+
+					if (above == 0 and side > 0.001) or (below == 0 and side < -0.001):
+						inside = false
+
+		if inside:
+			return true
+
+	return false
+
+
 func _look_checks(cfg: Dictionary) -> void:
 	var kinds: Array = ["thatch_roof", "thatch_roof_65"]
 
@@ -398,6 +543,7 @@ func _run() -> void:
 	_snap_checks(cfg)
 	_server_checks()
 	_tier_checks(cfg)
+	_hip_checks(cfg)
 	_look_checks(cfg)
 	print("test_roof_panels: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

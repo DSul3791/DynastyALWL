@@ -151,7 +151,7 @@ func _init() -> void:
 	check(not bool(Rules.snap(cfg, "thatch_roof_kit", Vector3(50.0, 10.0, 50.0), 0, thatch_base)[2]), "a Crude roof panel does not stand on a foundation: it rests on a wall top (test_roof_panels.gd)")
 	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
 
-	# Joins: a wall continues a wall, turns the corner at its end, stands on a floor edge; floors and roofs meet edge to edge.
+	# Joins: a wall continues a wall, turns the corner at its end, stands on a floor edge; floors meet edge to edge.
 	var wall_rows: Array = [{"pos": Vector3(20.0, 10.0, 20.0), "state": 22, "yaw": 0.0}]
 	var straight: Array = Rules.snap(cfg, "wall_section_kit", Vector3(22.3, 10.0, 20.2), 0, wall_rows)
 	check(is_equal_approx(straight[0].x, 22.0) and is_equal_approx(straight[0].z, 20.0) and int(straight[1]) == 0, "a wall continues a wall end to end (%s)" % str(straight))

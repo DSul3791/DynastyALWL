@@ -93,12 +93,7 @@ func _run() -> void:
 		check(_inside(box, Vector3(-half, -0.01, -half), Vector3(half, 2.62, half)) and box.end.y > 2.55, "%s: in its footprint, 2.6 m high (%s)" % [look, box])
 		check(_solid_at(node, Vector3(0.0, 0.1, 0.0)) and _solid_at(node, Vector3(0.0, 2.5, 0.0)), "%s: solid top to bottom" % look)
 
-	for kind in ["thatch", "wooden", "log", "stone", "brick"]:
-		var look: String = kind + "_roof_corner"
-		var node: Node3D = _build(look)
-		var box: AABB = _mesh_box(node)
-		check(_inside(box, Vector3(-1.36, -0.01, -1.36), Vector3(1.36, 3.0, 1.36)) and box.end.y > 2.5, "%s: the straight roof's 2.4 m square (%s)" % [look, box])
-		check(_solid_at(node, Vector3(0.0, 2.55, 0.0)) and _solid_at(node, Vector3(1.0, 2.55, 1.0)), "%s: a roof to stand on" % look)
+	# The roof corners are hips over the 2 m corner square since GOALS-REPAIR A-37, no posts: checked with their 65 shapes in test_roof_panels.
 
 	print("test_buildable_looks_b1bc: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

@@ -9016,10 +9016,12 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-37 (14 Nov 2026, PROVISIONAL): a hip over the corner square with no posts, at 45 or 65 degrees (the panel beside it decides, else the mouse wheel); the 65 shape is a twin structure row of the same item and blueprint. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "wooden_roof_corner_kit",
@@ -9044,10 +9046,12 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-37 (14 Nov 2026, PROVISIONAL): a hip over the corner square with no posts, at 45 or 65 degrees (the panel beside it decides, else the mouse wheel); the 65 shape is a twin structure row of the same item and blueprint. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "log_roof_corner_kit",
@@ -9072,10 +9076,12 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-37 (14 Nov 2026, PROVISIONAL): a hip over the corner square with no posts, at 45 or 65 degrees (the panel beside it decides, else the mouse wheel); the 65 shape is a twin structure row of the same item and blueprint. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "stone_roof_corner_kit",
@@ -9100,10 +9106,12 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-37 (14 Nov 2026, PROVISIONAL): a hip over the corner square with no posts, at 45 or 65 degrees (the panel beside it decides, else the mouse wheel); the 65 shape is a twin structure row of the same item and blueprint. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "brick_roof_corner_kit",
@@ -9128,10 +9136,12 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-37 (14 Nov 2026, PROVISIONAL): a hip over the corner square with no posts, at 45 or 65 degrees (the panel beside it decides, else the mouse wheel); the 65 shape is a twin structure row of the same item and blueprint. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "log_bench_kit",
@@ -12791,10 +12801,12 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-37 (14 Nov 2026, PROVISIONAL): a hip over the corner square with no posts, at 45 or 65 degrees (the panel beside it decides, else the mouse wheel); the 65 shape is a twin structure row of the same item and blueprint. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "fortified_foundation_kit",
