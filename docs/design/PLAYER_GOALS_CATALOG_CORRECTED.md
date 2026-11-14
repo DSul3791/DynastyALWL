@@ -13,7 +13,7 @@
   - **Verdicts changed:** the 22 WP-METAL R2 rows and `craft:iron_ingot` are no longer blocked: 17 are OK and 6 are FIX (they carry text corrections).
   - **Refs verified:** `build:improved_smelter` and the two Copper tool rows have their ids checked.
   - **Map goals:** the two map goals have their events from PR #1105.
-  - **Second recheck on dev `d4b2473` (R9 follow-up; static):** every row blocked by WP-METAL R3, WP-METAL R4, WP-R1B, the `got_item` gap (#1100) or the `fire_tier` gap (#1095) whose goal item or structure is reachable from an empty character is no longer blocked: 258 rows, 123 OK and 135 FIX.
+  - **Second recheck on dev `d4b2473` (R9 follow-up; static):** every row blocked by WP-METAL R3, WP-METAL R4, WP-R1B, the `got_item` gap (#1100) or the `fire_tier` gap (#1095) whose goal item or structure is reachable from an empty character is no longer blocked: 258 rows, 119 OK and 139 FIX (123 and 135 before the A-35 roof rename).
     - "Reachable" comes from the reach model in `tools/encyclopedia_reach.py`, run with the smelting jobs added (that tool does not know the self-running smelters yet). It is a static read of the data, not play. Every such row is NEEDS PLAYER VERIFICATION.
     - The correction text of those rows was spot-checked, not re-read row by row, against the final R3 and R4 data. The review of #1108 found stale R3/R4 text in `build:large_forge`, `craft:steel_ingot` and `build:blacksmithy`; it is corrected, and the 252 build rows' GAP-PRIM-F1 note now says #1095 is in dev.
     - The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/r9_reach_with_smelters.py . out.json` (it wraps `tools/encyclopedia_reach.py` and adds the smelting jobs; 1,072 items reachable on `d4b2473`).
