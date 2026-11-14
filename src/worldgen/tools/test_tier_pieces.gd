@@ -56,6 +56,11 @@ func _have(items, id: String) -> int:
 	return items.inventory_of(1).count_of(items.table.number_of(id))
 
 
+# How many of a cost's material came back from a take-down: a group cost is refunded as the group's lowest member.
+func _have_back(items, id: String) -> int:
+	return items.inventory_of(1).count_of(items._refund_number(items.table.number_of(id)))
+
+
 func _clear(items) -> void:
 	var inv = items.inventory_of(1)
 
@@ -167,7 +172,8 @@ func _server_checks() -> void:
 
 		items.report_position(1, spot + Vector3(0.0, 0.0, -1.5))   # within the take-down reach (3.5 m)
 		items.action(1, Net.ACT_PICKUP, built[0], 0, 0, Vector3.ZERO)
-		check(_standing(items, id).is_empty() and p[5].all(func(c): return _have(items, str(c[0])) == int(c[1])), "%s: taken down, every material comes back" % id)
+		# A group cost comes back as its lowest member (server_items._refund_number, item_table.spend_order): the Gate's 2 Hinges return as Bronze hinges.
+		check(_standing(items, id).is_empty() and p[5].all(func(c): return _have_back(items, str(c[0])) == int(c[1])), "%s: taken down, every material comes back" % id)
 		items.report_position(1, Vector3(x, 10.0, 300.0))
 		items.action(1, Net.ACT_PLACE_BLUEPRINT, int(p[2]), 0, 0, spot)
 		check(_standing(items, id).size() == 1, "%s: built again from the refund" % id)
