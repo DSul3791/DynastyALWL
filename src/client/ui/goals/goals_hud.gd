@@ -2,10 +2,12 @@ extends PanelContainer
 
 # The upper-right Goals box (docs/design/PLAYER_JOURNAL_GOALS_UI.md decision 3, GA-90/91): a thin-line rectangle with the heading "Goals" and the first two
 # unfinished goals in the authored order as bullet titles, one when only one is left, none (hidden) when all are done. The deliberate minimalist
-# exception to the Inventory/Crafting look: no trim, icons, progress, coins, hints or buttons. It sits under the Comfort/Rested line (inventory_view.gd
+# exception to the Inventory/Crafting look: no trim, icons, progress bar, coins, hints or buttons. A goal with an amount shows its count after its title
+# ("Gather plant fibre 3/12", GoalBook.label; Dave 14 Nov 2026). It sits under the Comfort/Rested line (inventory_view.gd
 # _comfort_label, top 18 px, 26 px text) and under the food effect lines when they show (food_effects_ui.gd), and hides while a screen (inventory, character, Journal, a talk) is open. View only: it tracks nothing.
 
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
+const GoalBook := preload("res://src/client/ui/goals/goal_book.gd")
 const SHOWN := 2
 const TOP_PX := 70.0          # clear of the Comfort/Rested line (18 + about 36 px tall) on the 1920 x 1080 canvas; lower while food effect lines show (from 56)
 const RIGHT_PX := 20.0        # the comfort line's right edge
@@ -64,7 +66,7 @@ static func titles(book) -> PackedStringArray:
 	var out: PackedStringArray = PackedStringArray()
 
 	for row in book.unfinished(SHOWN):
-		out.append(str(row["title"]))
+		out.append(GoalBook.label(row))
 
 	return out
 
