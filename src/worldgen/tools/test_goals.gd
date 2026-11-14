@@ -171,6 +171,8 @@ func _init() -> void:
 	check(done("axe"), "making the stone axe completes the axe goal")
 	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)
 	items.report_position(1, Vector3(8.0, 10.0, 0.0))
+	var kindling_fell: int = count("kindling")
+	var fell_lines: int = said.size()
 
 	for n in range(200):
 		if standing.is_empty():
@@ -179,7 +181,7 @@ func _init() -> void:
 		items._last_hit.clear()
 		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
-	check(standing.is_empty() and done("fell") and not said.any(func(t): return t.begins_with("Goal done: Fell") and not t.contains("You earn 5 copper.")), "felling a tree completes the fell goal and pays 5 copper, no kindling (coins only)")
+	check(standing.is_empty() and done("fell") and count("kindling") == kindling_fell and said.slice(fell_lines).any(func(t): return t.begins_with("Goal done: Fell a tree") and t.contains("You earn 5 copper.")), "felling a tree completes the fell goal and pays 5 copper, no kindling (coins only)")
 	# The logs a felled tree breaks into by itself are its feller's gathering, once; the record clients get does not name the feller.
 	var trunk_id: int = -1
 
