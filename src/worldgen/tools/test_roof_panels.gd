@@ -399,8 +399,8 @@ func _hip_checks(cfg: Dictionary) -> void:
 		var steep: Array = Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 1, walls)
 		check(steep.size() == 3 and str(steep[2]) == twin_id and _near(steep[0], Vector3(middle.x, top + r65, middle.y)), "%s: the wheel turns it to its 65 shape (%s)" % [id, str(steep)])
 		check(_near(Rules.roof_hip_pick(cfg, def, steep[0], 1, walls)[0], steep[0]) and _near(Rules.roof_hip_pick(cfg, def, plain[0], 0, walls)[0], plain[0]), "%s: an answer snaps to itself" % id)
-		var snapped: Array = Rules.snap(cfg, kit, Vector3(300.2, 13.0, 300.8), 0, walls)
-		check(bool(snapped[2]) and snapped[0] == plain[0] and int(snapped[1]) == 180, "%s: snap puts it there too" % id)
+		var by_snap: Array = Rules.snap(cfg, kit, Vector3(300.2, 13.0, 300.8), 0, walls)
+		check(bool(by_snap[2]) and by_snap[0] == plain[0] and int(by_snap[1]) == 180, "%s: snap puts it there too" % id)
 		check(Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 0, [walls[0]]).is_empty(), "%s: one wall top alone is no corner" % id)
 		check(str(Rules.roof_hip_pick(cfg, def, steep[0], 0, walls)[2]) == twin_id and str(Rules.roof_hip_pick(cfg, def, plain[0], 1, walls)[2]) == id, "%s: at exactly one shape's middle (a saved plan replayed) that shape, whatever the wheel" % id)
 		var upper: Array = walls + [{"pos": Vector3(300.0, 12.7, 300.0), "state": wall_state, "yaw": 0.0}, {"pos": Vector3(299.0, 12.7, 301.0), "state": wall_state, "yaw": 90.0}]
