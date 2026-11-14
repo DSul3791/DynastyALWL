@@ -8471,16 +8471,12 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		return false
 
 	var hammer: int = _heaviest_hammer_slot(inv)
-	# A garden plot is laid out with the hoe too (Dave 14 Nov 2026, the hoe's Garden mode; master s2.1 "Create Garden Plot"). PROVISIONAL: a working hoe on the
-	# hand bar stands in for a hammer for plot blueprints only, at the lightest hammer's tier.
-	var plot_row: bool = bool(_structures.get(str(row["structure"]), {}).get("plot", false))
-	var hoe_plot: bool = hammer < 0 and plot_row and int(row.get("hammer", 1)) <= 1 and _has_tool(inv, "hoe")
 
-	if hammer < 0 and not hoe_plot:
-		_say(peer, "You need a hammer or a hoe in your hand bar to lay out a garden plot." if plot_row else "You need a hammer in your hand bar to build from a blueprint.")
+	if hammer < 0:
+		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
 		return false
 
-	if hammer >= 0 and int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
+	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
 		_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
 		return false
 

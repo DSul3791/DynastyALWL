@@ -5,20 +5,21 @@ Thread "Add gardening to the Hoe". Dave's words (14 Nov 2026):
 - "Trees should drop some seeds when cut down. a random number of seeds between 1 and 5 seeds per tree."
 - "the hoe should work very much like the Valheim Hoe plus the plugin plant easy and plant everything." This is a feel reference only; the code and art are our own.
 - "ground leveling currently works but its to small an area and its too week"; "make the ground level with where you are standing and if you are standing on say a foundation it make the ground just a little bit below your feet".
+- Later the same day: "There doesn't actually need to be garden plots. It should just till the soil so you can put seeds in the ground. Look up the way ValHeim does it."
 
-The master items catalog (s2.1) already lists the hoe's "Create Garden Plot" and "Plant" modes.
+The master items catalog (s2.1) lists the hoe's "Create Garden Plot" and "Plant" modes. Following Dave's later ruling, the hoe no longer lays out plots: tilling is how it makes garden ground. The garden plot items and blueprints are unchanged and are still built with the hammer.
+
+**How Valheim does it (feel reference).** The Cultivator's right-click menu has Cultivate, which turns the ground under the cursor into dark tilled soil, and then the seeds you carry. A seed can only go on cultivated ground, and a green or red ghost shows whether it fits with enough space around it. The Plant Easily mod adds rows and grids of plants at once. Ours: Till turns a metre of ground into a bed, and a seed clicked on open ground in Garden mode tills it and sows it in the same click (G-1). The rows, grids and green or red preview are item 4 below.
 
 ## What is built
-1. **Garden mode (PR #1119).** The hoe's right-click list gains Garden. Choosing it opens a second list: the garden plots you know, then what the pack can plant, with counts.
-   - Seeds go in a tilled bed or garden plot.
+1. **Garden mode (PR #1119).** The hoe's right-click list gains Garden. Choosing it opens a second list of what the pack can plant, with counts.
+   - Seeds go in a tilled bed (or a garden plot built with the hammer). Seeds clicked on open ground till it first.
    - Dug-up bushes and tree seeds go in open ground.
    - The client sends the existing ACT_SOW / ACT_TILL / ACT_PLANT_BUSH, so there is no protocol change. The server rules on reach, season, ground and spacing.
 2. **Levelling (PR #1119).** Smooth levels a 1 m grid within 3 m to the ground under your feet. When you stand on a piece (0.2 m or more above the ground, such as a foundation), it levels to 0.1 m under your feet.
    - Heights are read through the saved dig/fill log, so strokes add up and stop once level.
    - Constants are in `src/stream/server_items.gd` (`SMOOTH_REACH_M`, `LEVEL_*`).
-3. **Garden plots with the hoe.**
-   - Picking a plot in the Garden list shows its ghost, as with the hammer, and left click lays it out.
-   - The server accepts a hoe on the hand bar for plot blueprints of hammer tier 1. Other plots still need their hammer.
+3. **No garden plots with the hoe (Dave's later ruling).** PR #1123 let the hoe lay out plot blueprints. That code is deleted (decision 61): the Garden list holds only what can be planted, and a plot blueprint needs a hammer, as every blueprint does.
 4. **Rows and grids with a preview.**
    - The mouse wheel picks one cell, a row of 5 along the way you face, 3 by 3 or 5 by 5 (`FarmRules.GARDEN_GRIDS`).
    - Green markers show where a click will plant, red where it will not.
@@ -39,8 +40,7 @@ These are PROVISIONAL values the thread or the coordinator chose under Dave's st
 |---|---|---|
 | G-1 | A seed clicked on open ground tills a bed there and then sows it, with no second click. | `FarmRules.garden_action`, `held_item._garden_here` |
 | G-2 | Levelling reach 3 m (was 1.5); up to 4 edits a stroke of up to 0.5 m each (was 0.25), with 2.5 m spheres. On a piece, it levels to 0.1 m under the feet, at most 1.5 m above the ground under them. The soil is free (not volume balanced), Valheim-style. | `server_items.gd` `SMOOTH_REACH_M`, `LEVEL_MAX_OPS`, `LEVEL_MAX_M`, `LEVEL_SPHERE_M`, `LEVEL_BELOW_PIECE_M`, `LEVEL_MAX_RAISE_M` |
-| G-3 | The Garden list holds plots first, then seeds, bushes and tree seeds in pack order. | `held_item._hoe_menu_choose` |
-| G-5 | The hoe lays out garden plot blueprints. The Thatch plot (hammer tier 1) needs no hammer; plots of a higher tier keep their hammer. | `server_items._can_blueprint` |
+| G-3 | The Garden list holds seeds, bushes and tree seeds in pack order. | `held_item._hoe_menu_choose` |
 | G-6 | Grid sizes are one, a row of 5, 3 by 3 and 5 by 5. Seeds go 1 m apart and bushes 2 m apart. | `FarmRules.GARDEN_GRIDS`, `SEED_SPACING_M`, `BUSH_SPACING_M` |
 | G-7 | Client planting reach is 3.7 m from the feet, inside the server's 4 m. | `held_item.GARDEN_REACH_M` |
 | G-8 | Garden pacing: tills 600 ms apart (the server's hoe pace is 500 ms), sows 150 ms apart. A sow waits up to 3 s for the bed its till asked for. | `FarmRules.GARDEN_*_MSEC` |
@@ -56,5 +56,6 @@ The coordinator answered these while you were away. All are provisional, and eac
 
 1. **Fantasy trees drop no seeds.** Mirrorbark, wardpine, hearthwood, everember and the witness tree give no seeds when felled, because magic content is deferred (G-10). Say if they should drop seeds now, and what the seed is called.
 2. **Herbs and flowers are not plantable yet.** The Planter box, Stone - Planter and Flower pot can be built, but nothing can be planted in them, because the catalog has no herb or flower seed or cutting item. Adding those items needs your go, since the catalog is fixed.
-3. **Every gardening value is assumed.** The table above (G-1 to G-3 and G-5 to G-12) lists each number and name we chose: auto-sow on open ground, levelling reach and strength, list order, which plots the hoe lays out, grid sizes and spacing, reach, pacing, the ten new seed names, tree spacing and the per-log seed roll. G-4 is the coordinator's ruling that a tree's own fruit or nut is its seed.
+3. **Every gardening value is assumed.** The table above (G-1 to G-3 and G-6 to G-12; G-5 is withdrawn) lists each number and name we chose: auto-sow on open ground, levelling reach and strength, list order, grid sizes and spacing, reach, pacing, the ten new seed names, tree spacing and the per-log seed roll. G-4 is the coordinator's ruling that a tree's own fruit or nut is its seed.
 4. **Planting now counts as a use in the item check.** Crop seeds, dug-up bushes and felled tree seeds no longer show up as dead ends in `validate_items`, so that warning lists only items with no use at all.
+5. **The hoe makes no garden plots (your ruling).** It tills, and seeds go into the tilled ground. Plots remain in the catalog and are built with the hammer. If you want plots gone from the catalog too, that is your call.
