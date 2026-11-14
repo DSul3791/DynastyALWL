@@ -71,7 +71,7 @@ for kind, d in structs.items():
         continue
     if kit.get("retired") and kind not in live_struct_of_bp and kind in toggled:
         continue
-    if kind in twins.values() and any(twin == kind and base in live_struct_of_bp for base, twin in twins.items()):
+    if any(twin == kind and base in live_struct_of_bp and structs[base].get("kit") == d["kit"] for base, twin in twins.items()):   # same kit as its base
         continue
 
     if kit.get("retired") and kind not in live_struct_of_bp and kind in KNOWN_OPEN:
