@@ -121,10 +121,10 @@ static func _make(recipes, table, number: int, times: int, ctx: Dictionary, stat
 static func _makers(recipes, item: int, ctx: Dictionary) -> Array:
 	var out: Array = []
 
-	for number in recipes.numbers():
+	for number in recipes.makers_of(item):
 		var r: Dictionary = recipes.recipe(number)
 
-		if int(r["gives"][0]) == item and (bool(r["known"]) or bool(ctx["free"]) or (ctx.has("known") and bool((ctx["known"] as Callable).call(r)))):
+		if (bool(r["known"]) or bool(ctx["free"]) or (ctx.has("known") and bool((ctx["known"] as Callable).call(r)))):
 			out.append(number)
 
 	return out
