@@ -34,6 +34,9 @@ uniform float gloom = 0.0;               // 0 clear, 1 storm: sky and clouds tur
 uniform float night = 0.0;               // 0 day .. 1 night: stars (day_cycle.gd)
 uniform float flash = 0.0;               // lightning: lights the clouds from within (weather_look.gd)
 uniform float rainbow = 0.0;             // 0 none .. 1 a clear bow on a passing shower (weather_look.gd, art_weather_light.md 4)
+uniform float fog_veil = 0.0;            // share of the sky the fog hides (Environment.fog_sky_affect, weather_look.gd), for the faint disc
+uniform float fog_disc = 0.35;           // the faint sun or moon disc through deep fog: its brightness over the fog (fog_look.gd DISC)
+uniform float fog_disc_rad = 0.028;      // and its soft radius (radians)
 
 // No sine in the hash: stays exact for large coordinates.
 float hash(vec2 p) {
@@ -212,6 +215,13 @@ void sky() {
 		COLOR = rainbow_on(COLOR, EYEDIR);
 		if (night > 0.0 && EYEDIR.y > 0.0) {
 			COLOR += stars(EYEDIR) * night * (1.0 - c.a) * (1.0 - gloom) * smoothstep(0.0, 0.12, EYEDIR.y);
+		}
+		// Deep fog (Dave's fog instruction): the engine mixes the fog over the sky by fog_veil, so the sun or moon (this light) is
+		// drawn here as a soft disc bright enough to show faintly through it. Light below the horizon: none. Not in the lighting pass.
+		if (fog_veil > 0.0 && LIGHT0_ENABLED && LIGHT0_DIRECTION.y > -0.02) {
+			float a = acos(clamp(dot(LIGHT0_DIRECTION, EYEDIR), -1.0, 1.0));
+			float glow = 1.0 - smoothstep(fog_disc_rad * 0.5, fog_disc_rad * 1.6, a);
+			COLOR += LIGHT0_COLOR * min(LIGHT0_ENERGY, 1.0) * fog_disc * glow * fog_veil / max(1.0 - fog_veil, 0.04);
 		}
 	}
 }
