@@ -9,6 +9,14 @@ const RecipeList := preload("res://src/client/ui/inventory/recipe_list.gd")
 const ItemSounds := preload("res://src/client/item_sounds.gd")
 
 
+# The real recipe list, counting card redraws: a click redraws the card and restyles two rows, without working the whole list out again.
+class CardCount extends RecipeList:
+	var cards: int = 0
+
+	func _refresh_detail() -> void:
+		cards += 1
+
+
 class FakeRecipes:
 	func recipe(number: int) -> Dictionary:
 		return {"number": number, "id": "wooden_spear" if number == 5 else "campfire"}
@@ -77,9 +85,9 @@ func _initialize() -> void:
 
 func _check_clicks() -> void:
 	var view: FakeView = FakeView.new()
-	var list = RecipeList.new(view)
+	var list = CardCount.new(view)
 	list.row_clicked(5, false)
-	check(view.crafted.is_empty() and view._selected_recipe == 5 and view.refreshes == 1, "a click on a recipe selects it and shows its card; nothing is crafted")
+	check(view.crafted.is_empty() and view._selected_recipe == 5 and list.cards == 1 and view.refreshes == 0, "a click on a recipe selects it and shows its card, without rebuilding the list; nothing is crafted")
 	list.row_clicked(5, false)
 	list.row_clicked(7, false)
 	check(view.crafted.is_empty() and view._selected_recipe == 7, "clicking again, or another recipe, still crafts nothing")

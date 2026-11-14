@@ -44,6 +44,18 @@ static func text_of(recipe: Dictionary, table = null) -> String:
 # name, case-insensitive. `makeable` (recipe) -> the stock covers it; `station_in_reach` (recipe) -> its station works within 12 m.
 # Returns [hand, station, rest].
 static func order_groups(rows: Array, makeable: Callable, station_in_reach: Callable) -> Array:
+	return groups_of(by_name(rows), makeable, station_in_reach)
+
+
+# The rows alphabetical by name, case-insensitive (a sorted copy).
+static func by_name(rows: Array) -> Array:
+	var out: Array = rows.duplicate()
+	out.sort_custom(func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0)
+	return out
+
+
+# order_groups for rows already in name order: each group keeps their order, so nothing is sorted (the recipe list sorts all recipes once).
+static func groups_of(rows: Array, makeable: Callable, station_in_reach: Callable) -> Array:
 	var hand: Array = []
 	var station: Array = []
 	var rest: Array = []
@@ -57,10 +69,5 @@ static func order_groups(rows: Array, makeable: Callable, station_in_reach: Call
 			station.append(r)
 		else:
 			rest.append(r)
-
-	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
-
-	for group in [hand, station, rest]:
-		group.sort_custom(by_name)
 
 	return [hand, station, rest]
