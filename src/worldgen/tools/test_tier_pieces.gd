@@ -99,10 +99,14 @@ func _data_checks() -> void:
 		var twin: Dictionary = structures.get(str(p[4]), {})
 		check(table.number_of(id) == int(p[1]) and str(table.entry(id).get("name", "")) == str(p[0]), "%s: item %d named %s" % [id, int(p[1]), str(p[0])])
 		check(int(bp.get("number", 0)) == int(p[2]) and str(bp.get("name", "")) == str(p[0]) and str(bp.get("structure", "")) == id and bool(bp.get("known", false)), "%s: blueprint %d, known, builds it" % [id, int(p[2])])
-		check(JSON.stringify(bp.get("cost", [])) == JSON.stringify(p[5]) and int(bp.get("hammer", 1)) == int(p[6]) and str(bp.get("note_provisional", "")).contains("A-40"), "%s: cost %s, hammer tier %d, marked PROVISIONAL A-40" % [id, JSON.stringify(p[5]), int(p[6])])
+		var cost: Array = (bp.get("cost", []) as Array).map(func(c): return [str(c[0]), int(c[1])])   # parsed JSON counts are floats
+		check(cost == p[5] and int(bp.get("hammer", 1)) == int(p[6]) and str(bp.get("note_provisional", "")).contains("A-40"), "%s: cost %s, hammer tier %d, marked PROVISIONAL A-40" % [id, JSON.stringify(p[5]), int(p[6])])
 		check(int(def.get("state", 0)) == int(p[3]) and str(def.get("item", "")) == id, "%s: structure state %d" % [id, int(p[3])])
 
-		for key in ["piece", "piece_kind", "variant_group", "footprint_x", "max_rise_m", "use", "clears_grass", "clear_tile"]:
+		for key in ["piece", "piece_kind", "variant_group", "footprint_x", "footprint_z", "max_rise_m", "use", "use_pace_ms", "use_reach_m", "blocks_walk", "clears_grass", "clear_tile"]:
+			if id == "fortified_window" and key == "footprint_z":
+				continue   # checked below: banded, as thick as the Fortified wall
+
 			check(def.get(key) == twin.get(key), "%s: %s as %s (%s)" % [id, key, str(p[4]), str(def.get(key))])
 
 		var looks: Array = [str(def.get("look", ""))]
@@ -116,9 +120,11 @@ func _data_checks() -> void:
 			if LookTable.has_look(look):
 				var node: Node3D = LookTable.build(look)
 				get_root().add_child(node)
-				check(node.find_children("*", "CollisionShape3D", true, false).size() >= 1 or node.find_children("*", "StaticBody3D", true, false).size() >= 1 or node.get_child_count() > 0, "%s: look %s builds" % [id, look])
+				check(node.get_child_count() > 0 and node.find_children("*", "CollisionShape3D", true, false).size() >= 1, "%s: look %s builds, with a collider" % [id, look])
 				node.queue_free()
 
+	check(is_equal_approx(float(structures["fortified_window"]["footprint_z"]), float(structures["fortified_wall"]["footprint_z"])), "the Fortified window is as thick as the Fortified wall (%s m)" % str(structures["fortified_window"]["footprint_z"]))
+	check(not structures["engineered_gate_open"].has("blocks_walk") and bool(structures["engineered_gate"].get("blocks_walk", false)), "the Engineered gate stops animals shut, not open")
 	var gate: Dictionary = structures["engineered_gate"]
 	check(str(gate.get("toggle", "")) == "engineered_gate_open" and str(structures["engineered_gate_open"].get("toggle", "")) == "engineered_gate" and int(structures["engineered_gate_open"]["state"]) == 406, "the Engineered gate opens to engineered_gate_open (state 406) and back")
 
