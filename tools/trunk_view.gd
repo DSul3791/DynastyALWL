@@ -43,11 +43,11 @@ func _init() -> void:
 		var cyl: CylinderMesh = CylinderMesh.new()
 		cyl.top_radius = 0.26 + 0.02 * float(k % 3)
 		cyl.bottom_radius = 0.3 - 0.01 * float(k % 3)
-		cyl.height = 2.44
+		cyl.height = 3.0
 		cyl.material = wood
 		log_node.mesh = cyl
 		log_node.rotation = Vector3(PI * 0.5, 0.0, 0.0)
-		log_node.position = Vector3(1.0 + 0.7 * float(k % 2), 0.3, orig - 1.5 - 2.7 * float(k)) if orig - 1.5 - 2.7 * float(k) > -1.0 else Vector3(1.0, 0.3, 4.0 + 0.7 * float(k))
+		log_node.position = Vector3(1.0 + 0.7 * float(k % 2), 0.3, orig - 1.5 - 3.2 * float(k)) if orig - 1.5 - 3.2 * float(k) > -1.0 else Vector3(1.0, 0.3, 4.0 + 0.7 * float(k))
 		add_child(log_node)
 
 		for end in [-1.0, 1.0]:

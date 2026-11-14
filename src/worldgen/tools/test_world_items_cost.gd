@@ -43,7 +43,7 @@ func _init() -> void:
 
 	for cut in range(4):
 		var shorter: Dictionary = trunk.duplicate()
-		shorter["length"] = 12.0 - 2.44 * float(cut + 1)
+		shorter["length"] = 12.0 - float(JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))["trunk"]["log_length_m"]) * float(cut + 1)
 		t0 = Time.get_ticks_usec()
 		view._on_world_items([[5000, 0, 1, Vector3(5.0, 0.0, 5.0), 3, shorter], [6000 + cut, table.number_of("log_beech"), 1, Vector3(6.0, 0.0, 5.0 + float(cut)), 0]], PackedInt32Array())
 		var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0

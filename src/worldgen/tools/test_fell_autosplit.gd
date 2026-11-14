@@ -109,7 +109,8 @@ func _init() -> void:
 	w._auto_split()
 	check(felled(w, 3).size() == 1, "still a trunk while it falls")
 
-	# 6 m = 2 whole logs (cutting would give int(6 / 2.44) = 2). After the fall time it is two logs lying along the trunk.
+	var log_len: float = float(w._drops["trunk"]["log_length_m"])   # 3.0 m (Master s2.3 item 1)
+	# 6 m = 2 whole logs (cutting would give int(6 / 3.0) = 2). After the fall time it is two logs lying along the trunk.
 	var log_n: int = w.table.number_of("log_beech")
 
 	if log_n <= 0:
@@ -131,7 +132,7 @@ func _init() -> void:
 		w._items.erase(900000 + far)
 
 	var logs: Array = loose_logs(w, log_n)
-	check(logs.size() == int(6.0 / 2.44), "log count equals what cutting gives: %d" % logs.size())
+	check(logs.size() == int(6.0 / log_len), "log count equals what cutting gives: %d" % logs.size())
 	check(felled(w, 4).size() == 1, "the stump stays")
 
 	# The crown (Dave 10 Nov 2026): its sticks and leaves lie all over the circle it landed on, the canopy's size (Cover.crown_radius), by the tree's height;
@@ -223,7 +224,7 @@ func _init() -> void:
 	check(big.size() == 1, "the oak is a trunk")
 	w._split_due[big[0]] = 0
 	w._auto_split()
-	check(loose_logs(w, w.table.number_of("log_oak")).size() == int(22.0 / 2.44), "oak logs: int(22 / 2.44) = %d" % int(22.0 / 2.44))
+	check(loose_logs(w, w.table.number_of("log_oak")).size() == int(22.0 / log_len), "oak logs: int(22 / %.1f) = %d" % [log_len, int(22.0 / log_len)])
 
 	# A trunk worked by hand is left alone; a crowded spot leaves the trunk for hand cutting.
 	standing[9] = true
