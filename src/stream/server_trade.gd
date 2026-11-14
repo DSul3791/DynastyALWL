@@ -239,6 +239,8 @@ func open(peer: int, npc_id: String) -> bool:
 	if not has_shop(npc_id) or not _near(peer, npc_id) or not send_shop.is_valid():
 		return false
 
+	items.redenominate(peer)   # at a trader the purse becomes the fewest coins (Dave, 14 Nov 2026); sent again after each deal
+
 	var m: Dictionary = multipliers(peer, npc_id)
 	var shop: Dictionary = _shops[npc_id]
 	var ids: PackedStringArray = PackedStringArray()

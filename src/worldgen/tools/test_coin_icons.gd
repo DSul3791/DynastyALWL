@@ -25,6 +25,8 @@ func _init() -> void:
 	view.fill_coin_line(label, ["Purse: ", 2345, "."])
 	check(label.get_parsed_text().begins_with("Purse: 2 "), "text then gold first (%s)" % label.get_parsed_text())
 	check(label.get_parsed_text().count(" ") >= 4, "four coin groups separated")
+	view.fill_coin_line(label, ["Purse: ", {"coin_copper": 200, "coin_silver": 1}])
+	check(label.get_parsed_text().begins_with("Purse: 1 ") and label.get_parsed_text().contains("200"), "a purse as held is drawn as it is, not changed into bigger coins (%s)" % label.get_parsed_text())
 	view.fill_coin_line(label, [0])
 	check(label.get_parsed_text() == "nothing", "zero amount reads nothing in the line")
 	check(view.coin_icon("coin_gold") != view.coin_icon("coin_silver") and view.coin_icon("coin_gold") == view.coin_icon("coin_gold"), "one cached icon per coin")
