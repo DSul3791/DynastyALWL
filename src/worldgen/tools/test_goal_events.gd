@@ -68,8 +68,8 @@ func make(dir: String):
 	it.season_now = func(): return season[0]
 	it.cover_at = func(_p): return 1.0
 	it.admin_ok = func(_p): return true
-	it.admin_mode_on = func(_p): return admin_on[0]
 	it.setup(ItemTableScript.load_default(), dir)
+	it.admin_mode_on = func(_p): return admin_on[0]   # after setup(), which sets its own (per-peer _admin_mode_on)
 	it.skill_level = func(_p, _s): return 1.0
 	it.peer_connected_hello(1, "goalevents001")
 	it.report_position(1, HERE)
@@ -619,9 +619,12 @@ func ore_checks() -> void:
 	items._boulder_cfg["flint"] = {}
 	items._boulder_cfg["ore"]["piece_share"] = 1.0
 	inv().add(n("stone_pickaxe"), 1)
+	inv().move(slot_of("stone_pickaxe"), 0)   # Inventory.add() puts a new item in the backpack (12 Nov 2026 rule); a blow needs the tool on the hotbar
+	check(inv().on_hotbar(slot_of("stone_pickaxe")), "the stone pickaxe is on the hotbar for the ore blows")
+	var stone_before: int = inv().count_of(n("stone"))
 	outcrop("")
 	blows(20)
-	check(ev("ore_mined") == 0 and inv().count_of(n("stone")) > 0, "a pick on a plain boulder gives stone and no ore event (%d stone)" % inv().count_of(n("stone")))
+	check(ev("ore_mined") == 0 and inv().count_of(n("stone")) > stone_before, "a pick on a plain boulder gives stone and no ore event (%d stone)" % (inv().count_of(n("stone")) - stone_before))
 	outcrop("copper")
 	admin_on[0] = true
 	blows(20)
