@@ -2418,7 +2418,7 @@ func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 	for flat in FarmRules.nearest_first(FarmRules.grid_points(garden_w, garden_d, step, _garden_centre, garden_yaw), flat_aim):
 		var pos: Vector3 = Vector3(flat.x, _terrain_y(flat.x, flat.y, aim.y, 3.0), flat.y)
 		var bed: int = _inv.bed_in(beds, pos)
-		spots.append([pos, bed, _inv.bed_crop(bed) if bed != 0 else ""])
+		spots.append([pos, bed, _inv.bed_crop(bed, pos) if bed != 0 else "", "%d:%d" % [bed, _inv.bed_cell_index(bed, pos)]])   # a plot holds a crop on each square metre
 
 	var plan: Array = FarmRules.garden_plan(kind, spots, feet, GARDEN_REACH_M, have)
 
@@ -2501,7 +2501,7 @@ func _garden_step() -> void:
 
 	var bed_at := func(pos: Vector3) -> Array:
 		var bed: int = _inv.bed_id_at(pos)
-		return [bed, _inv.bed_crop(bed) if bed != 0 else ""]
+		return [bed, _inv.bed_crop(bed, pos) if bed != 0 else ""]
 
 	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
 	var near := func(pos: Vector3) -> bool:
@@ -2519,7 +2519,7 @@ func _garden_step() -> void:
 			if _sound != null:
 				_sound.hits.hit("spade", "soil", send["pos"], 0.7)
 		"sow":
-			_net.inventory_action.rpc_id(1, Net.ACT_SOW, int(send["bed"]), slot, 0, Vector3.ZERO)   # b: the seed's pack slot
+			_net.inventory_action.rpc_id(1, Net.ACT_SOW, int(send["bed"]), slot, 0, send["pos"])   # b: the seed's pack slot; at: the square metre of a plot it goes in
 		"plant_bush":
 			_net.inventory_action.rpc_id(1, Net.ACT_PLANT_BUSH, slot, 0, 0, send["pos"])   # a: the bush's pack slot (it need not be in hand)
 			_arm_play("use", 0.6)

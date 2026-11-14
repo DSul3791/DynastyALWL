@@ -124,6 +124,12 @@ static func level_ok(heights: Array) -> bool:
 	return heights.all(func(h): return absf(float(h) - mean) <= GARDEN_LEVEL_LIMIT_M)
 
 
+# How many square metres a side a bed or plot holds, one crop each (Dave 14 Nov 2026: Small 1, Medium 4, Large 9): its smaller footprint side in whole
+# metres, at least 1 (a tilled bed, a pot and a planter hold one).
+static func bed_side(def: Dictionary) -> int:
+	return maxi(1, floori(minf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", def.get("footprint_x", 1.0)))) + 0.01))
+
+
 # The grid spacing for a picked plant: its crops.json row's "spacing_m" when it has one, else by kind (seed, bush, tree; tilling is 1 m beds).
 static func spacing_of(kind: String, crop_row: Dictionary = {}) -> float:
 	if crop_row.has("spacing_m"):
@@ -175,8 +181,8 @@ static func on_square(point: Vector2, centre: Vector2, half: float, yaw_deg: flo
 	return absf(local.x) <= half and absf(local.y) <= half
 
 
-# One Garden click's plan from its grid's spots (nearest the aim first), as [[position, bed id (0 for none), that bed's crop]]: a bed or garden plot takes one
-# point (its first: a 2 m plot holds several 1 m points but one crop), a point needs ground (y not NAN), and at most `have` points plant. A point farther than
+# One Garden click's plan from its grid's spots (nearest the aim first), as [[position, bed id (0 for none), the crop there, and optionally which square metre
+# of the bed ("bed:cell")]]: each square metre of a bed takes one point (its first; a Medium plot holds 4 crops, Dave 14 Nov 2026), a point needs ground (y not NAN), and at most `have` points plant. A point farther than
 # `reach` m flat from `feet` still plants: it waits in the queue until the player walks within reach ("far"). -> [{"act", "say", "pos", "bed", "ok", "far"}]; a
 # point that will not plant has act "none" and says why.
 static func garden_plan(kind: String, spots: Array, feet: Vector3, reach: float, have: int) -> Array:
@@ -186,12 +192,13 @@ static func garden_plan(kind: String, spots: Array, feet: Vector3, reach: float,
 	for spot in spots:
 		var pos: Vector3 = spot[0]
 		var bed: int = int(spot[1])
+		var place: Variant = spot[3] if spot.size() > 3 else bed   # a plot's square metre ("bed:cell"), else the bed
 
 		if bed != 0:
-			if used.has(bed):
+			if used.has(place):
 				continue
 
-			used[bed] = true
+			used[place] = true
 
 		var cell: Dictionary = garden_action(kind, bed != 0, str(spot[2]))
 		cell["pos"] = pos

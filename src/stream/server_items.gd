@@ -1217,9 +1217,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at, a, b)   # b: the hoe grid's turn in whole degrees (0: the bed snaps to the world's metre cells)
 	elif kind == Net.ACT_SOW:
-		sow(peer, inv, a, b)
+		sow(peer, inv, a, b, at)   # at: the point aimed at on a plot of several square metres (Vector3.ZERO: the first empty one)
 	elif kind == Net.ACT_HARVEST:
-		harvest(peer, inv, a)
+		harvest(peer, inv, a, at)
 	elif kind == Net.ACT_WATER_BED:
 		water_bed(peer, inv, a, b)   # b: the pack slot of the filled container in hand (WP-R1B), -1 for none; a slot with no water in it is refused
 	elif kind == Net.ACT_HOE_PATH:
@@ -4965,7 +4965,7 @@ func _sync_world_items() -> void:
 				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
 
 				if not crop_extra.is_empty():
-					signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997)   # a crop sown, grown a stage or gone (harvested, frost) is sent again
+					signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997) + 13 * (str(crop_extra.get("cells", "")).hash() % 991)   # a crop sown, grown a stage or gone (harvested, frost), in any square metre of a plot, is sent again
 
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
@@ -9466,7 +9466,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_dirty = true
 
 	if _is_plot_kind(str(it["struct"]["kind"])):
-		_crops.erase(_bed_key(it["pos"]))   # a garden plot taken down takes its crop with it, so a plot built there later starts empty
+		for cell in _bed_cells(it):
+			_crops.erase(_bed_key(cell))   # a garden plot taken down takes its crops with it, so a plot built there later starts empty
 
 	if str(def.get("attach_to", "")) == "fire":
 		_refresh_pots()   # the fire keeps burning and gets its tiers back
@@ -14650,27 +14651,71 @@ func _bed_key(pos: Vector3) -> String:
 	return "b%d,%d" % [roundi(pos.x / BED_SNAP_M), roundi(pos.z / BED_SNAP_M)]
 
 
+# The square metres of a bed or plot, each holding one crop (Dave 14 Nov 2026: a Medium gardening plot holds 4 crops and a Large 9): a 1 m bed, a pot or a
+# planter is one, at its own position (its key is the bed's own, as before); an n m plot is n by n, turned with it (FarmRules.bed_side, grid_points).
+func _bed_cells(it: Dictionary) -> Array:
+	var n: int = FarmRules.bed_side(_structures.get(str(it["struct"].get("kind", "")), {}))
+
+	if n <= 1:
+		return [it["pos"]]
+
+	var y: float = it["pos"].y
+	return FarmRules.grid_points(n, n, 1.0, Vector2(it["pos"].x, it["pos"].z), int(round(float(it["struct"].get("yaw", 0.0))))).map(func(p): return Vector3(p.x, y, p.y))
+
+
+# Which square metre of a bed a request is for: the one nearest `at` when the client names a point (not Vector3.ZERO), else the first that `wants`
+# ("empty": no crop; "ripe": a crop at stage 3; "crop": any crop). -> the crop key, "" when none fits.
+func _cell_key(it: Dictionary, at: Vector3, wants: String) -> String:
+	var cells: Array = _bed_cells(it)
+
+	if at != Vector3.ZERO:
+		var best: Vector3 = cells[0]
+
+		for cell in cells:
+			if Vector2(cell.x - at.x, cell.z - at.z).length() < Vector2(best.x - at.x, best.z - at.z).length():
+				best = cell
+
+		return _bed_key(best)
+
+	for cell in cells:
+		var crop: Dictionary = _crops.get(_bed_key(cell), {})
+
+		if (wants == "empty" and crop.is_empty()) or (wants == "ripe" and not crop.is_empty() and crop_stage(crop) >= 3) or (wants == "crop" and not crop.is_empty()):
+			return _bed_key(cell)
+
+	return ""
+
+
 # Old crop and moisture keys ("x,z", the metre cell under the bed) are moved to the bed standing in that cell; one with no bed there is dropped,
 # as a bed's tick would drop it.
 func _rekey_old_beds() -> void:
-	var by_cell: Dictionary = {}
+	var crop_to: Dictionary = {}    # old key -> the crop key of the bed's first square metre (a plot held one crop then)
+	var water_to: Dictionary = {}   # old key -> the bed's own key (moisture is the whole bed's)
 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and _is_plot_kind(str(it["struct"].get("kind", ""))):
-			by_cell["%d,%d" % [int(floor(it["pos"].x)), int(floor(it["pos"].z))]] = _bed_key(it["pos"])
+			var old: String = "%d,%d" % [int(floor(it["pos"].x)), int(floor(it["pos"].z))]
+			crop_to[old] = _bed_key(_bed_cells(it)[0])
+			water_to[old] = _bed_key(it["pos"])
 
-	for table_of in [_crops, _plot_water]:
-		for key in (table_of as Dictionary).keys():
+			if crop_to[old] != water_to[old] and _crops.has(old):
+				_crops[old]["plot"] = water_to[old]
+
+	for pair in [[_crops, crop_to], [_plot_water, water_to]]:
+		var table_of: Dictionary = pair[0]
+		var to: Dictionary = pair[1]
+
+		for key in table_of.keys():
 			if str(key).begins_with("b"):
 				continue
 
 			var row: Variant = table_of[key]
 			table_of.erase(key)
 
-			if by_cell.has(str(key)) and not table_of.has(by_cell[str(key)]):
-				table_of[by_cell[str(key)]] = row
+			if to.has(str(key)) and not table_of.has(to[str(key)]):
+				table_of[to[str(key)]] = row
 
 
 func _game_day() -> int:
@@ -15601,7 +15646,7 @@ func _garden_jobs_tick() -> void:
 
 
 # A seed from the pack slot goes into the bed: right season, empty bed, the seed is used up.
-func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
+func sow(peer: int, inv, bed_id: int, slot: int, at: Vector3 = Vector3.ZERO) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
 	if bed.is_empty() or not _peer_pos.has(peer):
@@ -15615,9 +15660,9 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 		_say(peer, "There are no seeds in that slot to sow.")
 		return false
 
-	var key: String = _bed_key(bed["pos"])
+	var key: String = _cell_key(bed, at, "empty")
 
-	if _crops.has(key):
+	if key == "" or _crops.has(key):
 		_say(peer, "Something is growing there already.")
 		return false
 
@@ -15642,6 +15687,9 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 
 	inv.remove(inv.numbers[slot], 1)
 	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
+
+	if key != _bed_key(bed["pos"]):
+		_crops[key]["plot"] = _bed_key(bed["pos"])   # one square metre of a plot: its moisture is the plot's
 	_dirty = true
 	_goal_event(peer, "seed_sown")   # ADD-05
 	return true
@@ -15661,7 +15709,7 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 		_say(peer, "Too far from the bed to water it.")
 		return false
 
-	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {})
+	var crop: Dictionary = _crops.get(_cell_key(bed, Vector3.ZERO, "crop"), {})   # a plot is watered whole; its first crop keeps the day's tally
 
 	if crop.is_empty():
 		_say(peer, "Nothing is growing there to water.")
@@ -15699,7 +15747,15 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 # any of its members does; the pack's has/remove follow the group.
 func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
-	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {}) if not bed.is_empty() else {}
+	var crop: Dictionary = {}
+
+	for cell in (_bed_cells(bed) if not bed.is_empty() else []):
+		var here: Dictionary = _crops.get(_bed_key(cell), {})
+
+		if not here.is_empty() and not bool(here["compost"]):
+			crop = here   # the first crop of the bed not composted yet
+			break
+
 	var compost: int = table.number_of("fertiliser") if table.number_of("fertiliser") > 0 else table.number_of("compost")
 
 	if crop.is_empty() or bool(crop["compost"]) or compost <= 0 or not inv.has(compost, 1):
@@ -15712,12 +15768,39 @@ func compost_bed(peer: int, inv, bed_id: int) -> bool:
 
 
 # A bed's world-row extra: {"crop": crop id, "stage": 0 to 3} for a bed with a crop on it, {} for an empty bed or any other piece (no protocol bump: PROTOCOL.md, row extras).
+# A plot of several square metres adds "cells": [[crop id or "", stage or -1]] in _bed_cells order, and its "crop" and "stage" name what E does next: the first ripe
+# crop, else "" when a square metre is still empty (E sows it), else its first crop.
 func crop_row_extra(it: Dictionary) -> Dictionary:
 	if not _is_plot_kind(str(it["struct"].get("kind", ""))):
 		return {}
 
-	var crop: Dictionary = _crops.get(_bed_key(it["pos"]), {})
-	return {} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop)}
+	var cells: Array = _bed_cells(it)
+
+	if cells.size() == 1:
+		var crop: Dictionary = _crops.get(_bed_key(it["pos"]), {})
+		return {} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop)}
+
+	var rows: Array = []
+	var ripe: Array = []
+	var empty: bool = false
+	var first: Array = []
+
+	for cell in cells:
+		var crop: Dictionary = _crops.get(_bed_key(cell), {})
+		rows.append(["", -1] if crop.is_empty() else [str(crop["crop"]), crop_stage(crop)])
+		empty = empty or crop.is_empty()
+
+		if not crop.is_empty() and ripe.is_empty() and crop_stage(crop) >= 3:
+			ripe = rows[rows.size() - 1]
+
+		if not crop.is_empty() and first.is_empty():
+			first = rows[rows.size() - 1]
+
+	if first.is_empty():
+		return {}
+
+	var shown: Array = ripe if not ripe.is_empty() else (["", 0] if empty else first)
+	return {"crop": shown[0], "stage": shown[1], "cells": rows}
 
 
 # The stage of a crop 0 seedling .. 3 ripe; a crop short of water stays at 2.
@@ -15761,14 +15844,14 @@ func _crops_tick() -> void:
 
 			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0)
 
-			if PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(key, [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0])):
+			if PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(str(crop.get("plot", key)), [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0])):   # a plot's square metre: the plot's moisture
 				crop["wet"] = int(crop["wet"]) + 1
 
 			_dirty = true
 
 
 # E on a ripe crop: its yields (half without the right tool), seeds back, and the bed is empty again. Returns true when something was harvested.
-func harvest(peer: int, inv, bed_id: int) -> bool:
+func harvest(peer: int, inv, bed_id: int, at: Vector3 = Vector3.ZERO) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
 	if bed.is_empty() or not _peer_pos.has(peer):
@@ -15778,7 +15861,11 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 		_say(peer, "Too far from the bed to harvest it.")
 		return false
 
-	var key: String = _bed_key(bed["pos"])
+	var key: String = _cell_key(bed, at, "ripe")
+
+	if key == "":
+		key = _cell_key(bed, at, "crop")   # nothing ripe: say why for the first crop
+
 	var crop: Dictionary = _crops.get(key, {})
 
 	if crop.is_empty():

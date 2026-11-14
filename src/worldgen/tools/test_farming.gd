@@ -272,7 +272,7 @@ func _plot_takedown_checks() -> void:
 	var spot: Vector3 = Vector3(-1.5, 10.0, -1.5)
 	var kind: String = "wooden_garden_plot"
 	items._items[920002] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
-	var key: String = items._bed_key(spot)
+	var key: String = items._bed_key(items._bed_cells(items._items[920002])[0])   # a Medium plot's first square metre (it holds 4 crops)
 	season[0] = "spring"
 	give("barley_seeds", 1)
 	act(Net.ACT_SOW, 920002, slot_of("barley_seeds"))
@@ -299,6 +299,46 @@ func _plot_takedown_checks() -> void:
 	act(Net.ACT_HARVEST, 920003)
 	check(not items._crops.has(key), "and has nothing to harvest")
 	items._items.erase(920003)
+	_plot_cell_checks()
+
+
+# A plot holds one crop a square metre (Dave 14 Nov 2026: Medium 4, Large 9). E sows the first empty one; the Garden grid names the one it aims at; the row
+# lists each; harvest takes the first ripe one; the plot's moisture is shared; a 1 m bed and a planter stay one crop on their own key.
+func _plot_cell_checks() -> void:
+	var spot: Vector3 = Vector3(-1.0, 10.0, -1.0)
+	items._items[920030] = {"number": items.table.number_of("wooden_garden_plot"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "wooden_garden_plot", "yaw": 0.0}}
+	items._items[920031] = {"number": items.table.number_of("large_garden_plot"), "count": 1, "pos": Vector3(3.0, 10.0, -3.0), "left": 1.0e9, "struct": {"kind": "large_garden_plot", "yaw": 90.0}}
+	var cells: Array = items._bed_cells(items._items[920030])
+	check(cells.size() == 4 and items._bed_cells(items._items[920031]).size() == 9 and items._bed_cells({"pos": spot, "struct": {"kind": "stone_planter"}}).size() == 1, "a Medium plot has 4 square metres, a Large 9, a planter 1")
+	check(cells.any(func(c): return c.is_equal_approx(Vector3(-1.5, 10.0, -1.5))) and cells.any(func(c): return c.is_equal_approx(Vector3(-0.5, 10.0, -0.5))), "the Medium plot's square metres are its four quarters (%s)" % str(cells))
+	season[0] = "spring"
+	give("barley_seeds", 5)
+
+	for n in 4:
+		act(Net.ACT_SOW, 920030, slot_of("barley_seeds"))
+
+	var keys: Array = cells.map(func(c): return items._bed_key(c))
+	check(keys.all(func(k): return items._crops.has(k)) and count("barley_seeds") >= 1, "four sows fill the four square metres")
+	notes.clear()
+	act(Net.ACT_SOW, 920030, slot_of("barley_seeds"))
+	check(notes.has("Something is growing there already."), "a fifth is refused: the plot is full")
+	var extra: Dictionary = items.crop_row_extra(items._items[920030])
+	check((extra.get("cells", []) as Array).size() == 4 and str(extra.get("crop", "")) == "barley", "the plot's row lists its four crops (%s)" % str(extra))
+	items._crops[keys[2]]["age"] = 200.0
+	items._crops[keys[2]]["wet"] = 200
+	extra = items.crop_row_extra(items._items[920030])
+	check(int(extra["stage"]) == 3, "a ripe square metre is what E names next")
+	act(Net.ACT_HARVEST, 920030)
+	check(not items._crops.has(keys[2]) and items._crops.has(keys[0]) and items._crops.has(keys[1]) and items._crops.has(keys[3]), "harvest takes the ripe one and leaves the rest")
+	items.action(1, Net.ACT_SOW, 920030, slot_of("barley_seeds"), 0, Vector3(cells[2].x + 0.2, 10.0, cells[2].z - 0.1))
+	check(items._crops.has(keys[2]), "the Garden grid sows the square metre it aims at")
+	check(str(items._crops[keys[0]].get("plot", "")) == items._bed_key(spot), "a square metre's crop takes the plot's moisture")
+
+	for k in keys:
+		items._crops.erase(k)
+
+	items._items.erase(920030)
+	items._items.erase(920031)
 
 
 # The hoe only tills (Dave 14 Nov 2026: "There doesn't actually need to be garden plots. It should just till the soil so you can put seeds in the ground."): with a hoe
