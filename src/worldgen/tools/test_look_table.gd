@@ -26,7 +26,7 @@ const B1B_B6 := {"log_stairs": 350,
 	"log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
 	"wooden_barrel": 500, "stone_well": 550, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
 	"stone_lamp_post": 450, "thatch_garden_plot": 600}
-# The tier roofs: the straight roofs are panels since GOALS-REPAIR A-35/A-36 (tier_panel, 132 to 216 triangles) and the corners hips over the corner
+# The tier roofs: the straight roofs are panels since GOALS-REPAIR A-35/A-36 (tier_panel, 132 to 240 triangles with the Fortified iron straps) and the corners hips over the corner
 # square since A-37 (roof_hip: two faces, a cap, two eaves), all under the default cap.
 # The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with bolted bands, 450.
 const FORTIFIED := {"fortified_doorway": 450}

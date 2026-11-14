@@ -20,7 +20,7 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 
 ## Roofs (#973)
 
-- Straight roofs above Crude (GOALS-REPAIR A-35/A-36, 14 Nov 2026): `piece_look.tier_panel(kind, slope_deg)`, the Crude panel's shape (no posts, 2 m wide over a 2 m run) in the tier's `ROOF_SPEC` cover: boards, courses with proud low edges, tile ribs on the clay tiers, three rafters, a fascia; `<Tier> - Roof 45` and `<Tier> - Roof 65` (`*_roof_65`, `roof_65`). Placeholder look, NEEDS PLAYER VERIFICATION.
+- Straight roofs above Crude (GOALS-REPAIR A-35/A-36, 14 Nov 2026): `piece_look.tier_panel(kind, slope_deg)`, the Crude panel's shape (no posts, 2 m wide over a 2 m run) in the tier's `ROOF_SPEC` cover: boards, courses with proud low edges, tile ribs on the clay tiers, three rafters, a fascia; `<Tier> - Roof 45` and `<Tier> - Roof 65` (`*_roof_65`, `roof_65`). Fortified (Dave, 14 Nov 2026: every tier has both) is the Engineered tiles a shade darker with two iron straps across (`ROOF_SPEC["fortified"]`). Placeholder look, NEEDS PLAYER VERIFICATION.
 - Corners (GOALS-REPAIR A-37, 14 Nov 2026): `piece_look.roof_hip(kind, slope_deg)`, a hip over the 2 m corner square where two wall tops, ceiling edges or panel ends meet, no posts: two triangular faces at 45 or 65 degrees (`*_roof_corner`, `*_roof_corner_65`) in the tier's `ROOF_SPEC` cover (thatch for Crude), a cap along the hip, eaves along both low edges, one convex collider per face. Placeholder look, NEEDS PLAYER VERIFICATION.
 - Rows are real geometry (no texture tiles): the edge of every course shows against the sky.
 - Triangle caps: every roof panel and corner is under the default 300 (`test_look_table.gd`).

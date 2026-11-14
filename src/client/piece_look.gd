@@ -1431,10 +1431,11 @@ static func tier_floor(kind: String = "stone") -> Node3D:
 	return root
 
 
-# A tier roof panel (GOALS-REPAIR A-35, A-36): Rustic, Refined, Sturdy, Superior and Engineered - Roof 45 and 65 are the Crude panel's shape (thatch_roof:
-# no posts, 2 m wide over a 2 m run, the spot its middle, rising toward -Z) in the tier's own cover from ROOF_SPEC: `kind` "log", "wood", "stone", "brick" or
-# "engineered". Boards under the cover, the cover in courses across the slope (each course's low edge stands proud of the next), a rib down the slope every
-# 0.24 m on the clay tile tiers, three rafters under it, a fascia board along the low eave, and the same tilted slab collider as the Crude panel.
+# A tier roof panel (GOALS-REPAIR A-35, A-36; Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65): Rustic, Refined, Sturdy, Superior, Engineered and
+# Fortified - Roof 45 and 65 are the Crude panel's shape (thatch_roof: no posts, 2 m wide over a 2 m run, the spot its middle, rising toward -Z) in the
+# tier's own cover from ROOF_SPEC: `kind` "log", "wood", "stone", "brick", "engineered" or "fortified". Boards under the cover, the cover in courses across
+# the slope (each course's low edge stands proud of the next), a rib down the slope every 0.24 m on the clay tile tiers, iron straps across the Fortified
+# tiles, three rafters under it, a fascia board along the low eave, and the same tilted slab collider as the Crude panel.
 static func tier_panel(kind: String = "stone", slope_deg: float = 45.0) -> Node3D:
 	_tier_materials()
 	var spec: Array = ROOF_SPEC.get(kind, ROOF_SPEC["wood"])
@@ -1458,6 +1459,10 @@ static func tier_panel(kind: String = "stone", slope_deg: float = 45.0) -> Node3
 		for i in 8:
 			_box_rot(root, Vector3(0.07, 0.03, length), Vector3(-0.84 + 0.24 * float(i), 0.0, 0.0) + _roof_off(tilt, thick + 0.015), turn, cover_mat)   # a rib of tile
 
+	if kind == "fortified":
+		for f in [-0.3, 0.3]:
+			_box_rot(root, Vector3(2.02, 0.02, 0.08), _roof_along(tilt, length * f) + _roof_off(tilt, thick + 0.04), turn, _iron_mat())   # an iron strap over the ribs
+
 	for x in [-0.85, 0.0, 0.85]:
 		_box_rot(root, Vector3(0.1, 0.1, length), Vector3(x, 0.0, 0.0) + _roof_off(tilt, -0.13), turn, _roof_mat(spec[5]))   # a rafter under it
 
@@ -1475,6 +1480,7 @@ const ROOF_SPEC := {
 	"stone": [Color(0.3, 0.32, 0.35), 7, 0.03, "_planks", "slab", "_frame", "_flag", 0.14],         # Sturdy: slates on boards, a stone ridge
 	"brick": [Color(0.7, 0.36, 0.2), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.12],         # Superior: fired clay tiles, round ridge tiles
 	"engineered": [Color(0.55, 0.24, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.14],   # Engineered: deeper red clay tiles on planks (#972: no concrete roof)
+	"fortified": [Color(0.47, 0.22, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.14],    # Fortified: the Engineered tiles, darker, strapped with iron
 }
 
 
