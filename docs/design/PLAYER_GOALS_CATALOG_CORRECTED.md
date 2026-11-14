@@ -13,7 +13,10 @@
   - **Verdicts changed:** the 22 WP-METAL R2 rows and `craft:iron_ingot` are no longer blocked: 17 are OK and 6 are FIX (they carry text corrections).
   - **Refs verified:** `build:improved_smelter` and the two Copper tool rows have their ids checked.
   - **Map goals:** the two map goals have their events from PR #1105.
-  - **Not rechecked yet:** the rows blocked by WP-METAL R3, WP-R1B, WP-PRIM and WP-GUIDE-UI were not rechecked here, although those PRs are now in dev.
+  - **Second recheck on dev `d4b2473` (R9 follow-up; static):** every row blocked by WP-METAL R3, WP-METAL R4, WP-R1B, the `got_item` gap (#1100) or the `fire_tier` gap (#1095) whose goal item or structure is reachable from an empty character is no longer blocked: 258 rows, 123 OK and 135 FIX.
+    - "Reachable" comes from the reach model in `tools/encyclopedia_reach.py`, run with the smelting jobs added (that tool does not know the self-running smelters yet). It is a static read of the data, not play. Every such row is NEEDS PLAYER VERIFICATION.
+    - The correction text of those rows was spot-checked, not re-read row by row, against the final R3 and R4 data.
+    - Still blocked (29): the 24 locked water and garden blueprints (all now UNASSIGNED; their materials are reachable), R5 (`build:master_forge`, `activity:temper_steel`), R6 (`build:open_storage_bin`), `activity:operate_bellows` (no `bellows_iron` event) and `activity:chop_log_blocks` (no `made_item_any` check type).
   - The counts below include these changes.
 - **Rewards:** unchanged. Every ORIGINAL row carries the draft figure, which totals 15,670 copper. In the PROPOSED rows `reward_copper` is empty, and `notes` says "Reward: for Dave".
 - **Wording:** "go live" means the day the corrected catalog replaces the live goal files. It is not a player action; the player never activates anything.
@@ -39,13 +42,13 @@
 
 | Verdict | All 651 | 328 rule-only rows (reviewed individually in this pass) | 323 rows already reviewed individually in the audit |
 |---|---:|---:|---:|
-| OK | 195 | 59 | 136 |
-| FIX | 169 | 57 | 112 |
-| BLOCKED-BY-MECHANIC | 287 | 212 | 75 |
+| OK | 318 | 159 | 159 |
+| FIX | 304 | 150 | 154 |
+| BLOCKED-BY-MECHANIC | 29 | 19 | 10 |
 | DESIGN-QUESTION | 0 | 0 | 0 |
 | **Total** | **651** | **328** | **323** |
 
-- **Blocked rows that also have text corrections:** 140, of which 96 are rule-only rows.
+- **Blocked rows that also have text corrections:** 5, of which 3 are rule-only rows.
 - **New goals (verdict PROPOSED):** 11.
 - **Rows with a play test or player-verification note:**
   - 109 need player verification of the PR #1091 sources (Tanbark, Pine tar, water from containers).
@@ -62,14 +65,14 @@
 | WP | Rows | What it unblocks |
 |---|---:|---|
 | WP-METAL R2 (PR #1092) | 0 | Was 22. The Bronze route is in dev, and the rows were rechecked on `54b2c51` |
-| WP-METAL R3 | 196 | Iron route. The Improved smelter and its bellows are in #1092, the Improved smithy without iron is A-15, and the Iron Saw is needed for Planks and Hardwood boards. Anything that uses Planks, Nails or Hinges waits for it |
-| WP-METAL R4 | 41 | Steel (A-19, A-24), the Advanced smelter (wind, A-18) and the Advanced smithy |
+| WP-METAL R3 | 1 | Was 196. Only `activity:operate_bellows` is left: no `bellows_iron` event, and the worker is not the owner `_credit` pays |
+| WP-METAL R4 | 0 | Was 41. Steel, the Advanced smelter and the Advanced smithy are in dev (#1102) |
 | WP-METAL R5 | 2 | Master smithy and tempering |
 | WP-METAL R6 | 1 | Small Resource Bin (16 Planks and 32 Nails, single type) |
-| WP-R1B (PR #1089) | 16 | Crop-only inputs: barley, oats, rye, flax (and linen). Flour is not blocked; see `craft:flour` |
-| WP-PRIM (PR #1095) | 3 | `activity:chop_log_blocks` (hand-chop credit; it also needs a WP-GUIDE-UI check type), `activity:medium_fire` and `activity:bonfire` (the `fire_tier` event) |
-| WP-GUIDE-UI (goals section) | 19 | Gather goals need a first-hand `got:<item>` counter. 20 gather rows have this gap; `gather:flax` is counted under WP-R1B |
-| UNASSIGNED | 9 | Locked water and garden blueprints. No WP owns these; 15 more locked rows are also behind a metal phase |
+| WP-R1B (PR #1089) | 0 | Was 16. Client farming is in dev (#1089) |
+| WP-PRIM (PR #1095) | 0 | Was 3. `fire_tier` and the hand-chop credit are in dev; `activity:chop_log_blocks` moved to WP-GUIDE-UI (it needs a check type) |
+| WP-GUIDE-UI (goals section) | 1 | Was 19 (the `got_item` counter is in dev, #1100). Left: `activity:chop_log_blocks`, which needs a `made_item_any` check type |
+| UNASSIGNED | 24 | Locked water and garden blueprints (Dave decision 2). No WP owns these. Since R3 their materials are reachable, so only the lock holds them |
 
 ## Dave decisions (short list)
 
@@ -108,16 +111,16 @@
 
 ## New proposed goals (rewards for Dave)
 
-Ids from R4 to R6 are **not yet in dev**: they come from the blocking WP. The Improved smelter and Copper tool ids were rechecked on dev `54b2c51` (R9, PR #1105). A `runtime_check` that contains a `<...TBD>` value or `count: "N"` is a placeholder. It is **not loadable** as goal data until the value is set.
+Ids from R5 and R6 are **not yet in dev**: they come from the blocking WP. The Improved smelter, Copper tool and Iron anvil ids were rechecked on dev `54b2c51`, and the R4 ids (Advanced smithy, Steel anvil) on `d4b2473` (R9). A `runtime_check` that contains a `<...TBD>` value or `count: "N"` is a placeholder. It is **not loadable** as goal data until the value is set.
 
 | id | Title | Completes when | Stable refs | Blocked by |
 |---|---|---|---|---|
 | `build:improved_smelter` | Build Improved Smelter | placed:improved_smelter | item #1304, state 368, bp 300 (A-9), rechecked on dev | in dev (#1092) |
-| `build:advanced_smithy` | Build Advanced Smithy | placed:advanced_smithy | item #1308, state 369, bp 301 (A-20) | WP-METAL R4 |
+| `build:advanced_smithy` | Build Advanced Smithy | placed:advanced_smithy | item #1308, state 369, bp 301 (A-20) | in dev (#1102) |
 | `craft:copper_pickaxe` | Make a Copper - Pickaxe | made:copper_pickaxe | item #1305, recipe 722 (A-13) | in dev (#1099) |
 | `craft:copper_axe` | Make a Copper - Axe | made:copper_axe | item #1306, recipe 723 (A-13) | in dev (#1099) |
-| `craft:iron_anvil_part` | Make an Iron anvil | made:iron_anvil_part | item #1307 (A-16), not #827 | WP-METAL R3 |
-| `craft:steel_anvil_part` | Make a Steel anvil | made:steel_anvil_part | item #1309, recipe 725 (A-21) | WP-METAL R4 |
+| `craft:iron_anvil_part` | Make an Iron anvil | made:iron_anvil_part | item #1307, recipe 724 (A-16), not #827 | in dev (#1101) |
+| `craft:steel_anvil_part` | Make a Steel anvil | made:steel_anvil_part | item #1309, recipe 725 (A-21) | in dev (#1102) |
 | `build:medium_resource_bin` | Build Medium Resource Bin | placed:<R6 structure> (placeholder) | to be set in R6 | WP-METAL R6 |
 | `build:large_resource_bin` | Build Large Resource Bin | placed:<R6 structure> (placeholder) | to be set in R6 | WP-METAL R6 |
 | `activity:repair_station` | Repair a worn smithy | new event `station_repaired` | none until R5 durability | WP-METAL R5 |
@@ -236,6 +239,6 @@ Whether the burst in point 1 is acceptable is Dave decision 4: accept it, reset 
 - Dev moved to `596d156` (#1090, #1092, #1097, #1098) after the baseline, and the rows were not recomputed there.
 - The player sources from PR #1091 (Tanbark, Pine tar, water from containers) are marked NEEDS PLAYER VERIFICATION in 109 rows.
 - The acquisition evidence comes from the audit at `dc2fa52`. Its text was cut at 90 characters, and the cuts are shown as "...".
-- At the review baseline the planned ids from R2b–R6 were not in dev. Since then #1305–#1307 (copper tools, Iron anvil, recipes 722–724) are in dev and were rechecked on `54b2c51` (R9, PR #1105); #1308, #1309, bp 301, recipe 725 and the bin structures are not yet.
+- At the review baseline the planned ids from R2b–R6 were not in dev. Since then #1305–#1307 (copper tools, Iron anvil, recipes 722–724) are in dev and were rechecked on `54b2c51` (R9, PR #1105); #1308, #1309, bp 301 and recipe 725 came with #1102 and were rechecked on `d4b2473`; the bin structures are not in dev yet.
 - The Leaves drop from felling is not verified.
 - Whether a newly placed Campfire kit starts with sticks in its fuel store is not verified.
