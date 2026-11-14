@@ -68,3 +68,6 @@ One full fast run (`tests_for_diff.py --all`) on `dev` once #1089 and #1095 land
 
 1. Finish baselines; assign first ready packages (R1 sources/water/farming, admin Ctrl+Shift shortcuts, goal-state sync foundation).
 2. Ask the coordinator to start separate threads for large independent packages (Journal/HUD/placard UI; charcoal Map; smelting/smithy chain) with self-contained briefs.
+
+## Temporary warnings to clear
+- #1101 (R3) adds `iron_anvil_part` (recipe 724) and validate_items warns it is a dead-end until R4 bp 301 (Advanced smithy) uses it. Accepted as temporary; R4's lane result must show the warning gone.
