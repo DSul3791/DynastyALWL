@@ -6903,7 +6903,7 @@
 		"copper_pickaxe": {
 			"name": "Copper - Pickaxe",
 			"kind": "tool",
-			"description": "A copper head on a hardwood handle. Breaks rock faster than stone and takes copper, tin and coal from a boulder; it is too soft for iron ore.",
+			"description": "A copper head on a hardwood handle. Breaks rock and takes copper, tin and coal, but not iron ore.",
 			"how_to_get": [
 				"Craft: 3 Copper ingot, 2 Stick at a forge"
 			],

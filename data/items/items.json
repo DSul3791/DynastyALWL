@@ -4845,7 +4845,7 @@
 		"copper_pickaxe": {
 			"number": 1305,
 			"name": "Copper - Pickaxe",
-			"description": "A copper head on a hardwood handle. Breaks rock faster than stone and takes copper, tin and coal from a boulder; it is too soft for iron ore.",
+			"description": "A copper head on a hardwood handle. Breaks rock and takes copper, tin and coal, but not iron ore.",
 			"kind": "tool",
 			"stack": 1,
 			"unstackable": true,
