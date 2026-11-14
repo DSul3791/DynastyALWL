@@ -372,6 +372,9 @@ func _init() -> void:
 	camp._next_id += 1
 	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "once a pot stands at the fire the plant food hint stops")
 	# Hint triggers that used to match nothing (3 Nov 2026): the sea water ones (the fell hint is Sal's #245).
+	check(not camp._hint_trigger_true(1, camp._goal_state_of(1), "wall_placed"), "no wall built: no roof panel hint")
+	camp._goal_event(1, "placed", "thatch_wall")
+	check(camp._hint_trigger_true(1, camp._goal_state_of(1), "wall_placed"), "a Crude - Wall standing brings the roof panel hint (GA-18)")
 	check(not camp._hint_trigger_true(1, pot_state, "has_sea_water"), "no sea water in the pack: no hint")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("sea_water"), 0, 1, Vector3.ZERO)
 	check(camp._hint_trigger_true(1, pot_state, "has_sea_water"), "sea water in the pack triggers its hint")
