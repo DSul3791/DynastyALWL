@@ -28,7 +28,7 @@
 		"plant_fibre": {
 			"number": 3,
 			"name": "Plant fibre",
-			"description": "Stringy strands from nettles and grass. Twist 3 into twine, or use one to light a fire.",
+			"description": "Stringy strands from nettles and grass. Twist 3 into twine.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -38,7 +38,7 @@
 		"log": {
 			"number": 4,
 			"name": "Log",
-			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
+			"description": "A heavy length of trunk. Chop it into blocks and firewood, or saw it into planks.",
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
@@ -73,7 +73,7 @@
 		"campfire_kit": {
 			"number": 8,
 			"name": "Campfire",
-			"description": "Stones and sticks for a fire. Set it down, then light it with fibre.",
+			"description": "Stones and sticks for a fire. Set it down, put wood on it, then press E to light it.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
@@ -282,7 +282,7 @@
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
-			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
+			"description": "Boards from a log. Make them at a saw mill or with a saw.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -1058,7 +1058,7 @@
 			"value": 3000,
 			"look_alikes": []
 		},
-		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy for special and masterwork pieces.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21.", "slots": 12},
+		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy with a steel anvil and its own quenching trough, for masterwork and Tempered steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21.", "slots": 12},
 		"log_oak": {
 			"number": 100,
 			"name": "Oak log",
@@ -2772,7 +2772,7 @@
 			"value": 1,
 			"sell_lot": 12
 		},
-		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
+		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round cut from a hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
 		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
 		"wooden_block_soft": {
 			"number": 237,
@@ -9557,7 +9557,7 @@
 			"improved_smelter": {"number": 1304, "name": "Improved smelter", "description": "A smelter with bronze fittings and hand bellows. Work the bellows to smelt faster and to smelt iron.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 368 (Improved Smelter, GOALS-REPAIR R3).", "slots": 10},
 			"advanced_smithy": {"number": 1308, "name": "Advanced smithy", "description": "A smithy with an iron anvil. Fire it with charcoal or coal to work every metal up to steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 369 (Advanced Smithy, GOALS-REPAIR R4).", "slots": 12},
 			"bellows": {"number": 909, "name": "Bellows", "description": "Old leather bellows from a smithy. They no longer speed a forge; take them down for the leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
-			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
+			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "An old stone trough from a smithy. It no longer tempers steel; take it down for the stone.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
 			"leatherworking_table": {"number": 911, "name": "Leatherworking table", "description": "A bench with tools for cutting and stitching leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 243 (Mission 001 phase 2b).", "slots": 8},
 			"tailors_table": {"number": 912, "name": "Tailor's table", "description": "A broad table for cutting and sewing cloth into clothes.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 244 (Mission 001 phase 2b).", "slots": 8},
 			"thread": {

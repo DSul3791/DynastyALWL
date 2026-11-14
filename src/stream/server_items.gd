@@ -8690,17 +8690,23 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 	var piece_name: String = kind.replace("_", " ")
 	var blueprint: Dictionary = _blueprints.get(int(_blueprint_of_kit.get(str(def.get("kit", "")), 0)), {})
 
-	if BuildingWear.rule_for(_wear_cfg, kind).is_empty() or blueprint.is_empty():
+	# A smithy also wears with use (server_smithy.gd, master s2.2 item 9): its condition is the lower of the two, and one repair mends both.
+	var smithy: bool = _smithies.durability(def) > 0.0
+
+	if smithy:
+		piece_name = table.in_sentence(str(table.entry(str(def.get("item", kind))).get("name", piece_name)))   # "improved smithy", not its old kind
+
+	if (BuildingWear.rule_for(_wear_cfg, kind).is_empty() and not smithy) or blueprint.is_empty():
 		_say(peer, "The %s does not wear, so it needs no repair." % piece_name)
 		return
 
-	var cond: float = piece_condition(id)
+	var cond: float = minf(piece_condition(id), _smithies.condition(id))
 
 	if cond >= float(_wear_cfg.get("good_condition", 0.98)):
 		_say(peer, "The %s is in good repair (%d percent)." % [piece_name, int(round(cond * 100.0))])
 		return
 
-	var needs: Array = BuildingWear.repair_needs(blueprint["cost"], cond, float(_wear_cfg.get("repair_share", 0.5)))
+	var needs: Array = BuildingWear.repair_needs(_smithies.repair_cost(blueprint["cost"]) if smithy else blueprint["cost"], cond, float(_wear_cfg.get("repair_share", 0.5)))
 	var log_need: int = 0
 
 	for need in needs:
@@ -8711,7 +8717,7 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_fill(table.number_of("log"))))   # shoulder and ground logs count, as for building
 
 	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0)) * _hammer_x(peer, hammer)
-	var boxes: Array = _boxes_near(peer, _hammer_x(peer, hammer))
+	var boxes: Array = _boxes_near(peer, _hammer_x(peer, hammer)).filter(func(box): return int(box[0]) != id)   # never the piece's own store: a repair keeps what it holds (a worn-out smithy's is shut anyway)
 	var short: PackedStringArray = []
 
 	for need in needs:
@@ -8747,6 +8753,7 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 			inv.remove_fill(number, left, [], true)
 
 	it["struct"]["born"] = _now_game_s()
+	_smithies.repaired(id)
 	_dirty = true
 	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
 
@@ -8840,8 +8847,8 @@ func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 	for sid in _items:
 		var s: Dictionary = _items[sid]
 
-		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
-			continue
+		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0 or _smithies.broken_row(s):
+			continue   # a worn-out smithy's store is shut (master s2.2 item 9)
 
 		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= (Interact.server_reach_m() + 2.0) * reach_x and _may_access(peer, s) and CraftStock.owner_ok(str(s["struct"].get("owner", "")), key) and not bool(s["struct"].get("keep_out", false)):
 			out.append([sid, _chests[int(s["struct"]["uid"])]])
@@ -9186,6 +9193,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if _platter_on(it):
 		_say(peer, "Take the platter off it first.")   # a table never leaves a platter floating
+		return
+
+	if _smithies.broken(id):
+		_say(peer, "Needs repair")   # a worn-out smithy is repaired before it comes down (PROVISIONAL, GOALS-REPAIR A-23)
 		return
 
 	if not _struct_empty(id):
@@ -10021,6 +10032,10 @@ func _chest_of(peer: int, id: int):
 		return null
 
 	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
+		return null
+
+	if _smithies.broken(id):
+		_say(peer, "Needs repair")   # a worn-out smithy's store stays shut, its contents kept, until a hammer repairs it (master s2.2 item 9)
 		return null
 
 	if str(it["struct"]["kind"]) == "remains" and not _may_open_remains(peer, it):
@@ -13207,6 +13222,9 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			continue
 
 		if station_level_of(it, def, station) >= level:
+			if _smithies.broken(int(id)):
+				continue   # a worn-out smithy serves nothing until it is repaired (master s2.2 item 9): the craft says Needs repair (_broken_station_near)
+
 			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_within(it["pos"], POT_ON_FIRE_M):
 				continue   # the pot hangs over its fire: with that fire out nothing cooks, the craft waits where it is and nothing is lost
 
@@ -13349,6 +13367,23 @@ func _cold_station_near(peer: int, station: String) -> bool:
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)) and station_level_of(it, def, station) > 0 and _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
+				return true
+
+	return false
+
+
+# A worn-out smithy (server_smithy.gd broken) that would serve this station stands within its reach: the craft says "Needs repair".
+func _broken_station_near(peer: int, station: String, level: int = 1) -> bool:
+	if not _peer_pos.has(peer):
+		return false
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if _smithies.broken(int(id)):
+			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+			if station_level_of(it, def, station) >= level and _peer_pos[peer].distance_to(it["pos"]) <= maxf(float(def.get("reach_m", 3.0)) + 1.0, CraftStock.CRAFT_REACH_M):   # as far as a craft would step to it
 				return true
 
 	return false
@@ -16281,6 +16316,9 @@ func _is_storage(it: Dictionary) -> bool:
 	if it.has("fire") or not it.has("struct") or not it["struct"].has("uid") or not _chests.has(int(it["struct"]["uid"])) or it["struct"].has("site"):
 		return false
 
+	if _smithies.broken_row(it):
+		return false   # a worn-out smithy's store is shut to crafting stock, storage views, sites and stacking until it is repaired (master s2.2 item 9)
+
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 	return int(def.get("slots", 0)) > 0 and not bool(def.get("take_only", false)) and str(def.get("use", "")) != "serve"   # a Serving Platter is a table display: no crafting stock, no storage views
 
@@ -17257,8 +17295,14 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		return
 
 	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
-	var station_name: String = str(recipe.get("station", ""))
-	var station_level: int = int(recipe.get("station_level", 1))
+	# A Tempered or +1/+2 craft goes to the station that makes it (the Master smithy), not to a nearer smithy that serves only the plain recipe.
+	# Only for a variant this item may have at all (the stations aside), so a bad request never moves the player.
+	var gives_v: Array = recipe.get("gives", [0, 0])
+	var made_v: String = table.id_of(int(gives_v[0])) if not gives_v.is_empty() else ""
+	var eligible: bool = variant != 0 and SmithingRules.valid(variant) and made_v != "" and SmithingRules.variants(made_v, table.entry(made_v), int(gives_v[1]) if gives_v.size() > 1 else 1, true, true).has(variant)
+	var work: Dictionary = _variant_recipe(recipe, variant) if eligible else recipe
+	var station_name: String = str(work.get("station", ""))
+	var station_level: int = int(work.get("station_level", 1))
 
 	if station_name != "" and not station_near(peer, station_name, station_level):
 		var far_id: int = serving_station(peer, station_name, station_level, CraftStock.CRAFT_REACH_M)
@@ -17272,7 +17316,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 			_say(peer, "That cannot be made %s here" % (SmithingRules.label(variant) if SmithingRules.valid(variant) else "that way"))
 			return
 
-		recipe = recipe.duplicate()
+		recipe = _variant_recipe(recipe, variant)   # a copy, worked at the Master smithy
 		recipe["needs"] = SmithingRules.scaled_needs(recipe["needs"], variant)
 
 	# A sealed batch is capped by the room in the pack and the player's storage nearby (master s3.14 bulk): it never spills onto the ground.
@@ -17300,7 +17344,10 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		return
 
 	if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
-		_say(peer, ("The %s is cold: carry charcoal or coal to fire it" if _cold_station_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
+		if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
+			_say(peer, "Needs repair")   # the exact warning for a worn-out smithy (master s2.2 item 9)
+		else:
+			_say(peer, ("The %s is cold: carry charcoal or coal to fire it" if _cold_station_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
 		return
 
 	for group_id in LOG_GROUP_IDS:   # shoulder and ground logs count (F-16), for any log and for the Softwood and Hardwood logs of the saws
@@ -17374,13 +17421,25 @@ func _variant_here(peer: int, recipe: Dictionary, variant: int) -> bool:
 	return bool(seen[3])
 
 
+# A Tempered or +1/+2 craft is worked at the station that allows it (smithing.json craft.station, temper.station: the Master smithy, which
+# serves every smithy recipe, s2.7 item 9): a copy of the recipe with that station at level 1, so the station check, the firing, the store
+# the product goes to and the wear all fall on it, never on a nearer Advanced smithy (repair plan P3: the Advanced smithy has no quencher).
+func _variant_recipe(recipe: Dictionary, variant: int) -> Dictionary:
+	var c: Dictionary = SmithingRules.cfg()
+	var key: String = "craft" if SmithingRules.craft_in(variant) > 0 else "temper"
+	var out: Dictionary = recipe.duplicate()
+	out["station"] = str(c.get(key, {}).get("station", "master_smithy"))
+	out["station_level"] = 1
+	return out
+
+
 # A queue entry's variant: [recipe, count, needs, parts, chain, variant]; shorter entries are plain.
 func _variant_of(entry: Array) -> int:
 	return int(entry[5]) if entry.size() > 5 else 0
 
 
-# The variant codes this recipe's output may be made as beside this player now (SmithingRules.variants): Tempered needs the temper add-on
-# (the Quenching trough) beside a Smithy or Master smithy that serves the recipe, +1/+2 a Master smithy that serves it.
+# The variant codes this recipe's output may be made as beside this player now (SmithingRules.variants): Tempered needs a temper.station that
+# serves the recipe (the Master smithy, its quenching trough built in), +1/+2 a craft.station (the Master smithy) that serves it.
 func craft_variants(peer: int, recipe: Dictionary) -> Array:
 	var gives: Array = recipe.get("gives", [0, 0])
 	var made_id: String = table.id_of(int(gives[0])) if not gives.is_empty() else ""
@@ -17388,36 +17447,22 @@ func craft_variants(peer: int, recipe: Dictionary) -> Array:
 	var level: int = int(recipe.get("station_level", 1))
 	var c: Dictionary = SmithingRules.cfg()
 	var master: bool = false
-	var trough: bool = false
+	var temper: bool = false
 
 	if station != "" and made_id != "":
 		var master_id: int = serving_station(peer, str(c.get("craft", {}).get("station", "master_smithy")))
 		master = master_id >= 0 and _station_serves(master_id, station, level)
-		var temper_station: String = str(c.get("temper", {}).get("station", "brick_forge"))
-		# The nearest smithy at the recipe's own level (a lit Improved smithy beside an Advanced smithy must not hide the steel one).
-		var smithy_id: int = serving_station(peer, temper_station, level if temper_station == station else 1)
-		trough = smithy_id >= 0 and _station_serves(smithy_id, station, level) and _addon_beside(smithy_id, str(c.get("temper", {}).get("addon", "")))
+		var temper_station: String = str(c.get("temper", {}).get("station", "master_smithy"))
+		# The nearest temper station at the recipe's own level when it is the recipe's station (a lit lower smithy must not hide it).
+		var temper_id: int = serving_station(peer, temper_station, level if temper_station == station else 1)
+		temper = temper_id >= 0 and _station_serves(temper_id, station, level)
 
-	return SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)
+	return SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, temper)
 
 
 func _station_serves(id: int, station: String, level: int) -> bool:
 	var it: Dictionary = _items[id]
 	return station_level_of(it, _structures.get(str(it["struct"]["kind"]), {}), station) >= level
-
-
-# Is a structure of this kind standing within the station's addon_reach_m?
-func _addon_beside(id: int, kind: String) -> bool:
-	var row: Dictionary = _items[id]
-	var reach: float = float(_structures.get(str(row["struct"]["kind"]), {}).get("addon_reach_m", 5.0))
-
-	for other_id in _items:
-		var other: Dictionary = _items[other_id]
-
-		if other.has("struct") and not other["struct"].has("site") and str(other["struct"]["kind"]) == kind and row["pos"].distance_to(other["pos"]) <= reach:
-			return true
-
-	return false
 
 
 # Does the pack hold everything `times` crafts of a recipe need (kept tools once)?
@@ -17645,6 +17690,9 @@ func _craft_tick(spent: float) -> void:
 		var head: Array = queue["entries"][0]
 		var recipe: Dictionary = recipes.recipe(int(head[0]))
 
+		if _variant_of(head) != 0 and not recipe.is_empty():
+			recipe = _variant_recipe(recipe, _variant_of(head))   # worked, fired, stored and worn at the Master smithy, as queued
+
 		if recipe.is_empty():
 			queue["entries"].remove_at(0)
 			queue["elapsed"] = 0.0
@@ -17669,7 +17717,17 @@ func _craft_tick(spent: float) -> void:
 		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1)), true):
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
-				_say(peer, ("The %s is cold: carry charcoal or coal to fire it" if _cold_station_near(peer, str(recipe["station"])) else "Your craft waits: go back to the %s") % _station_name(str(recipe["station"])))
+				if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
+					_say(peer, "Needs repair")   # the smithy wore out under the queue: the craft waits, nothing is lost
+				else:
+					var station_name: String = _station_name(str(recipe["station"]))
+					var waiting: int = _variant_of(head)
+					if _cold_station_near(peer, str(recipe["station"])):
+						_say(peer, "The %s is cold: carry charcoal or coal to fire it" % station_name)
+					elif waiting != 0:
+						_say(peer, "Your %s %s waits: go back to the %s" % [SmithingRules.label(waiting), str(recipe.get("name", "craft")), station_name])   # a Tempered or +1/+2 craft names the item it waits for
+					else:
+						_say(peer, "Your craft waits: go back to the %s" % station_name)
 
 			continue
 
@@ -17767,7 +17825,7 @@ func _craft_tick(spent: float) -> void:
 			var worked_at: int = store_id if store_id >= 0 else (serving_station(peer, str(recipe.get("station", "")), int(recipe.get("station_level", 1))) if not free_entry and not sealed and str(recipe.get("station", "")) != "" else -1)
 
 			if worked_at >= 0:
-				_smithies.crafted(worked_at, recipe)
+				_smithies.crafted(worked_at, recipe, peer)
 
 			if not free_entry:   # an admin-mode craft earns no goal (GA-54)
 				_goal_made(peer, int(recipe["gives"][0]), times)
