@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1310,
+	"next_number": 1325,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2193,7 +2193,7 @@
 		"roof_section_kit": {
 			"number": 196,
 			"retired": true,
-			"name": "Refined - Roof",
+			"name": "Refined - Roof 45",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2203,14 +2203,14 @@
 		},
 		"roof_section": {
 			"number": 197,
-			"name": "Refined - Roof",
-			"description": "A plank roof on four posts, to set over walls and ceilings.",
+			"name": "Refined - Roof 45",
+			"description": "A sloped roof panel of wooden shakes on sawn boards.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
-			"note": "Building piece: row state 24; sits on a 1 m grid, turns in quarter circles."
+			"note": "Placed piece: row state 24; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"foundation_section_kit": {
 			"number": 198,
@@ -4981,7 +4981,7 @@
 		"log_roof_kit": {
 			"number": 468,
 			"retired": true,
-			"name": "Rustic - Roof",
+			"name": "Rustic - Roof 45",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"kind": "placeable",
 			"stack": 1,
@@ -4991,12 +4991,13 @@
 		},
 		"log_roof": {
 			"number": 469,
-			"name": "Rustic - Roof",
-			"description": "A log-framed thatch roof.",
+			"name": "Rustic - Roof 45",
+			"description": "A sloped roof panel of bark shingles on split logs.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"note": "Placed piece: row state 52; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"stone_wall_kit": {
 			"number": 470,
@@ -5041,7 +5042,7 @@
 		"stone_roof_kit": {
 			"number": 474,
 			"retired": true,
-			"name": "Sturdy - Roof",
+			"name": "Sturdy - Roof 45",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5051,12 +5052,13 @@
 		},
 		"stone_roof": {
 			"number": 475,
-			"name": "Sturdy - Roof",
-			"description": "A stone-shingle roof.",
+			"name": "Sturdy - Roof 45",
+			"description": "A sloped roof panel of stone shingles.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"note": "Placed piece: row state 55; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"brick_wall_kit": {
 			"number": 476,
@@ -5101,7 +5103,7 @@
 		"brick_roof_kit": {
 			"number": 480,
 			"retired": true,
-			"name": "Superior - Roof",
+			"name": "Superior - Roof 45",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5111,12 +5113,13 @@
 		},
 		"brick_roof": {
 			"number": 481,
-			"name": "Superior - Roof",
-			"description": "A tiled brick roof.",
+			"name": "Superior - Roof 45",
+			"description": "A sloped roof panel of fired clay tiles.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"note": "Placed piece: row state 58; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"log_cabin_set_kit": {
 			"number": 482,
@@ -9175,7 +9178,7 @@
 			"engineered_roof_kit": {
 				"number": 876,
 				"retired": true,
-				"name": "Engineered - Roof",
+				"name": "Engineered - Roof 45",
 				"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9185,13 +9188,13 @@
 			},
 			"engineered_roof": {
 				"number": 877,
-				"name": "Engineered - Roof",
-				"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
+				"name": "Engineered - Roof 45",
+				"description": "A sloped roof panel of clay tiles on pinned plank rafters. Does not burn.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 219."
+				"note": "Placed piece: row state 219; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 			},
 			"engineered_roof_corner_kit": {
 				"number": 878,
@@ -10659,6 +10662,56 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row states 366 (shut) and 367 (open) (BUGLIST-002): a door that fits any double arched doorway, built with the hammer (blueprint 299). Take-down refunds its cost."
+			},
+			"log_roof_65": {
+				"number": 1320,
+				"name": "Rustic - Roof 65",
+				"description": "A steep roof panel of bark shingles on split logs.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 380 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Rustic - Roof 45 (log_roof), built with the hammer (blueprint 310)."
+			},
+			"roof_section_65": {
+				"number": 1321,
+				"name": "Refined - Roof 65",
+				"description": "A steep roof panel of wooden shakes on sawn boards.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 381 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Refined - Roof 45 (roof_section), built with the hammer (blueprint 311)."
+			},
+			"stone_roof_65": {
+				"number": 1322,
+				"name": "Sturdy - Roof 65",
+				"description": "A steep roof panel of stone shingles.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 382 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Sturdy - Roof 45 (stone_roof), built with the hammer (blueprint 312)."
+			},
+			"brick_roof_65": {
+				"number": 1323,
+				"name": "Superior - Roof 65",
+				"description": "A steep roof panel of fired clay tiles.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 383 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Superior - Roof 45 (brick_roof), built with the hammer (blueprint 313)."
+			},
+			"engineered_roof_65": {
+				"number": 1324,
+				"name": "Engineered - Roof 65",
+				"description": "A steep roof panel of clay tiles on pinned plank rafters. Does not burn.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 384 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Engineered - Roof 45 (engineered_roof), built with the hammer (blueprint 314)."
 			}
 	}
 }

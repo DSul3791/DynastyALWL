@@ -433,11 +433,6 @@ static func floor_piece(mat: String = "wood") -> Node3D:
 	return root
 
 
-# The Refined - Roof (seven-tier ladder, 10 Nov 2026): a pitched roof of split wooden shakes (see pitched_roof). `mat` is kept for old callers.
-static func roof(_mat: String = "wood") -> Node3D:
-	return pitched_roof("wood")
-
-
 # A foundation (Radar: 4 by 4 m, top 0.3 m above its spot, 2 m deep, solid; the other pieces click onto it): a fitted-stone course round a packed-earth top.
 static func foundation() -> Node3D:
 	_materials()
@@ -1436,13 +1431,43 @@ static func tier_floor(kind: String = "stone") -> Node3D:
 	return root
 
 
-# A tier roof: `kind` "log" (Rustic), "stone" (Sturdy), "brick" (Superior) or "engineered" (Engineered); see pitched_roof.
-static func tier_roof(kind: String = "stone") -> Node3D:
-	return pitched_roof(kind)
+# A tier roof panel (GOALS-REPAIR A-35, A-36): Rustic, Refined, Sturdy, Superior and Engineered - Roof 45 and 65 are the Crude panel's shape (thatch_roof:
+# no posts, 2 m wide over a 2 m run, the spot its middle, rising toward -Z) in the tier's own cover from ROOF_SPEC: `kind` "log", "wood", "stone", "brick" or
+# "engineered". Boards under the cover, the cover in courses across the slope (each course's low edge stands proud of the next), a rib down the slope every
+# 0.24 m on the clay tile tiers, three rafters under it, a fascia board along the low eave, and the same tilted slab collider as the Crude panel.
+static func tier_panel(kind: String = "stone", slope_deg: float = 45.0) -> Node3D:
+	_tier_materials()
+	var spec: Array = ROOF_SPEC.get(kind, ROOF_SPEC["wood"])
+	var cover_mat: StandardMaterial3D = _tone_mat(spec[0])
+	var rows: int = spec[1]
+	var thick: float = spec[2]
+	var tilt: float = deg_to_rad(slope_deg)
+	var length: float = 2.0 / cos(tilt)         # down the slope, for a 2 m run
+	var turn: Vector3 = Vector3(tilt, 0.0, 0.0)
+	var course: float = length / float(rows)
+	var root: Node3D = Node3D.new()
+
+	_box_rot(root, Vector3(2.0, 0.06, length), _roof_off(tilt, -0.05), turn, _roof_mat(spec[3]))      # the boards under the cover
+
+	for k in rows:
+		var t: float = thick * (0.75 + 0.25 * float((k * 7) % 3)) if kind == "log" else thick         # bark shingles vary in thickness
+		var at: Vector3 = _roof_along(tilt, -length * 0.5 + course * (float(k) + 0.5)) + _roof_off(tilt, t * 0.5)
+		_box_rot(root, Vector3(2.0, t, course + 0.02), at, Vector3(tilt - atan(t / course), 0.0, 0.0), cover_mat)   # a course, its low edge proud
+
+	if spec[4] == "round":
+		for i in 8:
+			_box_rot(root, Vector3(0.07, 0.03, length), Vector3(-0.84 + 0.24 * float(i), 0.0, 0.0) + _roof_off(tilt, thick + 0.015), turn, cover_mat)   # a rib of tile
+
+	for x in [-0.85, 0.0, 0.85]:
+		_box_rot(root, Vector3(0.1, 0.1, length), Vector3(x, 0.0, 0.0) + _roof_off(tilt, -0.13), turn, _roof_mat(spec[5]))   # a rafter under it
+
+	_box_rot(root, Vector3(2.0, 0.14, 0.04), _roof_along(tilt, length * 0.5), turn, _roof_mat(spec[6]))   # the fascia along the low eave
+	_solid(root, Vector3(2.0, 0.16, length), Vector3.ZERO, turn)
+	return root
 
 
-# --- Tier roofs (seven-tier ladder, Kathleen 10 Nov 2026; Dave: a roof is its own weatherproof cover, not the wall material). Every roof above Crude is
-# pitched like the thatch roof: the 2.4 m square on four posts, the ridge along Z, both slopes at 0.3 rad (so two tiers side by side meet at the same
+# --- Tier roofs (seven-tier ladder, Kathleen 10 Nov 2026; Dave: a roof is its own weatherproof cover, not the wall material). The straight roofs are
+# sloped panels (tier_panel, GOALS-REPAIR A-35/A-36); the corners (pitched_roof with `corner`, until A-37) are the 2.4 m square on four posts, the ridge along Z, both slopes at 0.3 rad (so two tiers side by side meet at the same
 # valley), eaves 2.45 m up at x = -1.2 and +1.2. The cover is laid in courses parallel to the ridge; each course's lower edge stands proud of the next
 # by its thickness, so the slope reads as shingles, shakes, slates or tiles from any side. A corner piece is the thatch corner's hip end: the ridge
 # stops at the middle and the cover slopes down to the +Z eave as well.
@@ -1606,7 +1631,7 @@ static func _mesh_of(root: Node3D, st: SurfaceTool, material: StandardMaterial3D
 	root.add_child(mesh)
 
 
-# A pitched tier roof (ROOF_SPEC `kind`); with `corner`, the hip-end corner piece.
+# A pitched tier roof corner (ROOF_SPEC `kind`), the hip end on four posts; the straight roofs are panels now (tier_panel). `corner` false is no longer drawn.
 static func pitched_roof(kind: String, corner: bool = false) -> Node3D:
 	_tier_materials()
 	var spec: Array = ROOF_SPEC.get(kind, ROOF_SPEC["wood"])

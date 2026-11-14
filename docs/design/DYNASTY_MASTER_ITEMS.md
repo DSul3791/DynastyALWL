@@ -1619,7 +1619,8 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 95 | `master_forge` | Master forge |  |  | UPDATE | Legacy station ID; target mapping pending (§2.7 item 11). Master Smithy requires a Steel Anvil and has an integrated Quenching Trough; no automatic ID remap is approved here. |
 | 193 | `wall_section` | Refined - Wall | planks |  | KEEP | A plank wall, two metres wide. Set pieces edge to edge to build a house. |
 | 195 | `floor_section` | Refined - Ceiling | planks |  | KEEP | A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge. |
-| 197 | `roof_section` | Refined - Roof | planks |  | KEEP | A plank roof on four posts, to set over walls and ceilings. |
+| 197 | `roof_section` | Refined - Roof 45 | planks |  | KEEP | A sloped roof panel of wooden shakes on sawn boards. **GOALS-REPAIR A-35 (14 Nov 2026): renamed from "Refined - Roof", id and number kept; now a 45 degree sloped panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm.** |
+| 1321 | `roof_section_65` | Refined - Roof 65 |  |  | ADD | A steep roof panel of wooden shakes on sawn boards. **GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree panel, blueprint 311, state 381, same materials as Refined - Roof 45. PROVISIONAL, for Dave to confirm.** |
 | 199 | `foundation_section` | Sturdy - Foundation | stone |  | KEEP | A stone and clay slab, four metres square. Walls and ceilings snap onto it. |
 | 201 | `doorway_section` | Refined - Doorway | planks |  | KEEP | A plank wall with an empty opening, one metre wide and two high. Build the door separately. **BUGLIST-002 (13 Nov 2026): an empty doorway frame; its door is a separate item (s3.0).** |
 | 203 | `window_section` | Refined - Window | planks |  | KEEP | A plank wall with an opening at chest height to see through. |
@@ -1691,13 +1692,16 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 463 | `stairs_wood` | Refined - Stairs |  |  | KEEP | A wooden flight of stairs, 2.4 m long. |
 | 465 | `log_wall` | Rustic - Wall |  |  | KEEP | A log wall, two metres wide. |
 | 467 | `log_floor` | Rustic - Ceiling |  |  | KEEP | A ceiling of laid logs. |
-| 469 | `log_roof` | Rustic - Roof |  |  | KEEP | A log-framed thatch roof. |
+| 469 | `log_roof` | Rustic - Roof 45 |  |  | KEEP | A sloped roof panel of bark shingles on split logs. **GOALS-REPAIR A-35 (14 Nov 2026): renamed from "Rustic - Roof", id and number kept; now a 45 degree sloped panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm.** |
+| 1320 | `log_roof_65` | Rustic - Roof 65 |  |  | ADD | A steep roof panel of bark shingles on split logs. **GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree panel, blueprint 310, state 380, same materials as Rustic - Roof 45. PROVISIONAL, for Dave to confirm.** |
 | 471 | `stone_wall` | Sturdy - Wall |  |  | KEEP | A stone wall, two metres wide. |
 | 473 | `stone_floor` | Sturdy - Ceiling |  |  | KEEP | A cobbled stone ceiling. |
-| 475 | `stone_roof` | Sturdy - Roof |  |  | KEEP | A stone-shingle roof. |
+| 475 | `stone_roof` | Sturdy - Roof 45 |  |  | KEEP | A sloped roof panel of stone shingles. **GOALS-REPAIR A-35 (14 Nov 2026): renamed from "Sturdy - Roof", id and number kept; now a 45 degree sloped panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm.** |
+| 1322 | `stone_roof_65` | Sturdy - Roof 65 |  |  | ADD | A steep roof panel of stone shingles. **GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree panel, blueprint 312, state 382, same materials as Sturdy - Roof 45. PROVISIONAL, for Dave to confirm.** |
 | 477 | `brick_wall` | Superior - Wall |  |  | KEEP | A brick wall, two metres wide. |
 | 479 | `brick_floor` | Superior - Ceiling |  |  | KEEP | A brick ceiling. |
-| 481 | `brick_roof` | Superior - Roof |  |  | KEEP | A tiled brick roof. |
+| 481 | `brick_roof` | Superior - Roof 45 |  |  | KEEP | A sloped roof panel of fired clay tiles. **GOALS-REPAIR A-35 (14 Nov 2026): renamed from "Superior - Roof", id and number kept; now a 45 degree sloped panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm.** |
+| 1323 | `brick_roof_65` | Superior - Roof 65 |  |  | ADD | A steep roof panel of fired clay tiles. **GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree panel, blueprint 313, state 383, same materials as Superior - Roof 45. PROVISIONAL, for Dave to confirm.** |
 | 502 | `log_seat` | Seat |  |  | KEEP | A log seat. Sit on it by the fire. |
 | 503 | `stool` | Stool |  |  | KEEP | A lashed stool. Sit on it. |
 | 504 | `bench` | Wooden - Bench |  |  | UPDATE | **DECIDED [D4]: becomes Crude - Bench (s3.5).** A plank bench that seats two or three. |
@@ -1848,7 +1852,8 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 871 | `engineered_pillar` | Engineered - Pillar |  |  | KEEP | A square concrete pillar to hold up a ceiling or a roof. |
 | 873 | `engineered_stairs` | Engineered - Stairs |  |  | KEEP | A flight of poured concrete steps up to the next storey. |
 | 875 | `engineered_floor` | Engineered - Ceiling |  |  | KEEP | A concrete slab cast over planks. A ceiling below and a floor above. |
-| 877 | `engineered_roof` | Engineered - Roof |  |  | KEEP | Clay roof tiles on pinned plank rafters. Does not burn. |
+| 877 | `engineered_roof` | Engineered - Roof 45 |  |  | KEEP | A sloped roof panel of clay tiles on pinned plank rafters. Does not burn. **GOALS-REPAIR A-35 (14 Nov 2026): renamed from "Engineered - Roof", id and number kept; now a 45 degree sloped panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm.** |
+| 1324 | `engineered_roof_65` | Engineered - Roof 65 |  |  | ADD | A steep roof panel of clay tiles on pinned plank rafters. Does not burn. **GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree panel, blueprint 314, state 384, same materials as Engineered - Roof 45. PROVISIONAL, for Dave to confirm.** |
 | 879 | `engineered_roof_corner` | Engineered - Roof corner |  |  | KEEP | A clay tile roof corner on pinned plank rafters. |
 | 881 | `fortified_foundation` | Fortified - Foundation |  |  | KEEP | A concrete slab tied with iron bands, four metres square. The base of a fort. |
 | 883 | `fortified_wall` | Fortified - Wall |  |  | KEEP | A concrete wall banded with iron, two metres wide. Built to stand a siege. |
