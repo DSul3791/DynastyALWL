@@ -6989,8 +6989,8 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 
 
 # A felled tree's seeds (Dave 14 Nov 2026: "Trees should drop some seeds when cut down. a random number of seeds between 1 and 5 seeds per tree"): [item number,
-# count] of its drops.json trunk.felled_seeds by_species seed (a species' own fruit or nut, or its own seed item), count from felled_seeds.count; [] for a species
-# with none (the fantasy trees). Rolled from the trunk's id like the crown litter; no player, so no luck (world drop).
+# count] of its drops.json trunk.felled_seeds by_species seed (every tree's own "<Tree> seed" item, fantasy trees too: Dave 14 Nov 2026), count from felled_seeds.count;
+# [] for a species with none. Rolled from the trunk's id like the crown litter; no player, so no luck (world drop).
 func _felled_seeds(id: int, tree: Dictionary) -> Array:
 	var cfg: Dictionary = (_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {})
 	var number: int = table.number_of(str((cfg.get("by_species", {}) as Dictionary).get(str(tree.get("species", "")), "")))
@@ -7544,7 +7544,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		flora_changed.call(home)
 
 
-# The tree species whose seed `item_id` is (drops.json trunk.felled_seeds by_species: a species' own fruit or nut, or its own seed item), "" for none. The
+# The tree species whose seed `item_id` is (drops.json trunk.felled_seeds by_species: each tree's own "<Tree> seed" item), "" for none. The
 # first species listed for an item wins (each seed is one species' today).
 func tree_seed_species(item_id: String) -> String:
 	var by: Dictionary = ((_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})
@@ -8472,16 +8472,12 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		return false
 
 	var hammer: int = _heaviest_hammer_slot(inv)
-	# A garden plot is laid out with the hoe too (Dave 14 Nov 2026, the hoe's Garden mode; master s2.1 "Create Garden Plot"). PROVISIONAL: a working hoe on the
-	# hand bar stands in for a hammer for plot blueprints only, at the lightest hammer's tier.
-	var plot_row: bool = bool(_structures.get(str(row["structure"]), {}).get("plot", false))
-	var hoe_plot: bool = hammer < 0 and plot_row and int(row.get("hammer", 1)) <= 1 and _has_tool(inv, "hoe")
 
-	if hammer < 0 and not hoe_plot:
-		_say(peer, "You need a hammer or a hoe in your hand bar to lay out a garden plot." if plot_row else "You need a hammer in your hand bar to build from a blueprint.")
+	if hammer < 0:
+		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
 		return false
 
-	if hammer >= 0 and int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
+	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
 		_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
 		return false
 

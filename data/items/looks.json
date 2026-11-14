@@ -4102,6 +4102,181 @@
    "color": "#a8884a",
    "size": 0.4
   },
+  "oak_seed": {
+   "shape": "nut",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "beech_seed": {
+   "shape": "nut",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "coconut_palm_seed": {
+   "shape": "nut",
+   "color": "#8a6a3a",
+   "size": 0.6
+  },
+  "rowan_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "wild_apple_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "wild_pear_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "wild_cherry_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "sweet_chestnut_seed": {
+   "shape": "nut",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "walnut_seed": {
+   "shape": "nut",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "date_palm_seed": {
+   "shape": "nut",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "mirrorbark_seed": {
+   "shape": "chunk",
+   "color": "#7a6aa8",
+   "size": 0.4
+  },
+  "wardpine_seed": {
+   "shape": "chunk",
+   "color": "#7a6aa8",
+   "size": 0.4
+  },
+  "hearthwood_seed": {
+   "shape": "chunk",
+   "color": "#7a6aa8",
+   "size": 0.4
+  },
+  "everember_seed": {
+   "shape": "chunk",
+   "color": "#7a6aa8",
+   "size": 0.4
+  },
+  "witness_tree_seed": {
+   "shape": "chunk",
+   "color": "#7a6aa8",
+   "size": 0.4
+  },
+  "apple_early_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "apple_summer_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "apple_autumn_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "apple_keeping_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "apple_cooking_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "pear_summer_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "pear_autumn_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "pear_winter_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "sour_cherry_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "plum_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "damson_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "quince_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "medlar_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "fig_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "olive_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "pomegranate_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "mango_seed": {
+   "shape": "nut",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "orange_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "lemon_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
+  "wild_apple_sweet_seed": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.4
+  },
   "sling": {
    "shape": "bundle",
    "color": "#8a6a4a",

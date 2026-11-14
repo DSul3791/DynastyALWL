@@ -73,8 +73,7 @@ ITEMS = {
     "wooden_pipe": ("wooden_pipe", STATION_VIEW), "wooden_pipe_elbow": ("wooden_pipe_elbow", STATION_VIEW), "wooden_pipe_tee": ("wooden_pipe_tee", STATION_VIEW), "wooden_channel": ("wooden_channel", STATION_VIEW), "wooden_channel_corner": ("wooden_channel_corner", STATION_VIEW),
     "wooden_channel_tee": ("wooden_channel_tee", STATION_VIEW), "wooden_sluice": ("wooden_sluice", STATION_VIEW),
     "stone_channel": ("stone_channel", STATION_VIEW), "stone_channel_corner": ("stone_channel_corner", STATION_VIEW),
-    "stone_channel_tee": ("stone_channel_tee", STATION_VIEW), "clay_pipe_run": ("clay_pipe_run", STATION_VIEW),
-    "clay_pipe_elbow": ("clay_pipe_elbow", STATION_VIEW), "clay_pipe_tee": ("clay_pipe_tee", STATION_VIEW), "iron_pipe": ("iron_pipe", STATION_VIEW),
+    "stone_channel_tee": ("stone_channel_tee", STATION_VIEW), "iron_pipe": ("iron_pipe", STATION_VIEW),
     "iron_pipe_elbow": ("iron_pipe_elbow", STATION_VIEW), "iron_tap": ("iron_tap", STATION_VIEW), "iron_deep_well_pump": ("iron_deep_well_pump", STATION_VIEW),
     "stone_cistern": ("stone_cistern", STATION_VIEW), "stone_raised_cistern": ("stone_raised_cistern", STATION_VIEW),
     # Item system C2: stations

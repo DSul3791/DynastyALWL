@@ -108,15 +108,15 @@ func _init() -> void:
 	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(hazel_bush), 0, 0, spot + Vector3(0.3, 0.0, 0.0))
 	check(inv.count_of(hazel_bush) == 1 and said.has("Too close to another plant."), "right beside the first: not planted")
 
-	# A tree's seed (gardening, Dave 14 Nov 2026): an acorn goes in as an oak sapling that grows like wild regrowth (planted now, not full size), 2 m from other plants.
-	var acorns: int = items.table.number_of("acorns")
-	check(items.tree_seed_species("acorns") == "oak" and items.tree_seed_species("maple_keys") == "maple" and items.tree_seed_species("stone") == "", "acorns are the oak's seed, maple keys the maple's; a stone is no seed")
-	items.action(1, Net.ACT_ADMIN_GIVE, acorns, 0, 2, Vector3.ZERO)
+	# A tree's seed (gardening, Dave 14 Nov 2026): an oak seed goes in as an oak sapling that grows like wild regrowth (planted now, not full size), 2 m from other plants.
+	var oak_seeds: int = items.table.number_of("oak_seed")
+	check(items.tree_seed_species("oak_seed") == "oak" and items.tree_seed_species("maple_keys") == "maple" and items.tree_seed_species("mirrorbark_seed") == "mirrorbark" and items.tree_seed_species("acorns") == "" and items.tree_seed_species("stone") == "", "every tree has its own seed (Oak seed, Sugar maple seed, Mirrorbark seed); acorns are food, not a seed; a stone is no seed")
+	items.action(1, Net.ACT_ADMIN_GIVE, oak_seeds, 0, 2, Vector3.ZERO)
 	said.clear()
-	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(acorns), 0, 0, spot + Vector3(0.0, 0.0, -1.5))
-	check(inv.count_of(acorns) == 2 and said.has("Too close to another plant."), "a tree seed 1.5 m from the hazel: not planted (trees keep 2 m)")
-	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(acorns), 0, 0, spot + Vector3(0.0, 0.0, -2.5))
-	check(inv.count_of(acorns) == 1 and items._saplings.size() == 2, "an acorn 2.5 m away is planted from the pack (%d planted)" % items._saplings.size())
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(oak_seeds), 0, 0, spot + Vector3(0.0, 0.0, -1.5))
+	check(inv.count_of(oak_seeds) == 2 and said.has("Too close to another plant."), "a tree seed 1.5 m from the hazel: not planted (trees keep 2 m)")
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(oak_seeds), 0, 0, spot + Vector3(0.0, 0.0, -2.5))
+	check(inv.count_of(oak_seeds) == 1 and items._saplings.size() == 2, "an oak seed 2.5 m away is planted from the pack (%d planted)" % items._saplings.size())
 
 	if items._saplings.size() == 2:
 		var oak: Dictionary = items._saplings[1]
@@ -128,9 +128,15 @@ func _init() -> void:
 		check(str(items.dynamic_tree_info(oak_home, oak_id).get("name", "")) == "oak", "grown, it is an oak to fell (%s)" % str(items.dynamic_tree_info(oak_home, oak_id)))
 		items.game_seconds = func(): return 5000000.0
 
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("crab_apples"), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(items.table.number_of("crab_apples")), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
-	check(items._saplings.size() == 3 and int(items._saplings[-1]["species"]) == int(items._flora_by_name["wild_apple"]["id"]), "a crab apple grows a wild apple tree")
+	# Fruit is food; the tree's own seed is what is planted (Dave 14 Nov 2026): a crab apple is not planted, a Wild apple seed grows a wild apple tree.
+	var crab: int = items.table.number_of("crab_apples")
+	items.action(1, Net.ACT_ADMIN_GIVE, crab, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(crab), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
+	check(inv.count_of(crab) == 1 and items._saplings.size() == 2, "a crab apple is food: it stays in the pack and nothing is planted")
+	var apple_seed: int = items.table.number_of("wild_apple_seed")
+	items.action(1, Net.ACT_ADMIN_GIVE, apple_seed, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(apple_seed), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
+	check(apple_seed > 0 and inv.count_of(apple_seed) == 0 and items._saplings.size() == 3 and int(items._saplings[-1]["species"]) == int(items._flora_by_name["wild_apple"]["id"]), "a Wild apple seed grows a wild apple tree")
 
 	items._finish_writer()
 	print("test_shrub_work: ", "FAIL (%d)" % failures if failures > 0 else "ok")

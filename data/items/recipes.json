@@ -6665,7 +6665,8 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "campfire"
+			"station": "campfire",
+			"retired": true
 		},
 		"toggle": {
 			"number": 353,
