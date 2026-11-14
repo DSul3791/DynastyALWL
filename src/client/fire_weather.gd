@@ -96,7 +96,7 @@ static func _shared_material() -> StandardMaterial3D:
 	return _halo_material
 
 
-# Once a second from weather_look.gd: veil = mist x mist_inside, snow = eased falling snow (0..1), ground_snow = the ground's
+# Once a second from weather_look.gd: veil = the fog at the eye (mist_inside: strength x depth in the valley or sea fog), snow = eased falling snow (0..1), ground_snow = the ground's
 # snow memory, daylight 0 night .. 1 day.
 static func update(tree: SceneTree, veil: float, snow: float, ground_snow: float, daylight: float) -> void:
 	if tree == null:

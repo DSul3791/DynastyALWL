@@ -8,7 +8,7 @@ One switch, `--firelight-weather`, off until Dino's pictures. Client only.
 ## 1. What is wrong today (read from the code on main)
 
 - **Fog does not touch firelight.** A torch (`held_item.gd`, `omni_range` = the item's `light_m`) and a campfire (`building_look.gd`, `FIRE_LIGHT` 3.5 / 7 / 14 m by tier when this was written; the large fire is 20 m since 13 Nov 2026, BUGLIST-001 BUG-002, so it is at least 4 times a torch) light just as far in dense valley fog as on a clear night (never-see 1).
-- **No halo.** Both torch lights set `light_volumetric_fog_energy` to 0, and the environment has no volumetric fog anyway. So a torch through thick fog is a clean point with no glow (never-see 2).
+- **No halo.** (Since 14 Nov 2026 every registered fire light also lights the volumetric fog on High and Ultra, FireWeather.FIRE_FOG_SHARE; docs/design/FOG_PLAN.md.) Both torch lights set `light_volumetric_fog_energy` to 0, and the environment has no volumetric fog anyway. So a torch through thick fog is a clean point with no glow (never-see 2).
 - **Lying snow does not throw the light back.** A campfire on fresh snow lights no wider ring than on grass (never-see 4).
 - **Rain is already right.** It does not shorten the reach, and open flames go out (`flame_rules.gd`). Nothing changes for rain.
 

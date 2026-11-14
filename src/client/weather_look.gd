@@ -118,7 +118,7 @@ const FLASH_S := 0.9
 # Valley fog (docs/design/valley_fog.md): the weather's `mist` (0..1) and `mist_top_m` (its top above sea level).
 const MIST_HEIGHT_DENSITY := 0.08        # per metre below the top at full mist: 5 m down about a third white, 30 m down nearly solid
 const MIST_EDGE_M := 6.0                 # the camera goes from above the fog to inside it over this much height either side of the top
-const MIST_INSIDE_THICK := 14.0          # inside the layer: the clear-air haze times this more (95% white at about 220 m; fog means under 1 km)
+const MIST_INSIDE_THICK := 14.0          # the server's animal-sight rule (Weather.VIS_MIST_THICK, about 220 m in full fog) until the third fog PR; the look uses fog_look.gd
 const MIST_WHITE := Color(0.9, 0.9, 0.9)
 const MIST_WHITEN := 0.55                # how far the fog colour moves from the horizon colour toward white by day
 const MIST_OWN_COLOR := 0.8              # the fog keeps its own colour instead of taking the sky's (aerial perspective) by this much
@@ -825,7 +825,7 @@ func _process_body(delta: float) -> void:
 		# Above the layer the air is clear (#672): valley fog or a sea fog bank, whichever is the thicker.
 		var haze_density: float = LookSettings.FOG_DENSITY * minf(thick, 20.0) * above_clear(foggy, mist_inside)
 		# Depth fog (fog_look.gd): the haze fitted as before, the fog at the eye pulling its end in toward Dave's dense-fog distances.
-		var shape: Vector3 = FogLook.depth(haze_density, mist_inside)
+		var shape: Vector3 = FogLook.depth(haze_density, mist_inside, FogLook.dense_end(_quality))
 		environment.fog_mode = Environment.FOG_MODE_DEPTH
 		environment.fog_depth_begin = shape.x
 		environment.fog_depth_end = shape.y
@@ -854,7 +854,9 @@ func _process_body(delta: float) -> void:
 		# The water draws its own fog with the same sums (water_material.gd): rivers and lakes take the land layer, the sea plane only
 		# the sea fog, so a calm night's valley fog leaves the open sea clear (radiation fog forms over land, not the open sea).
 		var heading_now: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
-		fog_body.update(delta, environment, _quality, _client.camera.global_position, mist_inside, foggy * under_rock, land_top if land >= sea_fog else sea_top, MIST_EDGE_M, wind_ms(float(_s["wind"])), heading_now)
+		# The body belongs to the layer the eye is in or over: the land layer, or the sea fog only down at sea level (not inland).
+		var sea_here: float = sea_fog if eye_y < SEA_LEVEL_EYE_M else 0.0
+		fog_body.update(delta, environment, _quality, _client.camera.global_position, mist_inside, maxf(land, sea_here) * under_rock, land_top if land >= sea_here else sea_top, MIST_EDGE_M, wind_ms(float(_s["wind"])), heading_now)
 		_water_fog(environment, sea_top, MIST_HEIGHT_DENSITY * sea_fog * (1.0 - mist_inside) * under_rock if FogLook.sky_drawn(_quality) else 0.0, under_rock)
 	else:
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
@@ -1051,7 +1053,7 @@ func _update_ground(rain: float, snow: float) -> void:
 	# Firelight in fog and snow (firelight_weather_design.md): reach and halo of every fire light, once a second.
 	if Time.get_ticks_msec() >= _fire_light_next_msec:
 		_fire_light_next_msec = Time.get_ticks_msec() + 1000
-		FireWeather.update(get_tree(), float(_s["mist"]) * mist_inside, snow, lying, 1.0 - day.night)
+		FireWeather.update(get_tree(), mist_inside, snow, lying, 1.0 - day.night)   # any fog at the eye, valley or sea (mist_inside has the strength in it)
 
 	# Snow on the branches and crowns (art_weather_light.md 8.2.2): the crowns keep their own memory, which holds in frost and sheds in a
 	# thaw or a strong wind, never more than the ground's.

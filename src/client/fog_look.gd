@@ -15,6 +15,7 @@ extends RefCounted
 
 # --- the fog's shape ---
 const DENSE_END_M := 60.0          # full fog (strength 1, standing inside): everything is gone by this distance (Dave's dense-fog targets)
+const DENSE_END_VOL_M := 70.0      # the same on High and Ultra, where the drifting body (fog_volume.gd) adds its share on top
 const BEGIN_M := 0.0               # the fog starts at the eye, thin (no clear bubble)
 const FOG_CURVE := 1.0             # 1: Dave's targets above. Under 1 thickens the near part, over 1 clears it
 const HAZE_END_K := 3.25           # clear-air haze as depth fog: end = HAZE_END_K / Godot density
@@ -65,11 +66,16 @@ static func haze_end(density: float) -> float:
 # The depth fog for haze of this exponential density and a fog of this strength at the eye (0 none .. 1 full and standing deep inside):
 # [begin, end, curve]. The fog's end is the haze's end moved toward DENSE_END_M in log steps, so half strength sits halfway on a log
 # scale (about 470 m in clear air) and a light mist leaves long views.
-static func depth(density: float, fog: float) -> Vector3:
+static func depth(density: float, fog: float, dense_end_m: float = DENSE_END_M) -> Vector3:
 	var f: float = clampf(fog, 0.0, 1.0)
 	var far: float = haze_end(density)
-	var end_m: float = far * pow(minf(DENSE_END_M / far, 1.0), f) if far < 1e8 else (DENSE_END_M / maxf(f, 1e-4) if f > 0.0 else 1e9)
+	var end_m: float = far * pow(minf(dense_end_m / far, 1.0), f) if far < 1e8 else (dense_end_m / maxf(f, 1e-4) if f > 0.0 else 1e9)
 	return Vector3(BEGIN_M * f, maxf(end_m, BEGIN_M * f + 1.0), lerpf(HAZE_CURVE, FOG_CURVE, f))
+
+
+# The dense end for this preset: longer where the volumetric body adds to it.
+static func dense_end(quality: int) -> float:
+	return DENSE_END_VOL_M if bool(preset(quality)["volumetric"]) else DENSE_END_M
 
 
 # Godot's depth fog amount at a distance (the same sum the engine and the water shader use).

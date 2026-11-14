@@ -15,6 +15,6 @@ All NEEDS PLAYER VERIFICATION. The test lane runs headless and cannot see. Desig
 - [ ] **With a torch** (night, fog). A soft halo is around the flame. On High and Ultra, a glow in the fog around it, and things behind it stay hidden. Without a torch it stays dark.
 - [ ] **Campfire in fog.** The same halo and glow around the fire.
 - [ ] **Through a doorway.** Inside a built room the air is clear; looking out of the doorway shows the fog outside. In a cave the fog is gone deep inside, and the mouth shows it.
-- [ ] **Drift (High and Ultra).** Slow, broad patches, thicker and thinner, drifting gently with the wind. No boiling, no repeating pattern, not following you.
+- [ ] **Drift (High and Ultra).** Slow, broad patches, thicker and thinner, drifting gently with the wind (the fog kind is dead calm: they only creep). No boiling, no repeating pattern, not following you.
 - [ ] **Clear day unchanged.** On a clear day, far hills haze to the sky colour as before.
 - [ ] **Presets.** Ultra: everything above. High: the same with a coarser body. Medium: distance, sky and halos, no drifting body. Low: no weather fog (the switch), clear-day haze as before. Note the frame rate in fog on each.

@@ -3281,7 +3281,7 @@ func _make_lantern_model(id: String) -> Node3D:
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(row.get("light_m", 8.0))
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0
+	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
 	light.light_cull_mask = 0xFFFFFFFD
 	light.position = body.position
 	lantern.add_child(light)
@@ -3427,7 +3427,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
 	light.omni_attenuation = FlameRules.TORCH_LIGHT_ATTENUATION
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0
+	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
