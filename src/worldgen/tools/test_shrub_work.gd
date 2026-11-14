@@ -128,9 +128,15 @@ func _init() -> void:
 		check(str(items.dynamic_tree_info(oak_home, oak_id).get("name", "")) == "oak", "grown, it is an oak to fell (%s)" % str(items.dynamic_tree_info(oak_home, oak_id)))
 		items.game_seconds = func(): return 5000000.0
 
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("crab_apples"), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(items.table.number_of("crab_apples")), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
-	check(items._saplings.size() == 3 and int(items._saplings[-1]["species"]) == int(items._flora_by_name["wild_apple"]["id"]), "a crab apple grows a wild apple tree")
+	# Fruit is food; the tree's own seed is what is planted (Dave 14 Nov 2026): a crab apple is not planted, a Wild apple seed grows a wild apple tree.
+	var crab: int = items.table.number_of("crab_apples")
+	items.action(1, Net.ACT_ADMIN_GIVE, crab, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(crab), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
+	check(inv.count_of(crab) == 1 and items._saplings.size() == 2, "a crab apple is food: it stays in the pack and nothing is planted")
+	var apple_seed: int = items.table.number_of("wild_apple_seed")
+	items.action(1, Net.ACT_ADMIN_GIVE, apple_seed, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(apple_seed), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
+	check(apple_seed > 0 and inv.count_of(apple_seed) == 0 and items._saplings.size() == 3 and int(items._saplings[-1]["species"]) == int(items._flora_by_name["wild_apple"]["id"]), "a Wild apple seed grows a wild apple tree")
 
 	items._finish_writer()
 	print("test_shrub_work: ", "FAIL (%d)" % failures if failures > 0 else "ok")
