@@ -73,7 +73,7 @@ func _init() -> void:
 		var marks: FileAccess = FileAccess.open(dir + "/flora_removed.json", FileAccess.WRITE)   # a felled tree and a cleared plant
 		marks.store_string(JSON.stringify({"layout": FloraLayout.VERSION, "3,4": [70000, 70001]}))
 		marks.close()
-		items._crops["52.00,20.00"] = {"crop": "barley", "sown": 1, "age": 1, "wet": 0, "day": 1, "compost": false}
+		items._crops["b1040,400"] = {"crop": "barley", "sown": 1, "age": 1, "wet": 0, "day": 1, "compost": false}
 		items._dirty = true
 		items.save()
 		items._finish_writer()

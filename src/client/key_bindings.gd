@@ -16,6 +16,7 @@ const PATH := "user://key_bindings.json"
 const CONTEXT_WORLD := "world"
 const CONTEXT_PACK := "inventory screen"
 const ADMIN_GROUP := "Admin and debug"
+const GARDEN_GROUP := "Hoe grid"   # every action in it needs Alt with its key (never saved: the group rule, like the admin group's Ctrl+Shift)
 
 # id, label, group, context, default key, ctrl, shift, polled (held keys and inventory-screen keys take a plain key only: Shift changes what some of them do)
 const ACTIONS := [
@@ -39,6 +40,11 @@ const ACTIONS := [
 	["auto_pickup", "Auto pickup on / off", "Actions", CONTEXT_WORLD, KEY_P, false, false, false],
 	["inspect", "Inspection mode on / off", "Actions", CONTEXT_WORLD, KEY_SLASH, false, false, false],
 	["ruler", "Inclination ruler on / off", "Actions", CONTEXT_WORLD, KEY_H, false, false, false],
+	# The hoe's garden grid (Dave 14 Nov 2026: "you can size it using the arrow keys plus the alt button"): the group always needs Alt (GARDEN_GROUP, _garden_alt).
+	["garden_wider", "Hoe grid: wider", GARDEN_GROUP, CONTEXT_WORLD, KEY_RIGHT, false, false, false],
+	["garden_narrower", "Hoe grid: narrower", GARDEN_GROUP, CONTEXT_WORLD, KEY_LEFT, false, false, false],
+	["garden_longer", "Hoe grid: longer", GARDEN_GROUP, CONTEXT_WORLD, KEY_UP, false, false, false],
+	["garden_shorter", "Hoe grid: shorter", GARDEN_GROUP, CONTEXT_WORLD, KEY_DOWN, false, false, false],
 	["inventory", "Crafting and inventory screen", "Screens", CONTEXT_WORLD, KEY_I, false, false, false],
 	["character", "Character screen", "Screens", CONTEXT_WORLD, KEY_TAB, false, false, false],
 	["journal", "Journal: the index (again: close)", "Screens", CONTEXT_WORLD, KEY_J, false, false, false],
@@ -241,16 +247,22 @@ static func is_default(id: String) -> bool:
 	return not _changed.has(id)
 
 
-static func key_label(bind: Dictionary) -> String:
+# `id` names the action when known, so a Hoe grid key shows its Alt.
+static func key_label(bind: Dictionary, id: String = "") -> String:
 	if int(bind["key"]) == KEY_NONE:
 		return "(none)"
 
 	var text: String = OS.get_keycode_string(int(bind["key"]))
-	return ("Ctrl+" if bind["ctrl"] else "") + ("Shift+" if bind["shift"] else "") + text
+	return ("Ctrl+" if bind["ctrl"] else "") + ("Shift+" if bind["shift"] else "") + ("Alt+" if id != "" and _garden_alt(id) else "") + text
 
 
 static func label(id: String) -> String:
-	return key_label(binding(id))
+	return key_label(binding(id), id)
+
+
+static func _garden_alt(id: String) -> bool:
+	var row: Array = _row(id)
+	return not row.is_empty() and row[2] == GARDEN_GROUP
 
 
 # True when this key-down event is the action's key (with the same Ctrl and Shift held). Extra Ctrl or Shift never match
@@ -269,12 +281,23 @@ static func matches(event: InputEventKey, id: String) -> bool:
 	if row[2] == ADMIN_GROUP and (event.alt_pressed or event.meta_pressed):
 		return false   # AltGr (Ctrl+Alt on Windows) types characters on some layouts: never an admin chord
 
+	if (row[2] == GARDEN_GROUP) != event.alt_pressed and (row[2] == GARDEN_GROUP or _garden_key(event.keycode)):
+		return false   # a Hoe grid key needs Alt, and Alt with a Hoe grid key is that and nothing else (Alt+Right is not the hammer's next group)
+
 	var hit: bool = event.ctrl_pressed == bool(bind["ctrl"]) and event.shift_pressed == bool(bind["shift"])
 
 	if hit and row[2] == ADMIN_GROUP:
 		_chord_lock = true
 
 	return hit
+
+
+static func _garden_key(key: int) -> bool:
+	for row in ACTIONS:
+		if row[2] == GARDEN_GROUP and int(binding(row[0])["key"]) == key:
+			return true
+
+	return false
 
 
 static func _admin_key(key: int) -> bool:
@@ -322,8 +345,8 @@ static func conflict(id: String, key: int, ctrl: bool, shift: bool) -> String:
 
 		var other: Dictionary = binding(row[0])
 
-		if int(other["key"]) != key:
-			continue
+		if int(other["key"]) != key or ((row[2] == GARDEN_GROUP) != (mine[2] == GARDEN_GROUP) and not (bool(row[7]) or bool(mine[7]))):
+			continue   # another key, or one of them needs Alt and the other does not (a held key ignores modifiers, so it still clashes)
 
 		var same_mods: bool = bool(other["ctrl"]) == ctrl and bool(other["shift"]) == shift
 

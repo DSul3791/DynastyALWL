@@ -148,6 +148,12 @@ func _init() -> void:
 	check(Bindings.matches(_key(KEY_D, false, true), "drop_item"), "Shift+D still drops one (inventory keys ignore Shift)")
 	check(Bindings.matches(_key(KEY_H), "ruler"), "the inclination ruler has a key")
 	check(Bindings.label("admin_rabbit") == "Ctrl+Shift+R", "label shows the Ctrl and Shift")
+	# The hoe grid (Dave 14 Nov 2026: "size it using the arrow keys plus the alt button"): Alt + arrows, and Alt + Right is not also the hammer's next group.
+	var alt_right: InputEventKey = _key(KEY_RIGHT)
+	alt_right.alt_pressed = true
+	check(Bindings.matches(alt_right, "garden_wider") and not Bindings.matches(_key(KEY_RIGHT), "garden_wider"), "Alt+Right widens the hoe grid, plain Right does not")
+	check(Bindings.matches(_key(KEY_RIGHT), "hammer_group_next") and not Bindings.matches(alt_right, "hammer_group_next"), "plain Right is the hammer's next group, Alt+Right is not")
+	check(Bindings.label("garden_longer") == "Alt+Up" and Bindings.conflict("garden_narrower", KEY_LEFT, false, false) == "", "the hoe grid keys show their Alt and share no binding with the hammer's arrows")
 
 	check(Bindings.set_binding("interact", KEY_ESCAPE, false, false) != "", "Esc cannot be bound")
 	check(Bindings.set_binding("interact", KEY_5, false, false) != "", "hotbar digits cannot be bound")
