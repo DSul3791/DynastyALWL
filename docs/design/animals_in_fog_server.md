@@ -9,7 +9,7 @@
 
 ## 1. What happens today (read from the code on the animal stack, 8 Nov; not tested)
 
-- The shared weather carries `mist` (0 to 1, the valley fog's strength) and `mist_top_m` (the top of the layer above sea level). Both come from `weather.gd`, so the server already has them.
+- The shared weather carries `mist` (0 to 1, the valley fog's strength) and `mist_top_m` (the top of the layer above sea level). (14 Nov 2026: now `mist_depth_m`, read by the server as the top above sea level until the third fog PR gives it the cold-air floor; docs/design/FOG_PLAN.md.) Both come from `weather.gd`, so the server already has them.
 - `server_animals._read_weather` keeps `mist` only, and `weather.on` (on) uses it in two flat cuts that ignore distance and height:
   - sight × (1 − `mist_sight` 0.6 × mist);
   - spook and alert distance × (1 − `mist_spook` 0.3 × mist).
