@@ -3013,12 +3013,13 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	var feet: Vector3 = _peer_pos[peer]
-	var under: float = _edited_height(feet.x, feet.z, edits_near.call(feet, 1.0) if edits_near.is_valid() else [])   # the ground as dug and filled under the feet
+	var near: Array = edits_near.call(at, DIG_REACH_M + 1.5) if edits_near.is_valid() else []   # one scan of the edit log: the feet are within DIG_REACH_M of the point
+	var under: float = _edited_height(feet.x, feet.z, near)   # the ground as dug and filled under the feet
 
 	if is_nan(under):
 		return
 
-	var edits: Array = edits_near.call(at, SMOOTH_REACH_M + 1.0) if edits_near.is_valid() else []   # and over the circle (every edit whose sphere comes within 4 m of the point)
+	var edits: Array = near.filter(func(op): return Vector2(op[1].x - at.x, op[1].z - at.z).length() < SMOOTH_REACH_M + float(op[2]))   # the edits over the circle, for the spot loops
 
 	var target: float = minf(feet.y - LEVEL_BELOW_PIECE_M, under + LEVEL_MAX_RAISE_M) if feet.y - under > LEVEL_ON_PIECE_M else under   # on a foundation: a little below the feet; on the ground: the ground the player stands on
 	var spots: Array = []
@@ -3035,7 +3036,7 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return   # the ground there is not loaded
 
 	if worked == 0:
-		_say(peer, "The ground here is already level with where you stand.")
+		_say(peer, str(dig_refusal.call()) if _level_refused and dig_refusal.is_valid() else "The ground here is already level with where you stand.")
 		return
 
 	_wear_slot(peer, inv, hoe, "dig")
@@ -3073,8 +3074,12 @@ func _edited_height(x: float, z: float, edits: Array) -> float:
 # Cuts or fills the ground toward `target` at the spots (offsets from `at`), at most LEVEL_MAX_OPS edits, each time at the spot now farthest from level
 # (heights read through the edits, the ones made in this stroke included, so strokes add up and every spot gets its turn), at most LEVEL_MAX_M an edit.
 # Not volume balanced (the Valheim feel Dave asked for): the soil is the hoe's to move. Returns the edits made, -1 when a spot is not loaded.
+var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
+
+
 func _level_ground(at: Vector3, spots: Array, target: float, edits: Array) -> int:
 	var worked: int = 0
+	_level_refused = false
 
 	for n in LEVEL_MAX_OPS:
 		var best: Vector3 = Vector3.ZERO
@@ -3098,6 +3103,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array) -> in
 		var done: Variant = dig_ground.call(centre, LEVEL_SPHERE_M) if best_off > 0.0 else fill_ground.call(centre, LEVEL_SPHERE_M, int(FILL_SOIL["soil"]))
 
 		if typeof(done) == TYPE_BOOL and not bool(done):
+			_level_refused = true
 			break   # the ground took no more (a full block, a refusal): the next stroke tries again
 
 		edits.append([0 if best_off > 0.0 else 1, centre, LEVEL_SPHERE_M])
