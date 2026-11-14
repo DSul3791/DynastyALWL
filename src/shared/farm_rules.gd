@@ -20,24 +20,25 @@ static func crop_of_seed(crops: Dictionary, seed_id: String) -> String:
 	return ""
 
 
-# {"act": "sow" | "harvest" | "water" | "none", "prompt": the E line}.
-# crop_id/stage: the bed's crop ("" for an empty bed); seed_name: the sentence name of the seed to sow ("" when none is held or carried);
-# water_in_hand: a held container with water in it (the same one E uses to drink and fill).
-static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_name: String, water_in_hand: bool) -> Dictionary:
+# The decision for one bed: {"act": "sow" | "harvest" | "water" | "none", "prompt": the E line, "b": the pack slot the request carries (the seed for a sow, the container for a water, else 0)}.
+# inventory_view._bed_interaction sends ACT_SOW / ACT_HARVEST / ACT_WATER_BED with the bed id as `a` and this `b`; "none" sends nothing and shows the prompt as a notice.
+# crop_id/stage: the bed's crop ("" for an empty bed); seed_slot/seed_name: the seed to sow (-1 and "" when none is held or carried);
+# water_slot: the held container that holds water, the one E uses to drink and fill (-1 when none).
+static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_slot: int, seed_name: String, water_slot: int) -> Dictionary:
 	if crop_id == "":
-		if seed_name != "":
-			return {"act": "sow", "prompt": "Press E to sow %s" % seed_name}
+		if seed_slot >= 0:
+			return {"act": "sow", "prompt": "Press E to sow %s" % seed_name, "b": seed_slot}
 
-		return {"act": "none", "prompt": "A tilled bed: carry seeds and press E to sow it"}
+		return {"act": "none", "prompt": "A tilled bed: carry seeds and press E to sow it", "b": 0}
 
 	var def: Dictionary = crops.get(crop_id, {})
 	var name: String = str(def.get("name", crop_id)).to_lower()
 
 	if stage >= RIPE:
 		var tool_class: String = str(def.get("tool_to_harvest", "hand"))
-		return {"act": "harvest", "prompt": "Press E to harvest the %s%s" % [name, "" if tool_class == "hand" else " (a %s gives the full yield)" % tool_class]}
+		return {"act": "harvest", "prompt": "Press E to harvest the %s%s" % [name, "" if tool_class == "hand" else " (a %s gives the full yield)" % tool_class], "b": 0}
 
-	if water_in_hand:
-		return {"act": "water", "prompt": "Press E to water the %s (%s)" % [name, STAGE_NAMES[clampi(stage, 0, RIPE)]]}
+	if water_slot >= 0:
+		return {"act": "water", "prompt": "Press E to water the %s (%s)" % [name, STAGE_NAMES[clampi(stage, 0, RIPE)]], "b": water_slot}
 
-	return {"act": "none", "prompt": "%s, %s: hold a filled bucket or waterskin and press E to water it" % [name.capitalize(), STAGE_NAMES[clampi(stage, 0, RIPE)]]}
+	return {"act": "none", "prompt": "%s, %s: hold a filled bucket or waterskin and press E to water it" % [name.capitalize(), STAGE_NAMES[clampi(stage, 0, RIPE)]], "b": 0}

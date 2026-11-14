@@ -1036,15 +1036,15 @@ func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictiona
 	var row: Dictionary = _world[id]
 	var seed_slot: int = _seed_slot() if str(row.get("crop", "")) == "" else -1   # only an empty bed takes a seed (this probe runs every frame the bed is aimed at)
 	var water_slot: int = held_container_slot() if held_container_has_water() else -1
-	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot >= 0)
+	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), seed_slot, table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot)
 	var found: Dictionary = {"prompt": plan["prompt"], "tap": func():
 		match str(plan["act"]):
 			"sow":
-				net.inventory_action.rpc_id(1, Net.ACT_SOW, id, seed_slot, 0, Vector3.ZERO)
+				net.inventory_action.rpc_id(1, Net.ACT_SOW, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the seed's pack slot
 			"harvest":
 				net.inventory_action.rpc_id(1, Net.ACT_HARVEST, id, 0, 0, Vector3.ZERO)
 			"water":
-				net.inventory_action.rpc_id(1, Net.ACT_WATER_BED, id, water_slot, 0, Vector3.ZERO)   # b: the container in hand, which the server draws the water from
+				net.inventory_action.rpc_id(1, Net.ACT_WATER_BED, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the container in hand, which the server draws the water from
 			_:
 				show_notice(str(plan["prompt"]))}
 

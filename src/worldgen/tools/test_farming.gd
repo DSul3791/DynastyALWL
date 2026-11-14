@@ -223,6 +223,26 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	season[0] = "spring"
 
 
+# A garden plot taken down takes its crop with it: a plot built on the same spot later starts empty (the crop record is keyed by the spot, not by the plot).
+func _plot_takedown_checks() -> void:
+	var spot: Vector3 = Vector3(-1.5, 10.0, -1.5)
+	var kind: String = "wooden_garden_plot"
+	items._items[920002] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
+	var key: String = items._bed_key(spot)
+	season[0] = "spring"
+	give("barley_seeds", 1)
+	act(Net.ACT_SOW, 920002, slot_of("barley_seeds"))
+	check(items._crops.has(key) and items.crop_row_extra(items._items[920002]).get("crop", "") == "barley", "barley is sown in a garden plot")
+	act(Net.ACT_PICKUP, 920002)
+	check(not items._items.has(920002) and count("wooden_garden_plot_kit") >= 1, "the plot is taken down and its kit comes back")
+	check(not items._crops.has(key), "its crop record went with it")
+	items._items[920003] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
+	check(not items._bed_at(920003).is_empty() and items.crop_row_extra(items._items[920003]).is_empty(), "a new plot built on the same spot is empty")
+	act(Net.ACT_HARVEST, 920003)
+	check(not items._crops.has(key), "and has nothing to harvest")
+	items._items.erase(920003)
+
+
 func _init() -> void:
 	var dir: String = "user://test_farming"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -355,6 +375,7 @@ func _init() -> void:
 
 	_moisture_checks(bed)
 	_route_checks(bed, crops)
+	_plot_takedown_checks()
 
 	# Save and restart: a barley crop grown to a stage keeps its crop, its age and its stage (the world save, not a hand-written file).
 	season[0] = "spring"

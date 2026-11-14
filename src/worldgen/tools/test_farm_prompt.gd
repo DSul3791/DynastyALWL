@@ -24,25 +24,27 @@ func _init() -> void:
 	check(FarmRules.crop_of_seed(crops, "flax_seeds") == "flax" and FarmRules.crop_of_seed(crops, "rye_seeds") == "rye", "flax seeds sow flax, rye seeds rye")
 	check(FarmRules.crop_of_seed(crops, "bronze_sickle") == "" and FarmRules.crop_of_seed(crops, "") == "", "a sickle, or nothing, sows nothing")
 
-	# An empty bed: sow what is held or carried, else say what the bed wants.
-	var plan: Dictionary = FarmRules.bed_action(crops, "", -1, "wheat seeds", false)
-	check(plan["act"] == "sow" and plan["prompt"] == "Press E to sow wheat seeds", "an empty bed with seeds: 'Press E to sow wheat seeds' sends a sow")
-	plan = FarmRules.bed_action(crops, "", -1, "", true)
+	# An empty bed: sow what is held or carried (the request carries that seed's pack slot as b), else say what the bed wants.
+	var plan: Dictionary = FarmRules.bed_action(crops, "", -1, 7, "wheat seeds", -1)
+	check(plan["act"] == "sow" and plan["b"] == 7 and plan["prompt"] == "Press E to sow wheat seeds", "an empty bed with seeds in pack slot 7: 'Press E to sow wheat seeds' sends a sow with b = 7")
+	plan = FarmRules.bed_action(crops, "", -1, 0, "flax seeds", 4)
+	check(plan["act"] == "sow" and plan["b"] == 0, "seeds in slot 0 sow with b = 0, even with a filled container in hand")
+	plan = FarmRules.bed_action(crops, "", -1, -1, "", 4)
 	check(plan["act"] == "none" and str(plan["prompt"]).contains("seeds"), "an empty bed without seeds asks for seeds and sends nothing (even with water in hand)")
 
-	# A crop short of ripe: water with a filled container in hand, else say so; never harvest.
+	# A crop short of ripe: water with the filled container in hand (b = its slot), else say so; never harvest, never sow a full bed.
 	for stage in range(3):
-		plan = FarmRules.bed_action(crops, "flax", stage, "wheat seeds", true)
-		check(plan["act"] == "water" and plan["prompt"] == "Press E to water the flax (%s)" % FarmRules.STAGE_NAMES[stage], "flax at stage %d with a filled container: water it" % stage)
-		plan = FarmRules.bed_action(crops, "flax", stage, "wheat seeds", false)
-		check(plan["act"] == "none" and str(plan["prompt"]).begins_with("Flax, %s" % FarmRules.STAGE_NAMES[stage]), "flax at stage %d with no water in hand: says its stage, sends nothing, seeds in hand do not sow a full bed" % stage)
+		plan = FarmRules.bed_action(crops, "flax", stage, 7, "wheat seeds", 4)
+		check(plan["act"] == "water" and plan["b"] == 4 and plan["prompt"] == "Press E to water the flax (%s)" % FarmRules.STAGE_NAMES[stage], "flax at stage %d with a filled container in slot 4: water it, b = 4" % stage)
+		plan = FarmRules.bed_action(crops, "flax", stage, 7, "wheat seeds", -1)
+		check(plan["act"] == "none" and str(plan["prompt"]).begins_with("Flax, %s" % FarmRules.STAGE_NAMES[stage]), "flax at stage %d with no water in hand: says its stage, sends nothing" % stage)
 
-	# Ripe: harvest, and say a sickle gives the full yield only where the crop needs one.
-	plan = FarmRules.bed_action(crops, "flax", 3, "", true)
-	check(plan["act"] == "harvest" and plan["prompt"] == "Press E to harvest the flax (a sickle gives the full yield)", "ripe flax harvests, even with water in hand, and names the sickle")
-	plan = FarmRules.bed_action(crops, "carrot", 3, "", false)
+	# Ripe: harvest (b unused), and say a sickle gives the full yield only where the crop needs one.
+	plan = FarmRules.bed_action(crops, "flax", 3, -1, "", 4)
+	check(plan["act"] == "harvest" and plan["b"] == 0 and plan["prompt"] == "Press E to harvest the flax (a sickle gives the full yield)", "ripe flax harvests, even with water in hand, and names the sickle")
+	plan = FarmRules.bed_action(crops, "carrot", 3, -1, "", -1)
 	check(plan["act"] == "harvest" and plan["prompt"] == "Press E to harvest the carrot", "ripe carrot is harvested by hand: no tool in the line")
-	plan = FarmRules.bed_action(crops, "unknown_crop", 3, "", false)
+	plan = FarmRules.bed_action(crops, "unknown_crop", 3, -1, "", -1)
 	check(plan["act"] == "harvest", "a crop this client has no data for still harvests (the server decides)")
 
 	# Placeholder looks: every crop, every stage, a tuft grid for a 1 m bed and a 2 m plot, taller with the stage.

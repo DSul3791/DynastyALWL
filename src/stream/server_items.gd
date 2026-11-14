@@ -4863,6 +4863,7 @@ func _sync_world_items() -> void:
 
 						if not crop_extra.is_empty():
 							(added[added.size() - 1][5] as Dictionary).merge(crop_extra)   # a bed's crop and stage (FARMING_SPEC.md step 6): the client draws the stage and words its E prompt
+
 					known[id] = signature
 
 		for bog in _bog_rows_near(peer, here):
@@ -9101,6 +9102,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
+
+	if _is_plot_kind(str(it["struct"]["kind"])):
+		_crops.erase(_bed_key(it["pos"]))   # a garden plot taken down takes its crop with it, so a plot built there later starts empty
 
 	if str(def.get("attach_to", "")) == "fire":
 		_refresh_pots()   # the fire keeps burning and gets its tiers back
