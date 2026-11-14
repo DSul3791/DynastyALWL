@@ -95,7 +95,8 @@ func _init() -> void:
 	check(feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 207}, "200 copper earned stays 200 copper coins (%s)" % str(feed.purse_of(9)))
 	feed.redenominate(9)
 	check(feed.purse_of(9) == {"coin_silver": 3, "coin_copper": 7} and feed.coins_of(9) == 307, "at a trader the purse becomes the fewest coins (%s)" % str(feed.purse_of(9)))
-	check(feed.take_coins(9, 200) and feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 7}, "two silver pay 200 and the copper is left alone (%s)" % str(feed.purse_of(9)))
+	check(feed.take_coins(9, 200) and feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 7}, "200 paid: the 7 copper and two silver go, and the 7 copper change comes back (%s)" % str(feed.purse_of(9)))
+	check(feed.take_coins(9, 0) and feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 7}, "paying nothing changes nothing")
 	feed.add_coins(9, 5, "goal")
 	check(feed.take_coins(9, 12) and feed.coins_of(9) == 100 and feed.purse_of(9) == {"coin_silver": 1}, "12 copper paid from 12 copper coins (%s)" % str(feed.purse_of(9)))
 	feed.give_to(9, "coin_copper", 7)
@@ -114,6 +115,9 @@ func _init() -> void:
 	var feed2 = make("user://test_server_items_feed")
 	feed2.peer_connected_hello(9, "feedfeed1234")
 	check(feed2.purse_of(9) == {"coin_silver": 1, "coin_copper": 7} and feed2.rep_points(9, "hob") == 30, "the purse (as held) and reputation are saved with the character (%s)" % str(feed2.purse_of(9)))
+	feed2._characters["feedfeed1234"]["purse"] = {"coin_gold": int(float(feed2._coins_cfg.get("max_copper", 100000000)) / 1000.0) - 1}
+	feed2.add_coins(9, 5000, "goal")
+	check(feed2.coins_of(9) == int(feed2._coins_cfg.get("max_copper", 100000000)), "the purse's worth stops at max_copper (%d)" % feed2.coins_of(9))
 
 	# Tool work is hard (Dave 2026-10-21): a swing of an axe holds effort at running level.
 	feed.give(9, feed.table.number_of("stone_axe") if feed.table.number_of("stone_axe") > 0 else feed.table.number_of("axe"), 1)

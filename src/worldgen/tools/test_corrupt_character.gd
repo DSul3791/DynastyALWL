@@ -39,10 +39,12 @@ func write(dir: String, content: String) -> void:
 
 func _init() -> void:
 	var dir: String = "user://test_corrupt_character"
-	write(dir, JSON.stringify({"version": 1, "players": {"good_key_0000000001": {"luck": 3, "fitness": 2, "coins": 40}, "bad_string_00000000": "oops", "bad_number_00000000": 7, "bad_null_000000000000": null, "bad_list_0000000000": [1, 2], "good_key_0000000002": {"luck": -2}}}))
+	write(dir, JSON.stringify({"version": 1, "players": {"good_key_0000000001": {"luck": 3, "fitness": 2, "coins": 40}, "bad_string_00000000": "oops", "bad_number_00000000": 7, "bad_null_000000000000": null, "bad_list_0000000000": [1, 2], "good_key_0000000002": {"luck": -2}, "good_key_0000000003": {"purse": {"coin_silver": 2.0, "coin_copper": -3, "coin_fake": 5, "coin_bronze": 1.7}}, "good_key_0000000004": {"purse": "oops", "coins": 90}}}))
 	var a = make(dir)
 	check(a._characters.has("good_key_0000000001") and int(a._characters["good_key_0000000001"]["luck"]) == 3 and a._characters["good_key_0000000001"]["purse"] == {"coin_bronze": 4}, "the first good record survives (an older row's 40 copper purse reads as 4 bronze)")
 	check(a._characters.has("good_key_0000000002") and int(a._characters["good_key_0000000002"]["luck"]) == -2, "the one after the damaged ones survives")
+	check(a._characters.get("good_key_0000000003", {}).get("purse", null) == {"coin_silver": 2, "coin_bronze": 1}, "a purse keeps known coins with a positive count, as whole numbers (%s)" % str(a._characters.get("good_key_0000000003", {}).get("purse", null)))
+	check(a._characters.get("good_key_0000000004", {}).get("purse", null) == {}, "a purse that is not a table reads empty, and an old coins number beside it is not used")
 	check(not a._characters.has("bad_string_00000000") and not a._characters.has("bad_number_00000000") and not a._characters.has("bad_null_000000000000") and not a._characters.has("bad_list_0000000000"), "damaged records are skipped")
 
 	write(dir, JSON.stringify({"version": 1, "players": "not a table"}))

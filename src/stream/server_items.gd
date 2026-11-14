@@ -11704,7 +11704,7 @@ func add_coins(peer: int, copper: int, source: String = "pickup") -> void:
 
 
 # Takes `copper` out of the purse, all or nothing: the cheapest coins go first, and a bigger coin broken for the last of it gives its change
-# back as the fewest coins. Coins not needed for the payment stay as they were.
+# back as the fewest coins. Coins the payment does not reach stay as they were.
 func take_coins(peer: int, copper: int) -> bool:
 	var key: String = _peer_key.get(peer, "")
 
