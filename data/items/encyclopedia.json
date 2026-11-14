@@ -10758,7 +10758,7 @@
 			"obtainable_now": true
 		},
 		"birch_seeds": {
-			"name": "Birch seeds",
+			"name": "Birch seed",
 			"kind": "material",
 			"description": "Tiny winged seeds shaken from birch catkins. Plant them with the hoe in open ground and a birch grows.",
 			"how_to_get": [
@@ -10770,7 +10770,7 @@
 			"obtainable_now": true
 		},
 		"pine_cones": {
-			"name": "Scots pine cones",
+			"name": "Scots pine seed",
 			"kind": "material",
 			"description": "Woody cones from a Scots pine, seeds still inside. Plant one with the hoe in open ground and a pine grows.",
 			"how_to_get": [
@@ -10782,7 +10782,7 @@
 			"obtainable_now": true
 		},
 		"spruce_cones": {
-			"name": "Spruce cones",
+			"name": "Spruce seed",
 			"kind": "material",
 			"description": "Long hanging spruce cones, seeds still inside. Plant one with the hoe in open ground and a spruce grows.",
 			"how_to_get": [
@@ -10794,7 +10794,7 @@
 			"obtainable_now": true
 		},
 		"alder_cones": {
-			"name": "Alder cones",
+			"name": "Alder seed",
 			"kind": "material",
 			"description": "Little black cones from an alder. Plant one with the hoe in open ground and an alder grows.",
 			"how_to_get": [
@@ -10806,7 +10806,7 @@
 			"obtainable_now": true
 		},
 		"willow_seeds": {
-			"name": "Willow seeds",
+			"name": "Willow seed",
 			"kind": "material",
 			"description": "Fluffy willow seeds from the catkins. Plant them with the hoe in open ground and a willow grows.",
 			"how_to_get": [
@@ -10818,7 +10818,7 @@
 			"obtainable_now": true
 		},
 		"hardwood_seeds": {
-			"name": "Hardwood seeds",
+			"name": "Mahogany seed",
 			"kind": "material",
 			"description": "Hard seeds of a tropical hardwood. Plant them with the hoe in open ground and a hardwood grows.",
 			"how_to_get": [
@@ -10830,7 +10830,7 @@
 			"obtainable_now": true
 		},
 		"acacia_pods": {
-			"name": "Acacia pods",
+			"name": "Acacia seed",
 			"kind": "material",
 			"description": "Dry acacia seed pods. Plant one with the hoe in open ground and an acacia grows.",
 			"how_to_get": [
@@ -10842,7 +10842,7 @@
 			"obtainable_now": true
 		},
 		"mangrove_propagules": {
-			"name": "Mangrove propagules",
+			"name": "Mangrove seed",
 			"kind": "material",
 			"description": "Green seedlings that drop from a mangrove ready to root. Plant one with the hoe and a mangrove grows.",
 			"how_to_get": [
@@ -10854,7 +10854,7 @@
 			"obtainable_now": true
 		},
 		"fir_cones": {
-			"name": "Balsam fir cones",
+			"name": "Balsam fir seed",
 			"kind": "material",
 			"description": "Upright cones from a balsam fir, seeds still inside. Plant one with the hoe in open ground and a fir grows.",
 			"how_to_get": [
@@ -10866,7 +10866,7 @@
 			"obtainable_now": true
 		},
 		"maple_keys": {
-			"name": "Maple keys",
+			"name": "Sugar maple seed",
 			"kind": "material",
 			"description": "Winged maple seeds that spin as they fall. Plant them with the hoe in open ground and a maple grows.",
 			"how_to_get": [
@@ -10874,6 +10874,426 @@
 			],
 			"used_for": [
 				"Planted with the hoe (Garden) to grow a sugar maple"
+			],
+			"obtainable_now": true
+		},
+		"oak_seed": {
+			"name": "English oak seed",
+			"kind": "material",
+			"description": "Seeds from an English oak. Plant them with the hoe in open ground and an English oak grows.",
+			"how_to_get": [
+				"From a felled english oak"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow an english oak"
+			],
+			"obtainable_now": true
+		},
+		"beech_seed": {
+			"name": "Beech seed",
+			"kind": "material",
+			"description": "Seeds from a beech. Plant them with the hoe in open ground and a beech grows.",
+			"how_to_get": [
+				"From a felled beech"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a beech"
+			],
+			"obtainable_now": true
+		},
+		"coconut_palm_seed": {
+			"name": "Coconut palm seed",
+			"kind": "material",
+			"description": "Seeds from a coconut palm. Plant them with the hoe in open ground and a coconut palm grows.",
+			"how_to_get": [
+				"From a felled coconut palm"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a coconut palm"
+			],
+			"obtainable_now": true
+		},
+		"rowan_seed": {
+			"name": "Rowan seed",
+			"kind": "material",
+			"description": "Seeds from a rowan. Plant them with the hoe in open ground and a rowan grows.",
+			"how_to_get": [
+				"From a felled rowan"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a rowan"
+			],
+			"obtainable_now": true
+		},
+		"wild_apple_seed": {
+			"name": "Crab apple seed",
+			"kind": "material",
+			"description": "Seeds from a crab apple. Plant them with the hoe in open ground and a crab apple grows.",
+			"how_to_get": [
+				"From a felled crab apple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a crab apple"
+			],
+			"obtainable_now": true
+		},
+		"wild_pear_seed": {
+			"name": "Wild pear seed",
+			"kind": "material",
+			"description": "Seeds from a wild pear. Plant them with the hoe in open ground and a wild pear grows.",
+			"how_to_get": [
+				"From a felled wild pear"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a wild pear"
+			],
+			"obtainable_now": true
+		},
+		"wild_cherry_seed": {
+			"name": "Wild cherry seed",
+			"kind": "material",
+			"description": "Seeds from a wild cherry. Plant them with the hoe in open ground and a wild cherry grows.",
+			"how_to_get": [
+				"From a felled wild cherry"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a wild cherry"
+			],
+			"obtainable_now": true
+		},
+		"sweet_chestnut_seed": {
+			"name": "Sweet chestnut seed",
+			"kind": "material",
+			"description": "Seeds from a sweet chestnut. Plant them with the hoe in open ground and a sweet chestnut grows.",
+			"how_to_get": [
+				"From a felled sweet chestnut"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a sweet chestnut"
+			],
+			"obtainable_now": true
+		},
+		"walnut_seed": {
+			"name": "Walnut seed",
+			"kind": "material",
+			"description": "Seeds from a walnut. Plant them with the hoe in open ground and a walnut grows.",
+			"how_to_get": [
+				"From a felled walnut"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a walnut"
+			],
+			"obtainable_now": true
+		},
+		"date_palm_seed": {
+			"name": "Date palm seed",
+			"kind": "material",
+			"description": "Seeds from a date palm. Plant them with the hoe in open ground and a date palm grows.",
+			"how_to_get": [
+				"From a felled date palm"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a date palm"
+			],
+			"obtainable_now": true
+		},
+		"mirrorbark_seed": {
+			"name": "Mirrorbark seed",
+			"kind": "material",
+			"description": "Seeds from a mirrorbark. Plant them with the hoe in open ground and a mirrorbark grows.",
+			"how_to_get": [
+				"From a felled mirrorbark"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a mirrorbark"
+			],
+			"obtainable_now": true
+		},
+		"wardpine_seed": {
+			"name": "Wardpine seed",
+			"kind": "material",
+			"description": "Seeds from a wardpine. Plant them with the hoe in open ground and a wardpine grows.",
+			"how_to_get": [
+				"From a felled wardpine"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a wardpine"
+			],
+			"obtainable_now": true
+		},
+		"hearthwood_seed": {
+			"name": "Hearthwood seed",
+			"kind": "material",
+			"description": "Seeds from a hearthwood. Plant them with the hoe in open ground and a hearthwood grows.",
+			"how_to_get": [
+				"From a felled hearthwood"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a hearthwood"
+			],
+			"obtainable_now": true
+		},
+		"everember_seed": {
+			"name": "Everember seed",
+			"kind": "material",
+			"description": "Seeds from an everember. Plant them with the hoe in open ground and an everember grows.",
+			"how_to_get": [
+				"From a felled everember"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow an everember"
+			],
+			"obtainable_now": true
+		},
+		"witness_tree_seed": {
+			"name": "Witness tree seed",
+			"kind": "material",
+			"description": "Seeds from a witness tree. Plant them with the hoe in open ground and a witness tree grows.",
+			"how_to_get": [
+				"From a felled witness tree"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a witness tree"
+			],
+			"obtainable_now": true
+		},
+		"apple_early_seed": {
+			"name": "Early summer apple seed",
+			"kind": "material",
+			"description": "Seeds from an early summer apple. Plant them with the hoe in open ground and an early summer apple grows.",
+			"how_to_get": [
+				"From a felled early summer apple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow an early summer apple"
+			],
+			"obtainable_now": true
+		},
+		"apple_summer_seed": {
+			"name": "Summer apple seed",
+			"kind": "material",
+			"description": "Seeds from a summer apple. Plant them with the hoe in open ground and a summer apple grows.",
+			"how_to_get": [
+				"From a felled summer apple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a summer apple"
+			],
+			"obtainable_now": true
+		},
+		"apple_autumn_seed": {
+			"name": "Autumn apple seed",
+			"kind": "material",
+			"description": "Seeds from an autumn apple. Plant them with the hoe in open ground and an autumn apple grows.",
+			"how_to_get": [
+				"From a felled autumn apple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow an autumn apple"
+			],
+			"obtainable_now": true
+		},
+		"apple_keeping_seed": {
+			"name": "Keeping apple seed",
+			"kind": "material",
+			"description": "Seeds from a keeping apple. Plant them with the hoe in open ground and a keeping apple grows.",
+			"how_to_get": [
+				"From a felled keeping apple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a keeping apple"
+			],
+			"obtainable_now": true
+		},
+		"apple_cooking_seed": {
+			"name": "Cooking apple seed",
+			"kind": "material",
+			"description": "Seeds from a cooking apple. Plant them with the hoe in open ground and a cooking apple grows.",
+			"how_to_get": [
+				"From a felled cooking apple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a cooking apple"
+			],
+			"obtainable_now": true
+		},
+		"pear_summer_seed": {
+			"name": "Summer pear seed",
+			"kind": "material",
+			"description": "Seeds from a summer pear. Plant them with the hoe in open ground and a summer pear grows.",
+			"how_to_get": [
+				"From a felled summer pear"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a summer pear"
+			],
+			"obtainable_now": true
+		},
+		"pear_autumn_seed": {
+			"name": "Autumn pear seed",
+			"kind": "material",
+			"description": "Seeds from an autumn pear. Plant them with the hoe in open ground and an autumn pear grows.",
+			"how_to_get": [
+				"From a felled autumn pear"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow an autumn pear"
+			],
+			"obtainable_now": true
+		},
+		"pear_winter_seed": {
+			"name": "Winter pear seed",
+			"kind": "material",
+			"description": "Seeds from a winter pear. Plant them with the hoe in open ground and a winter pear grows.",
+			"how_to_get": [
+				"From a felled winter pear"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a winter pear"
+			],
+			"obtainable_now": true
+		},
+		"sour_cherry_seed": {
+			"name": "Sour cherry seed",
+			"kind": "material",
+			"description": "Seeds from a sour cherry. Plant them with the hoe in open ground and a sour cherry grows.",
+			"how_to_get": [
+				"From a felled sour cherry"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a sour cherry"
+			],
+			"obtainable_now": true
+		},
+		"plum_seed": {
+			"name": "Plum seed",
+			"kind": "material",
+			"description": "Seeds from a plum. Plant them with the hoe in open ground and a plum grows.",
+			"how_to_get": [
+				"From a felled plum"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a plum"
+			],
+			"obtainable_now": true
+		},
+		"damson_seed": {
+			"name": "Damson seed",
+			"kind": "material",
+			"description": "Seeds from a damson. Plant them with the hoe in open ground and a damson grows.",
+			"how_to_get": [
+				"From a felled damson"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a damson"
+			],
+			"obtainable_now": true
+		},
+		"quince_seed": {
+			"name": "Quince seed",
+			"kind": "material",
+			"description": "Seeds from a quince. Plant them with the hoe in open ground and a quince grows.",
+			"how_to_get": [
+				"From a felled quince"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a quince"
+			],
+			"obtainable_now": true
+		},
+		"medlar_seed": {
+			"name": "Medlar seed",
+			"kind": "material",
+			"description": "Seeds from a medlar. Plant them with the hoe in open ground and a medlar grows.",
+			"how_to_get": [
+				"From a felled medlar"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a medlar"
+			],
+			"obtainable_now": true
+		},
+		"fig_seed": {
+			"name": "Fig seed",
+			"kind": "material",
+			"description": "Seeds from a fig. Plant them with the hoe in open ground and a fig grows.",
+			"how_to_get": [
+				"From a felled fig"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a fig"
+			],
+			"obtainable_now": true
+		},
+		"olive_seed": {
+			"name": "Olive seed",
+			"kind": "material",
+			"description": "Seeds from an olive. Plant them with the hoe in open ground and an olive grows.",
+			"how_to_get": [
+				"From a felled olive"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow an olive"
+			],
+			"obtainable_now": true
+		},
+		"pomegranate_seed": {
+			"name": "Pomegranate seed",
+			"kind": "material",
+			"description": "Seeds from a pomegranate. Plant them with the hoe in open ground and a pomegranate grows.",
+			"how_to_get": [
+				"From a felled pomegranate"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a pomegranate"
+			],
+			"obtainable_now": true
+		},
+		"mango_seed": {
+			"name": "Mango seed",
+			"kind": "material",
+			"description": "Seeds from a mango. Plant them with the hoe in open ground and a mango grows.",
+			"how_to_get": [
+				"From a felled mango"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a mango"
+			],
+			"obtainable_now": true
+		},
+		"orange_seed": {
+			"name": "Orange seed",
+			"kind": "material",
+			"description": "Seeds from an orange. Plant them with the hoe in open ground and an orange grows.",
+			"how_to_get": [
+				"From a felled orange"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow an orange"
+			],
+			"obtainable_now": true
+		},
+		"lemon_seed": {
+			"name": "Lemon seed",
+			"kind": "material",
+			"description": "Seeds from a lemon. Plant them with the hoe in open ground and a lemon grows.",
+			"how_to_get": [
+				"From a felled lemon"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a lemon"
+			],
+			"obtainable_now": true
+		},
+		"wild_apple_sweet_seed": {
+			"name": "Wild apple seed",
+			"kind": "material",
+			"description": "Seeds from a wild apple. Plant them with the hoe in open ground and a wild apple grows.",
+			"how_to_get": [
+				"From a felled wild apple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a wild apple"
 			],
 			"obtainable_now": true
 		},

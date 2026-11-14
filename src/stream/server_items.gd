@@ -6988,8 +6988,8 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 
 
 # A felled tree's seeds (Dave 14 Nov 2026: "Trees should drop some seeds when cut down. a random number of seeds between 1 and 5 seeds per tree"): [item number,
-# count] of its drops.json trunk.felled_seeds by_species seed (a species' own fruit or nut, or its own seed item), count from felled_seeds.count; [] for a species
-# with none (the fantasy trees). Rolled from the trunk's id like the crown litter; no player, so no luck (world drop).
+# count] of its drops.json trunk.felled_seeds by_species seed (every tree's own "<Tree> seed" item, fantasy trees too: Dave 14 Nov 2026), count from felled_seeds.count;
+# [] for a species with none. Rolled from the trunk's id like the crown litter; no player, so no luck (world drop).
 func _felled_seeds(id: int, tree: Dictionary) -> Array:
 	var cfg: Dictionary = (_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {})
 	var number: int = table.number_of(str((cfg.get("by_species", {}) as Dictionary).get(str(tree.get("species", "")), "")))
@@ -7543,7 +7543,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		flora_changed.call(home)
 
 
-# The tree species whose seed `item_id` is (drops.json trunk.felled_seeds by_species: a species' own fruit or nut, or its own seed item), "" for none. The
+# The tree species whose seed `item_id` is (drops.json trunk.felled_seeds by_species: each tree's own "<Tree> seed" item), "" for none. The
 # first species listed for an item wins (each seed is one species' today).
 func tree_seed_species(item_id: String) -> String:
 	var by: Dictionary = ((_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})

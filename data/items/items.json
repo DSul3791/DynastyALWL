@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1370,
+	"next_number": 1405,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -10857,113 +10857,498 @@
 			},
 		"birch_seeds": {
 			"number": 1360,
-			"name": "Birch seeds",
+			"name": "Birch seed",
 			"description": "Tiny winged seeds shaken from birch catkins. Plant them with the hoe in open ground and a birch grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"pine_cones": {
 			"number": 1361,
-			"name": "Scots pine cones",
+			"name": "Scots pine seed",
 			"description": "Woody cones from a Scots pine, seeds still inside. Plant one with the hoe in open ground and a pine grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"spruce_cones": {
 			"number": 1362,
-			"name": "Spruce cones",
+			"name": "Spruce seed",
 			"description": "Long hanging spruce cones, seeds still inside. Plant one with the hoe in open ground and a spruce grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"alder_cones": {
 			"number": 1363,
-			"name": "Alder cones",
+			"name": "Alder seed",
 			"description": "Little black cones from an alder. Plant one with the hoe in open ground and an alder grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"willow_seeds": {
 			"number": 1364,
-			"name": "Willow seeds",
+			"name": "Willow seed",
 			"description": "Fluffy willow seeds from the catkins. Plant them with the hoe in open ground and a willow grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"hardwood_seeds": {
 			"number": 1365,
-			"name": "Hardwood seeds",
+			"name": "Mahogany seed",
 			"description": "Hard seeds of a tropical hardwood. Plant them with the hoe in open ground and a hardwood grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"acacia_pods": {
 			"number": 1366,
-			"name": "Acacia pods",
+			"name": "Acacia seed",
 			"description": "Dry acacia seed pods. Plant one with the hoe in open ground and an acacia grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"mangrove_propagules": {
 			"number": 1367,
-			"name": "Mangrove propagules",
+			"name": "Mangrove seed",
 			"description": "Green seedlings that drop from a mangrove ready to root. Plant one with the hoe and a mangrove grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"fir_cones": {
 			"number": 1368,
-			"name": "Balsam fir cones",
+			"name": "Balsam fir seed",
 			"description": "Upright cones from a balsam fir, seeds still inside. Plant one with the hoe in open ground and a fir grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"maple_keys": {
 			"number": 1369,
-			"name": "Maple keys",
+			"name": "Sugar maple seed",
 			"description": "Winged maple seeds that spin as they fall. Plant them with the hoe in open ground and a maple grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"oak_seed": {
+			"number": 1370,
+			"name": "English oak seed",
+			"description": "Seeds from an English oak. Plant them with the hoe in open ground and an English oak grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"beech_seed": {
+			"number": 1371,
+			"name": "Beech seed",
+			"description": "Seeds from a beech. Plant them with the hoe in open ground and a beech grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"coconut_palm_seed": {
+			"number": 1372,
+			"name": "Coconut palm seed",
+			"description": "Seeds from a coconut palm. Plant them with the hoe in open ground and a coconut palm grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"rowan_seed": {
+			"number": 1373,
+			"name": "Rowan seed",
+			"description": "Seeds from a rowan. Plant them with the hoe in open ground and a rowan grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"wild_apple_seed": {
+			"number": 1374,
+			"name": "Crab apple seed",
+			"description": "Seeds from a crab apple. Plant them with the hoe in open ground and a crab apple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"wild_pear_seed": {
+			"number": 1375,
+			"name": "Wild pear seed",
+			"description": "Seeds from a wild pear. Plant them with the hoe in open ground and a wild pear grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"wild_cherry_seed": {
+			"number": 1376,
+			"name": "Wild cherry seed",
+			"description": "Seeds from a wild cherry. Plant them with the hoe in open ground and a wild cherry grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"sweet_chestnut_seed": {
+			"number": 1377,
+			"name": "Sweet chestnut seed",
+			"description": "Seeds from a sweet chestnut. Plant them with the hoe in open ground and a sweet chestnut grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"walnut_seed": {
+			"number": 1378,
+			"name": "Walnut seed",
+			"description": "Seeds from a walnut. Plant them with the hoe in open ground and a walnut grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"date_palm_seed": {
+			"number": 1379,
+			"name": "Date palm seed",
+			"description": "Seeds from a date palm. Plant them with the hoe in open ground and a date palm grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"mirrorbark_seed": {
+			"number": 1380,
+			"name": "Mirrorbark seed",
+			"description": "Seeds from a mirrorbark. Plant them with the hoe in open ground and a mirrorbark grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"wardpine_seed": {
+			"number": 1381,
+			"name": "Wardpine seed",
+			"description": "Seeds from a wardpine. Plant them with the hoe in open ground and a wardpine grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"hearthwood_seed": {
+			"number": 1382,
+			"name": "Hearthwood seed",
+			"description": "Seeds from a hearthwood. Plant them with the hoe in open ground and a hearthwood grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"everember_seed": {
+			"number": 1383,
+			"name": "Everember seed",
+			"description": "Seeds from an everember. Plant them with the hoe in open ground and an everember grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"witness_tree_seed": {
+			"number": 1384,
+			"name": "Witness tree seed",
+			"description": "Seeds from a witness tree. Plant them with the hoe in open ground and a witness tree grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"apple_early_seed": {
+			"number": 1385,
+			"name": "Early summer apple seed",
+			"description": "Seeds from an early summer apple. Plant them with the hoe in open ground and an early summer apple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"apple_summer_seed": {
+			"number": 1386,
+			"name": "Summer apple seed",
+			"description": "Seeds from a summer apple. Plant them with the hoe in open ground and a summer apple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"apple_autumn_seed": {
+			"number": 1387,
+			"name": "Autumn apple seed",
+			"description": "Seeds from an autumn apple. Plant them with the hoe in open ground and an autumn apple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"apple_keeping_seed": {
+			"number": 1388,
+			"name": "Keeping apple seed",
+			"description": "Seeds from a keeping apple. Plant them with the hoe in open ground and a keeping apple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"apple_cooking_seed": {
+			"number": 1389,
+			"name": "Cooking apple seed",
+			"description": "Seeds from a cooking apple. Plant them with the hoe in open ground and a cooking apple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"pear_summer_seed": {
+			"number": 1390,
+			"name": "Summer pear seed",
+			"description": "Seeds from a summer pear. Plant them with the hoe in open ground and a summer pear grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"pear_autumn_seed": {
+			"number": 1391,
+			"name": "Autumn pear seed",
+			"description": "Seeds from an autumn pear. Plant them with the hoe in open ground and an autumn pear grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"pear_winter_seed": {
+			"number": 1392,
+			"name": "Winter pear seed",
+			"description": "Seeds from a winter pear. Plant them with the hoe in open ground and a winter pear grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"sour_cherry_seed": {
+			"number": 1393,
+			"name": "Sour cherry seed",
+			"description": "Seeds from a sour cherry. Plant them with the hoe in open ground and a sour cherry grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"plum_seed": {
+			"number": 1394,
+			"name": "Plum seed",
+			"description": "Seeds from a plum. Plant them with the hoe in open ground and a plum grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"damson_seed": {
+			"number": 1395,
+			"name": "Damson seed",
+			"description": "Seeds from a damson. Plant them with the hoe in open ground and a damson grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"quince_seed": {
+			"number": 1396,
+			"name": "Quince seed",
+			"description": "Seeds from a quince. Plant them with the hoe in open ground and a quince grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"medlar_seed": {
+			"number": 1397,
+			"name": "Medlar seed",
+			"description": "Seeds from a medlar. Plant them with the hoe in open ground and a medlar grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"fig_seed": {
+			"number": 1398,
+			"name": "Fig seed",
+			"description": "Seeds from a fig. Plant them with the hoe in open ground and a fig grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"olive_seed": {
+			"number": 1399,
+			"name": "Olive seed",
+			"description": "Seeds from an olive. Plant them with the hoe in open ground and an olive grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"pomegranate_seed": {
+			"number": 1400,
+			"name": "Pomegranate seed",
+			"description": "Seeds from a pomegranate. Plant them with the hoe in open ground and a pomegranate grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"mango_seed": {
+			"number": 1401,
+			"name": "Mango seed",
+			"description": "Seeds from a mango. Plant them with the hoe in open ground and a mango grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"orange_seed": {
+			"number": 1402,
+			"name": "Orange seed",
+			"description": "Seeds from an orange. Plant them with the hoe in open ground and an orange grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"lemon_seed": {
+			"number": 1403,
+			"name": "Lemon seed",
+			"description": "Seeds from a lemon. Plant them with the hoe in open ground and a lemon grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+		},
+		"wild_apple_sweet_seed": {
+			"number": 1404,
+			"name": "Wild apple seed",
+			"description": "Seeds from a wild apple. Plant them with the hoe in open ground and a wild apple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		}
 	}
 }
