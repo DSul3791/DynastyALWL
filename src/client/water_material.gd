@@ -51,7 +51,9 @@ uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending
 // The defaults are the clear-air haze of look_settings.gd, for views that never feed them (terrain_preview, demos).
 uniform vec3 fog_color : source_color = vec3(0.63, 0.68, 0.75);
 uniform float fog_energy = 1.0;
-uniform float fog_density = 0.0009;
+uniform float fog_density = 0.0009;           // exponential: per metre; depth: the most fog there can be
+uniform bool fog_depth_mode = false;          // the environment's fog mode (depth in open air, fog_look.gd; exponential under water)
+uniform vec3 fog_depth = vec3(0.0, 3611.0, 0.35);   // depth fog begin, end (m) and curve
 uniform float fog_aerial = 0.7;               // share of the fog colour taken from the sky (Godot's aerial perspective)
 uniform vec3 fog_sky_color : source_color = vec3(0.63, 0.68, 0.75);   // stands in for the sky behind the fog (the horizon colour)
 uniform float fog_height = 0.0;
@@ -477,7 +479,7 @@ void fragment() {
 
 	// Fog, the way Godot's fog_process works it out: distance fog, then height fog below its top (whichever is thicker); the colour
 	// mixed toward the sky by the aerial share, plus a glow toward the sun. The sea plane has its own height layer (sea fog only).
-	float fog_amount = 1.0 - exp(min(0.0, -length(VERTEX) * fog_density));
+	float fog_amount = fog_depth_mode ? pow(smoothstep(fog_depth.x, fog_depth.y, length(VERTEX)), fog_depth.z) * fog_density : 1.0 - exp(min(0.0, -length(VERTEX) * fog_density));
 	float layer_density = sea > 0.5 ? sea_fog_height_density : fog_height_density;
 	float layer_top = sea > 0.5 ? sea_fog_height : fog_height;
 
