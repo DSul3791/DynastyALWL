@@ -79,7 +79,10 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - R6: Small, Medium and Large resource bins (one material, 1000/5000/10000), fuel pulls every 300 s from within 30 m (A-28 to A-34).
 - Building tiers work.
 - #1107 (GA-18, in review): the roof panel hint once a wall stands, and the roof wheel in the Controls list.
-- Roofs PR (A-35/A-36, provisional names): each tier gets "<Tier> - Roof 45" (renamed) and a new "<Tier> - Roof 65". NEEDS PLAYER VERIFICATION: the five tier Roof 45 icons still show the old gables and the 65s have no icon until a PC re-render (the cloud cannot render them: `look_runtime` has no `tier_panel`).
+- Tier roofs, #1110 (A-35/A-36, provisional names; waiting on the lane). Checks when it lands:
+  - [ ] On two facing walls of each tier, place Roof 45 and Roof 65. Each rises from the wall top, the wheel flips it, and there are no posts.
+  - [ ] A tier roof placed before #1110 reloads as a 45 panel, sitting low at its old spot. Take it down (you get the refund) and build it again.
+  - Names and icons: each tier gets "<Tier> - Roof 45" (renamed) and a new "<Tier> - Roof 65". NEEDS PLAYER VERIFICATION: the five tier Roof 45 icons still show the old gables and the 65s have no icon until a PC re-render (the cloud cannot render them: `look_runtime` has no `tier_panel`).
 
 ## 6. Building, doors and roofs (already in `dev`)
 

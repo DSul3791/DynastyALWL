@@ -158,7 +158,7 @@ Everything below is **PROVISIONAL**. None of it is approved. Each entry is in `R
 | A-32 | Bin storage form | units (1000/5000/10000), no kg cap |
 | A-33 | Is the 300 s pull interval real or game time? | 300 real seconds |
 | A-34 | A pull that empties someone's laid fire | the fire keeps its normal life |
-| A-35 | Roof names (roofs PR) | each tier's Roof becomes "<Tier> - Roof 45" and a "<Tier> - Roof 65" is added; goal and structure ids unchanged. Whether each Roof 65 gets a goal is listed in the catalog md |
+| A-35 | Roof names (roofs PR) | each tier's Roof becomes "<Tier> - Roof 45" and a "<Tier> - Roof 65" is added; goal and structure ids unchanged. Whether each Roof 65 gets a goal is listed in the catalog md. `DYNASTY_MASTER_ITEMS.md` still lists one "<Tier> - Roof" per tier: Dave to reconcile it with #1110 |
 
 These are also listed for your review: retirements made under the approved catalog (the standalone Smithy Bellows #909, the Blast furnace and `smelt_steel` 193, the Quenching trough), and the station display names Primitive smelter and Primitive smithy (REPAIR_DECISIONS §1).
 
