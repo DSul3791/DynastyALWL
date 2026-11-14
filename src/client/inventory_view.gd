@@ -1672,6 +1672,7 @@ func _update_trunk_colliders() -> void:
 # One Shader shared by every felled trunk, stump and log: a new Shader per call made the GPU compile the same bark shader again on each cut of a fallen tree (the trunk is rebuilt when it
 # gets shorter), a lock-up of about 2 s in the windowed game (Dave's bug 6, 2 Nov 2026; the server side of a cut costs under 30 ms with 3000 items).
 static var _felled_bark_shader: Shader = null
+const MIN_TRUNK_M := 0.3   # the shortest felled trunk drawn (a row with less is drawn this long, or twice its radius)
 
 
 func _felled_bark(species: String, radius: float, span: float) -> Material:
@@ -1710,7 +1711,9 @@ func _felled_bark(species: String, radius: float, span: float) -> Material:
 func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var radius: float = float(extra.get("radius", 0.3))
-	var length: float = float(extra.get("length", 8.0))
+	# Never a zero-length trunk: a 0 m cylinder and capsule made hundreds of "cannot be normalized" warnings and non-finite transforms, a 43 s stall
+	# on Dave's Windows PC (test lane, 14 Nov 2026). The server takes the trunk away with its last log, so this only guards a bad row.
+	var length: float = maxf(float(extra.get("length", 8.0)), maxf(MIN_TRUNK_M, radius * 2.0))   # long enough for its capsule (height at least twice the radius)
 	var bark: Material = _felled_bark(str(extra.get("species", "")), radius, length if trunk else maxf(radius * 1.2, 0.5))
 	var mesh_node: MeshInstance3D = MeshInstance3D.new()
 	var cyl: CylinderMesh = CylinderMesh.new()
