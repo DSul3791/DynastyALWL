@@ -182,7 +182,7 @@ const ACT_SET_SPAWN := 55   # a = a placed bed's world id: the bed becomes this 
 const ACT_TILL := 50       # a = the held pack slot (the hoe in hand from 117), at = the ground point: one hoe stroke tills a metre into a tilled bed (FARMING_SPEC.md step 2)
 const ACT_SOW := 51        # a = the bed's world id, b = the pack slot of the seed (step 3)
 const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
-const ACT_WATER_BED := 53  # a = the bed's world id: pours one `water` from the pack on it (step 4)
+const ACT_WATER_BED := 53  # a = the bed's world id, b = the pack slot of the filled water container in hand (-1 none; refused if it holds no water): pours up to 8000 mL from the pack's containers on it, that container first (GOALS-REPAIR GA-04, A-3)
 const ACT_HOE_PATH := 36     # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
 const ACT_HOE_SMOOTH := 37   # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
 const ACT_HOE_GRADE_POINT := 42   # a = held slot (the hoe in hand from 117), b = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player

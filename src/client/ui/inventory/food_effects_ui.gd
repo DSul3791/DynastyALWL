@@ -66,6 +66,11 @@ func on_effects(new_rows: Array) -> void:
 	_label.visible = not rows.is_empty()
 
 
+# Where the food effect lines end on the screen (the Goals box sits under them), or 0 while none show.
+func bottom_px() -> float:
+	return _label.position.y + _label.size.y if _label != null and _label.visible else 0.0
+
+
 func on_ask(slot: int, number: int, groups: PackedInt32Array) -> void:
 	if _ask_panel == null:
 		var parts: Array = view._storage_ui._panel("EAT")

@@ -171,6 +171,7 @@ SLOTS = [
     ("ui_on", "ui", "ui_sounds.gd: a toggle switched on (inspection mode)", "2 short rising two-note cues, quiet", 4),
     ("ui_off", "ui", "ui_sounds.gd: a toggle switched off", "2 short falling two-note cues, quiet", 4),
     ("ui_quality", "ui", "ui_sounds.gd: the quality tier changed (F2 or the menu)", "2 soft settled chimes, 0.5 s", 4),
+    ("ui_goal", "ui", "goal_placard.gd: the Goal Achieved placard's fanfare, once per completed goal", "A short triumphal trumpet fanfare, 1 to 2 s, original or properly licensed", 3),
     ("swim_splash_small", "swim", "swim_sounds.gd: the body enters water slowly (under 4 m/s)", "3 small body-into-water splashes, 0.5 to 1 s", 2),
     ("swim_splash_big", "swim", "swim_sounds.gd: a jump or fall into water (4 m/s and up)", "3 big splashes of a person falling in, 1 to 2 s", 2),
     ("swim_stroke", "swim", "swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s", "3 breaststroke or crawl arm pulls through water, 0.5 s", 3),

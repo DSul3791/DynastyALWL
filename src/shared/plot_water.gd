@@ -38,8 +38,8 @@ static func step(cfg: Dictionary, pct: float, dt_days: float, temp_c: float, win
 	return maxf(0.0, pct - loss * dt_days)
 
 
-static func pour(cfg: Dictionary, pct: float) -> float:
-	return minf(100.0, pct + float(cfg.get("pour_pct", 8.0)))
+static func pour(cfg: Dictionary, pct: float, bucket_share: float = 1.0) -> float:   # bucket_share: the part of a bucket (pour_ml) poured
+	return minf(100.0, pct + float(cfg.get("pour_pct", 8.0)) * bucket_share)
 
 
 static func is_wet(cfg: Dictionary, pct: float) -> bool:
