@@ -1,6 +1,6 @@
 # Player progression repair: verification report (GOALS-REPAIR R9)
 
-**Status: DRAFT, updated as work lands.** Written 14 Nov 2026 against `dev` `54b2c51c` (last merge #1101). R4 (#1102), R5, R6 and the building work are not in `dev` yet. Their rows say so and will be filled in when they merge.
+**Status: DRAFT, updated as work lands.** This PR also adds the map goal events (code) and applies the catalog recheck. Written 14 Nov 2026 against `dev` `54b2c51c` (last merge #1101). R4 (#1102), R5, R6 and the building work are not in `dev` yet. Their rows say so and will be filled in when they merge.
 
 This is the R9 report that Dave's 14 Nov brief and [CATALOG_IMPLEMENTATION_PLAN.md](CATALOG_IMPLEMENTATION_PLAN.md) §2 R9 and §5 call for. The tracker is `docs/ai-team/missions/GOALS-REPAIR/STATE.md`, with its decisions in `REPAIR_DECISIONS.md`. The original audit (`PLAYER_GOALS_REWARDS_AUDIT.md`, `PLAYER_GOALS_AUDIT_LEDGER.csv`) is kept unchanged. Section 5 lists what this mission changed against it. The play checklist is [PLAYER_PROGRESSION_REPAIR_F6.md](PLAYER_PROGRESSION_REPAIR_F6.md).
 
@@ -183,7 +183,7 @@ These are also listed for your review: retirements made under the approved catal
 | `build:improved_smelter` (PROPOSED) | ids not re-verified | item #1304 "Improved smelter", structure state 368, bp 300 all exist. The placed kind is `improved_smelter`. | refs **verified**. Stays PROPOSED (its reward is for Dave) |
 | `craft:copper_pickaxe`, `craft:copper_axe` (PROPOSED) | "key TBD" | The keys are `copper_pickaxe` #1305 (recipe 722) and `copper_axe` #1306 (recipe 723), both at `forge`. The axe needs a leather strap. | refs **verified**. Stays PROPOSED |
 | `build:smelter` | FIX (its correction says the Primitive smelter "arrives with R2") | The Primitive smelter is in dev (#1092) | correction text is stale; **not changed here**, left for the R3 recheck |
-| `activity:map_survey`, `activity:map_redraw` (PROPOSED) | GAP-MAP-SURVEY, GAP-MAP-REDRAW | The gap is closed in this PR. `server_map.gd` raises `map_surveyed` once per survey that finds never-seen ground (a survey runs every 8 m walked) and `map_redrawn` once per survey that redraws known ground at a higher skill. Both go through `_goal_event`, so Admin mode pauses them and each goal pays once. It counts each survey, not each cell, so a survey costs one goal check (GA-49). The catalog condition says so. Tested in `test_map`. Survey count N is for Dave. | stays PROPOSED (reward and N for Dave); event gap closed |
+| `activity:map_survey`, `activity:map_redraw` (PROPOSED) | GAP-MAP-SURVEY, GAP-MAP-REDRAW | The gap is closed in this PR. `server_map.gd` raises `map_surveyed` once per survey that finds never-seen ground (a survey runs every 8 m walked) and `map_redrawn` once per survey that redraws known ground at a higher skill. Both go through `_goal_event`, so Admin mode pauses them and each goal pays once. It counts each survey, not each cell, so a survey costs one goal check (GA-49). The catalog condition says so. New checks in `test_map` (and the real goal counters with Admin mode); the lane run on this head is owed, so the events are not yet VERIFIED BY TEST. Survey count N is for Dave. | stays PROPOSED (reward and N for Dave); event gap closed |
 
 ## 8. Still to do before R9 is complete
 
@@ -192,4 +192,5 @@ These are also listed for your review: retirements made under the approved catal
 3. Run a multiplayer restart test.
 4. Get Dave's F6 pass with [PLAYER_PROGRESSION_REPAIR_F6.md](PLAYER_PROGRESSION_REPAIR_F6.md).
 5. Get Dave's answers on section 6.
-6. Recheck the rows blocked by WP-METAL R3, WP-R1B, WP-PRIM and WP-GUIDE-UI, now that those PRs are in `dev`.
+6. Before the corrected catalog goes live, time `_goals_check` on the PC with all 651 goals: every map survey of new ground and every other goal event runs it (GA-49).
+7. Recheck the rows blocked by WP-METAL R3, WP-R1B, WP-PRIM and WP-GUIDE-UI, now that those PRs are in `dev`.

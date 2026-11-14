@@ -58,7 +58,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - [ ] **Primitive smithy** (bp 9: 24 stone, 10 clay, 2 log, A-8). It needs no metal to build. Make a **Copper pickaxe** (3 copper ingot, 2 stick) and a **Copper axe** (2 copper ingot, 1 stick, 1 leather strap) (A-13). Does copper feel worth making? It should be a bit better than stone and a bit worse than bronze (A-14). The copper pickaxe still does not mine iron. The tool looks are placeholders.
 - [ ] **Bronze tools.** At the Primitive smithy: bronze hammer, pickaxe, axe, nails, hinges and so on.
 - [ ] **Improved smelter** (bp 300: clay 24, stone 16, log 2, hide 3, bronze hinges 2, bronze nails 20; A-9).
-  - **Capacity:** 40 fuel, 40 ore and an 80-ingot rack.
+  - **Capacity:** 40 fuel, 40 ore and an 80-ingot rack. F opens its store; E works the bellows.
   - **Bellows:** press E and stay beside it to work the bellows. It smelts 1.3 times faster.
   - **Iron:** iron ore (mined with a Bronze pickaxe) smelts only while someone is working the bellows. Walk away and it pauses without losing time.
   - **Looks:** the look is a placeholder.

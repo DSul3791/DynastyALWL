@@ -7,7 +7,7 @@
   - Draft: `PLAYER_GOALS_REWARDS_DRAFT.md` (651 rows, 15,670 copper in total).
   - Audit: `PLAYER_GOALS_AUDIT_LEDGER.csv` (audit at `dc2fa52`).
   - Recovery: `PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md`, which holds the GA dispositions.
-  - Data baseline: dev `9db936d` (data identical to `77460e3`). The hand-chop, fire-tier and site-kind fixes were read in PR #1095's worktree; that PR is not in dev.
+  - Data baseline: dev `9db936d` (data identical to `77460e3`). The hand-chop, fire-tier and site-kind fixes were read in PR #1095's worktree; #1095 has since merged to dev (`b94b1e7`).
 - **Dev moved after the baseline.** Dev has since taken #1090 (Map), #1092 (R2a smelters), #1097 and #1098, and later #1089, #1095, #1099, #1100 and #1101.
 - **Rechecked on dev `54b2c51` (R9, PR #1105; static read of data and code):**
   - **Verdicts changed:** the 22 WP-METAL R2 rows and `craft:iron_ingot` are no longer blocked: 17 are OK and 6 are FIX (they carry text corrections).
@@ -186,7 +186,7 @@ Every row has a `condition`, a `runtime_check` in the goal engine's own JSON, an
     - `workbench` checks for the workbench only.
   - **The HUD skip** (Dave decision 5).
   - **Optional:** add the item to `ate_food`. Indexing goals by event (GA-49) is a performance shortcut, not a gap.
-- **WP-PRIM (PR #1095, not in dev):**
+- **WP-PRIM (PR #1095, in dev since `b94b1e7`):**
   - **F1.** In dev, `_finish_site` loses the structure kind; #1095 fixes this. The 256 build rows assume the fix.
   - **F3.** There is no `log_chopped` event. Instead, #1095 credits the hand chop as `_goal_made(peer, <species block>)`, which covers Hardwood, Softwood and Large blocks, and the hand split as `_goal_made(peer, <firewood>)`.
     - **Overlap:** a hand chop now also feeds `craft:wooden_block` and `craft:wooden_block_soft`. Under GA-38 each goal still pays once.
@@ -232,10 +232,10 @@ Whether the burst in point 1 is acceptable is Dave decision 4: accept it, reset 
 **Not verified:**
 
 - No Godot run, no tests and no play.
-- PR #1095 is not in dev. The rows that rely on it (F1, F3, F4) were checked against its worktree code only.
+- PR #1095 was not in dev at the review baseline. The rows that rely on it (F1, F3, F4) were checked against its worktree code; it has since merged (`b94b1e7`).
 - Dev moved to `596d156` (#1090, #1092, #1097, #1098) after the baseline, and the rows were not recomputed there.
 - The player sources from PR #1091 (Tanbark, Pine tar, water from containers) are marked NEEDS PLAYER VERIFICATION in 109 rows.
 - The acquisition evidence comes from the audit at `dc2fa52`. Its text was cut at 90 characters, and the cuts are shown as "...".
-- The planned ids from R2b–R6 (#1305–#1309, bp 301, recipe 725, copper tool keys, bin structures) are not in dev.
+- At the review baseline the planned ids from R2b–R6 were not in dev. Since then #1305–#1307 (copper tools, Iron anvil, recipes 722–724) are in dev and were rechecked on `54b2c51` (R9, PR #1105); #1308, #1309, bp 301, recipe 725 and the bin structures are not yet.
 - The Leaves drop from felling is not verified.
 - Whether a newly placed Campfire kit starts with sticks in its fuel store is not verified.
