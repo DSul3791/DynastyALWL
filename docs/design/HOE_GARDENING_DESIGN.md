@@ -50,3 +50,11 @@ These are PROVISIONAL values the thread or the coordinator chose under Dave's st
 | G-12 | The existing per-log seed roll (`trunk.seed_chance`: a species' fruit or nut, else Wild grain) is unchanged. It comes on top of the 1 to 5 felled seeds. | `drops.json trunk.seed_chance` |
 
 G-4 (the coordinator's ruling) is that a species' own fruit or nut is its seed.
+
+## For Dave: open points answered on your behalf
+The coordinator answered these while you were away. All are provisional, and each is a one-line change if you want it different.
+
+1. **Fantasy trees drop no seeds.** Mirrorbark, wardpine, hearthwood, everember and the witness tree give no seeds when felled, because magic content is deferred (G-10). Say if they should drop seeds now, and what the seed is called.
+2. **Herbs and flowers are not plantable yet.** The Planter box, Stone - Planter and Flower pot can be built, but nothing can be planted in them, because the catalog has no herb or flower seed or cutting item. Adding those items needs your go, since the catalog is fixed.
+3. **Every gardening value is assumed.** The table above (G-1 to G-3 and G-5 to G-12) lists each number and name we chose: auto-sow on open ground, levelling reach and strength, list order, which plots the hoe lays out, grid sizes and spacing, reach, pacing, the ten new seed names, tree spacing and the per-log seed roll. G-4 is the coordinator's ruling that a tree's own fruit or nut is its seed.
+4. **Planting now counts as a use in the item check.** Crop seeds, dug-up bushes and felled tree seeds no longer show up as dead ends in `validate_items`, so that warning lists only items with no use at all.
