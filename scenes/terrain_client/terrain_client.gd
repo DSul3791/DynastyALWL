@@ -4696,7 +4696,7 @@ func _snow_pace() -> float:
 	return _snow_pace_now
 
 
-# Space (jump, swim up, wake) and Ctrl (down, dive) held for the body: never while a screen (inventory, character, Journal, a talk) is open, as walking
+# Movement keys held for the body (jump, swim up, fly, Ctrl down or dive, ladder climb): never while a screen (inventory, character, Journal, a talk) is open, as walking
 # is not (the screen's keys and clicks are not the world's).
 func _move_held(id: String) -> bool:
 	return KeyBindings.held(id) and not (items != null and items.screen_open())
@@ -4723,7 +4723,7 @@ func _move_player(delta: float) -> void:
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
 	var sleeping_now: bool = items != null and items.asleep
 
-	if sleeping_now and _move_held("jump") and input == Vector3.ZERO:
+	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:   # waking works with a screen open too (Dave 2026-10-21: hold Space to wake)
 		# Dave 2026-10-21: holding Space wakes a sleeper early (not fully rested: the energy stays where it was).
 		_space_wake_s += delta
 
@@ -4901,7 +4901,7 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 		return false
 
 	var look: Vector3 = -body.global_transform.basis.z
-	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, KeyBindings.held("move_forward"), KeyBindings.held("move_back"), _move_held("jump"), delta * items.worn_speed())   # a pack frame climbs slower
+	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, _move_held("move_forward"), _move_held("move_back"), _move_held("jump"), delta * items.worn_speed())   # a pack frame climbs slower
 	var at: Vector3 = result["position"]
 
 	if at != Vector3.INF:
