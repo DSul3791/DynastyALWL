@@ -110,7 +110,7 @@ const RescueScript := preload("res://src/client/rescue.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
 const BUILD: int = BuildInfo.NUMBER
 var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
-var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
+var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+Shift+N shortcut
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -226,7 +226,7 @@ var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
 var _breath_label: Label             # the seconds of air left, shown with the oxygen symbol
-var sound_panel = SoundPanelScript.new()   # Shift+F3: every playing sound with a switch to mute it (sound_panel.gd)
+var sound_panel = SoundPanelScript.new()   # Ctrl+Shift+F5: every playing sound with a switch to mute it (sound_panel.gd)
 var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
 var _quality_buttons: Array = []         # Esc > Settings, one per tier; the active one is marked
@@ -491,7 +491,7 @@ var _commit: String = GitStamp.short_commit()   # which checkout is running
 var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
 var _machine_probe                    # "Measure this machine" run for the minimum-spec test (Esc > Advanced)
-var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+G
+var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+P
 var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
@@ -2184,7 +2184,7 @@ func _arrive_on_ground() -> void:
 
 # The character died (protocol 34): the server already holds the remains and the reset vitals; put the body back at the spawn
 # high up and let it settle on the ground the way a first arrival does (no fall, a few seconds of protection).
-# Ctrl+N (admin): stand next to the nearest NPC that is drawn (they are sent within 120 m); press E there to talk.
+# Ctrl+Shift+N (admin): stand next to the nearest NPC that is drawn (they are sent within 120 m); press E there to talk.
 func _go_to_npc() -> void:
 	var near: Dictionary = _npc_view.nearest(body.global_position, 100000.0) if _npc_view != null else {}
 
@@ -2884,7 +2884,7 @@ func _admin_dig() -> void:
 		net.dig.rpc_id(1, hit["position"], 2.0)
 
 
-# Ctrl+R (admin): a rabbit on the ground where the crosshair points, up to 40 m away (testing animals).
+# Ctrl+Shift+R (admin): a rabbit on the ground where the crosshair points, up to 40 m away (testing animals).
 func _admin_rabbit() -> void:
 	var origin: Vector3 = camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin - camera.global_transform.basis.z * 40.0)
@@ -3472,16 +3472,17 @@ var _previous_run_note_until_msec: int = 0
 var _ground_line: String = ""
 var _ground_line_msec: int = 0
 # Esc > Controls: every hotkey on one screen (CONTROLS.md has the full rules; keep this in step with it).
-const HELP_TEXT := """Move: W A S D   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
+const HELP_TEXT := """Move: W A S D   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly (admin): Ctrl+Shift+G
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
-Ctrl+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+L or Esc to lower it)
+Ctrl+Shift+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+Shift+L or Esc to lower it)
 Spyglass in hand: hold the right mouse button to look through it (3x), let go to lower it
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
-I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
-/: inspection mode   + and -: spring flow (tuning)
-F2: quality   F3: debug details   F4: all screen text on or off   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
-Admin: Ctrl+N nearest NPC   Ctrl+R rabbit   Ctrl+X dig hole   ]: starter items   Esc > Advanced > Dump ground: crosshair ground report
+J: Journal   G: goals   M: map   I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
+/: inspection mode
+Admin and debug shortcuts always need Ctrl+Shift together with the key (Esc > Settings > Controls changes the key, never the Ctrl+Shift):
+Ctrl+Shift+F2: quality   F3: debug details   F4: all screen text on or off   F5: sound panel   F7 / F8: water debug   P: GPU probe table (press again to close)   J: jitter test
+Ctrl+Shift+N: nearest NPC   R: rabbit   X: dig hole   ]: starter items   = and -: spring flow (tuning)   Esc > Advanced > Dump ground: crosshair ground report
 Esc: this menu"""
 
 
@@ -3857,7 +3858,7 @@ var _view_ball: SphereShape3D          # the camera's ball for the wall sweep (V
 const PhotoCameraScript := preload("res://src/client/photo_camera.gd")
 var photo = PhotoCameraScript.new()                      # K: the photo camera (src/client/photo_camera.gd), a free orbiting view of the character
 const SpyglassScript := preload("res://src/client/spyglass.gd")
-var spyglass = SpyglassScript.new()                      # Ctrl+L: the admin spyglass (src/client/spyglass.gd), zoom and the watched animal's readout
+var spyglass = SpyglassScript.new()                      # Ctrl+Shift+L: the admin spyglass (src/client/spyglass.gd), zoom and the watched animal's readout
 var _spyglass_overlay = null
 var _spyglass_sent_ms: int = 0
 var third_person: bool = false:
@@ -4064,9 +4065,9 @@ func _update_view(delta: float) -> void:
 var _photo_saved: Dictionary = {}
 
 
-# Ctrl+L: the admin spyglass up or down (docs/design/spyglass_design.md). Not from the photo camera. The server is told (ACT_SPYGLASS) so it
+# Ctrl+Shift+L: the admin spyglass up or down (docs/design/spyglass_design.md). Not from the photo camera. The server is told (ACT_SPYGLASS) so it
 # sends animals out to 300 m and the watched one's readout; a player who is not an admin is refused and the glass comes down.
-# Ctrl+L or Esc while looking through a held spyglass item lowers that instead.
+# Ctrl+Shift+L or Esc while looking through a held spyglass item lowers that instead.
 func _toggle_spyglass() -> void:
 	if spyglass.active and spyglass.tier > 0:
 		_spyglass_item(false, -1, spyglass.tier)
@@ -4085,7 +4086,7 @@ func _toggle_spyglass() -> void:
 # pack slot, `item_tier` its tier. The server checks the item, takes one use and sends animals out to the tier's radius (ACT_SPYGLASS a = 2).
 func _spyglass_item(on: bool, slot: int, item_tier: int) -> void:
 	if on == spyglass.active or (not on and spyglass.tier == 0):
-		return   # already so, or the admin glass is up: Ctrl+L owns that one
+		return   # already so, or the admin glass is up: Ctrl+Shift+L owns that one
 
 	var cfg: Dictionary = SpyglassScript.tier_config(item_tier)
 
@@ -4181,7 +4182,7 @@ func _update_spyglass() -> void:
 # K: into the photo view (the normal view is remembered) or back out (all of it restored: heading, pitch, roll, drawn camera and field of view).
 func _toggle_photo() -> void:
 	if spyglass.active:
-		return   # lower the spyglass first (Ctrl+L or Esc)
+		return   # lower the spyglass first (Ctrl+Shift+L or Esc)
 
 	if not photo.active:
 		_photo_saved = PhotoCameraScript.snapshot(body, camera, view_cam, pitch)
@@ -4286,6 +4287,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		items.toggle_character()
 		return
 
+	# The Journal (docs/design/PLAYER_JOURNAL_GOALS_UI.md): J the index, G goals, M map, from the world or inside the Journal. With the inventory up
+	# these keys stay the inventory's (plain G is Store all there); I and Tab above swap the Journal for their own screen.
+	if event is InputEventKey and event.pressed and not event.echo and items != null and items.journal != null and (items.journal.open or not items.screen_open()):
+		if KeyBindings.matches(event, "journal"):
+			items.journal.press_journal()
+			return
+
+		if KeyBindings.matches(event, "goals"):
+			items.journal.show_page("goals")
+			return
+
+		if KeyBindings.matches(event, "map"):
+			items.journal.show_page("map")
+			return
+
+	if items != null and items.journal != null and items.journal.open:
+		return   # the Journal takes no other key (Esc is handled above)
+
 	if items != null and items.screen_open():
 		if event is InputEventKey and event.pressed and not event.echo:
 			items.quick_key(event)
@@ -4344,9 +4363,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			if not inspecting:
 				_inspect_label.text = ""
-		elif KeyBindings.matches(event, "spring_up") or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+		elif KeyBindings.matches(event, "spring_up"):
 			net.step_water_rate.rpc_id(1, 1)
-		elif KeyBindings.matches(event, "spring_down") or event.keycode == KEY_KP_SUBTRACT:
+		elif KeyBindings.matches(event, "spring_down"):
 			net.step_water_rate.rpc_id(1, -1)
 		elif KeyBindings.matches(event, "put_down_log") and not flying and items != null and not items.open:
 			items.lay_down_shoulder()
@@ -4401,7 +4420,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_horizon.toggle()   # the inclination ruler underground (Dave 4 Nov 2026); off until asked for
 		elif KeyBindings.matches(event, "open"):
 			if items != null and not flying:
-				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down
+				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is Ctrl+Shift+G); with a log on the shoulder and nothing to open, F twice puts the log down
 		elif KeyBindings.matches(event, "fly"):
 			flying = not flying
 			body.velocity = Vector3.ZERO
@@ -5229,7 +5248,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, KeyBindings.held("interact") and not items.open)
+		harvest.update(delta, KeyBindings.held("interact") and not items.screen_open())   # no harvest under any screen (the Journal, Tab), not only the inventory
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
@@ -6398,7 +6417,7 @@ func _process(delta: float) -> void:
 	status_icons.tick(delta)
 	_note_last_sound()
 	_note_sound_now(delta)
-	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s\nplaying: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound, _sound_now]
+	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (Ctrl+Shift+F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s\nplaying: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound, _sound_now]
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
@@ -6492,9 +6511,9 @@ func _process(delta: float) -> void:
 # Debug details (Dave 2026-10-20: the default HUD is only build, position and the last sound).
 # Any thread that wants a diagnostic line on screen registers a Callable returning a String with
 # debug_hud (debug_hud.add_line(name, callable), see src/client/debug_hud.gd); it is only called
-# while Debug details is on (F3, or Esc > Settings).
+# while Debug details is on (Ctrl+Shift+F3, or Esc > Settings).
 func _debug_text(avg_ms: float, worst_ms: float) -> String:
-	var text: String = "avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d" % [
+	var text: String = "avg %.1f ms  worst %.1f ms  quality %s (Ctrl+Shift+F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d" % [
 		avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts
@@ -6510,7 +6529,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	var win: Vector2i = get_window().size
 	@warning_ignore("static_called_on_instance")
 	text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
-	text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
+	text += "\nGPU breakdown: Ctrl+Shift+P or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
 	text += "\n" + sound.debug_sound_text(body)       # cached half a second: it walks every player in the scene (was every frame)

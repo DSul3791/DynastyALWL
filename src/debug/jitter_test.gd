@@ -1,6 +1,6 @@
 extends Node
 # Float-precision test (Technical direction, 2026-10-20). Esc > Advanced > "Jitter test"
-# or J flies the player to the next test spot far from the world origin and shows a
+# or Ctrl+Shift+J flies the player to the next test spot far from the world origin and shows a
 # readout plus a row of thin posts 1 cm apart in front of the camera. Far from the
 # origin 32-bit floats get coarse; if the posts shimmer, swap places or the view
 # wobbles while you stand still or turn, the world needs a floating origin.

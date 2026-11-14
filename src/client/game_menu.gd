@@ -11,6 +11,7 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const TitleArt := preload("res://scenes/title/title_art.gd")
 
@@ -474,14 +475,14 @@ func _build_admin() -> void:
 func _build_developer() -> void:
 	var dev: VBoxContainer = _page("developer")
 	_heading(dev, "Developer tools")
-	_button(dev, "Debug text on screen (F3): on or off", func():
+	_button(dev, "Debug text on screen (%s): on or off" % KeyBindings.label("debug_details"), func():
 		_c.debug_hud.enabled = not _c.debug_hud.enabled
 		note.text = "Debug text %s" % ("on" if _c.debug_hud.enabled else "off"))
 	_button(dev, "Ground report for the spot you look at (copied)", func(): _c.ground_debug.dump_ground_here())
-	_button(dev, "Camera smoothness test (next spot, or J)", func():
+	_button(dev, "Camera smoothness test (next spot, or %s)" % KeyBindings.label("jitter_test"), func():
 		_c._jitter_test.next_spot()
 		_c._set_menu(false))
-	_button(dev, "Graphics timing table (stand still; Ctrl+Shift+G)", func():
+	_button(dev, "Graphics timing table (stand still; %s)" % KeyBindings.label("gpu_probe"), func():
 		_c._set_menu(false)
 		_c._gpu_probe.toggle())
 	_button(dev, "One-minute speed test of this PC", func():
