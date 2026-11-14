@@ -139,14 +139,14 @@ func _init() -> void:
 	items._gain_source = items.SRC_PICKUP
 	items._goals_tick()
 	check(got.call("plant_fibre") == 0 and not done("fibre"), "bought and handed-back fibre are not gathered either, though held (%d held)" % count("plant_fibre"))
-	items.give(1, items.table.number_of("plant_fibre"), 11)   # as a harvest gives them
-	check(got.call("plant_fibre") == 11 and not done("fibre"), "11 gathered first-hand: not yet")
 	check(not progress_sent.any(func(c): return (c as Dictionary).has("fibre")), "admin-given, bought and handed-back fibre sent no fibre count (%s)" % str(progress_sent))
 	progress_sent.clear()
+	items.give(1, items.table.number_of("plant_fibre"), 11)   # as a harvest gives them
+	check(got.call("plant_fibre") == 11 and not done("fibre"), "11 gathered first-hand: not yet")
+	check(progress_sent.size() == 1 and progress_sent[0].get("fibre") == 11 and not progress_sent[0].has("axe"), "the gathering sends the fibre count that moved, 11, at once, and no single-item goal (%s)" % str(progress_sent))
+	progress_sent.clear()
 	items._goals_tick()
-	check(progress_sent.size() == 1 and progress_sent[0].get("fibre") == 11 and not progress_sent[0].has("axe"), "the next check sends the fibre count that moved, 11, and no single-item goal (%s)" % str(progress_sent))
-	items._goals_tick()
-	check(progress_sent.size() == 1, "a check where nothing moved sends nothing")
+	check(progress_sent.is_empty(), "a check where nothing moved sends nothing (%s)" % str(progress_sent))
 	items.give(1, items.table.number_of("plant_fibre"), 1)
 	items._goals_tick()
 	check(got.call("plant_fibre") == 12 and done("fibre"), "the 12th gathered plant fibre completes the fibre goal: history, not what is held (got_item)")
