@@ -368,6 +368,7 @@ const BowScript := preload("res://src/stream/server_bow.gd")
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const TrapsScript := preload("res://src/stream/server_traps.gd")
 const SmelterScript := preload("res://src/stream/server_smelter.gd")   # the Smelters: hopper, input, output or ground, bellows (master s2.5, s2.7)
+const SmithyScript := preload("res://src/stream/server_smithy.gd")     # the Smithies' use wear (master s2.7 items 5-8)
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const FoodEffects := preload("res://src/shared/food_effects.gd")   # temporary food effects in three group slots (catalog Phase 7)
 const CarryRules := preload("res://src/shared/carry_rules.gd")
@@ -392,6 +393,7 @@ var plant_stays: bool = false         # set by gather(): the last pick left the 
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
 var _traps = null                   # server_traps.gd (snares), made in setup
 var _smelters = null                # server_smelter.gd (the Smelters), made in setup
+var _smithies = null                # server_smithy.gd (the Smithies' use wear), made in setup
 const CartsScript := preload("res://src/stream/server_carts.gd")
 var _carts = null                   # server_carts.gd (the Handcart and crates riding on it, catalog Phase 10), made in setup
 var send_cart_pull: Callable        # (peer, cart world id or 0, pace in tenths of m/s): the cart this player holds the handle of (protocol 111)
@@ -461,6 +463,8 @@ func setup(item_table, store_dir: String) -> void:
 	_smelters = SmelterScript.new()
 	_smelters.host = self
 	_smelters.setup(_structures_cfg)
+	_smithies = SmithyScript.new()
+	_smithies.host = self
 	_load_blueprints()
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
@@ -508,6 +512,7 @@ func setup(item_table, store_dir: String) -> void:
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
 	_smelters.load_rows(_read_json_version("smelters.json", 1))
+	_smithies.load_rows(_read_json_version("smithies.json", 1))
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
@@ -1568,6 +1573,7 @@ func save() -> void:
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
+	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
 
 
@@ -2164,7 +2170,6 @@ func reset_world() -> int:
 	_refresh_pots()
 	_lit_valid = false
 	_bed_cache.clear()
-	_speed_cache.clear()
 	_sync_grid = {}
 
 	for peer in _chest_viewer.keys():
@@ -3954,12 +3959,10 @@ func _water_flow_rules() -> Dictionary:
 
 # How much slower a station recipe runs at a sawmill whose wheel gives less than full_power_w (Sonny section 10: craft time x full_power_w / P).
 # The wheel's watts are worked out once per placed sawmill and kept on it ("wheel_w"); 1.0 for every other station, or with no wheel callable.
-# Also: Bellows beside a Smithy (an add-on with craft_speed, master s2.7 item 5) make its crafts faster.
 func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 	var station: String = str(recipe.get("station", ""))
-	var wheel: bool = water_wheel.is_valid() and _wheel_station(station)
 
-	if station == "" or not (wheel or _speed_addon_station(station)):
+	if station == "" or not (water_wheel.is_valid() and _wheel_station(station)):
 		return 1.0
 
 	var id: int = serving_station(peer, station, int(recipe.get("station_level", 1)))
@@ -3967,39 +3970,8 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 	if id < 0:
 		return 1.0
 
-	var slow: float = 1.0 / _speed_factor(id)
-
-	if not wheel:
-		return slow
-
 	var watts: float = _wheel_watts(_items[id])
-	return slow if watts < 0.0 else slow / WaterFlowScript.wheel_share(watts, _water_flow_rules())
-
-
-var _speed_addons: Dictionary = {}   # station -> true when some add-on of it carries craft_speed (worked out once)
-var _speed_cache: Dictionary = {}    # station world id -> [ms when worked out, craft_speed factor]: the add-on scan runs at most every 5 s per station
-
-
-func _speed_factor(id: int) -> float:
-	var now: int = Time.get_ticks_msec()
-	var row: Array = _speed_cache.get(id, [])
-
-	if row.is_empty() or now - int(row[0]) > 5000:
-		row = [now, _addon_factor(_items[id], _structures.get(str(_items[id]["struct"]["kind"]), {}), "craft_speed")]
-		_speed_cache[id] = row
-
-	return float(row[1])
-
-
-func _speed_addon_station(station: String) -> bool:
-	if _speed_addons.is_empty():
-		_speed_addons["_read"] = true
-
-		for kind in _structures:
-			if _structures[kind].has("craft_speed") and not bool(_structures[kind].get("retired", false)):
-				_speed_addons[str(_structures[kind].get("addon_of", ""))] = true
-
-	return _speed_addons.has(station)
+	return 1.0 if watts < 0.0 else 1.0 / WaterFlowScript.wheel_share(watts, _water_flow_rules())
 
 
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
@@ -13318,7 +13290,7 @@ func _cold_station_near(peer: int, station: String) -> bool:
 	return false
 
 
-# Fires a cold station that burns fuel (craft_needs_lit) with one fuel unit from the pack: lit for fuel_s seconds, longer with Bellows beside it.
+# Fires a cold station that burns fuel (craft_needs_lit) with one fuel unit from the pack: lit for fuel_s seconds.
 func _fire_station(peer: int, inv, it: Dictionary, def: Dictionary, fuel_n: int) -> void:
 	var before: Array = _snapshot(inv)
 
@@ -13327,33 +13299,10 @@ func _fire_station(peer: int, inv, it: Dictionary, def: Dictionary, fuel_n: int)
 
 	_send_changes(peer, inv, before)
 	it["struct"]["lit"] = true
-	it["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0)) * _addon_factor(it, def, "fuel_saving")
+	it["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0))
 	_lit_valid = false
 	_dirty = true
 	_say(peer, "You fire the %s." % table.sentence_name(int(it["number"])))
-
-
-# The product of an add-on's factor (structures.json craft_speed, fuel_saving) over the add-on kinds standing beside this station (Bellows, phase 2b); 1.0 with none.
-func _addon_factor(station_row: Dictionary, def: Dictionary, field: String) -> float:
-	var factor: float = 1.0
-	var seen: Dictionary = {}
-	var reach: float = float(def.get("addon_reach_m", 5.0))
-	var station: String = str(def.get("station", ""))
-
-	for id in _items:
-		var other: Dictionary = _items[id]
-
-		if not other.has("struct"):
-			continue
-
-		var kind: String = str(other["struct"]["kind"])
-		var odef: Dictionary = _structures.get(kind, {})
-
-		if not seen.has(kind) and odef.has(field) and str(odef.get("addon_of", "")) == station and station_row["pos"].distance_to(other["pos"]) <= reach:
-			seen[kind] = true
-			factor *= float(odef[field])
-
-	return factor
 
 
 # How many different add-on kinds (structures.json addon_of) stand within addon_reach_m of a station: each raises its level by one,
@@ -17671,6 +17620,8 @@ func _craft_tick(spent: float) -> void:
 
 				if spill > 0:   # not reached (the room was checked this tick); kept so a disagreement with Inventory.add never loses the product
 					give(peer, made_n, spill, made_inst, made_age)
+
+				_smithies.crafted(store_id, recipe)   # a smithy's anvil wears with use, iron on bronze faster (master s2.7 item 5)
 
 				if int(head[1]) - times <= 0:
 					_say(peer, "%s done: it is in the %s." % [str(recipe.get("name", "Your craft")), table.sentence_name(int(_items[store_id]["number"]))])

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1307,
+	"next_number": 1308,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -1025,7 +1025,7 @@
 			"value": 600,
 			"look_alikes": []
 		},
-		"blacksmithy": {"number": 90, "name": "Smithy", "description": "A smithy with its own forge, anvil and bench. Fire it with charcoal or coal to work bronze, iron and steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 12},
+		"blacksmithy": {"number": 90, "name": "Improved smithy", "description": "A forge with a bronze anvil. Fire it with charcoal or coal to work copper, bronze and iron; iron wears it.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 12},
 		"carcass": {
 			"number": 91,
 			"name": "Carcass",
@@ -4895,6 +4895,17 @@
 			"value": 40,
 			"edge": true,
 			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-13): Copper pickaxe and axe only (master s2: no Copper variant without a verified role); knife and hammer are a question for Dave. PROVISIONAL (GOALS-REPAIR A-14): stats midway between Stone and Bronze (durability, value; per-material rates in boulders.json and drops.json)."
+		},
+		"iron_anvil_part": {
+			"number": 1307,
+			"name": "Iron anvil",
+			"description": "A forged iron anvil on a banded log stump. Not set down on its own: it goes into building an Advanced smithy.",
+			"kind": "material",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"value": 90,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-16): a new id for the Iron anvil component (master s2.7 item 6, s3.3); #827 stays the retired placed Anvil so old saves load. Its recipe copies the obsolete blueprint 164 cost (5 Iron ingot, 1 Log)."
 		},
 		"stairs_wood_kit": {
 			"number": 462,

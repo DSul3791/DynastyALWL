@@ -138,7 +138,9 @@ func _init() -> void:
 
 	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 1, "steel work is at the Smithy with no level: Blast furnace steel gates it (master s4 item 10, the Anvil retired)")
 
-	# Bellows and the Quenching trough beside the Smithy are add-ons (master s2.7 item 5) that change how it works, never its level.
+	# Bellows and the Quenching trough beside the Smithy are old add-ons that never change its level. The standalone Bellows no longer speed the
+	# Smithy or save its fuel (GOALS-REPAIR R3; CATALOG_IMPLEMENTATION_PLAN s1: the standalone Smithy Bellows must not return), but a placed one
+	# still stands (old saves).
 	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
 	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
 
@@ -157,11 +159,46 @@ func _init() -> void:
 	check(tiers.station_near(1, "brick_forge", 2) and not tiers.station_near(1, "brick_forge", 3), "they do not raise the Smithy's level")
 	var smithy_id: int = tiers.serving_station(1, "brick_forge", 2)
 	var smithy_def: Dictionary = tiers._structures["blacksmithy"]
-	check(smithy_id >= 0 and is_equal_approx(tiers._addon_factor(tiers._items[smithy_id], smithy_def, "craft_speed"), 1.25), "Bellows make the Smithy's crafts faster")
+	check(smithy_id >= 0 and not tiers._structures["bellows"].has("craft_speed") and not tiers._structures["bellows"].has("fuel_saving") and is_equal_approx(tiers._wheel_slow(1, {"station": "brick_forge", "station_level": 2}), 1.0), "standalone Bellows no longer make the Smithy faster or save its fuel")
 	var before_fuel: int = tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal"))
 	check(tiers.station_near(1, "brick_forge", 2, true) and bool(tiers._items[smithy_id]["struct"].get("lit", false)), "a craft fires the cold Smithy")
-	check(tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")) == before_fuel - 1 and float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)) > float(smithy_def["fuel_s"]), "with one charcoal from the pack, and it burns longer with Bellows beside it")
+	check(tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")) == before_fuel - 1 and is_equal_approx(float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)), float(smithy_def["fuel_s"])), "with one charcoal from the pack, burning its plain time, Bellows or not")
 	check(tiers.station_near(1, "brick_forge", 2, true) and tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")) == before_fuel - 1, "a burning Smithy takes no more fuel")
+
+	# A placed standalone Bellows (an old save) still loads and takes down into its blueprint's materials, but can no longer be built (GOALS-REPAIR R3).
+	var bellows_id: int = -1
+
+	for id in tiers._items:
+		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "bellows":
+			bellows_id = int(id)
+
+	tiers.save()
+	tiers._finish_writer()
+	var reload = ItemsScript.new()
+	reload.send_full = func(_p, _b): pass
+	reload.send_slots = func(_p, _b): pass
+	reload.send_world_items = func(_p, _a, _r): pass
+	reload.ground_height = func(_x, _z): return 10.0
+	reload.setup(ItemTableScript.load_default(), dir2)
+	check(bellows_id >= 0 and reload._items.has(bellows_id) and str(reload._items[bellows_id]["struct"]["kind"]) == "bellows", "a placed Bellows loads from the save")
+	reload._finish_writer()
+	var bellows_bp: Dictionary = tiers._blueprints.get(203, {})
+	check(not bellows_bp.is_empty() and str(bellows_bp.get("structure", "")) == "bellows" and not tiers._can_blueprint(1, tiers.inventory_of(1), bellows_bp), "the Bellows blueprint is kept for its take-down but cannot be built")
+	var refund: Dictionary = {}
+
+	for c in bellows_bp.get("cost", []):
+		if str(c[0]) != "log":   # a log goes to the shoulder, not the pack
+			refund[str(c[0])] = tiers.inventory_of(1).count_of(tiers.table.number_of(str(c[0])))
+
+	tiers.report_position(1, tiers._items[bellows_id]["pos"] + Vector3(1.0, 0.0, 0.0))
+	tiers._take_down(1, tiers.inventory_of(1), bellows_id)
+	var back: bool = not tiers._items.has(bellows_id)
+
+	for c in bellows_bp.get("cost", []):
+		if refund.has(str(c[0])):
+			back = back and tiers.inventory_of(1).count_of(tiers.table.number_of(str(c[0]))) == int(refund[str(c[0])]) + int(c[1])
+
+	check(back, "taking it down gives back its materials (%s)" % str(bellows_bp.get("cost", [])))
 
 	_body_checks(tiers)
 
