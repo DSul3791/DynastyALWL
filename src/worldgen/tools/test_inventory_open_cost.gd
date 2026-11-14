@@ -9,7 +9,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_inventory_open_cost.gd
 
 const OPEN_MS := 150.0    # the open itself: the pack grid and the You column (headless gate PC; generous)
-const SLICE_MS := 60.0    # one frame's slice of the recipe pass: its 4 ms budget plus the one row that ran over it
+const SLICE_MS := 25.0    # one frame's slice of the recipe pass: its 4 ms budget plus the one step that ran over it (David4 14 Nov before the split: 53 to 60 ms)
 
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
@@ -41,6 +41,7 @@ func _initialize() -> void:
 	root.add_child(layer)
 	var world_root: Node3D = Node3D.new()
 	root.add_child(world_root)
+	await process_frame   # nodes added to root enter the tree after a frame; the window's text sizes read the layer's viewport (as test_goal_ui)
 	var view = InventoryViewScript.new()   # not in the tree: its _process (prompts, pickups) needs the whole client; the test steps the pass itself
 	view.table = ItemTableScript.load_default()
 	view.inventory = InventoryScript.pack(view.table)
@@ -101,18 +102,40 @@ func _initialize() -> void:
 	quit(1 if failures > 0 else 0)
 
 
+# Which part of the pass a slice starts in (recipe_list.gd step), to name the slow one.
+func _phase(p: Dictionary) -> String:
+	if p.is_empty():
+		return "idle"
+
+	if int(p["at"]) < (p["rows"] as Array).size():
+		return "what each recipe can do"
+
+	if not bool(p["ordered"]):
+		return "sorting"
+
+	if int(p["built"]) < (p["shown"] as Array).size():
+		return "rows"
+
+	return "taking rows away, finishing"
+
+
 # Runs the recipe pass a frame's slice at a time, as the view's _process does, and checks it ends with every shown recipe listed.
 func _catch_up(view, which: String, pinned: bool) -> void:
 	var slices: int = 0
 	var worst: float = 0.0
 	var total: float = 0.0
-
 	var worst_frame: float = 0.0
+	var worst_phase: String = ""
 
-	while slices < 5000:   # a real frame between slices: the layout of the swapped-in rows and the window's draw land in those frames
+	while slices < 5000:   # a real frame between slices: the layout of the changed rows and the window's draw land in those frames
+		var phase: String = _phase(view._recipe_part._pass)
 		var t0: int = Time.get_ticks_usec()
 		view._recipe_part.step()
 		var ms: float = ms_since(t0)
+
+		if ms > worst:
+			worst_phase = phase
+
 		worst = maxf(worst, ms)
 		total += ms
 		slices += 1
@@ -122,7 +145,7 @@ func _catch_up(view, which: String, pinned: bool) -> void:
 		if not view._recipe_part.running():
 			break
 
-	line("recipe list catch-up, %s" % which, total, "%d slices, worst slice %.1f ms, worst frame %.1f ms" % [slices, worst, worst_frame])
+	line("recipe list catch-up, %s" % which, total, "%d slices, worst slice %.1f ms (%s), worst frame %.1f ms" % [slices, worst, worst_phase, worst_frame])
 	check(not view._recipe_part.running(), "the recipe pass ends")
 	check(slices > 1, "the pass took more than one frame (%s: %d)" % [which, slices])
 	check(not pinned or worst < SLICE_MS, "no slice of the recipe pass takes %.0f ms or more (%.1f ms)" % [SLICE_MS, worst])

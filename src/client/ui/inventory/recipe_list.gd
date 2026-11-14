@@ -92,15 +92,18 @@ func build(queue_root: Control) -> Control:
 # Opening the inventory stalled for seconds (Dave 14 Nov 2026: "I would prefer it opened the inventory immediately and asynchronously did the check
 # and caught up"): working out what about 490 recipes can make (each with its auto-make plan and station checks) and building a row for each ran in
 # the one frame the window opened. Now refresh() starts a pass that step() carries on, a slice of at most SLICE_USEC each frame, on the main
-# thread (no threads: the rows build controls and styleboxes). The rows of the last finished pass stay on screen, and clickable, until the new
-# ones are ready; then one frame swaps them in. A refresh asked while a pass runs (a pickup, the server's craft stock answer) lets that pass
-# finish and starts one more, so a steady stream of pickups still shows each finished list and never starves it.
+# thread (no threads: the rows build controls and styleboxes). The pass first works out what each recipe can do, then brings the list on screen
+# up to date in place, a row at a time: a row whose state is unchanged keeps its button (only moved if its place changed), a changed one is made
+# again, rows no longer listed go last. Nothing is done to all rows in one frame (David4, 14 Nov: swapping 417 rows in at once took 50 to 60 ms).
+# A refresh asked while a pass runs (a pickup, the server's craft stock answer) lets that pass finish and starts one more, so a steady stream of
+# pickups never starves it.
 const SLICE_USEC := 4000
 
 var _pass: Dictionary = {}       # the running pass: rows to sort, how far it got, the groups, the rows built so far; {} while none runs
 var _again: bool = false         # a refresh came in while a pass ran: run one more when it ends
-var _rows: Dictionary = {}       # recipe number -> its row on screen {"button", "makeable"} (selection restyles two rows, not the list)
+var _rows: Dictionary = {}       # recipe number -> its row on screen {"button", "makeable", "ready", "two_line", "lit"}
 var _waiting: Label              # "Looking over what you can make" while the very first pass runs
+var _admin_nodes: Array = []     # the Admin heading and kit rows at the foot of the list (Admin mode), made again at the end of each pass
 
 
 func running() -> bool:
@@ -129,7 +132,7 @@ func refresh() -> void:
 		return
 
 	stop()   # a new search or tab: the rows the running pass works on are not the ones asked for now
-	_pass = {"rows": rows, "numbers": numbers, "at": 0, "can": {}, "reach": {}, "shown": [], "ready": 0, "built": 0, "list": null}
+	_pass = {"rows": rows, "numbers": numbers, "at": 0, "can": {}, "reach": {}, "shown": [], "ready": 0, "built": 0, "ordered": false, "gone": [], "cleared": 0}
 
 	if view._recipe_list.get_child_count() == 0 and _waiting == null:
 		_waiting = _text("Looking over what you can make...", view.BODY_PX - 12, ArtKit.CREAM)
@@ -158,32 +161,72 @@ func step() -> void:
 		if Time.get_ticks_usec() - t0 > SLICE_USEC:
 			return
 
-	if _pass["list"] == null:
+	if not bool(_pass["ordered"]):
 		var groups: Array = RecipeFilter.order_groups(rows, func(r): return bool(_pass["can"][int(r["number"])]), func(r): return bool(_pass["reach"][int(r["number"])]))
 		_pass["ready"] = (groups[0] as Array).size() + (groups[1] as Array).size()
 		_pass["shown"] = groups[0] + groups[1] + groups[2]
-		_pass["list"] = VBoxContainer.new()   # the new rows are built off screen; the old rows stay up meanwhile
-		_pass["rows_built"] = {}
+		_pass["ordered"] = true
 
 		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
 			view._selected_recipe = _pass["shown"][0]["number"] if not (_pass["shown"] as Array).is_empty() else 0
 
+		if _waiting != null and is_instance_valid(_waiting):
+			view._recipe_list.remove_child(_waiting)   # the rows come in from the top now
+			_waiting.queue_free()
+
+		_waiting = null
+		return   # sorting is a step of its own
+
 	var shown: Array = _pass["shown"]
+	var list: VBoxContainer = view._recipe_list
 
 	while int(_pass["built"]) < shown.size():
 		var k: int = int(_pass["built"])
 		var r: Dictionary = shown[k]
+		var number: int = int(r["number"])
 		var ready: bool = k < int(_pass["ready"])
-		var makeable: bool = ready or (bool(_pass["can"][int(r["number"])]) and view._station_ok(r))
-		var entry: Button = _make_row(r, ready, makeable)
-		(_pass["list"] as VBoxContainer).add_child(entry)
-		_pass["rows_built"][int(r["number"])] = {"button": entry, "makeable": makeable, "ready": ready, "lit": int(r["number"]) == view._selected_recipe}
+		var makeable: bool = ready or (bool(_pass["can"][number]) and view._station_ok(r))
+		var two_line: bool = not view._station_ok(r) and not ready
+		var row: Dictionary = _rows.get(number, {})
+
+		if row.is_empty() or not is_instance_valid(row["button"]) or bool(row["makeable"]) != makeable or bool(row["ready"]) != ready or bool(row["two_line"]) != two_line:
+			if not row.is_empty() and is_instance_valid(row["button"]):
+				_drop_row(number, row["button"])
+
+			row = {"button": _make_row(r, ready, makeable), "makeable": makeable, "ready": ready, "two_line": two_line, "lit": number == view._selected_recipe}
+			_rows[number] = row
+			list.add_child(row["button"])
+
+		(row["button"] as Button).tooltip_text = _row_tip(r, ready, makeable)
+
+		if (row["button"] as Node).get_index() != k:
+			list.move_child(row["button"], k)
+
 		_pass["built"] = k + 1
 
 		if Time.get_ticks_usec() - t0 > SLICE_USEC:
 			return
 
-	_swap_in()
+	# Rows no longer listed (a search, a tab) are taken away, a slice at a time like the rest.
+	if (_pass["gone"] as Array).is_empty() and int(_pass["cleared"]) == 0:
+		for number in _rows:
+			if not (_pass["numbers"] as PackedInt32Array).has(int(number)):
+				_pass["gone"].append(number)
+
+		_pass["cleared"] = -1 if (_pass["gone"] as Array).is_empty() else 1
+
+	while not (_pass["gone"] as Array).is_empty():
+		var number: int = int(_pass["gone"].pop_back())
+		var row: Dictionary = _rows.get(number, {})
+		_rows.erase(number)
+
+		if not row.is_empty() and is_instance_valid(row["button"]):
+			_drop_row(number, row["button"])
+
+		if Time.get_ticks_usec() - t0 > SLICE_USEC:
+			return
+
+	_finish_pass()
 
 
 # Runs the pass to its end at once (the headless checks, which count rows right after a refresh).
@@ -192,11 +235,8 @@ func finish_now() -> void:
 		step()
 
 
-# The window shut: the pass is dropped (the next open starts a new one).
+# The window shut: the pass is dropped (the next open starts a new one; the rows it already brought up to date stay).
 func stop() -> void:
-	if running() and _pass["list"] != null:
-		(_pass["list"] as Node).free()
-
 	_pass = {}
 	_again = false
 
@@ -205,35 +245,37 @@ func stop() -> void:
 func panel_gone() -> void:
 	stop()
 	_rows.clear()
+	_admin_nodes.clear()
 	_waiting = null
 	_quantity = null
 
 
-# The finished rows replace the shown ones in one frame, in the same list (its scroll box keeps its place).
-func _swap_in() -> void:
-	var built: VBoxContainer = _pass["list"]
-	_rows = _pass["rows_built"]
+# A row's button leaves the list. A freed button sends no mouse_exited, so a hover on it is forgotten (E over a recipe crafts the hovered one).
+func _drop_row(number: int, button: Node) -> void:
+	if view._hover_recipe == number:
+		view._hover_recipe = 0
+
+	view._recipe_list.remove_child(button)
+	button.queue_free()
+
+
+# The pass is done: the selection lit on the right row, the Admin kits at the foot, the card.
+func _finish_pass() -> void:
 	_pass = {}
-	_waiting = null
-	view._hover_recipe = 0
 
-	for child in view._recipe_list.get_children():
-		view._recipe_list.remove_child(child)
-		child.queue_free()
-
-	for row in built.get_children():
-		built.remove_child(row)
-		view._recipe_list.add_child(row)
-
-	built.free()
-
-	for number in _rows:   # a recipe clicked while the rows were being built: light the right one
+	for number in _rows:   # a recipe clicked while the rows were being made: light the right one
 		var row: Dictionary = _rows[number]
 
 		if bool(row["lit"]) != (int(number) == view._selected_recipe):
 			_style_row(row["button"], int(number), bool(row["makeable"]), bool(row["ready"]))
 			row["lit"] = int(number) == view._selected_recipe
 
+	for node in _admin_nodes:
+		if is_instance_valid(node):
+			view._recipe_list.remove_child(node)
+			node.queue_free()
+
+	_admin_nodes.clear()
 	_add_admin_builds()
 	_refresh_detail()
 
@@ -258,16 +300,21 @@ func _make_row(r: Dictionary, ready: bool, makeable: bool) -> Button:
 	view._style(entry, view.BODY_PX - 12)
 	_style_row(entry, int(r["number"]), makeable, ready)
 
-	if ready and str(r.get("station", "")) != "" and not view.station_near(str(r["station"]), int(r.get("station_level", 1))):
-		entry.tooltip_text = "Crafting this takes you to the %s nearby" % view._station_label(r)
-
-	if not makeable and view._station_ok(r):
-		entry.tooltip_text = missing_text(r)
-
 	entry.pressed.connect(func(): row_clicked(int(r["number"]), Input.is_key_pressed(KEY_SHIFT)))
 	entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
 	entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
 	return entry
+
+
+# A row's tooltip: where a station craft takes you, or what a dim row still needs (it follows the pack, so every pass sets it).
+func _row_tip(r: Dictionary, ready: bool, makeable: bool) -> String:
+	if not makeable and view._station_ok(r):
+		return missing_text(r)
+
+	if ready and str(r.get("station", "")) != "" and not view.station_near(str(r["station"]), int(r.get("station_level", 1))):
+		return "Crafting this takes you to the %s nearby" % view._station_label(r)
+
+	return ""
 
 
 # Look doc section 9: a makeable row has the gold bar on its left, the chosen one is lit; the others are dim and say what they still need.
@@ -429,7 +476,8 @@ func _add_admin_builds() -> void:
 			continue
 
 		if listed == 0:
-			view._recipe_list.add_child(_section("Admin"))   # no Admin heading over an empty list
+			_admin_nodes.append(_section("Admin"))   # no Admin heading over an empty list
+			view._recipe_list.add_child(_admin_nodes[-1])
 
 		listed += 1
 		# The same row as a recipe's (44 px, its icon and name), gold-lettered: a click gives the kit.
@@ -447,6 +495,7 @@ func _add_admin_builds() -> void:
 		view._style(entry, view.BODY_PX - 12)
 		entry.add_theme_color_override("font_color", ArtKit.HEADING)
 		entry.pressed.connect(func(): view.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO))
+		_admin_nodes.append(entry)
 		view._recipe_list.add_child(entry)
 
 
