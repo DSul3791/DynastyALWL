@@ -159,15 +159,15 @@ func _init() -> void:
 	# Dave 14 Nov 2026: "the first goal should always be the first goal a play can do next. the second one will be what should be next". The Goals box and the
 	# "Next:" line show the first goal not done and the one after it in the authored order; that first goal is always one the player can do because every
 	# goal a goal follows (`after`) comes before it in the order, so it is done by then. This keeps that true for every goal added later.
-	var seen: Dictionary = {}
+	var earlier: Dictionary = {}
 	var late: Array = []
 
 	for goal in items._goals_data():
 		for a in goal.get("after", []):
-			if not seen.has(str(a)):
+			if not earlier.has(str(a)):
 				late.append("%s after %s" % [str(goal["id"]), str(a)])
 
-		seen[str(goal["id"])] = true
+		earlier[str(goal["id"])] = true
 
 	check(late.is_empty(), "every goal comes after the goals it follows, so the first goal not done is one the player can do next (%s)" % str(late))
 
