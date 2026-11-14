@@ -572,6 +572,7 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
 - **[Decided]** **First three things to craft (owner, 2026-10-20):** a stone axe, a spear and a campfire. The stone axe is also used as the pick, so there is no stone pickaxe.
 - **[Decided]** **Spear controls (owner, 2026-10-20):** held and jabbed by default with the normal attack keys. Hold right click to raise it and aim a throw, then left click throws it. Letting go of right click returns to the normal stance.
 - **[Proposed]** Prerequisites in order: item and inventory system, harvest and drop system (stone, sticks, fibre, wood), hand-craft recipe system (two ingredients, no station), fire (campfire place, light, burn, rain rule from 4.2), tool use (axe on trees and rock, spear attack and throw).
+- **[Idea] (future, not to build now)** **Clay pottery and the potter's wheel (owner, 2026-11-14).** A potter's wheel station makes clay bowls, pots, jugs and mugs; the existing Clay - Pot and Clay jug are the water pot and jug; food in a covered pot (the existing Storage jar) keeps only with salt in it, a rule players learn rather than read on the item. Mapped out in `docs/design/CLAY_POTTERY_DESIGN.md`, with assumed values for the owner.
 
 ### 5.4 Skills
 
