@@ -40,8 +40,8 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
   - Under rock (caves, tunnels), the fog at the eye goes with the light (as before), and the depth fog returns to the haze.
   - In a building, depth fog leaves the first 10 m nearly clear, so a room is clear while the doorway shows the fog outside.
   - Known limit: the High/Ultra volumetric body does not yet stop at walls (a thin share can show indoors).
-- **Halos.** The billboard halo now follows any fog at the eye, valley or sea (before: valley fog only, and squared).
-- **Visibility number.** The client's `visibility_m` is now the depth fog's 95 % distance (about 50 m in full fog, about 2.8 km in clear air). The server's animal rule stays at about 220 m in full fog until PR 3.
+- **Halo strength.** The billboard halo now follows any fog at the eye, valley or sea (before: valley fog only, and squared).
+- **Visibility number.** The client's `visibility_m` is now the depth fog's 95 % distance (about 50 m in full fog, about 60 m on High and Ultra, about 2.8 km in clear air). The server's animal rule stays at about 220 m in full fog until PR 3.
 
 ## Tunables, in one place: `src/client/fog_look.gd` (and `fog_volume.gd` for the drifting body)
 

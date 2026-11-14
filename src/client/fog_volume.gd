@@ -10,7 +10,7 @@ extends RefCounted
 
 const FogLook := preload("res://src/client/fog_look.gd")
 
-const VOL_DENSITY := 0.006          # per metre at full fog, on top of the depth fog (with it: about 11 % at 10 m, 29 % at 20 m, 71 % at 40 m)
+const VOL_DENSITY := 0.006          # per metre at full fog, on top of the depth fog (with it: about 11 % at 10 m, 29 % at 20 m, 69 % at 40 m)
 const VOL_PATCH_M := 70.0           # size of the broad drifting patches
 const VOL_DETAIL_M := 23.0          # a second, smaller scale crossing them, so no pattern repeats in view
 const VOL_DRIFT := 0.25             # share of the wind speed the patches drift at (slow, never boiling)
@@ -37,7 +37,7 @@ uniform vec2 drift = vec2(0.0);       // metres the patches have drifted (world 
 void fog() {
 	vec3 p = WORLD_POSITION;
 	float broad = texture(patches, vec3(p.x - drift.x, p.y * 2.0, p.z - drift.y) / patch_m).r;
-	float fine = texture(patches, vec3(p.z + drift.y, p.y * 3.0 + 17.0, p.x - drift.x) / detail_m).r;   // turned a quarter, so the two never line up
+	float fine = texture(patches, vec3(p.z - drift.y, p.y * 3.0 + 17.0, p.x - drift.x) / detail_m).r;   // turned a quarter, so the two never line up
 	float body = mix(1.0, (0.7 * broad + 0.3 * fine) * 2.0, contrast);
 	float below = 1.0 - smoothstep(top - edge, top + edge, p.y);
 	DENSITY = density * max(body, 0.0) * below;
