@@ -4696,6 +4696,12 @@ func _snow_pace() -> float:
 	return _snow_pace_now
 
 
+# Space (jump, swim up, wake) and Ctrl (down, dive) held for the body: never while a screen (inventory, character, Journal, a talk) is open, as walking
+# is not (the screen's keys and clicks are not the world's).
+func _move_held(id: String) -> bool:
+	return KeyBindings.held(id) and not (items != null and items.screen_open())
+
+
 func _move_player(delta: float) -> void:
 	if menu_open or (cavein_death != null and cavein_death.active) or (death_screen != null and death_screen.active):
 		body.velocity = Vector3.ZERO
@@ -4717,7 +4723,7 @@ func _move_player(delta: float) -> void:
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
 	var sleeping_now: bool = items != null and items.asleep
 
-	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:
+	if sleeping_now and _move_held("jump") and input == Vector3.ZERO:
 		# Dave 2026-10-21: holding Space wakes a sleeper early (not fully rested: the energy stays where it was).
 		_space_wake_s += delta
 
@@ -4727,7 +4733,7 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if input != Vector3.ZERO or (KeyBindings.held("jump") and not sleeping_now):
+	if input != Vector3.ZERO or (_move_held("jump") and not sleeping_now):
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -4788,7 +4794,7 @@ func _move_player(delta: float) -> void:
 		if not body.get_world_3d().direct_space_state.intersect_ray(below).is_empty():
 			_fly_ground_msec = Time.get_ticks_msec()
 	elif flying:
-		direction.y += float(KeyBindings.held("jump")) - float(KeyBindings.held("down"))
+		direction.y += float(_move_held("jump")) - float(_move_held("down"))
 		body.global_position += direction * FLY_SPEED * fast * delta
 	elif _hold_seat():
 		pass
@@ -4842,7 +4848,7 @@ func _move_player(delta: float) -> void:
 		if not waiting_for_ground:
 			_ice_feel_shock(water, delta)
 
-		if not swimming and body.is_on_floor() and KeyBindings.held("jump") and strain_cap >= 0.0:
+		if not swimming and body.is_on_floor() and _move_held("jump") and strain_cap >= 0.0:
 			velocity.y = 7.0
 			feel.jump()
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
@@ -4895,7 +4901,7 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 		return false
 
 	var look: Vector3 = -body.global_transform.basis.z
-	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, KeyBindings.held("move_forward"), KeyBindings.held("move_back"), KeyBindings.held("jump"), delta * items.worn_speed())   # a pack frame climbs slower
+	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, KeyBindings.held("move_forward"), KeyBindings.held("move_back"), _move_held("jump"), delta * items.worn_speed())   # a pack frame climbs slower
 	var at: Vector3 = result["position"]
 
 	if at != Vector3.INF:
@@ -4982,8 +4988,8 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	if strain_cap < 0.0:
 		horizontal = Vector3.ZERO
 
-	var up: bool = KeyBindings.held("jump") and strain_cap >= 0.0
-	var down: bool = KeyBindings.held("down") and strain_cap >= 0.0
+	var up: bool = _move_held("jump") and strain_cap >= 0.0
+	var down: bool = _move_held("down") and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	# BUG-028: W / S swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
