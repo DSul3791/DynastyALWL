@@ -40,7 +40,7 @@ cisterns: hold litres; drink or fill a container at them with E) or straight int
 3. **Stone channels, cisterns** (the same data conversion). Unlocked, except the Raised cistern: only a force pump fills it, so it
    stays locked until iron plumbing brings the Deep-well pump. **Clay plumbing is retired** (Dave, 14 Nov 2026: "I don't think clay plumbing
    would make sense. We should remove clay plumbing altogether."): Clay pipe (730), Clay - Pipe (740), Clay - Pipe elbow (742) and
-   Clay - Pipe tee (744) are retired with their numbers kept, blueprints 141-143 retired, structure states 179-181 deleted, the Clay pipe
+   Clay - Pipe tee (744) are retired with their numbers kept, blueprints 141-143 retired, structure states 179-181 retired (rows kept for their numbers, no look or water block), the Clay pipe
    recipe (352) retired; a saved Clay pipe loads as Clay. Closed pipe is the Wooden - Pipe (PR 2) until iron.
 4. **FUTURE, deferred (Dave, 14 Nov 2026: "finish up what you're working on, but put the rest aside under future"). Not built.**
    **Iron plumbing, gated on the Master smithy.** A new material, Iron pipe section, forged only at the Master smithy (learned there by

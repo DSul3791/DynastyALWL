@@ -57,10 +57,10 @@ func _init() -> void:
 	for id in ["stone_trough", "stone_channel", "stone_channel_corner", "stone_channel_tee", "stone_cistern"]:
 		check(bp.has(id) and bool(bp[id].get("known", false)) and not bool(bp[id].get("locked", false)), "blueprint %s is known and unlocked" % id)
 
-	check(bp.has("stone_raised_cistern") and bool(bp["stone_raised_cistern"].get("locked", false)), "the Raised cistern stays locked until a force pump can fill it (plumbing PR 4)")
+	check(bp.has("stone_raised_cistern") and bool(bp["stone_raised_cistern"].get("locked", false)), "the Raised cistern stays locked until a force pump can fill it (iron plumbing, FUTURE)")
 	check(int(items._structures["stone_channel"]["water"]["cap_lpm"]) == 300 and not bool(items._structures["stone_channel"]["water"]["closed"]), "a stone channel is open and carries 300 L/min")
 	for id in ["clay_pipe_run", "clay_pipe_elbow", "clay_pipe_tee"]:
-		check(bp.has(id) and bool(bp[id].get("retired", false)) and not items._structures.has(id), "clay plumbing is retired: %s is kept for its number only and is not a structure" % id)
+		check(bp.has(id) and bool(bp[id].get("retired", false)) and bool(items._structures[str(bp[id]["structure"])].get("retired", false)) and not items._structures[str(bp[id]["structure"])].has("water"), "clay plumbing is retired: %s is kept for its numbers only, with no water block" % id)
 
 	check(items.table.current_number(items.table.number_of("clay_pipe")) == items.table.number_of("clay"), "a saved Clay pipe loads as Clay")
 
