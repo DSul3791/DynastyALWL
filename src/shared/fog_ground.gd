@@ -11,7 +11,7 @@ extends RefCounted
 # WINDOW_M square round the player on a worker thread, rebuilt when the player has moved REBUILD_M from its centre. No network traffic.
 # Every function below the loader is pure, so the server can build the same grid from its own tiles (third fog PR).
 
-const TileFile := preload("res://src/worldgen/tile/tile_file.gd")
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
 const CELL_M := 32.0                # the grid's step: the tiles' coarse height map
 const WINDOW_M := 4608.0            # the square read round the player
@@ -121,27 +121,27 @@ static func _read_tile(dir: String, tile: Vector2i, tile_size: float, origin: Ve
 	if not FileAccess.file_exists(path):
 		return false
 
-	var head: Dictionary = TileFile.read_header(path)
+	var head: Dictionary = TileFileScript.read_header(path)
 
 	if not head["ok"]:
 		return false
 
 	var header: Dictionary = head["header"]
-	var low: Dictionary = TileFile.read_section(path, head["table"], "low_height")
+	var low: Dictionary = TileFileScript.read_section(path, head["table"], "low_height")
 
 	if not low["ok"]:
 		return false
 
 	var low_n: int = int(header.get("low_res_samples", 0))
 	var low_step: float = float(header.get("low_res_spacing_m", 32))
-	var low_h: PackedFloat32Array = TileFile.decode_height(low["raw"], TileFile.height_step_of(header))
+	var low_h: PackedFloat32Array = TileFileScript.decode_height(low["raw"], TileFileScript.height_step_of(header))
 
 	if low_n < 2 or low_h.size() != low_n * low_n:
 		return false
 
 	var samples: int = int(header.get("samples", 0))
 	var spacing: float = float(header.get("map_spacing_m", 8))
-	var fresh_section: Dictionary = TileFile.read_section(path, head["table"], "fresh_m")   # optional: older tiles have none
+	var fresh_section: Dictionary = TileFileScript.read_section(path, head["table"], "fresh_m")   # optional: older tiles have none
 	var fresh_raw: PackedByteArray = fresh_section["raw"] if fresh_section["ok"] and fresh_section["raw"].size() == samples * samples else PackedByteArray()
 	var tile_origin: Vector2 = Vector2(float(tile.x), float(tile.y)) * tile_size
 
