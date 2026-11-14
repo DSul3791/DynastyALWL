@@ -219,7 +219,7 @@ func cell_rows(cells: Dictionary) -> Dictionary:
 # The blocks to send this peer now, [[bx, bz, bytes], ...]: every block of its character's record that it has not been sent at its
 # current version, at most send_per_pass a call (a joining character gets its whole map over a few passes); a block it already has
 # goes again at most every resend_s, so walking about in one block does not deflate it on every survey.
-func updates_for(peer: int, now_msec: int = -1) -> Array:
+func updates_for(peer: int, at_msec: int = -1) -> Array:
 	var key: String = str(_peer_key.get(peer, key_of.call(peer) if key_of.is_valid() else ""))
 
 	if key == "":
@@ -230,7 +230,7 @@ func updates_for(peer: int, now_msec: int = -1) -> Array:
 	var known: Dictionary = _sent.get(peer, {})
 	var out: Array = []
 	var limit: int = maxi(int(cfg.get("send_per_pass", 4)), 1)
-	var now: int = now_msec if now_msec >= 0 else Time.get_ticks_msec()
+	var now: int = at_msec if at_msec >= 0 else Time.get_ticks_msec()
 	var resend_ms: int = int(float(cfg.get("resend_s", 2.0)) * 1000.0)
 
 	for block in rec.get("blocks", {}):

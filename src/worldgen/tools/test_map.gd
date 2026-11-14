@@ -177,10 +177,10 @@ func _init() -> void:
 
 	check(m.surveys == surveys_before and practised.size() == before, "standing still surveys nothing and practises nothing")
 
-	for k in path.size():
-		m.note_position(1, path[path.size() - 1 - k])   # back the way it came
+	for k in path.size() - 2:
+		m.note_position(1, path[path.size() - 1 - k])   # back the way it came, not past the first survey point (x = 112)
 
-	for p in path:
+	for p in path.slice(2):
 		m.note_position(1, p)
 
 	check(m.surveys > surveys_before and practised.size() == before, "walking back over known ground practises nothing (%d -> %d)" % [before, practised.size()])
