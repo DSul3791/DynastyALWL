@@ -9,7 +9,7 @@ extends RefCounted
 #
 # Read on the player's machine from the baked tiles (the coarse "low_height" map, 32 m, and the "fresh_m" distance to fresh water), in a
 # WINDOW_M square round the player on a worker thread, rebuilt when the player has moved REBUILD_M from its centre. No network traffic.
-# Every function below the loader is pure, so the server can build the same grid from its own tiles (third fog PR).
+# Every function below the loader is pure, so the server builds the same grid from its own tiles (server_animals.gd: animals' sight in fog).
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
@@ -29,6 +29,7 @@ var grid: Dictionary = {}           # the last finished build (build_grid), empt
 var _task: int = -1
 var _next: Dictionary = {}
 var _centre: Vector2 = Vector2(INF, INF)
+var who: String = "client"          # for the log line: "client" or "server"
 
 
 func setup(world: Dictionary) -> void:
@@ -42,13 +43,7 @@ func setup(world: Dictionary) -> void:
 # Every frame or so: starts a read when the player has moved far enough, picks up a finished one.
 func update(at: Vector3) -> void:
 	if _task != -1:
-		if WorkerThreadPool.is_task_completed(_task):
-			WorkerThreadPool.wait_for_task_completion(_task)
-			_task = -1
-
-			if not _next.is_empty():
-				grid = _next
-
+		poll()
 		return
 
 	var here: Vector2 = Vector2(at.x, at.z)
@@ -64,6 +59,45 @@ func update(at: Vector3) -> void:
 		_next = read_window(dir, size, origin)
 
 	_task = WorkerThreadPool.add_task(job, false, "fog ground")
+
+
+# The centre (x, z) of the last read started (INF before any).
+func centre() -> Vector2:
+	return _centre
+
+
+# Picks up a finished read without moving the window.
+func poll() -> void:
+	if _task != -1 and WorkerThreadPool.is_task_completed(_task):
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
+
+		if not _next.is_empty():
+			grid = _next
+
+		_log_read()
+
+
+# One line per finished read, so a smoke can show the worker ran (client and server).
+func _log_read() -> void:
+	if _next.is_empty():
+		print("fog ground (%s): no tile at %.0f, %.0f" % [who, _centre.x, _centre.y])
+		return
+
+	var floor_m: PackedFloat32Array = _next["floor"]
+	var low_m: float = INF
+	var high_m: float = -INF
+
+	for value in floor_m:
+		low_m = minf(low_m, value)
+		high_m = maxf(high_m, value)
+
+	print("fog ground (%s): read %d x %d cells round %.0f, %.0f; cold-air floor %.0f to %.0f m" % [who, int(_next["n"]), int(_next["n"]), _centre.x, _centre.y, low_m, high_m])
+
+
+# Is a read running?
+func busy() -> bool:
+	return _task != -1
 
 
 # Waits for a read still running (the client is closing).
@@ -247,6 +281,17 @@ static func box_blur(values: PackedFloat32Array, n: int) -> PackedFloat32Array:
 
 
 # A grid value at a world point, bilinear between cell centres; `outside` when the grid is empty or the point is off it.
+# How far a point lies inside a grid's window (m to its nearest edge); -1 when outside or no grid.
+static func margin(g: Dictionary, x: float, z: float) -> float:
+	if g.is_empty():
+		return -1.0
+
+	var origin: Vector2 = g["origin"]
+	var size: float = float(int(g["n"])) * CELL_M
+	var inside: float = minf(minf(x - origin.x, origin.x + size - x), minf(z - origin.y, origin.y + size - z))
+	return inside if inside >= 0.0 else -1.0
+
+
 static func sample(g: Dictionary, key: String, x: float, z: float, outside: float) -> float:
 	if g.is_empty():
 		return outside

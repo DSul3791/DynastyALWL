@@ -13,6 +13,7 @@ extends RefCounted
 
 const GameClockScript := preload("res://src/shared/game_clock.gd")   # the one time source; callers pass its `seconds`
 const Climate := preload("res://src/shared/climate.gd")             # the island climate and the one air temperature
+const FogShape := preload("res://src/shared/fog_shape.gd")          # the fog's distance shape (client look and animal sight)
 const FRONT_HOURS := 12.0                  # game hours between weather fronts (the noise grid step)
 const NIGHT_FROM := 21.0
 const NIGHT_TO := 5.0
@@ -307,23 +308,55 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	}
 
 
-# Visibility V (m) at a height, from a weather state: the rule the client's look drew its fog by until 14 Nov 2026 (Kathleen #724);
-# the look now follows Dave's fog instruction (fog_look.gd, about 50 m in full fog) and the animals move to it in the third fog PR
-# (docs/design/FOG_PLAN.md). So the server (animals in fog, docs/design/animals_in_fog_server.md) and the client agree on one V. Koschmieder with a
-# 5 % threshold: V = 3 / extinction, the extinction the clear haze VIS_HAZE_DENSITY times 1 + 5 rain + 4 snow + 3 storm + VIS_MIST_THICK
-# x how deep the point is in the valley fog (eased over VIS_MIST_EDGE_M across mist_depth_m above sea level until the third fog PR), at most VIS_THICK_MAX times. Clear air about
-# 3.3 km, full valley fog about 220 m, the thickest about 170 m (Jamie #716: recognise at half V, detail at a quarter). No caves or water.
+# The fog at a point, as the depth fog's shape [begin, end, curve] (fog_shape.gd), from a weather state: the one fog the client draws
+# (weather_look.gd, Dave's fog instruction) and the server's animals see by (docs/design/animals_in_fog_server.md, FOG_PLAN.md part 3).
+# The clear haze VIS_HAZE_DENSITY thickened 1 + 5 rain + 4 snow + 3 storm times (at most VIS_THICK_MAX), and the fog strength at the
+# point: the valley fog (mist, eased over VIS_MIST_EDGE_M across its top: the cold-air floor `floor_m` there, fog_ground.gd, plus
+# mist_depth_m) or the sea fog over the land (sea_fog_land, under sea_fog_top_m), whichever the point is deeper in. Steam wisps
+# (4 m) are left out, as in the look. No caves or water. Graphics presets change how the client draws it, never this.
 const VIS_HAZE_DENSITY := 0.0009      # = LookSettings.FOG_DENSITY (client)
-const VIS_MIST_THICK := 14.0          # = WeatherLook.MIST_INSIDE_THICK
 const VIS_MIST_EDGE_M := 6.0          # = WeatherLook.MIST_EDGE_M
-const VIS_THICK_MAX := 20.0           # = the look's cap on the fog multiple
+const VIS_THICK_MAX := 20.0           # = the look's cap on the haze multiple
 
 
-static func visibility_m(weather_state: Dictionary, height_m: float) -> float:
+static func fog_shape(weather_state: Dictionary, height_m: float, floor_m: float = 0.0) -> Vector3:
+	return FogShape.depth(fog_haze_density(weather_state), fog_strength(weather_state, height_m, floor_m))
+
+
+# The fog's strength at a point, 0..1: how deep it is in the valley fog or the sea fog over the land, whichever is more.
+static func fog_strength(weather_state: Dictionary, height_m: float, floor_m: float = 0.0) -> float:
 	var mist: float = clampf(float(weather_state.get("mist", 0.0)), 0.0, 1.0)
-	var inside: float = mist * smoothstep(-VIS_MIST_EDGE_M, VIS_MIST_EDGE_M, float(weather_state.get("mist_depth_m", 0.0)) - height_m)
-	var thick: float = 1.0 + 5.0 * float(weather_state.get("rain", 0.0)) + 4.0 * float(weather_state.get("snow", 0.0)) + 3.0 * float(weather_state.get("storm", 0.0)) + VIS_MIST_THICK * inside
-	return 3.0 / (VIS_HAZE_DENSITY * minf(thick, VIS_THICK_MAX))
+	var valley_top: float = floor_m + float(weather_state.get("mist_depth_m", 0.0))
+	var in_valley: float = mist * smoothstep(-VIS_MIST_EDGE_M, VIS_MIST_EDGE_M, valley_top - height_m)
+	var sea_land: float = clampf(float(weather_state.get("sea_fog_land", 0.0)), 0.0, 1.0)
+	var in_sea: float = sea_land * smoothstep(-VIS_MIST_EDGE_M, VIS_MIST_EDGE_M, float(weather_state.get("sea_fog_top_m", 0.0)) - height_m)
+	return maxf(in_valley, in_sea)
+
+
+# The fog's strength along a line between heights y1 and y2 (an animal's eye and a player): for each layer, its strength times the share
+# of the line below its top (eased over VIS_MIST_EDGE_M, so a level line is the point rule's ramp), whichever layer is more. Both ends
+# deep in the fog: the full fog; a ridge-to-ridge line over a filled basin: none (it never dips into it).
+static func fog_strength_along(weather_state: Dictionary, y1: float, y2: float, floor_m: float = 0.0) -> float:
+	var lo: float = minf(y1, y2)
+	var span: float = absf(y2 - y1) + 2.0 * VIS_MIST_EDGE_M
+	var mist: float = clampf(float(weather_state.get("mist", 0.0)), 0.0, 1.0)
+	var valley_top: float = floor_m + float(weather_state.get("mist_depth_m", 0.0))
+	var sea_land: float = clampf(float(weather_state.get("sea_fog_land", 0.0)), 0.0, 1.0)
+	var sea_top: float = float(weather_state.get("sea_fog_top_m", 0.0))
+	var in_valley: float = mist * clampf((valley_top - lo + VIS_MIST_EDGE_M) / span, 0.0, 1.0)
+	var in_sea: float = sea_land * clampf((sea_top - lo + VIS_MIST_EDGE_M) / span, 0.0, 1.0)
+	return maxf(in_valley, in_sea)
+
+
+# The clear-air haze thickened by rain, snow and storm, as a Godot exponential density.
+static func fog_haze_density(weather_state: Dictionary) -> float:
+	var thick: float = 1.0 + 5.0 * float(weather_state.get("rain", 0.0)) + 4.0 * float(weather_state.get("snow", 0.0)) + 3.0 * float(weather_state.get("storm", 0.0))
+	return VIS_HAZE_DENSITY * minf(thick, VIS_THICK_MAX)
+
+
+# Visibility V (m) at a point: where the fog there takes 95 %. Clear air about 2.8 km, heavy rain about 460 m, full fog about 52 m.
+static func visibility_m(weather_state: Dictionary, height_m: float, floor_m: float = 0.0) -> float:
+	return FogShape.visibility(fog_shape(weather_state, height_m, floor_m))
 
 
 # Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws (`latitude_deg`: the tile

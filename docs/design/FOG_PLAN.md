@@ -12,7 +12,7 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
    - fog collecting in valleys and low ground;
    - coastal banks drifting inland.
    It comes and goes gradually, varies naturally, and belongs to places: a fog field by position, not one layer for the whole island. The server reads the same field.
-3. **Animals.** Visual detection follows the new fog field at the animal and along the line of sight. Hearing and smell are unchanged. Until then, animals keep today's rule (`Weather.visibility_m`, about 220 m inside full valley fog), so in PR 1's dense fog the player sees less than the animals' sight rule assumes.
+3. **Animals.** Visual detection follows the new fog field at the animal and along the line of sight. Hearing and smell are unchanged.
 
 ## Look: what the code does (PR 1)
 
@@ -41,7 +41,7 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
   - In a building, depth fog leaves the first 10 m nearly clear, so a room is clear while the doorway shows the fog outside.
   - Known limit: the High/Ultra volumetric body does not yet stop at walls (a thin share can show indoors).
 - **Halo strength.** The billboard halo now follows any fog at the eye, valley or sea (before: valley fog only, and squared).
-- **Visibility number.** The client's `visibility_m` is now the depth fog's 95 % distance (about 50 m in full fog, about 60 m on High and Ultra, about 2.8 km in clear air). The server's animal rule stays at about 220 m in full fog until PR 3.
+- **Visibility number.** The client's `visibility_m` is now the depth fog's 95 % distance (about 50 m in full fog, about 60 m on High and Ultra, about 2.8 km in clear air). The server's animals see by the same fog since PR 3 (below).
 
 ## Where and when: what the code does (PR 2)
 
@@ -61,16 +61,24 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
   - Limit: the steam's top is the coarse 32 m ground plus 4 m, not the water surface itself, so over a deep river cut it can sit a little off. Good enough for wisps; revisit if it shows in play.
   - Where no tile is known, the floor is sea level, which was the old single layer.
 - **Wind.** It mixes away the shallow ground fog and the steam (none from wind 0.5 and 0.4). It carries the sea fog banks in (sea fog needs a breeze). Drifting patches move with it (fog look, High and Ultra).
-- Not in PR 2: the server still reads the fog's depth as height above sea level for animal sight. PR 3 gives it the same floor.
 
-## Tunables, in one place: `src/client/fog_look.gd` (and `fog_volume.gd` for the drifting body)
+## Animals (PR 3)
+
+- **One fog.** The distance shape (depth fog, haze fit, dense end 60 m) moved to `src/shared/fog_shape.gd`, so the client's look and the server's animals use the same sums (the Low and Medium look exactly; High and Ultra draw the dense end at 70 m with the drifting body adding the rest). `Weather.fog_shape(state, height, floor)` is the fog at a point: the haze thickened by rain, snow and storm, and the fog strength there (the valley fog over the cold-air floor, or the sea fog over the land under its top). Steam wisps are left out, as in the look. Graphics presets change only how a client draws it, never what animals see.
+- **Where it lies.** The server keeps cold-air floor windows round the players (`fog_ground.gd`, read from the world's tiles on a worker thread; players within 1 km of a window share it, at most 16), so a deer in a high basin is in that basin's fog. A point takes the window it lies deepest inside.
+- **Along the line of sight.** The fog's strength between an animal and a player is each layer's strength times the share of the line below its top: a deer in the valley fog looking up at a player on the clear slope sees through only the part below the top, and a line from ridge to ridge over a filled basin is clear. In clear air with no rain the sight rule needs no sums inside 800 m.
+- **Sight.** Jamie's rule for exponential fog (all of a player to V/4, nothing past V/2) is the same contrast as the fog taking 53 % and 78 % of the view. On the depth fog that is all of a player to about 31 m in full fog and nothing past about 42 m, which is Dave's "silhouettes at 20 to 40 m". Past that only hearing and smell (`senses.blind_factor`), unchanged.
+- **Visibility V** (95 %): about 2.8 km clear, 460 m in heavy rain, 52 m in full fog (was 3.3 km, 555 m, 220 m). The rules that take V (birds sit out fog, deer keep dawn hours, herds stay close) keep about the same fog strengths as before (within 0.03): `sit_below_m` 250 → 100 (strength 0.85 and up), `deer_v_m` 1000 → 1400 (strength 0.17 and up). Wolves still shadow at half V, never under 10 m (25 m in full fog, as before; that is inside the 31 m they are seen in full, so fog gives them no cover, as before).
+- Limits: the server reads one weather for the island (the starter row's), as before. Animals over the sea see by the sea fog over the land only.
+
+## Tunables, in one place: `src/client/fog_look.gd` (the shape in `src/shared/fog_shape.gd`, the drifting body in `fog_volume.gd`)
 
 | Number | Now | What it does |
 |---|---|---|
-| `DENSE_END_M` | 60 m | full fog: everything gone by here (raise for thinner dense fog) |
+| `FogShape.DENSE_END_M` | 60 m | full fog: everything gone by here (raise for thinner dense fog); animals see by it too |
 | `DENSE_END_VOL_M` | 70 m | the same on High and Ultra, where the drifting body adds to it |
-| `FOG_CURVE` | 1.0 | under 1 thickens the near fog, over 1 clears it |
-| `BEGIN_M` | 0 m | start of the fog at full strength (0: no clear bubble) |
+| `FogShape.FOG_CURVE` | 1.0 | under 1 thickens the near fog, over 1 clears it |
+| `FogShape.BEGIN_M` | 0 m | start of the fog at full strength (0: no clear bubble) |
 | `SKY_HIDE_DEEP` | 0.94 | share of the sky deep fog hides (the rest lets the disc through) |
 | `OVERHEAD_M` | 15 m | fog depth above you that hides 63 % of that |
 | `SUN_DIM` | 0.7 | share of the sunlight deep fog takes |
@@ -85,6 +93,8 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
 | `Weather.MIST_DEPTH_MIN_M`, `MAX` | 15, 90 m | how deep a full fog lies over the low ground |
 | `FogGround.FLOOR_REACH_M`, `VIEW_REACH_M` | 320, 1280 m | how far round counts as the low ground (bigger: broader valleys fill) |
 | `FogGround.STEAM_REACH_M`, `STEAM_DEPTH_M` | 60 m, 4 m | steam fog's reach from the water and its depth |
+| animals.json `weather.fog` `sight_full_fog`, `sight_gone_fog` | 0.53, 0.78 | how much fog an animal sees a player through in full, and not at all (PR 3) |
+| animals.json `weather.fog` `sit_below_m`, `deer_v_m` | 100, 1400 m | V under which birds sit out fog, and deer keep dawn hours and herds stay close |
 
 ## Graphics presets (Dave 14 Nov 2026: "full on ultra setting but off on lowest setting")
 

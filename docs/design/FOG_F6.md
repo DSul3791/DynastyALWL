@@ -27,3 +27,10 @@ All NEEDS PLAYER VERIFICATION. The test lane runs headless and cannot see. Desig
 - [ ] **Fog in light rain.** Sometimes a thin fog comes with light, cool rain. It never comes in heavy rain.
 - [ ] **Steam by the water.** On a cold, calm morning, low wisps lie over rivers and lakes and fade away from the bank.
 - [ ] **Sea fog.** A bank offshore on a light onshore breeze, coming in over the coast.
+
+## PR "fog animals"
+
+- [ ] **Closer in fog.** In thick fog (the fog kind), walk slowly toward deer. They see you only from about 30 to 40 m, and before that react only to noise (running, chopping) or your scent on the wind. In clear air they see you as before.
+- [ ] **Hearing unchanged.** In the same fog, run or chop near them: they still hear you at the usual range.
+- [ ] **From above the fog.** Stand on a clear slope above a fogged valley: deer in the fog below notice you later than in clear air, but sooner than when you are in the fog with them.
+- [ ] **Birds and wolves.** Perched birds stay down in thick fog; wolves shadow closer (about 25 m) in it.
