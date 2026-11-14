@@ -4,15 +4,19 @@ extends SceneTree
 # when you pick it or cut it down or harvest something by your own hand"), played on the server logic. Each event is fired by the act itself, once, for the character whose
 # hand did it; a refused act fires nothing, and nothing counts in Admin mode (GA-54; _goal_event pauses). The goals themselves are not in the live goal files: only the
 # counter "event:<name>" is read here.
-# Commit 1: cooked_on_fire, bed_tilled, seed_sown, crop_harvested, bush_replanted, snare_set, tool_sharpened, tool_repaired, building_repaired, slept_night, stored_item.
+# Part 1: cooked_on_fire, bed_tilled, seed_sown, crop_harvested, bush_replanted, snare_set, tool_sharpened, tool_repaired, building_repaired, slept_night, stored_item.
+# Part 2 (a fresh world): container_locked, handcart_hauled, tempered, masterwork_made, station_repaired, kiln_charcoal, bought, jar_matured, platter_served,
+#   meal_effect, torch_placed, foraged_new, fish_kind_caught, ore_mined.
 #   godot --headless --path . --script res://src/worldgen/tools/test_goal_events.gd
 
 const BuildingWear := preload("res://src/shared/building_wear.gd")
+const Carts := preload("res://src/stream/server_carts.gd")
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const TradeScript := preload("res://src/stream/server_trade.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 
@@ -24,6 +28,11 @@ var season: Array = ["spring"]
 var fire: int = 0
 var chest: int = 0
 var bench: String = ""
+var clock: Array = [1.0e6]
+var cart: int = 0
+var target: int = 0   # the world id of the thing the current check works on
+var trade
+var ore_id: int = 900001
 
 
 func check(ok: bool, what: String) -> void:
@@ -315,6 +324,294 @@ func store_checks() -> void:
 	admin_then_real("stored_item", do_store, "a stick put into a chest")
 
 
+# ---------------- Part 2: a fresh world (no stations or fires left over from part 1) ----------------
+
+func recipe_of(item_id: String) -> int:
+	for number in items.recipes.numbers():
+		var r: Dictionary = items.recipes.recipe(int(number))
+
+		if not r.get("gives", []).is_empty() and int(r["gives"][0]) == n(item_id) and not bool(r.get("retired", false)):
+			return int(number)
+
+	return 0
+
+
+# --- ADD-14 container_locked: the owner sets a valid four-digit code ---
+func do_lock(i: int) -> void:
+	items.action(1, Net.ACT_CHEST_LOCK, target, ItemsScript.LOCK_SET, 42 + i, Vector3.ZERO)
+
+
+func lock_checks() -> void:
+	target = items.dev_place("wooden_crate@0.0,-1.5,0")
+	items._items[target]["struct"]["owner"] = "goalevents001"
+	items.action(1, Net.ACT_CHEST_LOCK, target, ItemsScript.LOCK_SET, 10000, Vector3.ZERO)
+	check(ev("container_locked") == 0 and not items._items[target]["struct"].has("lock"), "a code that is not four digits locks nothing: container_locked stays 0")
+	admin_then_real("container_locked", do_lock, "a crate locked with a code")
+
+
+# --- ADD-15 handcart_hauled: a crate rides the cart the puller moves; an empty cart is not a haul ---
+func do_haul(_i: int) -> void:
+	items.report_position(1, items._items[cart]["pos"] + Vector3(1.5, 0.0, 0.0))
+	items.action(1, Net.ACT_CART, cart, Carts.OP_GRAB, 0, Vector3.ZERO)
+	var here: Vector3 = items._peer_pos[1]
+
+	for step in 10:
+		here += Vector3(0.3, 0.0, 0.0)
+		clock[0] += 0.2
+		items.report_position(1, here)
+
+	items.action(1, Net.ACT_CART, cart, Carts.OP_RELEASE, 0, Vector3.ZERO)
+
+
+func haul_checks() -> void:
+	items.unix_now = func(): return clock[0]
+	cart = items.dev_place("handcart@2.0,0.0,0")
+	do_haul(0)
+	var at: Vector3 = items._items[cart]["pos"]
+	check(ev("handcart_hauled") == 0 and at.x > 2.5, "an empty handcart pulled along fires nothing (it moved to x %.1f)" % at.x)
+	target = items.dev_place("warehouse_crate@%f,%f,0" % [at.x, at.z + 2.0])
+	items.report_position(1, at + Vector3(0.0, 0.0, 1.0))
+	items.action(1, Net.ACT_CART, target, Carts.OP_LOAD, 0, Vector3.ZERO)
+	check(items._carts.riders_of(cart).size() == 1, "the crate is on the cart")
+	admin_then_real("handcart_hauled", do_haul, "a loaded handcart pulled (ten steps, one grab)")
+	items.report_position(1, HERE)
+
+
+# --- ADD-17 masterwork_made and tempered (ADD-16 and activity:temper_steel share it): a variant craft at the Master smithy ---
+func variant_craft(item_id: String, variant: int) -> void:
+	var number: int = recipe_of(item_id)
+	var r: Dictionary = items.recipes.recipe(number)
+
+	for need in SmithingRules.scaled_needs(r["needs"], variant):
+		inv().add(int(need[0]), int(need[1]))
+
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, number, variant, 1, Vector3.ZERO)
+	run(float(r["craft_s"]) * SmithingRules.time_mult(variant) + 3.0)
+
+
+func empty_pack() -> void:
+	for s in inv().slot_count:
+		inv().clear_slot(s)
+
+
+func do_masterwork(_i: int) -> void:
+	empty_pack()
+	variant_craft("iron_pickaxe", SmithingRules.code(false, 1))
+
+
+func do_tempered(_i: int) -> void:
+	empty_pack()
+	variant_craft("steel_pickaxe", SmithingRules.code(true, 0))
+
+
+func smithy_checks() -> void:
+	place("master_forge", HERE + Vector3(0.0, 0.0, 3.0))
+	variant_craft("iron_pickaxe", 0)
+	check(inv().count_of(n("iron_pickaxe")) == 1 and ev("masterwork_made") == 0 and ev("tempered") == 0, "a plain pickaxe at the Master smithy is neither masterwork nor tempered")
+	admin_then_real("masterwork_made", do_masterwork, "a +1 pickaxe at the Master smithy")
+	check(ev("tempered") == 0, "a +1 craft is not a tempering: tempered stays 0")
+	admin_then_real("tempered", do_tempered, "a Tempered steel pickaxe at the Master smithy")
+	check(ev("masterwork_made") == 1, "a Tempered craft with no +1 is not masterwork: masterwork_made stays 1")
+
+
+# --- station_repaired (activity:repair_station): a hammer mends a worn smithy, not a wall ---
+func smithy_needs(smithy: int) -> Array:
+	var cost: Array = items._smithies.repair_cost(blueprint_of(str(items._items[smithy]["struct"]["kind"]))["cost"])
+	return BuildingWear.repair_needs(cost, 0.0, float(items._wear_cfg.get("repair_share", 0.5)))
+
+
+func break_smithy() -> void:
+	items._items[target]["struct"]["use_wear"] = items._smithies.durability(items._structures["blacksmithy"])
+
+
+func do_repair_station(_i: int) -> void:
+	break_smithy()
+
+	for need in smithy_needs(target):
+		items.give(1, n(str(need[0])), int(need[1]))
+
+	items.action(1, Net.ACT_REPAIR_STRUCT, target, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
+
+
+func station_checks() -> void:
+	empty_pack()
+	items.give(1, n("wooden_hammer"), 1)
+	target = items.dev_place("blacksmithy@0.0,-3.0,0,lit")
+	break_smithy()
+	items.action(1, Net.ACT_REPAIR_STRUCT, target, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
+	check(ev("station_repaired") == 0 and items._smithies.broken(target), "short of materials the smithy stays broken: station_repaired stays 0")
+	admin_then_real("station_repaired", do_repair_station, "a worn smithy repaired with a hammer")
+	check(ev("building_repaired") == 0, "and a smithy is not a building piece: building_repaired stays 0")
+
+
+# --- ADD-18 kiln_charcoal: the batch's last log is charcoal, credited to the kiln's owner ---
+func do_kiln(_i: int) -> void:
+	var kiln: int = items.dev_place("kiln@-3.0,3.0,0,lit")
+	items._items[kiln]["struct"]["owner"] = "goalevents001"
+	var box = items._chests[int(items._items[kiln]["struct"]["uid"])]
+	box.add(n("log"), 1)
+	items._kiln_burn(kiln, items._items[kiln], items._structures["kiln"], 400.0)
+	check(box.count_of(n("charcoal")) > 0, "the batch burned: %d charcoal" % box.count_of(n("charcoal")))
+
+
+func kiln_checks() -> void:
+	var kiln: int = items.dev_place("kiln@3.0,-3.0,0,lit")
+	items._items[kiln]["struct"]["owner"] = "goalevents001"
+	var box = items._chests[int(items._items[kiln]["struct"]["uid"])]
+	box.add(n("log"), 1)
+	items._kiln_burn(kiln, items._items[kiln], items._structures["kiln"], 60.0)
+	check(ev("kiln_charcoal") == 0 and box.count_of(n("charcoal")) > 0, "a log burnt part way (%d charcoal) is not a finished batch: kiln_charcoal stays 0" % box.count_of(n("charcoal")))
+	admin_then_real("kiln_charcoal", do_kiln, "a kiln batch burnt out")
+
+
+# --- ADD-19 bought: a purchase from a trader's shelf (a refused one fires nothing) ---
+func do_buy(_i: int) -> void:
+	items.add_coins(1, 5000)
+	trade.deal(1, "hob", 0, 0, 1)
+
+
+func buy_checks() -> void:
+	trade = TradeScript.new()
+	trade.items = items
+	trade.npcs = {"npcs": {"hob": {"dormant": false, "placed": true, "pos": Vector3(1.0, 10.0, 0.0)}}}
+	trade.setup("user://test_goal_events_2")
+	items.take_coins(1, items.coins_of(1))
+	check(trade.deal(1, "hob", 0, 0, 1) == "You cannot afford that." and ev("bought") == 0, "a purchase with no coins is refused: bought stays 0")
+	admin_then_real("bought", do_buy, "a purchase from Hob")
+
+
+# --- ADD-20 jar_matured (a Ready sealed batch eaten), ADD-22 meal_effect (a food that gave an effect) ---
+func eat(id: String, wear: int = 0) -> void:
+	inv().add(n(id), 1, wear)
+	items._last_eat.clear()
+	items.vitals_of(1)["fed"] = 0.0
+	items.action(1, Net.ACT_EAT, slot_of(id), 0, 0, Vector3.ZERO)
+
+
+func do_jar(_i: int) -> void:
+	eat("sauerkraut", items.table.ready_units(n("sauerkraut")))
+
+
+func do_meal(_i: int) -> void:
+	eat("hunters_stew")
+
+
+func eat_checks() -> void:
+	items._vitals_cfg["eat_pace_ms"] = 0
+	eat("blueberries")
+	check(ev("meal_effect") == 0, "a handful of raw berries has no food effect: meal_effect stays 0")
+	admin_then_real("meal_effect", do_meal, "a Hunter's stew eaten")
+	eat("sauerkraut")
+	check(ev("jar_matured") == 0 and inv().count_of(n("sauerkraut")) == 1, "a Maturing jar is refused and not eaten: jar_matured stays 0")
+	inv().clear_slot(slot_of("sauerkraut"))
+	admin_then_real("jar_matured", do_jar, "a Ready jar of sauerkraut eaten")
+
+
+# --- ADD-21 platter_served: the owner sets a food board out on a Serving platter ---
+func do_serve(_i: int) -> void:
+	inv().add(n("roast_platter"), 1)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("roast_platter"), target, 1, Vector3.ZERO)
+
+
+func serve_checks() -> void:
+	target = items.dev_place("serving_platter@0.5,2.0,0")
+	items.give(1, n("stone"), 1)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("stone"), target, 1, Vector3.ZERO)
+	check(ev("platter_served") == 0 and inv().count_of(n("stone")) >= 1, "a platter takes food boards only: a stone fires nothing")
+	admin_then_real("platter_served", do_serve, "a roast board set on a platter")
+
+
+# --- ADD-23 torch_placed ---
+func do_torch(i: int) -> void:
+	inv().add(n("torch"), 1)
+	items.action(1, Net.ACT_PLACE_TORCH, slot_of("torch"), 0, 0, Vector3(1.0 + float(i), 10.0, 1.0))
+
+
+func torch_checks() -> void:
+	inv().add(n("torch"), 1)
+	items.action(1, Net.ACT_PLACE_TORCH, slot_of("torch"), 0, 0, Vector3(40.0, 10.0, 40.0))
+	check(ev("torch_placed") == 0, "a torch aimed too far away is not placed: torch_placed stays 0")
+	admin_then_real("torch_placed", do_torch, "a torch stuck in the ground")
+
+
+# --- ADD-24 foraged_new: the first time this character picks each plant yield by hand (berries, fruit from a tree, a harvest plant) ---
+func pick(species: String, flora_id: int) -> void:
+	items._last_gather.clear()
+	items.gather(1, species, "plant", "0,0,%d" % flora_id, flora_id, HERE + Vector3(1.0, 0.0, 0.0))
+
+
+func do_forage(i: int) -> void:
+	season[0] = "summer"
+	pick("blueberry", 100 + i)
+
+
+func forage_checks() -> void:
+	season[0] = "winter"
+	pick("blueberry", 99)
+	check(ev("foraged_new") == 0, "a berry bush out of season gives nothing: foraged_new stays 0")
+	admin_then_real("foraged_new", do_forage, "the first blueberries picked")
+	pick("blueberry", 102)
+	check(ev("foraged_new") == 1, "more blueberries from another bush are not a new plant: still 1")
+	pick("bramble", 103)
+	check(ev("foraged_new") == 2 and int(items._goal_state_of(1)["goal_counts"].get("event:foraged_new:blackberries", 0)) == 1, "blackberries are a new yield: 2")
+	season[0] = "autumn"
+	pick("wild_apple", 104)
+	pick("hazel", 105)
+	check(ev("foraged_new") == 4, "crab apples from a tree and hazelnuts from a harvest plant each count once: 4 (%d)" % ev("foraged_new"))
+	season[0] = "spring"
+
+
+# --- ADD-25 fish_kind_caught: the first catch of each species (the rod path; the net and spear call the same helper) ---
+func land(species: String) -> void:
+	items._fish_land(1, inv(), 0, {"cell": Vector2i(0, 0), "species": species})
+
+
+func do_fish(_i: int) -> void:
+	land("perch")
+
+
+func fish_checks() -> void:
+	admin_then_real("fish_kind_caught", do_fish, "the first perch landed")
+	land("perch")
+	check(ev("fish_kind_caught") == 1, "a second perch is not a new kind: still 1")
+	land("trout")
+	check(ev("fish_kind_caught") == 2, "a trout is a new kind: 2")
+
+
+# --- ADD-26 ore_mined: a pick takes ore from an outcrop (one event per ore piece); a plain boulder or an axe gives none ---
+func outcrop(ore: String) -> void:
+	items._items[ore_id] = {"number": 0, "count": 5000, "pos": Vector3(0.0, 10.0, 1.5), "left": 1.0e9, "scatter": items.BOULDER_KEY | 7, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 5000}}
+
+	if ore != "":
+		items._items[ore_id]["boulder"]["ore"] = ore
+
+
+func blows(count: int) -> void:
+	for k in range(count):
+		items._last_hit.clear()
+		items.action(1, Net.ACT_HIT, ore_id, Net.HIT_BOULDER, slot_of("stone_pickaxe") + 1, Vector3.ZERO)
+
+
+func ore_checks() -> void:
+	items._boulder_cfg["luck_extra"] = 0.0
+	items._boulder_cfg["flint"] = {}
+	items._boulder_cfg["ore"]["piece_share"] = 1.0
+	inv().add(n("stone_pickaxe"), 1)
+	outcrop("")
+	blows(20)
+	check(ev("ore_mined") == 0 and inv().count_of(n("stone")) > 0, "a pick on a plain boulder gives stone and no ore event (%d stone)" % inv().count_of(n("stone")))
+	outcrop("copper")
+	admin_on[0] = true
+	blows(20)
+	var ore_admin: int = inv().count_of(n("copper_ore"))
+	check(ore_admin > 0 and ev("ore_mined") == 0, "copper ore taken in Admin mode fires nothing (%d ore)" % ore_admin)
+	admin_on[0] = false
+	blows(20)
+	var ore_real: int = inv().count_of(n("copper_ore")) - ore_admin
+	check(ore_real > 0 and ev("ore_mined") == ore_real, "each copper piece taken with the pick fires ore_mined (%d pieces, %d events)" % [ore_real, ev("ore_mined")])
+
+
 func _init() -> void:
 	items = make("user://test_goal_events")
 	check(not items._goals_data().is_empty(), "the live goals are loaded, so the events are counted")
@@ -328,5 +625,19 @@ func _init() -> void:
 	sleep_checks()
 	store_checks()
 	items._finish_writer()   # the background save thread must finish before quit
+	items = make("user://test_goal_events_2")
+	lock_checks()
+	haul_checks()
+	smithy_checks()
+	station_checks()
+	kiln_checks()
+	buy_checks()
+	eat_checks()
+	serve_checks()
+	torch_checks()
+	forage_checks()
+	fish_checks()
+	ore_checks()
+	items._finish_writer()
 	print("goal events: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
