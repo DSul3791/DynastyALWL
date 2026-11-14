@@ -5,6 +5,9 @@
 		"salt": "sea_salt",
 		"iron_doorway": "doorway_section",
 		"steel_doorway": "fortified_doorway",
-		"clay_pipe": "clay"
+		"clay_pipe": "clay",
+		"thatch_garden_plot": "wooden_garden_plot",
+		"stone_garden_plot": "wooden_garden_plot",
+		"brick_garden_plot": "wooden_garden_plot"
 	}
 }

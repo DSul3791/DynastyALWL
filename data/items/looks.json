@@ -4277,6 +4277,341 @@
    "color": "#8a6a3a",
    "size": 0.4
   },
+  "fern_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "heather_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "reeds_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "nettle_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "cotton_grass_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "alpine_flowers_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "blueberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "lingonberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "cranberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "cloudberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_strawberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "crowberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_garlic_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_thyme_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_mint_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "sorrel_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "dandelion_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "watercress_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "samphire_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_marjoram_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_sage_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "lavender_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "yarrow_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "plantain_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "chamomile_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "comfrey_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "st_johns_wort_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "valerian_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "meadowsweet_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "feverfew_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "burdock_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "mugwort_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "arnica_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "angelica_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "aloe_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "foxglove_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "belladonna_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wolfsbane_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "owlpetal_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "staunchmoss_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "emberroot_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wispbloom_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "hushfern_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "heartroot_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "tideglass_weed_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "gloomthistle_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "dewlantern_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "marrowroot_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "riverbraid_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "brinebell_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "quenchbell_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "whisperfern_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "duskmallow_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "tanglewort_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "stormreed_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "truthsage_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "echo_moss_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "nightcrown_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "mournbloom_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "pilgrims_cup_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "frostglass_orchid_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "sevenyear_lily_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "gloaming_star_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "tidecrown_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "thatch_grass_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "dune_grass_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "sea_holly_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
   "sling": {
    "shape": "bundle",
    "color": "#8a6a4a",

@@ -60,3 +60,13 @@ Results (Dave's PC ManlandRyzen5, 12 Nov 2026, worktree `E:/Software/godotDev/wt
 1. Sell to Hob until he stops: the window says why (purse or "wants for now"), and his purse fills again after a while.
 2. Purse and prices read gold, silver, bronze, copper from left to right.
 3. On a new character, fell the first tree after lighting a fire: the line says "Goal done: Light a fire. You earn 5 copper." and the feed says "(goal reward)".
+
+## Coins keep their denomination until a trader (Dave, 14 Nov 2026, PR #1140)
+
+Dave, 14 Nov 2026 15:37Z: "I don't want my coins to automatically change denomination unless I am at a vender. so if I have gathered 200 copper I should have 200 copper until the next time I am talking to a vendor then It can redenominated it." This is the Class C basis for protocol 123.
+
+Rule (the simplest, Dave may change it): the purse is the coins as held (`characters.json` `purse`). Opening a trader's conversation or shop, and every deal (the shop reopens), changes the purse into the fewest coins, richest first. Paying spends the smallest coins first and the change comes back as the fewest coins. Known limit: a dead character's remains store a copper number, so coins found on remains come back as the fewest coins.
+
+Evidence at 4c3abd444f73036fba68225930f38a8f6ebb4695 (dev b034f2ef merged in): independent gate review PASS; CI merge-check green; lane B (David4) smoke PASS (import, parse, 4 coin/trade tests, 3 play-role smokes to ground ready, 0 script errors); lane A (Dave's PC) 383 fast + 8 timing: 389 pass, 2 fail, both failing on dev on that PC (test_world_items_cost, fix in PR #1144; test_flora_density timeout). Picture tests and on-screen checks not run. Status: NEEDS PLAYER VERIFICATION.
+
+Dave should check: gather copper and see it stay copper; talk to Hob and see it become the fewest coins; buy something with mixed coins and get correct change.

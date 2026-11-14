@@ -53,7 +53,7 @@ func _init() -> void:
 		items.inventory_of(1).add(stone, 30)
 		items.inventory_of(1).add(stick, 12)
 		items._characters[KEY]["skills"] = {"digging": 1234.0}
-		items._characters[KEY]["coins"] = 55
+		items._characters[KEY]["purse"] = {"coin_copper": 55}
 		items.drop_in_world(stone, 5, Vector3(1.0, 10.0, 1.0))
 		items.drop_in_world(stick, 3, Vector3(3000.0, 10.0, 3000.0))
 		var placed: int = 0
@@ -93,7 +93,7 @@ func _init() -> void:
 	again.peer_connected_hello(1, KEY)
 	var inv = again.inventory_of(1)
 	var row: Dictionary = again._characters.get(KEY, {})
-	var kept: bool = inv.count_of(again.table.number_of("stone")) == 30 and inv.count_of(again.table.number_of("stick")) == 12 and float((row.get("skills", {}) as Dictionary).get("digging", 0.0)) == 1234.0 and int(row.get("coins", 0)) == 55
+	var kept: bool = inv.count_of(again.table.number_of("stone")) == 30 and inv.count_of(again.table.number_of("stick")) == 12 and float((row.get("skills", {}) as Dictionary).get("digging", 0.0)) == 1234.0 and row.get("purse", {}) == {"coin_copper": 55}
 	var ok: bool = rows == 0 and world == 1 and felled == 0 and again._taken.is_empty() and again._boulder_left.is_empty() and chests == 0 and again._crops.is_empty() and ops.count == 0 and kept
 	print("%s rows=%d world_piles=%d felled_chunks=%d taken=%d chests=%d crops=%d edits=%d character_kept=%s" % ["RESET_STORE_OK" if ok else "RESET_STORE_BAD", rows, world, felled, again._taken.size(), chests, again._crops.size(), ops.count, str(kept)])
 	quit(0 if ok else 1)

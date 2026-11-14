@@ -271,7 +271,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
 	@warning_ignore("confusable_local_declaration")
-	items.send_purse = func(peer, copper): net.purse.rpc_id(peer, copper)
+	items.send_purse = func(peer, counts): net.purse.rpc_id(peer, counts)
 	@warning_ignore("confusable_local_declaration")
 	items.send_carry = func(peer, item_id): net.carry.rpc_id(peer, item_id)
 	@warning_ignore("confusable_local_declaration")

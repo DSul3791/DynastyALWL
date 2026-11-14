@@ -502,6 +502,2397 @@
 			"sow_seasons": [
 				"spring"
 			]
+		},
+		"fern": {
+			"name": "Bracken",
+			"seed": "fern_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"bedding",
+					2
+				],
+				[
+					"fiddleheads",
+					2
+				]
+			],
+			"seeds_back": [
+				"fern_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild bracken picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"heather": {
+			"name": "Heather",
+			"seed": "heather_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"thatch",
+					4
+				],
+				[
+					"bedding",
+					2
+				],
+				[
+					"honey_flowers",
+					2
+				]
+			],
+			"seeds_back": [
+				"heather_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild heather picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"heath"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"reeds": {
+			"name": "Common reed",
+			"seed": "reeds_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"plant_fibre",
+					3
+				],
+				[
+					"thatch",
+					8
+				],
+				[
+					"reed_stems",
+					2
+				]
+			],
+			"seeds_back": [
+				"reeds_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild common reed picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"mangrove",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"nettle": {
+			"name": "Nettle",
+			"seed": "nettle_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"plant_fibre",
+					2
+				],
+				[
+					"nettles",
+					4
+				]
+			],
+			"seeds_back": [
+				"nettle_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild nettle picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer"
+			],
+			"herb": true
+		},
+		"cotton_grass": {
+			"name": "Cotton grass",
+			"seed": "cotton_grass_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"tinder",
+					2
+				],
+				[
+					"stuffing",
+					2
+				]
+			],
+			"seeds_back": [
+				"cotton_grass_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild cotton grass picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"tundra"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"alpine_flowers": {
+			"name": "Mountain avens",
+			"seed": "alpine_flowers_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"dye",
+					2
+				]
+			],
+			"seeds_back": [
+				"alpine_flowers_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild mountain avens picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"blueberry": {
+			"name": "Blueberry",
+			"seed": "blueberry_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"blueberries",
+					12
+				]
+			],
+			"seeds_back": [
+				"blueberry_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild blueberry picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"lingonberry": {
+			"name": "Lingonberry",
+			"seed": "lingonberry_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"lingonberries",
+					12
+				]
+			],
+			"seeds_back": [
+				"lingonberry_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild lingonberry picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"tundra"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"cranberry": {
+			"name": "Cranberry",
+			"seed": "cranberry_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"cranberries",
+					12
+				]
+			],
+			"seeds_back": [
+				"cranberry_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild cranberry picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"tundra"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"cloudberry": {
+			"name": "Cloudberry",
+			"seed": "cloudberry_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"cloudberries",
+					3
+				]
+			],
+			"seeds_back": [
+				"cloudberry_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild cloudberry picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"tundra"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"wild_strawberry": {
+			"name": "Wild strawberry",
+			"seed": "wild_strawberry_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"strawberries",
+					10
+				]
+			],
+			"seeds_back": [
+				"wild_strawberry_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild strawberry picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"crowberry": {
+			"name": "Crowberry",
+			"seed": "crowberry_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"crowberries",
+					12
+				]
+			],
+			"seeds_back": [
+				"crowberry_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild crowberry picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"tundra"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"wild_garlic": {
+			"name": "Wild garlic",
+			"seed": "wild_garlic_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"wild_garlic_leaves",
+					2
+				],
+				[
+					"wild_garlic_bulbs",
+					2
+				]
+			],
+			"seeds_back": [
+				"wild_garlic_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild garlic picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring"
+			],
+			"herb": true
+		},
+		"wild_thyme": {
+			"name": "Wild thyme",
+			"seed": "wild_thyme_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"thyme",
+					12
+				]
+			],
+			"seeds_back": [
+				"wild_thyme_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild thyme picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"dry_scrub",
+				"heath",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"wild_mint": {
+			"name": "Water mint",
+			"seed": "wild_mint_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"mint",
+					12
+				]
+			],
+			"seeds_back": [
+				"wild_mint_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild water mint picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer"
+			],
+			"herb": true
+		},
+		"sorrel": {
+			"name": "Sorrel",
+			"seed": "sorrel_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"sorrel_leaves",
+					12
+				]
+			],
+			"seeds_back": [
+				"sorrel_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild sorrel picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer"
+			],
+			"herb": true
+		},
+		"dandelion": {
+			"name": "Dandelion",
+			"seed": "dandelion_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"dandelion_flowers",
+					2
+				],
+				[
+					"dandelion_leaves",
+					2
+				],
+				[
+					"dandelion_roots",
+					2
+				]
+			],
+			"seeds_back": [
+				"dandelion_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild dandelion picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"beach",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"watercress": {
+			"name": "Watercress",
+			"seed": "watercress_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"watercress",
+					12
+				]
+			],
+			"seeds_back": [
+				"watercress_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild watercress picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"samphire": {
+			"name": "Samphire",
+			"seed": "samphire_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"samphire",
+					12
+				]
+			],
+			"seeds_back": [
+				"samphire_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild samphire picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"mangrove",
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"wild_marjoram": {
+			"name": "Wild marjoram",
+			"seed": "wild_marjoram_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"marjoram",
+					12
+				]
+			],
+			"seeds_back": [
+				"wild_marjoram_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild marjoram picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"wild_sage": {
+			"name": "Wild sage",
+			"seed": "wild_sage_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"sage",
+					12
+				]
+			],
+			"seeds_back": [
+				"wild_sage_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild sage picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"dry_scrub",
+				"savanna"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"lavender": {
+			"name": "Lavender",
+			"seed": "lavender_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"lavender_flowers",
+					12
+				]
+			],
+			"seeds_back": [
+				"lavender_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild lavender picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"yarrow": {
+			"name": "Yarrow",
+			"seed": "yarrow_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"yarrow",
+					12
+				]
+			],
+			"seeds_back": [
+				"yarrow_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild yarrow picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"plantain": {
+			"name": "Ribwort plantain",
+			"seed": "plantain_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"plantain_leaves",
+					12
+				]
+			],
+			"seeds_back": [
+				"plantain_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild ribwort plantain picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"chamomile": {
+			"name": "Chamomile",
+			"seed": "chamomile_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"chamomile_flowers",
+					12
+				]
+			],
+			"seeds_back": [
+				"chamomile_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild chamomile picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"comfrey": {
+			"name": "Comfrey",
+			"seed": "comfrey_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"comfrey_leaves",
+					12
+				]
+			],
+			"seeds_back": [
+				"comfrey_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild comfrey picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"st_johns_wort": {
+			"name": "St John's wort",
+			"seed": "st_johns_wort_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"st_johns_wort",
+					12
+				]
+			],
+			"seeds_back": [
+				"st_johns_wort_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild St John's wort picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"valerian": {
+			"name": "Valerian",
+			"seed": "valerian_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"valerian_roots",
+					2
+				]
+			],
+			"seeds_back": [
+				"valerian_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild valerian picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"meadowsweet": {
+			"name": "Meadowsweet",
+			"seed": "meadowsweet_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"meadowsweet_flowers",
+					12
+				]
+			],
+			"seeds_back": [
+				"meadowsweet_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild meadowsweet picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"feverfew": {
+			"name": "Feverfew",
+			"seed": "feverfew_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"feverfew",
+					12
+				]
+			],
+			"seeds_back": [
+				"feverfew_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild feverfew picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"burdock": {
+			"name": "Burdock",
+			"seed": "burdock_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"burdock_roots",
+					2
+				]
+			],
+			"seeds_back": [
+				"burdock_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild burdock picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"mugwort": {
+			"name": "Mugwort",
+			"seed": "mugwort_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"mugwort",
+					12
+				]
+			],
+			"seeds_back": [
+				"mugwort_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild mugwort picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"arnica": {
+			"name": "Arnica",
+			"seed": "arnica_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"arnica_flowers",
+					12
+				]
+			],
+			"seeds_back": [
+				"arnica_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild arnica picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"heath"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"angelica": {
+			"name": "Angelica",
+			"seed": "angelica_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"angelica_roots",
+					2
+				]
+			],
+			"seeds_back": [
+				"angelica_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild angelica picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"aloe": {
+			"name": "Aloe",
+			"seed": "aloe_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"aloe_gel",
+					2
+				]
+			],
+			"seeds_back": [
+				"aloe_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild aloe picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"dry_scrub",
+				"hot_desert",
+				"savanna"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"foxglove": {
+			"name": "Foxglove",
+			"seed": "foxglove_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"foxglove_leaves",
+					12
+				]
+			],
+			"seeds_back": [
+				"foxglove_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild foxglove picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"belladonna": {
+			"name": "Deadly nightshade",
+			"seed": "belladonna_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"belladonna_berries",
+					2
+				],
+				[
+					"belladonna_leaves",
+					2
+				]
+			],
+			"seeds_back": [
+				"belladonna_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild deadly nightshade picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"wolfsbane": {
+			"name": "Wolfsbane",
+			"seed": "wolfsbane_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"wolfsbane_roots",
+					2
+				]
+			],
+			"seeds_back": [
+				"wolfsbane_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild wolfsbane picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"mixed_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"henbane": {
+			"name": "Henbane",
+			"seed": "henbane_seeds",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"henbane_leaves",
+					2
+				]
+			],
+			"seeds_back": [
+				"henbane_seeds",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild henbane picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"owlpetal": {
+			"name": "Owlpetal",
+			"seed": "owlpetal_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"owlpetals",
+					5
+				]
+			],
+			"seeds_back": [
+				"owlpetal_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild owlpetal picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"staunchmoss": {
+			"name": "Staunchmoss",
+			"seed": "staunchmoss_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"staunchmoss",
+					2
+				]
+			],
+			"seeds_back": [
+				"staunchmoss_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild staunchmoss picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"emberroot": {
+			"name": "Emberroot",
+			"seed": "emberroot_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"emberroots",
+					2
+				]
+			],
+			"seeds_back": [
+				"emberroot_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild emberroot picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"dry_scrub",
+				"heath",
+				"volcanic_waste"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"wispbloom": {
+			"name": "Wispbloom",
+			"seed": "wispbloom_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"wispbloom_heads",
+					5
+				]
+			],
+			"seeds_back": [
+				"wispbloom_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild wispbloom picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"hushfern": {
+			"name": "Hushfern",
+			"seed": "hushfern_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"hushfern_fronds",
+					2
+				]
+			],
+			"seeds_back": [
+				"hushfern_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild hushfern picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"heartroot": {
+			"name": "Heartroot",
+			"seed": "heartroot_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"heartroots",
+					2
+				]
+			],
+			"seeds_back": [
+				"heartroot_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild heartroot picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"autumn"
+			],
+			"herb": true
+		},
+		"tideglass_weed": {
+			"name": "Tideglass weed",
+			"seed": "tideglass_weed_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"tideglass_fronds",
+					2
+				]
+			],
+			"seeds_back": [
+				"tideglass_weed_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild tideglass weed picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"gloomthistle": {
+			"name": "Gloomthistle",
+			"seed": "gloomthistle_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"gloomthistle_heads",
+					2
+				],
+				[
+					"gloomthistle_down",
+					2
+				]
+			],
+			"seeds_back": [
+				"gloomthistle_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild gloomthistle picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"bare_rock",
+				"heath",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"dewlantern": {
+			"name": "Dewlantern",
+			"seed": "dewlantern_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"lantern_dew",
+					2
+				]
+			],
+			"seeds_back": [
+				"dewlantern_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild dewlantern picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer"
+			],
+			"herb": true
+		},
+		"marrowroot": {
+			"name": "Marrowroot",
+			"seed": "marrowroot_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"marrowroots",
+					2
+				]
+			],
+			"seeds_back": [
+				"marrowroot_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild marrowroot picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"savanna",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"riverbraid": {
+			"name": "Riverbraid",
+			"seed": "riverbraid_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"plant_fibre",
+					3
+				],
+				[
+					"riverbraid_stems",
+					2
+				]
+			],
+			"seeds_back": [
+				"riverbraid_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild riverbraid picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"brinebell": {
+			"name": "Brinebell",
+			"seed": "brinebell_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"brinebells",
+					2
+				]
+			],
+			"seeds_back": [
+				"brinebell_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild brinebell picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"mangrove",
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"quenchbell": {
+			"name": "Quenchbell",
+			"seed": "quenchbell_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"quenchbell_heads",
+					2
+				]
+			],
+			"seeds_back": [
+				"quenchbell_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild quenchbell picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"heath"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"whisperfern": {
+			"name": "Whisperfern",
+			"seed": "whisperfern_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"whisperfern_fronds",
+					2
+				]
+			],
+			"seeds_back": [
+				"whisperfern_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild whisperfern picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"duskmallow": {
+			"name": "Duskmallow",
+			"seed": "duskmallow_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"duskmallow_flowers",
+					2
+				],
+				[
+					"duskmallow_roots",
+					2
+				]
+			],
+			"seeds_back": [
+				"duskmallow_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild duskmallow picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"heath",
+				"marsh",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"tanglewort": {
+			"name": "Tanglewort",
+			"seed": "tanglewort_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"plant_fibre",
+					2
+				],
+				[
+					"tanglewort_vines",
+					2
+				]
+			],
+			"seeds_back": [
+				"tanglewort_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild tanglewort picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"stormreed": {
+			"name": "Stormreed",
+			"seed": "stormreed_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"stormreed_stalks",
+					2
+				]
+			],
+			"seeds_back": [
+				"stormreed_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild stormreed picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"truthsage": {
+			"name": "Truthsage",
+			"seed": "truthsage_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"truthsage_leaves",
+					12
+				]
+			],
+			"seeds_back": [
+				"truthsage_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild truthsage picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"heath"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"echo_moss": {
+			"name": "Echo moss",
+			"seed": "echo_moss_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"echo_moss",
+					2
+				]
+			],
+			"seeds_back": [
+				"echo_moss_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild echo moss picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"boreal_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"nightcrown": {
+			"name": "Nightcrown",
+			"seed": "nightcrown_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"nightcrown_blooms",
+					3
+				]
+			],
+			"seeds_back": [
+				"nightcrown_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild nightcrown picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"tundra"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"mournbloom": {
+			"name": "Mournbloom",
+			"seed": "mournbloom_seed",
+			"sow_season": "autumn",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"mournbloom_petals",
+					4
+				]
+			],
+			"seeds_back": [
+				"mournbloom_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild mournbloom picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"bare_rock",
+				"boreal_forest",
+				"heath"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"autumn"
+			],
+			"herb": true
+		},
+		"pilgrims_cup": {
+			"name": "Pilgrim's cup",
+			"seed": "pilgrims_cup_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"pilgrims_cup_water",
+					2
+				],
+				[
+					"pilgrims_cup_pitchers",
+					2
+				]
+			],
+			"seeds_back": [
+				"pilgrims_cup_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild Pilgrim's cup picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"mangrove",
+				"marsh",
+				"tropical_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"frostglass_orchid": {
+			"name": "Frostglass orchid",
+			"seed": "frostglass_orchid_seed",
+			"sow_season": "winter",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"frostglass_petals",
+					2
+				]
+			],
+			"seeds_back": [
+				"frostglass_orchid_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild frostglass orchid picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"tundra"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"sevenyear_lily": {
+			"name": "Sevenyear lily",
+			"seed": "sevenyear_lily_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"sevenyear_bulbs",
+					2
+				],
+				[
+					"sevenyear_blossoms",
+					2
+				]
+			],
+			"seeds_back": [
+				"sevenyear_lily_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild sevenyear lily picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"heath",
+				"marsh",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"stillwater_lotus": {
+			"name": "Stillwater lotus",
+			"seed": "stillwater_seeds",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"stillwater_petals",
+					2
+				]
+			],
+			"seeds_back": [
+				"stillwater_seeds",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild stillwater lotus picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"gloaming_star": {
+			"name": "Gloaming star",
+			"seed": "gloaming_star_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"gloaming_star",
+					2
+				]
+			],
+			"seeds_back": [
+				"gloaming_star_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild gloaming star picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"tidecrown": {
+			"name": "Tidecrown",
+			"seed": "tidecrown_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"tidecrown_pearls",
+					2
+				]
+			],
+			"seeds_back": [
+				"tidecrown_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild tidecrown picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
+		},
+		"thatch_grass": {
+			"name": "Thatching grass",
+			"seed": "thatch_grass_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [
+				[
+					"thatch",
+					10
+				]
+			],
+			"seeds_back": [
+				"thatch_grass_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild thatching grass picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"heath",
+				"marsh",
+				"mixed_forest",
+				"savanna",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn",
+				"winter"
+			],
+			"herb": true,
+			"grows_in_winter": true
+		},
+		"dune_grass": {
+			"name": "Dune grass",
+			"seed": "dune_grass_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [],
+			"seeds_back": [
+				"dune_grass_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild dune grass picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"sea_holly": {
+			"name": "Sea holly",
+			"seed": "sea_holly_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.3,
+			"soil": "any garden soil",
+			"yields": [],
+			"seeds_back": [
+				"sea_holly_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild sea holly picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"beach"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer"
+			],
+			"herb": true
 		}
 	}
 }

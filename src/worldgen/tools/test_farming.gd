@@ -13,6 +13,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const PlotWater := preload("res://src/shared/plot_water.gd")
+const Gather := preload("res://src/shared/gather_rules.gd")
 
 var failures: int = 0
 var items
@@ -277,17 +278,19 @@ func _plot_takedown_checks() -> void:
 	act(Net.ACT_SOW, 920002, slot_of("barley_seeds"))
 	check(items._crops.has(key) and items.crop_row_extra(items._items[920002]).get("crop", "") == "barley", "barley is sown in a garden plot")
 	# A garden plot is a hammer blueprint piece (blueprints.json), so taking it down gives its materials back, not a kit.
+	# A group cost (Nails) comes back as its lowest member (Bronze nails, ItemTable.spend_order), so the count is of the item the refund gives.
 	var cost: Array = items._blueprints[int(items._blueprint_of_kit["wooden_garden_plot_kit"])]["cost"]
 	var before: Dictionary = {}
+	var back: Callable = func(id): return items.inventory_of(1).count_of(items._refund_number(items.table.number_of(id)))
 
 	for need in cost:
-		before[str(need[0])] = count(str(need[0]))
+		before[str(need[0])] = back.call(str(need[0]))
 
 	act(Net.ACT_PICKUP, 920002)
 	var refunded: bool = true
 
 	for need in cost:
-		refunded = refunded and count(str(need[0])) - int(before[str(need[0])]) == int(need[1])
+		refunded = refunded and back.call(str(need[0])) - int(before[str(need[0])]) == int(need[1])
 
 	check(not items._items.has(920002) and refunded, "the plot is taken down and its blueprint materials come back (%s)" % str(cost))
 	check(not items._crops.has(key), "its crop record went with it")
@@ -304,11 +307,106 @@ func _hoe_plot_checks() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var hoe_slot: int = HeldTool.slot_of(items, "hoe")
 	check(hoe_slot >= 0 and hoe_slot < 10 and HeldTool.slot_of(items, "hammer") < 0, "the farmer has a hoe on the hand bar and no hammer")
-	var plot_bp: int = int(items._blueprint_of_kit["thatch_garden_plot_kit"])
+	var plot_bp: int = int(items._blueprint_of_kit["wooden_garden_plot_kit"])
 	notes.clear()
 	var count_before: int = items._items.size()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, plot_bp, 0, 0, Vector3(4.0, 10.0, 4.0))
 	check(items._items.size() == count_before and notes.any(func(t): return str(t).contains("need a hammer")), "a hoe alone lays out no garden plot: it needs a hammer (%s)" % str(notes))
+
+
+# Herb and plant seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"; HOE_GARDENING_DESIGN.md): a wild herb picked late in its season gives its
+# seed, not earlier; the seed grows in a planter (plot: true) and a ripe one gives its harvest and seeds back; every real plant has a seed and a garden row.
+func _herb_seed_checks(crops: Dictionary) -> void:
+	items.report_position(1, Vector3(500.0, 70.0, 500.0))
+	season[0] = "spring"
+	items._last_gather.clear()
+	items.gather(1, "wild_thyme", "plant", "0,0,900", 900, Vector3(501.0, 70.0, 500.0))
+	check(count("wild_thyme_seed") == 0 and count("thyme") > 0, "wild thyme picked in spring gives thyme but no seed (%d)" % count("wild_thyme_seed"))
+	season[0] = "autumn"
+	items._last_gather.clear()
+	items.gather(1, "wild_thyme", "plant", "0,0,901", 901, Vector3(501.0, 70.0, 500.0))
+	check(count("wild_thyme_seed") >= 1 and count("wild_thyme_seed") <= 2, "late in its season it has gone to seed: 1 to 2 Wild thyme seeds (%d)" % count("wild_thyme_seed"))
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var spot: Vector3 = Vector3(2.5, 10.0, 2.5)
+	items._items[920004] = {"number": items.table.number_of("stone_planter"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "stone_planter", "yaw": 0.0}}
+	var key: String = items._bed_key(spot)
+	season[0] = "summer"
+	act(Net.ACT_SOW, 920004, slot_of("wild_thyme_seed"))
+	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "wild_thyme", "a Wild thyme seed is sown in a Stone - Planter")
+	rain[0] = 0.8
+	days(int(crops["wild_thyme"]["grow_days"]) + 1)
+	rain[0] = 0.0
+	var thyme: int = count("thyme")
+	var seeds: int = count("wild_thyme_seed")
+	act(Net.ACT_HARVEST, 920004)
+	check(not items._crops.has(key) and count("thyme") - thyme == int(crops["wild_thyme"]["yields"][0][1]) and count("wild_thyme_seed") - seeds >= 1, "the ripe garden thyme gives its thyme and seeds back (+%d thyme, +%d seeds)" % [count("thyme") - thyme, count("wild_thyme_seed") - seeds])
+	items._items.erase(920004)
+	items._items[920005] = {"number": items.table.number_of("flower_pot"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "flower_pot", "yaw": 0.0}}
+	check(not items._bed_at(920005).is_empty(), "a Flower pot takes seeds too")
+	items._items.erase(920005)
+	var drops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var fungi: Array = ["mushrooms", "chanterelle", "porcini", "morel", "fly_agaric", "puffball", "tinder_fungus", "rimecap", "lumencap", "cinderfoot", "mirrorcap"]
+	var missing: Array = []
+
+	for plant in items._flora_by_name:
+		var entry: Dictionary = items._flora_by_name[plant]
+
+		if str(entry.get("kind", "")) != "plant" or bool(entry.get("future", false)) or str(plant).ends_with("_log") or plant == "old_stump" or fungi.has(plant):
+			continue
+
+		var wild: Dictionary = (drops.get("seed_drops", {}) as Dictionary).get(plant, {})
+		var sown: bool = false
+
+		for row in wild.get("rows", []):
+			for crop_id in crops:
+				sown = sown or str(crops[crop_id].get("seed", "")) == str(row[0])
+
+		if not sown:
+			missing.append(plant)
+
+	check(missing.is_empty(), "every real plant gives a wild seed that sows a garden crop (%s)" % str(missing))
+	var dune: Dictionary = items._flora_by_name.get("dune_grass", {})
+	var no_tool: Callable = func(_t: String) -> bool: return false
+	var any_item: Callable = func(_i: String) -> bool: return true
+	check(bool(Gather.check(dune, "plant", drops, str((drops["seed_drops"]["dune_grass"]["seasons"] as Array)[0]), no_tool, any_item)["ok"]) and not bool(Gather.check(dune, "plant", drops, "winter", no_tool, any_item)["ok"]), "dune grass, which bears nothing else, can be picked for its seed when it has gone to seed, not in winter")
+	# One bed or planter to a metre cell (one crop record each): a second pot in the same cell is refused.
+	items._items[920006] = {"number": items.table.number_of("flower_pot"), "count": 1, "pos": Vector3(2.3, 10.0, 2.3), "left": 1.0e9, "struct": {"kind": "flower_pot", "yaw": 0.0}}
+	notes.clear()
+	var before: int = items._items.size()
+	items.place_piece(1, "flower_pot_kit", Vector3(2.7, 10.0, 2.7))   # free build, as from the hammer (the Flower pot kit itself is retired)
+	check(items._items.size() == before and notes.has("A bed or planter is already in that spot."), "a second flower pot in the same metre cell is refused (%s)" % str(notes))
+	items._items.erase(920006)
+
+
+# Gardening plots (Dave 14 Nov 2026: "Gardening plots can come in three sizes small medium and large ... A small takes two planks and eight nails a medium
+# takes three planks, and eight nails and a large takes four planks, and eight nails"; no tiers): the three blueprints and footprints, and a saved Thatch,
+# Stone or Brick plot loads as the Medium one.
+func _plot_size_checks(dir: String) -> void:
+	for row in [["small_garden_plot", 1.0, 2], ["wooden_garden_plot", 2.0, 3], ["large_garden_plot", 3.0, 4]]:
+		var bp: Dictionary = items._blueprints.get(int(items._blueprint_of_kit.get(str(items._structures.get(str(row[0]), {}).get("kit", "")), 0)), {})
+		var def: Dictionary = items._structures.get(str(row[0]), {})
+		var cost: Array = []
+		for c in bp.get("cost", []):
+			cost.append("%s %d" % [str(c[0]), int(c[1])])
+		check(cost == ["lumber %d" % int(row[2]), "nails 8"] and is_equal_approx(float(def.get("footprint_x", 0.0)), float(row[1])) and bool(def.get("plot", false)), "%s: %d m square, %d planks and 8 nails (%s)" % [str(bp.get("name", row[0])), int(row[1]), int(row[2]), str(bp.get("cost", []))])
+
+	for old in ["thatch_garden_plot", "stone_garden_plot", "brick_garden_plot"]:
+		check(not items._structures.has(old), "the %s tier is gone" % old)
+
+	var spot: Vector3 = Vector3(60.0, 10.0, 60.0)
+	items._items[920007] = {"number": items.table.number_of("stone_garden_plot"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "stone_garden_plot", "yaw": 0.0}}   # what an old save holds
+	items._dirty = true
+	items.save()
+	items._finish_writer()
+	var again = make(dir)
+	var found: Dictionary = {}
+
+	for id in again._items:
+		if again._items[id].has("struct") and (again._items[id]["pos"] as Vector3).distance_to(spot) < 0.01:
+			found = again._items[id]
+
+	check(not found.is_empty() and str(found["struct"]["kind"]) == "wooden_garden_plot" and int(found["number"]) == again.table.number_of("wooden_garden_plot"), "a saved Stone - Garden plot loads as the Medium gardening plot (%s)" % str(found.get("struct", {})))
+	items._items.erase(920007)
 
 
 func _init() -> void:
@@ -446,6 +544,8 @@ func _init() -> void:
 	_route_checks(bed, crops)
 	_plot_takedown_checks()
 	_hoe_plot_checks()
+	_herb_seed_checks(crops)
+	_plot_size_checks(dir)
 
 	# Save and restart: a barley crop grown to a stage keeps its crop, its age and its stage (the world save, not a hand-written file).
 	season[0] = "spring"

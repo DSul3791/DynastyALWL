@@ -2924,46 +2924,31 @@ static func _soil_mat() -> StandardMaterial3D:
 	return _soil
 
 
-# A garden plot, 2 x 2 m: soil heaped inside a frame `high` m tall. "thatch": stakes and woven stick edging, lashed at the corners (0.3 m). "wood": a plank
-# raised bed with corner posts (0.4 m). "stone": a low wall of stones round it (0.4 m). "brick": a brick kerb with a stone coping (0.4 m).
-static func garden_plot(kind: String = "wood") -> Node3D:
+# A gardening plot `side` m square (Dave 14 Nov 2026: no tiers, Small 1 m, Medium 2 m, Large 3 m, planks and nails): soil heaped inside a plank raised
+# bed 0.4 m tall, with corner posts.
+static func garden_plot(side: float = 2.0) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	var high: float = 0.3 if kind == "thatch" else 0.4
-	var side: StandardMaterial3D = {"thatch": _log, "wood": _planks, "stone": _stone, "brick": _brick}.get(kind, _planks)
-	var thick: float = 0.06 if kind in ["thatch", "wood"] else 0.18
-	_box(root, Vector3(2.0 - 2.0 * thick, high - 0.06, 2.0 - 2.0 * thick), Vector3(0.0, (high - 0.06) * 0.5, 0.0), _soil_mat())
+	var high: float = 0.4
+	var thick: float = 0.06
+	var half: float = side * 0.5
+	_box(root, Vector3(side - 2.0 * thick, high - 0.06, side - 2.0 * thick), Vector3(0.0, (high - 0.06) * 0.5, 0.0), _soil_mat())
+	var furrows: int = maxi(int(round(side * 3.5)), 3)
 
-	for k in 7:   # furrows in the soil
-		_box(root, Vector3(1.8 - 2.0 * thick, 0.03, 0.08), Vector3(0.0, high - 0.06, -0.72 + 0.24 * float(k)), _soil_mat())
+	for k in furrows:   # furrows in the soil, 0.24 m apart over the inside
+		_box(root, Vector3(side - 0.2 - 2.0 * thick, 0.03, 0.08), Vector3(0.0, high - 0.06, -(float(furrows - 1) * 0.12) + 0.24 * float(k)), _soil_mat())
 
 	for s in [-1.0, 1.0]:
-		_box(root, Vector3(2.0, high, thick), Vector3(0.0, high * 0.5, s * (1.0 - thick * 0.5)), side)
-		_box(root, Vector3(thick, high, 2.0 - 2.0 * thick), Vector3(s * (1.0 - thick * 0.5), high * 0.5, 0.0), side)
+		_box(root, Vector3(side, high, thick), Vector3(0.0, high * 0.5, s * (half - thick * 0.5)), _planks)
+		_box(root, Vector3(thick, high, side - 2.0 * thick), Vector3(s * (half - thick * 0.5), high * 0.5, 0.0), _planks)
+		_box(root, Vector3(side, 0.015, thick + 0.004), Vector3(0.0, high * 0.5, s * (half - thick * 0.5)), _frame)   # the seam between two boards
+		_box(root, Vector3(thick + 0.004, 0.015, side - 2.0 * thick), Vector3(s * (half - thick * 0.5), high * 0.5, 0.0), _frame)
 
-	match kind:
-		"thatch":
-			for x in [-1.0, 1.0]:
-				for z in [-1.0, 1.0]:
-					_cyl(root, 0.035, high + 0.05, Vector3(x * 0.97, (high + 0.05) * 0.5, z * 0.97), _log, 6)
-					_cyl(root, 0.05, 0.04, Vector3(x * 0.97, high - 0.05, z * 0.97), _frame, 6)       # lashing
-			for y in [0.1, 0.2]:
-				for s in [-1.0, 1.0]:
-					_box(root, Vector3(2.0, 0.025, 0.07), Vector3(0.0, y, s * 0.97), _frame)               # the weave's dark lines
-					_box(root, Vector3(0.07, 0.025, 1.9), Vector3(s * 0.97, y, 0.0), _frame)
-		"wood":
-			for x in [-1.0, 1.0]:
-				for z in [-1.0, 1.0]:
-					_box(root, Vector3(0.08, high + 0.04, 0.08), Vector3(x * 0.96, (high + 0.04) * 0.5, z * 0.96), _frame)
-			for s in [-1.0, 1.0]:
-				_box(root, Vector3(2.0, 0.015, thick + 0.004), Vector3(0.0, high * 0.5, s * (1.0 - thick * 0.5)), _frame)   # the seam between two boards
-				_box(root, Vector3(thick + 0.004, 0.015, 2.0 - 2.0 * thick), Vector3(s * (1.0 - thick * 0.5), high * 0.5, 0.0), _frame)
-		"brick":
-			for s in [-1.0, 1.0]:
-				_box(root, Vector3(2.02, 0.05, thick + 0.03), Vector3(0.0, high + 0.025, s * (1.0 - thick * 0.5)), _mortar)
-				_box(root, Vector3(thick + 0.03, 0.05, 2.0 - 2.0 * thick), Vector3(s * (1.0 - thick * 0.5), high + 0.025, 0.0), _mortar)
+	for x in [-1.0, 1.0]:
+		for z in [-1.0, 1.0]:
+			_box(root, Vector3(0.08, high + 0.04, 0.08), Vector3(x * (half - 0.04), (high + 0.04) * 0.5, z * (half - 0.04)), _frame)
 
-	_solid(root, Vector3(2.0, high, 2.0), Vector3(0.0, high * 0.5, 0.0))
+	_solid(root, Vector3(side, high, side), Vector3(0.0, high * 0.5, 0.0))
 	return root
 
 

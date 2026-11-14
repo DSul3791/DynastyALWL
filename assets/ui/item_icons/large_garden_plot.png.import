@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dj2ng1bdfwckc"
-path="res://.godot/imported/stone_garden_plot.png-834ac97f36b013537b4b3f56f640a3b4.ctex"
+uid="uid://p83213cmsi935"
+path="res://.godot/imported/large_garden_plot.png-9086a9be7605462f30b228b0c22861b8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/stone_garden_plot.png"
-dest_files=["res://.godot/imported/stone_garden_plot.png-834ac97f36b013537b4b3f56f640a3b4.ctex"]
+source_file="res://assets/ui/item_icons/large_garden_plot.png"
+dest_files=["res://.godot/imported/large_garden_plot.png-9086a9be7605462f30b228b0c22861b8.ctex"]
 
 [params]
 

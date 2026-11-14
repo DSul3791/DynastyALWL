@@ -8,7 +8,7 @@ extends SceneTree
 const LookTable := preload("res://src/client/look_table.gd")
 
 const SIZES := {
-	"thatch_garden_plot": Vector3(2.0, 0.3, 2.0), "wooden_garden_plot": Vector3(2.0, 0.4, 2.0), "stone_garden_plot": Vector3(2.0, 0.4, 2.0), "brick_garden_plot": Vector3(2.0, 0.4, 2.0),
+	"small_garden_plot": Vector3(1.0, 0.4, 1.0), "wooden_garden_plot": Vector3(2.0, 0.4, 2.0), "large_garden_plot": Vector3(3.0, 0.4, 3.0),
 	"wooden_planter_box": Vector3(0.8, 0.3, 0.3), "stone_planter": Vector3(0.8, 0.6, 0.8), "wooden_trellis": Vector3(1.6, 2.0, 0.1), "wooden_compost_bin": Vector3(1.0, 0.8, 1.0),
 	"thatch_scarecrow": Vector3(1.1, 2.0, 0.6), "wooden_cold_frame": Vector3(1.0, 0.5, 1.0),
 	"stone_well": Vector3(1.6, 1.1, 1.6), "wooden_hand_pump": Vector3(0.5, 1.1, 0.5), "iron_hand_pump": Vector3(0.5, 1.1, 0.5),

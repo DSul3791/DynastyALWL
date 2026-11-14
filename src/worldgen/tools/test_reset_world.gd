@@ -67,7 +67,7 @@ func player_rows(items) -> int:
 
 func progress_kept(items) -> bool:
 	var row: Dictionary = items._characters.get(KEY, {})
-	return float((row.get("skills", {}) as Dictionary).get("digging", 0.0)) == 1234.0 and int(row.get("fitness", 0)) == 3 and (row.get("learned", {}) as Dictionary).has("127") and int(row.get("coins", 0)) == 55
+	return float((row.get("skills", {}) as Dictionary).get("digging", 0.0)) == 1234.0 and int(row.get("fitness", 0)) == 3 and (row.get("learned", {}) as Dictionary).has("127") and row.get("purse", {}) == {"coin_copper": 55}
 
 
 func world_piles(items) -> int:
@@ -112,7 +112,7 @@ func _init() -> void:
 	items._characters[KEY]["skills"] = {"digging": 1234.0}   # skills and progression: the character row must come through untouched
 	items._characters[KEY]["fitness"] = 3
 	items._characters[KEY]["learned"] = {"127": true}
-	items._characters[KEY]["coins"] = 55
+	items._characters[KEY]["purse"] = {"coin_copper": 55}
 	items.vitals_of(1)["hunger"] = 42.0
 
 	# Terrain: a dig, a fill (a raise) and a flatten-like dig far from anyone.
