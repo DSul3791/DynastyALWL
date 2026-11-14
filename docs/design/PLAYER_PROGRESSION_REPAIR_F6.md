@@ -12,7 +12,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - [ ] **Journal is empty for a new character.** J opens the Index, G opens Goals, M opens Map, and Esc closes. The Map page reads "Nothing mapped yet. Explore to fill this page." Opening the inventory closes the Journal, and the other way round.
 - [ ] **Keys under a screen** (#1104). Open the inventory (I) or the character screen (Tab). Hold Space and Ctrl on the ground, in water and on a ladder; on a ladder also press W and S. Nothing should move you: no jump, rise, dive, climb or letting go. Space still wakes you if you are asleep with a screen open.
 - [ ] **Goals box.** At the upper right, a thin cream border, the heading "Goals" and the first two unfinished goals. It sits clear of the Comfort and food lines and hides while any screen is open.
-- [ ] **Join without a crash** (#1124). Join a few times. The game should never crash at the join. Trees may finish setting up a moment later than before; their looks should be unchanged.
+- [ ] **Note any crash while joining.** Join a few times. Headless test runs still crash now and then while joining (1 of 3 in the final run, in the animal models; cause unknown, open). If the game crashes or freezes at a join, note when, and save the log if you can. #1124 fixed one cause (trees); trees may finish setting up a moment later than before, with unchanged looks.
 
 ## 1. First minutes: gathering, tools, fire, shelter
 
@@ -158,5 +158,5 @@ These are outside the mission's completion criteria. They passed headless on Dav
 ## 9. Known limits (not defects)
 
 - A tree's feller and a kiln's lighter are not saved. A trunk that splits, or a kiln batch that finishes, after a server restart or while that player is offline credits no one.
-- Headless test runs sometimes printed an "already initialized RID" error at the join. The flora fix (#1124) may have cured it (0 of 5 runs since), but the cause is unconfirmed and it has never been seen as a visible fault.
+- **Open defect:** an intermittent client crash while joining, seen in headless test runs (about 2 crashes in 45 runs, RID error lines in about 1 run in 8; the final run crashed once in 3, building an animal model). The cause is unconfirmed and older than the mission; whether a normal windowed game hits it is unknown. It is under investigation.
 - The game still crashes on quit in headless test runs (exit 134); that is older and known.
