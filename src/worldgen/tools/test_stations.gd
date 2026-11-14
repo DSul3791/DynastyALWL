@@ -102,9 +102,10 @@ func _init() -> void:
 	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0), Vector3(600.0, 10.0, 0.0), Vector3(800.0, 10.0, 0.0)]
 	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
 	# [workbench, forge, brick_forge]. The Smithy (Brick - Forge) is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
-	# level-1 forge for bronze (also). Mission 001 phase 2b: the Blast furnace is its own body (blast_furnace, no forge work) and the Master smithy
-	# a smithy too (brick_forge 2, forge 1) with its own master_smithy body. The smithies must burn to craft: the player carries charcoal to fire them.
-	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 0, 0], [0, 1, 2]]
+	# level-1 forge for bronze (also). The old Blast furnace is the Advanced smelter (GOALS-REPAIR R4): a smelter, no crafting station at all;
+	# the Master smithy a smithy too (brick_forge 3 for steel, forge 1) with its own master_smithy body. The smithies must burn to craft: the
+	# player carries charcoal to fire them.
+	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 0, 0], [0, 1, 3]]
 	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
 
 	for n in 5:
@@ -121,9 +122,8 @@ func _init() -> void:
 		check(tiers.station_near(1, "brick_forge", int(want[n][2])) or int(want[n][2]) == 0, "%s brick forge %d" % [kits[n], int(want[n][2])])
 		check(not tiers.station_near(1, "brick_forge", int(want[n][2]) + 1), "%s brick forge capped at %d" % [kits[n], int(want[n][2])])
 
-	check(tiers.station_near(1, "blast_furnace", 1) == false, "no blast furnace beside the master smithy spot")
 	tiers.report_position(1, spots[3] - Vector3(2.0, 0.0, 0.0))
-	check(tiers.station_near(1, "blast_furnace", 1) and tiers.station_near(1, "smelter", 1), "the Blast furnace makes steel and smelts in bulk (blast_furnace, also a smelter)")
+	check(not tiers.station_near(1, "blast_furnace", 1) and not tiers.station_near(1, "smelter", 1) and tiers._smelters.is_smelter(tiers._structures["large_forge"]) and tiers._structures["large_forge"].get("station", "") == "" and not tiers._structures["large_forge"].has("also"), "the old Blast furnace is the Advanced smelter: it smelts by itself and serves no crafting station (GOALS-REPAIR R4)")
 	tiers.report_position(1, spots[4] - Vector3(2.0, 0.0, 0.0))
 	check(tiers.station_near(1, "master_smithy", 1), "the Master smithy is its own body")
 	tiers.inventory_of(1).remove(tiers.table.number_of("charcoal"), tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")))
@@ -136,7 +136,7 @@ func _init() -> void:
 		if str(tiers.recipes.recipe(number)["id"]) == "steel_pickaxe":
 			steel = number
 
-	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 1, "steel work is at the Smithy with no level: Blast furnace steel gates it (master s4 item 10, the Anvil retired)")
+	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel work is at brick forge level 3: the Advanced and Master smithies (GOALS-REPAIR R4, master s2.7 item 6)")
 
 	# Bellows and the Quenching trough beside the Smithy are old add-ons that never change its level. The standalone Bellows no longer speed the
 	# Smithy or save its fuel (GOALS-REPAIR R3; CATALOG_IMPLEMENTATION_PLAN s1: the standalone Smithy Bellows must not return), but a placed one

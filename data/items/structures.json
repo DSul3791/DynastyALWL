@@ -122,6 +122,7 @@
 		},
 		"stone_forge": {"blocks_walk": true, "kit": "stone_forge_kit", "item": "stone_forge", "state": 17, "footprint_x": 0.9, "footprint_z": 0.72, "cap_per_chunk": 2, "station": "forge", "station_level": 1, "anvil": "stone", "tier": "large", "reach_m": 5.0, "addon_reach_m": 5.0, "look": "stone_forge", "sound": "foundation", "clears_grass": true, "slots": 4, "out_slots": 4},
 		"blacksmithy": {"blocks_walk": true, "kit": "blacksmithy_kit", "item": "blacksmithy", "state": 18, "footprint_x": 1.5, "footprint_z": 1.17, "cap_per_chunk": 1, "station": "brick_forge", "station_level": 2, "anvil": "bronze", "tier": "epic", "reach_m": 5.0, "addon_reach_m": 5.0, "look": "blacksmithy", "sound": "foundation", "clears_grass": true, "also": {"forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800, "slots": 6, "out_slots": 6},
+		"advanced_smithy": {"blocks_walk": true, "kit": "advanced_smithy", "item": "advanced_smithy", "state": 369, "footprint_x": 1.5, "footprint_z": 1.17, "cap_per_chunk": 1, "station": "brick_forge", "station_level": 3, "anvil": "iron", "tier": "epic", "reach_m": 5.0, "addon_reach_m": 5.0, "look": "blacksmithy", "sound": "foundation", "clears_grass": true, "also": {"forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800, "slots": 6, "out_slots": 6, "note_station": "The Advanced smithy (master s2.7 item 6, s3.3; plan P3): built with the Iron anvil; works copper, bronze, iron and steel (brick_forge level 3: the steel recipes) and forges the Steel anvil. No quencher (the Master smithy's).", "note_look": "PLACEHOLDER look: the Improved smithy's model until the art pipeline draws the Advanced smithy."},
 		"carcass": {
 			"kit": "",
 			"item": "carcass",
@@ -135,8 +136,8 @@
 			"sound": "",
 			"clears_grass": false
 		},
-		"large_forge": {"blocks_walk": true, "kit": "large_forge_kit", "item": "large_forge", "state": 20, "footprint_x": 2.8, "footprint_z": 2.0, "cap_per_chunk": 1, "station": "blast_furnace", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"smelter": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800, "slots": 6, "out_slots": 6},
-		"master_forge": {"blocks_walk": true, "kit": "master_forge_kit", "item": "master_forge", "state": 21, "footprint_x": 3.9, "footprint_z": 2.6, "cap_per_chunk": 1, "station": "master_smithy", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"brick_forge": 2, "forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800, "slots": 6, "out_slots": 6},
+		"large_forge": {"blocks_walk": true, "kit": "large_forge_kit", "item": "large_forge", "state": 20, "footprint_x": 2.8, "footprint_z": 2.0, "cap_per_chunk": 1, "tier": "epic", "reach_m": 6.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "use": "smelt", "slots": 8, "out_slots": 4, "takes": ["coal", "charcoal", "copper_ore", "tin_ore", "iron_ore"], "smelt": {"hopper_slots": 2, "hopper": 80, "input": 80, "output": 160, "ingot_s": 20.0, "speed": 1.69, "lanes": 2, "wind": true, "carbon": true, "jobs": ["steel", "iron", "bronze", "copper", "tin"]}, "note_smelt": "The Advanced smelter (master s2.7 items 7 and 8, plan P3): one station with its windmill and two mechanically driven bellows built in; 80 fuel, 80 input, a 160-ingot rack; two lanes at 1.30 x 1.30 = 1.69 times the Primitive rate (20 / 1.69 = 11.83 s for two ingots); nothing at all below smelting.wind_min_mps. PROVISIONAL: the same rate in any wind above the threshold until the wind speed curve is tuned (plan P3 leaves it open). The old Blast furnace's crafting station (blast_furnace, also smelter) is gone.", "note_look": "PLACEHOLDER look: the old big forge model until the art pipeline draws the Advanced smelter with its windmill and two bellows."},
+		"master_forge": {"blocks_walk": true, "kit": "master_forge_kit", "item": "master_forge", "state": 21, "footprint_x": 3.9, "footprint_z": 2.6, "cap_per_chunk": 1, "station": "master_smithy", "station_level": 1, "tier": "epic", "reach_m": 6.0, "addon_reach_m": 5.0, "look": "big_forge", "sound": "foundation", "clears_grass": true, "also": {"brick_forge": 3, "forge": 1}, "craft_needs_lit": true, "fuel": "fuel", "fuel_s": 1800, "slots": 6, "out_slots": 6},
 		"wall_section": {
 			"blocks_walk": true,
 			"kit": "wall_section_kit",
@@ -698,7 +699,7 @@
 				"crate_spots": [[0.0, 0.55, -0.1]]}}
 	},
 	"smelting": {
-		"note": "The Smelters (master s2.5, s2.7; src/stream/server_smelter.gd). A structure with \"use\": \"smelt\" lists its jobs in \"smelt\".jobs; it does the first whose ore is in its input (a \"bellows\" job only while a player works its bellows). A job takes its \"in\", gives its \"out\" (ingot_s seconds an ingot) and burns fuel_per_ore hopper fuel a unit of ore, all when it delivers. Coal and Charcoal are the only fuel (s2.5).",
+		"note": "The Smelters (master s2.5, s2.7; src/stream/server_smelter.gd). A structure with \"use\": \"smelt\" lists its jobs in \"smelt\".jobs; it does the first whose ore is in its input (a \"bellows\" job only with air: a player working its bellows, or its windmill turning). A job takes its \"in\", gives its \"out\" (ingot_s seconds an ingot) and burns fuel_per_ore hopper fuel a unit of ore, all when it delivers. Coal and Charcoal are the only fuel (s2.5).",
 		"fuel": ["charcoal", "coal"],
 		"fuel_per_ore": 1,
 		"note_fuel_per_ore": "PROVISIONAL (GOALS-REPAIR A-10): master s2.7 item 3 leaves the burn rate open. One fuel a unit of ore matches each tier's approved hopper and input sizes (20/20, 40/40, 80/80): a full hopper smelts a full input.",
@@ -706,8 +707,12 @@
 			"iron": {"in": [["iron_ore", 1]], "out": ["iron_ingot", 1], "bellows": true},
 			"bronze": {"in": [["copper_ore", 1], ["tin_ore", 1]], "out": ["bronze_ingot", 2]},
 			"copper": {"in": [["copper_ore", 1]], "out": ["copper_ingot", 1]},
-			"tin": {"in": [["tin_ore", 1]], "out": ["tin_ingot", 1]}
-		}
+			"tin": {"in": [["tin_ore", 1]], "out": ["tin_ingot", 1]},
+			"steel": {"in": [["iron_ore", 1]], "carbon": 1, "out": ["steel_ingot", 1], "bellows": true, "note_provisional": "PROVISIONAL, NOT APPROVED (GOALS-REPAIR A-19; for Dave's review): 1 Coal or Charcoal in the input as carbon a unit of Iron ore (master s2.7 item 8 and plan P3 leave the ratio open). The hopper fuel is burned as for any job, on top. To change it, change carbon."}
+		},
+		"wind_min_mps": 4.0,
+		"note_wind_min_mps": "PROVISIONAL (GOALS-REPAIR A-18): the world wind (Weather.wind_mps) at or above which a windmill station's windmill turns; below it the station makes no progress at all (plan P3). The threshold is to be tuned.",
+		"note_carbon": "A job's \"carbon\" is how many Coal or Charcoal it takes from the INPUT (put there by dragging onto an input slot, protocol 121), never from the hopper."
 	},
 	"campfire": {
 		"gap_m": 2.0,

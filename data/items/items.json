@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1308,
+	"next_number": 1310,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -1046,7 +1046,7 @@
 			"value": 900,
 			"look_alikes": []
 		},
-		"large_forge": {"number": 93, "name": "Blast furnace", "description": "A tall furnace that holds great heat. Makes steel and smelts in bulk.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20.", "slots": 12},
+		"large_forge": {"number": 93, "name": "Advanced smelter", "description": "A furnace with its own windmill and two bellows. In wind it smelts two ingots at once, and steel with carbon.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20.", "slots": 12},
 		"master_forge_kit": {
 			"number": 94,
 			"future": true,
@@ -4906,6 +4906,17 @@
 			"look_alikes": [],
 			"value": 90,
 			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-16): a new id for the Iron anvil component (master s2.7 item 6, s3.3); #827 stays the retired placed Anvil so old saves load. Its recipe copies the obsolete blueprint 164 cost (5 Iron ingot, 1 Log)."
+		},
+		"steel_anvil_part": {
+			"number": 1309,
+			"name": "Steel anvil",
+			"description": "A forged steel anvil on a banded log stump. Not set down on its own: it goes into building a Master smithy.",
+			"kind": "material",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"value": 160,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-21): the Steel anvil component (master s2.7 item 6, s3.3), made at the Advanced smithy from 5 Steel ingot and 1 Log, the Iron anvil's recipe in steel."
 		},
 		"stairs_wood_kit": {
 			"number": 462,
@@ -9541,6 +9552,7 @@
 			},
 			"smelter": {"number": 908, "name": "Primitive smelter", "description": "A stone and clay furnace. Fed Coal or Charcoal and ore, it smelts copper, tin and bronze by itself.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b; Primitive Smelter, GOALS-REPAIR R2).", "slots": 3},
 			"improved_smelter": {"number": 1304, "name": "Improved smelter", "description": "A smelter with bronze fittings and hand bellows. Work the bellows to smelt faster and to smelt iron.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 368 (Improved Smelter, GOALS-REPAIR R3).", "slots": 10},
+			"advanced_smithy": {"number": 1308, "name": "Advanced smithy", "description": "A smithy with an iron anvil. Fire it with charcoal or coal to work every metal up to steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 369 (Advanced Smithy, GOALS-REPAIR R4).", "slots": 12},
 			"bellows": {"number": 909, "name": "Bellows", "description": "Old leather bellows from a smithy. They no longer speed a forge; take them down for the leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
 			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
 			"leatherworking_table": {"number": 911, "name": "Leatherworking table", "description": "A bench with tools for cutting and stitching leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 243 (Mission 001 phase 2b).", "slots": 8},

@@ -3353,6 +3353,14 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"advanced_smithy": {
+			"name": "Advanced smithy",
+			"kind": "structure",
+			"description": "A smithy with an iron anvil. Fire it with charcoal or coal to work every metal up to steel.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"carcass": {
 			"name": "Carcass",
 			"kind": "structure",
@@ -3371,13 +3379,12 @@
 			"status": "planned"
 		},
 		"large_forge": {
-			"name": "Large forge",
+			"name": "Advanced smelter",
 			"kind": "structure",
-			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
+			"description": "A furnace with its own windmill and two bellows. In wind it smelts two ingots at once, and steel with carbon.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"master_forge_kit": {
 			"name": "Master forge",
@@ -6926,6 +6933,16 @@
 			"description": "A forged iron anvil on a banded log stump. Not set down on its own: it goes into building an Advanced smithy.",
 			"how_to_get": [
 				"Craft: 5 Iron ingot, 1 Log at a brick forge"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"steel_anvil_part": {
+			"name": "Steel anvil",
+			"kind": "material",
+			"description": "A forged steel anvil on a banded log stump. Not set down on its own: it goes into building a Master smithy.",
+			"how_to_get": [
+				"Craft: 5 Steel ingot, 1 Log at a brick forge"
 			],
 			"used_for": [],
 			"obtainable_now": true

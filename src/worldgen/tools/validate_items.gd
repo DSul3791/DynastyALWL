@@ -874,6 +874,12 @@ func _init() -> void:
 		if int(smelt.get("hopper_slots", 0)) < 1 or int(smelt.get("hopper_slots", 0)) >= int(sdef.get("slots", 0)) or int(smelt.get("hopper", 0)) <= 0 or int(smelt.get("input", 0)) <= 0 or float(smelt.get("ingot_s", 0.0)) <= 0.0:
 			fail("structures.json %s: a smelter needs smelt.hopper_slots (1 to slots - 1), hopper, input and ingot_s above 0" % kind)
 
+		if bool(smelt.get("wind", false)) and float(smelting.get("wind_min_mps", 0.0)) <= 0.0:
+			fail("structures.json %s: a windmill smelter needs smelting.wind_min_mps above 0" % kind)
+
+		if int(smelt.get("lanes", 1)) < 1 or float(smelt.get("speed", 1.0)) <= 0.0:
+			fail("structures.json %s: smelt.lanes must be 1 or more and smelt.speed above 0" % kind)
+
 		if int(sdef.get("out_slots", 0)) > 0 and int(smelt.get("output", 0)) <= 0:
 			fail("structures.json %s: a smelter with an output rack needs smelt.output, the ingots the rack holds, above 0" % kind)
 
@@ -889,8 +895,11 @@ func _init() -> void:
 
 			var job: Dictionary = smelting["jobs"][String(job_id)]
 
-			if bool(job.get("bellows", false)) and not bool(smelt.get("bellows", false)):
-				fail("structures.json %s: job '%s' needs worked bellows and the station has none" % [kind, job_id])
+			if bool(job.get("bellows", false)) and not bool(smelt.get("bellows", false)) and not bool(smelt.get("wind", false)):
+				fail("structures.json %s: job '%s' needs air from bellows and the station has neither worked bellows nor a windmill" % [kind, job_id])
+
+			if int(job.get("carbon", 0)) > 0 and not bool(smelt.get("carbon", false)):
+				fail("structures.json %s: job '%s' takes carbon from the input and the station has no carbon input (smelt.carbon)" % [kind, job_id])
 
 			var job_ok: bool = true
 

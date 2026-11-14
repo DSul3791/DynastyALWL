@@ -225,13 +225,13 @@ func _init() -> void:
 	items.report_position(1, smithy_at)
 	empty_pack()
 	hold("wooden_hammer")
-	check(place("blacksmithy", smithy_at + Vector3(2.0, 0.0, 0.0)), "a Smithy stands")
+	check(place("advanced_smithy", smithy_at + Vector3(2.0, 0.0, 0.0)), "an Advanced smithy stands (iron at brick forge level 2 and steel at 3, GOALS-REPAIR R4)")
 	items.give(1, n_of("charcoal"), 20)   # fires the Smithy
 
 	for id in NEW_TOOLS.filter(func(t): return STATION[str(row(t).get("material", ""))] != "forge"):
 		give_needs(id)
 		craft(id)
-		check(have(id) == 1, "%s is made at the lit Smithy" % id)
+		check(have(id) == 1, "%s is made at the lit Advanced smithy" % id)
 
 	# 4. Any metal hammer builds the top hammer tier; the wooden and stone ones do not.
 	var top: int = 0

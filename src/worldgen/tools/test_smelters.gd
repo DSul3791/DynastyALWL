@@ -152,6 +152,7 @@ func empty(id: int) -> void:
 
 	items._items[id]["struct"].erase("smelt_t")
 	items._items[id]["struct"].erase("smelt_job")
+	items._items[id]["struct"].erase("smelt_lanes")
 
 
 # Loose ground units of an item within 2 m of the smelter's front, and taking them away (as a player picks them up).

@@ -3449,13 +3449,17 @@ func station_in_reach(r: Dictionary) -> bool:
 	return str(r.get("station", "")) != "" and station_near(str(r["station"]), int(r.get("station_level", 1)), CraftStock.CRAFT_REACH_M)
 
 
+# The station that makes a recipe, by name: the first structure whose own station serves it at the recipe's level (steel at brick forge level 3
+# names the Advanced smithy, not the Improved one; GOALS-REPAIR R4), else one that carries it as an "also" station at that level.
 func _station_label(r: Dictionary) -> String:
+	var level: int = int(r.get("station_level", 1))
+
 	for kind in _structure_kinds():
-		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")):
+		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")) and int(_structures_cfg[kind].get("station_level", 1)) >= level and not bool(_structures_cfg[kind].get("retired", false)):
 			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	for kind in _structure_kinds():
-		if _structures_cfg[kind].get("also", {}).has(str(r.get("station", ""))):
+		if int(_structures_cfg[kind].get("also", {}).get(str(r.get("station", "")), 0)) >= level and not bool(_structures_cfg[kind].get("retired", false)):
 			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	return str(r.get("station", "")).replace("_", " ")
