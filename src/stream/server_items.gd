@@ -8534,7 +8534,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		if bed_in_shelter:
 			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
 
-		if PlacementRules.one_to_a_point(str(def.get("piece_kind", ""))) and other.has("struct") and PlacementRules.point_family(str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", ""))) == PlacementRules.point_family(str(def.get("piece_kind", ""))) and other["pos"].distance_to(spot) < PlacementRules.ANCHOR_TAKEN_M:
+		if PlacementRules.one_to_a_point(str(def.get("piece_kind", ""))) and other.has("struct") and PlacementRules.point_family(str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", ""))) == PlacementRules.point_family(str(def.get("piece_kind", ""))) and PlacementRules.point_of(_structures.get(str(other["struct"]["kind"]), {}), other["pos"]).distance_to(PlacementRules.point_of(def, spot)) < PlacementRules.ANCHOR_TAKEN_M:
 			_say(peer, "Something is in the way.")   # one pillar to a point, one wall top to a wall (PlacementRules.blocked)
 			return
 

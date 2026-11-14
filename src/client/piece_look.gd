@@ -1473,14 +1473,14 @@ static func tier_panel(kind: String = "stone", slope_deg: float = 45.0) -> Node3
 
 # --- Tier roofs (seven-tier ladder, Kathleen 10 Nov 2026; Dave: a roof is its own weatherproof cover, not the wall material). Every roof above Crude is a
 # sloped panel (tier_panel, GOALS-REPAIR A-35/A-36) and every corner a hip over a corner square (roof_hip, A-37), in the tier's own cover from this table.
-#   kind: [cover, courses, course thickness, underside, ridge ("log", "boards", "slab" or "round"), posts, verges, post width]
+#   kind: [cover, courses, course thickness, boards under the cover, ridge style ("round": a rib of tile down the slope every 0.24 m), rafters, fascia]
 const ROOF_SPEC := {
-	"log": [Color(0.29, 0.26, 0.23), 6, 0.04, "_log", "log", "_log", "_log", 0.14],               # Rustic: bark shingles on split-log boards
-	"wood": [Color(0.58, 0.43, 0.26), 9, 0.03, "_planks", "boards", "_frame", "_frame", 0.12],      # Refined: split wooden shakes on sawn boards
-	"stone": [Color(0.3, 0.32, 0.35), 7, 0.03, "_planks", "slab", "_frame", "_flag", 0.14],         # Sturdy: slates on boards, a stone ridge
-	"brick": [Color(0.7, 0.36, 0.2), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.12],         # Superior: fired clay tiles, round ridge tiles
-	"engineered": [Color(0.55, 0.24, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.14],   # Engineered: deeper red clay tiles on planks (#972: no concrete roof)
-	"fortified": [Color(0.47, 0.22, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.14],    # Fortified: the Engineered tiles, darker, strapped with iron
+	"log": [Color(0.29, 0.26, 0.23), 6, 0.04, "_log", "log", "_log", "_log"],               # Rustic: bark shingles on split-log boards
+	"wood": [Color(0.58, 0.43, 0.26), 9, 0.03, "_planks", "boards", "_frame", "_frame"],      # Refined: split wooden shakes on sawn boards
+	"stone": [Color(0.3, 0.32, 0.35), 7, 0.03, "_planks", "slab", "_frame", "_flag"],         # Sturdy: slates on boards, a stone ridge
+	"brick": [Color(0.7, 0.36, 0.2), 5, 0.04, "_planks", "round", "_frame", "_tile"],         # Superior: fired clay tiles, round ridge tiles
+	"engineered": [Color(0.55, 0.24, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile"],   # Engineered: deeper red clay tiles on planks (#972: no concrete roof)
+	"fortified": [Color(0.47, 0.22, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile"],    # Fortified: the Engineered tiles, darker, strapped with iron
 }
 
 
@@ -2317,7 +2317,7 @@ static func pillar(kind: String = "wood") -> Node3D:
 # hip, each the continuation of the panels on one side (tier_panel and thatch_roof, at `slope_deg` 45 or 65). Its spot is the square's middle, its faces
 # rise toward -Z and -X: the outer corner (+1, -rise / 2, +1) is low, the inner (-1, +rise / 2, -1) high. Each face is a slab 0.16 m thick round the plane
 # a panel's middle lies on, so it meets the panel beside it flush; a hip cap along the meeting line and, for thatch, the shaggy eave along both low edges.
-# `kind` is "thatch" or a ROOF_SPEC kind ("wood", "log", "stone", "brick", "engineered"). One convex collider per face.
+# `kind` is "thatch" or a ROOF_SPEC kind ("wood", "log", "stone", "brick", "engineered", "fortified"). One convex collider per face.
 static func roof_hip(kind: String = "wood", slope_deg: float = 45.0) -> Node3D:
 	_tier_materials()
 	_materials()

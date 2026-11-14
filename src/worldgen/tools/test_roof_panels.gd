@@ -402,6 +402,11 @@ func _hip_checks(cfg: Dictionary) -> void:
 		var snapped: Array = Rules.snap(cfg, kit, Vector3(300.2, 13.0, 300.8), 0, walls)
 		check(bool(snapped[2]) and snapped[0] == plain[0] and int(snapped[1]) == 180, "%s: snap puts it there too" % id)
 		check(Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 0, [walls[0]]).is_empty(), "%s: one wall top alone is no corner" % id)
+		check(str(Rules.roof_hip_pick(cfg, def, steep[0], 0, walls)[2]) == twin_id and str(Rules.roof_hip_pick(cfg, def, plain[0], 1, walls)[2]) == id, "%s: at exactly one shape's middle (a saved plan replayed) that shape, whatever the wheel" % id)
+		var upper: Array = walls + [{"pos": Vector3(300.0, 12.7, 300.0), "state": wall_state, "yaw": 0.0}, {"pos": Vector3(299.0, 12.7, 301.0), "state": wall_state, "yaw": 90.0}]
+		var low65: Array = Rules.roof_hip_pick(cfg, def, Vector3(middle.x, top + r65, middle.y), 1, upper)
+		var high45: Array = Rules.roof_hip_pick(cfg, def, Vector3(middle.x, top + 2.4 + r45, middle.y), 0, upper)
+		check(low65.size() == 3 and absf((low65[0] as Vector3).y - (top + r65)) < 0.001 and high45.size() == 3 and absf((high45[0] as Vector3).y - (top + 2.4 + r45)) < 0.001, "%s: two storeys of walls: each answer stays on its own storey (%s, %s)" % [id, str(low65), str(high45)])
 
 		for slope in [45, 65]:   # a panel already standing beside it (continuing the +Z face, one run along +X) sets the shape whatever the wheel says
 			var panel_kind: String = "thatch_roof" if slope == 45 else "thatch_roof_65"
@@ -415,6 +420,10 @@ func _hip_checks(cfg: Dictionary) -> void:
 
 			var other: Array = walls + [{"pos": Vector3(300.0, top + rise, 303.0), "state": int(cfg["structures"][panel_kind]["state"]), "yaw": 270.0}]   # beside the other face: one run along +Z, rising +X
 			check(str(Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 1 if slope == 45 else 0, other)[2]) == want, "%s: so does a Roof %d panel beside its other face" % [id, slope])
+
+	check(Rules.reason_text("nocorner") != "", "the ghost says why a corner will not go: %s" % Rules.reason_text("nocorner"))
+	var square: Array = [{"pos": Vector3(300.0, 10.3, 300.0), "state": int(cfg["structures"]["wall_section"]["state"]), "yaw": 0.0}, {"pos": Vector3(300.0, 13.7, 301.0), "state": int(cfg["structures"]["thatch_roof"]["state"]), "yaw": 180.0}]
+	check(Rules.blocked(cfg, "thatch_roof_65", Vector3(300.0, 12.7 + Rules.roof_panel_rise(cfg["structures"]["thatch_roof_65"]) * 0.5, 301.0), square) == "close", "a Roof 65 panel on the edge a Roof 45 panel already rises from is refused")
 
 	# A real server: each corner on its own corner of two walls, by the wheel 45 or 65 in turn; the shape is saved and loads again.
 	var dir: String = "user://test_roof_panels_hips"
@@ -440,7 +449,8 @@ func _hip_checks(cfg: Dictionary) -> void:
 		var rise: float = Rules.roof_panel_rise(cfg["structures"][kind]) * 0.5
 		check(placed.size() == 1 and _near(placed[0], Vector3(x, 12.4 + rise, 501.0)), "%s: placed by the wheel's %s shape on the corner of two walls (%s)" % [id, "45" if mode == 0 else "65", str(placed)])
 		server.place_piece(1, kit, Vector3(x, 13.0, 501.0), 0, mode)
-		check(_count(server, id) + _count(server, id + "_65") == 1, "%s: a second corner on the same square is refused" % id)
+		server.place_piece(1, kit, Vector3(x, 13.0, 501.0), 0, 1 - mode)
+		check(_count(server, id) + _count(server, id + "_65") == 1, "%s: a second corner on the same square is refused, at either slope" % id)
 		x += 10.0
 		n += 1
 
