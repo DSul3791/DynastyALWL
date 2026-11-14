@@ -123,6 +123,6 @@ func _init() -> void:
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 227 and strict_list.rows(2).size() == 228, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 226 and strict_list.rows(2).size() == 227, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

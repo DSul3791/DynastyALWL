@@ -383,7 +383,10 @@ func _plot_size_checks(dir: String) -> void:
 	for row in [["small_garden_plot", 1.0, 2], ["wooden_garden_plot", 2.0, 3], ["large_garden_plot", 3.0, 4]]:
 		var bp: Dictionary = items._blueprints.get(int(items._blueprint_of_kit.get(str(items._structures.get(str(row[0]), {}).get("kit", "")), 0)), {})
 		var def: Dictionary = items._structures.get(str(row[0]), {})
-		check(bp.get("cost", []) == [["lumber", int(row[2])], ["nails", 8]] and is_equal_approx(float(def.get("footprint_x", 0.0)), float(row[1])) and bool(def.get("plot", false)), "%s: %d m square, %d planks and 8 nails (%s)" % [str(bp.get("name", row[0])), int(row[1]), int(row[2]), str(bp.get("cost", []))])
+		var cost: Array = []
+		for c in bp.get("cost", []):
+			cost.append("%s %d" % [str(c[0]), int(c[1])])
+		check(cost == ["lumber %d" % int(row[2]), "nails 8"] and is_equal_approx(float(def.get("footprint_x", 0.0)), float(row[1])) and bool(def.get("plot", false)), "%s: %d m square, %d planks and 8 nails (%s)" % [str(bp.get("name", row[0])), int(row[1]), int(row[2]), str(bp.get("cost", []))])
 
 	for old in ["thatch_garden_plot", "stone_garden_plot", "brick_garden_plot"]:
 		check(not items._structures.has(old), "the %s tier is gone" % old)
