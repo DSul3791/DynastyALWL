@@ -3246,7 +3246,8 @@ static func trough(kind: String = "wood") -> Node3D:
 
 
 # One run of conduit along X from x0 to x1, at its trestle height. "wood": an open plank flume (a floor and two sides) on a trestle at each end. "stone": a cut
-# channel of stone blocks on the ground. "clay": a round clay pipe with a collar at each joint. "iron": a thin iron pipe on low saddles.
+# channel of stone blocks on the ground. "clay": a round clay pipe with a collar at each joint. "iron": a thin iron pipe on low saddles. "log": a bored
+# log pipe on the ground, lashed at each joint (Wooden - Pipe, plumbing PR 2).
 static func _conduit_run(root: Node3D, kind: String, x0: float, x1: float) -> void:
 	var length: float = x1 - x0
 	var mid: float = (x0 + x1) * 0.5
@@ -3263,6 +3264,8 @@ static func _conduit_run(root: Node3D, kind: String, x0: float, x1: float) -> vo
 			_box(root, Vector3(length, 0.01, 0.26), Vector3(mid, 0.125, 0.0), _tone_mat(Color(0.3, 0.29, 0.27)))
 		"clay":
 			_cyl(root, 0.12, length, Vector3(mid, 0.15, 0.0), _clay, 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+		"log":
+			_cyl(root, 0.13, length, Vector3(mid, 0.13, 0.0), _log, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
 		_:
 			_cyl(root, 0.06, length, Vector3(mid, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
 
@@ -3281,18 +3284,20 @@ static func _conduit_joint(root: Node3D, kind: String, at: Vector3, yaw: float) 
 			_box(holder, Vector3(0.06, 0.04, 0.38), Vector3(0.0, 0.18, 0.0), _frame)
 		"clay":
 			_cyl(holder, 0.145, 0.08, Vector3(0.0, 0.15, 0.0), _clay, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
+		"log":
+			_cyl(holder, 0.145, 0.06, Vector3(0.0, 0.13, 0.0), _frame, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the twine lashing round a joint (no bore disc: the tee stays under the 300-triangle cap)
 		"iron":
 			_cyl(holder, 0.075, 0.04, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
 			_box(holder, Vector3(0.06, 0.04, 0.16), Vector3(0.0, 0.02, 0.0), _iron_mat())
 
 
-# A conduit piece (B6). `kind` "wood" (channel), "stone" (channel), "clay" (pipe) or "iron" (pipe); `shape` "straight" (ports -X, +X), "corner" (-X, +Z) or
+# A conduit piece (B6). `kind` "wood" (channel), "stone" (channel), "clay" (pipe), "iron" (pipe) or "log" (bored log pipe); `shape` "straight" (ports -X, +X), "corner" (-X, +Z) or
 # "tee" (-X, +X, +Z). Solid along the runs (low: you step over a pipe, not a flume on trestles).
 static func conduit(kind: String = "wood", shape: String = "straight") -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	var high: float = {"wood": 0.3, "stone": 0.3, "clay": 0.3, "iron": 0.2}.get(kind, 0.3)
-	var width: float = {"wood": 0.4, "stone": 0.5, "clay": 0.3, "iron": 0.2}.get(kind, 0.3)
+	var high: float = {"wood": 0.3, "stone": 0.3, "clay": 0.3, "iron": 0.2, "log": 0.26}.get(kind, 0.3)
+	var width: float = {"wood": 0.4, "stone": 0.5, "clay": 0.3, "iron": 0.2, "log": 0.26}.get(kind, 0.3)
 
 	if shape == "straight":
 		_conduit_run(root, kind, -1.0, 1.0)

@@ -1005,6 +1005,10 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "source" and (water.has("pump") or bool(water.get("windlass", false))):
 		return {"prompt": "Press E to work the %s, E again to stop (hold E to take it down)" % table.sentence_name(_world[id]["number"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
+	if str(station_def.get("use", "")) == "water_gate":   # a Sluice or Tap (plumbing PR 2): E opens or shuts it; the open twin has water "open" true
+		var is_open: bool = typeof(water) == TYPE_DICTIONARY and bool(water.get("open", true))
+		return {"prompt": "Press E to %s the %s (hold E to take it down)" % ["shut" if is_open else "open", table.sentence_name(_world[id]["number"])], "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "tank":
 		return {"prompt": "Press E to drink, or to fill what you hold (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
 
