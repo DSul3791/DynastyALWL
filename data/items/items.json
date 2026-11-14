@@ -11614,7 +11614,7 @@
 		"plantain_seed": {
 			"number": 1428,
 			"name": "Ribwort plantain seed",
-			"description": "Seeds from a ribwort plantain. Sow them with the hoe in a tilled bed or a planter and a ribwort plantain grows.",
+			"description": "Seeds from a ribwort plantain. Sow them in a tilled bed or a planter and a ribwort plantain grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -11757,7 +11757,7 @@
 		"belladonna_seed": {
 			"number": 1441,
 			"name": "Deadly nightshade seed",
-			"description": "Seeds from a deadly nightshade. Sow them with the hoe in a tilled bed or a planter and a deadly nightshade grows.",
+			"description": "Seeds from a deadly nightshade. Sow them in a tilled bed or a planter and a deadly nightshade grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -12021,7 +12021,7 @@
 		"frostglass_orchid_seed": {
 			"number": 1465,
 			"name": "Frostglass orchid seed",
-			"description": "Seeds from a frostglass orchid. Sow them with the hoe in a tilled bed or a planter and a frostglass orchid grows.",
+			"description": "Seeds from a frostglass orchid. Sow them in a tilled bed or a planter and a frostglass orchid grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],

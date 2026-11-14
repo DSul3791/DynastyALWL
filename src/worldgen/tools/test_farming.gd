@@ -278,17 +278,19 @@ func _plot_takedown_checks() -> void:
 	act(Net.ACT_SOW, 920002, slot_of("barley_seeds"))
 	check(items._crops.has(key) and items.crop_row_extra(items._items[920002]).get("crop", "") == "barley", "barley is sown in a garden plot")
 	# A garden plot is a hammer blueprint piece (blueprints.json), so taking it down gives its materials back, not a kit.
+	# A group cost (Nails) comes back as its lowest member (Bronze nails, ItemTable.spend_order), so the count is of the item the refund gives.
 	var cost: Array = items._blueprints[int(items._blueprint_of_kit["wooden_garden_plot_kit"])]["cost"]
 	var before: Dictionary = {}
+	var back: Callable = func(id): return items.inventory_of(1).count_of(items._refund_number(items.table.number_of(id)))
 
 	for need in cost:
-		before[str(need[0])] = count(str(need[0]))
+		before[str(need[0])] = back.call(str(need[0]))
 
 	act(Net.ACT_PICKUP, 920002)
 	var refunded: bool = true
 
 	for need in cost:
-		refunded = refunded and count(str(need[0])) - int(before[str(need[0])]) == int(need[1])
+		refunded = refunded and back.call(str(need[0])) - int(before[str(need[0])]) == int(need[1])
 
 	check(not items._items.has(920002) and refunded, "the plot is taken down and its blueprint materials come back (%s)" % str(cost))
 	check(not items._crops.has(key), "its crop record went with it")

@@ -1660,6 +1660,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 			elif rows.is_empty() and missing != "":
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 				_reject(peer, 1)
+				return false   # the plant is not picked at all: its seeds come with the roots or bark it is taken for, so it stays for when the tool is there (Dave 2026-10-20: roots need a spade)
 
 	var seed_rows: Array = _seed_rows(species_name)
 
