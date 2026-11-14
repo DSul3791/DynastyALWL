@@ -27,17 +27,34 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 
 ## Shared-file ownership
 
-`src/stream/server_items.gd` (18.5k lines) and shared `data/items/*.json` carry a per-file owner lock (CATALOG_IMPLEMENTATION_PLAN §1). Until proposed refinement D-E1 (per-section lock) is adopted, the plan's **per-file** lock holds: one writer of server_items.gd and of each shared JSON at a time, recorded here; every PR rebases on `dev` before merge. `src/stream/terrain_net.gd` `PROTOCOL_VERSION` + `PROTOCOL.md`: one bump owner at a time, assigned here.
+`src/stream/server_items.gd` (18.5k lines) and shared `data/items/*.json` carry a per-file owner lock (CATALOG_IMPLEMENTATION_PLAN §1). D-E1 is adopted (coordinator, 14 Nov 00:44Z): **per-section** lock on server_items.gd, one owner per shared JSON, one protocol bump owner at a time (numbers assigned by the lead). Rebase on `dev` before merge; the reviewer confirms the diff stays in its sections. `src/stream/terrain_net.gd` `PROTOCOL_VERSION` + `PROTOCOL.md`: one bump owner at a time, assigned here.
 
 | Shared file / section | Current owner | Since |
 |---|---|---|
-| (none assigned yet) | | |
+| server_items.gd: tree/trunk processing, crafting ingredient count/consume, water_bed | lead → WP-R1A worker | 14 Nov |
+| server_items.gd: farming handlers + world-item row extras for crops | lead → WP-R1B (farming) | 14 Nov |
+| server_items.gd: goals section (`_goals_*`, `_goal_event`, `_goal_made`, `goals_state`) | thread "Build the Journal, goal HUD and placard" | 14 Nov |
+| server_items.gd: smelting/craft-queue stations, station stores, kiln, `_repair_struct`/structure wear, hopper/fuel pulls | thread "Build the metalworking progression" | 14 Nov |
+| server_items.gd: one hook for discovery record (new module) | thread "Build the discovered charcoal map" | on request |
+| data/items/{items,structures,blueprints,recipes,boulders,smithing,building_wear}.json | metalworking thread | 14 Nov |
+| data/items/drops.json, inventory shared code | WP-R1A | 14 Nov |
+| src/client/key_bindings.gd, key_bindings_page.gd, game_menu.gd, CONTROLS.md, terrain_client.gd input dispatch | WP-KEYS (lead) | 14 Nov |
+| src/client/held_item.gd, harvest.gd | WP-R1B (farming) | 14 Nov |
+| PROTOCOL_VERSION | 119 → guide-UI thread; next number on request | 14 Nov |
 
 ## Work packages
 
 | WP | Phase | Scope | Owner | Depends on | State | Branch / PR | dev SHA | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| WP-00 | R0 | #1085 review + merge, follow-up fixes, tracker | lead | — | IN REVIEW | lead branch | #1085 → `d990abd` | gate review 14 Nov |
+| WP-00 | R0 | #1085 review + merge, follow-up fixes, tracker, ruling R-1, briefs | lead | — | IN REVIEW | lead branch / #1086 | #1085 → `d990abd` | gate review 14 Nov |
+| WP-KEYS | R8 | Every admin/debug key Ctrl+Shift (defaults, saved binds, hardcoded paths), free J/G, keep inventory G | lead worker | — | IN PROGRESS | goals-repair/wp-keys | | |
+| WP-R1A | R1 | GA-02 pine tar drop, GA-01 oak bark once per felled tree, GA-04 recipe water from containers (A-1, A-3) | lead worker | — | IN PROGRESS | goals-repair/wp-r1a | | |
+| WP-R1B | R1 | GA-03 client farming: sow, water, harvest, crop stage looks | lead worker | WP-R1A (water_bed adapter) | NOT STARTED | | | |
+| WP-METAL | R2–R6 | Smelters, Smithies, Copper tools, Anvils, wear/repair, bins, fuel pulls | thread "Build the metalworking progression" | — | IN PROGRESS | | | |
+| WP-GUIDE-UI | R7 runtime + R8 | Goal sync (protocol 119), Journal J/G/M, HUD, placard | thread "Build the Journal, goal HUD and placard" | WP-KEYS for J/G/M | IN PROGRESS | | | |
+| WP-MAP | R8 | Discovered charcoal Map foundation | thread "Build the discovered charcoal map" | WP-GUIDE-UI shell | IN PROGRESS | | | |
+| WP-PRIM | R1/R2 | Primitive route: logs/blocks, hammer, firewood, fire sizes, shelter, doors/roofs (verify, fix gaps) | lead | — | NOT STARTED | | | |
+| WP-GOALS | R7 | 651-row catalog correction (328 rule-only rows individually), new-station coverage, completion conditions, migration; creator-review package | lead | mechanics PRs | NOT STARTED | | | |
 
 ## Next actions
 

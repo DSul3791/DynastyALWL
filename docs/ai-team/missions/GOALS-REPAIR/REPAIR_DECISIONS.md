@@ -23,7 +23,7 @@ Companion to [STATE.md](STATE.md). Three kinds of entry, kept apart:
 
 | ID | Decision | Reason | Affects |
 |---|---|---|---|
-| D-E1 | **PROPOSED refinement of CATALOG_IMPLEMENTATION_PLAN §1, not yet in force:** hold the server_items.gd owner lock per section (function group). Until it is adopted the plan's per-file lock stands: one writer of server_items.gd and of each shared JSON file at a time, recorded in STATE.md; one PROTOCOL_VERSION bump owner at a time | An 18.5k-line file under a whole-file lock serializes most of the mission | STATE.md ownership table |
+| D-E1 | **ADOPTED 14 Nov 00:44Z by the project coordinator (routine engineering under delegated authority; coordinator's ruling, not Dave's):** server_items.gd is owner-locked per section (split in STATE.md and the briefs); each shared JSON file has one owner; one PROTOCOL_VERSION bump owner at a time, numbers assigned by the lead. Conditions: rebase on current `dev` before merge; the independent reviewer confirms the diff stays inside its own sections; cross-section needs go to the section owner through the lead; if conflicts cost more than they save, serialize and tell the coordinator | An 18.5k-line file under a whole-file lock serializes most of the mission | STATE.md ownership table |
 
 ## 3. Open decisions (reserved; recommendation recorded, work continues around them)
 
@@ -35,8 +35,14 @@ Companion to [STATE.md](STATE.md). Three kinds of entry, kept apart:
 
 Each entry: question; answer chosen; precedent it was reasoned from; what it affects (files, values, commits); how to change it.
 
-(none yet)
+| ID | Question | Answer (PROVISIONAL) | Precedent | Affects | How to change |
+|---|---|---|---|---|---|
+| A-1 | How many millilitres of a filled container make one recipe `water` ingredient? | **500 mL** | `vitals` thirst `fill_ml` = 500 (one fill action); `weights.json` water 0.5 kg; recovery GA-04 proposed the same | WP-R1A water adapter (one data constant); every recipe using `water` (28) | Change the one constant tagged `PROVISIONAL (GOALS-REPAIR A-1)` |
+| A-2 | How much Tannin Bark does an oak give, and from which action? | The existing oak harvest yield (3), **once per felled oak trunk** when the player processes it; no standing-tree farming | `drops.json` oak tannin_bark 3; recovery GA-01 "genuine one-time oak bark/trunk harvest; avoid unlimited E-on-tree farming" | WP-R1A trunk processing | Edit drops.json oak count, or move the yield to another action |
+| A-3 | How much water does one "water the bed" action pour? | Up to **8000 mL** from filled containers, with the crop's `pour_pct` scaled by what was poured | `crops.json` defines `pour_pct` as one 8 L bucket | WP-R1A ACT_WATER_BED | Change the constant tagged `PROVISIONAL (GOALS-REPAIR A-3)` |
+| A-4 | A new world starts on day 100 (summer), when wheat, barley, oats and flax cannot be sown (spring only; rye autumn). Change the seasons? | **No data change.** The guide teaches spring sowing; summer-sowable crops (radish, lettuce) and wild seeds remain the early route | Dave: catalog fixed, no redesign without him; `sow_seasons` is the field the server reads (14664), `sow_season` singular is stale | Goal how-to text (R7); stale `sow_season` field reported in §5 | Change crops.json `sow_seasons` |
 
 ## 5. Findings outside this mission (reported, not fixed)
 
-(none yet)
+- `data/items/crops.json`: nine crops carry a stale singular `sow_season: "summer"` that disagrees with the `sow_seasons` list the server actually reads (server_items.gd ~14664). Reported; left unchanged pending the catalog owner (R1 baseline).
+- `data/items/terrain_preview.gd` / client: bare `KEY_G` in terrain_preview.gd (tool scene) noted by the keys baseline.
