@@ -10031,7 +10031,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 		amount = _smelters.room(_structures[kind], chest, number, amount)
 
 		if amount == 0:
-			_say(peer, "The %s is full of that." % table.in_sentence(table.name_of(int(_items[id]["number"]))))
+			_say(peer, _smelters.refusal(_structures[kind], chest, number))
 			_reject(peer, 3)
 			return 0
 

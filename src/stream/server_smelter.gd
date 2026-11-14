@@ -16,7 +16,10 @@ extends RefCounted
 # struct["smelt_t"] = seconds banked toward the next delivery of the job struct["smelt_job"]; saved in smelters.json by the store's uid as
 # [seconds, job]. Who works the bellows is not saved.
 
-const NEAR_M := 1.0          # beyond the station's reach_m: how far a bellows worker may stand
+const NEAR_M := 1.0
+# PROVISIONAL (GOALS-REPAIR A-11): ingots a smelter drops in front last as long as a pile (server_items.PILE_LIFETIME_S), not the 20 minutes of a
+# loose item, so a player back from a long run still finds them. To change it, change this value.
+const GROUND_S := 7200.0          # beyond the station's reach_m: how far a bellows worker may stand
 
 var host = null              # the items module (server_items.gd)
 var _cfg: Dictionary = {}    # structures.json "smelting"
@@ -113,8 +116,30 @@ func room(def: Dictionary, box, number: int, amount: int) -> int:
 	if part == "" or box == null:
 		return 0
 
-	var cap: int = int(def["smelt"].get(part, 0))
-	return clampi(cap - _units(box, _span(def, part)), 0, amount)
+	var span: Vector2i = _span(def, part)
+	var stack: int = host.table.stack_of(number)
+	var fits: int = 0   # what its slots still hold: a hopper slot or an ore slot holds one kind (as host._out_room)
+
+	for i in range(span.x, mini(span.y, box.slot_count)):
+		if box.numbers[i] == 0:
+			fits += stack
+		elif box.numbers[i] == number and box.inst[i].is_empty() and box._mergeable(number, box.wear[i], 0):
+			fits += maxi(stack - box.counts[i], 0)
+
+	return clampi(mini(int(def["smelt"].get(part, 0)) - _units(box, span), fits), 0, amount)
+
+
+# Why room() is 0, said to the player.
+func refusal(def: Dictionary, box, number: int) -> String:
+	var part: String = part_for(def, number)
+
+	if part == "":
+		return "It takes only Coal or Charcoal and ore it can smelt."
+
+	if box != null and _units(box, _span(def, part)) >= int(def["smelt"].get(part, 0)):
+		return "Its fuel slot is full." if part == "hopper" else "Its ore is full."
+
+	return "Each of its fuel slots holds one kind of fuel." if part == "hopper" else "Each of its ore slots holds one kind of ore."
 
 
 # Puts up to `amount` into the right part (the caller checked room). Returns what did not go in.
@@ -130,11 +155,6 @@ func put(def: Dictionary, box, number: int, amount: int, item_wear: int = 0, ite
 	var left: int = box.add(number, amount, item_wear, item_inst, span.x)
 	box.usable = was
 	return left
-
-
-# What the take-down, the fill and the client need: the slots a smelter shows.
-func shown_slots(def: Dictionary) -> int:
-	return int(def.get("slots", 0)) + int(def.get("out_slots", 0))
 
 
 # --- Working ---
@@ -310,10 +330,11 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 		changed = true
 		_credit(it, host.table.number_of(str(out[0])), count)
 
-	if absf(t - float(it["struct"].get("smelt_t", 0.0))) > 0.0001 or current != str(it["struct"].get("smelt_job", "")):
-		it["struct"]["smelt_t"] = t
-		it["struct"]["smelt_job"] = current
-		host._dirty = true
+	if current != str(it["struct"].get("smelt_job", "")):
+		host._dirty = true   # a job started or ended; time alone does not force a save (a crash loses at most the time since the last one)
+
+	it["struct"]["smelt_t"] = t
+	it["struct"]["smelt_job"] = current
 
 	if changed:
 		host._push_box(id, box)
@@ -329,7 +350,7 @@ func _deliver(id: int, it: Dictionary, def: Dictionary, number: int, count: int)
 		host._out_add(id, number, count)
 		return true
 
-	return host.drop_in_world(number, count, front_of(it, def))
+	return host.drop_in_world(number, count, front_of(it, def), 0, GROUND_S)
 
 
 # The spot in front of the station: its model's front (Godot's +Z turned by the yaw, as server_items._step_spot), past its footprint.
@@ -422,9 +443,20 @@ func _fix_layout(id: int, it: Dictionary, def: Dictionary) -> void:
 			var fit: int = room(def, box, int(row[0]), left)
 			left = put(def, box, int(row[0]), fit, int(row[2]), row[3]) + (left - fit)
 
-		if left > 0:
-			host.drop_in_world(int(row[0]), left, front_of(it, def), int(row[2]), 0.0, NAN, NAN, "", row[3])
+		if left > 0 and not host.drop_in_world(int(row[0]), left, front_of(it, def), int(row[2]), GROUND_S, NAN, NAN, "", row[3]):
+			_lay_down(int(row[0]), left, front_of(it, def), int(row[2]), row[3])   # crowded ground: this one-time move still loses nothing
 
+	host._dirty = true
+
+
+# A ground item put down past drop_in_world's crowd limit (fields as drop_in_world writes them).
+func _lay_down(number: int, count: int, at: Vector3, item_wear: int, item_inst: Dictionary) -> void:
+	host._items[host._next_id] = {"number": number, "count": count, "pos": at, "left": GROUND_S, "wear": item_wear}
+
+	if not item_inst.is_empty():
+		host._items[host._next_id]["inst"] = item_inst.duplicate(true)
+
+	host._next_id += 1
 	host._dirty = true
 
 

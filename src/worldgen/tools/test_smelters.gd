@@ -9,6 +9,8 @@ extends SceneTree
 #   3. the Improved smelter: without anyone at its bellows it works like the Primitive (20 s a copper ingot) and makes no iron; with a player
 #      working them iron goes, ~15.38 s an ingot, into its output rack; a worker who walks away stops them and the iron job keeps its time;
 #      a full rack makes it wait;
+#   3b. two players: one works the bellows, a second is refused; the second takes the ore and fuel out mid-smelt (nothing lost or made,
+#      the smelt forgotten); the worker logging out stops the bellows, the iron job paused;
 #   4. crafts and building never draw on a smelter's store (its fuel and ore are its own);
 #   5. save and load keep a smelter's banked time; a store saved under the old 4 + 4 slot layout is laid out again with nothing lost or made;
 #   6. the old craft-queue smelts are retired (recipes 185, 190, 191, 192): no recipe is crafted at a smelter.
@@ -63,8 +65,19 @@ func n(id: String) -> int:
 	return items.table.number_of(id)
 
 
-func act(kind: int, a: int, b: int = 0, count: int = 0) -> void:
-	items.action(1, kind, a, b, count, Vector3.ZERO)
+func act(kind: int, a: int, b: int = 0, count: int = 0, peer: int = 1) -> void:
+	items.action(peer, kind, a, b, count, Vector3.ZERO)
+
+
+func pack_of(peer: int, number: int) -> int:
+	return items.inventory_of(peer).count_of(number)
+
+
+# A second player's Take all at a store.
+func take_all_as(peer: int, id: int) -> void:
+	act(Net.ACT_CHEST_OPEN, id, 0, 0, peer)
+	act(Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, peer)
+	act(Net.ACT_CHEST_CLOSE, 0, 0, 0, peer)
 
 
 func place(spec: String) -> int:
@@ -311,6 +324,41 @@ func _init() -> void:
 	box(imp).clear_slot(first_out)
 	run(2.0)
 	check(part(imp, "output", cu) == 1 and part(imp, "input", cu_ore) == 0, "room in the rack: it delivers")
+
+	# --- 3b. Two players at one smelter ---
+	empty(imp)
+	clear_pack()
+	items.peer_connected_hello(2, "smeltwo00002")
+	items.report_position(2, HERE)
+	items.vitals_of(2)["weight"] = 5000.0
+	items.give(1, charcoal, 4)
+	items.give(1, fe_ore, 2)
+	put_in(imp, "charcoal", 4)
+	put_in(imp, "iron_ore", 2)
+	act(Net.ACT_USE_STRUCT, imp)
+	said.clear()
+	act(Net.ACT_USE_STRUCT, imp, 0, 0, 2)
+	check(items._smelters.bellows_worked(imp) and int(items._smelters._bellows.get(imp, -1)) == 1 and said.any(func(t): return "already" in str(t)), "a second player at worked bellows is refused; the first keeps them")
+	run(manned_s * 0.5)
+	take_all_as(2, imp)
+	run(1.0)
+	check(pack_of(2, fe_ore) == 2 and pack_of(2, charcoal) == 4 and part(imp, "input") == 0 and part(imp, "hopper") == 0 and part(imp, "output") == 0 and float(items._items[imp]["struct"].get("smelt_t", 0.0)) == 0.0, "the other player takes the ore and fuel out mid-smelt: all 2 ore and 4 fuel come back, no ingot, the smelt forgotten")
+	act(Net.ACT_CHEST_OPEN, imp, 0, 0, 2)
+	act(Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(charcoal), imp, 4, 2)
+	act(Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(fe_ore), imp, 2, 2)
+	act(Net.ACT_CHEST_CLOSE, 0, 0, 0, 2)
+	run(manned_s + 1.0)
+	check(part(imp, "output", iron) == 1 and part(imp, "input", fe_ore) == 1, "put back by the other player, it smelts on while the first works the bellows")
+	run(manned_s * 0.5)
+	items.peer_left(1)   # the worker logs out
+	run(p_s * 2.0)
+	check(not items._smelters.bellows_worked(imp) and part(imp, "output", iron) == 1 and part(imp, "input", fe_ore) == 1 and float(items._items[imp]["struct"].get("smelt_t", 0.0)) > 0.0, "the worker logs out: the bellows stop, the iron job keeps its time, 1 ingot + 1 ore (nothing lost or made)")
+	items.peer_left(2)
+	items.peer_connected_hello(1, key)
+	items.report_position(1, HERE)
+	items.vitals_of(1)["weight"] = 5000.0
+	empty(imp)
+	clear_pack()
 
 	# --- 4. Crafts never draw on a smelter ---
 	var boxes: Array = items._craft_boxes(1).map(func(row): return int(row[0]))
