@@ -311,6 +311,59 @@ func _hoe_plot_checks() -> void:
 	check(items._items.size() == count_before and notes.any(func(t): return str(t).contains("need a hammer")), "a hoe alone lays out no garden plot: it needs a hammer (%s)" % str(notes))
 
 
+# Herb and plant seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"; HOE_GARDENING_DESIGN.md): a wild herb picked late in its season gives its
+# seed, not earlier; the seed grows in a planter (plot: true) and a ripe one gives its harvest and seeds back; every real plant has a seed and a garden row.
+func _herb_seed_checks(crops: Dictionary) -> void:
+	items.report_position(1, Vector3(500.0, 70.0, 500.0))
+	season[0] = "spring"
+	items._last_gather.clear()
+	items.gather(1, "wild_thyme", "plant", "0,0,900", 900, Vector3(501.0, 70.0, 500.0))
+	check(count("wild_thyme_seed") == 0 and count("thyme") > 0, "wild thyme picked in spring gives thyme but no seed (%d)" % count("wild_thyme_seed"))
+	season[0] = "autumn"
+	items._last_gather.clear()
+	items.gather(1, "wild_thyme", "plant", "0,0,901", 901, Vector3(501.0, 70.0, 500.0))
+	check(count("wild_thyme_seed") >= 1 and count("wild_thyme_seed") <= 2, "late in its season it has gone to seed: 1 to 2 Wild thyme seeds (%d)" % count("wild_thyme_seed"))
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var spot: Vector3 = Vector3(2.5, 10.0, 2.5)
+	items._items[920004] = {"number": items.table.number_of("stone_planter"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "stone_planter", "yaw": 0.0}}
+	var key: String = items._bed_key(spot)
+	season[0] = "summer"
+	act(Net.ACT_SOW, 920004, slot_of("wild_thyme_seed"))
+	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "wild_thyme", "a Wild thyme seed is sown in a Stone - Planter")
+	rain[0] = 0.8
+	days(int(crops["wild_thyme"]["grow_days"]) + 1)
+	rain[0] = 0.0
+	var thyme: int = count("thyme")
+	var seeds: int = count("wild_thyme_seed")
+	act(Net.ACT_HARVEST, 920004)
+	check(not items._crops.has(key) and count("thyme") - thyme == int(crops["wild_thyme"]["yields"][0][1]) and count("wild_thyme_seed") - seeds >= 1, "the ripe garden thyme gives its thyme and seeds back (+%d thyme, +%d seeds)" % [count("thyme") - thyme, count("wild_thyme_seed") - seeds])
+	items._items.erase(920004)
+	items._items[920005] = {"number": items.table.number_of("flower_pot"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "flower_pot", "yaw": 0.0}}
+	check(not items._bed_at(920005).is_empty(), "a Flower pot takes seeds too")
+	items._items.erase(920005)
+	var drops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var fungi: Array = ["mushrooms", "chanterelle", "porcini", "morel", "fly_agaric", "puffball", "tinder_fungus", "rimecap", "lumencap", "cinderfoot", "mirrorcap"]
+	var missing: Array = []
+
+	for plant in items._flora_by_name:
+		var entry: Dictionary = items._flora_by_name[plant]
+
+		if str(entry.get("kind", "")) != "plant" or bool(entry.get("future", false)) or str(plant).ends_with("_log") or plant == "old_stump" or fungi.has(plant):
+			continue
+
+		var wild: Dictionary = (drops.get("seed_drops", {}) as Dictionary).get(plant, {})
+		var sown: bool = false
+
+		for row in wild.get("rows", []):
+			for crop_id in crops:
+				sown = sown or str(crops[crop_id].get("seed", "")) == str(row[0])
+
+		if not sown:
+			missing.append(plant)
+
+	check(missing.is_empty(), "every real plant gives a wild seed that sows a garden crop (%s)" % str(missing))
+
+
 func _init() -> void:
 	var dir: String = "user://test_farming"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -446,6 +499,7 @@ func _init() -> void:
 	_route_checks(bed, crops)
 	_plot_takedown_checks()
 	_hoe_plot_checks()
+	_herb_seed_checks(crops)
 
 	# Save and restart: a barley crop grown to a stage keeps its crop, its age and its stage (the world save, not a hand-written file).
 	season[0] = "spring"
