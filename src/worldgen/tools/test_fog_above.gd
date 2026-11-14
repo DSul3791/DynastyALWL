@@ -5,6 +5,7 @@ extends SceneTree
 
 const WeatherLook := preload("res://src/client/weather_look.gd")
 const FogLook := preload("res://src/client/fog_look.gd")
+const FogShape := preload("res://src/shared/fog_shape.gd")
 
 var _fails: int = 0
 
@@ -29,30 +30,30 @@ func _init() -> void:
 		_check(is_zero_approx(WeatherLook.layer_height_density(strength, 1.0)), "inside a layer of strength %.1f: no height fog on the ground nearby" % strength)
 	_check(WeatherLook.layer_height_density(0.5, 0.5) < WeatherLook.layer_height_density(0.5, 0.0), "at the top's edge: part way")
 	# Dave's fog instruction (14 Nov 2026, docs/design/FOG_DESIGN_DAVE.md): dense fog clear near, silhouettes at 20-40 m, gone beyond.
-	var dense: Vector3 = FogLook.depth(0.0009, 1.0)
-	_check(FogLook.amount(10.0, dense) < 0.15, "full fog: 10 m easy to see (%.2f)" % FogLook.amount(10.0, dense))
-	_check(FogLook.amount(20.0, dense) > 0.15 and FogLook.amount(20.0, dense) < 0.45, "full fog: 20 m noticeable (%.2f)" % FogLook.amount(20.0, dense))
-	_check(FogLook.amount(40.0, dense) > 0.6 and FogLook.amount(40.0, dense) < 0.9, "full fog: 40 m a silhouette (%.2f)" % FogLook.amount(40.0, dense))
-	_check(FogLook.amount(70.0, dense) > 0.95, "full fog: beyond, mostly obscured")
-	_check(FogLook.amount(1.0, dense) > 0.0 and FogLook.amount(2.0, dense) > FogLook.amount(1.0, dense), "no clear bubble: the fog starts at the eye, thin")
+	var dense: Vector3 = FogShape.depth(0.0009, 1.0)
+	_check(FogShape.amount(10.0, dense) < 0.15, "full fog: 10 m easy to see (%.2f)" % FogShape.amount(10.0, dense))
+	_check(FogShape.amount(20.0, dense) > 0.15 and FogShape.amount(20.0, dense) < 0.45, "full fog: 20 m noticeable (%.2f)" % FogShape.amount(20.0, dense))
+	_check(FogShape.amount(40.0, dense) > 0.6 and FogShape.amount(40.0, dense) < 0.9, "full fog: 40 m a silhouette (%.2f)" % FogShape.amount(40.0, dense))
+	_check(FogShape.amount(70.0, dense) > 0.95, "full fog: beyond, mostly obscured")
+	_check(FogShape.amount(1.0, dense) > 0.0 and FogShape.amount(2.0, dense) > FogShape.amount(1.0, dense), "no clear bubble: the fog starts at the eye, thin")
 	var wall: float = 0.0
 	for i in range(1, 120):
-		wall = maxf(wall, FogLook.amount(float(i), dense) - FogLook.amount(float(i - 1), dense))
+		wall = maxf(wall, FogShape.amount(float(i), dense) - FogShape.amount(float(i - 1), dense))
 	_check(wall < 0.05, "no wall: never more than 5 %% more fog per metre (%.3f)" % wall)
 	# Clear air: the depth fog fitted to the old exponential haze, within 5 %.
-	var haze: Vector3 = FogLook.depth(0.0009, 0.0)
+	var haze: Vector3 = FogShape.depth(0.0009, 0.0)
 	var worst: float = 0.0
 	for metres in [100.0, 500.0, 1000.0, 2000.0, 3333.0]:
-		worst = maxf(worst, absf(FogLook.amount(metres, haze) - (1.0 - exp(-0.0009 * metres))))
+		worst = maxf(worst, absf(FogShape.amount(metres, haze) - (1.0 - exp(-0.0009 * metres))))
 	_check(worst < 0.05, "clear air looks as before (worst %.3f)" % worst)
-	_check(FogLook.visibility(haze) > 2500.0 and FogLook.visibility(haze) < 3600.0, "clear air: visibility about 3 km (%.0f)" % FogLook.visibility(haze))
-	_check(FogLook.visibility(dense) < 70.0 and FogLook.visibility(dense) > 40.0, "full fog: visibility about 50 m (%.0f)" % FogLook.visibility(dense))
-	var half: float = FogLook.visibility(FogLook.depth(0.0009, 0.5))
+	_check(FogShape.visibility(haze) > 2500.0 and FogShape.visibility(haze) < 3600.0, "clear air: visibility about 3 km (%.0f)" % FogShape.visibility(haze))
+	_check(FogShape.visibility(dense) < 70.0 and FogShape.visibility(dense) > 40.0, "full fog: visibility about 50 m (%.0f)" % FogShape.visibility(dense))
+	var half: float = FogShape.visibility(FogShape.depth(0.0009, 0.5))
 	_check(half > 200.0 and half < 1000.0, "a light mist leaves much longer views (%.0f m)" % half)
 	var last: float = INF
 	var falls: bool = true
 	for step in range(0, 11):
-		var v: float = FogLook.visibility(FogLook.depth(0.0009, step / 10.0))
+		var v: float = FogShape.visibility(FogShape.depth(0.0009, step / 10.0))
 		falls = falls and v <= last + 0.01
 		last = v
 	_check(falls, "thicker fog never sees further")

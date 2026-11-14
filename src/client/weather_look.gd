@@ -118,7 +118,6 @@ const FLASH_S := 0.9
 # Land fog (docs/design/FOG_PLAN.md): the weather's `mist` (0..1) and `mist_depth_m` (its depth over the cold-air floor, fog_ground.gd).
 const MIST_HEIGHT_DENSITY := 0.08        # per metre below the top at full mist: 5 m down about a third white, 30 m down nearly solid
 const MIST_EDGE_M := 6.0                 # the camera goes from above the fog to inside it over this much height either side of the top
-const MIST_INSIDE_THICK := 14.0          # the server's animal-sight rule (Weather.VIS_MIST_THICK, about 220 m in full fog) until the third fog PR; the look uses fog_look.gd
 const MIST_WHITE := Color(0.9, 0.9, 0.9)
 const MIST_WHITEN := 0.55                # how far the fog colour moves from the horizon colour toward white by day
 const MIST_OWN_COLOR := 0.8              # the fog keeps its own colour instead of taking the sky's (aerial perspective) by this much
@@ -233,6 +232,7 @@ var mist_inside: float = 0.0             # 0 above or out of the valley fog .. 1
 var fog_body                            # FogVolume: the fog's drifting body and the fire halos in it (High and Ultra)
 var fog_sky: float = 0.0                 # share of the sky the fog overhead hides now (fog_look.gd sky_hide; dims the sun)
 var _fog_veil_sent: float = -1.0
+var _forced_logged: bool = false        # the one log line for a --weather=KIND look
 var _valley_floor: float = NAN           # the cold-air floor at the eye, eased (fog_ground.gd)
 var _view_floor: float = NAN             # and the wider ground's
 const FLOOR_EASE_MS := 25.0              # metres a second the floors follow a new reading (a first grid, a teleport)
@@ -281,6 +281,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const FogLook := preload("res://src/client/fog_look.gd")
+const FogShape := preload("res://src/shared/fog_shape.gd")
 const FogVolumeScript := preload("res://src/client/fog_volume.gd")
 var _fire_light_next_msec: int = 0
 const GameClock := preload("res://src/shared/game_clock.gd")
@@ -559,6 +560,10 @@ func _target() -> Dictionary:
 		return out
 
 	if _client.sound != null and _client.sound.weather != null and (int(_client.sound_tests.weather_at) >= 0 or bool(_client.sound.weather.forced)):
+		if bool(_client.sound.weather.forced) and not _forced_logged:
+			_forced_logged = true
+			print("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
+
 		return TEST.get(_client.sound.weather.kind, out)
 
 	var world: Dictionary = _client.weather
@@ -847,13 +852,13 @@ func _process_body(delta: float) -> void:
 		# Above the layer the air is clear (#672): valley fog or a sea fog bank, whichever is the thicker.
 		var haze_density: float = LookSettings.FOG_DENSITY * minf(thick, 20.0) * above_clear(foggy, mist_inside)
 		# Depth fog (fog_look.gd): the haze fitted as before, the fog at the eye pulling its end in toward Dave's dense-fog distances.
-		var shape: Vector3 = FogLook.depth(haze_density, mist_inside, FogLook.dense_end(_quality))
+		var shape: Vector3 = FogShape.depth(haze_density, mist_inside, FogLook.dense_end(_quality))
 		environment.fog_mode = Environment.FOG_MODE_DEPTH
 		environment.fog_depth_begin = shape.x
 		environment.fog_depth_end = shape.y
 		environment.fog_depth_curve = shape.z
 		environment.fog_density = 0.0 if clear_day else 1.0      # in depth mode: the most fog there can be
-		visibility_m = VISIBILITY_MAX_M if clear_day else minf(FogLook.visibility(shape), VISIBILITY_MAX_M)
+		visibility_m = VISIBILITY_MAX_M if clear_day else minf(FogShape.visibility(shape), VISIBILITY_MAX_M)
 		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
 		# Valley fog is whiter than the haze: lit by the sky and the sun (white by day, warm at sunrise from the dusk horizon colour,
 		# blue-grey at night from the night horizon), never a flat grey card (art_weather_light.md section 7 rule 2).
