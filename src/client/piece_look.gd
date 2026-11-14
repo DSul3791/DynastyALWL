@@ -4392,6 +4392,32 @@ static func crate() -> Node3D:
 	return root
 
 
+# PLACEHOLDER look (GOALS-REPAIR R6, until the art pipeline draws the resource bins): an open plank bin `side` m square, its walls
+# bin_wall_m(side) high with a frame post at each corner and no lid, so the resource surface (inventory_view._note_bin) shows inside.
+static func resource_bin(side: float) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var h: float = bin_wall_m(side)
+	var half: float = side * 0.5 - 0.02
+	_box(root, Vector3(side - 0.04, 0.04, side - 0.04), Vector3(0.0, 0.02, 0.0), _planks)   # the floor
+
+	for z in [-half, half]:
+		_box(root, Vector3(side, h, 0.04), Vector3(0.0, h * 0.5, z), _planks)
+	for x in [-half, half]:
+		_box(root, Vector3(0.04, h, side - 0.08), Vector3(x, h * 0.5, 0.0), _planks)
+
+	for a in [Vector3(half, 0.0, half), Vector3(-half, 0.0, half), Vector3(half, 0.0, -half), Vector3(-half, 0.0, -half)]:
+		_box(root, Vector3(0.06, h + 0.04, 0.06), a + Vector3(0.0, (h + 0.04) * 0.5, 0.0), _frame)   # corner posts
+
+	_solid(root, Vector3(side, h, side), Vector3(0.0, h * 0.5, 0.0))
+	return root
+
+
+# A resource bin's wall height for its side (0.7 m for the 1 m Small bin, 0.8 m Medium, 0.9 m Large). PLACEHOLDER (R6).
+static func bin_wall_m(side: float) -> float:
+	return 0.5 + 0.2 * side
+
+
 # --- Bog iron (water_flow_rules s11.3, Kathleen 10 Nov 2026; ships with Sonny's bog iron, #996). A deposit's 8 m sample shows a ground
 # stain of rust-orange mud, darker and redder at its heart and fading out at a ragged edge, with rust-brown lumps of ore half sunk in the core. "wet":
 # a skin of standing water over the core carries the iron-bacteria film, a dull oily sheen broken into flat plates. "dug": spade cuts into the core,
