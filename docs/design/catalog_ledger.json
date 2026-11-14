@@ -10642,14 +10642,17 @@
    "number": 730,
    "name": "Clay pipe",
    "category": "material",
-   "catalog": "KEEP",
-   "section": null,
-   "phase": null,
+   "catalog": "RETIRE",
+   "section": "3.0",
+   "phase": "PLUMBING-PR3",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_stone_water",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Dave 14 Nov 2026: \"We should remove clay plumbing altogether.\" Retired, number kept. A saved Clay pipe loads as Clay (renames.json)."
   },
   {
    "key": "stone_trough_kit",
@@ -10676,7 +10679,7 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
@@ -10707,7 +10710,7 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
@@ -10738,7 +10741,7 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
@@ -10769,7 +10772,7 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
@@ -10794,17 +10797,17 @@
    "number": 740,
    "name": "Clay - Pipe",
    "category": "structure",
-   "catalog": "KEEP",
-   "section": null,
-   "phase": null,
+   "catalog": "RETIRE",
+   "section": "3.0",
+   "phase": "PLUMBING-PR3",
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
+   "note": "Dave 14 Nov 2026: \"We should remove clay plumbing altogether.\" Retired, number kept. Never buildable before (its blueprint was locked), so no placed one exists; its structure row is deleted."
   },
   {
    "key": "clay_pipe_elbow_kit",
@@ -10825,17 +10828,17 @@
    "number": 742,
    "name": "Clay - Pipe elbow",
    "category": "structure",
-   "catalog": "KEEP",
-   "section": null,
-   "phase": null,
+   "catalog": "RETIRE",
+   "section": "3.0",
+   "phase": "PLUMBING-PR3",
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
+   "note": "Dave 14 Nov 2026: \"We should remove clay plumbing altogether.\" Retired, number kept. Never buildable before (its blueprint was locked), so no placed one exists; its structure row is deleted."
   },
   {
    "key": "clay_pipe_tee_kit",
@@ -10856,17 +10859,17 @@
    "number": 744,
    "name": "Clay - Pipe tee",
    "category": "structure",
-   "catalog": "KEEP",
-   "section": null,
-   "phase": null,
+   "catalog": "RETIRE",
+   "section": "3.0",
+   "phase": "PLUMBING-PR3",
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
+   "note": "Dave 14 Nov 2026: \"We should remove clay plumbing altogether.\" Retired, number kept. Never buildable before (its blueprint was locked), so no placed one exists; its structure row is deleted."
   },
   {
    "key": "iron_pipe_kit",
@@ -11005,7 +11008,7 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,
@@ -11036,7 +11039,7 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-    "test_stone_clay_water",
+    "test_stone_water",
     "test_blueprints"
    ],
    "accepted_commit": null,

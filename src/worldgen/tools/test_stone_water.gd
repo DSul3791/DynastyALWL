@@ -1,10 +1,11 @@
 extends SceneTree
 
-# Stone channels, clay pipes and cisterns (plumbing PR 3, docs/design/PLUMBING_DESIGN.md s6; values PROVISIONAL): the real structures.json rows join
-# the water network. A cistern's water stands half a metre over its base outlet and drives a level clay pipe at half its cap; the raised cistern's
+# Stone channels, the Stone - Trough and cisterns (plumbing PR 3, docs/design/PLUMBING_DESIGN.md s6; values PROVISIONAL): the real structures.json rows
+# join the water network. Clay plumbing is retired (Dave 14 Nov 2026: "We should remove clay plumbing altogether"), so a cistern drains down a log pipe
+# (Wooden - Pipe, plumbing PR 2). A cistern's water stands half a metre over its base outlet and drives a level log pipe at about half its cap; the raised cistern's
 # tank stands 2.5 m over its foot outlet (full cap) and fills through its riser only from a surface that reaches its top (a force pump), never from
 # a hand pump's spout.
-#   godot --headless --path . --script res://src/worldgen/tools/test_stone_clay_water.gd
+#   godot --headless --path . --script res://src/worldgen/tools/test_stone_water.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -50,25 +51,29 @@ func put(kind: String, pos: Vector3, yaw: float = 0.0) -> int:
 
 
 func _init() -> void:
-	items = make("user://test_stone_clay_water")
+	items = make("user://test_stone_water")
 	var bp: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"]
 
-	for id in ["stone_trough", "stone_channel", "stone_channel_corner", "stone_channel_tee", "clay_pipe_run", "clay_pipe_elbow", "clay_pipe_tee", "stone_cistern"]:
+	for id in ["stone_trough", "stone_channel", "stone_channel_corner", "stone_channel_tee", "stone_cistern"]:
 		check(bp.has(id) and bool(bp[id].get("known", false)) and not bool(bp[id].get("locked", false)), "blueprint %s is known and unlocked" % id)
 
 	check(bp.has("stone_raised_cistern") and bool(bp["stone_raised_cistern"].get("locked", false)), "the Raised cistern stays locked until a force pump can fill it (plumbing PR 4)")
 	check(int(items._structures["stone_channel"]["water"]["cap_lpm"]) == 300 and not bool(items._structures["stone_channel"]["water"]["closed"]), "a stone channel is open and carries 300 L/min")
-	check(bool(items._structures["clay_pipe_run"]["water"]["closed"]), "a clay pipe is closed")
+	for id in ["clay_pipe_run", "clay_pipe_elbow", "clay_pipe_tee"]:
+		check(bp.has(id) and bool(bp[id].get("retired", false)) and not items._structures.has(id), "clay plumbing is retired: %s is kept for its number only and is not a structure" % id)
 
-	# A cistern drains through a level clay pipe (laid along Z) into a stone trough: half a metre of head gives half the pipe's 120 L/min.
+	check(items.table.current_number(items.table.number_of("clay_pipe")) == items.table.number_of("clay"), "a saved Clay pipe loads as Clay")
+
+	# A cistern drains through a level log pipe (laid along Z, its ends 0.13 m up) into a stone trough: the water stands 0.5 m over the cistern's outlet
+	# (0.15 m up), 0.52 m over the pipe's far end, so it passes 52 percent of the pipe's 60 L/min.
 	var cistern: int = put("stone_cistern", Vector3(200.0, 10.0, 200.0))
-	var pipe: int = put("clay_pipe_run", Vector3(200.0, 10.0, 202.05), 90.0)
+	var pipe: int = put("wooden_pipe", Vector3(200.0, 10.0, 202.05), 90.0)
 	var trough: int = put("stone_trough", Vector3(200.0, 9.5, 204.0))
-	check(items._water.downstream(cistern).has(pipe) and items._water.downstream(pipe).has(trough), "cistern, clay pipe and stone trough join")
+	check(items._water.downstream(cistern).has(pipe) and items._water.downstream(pipe).has(trough), "cistern, log pipe and stone trough join")
 	items._water.set_litres(cistern, 1000.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
-	check(absf(items._water.inflow_lpm(trough) - 60.0) < 0.01, "the trough fills at 60 L/min (%.2f)" % items._water.inflow_lpm(trough))
+	check(absf(items._water.inflow_lpm(trough) - 31.2) < 0.05, "the trough fills at 31.2 L/min (%.2f)" % items._water.inflow_lpm(trough))
 
 	# A cistern spills from its base outlet into an open stone channel and corner, which pour over the rim of a stone trough standing lower.
 	var c2: int = put("stone_cistern", Vector3(500.0, 10.0, 500.0))
@@ -83,14 +88,14 @@ func _init() -> void:
 	items._water_tick(0.0)
 	check(absf(items._water.inflow_lpm(basin) - 300.0) < 0.01, "the stone trough fills through the channels at their full 300 L/min (%.2f)" % items._water.inflow_lpm(basin))
 
-	# The raised cistern's tank stands 2.5 m over its outlet: a level clay pipe from it runs full.
+	# The raised cistern's tank stands 2.5 m over its outlet: a level log pipe from it runs full.
 	var raised: int = put("stone_raised_cistern", Vector3(300.0, 10.0, 300.0))
-	var pipe2: int = put("clay_pipe_run", Vector3(300.0, 10.0, 302.05), 90.0)
+	var pipe2: int = put("wooden_pipe", Vector3(300.0, 10.0, 302.05), 90.0)
 	var trough2: int = put("stone_trough", Vector3(300.0, 9.5, 304.0))
 	items._water.set_litres(raised, 1000.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
-	check(items._water.downstream(raised).has(pipe2) and absf(items._water.inflow_lpm(trough2) - 120.0) < 0.01, "a raised cistern drives a level clay pipe at its full 120 L/min (%.2f)" % items._water.inflow_lpm(trough2))
+	check(items._water.downstream(raised).has(pipe2) and absf(items._water.inflow_lpm(trough2) - 60.0) < 0.01, "a raised cistern drives a level log pipe at its full 60 L/min (%.2f)" % items._water.inflow_lpm(trough2))
 
 	# Its riser: a hand pump's spout does not reach it (no link); in the network a force pump's surface over its top fills it, a low one does not.
 	var pump: int = put("wooden_hand_pump", Vector3(300.0, 10.0, 298.68))
@@ -113,5 +118,5 @@ func _init() -> void:
 	net.solve(1.0)
 	check(net.inflow_lpm(3) == 0.0, "with no push the water cannot climb to its tank")
 
-	print("stone and clay water: %d failures" % failures)
+	print("stone water: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

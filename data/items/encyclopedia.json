@@ -9344,7 +9344,8 @@
 				"Used in Clay - Pipe elbow",
 				"Used in Clay - Pipe tee"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"stone_trough_kit": {
 			"name": "Stone - Trough",
@@ -9426,7 +9427,8 @@
 				"Build with a hammer (press R): 2 Clay pipe"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"clay_pipe_run": {
 			"name": "Clay - Pipe",
@@ -9434,7 +9436,8 @@
 			"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"clay_pipe_elbow_kit": {
 			"name": "Clay - Pipe elbow",
@@ -9444,7 +9447,8 @@
 				"Build with a hammer (press R): 2 Clay pipe"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"clay_pipe_elbow": {
 			"name": "Clay - Pipe elbow",
@@ -9452,7 +9456,8 @@
 			"description": "A clay pipe that turns a quarter circle.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"clay_pipe_tee_kit": {
 			"name": "Clay - Pipe tee",
@@ -9462,7 +9467,8 @@
 				"Build with a hammer (press R): 3 Clay pipe"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"clay_pipe_tee": {
 			"name": "Clay - Pipe tee",
@@ -9470,7 +9476,8 @@
 			"description": "A clay pipe that splits its water two ways.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_pipe_kit": {
 			"name": "Iron - Pipe",

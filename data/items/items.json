@@ -7779,12 +7779,14 @@
 			},
 			"clay_pipe": {
 				"number": 730,
+				"retired": true,
 				"name": "Clay pipe",
 				"description": "A fired clay pipe section. Two make a length of closed water pipe.",
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],
-				"value": 2
+				"value": 2,
+				"note": "Retired 14 Nov 2026 (Dave: clay plumbing does not make sense, remove it altogether). A saved Clay pipe loads as Clay (renames.json)."
 			},
 			"stone_trough_kit": {
 				"number": 731,
@@ -7883,13 +7885,14 @@
 			},
 			"clay_pipe_run": {
 				"number": 740,
+				"retired": true,
 				"name": "Clay - Pipe",
 				"description": "A closed clay pipe, two metres long. Drain it before a hard frost.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 179. Live in the water network since plumbing PR 3 (unlocked)."
+				"note": "Retired 14 Nov 2026 (Dave: clay plumbing does not make sense, remove it altogether). Never buildable before it (its blueprint was locked), so no placed one exists."
 			},
 			"clay_pipe_elbow_kit": {
 				"number": 741,
@@ -7904,13 +7907,14 @@
 			},
 			"clay_pipe_elbow": {
 				"number": 742,
+				"retired": true,
 				"name": "Clay - Pipe elbow",
 				"description": "A clay pipe that turns a quarter circle.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 180. Live in the water network since plumbing PR 3 (unlocked)."
+				"note": "Retired 14 Nov 2026 (Dave: clay plumbing does not make sense, remove it altogether). Never buildable before it (its blueprint was locked), so no placed one exists."
 			},
 			"clay_pipe_tee_kit": {
 				"number": 743,
@@ -7925,13 +7929,14 @@
 			},
 			"clay_pipe_tee": {
 				"number": 744,
+				"retired": true,
 				"name": "Clay - Pipe tee",
 				"description": "A clay pipe that splits its water two ways.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 181. Live in the water network since plumbing PR 3 (unlocked)."
+				"note": "Retired 14 Nov 2026 (Dave: clay plumbing does not make sense, remove it altogether). Never buildable before it (its blueprint was locked), so no placed one exists."
 			},
 			"iron_pipe_kit": {
 				"number": 745,

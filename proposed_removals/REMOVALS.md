@@ -104,6 +104,12 @@ Also removed inside live files: hit_sounds.gd swing() with its SWING_* constants
 |---|---|---|---|---|
 | assets/ui/item_icons/iron_doorway.png, steel_doorway.png | Claude (BUGLIST-002) | 13 Nov | Dave: "There is no iron or steel door" / "Yes remove them please": Iron - Doorway and Steel - Doorway are retired (their .import files deleted) | none: a saved one loads as Refined - Doorway / Fortified - Doorway, which have their own icons |
 
+## Retired clay plumbing, 14 Nov 2026
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/clay_pipe.png, clay_pipe_run.png, clay_pipe_elbow.png, clay_pipe_tee.png | Claude (plumbing PR 3) | 14 Nov | Dave: "I don't think clay plumbing would make sense. We should remove clay plumbing altogether." Clay pipe, Clay - Pipe, Clay - Pipe elbow and Clay - Pipe tee are retired (their .import files deleted) | none: a saved Clay pipe loads as Clay (renames.json); stone channels and wooden pipes carry the water |
+Also removed inside live files: the three clay_pipe rows of structures.json and look_table.gd, the "clay" branches of piece_look.gd conduit, the clay_pipe painter of tools/paint_item_icons.py and its rows in tools/paint_look_icons.py.
+
 ## Replaced code (deleted outright, Decision 61 as clarified by Dave, 12 Nov 2026)
 Code that new code replaced is deleted, not moved here. Add one row per deleted file in the same PR; `tools/merge_check.py` checks that the replacement exists and that nothing still uses the old file. Code with no replacement is an ordinary unused file: move it aside as above.
 | deleted path | replaced by (path at HEAD) | who | date | why |

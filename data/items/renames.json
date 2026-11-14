@@ -4,6 +4,7 @@
 		"hide_leggings": "hide_trousers",
 		"salt": "sea_salt",
 		"iron_doorway": "doorway_section",
-		"steel_doorway": "fortified_doorway"
+		"steel_doorway": "fortified_doorway",
+		"clay_pipe": "clay"
 	}
 }
