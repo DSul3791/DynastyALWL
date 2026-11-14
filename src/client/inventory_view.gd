@@ -66,6 +66,7 @@ const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe
 const GoalBookScript := preload("res://src/client/ui/goals/goal_book.gd")          # the goal list from the server (protocol 119)
 const GoalsHudScript := preload("res://src/client/ui/goals/goals_hud.gd")           # the upper-right Goals box
 const GoalPlacardScript := preload("res://src/client/ui/goals/goal_placard.gd")     # the Goal Achieved placard
+const JournalScript := preload("res://src/client/ui/goals/journal_view.gd")         # the Journal: Index, Goals, Map (J, G, M)
 const InventoryFrameScript := preload("res://src/client/ui/inventory/inventory_frame.gd")   # the redesign's three panels (step 3a)
 const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd")             # the gear wells and the live character (step 3d)
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
@@ -448,6 +449,9 @@ func toggle() -> void:
 	if not open and character_open():
 		_character.toggle()
 
+	if not open and journal != null and journal.open:
+		journal.close()   # one window at a time
+
 	open = not open
 
 	if not open and _recipe_search != null:
@@ -491,6 +495,9 @@ func close() -> void:
 	if dialogue_open and dialogue_close.is_valid():
 		dialogue_close.call()
 
+	if journal != null and journal.open:
+		journal.close()
+
 	if open:
 		toggle()
 
@@ -505,6 +512,9 @@ func toggle_character() -> void:
 
 	if open:
 		toggle()
+
+	if journal != null and journal.open:
+		journal.close()
 
 	if _character == null:
 		_character = CharacterScreenScript.new()
@@ -4773,6 +4783,7 @@ func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String =
 var goal_book
 var goals_hud: Control
 var goal_placard: Control
+var journal
 
 
 func _setup_goals() -> void:
@@ -4789,6 +4800,8 @@ func _setup_goals() -> void:
 	goal_placard = GoalPlacardScript.new()
 	top.add_child(goal_placard)
 	goal_placard.setup(self, goal_book)
+	journal = JournalScript.new()
+	journal.setup(self, _layer, goal_book)
 
 
 # The words of the comfort line: "" when there is nothing to say.
@@ -4979,7 +4992,7 @@ var dialogue_close: Callable = Callable()
 
 
 func screen_open() -> bool:
-	return open or chest_mode or character_open() or dialogue_open or _storage_ui.is_open() or _food_ui.is_open()
+	return open or chest_mode or character_open() or (journal != null and journal.open) or dialogue_open or _storage_ui.is_open() or _food_ui.is_open()
 
 
 const CHEST_KEYS := [["take_all", 0], ["store_all", 1], ["stack_nearby", 2], ["sort_both", 3]]    # action id, Net.ACT_BULK kind

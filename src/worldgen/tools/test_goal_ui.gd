@@ -9,6 +9,7 @@ extends SceneTree
 const GoalBook := preload("res://src/client/ui/goals/goal_book.gd")
 const GoalsHud := preload("res://src/client/ui/goals/goals_hud.gd")
 const GoalPlacard := preload("res://src/client/ui/goals/goal_placard.gd")
+const Journal := preload("res://src/client/ui/goals/journal_view.gd")
 const ViewScript := preload("res://src/client/inventory_view.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -25,6 +26,15 @@ func check(ok: bool, what: String) -> void:
 
 func row(id: String, title: String, done: bool, after: Array = [], copper: int = 3) -> Array:
 	return [id, title, "How to " + title, copper, "", 0, PackedStringArray(after), done]
+
+
+# Every Label's and Button's text under `node`.
+func _collect(node: Node, into: Array) -> void:
+	for child in node.get_children():
+		if (child is Label or child is Button) and child.is_visible_in_tree():
+			into.append(str(child.text))
+
+		_collect(child, into)
 
 
 func _init() -> void:
@@ -86,6 +96,53 @@ func _init() -> void:
 	var long_px: int = GoalPlacard.fit_px(face, "Cross the camp at night with a torch and fill your winter store before the first snow", box, 26, 12)
 	check(short_px == 26 and long_px < short_px, "a long name steps its text down to fit the band (%d against %d)" % [long_px, short_px])
 	placard.queue_free()
+
+	# The Journal: one window, J / G / M pages, Esc closes, view-only selection with prerequisite links and Back.
+	var layer: CanvasLayer = CanvasLayer.new()
+	root.add_child(layer)
+	view._layer = layer
+	var coins: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
+	view._coins_cfg = coins
+	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", false), row("twine", "Twist twine", false, ["fibre"], 0),
+		row("axe", "Make a Stone - Axe", false, ["twine"], 5)])
+	var journal = Journal.new()
+	journal.setup(view, layer, book)
+	view.journal = journal
+	journal.press_journal()
+	check(journal.open and journal.page == Journal.INDEX and view.screen_open(), "J opens the Journal at its Index, and it counts as an open screen")
+	var windows: int = layer.get_children().filter(func(c): return c.name == "Journal").size()
+	journal.show_page(Journal.GOALS)
+	check(journal.page == Journal.GOALS and journal.selected == "fibre", "G shows Goals with the first unfinished goal selected (%s)" % journal.selected)
+	journal.show_page(Journal.MAP)
+	check(journal.page == Journal.MAP and layer.get_children().filter(func(c): return c.name == "Journal").size() == windows and windows == 1, "M shows the Map in the same single window")
+	journal.press_journal()
+	check(journal.open and journal.page == Journal.INDEX, "J inside the Journal goes back to the Index")
+	journal.press_journal()
+	check(not journal.open and not view.screen_open(), "J on the Index closes it")
+	journal.show_page(Journal.GOALS)
+	view.close()
+	check(not journal.open, "Esc (the view's close) closes the Journal")
+	journal.show_page(Journal.GOALS)
+	var done_before: int = book.done_count()
+	journal.select("axe")
+	journal.select("twine")
+	check(journal.selected == "twine" and journal.history == ["fibre", "axe"], "selecting goals and links changes only what is shown (%s)" % str(journal.history))
+	check(book.done_count() == done_before and heard.size() == 1, "looking at goals completes and announces nothing")
+	journal.back()
+	check(journal.selected == "axe", "Back returns to the goal looked at before")
+	var text: Array = []
+	_collect(layer, text)
+	check(text.has("LEARN FIRST") and text.any(func(t): return str(t).contains("Twist twine")) and text.any(func(t): return str(t).begins_with("How to Make a Stone")), "the details show the how-to and a Learn first link to Twist twine")
+	check(text.has("LEADS TO") == false, "the last goal leads nowhere, so there is no Leads to section")
+	journal.select("fibre")
+	text.clear()
+	_collect(layer, text)
+	check(text.has("LEADS TO") and text.any(func(t): return str(t).contains("Twist twine")), "Gather plant fibre leads to Twist twine")
+	journal.show_page(Journal.MAP)
+	text.clear()
+	_collect(layer, text)
+	check(text.any(func(t): return str(t).contains("not the finished Map")), "the Map page says plainly it is an interim page")
+	journal.close()
 	view.free()
 	print("goal ui: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
