@@ -97,13 +97,13 @@ func span(id: int, which: String) -> Vector2i:
 # Units of an item (0: all) in one part of a smelter's store.
 func part(id: int, which: String, number: int = 0) -> int:
 	var sp: Vector2i = span(id, which)
-	var total: int = 0
+	var units: int = 0
 
 	for i in range(sp.x, sp.y):
 		if box(id).numbers[i] != 0 and (number == 0 or box(id).numbers[i] == number):
-			total += box(id).counts[i]
+			units += box(id).counts[i]
 
-	return total
+	return units
 
 
 func pack(number: int) -> int:
