@@ -6,7 +6,7 @@ extends SceneTree
 #      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Spade and Stone - Sickle are retired;
 #   2. the groups take the better tool: an Iron - Knife for the Wooden bowl (recipe 20), an Iron - Axe for small blocks (339), a
 #      Steel - Saw for Planks by hand (159), with no stone knife, stone axe or Iron - Saw in the pack;
-#   3. every new ladder tool is made at its station from live materials: bronze at the Stone - Forge, iron and steel at the lit Smithy;
+#   3. every new ladder tool is made at its station from live materials: copper and bronze at the Primitive smithy (stone_forge), iron and steel at the lit Smithy;
 #   4. any metal hammer builds a blueprint of the top hammer tier, and the wooden and stone hammers do not (decision 73);
 #   5. the Grindstone is built before the first saw and is a station.
 #   godot --headless --path . --script res://src/worldgen/tools/test_tool_ladder.gd
@@ -16,14 +16,14 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
-const RANK := {"wood": 1, "stone": 2, "bronze": 3, "iron": 4, "steel": 5}
+const RANK := {"wood": 1, "stone": 2, "copper": 2, "bronze": 3, "iron": 4, "steel": 5}   # Copper shares Stone's tier: between Stone and Bronze in its rates (GOALS-REPAIR R2b)
 const FAMILIES := ["axe", "pick", "spade", "hammer", "hoe", "knife", "saw", "sickle", "scythe", "chisel"]
 const EDGED := ["axe", "pick", "knife", "saw", "sickle", "scythe", "chisel"]
 const NEW_TOOLS := ["iron_axe", "steel_axe", "iron_knife", "steel_knife", "steel_saw", "bronze_sickle", "iron_sickle", "steel_sickle",
-		"bronze_scythe", "steel_scythe"]
+		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe"]
 const DISPOSABLE := ["stone_axe", "stone_knife", "stone_hoe", "stone_hammer", "stone_pickaxe", "wooden_spade", "wooden_hoe", "wooden_hammer",
 		"hide_scraper", "spear", "stone_mace", "javelin", "sewing_needle"]
-const STATION := {"bronze": "forge", "iron": "brick_forge", "steel": "brick_forge"}
+const STATION := {"copper": "forge", "bronze": "forge", "iron": "brick_forge", "steel": "brick_forge"}
 
 var failures: int = 0
 var items
@@ -217,7 +217,7 @@ func _init() -> void:
 		var live: bool = r.get("needs", []).all(func(c): return not bool(row(items.table.id_of(int(c[0]))).get("future", false)) and not bool(row(items.table.id_of(int(c[0]))).get("retired", false)))
 		check(live and str(r.get("station", "")) == STATION[str(row(id).get("material", ""))], "%s: made at the %s from live materials" % [id, str(r.get("station", ""))])
 
-	for id in NEW_TOOLS.filter(func(t): return str(row(t).get("material", "")) == "bronze"):
+	for id in NEW_TOOLS.filter(func(t): return STATION[str(row(t).get("material", ""))] == "forge"):
 		give_needs(id)
 		craft(id)
 		check(have(id) == 1, "%s is made at the Stone - Forge" % id)
@@ -228,7 +228,7 @@ func _init() -> void:
 	check(place("blacksmithy", smithy_at + Vector3(2.0, 0.0, 0.0)), "a Smithy stands")
 	items.give(1, n_of("charcoal"), 20)   # fires the Smithy
 
-	for id in NEW_TOOLS.filter(func(t): return str(row(t).get("material", "")) != "bronze"):
+	for id in NEW_TOOLS.filter(func(t): return STATION[str(row(t).get("material", ""))] != "forge"):
 		give_needs(id)
 		craft(id)
 		check(have(id) == 1, "%s is made at the lit Smithy" % id)
