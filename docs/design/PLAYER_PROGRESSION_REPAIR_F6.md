@@ -71,7 +71,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
   - **Two lanes:** it smelts two ingots at once, faster than the Improved smelter.
   - **Steel:** put iron ore in the input, and drag Coal or Charcoal **onto an input slot** as carbon (A-24). 1 iron ore + 1 carbon makes 1 Steel ingot (A-19). Fuel put in the plain way (F, or Store all) goes to the hopper and is burned as fuel, never as carbon. Iron ore with no carbon makes iron.
 - [ ] **Advanced smithy** (bp 301: stone 24, clay 12, log 6, the Iron anvil, nails 30, hinges 4; A-20). It works every metal up to steel. Make the **Steel anvil** there (5 steel ingot + 1 log, A-21) and a steel tool.
-- [ ] **Master smithy** (R5, #1106; bp 202, iron hammer).
+- [ ] **Master smithy** (R5, #1106; bp 202, a Bronze or better hammer, tier 3).
   - **Cost:** brick 30, stone 20, log 6, iron ingot 10, and the Steel anvil made at the Advanced smithy.
   - **Tempered and +1/+2:** these are made here and only here.
   - **Waiting:** away from it, a queued variant says "Your +1 <item> waits: go back to the master smithy". Nothing is lost.
@@ -144,7 +144,7 @@ The full lists are `/mnt/project-files/buglist-002/F6_CHECKLIST.md` (doors) and 
 
 The corrected catalog (704 rows, of them the 651 draft goals) is **not live yet**. You said it stays off while it is audited and reworked (06:41Z); it goes in only on your word. Its open points are in the verification report, section 6.
 
-## 8. Follow-on work you added (14 Nov 06:30Z): gardening and wells
+## 8. Follow-on work you added (14 Nov, around 06:30Z): gardening and wells
 
 These are outside the mission's completion criteria. They passed headless on David4 but need your play check. The values are G-n (`docs/design/HOE_GARDENING_DESIGN.md`) and P-n (`docs/design/PLUMBING_DESIGN.md`), all provisional.
 
