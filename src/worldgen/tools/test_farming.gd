@@ -276,7 +276,7 @@ func _plot_takedown_checks() -> void:
 	season[0] = "spring"
 	give("barley_seeds", 1)
 	act(Net.ACT_SOW, 920002, slot_of("barley_seeds"))
-	check(items._crops.has(key) and items.crop_row_extra(items._items[920002]).get("crop", "") == "barley", "barley is sown in a garden plot")
+	check(items._crops.has(key) and str(items.crop_row_extra(items._items[920002])["cells"][0][0]) == "barley", "barley is sown in a garden plot's first square metre")
 	# A garden plot is a hammer blueprint piece (blueprints.json), so taking it down gives its materials back, not a kit.
 	# A group cost (Nails) comes back as its lowest member (Bronze nails, ItemTable.spend_order), so the count is of the item the refund gives.
 	var cost: Array = items._blueprints[int(items._blueprint_of_kit["wooden_garden_plot_kit"])]["cost"]
@@ -333,6 +333,20 @@ func _plot_cell_checks() -> void:
 	items.action(1, Net.ACT_SOW, 920030, slot_of("barley_seeds"), 0, Vector3(cells[2].x + 0.2, 10.0, cells[2].z - 0.1))
 	check(items._crops.has(keys[2]), "the Garden grid sows the square metre it aims at")
 	check(str(items._crops[keys[0]].get("plot", "")) == items._bed_key(spot), "a square metre's crop takes the plot's moisture")
+
+	# The day's bucket is the whole plot's: harvesting the crop that was first does not let a second bucket in.
+	give("bucket", 1)
+	items.inventory_of(1).wear[slot_of("bucket")] = 8000
+	check(items.water_bed(1, items.inventory_of(1), 920030), "a bucket waters the plot")
+	items.inventory_of(1).wear[slot_of("bucket")] = 8000
+	items._crops.erase(keys[0])
+	check(not items.water_bed(1, items.inventory_of(1), 920030), "the plot has had its water today, whichever crop went")
+
+	# No two beds share a square metre: a Large plot whose square metre lies on the Medium one's clashes, one a metre clear does not; a bed is not tilled on a plot.
+	check(items._beds_clash(items._bed_cells({"pos": Vector3(1.0, 10.0, -1.0), "struct": {"kind": "large_garden_plot", "yaw": 0.0}}), items._items[920030]), "a Large plot over the Medium one's edge square metres is refused")
+	check(not items._beds_clash(items._bed_cells({"pos": Vector3(2.5, 10.0, -1.0), "struct": {"kind": "large_garden_plot", "yaw": 0.0}}), items._items[920030]), "a Large plot beside it is not")
+	items._last_dig.clear()
+	check(items.till(1, items.inventory_of(1), Vector3(-0.4, 10.0, -1.4), HeldTool.slot_of(items, "hoe"), 15) == 0, "the hoe does not till a bed on a plot's square metre")
 
 	for k in keys:
 		items._crops.erase(k)
@@ -523,6 +537,21 @@ func _garden_till_checks() -> void:
 	notes.clear()
 	items._last_dig.clear()
 	check(not items.till_garden(1, inv, Vector3(60.5, 10.0, 40.5), hoe, 0, 501) and made_edits.is_empty() and notes.any(func(n): return str(n).contains("rises and falls too much")), "ground that rises or falls more than 1 m from its average is refused (%s)" % str(notes))
+
+	# A 5 by 5 garden on the same gentle slope: the feather band settles well inside the edit cap (a steeper blend cut and filled without end).
+	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 120.5)
+	items.report_position(1, Vector3(120.5, 10.0, 40.5))
+	made_edits.clear()
+	items._last_dig.clear()
+	check(items.till_garden(1, inv, Vector3(120.5, 10.0, 40.5), hoe, 0, 505), "a 5 by 5 garden on a gentle slope is taken on")
+	steps = 0
+
+	while items._garden_jobs.has(1) and steps < 800:
+		items._garden_jobs[1]["next_ms"] = 0
+		items._garden_jobs_tick()
+		steps += 1
+
+	check(not items._garden_jobs.has(1) and made_edits.size() < items.GARDEN_MAX_EDITS, "the 5 by 5 garden is levelled in %d edits, under the cap of %d" % [made_edits.size(), items.GARDEN_MAX_EDITS])
 
 	# A wall beside the garden: no cut or fill near it.
 	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 80.5)

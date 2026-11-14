@@ -94,6 +94,11 @@ func _init() -> void:
 	check(made[1]["act"] == "till" and made[2]["act"] == "none" and str(made[2]["say"]) == "No ground to plant there" and made[3]["act"] == "till" and bool(made[3]["far"]) and not bool(made[1]["far"]), "garden plan: open ground tills; no ground says why; a far point is planted later")
 	check(made[4]["act"] == "none" and int(made[4]["bed"]) == 8, "garden plan: a growing bed is shown, not sown")
 	check(made.filter(func(c): return bool(c["ok"])).size() == 3, "garden plan: three seeds in the pack plant three points and the plan stops at the fourth")
+	# A plot of several square metres: each square metre ("bed:cell") is sown once, two grid points on one square metre count once.
+	var cell_spots: Array = [[Vector3(0.4, 1.0, 0.4), 7, "", "7:0"], [Vector3(0.6, 1.0, 0.6), 7, "", "7:0"], [Vector3(1.5, 1.0, 0.5), 7, "", "7:1"], [Vector3(1.5, 1.0, 1.5), 7, "wheat", "7:3"]]
+	var by_cell: Array = FarmRules.garden_plan("seed", cell_spots, Vector3.ZERO, 3.7, 9)
+	check(by_cell.size() == 3 and by_cell[0]["act"] == "sow" and by_cell[1]["act"] == "sow" and by_cell[2]["act"] == "none", "garden plan: a plot's square metres are sown one each, a growing one is left (%s)" % str(by_cell))
+	check(FarmRules.bed_side({"footprint_x": 1.0}) == 1 and FarmRules.bed_side({"footprint_x": 2.0, "footprint_z": 2.0}) == 2 and FarmRules.bed_side({"footprint_x": 3.0, "footprint_z": 3.0}) == 3 and FarmRules.bed_side({"footprint_x": 0.6}) == 1 and FarmRules.bed_side({"footprint_x": 3.0, "footprint_z": 2.0}) == 2, "bed_side: 1, 2 and 3 m beds hold 1, 2 and 3 square metres a side; a pot one")
 	# The queue: a till goes out and holds the next till 600 ms; its own sow waits for the bed up to 3 s (others go first meanwhile), then is dropped; a bed that
 	# shows is sown once; a point out of reach waits until the player is near.
 	var queue: Array = [{"act": "till", "pos": Vector3(0.5, 1.0, 0.5)}, {"act": "sow_at", "pos": Vector3(0.5, 1.0, 0.5), "until": 0}, {"act": "sow", "bed": 4, "pos": Vector3.ZERO}]
