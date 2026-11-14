@@ -844,6 +844,12 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
 
+	if str(def.get("piece_kind", "")) == ROOF_HIP_KIND:   # a roof corner's point is the shape at `spot` (the ghost's own, by the exact-middle rule)
+		var hip: Array = roof_hip_pick(cfg, def, spot, 0, rows)
+
+		if not hip.is_empty():
+			def = cfg["structures"].get(str(hip[2]), def)
+
 	if one_to_a_point(str(def.get("piece_kind", ""))) and _kind_at(cfg, spot, rows, str(def.get("piece_kind", "")), def):
 		return "close"   # one pillar to a point, one wall top to a wall (the server says the same)
 
