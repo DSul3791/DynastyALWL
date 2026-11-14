@@ -547,12 +547,12 @@ var _load_worst_ms: int = 0            # the longest a chunk waited from being a
 var _load_start_msec: int = 0          # when the first of this batch was asked
 var _setup_queue: Array = []           # species entries still to build (see _setup_step)
 var _setup_next: int = 0
-var _models_ready: Dictionary = {}      # species id -> [near meshes, far meshes] from the worker
+var _models_ready: Dictionary = {}      # species id -> [near, far, mid] from the worker, each a list of TreeBuilder.build_surfaces results (made into meshes in _setup_entry), or [] for the plain model
 var _models_mutex: Mutex = Mutex.new()
 var _models_task_id: int = -1
 var _setup_total: int = 0
 var _setup_done: bool = false
-var _mid_wanted: Array = []            # [species id, variant, full mesh] still to be simplified (see _decimate_task)
+var _mid_wanted: Array = []            # [species id, variant, full model surfaces [[arrays, material], ...]] still to be simplified (see _decimate_task)
 var _mid_ready: Array = []             # [species id, variant, [surface arrays], [materials]] from the worker, built into meshes in apply_built
 var _mid_task: int = -1
 var _built: Array = []                 # finished plans: [chunk, serial, level, plan]
@@ -944,7 +944,8 @@ func setup(tables, tile_rules: Dictionary) -> void:
 
 
 # Worker thread: builds each species' models (a tree species took 14 to 56 ms on the main thread).
-# Only meshes are made here; the tables are filled on the main thread in _setup_entry.
+# Only plain surface arrays are made here (no mesh, material or node: an ArrayMesh made here crashed the client at join, 14 Nov 2026);
+# _setup_entry makes the meshes and fills the tables on the main thread.
 func _models_task(entries: Array) -> void:
 	for entry in entries:
 		var height: Array = entry["height_m"]
@@ -957,25 +958,21 @@ func _models_task(entries: Array) -> void:
 		var mid_built: Array = []         # the middle model (flora.json "mid_m"): Kathleen's build(mid=true), about 900 vertices
 
 		if not built:
-			var plain: ArrayMesh = _make_mesh(entry, reference)
-			near_meshes = [plain]
-			far_meshes = [plain]
+			pass       # the plain model (_make_mesh) is made on the main thread in _setup_entry
 		elif kind == KIND_PLANT:
 			# Small plants: two variants, one model at every distance.
 			for v in range(2):
-				var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
+				var model: Array = TreeBuilder.build_surfaces(entry, reference, v, false, _tree_materials)
 				near_meshes.append(model)
 				# The low berry and herb plants (TreeBuilder.GROUND_LOOKS, and the plant-sized blueberry) have a cheaper far model: a patch of 15 to 30 draws it beyond near_m.
-				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials) if (TreeBuilder.GROUND_LOOKS.has(str(entry["name"])) or TreeBuilder.SHRUB_LOOKS.has(str(entry["name"]))) else model)
+				far_meshes.append(TreeBuilder.build_surfaces(entry, reference, v, true, _tree_materials) if (TreeBuilder.GROUND_LOOKS.has(str(entry["name"])) or TreeBuilder.SHRUB_LOOKS.has(str(entry["name"]))) else model)
 		else:
 			for v in range(TreeBuilder.VARIANTS):
-				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
-				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
+				near_meshes.append(TreeBuilder.build_surfaces(entry, reference, v, false, _tree_materials))
+				far_meshes.append(TreeBuilder.build_surfaces(entry, reference, v, true, _tree_materials))
 
 				if entry.has("mid_m"):
-					mid_built.append(TreeBuilder.build(entry, reference, v, false, _tree_materials, "", false, true))
-
-			_override_models(str(entry["name"]), near_meshes, far_meshes)
+					mid_built.append(TreeBuilder.build_surfaces(entry, reference, v, false, _tree_materials, "", false, true))
 
 		_models_mutex.lock()
 		_models_ready[int(entry["id"])] = [near_meshes, far_meshes, mid_built]
@@ -986,7 +983,7 @@ func _models_task(entries: Array) -> void:
 # res://assets/tree_meshes/ replaces the procedural near models (<name>.glb, objects <name>_v0 ..)
 # and/or far models (<name>_far.glb, objects <name>_v0_far ..), as exported by
 # tools/export_tree_meshes.gd. Anything missing or unreadable keeps the procedural model; nothing
-# here touches saves or the protocol. Runs on the worker thread.
+# here touches saves or the protocol. Runs on the main thread (_setup_entry): it makes nodes and meshes.
 const MODEL_DIRS := ["user://tree_meshes/", "res://assets/tree_meshes/"]
 
 
@@ -1042,6 +1039,33 @@ func _use_game_materials(mesh: ArrayMesh) -> void:
 
 		if _tree_materials.has(key):
 			mesh.surface_set_material(s, _tree_materials[key])
+
+
+# Meshes of the worker's surface lists (TreeBuilder.to_mesh), main thread only. A list that is the very same one as in `shared_from` reuses
+# that list's mesh (a small plant draws one model near and far).
+func _meshes_of(surface_lists: Array, shared_from: Array = [], shared_meshes: Array = []) -> Array:
+	var out: Array = []
+
+	for n in range(surface_lists.size()):
+		var at: int = -1
+
+		for m in range(shared_from.size()):
+			if is_same(shared_from[m], surface_lists[n]):
+				at = m
+
+		out.append(shared_meshes[at] if at >= 0 else TreeBuilder.to_mesh(surface_lists[n]))
+
+	return out
+
+
+# A mesh's surfaces as [[arrays, material], ...] (main thread: reads the mesh back).
+func _surfaces_of(mesh: ArrayMesh) -> Array:
+	var out: Array = []
+
+	for surface in range(mesh.get_surface_count()):
+		out.append([mesh.surface_get_arrays(surface), mesh.surface_get_material(surface)])
+
+	return out
 
 
 # Builds every queued species now (tools and the preview, which have no frame budget).
@@ -1105,9 +1129,29 @@ func _setup_entry(entry: Dictionary) -> bool:
 	if models.is_empty():
 		return false
 
-	var near_meshes: Array = models[0]
-	var far_meshes: Array = models[1]
-	var mid_from_builder: Array = models[2] if models.size() > 2 else []
+	# The worker made plain surfaces; the meshes are made here on the main thread. _setup_step spreads the species over frames (4 ms budget,
+	# at least one species a frame), so the hitch is bounded by one species: up to 12 meshes of a tree species.
+	var near_meshes: Array = []
+	var far_meshes: Array = []
+	var mid_from_builder: Array = []
+	var built_near: Array = []
+
+	if not built:
+		var plain: ArrayMesh = _make_mesh(entry, reference)
+		near_meshes = [plain]
+		far_meshes = [plain]
+	else:
+		near_meshes = _meshes_of(models[0])
+		far_meshes = _meshes_of(models[1], models[0], near_meshes)
+		mid_from_builder = _meshes_of(models[2])
+		built_near = near_meshes.duplicate()
+
+		if kind != KIND_PLANT:
+			_override_models(str(entry["name"]), near_meshes, far_meshes)
+
+	_models_mutex.lock()
+	_models_ready.erase(int(entry["id"]))   # the surfaces are in the meshes now (a tree's near ones also wait in _mid_wanted)
+	_models_mutex.unlock()
 
 	if OS.has_environment("FLORA_DEBUG"):
 		var counts: Array = []
@@ -1126,7 +1170,8 @@ func _setup_entry(entry: Dictionary) -> bool:
 	var mid_meshes: Array = mid_from_builder if not mid_from_builder.is_empty() else near_meshes.duplicate()
 	if kind == KIND_TREE and built:
 		for v in range(near_meshes.size()):
-			_mid_wanted.append([int(entry["id"]), v, near_meshes[v]])
+			# An owner-made model (_override_models) is simplified from its own surfaces, read here on the main thread.
+			_mid_wanted.append([int(entry["id"]), v, models[0][v] if is_same(near_meshes[v], built_near[v]) else _surfaces_of(near_meshes[v])])
 
 	var c: Array = entry["color"]
 	_species[int(entry["id"])] = {
@@ -2108,7 +2153,8 @@ func _start_seasonal() -> void:
 	_seasonal_task = WorkerThreadPool.add_task(_seasonal_models_task.bind(wanted, season, _tree_materials, _leaf_only.duplicate()), false, "flora seasonal models")
 
 
-# Worker: each berry bush species' near and far models for one season, ripe and picked bare (Kathleen's build(season, stripped)).
+# Worker: each berry bush species' near and far models for one season, ripe and picked bare (Kathleen's build(season, stripped)), as plain
+# surfaces; the draw makes each list's meshes on the main thread the first time it is drawn (_seasonal_meshes).
 func _seasonal_models_task(entries: Array, for_season: String, materials: Dictionary, leaf_only: Dictionary = {}) -> void:
 	for bare: bool in [false, true]:
 		var models_set: Dictionary = {}
@@ -2124,11 +2170,11 @@ func _seasonal_models_task(entries: Array, for_season: String, materials: Dictio
 			var mid_meshes: Array = []
 
 			for v in range(2 if str(entry["kind"]) == "plant" else TreeBuilder.VARIANTS):
-				near_meshes.append(TreeBuilder.build(entry, reference, v, false, materials, for_season, bare))
-				far_meshes.append(TreeBuilder.build(entry, reference, v, true, materials, for_season, bare))
+				near_meshes.append(TreeBuilder.build_surfaces(entry, reference, v, false, materials, for_season, bare))
+				far_meshes.append(TreeBuilder.build_surfaces(entry, reference, v, true, materials, for_season, bare))
 
 				if entry.has("mid_m"):
-					mid_meshes.append(TreeBuilder.build(entry, reference, v, false, materials, for_season, bare, true))
+					mid_meshes.append(TreeBuilder.build_surfaces(entry, reference, v, false, materials, for_season, bare, true))
 
 			models_set[int(entry["id"])] = [near_meshes, far_meshes, mid_meshes]
 
@@ -2594,6 +2640,8 @@ func _launch_plans(from_position: Vector3) -> void:
 		items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
 		items["fruit_levels"] = _fruit_levels_of(chunk, items)
 		items["from"] = from_position
+		items["species"] = _species.duplicate()   # shallow: each species' own dictionary is complete once it is in the table
+		items["slugs"] = _slugs.duplicate()
 		_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, int(entry["serial"]), int(entry["building"]), items, entry.get("building_masks", {})), false, "flora chunk"))
 
 
@@ -2914,6 +2962,10 @@ func _load_far() -> void:
 
 
 func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
+	# The species tables as they were when the plan was asked for (_launch_plans): the main thread still adds species while plans run
+	# (_setup_entry, a few a frame after the welcome), and a dictionary must not grow under a worker reading it. Tests calling here directly read the live tables.
+	var species: Dictionary = items.get("species", _species)
+	var slugs: Dictionary = items.get("slugs", _slugs)
 	var has_from: bool = items.has("from")   # the player position when the plan was asked for (distance thinning); tests may leave it out
 	var from: Vector3 = items.get("from", Vector3.ZERO)
 	var ids: PackedInt32Array = items["ids"]
@@ -2925,7 +2977,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 	for n in range(count):
 		var species_id: int = ids[n] >> 16
-		var info: Dictionary = _species.get(species_id, {})
+		var info: Dictionary = species.get(species_id, {})
 
 		if info.is_empty() or (level & (1 << int(info["kind"]))) == 0:
 			continue
@@ -2980,10 +3032,10 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			continue
 
 		# Out of season a herb, flower or mushroom is not drawn at all (berry bushes and woody plants stay; GatherRules.hidden_out_of_season).
-		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(_slugs.get(species_id, "")))):
+		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(slugs.get(species_id, "")))):
 			continue
 
-		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
+		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(slugs.get(species_id, "")))
 		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
 		# Trees only for now: a tree chunk is re-planned whenever one of its 64 m cells changes model tier, so the distance stays close enough;
@@ -3025,7 +3077,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 		var lit: Dictionary = {}
 
 		for n in range(count):
-			var info: Dictionary = _species.get(ids[n] >> 16, {})
+			var info: Dictionary = species.get(ids[n] >> 16, {})
 
 			if not info.has("glow") or lit.size() >= GLOW_LIGHTS:
 				continue
@@ -3048,7 +3100,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var draws: Array = []
 
 	for key in groups:
-		var info: Dictionary = _species[key[0]]
+		var info: Dictionary = species[key[0]]
 		var indices: PackedInt32Array = groups[key]
 		var tinted: bool = bool(info["tinted"])
 		var stride: int = 16 if tinted else 12
@@ -3167,7 +3219,7 @@ func _apply_step(job: Dictionary) -> bool:
 		if seasonal.has(key[0]):
 			var wanted_set: Array = seasonal[key[0]]
 			var which: int = 0 if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT) else (2 if key[4] == TIER_MID and not (wanted_set[2] as Array).is_empty() else (0 if key[4] == TIER_MID else 1))
-			models = wanted_set[which]
+			models = _seasonal_meshes(wanted_set, which)
 
 	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == TIER_IMPOSTOR and _impostors.has(key[0]) else models[key[3] % models.size()]
 	multimesh.use_custom_data = bool(info["tinted"])
@@ -3187,6 +3239,17 @@ func _apply_step(job: Dictionary) -> bool:
 	return int(job["draw"]) >= draws.size()
 
 
+# A berry bush's seasonal models of one tier, made into meshes on the first draw (the worker leaves surface lists; one species' 2 to 4 meshes at a time).
+func _seasonal_meshes(wanted_set: Array, which: int) -> Array:
+	var models: Array = wanted_set[which]
+
+	if not models.is_empty() and not models[0] is ArrayMesh:
+		models = _meshes_of(models)
+		wanted_set[which] = models
+
+	return models
+
+
 # The mid model of each variant: the full model with its triangles cut to about a third by mesh
 # simplification (Godot's meshoptimizer, ImporterMesh.generate_lods), done once at startup.
 # Variants with few triangles keep the full model.
@@ -3204,13 +3267,13 @@ func _start_mid_task() -> void:
 
 func _decimate_task(wanted: Array) -> void:
 	for item in wanted:
-		var mesh: ArrayMesh = item[2]
+		var surfaces: Array = item[2]     # plain [[arrays, material], ...]: no mesh is read or made on this worker
 		var triangles: int = 0
 		var arrays_list: Array = []
 		var materials: Array = []
 
-		for surface in range(mesh.get_surface_count()):
-			var arrays: Array = mesh.surface_get_arrays(surface)
+		for surface in surfaces:
+			var arrays: Array = surface[0]
 			var index: Variant = arrays[Mesh.ARRAY_INDEX]
 
 			if not index is PackedInt32Array:      # a surface without indices cannot be simplified: keep the full model
@@ -3220,7 +3283,7 @@ func _decimate_task(wanted: Array) -> void:
 			@warning_ignore("integer_division")
 			triangles += (index as PackedInt32Array).size() / 3
 			arrays_list.append(arrays)
-			materials.append(mesh.surface_get_material(surface))
+			materials.append(surface[1])
 
 		if triangles < MID_MIN_TRIANGLES:
 			continue
