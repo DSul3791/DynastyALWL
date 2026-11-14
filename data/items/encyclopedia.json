@@ -3346,9 +3346,9 @@
 			"obtainable_now": true
 		},
 		"blacksmithy": {
-			"name": "Brick - Forge",
+			"name": "Improved smithy",
 			"kind": "structure",
-			"description": "A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel.",
+			"description": "A forge with a bronze anvil. Fire it with charcoal or coal to work copper, bronze and iron; iron wears it.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -6916,6 +6916,16 @@
 			"description": "A copper blade on a hardwood handle. Fells trees faster than stone; bronze is faster still.",
 			"how_to_get": [
 				"Craft at a forge: 2 Copper ingot, 1 Stick, 1 Leather strap"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"iron_anvil_part": {
+			"name": "Iron anvil",
+			"kind": "material",
+			"description": "A forged iron anvil on a banded log stump. Not set down on its own: it goes into building an Advanced smithy.",
+			"how_to_get": [
+				"Craft: 5 Iron ingot, 1 Log at a brick forge"
 			],
 			"used_for": [],
 			"obtainable_now": true

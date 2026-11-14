@@ -6,15 +6,19 @@ extends SceneTree
 #   2. charcoal at a lit campfire from firewood;
 #   3. the Primitive smelter refuses iron ore; an Improved smelter (its bronze fittings come from the bronze route, test_bronze_path) smelts it
 #      by itself only while the player works its bellows (master s2.7 items 1 and 4), into its output rack;
-#   4. a Smithy from stones, clay, logs and Iron ingots; cold, it makes nothing without fuel; fired with charcoal from the pack;
-#   5. the Iron - Saw at the burning Smithy from iron and wood, no Saw blade;
-#   6. with the saw: a spruce log gives 6 Planks, an oak log 4 Hardwood boards.
+#   4. an Improved smithy from stones, clay, logs and bronze (its bronze anvil and fittings, from the bronze route, test_bronze_path), no iron
+#      (master s2.7 item 5, GOALS-REPAIR A-15); cold, it makes nothing without fuel; fired with charcoal from the pack;
+#   5. the Iron - Saw at the burning Improved smithy from iron and wood, no Saw blade;
+#   6. with the saw: a spruce log gives 6 Planks, an oak log 4 Hardwood boards;
+#   7. the Iron anvil (the Advanced smithy's component, A-16) at the Improved smithy; working iron on its bronze anvil wears it faster than
+#      bronze work (smithing.json station_wear, A-17).
 #   godot --headless --path . --script res://src/worldgen/tools/test_iron_saw_route.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 
 const HERE := Vector3(5.0, 10.0, 0.0)
 const FIRE_AT := Vector3(2.5, 10.0, 0.0)
@@ -160,16 +164,17 @@ func _init() -> void:
 			smithy_iron = int(need[1])
 
 	var saw_iron: int = need_of("hand_saw", "iron_ingot")
+	var anvil_iron: int = need_of("iron_anvil_part", "iron_ingot")
 	var job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("iron", {})
-	var ore_n: int = smithy_iron + saw_iron   # 1 Iron ore makes 1 Iron ingot (master s2.7 item 3)
+	var ore_n: int = saw_iron + anvil_iron   # 1 Iron ore makes 1 Iron ingot (master s2.7 item 3)
 	var fuel_n: int = int(ceil(float(items._structures_cfg["smelting"].get("fuel_per_ore", 1)) * float(ore_n))) + 4   # and a few to fire the Smithy
 	check(rows_text(job.get("in", [])) == "iron_ore 1" and rows_text([job.get("out", ["", 0])]) == "iron_ingot 1" and bool(job.get("bellows", false)), "the iron job: 1 Iron ore to 1 Iron ingot, only with the bellows worked")
 	# The pre-saw stations take only what the wilderness gives and the route makes (master s4 item 10): no Planks, no nails, no bought metal.
 	for st in ["smelter", "stone_forge", "improved_smelter", "blacksmithy"]:
 		var ids: Array = blueprint_of(st).get("cost", []).map(func(c): return str(c[0]))
-		check(not ids.is_empty() and ids.all(func(c): return c in ["stone", "clay", "log", "iron_ingot", "hide", "bronze_hinges", "bronze_nails"]), "the %s costs only stone, clay, logs, hide, bronze fittings and route iron (%s)" % [st, str(ids)])
+		check(not ids.is_empty() and ids.all(func(c): return c in ["stone", "clay", "log", "hide", "bronze_ingot", "bronze_hinges", "bronze_nails"]), "the %s costs only stone, clay, logs, hide and bronze (%s)" % [st, str(ids)])
 
-	check(smithy_iron > 0 and saw_iron > 0 and ore_n > 0, "the Smithy costs Iron ingots (%d) and the saw is made of iron (%d): %d ore to dig" % [smithy_iron, saw_iron, ore_n])
+	check(smithy_iron == 0 and saw_iron > 0 and anvil_iron > 0, "the Improved smithy costs no iron; the saw (%d) and the Iron anvil (%d) are made of iron: %d ore to dig" % [saw_iron, anvil_iron, ore_n])
 
 	# 1. Bog iron with a wooden spade.
 	items.give(1, items.table.number_of("wooden_spade"), 1)
@@ -220,9 +225,10 @@ func _init() -> void:
 	take_all(smelter)
 	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again, still beside it: leave the bellows
 	items.report_position(1, HERE)
-	check(have("iron_ingot") >= smithy_iron + saw_iron and not items._smelters.bellows_worked(smelter), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); E again leaves them" % [smithy_iron + saw_iron, manned_s, have("iron_ingot")])
+	check(have("iron_ingot") >= ore_n and not items._smelters.bellows_worked(smelter), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); E again leaves them" % [ore_n, manned_s, have("iron_ingot")])
 
-	# 4. The Smithy from stones, clay, logs and Iron ingots; it must burn to craft.
+	# 4. The Improved smithy from stones, clay, logs and bronze (given: the bronze route is test_bronze_path); it must burn to craft.
+	items.vitals_of(1)["weight"] = 5000.0   # the ticks above may have drawn the body weight down (empty stomach): the given build cost must fit the pack
 	var iron_before: int = have("iron_ingot")
 	var bp: Dictionary = blueprint_of("blacksmithy")
 	var smithy_id: int = -1
@@ -237,18 +243,22 @@ func _init() -> void:
 		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "blacksmithy" and not items._items[id]["struct"].has("site"):
 			smithy_id = int(id)
 
-	check(smithy_id >= 0 and have("iron_ingot") == iron_before - smithy_iron, "4a. the Smithy stands and took its %d Iron ingots" % smithy_iron)
+	check(smithy_id >= 0 and have("iron_ingot") == iron_before, "4a. the Improved smithy stands, built without iron")
 	var charcoal_n: int = have("charcoal")
 	items.inventory_of(1).remove(items.table.number_of("charcoal"), charcoal_n)
 	items.give(1, items.table.number_of("stick"), need_of("hand_saw", "stick"))
 	craft("hand_saw", 1, 60)
-	check(have("hand_saw") == 0 and have("iron_ingot") == iron_before - smithy_iron and not bool(items._items[smithy_id]["struct"].get("lit", false)), "4b. a cold Smithy and no fuel: no saw, nothing taken (%d ingots)" % have("iron_ingot"))
+	check(have("hand_saw") == 0 and have("iron_ingot") == iron_before and not bool(items._items[smithy_id]["struct"].get("lit", false)), "4b. a cold Smithy and no fuel: no saw, nothing taken (%d ingots)" % have("iron_ingot"))
 	items.inventory_of(1).add(items.table.number_of("charcoal"), charcoal_n)
 
 	# 5. The Iron - Saw at the burning Smithy.
 	craft("hand_saw", 1, 120)
 	check(bool(items._items[smithy_id]["struct"].get("lit", false)) and have("charcoal") == charcoal_n - 1, "5a. the craft fires the Smithy with one charcoal")
-	check(have("hand_saw") == 1 and have("saw_blade") == 0, "5b. the Iron - Saw is made at the Smithy from iron and wood, with no Saw blade")
+	check(have("hand_saw") == 1 and have("saw_blade") == 0, "5b. the Iron - Saw is made at the Improved smithy from iron and wood, with no Saw blade")
+	var wear_cfg: Dictionary = SmithingRules.cfg().get("station_wear", {})
+	var per_craft: float = float(wear_cfg.get("per_craft", 1.0))
+	var iron_x: float = float(wear_cfg.get("iron_on_bronze", 1.0))
+	check(iron_x > 1.0 and is_equal_approx(items._smithies.wear_of(smithy_id), per_craft * iron_x), "5c. the iron saw wore the bronze anvil %.1f (iron on bronze: x%.1f)" % [items._smithies.wear_of(smithy_id), iron_x])
 
 	# 6. Planks and Hardwood boards with the saw.
 	items.inventory_of(1).add(items.table.number_of("log_spruce"), 1)
@@ -256,6 +266,32 @@ func _init() -> void:
 	craft("lumber_by_hand", 1, 60)
 	craft("hardwood_board_by_hand", 1, 60)
 	check(have("lumber") == 6 and have("hardwood_board") == 4, "6. the saw gives 6 Planks from a spruce log and 4 Hardwood boards from an oak log (%d, %d)" % [have("lumber"), have("hardwood_board")])
+
+	# 7. The Iron anvil at the Improved smithy; iron work wears its bronze anvil faster than bronze work.
+	items.give(1, items.table.number_of("log"), need_of("iron_anvil_part", "log"))
+	craft("iron_anvil_part", 1, 120)
+	check(have("iron_anvil_part") == 1, "7a. the Iron anvil is forged at the Improved smithy from %d Iron ingots" % anvil_iron)
+	check(is_equal_approx(items._smithies.wear_of(smithy_id), 2.0 * per_craft * iron_x), "7b. its anvil wore %.1f more" % (per_craft * iron_x))
+	items.give(1, items.table.number_of("bronze_ingot"), need_of("bronze_knife", "bronze_ingot"))
+	items.give(1, items.table.number_of("stick"), need_of("bronze_knife", "stick"))
+	craft("bronze_knife", 1, 60)
+	check(have("bronze_knife") == 1 and is_equal_approx(items._smithies.wear_of(smithy_id), 2.0 * per_craft * iron_x + per_craft), "7c. a Bronze - Knife there (bronze work) wears it only %.1f" % per_craft)
+	items.save()
+	items._finish_writer()
+	var again = ItemsScript.new()
+	again.send_full = func(_p, _b): pass
+	again.send_slots = func(_p, _b): pass
+	again.send_world_items = func(_p, _a, _r): pass
+	again.ground_height = func(_x, _z): return 10.0
+	again.setup(ItemTableScript.load_default(), dir)
+	var again_smithy: int = -1   # world ids are handed out again on load; the store uid (and the kind here) stays
+
+	for id in again._items:
+		if again._items[id].has("struct") and str(again._items[id]["struct"]["kind"]) == "blacksmithy" and not again._items[id]["struct"].has("site"):
+			again_smithy = int(id)
+
+	check(again_smithy >= 0 and is_equal_approx(again._smithies.wear_of(again_smithy), items._smithies.wear_of(smithy_id)), "7d. save and load keep the anvil's wear (%.1f)" % (again._smithies.wear_of(again_smithy) if again_smithy >= 0 else -1.0))
+	again._finish_writer()
 
 	print("iron saw route: %d failures" % failures)
 	items._finish_writer()

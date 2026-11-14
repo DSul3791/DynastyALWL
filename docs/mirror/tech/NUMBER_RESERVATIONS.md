@@ -24,3 +24,4 @@ Structure states 28 (`door_open`), 82, 84, 86, 140, 142, 144, 214 and 224 are RE
 ## GOALS-REPAIR WP-METAL (14 Nov 2026, metalworking tiers R2-R6)
 R2a (PR #1092): item 1304 `improved_smelter`, blueprint 300, structure state 368. Recipes 185, 190, 191 and 192 (the old craft-queue smelts) are RETIRED and never reused; smelting is the stations' own (`src/stream/server_smelter.gd`). Next free: blueprint 301, item 1305, structure state 369.
 R2b: items 1305 `copper_pickaxe`, 1306 `copper_axe`; recipes 722, 723. Next free: item 1307, recipe 724.
+R3: item 1307 `iron_anvil_part` (the Iron anvil component; #827 `iron_anvil` stays the retired placed Anvil); recipe 724. Next free: item 1308, recipe 725.

@@ -15,6 +15,12 @@
 		"materials": [1.0, 1.5, 2.0],
 		"time": [1.0, 2.0, 3.0]
 	},
+	"station_wear": {
+		"note": "GOALS-REPAIR R3 (master s2.7 item 5: the Improved smithy works iron on its bronze anvil, \"iron accelerates anvil/station wear\"): every craft finished at a smithy (structures.json anvil) adds per_craft to its use wear; a craft that works a hard_metals ingot or makes a hard_metals product on a bronze anvil adds iron_on_bronze times that. Read by src/stream/server_smithy.gd; station durability and Needs repair are R5. iron_on_bronze PROVISIONAL (GOALS-REPAIR A-17).",
+		"per_craft": 1.0,
+		"iron_on_bronze": 3.0,
+		"hard_metals": ["iron", "steel"]
+	},
 	"temper": {
 		"station": "brick_forge",
 		"addon": "quenching_trough",

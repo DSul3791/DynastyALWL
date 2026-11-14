@@ -638,12 +638,13 @@ func step2_wood_and_metal() -> void:
 	# Primitive smelter and smithy (test_bronze_path proves that route), so they are given here.
 	give_cost("improved_smelter", ["stone", "clay", "log", "hide", "bronze_hinges", "bronze_nails"])
 	smelter = build("improved_smelter", FORGE + Vector3(3.0, 0.0, -0.5), "2b")
-	var smithy_iron: int = cost_of("blacksmithy", "iron_ingot")
 	var saw_iron: int = need_of("hand_saw", "iron_ingot")
-	check(make_iron(smithy_iron + saw_iron), "2c. bog iron dug with the spade, charcoal burnt at the campfire and smelted at the Improved smelter with its bellows worked: %d Iron ingots (%d needed)" % [have("iron_ingot"), smithy_iron + saw_iron])
+	check(make_iron(saw_iron), "2c. bog iron dug with the spade, charcoal burnt at the campfire and smelted at the Improved smelter with its bellows worked: %d Iron ingots (%d needed)" % [have("iron_ingot"), saw_iron])
 
-	# The Smithy from stones, clay, logs (gathered: test_iron_saw_route) and the route's iron; cold, it is fired by the craft with charcoal.
-	give_cost("blacksmithy", ["stone", "clay", "log"])
+	# The Improved smithy from stones, clay, logs (gathered: test_iron_saw_route) and bronze for its anvil and fittings (the bronze route,
+	# test_bronze_path), no iron (master s2.7 item 5); cold, it is fired by the craft with charcoal.
+	check(cost_of("blacksmithy", "iron_ingot") == 0, "2c'. the Improved smithy needs no iron")
+	give_cost("blacksmithy", ["stone", "clay", "log", "bronze_ingot", "bronze_nails", "bronze_hinges"])
 	smithy = build("blacksmithy", FORGE + Vector3(0.0, 0.0, 3.5), "2d")
 	make_charcoal(4)
 	var charcoal_n: int = have("charcoal")
