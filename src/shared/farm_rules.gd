@@ -44,3 +44,45 @@ static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_slot
 		return {"act": "water", "prompt": "Press E to water the %s (%s)" % [name, STAGE_NAMES[clampi(stage, 0, RIPE)]], "b": water_slot}
 
 	return {"act": "none", "prompt": "%s, %s: hold a filled bucket or waterskin and press E to water it" % [name.capitalize(), STAGE_NAMES[clampi(stage, 0, RIPE)]], "b": 0}
+
+
+# The hoe's Garden mode (Dave 14 Nov 2026: "gardening should also be another option on the right click of the Hoe ... make garden plots or plant seeds, plants, shrubs";
+# master s2.1 "Create Garden Plot, Plant"). What the pack carries that the hoe can plant, one row per kind, in pack order: {"id", "kind": "seed" | "bush"}.
+# `ids`: the item id in each pack slot ("" for an empty slot). A bush is a dug-up shrub (`<species>_bush`, drops.json shrub_work dig_suffix); trees have no item yet.
+static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bush") -> Array:
+	var rows: Array = []
+	var seen: Dictionary = {}
+
+	for id in ids:
+		var item: String = str(id)
+
+		if item == "" or seen.has(item):
+			continue
+
+		var kind: String = "seed" if crop_of_seed(crops, item) != "" else ("bush" if item.ends_with(bush_suffix) else "")
+
+		if kind != "":
+			seen[item] = true
+			rows.append({"id": item, "kind": kind})
+
+	return rows
+
+
+# One Garden-mode click: {"act": "sow" | "till" | "plant_bush" | "none", "say": the notice line ("" for none)}. `kind`: the picked plantable's kind ("" when nothing is
+# picked or none is left in the pack); `bed`: a tilled bed or garden plot is under the crosshair; `bed_crop`: what grows on it ("" for empty). The server rules on the
+# rest (reach, season, ground, spacing) and says why it refuses.
+# PROVISIONAL (gardening, 14 Nov 2026): a seed clicked on open ground tills a bed there first; the next click on that bed sows it.
+static func garden_action(kind: String, name: String, bed: bool, bed_crop: String) -> Dictionary:
+	if kind == "":
+		return {"act": "none", "say": "Nothing to plant: carry seeds or a dug-up bush, then right click and pick it"}
+
+	if kind == "bush":
+		return {"act": "none", "say": "A bush goes in open ground, not in a bed"} if bed else {"act": "plant_bush", "say": ""}
+
+	if not bed:
+		return {"act": "till", "say": "Tilling a bed for the %s: click it again to sow" % name}
+
+	if bed_crop != "":
+		return {"act": "none", "say": "Something is already growing there"}
+
+	return {"act": "sow", "say": ""}

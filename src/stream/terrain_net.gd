@@ -184,7 +184,7 @@ const ACT_SOW := 51        # a = the bed's world id, b = the pack slot of the se
 const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
 const ACT_WATER_BED := 53  # a = the bed's world id, b = the pack slot of the filled water container in hand (-1 none; refused if it holds no water): pours up to 8000 mL from the pack's containers on it, that container first (GOALS-REPAIR GA-04, A-3)
 const ACT_HOE_PATH := 36     # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
-const ACT_HOE_SMOOTH := 37   # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
+const ACT_HOE_SMOOTH := 37   # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke levels the ground within 3 m toward the height the player stands at (a little under the feet on a built piece; 14 Nov 2026, no version change)
 const ACT_HOE_GRADE_POINT := 42   # a = held slot (the hoe in hand from 117), b = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
 const ACT_HOE_GRADE := 43    # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke brings the ground within 1.5 m toward the straight ramp from A to B (0.25 m at most, no items)
 const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (clamped by the server), at = aim direction: one arrow from the first arrow item in the pack (data/items/bow.json; protocol 79, taken at merge)
