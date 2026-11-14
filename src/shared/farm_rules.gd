@@ -113,3 +113,80 @@ static func garden_cells(grid: int, kind: String, aim: Vector3, facing: Vector3)
 
 	cells.sort_custom(func(p, q): return p.distance_squared_to(centre) < q.distance_squared_to(centre))
 	return cells
+
+
+# One Garden click's plan from its grid's spots (garden_cells, nearest first), as [[position, bed id (0 for none), that bed's crop]]: a bed or garden plot takes one
+# cell (its first spot: a 2 m plot holds several 1 m cells but one crop), a cell needs ground (y not NAN) within `reach` m flat of `feet`, and at most `have` cells
+# plant. -> [{"act", "say", "pos", "bed", "ok"}]; a cell that will not plant has act "none" and says why.
+static func garden_plan(kind: String, name: String, spots: Array, feet: Vector3, reach: float, have: int) -> Array:
+	var used: Dictionary = {}
+	var out: Array = []
+
+	for spot in spots:
+		var pos: Vector3 = spot[0]
+		var bed: int = int(spot[1])
+
+		if bed != 0:
+			if used.has(bed):
+				continue
+
+			used[bed] = true
+
+		var cell: Dictionary = garden_action(kind, name, bed != 0, str(spot[2]))
+		cell["pos"] = pos
+		cell["bed"] = bed
+		cell["ok"] = str(cell["act"]) != "none" and not is_nan(pos.y) and Vector2(pos.x - feet.x, pos.z - feet.z).length() <= reach
+
+		if not bool(cell["ok"]) and str(cell["act"]) != "none":
+			cell["say"] = "No ground to plant there" if is_nan(pos.y) else "Too far to plant there: step closer"
+			cell["act"] = "none"
+
+		if bool(cell["ok"]):
+			if have <= 0:
+				break
+
+			have -= 1
+
+		out.append(cell)
+
+	return out
+
+
+const GARDEN_STEP_MSEC := 150         # between sows and plantings
+const GARDEN_TILL_MSEC := 600         # between tills (the server paces hoe strokes at 500 ms)
+const GARDEN_BED_WAIT_MSEC := 3000    # how long a sow waits for the bed its till asked for
+
+
+# The next request of a Garden queue ([{"act": "till" | "sow" | "sow_at" | "plant_bush", "pos", "bed", "until"}], not empty) at `now` msec. Pops the front, or moves
+# a "sow_at" whose bed is not there yet to the back until its wait ends (a till starts the wait of the first sow_at not yet waiting). `bed_at.call(position)` ->
+# [bed id or 0, its crop]. -> {"send": the request to send now or {} (a "sow_at" goes out as a "sow" of its bed, or not at all if the bed has a crop), "next": msec
+# the queue may move again}.
+static func garden_step(queue: Array, now: int, bed_at: Callable) -> Dictionary:
+	var item: Dictionary = queue[0]
+
+	match str(item["act"]):
+		"till":
+			queue.pop_front()
+
+			for wait in queue:
+				if str(wait["act"]) == "sow_at" and int(wait["until"]) == 0:
+					wait["until"] = now + GARDEN_BED_WAIT_MSEC
+					break
+
+			return {"send": item, "next": now + GARDEN_TILL_MSEC}
+		"sow_at":
+			var found: Array = bed_at.call(item["pos"])
+
+			if int(found[0]) == 0 and (int(item["until"]) == 0 or now < int(item["until"])):
+				queue.push_back(queue.pop_front())   # not there yet: the next request goes first
+				return {"send": {}, "next": now + GARDEN_STEP_MSEC}
+
+			queue.pop_front()
+
+			if int(found[0]) == 0 or str(found[1]) != "":   # never came, or already sown
+				return {"send": {}, "next": now + GARDEN_STEP_MSEC}
+
+			return {"send": {"act": "sow", "bed": int(found[0]), "pos": item["pos"]}, "next": now + GARDEN_STEP_MSEC}
+
+	queue.pop_front()
+	return {"send": item, "next": now + GARDEN_STEP_MSEC}

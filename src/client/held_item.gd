@@ -2343,9 +2343,6 @@ func _hoe_here(action: int) -> void:
 var garden_grid: int = 0                 # index of FarmRules.GARDEN_GRIDS
 var _garden_queue: Array = []            # [{"act": "till" | "sow" | "sow_at" | "plant_bush", "pos": Vector3, "bed": id, "until": msec a sow_at waits for its bed}]
 var _garden_next_msec: int = 0
-const GARDEN_STEP_MSEC := 150            # between sows and plantings
-const GARDEN_TILL_MSEC := 600            # between tills (the server paces hoe strokes at 500 ms)
-const GARDEN_BED_WAIT_MSEC := 3000       # how long a sow waits for the bed its till asked for
 
 
 func _garden_here() -> void:
@@ -2397,37 +2394,14 @@ func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 	var facing: Vector3 = -_camera.global_transform.basis.z
 	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
 	var beds: Array = _inv.bed_rows()   # read once for the whole grid
-	var beds_used: Dictionary = {}       # a 2 m plot holds several 1 m cells but takes one crop: only its first cell sows it
-	var out: Array = []
+	var spots: Array = []
 
 	for flat in FarmRules.garden_cells(garden_grid, kind, aim, facing):
 		var pos: Vector3 = Vector3(flat.x, _terrain_y(flat.x, flat.y, aim.y, 3.0), flat.y)
 		var bed: int = _inv.bed_in(beds, pos)
+		spots.append([pos, bed, _inv.bed_crop(bed) if bed != 0 else ""])
 
-		if bed != 0 and beds_used.has(bed):
-			continue
-
-		if bed != 0:
-			beds_used[bed] = true
-
-		var cell: Dictionary = FarmRules.garden_action(kind, plant_name, bed != 0, _inv.bed_crop(bed) if bed != 0 else "")
-		cell["pos"] = pos
-		cell["bed"] = bed
-		cell["ok"] = str(cell["act"]) != "none" and Vector2(pos.x - feet.x, pos.z - feet.z).length() <= GARDEN_REACH_M and not is_nan(pos.y)
-
-		if not bool(cell["ok"]) and str(cell["act"]) != "none":
-			cell["say"] = "No ground to plant there" if is_nan(pos.y) else "Too far to plant there: step closer"
-			cell["act"] = "none"
-
-		if bool(cell["ok"]):
-			if have <= 0:
-				break
-
-			have -= 1
-
-		out.append(cell)
-
-	return out
+	return FarmRules.garden_plan(kind, plant_name, spots, feet, GARDEN_REACH_M, have)
 
 
 const GARDEN_REACH_M := 3.7   # inside the server's PLANT_BUSH_REACH_M (4 m flat; DIG_REACH_M 4.5 for tilling and sowing), flat from the player's feet, with room for the server's position lagging a tick
@@ -2440,8 +2414,8 @@ func _ground_under_crosshair() -> Dictionary:
 	return {} if hit.is_empty() or hit["collider"].has_meta("species_ids") else hit
 
 
-# Sends the queued Garden requests one at a time: a till waits GARDEN_TILL_MSEC after the last one (the server's hoe pace), a sow of a just-tilled cell waits for its bed
-# to show (up to GARDEN_BED_WAIT_MSEC), and the queue stops when the hoe leaves the hand or the pack runs out of the pick.
+# Sends the queued Garden requests one at a time: a till waits FarmRules.GARDEN_TILL_MSEC after the last one (the server's hoe pace), a sow of a just-tilled cell waits for its bed
+# to show (up to FarmRules.GARDEN_BED_WAIT_MSEC; FarmRules.garden_step), and the queue stops when the hoe leaves the hand or the pack runs out of the pick.
 func _garden_step() -> void:
 	if _garden_queue.is_empty():
 		return
@@ -2455,44 +2429,32 @@ func _garden_step() -> void:
 	if now < _garden_next_msec:
 		return
 
-	var item: Dictionary = _garden_queue[0]
 	var slot: int = _pack_slot_of(garden_pick)
 
-	if slot < 0 and str(item["act"]) != "till":
+	if slot < 0 and str(_garden_queue[0]["act"]) != "till":
 		_garden_queue.clear()
 		return
 
-	match str(item["act"]):
+	var bed_at := func(pos: Vector3) -> Array:
+		var bed: int = _inv.bed_id_at(pos)
+		return [bed, _inv.bed_crop(bed) if bed != 0 else ""]
+
+	var step: Dictionary = FarmRules.garden_step(_garden_queue, now, bed_at)
+	var send: Dictionary = step["send"]
+	_garden_next_msec = int(step["next"])
+
+	match str(send.get("act", "")):
 		"till":
-			_net.inventory_action.rpc_id(1, Net.ACT_TILL, held_slot, 0, 0, item["pos"])   # the hoe in hand tills, as in Till mode
+			_net.inventory_action.rpc_id(1, Net.ACT_TILL, held_slot, 0, 0, send["pos"])   # the hoe in hand tills, as in Till mode
 			_arm_play("use", 0.6)
 
 			if _sound != null:
-				_sound.hits.hit("spade", "soil", item["pos"], 0.7)
-
-			_garden_queue.pop_front()
-			_garden_next_msec = now + GARDEN_TILL_MSEC
-			_garden_queue_sow_waits(now)
-			return
+				_sound.hits.hit("spade", "soil", send["pos"], 0.7)
 		"sow":
-			_net.inventory_action.rpc_id(1, Net.ACT_SOW, int(item["bed"]), slot, 0, Vector3.ZERO)   # b: the seed's pack slot
-		"sow_at":
-			var bed: int = _inv.bed_id_at(item["pos"])
-
-			if bed == 0:
-				if int(item["until"]) == 0 or now < int(item["until"]):
-					_garden_queue.push_back(_garden_queue.pop_front())   # not there yet: the next request goes first
-					_garden_next_msec = now + GARDEN_STEP_MSEC
-					return
-
-			elif _inv.bed_crop(bed) == "":
-				_net.inventory_action.rpc_id(1, Net.ACT_SOW, bed, slot, 0, Vector3.ZERO)
+			_net.inventory_action.rpc_id(1, Net.ACT_SOW, int(send["bed"]), slot, 0, Vector3.ZERO)   # b: the seed's pack slot
 		"plant_bush":
-			_net.inventory_action.rpc_id(1, Net.ACT_PLANT_BUSH, slot, 0, 0, item["pos"])   # a: the bush's pack slot (it need not be in hand)
+			_net.inventory_action.rpc_id(1, Net.ACT_PLANT_BUSH, slot, 0, 0, send["pos"])   # a: the bush's pack slot (it need not be in hand)
 			_arm_play("use", 0.6)
-
-	_garden_queue.pop_front()
-	_garden_next_msec = now + GARDEN_STEP_MSEC
 
 
 # The Garden preview (the "plant easily" feel): a flat marker on every cell the next click would work, green where it will plant, red where it will not (a crop already
@@ -2554,13 +2516,6 @@ func _garden_preview() -> void:
 
 
 # A till has gone out: the sows waiting for beds start their wait clock (a sow_at queued behind tills not yet sent waits until its own till is out).
-func _garden_queue_sow_waits(now: int) -> void:
-	for item in _garden_queue:
-		if str(item["act"]) == "sow_at" and int(item["until"]) == 0:
-			item["until"] = now + GARDEN_BED_WAIT_MSEC
-			return
-
-
 # A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
 	var from: Vector3 = _camera.global_position

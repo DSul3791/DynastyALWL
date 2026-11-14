@@ -68,6 +68,37 @@ func _init() -> void:
 	check(FarmRules.garden_action("bush", "hazel bush", false, "")["act"] == "plant_bush", "garden: a bush on open ground is planted")
 	check(FarmRules.garden_action("bush", "hazel bush", true, "")["act"] == "none", "garden: a bush is not planted in a bed")
 	check(FarmRules.garden_action("", "", false, "")["act"] == "none", "garden: nothing picked sends nothing")
+	# A click's plan: a 2 m plot holding several 1 m cells takes one seed (its first cell); reach from the feet, no ground, and the pack's count stop the rest.
+	var spots: Array = [[Vector3(0.5, 1.0, 0.5), 7, ""], [Vector3(1.5, 1.0, 0.5), 7, ""], [Vector3(0.5, 1.0, 1.5), 0, ""], [Vector3(1.5, NAN, 1.5), 0, ""], [Vector3(9.5, 1.0, 0.5), 0, ""], [Vector3(-0.5, 1.0, 0.5), 8, "flax"], [Vector3(2.5, 1.0, 0.5), 0, ""]]
+	var made: Array = FarmRules.garden_plan("seed", "wheat seeds", spots, Vector3.ZERO, 3.7, 2)
+	check(made.size() == 5 and made[0]["act"] == "sow" and int(made[0]["bed"]) == 7 and made.filter(func(c): return int(c["bed"]) == 7).size() == 1, "garden plan: the plot is sown once, from its first cell (%s)" % str(made))
+	check(made[1]["act"] == "till" and made[2]["act"] == "none" and str(made[2]["say"]) == "No ground to plant there" and made[3]["act"] == "none" and str(made[3]["say"]).begins_with("Too far"), "garden plan: open ground tills; no ground and out of reach say why")
+	check(made[4]["act"] == "none" and int(made[4]["bed"]) == 8, "garden plan: a growing bed is shown, not sown")
+	check(made.filter(func(c): return bool(c["ok"])).size() == 2, "garden plan: two seeds in the pack plant two cells and the plan stops at the third")
+	# The queue: a till goes out and holds the next till 600 ms; its sow waits for the bed (moving to the back) up to 3 s, then is dropped; a bed that shows is sown once.
+	var queue: Array = [{"act": "till", "pos": Vector3(0.5, 1.0, 0.5)}, {"act": "sow_at", "pos": Vector3(0.5, 1.0, 0.5), "until": 0}, {"act": "sow", "bed": 4, "pos": Vector3.ZERO}]
+	var bed_there: Array = [0, ""]   # changed in place below: a lambda keeps the array it captured
+	var bed_at := func(_pos: Vector3) -> Array:
+		return bed_there.duplicate()
+
+	var step: Dictionary = FarmRules.garden_step(queue, 1000, bed_at)
+	check(step["send"]["act"] == "till" and int(step["next"]) == 1000 + FarmRules.GARDEN_TILL_MSEC and queue.size() == 2 and int(queue[0]["until"]) == 1000 + FarmRules.GARDEN_BED_WAIT_MSEC, "garden queue: the till goes, the next move waits 600 ms, its sow starts waiting 3 s")
+	step = FarmRules.garden_step(queue, 1600, bed_at)
+	check(step["send"].is_empty() and queue[0]["act"] == "sow" and queue[1]["act"] == "sow_at", "garden queue: a sow whose bed is not there yet goes to the back")
+	step = FarmRules.garden_step(queue, 1750, bed_at)
+	check(step["send"]["act"] == "sow" and int(step["send"]["bed"]) == 4 and queue.size() == 1 and int(step["next"]) == 1750 + FarmRules.GARDEN_STEP_MSEC, "garden queue: a queued sow goes out, 150 ms apart")
+	bed_there[0] = 12
+	var waiting: Array = queue.duplicate(true)
+	step = FarmRules.garden_step(queue, 1900, bed_at)
+	check(step["send"]["act"] == "sow" and int(step["send"]["bed"]) == 12 and queue.is_empty(), "garden queue: once the bed shows, the waiting sow sows it")
+	bed_there[0] = 0
+	step = FarmRules.garden_step(waiting, 4001, bed_at)
+	check(step["send"].is_empty() and waiting.is_empty(), "garden queue: a bed that never shows is given up after 3 s")
+	bed_there[0] = 12
+	bed_there[1] = "wheat"
+	waiting = [{"act": "sow_at", "pos": Vector3.ZERO, "until": 5000}]
+	step = FarmRules.garden_step(waiting, 4000, bed_at)
+	check(step["send"].is_empty() and waiting.is_empty(), "garden queue: a bed already sown is not sown again")
 
 	# Placeholder looks: every crop, every stage, a tuft grid for a 1 m bed and a 2 m plot, taller with the stage.
 	var all_built: bool = true
