@@ -1878,7 +1878,6 @@ func _sync_cleared() -> void:
 
 			if loose_id == "log" or loose_id.begins_with("log_"):
 				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): pressed like a felled trunk.
-				var plain: bool = loose_id == "log"
 				var node: Node3D = row["node"]
 				var seg: Array
 
@@ -1888,7 +1887,7 @@ func _sync_cleared() -> void:
 				if items._rolling.has(id) and _loose_segs.has(id):
 					seg = _loose_segs[id]
 				else:
-					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 2.5, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 3.0, 0.22, 0.28)
 
 				segs_now[id] = seg
 				lying.append(seg)
@@ -3944,8 +3943,8 @@ func _clear_view_m(from: Vector3, to: Vector3) -> float:
 
 
 # Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.
-# The log on the shoulder: about two and a half metres of trunk (the species' real length is not sent; Radar's item data has the weight).
-const CARRY_LOG_LENGTH_M := 2.4
+# The log on the shoulder: a full 3 m log (drops.json log_length_m; the species' real length is not sent; Radar's item data has the weight).
+const CARRY_LOG_LENGTH_M := 3.0
 const CARRY_LOG_RADIUS_M := 0.14
 const FOV_BASE := 75.0                 # Godot's default, which the game has always used
 const FOV_RUN_EXTRA := 5.0             # degrees wider at a full run
