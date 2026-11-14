@@ -553,6 +553,22 @@ func _garden_till_checks() -> void:
 
 	check(not items._garden_jobs.has(1) and made_edits.size() < items.GARDEN_MAX_EDITS, "the 5 by 5 garden is levelled in %d edits, under the cap of %d" % [made_edits.size(), items.GARDEN_MAX_EDITS])
 
+	# A 2 by 2 on a 0.4 slope: its first and second rings' targets are 0.6 m apart, which the feather slack lets settle too.
+	items.ground_height = func(x, _z): return 10.0 + 0.4 * (x - 140.0)
+	items.report_position(1, Vector3(140.0, 10.0, 40.0))
+	made_edits.clear()
+	items._last_dig.clear()
+	check(items.till_garden(1, inv, Vector3(140.0, 10.0, 40.0), hoe, 0, 202), "a 2 by 2 garden on a 0.4 slope is taken on")
+	steps = 0
+
+	while items._garden_jobs.has(1) and steps < 800:
+		items._garden_jobs[1]["next_ms"] = 0
+		items._garden_jobs_tick()
+		steps += 1
+
+	check(not items._garden_jobs.has(1) and made_edits.size() < items.GARDEN_MAX_EDITS, "the 2 by 2 garden is levelled in %d edits, under the cap" % made_edits.size())
+	check(items.GARDEN_FEATHER_GRADE <= 0.5, "the feather grade stays at most 1 in 2 (steeper, the inner spheres and the first ring undo each other)")
+
 	# A wall beside the garden: no cut or fill near it.
 	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 80.5)
 	items._items[920021] = {"number": items.table.number_of("thatch_wall"), "count": 1, "pos": Vector3(83.1, 10.0, 40.5), "left": 1.0e9, "struct": {"kind": "thatch_wall", "yaw": 0.0}}

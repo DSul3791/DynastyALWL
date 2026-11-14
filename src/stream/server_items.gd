@@ -3100,6 +3100,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 	for n in LEVEL_MAX_OPS:
 		var best: Vector3 = Vector3.ZERO
 		var best_off: float = 0.0
+		var best_excess: float = 0.0   # how far the worst spot is past its slack
 		var sphere: float = LEVEL_SPHERE_M
 
 		for n_spot in spots.size():
@@ -3110,13 +3111,16 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 				return -1
 
 			var want: float = float(targets[n_spot]) if not targets.is_empty() else target
+			var radius: float = float(radii[n_spot]) if not radii.is_empty() else LEVEL_SPHERE_M
+			var slack: float = LEVEL_MIN_M if radius >= LEVEL_SPHERE_M else GARDEN_FEATHER_SLACK_M   # a garden's feather band (smaller spheres) is near enough sooner
 
-			if absf(h - want) > absf(best_off):
+			if absf(h - want) - slack > best_excess:
+				best_excess = absf(h - want) - slack
 				best_off = h - want
 				best = Vector3(at.x + offset.x, h, at.z + offset.y)
-				sphere = float(radii[n_spot]) if not radii.is_empty() else LEVEL_SPHERE_M
+				sphere = radius
 
-		if absf(best_off) < LEVEL_MIN_M:
+		if best_excess <= 0.0:
 			break
 
 		var depth: float = minf(absf(best_off), LEVEL_MAX_M)
@@ -14652,8 +14656,6 @@ func _bed_key(pos: Vector3) -> String:
 	return "b%d,%d" % [roundi(pos.x / BED_SNAP_M), roundi(pos.z / BED_SNAP_M)]
 
 
-# The square metres of a bed or plot, each holding one crop (Dave 14 Nov 2026: a Medium gardening plot holds 4 crops and a Large 9): a 1 m bed, a pot or a
-# planter is one, at its own position (its key is the bed's own, as before); an n m plot is n by n, turned with it (FarmRules.bed_side, grid_points).
 # Whether any square metre in `cells` lies within BED_GAP_M of one of bed or plot `other`'s (two would share a crop record).
 func _beds_clash(cells: Array, other: Dictionary) -> bool:
 	for mine in cells:
@@ -14664,6 +14666,8 @@ func _beds_clash(cells: Array, other: Dictionary) -> bool:
 	return false
 
 
+# The square metres of a bed or plot, each holding one crop (Dave 14 Nov 2026: a Medium gardening plot holds 4 crops and a Large 9): a 1 m bed, a pot or a
+# planter is one, at its own position (its key is the bed's own, as before); an n m plot is n by n, turned with it (FarmRules.bed_side, grid_points).
 func _bed_cells(it: Dictionary) -> Array:
 	var n: int = FarmRules.bed_side(_structures.get(str(it["struct"].get("kind", "")), {}))
 
@@ -15477,6 +15481,9 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 		var kind: String = str(other["struct"]["kind"])
 
 		if _is_plot_kind(kind) and _beds_clash([cell], other):
+			if not quiet:
+				_say(peer, "That ground is already a bed." if kind == "tilled_bed" else "A garden plot or planter is in the way.")
+
 			return 0   # already tilled, or a bed or a plot's square metre overlaps it (turned beds stand where their grid puts them)
 
 		if kind == "tilled_bed":
@@ -15513,6 +15520,8 @@ const GARDEN_FEATHER_M := 2.0          # Dave: "feather the edges outside of the
 const GARDEN_STAY_M := 20.0            # PROVISIONAL: the job stops when the player is this far from the garden's centre
 const GARDEN_CLEAR_M := 1.5            # PROVISIONAL: no levelling spot this close to a built piece (its sphere would cut or bury it)
 const GARDEN_FEATHER_SPHERE_M := 1.2   # PROVISIONAL: smaller cut and fill spheres in the feather band, so its slope survives (a 2.5 m sphere is flatter than a 2 m blend)
+const GARDEN_FEATHER_SLACK_M := 0.1    # a feather spot within this of its target is left: the 1.2 m spheres of neighbouring rings undo each other by up to about 0.09 m on a small garden's slope, and a tighter stop cuts and fills without end
+# Keep GARDEN_FEATHER_GRADE at 0.5 or below: an inner 2.5 m sphere moves the first ring (1 m off) by 0.21 m, which a steeper grade turns into a cycle.
 const GARDEN_FEATHER_GRADE := 0.5      # the feather band rises or falls at most this much a metre: a steeper blend has each 1.2 m cut or fill undo its neighbour's, without end (the 600-edit cap would stop it); past it the ground meets the natural with a step
 const GARDEN_MAX_EDITS := 600          # PROVISIONAL: a garden's levelling stops after this many ground edits whatever is left (never an endless job)
 const GARDEN_TILLS_A_STEP := 4         # PROVISIONAL: beds tilled each HOE_COOLDOWN_MS once the ground is level
