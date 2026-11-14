@@ -368,8 +368,7 @@ func _credit(it: Dictionary, number: int, count: int) -> void:
 
 	for peer in host._peer_key:
 		if str(host._peer_key[peer]) == owner:
-			for _i in count:
-				host._goal_made(int(peer), number)
+			host._goal_made(int(peer), number, count)   # one "made:" a unit, as the crafts count (#1088); paused in admin mode
 
 			return
 
