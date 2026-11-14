@@ -2001,7 +2001,7 @@
 		"plant_fibre": {
 			"name": "Plant fibre",
 			"kind": "material",
-			"description": "Stringy strands from nettles and grass. Twist 3 into twine, or use one to light a fire.",
+			"description": "Stringy strands from nettles and grass. Twist 3 into twine.",
 			"how_to_get": [
 				"Picked from flax",
 				"Picked from nettle",
@@ -2027,7 +2027,7 @@
 		"log": {
 			"name": "Log",
 			"kind": "material",
-			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
+			"description": "A heavy length of trunk. Chop it into blocks and firewood, or saw it into planks.",
 			"how_to_get": [
 				"Any species' log from a felled tree counts (oak log, pine log and the rest)"
 			],
@@ -2188,7 +2188,7 @@
 		"campfire_kit": {
 			"name": "Campfire",
 			"kind": "placeable",
-			"description": "Stones and sticks for a fire. Set it down, then light it with fibre.",
+			"description": "Stones and sticks for a fire. Set it down, put wood on it, then press E to light it.",
 			"how_to_get": [
 				"Craft: 6 Stick, 3 Stone"
 			],
@@ -2414,7 +2414,7 @@
 		"lumber": {
 			"name": "Plank",
 			"kind": "material",
-			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
+			"description": "Boards from a log. Make them at a saw mill or with a saw.",
 			"how_to_get": [
 				"Craft at a saw mill: 1 Log",
 				"Craft at a workbench: 1 Log (keep Stone - Wedge)",
@@ -3396,13 +3396,12 @@
 			"status": "planned"
 		},
 		"master_forge": {
-			"name": "Master forge",
+			"name": "Master smithy",
 			"kind": "structure",
-			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
+			"description": "An ornate smithy with a steel anvil and its own quenching trough, for masterwork and Tempered steel.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_oak": {
 			"name": "Oak log",
@@ -4442,7 +4441,7 @@
 		"wooden_block": {
 			"name": "Hardwood block",
 			"kind": "material",
-			"description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.",
+			"description": "A short round cut from a hardwood log. Burns longer than hard firewood, or split it on a chopping block.",
 			"how_to_get": [
 				"Strike a small log lying on the ground with an axe: 3 blocks"
 			],
