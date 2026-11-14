@@ -2158,6 +2158,7 @@ func reset_world() -> int:
 	_mined.clear()
 	_chops.clear()
 	_split_due.clear()
+	_fellers.clear()
 	_saplings.clear()
 
 	if restore_flora.is_valid():
@@ -6795,7 +6796,6 @@ func split_trunk(id: int) -> bool:
 	for spot in spots:   # the log mesh lies along its x axis: turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
 		if drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius)):
 			laid += 1
-
 
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
@@ -15896,9 +15896,9 @@ func _goal_made(peer: int, item: int, crafts: int = 1) -> void:
 # Gathered first-hand (give() or _take_in() with no caller's source: a harvest, dig, mine, carcass, catch or litter): the got_item checks count it as
 # history, not possession. Trades, crafts, cooking, rewards, refunds and returns are tagged by their callers and do not count, nor do admin gives
 # (they go straight to Inventory.add). Ground items count only when found: natural scatter at its pickup (_pickup, _pickup_batch), and a log when
-# this player cuts it off a trunk (_cut_log_off; it lands on the ground).
-# shortcut: other ground pickups never count, since a dropped item cannot be told from a found one; the logs a felled tree breaks into by itself
-# (_auto_split, no player) are not counted; revisit with GA-41 origin events.
+# this player cuts it off a trunk (_cut_log_off; it lands on the ground), and the logs a tree breaks into by itself go to its feller (split_trunk, _fellers).
+# shortcut: other ground pickups never count, since a dropped item cannot be told from a found one; a trunk that splits while its feller is offline,
+# or after a server restart (_fellers is not saved), credits no one; revisit with GA-41 origin events.
 func _goal_got(peer: int, item: int, n: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
