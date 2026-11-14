@@ -6528,7 +6528,7 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"material": "thatch",
-				"note": "Building piece: row state 118."
+				"note": "Placed piece: row states 118 (45 degrees) and 385 (65 degrees, thatch_roof_corner_65), A-37 (PROVISIONAL)."
 			},
 			"wooden_roof_corner_kit": {
 				"number": 620,
@@ -6550,7 +6550,7 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"material": "wood",
-				"note": "Building piece: row state 119."
+				"note": "Placed piece: row states 119 (45 degrees) and 386 (65 degrees, wooden_roof_corner_65), A-37 (PROVISIONAL)."
 			},
 			"log_roof_corner_kit": {
 				"number": 622,
@@ -6572,7 +6572,7 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"material": "log",
-				"note": "Building piece: row state 120."
+				"note": "Placed piece: row states 120 (45 degrees) and 387 (65 degrees, log_roof_corner_65), A-37 (PROVISIONAL)."
 			},
 			"stone_roof_corner_kit": {
 				"number": 624,
@@ -6594,7 +6594,7 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"material": "stone",
-				"note": "Building piece: row state 121."
+				"note": "Placed piece: row states 121 (45 degrees) and 388 (65 degrees, stone_roof_corner_65), A-37 (PROVISIONAL)."
 			},
 			"brick_roof_corner_kit": {
 				"number": 626,
@@ -6616,7 +6616,7 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"material": "brick",
-				"note": "Building piece: row state 122."
+				"note": "Placed piece: row states 122 (45 degrees) and 389 (65 degrees, brick_roof_corner_65), A-37 (PROVISIONAL)."
 			},
 			"log_bench_kit": {
 				"number": 628,
@@ -9235,7 +9235,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 220."
+				"note": "Placed piece: row states 220 (45 degrees) and 390 (65 degrees, engineered_roof_corner_65), A-37 (PROVISIONAL)."
 			},
 			"fortified_foundation_kit": {
 				"number": 880,
@@ -10754,6 +10754,16 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 392 (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL (GOALS-REPAIR A-39)): the 65 degree twin of Fortified - Roof 45 (fortified_roof), built with the hammer (blueprint 316)."
+			},
+			"fortified_roof_corner": {
+				"number": 1327,
+				"name": "Fortified - Roof corner",
+				"description": "A clay tile roof corner on pinned plank rafters, strapped with iron bands. Does not burn.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row states 393 (45 degrees) and 394 (65 degrees, fortified_roof_corner_65), A-37; built with the hammer (blueprint 317); cost PROVISIONAL (GOALS-REPAIR A-40)."
 			}
 	}
 }

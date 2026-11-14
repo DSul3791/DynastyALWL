@@ -60,6 +60,7 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 			row["id"] = id
 			row["kit"] = str(kinds[str(row["structure"])].get("kit", ""))
 			row["state"] = int(kinds[str(row["structure"])].get("state", 0))
+			row["twin_state"] = int(kinds.get(str(kinds[str(row["structure"])].get("slope_twin", "")), {}).get("state", -1))   # a roof corner's 65 shape (A-37)
 			_book.append(row)
 
 	var order: Array = parsed.get("tier_order", TIER_ORDER) if typeof(parsed) == TYPE_DICTIONARY else TIER_ORDER
@@ -166,12 +167,15 @@ func can_afford(hammer_tier: int) -> bool:
 	return false
 
 
-# state number -> blueprint number, for the structures a hammer can place (what "Save building plan" can keep).
+# state number -> blueprint number, for the structures a hammer can place (what "Save building plan" can keep), a roof corner's 65 shape included.
 func bp_of_state() -> Dictionary:
 	var out: Dictionary = {}
 
 	for row in _book:
 		out[int(row["state"])] = int(row["number"])
+
+		if int(row["twin_state"]) >= 0:
+			out[int(row["twin_state"])] = int(row["number"])   # a roof corner's 65 shape is the same blueprint; replayed at its own height it comes back 65 (roof_hip_pick)
 
 	return out
 

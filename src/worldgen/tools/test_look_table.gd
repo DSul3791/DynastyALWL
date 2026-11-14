@@ -23,13 +23,11 @@ const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "
 const FENCES := ["thatch_fence", "thatch_gate", "thatch_gate_open", "wood_fence", "wood_gate", "wood_gate_open", "log_fence", "log_gate", "log_gate_open",
 	"stone_fence", "stone_gate", "stone_gate_open", "brick_fence", "brick_gate", "brick_gate_open", "iron_fence", "iron_gate", "iron_gate_open"]
 const B1B_B6 := {"log_stairs": 350,
-	"thatch_roof_corner": 400, "log_roof_corner": 400, "log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
+	"log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
 	"wooden_barrel": 500, "stone_well": 550, "primitive_well": 700, "advanced_well": 700, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
 	"stone_lamp_post": 450, "thatch_garden_plot": 600}
-# The pitched tier roof corners (Kathleen, 10 Nov 2026): the clay tile roofs add a rib down the slope every 0.24 m and a round ridge tile to the courses;
-# the straight roofs are panels since GOALS-REPAIR A-35/A-36 (tier_panel, 132 to 240 triangles with the Fortified iron straps, under the default cap);
-# their hip corners carry the ribs over three faces and two hip caps, 400 (the thatch and log corners').
-const TILE_ROOFS := {"brick_roof_corner": 400, "engineered_roof_corner": 400}
+# The tier roofs: the straight roofs are panels since GOALS-REPAIR A-35/A-36 (tier_panel, 132 to 240 triangles with the Fortified iron straps) and the corners hips over the corner
+# square since A-37 (roof_hip: two faces, a cap, two eaves), all under the default cap.
 # The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with bolted bands, 450.
 const FORTIFIED := {"fortified_doorway": 450}
 # BUGLIST-002 (13 Nov 2026): the new empty doorway frames. The double is the single's wall twice as wide, so the single's cap; an arched frame adds the wall steps and
@@ -73,7 +71,7 @@ func _cap(look: String) -> int:
 	if ("_door" in look) and not ("doorway" in look):      # a door (shut or open): one leaf, or two for a double
 		return DOOR_DOUBLE if "double" in look else DOOR_SINGLE
 
-	return int(BIG.get(look, B1A.get(look, B1B_B6.get(look, TILE_ROOFS.get(look, FORTIFIED.get(look, DOOR_FRAMES.get(look, NEAR_TRIANGLES)))))))
+	return int(BIG.get(look, B1A.get(look, B1B_B6.get(look, FORTIFIED.get(look, DOOR_FRAMES.get(look, NEAR_TRIANGLES))))))
 
 
 func _init() -> void:

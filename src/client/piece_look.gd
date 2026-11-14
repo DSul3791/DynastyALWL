@@ -1471,23 +1471,17 @@ static func tier_panel(kind: String = "stone", slope_deg: float = 45.0) -> Node3
 	return root
 
 
-# --- Tier roofs (seven-tier ladder, Kathleen 10 Nov 2026; Dave: a roof is its own weatherproof cover, not the wall material). The straight roofs are
-# sloped panels (tier_panel, GOALS-REPAIR A-35/A-36); the corners (pitched_roof, until A-37) are the 2.4 m square on four posts, the ridge along Z, both slopes at 0.3 rad (so two tiers side by side meet at the same
-# valley), eaves 2.45 m up at x = -1.2 and +1.2. The cover is laid in courses parallel to the ridge; each course's lower edge stands proud of the next
-# by its thickness, so the slope reads as shingles, shakes, slates or tiles from any side. A corner piece is the thatch corner's hip end: the ridge
-# stops at the middle and the cover slopes down to the +Z eave as well.
-#   kind: [cover, courses, course thickness, underside, ridge ("log", "boards", "slab" or "round"), posts, verges, post width]
+# --- Tier roofs (seven-tier ladder, Kathleen 10 Nov 2026; Dave: a roof is its own weatherproof cover, not the wall material). Every roof above Crude is a
+# sloped panel (tier_panel, GOALS-REPAIR A-35/A-36) and every corner a hip over a corner square (roof_hip, A-37), in the tier's own cover from this table.
+#   kind: [cover, courses, course thickness, boards under the cover, ridge style ("round": a rib of tile down the slope every 0.24 m), rafters, fascia]
 const ROOF_SPEC := {
-	"log": [Color(0.29, 0.26, 0.23), 6, 0.04, "_log", "log", "_log", "_log", 0.14],               # Rustic: bark shingles on split-log boards
-	"wood": [Color(0.58, 0.43, 0.26), 9, 0.03, "_planks", "boards", "_frame", "_frame", 0.12],      # Refined: split wooden shakes on sawn boards
-	"stone": [Color(0.3, 0.32, 0.35), 7, 0.03, "_planks", "slab", "_frame", "_flag", 0.14],         # Sturdy: slates on boards, a stone ridge
-	"brick": [Color(0.7, 0.36, 0.2), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.12],         # Superior: fired clay tiles, round ridge tiles
-	"engineered": [Color(0.55, 0.24, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.14],   # Engineered: deeper red clay tiles on planks (#972: no concrete roof)
-	"fortified": [Color(0.47, 0.22, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.14],    # Fortified: the Engineered tiles, darker, strapped with iron
+	"log": [Color(0.29, 0.26, 0.23), 6, 0.04, "_log", "log", "_log", "_log"],               # Rustic: bark shingles on split-log boards
+	"wood": [Color(0.58, 0.43, 0.26), 9, 0.03, "_planks", "boards", "_frame", "_frame"],      # Refined: split wooden shakes on sawn boards
+	"stone": [Color(0.3, 0.32, 0.35), 7, 0.03, "_planks", "slab", "_frame", "_flag"],         # Sturdy: slates on boards, a stone ridge
+	"brick": [Color(0.7, 0.36, 0.2), 5, 0.04, "_planks", "round", "_frame", "_tile"],         # Superior: fired clay tiles, round ridge tiles
+	"engineered": [Color(0.55, 0.24, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile"],   # Engineered: deeper red clay tiles on planks (#972: no concrete roof)
+	"fortified": [Color(0.47, 0.22, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile"],    # Fortified: the Engineered tiles, darker, strapped with iron
 }
-const ROOF_PITCH := 0.3
-const ROOF_HALF := 1.2
-const ROOF_EAVE := 2.45
 
 
 static func _roof_mat(name: String) -> StandardMaterial3D:
@@ -1506,129 +1500,6 @@ static func _tri_out(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, out: V
 		st.add_vertex(c)
 
 
-# The part of the convex polygon `pts` between heights `low` and `high`.
-static func _clip_band(pts: Array, low: float, high: float) -> Array:
-	var out: Array = pts
-
-	for bound in [[low, 1.0], [high, -1.0]]:
-		var level: float = bound[0]
-		var keep: float = bound[1]
-		var kept: Array = []
-
-		for i in out.size():
-			var p: Vector3 = out[i]
-			var q: Vector3 = out[(i + 1) % out.size()]
-			var p_in: bool = (p.y - level) * keep >= -0.0001
-			var q_in: bool = (q.y - level) * keep >= -0.0001
-
-			if p_in:
-				kept.append(p)
-
-			if p_in != q_in:
-				kept.append(p.lerp(q, (level - p.y) / (q.y - p.y)))
-
-		out = kept
-
-		if out.size() < 3:
-			return []
-
-	return out
-
-
-# The cover of one roof face (a flat convex polygon running from the eave up to the ridge): `rows` courses, each lifted `thick` at its lower edge and
-# flush at its upper edge, a drip face under each lower edge; the underside `deck` below the face in `under`. `rough`: the courses vary in thickness (bark
-# shingles); `ribs`: rounded clay tiles, a rib down the slope every 0.24 m over the courses.
-static func _roof_face(cover: SurfaceTool, under: SurfaceTool, face: Array, rows: int, thick: float, deck: float, ridge: float, ribs: bool, rough: bool) -> void:
-	var n: Vector3 = ((face[1] as Vector3) - (face[0] as Vector3)).cross((face[2] as Vector3) - (face[0] as Vector3)).normalized()
-
-	if n.y < 0.0:
-		n = -n
-
-	var step: float = (ridge - ROOF_EAVE) / float(rows)
-
-	for k in rows:
-		var low: float = ROOF_EAVE + step * float(k)
-		var band: Array = _clip_band(face, low, low + step)
-
-		if band.is_empty():
-			continue
-
-		var proud: float = thick * (1.0 + 0.45 * float((k * 7) % 3 - 1)) if rough else thick
-		var lifted: Array = []
-		var edge: Array = []
-
-		for p in band:
-			var v: Vector3 = p
-			lifted.append(v + n * (proud * clampf((low + step - v.y) / step, 0.0, 1.0)))
-
-			if absf(v.y - low) < 0.0001:
-				edge.append(v)
-
-		for t in range(1, lifted.size() - 1):
-			_tri_out(cover, lifted[0], lifted[t], lifted[t + 1], n)
-
-		if edge.size() == 2:
-			var a: Vector3 = edge[0]
-			var b: Vector3 = edge[1]
-			var drip: Vector3 = Vector3(n.x, 0.0, n.z).normalized()
-			_tri_out(cover, a, b, b + n * proud, drip)
-			_tri_out(cover, a, b + n * proud, a + n * proud, drip)
-
-	if ribs:
-		var slope: Vector3 = (Vector3(0.0, -1.0, 0.0) + n * n.y).normalized()   # straight down the face
-		var across: Vector3 = n.cross(slope).normalized()
-		var lo: float = INF
-		var hi: float = -INF
-
-		for p in face:
-			lo = minf(lo, (p as Vector3).dot(across))
-			hi = maxf(hi, (p as Vector3).dot(across))
-
-		var count: int = floori((hi - lo) / 0.24)
-
-		for j in count:
-			var u: float = lo + (hi - lo) * (float(j) + 0.5) / float(count)
-			var ends: Array = []
-
-			for i in face.size():
-				var a: Vector3 = face[i]
-				var b: Vector3 = face[(i + 1) % face.size()]
-				var da: float = a.dot(across) - u
-				var db: float = b.dot(across) - u
-
-				if (da < 0.0) != (db < 0.0):
-					ends.append(a.lerp(b, da / (da - db)))
-
-			if ends.size() != 2:
-				continue
-
-			var top_a: Vector3 = (ends[0] as Vector3) + n * (thick + 0.035)
-			var top_b: Vector3 = (ends[1] as Vector3) + n * (thick + 0.035)
-
-			for s in [-1.0, 1.0]:
-				var foot_a: Vector3 = (ends[0] as Vector3) + across * (s * 0.08) + n * (thick * 0.5)
-				var foot_b: Vector3 = (ends[1] as Vector3) + across * (s * 0.08) + n * (thick * 0.5)
-				_tri_out(cover, foot_a, foot_b, top_b, n + across * s)
-				_tri_out(cover, foot_a, top_b, top_a, n + across * s)
-
-	var down: Array = []
-
-	for p in face:
-		down.append((p as Vector3) - Vector3(0.0, deck, 0.0))
-
-	for t in range(1, down.size() - 1):
-		_tri_out(under, down[0], down[t], down[t + 1], Vector3(0.0, -1.0, 0.0))
-
-	for i in face.size():   # the eave edge: from the cover's proud lower edge down to the underside
-		var a: Vector3 = face[i]
-		var b: Vector3 = face[(i + 1) % face.size()]
-
-		if absf(a.y - ROOF_EAVE) < 0.0001 and absf(b.y - ROOF_EAVE) < 0.0001:
-			var out: Vector3 = Vector3(n.x, 0.0, n.z).normalized()
-			_tri_out(under, a + n * thick, b + n * thick, b - Vector3(0.0, deck, 0.0), out)
-			_tri_out(under, a + n * thick, b - Vector3(0.0, deck, 0.0), a - Vector3(0.0, deck, 0.0), out)
-
-
 static func _mesh_of(root: Node3D, st: SurfaceTool, material: StandardMaterial3D) -> void:
 	st.generate_normals()
 	var mesh: MeshInstance3D = MeshInstance3D.new()
@@ -1637,74 +1508,6 @@ static func _mesh_of(root: Node3D, st: SurfaceTool, material: StandardMaterial3D
 	root.add_child(mesh)
 
 
-# A tier roof corner (ROOF_SPEC `kind`): the hip end on four posts, the 2.4 m square, the ridge along Z stopping at the middle and the cover sloping down to
-# the +Z eave as well as both side eaves (the straight roofs are panels, tier_panel; the corners are redone for both slopes in A-37).
-static func pitched_roof(kind: String) -> Node3D:
-	_tier_materials()
-	var spec: Array = ROOF_SPEC.get(kind, ROOF_SPEC["wood"])
-	var cover_mat: StandardMaterial3D = _tone_mat(spec[0])
-	var rows: int = spec[1]
-	var thick: float = spec[2]
-	var under_mat: StandardMaterial3D = _roof_mat(spec[3])
-	var post_mat: StandardMaterial3D = _roof_mat(spec[5])
-	var verge_mat: StandardMaterial3D = _roof_mat(spec[6])
-	var post_w: float = spec[7]
-	var deck: float = 0.06
-	var h: float = ROOF_HALF
-	var e: float = ROOF_EAVE
-	var r: float = e + h * tan(ROOF_PITCH)
-	var root: Node3D = Node3D.new()
-	var top_end: Vector3 = Vector3(0.0, r, 0.0)
-	var faces: Array = [
-		[Vector3(0.0, r, -h), top_end, Vector3(h, e, h), Vector3(h, e, -h)],
-		[Vector3(0.0, r, -h), Vector3(-h, e, -h), Vector3(-h, e, h), top_end],
-		[top_end, Vector3(-h, e, h), Vector3(h, e, h)],
-	]
-	var cover: SurfaceTool = SurfaceTool.new()
-	cover.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var under: SurfaceTool = SurfaceTool.new()
-	under.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	for face in faces:
-		_roof_face(cover, under, face, rows, thick, deck, r, spec[4] == "round", kind == "log")
-
-	_mesh_of(root, cover, cover_mat)
-	_mesh_of(root, under, under_mat)
-
-	for x in [-1.1, 1.1]:   # the posts; the outer corner's is heavier
-		for z in [-1.1, 1.1]:
-			var w: float = post_w + (0.06 if x > 0.0 and z > 0.0 else 0.0)
-			_box(root, Vector3(w, e - 0.04, w), Vector3(x, (e - 0.04) * 0.5, z), post_mat)
-
-	var ridge_len: float = h
-	var ridge_z: float = -h * 0.5
-	_box(root, Vector3(0.1, 0.14, ridge_len), Vector3(0.0, r - deck - 0.07, ridge_z), post_mat)          # the ridge beam under the ridge
-	_box(root, Vector3(2.3, 0.1, 0.1), Vector3(0.0, e - 0.09, -1.1), post_mat)                             # a tie beam across the gable end
-	_box(root, Vector3(0.1, 0.1, 2.3), Vector3(1.1, e - 0.09, 0.0), post_mat)                              # and along the two eaves that meet at the hip
-	_box(root, Vector3(2.3, 0.1, 0.1), Vector3(0.0, e - 0.09, 1.1), post_mat)
-
-	match spec[4]:   # the ridge
-		"log":
-			_log_along(root, ridge_len + 0.04, 0.16, Vector3(0.0, r + 0.03, ridge_z), true)
-		"boards":
-			for side in [-1.0, 1.0]:
-				_box_rot(root, Vector3(0.18, 0.025, ridge_len + 0.04), Vector3(side * 0.08, r + thick * 0.5 + 0.01 - 0.08 * tan(ROOF_PITCH), ridge_z), Vector3(0.0, 0.0, -side * ROOF_PITCH), _frame)
-		"slab":
-			_box(root, Vector3(0.24, 0.07, ridge_len + 0.04), Vector3(0.0, r + 0.02, ridge_z), _flag)
-		_:
-			var ridge_tile: MeshInstance3D = _cyl(root, 0.08, ridge_len + 0.04, Vector3(0.0, r + 0.01, ridge_z), cover_mat, 8)
-			ridge_tile.rotation = Vector3(PI * 0.5, 0.0, 0.0)
-
-	for c in [Vector3(h, e, h), Vector3(-h, e, h)]:   # a cap along each hip, the cover's ridge material
-		var hip_mat: StandardMaterial3D = _flag if spec[4] == "slab" else (_log if spec[4] == "log" else (_frame if spec[4] == "boards" else cover_mat))
-		_rod(root, (c as Vector3) + Vector3(0.0, thick + 0.02, 0.0), top_end + Vector3(0.0, 0.03, 0.0), 0.1, hip_mat)
-
-	for side in [-1.0, 1.0]:   # a verge board up each edge of the gable end hides the cover's cut end
-		var mid: Vector3 = Vector3(side * h * 0.5, (e + r) * 0.5 + (thick - deck) * 0.5, -h)
-		_box_rot(root, Vector3(h / cos(ROOF_PITCH) + 0.04, thick + deck + 0.05, 0.05), mid, Vector3(0.0, 0.0, -side * ROOF_PITCH), verge_mat)
-
-	_solid(root, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
-	return root
 
 
 # --- Comfort furniture (Dave's comfort feature; Kathleen, 2026-10-31). References: Viking Age stools, benches and chairs (https://www.vikingage.org/wiki/wiki/Stools,_Benches_%26_Chairs), the Sala Hytta low table
@@ -2510,66 +2313,66 @@ static func pillar(kind: String = "wood") -> Node3D:
 	return root
 
 
-# A roof corner (B1c), the straight roof's 2.4 m square, for the corner of a building. "thatch": a hip end: the ridge of the straight thatch roof (along Z)
-# comes in from -Z and stops at the middle, and from its end the thatch slopes down to the +Z eave as well as to both side eaves, all at the straight roof's
-# 0.3 rad pitch; straw bundles along the three eaves, a hip rafter under each hip, a knot on the ridge end. "wood", "log", "stone", "brick", "engineered": the
-# same hip end in the tier's own roof cover (pitched_roof).
-static func roof_corner(kind: String = "wood") -> Node3D:
+# A roof corner (GOALS-REPAIR A-37; placement_rules.gd roof_hip_pick): the 2 m square at a building's corner, no posts, two sloped faces meeting along a
+# hip, each the continuation of the panels on one side (tier_panel and thatch_roof, at `slope_deg` 45 or 65). Its spot is the square's middle, its faces
+# rise toward -Z and -X: the outer corner (+1, -rise / 2, +1) is low, the inner (-1, +rise / 2, -1) high. Each face is a slab 0.16 m thick round the plane
+# a panel's middle lies on, so it meets the panel beside it flush; a hip cap along the meeting line and, for thatch, the shaggy eave along both low edges.
+# `kind` is "thatch" or a ROOF_SPEC kind ("wood", "log", "stone", "brick", "engineered", "fortified"). One convex collider per face.
+static func roof_hip(kind: String = "wood", slope_deg: float = 45.0) -> Node3D:
 	_tier_materials()
-
-	if kind != "thatch":
-		return pitched_roof(kind)
-
-	var hip: Node3D = Node3D.new()
-
-	for x in [-1.1, 1.1]:
-		for z in [-1.1, 1.1]:
-			_box(hip, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
-
-	var eave: float = 2.45
-	var ridge: float = eave + 1.25 * tan(0.3)
-	var top_end: Vector3 = Vector3(0.0, ridge, 0.0)
-	var faces: Array = [
-		[Vector3(0.0, ridge, -1.25), top_end, Vector3(1.25, eave, 1.25), Vector3(1.25, eave, -1.25)],        # the +X slope
-		[Vector3(0.0, ridge, -1.25), Vector3(-1.25, eave, -1.25), Vector3(-1.25, eave, 1.25), top_end],      # the -X slope
-		[top_end, Vector3(-1.25, eave, 1.25), Vector3(1.25, eave, 1.25)],                                    # the hip end
-	]
-	var st: SurfaceTool = SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_materials()
+	var root: Node3D = Node3D.new()
+	var tilt: float = deg_to_rad(slope_deg)
+	var r: float = 2.0 * tan(tilt)
+	var off: Vector3 = Vector3(0.0, 0.08 / cos(tilt), 0.0)          # half the slab's 0.16 m, measured straight up
+	var outer: Vector3 = Vector3(1.0, -r * 0.5, 1.0)
+	var inner: Vector3 = Vector3(-1.0, r * 0.5, -1.0)
+	var faces: Array = [[outer, Vector3(-1.0, -r * 0.5, 1.0), inner], [outer, inner, Vector3(1.0, -r * 0.5, -1.0)]]   # rising toward -Z, toward -X
+	var cover_mat: StandardMaterial3D = _thatch if kind == "thatch" else _tone_mat(ROOF_SPEC.get(kind, ROOF_SPEC["wood"])[0])
+	var under_mat: StandardMaterial3D = _frame if kind == "thatch" else _roof_mat(ROOF_SPEC.get(kind, ROOF_SPEC["wood"])[3])
+	var cover: SurfaceTool = SurfaceTool.new()
+	cover.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var under: SurfaceTool = SurfaceTool.new()
+	under.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	for face in faces:
-		for drop in [0.0, 0.14]:                                                         # the top of the thatch and, under it, its underside
-			var pts: Array = []
+		var top: Array = []
+		var low: Array = []
 
-			for p in face:
-				pts.append((p as Vector3) - Vector3(0.0, drop, 0.0))
+		for p in face:
+			top.append((p as Vector3) + off)
+			low.append((p as Vector3) - off)
 
-			for t in range(1, pts.size() - 1):
-				var tri: Array = [pts[0], pts[t + 1], pts[t]] if drop == 0.0 else [pts[0], pts[t], pts[t + 1]]   # clockwise from above on top (Godot's front face)
-				for v in tri:
-					st.add_vertex(v)
+		_tri_out(cover, top[0], top[1], top[2], Vector3.UP)
+		_tri_out(under, low[0], low[1], low[2], Vector3.DOWN)
 
-	st.generate_normals()
-	var thatch: MeshInstance3D = MeshInstance3D.new()
-	thatch.mesh = st.commit()
-	thatch.material_override = _thatch
-	hip.add_child(thatch)
-	_box(hip, Vector3(0.26, 0.16, 1.3), Vector3(0.0, ridge, -0.6), _thatch)              # the ridge bundle, to the ridge end
-	_box(hip, Vector3(0.1, 0.1, 1.25), Vector3(0.0, ridge - 0.12, -0.62), _frame)         # the ridge pole
+		for k in 3:   # the slab's three edges
+			var a: int = k
+			var b: int = (k + 1) % 3
+			var out: Vector3 = ((top[a] as Vector3) + (top[b] as Vector3) - 2.0 * (((top[0] as Vector3) + (top[1] as Vector3) + (top[2] as Vector3)) / 3.0))
+			_tri_out(cover, top[a], top[b], low[b], out)
+			_tri_out(cover, top[a], low[b], low[a], out)
 
-	for corner in [Vector3(1.2, eave - 0.03, 1.2), Vector3(-1.2, eave - 0.03, 1.2)]:
-		_rod(hip, corner, top_end - Vector3(0.0, 0.12, 0.0), 0.05, _frame)              # a hip rafter under each hip
+		var body: StaticBody3D = StaticBody3D.new()
+		body.set_meta("placed_structure", true)
+		var shape: CollisionShape3D = CollisionShape3D.new()
+		var hull: ConvexPolygonShape3D = ConvexPolygonShape3D.new()
+		hull.points = PackedVector3Array(top + low)
+		shape.shape = hull
+		body.add_child(shape)
+		root.add_child(body)
 
-	for side in [-1.0, 1.0]:
-		for k in 6:
-			_box_rot(hip, Vector3(0.16, 0.18, 0.14), Vector3(side * 1.22, eave, -1.15 + 0.46 * float(k)), Vector3(0.0, 0.0, -side * 0.3), _thatch)   # the side eaves
+	_mesh_of(root, cover, cover_mat)
+	_mesh_of(root, under, under_mat)
+	_rod(root, outer + off * 1.4, inner + off * 1.4, 0.07, _thatch if kind == "thatch" else cover_mat)   # the hip cap
 
-	for k in 6:
-		_box_rot(hip, Vector3(0.14, 0.18, 0.16), Vector3(-1.15 + 0.46 * float(k), eave, 1.22), Vector3(0.3, 0.0, 0.0), _thatch)   # the hip end's eave
+	if kind == "thatch":
+		for k in 6:   # the shaggy low eave along both outer edges
+			var t: float = -0.85 + 0.34 * float(k)
+			_box_rot(root, Vector3(0.16, 0.18, 0.14), Vector3(t, -r * 0.5, 1.0), Vector3(tilt, 0.0, 0.0), _thatch)
+			_box_rot(root, Vector3(0.14, 0.18, 0.16), Vector3(1.0, -r * 0.5, t), Vector3(0.0, 0.0, -tilt), _thatch)
 
-	_dome(hip, 0.16, top_end, Vector3(1.0, 0.8, 1.0), _thatch, 6, 3)                    # the knot on the ridge end
-	_solid(hip, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
-	return hip
+	return root
 
 
 # --- Buildables B2 (buildables_plan.md, 10 Nov 2026): fences and gates. A section is 2 m long along X with a post at each end (x = -1 and +1) that the next
