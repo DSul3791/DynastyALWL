@@ -425,6 +425,78 @@ func leave(keep: Dictionary) -> void:
 				break
 
 
+# Water by the player's route (GOALS-REPAIR GA-04): the real fill action at fresh water puts 500 mL a fill into a bucket in the pack, which the recipes draw from.
+func fill_water(units: int) -> void:
+	items.water_near = func(_pos, _reach): return true
+	var bucket: int = n("bucket")
+
+	if have("bucket") == 0:
+		items.give(1, bucket, 1)
+
+	var slot: int = items.inventory_of(1).numbers.find(bucket)
+
+	for k in range(units):
+		items._last_drink.clear()
+		items.action(1, Net.ACT_DRINK, slot, 0, 0, Vector3.ZERO)
+
+	check(items.inventory_of(1).count_fill(n("water")) >= units and have("water") == 0, "%d fills of 500 mL make %d water ingredients, and no stackable water exists" % [units, units])
+
+
+# What the pack holds, item number -> count.
+func pack_counts() -> Dictionary:
+	var out: Dictionary = {}
+	var pack = items.inventory_of(1)
+
+	for i in pack.slot_count:
+		if pack.numbers[i] != 0:
+			out[pack.numbers[i]] = int(out.get(pack.numbers[i], 0)) + pack.counts[i]
+
+	return out
+
+
+# Cutting a trunk also gives its branches' sticks and leaves, seeds and roots; this test counts its stations' materials exactly, so what came besides the tannin bark is put down again.
+func drop_byproducts(before: Dictionary) -> void:
+	var pack = items.inventory_of(1)
+	var bark: int = n("tannin_bark")
+
+	for number in pack_counts():
+		var extra: int = int(pack_counts()[number]) - int(before.get(number, 0))
+
+		if extra > 0 and number != bark:
+			pack.remove(int(number), extra)
+
+
+# Tannin bark by the player's route (GOALS-REPAIR GA-01): felled oak trunks (the fall itself: test_fell_autosplit) cut up with the Stone - Axe in hand, far from the
+# stations so their logs are no craft stock. Each oak gives its drops.json harvest_yield count, once. The player is put back where they were.
+func bark_from_oaks(wanted: int) -> void:
+	var back: Vector3 = items.position_of(1)
+	var per_oak: int = int(items._drops["harvest_yield"]["oak"]["count"])
+	var oaks: int = ceili(float(wanted) / float(per_oak))
+	var have_before: int = have("tannin_bark")
+	var before: Dictionary = pack_counts()
+
+	for k in range(oaks):
+		var id: int = 960000 + k
+		var at: Vector3 = Vector3(300.0 + float(k) * 40.0, 10.0, 300.0)
+		items._items[id] = {"number": 0, "count": 1, "pos": at, "left": 1.0e9, "tree": {"state": 3, "species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 9.0, "radius": 0.3, "chunk": [4, 4]}}
+
+		for blow in range(40):
+			if not items._items.has(id):
+				break
+
+			var tree: Dictionary = items._items[id]["tree"]
+			var logs_phase: bool = int(tree.get("blows", 0)) >= int(items._drops["trunk"]["branch_blows"]) and int(tree.get("logs_left", 0)) > 0
+			var length_now: float = float(tree["length"])
+			var piece: float = length_now if int(tree.get("logs_left", 0)) <= 1 else minf(float(items._drops["trunk"]["log_length_m"]), length_now)
+			go(at + Vector3(0.3, 0.0, (length_now - piece * 0.5) if logs_phase else 0.5))
+			items._last_process.erase(1)
+			items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
+
+	go(back)
+	drop_byproducts(before)
+	check(have("tannin_bark") - have_before == oaks * per_oak, "tannin bark came off %d felled oaks, %d each, cut with the axe (%d)" % [oaks, per_oak, have("tannin_bark") - have_before])
+
+
 func pack_str(peer: int = 1) -> String:
 	var out: Array = []
 	var pinv = items.inventory_of(peer)
@@ -626,13 +698,14 @@ func step3_construction_and_equipment() -> void:
 	craft("hide_scraper", 1)
 	check(have("hide_scraper") == 1, "3b. a hide scraper at the workbench")
 
-	# Leather: the hide scraped and dried at a Drying rack, tanned at a Tanning rack (tannin bark and water are given as test_textile_route gives them: no route test proves stripping bark or drawing water, T19_RESULTS gaps).
+	# Leather: the hide scraped and dried at a Drying rack, tanned at a Tanning rack (tannin bark: felled oaks cut up with the axe, bark_from_oaks; water: a bucket filled with the real fill action, fill_water).
 	give_cost("drying_rack", ["stick"])
 	build("drying_rack", WORKSHOP + Vector3(-3.0, 0.0, 0.5), "3c")
 	craft("processed_hide", 2)
 	give_cost("tanning_rack", ["log"])   # logs felled and worked (test_first_hour)
 	build("tanning_rack", WORKSHOP + Vector3(0.0, 0.0, -3.5), "3c")
-	give_needs("leather", ["tannin_bark", "water"], 2)
+	bark_from_oaks(need_of("leather", "tannin_bark") * 2)
+	fill_water(need_of("leather", "water") * 2)
 	craft("leather", 2)
 	check(have("leather") == 2 and have("processed_hide") == 0, "3c. two hides scraped, dried and tanned into Leather")
 
@@ -852,7 +925,7 @@ func step4_cooking_and_preservation() -> void:
 	leave({"sinew": 0, "antler": 0, "gut": 0, "bone": 0, "hide": 0, "animal_fat": need_of("cook_onion_roast", "animal_fat"), "plant_fibre": 0})
 
 	# The Food preparation table (logs: test_first_hour); Flatbread from flour milled by hand with a quern (wheat harvested: test_farming; water
-	# given: no route test proves drawing it, T19_RESULTS gaps), prepared at the table and baked at a Clay hearth of campfire bricks.
+	# filled at fresh water with the real fill action, fill_water), prepared at the table and baked at a Clay hearth of campfire bricks.
 	give_cost("food_preparation_table", ["log"])
 	prep_table = build("food_preparation_table", KITCHEN + Vector3(3.0, 0.0, 0.0), "4a")
 	give_needs("quern", ["stone", "stick"])   # stones and sticks lie about (test_first_hour)
@@ -860,7 +933,7 @@ func step4_cooking_and_preservation() -> void:
 	give_needs("flour_from_wheat", ["wheat"])
 	craft("flour_from_wheat", 1)
 	check(have("flour") >= need_of("prep_flatbread", "flour"), "4b. wheat milled by hand with the quern: %d flour" % have("flour"))
-	items.give(1, n("water"), need_of("prep_flatbread", "water"))
+	fill_water(need_of("prep_flatbread", "water"))
 	go(KITCHEN + Vector3(1.5, 0.0, 0.0))
 	craft("prep_flatbread", 1)
 	check(have("unbaked_flatbread") == gives_of("prep_flatbread"), "4c. the table prepares %d Unbaked flatbread" % have("unbaked_flatbread"))

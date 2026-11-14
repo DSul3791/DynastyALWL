@@ -230,10 +230,11 @@ func _init() -> void:
 
 	# Water poured counts: sow, pour, next day wet.
 	season[0] = "spring"
-	give("water", 1)
+	give("bucket", 1)
+	items.inventory_of(1).wear[slot_of("bucket")] = 8000   # a filled bucket (the fill and the pour scaling: test_liquid_ingredient)
 	give("barley_seeds", 1)
 	items.sow(1, items.inventory_of(1), bed, slot_of("barley_seeds"))
-	check(items.water_bed(1, items.inventory_of(1), bed) and not items.water_bed(1, items.inventory_of(1), bed), "one water pours on the bed per day")
+	check(items.water_bed(1, items.inventory_of(1), bed) and not items.water_bed(1, items.inventory_of(1), bed), "one bucket of water pours on the bed per day")
 	days(1)
 	check(int(items._crops[key]["wet"]) == 1, "water poured makes the next game day wet")
 

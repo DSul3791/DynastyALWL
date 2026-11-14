@@ -2217,6 +2217,8 @@
 			"name": "Water",
 			"kind": "material",
 			"stack": 20,
+			"unit_ml": 500,
+			"_provisional": "PROVISIONAL (GOALS-REPAIR A-1): one water ingredient is 500 mL of fresh water from filled containers (Inventory.count_fill / remove_fill). Precedent: vitals.json thirst.fill_ml 500 (what one fill action puts in a container) and weights.json water 0.5 kg. Not approved by Dave.",
 			"look_alikes": [
 				"Prickly pear",
 				"Aloe"
