@@ -5090,8 +5090,6 @@ func _load_world_items() -> void:
 				if not _chests.has(int(row[10])):
 					_chests[int(row[10])] = InventoryScript.new(table)
 
-				_chests[int(row[10])].stack_all = BinRules.is_bin(_structures.get(str(entry["struct"]["kind"]), {}))   # a resource bin holds its units in a few slots (not saved)
-
 			if row.size() > 12 and (_structures.get(str(row[9]), {}).has("support") or (not BuildingWear.rule_for(_wear_cfg, str(entry["struct"]["kind"])).is_empty() and float(row[12]) > 0.0)):
 				entry["struct"]["born"] = float(row[12])
 
@@ -8566,7 +8564,6 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		entry["struct"]["uid"] = _next_uid
 		entry["struct"]["owner"] = str(_peer_key.get(peer, ""))   # crafting draws only on the owner's containers (CraftStock.owner_ok)
 		_chests[_next_uid] = InventoryScript.new(table)
-		_chests[_next_uid].stack_all = BinRules.is_bin(def)   # a resource bin holds its units in a few slots (not saved)
 		_next_uid += 1
 
 	if not site_row.is_empty():
@@ -13258,7 +13255,7 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 				continue   # the Fireplace cooking crane (master s3.12) hangs its pot over a fireplace: only while that fireplace burns
 
 			# A station that must be burning to craft (the Smithies and the Master smithy, master s4 item 10): a cold one serves while the crafter
-			# carries its fuel, and the craft itself (light_it) fires it from the pack. Without fuel the craft waits and nothing is lost.
+			# carries its fuel or a fuel source stands near it (A-28), and the craft itself (light_it) fires it. Without fuel the craft waits and nothing is lost.
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
 				if d < cold_d:
 					cold = int(id)
@@ -13272,7 +13269,8 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 	if best >= 0 or cold < 0:
 		return best
 
-	# No burning station serves: the nearest cold one does while the crafter carries its fuel, and only the craft itself (light_it) fires it.
+	# No burning station serves: the nearest cold one does while the crafter carries its fuel or a fuel source stands within FUEL_SOURCE_M of it,
+	# and only the craft itself (light_it) fires it.
 	var cold_it: Dictionary = _items[cold]
 	var cold_def: Dictionary = _structures.get(str(cold_it["struct"]["kind"]), {})
 	var fuel_n: int = table.number_of(str(cold_def.get("fuel", "fuel")))
@@ -15655,7 +15653,6 @@ func dev_place(spec: String) -> int:
 	if int(def.get("slots", 0)) > 0:
 		row["uid"] = _next_uid
 		_chests[_next_uid] = InventoryScript.new(table)
-		_chests[_next_uid].stack_all = BinRules.is_bin(def)
 		_next_uid += 1
 
 	_items[_next_id] = entry
@@ -17244,6 +17241,9 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 
 # How many of `amount` a storage container still takes by weight (structures.json max_kg); all of it when it has no weight limit.
 func _box_room(sid: int, number: int, amount: int) -> int:
+	if not _box_takes(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), number):
+		return 0   # what the container does not take (structures.json takes): a sealed batch never goes into a Stone bin
+
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
 	amount = _kiln_room(sid, box, amount)
@@ -17450,7 +17450,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			_say(peer, "Needs repair")   # the exact warning for a worn-out smithy (master s2.2 item 9)
 		else:
-			_say(peer, ("The %s is cold: carry charcoal or coal, or keep some in a bin close by, to fire it" if _cold_station_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
+			_say(peer, ("The %s is cold: carry charcoal or coal, or keep some close by in a bin, a kiln or an unlit fire, to fire it" if _cold_station_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
 		return
 
 	for group_id in LOG_GROUP_IDS:   # shoulder and ground logs count (F-16), for any log and for the Softwood and Hardwood logs of the saws
@@ -17826,7 +17826,7 @@ func _craft_tick(spent: float) -> void:
 					var station_name: String = _station_name(str(recipe["station"]))
 					var waiting: int = _variant_of(head)
 					if _cold_station_near(peer, str(recipe["station"])):
-						_say(peer, "The %s is cold: carry charcoal or coal, or keep some in a bin close by, to fire it" % station_name)
+						_say(peer, "The %s is cold: carry charcoal or coal, or keep some close by in a bin, a kiln or an unlit fire, to fire it" % station_name)
 					elif waiting != 0:
 						_say(peer, "Your %s %s waits: go back to the %s" % [SmithingRules.label(waiting), str(recipe.get("name", "craft")), station_name])   # a Tempered or +1/+2 craft names the item it waits for
 					else:

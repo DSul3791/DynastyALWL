@@ -4,7 +4,8 @@ extends SceneTree
 # src/shared/bin_rules.gd, server_items.gd _box_put / fuel_sources, server_smelter.gd pull_fuel):
 #   1. the Small, Medium and Large resource bins: 1000, 5000 and 10000 units, built from Plank and Nails (16/32, 32/64, 64/128);
 #   2. an empty bin takes the first kind put in; another kind is refused with a notice and stays in the pack; Store all puts in only that kind;
-#   3. capacity is units: a put past it puts what fits and keeps the rest, then "The bin is full"; a slot holds more than an item's stack;
+#   3. capacity is units: a put past it puts what fits and keeps the rest, then "The bin is full"; Stack to nearby fills only a bin of
+#      that kind, never a mixed or another kind's bin;
 #   4. emptied, the bin is unassigned and takes another kind;
 #   5. a mixed bin from before R6 keeps everything, takes nothing in (a notice), can be emptied, and holds one kind again after;
 #   6. the world row carries the bin's resource and fill (row extras "res", "fill_pm") for the resource surface;
@@ -229,7 +230,7 @@ func _init() -> void:
 	store_all(bin)
 	check(held(bin, "stone") == 20 and held(bin, "clay") == 0 and pack("clay") == 15, "2e. Store all into a Stone bin puts in the Stone only (%d Stone, %d Clay)" % [held(bin, "stone"), held(bin, "clay")])
 
-	# 3. Capacity in units (one slot holds more than the stack of 20).
+	# 3. Capacity in units.
 	box(bin).add(n("stone"), 970)
 	clear_pack()
 	items.give(1, n("stone"), 20)
@@ -241,7 +242,7 @@ func _init() -> void:
 	for i in box(bin).slot_count:
 		most = maxi(most, box(bin).counts[i])
 
-	check(most > items.table.stack_of(n("stone")) and box(bin).count_of(n("stone")) == 1000, "3c. its slots hold %d in one, past the stack of %d: slots are layout, units the limit" % [most, items.table.stack_of(n("stone"))])
+	check(most == 1000 and box(bin).count_of(n("stone")) == 1000, "3c. one slot holds all 1000: the slots are layout, the units the limit (%d)" % most)
 
 	# 4. Emptied, it takes another kind.
 	while box(bin).count_of(n("stone")) > 0:
@@ -270,6 +271,19 @@ func _init() -> void:
 	act(Net.ACT_CHEST_CLOSE, 0)
 	check(pack("clay") == 7 and pack("charcoal") == 4 and BinRules.assigned(box(legacy)) == n("stone") and held(legacy, "stone") == 30, "5c. the Clay and Charcoal come out whole and it is a Stone bin again")
 	check(put_in(legacy, "stone", 5) == 5 and held(legacy, "stone") == 35, "5d. and takes Stone")
+	# Stack to nearby: Stone goes only into the Stone bin; a Clay bin and a nearer mixed bin holding Stone take none.
+	var clay_bin: int = place("open_storage_bin", BIN_AT + Vector3(0.0, 0.0, -1.5))
+	box(clay_bin).add(n("clay"), 3)
+	var mixed: int = place("open_storage_bin", BIN_AT + Vector3(-3.0, 0.0, 0.0))
+	box(mixed).add(n("clay"), 2)
+	box(mixed).add(n("stone"), 2)   # nearer than the Stone bin, and holding Stone: only the bin rule keeps the Stone out
+	clear_pack()
+	items.give(1, n("stone"), 12)
+	act(Net.ACT_BULK, ItemsScript.BULK_STACK_NEARBY, 0)
+	check(held(legacy, "stone") == 47 and held(clay_bin) == 3 and held(mixed) == 4 and pack("stone") == 0, "5e. Stack to nearby puts the 12 Stone into the Stone bin only (%d there, Clay bin %d, mixed bin %d)" % [held(legacy, "stone"), held(clay_bin), held(mixed)])
+	for gone in [clay_bin, mixed]:
+		items._chests.erase(int(items._items[gone]["struct"]["uid"]))
+		items._items.erase(gone)
 	box(legacy).add(n("clay"), 2)   # mixed again, for the save
 
 	# 6. The world row: the resource and the fill for the surface.
@@ -302,11 +316,11 @@ func _init() -> void:
 			legacy = int(id)
 
 	check(bin > 0 and held(bin, "iron_ore") == 950 and BinRules.assigned(box(bin)) == n("iron_ore"), "7a. after a restart the bin still holds 950 Iron ore and is an Iron ore bin")
-	check(legacy > 0 and held(legacy, "stone") == 35 and held(legacy, "clay") == 2 and BinRules.assigned(box(legacy)) == -1, "7b. the mixed bin is still mixed with nothing lost")
+	check(legacy > 0 and held(legacy, "stone") == 47 and held(legacy, "clay") == 2 and BinRules.assigned(box(legacy)) == -1, "7b. the mixed bin is still mixed with nothing lost")
 	clear_pack()
 	items.give(1, n("iron_ore"), 20)
 	items.give(1, n("stone"), 5)
-	check(put_in(bin, "iron_ore", 20) == 20 and put_in(bin, "stone", 5) == 0 and held(bin) == 970, "7c. it takes more Iron ore past a stack in its slot and still refuses Stone")
+	check(put_in(bin, "iron_ore", 20) == 20 and put_in(bin, "stone", 5) == 0 and held(bin) == 970, "7c. it takes more Iron ore and still refuses Stone")
 
 	# 8. The smelters' fuel draw every 300 s.
 	clear_world()
@@ -337,7 +351,7 @@ func _init() -> void:
 	check(near_got == hopper and part(near_smelter, "hopper", "coal") == mini(hopper, 25), "8c. the older Primitive smelter fills its hopper (%d) from the nearest source, the Coal bin, first (%d Coal)" % [hopper, part(near_smelter, "hopper", "coal")])
 	check(adv_got == mini(adv_hopper, 25 + 30 + 50 - hopper) and part(advanced, "input", "coal") + part(advanced, "input", "charcoal") == 0, "8d. the Advanced smelter then fills its hopper (%d of %d) and never its input" % [adv_got, adv_hopper])
 	check(held(far_bin, "coal") == 40 and held(stone_bin, "stone") == 40 and box(kiln).count_of(n("log")) == 3, "8e. nothing from a bin 40 m off, a Stone bin, or the Kiln's logs")
-	check(part(lone, "hopper", "coal") + part(lone, "hopper", "charcoal") == 0 and fire_box(lit_fire).count_of(n("charcoal")) <= 30, "8f. a smelter whose only fuel is in a burning fire draws none")
+	check(part(lone, "hopper", "coal") + part(lone, "hopper", "charcoal") == 0, "8f. a smelter whose only fuel is in a burning fire draws none")
 	var drawn: int = (25 - held(coal_bin, "coal")) + (30 - box(kiln).count_of(n("charcoal"))) + (50 - fire_box(cold_fire).count_of(n("charcoal")))
 	check(drawn == near_got + adv_got and all_fuel() == fuel_before - (30 - fire_box(lit_fire).count_of(n("charcoal"))), "8g. every unit in the hoppers left a source: %d drawn, %d in the hoppers, nothing made or lost" % [drawn, near_got + adv_got])
 	check(held(coal_bin) == 0 and BinRules.assigned(box(coal_bin)) == 0, "8h. the Coal bin, drawn empty, is unassigned again")
