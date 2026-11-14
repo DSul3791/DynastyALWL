@@ -102,6 +102,12 @@ func _init() -> void:
 	items._goal_event(1, "drink")
 	items._goals_check(1)
 	check(items.coins_of(1) == coins_drunk and done_sent.size() == 1, "drinking again and a repeated check pay nothing and send nothing (%d copper, %d sent)" % [items.coins_of(1), done_sent.size()])
+	# A sale and a filled order (server_trade.gd) are goal events too: their goals pay their own copper on top of the trade, once (the trade tests opt out of goals).
+	items._goal_event(1, "sold")
+	items._goal_event(1, "wanted_order")
+	check(done("sell") and done("order") and items.coins_of(1) == coins_drunk + 5, "a sale and a filled order complete the sell and order goals out of order and pay 2 + 3 copper (%d)" % (items.coins_of(1) - coins_drunk))
+	items._goal_event(1, "sold")
+	check(items.coins_of(1) == coins_drunk + 5, "a second sale pays no goal again")
 
 	# Admin-given fibre does not count (GA-54); twine made from it does, before the fibre goal it is taught after (out of order, GA-40).
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("plant_fibre"), 0, 40, Vector3.ZERO)
