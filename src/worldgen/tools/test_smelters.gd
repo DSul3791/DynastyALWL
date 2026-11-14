@@ -327,6 +327,19 @@ func _init() -> void:
 	run(2.0)
 	check(part(imp, "output", cu) == 1 and part(imp, "input", cu_ore) == 0 and part(imp, "hopper") == hopper_before - 1, "room for one in the rack: it delivers (rack copper %d, copper ore in %d, banked %.1f s on '%s')" % [part(imp, "output", cu), part(imp, "input", cu_ore), float(items._items[imp]["struct"].get("smelt_t", 0.0)), str(items._items[imp]["struct"].get("smelt_job", ""))])
 
+	# Worked bellows speed every job, not only iron: a Copper ingot in about 15.38 s instead of 20 s (master s2.7 item 4).
+	empty(imp)
+	items.give(1, charcoal, 4)
+	items.give(1, cu_ore, 1)
+	put_in(imp, "charcoal", 4)
+	put_in(imp, "copper_ore", 1)
+	act(Net.ACT_USE_STRUCT, imp)
+	run(manned_s - 1.5)
+	var cu_early: int = part(imp, "output", cu)
+	run(2.0)
+	check(items._smelters.bellows_worked(imp) and cu_early == 0 and part(imp, "output", cu) == 1 and part(imp, "input", cu_ore) == 0, "worked, the bellows speed copper too: 1 Copper ingot in about %.2f s, not %.0f s (%d before)" % [manned_s, p_s, cu_early])
+	act(Net.ACT_USE_STRUCT, imp)
+
 	# --- 3b. Two players at one smelter ---
 	empty(imp)
 	clear_pack()

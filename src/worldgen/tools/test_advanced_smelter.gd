@@ -256,6 +256,20 @@ func _init() -> void:
 		empty(adv)
 		clear_pack()
 
+	# Carbon in the input is never burned as fuel: with the hopper empty, the steel job waits and the carbon stays.
+	items.give(1, n("coal"), carbon_n)
+	items.give(1, n("iron_ore"), 1)
+	put_in(adv, "coal", carbon_n, input_at)
+	put_in(adv, "iron_ore", 1)
+	run(lane_s * 3.0)
+	check(part(adv, "hopper") == 0 and part(adv, "input", n("coal")) == carbon_n and part(adv, "input", n("iron_ore")) == 1 and part(adv, "output") == 0, "an empty hopper: the steel job waits, its input carbon is not burned as fuel (%d Coal still in)" % part(adv, "input", n("coal")))
+	items.give(1, n("charcoal"), per_ore)
+	put_in(adv, "charcoal", per_ore)
+	run(lane_s + 1.0)
+	check(part(adv, "output", n("steel_ingot")) == 1 and part(adv, "input") == 0 and part(adv, "hopper") == 0, "fuel in the hopper: the waiting steel job runs, 1 Steel ingot")
+	empty(adv)
+	clear_pack()
+
 	var imp: int = place("improved_smelter@3,-2,0")
 	items.give(1, n("coal"), 1)
 	check(imp > 0 and put_in(imp, "coal", 1, span(imp, "input").x) == 1 and part(imp, "hopper", n("coal")) == 1 and part(imp, "input", n("coal")) == 0, "at the Improved smelter (no carbon input) Coal dragged onto an ore slot still goes to its hopper")
