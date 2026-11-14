@@ -26,6 +26,7 @@ static func crop_of_seed(crops: Dictionary, seed_id: String) -> String:
 # water_slot: the held container that holds water, the one E uses to drink and fill (-1 when none).
 static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_slot: int, seed_name: String, water_slot: int) -> Dictionary:
 	if crop_id == "":
+		# PROVISIONAL (GOALS-REPAIR A-6): the seed is the one in hand, else the first in the pack (chosen by inventory_view._seed_slot).
 		if seed_slot >= 0:
 			return {"act": "sow", "prompt": "Press E to sow %s" % seed_name, "b": seed_slot}
 
@@ -38,6 +39,7 @@ static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_slot
 		var tool_class: String = str(def.get("tool_to_harvest", "hand"))
 		return {"act": "harvest", "prompt": "Press E to harvest the %s%s" % [name, "" if tool_class == "hand" else " (a %s gives the full yield)" % tool_class], "b": 0}
 
+	# PROVISIONAL (GOALS-REPAIR A-7): to water, hold a filled freshwater container and tap E on the growing crop; the server draws from that slot (REPAIR_DECISIONS.md section 4).
 	if water_slot >= 0:
 		return {"act": "water", "prompt": "Press E to water the %s (%s)" % [name, STAGE_NAMES[clampi(stage, 0, RIPE)]], "b": water_slot}
 

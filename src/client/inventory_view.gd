@@ -1017,6 +1017,7 @@ func _crop_cfg() -> Dictionary:
 
 
 # The pack slot of the seed E would sow: the one in hand, else the first seed in the pack; -1 for none.
+# PROVISIONAL (GOALS-REPAIR A-6): E on an empty bed sows the seed in hand, else the first seed in the pack (REPAIR_DECISIONS.md section 4).
 func _seed_slot() -> int:
 	var hand: int = _hand_slot()
 
