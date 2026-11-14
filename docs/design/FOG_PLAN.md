@@ -53,10 +53,12 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
   - **Sea fog.** Unchanged: banks carried in on a light onshore wind, in the day too, and longer while the conditions last.
   - **Depth.** `mist_depth_m` replaces `mist_top_m`. It is the fog's depth over the local low ground: 15 to 90 m, a new depth each night, shallower while the fog is thin (it starts shallow and sinks as it clears).
 - **Place** (`src/shared/fog_ground.gd`, client).
-  - From the tiles' coarse heights (32 m) in a 4 km window round the player, read on a worker thread, it builds the cold-air floor: the lowest ground within 320 m, smoothed. The fog's top is that floor plus its depth, so valleys and high basins fill while the slopes and hilltops round them stay clear. The top belongs to the place, not to the player, and changes smoothly across the land.
+  - From the tiles' coarse heights (32 m) in a 4.6 km window round the player (so the 1280 m view floor reaches past the 1 km rebuild step), read on a worker thread, it builds the cold-air floor: the lowest ground within 320 m, smoothed. The fog's top is that floor plus its depth, so valleys and high basins fill while the slopes and hilltops round them stay clear. The top belongs to the place, not to the player, and changes smoothly across the land.
   - Seen from above, the layer lies over the wider floor (1280 m), which is the valley below a hill.
   - Steam fog is a 4 m layer over the water, fading out within 60 m of rivers and lakes (the tiles' fresh-water distance).
-  - The land layer at the eye is the strongest of valley fog, sea fog over the land and steam.
+  - The land layer at the eye is the one the eye is most inside (strength × depth at the eye): 10 m above a river in valley fog it is the valley fog, not the stronger steam below. Above every layer it is the strongest. The floors ease at 25 m/s toward a new reading, so the top never jumps on a first read or a teleport.
+  - The fog's air is the low ground's (sea-level air of the zone row), so the server and every client get the same fog whatever their height.
+  - Limit: the steam's top is the coarse 32 m ground plus 4 m, not the water surface itself, so over a deep river cut it can sit a little off. Good enough for wisps; revisit if it shows in play.
   - Where no tile is known, the floor is sea level, which was the old single layer.
 - **Wind.** It mixes away the shallow ground fog and the steam (none from wind 0.5 and 0.4). It carries the sea fog banks in (sea fog needs a breeze). Drifting patches move with it (fog look, High and Ultra).
 - Not in PR 2: the server still reads the fog's depth as height above sea level for animal sight. PR 3 gives it the same floor.

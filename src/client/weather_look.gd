@@ -233,6 +233,9 @@ var mist_inside: float = 0.0             # 0 above or out of the valley fog .. 1
 var fog_body                            # FogVolume: the fog's drifting body and the fire halos in it (High and Ultra)
 var fog_sky: float = 0.0                 # share of the sky the fog overhead hides now (fog_look.gd sky_hide; dims the sun)
 var _fog_veil_sent: float = -1.0
+var _valley_floor: float = NAN           # the cold-air floor at the eye, eased (fog_ground.gd)
+var _view_floor: float = NAN             # and the wider ground's
+const FLOOR_EASE_MS := 25.0              # metres a second the floors follow a new reading (a first grid, a teleport)
 var canopy                              # CanopyMap: where trees shelter the ground
 var _rain: GPUParticles3D
 var _rain_material: ShaderMaterial
@@ -808,32 +811,38 @@ func _process_body(delta: float) -> void:
 		# The weather fog is drawn by graphics preset (fog_look.gd PRESETS; Dave: off on the lowest, full on Ultra).
 		var fog_shown: bool = not clear_day and FogLook.weather_drawn(_quality)
 		var mist: float = float(_s["mist"]) if fog_shown else 0.0
-		# The clear-air base is the haze rule's share, thickened by rain, snow, storm, fog and the valley fog inside it.
 		var sea_fog: float = float(_s["sea_fog"]) if fog_shown else 0.0
 		var sea_land: float = float(_s["sea_fog_land"]) if fog_shown else 0.0
 		var sea_top: float = float(_s["sea_fog_top_m"])
-		# The land layer: the stronger of the valley fog and the sea fog lying over the land, with that one's top.
 		# Where the land fog lies (fog_ground.gd): the valley fog's top is the cold-air floor here plus its depth; steam fog is a shallow
-		# layer over the water near rivers and lakes; the sea fog over the land keeps its own top. The land layer is the strongest of them.
+		# layer over the water near rivers and lakes; the sea fog over the land keeps its own top. The land layer is the one the eye is
+		# most inside (strength x depth at the eye), or, above them all, the strongest (fog_look.gd pick_layer).
 		var eye: Vector3 = _client.camera.global_position
 		var eye_y: float = eye.y
-		if _summits_set:          # the world's tiles are known (set with the summits)
+
+		if _summits_set and fog_shown:          # the world's tiles are known (set with the summits); no reading for an undrawn fog
 			fog_ground.update(eye)
 
-		var valley_top: float = fog_ground.floor_at(eye.x, eye.z) + float(_s["mist_depth_m"])
+		# The floors ease toward a new grid's values (a first read or a teleport), so the top never jumps.
+		var depth_now: float = float(_s["mist_depth_m"])
+		_valley_floor = _ease_floor(_valley_floor, fog_ground.floor_at(eye.x, eye.z), delta)
+		_view_floor = _ease_floor(_view_floor, fog_ground.view_floor_at(eye.x, eye.z), delta)
+		var valley_top: float = _valley_floor + depth_now
 		var steam: float = float(_s["water_steam"]) * fog_ground.steam_near(eye.x, eye.z) if fog_shown else 0.0
 		var steam_top: float = fog_ground.water_level(eye.x, eye.z) + FogGroundScript.STEAM_DEPTH_M
-		var land: float = maxf(maxf(mist, sea_land), steam)
-		var land_top: float = valley_top if mist >= maxf(sea_land, steam) else (sea_top if sea_land >= steam else steam_top)
-		# Seen from above, the layer lies over the wider ground's floor (the valley below a hill), not this slope's own.
-		var view_top: float = fog_ground.view_floor_at(eye.x, eye.z) + float(_s["mist_depth_m"]) if mist >= maxf(sea_land, steam) else land_top
+		var layer: int = FogLook.pick_layer(eye_y, PackedFloat32Array([mist, sea_land, steam]), PackedFloat32Array([valley_top, sea_top, steam_top]), MIST_EDGE_M)
+		var land: float = [mist, sea_land, steam][layer]
+		var land_top: float = [valley_top, sea_top, steam_top][layer]
+		# Seen from above, the valley fog lies over the wider ground's floor (the valley below a hill), not this slope's own.
+		var view_top: float = minf(_view_floor + depth_now, land_top) if layer == 0 else land_top
 		var eye_in_land: float = smoothstep(-MIST_EDGE_M, MIST_EDGE_M, land_top - eye_y)   # 0 above the layer's top .. 1 below it, whatever its strength
 		var in_land: float = land * eye_in_land
 		var in_sea: float = sea_fog * smoothstep(-MIST_EDGE_M, MIST_EDGE_M, sea_top - eye_y) if eye_y < SEA_LEVEL_EYE_M else 0.0
 		mist_inside = maxf(in_land, in_sea) * under_rock
 		# How foggy the air looks overall, and how much of it is the grey sea fog rather than the white valley fog.
-		var foggy: float = maxf(land, sea_fog)
+		var foggy: float = maxf(maxf(mist, sea_land), sea_fog)     # steam wisps (4 m deep) do not haze the whole view
 		var sea_share: float = maxf(sea_fog, sea_land) / maxf(mist + maxf(sea_fog, sea_land), 0.0001)
+		# The clear-air base is the haze rule's share, thickened by rain, snow, storm, fog and the valley fog inside it.
 		var thick: float = haze.density_scale + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
 		# Above the layer the air is clear (#672): valley fog or a sea fog bank, whichever is the thicker.
 		var haze_density: float = LookSettings.FOG_DENSITY * minf(thick, 20.0) * above_clear(foggy, mist_inside)
@@ -862,7 +871,7 @@ func _process_body(delta: float) -> void:
 		# Fog has a top (rule 1): Godot's height fog thickens below fog_height and is nothing above it. Seen from above, the low
 		# ground fills white with a soft top. Inside the layer the height fog steps aside (it would whiten the ground at your feet
 		# as much as the far valley) and the distance fog above carries it. Under rock it goes, like the light.
-		environment.fog_height = lerpf(minf(land_top, view_top), land_top, eye_in_land)
+		environment.fog_height = lerpf(view_top, land_top, eye_in_land)
 		environment.fog_height_density = layer_height_density(land, eye_in_land) * under_rock if FogLook.sky_drawn(_quality) else 0.0
 		# The water draws its own fog with the same sums (water_material.gd): rivers and lakes take the land layer, the sea plane only
 		# the sea fog, so a calm night's valley fog leaves the open sea clear (radiation fog forms over land, not the open sea).
@@ -978,6 +987,10 @@ static func sky_under_rock(environment: Environment, sky_part: float, under_rock
 # white under a clear sky (Dave's shots, 14 Nov 2026).
 static func layer_height_density(strength: float, eye_in: float) -> float:
 	return MIST_HEIGHT_DENSITY * clampf(strength, 0.0, 1.0) * (1.0 - clampf(eye_in, 0.0, 1.0))
+
+
+func _ease_floor(now: float, target: float, delta: float) -> float:
+	return target if is_nan(now) else move_toward(now, target, FLOOR_EASE_MS * delta)
 
 
 # The sky shader's faint sun or moon disc through deep fog: sent in steps, since a changed sky parameter can redraw the sky's lighting.

@@ -14,7 +14,7 @@ extends RefCounted
 const TileFile := preload("res://src/worldgen/tile/tile_file.gd")
 
 const CELL_M := 32.0                # the grid's step: the tiles' coarse height map
-const WINDOW_M := 4096.0            # the square read round the player
+const WINDOW_M := 4608.0            # the square read round the player
 const REBUILD_M := 1024.0           # read again when the player is this far from its centre
 const FLOOR_REACH_M := 320.0        # the cold-air floor: the lowest ground within this distance (a valley's floor seen from its slopes)
 const VIEW_REACH_M := 1280.0       # the floor the layer is drawn at when seen from above (the valley below a hill, not the hill's own shoulder)
@@ -268,7 +268,3 @@ static func sample(g: Dictionary, key: String, x: float, z: float, outside: floa
 	var bottom: float = lerpf(values[(j + 1) * n + i], values[(j + 1) * n + i + 1], fu)
 	return lerpf(top, bottom, fv)
 
-
-# The land fog's top at a point: the floor plus the fog's depth.
-static func land_top(floor_m: float, depth_m: float) -> float:
-	return floor_m + depth_m

@@ -137,9 +137,9 @@ const SEA_FOG_LAND_AFTERNOON := 0.35       # share left over the land in the war
 const SEA_FOG_TOP_MIN_M := 60.0
 const SEA_FOG_TOP_MAX_M := 200.0
 # The sun path of day_cycle.gd (AXIAL_TILT_DEG): the burn-off follows the real sunrise. Keep the two the same.
-const SUN_TILT_DEG := 23.44
 # One sky (docs/design/one_sky_design.md; the only sky since Dave's 8 Nov ruling): the latitude of the tile row (Climate.latitude_of_row)
 # and the starter calendar's declination, calendar_sign() x 23.44 sin(2 pi phase), as day_cycle.gd draws them.
+const SUN_TILT_DEG := 23.44
 
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
@@ -279,7 +279,9 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	var snowing: bool = temp + Climate.snow_bias_c(Climate.of_zone(group)) < 0.5   # rain or snow: the snow layer's air (snow_bias_c, row 21)
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
 	var wind: float = clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0)
-	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit, latitude_deg, need, temp - RAIN_COOL_C * (0.0 if snowing else precip))
+	# The fog's air is the low ground's (sea level), not the caller's altitude: one fog for the zone row, the same on server and client.
+	var low_air: float = air_c(game_s, group, 0.0, seed_value, row, equator_row) - RAIN_COOL_C * (0.0 if snowing else precip)
+	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit, latitude_deg, need, low_air)
 	var sea_fog: float = _sea_fog(seed_value, game_s, group, phase, wind, front, precip)
 	var sea_fog_land: float = sea_fog * _land_keeps_sea_fog(year_phase(game_s), hour, latitude_deg)   # the calendar's phase: the sunrise takes the hemisphere from the latitude
 
@@ -296,7 +298,7 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		"season": GameClockScript.SEASON_NAMES[int(phase * 4.0) % 4],
 		"mist": mist,
 		"mist_depth_m": mist_depth_m(seed_value, game_s, mist),
-		"water_steam": water_steam(temp, group, wind, precip),
+		"water_steam": water_steam(low_air, group, wind, precip),
 		"sea_fog": sea_fog,
 		"sea_fog_land": sea_fog_land,
 		"sea_fog_top_m": sea_fog_top_m(seed_value, game_s, sea_fog),
@@ -371,7 +373,7 @@ static func _mist(seed_value: int, game_s: float, group: String, phase: float, h
 # Steam fog over rivers and lakes, 0..1: air much colder than the water (the water keeps near the year's mean warmth), in calm air,
 # at any hour; heavy rain or snow ends it. The client draws it as low wisps over the water (fog_ground.gd).
 static func water_steam(temp_c: float, group: String, wind: float, precip: float) -> float:
-	var warmer: float = year_mean_c(group) - temp_c
+	var warmer: float = maxf(year_mean_c(group), 0.0) - temp_c      # water never colder than freezing (a frozen river raises no steam: ice)
 	var calm: float = 1.0 - smoothstep(STEAM_WIND * 0.6, STEAM_WIND, wind)
 	return clampf(smoothstep(float(STEAM_WARMER_C[0]), float(STEAM_WARMER_C[1]), warmer) * calm * (1.0 - smoothstep(0.2, 0.5, precip)), 0.0, 1.0)
 

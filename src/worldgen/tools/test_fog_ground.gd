@@ -40,7 +40,7 @@ func _initialize() -> void:
 	_check(absf(floor_valley - 50.0) < 5.0, "the valley's floor is its bed (%.1f m)" % floor_valley)
 	_check(floor_hill > 150.0, "high on the hillside the floor is the hill's own shoulder, not the valley (%.1f m)" % floor_hill)
 	var depth: float = 60.0
-	_check(FogGround.land_top(floor_valley, depth) > 50.0 + 1.7 and FogGround.land_top(floor_valley, depth) < 250.0, "a 60 m fog fills the valley and stays below the hilltops")
+	_check(floor_valley + depth > 50.0 + 1.7 and floor_valley + depth < 250.0, "a 60 m fog fills the valley and stays below the hilltops")
 	var x_slope: float = origin.x + 36.5 * FogGround.CELL_M         # 128 m from the river, 32 m up the slope
 	_check(FogGround.sample(g, "floor", x_slope, z_mid, -1.0) < 60.0, "low on the slope the floor is still the valley's: the fog reaches up it")
 	_check(FogGround.sample(g, "view", x_hill, z_mid, -1.0) < floor_hill - 50.0, "seen from the hill, the layer lies over the valley below")

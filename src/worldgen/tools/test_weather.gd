@@ -181,7 +181,7 @@ func _init() -> void:
 	var mist_afternoon: int = 0
 	var mist_heavy: int = 0
 	var mist_in_rain_bad: int = 0
-	var mist_top_bad: int = 0
+	var mist_depth_bad: int = 0
 
 	for h in range(24 * 120):
 		var t: float = float(h) * 3600.0 + 180.0 * 86400.0
@@ -194,10 +194,10 @@ func _init() -> void:
 			mist_bad += 1
 
 		if mist > 0.0 and (depth < Weather.MIST_DEPTH_MIN_M * 0.3 - 0.01 or depth > Weather.MIST_DEPTH_MAX_M + 0.01):
-			mist_top_bad += 1
+			mist_depth_bad += 1
 
 		if mist == 0.0 and depth != 0.0:
-			mist_top_bad += 1
+			mist_depth_bad += 1
 
 		var hour: float = Weather.hour_of(t)
 
@@ -211,9 +211,38 @@ func _init() -> void:
 			mist_in_rain_bad += 1
 
 	check(mist_bad == 0, "mist stays within 0..1 (%d bad)" % mist_bad)
-	check(mist_top_bad == 0, "mist depth only with mist, within its range (%d bad)" % mist_top_bad)
+	check(mist_depth_bad == 0, "mist depth only with mist, within its range (%d bad)" % mist_depth_bad)
 	check(mist_afternoon == 0, "a dry afternoon (14:00 to 18:00) has no fog (%d hours)" % mist_afternoon)
 	check(mist_heavy == 0, "no fog in heavy rain or snow (%d hours)" % mist_heavy)
+
+	# One fog for the zone row: the caller's altitude (server at sea level, client at the eye) never changes it.
+	var alt_bad: int = 0
+	var burn_bad: int = 0
+
+	for day in range(60):
+		for hour in [2, 5, 7, 9, 12, 20]:
+			var t_a: float = (float(180 + day) * 24.0 + float(hour)) * 3600.0
+			var low: Dictionary = Weather.state(777, t_a, "temperate", 0.0)
+			var high: Dictionary = Weather.state(777, t_a, "temperate", 1500.0)
+
+			if not is_equal_approx(float(low["mist"]), float(high["mist"])) or not is_equal_approx(float(low["water_steam"]), float(high["water_steam"])):
+				alt_bad += 1
+
+		# Burn-off: some fog is left an hour after sunrise when there was fog at dawn, and five hours on it is thinner.
+		var sunrise: float = Weather.sunrise_hour(fposmod(float(180 + day), 365.0))
+		var t_rise: float = (float(180 + day) * 24.0 + sunrise) * 3600.0
+		var at_rise: Dictionary = Weather.state(777, t_rise, "temperate")
+		var dry: bool = float(at_rise["rain"]) + float(at_rise["snow"]) < 0.05
+
+		if dry and float(at_rise["mist"]) > 0.3:
+			var plus1: float = float(Weather.state(777, t_rise + 3600.0, "temperate")["mist"])
+			var plus5: float = float(Weather.state(777, t_rise + 5.0 * 3600.0, "temperate")["mist"])
+
+			if plus1 <= 0.0 or plus5 > plus1 + 0.001:
+				burn_bad += 1
+
+	check(alt_bad == 0, "the fog and the steam are the same at any caller's altitude (%d differ)" % alt_bad)
+	check(burn_bad == 0, "the fog clears gradually after sunrise, not at once (%d bad mornings)" % burn_bad)
 	check(mist_in_rain_bad == 0, "fog in rain stays thin (%d hours)" % mist_in_rain_bad)
 	var in_rain_any: bool = false
 
