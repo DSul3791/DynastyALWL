@@ -234,6 +234,13 @@ const LOOKS := {
 	"fortified_gate_open": {"builder": "fortified_gate", "args": [true]},
 	"fortified_pillar": {"builder": "concrete_pillar", "args": [true]},
 	"fortified_wall_top": {"builder": "fortified_wall_top", "args": []},
+	"engineered_fence": {"builder": "fence", "args": ["brick"]},
+	"engineered_gate": {"builder": "gate", "args": ["brick", false]},
+	"engineered_gate_open": {"builder": "gate", "args": ["brick", true]},
+	"fortified_window": {"builder": "concrete_gap", "args": [true, 0.9, 1.7]},
+	"fortified_floor": {"builder": "tier_floor", "args": ["concrete"]},
+	"fortified_stairs": {"builder": "tier_stairs", "args": ["concrete"]},
+	"fortified_fence": {"builder": "fence", "args": ["brick"]},
 	"bog_iron_patch": {"builder": "bog_iron_patch", "args": ["dry"]},   # a bog iron deposit's ground stain (#996; drawn by inventory_view, not placed)
 	"bog_iron_patch_wet": {"builder": "bog_iron_patch", "args": ["wet"]},
 	"bog_iron_patch_dug": {"builder": "bog_iron_patch", "args": ["dug"]},
