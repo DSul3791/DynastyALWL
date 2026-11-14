@@ -1086,6 +1086,7 @@ const SLOW_ACTION_MS := 20.0
 
 
 func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
+	_act_events.clear()
 	var t0: int = Time.get_ticks_usec()
 	_action(peer, kind, a, b, count, at)
 	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
@@ -1671,6 +1672,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 	if natural != "":
 		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, 1, 3)) * more))))
+		_goal_event(peer, "foraged_new", natural, true)   # ADD-24: a plant's own yield picked by hand (not the fixed sticks and fibre, not seeds)
 
 	for row in seed_rows:
 		give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
@@ -1775,6 +1777,8 @@ func _gather_fruit_tree(peer: int, species_name: String, flora_key: String, plan
 	if given <= 0:
 		return false
 
+	_goal_event(peer, "foraged_new", str(item_row["item"]), true)   # ADD-24: fruit picked from a tree by hand
+
 	if not _fruit.has(parts[0]):
 		_fruit[parts[0]] = {}
 
@@ -1818,6 +1822,7 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 	var count: int = GatherRules.harvest_count(berry, GatherRules.harvest_scale(_drops, plant_height, entry))      # the one count rule (Dave: size scaled, 3x cap, rounded up, never 0)
 	practice(peer, "gather_plant")
 	give(peer, number, count)
+	_goal_event(peer, "foraged_new", str(berry["item"]), true)   # ADD-24: a berry bush or other harvest plant stripped by hand
 
 	var seed_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	seed_rng.seed = hash(flora_key) ^ stamp ^ 0x2545f491
@@ -2167,6 +2172,7 @@ func reset_world() -> int:
 	_chops.clear()
 	_split_due.clear()
 	_fellers.clear()
+	_kiln_lit_by.clear()
 	_saplings.clear()
 
 	if restore_flora.is_valid():
@@ -5793,6 +5799,9 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 				var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
 				ore_item = table.number_of(piece_id)
 
+				if ore_item > 0 and not rock_piece:
+					_goal_event_act(peer, "ore_mined")   # ADD-26: once per blow, however many pieces; a pick took ore from an outcrop (the piece goes into the pack just below); limestone is a rock piece, not ore
+
 		# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule or an ore is one piece, never a double.
 		if ore_item > 0:
 			_take_in(peer, inv, ore_item, 1)
@@ -6304,6 +6313,7 @@ func _repair(peer: int, inv, slot: int) -> void:
 
 	inv.wear[slot] = 0
 	practice(peer, "tool_care")
+	_goal_event(peer, "tool_repaired")   # ADD-10: the tool took its repair materials and its wear is back to 0
 
 
 # What to do with a broken tool: where and with what it is repaired, or that a disposable one is made anew.
@@ -6441,6 +6451,7 @@ func _apply_sharpen(peer: int, inv, job: Dictionary) -> void:
 	inv.inst[slot] = InventoryScript.clean_inst(item_inst)
 	practice(peer, "tool_care")
 	_dirty = true
+	_goal_event(peer, "tool_sharpened")   # ADD-09: some edge really came back (restored > 0); a job stopped part-way counts, it restored in proportion
 
 	if _is_broken(inv, slot):   # the lower maximum reached its wear: it breaks as a use would break it
 		_tool_broke(peer, inv, slot, entry)
@@ -7468,6 +7479,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s - SAPLING_GROWN_S})   # a dug bush goes in full size
 	_dirty = true
+	_goal_event(peer, "bush_replanted")   # ADD-07: a dug-up bush (only digging gives a <species>_bush) planted again
 
 	if flora_changed.is_valid():
 		flora_changed.call(home)
@@ -7913,6 +7925,7 @@ func _cook(peer: int, inv, id: int) -> void:
 			_gain_source = SRC_CRAFT   # a roast is made, not gathered (goal got: counter)
 			_take_in(peer, inv, cooked, 1, age)
 			_gain_source = was_src
+			_goal_event(peer, "cooked_on_fire")   # ADD-03: a roast made on the campfire (the campfire cooks only meat and fish, cooking.json cooks_into)
 
 			return
 
@@ -8203,6 +8216,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 	_grid_add(_next_id, placed)
 	_next_id += 1
 	_dirty = true
+	_goal_event(peer, "torch_placed")   # ADD-23: a torch wedged into the ground or a wall (the other lights are built as structures)
 
 
 # E at a burning fire with a doused torch in the pack lights the first one again (Dave, 4 Nov 2026).
@@ -8897,6 +8911,8 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 	_dirty = true
 	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
 
+	_goal_event(peer, "station_repaired" if smithy else "building_repaired")   # ADD-11: a hammer mended a worn building piece; the R5 smithy is the goal activity:repair_station
+
 
 # Loose items (not structures, fires or trees) of one kind, or of any member of its group, within `radius` of a spot.
 func _ground_count(number: int, at: Vector3, radius: float) -> int:
@@ -9303,6 +9319,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
 		return
 
+	_kiln_lit_by.erase(id)   # a kiln taken down forgets who lit it (ADD-18)
+
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 	if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH and PlacementRules.door_at(_structures_cfg, it["pos"], _foundation_rows()):
@@ -9433,7 +9451,7 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		return
 
 	if str(def.get("use", "")) == "kiln":   # E lights the Kiln while it holds wood and puts it out (master s2.6)
-		_kiln_use(peer, it, def)
+		_kiln_use(peer, id, it, def)
 		return
 
 	if _smelters.is_smelter(def):   # E at a Smelter: works its bellows (Improved), or says how it is fed (master s2.7)
@@ -9679,8 +9697,13 @@ func _kiln_room(id: int, box, amount: int) -> int:
 	return clampi(int(def["batch_logs"]) - _kiln_logs(_items[id], box, def), 0, amount)
 
 
+# kiln world id -> the character key that lit it (server only, not saved, never sent: ADD-18 credits that character when the batch is done).
+# shortcut: a restart forgets who lit a burning kiln, so that batch credits no one (as _fellers does for a trunk); revisit with GA-41 origin events.
+var _kiln_lit_by: Dictionary = {}
+
+
 # E on a Kiln: lights it while it holds wood, puts it out when it burns.
-func _kiln_use(peer: int, it: Dictionary, def: Dictionary) -> void:
+func _kiln_use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
 	var box = _chests.get(int(it["struct"].get("uid", 0)))
 
 	if box == null:
@@ -9688,6 +9711,7 @@ func _kiln_use(peer: int, it: Dictionary, def: Dictionary) -> void:
 
 	if bool(it["struct"].get("lit", false)):
 		it["struct"]["lit"] = false
+		_kiln_lit_by.erase(id)
 		_say(peer, "You put the kiln out. What is in it stays.")
 	elif _kiln_logs(it, box, def) <= 0:
 		_say(peer, "Put logs in the kiln first (F).")
@@ -9695,6 +9719,7 @@ func _kiln_use(peer: int, it: Dictionary, def: Dictionary) -> void:
 	else:
 		it["struct"]["lit"] = true
 		it["struct"]["kiln"] = it["struct"].get("kiln", {"left": 0, "t": 0.0})
+		_kiln_lit_by[id] = str(_peer_key.get(peer, ""))
 		_say(peer, "The kiln is lit: each log gives %d charcoal." % int(def.get("per_log", 100)))
 
 	_dirty = true
@@ -9733,6 +9758,14 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			k["left"] = int(k["left"]) - 1
 			k["t"] = float(k["t"]) - per
 			changed = true
+
+			if int(k["left"]) <= 0 and _kiln_logs(it, box, def) <= 0:   # ADD-18: the last log of the batch is charcoal: the character who lit it (_kiln_lit_by), if online, else no one
+				var lighter: String = str(_kiln_lit_by.get(id, ""))
+
+				for lighter_peer in _peer_key:
+					if lighter != "" and str(_peer_key[lighter_peer]) == lighter:
+						_goal_event(int(lighter_peer), "kiln_charcoal")
+						break
 		else:
 			if float(k["t"]) < self_s:
 				break
@@ -10348,6 +10381,13 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
+
+	if amount > left and id >= 0:
+		if bool(_structures.get(kind, {}).get("lockable", false)):
+			_goal_event_act(peer, "stored_item")   # ADD-13: once per act (Store all and a view deposit put many stacks); items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
+		elif str(_structures.get(kind, {}).get("use", "")) == "serve":
+			_goal_event_act(peer, "platter_served")   # ADD-21: once per act; a food board set out on a Serving platter (it stands on a table, _place), by its owner (_platter_mine)
+
 	return amount - left
 
 
@@ -13941,6 +13981,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 			var species: String = _fish_species(cell, hit)
 			_take_in(peer, inv, table.number_of(species), 1)
 			caught.append(table.sentence_name(table.number_of(species)))
+			_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25: first catch of this kind
 
 	var was_quiet: bool = _gain_quiet
 	_gain_quiet = true   # the haul line below names the catch
@@ -14024,6 +14065,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 
 		practice(peer, "fish")
 		_goal_event(peer, "fish_caught")
+		_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25
 		_say(peer, str(cfg.get("say_hit", "")) % table.sentence_name(table.number_of(species)))
 		_dirty = true
 	else:
@@ -14226,6 +14268,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 	_take_in(peer, inv, table.number_of(species), 1)
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
+	_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25: first catch of this kind
 	var landed: String = "You land a %s." % table.sentence_name(table.number_of(species))
 
 	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):
@@ -15031,6 +15074,7 @@ func till(peer: int, inv, at: Vector3, held_slot: int) -> int:
 	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": 0.0}}
 	_next_id += 1
 	_dirty = true
+	_goal_event(peer, "bed_tilled")   # ADD-04: a new bed tilled by this hoe stroke (the early returns above are not a tilling)
 	return _next_id - 1
 
 
@@ -15077,6 +15121,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	inv.remove(inv.numbers[slot], 1)
 	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
 	_dirty = true
+	_goal_event(peer, "seed_sown")   # ADD-05
 	return true
 
 
@@ -15242,6 +15287,7 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 
 	_crops.erase(key)
 	_dirty = true
+	_goal_event(peer, "crop_harvested")   # ADD-06: a ripe crop taken by hand from the bed (Dave 14 Nov: gathering counts by your own hand)
 	return true
 
 
@@ -16144,10 +16190,14 @@ func _goals_paused(peer: int) -> bool:
 	return free_craft_for(peer)
 
 
-func _goal_event(peer: int, name: String, what: String = "") -> void:
+# first_only: counts only the first time per `what` (a plant, a fish kind); its own "event:<name>:<what>" count is the seen mark, so nothing else is saved.
+func _goal_event(peer: int, name: String, what: String = "", first_only: bool = false) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
 	if st.is_empty() or _goals_data().is_empty() or _goals_paused(peer):
+		return
+
+	if first_only and int(st["goal_counts"].get(_goal_count_key(name, what), 0)) > 0:
 		return
 
 	var plain: String = _goal_count_key(name, "")
@@ -16159,6 +16209,19 @@ func _goal_event(peer: int, name: String, what: String = "") -> void:
 
 	_dirty = true
 	_goals_check(peer)
+
+
+# An event that counts once per player act, however many stacks or pieces the act moved (Store all, a boulder blow that breaks several pieces):
+# _act_events is cleared when each action starts.
+var _act_events: Dictionary = {}   # "<peer>:<event>" fired during the current action
+
+
+func _goal_event_act(peer: int, name: String) -> void:
+	var k: String = "%d:%s" % [peer, name]
+
+	if not _act_events.has(k):
+		_act_events[k] = true
+		_goal_event(peer, name)
 
 
 # crafts: how many crafts of the item finished at once (a sealed batch makes them all in one step).
@@ -16950,6 +17013,7 @@ func _lock_action(peer: int, inv, id: int, op: int, value: int) -> void:
 		var salt: String = "%08x%08x" % [randi(), randi()]
 		it["struct"]["lock"] = {"salt": salt, "hash": _code_hash(salt, code), "ok": [], "allow": lock.get("allow", []), "tries": lock.get("tries", {})}   # a new code drops code-based access
 		_say(peer, "Locked with a four-digit code. Only you, those you let in and those who know the code can open it.")
+		_goal_event(peer, "container_locked")   # ADD-14: the owner set a valid four-digit code
 	elif op == LOCK_CLEAR:
 		it["struct"].erase("lock")
 		_say(peer, "The lock is off: anyone can open it.")
@@ -18079,6 +18143,13 @@ func _craft_tick(spent: float) -> void:
 			if not free_entry:   # an admin-mode craft earns no goal (GA-54)
 				_goal_made(peer, int(recipe["gives"][0]), times)
 
+				# A variant craft runs only at the Master smithy (_variant_here). "tempered" is one event for activity:temper_steel and ADD-16 (tracker A-43); "masterwork_made" is ADD-17 (+1/+2).
+				if SmithingRules.tempered_in(variant):
+					_goal_event(peer, "tempered")
+
+				if SmithingRules.craft_in(variant) > 0:
+					_goal_event(peer, "masterwork_made")
+
 			if wears_tool != "" and not free_entry:
 				_wear_tool(peer, inv, wears_tool, "craft")
 
@@ -18331,8 +18402,14 @@ func _strain_tick(peer: int, spent: float) -> void:
 			if bool(rest.get("nap", false)):
 				if strain <= float(rest["nap_end"]) + 0.001:
 					_wake(peer, "You wake refreshed")
-			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9 and not on_good_bed(peer):
-				_wake(peer, "You wake rested")   # on a good bed the sleeper stays (bed.json): only moving, a stance key, a hit or the bed going wakes them
+			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9:
+				# ADD-12: a night slept = a sleep (not a nap or a collapse) that filled the energy while lying on a bed or beside a lean-to; once per sleep.
+				if not rest.has("night") and (_bed_of(peer) != 0 or _shelter_near(_peer_pos[peer]) >= 0):
+					rest["night"] = true
+					_goal_event(peer, "slept_night")
+
+				if not on_good_bed(peer):
+					_wake(peer, "You wake rested")   # on a good bed the sleeper stays (bed.json): only moving, a stance key, a hit or the bed going wakes them
 
 	if state == 2:
 		if float(st["t"]) >= float(cfg.get("faint_s", 8.0)):
@@ -18722,6 +18799,9 @@ func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 	_food_apply(peer, item_id, step)
 	_sync_vitals(peer, true)
 
+	if table.ready_units(table.number_of(item_id)) > 0 and int(_goal_state_of(peer).get("goal_counts", {}).get("made:" + item_id, 0)) > 0:   # ADD-20: a Ready sealed batch eaten by a character who has sealed that food (maturing is passive and its owner is not recorded; _goal_made counts the seal; the check above refuses a Maturing one)
+		_goal_event(peer, "jar_matured")
+
 
 # --- Temporary food effects (master s3.16 [D16, D17], data/items/food_effects.json, src/shared/food_effects.gd; catalog Phase 7) ---
 # Up to three groups at once, each on its own game-clock timer, saved in characters.json "food" and cleared by death. XP bonuses
@@ -18757,6 +18837,7 @@ func _food_apply(peer: int, item_id: String, step: Dictionary, instant: bool = t
 
 	var group: String = str(step["group"])
 	FoodEffects.apply(_food_of(peer), _now_game_s(), item_id, step, _food_cfg)
+	_goal_event(peer, "meal_effect")   # ADD-22: a food gave a temporary effect (a declined question or a refusal never gets here)
 	var energy: float = float(FoodEffects.tier_row(group, int(FoodEffects.profile(item_id, _food_cfg)["tier"]), _food_cfg).get("energy", 0.0))
 
 	if instant and energy > 0.0 and bool(step["fresh"]):
