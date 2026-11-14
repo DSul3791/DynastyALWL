@@ -293,7 +293,10 @@ func _show_goal_list() -> void:
 			chosen_row = entry
 
 	if chosen_row != null:
-		_list_scroll.ensure_control_visible.call_deferred(chosen_row)
+		var scroll: ScrollContainer = _list_scroll
+		_layer.get_tree().process_frame.connect(func() -> void:
+			if is_instance_valid(scroll) and is_instance_valid(chosen_row):
+				scroll.ensure_control_visible(chosen_row), CONNECT_ONE_SHOT)   # after the rows are laid out
 
 	_left.add_child(_text("%d of %d done" % [_book.done_count(), _book.rows.size()], 18, ArtKit.DIM))
 

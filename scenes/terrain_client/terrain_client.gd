@@ -5248,7 +5248,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, KeyBindings.held("interact") and not items.open)
+		harvest.update(delta, KeyBindings.held("interact") and not items.screen_open())   # no harvest under any screen (the Journal, Tab), not only the inventory
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()

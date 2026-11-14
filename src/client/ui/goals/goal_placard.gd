@@ -20,6 +20,7 @@ const ENTER_S := 0.6
 const HOLD_S := 4.0
 const EXIT_S := 0.5
 const FANFARE_DB := -10.0
+const FLOOR_PX := 22.0                                   # no placard text under this on the 1920 x 1080 canvas (above the game's 16 px floor); a longer name clips
 
 var queue: Array = []                                    # [title, copper, item text] waiting their turn
 var showing: bool = false
@@ -150,10 +151,10 @@ func _fill(title: String, copper: int, item_text: String) -> void:
 	_name.position = NAME_BOX.position * k
 	_name.size = NAME_BOX.size * k
 	_name.text = title
-	_name.add_theme_font_size_override("font_size", fit_px(ArtKit.font("garamond_semibold"), title, _name.size, int(64.0 * k), int(30.0 * k)))
+	_name.add_theme_font_size_override("font_size", fit_px(ArtKit.font("garamond_semibold"), title, _name.size, int(64.0 * k), int(FLOOR_PX * view.y / 1080.0)))
 	_reward.position = REWARD_BOX.position * k
 	_reward.size = REWARD_BOX.size * k
-	var px: int = int(52.0 * k)
+	var px: int = maxi(int(52.0 * k), int(FLOOR_PX * view.y / 1080.0))
 	_reward.add_theme_font_size_override("normal_font_size", px)
 	_reward.set_meta("px", px)
 	var segments: Array = []

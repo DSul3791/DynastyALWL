@@ -33,7 +33,8 @@ func on_done(id: String, copper: int) -> void:
 	var row: Dictionary = _by_id.get(id, {})
 
 	if row.is_empty():
-		row = {"id": id, "title": id, "howto": "", "copper": copper, "item": "", "item_n": 0, "after": PackedStringArray(), "done": false}   # not in the list yet: still announce it
+		row = {"id": id, "title": id, "howto": "", "copper": copper, "item": "", "item_n": 0, "after": PackedStringArray(), "done": false}   # not in the list yet: still announce it, once
+		_by_id[id] = row
 
 	if bool(row["done"]):
 		return
