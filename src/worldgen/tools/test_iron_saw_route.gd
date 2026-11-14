@@ -283,7 +283,13 @@ func _init() -> void:
 	again.send_world_items = func(_p, _a, _r): pass
 	again.ground_height = func(_x, _z): return 10.0
 	again.setup(ItemTableScript.load_default(), dir)
-	check(again._items.has(smithy_id) and is_equal_approx(again._smithies.wear_of(smithy_id), items._smithies.wear_of(smithy_id)), "7d. save and load keep the anvil's wear (%.1f)" % again._smithies.wear_of(smithy_id))
+	var again_smithy: int = -1   # world ids are handed out again on load; the store uid (and the kind here) stays
+
+	for id in again._items:
+		if again._items[id].has("struct") and str(again._items[id]["struct"]["kind"]) == "blacksmithy" and not again._items[id]["struct"].has("site"):
+			again_smithy = int(id)
+
+	check(again_smithy >= 0 and is_equal_approx(again._smithies.wear_of(again_smithy), items._smithies.wear_of(smithy_id)), "7d. save and load keep the anvil's wear (%.1f)" % (again._smithies.wear_of(again_smithy) if again_smithy >= 0 else -1.0))
 	again._finish_writer()
 
 	print("iron saw route: %d failures" % failures)

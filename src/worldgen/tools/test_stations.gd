@@ -180,10 +180,28 @@ func _init() -> void:
 	reload.send_world_items = func(_p, _a, _r): pass
 	reload.ground_height = func(_x, _z): return 10.0
 	reload.setup(ItemTableScript.load_default(), dir2)
-	check(bellows_id >= 0 and reload._items.has(bellows_id) and str(reload._items[bellows_id]["struct"]["kind"]) == "bellows", "a placed Bellows loads from the save")
+	var reloaded: bool = false   # world ids are handed out again on load: found by kind
+
+	for id in reload._items:
+		reloaded = reloaded or (reload._items[id].has("struct") and str(reload._items[id]["struct"]["kind"]) == "bellows")
+
+	check(bellows_id >= 0 and reloaded, "a placed Bellows loads from the save")
 	reload._finish_writer()
 	var bellows_bp: Dictionary = tiers._blueprints.get(203, {})
 	check(not bellows_bp.is_empty() and str(bellows_bp.get("structure", "")) == "bellows" and not tiers._can_blueprint(1, tiers.inventory_of(1), bellows_bp), "the Bellows blueprint is kept for its take-down but cannot be built")
+	var hammer_n: int = tiers.table.number_of("iron_hammer")
+	tiers.action(1, Net.ACT_ADMIN_GIVE, hammer_n, 0, 1, Vector3.ZERO)
+	var bellows_count: int = 0
+
+	for c in bellows_bp.get("cost", []):
+		tiers.give(1, tiers.table.number_of(str(c[0])), int(c[1]))
+
+	tiers.action(1, Net.ACT_PLACE_BLUEPRINT, 203, 0, 0, spots[2] + Vector3(3.0, 0.0, 3.0))
+
+	for id in tiers._items:
+		bellows_count += 1 if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "bellows" else 0
+
+	check(bellows_count == 1, "with a hammer and every material in the pack, the Bellows blueprint still builds nothing (%d Bellows)" % bellows_count)
 	var refund: Dictionary = {}
 
 	for c in bellows_bp.get("cost", []):

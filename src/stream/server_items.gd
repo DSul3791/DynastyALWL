@@ -17621,8 +17621,6 @@ func _craft_tick(spent: float) -> void:
 				if spill > 0:   # not reached (the room was checked this tick); kept so a disagreement with Inventory.add never loses the product
 					give(peer, made_n, spill, made_inst, made_age)
 
-				_smithies.crafted(store_id, recipe)   # a smithy's anvil wears with use, iron on bronze faster (master s2.7 item 5)
-
 				if int(head[1]) - times <= 0:
 					_say(peer, "%s done: it is in the %s." % [str(recipe.get("name", "Your craft")), table.sentence_name(int(_items[store_id]["number"]))])
 			else:
@@ -17633,6 +17631,12 @@ func _craft_tick(spent: float) -> void:
 					_goal_admin_gave(peer, made_n, gave_n)
 
 			_gain_source = SRC_PICKUP
+			# The smithy the craft was worked at wears with use, iron on bronze faster (master s2.7 item 5): its own store's station, or the one that
+			# served a craft whose product went to the pack (a player at someone else's smithy). An admin-mode craft wears nothing.
+			var worked_at: int = store_id if store_id >= 0 else (serving_station(peer, str(recipe.get("station", "")), int(recipe.get("station_level", 1))) if not free_entry and not sealed and str(recipe.get("station", "")) != "" else -1)
+
+			if worked_at >= 0:
+				_smithies.crafted(worked_at, recipe)
 
 			if not free_entry:   # an admin-mode craft earns no goal (GA-54)
 				_goal_made(peer, int(recipe["gives"][0]), times)
