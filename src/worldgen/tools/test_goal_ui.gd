@@ -14,6 +14,7 @@ const ViewScript := preload("res://src/client/inventory_view.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Bindings := preload("res://src/client/key_bindings.gd")
+const MapKnowledge := preload("res://src/client/map_knowledge.gd")
 
 var failures: int = 0
 
@@ -153,10 +154,15 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	text.clear()
 	_collect(layer, text)
 	check(text.has("LEADS TO") and text.any(func(t): return str(t).contains("Twist twine")), "Gather plant fibre leads to Twist twine")
+	journal.map_knowledge = MapKnowledge.new()
 	journal.show_page(Journal.MAP)
-	text.clear()
-	_collect(layer, text)
-	check(text.any(func(t): return str(t).contains("not the finished Map")), "the Map page says plainly it is an interim page")
+	var pages: Array = layer.find_children("MapPage", "", true, false)
+	check(pages.size() == 1 and pages[0].knowledge == journal.map_knowledge and pages[0].is_visible_in_tree(), "M shows the charcoal map page, drawing this character's map knowledge")
+	await process_frame
+	check(pages.size() == 1 and pages[0].size.x > 100.0 and pages[0].size.y > 100.0, "the map page fills the Map panel (%s)" % (str(pages[0].size) if pages.size() == 1 else "none"))
+	journal.show_page(Journal.GOALS)
+	journal.show_page(Journal.MAP)
+	check(layer.find_children("MapPage", "", true, false) == pages, "the same map page comes back (its drawn blocks are kept)")
 	journal.close()
 	view.free()
 
