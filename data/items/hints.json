@@ -113,6 +113,11 @@
 			"goal": "workbench"
 		},
 		{
+			"id": "roof_panel",
+			"trigger": "wall_placed",
+			"text": "Hammer (press R): Crude - Roof 45 or 65. A roof panel rests on a wall top, a ceiling edge or another panel's end: aim at one and face across it. The mouse wheel flips it to rise or fall."
+		},
+		{
 			"id": "spear",
 			"trigger": "workbench_placed",
 			"text": "Make a Wooden - Spear, then bind it with 2 twine.",

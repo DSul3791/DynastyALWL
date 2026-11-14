@@ -15648,6 +15648,12 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "event:placed:lean_to") >= 1
 		"bed_placed":
 			return _hint_count(st, "event:placed:rough_bed") >= 1
+		"wall_placed":   # any wall, doorway or window stands: the roof panels come next (GA-18)
+			for k in st.get("goal_counts", {}):
+				if str(k).begins_with("event:placed:") and str(_structures.get(str(k).trim_prefix("event:placed:"), {}).get("piece_kind", "")) == "wall":
+					return true
+
+			return false
 		"workbench_placed":   # the camp bench or the log workbench (Dino round 6)
 			return _hint_count(st, "event:placed:workbench") + _hint_count(st, "event:placed:log_workbench") >= 1
 		"axe_held_near_tree":   # an axe on the hotbar and a standing tree within 6 m (any axe on the hotbar where the tree index is not wired)
