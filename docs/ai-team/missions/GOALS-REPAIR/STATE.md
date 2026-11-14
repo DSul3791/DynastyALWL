@@ -77,3 +77,14 @@ Seven files are over the warning baseline. `test_wood_sources.gd` came in with #
 ## Temporary warnings to clear
 - CLEARED by #1102: #1101 (R3) adds `iron_anvil_part` (recipe 724) and validate_items warns it is a dead-end until R4 bp 301 (Advanced smithy) uses it. Accepted as temporary; R4's lane result must show the warning gone.
 - #1102 (R4) adds `steel_anvil_part` dead-end warning until R5 (#1106) uses it for the Master smithy. R5 is in dev; confirm the warning is gone in the next lane validate_items.
+
+## Notes for the final report and F6 update (after #1108 at edbcb10)
+
+- #1108 is IN DEV at edbcb10: the R4 rows, the catalog second recheck (OK 313 / FIX 309 / BLOCKED 29), and Dave's confirmed roof naming.
+- F6: corners and tier roofs saved before #1110 and the A-37 corners PR reload in the wrong place (roofs sit low as panels; corners are hips at foundation height). Take them down for a refund and rebuild.
+- F6: check every tier, Fortified included, for Roof 45/65 and the two-shape corners (no posts, wheel flips, the corner takes the pitch of the adjacent panel). Check the six A-40 pieces from #1113 (Fortified window, ceiling, stairs and fence; Engineered fence and gate, which opens with E).
+- F6: R6 bins and fuel pulls (A-28 to A-34): fill surface look, a legacy mixed bin refusing puts, a smithy fired from nearby coal, and a laid fire keeping its lifetime after a draw.
+- F6: R5 repair: open the hammer menu with right-click, choose Repair, then left-click the station (A-41).
+- Icons: the tier roofs, corners and A-40 pieces need a PC re-render.
+- Open defect: an intermittent mid-play RID error (REPAIR_DECISIONS §5).
+- Metal completeness: /mnt/project-files/goals-repair/wp-metal/COMPLETENESS_CHECK.md, plus a follow-up that only adds tests.
