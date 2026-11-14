@@ -8747,6 +8747,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 			_say(peer, "Something is in the way.")   # one pillar to a point, one wall top to a wall (PlacementRules.blocked)
 			return
 
+		if _is_plot_kind(str(def.get("kind", ""))) and other.has("struct") and _is_plot_kind(str(other["struct"]["kind"])) and _bed_key(other["pos"]) == _bed_key(spot):
+			_say(peer, "A bed or planter is already in that spot.")   # one crop record to a metre cell (_bed_key): two pots in one cell would share it
+			return
+
 		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter and not bool(def.get("gap_exempt", false)) and not (other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("gap_exempt", false))):   # furniture (gap_exempt) stands beside fires, shelters and each other
 			_say(peer, "Something is in the way.")
 			return

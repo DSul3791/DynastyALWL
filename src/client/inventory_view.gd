@@ -1164,7 +1164,7 @@ func _note_crop(id: int, row: Array) -> void:
 
 	if crop != "":
 		var bed_def: Dictionary = _structure_by_state(int(rec["state"]))
-		var look: Node3D = CropLook.build(crop, stage, float(bed_def.get("footprint_x", 1.0)))
+		var look: Node3D = CropLook.build(crop, stage, minf(float(bed_def.get("footprint_x", 1.0)), float(bed_def.get("footprint_z", bed_def.get("footprint_x", 1.0)))))
 		look.position.y = float(bed_def.get("soil_y", 0.0))   # a planter's soil is raised (structures.json soil_y); a bed or plot grows from the ground
 		(rec["node"] as Node3D).add_child(look)
 		rec["crop_node"] = look

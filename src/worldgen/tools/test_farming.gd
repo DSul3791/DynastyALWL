@@ -13,6 +13,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const PlotWater := preload("res://src/shared/plot_water.gd")
+const Gather := preload("res://src/shared/gather_rules.gd")
 
 var failures: int = 0
 var items
@@ -362,6 +363,18 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 			missing.append(plant)
 
 	check(missing.is_empty(), "every real plant gives a wild seed that sows a garden crop (%s)" % str(missing))
+	var dune: Dictionary = items._flora_by_name.get("dune_grass", {})
+	var no_tool: Callable = func(_t: String) -> bool: return false
+	var any_item: Callable = func(_i: String) -> bool: return true
+	check(bool(Gather.check(dune, "plant", drops, str((drops["seed_drops"]["dune_grass"]["seasons"] as Array)[0]), no_tool, any_item)["ok"]) and not bool(Gather.check(dune, "plant", drops, "winter", no_tool, any_item)["ok"]), "dune grass, which bears nothing else, can be picked for its seed when it has gone to seed, not in winter")
+	# One bed or planter to a metre cell (one crop record each): a second pot in the same cell is refused.
+	items._items[920006] = {"number": items.table.number_of("flower_pot"), "count": 1, "pos": Vector3(2.3, 10.0, 2.3), "left": 1.0e9, "struct": {"kind": "flower_pot", "yaw": 0.0}}
+	notes.clear()
+	var before: int = items._items.size()
+	give("flower_pot_kit", 1)
+	items.action(1, Net.ACT_PLACE, slot_of("flower_pot_kit"), 0, 0, Vector3(2.7, 10.0, 2.7))
+	check(items._items.size() == before and notes.has("A bed or planter is already in that spot."), "a second flower pot in the same metre cell is refused (%s)" % str(notes))
+	items._items.erase(920006)
 
 
 func _init() -> void:

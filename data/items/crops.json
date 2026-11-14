@@ -553,7 +553,7 @@
 			"yields": [
 				[
 					"thatch",
-					2
+					4
 				],
 				[
 					"bedding",
@@ -593,8 +593,12 @@
 			"soil": "any garden soil",
 			"yields": [
 				[
+					"plant_fibre",
+					3
+				],
+				[
 					"thatch",
-					2
+					8
 				],
 				[
 					"reed_stems",
@@ -635,7 +639,16 @@
 			"grow_days": 12,
 			"water_per_day": 0.3,
 			"soil": "any garden soil",
-			"yields": [],
+			"yields": [
+				[
+					"plant_fibre",
+					2
+				],
+				[
+					"nettles",
+					4
+				]
+			],
 			"seeds_back": [
 				"nettle_seed",
 				[
@@ -877,7 +890,7 @@
 					2
 				]
 			],
-			"seed_source": "a wild wild strawberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild strawberry picked late in its season (1 to 2 seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"mixed_forest",
@@ -948,7 +961,7 @@
 					2
 				]
 			],
-			"seed_source": "a wild wild garlic picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild garlic picked late in its season (1 to 2 seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest"
@@ -980,7 +993,7 @@
 					2
 				]
 			],
-			"seed_source": "a wild wild thyme picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild thyme picked late in its season (1 to 2 seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"dry_scrub",
@@ -1196,7 +1209,7 @@
 					2
 				]
 			],
-			"seed_source": "a wild wild marjoram picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild marjoram picked late in its season (1 to 2 seeds)",
 			"biomes": [
 				"dry_scrub",
 				"temperate_grassland"
@@ -1228,7 +1241,7 @@
 					2
 				]
 			],
-			"seed_source": "a wild wild sage picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sage picked late in its season (1 to 2 seeds)",
 			"biomes": [
 				"dry_scrub",
 				"savanna"
@@ -2198,6 +2211,10 @@
 			"soil": "any garden soil",
 			"yields": [
 				[
+					"plant_fibre",
+					3
+				],
+				[
 					"riverbraid_stems",
 					2
 				]
@@ -2371,6 +2388,10 @@
 			"water_per_day": 0.3,
 			"soil": "any garden soil",
 			"yields": [
+				[
+					"plant_fibre",
+					2
+				],
 				[
 					"tanglewort_vines",
 					2
