@@ -118,7 +118,7 @@ func _init() -> void:
 	view._world.clear()
 	view._world[10] = {"node": null, "number": bed_number, "count": 1, "pos": Vector3(0.5, 0.0, 0.5), "state": 47, "yaw": 0.0, "light": null}
 	view._world[11] = {"node": null, "number": table.number_of("wooden_garden_plot"), "count": 1, "pos": Vector3(10.0, 0.0, 10.0), "state": 157, "yaw": 0.0, "light": null, "crop": "wheat"}
-	view._world[12] = {"node": null, "number": table.number_of("stone_garden_plot"), "count": 1, "pos": Vector3(20.0, 0.0, 20.0), "state": 158, "yaw": 0.0, "light": null, "site": {}}
+	view._world[12] = {"node": null, "number": table.number_of("wooden_garden_plot"), "count": 1, "pos": Vector3(20.0, 0.0, 20.0), "state": 157, "yaw": 0.0, "light": null, "site": {}}
 	check(view.bed_id_at(Vector3(0.5, 0.0, 0.5)) == 10 and view.bed_id_at(Vector3(0.95, 0.0, 0.1)) == 10 and view.bed_id_at(Vector3(1.2, 0.0, 0.5)) == 0, "bed_id_at: a 1 m bed holds its own square and not 0.7 m out")
 	check(view.bed_id_at(Vector3(10.9, 0.0, 9.1)) == 11 and view.bed_id_at(Vector3(11.3, 0.0, 10.0)) == 0, "bed_id_at: a 2 m plot holds its corner and not 1.3 m out")
 	check(view.bed_id_at(Vector3(20.0, 0.0, 20.0)) == 0, "bed_id_at: a plot still a blueprint site is not a bed")

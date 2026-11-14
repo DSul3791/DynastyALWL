@@ -102,7 +102,8 @@ static func check(flora_row: Dictionary, kind: String, drops: Dictionary, season
 	var seasons: Array = flora_row.get("season", [])
 
 	if yields.is_empty():
-		return {"ok": false, "reason": "nothing to pick"}
+		var wild_seed: Dictionary = (drops.get("seed_drops", {}) as Dictionary).get(name, {})   # a plant with only its seed to give (dune grass, sea holly): picked when it has gone to seed
+		return {"ok": true, "reason": ""} if (wild_seed.get("seasons", []) as Array).has(season) else {"ok": false, "reason": "nothing to pick"}
 
 	if not (seasons.has("all") or seasons.has(season)):
 		return {"ok": false, "reason": "nothing to pick this season"}
