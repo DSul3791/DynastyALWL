@@ -1043,11 +1043,14 @@ func bed_id_at(point: Vector3) -> int:
 
 
 # Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm, yaw degrees], read once for a whole Garden grid (held_item._garden_plan).
-func bed_rows() -> Array:
+func bed_rows(near: Vector3 = Vector3.INF, radius: float = 0.0) -> Array:   # `near`/`radius`: only the beds within that flat distance (the hoe grid's area)
 	var rows: Array = []
 
 	for id in _world:
 		if not _world[id].has("yaw") or int(_world[id]["state"]) < 5 or _world[id].get("site") != null:   # a plot's blueprint site is not a bed yet (the server refuses it)
+			continue
+
+		if near.is_finite() and Vector2(_world[id]["pos"].x - near.x, _world[id]["pos"].z - near.z).length() > radius:
 			continue
 
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))

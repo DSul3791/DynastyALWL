@@ -8760,8 +8760,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 			_say(peer, "Something is in the way.")   # one pillar to a point, one wall top to a wall (PlacementRules.blocked)
 			return
 
-		if _is_plot_kind(str(def.get("kind", ""))) and other.has("struct") and _is_plot_kind(str(other["struct"]["kind"])) and _bed_key(other["pos"]) == _bed_key(spot):
-			_say(peer, "A bed or planter is already in that spot.")   # one crop record to a bed position (_bed_key): two pots on one spot would share it
+		if _is_plot_kind(str(def.get("kind", ""))) and other.has("struct") and _is_plot_kind(str(other["struct"]["kind"])) and Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length() < BED_GAP_M:
+			_say(peer, "A bed or planter is already in that spot.")   # beds stand BED_GAP_M apart, as a tilled one does (two on one spot would share a crop record)
 			return
 
 		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter and not bool(def.get("gap_exempt", false)) and not (other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("gap_exempt", false))):   # furniture (gap_exempt) stands beside fires, shelters and each other
@@ -15433,14 +15433,15 @@ func till(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int = 0) -> int:
 	if hoe < 0:
 		return 0
 
-	return _till_cell(peer, inv, hoe, at, yaw_deg, false)
+	return _till_cell(peer, inv, hoe, at, yaw_deg, false, edits_near.call(at, 4.0) if edits_near.is_valid() else [])
 
 
 # One metre bed tilled at `at` with the hoe in pack slot `hoe` (checked by the caller); `quiet` keeps a garden's refusals to itself (till_garden says once).
-func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool) -> int:
+# `edits`: the ground edits near it, so the bed lies on the ground as dug and filled (a levelled garden), not the generated surface.
+func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool, edits: Array) -> int:
 	yaw_deg = posmod(yaw_deg, 360)
 	var cell: Vector3 = Vector3(floor(at.x) + 0.5, 0.0, floor(at.z) + 0.5) if yaw_deg == 0 else Vector3(snappedf(at.x, BED_SNAP_M), 0.0, snappedf(at.z, BED_SNAP_M))
-	var ground: float = float(ground_height.call(cell.x, cell.z))
+	var ground: float = _edited_height(cell.x, cell.z, edits)
 
 	if is_nan(ground):
 		return 0
@@ -15515,11 +15516,7 @@ func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size
 		_say(peer, "Still working the last garden.")
 		return false
 
-	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-		_reject(peer, 0)
-		return false
-
-	if _swing_tool(peer, inv, held_slot, "hoe") < 0:
+	if not at.is_finite() or _hoe_ready(peer, inv, at, held_slot) < 0:   # in reach, a hoe in hand, and the hoe's pace (a refused garden costs a scan)
 		return false
 
 	var w: int = clampi(floori(float(size) / 100.0), 1, FarmRules.GRID_MAX_SIDE)
@@ -15527,6 +15524,11 @@ func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size
 	yaw_deg = posmod(yaw_deg, 360)
 	var centre: Vector2 = Vector2(at.x, at.z)
 	var cells: Array = FarmRules.grid_points(w, d, 1.0, centre, yaw_deg)
+
+	if yaw_deg == 0:   # unturned beds sit on the metre cells (_till_cell snaps them): survey and level where they will be
+		centre += Vector2(floor(cells[0].x) + 0.5 - cells[0].x, floor(cells[0].y) + 0.5 - cells[0].y)
+		cells = FarmRules.grid_points(w, d, 1.0, centre, yaw_deg)
+
 	var reach: float = Vector2(float(w), float(d)).length() * 0.5 + GARDEN_FEATHER_M + LEVEL_SPHERE_M + 1.0
 	var edits: Array = (edits_near.call(at, reach) if edits_near.is_valid() else []) as Array
 	var mean: float = 0.0
@@ -15581,10 +15583,10 @@ func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size
 				continue
 
 			spots.append(flat - centre)
-			targets.append(lerpf(mean, h, out / GARDEN_FEATHER_M))   # inside: the mean; outside: back to the ground as it was by the band's far side
+			targets.append(clampf(lerpf(mean, h, out / GARDEN_FEATHER_M), mean - out, mean + out))   # inside: the mean; outside: back to the ground as it was by the band's far side, never steeper than 1 in 1 (a steeper blend would cut and fill against the garden's own edge without end)
 			radii.append(LEVEL_SPHERE_M if out <= 0.0 else GARDEN_FEATHER_SPHERE_M)
 
-	_garden_jobs[peer] = {"slot": held_slot, "centre": Vector3(at.x, mean, at.z), "yaw": yaw_deg, "spots": spots, "targets": targets, "radii": radii, "edits": edits, "cells": cells, "made": 0, "worked": 0, "next_ms": 0, "reach": reach}
+	_garden_jobs[peer] = {"slot": held_slot, "centre": Vector3(centre.x, mean, centre.y), "yaw": yaw_deg, "spots": spots, "targets": targets, "radii": radii, "edits": edits, "cells": cells, "made": 0, "worked": 0, "next_ms": 0, "reach": reach}
 	_say(peer, "Levelling and tilling a %d by %d garden." % [w, d])
 	return true
 
@@ -15632,7 +15634,7 @@ func _garden_jobs_tick() -> void:
 
 			var flat: Vector2 = cells.pop_front()
 
-			if _till_cell(peer, inv, hoe, Vector3(flat.x, centre.y, flat.y), int(job["yaw"]), true) > 0:
+			if _till_cell(peer, inv, hoe, Vector3(flat.x, centre.y, flat.y), int(job["yaw"]), true, job["edits"]) > 0:
 				job["made"] = int(job["made"]) + 1
 
 			hoe = _held_tool(inv, int(job["slot"]), "hoe")

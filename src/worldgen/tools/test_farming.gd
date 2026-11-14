@@ -478,14 +478,18 @@ func _garden_till_checks() -> void:
 	items._items.erase(920020)
 
 	# Till a garden on a slope of 0.3 m a metre: 3 by 3 beds within 0.3 m of their average, so it is levelled and tilled.
+	# Aimed a little off the metre cells: an unturned garden's beds snap to them, and it is surveyed and levelled there.
 	var made_edits: Array = []
-	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 40.0)
+	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 40.5)
+	items.edits_near = func(_p, _r): return made_edits.duplicate()
 	items.dig_ground = func(c, r): made_edits.append([0, c, r]); return true
 	items.fill_ground = func(c, r, _m): made_edits.append([1, c, r]); return true
 	items.report_position(1, Vector3(40.0, 10.0, 40.0))
 	notes.clear()
-	check(items.till_garden(1, inv, Vector3(40.0, 10.0, 40.0), hoe, 0, 303) and items._garden_jobs.has(1), "a 3 by 3 garden on a gentle slope is taken on (%s)" % str(notes))
-	check(not items.till_garden(1, inv, Vector3(40.0, 10.0, 40.0), hoe, 0, 303), "one garden at a time")
+	items._last_dig.clear()
+	check(items.till_garden(1, inv, Vector3(40.3, 10.0, 40.7), hoe, 0, 303) and items._garden_jobs.has(1), "a 3 by 3 garden on a gentle slope is taken on (%s)" % str(notes))
+	items._last_dig.clear()
+	check(not items.till_garden(1, inv, Vector3(40.3, 10.0, 40.7), hoe, 0, 303), "one garden at a time")
 	var steps: int = 0
 
 	while items._garden_jobs.has(1) and steps < 500:
@@ -493,32 +497,40 @@ func _garden_till_checks() -> void:
 		items._garden_jobs_tick()
 		steps += 1
 
-	var beds: Array = items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed" and Vector2(items._items[k]["pos"].x - 40.0, items._items[k]["pos"].z - 40.0).length() < 1.6)
+	var beds: Array = items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed" and Vector2(items._items[k]["pos"].x - 40.5, items._items[k]["pos"].z - 40.5).length() < 1.6)
 	check(not items._garden_jobs.has(1) and beds.size() == 9 and notes.has("The garden is ready: 9 beds tilled."), "the garden is levelled and its 9 beds tilled in %d steps (%s)" % [steps, str(notes)])
 	check(made_edits.any(func(op): return int(op[0]) == 0) and made_edits.any(func(op): return int(op[0]) == 1), "the high side is cut and the low side filled")
 	var flat: bool = true
 
-	for x in [39.0, 40.0, 41.0]:
-		for z in [39.0, 40.0, 41.0]:
+	for x in [39.5, 40.5, 41.5]:
+		for z in [39.5, 40.5, 41.5]:
 			flat = flat and absf(items._edited_height(x, z, made_edits) - 10.0) <= items.LEVEL_MIN_M + 0.01
 
 	check(flat, "every bed is level with the average height (10 m)")
-	var edge: float = items._edited_height(42.5, 40.0, made_edits)
+	check(beds.all(func(k): return absf(items._items[k]["pos"].y - 10.02) <= items.LEVEL_MIN_M + 0.01), "each bed lies on the levelled ground, not the slope as it was")
+
+	for k in beds:
+		items._crops.erase(items._bed_key(items._items[k]["pos"]))
+		items._items.erase(k)
+
+	var edge: float = items._edited_height(43.0, 40.5, made_edits)
 	check(edge > 10.0 - 0.06 and edge < 10.0 + 0.3 * 2.5 + 0.06, "a metre outside the garden the ground lies between the average and the slope as it was (%.2f)" % edge)
 
 	# Too uneven: a slope of 0.6 m a metre over 5 beds is 1.2 m above and below the average: refused, nothing touched.
-	items.ground_height = func(x, _z): return 10.0 + 0.6 * (x - 60.0)
-	items.report_position(1, Vector3(60.0, 10.0, 40.0))
+	items.ground_height = func(x, _z): return 10.0 + 0.6 * (x - 60.5)
+	items.report_position(1, Vector3(60.5, 10.0, 40.5))
 	made_edits.clear()
 	notes.clear()
-	check(not items.till_garden(1, inv, Vector3(60.0, 10.0, 40.0), hoe, 0, 501) and made_edits.is_empty() and notes.any(func(n): return str(n).contains("rises and falls too much")), "ground that rises or falls more than 1 m from its average is refused (%s)" % str(notes))
+	items._last_dig.clear()
+	check(not items.till_garden(1, inv, Vector3(60.5, 10.0, 40.5), hoe, 0, 501) and made_edits.is_empty() and notes.any(func(n): return str(n).contains("rises and falls too much")), "ground that rises or falls more than 1 m from its average is refused (%s)" % str(notes))
 
 	# A wall beside the garden: no cut or fill near it.
-	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 80.0)
-	items._items[920021] = {"number": items.table.number_of("thatch_wall"), "count": 1, "pos": Vector3(82.6, 10.0, 40.0), "left": 1.0e9, "struct": {"kind": "thatch_wall", "yaw": 0.0}}
-	items.report_position(1, Vector3(80.0, 10.0, 40.0))
+	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 80.5)
+	items._items[920021] = {"number": items.table.number_of("thatch_wall"), "count": 1, "pos": Vector3(83.1, 10.0, 40.5), "left": 1.0e9, "struct": {"kind": "thatch_wall", "yaw": 0.0}}
+	items.report_position(1, Vector3(80.5, 10.0, 40.5))
 	made_edits.clear()
-	check(items.till_garden(1, inv, Vector3(80.0, 10.0, 40.0), hoe, 0, 303), "a garden beside a wall is taken on")
+	items._last_dig.clear()
+	check(items.till_garden(1, inv, Vector3(80.5, 10.0, 40.5), hoe, 0, 303), "a garden beside a wall is taken on")
 	steps = 0
 
 	while items._garden_jobs.has(1) and steps < 500:
@@ -526,12 +538,13 @@ func _garden_till_checks() -> void:
 		items._garden_jobs_tick()
 		steps += 1
 
-	check(not made_edits.is_empty() and made_edits.all(func(op): return Vector2(op[1].x - 82.6, op[1].z - 40.0).length() >= 2.4), "no levelling spot within the wall's reach plus 1.5 m")
+	check(not made_edits.is_empty() and made_edits.all(func(op): return Vector2(op[1].x - 83.1, op[1].z - 40.5).length() >= 2.4), "no levelling spot within the wall's reach plus 1.5 m")
 	items._items.erase(920021)
 
 	# Walking off leaves it half done.
 	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 100.0)
 	items.report_position(1, Vector3(100.0, 10.0, 40.0))
+	items._last_dig.clear()
 	check(items.till_garden(1, inv, Vector3(100.0, 10.0, 40.0), hoe, 0, 505), "a 5 by 5 garden is taken on")
 	items.report_position(1, Vector3(140.0, 10.0, 40.0))
 	notes.clear()
@@ -541,6 +554,7 @@ func _garden_till_checks() -> void:
 	items.ground_height = func(_x, _z): return 10.0
 	items.dig_ground = Callable()
 	items.fill_ground = Callable()
+	items.edits_near = Callable()
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 
 

@@ -2399,7 +2399,7 @@ func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 		step = FarmRules.spacing_of(kind, _inv.crop_table().get(FarmRules.crop_of_seed(_inv.crop_table(), garden_pick), {}) if kind == "seed" else {})
 
 	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
-	var beds: Array = _inv.bed_rows()   # read once for the whole grid
+	var beds: Array = _inv.bed_rows(aim, Vector2(float(garden_w), float(garden_d)).length() * step + 3.0)   # read once for the whole grid, only the beds it can touch (a plot reaches 1.5 m from its middle)
 	var flat_aim: Vector2 = Vector2(aim.x, aim.z)
 	var anchor: Variant = null
 	var under: int = _inv.bed_in(beds, aim)
