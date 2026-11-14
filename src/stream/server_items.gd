@@ -520,7 +520,8 @@ func setup(item_table, store_dir: String) -> void:
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
-	_water_rebuild((crops_parsed.get("tanks", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("tanks", null)) == TYPE_DICTIONARY else {})
+	_water_rebuild((crops_parsed.get("tanks", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("tanks", null)) == TYPE_DICTIONARY else {},
+			(crops_parsed.get("wells", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("wells", null)) == TYPE_DICTIONARY else {})
 	_rebuild_supports()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -1579,7 +1580,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
@@ -14699,6 +14700,8 @@ var _water_dirty: bool = false
 var _water_at_s: float = -1.0           # real second of the last solve
 var _water_next_s: float = INF          # the network's next event, real seconds
 var _water_tanks_saved: Dictionary = {} # crops.json "tanks": position key -> litres, read at load
+var _wells_saved: Dictionary = {}       # crops.json "wells": position key -> [litres, game second], read at load
+var _well_store: Dictionary = {}        # item id of a well with a daily yield -> [litres it held, game second then]
 
 
 func _water_now_s() -> float:
@@ -14776,6 +14779,11 @@ func _water_add(id: int) -> void:
 		_water.set_litres(id, float(_water_tanks_saved.get(_water_key(it["pos"]), 0.0)))
 		_water_tanks_saved.erase(_water_key(it["pos"]))
 
+	if piece.has("yield_l_day"):
+		var saved: Variant = _wells_saved.get(_water_key(it["pos"]), null)
+		_well_store[id] = [float(saved[0]), float(saved[1])] if typeof(saved) == TYPE_ARRAY and (saved as Array).size() >= 2 else [float(piece["yield_l_day"]), _now_game_s()]   # a new well is full
+		_wells_saved.erase(_water_key(it["pos"]))
+
 	_water_dirty = true
 
 
@@ -14784,13 +14792,15 @@ func _water_key(pos: Vector3) -> String:
 
 
 # At load: every standing water structure joins, and tanks take their saved litres.
-func _water_rebuild(tanks: Dictionary) -> void:
+func _water_rebuild(tanks: Dictionary, wells: Dictionary = {}) -> void:
 	_water = WaterNetwork.new()
 	_water.still_after_s = 3.0 * GameClockScript.SECONDS_PER_DAY / GameClockScript.RATIO   # 3 game days (Sonny's rules)
 	_water_kind.clear()
 	_water_depth.clear()
 	_pumping.clear()
 	_water_tanks_saved = tanks.duplicate()
+	_wells_saved = wells.duplicate()
+	_well_store.clear()
 	_water_at_s = -1.0
 
 	for id in _items:
@@ -14798,6 +14808,7 @@ func _water_rebuild(tanks: Dictionary) -> void:
 			_water_add(id)
 
 	_water_tanks_saved.clear()
+	_wells_saved.clear()
 
 
 func _water_tanks_save() -> Dictionary:
@@ -14832,6 +14843,7 @@ func _water_tick(spent: float = 0.0) -> void:
 			_water.remove(id)
 			_water_kind.erase(id)
 			_water_depth.erase(id)
+			_well_store.erase(id)
 			_water_dirty = true
 
 	_pump_tick(spent)
@@ -14959,10 +14971,18 @@ func _toggle_pump(peer: int, id: int) -> void:
 		_say(peer, "It draws nothing.")
 		return
 
+	if _well_store.has(id) and _well_left(id) < 1.0:
+		_say(peer, "The well is drawn dry. It fills again through the day.")
+		return
+
 	_pumping[peer] = id
 	_water.pieces[id]["rate_lpm"] = rate
 	_water_dirty = true
-	_say(peer, "You start working it (%d L a minute). Press E again to stop." % int(round(rate)))
+
+	if _well_store.has(id):
+		_say(peer, "You start drawing water (%d L a minute, %d L left in the well today). Press E again to stop." % [int(round(rate)), int(_well_left(id))])
+	else:
+		_say(peer, "You start working it (%d L a minute). Press E again to stop." % int(round(rate)))
 
 
 func _stop_pump(peer: int, say: String) -> void:
@@ -15005,16 +15025,58 @@ func _pump_tick(spent: float) -> void:
 		_work_until[peer] = Time.get_ticks_msec() + int(maxf(spent, SLOW_TICK_S) * 1000.0) + 500
 		_work_level[peer] = float(piece.get("effort", 0.7))
 
+		var drawn_l: float = 0.0
+
 		if _water.downstream(id).is_empty() and spent > 0.0:
-			_pour_into_containers(peer, float(piece.get("rate_lpm", 0.0)) * spent / 60.0 * 1000.0)
+			drawn_l = float(_pour_into_containers(peer, minf(float(piece.get("rate_lpm", 0.0)) * spent / 60.0, _well_left(id) if _well_store.has(id) else BIG_L) * 1000.0)) / 1000.0
+		else:
+			drawn_l = _water.outflow_lpm(id) * spent / 60.0
+
+		if _well_store.has(id) and spent > 0.0:
+			_well_take(id, drawn_l)
+
+			if _well_left(id) < 0.01:
+				_stop_pump(peer, "The well is drawn dry. It fills again through the day.")
 
 
-func _pour_into_containers(peer: int, ml: float) -> void:
+# --- Well daily yield (docs/design/PLUMBING_DESIGN.md s4, PROVISIONAL) ---
+# A well whose water block has "yield_l_day" holds at most one day's water and fills again at that rate over a game day (GameClock.SECONDS_PER_DAY);
+# what is drawn, poured into containers or sent down the network, comes out of it. Saved in crops.json "wells" by position.
+const BIG_L := 1.0e9
+
+
+func _well_left(id: int) -> float:
+	var row: Array = _well_store.get(id, [])
+
+	if row.is_empty() or not _water.pieces.has(id):
+		return 0.0
+
+	var per_day: float = float(_water.pieces[id].get("yield_l_day", 0.0))
+	return minf(per_day, float(row[0]) + maxf(_now_game_s() - float(row[1]), 0.0) / GameClockScript.SECONDS_PER_DAY * per_day)
+
+
+func _well_take(id: int, litres: float) -> void:
+	if _well_store.has(id):
+		_well_store[id] = [maxf(_well_left(id) - maxf(litres, 0.0), 0.0), _now_game_s()]
+
+
+func _wells_save() -> Dictionary:
+	var out: Dictionary = {}
+
+	for id in _well_store:
+		if _items.has(id):
+			out[_water_key(_items[id]["pos"])] = [snappedf(_well_left(id), 0.01), _now_game_s()]
+
+	return out
+
+
+# Pours up to `ml` into the worker's containers (the first with room, hotbar first); returns the millilitres poured.
+func _pour_into_containers(peer: int, ml: float) -> int:
 	var inv = inventory_of(peer)
 
 	if inv == null:
 		_stop_pump(peer, "")
-		return
+		return 0
 
 	var carry: float = float(_pour_carry.get(peer, 0.0)) + ml
 	var whole: int = int(floor(carry))
@@ -15031,18 +15093,22 @@ func _pour_into_containers(peer: int, ml: float) -> void:
 
 	if order.is_empty():
 		_stop_pump(peer, "You have nothing with room for water.")
-		return
+		return 0
+
+	var total: int = 0
 
 	for slot in order:
 		var poured: int = mini(whole, _container_cap(inv.numbers[slot]) - inv.wear[slot])
 		inv.wear[slot] += poured
 		whole -= poured
+		total += poured
 
 		if whole <= 0:
 			break
 
 	_send_changes(peer, inv, before)
 	_dirty = true
+	return total
 
 
 # The nearest tank (trough, barrel, cistern) holding water within `reach` of `pos`, or -1.
