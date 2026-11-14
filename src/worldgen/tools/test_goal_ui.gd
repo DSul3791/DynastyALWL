@@ -13,6 +13,7 @@ const Journal := preload("res://src/client/ui/goals/journal_view.gd")
 const ViewScript := preload("res://src/client/inventory_view.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const Bindings := preload("res://src/client/key_bindings.gd")
 
 var failures: int = 0
 
@@ -26,6 +27,15 @@ func check(ok: bool, what: String) -> void:
 
 func row(id: String, title: String, done: bool, after: Array = [], copper: int = 3) -> Array:
 	return [id, title, "How to " + title, copper, "", 0, PackedStringArray(after), done]
+
+
+func _key(code: int, ctrl: bool = false, shift: bool = false) -> InputEventKey:
+	var event: InputEventKey = InputEventKey.new()
+	event.keycode = code
+	event.ctrl_pressed = ctrl
+	event.shift_pressed = shift
+	event.pressed = true
+	return event
 
 
 # Every Label's and Button's text under `node`.
@@ -144,5 +154,14 @@ func _init() -> void:
 	check(text.any(func(t): return str(t).contains("not the finished Map")), "the Map page says plainly it is an interim page")
 	journal.close()
 	view.free()
+
+	# The keys (after WP-KEYS freed plain J and G): plain J, G and M are the Journal's in the world; Ctrl+Shift+G stays Admin fly, plain G stays Store all on the inventory.
+	Bindings.use_path("user://test_goal_ui_keys.json")   # no saved file here: the defaults
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_goal_ui_keys.json"))
+	Bindings.forget_loaded()
+	check(Bindings.matches(_key(KEY_J), "journal") and Bindings.matches(_key(KEY_G), "goals") and Bindings.matches(_key(KEY_M), "map"), "J, G and M are the Journal's keys")
+	check(not Bindings.matches(_key(KEY_G, true, true), "goals") and Bindings.matches(_key(KEY_G, true, true), "fly"), "Ctrl+Shift+G is Admin fly, never Goals")
+	check(not Bindings.matches(_key(KEY_J, true, true), "journal") and Bindings.matches(_key(KEY_G), "store_all"), "Ctrl+Shift+J is not the Journal; plain G is still Store all in the inventory context")
+	check(Bindings.conflict("goals", KEY_G, false, false) == "" and Bindings.conflict("journal", KEY_J, false, false) == "" and Bindings.conflict("map", KEY_M, false, false) == "", "the Journal keys clash with no world action")
 	print("goal ui: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
