@@ -88,3 +88,6 @@ Seven files are over the warning baseline. `test_wood_sources.gd` came in with #
 - Icons: the tier roofs, corners and A-40 pieces need a PC re-render.
 - Open defect: an intermittent mid-play RID error (REPAIR_DECISIONS §5).
 - Metal completeness: /mnt/project-files/goals-repair/wp-metal/COMPLETENESS_CHECK.md, plus a follow-up that only adds tests.
+- Merge order for the remaining code: R6 #1111 (in dev 242d4cf), #1112 Fortified roofs, the A-37 corners PR, #1113 tier pieces, then the goal fanfare PR (Journal thread, Dave 06:18Z ruling). #1115 metal gap tests is in dev at 71ae0c1.
+- F6: goal fanfare: a short generated sound plays with each goal placard and sounds the same every time (Dave 06:18Z: "nothing special. a sound people will grow to recognize").
+- Dave 06:18Z: existing characters get no catch-up payout; he plans to wipe characters, world edits and items before testing. That is his plan to carry out; the team does not wipe or touch live saves unless he asks.
