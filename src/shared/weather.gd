@@ -287,8 +287,9 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	}
 
 
-# Visibility V (m) at a height, from a weather state: the same rule the client's look draws its fog by (weather_look.gd visibility_m,
-# Kathleen #724), so the server (animals in fog, docs/design/animals_in_fog_server.md) and the client agree on one V. Koschmieder with a
+# Visibility V (m) at a height, from a weather state: the rule the client's look drew its fog by until 14 Nov 2026 (Kathleen #724);
+# the look now follows Dave's fog instruction (fog_look.gd, about 50 m in full fog) and the animals move to it in the third fog PR
+# (docs/design/FOG_PLAN.md). So the server (animals in fog, docs/design/animals_in_fog_server.md) and the client agree on one V. Koschmieder with a
 # 5 % threshold: V = 3 / extinction, the extinction the clear haze VIS_HAZE_DENSITY times 1 + 5 rain + 4 snow + 3 storm + VIS_MIST_THICK
 # x how deep the point is in the valley fog (eased over VIS_MIST_EDGE_M across mist_top_m), at most VIS_THICK_MAX times. Clear air about
 # 3.3 km, full valley fog about 220 m, the thickest about 170 m (Jamie #716: recognise at half V, detail at a quarter). No caves or water.

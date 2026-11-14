@@ -10103,14 +10103,17 @@
    "number": 693,
    "name": "Thatch - Garden plot",
    "category": "structure",
-   "catalog": "KEEP",
+   "catalog": "RETIRE",
    "section": null,
-   "phase": null,
+   "phase": "gardening",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_farming",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Dave 14 Nov 2026: one gardening plot, no tiers, three sizes. Retired; a saved one loads as the Medium gardening plot (wooden_garden_plot) (renames.json, legacy_kinds)."
   },
   {
    "key": "wooden_garden_plot_kit",
@@ -10129,16 +10132,19 @@
   {
    "key": "wooden_garden_plot",
    "number": 695,
-   "name": "Wooden - Garden plot",
+   "name": "Medium gardening plot",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
-   "phase": null,
+   "phase": "gardening",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_farming",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Dave 14 Nov 2026: renamed from Wooden - Garden plot; 2 x 2 m, 3 planks + 8 nails. Small (1472) and Large (1473) gardening plots are new."
   },
   {
    "key": "stone_garden_plot_kit",
@@ -10159,14 +10165,17 @@
    "number": 697,
    "name": "Stone - Garden plot",
    "category": "structure",
-   "catalog": "KEEP",
+   "catalog": "RETIRE",
    "section": null,
-   "phase": null,
+   "phase": "gardening",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_farming",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Dave 14 Nov 2026: one gardening plot, no tiers, three sizes. Retired; a saved one loads as the Medium gardening plot (wooden_garden_plot) (renames.json, legacy_kinds)."
   },
   {
    "key": "brick_garden_plot_kit",
@@ -10187,14 +10196,17 @@
    "number": 699,
    "name": "Brick - Garden plot",
    "category": "structure",
-   "catalog": "KEEP",
+   "catalog": "RETIRE",
    "section": null,
-   "phase": null,
+   "phase": "gardening",
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_farming",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Dave 14 Nov 2026: one gardening plot, no tiers, three sizes. Retired; a saved one loads as the Medium gardening plot (wooden_garden_plot) (renames.json, legacy_kinds)."
   },
   {
    "key": "wooden_planter_box_kit",

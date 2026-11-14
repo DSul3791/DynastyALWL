@@ -62,8 +62,8 @@ ITEMS = {
     "wooden_lamp_post": ("wooden_lamp_post", STATION_VIEW), "iron_lamp_post": ("iron_lamp_post", STATION_VIEW),
     "stone_lamp_post": ("stone_lamp_post", STATION_VIEW), "stone_brazier": ("stone_brazier", STATION_VIEW), "iron_brazier": ("iron_brazier", STATION_VIEW),
     # B5: garden
-    "thatch_garden_plot": ("thatch_garden_plot", PLOT_VIEW), "wooden_garden_plot": ("wooden_garden_plot", PLOT_VIEW),
-    "stone_garden_plot": ("stone_garden_plot", PLOT_VIEW), "brick_garden_plot": ("brick_garden_plot", PLOT_VIEW),
+    "small_garden_plot": ("small_garden_plot", PLOT_VIEW), "wooden_garden_plot": ("wooden_garden_plot", PLOT_VIEW),
+    "large_garden_plot": ("large_garden_plot", PLOT_VIEW),
     "wooden_planter_box": ("wooden_planter_box", STATION_VIEW), "stone_planter": ("stone_planter", STATION_VIEW),
     "wooden_trellis": ("wooden_trellis", STATION_VIEW), "wooden_compost_bin": ("wooden_compost_bin", STATION_VIEW),
     "thatch_scarecrow": ("thatch_scarecrow", STATION_VIEW), "wooden_cold_frame": ("wooden_cold_frame", STATION_VIEW),
