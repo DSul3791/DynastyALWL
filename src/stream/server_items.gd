@@ -13500,10 +13500,16 @@ func _fuel_source_one(at: Vector3, fuel_n: int) -> Array:
 	return []
 
 
-# A fuel source lost some of its store: a fire's burn follows its store, and whoever has it open sees it.
+# A fuel source lost some of its store: a fire's burn follows its store, and whoever has it open sees it. PROVISIONAL (GOALS-REPAIR A-34):
+# a draw never shortens or removes anyone's fire: a laid fire it empties stays a laid fire (state 8, empty) with the time it had left,
+# not the FIRE_OUT_S of a burnt-out one.
 func fuel_taken(id: int, box) -> void:
 	if _items.get(id, {}).has("fire"):
+		var left_was: float = float(_items[id].get("left", FIRE_LAID_S))
 		_sync_fire_from_box(0, id)   # peer 0: no notice
+
+		if not fire_is_lit(int(_items[id]["fire"]["state"])):
+			_items[id]["left"] = maxf(float(_items[id].get("left", 0.0)), left_was)
 
 	_push_box(id, box)
 	_dirty = true

@@ -13,6 +13,7 @@ extends SceneTree
 #   8. every 300 s a smelter's hopper takes Coal and Charcoal from a Coal bin, a Kiln's charcoal rack and an unlit fire within 30 m, nearest
 #      first, the oldest smelter first, never more than the hopper holds and never into an Advanced smelter's input; nothing is made or lost;
 #      nothing from beyond 30 m, a burning fire or a Kiln's logs;
+#      a laid fire drawn empty stays laid with the time it had (A-34);
 #   9. a cold smithy with no fuel in the pack is fired by a craft with one Coal from a bin within 30 m (A-28), not from one beyond.
 #   godot --headless --path . --script res://src/worldgen/tools/test_resource_bins.gd
 
@@ -359,6 +360,16 @@ func _init() -> void:
 	var fire_left: int = fire_box(cold_fire).count_of(n("charcoal"))
 	run(300.0)
 	check(box(kiln).count_of(n("charcoal")) == kiln_left and fire_box(cold_fire).count_of(n("charcoal")) == fire_left, "8i. full hoppers draw nothing more")
+
+	# A laid fire drawn empty stays a laid fire with its own time left (A-34), not a burnt-out one that goes in 300 s.
+	var far_smelter: int = place("smelter", HERE + Vector3(-300.0, 0.0, 0.0))
+	var laid: int = fire_with(HERE + Vector3(-305.0, 0.0, 0.0), 6, false)
+	var laid_left: float = float(items._items[laid]["left"])
+	run(301.0)
+	check(part(far_smelter, "hopper", "charcoal") == 6 and fire_box(laid).count_of(n("charcoal")) == 0, "8j. a smelter draws all 6 Charcoal out of a laid fire")
+	check(items._items.has(laid) and not ItemsScript.fire_is_lit(int(items._items[laid]["fire"]["state"])) and float(items._items[laid]["left"]) >= laid_left - 302.0 and float(items._items[laid]["left"]) > ItemsScript.FIRE_OUT_S, "8k. the emptied fire is still laid with its time left (%.0f s of %.0f), not cut to a burnt-out fire's %.0f s" % [float(items._items.get(laid, {}).get("left", 0.0)), laid_left, ItemsScript.FIRE_OUT_S])
+	run(600.0)
+	check(items._items.has(laid), "8l. and it is still there 10 minutes on")
 
 	# 9. A cold smithy fired from a bin (A-28).
 	clear_world()
