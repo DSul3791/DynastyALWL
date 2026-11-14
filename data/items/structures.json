@@ -585,7 +585,11 @@
 		"fortified_gate_open": {"kit": "fortified_gate_kit", "item": "fortified_gate", "state": 226, "piece": true, "piece_kind": "fence", "material": "stone", "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "max_rise_m": 1.0, "sound": "stone", "clears_grass": false, "use": "door", "use_pace_ms": 400, "use_reach_m": 3.0, "look": "fortified_gate_open", "toggle": "fortified_gate"},
 		"fortified_pillar": {"kit": "fortified_pillar_kit", "item": "fortified_pillar", "state": 227, "piece": true, "piece_kind": "pillar", "material": "stone", "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 100, "max_rise_m": 0.6, "blocks_walk": true, "sound": "stone", "clears_grass": false, "look": "fortified_pillar"},
 		"fortified_wall_top": {"kit": "fortified_wall_top_kit", "item": "fortified_wall_top", "state": 228, "piece": true, "piece_kind": "wall_top", "material": "stone", "footprint_x": 2.0, "footprint_z": 0.4, "cap_per_chunk": 200, "max_rise_m": 1.0, "sound": "stone", "clears_grass": false, "blocks_walk": true, "look": "fortified_wall_top"},
-		"smelter": {"kit": "smelter", "item": "smelter", "state": 240, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station": "smelter", "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "look": "stone_forge", "slots": 4, "out_slots": 4},
+		"smelter": {"kit": "smelter", "item": "smelter", "state": 240, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "look": "stone_forge", "use": "smelt", "slots": 3, "out_slots": 0, "takes": ["coal", "charcoal", "copper_ore", "tin_ore"],
+			"smelt": {"hopper_slots": 1, "hopper": 20, "input": 20, "ingot_s": 20.0, "jobs": ["bronze", "copper", "tin"]}},
+		"improved_smelter": {"kit": "improved_smelter", "item": "improved_smelter", "state": 368, "blocks_walk": true, "footprint_x": 1.4, "footprint_z": 1.4, "cap_per_chunk": 4, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "look": "stone_forge", "use": "smelt", "slots": 6, "out_slots": 4, "takes": ["coal", "charcoal", "copper_ore", "tin_ore", "iron_ore"],
+			"smelt": {"hopper_slots": 2, "hopper": 40, "input": 40, "ingot_s": 20.0, "bellows": true, "bellows_speed": 1.3, "jobs": ["iron", "bronze", "copper", "tin"]},
+			"note_look": "PLACEHOLDER look: the Primitive smelter's model until the art pipeline draws the Improved smelter (bellows, bronze fittings)."},
 		"bellows": {"kit": "bellows", "item": "bellows", "state": 241, "footprint_x": 0.8, "footprint_z": 0.5, "cap_per_chunk": 4, "addon_of": "brick_forge", "adds_level": false, "craft_speed": 1.25, "fuel_saving": 1.5, "sound": "timber", "clears_grass": true, "look": "tool_rack"},
 		"quenching_trough": {"kit": "quenching_trough", "item": "quenching_trough", "state": 242, "footprint_x": 1.2, "footprint_z": 0.5, "cap_per_chunk": 4, "addon_of": "brick_forge", "adds_level": false, "sound": "stone", "clears_grass": true, "look": "log_trough"},
 		"leatherworking_table": {"kit": "leatherworking_table", "item": "leatherworking_table", "state": 243, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 4, "station": "leatherworking_table", "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "look": "carpenters_bench", "slots": 4, "out_slots": 4},
@@ -692,6 +696,18 @@
 			"vehicle": {"hitch_m": 1.7, "slack_m": 1.5, "speed_mps": 3.2, "pace_slack": 1.3, "load_slow": 0.4, "slope_max": 0.36, "slope_slow": 0.5, "water_max_m": 0.5, "fit_m": 0.6, "pull_effort": 0.35, "load_reach_m": 3.0,
 				"rough": {"rock": 0.65, "bare_rock": 0.65, "stony_soil": 0.8, "gravel": 0.85, "sand": 0.7, "beach_sand": 0.7, "mud": 0.55, "peat": 0.7, "snow": 0.6, "volcanic_ash": 0.8},
 				"crate_spots": [[0.0, 0.55, -0.1]]}}
+	},
+	"smelting": {
+		"note": "The Smelters (master s2.5, s2.7; src/stream/server_smelter.gd). A structure with \"use\": \"smelt\" lists its jobs in \"smelt\".jobs; it does the first whose ore is in its input (a \"bellows\" job only while a player works its bellows). A job takes its \"in\", gives its \"out\" (ingot_s seconds an ingot) and burns fuel_per_ore hopper fuel a unit of ore, all when it delivers. Coal and Charcoal are the only fuel (s2.5).",
+		"fuel": ["charcoal", "coal"],
+		"fuel_per_ore": 1,
+		"note_fuel_per_ore": "PROVISIONAL (GOALS-REPAIR A-3): master s2.7 item 3 leaves the burn rate open. One fuel a unit of ore matches each tier's approved hopper and input sizes (20/20, 40/40, 80/80): a full hopper smelts a full input.",
+		"jobs": {
+			"iron": {"in": [["iron_ore", 1]], "out": ["iron_ingot", 1], "bellows": true},
+			"bronze": {"in": [["copper_ore", 1], ["tin_ore", 1]], "out": ["bronze_ingot", 2]},
+			"copper": {"in": [["copper_ore", 1]], "out": ["copper_ingot", 1]},
+			"tin": {"in": [["tin_ore", 1]], "out": ["tin_ingot", 1]}
+		}
 	},
 	"campfire": {
 		"gap_m": 2.0,

@@ -935,6 +935,14 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(store_def.get("use", "")) == "kiln":   # the Kiln (master s2.6): E lights it and puts it out, like a fire; F for its logs and charcoal
 		return {"prompt": "Press E to %s, F for its logs and charcoal%s (hold E to take it down)" % ["put the kiln out" if bool(_world[id].get("lit", false)) else "light the kiln", _fill_note(id)], "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
+	if str(store_def.get("use", "")) == "smelt":   # a Smelter (master s2.7): F for its fuel and ore; E works the bellows of one that has them
+		var smelt_tap: Callable = func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+		if not bool(store_def.get("smelt", {}).get("bellows", false)):
+			smelt_tap = func(): _ask_open(id)
+
+		return {"prompt": "Press %s for its fuel and ore%s (hold E to take it down)" % ["E to work the bellows, F" if bool(store_def.get("smelt", {}).get("bellows", false)) else "E or F", _fill_note(id)], "tap": smelt_tap, "hold": take_down}
+
 	if str(store_def.get("station", "")) != "" and int(store_def.get("out_slots", 0)) > 0:   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
 
@@ -1104,6 +1112,10 @@ func open_container() -> bool:
 		return false
 
 	var best_def: Dictionary = _structure_by_state(int(_world[best]["state"]))
+
+	if str(best_def.get("use", "")) == "smelt":   # a Smelter: its store (hopper, input, rack); it crafts nothing
+		_ask_open(best)
+		return true
 
 	if str(best_def.get("station", "")) != "" and int(best_def.get("out_slots", 0)) > 0:   # a station with a store: its window, on the Craft tab (the Kiln: on its store)
 		_ask_open(best, str(best_def.get("use", "")) != "kiln")
