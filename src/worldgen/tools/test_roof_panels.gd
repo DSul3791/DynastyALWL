@@ -421,10 +421,10 @@ func _hip_checks(cfg: Dictionary) -> void:
 			var other: Array = walls + [{"pos": Vector3(300.0, top + rise, 303.0), "state": int(cfg["structures"][panel_kind]["state"]), "yaw": 270.0}]   # beside the other face: one run along +Z, rising +X
 			check(str(Rules.roof_hip_pick(cfg, def, Vector3(300.2, 13.0, 300.8), 1 if slope == 45 else 0, other)[2]) == want, "%s: so does a Roof %d panel beside its other face" % [id, slope])
 
-	var r65: float = Rules.roof_panel_rise(cfg["structures"]["thatch_roof_corner_65"]) * 0.5
+	var corner_r65: float = Rules.roof_panel_rise(cfg["structures"]["thatch_roof_corner_65"]) * 0.5
 	var corner_rows: Array = [{"pos": Vector3(300.0, 10.3, 300.0), "state": int(cfg["structures"]["wall_section"]["state"]), "yaw": 0.0}, {"pos": Vector3(299.0, 10.3, 301.0), "state": int(cfg["structures"]["wall_section"]["state"]), "yaw": 90.0}]
-	corner_rows.append({"pos": Vector3(300.0, 12.7 + r65, 301.0), "state": int(cfg["structures"]["thatch_roof_corner_65"]["state"]), "yaw": 180.0})
-	check(Rules.blocked(cfg, "thatch_roof_corner_kit", Vector3(300.0, 12.7 + r65, 301.0), corner_rows) == "close", "a 65 corner's ghost over a standing 65 corner shows red, as the server refuses it")
+	corner_rows.append({"pos": Vector3(300.0, 12.7 + corner_r65, 301.0), "state": int(cfg["structures"]["thatch_roof_corner_65"]["state"]), "yaw": 180.0})
+	check(Rules.blocked(cfg, "thatch_roof_corner_kit", Vector3(300.0, 12.7 + corner_r65, 301.0), corner_rows) == "close", "a 65 corner's ghost over a standing 65 corner shows red, as the server refuses it")
 	check(Rules.reason_text("nocorner") != "", "the ghost says why a corner will not go: %s" % Rules.reason_text("nocorner"))
 	var square: Array = [{"pos": Vector3(300.0, 10.3, 300.0), "state": int(cfg["structures"]["wall_section"]["state"]), "yaw": 0.0}, {"pos": Vector3(300.0, 13.7, 301.0), "state": int(cfg["structures"]["thatch_roof"]["state"]), "yaw": 180.0}]
 	check(Rules.blocked(cfg, "thatch_roof_65", Vector3(300.0, 12.7 + Rules.roof_panel_rise(cfg["structures"]["thatch_roof_65"]) * 0.5, 301.0), square) == "close", "a Roof 65 panel on the edge a Roof 45 panel already rises from is refused")
