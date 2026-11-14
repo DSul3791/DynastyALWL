@@ -174,12 +174,18 @@ const TIERS := {
 	"log_wall": "log_wall",
 	"log_floor": "log_floor",
 	"log_roof": "log_roof",
+	"log_roof_65": "log_roof_65",
 	"stone_wall": "stone_wall",
 	"stone_floor": "stone_floor",
 	"stone_roof": "stone_roof",
+	"stone_roof_65": "stone_roof_65",
 	"brick_wall": "brick_wall",
 	"brick_floor": "brick_floor",
 	"brick_roof": "brick_roof",
+	"brick_roof_65": "brick_roof_65",
+	"roof_section_65": "roof_65",              # GOALS-REPAIR A-36: each tier roof's 65 degree panel
+	"engineered_roof": "engineered_roof",
+	"engineered_roof_65": "engineered_roof_65",
 }
 
 var _failures: int = 0

@@ -2048,7 +2048,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -2131,7 +2132,8 @@
 				"Used in Refined - Foundation",
 				"Used in Refined - Gate",
 				"Used in Refined - Pillar",
-				"Used in Refined - Roof",
+				"Used in Refined - Roof 45",
+				"Used in Refined - Roof 65",
 				"Used in Refined - Roof corner",
 				"Used in Refined - Stairs",
 				"Used in Refined - Wall",
@@ -2142,7 +2144,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -2458,7 +2461,8 @@
 				"Used in Crate",
 				"Used in Cupboard",
 				"Used in Engineered - Ceiling",
-				"Used in Engineered - Roof",
+				"Used in Engineered - Roof 45",
+				"Used in Engineered - Roof 65",
 				"Used in Engineered - Roof corner",
 				"Used in Fortified - Gate",
 				"Used in Mixer",
@@ -2471,7 +2475,8 @@
 				"Used in Refined - Foundation",
 				"Used in Refined - Gate",
 				"Used in Refined - Pillar",
-				"Used in Refined - Roof",
+				"Used in Refined - Roof 45",
+				"Used in Refined - Roof 65",
 				"Used in Refined - Roof corner",
 				"Used in Refined - Stairs",
 				"Used in Refined - Wall",
@@ -2480,11 +2485,13 @@
 				"Used in Sluice",
 				"Used in Sturdy - Ceiling",
 				"Used in Sturdy - Gate",
-				"Used in Sturdy - Roof",
+				"Used in Sturdy - Roof 45",
+				"Used in Sturdy - Roof 65",
 				"Used in Sturdy - Roof corner",
 				"Used in Superior - Ceiling",
 				"Used in Superior - Gate",
-				"Used in Superior - Roof",
+				"Used in Superior - Roof 45",
+				"Used in Superior - Roof 65",
 				"Used in Superior - Roof corner",
 				"Used in Well",
 				"Used in Wooden shingle",
@@ -3425,7 +3432,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3482,7 +3490,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3539,7 +3548,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3596,7 +3606,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3653,7 +3664,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3710,7 +3722,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3767,7 +3780,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -4009,7 +4023,7 @@
 			"obtainable_now": true
 		},
 		"roof_section_kit": {
-			"name": "Refined - Roof",
+			"name": "Refined - Roof 45",
 			"kind": "placeable",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [
@@ -4019,9 +4033,17 @@
 			"obtainable_now": true
 		},
 		"roof_section": {
-			"name": "Refined - Roof",
+			"name": "Refined - Roof 45",
 			"kind": "structure",
-			"description": "A plank roof on four posts, to set over walls and ceilings.",
+			"description": "A sloped roof panel of wooden shakes on sawn boards.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"roof_section_65": {
+			"name": "Refined - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of wooden shakes on sawn boards.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -4380,7 +4402,8 @@
 			"used_for": [
 				"Planned: a stone roof.",
 				"Used in Carved stone shingle",
-				"Used in Sturdy - Roof",
+				"Used in Sturdy - Roof 45",
+				"Used in Sturdy - Roof 65",
 				"Used in Sturdy - Roof corner"
 			],
 			"obtainable_now": true
@@ -4433,7 +4456,8 @@
 				"Used in Carpenter's bench",
 				"Used in Sturdy - Ceiling",
 				"Used in Superior - Ceiling",
-				"Used in Engineered - Roof",
+				"Used in Engineered - Roof 45",
+				"Used in Engineered - Roof 65",
 				"Used in Engineered - Roof corner"
 			],
 			"obtainable_now": true
@@ -7009,7 +7033,7 @@
 			"obtainable_now": true
 		},
 		"log_roof_kit": {
-			"name": "Rustic - Roof",
+			"name": "Rustic - Roof 45",
 			"kind": "placeable",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"how_to_get": [
@@ -7021,12 +7045,20 @@
 			"obtainable_now": true
 		},
 		"log_roof": {
-			"name": "Rustic - Roof",
+			"name": "Rustic - Roof 45",
 			"kind": "structure",
-			"description": "A log-framed thatch roof.",
+			"description": "A sloped roof panel of bark shingles on split logs.",
 			"how_to_get": [
 				"Found in the world"
 			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_roof_65": {
+			"name": "Rustic - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of bark shingles on split logs.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
 		},
@@ -7071,7 +7103,7 @@
 			"obtainable_now": true
 		},
 		"stone_roof_kit": {
-			"name": "Sturdy - Roof",
+			"name": "Sturdy - Roof 45",
 			"kind": "placeable",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"how_to_get": [
@@ -7081,12 +7113,20 @@
 			"obtainable_now": true
 		},
 		"stone_roof": {
-			"name": "Sturdy - Roof",
+			"name": "Sturdy - Roof 45",
 			"kind": "structure",
-			"description": "A stone-shingle roof.",
+			"description": "A sloped roof panel of stone shingles.",
 			"how_to_get": [
 				"Found in the world"
 			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_roof_65": {
+			"name": "Sturdy - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of stone shingles.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
 		},
@@ -7131,7 +7171,7 @@
 			"obtainable_now": true
 		},
 		"brick_roof_kit": {
-			"name": "Superior - Roof",
+			"name": "Superior - Roof 45",
 			"kind": "placeable",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"how_to_get": [
@@ -7141,12 +7181,20 @@
 			"obtainable_now": true
 		},
 		"brick_roof": {
-			"name": "Superior - Roof",
+			"name": "Superior - Roof 45",
 			"kind": "structure",
-			"description": "A tiled brick roof.",
+			"description": "A sloped roof panel of fired clay tiles.",
 			"how_to_get": [
 				"Found in the world"
 			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_roof_65": {
+			"name": "Superior - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of fired clay tiles.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
 		},
@@ -10647,7 +10695,7 @@
 			"obtainable_now": true
 		},
 		"engineered_roof_kit": {
-			"name": "Engineered - Roof",
+			"name": "Engineered - Roof 45",
 			"kind": "placeable",
 			"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 			"how_to_get": [
@@ -10657,9 +10705,17 @@
 			"obtainable_now": true
 		},
 		"engineered_roof": {
-			"name": "Engineered - Roof",
+			"name": "Engineered - Roof 45",
 			"kind": "structure",
-			"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
+			"description": "A sloped roof panel of clay tiles on pinned plank rafters. Does not burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_roof_65": {
+			"name": "Engineered - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of clay tiles on pinned plank rafters. Does not burn.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -10798,7 +10854,8 @@
 				"Craft: 2 Bark"
 			],
 			"used_for": [
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner"
 			],
 			"obtainable_now": true
@@ -10811,7 +10868,8 @@
 				"Craft at a workbench: 1 Plank"
 			],
 			"used_for": [
-				"Used in Refined - Roof",
+				"Used in Refined - Roof 45",
+				"Used in Refined - Roof 65",
 				"Used in Refined - Roof corner"
 			],
 			"obtainable_now": true
@@ -10824,9 +10882,11 @@
 				"Craft at a kiln: 2 Clay"
 			],
 			"used_for": [
-				"Used in Engineered - Roof",
+				"Used in Engineered - Roof 45",
+				"Used in Engineered - Roof 65",
 				"Used in Engineered - Roof corner",
-				"Used in Superior - Roof",
+				"Used in Superior - Roof 45",
+				"Used in Superior - Roof 65",
 				"Used in Superior - Roof corner"
 			],
 			"obtainable_now": true
