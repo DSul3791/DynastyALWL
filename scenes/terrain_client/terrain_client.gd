@@ -4412,6 +4412,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			_save_display()
 		elif KeyBindings.matches(event, "delete_plan") and held != null and held.delete_plan():
 			pass
+		elif KeyBindings.matches(event, "garden_wider") and held != null and held.garden_resize(1, 0):
+			pass
+		elif KeyBindings.matches(event, "garden_narrower") and held != null and held.garden_resize(-1, 0):
+			pass
+		elif KeyBindings.matches(event, "garden_longer") and held != null and held.garden_resize(0, 1):
+			pass
+		elif KeyBindings.matches(event, "garden_shorter") and held != null and held.garden_resize(0, -1):
+			pass
 		elif KeyBindings.matches(event, "hammer_group_next") and held != null and held.step_blueprint_group(true):
 			pass
 		elif KeyBindings.matches(event, "hammer_group_prev") and held != null and held.step_blueprint_group(false):

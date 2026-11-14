@@ -1042,7 +1042,7 @@ func bed_id_at(point: Vector3) -> int:
 	return bed_in(bed_rows(), point)
 
 
-# Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm], read once for a whole Garden grid (held_item._garden_plan).
+# Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm, yaw degrees], read once for a whole Garden grid (held_item._garden_plan).
 func bed_rows() -> Array:
 	var rows: Array = []
 
@@ -1053,14 +1053,14 @@ func bed_rows() -> Array:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
 		if _is_bed_def(def):
-			rows.append([int(id), _world[id]["pos"], float(def.get("footprint_x", 1.0)) * 0.5 + 0.05])
+			rows.append([int(id), _world[id]["pos"], float(def.get("footprint_x", 1.0)) * 0.5 + 0.05, float(_world[id]["yaw"])])
 
 	return rows
 
 
 static func bed_in(rows: Array, point: Vector3) -> int:
 	for row in rows:
-		if absf(row[1].x - point.x) <= float(row[2]) and absf(row[1].z - point.z) <= float(row[2]):
+		if FarmRules.on_square(Vector2(point.x, point.z), Vector2(row[1].x, row[1].z), float(row[2]), float(row[3]) if row.size() > 3 else 0.0):   # a turned bed or plot by its own square
 			return int(row[0])
 
 	return 0

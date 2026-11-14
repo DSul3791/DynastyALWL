@@ -369,12 +369,12 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	var no_tool: Callable = func(_t: String) -> bool: return false
 	var any_item: Callable = func(_i: String) -> bool: return true
 	check(bool(Gather.check(dune, "plant", drops, str((drops["seed_drops"]["dune_grass"]["seasons"] as Array)[0]), no_tool, any_item)["ok"]) and not bool(Gather.check(dune, "plant", drops, "winter", no_tool, any_item)["ok"]), "dune grass, which bears nothing else, can be picked for its seed when it has gone to seed, not in winter")
-	# One bed or planter to a metre cell (one crop record each): a second pot in the same cell is refused.
+	# One bed or planter to a spot (one crop record each, _bed_key): a second pot on the same spot is refused.
 	items._items[920006] = {"number": items.table.number_of("flower_pot"), "count": 1, "pos": Vector3(2.3, 10.0, 2.3), "left": 1.0e9, "struct": {"kind": "flower_pot", "yaw": 0.0}}
 	notes.clear()
 	var before: int = items._items.size()
-	items.place_piece(1, "flower_pot_kit", Vector3(2.7, 10.0, 2.7))   # free build, as from the hammer (the Flower pot kit itself is retired)
-	check(items._items.size() == before and notes.has("A bed or planter is already in that spot."), "a second flower pot in the same metre cell is refused (%s)" % str(notes))
+	items.place_piece(1, "flower_pot_kit", Vector3(2.3, 10.0, 2.3))   # free build, as from the hammer (the Flower pot kit itself is retired)
+	check(items._items.size() == before and notes.has("A bed or planter is already in that spot."), "a second flower pot on the same spot is refused (%s)" % str(notes))
 	items._items.erase(920006)
 
 
@@ -407,6 +407,101 @@ func _plot_size_checks(dir: String) -> void:
 
 	check(not found.is_empty() and str(found["struct"]["kind"]) == "wooden_garden_plot" and int(found["number"]) == again.table.number_of("wooden_garden_plot"), "a saved Stone - Garden plot loads as the Medium gardening plot (%s)" % str(found.get("struct", {})))
 	items._items.erase(920007)
+
+
+# The hoe grid's tilling (Dave 14 Nov 2026): a turned bed stands where its grid point is, turned with it; old metre-cell crop keys move to the bed at load;
+# Till a garden surveys the marked beds, refuses ground that rises or falls more than 1 m from its average, levels the beds to the average, blends the
+# ground outside back to the natural over 2 m, leaves ground by a building alone, and tills every bed; it stops when the player walks off.
+func _garden_till_checks() -> void:
+	var inv = items.inventory_of(1)
+	var hoe: int = HeldTool.slot_of(items, "hoe")
+	items.report_position(1, Vector3(20.0, 10.0, 20.0))
+	items._last_dig.clear()
+	var turned: int = items.till(1, inv, Vector3(20.37, 10.0, 20.12), hoe, 15)
+	check(turned != 0 and items._items[turned]["pos"].is_equal_approx(Vector3(20.35, 10.02, 20.1)) and is_equal_approx(float(items._items[turned]["struct"]["yaw"]), 15.0), "a turned grid's bed stands at its point (to 5 cm), turned 15 degrees")
+	items._last_dig.clear()
+	check(items.till(1, inv, Vector3(20.9, 10.0, 20.4), hoe, 15) == 0, "a bed closer than 0.9 m to another is not tilled")
+	items._last_dig.clear()
+	check(items.till(1, inv, Vector3(21.35, 10.0, 20.1), hoe, 15) != 0, "one a metre along is")
+	check(items._bed_key(Vector3(20.35, 10.0, 20.1)) != items._bed_key(Vector3(20.9, 10.0, 20.1)) and items._bed_key(Vector3(20.35, 10.0, 20.1)) == items._bed_key(Vector3(20.36, 11.0, 20.09)), "a bed's key is its own position in 5 cm steps, not its metre cell")
+
+	# A save from before turned beds: its crop and moisture keys are metre cells; they move to the bed in that cell, and a key with no bed is dropped.
+	items._items[920020] = {"number": items.table.number_of("tilled_bed"), "count": 1, "pos": Vector3(30.5, 10.02, 30.5), "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": 0.0}}
+	items._crops["30,30"] = {"crop": "wheat", "sown": 0, "age": 1.0, "wet": 0, "day": 0, "compost": false, "poured": -1}
+	items._plot_water["30,30"] = [60.0, 0.0]
+	items._crops["77,77"] = {"crop": "wheat", "sown": 0, "age": 1.0, "wet": 0, "day": 0, "compost": false, "poured": -1}
+	items._rekey_old_beds()
+	var new_key: String = items._bed_key(Vector3(30.5, 10.0, 30.5))
+	check(items._crops.has(new_key) and str(items._crops[new_key]["crop"]) == "wheat" and items._plot_water.has(new_key) and not items._crops.has("30,30") and not items._crops.has("77,77"), "old metre-cell keys move to their bed; one with no bed is dropped")
+	items._crops.erase(new_key)
+	items._plot_water.erase(new_key)
+	items._items.erase(920020)
+
+	# Till a garden on a slope of 0.3 m a metre: 3 by 3 beds within 0.3 m of their average, so it is levelled and tilled.
+	var made_edits: Array = []
+	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 40.0)
+	items.dig_ground = func(c, r): made_edits.append([0, c, r]); return true
+	items.fill_ground = func(c, r, _m): made_edits.append([1, c, r]); return true
+	items.report_position(1, Vector3(40.0, 10.0, 40.0))
+	notes.clear()
+	check(items.till_garden(1, inv, Vector3(40.0, 10.0, 40.0), hoe, 0, 303) and items._garden_jobs.has(1), "a 3 by 3 garden on a gentle slope is taken on (%s)" % str(notes))
+	check(not items.till_garden(1, inv, Vector3(40.0, 10.0, 40.0), hoe, 0, 303), "one garden at a time")
+	var steps: int = 0
+
+	while items._garden_jobs.has(1) and steps < 500:
+		items._garden_jobs[1]["next_ms"] = 0
+		items._garden_jobs_tick()
+		steps += 1
+
+	var beds: Array = items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed" and Vector2(items._items[k]["pos"].x - 40.0, items._items[k]["pos"].z - 40.0).length() < 1.6)
+	check(not items._garden_jobs.has(1) and beds.size() == 9 and notes.has("The garden is ready: 9 beds tilled."), "the garden is levelled and its 9 beds tilled in %d steps (%s)" % [steps, str(notes)])
+	check(made_edits.any(func(op): return int(op[0]) == 0) and made_edits.any(func(op): return int(op[0]) == 1), "the high side is cut and the low side filled")
+	var flat: bool = true
+
+	for x in [39.0, 40.0, 41.0]:
+		for z in [39.0, 40.0, 41.0]:
+			flat = flat and absf(items._edited_height(x, z, made_edits) - 10.0) <= items.LEVEL_MIN_M + 0.01
+
+	check(flat, "every bed is level with the average height (10 m)")
+	var edge: float = items._edited_height(42.5, 40.0, made_edits)
+	check(edge > 10.0 - 0.06 and edge < 10.0 + 0.3 * 2.5 + 0.06, "a metre outside the garden the ground lies between the average and the slope as it was (%.2f)" % edge)
+
+	# Too uneven: a slope of 0.6 m a metre over 5 beds is 1.2 m above and below the average: refused, nothing touched.
+	items.ground_height = func(x, _z): return 10.0 + 0.6 * (x - 60.0)
+	items.report_position(1, Vector3(60.0, 10.0, 40.0))
+	made_edits.clear()
+	notes.clear()
+	check(not items.till_garden(1, inv, Vector3(60.0, 10.0, 40.0), hoe, 0, 501) and made_edits.is_empty() and notes.any(func(n): return str(n).contains("rises and falls too much")), "ground that rises or falls more than 1 m from its average is refused (%s)" % str(notes))
+
+	# A wall beside the garden: no cut or fill near it.
+	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 80.0)
+	items._items[920021] = {"number": items.table.number_of("thatch_wall"), "count": 1, "pos": Vector3(82.6, 10.0, 40.0), "left": 1.0e9, "struct": {"kind": "thatch_wall", "yaw": 0.0}}
+	items.report_position(1, Vector3(80.0, 10.0, 40.0))
+	made_edits.clear()
+	check(items.till_garden(1, inv, Vector3(80.0, 10.0, 40.0), hoe, 0, 303), "a garden beside a wall is taken on")
+	steps = 0
+
+	while items._garden_jobs.has(1) and steps < 500:
+		items._garden_jobs[1]["next_ms"] = 0
+		items._garden_jobs_tick()
+		steps += 1
+
+	check(not made_edits.is_empty() and made_edits.all(func(op): return Vector2(op[1].x - 82.6, op[1].z - 40.0).length() >= 2.4), "no levelling spot within the wall's reach plus 1.5 m")
+	items._items.erase(920021)
+
+	# Walking off leaves it half done.
+	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 100.0)
+	items.report_position(1, Vector3(100.0, 10.0, 40.0))
+	check(items.till_garden(1, inv, Vector3(100.0, 10.0, 40.0), hoe, 0, 505), "a 5 by 5 garden is taken on")
+	items.report_position(1, Vector3(140.0, 10.0, 40.0))
+	notes.clear()
+	items._garden_jobs[1]["next_ms"] = 0
+	items._garden_jobs_tick()
+	check(not items._garden_jobs.has(1) and notes.any(func(n): return str(n).begins_with("The garden is left half done")), "walking off stops the garden job (%s)" % str(notes))
+	items.ground_height = func(_x, _z): return 10.0
+	items.dig_ground = Callable()
+	items.fill_ground = Callable()
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 
 
 func _init() -> void:
@@ -529,6 +624,17 @@ func _init() -> void:
 	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1, "poured": -1}
 	var before: int = count("wheat")
 	check(items.harvest(1, items.inventory_of(1), bed) and count("wheat") - before == yield_wheat, "with a sickle the full yield (%d)" % (count("wheat") - before))
+	# Worms (Dave 14 Nov 2026): each ripe garden crop taken rolls crops.json worm.chance (0.2) for a Worm; forced to 1 and 0 here to see both ends.
+	check(is_equal_approx(float(items._crops_file_extra["worm"]["chance"]), 0.2), "a ripe crop gives a worm one time in five (%s)" % str(items._crops_file_extra.get("worm", {})))
+	var worm_chance: Dictionary = items._crops_file_extra["worm"]
+	var worms: int = count("worm")
+	worm_chance["chance"] = 1.0
+	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1, "poured": -1}
+	check(items.harvest(1, items.inventory_of(1), bed) and count("worm") == worms + 1, "a sure worm roll gives one Worm with the harvest")
+	worm_chance["chance"] = 0.0
+	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1, "poured": -1}
+	check(items.harvest(1, items.inventory_of(1), bed) and count("worm") == worms + 1, "no worm roll, no worm")
+	worm_chance["chance"] = 0.2
 
 	# Water poured counts: sow, pour, next day wet.
 	season[0] = "spring"
@@ -546,6 +652,7 @@ func _init() -> void:
 	_hoe_plot_checks()
 	_herb_seed_checks(crops)
 	_plot_size_checks(dir)
+	_garden_till_checks()
 
 	# Save and restart: a barley crop grown to a stage keeps its crop, its age and its stage (the world save, not a hand-written file).
 	season[0] = "spring"

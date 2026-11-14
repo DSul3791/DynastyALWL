@@ -55,16 +55,28 @@ func _init() -> void:
 	check(FarmRules.garden_action("seed", true, "flax")["act"] == "none", "garden: seeds on a growing bed do nothing and say so")
 	plan = FarmRules.garden_action("seed", false, "")
 	check(plan["act"] == "till" and str(plan["say"]) == "", "garden: seeds on open ground till a bed (and are sown when it is there)")
-	# Rows and grids: one cell, a row of 5 along the way the player faces, 3 by 3 and 5 by 5 on the 1 m cells for seeds; bushes 2 m apart; nearest the aim first.
-	var one: Array = FarmRules.garden_cells(0, "seed", Vector3(3.7, 10.0, -2.2), Vector3(1.0, 0.0, 0.0))
-	check(one == [Vector2(3.5, -2.5)], "garden cells: one seed cell, the aimed 1 m cell's centre (%s)" % str(one))
-	var row: Array = FarmRules.garden_cells(1, "seed", Vector3(3.7, 10.0, -2.2), Vector3(0.9, 0.0, 0.2))
-	check(row.size() == 5 and row[0] == Vector2(3.5, -2.5) and row.all(func(c): return is_equal_approx(c.y, -2.5)) and row.any(func(c): return is_equal_approx(c.x, 5.5)) and row.any(func(c): return is_equal_approx(c.x, 1.5)), "garden cells: a row of 5 runs along x when facing x (%s)" % str(row))
-	row = FarmRules.garden_cells(1, "seed", Vector3(3.7, 10.0, -2.2), Vector3(0.1, 0.0, -1.0))
-	check(row.all(func(c): return is_equal_approx(c.x, 3.5)), "garden cells: and along z when facing z")
-	check(FarmRules.garden_cells(2, "seed", Vector3.ZERO, Vector3.FORWARD).size() == 9 and FarmRules.garden_cells(3, "seed", Vector3.ZERO, Vector3.FORWARD).size() == 25, "garden cells: 3 by 3 is 9 cells, 5 by 5 is 25")
-	var bushes: Array = FarmRules.garden_cells(2, "bush", Vector3(0.3, 0.0, 0.3), Vector3.FORWARD)
-	check(bushes[0] == Vector2(0.3, 0.3) and bushes.any(func(c): return c.is_equal_approx(Vector2(2.3, 2.3))), "garden cells: bushes round the aim itself, 2 m apart")
+	# The hoe grid (Dave 14 Nov 2026): width by length, turned by the wheel, spaced for the plant; unturned 1 m grids sit on the metre cells.
+	var one: Array = FarmRules.grid_points(1, 1, 1.0, FarmRules.grid_centre(1, 1, 1.0, Vector2(3.7, -2.2), 0, Vector2(3.5, -2.5)), 0)
+	check(one.size() == 1 and one[0].is_equal_approx(Vector2(3.5, -2.5)), "hoe grid: one point, moved onto the aimed metre cell's centre (%s)" % str(one))
+	var even: Array = FarmRules.grid_points(2, 3, 1.0, FarmRules.grid_centre(2, 3, 1.0, Vector2(3.7, -2.2), 0, Vector2(3.5, -2.5)), 0)
+	check(even.size() == 6 and even.all(func(c): return is_equal_approx(fposmod(c.x, 1.0), 0.5) and is_equal_approx(fposmod(c.y, 1.0), 0.5)) and even.any(func(c): return c.is_equal_approx(Vector2(3.5, -2.5))), "hoe grid: 2 by 3 is 6 points, every one on a cell centre, one on the aimed cell (%s)" % str(even))
+	var xs: Dictionary = {}
+	var zs: Dictionary = {}
+
+	for c in even:
+		xs[snappedf(c.x, 0.01)] = true
+		zs[snappedf(c.y, 0.01)] = true
+
+	check(xs.size() == 2 and zs.size() == 3, "hoe grid: width runs along x and length along z when unturned")
+	var turned: Array = FarmRules.grid_points(3, 1, 1.0, Vector2.ZERO, 90)
+	check(turned.any(func(c): return c.is_equal_approx(Vector2(0.0, 1.0))) and turned.any(func(c): return c.is_equal_approx(Vector2(0.0, -1.0))), "hoe grid: turned 90 degrees, a row across x lies along z (%s)" % str(turned))
+	var tilt: Array = FarmRules.grid_points(2, 2, 1.0, Vector2.ZERO, 15)
+	check(is_equal_approx(tilt[0].distance_to(tilt[1]), 1.0) and is_equal_approx(tilt[0].distance_to(tilt[2]), 1.0), "hoe grid: turned 15 degrees, the points stay 1 m apart")
+	check(FarmRules.spacing_of("seed") == 1.0 and FarmRules.spacing_of("bush") == 2.0 and FarmRules.spacing_of("tree") == 3.0 and FarmRules.spacing_of("seed", {"spacing_m": 2.0}) == 2.0, "hoe grid: spacing by kind (1, 2, 3 m), a crop row's spacing_m wins")
+	check(FarmRules.nearest_first([Vector2(5, 0), Vector2(1, 0), Vector2(3, 0)], Vector2.ZERO)[0] == Vector2(1, 0), "hoe grid: nearest the aim first")
+	check(FarmRules.on_square(Vector2(0.6, 0.0), Vector2.ZERO, 0.55, 45.0) and not FarmRules.on_square(Vector2(0.5, 0.5), Vector2.ZERO, 0.55, 45.0) and FarmRules.on_square(Vector2(0.5, 0.5), Vector2.ZERO, 0.55, 0.0), "on_square: a bed turned 45 degrees holds its own diamond, not the unturned corner")
+	check(FarmRules.level_ok([10.0, 10.5, 9.4]) and not FarmRules.level_ok([10.0, 10.0, 12.5]) and not FarmRules.level_ok([]) and not FarmRules.level_ok([10.0, NAN]), "garden level test: within 1 m of the average tills, more than 1 m does not (Dave: up or down 1 m)")
+	check(FarmRules.garden_action("till", false, "")["act"] == "till" and FarmRules.garden_action("till", true, "")["act"] == "none", "till a garden: open ground tills, a bed already there is shown red")
 	check(FarmRules.garden_action("bush", false, "")["act"] == "plant_bush", "garden: a bush on open ground is planted")
 	check(FarmRules.garden_action("bush", true, "")["act"] == "none", "garden: a bush is not planted in a bed")
 	check(FarmRules.garden_action("", false, "")["act"] == "none", "garden: nothing picked sends nothing")
@@ -74,16 +86,16 @@ func _init() -> void:
 	check(with_trees.size() == 3 and with_trees[0] == {"id": "oak_seed", "kind": "tree"} and with_trees[1]["kind"] == "seed" and with_trees[2] == {"id": "maple_keys", "kind": "tree"}, "plantables: tree seeds list as trees (%s)" % str(with_trees))
 	check(FarmRules.plantables(crops, ["oak_seed"]).is_empty(), "plantables: no tree seed table, no tree rows")
 	check(FarmRules.garden_action("tree", false, "")["act"] == "plant_bush" and FarmRules.garden_action("tree", true, "")["act"] == "none", "garden: a tree seed goes in open ground, not a bed")
-	var tree_cells: Array = FarmRules.garden_cells(1, "tree", Vector3(0.3, 0.0, 0.3), Vector3(1.0, 0.0, 0.0))
-	check(tree_cells[0] == Vector2(0.3, 0.3) and tree_cells.any(func(c): return c.is_equal_approx(Vector2(6.3, 0.3))), "garden cells: a row of tree seeds 3 m apart round the aim (%s)" % str(tree_cells))
-	# A click's plan: a 2 m plot holding several 1 m cells takes one seed (its first cell); reach from the feet, no ground, and the pack's count stop the rest.
+	# A click's plan: a 2 m plot holding several 1 m points takes one seed (its first point); no ground and the pack's count stop the rest; a far point plants
+	# when the player walks over (it is queued, marked far).
 	var spots: Array = [[Vector3(0.5, 1.0, 0.5), 7, ""], [Vector3(1.5, 1.0, 0.5), 7, ""], [Vector3(0.5, 1.0, 1.5), 0, ""], [Vector3(1.5, NAN, 1.5), 0, ""], [Vector3(9.5, 1.0, 0.5), 0, ""], [Vector3(-0.5, 1.0, 0.5), 8, "flax"], [Vector3(2.5, 1.0, 0.5), 0, ""]]
-	var made: Array = FarmRules.garden_plan("seed", spots, Vector3.ZERO, 3.7, 2)
-	check(made.size() == 5 and made[0]["act"] == "sow" and int(made[0]["bed"]) == 7 and made.filter(func(c): return int(c["bed"]) == 7).size() == 1, "garden plan: the plot is sown once, from its first cell (%s)" % str(made))
-	check(made[1]["act"] == "till" and made[2]["act"] == "none" and str(made[2]["say"]) == "No ground to plant there" and made[3]["act"] == "none" and str(made[3]["say"]).begins_with("Too far"), "garden plan: open ground tills; no ground and out of reach say why")
+	var made: Array = FarmRules.garden_plan("seed", spots, Vector3.ZERO, 3.7, 3)
+	check(made.size() == 5 and made[0]["act"] == "sow" and int(made[0]["bed"]) == 7 and made.filter(func(c): return int(c["bed"]) == 7).size() == 1, "garden plan: the plot is sown once, from its first point (%s)" % str(made))
+	check(made[1]["act"] == "till" and made[2]["act"] == "none" and str(made[2]["say"]) == "No ground to plant there" and made[3]["act"] == "till" and bool(made[3]["far"]) and not bool(made[1]["far"]), "garden plan: open ground tills; no ground says why; a far point is planted later")
 	check(made[4]["act"] == "none" and int(made[4]["bed"]) == 8, "garden plan: a growing bed is shown, not sown")
-	check(made.filter(func(c): return bool(c["ok"])).size() == 2, "garden plan: two seeds in the pack plant two cells and the plan stops at the third")
-	# The queue: a till goes out and holds the next till 600 ms; its sow waits for the bed (moving to the back) up to 3 s, then is dropped; a bed that shows is sown once.
+	check(made.filter(func(c): return bool(c["ok"])).size() == 3, "garden plan: three seeds in the pack plant three points and the plan stops at the fourth")
+	# The queue: a till goes out and holds the next till 600 ms; its own sow waits for the bed up to 3 s (others go first meanwhile), then is dropped; a bed that
+	# shows is sown once; a point out of reach waits until the player is near.
 	var queue: Array = [{"act": "till", "pos": Vector3(0.5, 1.0, 0.5)}, {"act": "sow_at", "pos": Vector3(0.5, 1.0, 0.5), "until": 0}, {"act": "sow", "bed": 4, "pos": Vector3.ZERO}]
 	var bed_there: Array = [0, ""]   # changed in place below: a lambda keeps the array it captured
 	var bed_at := func(_pos: Vector3) -> Array:
@@ -92,9 +104,9 @@ func _init() -> void:
 	var step: Dictionary = FarmRules.garden_step(queue, 1000, bed_at)
 	check(step["send"]["act"] == "till" and int(step["next"]) == 1000 + FarmRules.GARDEN_TILL_MSEC and queue.size() == 2 and int(queue[0]["until"]) == 1000 + FarmRules.GARDEN_BED_WAIT_MSEC, "garden queue: the till goes, the next move waits 600 ms, its sow starts waiting 3 s")
 	step = FarmRules.garden_step(queue, 1600, bed_at)
-	check(step["send"].is_empty() and queue[0]["act"] == "sow" and queue[1]["act"] == "sow_at", "garden queue: a sow whose bed is not there yet goes to the back")
+	check(step["send"]["act"] == "sow" and int(step["send"]["bed"]) == 4 and queue.size() == 1 and queue[0]["act"] == "sow_at" and int(step["next"]) == 1600 + FarmRules.GARDEN_STEP_MSEC, "garden queue: while a sow waits for its bed, the one behind it goes, 150 ms apart")
 	step = FarmRules.garden_step(queue, 1750, bed_at)
-	check(step["send"]["act"] == "sow" and int(step["send"]["bed"]) == 4 and queue.size() == 1 and int(step["next"]) == 1750 + FarmRules.GARDEN_STEP_MSEC, "garden queue: a queued sow goes out, 150 ms apart")
+	check(step["send"].is_empty() and queue.size() == 1, "garden queue: nothing goes while the bed is not there yet")
 	bed_there[0] = 12
 	var waiting: Array = queue.duplicate(true)
 	step = FarmRules.garden_step(queue, 1900, bed_at)
@@ -107,6 +119,14 @@ func _init() -> void:
 	waiting = [{"act": "sow_at", "pos": Vector3.ZERO, "until": 5000}]
 	step = FarmRules.garden_step(waiting, 4000, bed_at)
 	check(step["send"].is_empty() and waiting.is_empty(), "garden queue: a bed already sown is not sown again")
+	var walk: Array = [{"act": "plant_bush", "pos": Vector3(9.0, 0.0, 0.0)}, {"act": "plant_bush", "pos": Vector3(1.0, 0.0, 0.0)}]
+	var near_origin := func(pos: Vector3) -> bool:
+		return pos.length() <= 3.7
+
+	step = FarmRules.garden_step(walk, 5000, bed_at, near_origin)
+	check(step["send"]["pos"] == Vector3(1.0, 0.0, 0.0) and walk.size() == 1, "garden queue: the point in reach goes first")
+	step = FarmRules.garden_step(walk, 5200, bed_at, near_origin)
+	check(step["send"].is_empty() and walk.size() == 1, "garden queue: a point out of reach waits for the player")
 
 	# Placeholder looks: every crop, every stage, a tuft grid for a 1 m bed and a 2 m plot, taller with the stage.
 	var all_built: bool = true

@@ -182,7 +182,7 @@ func _on_captured(key: int, ctrl: bool, shift: bool) -> void:
 	if other != "":
 		_pending = [id, other, key, ctrl, shift]
 		_conflict_row.visible = true
-		var shown: String = KeyBindings.key_label(KeyBindings.forced_binding(id, key, ctrl, shift))
+		var shown: String = KeyBindings.key_label(KeyBindings.forced_binding(id, key, ctrl, shift), id)
 		_say("Warning: %s is already used for \"%s\". Swap gives that action your old key (%s); Cancel keeps things as they were." % [shown, KeyBindings.label_of_action(other), KeyBindings.label(id)])
 		refresh()
 		return

@@ -74,6 +74,9 @@ static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bu
 # rest (reach, season, ground, spacing) and says why it refuses.
 # PROVISIONAL (gardening, 14 Nov 2026): a seed clicked on open ground tills a bed there and then sows it.
 static func garden_action(kind: String, bed: bool, bed_crop: String) -> Dictionary:
+	if kind == "till":   # Till a garden: the preview shows the beds already there
+		return {"act": "none", "say": "Already tilled"} if bed else {"act": "till", "say": ""}
+
 	if kind == "":
 		return {"act": "none", "say": "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, then right click and pick it"}
 
@@ -89,37 +92,93 @@ static func garden_action(kind: String, bed: bool, bed_crop: String) -> Dictiona
 	return {"act": "sow", "say": ""}
 
 
-# Planting in rows and grids (Dave 14 Nov 2026, the "plant easily" feel): the mouse wheel in Garden mode steps through these. PROVISIONAL sizes.
-const GARDEN_GRIDS := [{"name": "one", "w": 1, "d": 1}, {"name": "a row of 5", "w": 1, "d": 5}, {"name": "3 by 3", "w": 3, "d": 3}, {"name": "5 by 5", "w": 5, "d": 5}]
-const SEED_SPACING_M := 1.0   # seeds go one to a tilled metre (the server tills 1 m cells, floor + 0.5)
-const BUSH_SPACING_M := 2.0   # PROVISIONAL: bushes two metres apart (the server's own gap is PLANT_BUSH_GAP_M, 1 m)
-const TREE_SPACING_M := 3.0   # PROVISIONAL: tree seeds three metres apart (the server's own gap is PLANT_TREE_GAP_M, 2 m)
+# The hoe grid (Dave 14 Nov 2026): "green markers that show you the size of the garden on the ground and you can size it using the arrow keys plus the alt
+# button ... turning the mouse wheel will cause the marked out area to rotate a little bit so you can line up your gardens"; planting uses "the same
+# mechanism", with "the spacing ... adjusted according to the plant that you picked". One grid, width by length, turned by the wheel. PROVISIONAL limits.
+const GRID_MAX_SIDE := 10      # PROVISIONAL: at most 10 by 10 points (a 10 m square garden of 1 m beds)
+const GRID_TURN_DEG := 5       # PROVISIONAL: one wheel notch turns the grid this far
+const SEED_SPACING_M := 1.0    # seeds go one to a tilled metre bed (the server's beds are 1 m)
+const BUSH_SPACING_M := 2.0    # PROVISIONAL: bushes two metres apart (the server's own gap is PLANT_BUSH_GAP_M, 1 m)
+const TREE_SPACING_M := 3.0    # PROVISIONAL: tree seeds three metres apart (the server's own gap is PLANT_TREE_GAP_M, 2 m)
 
 
-# The flat spots one Garden click works, nearest the aim first: seeds on the 1 m cell centres round the aimed cell, bushes BUSH_SPACING_M and tree seeds TREE_SPACING_M apart round the aim.
-# A row runs along the axis the player faces most (`facing`: a flat direction). `grid`: an index of GARDEN_GRIDS.
-static func garden_cells(grid: int, kind: String, aim: Vector3, facing: Vector3) -> Array:
-	var size: Dictionary = GARDEN_GRIDS[clampi(grid, 0, GARDEN_GRIDS.size() - 1)]
-	var step: float = BUSH_SPACING_M if kind == "bush" else (TREE_SPACING_M if kind == "tree" else SEED_SPACING_M)
-	var centre: Vector2 = Vector2(aim.x, aim.z) if kind != "seed" else Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)
-	var along_x: bool = absf(facing.x) > absf(facing.z)
-	var across: int = int(size["w"])
-	var ahead: int = int(size["d"])
-	var cells: Array = []
-
-	for a in range(ahead):
-		for c in range(across):
-			var forward: float = (float(a) - float(ahead - 1) * 0.5) * step
-			var side: float = (float(c) - float(across - 1) * 0.5) * step
-			cells.append(centre + (Vector2(forward, side) if along_x else Vector2(side, forward)))
-
-	cells.sort_custom(func(p, q): return p.distance_squared_to(centre) < q.distance_squared_to(centre))
-	return cells
+# Dave 14 Nov 2026: an area with "a massive height variation" cannot be tilled ("it can turn the grid green or red"); "I think up or down 1 m should be the
+# limit". The garden's surveyed points (its bed centres) must each be within GARDEN_LEVEL_LIMIT_M of their mean, the height it is levelled to.
+const GARDEN_LEVEL_LIMIT_M := 1.0
 
 
-# One Garden click's plan from its grid's spots (garden_cells, nearest first), as [[position, bed id (0 for none), that bed's crop]]: a bed or garden plot takes one
-# cell (its first spot: a 2 m plot holds several 1 m cells but one crop), a cell needs ground (y not NAN) within `reach` m flat of `feet`, and at most `have` cells
-# plant. -> [{"act", "say", "pos", "bed", "ok"}]; a cell that will not plant has act "none" and says why.
+# Whether a garden's surveyed heights are close enough to their mean to till (an empty list or an unloaded point, NAN, is not).
+static func level_ok(heights: Array) -> bool:
+	if heights.is_empty():
+		return false
+
+	var mean: float = 0.0
+
+	for h in heights:
+		if is_nan(float(h)):
+			return false
+
+		mean += float(h)
+
+	mean /= float(heights.size())
+	return heights.all(func(h): return absf(float(h) - mean) <= GARDEN_LEVEL_LIMIT_M)
+
+
+# The grid spacing for a picked plant: its crops.json row's "spacing_m" when it has one, else by kind (seed, bush, tree; tilling is 1 m beds).
+static func spacing_of(kind: String, crop_row: Dictionary = {}) -> float:
+	if crop_row.has("spacing_m"):
+		return float(crop_row["spacing_m"])
+
+	return BUSH_SPACING_M if kind == "bush" else (TREE_SPACING_M if kind == "tree" else SEED_SPACING_M)
+
+
+# The grid's points, `w` across (x) by `d` along (z) at `step` apart round `centre`, turned `yaw_deg` the way a structure's yaw turns it (Godot's
+# rotation about y). The server works the same points from the same centre (server_items.till_garden).
+static func grid_points(w: int, d: int, step: float, centre: Vector2, yaw_deg: int) -> Array:
+	var points: Array = []
+	var turn: float = -deg_to_rad(float(yaw_deg))
+
+	for a in range(d):
+		for c in range(w):
+			points.append(centre + Vector2((float(c) - float(w - 1) * 0.5) * step, (float(a) - float(d - 1) * 0.5) * step).rotated(turn))
+
+	return points
+
+
+# Where the grid's centre goes for an aim: round the aim, moved so the point nearest the aim lands on `anchor` (a bed's centre, or a metre cell's centre
+# for an unturned 1 m grid) when one is given (a Vector2), so a grid lines up with the beds already there.
+static func grid_centre(w: int, d: int, step: float, aim: Vector2, yaw_deg: int, anchor: Variant = null) -> Vector2:
+	if typeof(anchor) != TYPE_VECTOR2:
+		return aim
+
+	var nearest: Vector2 = aim
+	var best: float = INF
+
+	for p in grid_points(w, d, step, aim, yaw_deg):
+		if p.distance_squared_to(aim) < best:
+			best = p.distance_squared_to(aim)
+			nearest = p
+
+	return aim + (anchor as Vector2 - nearest)
+
+
+# The grid's points nearest `aim` first (the pack's count runs out on the far ones).
+static func nearest_first(points: Array, aim: Vector2) -> Array:
+	var out: Array = points.duplicate()
+	out.sort_custom(func(p, q): return p.distance_squared_to(aim) < q.distance_squared_to(aim))
+	return out
+
+
+# Whether a flat point lies on a bed or plot: its square footprint (half side `half`) turned `yaw_deg` round `centre`.
+static func on_square(point: Vector2, centre: Vector2, half: float, yaw_deg: float) -> bool:
+	var local: Vector2 = (point - centre).rotated(deg_to_rad(yaw_deg))
+	return absf(local.x) <= half and absf(local.y) <= half
+
+
+# One Garden click's plan from its grid's spots (nearest the aim first), as [[position, bed id (0 for none), that bed's crop]]: a bed or garden plot takes one
+# point (its first: a 2 m plot holds several 1 m points but one crop), a point needs ground (y not NAN), and at most `have` points plant. A point farther than
+# `reach` m flat from `feet` still plants: it waits in the queue until the player walks within reach ("far"). -> [{"act", "say", "pos", "bed", "ok", "far"}]; a
+# point that will not plant has act "none" and says why.
 static func garden_plan(kind: String, spots: Array, feet: Vector3, reach: float, have: int) -> Array:
 	var used: Dictionary = {}
 	var out: Array = []
@@ -137,10 +196,11 @@ static func garden_plan(kind: String, spots: Array, feet: Vector3, reach: float,
 		var cell: Dictionary = garden_action(kind, bed != 0, str(spot[2]))
 		cell["pos"] = pos
 		cell["bed"] = bed
-		cell["ok"] = str(cell["act"]) != "none" and not is_nan(pos.y) and Vector2(pos.x - feet.x, pos.z - feet.z).length() <= reach
+		cell["ok"] = str(cell["act"]) != "none" and not is_nan(pos.y)
+		cell["far"] = Vector2(pos.x - feet.x, pos.z - feet.z).length() > reach
 
 		if not bool(cell["ok"]) and str(cell["act"]) != "none":
-			cell["say"] = "No ground to plant there" if is_nan(pos.y) else "Too far to plant there: step closer"
+			cell["say"] = "No ground to plant there"
 			cell["act"] = "none"
 
 		if bool(cell["ok"]):
@@ -159,36 +219,41 @@ const GARDEN_TILL_MSEC := 600         # between tills (the server paces hoe stro
 const GARDEN_BED_WAIT_MSEC := 3000    # how long a sow waits for the bed its till asked for
 
 
-# The next request of a Garden queue ([{"act": "till" | "sow" | "sow_at" | "plant_bush", "pos", "bed", "until"}], not empty) at `now` msec. Pops the front, or moves
-# a "sow_at" whose bed is not there yet to the back until its wait ends (a till starts the wait of the first sow_at not yet waiting). `bed_at.call(position)` ->
-# [bed id or 0, its crop]. -> {"send": the request to send now or {} (a "sow_at" goes out as a "sow" of its bed, or not at all if the bed has a crop), "next": msec
-# the queue may move again}.
-static func garden_step(queue: Array, now: int, bed_at: Callable) -> Dictionary:
-	var item: Dictionary = queue[0]
+# The next request of a Garden queue ([{"act": "till" | "sow" | "sow_at" | "plant_bush", "pos", "bed", "until"}]) at `now` msec: the first one in order that
+# `near.call(position)` allows (within the player's reach; an invalid `near` allows all) and that can go. A "sow_at" waits for the bed its till asked for (from the
+# moment that till goes, up to GARDEN_BED_WAIT_MSEC, then it is dropped); the ones behind it go first meanwhile. `bed_at.call(position)` -> [bed id or 0, its crop].
+# -> {"send": the request to send now or {} (a "sow_at" goes out as a "sow" of its bed, or not at all if the bed has a crop), "next": msec the queue may move again}.
+static func garden_step(queue: Array, now: int, bed_at: Callable, near: Callable = Callable()) -> Dictionary:
+	for i in range(queue.size()):
+		var item: Dictionary = queue[i]
 
-	match str(item["act"]):
-		"till":
-			queue.pop_front()
+		if near.is_valid() and not bool(near.call(item["pos"])):
+			continue   # out of reach: it waits for the player to walk over
 
-			for wait in queue:
-				if str(wait["act"]) == "sow_at" and int(wait["until"]) == 0:
-					wait["until"] = now + GARDEN_BED_WAIT_MSEC
-					break
+		match str(item["act"]):
+			"till":
+				queue.remove_at(i)
 
-			return {"send": item, "next": now + GARDEN_TILL_MSEC}
-		"sow_at":
-			var found: Array = bed_at.call(item["pos"])
+				for wait in queue:
+					if str(wait["act"]) == "sow_at" and int(wait["until"]) == 0 and (wait["pos"] as Vector3).is_equal_approx(item["pos"]):
+						wait["until"] = now + GARDEN_BED_WAIT_MSEC   # its own sow starts waiting for the bed
+						break
 
-			if int(found[0]) == 0 and (int(item["until"]) == 0 or now < int(item["until"])):
-				queue.push_back(queue.pop_front())   # not there yet: the next request goes first
-				return {"send": {}, "next": now + GARDEN_STEP_MSEC}
+				return {"send": item, "next": now + GARDEN_TILL_MSEC}
+			"sow_at":
+				var found: Array = bed_at.call(item["pos"])
 
-			queue.pop_front()
+				if int(found[0]) == 0 and (int(item["until"]) == 0 or now < int(item["until"])):
+					continue   # its bed is not there yet
 
-			if int(found[0]) == 0 or str(found[1]) != "":   # never came, or already sown
-				return {"send": {}, "next": now + GARDEN_STEP_MSEC}
+				queue.remove_at(i)
 
-			return {"send": {"act": "sow", "bed": int(found[0]), "pos": item["pos"]}, "next": now + GARDEN_STEP_MSEC}
+				if int(found[0]) == 0 or str(found[1]) != "":   # never came, or already sown
+					return {"send": {}, "next": now + GARDEN_STEP_MSEC}
 
-	queue.pop_front()
-	return {"send": item, "next": now + GARDEN_STEP_MSEC}
+				return {"send": {"act": "sow", "bed": int(found[0]), "pos": item["pos"]}, "next": now + GARDEN_STEP_MSEC}
+
+		queue.remove_at(i)
+		return {"send": item, "next": now + GARDEN_STEP_MSEC}
+
+	return {"send": {}, "next": now + GARDEN_STEP_MSEC}

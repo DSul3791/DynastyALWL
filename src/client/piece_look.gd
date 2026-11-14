@@ -38,7 +38,7 @@ const PREWARM := [
 	["blocks", [Color(0.52, 0.5, 0.46), 2, 109, 0.3]], ["blocks", [Color(0.62, 0.6, 0.55), 1, 113, 0.2]], ["blocks", [Color(0.6, 0.59, 0.56), 3, 127, 0.1]],
 	["masonry", [Color(0.52, 0.5, 0.46), Color(0.45, 0.38, 0.28), 26, 13, 61, 0.14]], ["masonry", [Color(0.62, 0.3, 0.2), Color(0.72, 0.7, 0.66), 28, 10, 67, 0.12]],
 	["organic", ["logs", Color(0.4, 0.28, 0.16), 73]], ["organic", ["daub", Color(0.74, 0.64, 0.48), 79]],
-	["straw", [Color(0.74, 0.6, 0.3), 83]], ["trod", []],
+	["straw", [Color(0.74, 0.6, 0.3), 83]], ["trod", []], ["tilled", ["albedo"]], ["tilled", ["normal"]],
 	["board", [Color(0.54, 0.35, 0.2), 1, 151, false]], ["board", [Color(0.34, 0.19, 0.1), 1, 157, false]], ["board", [Color(0.5, 0.36, 0.21), 1, 161, true]],     # the doors' boards (BUGLIST-002)
 	["board", [Color(0.4, 0.29, 0.17), 1, 163, true]], ["board", [Color(0.3, 0.22, 0.14), 1, 167, true]],
 ]
@@ -102,6 +102,8 @@ static func _picture(kind: String, a: Array) -> Image:
 			return _straw_image(a[0], a[1])
 		"trod":
 			return _trod_pixels()
+		"tilled":
+			return _tilled_pixels(str(a[0]) == "normal")
 
 	return null
 
@@ -514,20 +516,6 @@ static func ladder() -> Node3D:
 	return root
 
 
-# A metre of hoe path: a flat tan patch laid on the ground (real packed-earth ground material comes later); no collision.
-static func path() -> Node3D:
-	_materials()
-	var root: Node3D = Node3D.new()
-	_box(root, Vector3(1.0, 0.03, 1.0), Vector3(0.0, 0.0, 0.0), _earth)
-	_box(root, Vector3(0.7, 0.012, 1.0), Vector3(0.0, 0.02, 0.0), _earth)   # the trodden middle, a little higher and paler than the verge
-
-	for k in 7:   # small stones pressed into the edges
-		var side: float = 1.0 if k % 2 == 0 else -1.0
-		_stone_at(root, Vector3(side * (0.46 + 0.02 * float(k % 3)), 0.03, -0.42 + 0.14 * float(k)), float(k) * 0.9)
-
-	return root
-
-
 # A trodden hoe path (Dave 2 Nov 2026): a round soft patch of brown earth PROJECTED onto the ground with a Decal, so it follows every bump of the
 # terrain (a flat disc laid on the voxel ground was cut into stair steps where the ground rose through it). Strong brown for the middle half metre,
 # fading to see-through by 1.25 m so it merges with whatever is round it and with the next patch along a drag. Small stones are scattered at random,
@@ -615,6 +603,73 @@ static func trodden_path() -> Node3D:
 	decal.lower_fade = 0.3
 	decal.distance_fade_enabled = true   # far patches drop out (a long road is many decals)
 	decal.distance_fade_begin = 35.0
+	decal.distance_fade_length = 10.0
+	root.add_child(decal)
+	return root
+
+
+# A tilled bed (Dave 14 Nov 2026: "when you till the soil, it gets a bumpy texture and looks dark and rich, just like a real garden"): dark, moist soil
+# PROJECTED onto the ground with a Decal like the trodden path, so it follows the ground, with furrows across it and crumbly clods drawn into its colour
+# and a normal map, so the light picks out the bumps. 1 m square with soft edges, so beds side by side read as one patch of garden. No collision. Our own art.
+const TILLED_PX := 128
+const TILLED_SPAN_M := 1.1     # a little over the 1 m bed, fading out at its edges
+const TILLED_FURROWS := 4      # ridges across a bed
+static var _tilled_albedo: ImageTexture
+static var _tilled_normal: ImageTexture
+
+
+# The soil's height at a pixel, 0 to 1: furrow ridges plus clods (the same for the colour and the normal map).
+static func _tilled_height(x: float, y: float, noise: FastNoiseLite, clods: FastNoiseLite) -> float:
+	var ridge: float = 0.5 + 0.5 * sin(y / float(TILLED_PX) * TAU * float(TILLED_FURROWS))
+	return clampf(0.6 * ridge + 0.25 * (noise.get_noise_2d(x, y) * 0.5 + 0.5) + 0.15 * maxf(clods.get_noise_2d(x, y), 0.0) * 2.0, 0.0, 1.0)
+
+
+static func _tilled_pixels(normal_map: bool) -> Image:
+	var image: Image = Image.create(TILLED_PX, TILLED_PX, false, Image.FORMAT_RGBA8)
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = 131
+	noise.frequency = 0.12
+	var clods: FastNoiseLite = FastNoiseLite.new()
+	clods.seed = 137
+	clods.frequency = 0.3
+	var soil: Color = Color(0.17, 0.11, 0.07)   # dark, rich, damp loam
+	var half: float = float(TILLED_PX) * 0.5
+
+	for y in TILLED_PX:
+		for x in TILLED_PX:
+			var h: float = _tilled_height(float(x), float(y), noise, clods)
+
+			if normal_map:
+				var dx: float = _tilled_height(float(x + 1), float(y), noise, clods) - _tilled_height(float(x - 1), float(y), noise, clods)
+				var dy: float = _tilled_height(float(x), float(y + 1), noise, clods) - _tilled_height(float(x), float(y - 1), noise, clods)
+				var n: Vector3 = Vector3(-dx * 3.0, -dy * 3.0, 1.0).normalized()
+				image.set_pixel(x, y, Color(n.x * 0.5 + 0.5, n.y * 0.5 + 0.5, n.z * 0.5 + 0.5, 1.0))
+				continue
+
+			var edge: float = maxf(absf(float(x) + 0.5 - half), absf(float(y) + 0.5 - half)) / half * (TILLED_SPAN_M * 0.5)   # metres from the middle, square
+			var a: float = 1.0 - smoothstep(0.46, TILLED_SPAN_M * 0.5, edge)
+			var shade: float = 0.7 + 0.55 * h   # the furrow bottoms darker, the ridge tops and clods lighter
+			image.set_pixel(x, y, Color(soil.r * shade, soil.g * shade, soil.b * shade, a))
+
+	image.generate_mipmaps()
+	return image
+
+
+static func tilled_soil() -> Node3D:
+	if _tilled_albedo == null:
+		_tilled_albedo = ImageTexture.create_from_image(_draw("tilled", ["albedo"]))
+		_tilled_normal = ImageTexture.create_from_image(_draw("tilled", ["normal"]))
+
+	var root: Node3D = Node3D.new()
+	var decal: Decal = Decal.new()
+	decal.size = Vector3(TILLED_SPAN_M, 1.2, TILLED_SPAN_M)
+	decal.texture_albedo = _tilled_albedo
+	decal.texture_normal = _tilled_normal
+	decal.cull_mask = _decal_mask
+	decal.upper_fade = 0.3
+	decal.lower_fade = 0.3
+	decal.distance_fade_enabled = true
+	decal.distance_fade_begin = 45.0
 	decal.distance_fade_length = 10.0
 	root.add_child(decal)
 	return root
