@@ -1060,21 +1060,25 @@ func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictiona
 	var seed_slot: int = _seed_slot() if str(row.get("crop", "")) == "" else -1   # only an empty bed takes a seed (this probe runs every frame the bed is aimed at)
 	var water_slot: int = held_container_slot() if held_container_has_water() else -1
 	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), seed_slot, table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot)
-	var found: Dictionary = {"prompt": plan["prompt"], "tap": func():
-		match str(plan["act"]):
-			"sow":
-				net.inventory_action.rpc_id(1, Net.ACT_SOW, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the seed's pack slot
-			"harvest":
-				net.inventory_action.rpc_id(1, Net.ACT_HARVEST, id, 0, 0, Vector3.ZERO)
-			"water":
-				net.inventory_action.rpc_id(1, Net.ACT_WATER_BED, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the container in hand, which the server draws the water from
-			_:
-				show_notice(str(plan["prompt"]))}
+	var found: Dictionary = {"prompt": plan["prompt"], "tap": func(): _bed_tap(id, plan)}
 
 	if str(def.get("kit", "")) != "":
 		found["hold"] = take_down
 
 	return found
+
+
+# Sends the one request the bed's plan names (a block body in a lambda inside a dictionary literal does not parse with a match in it: hence a method).
+func _bed_tap(id: int, plan: Dictionary) -> void:
+	match str(plan["act"]):
+		"sow":
+			net.inventory_action.rpc_id(1, Net.ACT_SOW, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the seed's pack slot
+		"harvest":
+			net.inventory_action.rpc_id(1, Net.ACT_HARVEST, id, 0, 0, Vector3.ZERO)
+		"water":
+			net.inventory_action.rpc_id(1, Net.ACT_WATER_BED, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the container in hand, which the server draws the water from
+		_:
+			show_notice(str(plan["prompt"]))
 
 
 # A bed's crop and stage from its world row (server_items.crop_row_extra): kept on the record for the E prompt, with its PLACEHOLDER stage look hung on the bed's node;

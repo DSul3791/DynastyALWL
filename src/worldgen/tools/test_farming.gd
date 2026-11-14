@@ -276,8 +276,20 @@ func _plot_takedown_checks() -> void:
 	give("barley_seeds", 1)
 	act(Net.ACT_SOW, 920002, slot_of("barley_seeds"))
 	check(items._crops.has(key) and items.crop_row_extra(items._items[920002]).get("crop", "") == "barley", "barley is sown in a garden plot")
+	# A garden plot is a hammer blueprint piece (blueprints.json), so taking it down gives its materials back, not a kit.
+	var cost: Array = items._blueprints[int(items._blueprint_of_kit["wooden_garden_plot_kit"])]["cost"]
+	var before: Dictionary = {}
+
+	for need in cost:
+		before[str(need[0])] = count(str(need[0]))
+
 	act(Net.ACT_PICKUP, 920002)
-	check(not items._items.has(920002) and count("wooden_garden_plot_kit") >= 1, "the plot is taken down and its kit comes back")
+	var refunded: bool = true
+
+	for need in cost:
+		refunded = refunded and count(str(need[0])) - int(before[str(need[0])]) == int(need[1])
+
+	check(not items._items.has(920002) and refunded, "the plot is taken down and its blueprint materials come back (%s)" % str(cost))
 	check(not items._crops.has(key), "its crop record went with it")
 	items._items[920003] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
 	check(not items._bed_at(920003).is_empty() and items.crop_row_extra(items._items[920003]).is_empty(), "a new plot built on the same spot is empty")
