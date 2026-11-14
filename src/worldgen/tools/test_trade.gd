@@ -54,6 +54,9 @@ func _init() -> void:
 	# Buying and selling with coins.
 	var axe: int = items.table.number_of("stone_axe")
 	items.add_coins(1, 100)
+	check(items.purse_of(1) == {"coin_copper": 100}, "100 copper paid in stays 100 copper coins away from a trader (%s)" % str(items.purse_of(1)))
+	trade.open(1, "hob")
+	check(items.purse_of(1) == {"coin_silver": 1} and items.coins_of(1) == 100, "opening Hob's window changes them into the fewest coins (%s)" % str(items.purse_of(1)))
 	var idx: int = (opened[0][1] as PackedStringArray).find("stone_axe")
 	var said: String = trade.deal(1, "hob", 0, idx, 1)
 	check(items.inventory_of(1).count_of(axe) == 1 and items.coins_of(1) == 100 - 23, "an axe (value 20) costs 23 copper (130 percent, full shelf 85 percent) (%d left, %s)" % [items.coins_of(1), said])
