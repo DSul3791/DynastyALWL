@@ -430,7 +430,7 @@ func _build_tier() -> int:
 	if hammer > 0:
 		return hammer
 
-	return 1 if _hoe_in_hand() and hoe_mode == "garden" and blueprints.picked > 0 and garden_pick == "bp:%d" % blueprints.picked else 0
+	return 1 if _hoe_in_hand() and hoe_mode == "garden" and blueprints.picked > 0 and blueprints.plan_picked < 0 and garden_pick == "bp:%d" % blueprints.picked else 0
 
 
 func _hoe_in_hand() -> bool:
@@ -1102,7 +1102,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
-	if _blueprinting():
+	if _blueprinting() and not (_hoe_in_hand() and (_hoe_menu_open or button == MOUSE_BUTTON_RIGHT)):   # the hoe's right click and its open list stay the hoe's
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
 			if blueprints.plan_picked >= 0:
 				_start_plan_place()
@@ -1780,6 +1780,9 @@ func _hammer_stock(delta: float) -> void:
 
 
 func _update_blueprint() -> void:
+	if blueprints.picked == 0 and _hoe_in_hand() and hoe_mode == "garden" and garden_pick.begins_with("bp:"):
+		_pick_plot(int(garden_pick.trim_prefix("bp:")))   # the hoe taken up again keeps its garden plot, as it keeps a seed pick
+
 	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _build_tier() <= 0:
 		blueprints.clear()   # the hammer is put away (or the hoe leaves its garden plot): the pick and the list go with it
 		_plan_queue.clear()
@@ -2164,7 +2167,7 @@ func _hoe_menu_choose() -> void:
 			garden_pick = str(row["id"])
 
 			if str(row["kind"]) == "plot":
-				blueprints.picked = int(row["number"])   # the ghost and the left click are the blueprint's, as with a hammer (_blueprinting)
+				_pick_plot(int(row["number"]))
 				_inv._on_notice("Hoe: lay out %s (left click places it; a blue plot takes the materials later)" % str(row["name"]))
 			else:
 				blueprints.picked = 0
@@ -2200,6 +2203,14 @@ func _hoe_menu_choose() -> void:
 			_hoe_menu_index = n
 
 	_hoe_menu_refresh()
+
+
+# A garden plot picked for the hoe: the ghost and the left click are the blueprint's, as with a hammer (_blueprinting); "place" mode, so a hammer taken up
+# afterwards places it too instead of repairing.
+func _pick_plot(number: int) -> void:
+	blueprints.picked = number
+	blueprints.plan_picked = -1
+	blueprints.mode = "place"
 
 
 # The garden plot blueprints the player knows (blueprints.json rows whose structure is a "plot": Thatch, Wooden, Stone, Brick), with what they cost and what is to hand.
