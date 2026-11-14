@@ -61,6 +61,13 @@ func _init() -> void:
 	_check(FogLook.sky_hide(1.0, 2.0) < 0.15, "shallow ground fog: the sky stays (%.2f)" % FogLook.sky_hide(1.0, 2.0))
 	_check(is_zero_approx(FogLook.sky_hide(0.0, 60.0)) and is_zero_approx(FogLook.sky_hide(1.0, 0.0)), "out of the fog or above it: clear sky")
 	_check(is_equal_approx(FogLook.sun_keep(0.0), 1.0) and FogLook.sun_keep(FogLook.SKY_HIDE_DEEP) > 0.0 and FogLook.sun_keep(FogLook.SKY_HIDE_DEEP) < 0.5, "the sun dims under deep fog, never black")
+	# The land layer at the eye: the one the eye is inside, not merely the strongest.
+	var strengths := PackedFloat32Array([0.6, 0.0, 0.9])       # valley fog, sea fog over the land, steam
+	var tops := PackedFloat32Array([70.0, 0.0, 14.0])           # valley top 70 m; steam 4 m over a river at 10 m
+	_check(FogLook.pick_layer(20.0, strengths, tops, 5.0) == 0, "10 m above the river, inside the valley fog: the valley layer, not the stronger steam")
+	_check(FogLook.pick_layer(11.0, strengths, tops, 5.0) == 2, "at the river's edge, deep in the steam: the steam layer")
+	_check(FogLook.pick_layer(300.0, strengths, tops, 5.0) == 2, "above every layer: the strongest")
+	_check(FogLook.pick_layer(20.0, PackedFloat32Array([0.0, 0.0, 0.0]), tops, 5.0) == 0, "no fog: a valid layer")
 	# Graphics presets (Dave 14 Nov 2026: full on Ultra, off on the lowest).
 	_check(FogLook.PRESETS.size() == 4 and not bool(FogLook.preset(0)["volumetric"]) and bool(FogLook.preset(3)["volumetric"]), "four presets: volumetric off on Low, on on Ultra")
 	_check(FogLook.weather_drawn(3) and FogLook.sky_drawn(3) and FogLook.weather_drawn(1), "Ultra and Medium draw the weather fog")

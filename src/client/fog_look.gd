@@ -91,6 +91,29 @@ static func visibility(d: Vector3) -> float:
 	return d.x + (d.y - d.x) * s
 
 
+# Which fog layer is the land layer at the eye: the one the eye is most inside (strength x how far below its top, eased over
+# `edge` m), or, when the eye is above them all, the strongest. Tops and strengths in the same order.
+static func pick_layer(eye_y: float, strengths: PackedFloat32Array, tops: PackedFloat32Array, edge: float) -> int:
+	var best: int = 0
+	var best_in: float = -1.0
+
+	for k in range(strengths.size()):
+		var inside: float = strengths[k] * smoothstep(-edge, edge, tops[k] - eye_y)
+
+		if inside > best_in + 1e-6:
+			best_in = inside
+			best = k
+
+	if best_in > 1e-6:
+		return best
+
+	for k in range(strengths.size()):
+		if strengths[k] > strengths[best]:
+			best = k
+
+	return best
+
+
 # Share of the sky hidden: the fog's strength at the eye times how much fog is overhead (metres between the eye and the layer's top).
 static func sky_hide(fog: float, overhead_m: float) -> float:
 	return SKY_HIDE_DEEP * clampf(fog, 0.0, 1.0) * (1.0 - exp(-maxf(overhead_m, 0.0) / OVERHEAD_M))

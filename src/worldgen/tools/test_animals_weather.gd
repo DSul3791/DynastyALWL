@@ -127,7 +127,7 @@ func _init() -> void:
 	check(not a._storm_ahead and a.resting(raccoon), "with no storm ahead the raccoon rests again")
 
 	# 7. Fog cuts sight by distance (the fog rules, test_animals_fog), not the spook range: in full valley fog (V about 220 m) full at 30 m, none at 150 m.
-	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	a.ground_height = Callable()   # a clear line: only the fog is in the way
 	check(near(a._sight({"pos": Vector3.ZERO}, deer, Vector3(30.0, 0.0, 0.0), 30.0, false), 1.0) and near(a._sight({"pos": Vector3.ZERO}, deer, Vector3(150.0, 0.0, 0.0), 150.0, false), 0.0) and near(a.weather_spook_x(deer), 1.0), "in valley fog sight is full at 30 m and gone at 150 m; spook range is unchanged")
 
