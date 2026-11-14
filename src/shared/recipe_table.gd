@@ -58,6 +58,7 @@ func load_file(path: String, item_table) -> bool:
 			item_table.set_ready_age(int(entry["gives"][0]), float(entry["ready_age"]))   # the item table rules Maturing stacks (merge, eat, use)
 
 	_open_listed(path.get_base_dir().path_join("open_recipes.json"))
+	_sorted = []   # a reload may change what a number makes: index again on the next ask
 	return true
 
 

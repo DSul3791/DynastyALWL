@@ -2606,6 +2606,7 @@ func _close_chest() -> void:
 
 	chest_mode = false
 	open = false
+	_recipe_part.stop()   # the window shut: a half-worked recipe list is dropped
 	_show_tab()
 
 	if _you_part != null:
@@ -4584,6 +4585,7 @@ func set_text_scale(scale: float) -> void:
 
 	if _panel != null:
 		var was_open: bool = open
+		_recipe_part.panel_gone()   # the rows and the card go with the panel; a running pass would build for a list that is gone
 		_panel.queue_free()
 		_panel = null
 		_frame = null

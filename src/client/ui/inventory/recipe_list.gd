@@ -125,6 +125,7 @@ func refresh() -> void:
 
 	if running() and numbers == _pass["numbers"]:
 		_again = true   # the same rows: this pass ends, then one more catches up with what changed
+		_refresh_detail()   # the card's have / need counts follow at once
 		return
 
 	stop()   # a new search or tab: the rows the running pass works on are not the ones asked for now
@@ -163,7 +164,6 @@ func step() -> void:
 		_pass["shown"] = groups[0] + groups[1] + groups[2]
 		_pass["list"] = VBoxContainer.new()   # the new rows are built off screen; the old rows stay up meanwhile
 		_pass["rows_built"] = {}
-		_pass["chosen"] = view._selected_recipe
 
 		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
 			view._selected_recipe = _pass["shown"][0]["number"] if not (_pass["shown"] as Array).is_empty() else 0
@@ -177,7 +177,7 @@ func step() -> void:
 		var makeable: bool = ready or (bool(_pass["can"][int(r["number"])]) and view._station_ok(r))
 		var entry: Button = _make_row(r, ready, makeable)
 		(_pass["list"] as VBoxContainer).add_child(entry)
-		_pass["rows_built"][int(r["number"])] = {"button": entry, "makeable": makeable, "ready": ready}
+		_pass["rows_built"][int(r["number"])] = {"button": entry, "makeable": makeable, "ready": ready, "lit": int(r["number"]) == view._selected_recipe}
 		_pass["built"] = k + 1
 
 		if Time.get_ticks_usec() - t0 > SLICE_USEC:
@@ -201,10 +201,17 @@ func stop() -> void:
 	_again = false
 
 
+# The panel is freed and built again (a new text size): its rows, the card's quantity box and any running pass belong to the old one.
+func panel_gone() -> void:
+	stop()
+	_rows.clear()
+	_waiting = null
+	_quantity = null
+
+
 # The finished rows replace the shown ones in one frame, in the same list (its scroll box keeps its place).
 func _swap_in() -> void:
 	var built: VBoxContainer = _pass["list"]
-	var was_chosen: int = int(_pass["chosen"])
 	_rows = _pass["rows_built"]
 	_pass = {}
 	_waiting = null
@@ -220,11 +227,12 @@ func _swap_in() -> void:
 
 	built.free()
 
-	for chosen in [was_chosen, view._selected_recipe]:   # a recipe clicked while the rows were being built: light the right one
-		var row: Dictionary = _rows.get(chosen, {})
+	for number in _rows:   # a recipe clicked while the rows were being built: light the right one
+		var row: Dictionary = _rows[number]
 
-		if was_chosen != view._selected_recipe and not row.is_empty():
-			_style_row(row["button"], chosen, bool(row["makeable"]), bool(row["ready"]))
+		if bool(row["lit"]) != (int(number) == view._selected_recipe):
+			_style_row(row["button"], int(number), bool(row["makeable"]), bool(row["ready"]))
+			row["lit"] = int(number) == view._selected_recipe
 
 	_add_admin_builds()
 	_refresh_detail()
@@ -373,6 +381,7 @@ func _select_recipe(number: int) -> void:
 
 		if not row.is_empty() and is_instance_valid(row["button"]):
 			_style_row(row["button"], chosen, bool(row["makeable"]), bool(row["ready"]))
+			row["lit"] = chosen == number
 
 	_refresh_detail()
 
