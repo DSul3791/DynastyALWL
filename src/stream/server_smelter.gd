@@ -16,10 +16,10 @@ extends RefCounted
 # struct["smelt_t"] = seconds banked toward the next delivery of the job struct["smelt_job"]; saved in smelters.json by the store's uid as
 # [seconds, job]. Who works the bellows is not saved.
 
-const NEAR_M := 1.0
+const NEAR_M := 1.0          # beyond the station's reach_m: how far a bellows worker may stand
 # PROVISIONAL (GOALS-REPAIR A-11): ingots a smelter drops in front last as long as a pile (server_items.PILE_LIFETIME_S), not the 20 minutes of a
 # loose item, so a player back from a long run still finds them. To change it, change this value.
-const GROUND_S := 7200.0          # beyond the station's reach_m: how far a bellows worker may stand
+const GROUND_S := 7200.0
 
 var host = null              # the items module (server_items.gd)
 var _cfg: Dictionary = {}    # structures.json "smelting"
@@ -368,7 +368,7 @@ func _credit(it: Dictionary, number: int, count: int) -> void:
 
 	for peer in host._peer_key:
 		if str(host._peer_key[peer]) == owner:
-			host._goal_made(int(peer), number, count)   # one "made:" a unit, as the crafts count (#1088); paused in admin mode
+			host._goal_made(int(peer), number, count)   # one "made:" an ingot delivered (a 2-Bronze smelt counts 2; lead-ruled); paused in admin mode
 
 			return
 
