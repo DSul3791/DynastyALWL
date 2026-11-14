@@ -870,9 +870,13 @@ func _trunks_near(at: Vector2, reach: float) -> PackedVector2Array:
 
 
 # What a character surveying a point sees there for its Map (server_map.gd observe): [ground height m, water kind], or [] while that
-# tile is not in memory yet (a first look reads the file on the main thread; the next survey step gets it).
+# tile or its flora chunk is not in memory yet (reading either here would stall the main thread, and a chunk not made yet would
+# record its trees as none for good): the next survey step after they are made records the cell.
 func _map_observe(x: float, z: float) -> Array:
 	if not generator.tile_cached(x, z):
+		return []
+
+	if flora != null and flora.items_cached(Vector2i(int(floor(x / flora.placer.chunk_m)), int(floor(z / flora.placer.chunk_m)))).is_empty():
 		return []
 
 	var tile_data = generator.get_tile(generator.tile_of(x, z))
@@ -2465,7 +2469,7 @@ func _send_npcs(delta: float) -> void:
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2])
 
-		for block in map_knowledge.updates_for(peer):
+		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
 
 		var trail: PackedVector3Array = animals.blood_near(at)

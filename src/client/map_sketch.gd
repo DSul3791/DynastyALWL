@@ -86,6 +86,10 @@ static func render_rect(knowledge, origin: Vector2i, extent: Vector2i, px: int =
 			var wy: int = origin.y + y
 			var ci: int = int(floor(float(wx) * inv)) - c0.x
 			var cj: int = int(floor(float(wy) * inv)) - c0.y
+
+			if known[cj * cw + ci] == 0 and known[cj * cw + ci - 1] == 0 and known[(cj - 1) * cw + ci] == 0:
+				continue   # only known pixels and their right and lower neighbours are ever read
+
 			var wob: float = _wobble(quality[cj * cw + ci], wx, wy)
 			var u: float = (float(wx) + 0.5) * inv - 0.5 - float(c0.x) + wob
 			var v: float = (float(wy) + 0.5) * inv - 0.5 - float(c0.y) + _wobble(quality[cj * cw + ci], wy + 7919, wx)

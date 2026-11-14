@@ -19,6 +19,8 @@ var practised: Array = []     # peers practised
 var skill: Dictionary = {}    # peer -> Mapping level the fake skill system reports
 var keys: Dictionary = {}     # peer -> key
 var cave: bool = false
+var clock_ms: int = 0     # the send clock: each look at the sends is 10 s later (past resend_s)
+var held: bool = false   # ground west of x = 0 "not made yet" while set
 
 
 func check(ok: bool, what: String) -> void:
@@ -31,8 +33,8 @@ func check(ok: bool, what: String) -> void:
 func ground(x: float, z: float) -> Array:
 	observed.append(Vector2(x, z))
 
-	if x > 5000.0:
-		return []   # "not loaded"
+	if x > 5000.0 or (held and x < 0.0):
+		return []   # "not loaded" (or its flora chunk not made yet)
 
 	return [x * 0.25 + 3.7, Codec.WATER_INLAND if x < -200.0 else Codec.WATER_NONE]
 
@@ -64,7 +66,8 @@ func sent_cells(m, peer: int) -> Dictionary:
 	var out: Dictionary = {}
 
 	for _pass in 50:
-		var batch: Array = m.updates_for(peer)
+		clock_ms += 10000
+		var batch: Array = m.updates_for(peer, clock_ms)
 
 		if batch.is_empty():
 			break
@@ -78,7 +81,7 @@ func sent_cells(m, peer: int) -> Dictionary:
 func cell_centre(block: Vector2i, idx: int, cfg: Dictionary) -> Vector2:
 	var per: int = int(cfg["block_cells"])
 	var size: float = float(cfg["cell_m"])
-	return Vector2((float(block.x * per + idx % per) + 0.5) * size, (float(block.y * per + idx / per) + 0.5) * size)
+	return Vector2((float(block.x * per + idx % per) + 0.5) * size, (float(block.y * per) + floor(float(idx) / float(per)) + 0.5) * size)
 
 
 func _init() -> void:
@@ -134,11 +137,11 @@ func _init() -> void:
 	for block in cells:
 		for idx in cells[block]:
 			count += 1
-			var c: Vector2 = cell_centre(block, int(idx), cfg)
+			var centre: Vector2 = cell_centre(block, int(idx), cfg)
 			var near: bool = false
 
 			for p in surveyed_at:
-				near = near or c.distance_to(Vector2(p.x, p.z)) <= radius + 0.01
+				near = near or centre.distance_to(Vector2(p.x, p.z)) <= radius + 0.01
 
 			if not near:
 				far += 1
@@ -182,8 +185,6 @@ func _init() -> void:
 	check(sent_cells(m, 1).is_empty(), "and changes nothing")
 
 	# 5. A skill gain alone changes nothing; a revisit at the higher skill redraws, with finer heights; a small gain does not.
-	skill[1] = 3.0
-	m.note_position(1, Vector3(600.0, 10.0, 100.0))   # elsewhere (new ground, so this survey is real)
 	var block0: Vector2i = Vector2i(0, 0)
 	var known_q: Dictionary = {}
 
@@ -199,6 +200,7 @@ func _init() -> void:
 		break
 
 	var practices: int = practised.size()
+	m._last_at.erase(1)   # start the walk afresh, so the revisit surveys from the same points as the first walk
 
 	for p in path:
 		m.note_position(1, p)
@@ -220,6 +222,7 @@ func _init() -> void:
 	var sharp: Array = m.cell_rows({0: [100, 17.0, 0, 3]})[0]
 	check(absf(float(sharp[1]) - 17.0) < 0.01 and absf(float(rough[1]) - 17.0) > 2.0 and int(rough[3]) == 1 and int(sharp[3]) == 3, "Mapping 1 is sent coarse (%s), Mapping 100 exact (%s)" % [str(rough), str(sharp)])
 	skill[1] = 61.0
+	m._last_at.erase(1)
 
 	for p in path:
 		m.note_position(1, p)
@@ -238,16 +241,33 @@ func _init() -> void:
 	check(b.has(Vector2i(0, 1)) and b.has(Vector2i(1, 1)), "a walk over the block edge records both blocks")
 	check(b.get(Vector2i(0, 1), {}).has((per - 1) + row_z * per) and b.get(Vector2i(1, 1), {}).has(0 + row_z * per), "the cells either side of the edge are both there")
 
-	# 7. Caves: nothing to survey.
+	# 7. A jump (respawn, teleport, or a client claiming one) surveys nothing where it lands; walking on from there does.
+	var s_jump: int = m.surveys
+	m.note_position(1, Vector3(3000.0, 10.0, 3000.0))
+	check(m.surveys == s_jump and not m.blocks_of("map-key-0001").has(Vector2i(5, 5)), "a jump surveys nothing where it lands")
+	m.note_position(1, Vector3(3010.0, 10.0, 3000.0))
+	check(m.surveys == s_jump + 1 and m.blocks_of("map-key-0001").has(Vector2i(5, 5)), "walking on from there surveys")
+
+	# Caves: nothing to survey.
 	cave = true
+	m._last_at.erase(1)
 	var s0: int = m.surveys
 	m.note_position(1, Vector3(-3000.0, -20.0, -3000.0))
 	check(m.surveys == s0 and not m.blocks_of("map-key-0001").has(Vector2i(-6, -6)), "no survey inside a cave")
 	cave = false
 
-	# Ground not loaded yet: skipped, surveyed on a later step.
+	# Ground not loaded yet (or its trees not made yet): skipped, surveyed on a later step once it is.
+	m._last_at.erase(1)
 	m.note_position(1, Vector3(5500.0, 10.0, 0.0))
 	check(not m.blocks_of("map-key-0001").has(Vector2i(10, 0)), "ground that is not loaded is not invented")
+	held = true
+	m._last_at.erase(1)
+	m.note_position(1, Vector3(-1000.0, 10.0, 2000.0))
+	var deferred: Vector2i = Vector2i(-2, 3)
+	check(not m.blocks_of("map-key-0001").has(deferred), "a cell whose flora is not made yet is not recorded (no permanent false 'no trees')")
+	held = false
+	m.note_position(1, Vector3(-1000.0, 10.0, 2009.0))
+	check(m.blocks_of("map-key-0001").has(deferred), "the next step records it once it is made")
 
 	# 8. Quit and rejoin: saved per character, read back, sent again in full to the new connection.
 	var total: int = 0
@@ -297,13 +317,14 @@ func _init() -> void:
 	var none: Image = Sketch.render_block(k1, Vector2i(0, 1))
 	check(a.get_used_rect().size != Vector2i.ZERO and none.get_used_rect().size == Vector2i.ZERO, "known ground gets marks, unknown ground none")
 	var size: int = per * Sketch.PX
-	var seam: Image = Sketch.render_rect(k1, Vector2i(size / 2, 0), Vector2i(size, size))
+	var half: int = int(size / 2.0)
+	var seam: Image = Sketch.render_rect(k1, Vector2i(half, 0), Vector2i(size, size))
 	var mismatch: int = 0
 
 	for y in size:
 		for x in size:
 			var whole: Color = seam.get_pixel(x, y)
-			var part: Color = a.get_pixel(x + size / 2, y) if x < size / 2 else c.get_pixel(x - size / 2, y)
+			var part: Color = a.get_pixel(x + half, y) if x < half else c.get_pixel(x - half, y)
 
 			if absf(whole.a - part.a) > 0.01:
 				mismatch += 1
@@ -315,7 +336,7 @@ func _init() -> void:
 	var hills_f: Dictionary = {}
 
 	for idx in per * per:
-		var hx: float = 20.0 * sin(float(idx % per) * 0.4) + 15.0 * cos(float(idx / per) * 0.3)
+		var hx: float = 20.0 * sin(float(idx % per) * 0.4) + 15.0 * cos(floor(float(idx) / float(per)) * 0.3)
 		hills_r[idx] = [1, round(hx / 10.0) * 10.0, 0, 0]
 		hills_f[idx] = [100, round(hx), 0, 0]
 
@@ -335,7 +356,7 @@ func _init() -> void:
 			if absf(r_img.get_pixel(x, y).a - f_img.get_pixel(x, y).a) > 0.05:
 				differ += 1
 
-	check(differ > size * size / 20 and f_ink > r_ink, "the same hills sketch rougher and lighter at Mapping 1 than at 100 (%d pixels differ, ink %.0f vs %.0f)" % [differ, r_ink, f_ink])
+	check(differ > int(size * size / 20.0) and f_ink > r_ink, "the same hills sketch rougher and lighter at Mapping 1 than at 100 (%d pixels differ, ink %.0f vs %.0f)" % [differ, r_ink, f_ink])
 
 	# 11. The real skills system: "survey" practises Mapping.
 	var items = ItemsScript.new()
@@ -377,15 +398,17 @@ func _init() -> void:
 	var sketch_us: int = Time.get_ticks_usec() - started
 	print("Map cost: %.0f us a survey (%d surveys), whole map send %d us %d bytes, one block sketch %d us" % [survey_us, big.surveys, send_us, bytes, sketch_us])
 	check(survey_us < 20000.0, "a survey stays cheap (%.0f us)" % survey_us)
+	check(sketch_us < 1500000, "a block sketch stays under 1.5 s even here (%d us; the page draws one block a frame at most)" % sketch_us)
 	print("map: %d failures" % failures)
-	quit()
+	quit(1 if failures > 0 else 0)
 
 
 func sent_cells_raw(m, peer: int) -> Array:
 	var out: Array = []
 
 	for _pass in 200:
-		var batch: Array = m.updates_for(peer)
+		clock_ms += 10000
+		var batch: Array = m.updates_for(peer, clock_ms)
 
 		if batch.is_empty():
 			break

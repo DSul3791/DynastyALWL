@@ -22,7 +22,7 @@ var in_cave: Callable         # (Vector3) -> true inside a cave (nothing to surv
 var _records: Dictionary = {} # character key -> {"blocks": {Vector2i: {"cells": {idx: [q, h, water, trees]}, "ver": int}}, "tally": int, "dirty": bool}
 var _peer_key: Dictionary = {}   # peer -> the key its record is under (kept so a record can be unloaded when its last peer leaves)
 var _last_at: Dictionary = {}    # peer -> Vector3 of its last survey
-var _sent: Dictionary = {}       # peer -> {Vector2i: version sent}
+var _sent: Dictionary = {}       # peer -> {Vector2i: [version sent, msec sent]}
 var _dir: String = ""
 var _save_acc: float = 0.0
 var surveys: int = 0             # surveys run (the benchmark and the tests read it)
@@ -78,7 +78,14 @@ func note_position(peer: int, pos: Vector3) -> void:
 
 	_peer_key[peer] = key
 
-	if _last_at.has(peer) and Vector2(pos.x, pos.z).distance_to(Vector2(_last_at[peer].x, _last_at[peer].z)) < float(cfg.get("survey_step_m", 8.0)):
+	var step: float = float(cfg.get("survey_step_m", 8.0))
+	var moved: float = Vector2(pos.x, pos.z).distance_to(Vector2(_last_at[peer].x, _last_at[peer].z)) if _last_at.has(peer) else 0.0
+
+	if _last_at.has(peer) and moved < step:
+		return
+
+	if moved > step * float(cfg.get("jump_steps", 4.0)):
+		_last_at[peer] = pos   # a jump (respawn, teleport, or a client claiming one): nothing surveyed until it walks on from here
 		return
 
 	if in_cave.is_valid() and bool(in_cave.call(pos)):
@@ -147,7 +154,7 @@ func survey(peer: int, pos: Vector3) -> int:
 
 	if fresh > 0:
 		var per_practice: int = maxi(int(cfg.get("cells_per_practice", 20)), 1)
-		rec["tally"] = mini(int(rec.get("tally", 0)) + fresh, per_practice * 2)   # a long flight over new ground banks no more than two
+		rec["tally"] = mini(int(rec.get("tally", 0)) + fresh, per_practice * int(cfg.get("bank_practices", 2)))   # a long flight over new ground banks only so much
 
 		if int(rec["tally"]) >= per_practice:
 			rec["tally"] = int(rec["tally"]) - per_practice
@@ -197,8 +204,9 @@ func cell_rows(cells: Dictionary) -> Dictionary:
 
 
 # The blocks to send this peer now, [[bx, bz, bytes], ...]: every block of its character's record that it has not been sent at its
-# current version, at most send_per_pass a call (a joining character gets its whole map over a few passes).
-func updates_for(peer: int) -> Array:
+# current version, at most send_per_pass a call (a joining character gets its whole map over a few passes); a block it already has
+# goes again at most every resend_s, so walking about in one block does not deflate it on every survey.
+func updates_for(peer: int, now_msec: int = -1) -> Array:
 	var key: String = str(_peer_key.get(peer, key_of.call(peer) if key_of.is_valid() else ""))
 
 	if key == "":
@@ -209,14 +217,17 @@ func updates_for(peer: int) -> Array:
 	var known: Dictionary = _sent.get(peer, {})
 	var out: Array = []
 	var limit: int = maxi(int(cfg.get("send_per_pass", 4)), 1)
+	var now: int = now_msec if now_msec >= 0 else Time.get_ticks_msec()
+	var resend_ms: int = int(float(cfg.get("resend_s", 2.0)) * 1000.0)
 
 	for block in rec.get("blocks", {}):
 		var ver: int = int(rec["blocks"][block]["ver"])
+		var had: Array = known.get(block, [])
 
-		if int(known.get(block, -1)) == ver:
+		if not had.is_empty() and (int(had[0]) == ver or now - int(had[1]) < resend_ms):
 			continue
 
-		known[block] = ver
+		known[block] = [ver, now]
 		out.append([block.x, block.y, Codec.encode(cell_rows(rec["blocks"][block]["cells"]))])
 
 		if out.size() >= limit:
@@ -313,6 +324,8 @@ func _load(key: String) -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
 	if typeof(parsed) != TYPE_DICTIONARY:
+		DirAccess.rename_absolute(path, path + ".bad")   # kept for a look, never overwritten by the next save
+		push_warning("server map: %s did not parse, set aside as .bad" % path)
 		return rec
 
 	rec["tally"] = int(parsed.get("tally", 0))
