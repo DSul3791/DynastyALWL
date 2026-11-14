@@ -84,18 +84,20 @@ func _init() -> void:
 	items.admin_mode_on = func(_p): return false
 	check(lists_sent.size() == 1 and (lists_sent[0] as Array).size() == items._goals_data().size(), "the join sends the whole goal list once (%d lists)" % lists_sent.size())
 	var rows: Array = items.goals_rows(1)
-	check(rows.size() >= 10 and rows[0][0] == "drink" and rows[0][3] == 2 and rows[0][7] == false and rows.all(func(r): return r.size() == 8 and r[7] == false), "goals_rows lists every goal in the authored order, drink first paying 2 copper, none done (%d goals)" % rows.size())
-	check(rows.any(func(r): return r[0] == "twine" and r[3] == 0 and r[4] == "stick" and r[5] == 4) and rows.any(func(r): return r[0] == "axe" and r[6].has("twine") and r[2] != ""), "a row carries its item reward, its how-to and the goals taught before it")
+	check(rows.size() >= 10 and rows[0][0] == "drink" and rows[0][3] == 5 and rows[0][7] == false and rows.all(func(r): return r.size() == 8 and r[7] == false), "goals_rows lists every goal in the authored order, drink first paying 5 copper (start stage), none done (%d goals)" % rows.size())
+	check(rows.all(func(r): return r[3] == 5 and r[4] == "" and r[5] == 0) and rows.any(func(r): return r[0] == "axe" and r[6].has("twine") and r[2] != ""), "every live goal pays 5 copper and no item (coins only, Dave 14 Nov; A-42 start stage); a row carries its how-to and the goals taught before it")
+	var stages: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/goal_rewards.json")) as Dictionary).get("stages", {})
+	check(stages.size() == 4 and items._goals_data().all(func(g): return stages.has(str(g.get("stage", ""))) and not g.has("reward")), "every goal names a stage from the one table in goal_rewards.json and carries no reward of its own")
 	check(rows.any(func(r): return r[0] == "hoe") and rows.any(func(r): return r[0] == "path"), "the hoe and path goals are listed (Dave 4 Nov 2026)")
 
 	# Drink: needs the water and a drop in thirst room.
 	items.vitals_of(1)["wet"] = 1000.0
 	near_water[0] = true
 	items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
-	check(done("drink") and items.coins_of(1) >= 2, "drinking at the water completes the first goal and pays 2 copper (%d)" % items.coins_of(1))
+	check(done("drink") and items.coins_of(1) >= 5, "drinking at the water completes the first goal and pays 5 copper (%d)" % items.coins_of(1))
 	check(said.any(func(t): return t.begins_with("Goal done: ")), "the player is told: %s" % str(said.filter(func(t): return t.begins_with("Goal done")).slice(0, 1)))
-	check(said.any(func(t): return t.begins_with("Goal done: Drink") and t.contains("You earn 2 copper.")), "the goal's coins are named in its line, so they are not taken for a find (TEST-009): %s" % str(said.filter(func(t): return t.begins_with("Goal done")).slice(0, 1)))
-	check(done_sent.size() == 1 and done_sent[0] == ["drink", 2], "goal_done goes to the client once, with the copper paid (%s)" % str(done_sent))
+	check(said.any(func(t): return t.begins_with("Goal done: Drink") and t.contains("You earn 5 copper.")), "the goal's coins are named in its line, so they are not taken for a find (TEST-009): %s" % str(said.filter(func(t): return t.begins_with("Goal done")).slice(0, 1)))
+	check(done_sent.size() == 1 and done_sent[0] == ["drink", 5], "goal_done goes to the client once, with the copper paid (%s)" % str(done_sent))
 	check(items._save_in <= 0.0, "a completion saves on the next tick (GA-55)")
 	var coins_drunk: int = items.coins_of(1)
 	items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
@@ -105,20 +107,21 @@ func _init() -> void:
 	# A sale and a filled order (server_trade.gd) are goal events too: their goals pay their own copper on top of the trade, once (the trade tests opt out of goals).
 	items._goal_event(1, "sold")
 	items._goal_event(1, "wanted_order")
-	check(done("sell") and done("order") and items.coins_of(1) == coins_drunk + 5, "a sale and a filled order complete the sell and order goals out of order and pay 2 + 3 copper (%d)" % (items.coins_of(1) - coins_drunk))
+	check(done("sell") and done("order") and items.coins_of(1) == coins_drunk + 10, "a sale and a filled order complete the sell and order goals out of order and pay 5 + 5 copper (%d)" % (items.coins_of(1) - coins_drunk))
 	items._goal_event(1, "sold")
-	check(items.coins_of(1) == coins_drunk + 5, "a second sale pays no goal again")
+	check(items.coins_of(1) == coins_drunk + 10, "a second sale pays no goal again")
 
 	# Admin-given fibre does not count (GA-54); twine made from it does, before the fibre goal it is taught after (out of order, GA-40).
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("plant_fibre"), 0, 40, Vector3.ZERO)
 	items._goals_tick()
 	check(not done("fibre"), "40 admin-given plant fibre do not complete the fibre goal")
 	var sticks_before: int = count("stick")
+	var coins_twine: int = items.coins_of(1)
 	craft("twine", 2)
-	check(done("twine") and not done("fibre") and count("stick") >= sticks_before + 4, "two crafts of twine complete the twine goal before the fibre goal and give 4 sticks (reward)")
+	check(done("twine") and not done("fibre") and count("stick") == sticks_before and items.coins_of(1) == coins_twine + 5, "two crafts of twine complete the twine goal before the fibre goal and pay 5 copper, no sticks (coins only)")
 	check(said.any(func(t): return t.begins_with("Goal done: ") and t.contains(" Next: Gather plant fibre.")), "and the line names the first unfinished goal in the authored order")
 	var got: Callable = func(id: String) -> int: return int(items._goal_state_of(1)["goal_counts"].get("got:" + id, 0))
-	check(got.call("plant_fibre") == 0 and got.call("stick") == 0, "admin gives and a goal's item reward are not gathered (got: %d fibre, %d sticks)" % [got.call("plant_fibre"), got.call("stick")])
+	check(got.call("plant_fibre") == 0 and got.call("stick") == 0, "admin gives are not gathered (got: %d fibre, %d sticks)" % [got.call("plant_fibre"), got.call("stick")])
 	items._gain_source = "trade"
 	items.give(1, items.table.number_of("plant_fibre"), 5)   # as server_trade.gd gives a purchase
 	items._gain_source = items.SRC_RETURN
@@ -176,7 +179,7 @@ func _init() -> void:
 		items._last_hit.clear()
 		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
-	check(standing.is_empty() and done("fell") and count("kindling") >= 3, "felling a tree completes the fell goal and gives kindling")
+	check(standing.is_empty() and done("fell") and not said.any(func(t): return t.begins_with("Goal done: Fell") and not t.contains("You earn 5 copper.")), "felling a tree completes the fell goal and pays 5 copper, no kindling (coins only)")
 	# The logs a felled tree breaks into by itself are its feller's gathering, once; the record clients get does not name the feller.
 	var trunk_id: int = -1
 
