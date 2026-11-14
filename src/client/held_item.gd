@@ -1112,7 +1112,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
-	if _blueprinting() and not (_hoe_in_hand() and (_hoe_menu_open or button == MOUSE_BUTTON_RIGHT)):   # the hoe's right click and its open list stay the hoe's
+	if _blueprinting():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
 			if blueprints.plan_picked >= 0:
 				_start_plan_place()

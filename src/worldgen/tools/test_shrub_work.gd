@@ -109,14 +109,14 @@ func _init() -> void:
 	check(inv.count_of(hazel_bush) == 1 and said.has("Too close to another plant."), "right beside the first: not planted")
 
 	# A tree's seed (gardening, Dave 14 Nov 2026): an oak seed goes in as an oak sapling that grows like wild regrowth (planted now, not full size), 2 m from other plants.
-	var acorns: int = items.table.number_of("oak_seed")
+	var oak_seeds: int = items.table.number_of("oak_seed")
 	check(items.tree_seed_species("oak_seed") == "oak" and items.tree_seed_species("maple_keys") == "maple" and items.tree_seed_species("mirrorbark_seed") == "mirrorbark" and items.tree_seed_species("acorns") == "" and items.tree_seed_species("stone") == "", "every tree has its own seed (Oak seed, Sugar maple seed, Mirrorbark seed); acorns are food, not a seed; a stone is no seed")
-	items.action(1, Net.ACT_ADMIN_GIVE, acorns, 0, 2, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, oak_seeds, 0, 2, Vector3.ZERO)
 	said.clear()
-	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(acorns), 0, 0, spot + Vector3(0.0, 0.0, -1.5))
-	check(inv.count_of(acorns) == 2 and said.has("Too close to another plant."), "a tree seed 1.5 m from the hazel: not planted (trees keep 2 m)")
-	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(acorns), 0, 0, spot + Vector3(0.0, 0.0, -2.5))
-	check(inv.count_of(acorns) == 1 and items._saplings.size() == 2, "an oak seed 2.5 m away is planted from the pack (%d planted)" % items._saplings.size())
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(oak_seeds), 0, 0, spot + Vector3(0.0, 0.0, -1.5))
+	check(inv.count_of(oak_seeds) == 2 and said.has("Too close to another plant."), "a tree seed 1.5 m from the hazel: not planted (trees keep 2 m)")
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(oak_seeds), 0, 0, spot + Vector3(0.0, 0.0, -2.5))
+	check(inv.count_of(oak_seeds) == 1 and items._saplings.size() == 2, "an oak seed 2.5 m away is planted from the pack (%d planted)" % items._saplings.size())
 
 	if items._saplings.size() == 2:
 		var oak: Dictionary = items._saplings[1]
