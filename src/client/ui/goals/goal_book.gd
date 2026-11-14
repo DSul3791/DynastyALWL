@@ -20,28 +20,28 @@ func on_goals(list: Array) -> void:
 		if typeof(r) != TYPE_ARRAY or (r as Array).size() < 8:
 			continue
 
-		var row: Dictionary = {"id": str(r[0]), "title": str(r[1]), "howto": str(r[2]), "copper": int(r[3]), "item": str(r[4]), "item_n": int(r[5]),
+		var entry: Dictionary = {"id": str(r[0]), "title": str(r[1]), "howto": str(r[2]), "copper": int(r[3]), "item": str(r[4]), "item_n": int(r[5]),
 			"after": PackedStringArray(r[6]), "done": bool(r[7])}
-		rows.append(row)
-		_by_id[row["id"]] = row
+		rows.append(entry)
+		_by_id[entry["id"]] = entry
 
 	changed.emit()
 
 
 # The goal_done message: marks the goal done and announces it once. A repeat of a goal already done here is ignored (no second placard).
 func on_done(id: String, copper: int) -> void:
-	var row: Dictionary = _by_id.get(id, {})
+	var entry: Dictionary = _by_id.get(id, {})
 
-	if row.is_empty():
-		row = {"id": id, "title": id, "howto": "", "copper": copper, "item": "", "item_n": 0, "after": PackedStringArray(), "done": false}   # not in the list yet: still announce it, once
-		_by_id[id] = row
+	if entry.is_empty():
+		entry = {"id": id, "title": id, "howto": "", "copper": copper, "item": "", "item_n": 0, "after": PackedStringArray(), "done": false}   # not in the list yet: still announce it, once
+		_by_id[id] = entry
 
-	if bool(row["done"]):
+	if bool(entry["done"]):
 		return
 
-	row["done"] = true
+	entry["done"] = true
 	changed.emit()
-	achieved.emit(row, copper)
+	achieved.emit(entry, copper)
 
 
 func row(id: String) -> Dictionary:

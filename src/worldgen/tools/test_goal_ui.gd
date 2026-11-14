@@ -31,7 +31,7 @@ func row(id: String, title: String, done: bool, after: Array = [], copper: int =
 
 func _key(code: int, ctrl: bool = false, shift: bool = false) -> InputEventKey:
 	var event: InputEventKey = InputEventKey.new()
-	event.keycode = code
+	event.keycode = code as Key
 	event.ctrl_pressed = ctrl
 	event.shift_pressed = shift
 	event.pressed = true
@@ -47,7 +47,7 @@ func _collect(node: Node, into: Array) -> void:
 		_collect(child, into)
 
 
-func _init() -> void:
+func _initialize() -> void:   # not _init: the root is in the tree only from here, and the Journal's text sizing reads the viewport
 	var net: Node = Net.new()
 	var methods: Array = net.get_method_list().map(func(m): return str(m["name"]))
 	net.free()
