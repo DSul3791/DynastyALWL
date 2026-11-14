@@ -2125,17 +2125,8 @@ func _hoe_menu_line(n: int) -> String:
 
 	var row: Dictionary = _garden_rows[n]
 	var hint: String = "click a bed or garden plot to sow, open ground to till a bed first" if str(row["kind"]) == "seed" else "click open ground to plant it"
-	return "%s (%d): %s" % [_inv.table.name_of(_inv.table.number_of(str(row["id"]))), _pack_count(str(row["id"])), hint]
-
-
-func _pack_count(id: String) -> int:
-	var total: int = 0
-
-	for slot in range(_inv.inventory.slot_count):
-		if _inv.inventory.numbers[slot] != 0 and _inv.table.id_of(_inv.inventory.numbers[slot]) == id:
-			total += int(_inv.inventory.counts[slot])
-
-	return total
+	var number: int = _inv.table.number_of(str(row["id"]))
+	return "%s (%d): %s" % [_inv.table.name_of(number), _inv.inventory.count_of(number), hint]
 
 
 func _pack_slot_of(id: String) -> int:
@@ -2302,10 +2293,8 @@ func _garden_here() -> void:
 		return
 
 	var slot: int = _pack_slot_of(garden_pick) if garden_pick != "" else -1
-	var kind: String = ""
-
-	if slot >= 0:
-		kind = "seed" if FarmRules.crop_of_seed(_inv.crop_table(), garden_pick) != "" else ("bush" if garden_pick.ends_with("_bush") else "")
+	var picked: Array = FarmRules.plantables(_inv.crop_table(), [garden_pick] if slot >= 0 else [])
+	var kind: String = str(picked[0]["kind"]) if not picked.is_empty() else ""
 
 	var bed: int = _inv.bed_id_at(hit["position"])
 	var plant_name: String = _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower() if garden_pick != "" else ""

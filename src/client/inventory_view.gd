@@ -1033,7 +1033,7 @@ func _is_bed_def(def: Dictionary) -> bool:
 # The tilled bed or garden plot whose square footprint holds `point` (flat), 0 for none: the hoe's Garden mode sows it (held_item._garden_here).
 func bed_id_at(point: Vector3) -> int:
 	for id in _world:
-		if not _world[id].has("yaw") or int(_world[id]["state"]) < 5:
+		if not _world[id].has("yaw") or int(_world[id]["state"]) < 5 or _world[id].get("site") != null:   # a plot's blueprint site is not a bed yet (the server refuses it)
 			continue
 
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
