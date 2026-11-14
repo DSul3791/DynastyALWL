@@ -29,7 +29,7 @@ EVENT_STAGES = {
     "map_surveyed": "stone", "map_redrawn": "stone",
     "bellows_iron": "iron",          # iron ore smelted at the Improved smelter's bellows
     "tempered": "steel",             # tempering steel at the Master smithy
-    "station_repaired": "bronze",    # a hammer repair of a worn smithy; the Primitive smithy is the first that wears (bronze stage)
+    "station_repaired": "stone",     # a hammer repair of a worn smithy; the Primitive smithy (stone_forge, stone stage) already wears (test_smithy_repair)
     # The 26 audit ADD goals (approved by Dave 14 Nov 2026 06:26Z) whose events are not built yet: done by hand at the start.
     "cooked_on_fire": "stone", "seed_sown": "stone", "crop_harvested": "stone", "tool_repaired": "stone", "slept_night": "stone",
     "stored_item": "stone", "bought": "stone", "meal_effect": "stone", "foraged_new": "stone", "fish_kind_caught": "stone",
@@ -174,7 +174,7 @@ raised = []
 
 
 def named_stage(title):
-    found = [NAMED[w] for w in title.replace("-", " ").split() if w in NAMED]
+    found = [NAMED[w.strip("(),.;:")] for w in title.replace("-", " ").split() if w.strip("(),.;:") in NAMED]
     return max(found, key=lambda s: COPPER[s]) if found else None
 
 
@@ -194,6 +194,7 @@ for row in rows:
     row["reward_copper"] = str(COPPER[stage])
     row["reward_text"] = text(COPPER[stage])
 
+assert len({r["id"] for r in rows}) == len(rows), "duplicate goal ids"
 total = sum(int(r["reward_copper"] or 0) for r in rows)
 print(json.dumps({"stages": counts, "total_copper": total, "total_original": sum(int(r["reward_copper"] or 0) for r in rows if r["status"] == "ORIGINAL"), "unplaced": unplaced, "raised_above_name": raised}, indent=1))
 

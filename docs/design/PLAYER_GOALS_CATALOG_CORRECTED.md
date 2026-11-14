@@ -20,7 +20,7 @@
   - **Roof 45 and 65 (#1110; naming CONFIRMED by Dave (14 Nov 2026 05:29Z: "all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof", Fortified included)):** every tier has a "<Tier> - Roof 45" and a "<Tier> - Roof 65". A Roof 65 costing the same as its Roof 45 is still an assumption (A-35). The five `build:*roof` rows for Rustic, Sturdy, Superior, Refined and Engineered now say "choose <Tier> - Roof 45" and are FIX (they were OK). Goal ids and structure ids are unchanged. The Crude pair (`build:thatch_roof`, `build:thatch_roof_65`) already had both goals. The five new 65 panels are PROPOSED rows now (the R9 reward pass), and the Fortified pair follows when its data is in dev. The roofs PR is #1110. `PLAYER_GOALS_REWARDS_DRAFT.md` and the audit CSVs are the historical review inputs and are left as they were; this catalog supersedes them.
     - Still blocked (28): the 24 locked water and garden blueprints (all now UNASSIGNED; their materials are reachable; Dave 14 Nov 06:26Z keeps them as future goals, still locked), R5 (`build:master_forge`, `activity:temper_steel`), R6 (`build:open_storage_bin`) and `activity:chop_log_blocks` (no `made_item_any` check type). `activity:operate_bellows` is OK since the reward pass: `server_smelter.gd` emits `bellows_iron` in dev. R5, R6 and `made_item_any` have since landed in dev too; their rows are rechecked in the final R9 docs update, not here.
   - The counts below include these changes.
-- **Rewards:** every row now pays the A-42 coin scale (section "Rewards (A-42)" below): 6,485 copper over the 699 rows, 6,010 of it on the 651 ORIGINAL rows. The draft's 15,670 copper is replaced.
+- **Rewards:** every row now pays the A-42 coin scale (section "Rewards (A-42)" below): 6,480 copper over the 699 rows, 6,010 of it on the 651 ORIGINAL rows. The draft's 15,670 copper is replaced.
 - **Wording:** "go live" means the day the corrected catalog replaces the live goal files. It is not a player action; the player never activates anything.
 
 ## Rewards (A-42)
@@ -37,18 +37,18 @@
 
 | Stage | Pays | Covers | Rows |
 |---|---:|---|---:|
-| Stone | 5 copper | the start, stone tools, Crude | 415 |
-| Bronze | 10 copper (1 bronze) | Copper, Bronze, Improved | 28 |
+| Stone | 5 copper | the start, stone tools, Crude | 416 |
+| Bronze | 10 copper (1 bronze) | Copper, Bronze, Improved | 27 |
 | Iron | 15 copper (1 bronze + 5 copper) | Iron, Refined, Advanced | 198 |
 | Steel | 20 copper (2 bronze) | Steel, Fortified, Master | 58 |
-| **All** | **6,485 copper** | 699 rows (651 ORIGINAL: 6,010; 22 PROPOSED: 305; 26 APPROVED: 170) | **699** |
+| **All** | **6,480 copper** | 699 rows (651 ORIGINAL: 6,010; 22 PROPOSED: 300; 26 APPROVED: 170) | **699** |
 
 **How a row gets its stage.** A row pays the higher of two stages:
 
 - the stage its title names (a tier word such as "Crude", "Copper", "Refined" or "Fortified", or a metal), and
 - the stage its target really needs in the data: the static reach model (`r9_reach_with_smelters.py`) run with the later ingots withheld. A target reachable with no ingots is stone; with copper, tin and bronze ingots it is bronze; with iron as well it is iron; otherwise steel.
 
-A row with no stage of its own (an event such as drinking or selling) takes the highest tier of the tool, item or station it needs, or stone when it needs none. Every row was placed; none is left without a reward.
+A row with no stage of its own (an event such as drinking or selling) takes the stage of the tool, item or station it needs (where any one of several will do, such as any hoe, the easiest of them), or stone when it needs none. Events are placed by a table in the tool (`EVENT_STAGES`, `EVENT_NEEDS`); repairing a worn smithy is stone, because the Primitive smithy already wears. Every row was placed; none is left without a reward.
 
 **Rows that pay above the stage their name suggests**, because their data needs a later tier (right under the rule; listed so Dave can see them):
 
@@ -68,7 +68,7 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 
 - **The 26 audit ADD goals are approved** ("approve the 26 goals because the system is more important than the actual goals we can adjust them as we go"). They are rows now, with the A-42 scale.
 - **The 24 locked blueprints stay** as future goals ("yes keep the 24 blueprints"). Their rows stay in the catalog, still locked and blocked (listed below).
-- **The HUD order:** "the first goal should always be the first goal a play can do next. the second one will be what should be next." The HUD's first goal is the earliest goal the player can do now; the second is the one that should come after it. A blocked goal (any row with a `blocking_wp`) is never one the player can do next, so it does not take a HUD slot; it stays visible in the Journal.
+- **The HUD order:** "the first goal should always be the first goal a play can do next. the second one will be what should be next." The HUD's first goal is the earliest goal the player can do now; the second is the one that should come after it. The coordinator's reading: a blocked goal (any row with a `blocking_wp`) is never one the player can do next, so it does not take a HUD slot; it stays visible in the Journal.
 - **Build costs** stay assumed values that can be changed at any time ("keep assuming build costs we can adjust them in the future at anytiime").
 - **Nothing is switched on.** Approving the rows does not activate the catalog in the game; that still waits for Dave's explicit go (the coordinator's reading).
 
@@ -158,7 +158,7 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 2. **The water and garden module.** Ruled (06:26Z): the 24 locked blueprints stay as future goals, still locked.
 3. **Two reward switches when the catalog goes live.** Ruled by "coins only": `twine` (was 4 Stick) and `fell` (was 3 Kindling) pay 5 copper each.
 4. **The completion burst when the catalog goes live.** Ruled (06:18Z): characters, world edits and items are wiped before testing, so there is no burst and no catch-up payout.
-5. **The HUD and blocked goals.** Ruled (06:26Z): the first HUD goal is the first one the player can do next, the second what should be next. A blocked goal is not one the player can do, so it does not take a HUD slot.
+5. **The HUD and blocked goals.** Ruled (06:26Z): the first HUD goal is the first one the player can do next, the second what should be next. The coordinator's reading: a blocked goal is not one the player can do, so it does not take a HUD slot.
 6. **The provisional values the corrected text teaches.**
    - **Station costs and fuel:**
      - A-8: Primitive smithy, 2 Log instead of 2 Hide.
@@ -187,7 +187,7 @@ A `runtime_check` that contains `count: "N"` is a placeholder. It is **not loada
 | `craft:steel_anvil_part` | Make a Steel anvil | made:steel_anvil_part | item steel_anvil_part #1309, recipe 725 at the Advanced smithy (brick_forge L3) (dev, PR #1102; A-21) | 20 |
 | `build:medium_resource_bin` | Build Medium Resource Bin | placed:medium_resource_bin | item medium_resource_bin #1310, state 370, bp 302 (dev, R6 #1111) | 15 |
 | `build:large_resource_bin` | Build Large Resource Bin | placed:large_resource_bin | item large_resource_bin #1311, state 371, bp 303 (dev, R6 #1111) | 15 |
-| `activity:repair_station` | Repair a worn smithy | event `station_repaired` | no data yet (station durability is R5) | 10 |
+| `activity:repair_station` | Repair a worn smithy | event `station_repaired` | no data yet (station durability is R5) | 5 |
 | `activity:map_survey` | Map new ground | event `map_surveyed` | data/map.json, skills.json 'mapping' (dev, PR #1090) | 5 |
 | `activity:map_redraw` | Redraw an old map area | event `map_redrawn` | data/map.json revisit rule improve_min_levels (dev, PR #1090; A-5) | 5 |
 | `build:log_roof_65` | Build Rustic - Roof 65 | placed:log_roof_65 | item log_roof_65 #1320, state 380, bp 310 (dev, PR #1110) | 5 |
