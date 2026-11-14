@@ -684,6 +684,7 @@ func peer_left(peer: int) -> void:
 	_zone_pos.erase(peer)
 	_zone_checked.erase(peer)
 	_vent_sent.erase(peer)
+	_goal_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
 	_admin_mode_on.erase(peer)   # Admin mode never outlives a session: every login starts with it off
@@ -6988,8 +6989,8 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 
 
 # A felled tree's seeds (Dave 14 Nov 2026: "Trees should drop some seeds when cut down. a random number of seeds between 1 and 5 seeds per tree"): [item number,
-# count] of its drops.json trunk.felled_seeds by_species seed (a species' own fruit or nut, or its own seed item), count from felled_seeds.count; [] for a species
-# with none (the fantasy trees). Rolled from the trunk's id like the crown litter; no player, so no luck (world drop).
+# count] of its drops.json trunk.felled_seeds by_species seed (every tree's own "<Tree> seed" item, fantasy trees too: Dave 14 Nov 2026), count from felled_seeds.count;
+# [] for a species with none. Rolled from the trunk's id like the crown litter; no player, so no luck (world drop).
 func _felled_seeds(id: int, tree: Dictionary) -> Array:
 	var cfg: Dictionary = (_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {})
 	var number: int = table.number_of(str((cfg.get("by_species", {}) as Dictionary).get(str(tree.get("species", "")), "")))
@@ -7543,7 +7544,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		flora_changed.call(home)
 
 
-# The tree species whose seed `item_id` is (drops.json trunk.felled_seeds by_species: a species' own fruit or nut, or its own seed item), "" for none. The
+# The tree species whose seed `item_id` is (drops.json trunk.felled_seeds by_species: each tree's own "<Tree> seed" item), "" for none. The
 # first species listed for an item wins (each seed is one species' today).
 func tree_seed_species(item_id: String) -> String:
 	var by: Dictionary = ((_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})
@@ -8471,16 +8472,12 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		return false
 
 	var hammer: int = _heaviest_hammer_slot(inv)
-	# A garden plot is laid out with the hoe too (Dave 14 Nov 2026, the hoe's Garden mode; master s2.1 "Create Garden Plot"). PROVISIONAL: a working hoe on the
-	# hand bar stands in for a hammer for plot blueprints only, at the lightest hammer's tier.
-	var plot_row: bool = bool(_structures.get(str(row["structure"]), {}).get("plot", false))
-	var hoe_plot: bool = hammer < 0 and plot_row and int(row.get("hammer", 1)) <= 1 and _has_tool(inv, "hoe")
 
-	if hammer < 0 and not hoe_plot:
-		_say(peer, "You need a hammer or a hoe in your hand bar to lay out a garden plot." if plot_row else "You need a hammer in your hand bar to build from a blueprint.")
+	if hammer < 0:
+		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
 		return false
 
-	if hammer >= 0 and int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
+	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
 		_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
 		return false
 
@@ -16450,6 +16447,8 @@ var _goals_loaded: bool = false
 var _goal_stage_copper: Dictionary = {}   # stage -> copper a goal of that stage pays (data/items/goal_rewards.json; GOALS-REPAIR A-42)
 var send_goals: Callable       # (peer, rows Array): the whole goal list at the join, rows as goals_rows (protocol 119)
 var send_goal_done: Callable   # (peer, id String, copper int): a goal this character has just completed and the copper it paid (protocol 119)
+var send_goal_progress: Callable   # (peer, changes Dictionary id -> count): how far the unfinished goals with an amount have got, as they move (protocol 122)
+var _goal_sent: Dictionary = {}    # peer -> {goal id -> the count last sent}: goal_progress sends only what moved
 
 
 func _goals_data() -> Array:
@@ -16597,17 +16596,24 @@ func _goal_have(st: Dictionary, inv, id: String) -> int:
 
 
 func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "") -> bool:
+	var progress: Vector2i = _goal_progress(peer, st, check, goal_id)
+	return progress.x >= progress.y
+
+
+# How far a goal's check has got: Vector2i(count so far, count needed). Its count is the one _goal_met compares (Dave 14 Nov 2026: "Gather plant fiber 0/50",
+# shown for every goal with an amount). A check with no amount (worn warmth) is 0 or 1 of 1; the night walk counts whole metres.
+func _goal_progress(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "") -> Vector2i:
 	var need: int = int(check.get("count", 1))
 	var inv = inventory_of(peer)
 
 	if str(check.get("event", "")) == "worn_warmth":
-		return _worn_warmth(peer) >= float(check.get("min", 0.7))
+		return Vector2i(1 if _worn_warmth(peer) >= float(check.get("min", 0.7)) else 0, 1)
 
 	if str(check.get("event", "")) == "talked":
-		return int(st["goal_counts"].get("hit:" + goal_id, 0)) >= need
+		return Vector2i(int(st["goal_counts"].get("hit:" + goal_id, 0)), need)
 
 	if str(check.get("event", "")) == "moved_lit_night":
-		return float(st["goal_counts"].get("moved_lit_night", 0.0)) >= float(check.get("metres", 100.0))
+		return Vector2i(floori(float(st["goal_counts"].get("moved_lit_night", 0.0))), ceili(float(check.get("metres", 100.0))))   # whole metres: met at the same distance for a whole-metre target
 
 	if check.has("event") and check.has("what_any"):   # any of these kinds counts: the camp bench or the log workbench (Dino round 6)
 		var total: int = 0
@@ -16615,13 +16621,13 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		for what in check["what_any"]:
 			total += int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(what)), 0))
 
-		return total >= need
+		return Vector2i(total, need)
 
 	if check.has("event"):
-		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
+		return Vector2i(int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)), need)
 
 	if check.has("got_item"):
-		return int(st["goal_counts"].get("got:" + str(check["got_item"]), 0)) >= need
+		return Vector2i(int(st["goal_counts"].get("got:" + str(check["got_item"]), 0)), need)
 
 	if check.has("made_item"):
 		var made: int = int(st["goal_counts"].get("made:" + str(check["made_item"]), 0))
@@ -16629,7 +16635,7 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		if bool(check.get("or_have", false)) and inv != null:   # a bought one counts too (Hob sells the stone axe; Dino round 6)
 			made = maxi(made, _goal_have(st, inv, str(check["made_item"])))
 
-		return made >= need
+		return Vector2i(made, need)
 
 	if check.has("made_item_any"):   # crafts of any of these ids add up: the four kinds of wooden block (chop_log_blocks, GAP-GUIDE-ANY)
 		var made_any: int = 0
@@ -16637,13 +16643,13 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		for id in check["made_item_any"]:
 			made_any += int(st["goal_counts"].get("made:" + str(id), 0))
 
-		return made_any >= need
+		return Vector2i(made_any, need)
 
 	if inv == null:
-		return false
+		return Vector2i(0, need)
 
 	if check.has("have_item"):
-		return _goal_have(st, inv, str(check["have_item"])) >= need
+		return Vector2i(_goal_have(st, inv, str(check["have_item"])), need)
 
 	if check.has("have_item_any"):
 		var total: int = int(st["goal_counts"].get(_goal_count_key(str(check["or_event"]), ""), 0)) if check.has("or_event") else 0   # a catch counts though the fish was eaten
@@ -16651,9 +16657,9 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		for id in check["have_item_any"]:
 			total += _goal_have(st, inv, str(id))
 
-		return total >= need
+		return Vector2i(total, need)
 
-	return false
+	return Vector2i(0, need)
 
 
 # The first goal in the authored order this character has not done, or {}.
@@ -16673,14 +16679,24 @@ func _goals_check(peer: int) -> void:
 		return
 
 	var changed: bool = true
+	var counts: Dictionary = {}   # unfinished goal with an amount -> its count, from the last pass (nothing completes in it)
 
 	while changed:
 		changed = false
+		counts = {}
 
 		for goal in _goals_data():
 			var id: String = str(goal["id"])
 
-			if st["goals_done"].has(id) or not _goal_met(peer, st, goal.get("check", {}), id):
+			if st["goals_done"].has(id):
+				continue
+
+			var progress: Vector2i = _goal_progress(peer, st, goal.get("check", {}), id)
+
+			if progress.x < progress.y:
+				if progress.y > 1:
+					counts[id] = progress.x
+
 				continue
 
 			# Done before paying, in the same step and the same record as the coins: no retry, reconnect or reload pays twice.
@@ -16708,6 +16724,24 @@ func _goals_check(peer: int) -> void:
 				line += " Next: %s. %s" % [str(next.get("title", "")), str(next.get("hint", ""))]
 
 			_say(peer, line)
+
+	_send_goal_progress(peer, counts)
+
+
+# Sends the counts that moved since the last send (the have checks move both ways). The join's list carries them all (goals_rows).
+func _send_goal_progress(peer: int, counts: Dictionary) -> void:
+	var sent: Dictionary = _goal_sent.get(peer, {})
+	var moved: Dictionary = {}
+
+	for id in counts:
+		if int(sent.get(id, -1)) != int(counts[id]):
+			moved[id] = int(counts[id])
+			sent[id] = int(counts[id])
+
+	_goal_sent[peer] = sent
+
+	if not moved.is_empty() and send_goal_progress.is_valid():
+		send_goal_progress.call(peer, moved)
 
 
 func _goals_tick() -> void:
@@ -16744,18 +16778,24 @@ func _goals_tick() -> void:
 
 
 # The goal list as the client gets it, in the authored order: [id, title, how-to, reward copper, reward item id ("" none), reward item count, after ids
-# (PackedStringArray: the goals taught first, for the Journal's links), done (bool)].
+# (PackedStringArray: the goals taught first, for the Journal's links), done (bool), amount needed, count so far (protocol 122; the count stops at the amount)].
 func goals_rows(peer: int) -> Array:
 	var st: Dictionary = _goal_state_of(peer)
 	var rows: Array = []
+	var sent: Dictionary = {}
 
 	if st.is_empty():
 		return rows
 
 	for goal in _goals_data():
-		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), _goal_copper(goal), "", 0,   # reward item fields stay in the protocol 119 row, always empty: goals pay coins only
-			PackedStringArray(goal.get("after", [])), st["goals_done"].has(str(goal["id"]))])
+		var id: String = str(goal["id"])
+		var progress: Vector2i = _goal_progress(peer, st, goal.get("check", {}), id)
+		var so_far: int = mini(progress.x, progress.y)
+		rows.append([id, str(goal.get("title", "")), str(goal.get("hint", "")), _goal_copper(goal), "", 0,   # reward item fields stay in the protocol 119 row, always empty: goals pay coins only
+			PackedStringArray(goal.get("after", [])), st["goals_done"].has(id), progress.y, so_far])
+		sent[id] = progress.x
 
+	_goal_sent[peer] = sent   # the list carries every count: goal_progress sends only what moves after it
 	return rows
 
 

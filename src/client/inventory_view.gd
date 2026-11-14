@@ -5030,6 +5030,7 @@ func _setup_goals() -> void:
 	goal_book = GoalBookScript.new()
 	net.goals_received.connect(goal_book.on_goals)
 	net.goal_done_received.connect(goal_book.on_done)
+	net.goal_progress_received.connect(goal_book.on_progress)
 	goals_hud = GoalsHudScript.new()
 	_layer.add_child(goals_hud)
 	goals_hud.setup(self, goal_book)

@@ -7,7 +7,7 @@ extends RefCounted
 # A piece is a Dictionary:
 #   role       "source" | "conduit" | "tank" | "consumer"
 #   inlet      Vector3 (conduit, tank: at the rim; consumer)      outlet  Vector3 (source: the spout; conduit; tank: at its base)
-#   cap_lpm    most it passes, litres a minute (conduit, source)  closed  true for a pipe, false for an open channel or trough
+#   cap_lpm    most it passes, litres a minute (conduit, source)  closed  true for a pipe (or a riser-fed tank), false for open
 #   open       false for a shut sluice or tap                     rate_lpm  a source's output now (pump_lpm, windlass_lpm, rain x area)
 #   quality    a source's water: "clean" or "river"                push_m  a force pump's push above its spout (the deep-well pump: 10)
 #   litres_max a tank's size                                      tap_lpm  most a tank lets into a consumer straight below it (30)
@@ -15,13 +15,15 @@ extends RefCounted
 #   outlets    more outlets besides `outlet` (a tee's second branch; plumbing PR 2): each feeds like the outlet; the cap and fall use `outlet`
 #   catch_m    how far across the ground from its inlet an open piece catches a feeder's water (a trough's length, a flume's mouth; default PORT_JOIN_M)
 #   drop_m     how far a feeder's water may fall into an open piece (a spout over a trough; default PORT_JOIN_M)
+#   head_m     a tank's water stands this far over its base outlet (a raised cistern's tank on its plinth, its downpipe built in; plumbing PR 3)
+#   lift_m     a tank fed at its foot through a closed riser takes water only from a surface at least this far over its inlet (the raised cistern)
 #
 # Rules (Sonny's numbers):
 #   - Links: an outlet feeds an inlet within PORT_JOIN_M across the ground. Into an open piece only when its inlet is at or below the outlet (+2 cm),
 #     so water never climbs between pieces; pipe to pipe joints are sealed and the head rule covers them (up to PORT_JOIN_M of height).
 #   - Direction is fixed by the ports; a piece that would close a loop, or make a network of more than MAX_PIECES, joins nothing (check()).
 #   - Open channel: no flow if the outlet is above the inlet; full cap from 0.5 % fall, half from 0.1 %, a level run trickles 5 L/min.
-#   - Closed pipe: the feeding surface comes down the pass (a force pump's spout + push_m, a hand pump's spout, a tank's base outlet, fixed so rates
+#   - Closed pipe: the feeding surface comes down the pass (a force pump's spout + push_m, a hand pump's spout, a tank's base outlet + head_m, fixed so rates
 #     hold between events); a pipe whose inlet is above it passes nothing (no siphons), and its head (surface - outlet) gives full cap from 1 m, in
 #     proportion under that. Each 2 m pipe piece checks its own inlet, so the route is checked every 2 m.
 #   - Each piece takes at most what it and the pieces below it can carry, so water is only sent where it can go (a shut piece, a full consumer, a
@@ -327,7 +329,7 @@ func _feed_y(id: int, fed: float) -> float:
 		"source":
 			return (piece["outlet"] as Vector3).y + float(piece.get("push_m", 0.0))
 		"tank":
-			return (piece["outlet"] as Vector3).y if piece.has("outlet") else -BIG
+			return (piece["outlet"] as Vector3).y + float(piece.get("head_m", 0.0)) if piece.has("outlet") else -BIG
 
 	return fed
 
@@ -341,6 +343,9 @@ func _take(id: int, surface: Dictionary, take: Dictionary) -> float:
 		"consumer":
 			return BIG if float(piece.get("room_l", 0.0)) > 0.0 else 0.0
 		"tank":
+			if piece.has("lift_m") and piece.has("inlet") and float(surface[id]) < (piece["inlet"] as Vector3).y + float(piece["lift_m"]):
+				return 0.0   # the water reaching its riser cannot climb to the tank
+
 			if float(_litres.get(id, 0.0)) < float(piece.get("litres_max", 0.0)) - 0.001:
 				return BIG
 		"conduit":
