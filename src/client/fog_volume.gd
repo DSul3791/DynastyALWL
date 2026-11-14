@@ -82,6 +82,7 @@ func _build() -> void:
 	_volume.shape = RenderingServer.FOG_VOLUME_SHAPE_BOX
 	_volume.size = VOL_BOX_M
 	_volume.material = _material
+	_volume.top_level = true     # placed in world space whatever its parent; position works before the node is in the tree too
 	_parent.add_child(_volume)
 
 
@@ -120,7 +121,7 @@ func update(delta: float, environment: Environment, quality: int, eye: Vector3, 
 	var toward: Vector2 = Vector2(cos(heading), sin(heading))
 	drift += toward * maxf(wind_ms * VOL_DRIFT, VOL_DRIFT_MIN_MS) * delta
 	drift = Vector2(fposmod(drift.x, DRIFT_WRAP_M), fposmod(drift.y, DRIFT_WRAP_M))
-	_volume.global_position = Vector3(snappedf(eye.x, VOL_STEP_M), eye.y, snappedf(eye.z, VOL_STEP_M))
+	_volume.position = Vector3(snappedf(eye.x, VOL_STEP_M), eye.y, snappedf(eye.z, VOL_STEP_M))
 	_material.set_shader_parameter("density", VOL_DENSITY * clampf(strength, 0.0, 1.0))
 	_material.set_shader_parameter("top", top)
 	_material.set_shader_parameter("edge", edge)

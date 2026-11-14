@@ -33,6 +33,8 @@ func _initialize() -> void:
 	body.update(0.1, env, 2, eye, 0.5, 0.5, 90.0, 6.0, 2.0, 0.0)
 	_check(body.on and env.volumetric_fog_enabled and is_equal_approx(env.volumetric_fog_length, float(FogLook.preset(2)["vol_length_m"])), "High in fog: on, its own reach")
 	_check(is_zero_approx(env.volumetric_fog_density), "no even volumetric fog everywhere: the body is the box's")
+	var box: FogVolume = parent.get_child(0) as FogVolume
+	_check(box != null and box.top_level and box.position.is_equal_approx(Vector3(0.0, 5.0, 0.0)), "the box sits round the eye in 32 m steps, in world space")
 	body.update(0.1, env, 3, eye, 0.5, 0.5, 90.0, 6.0, 2.0, 0.0)
 	_check(is_equal_approx(env.volumetric_fog_length, float(FogLook.preset(3)["vol_length_m"])), "High to Ultra in fog: Ultra's reach at once")
 	body.update(0.1, env, 3, eye, 0.015, 0.015, 90.0, 6.0, 2.0, 0.0)
