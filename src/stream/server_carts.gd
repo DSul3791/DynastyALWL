@@ -242,6 +242,11 @@ func _follow(peer: int, id: int) -> void:
 	rec["budget"] = float(rec["budget"]) - step.length()
 	to.y = _rest_y(to, from.y)
 	_move(id, cart, to, rad_to_deg(atan2(heading.x, heading.y)), rec["riders"])
+
+	if not rec["riders"].is_empty() and not rec.has("hauled"):
+		rec["hauled"] = true   # ADD-15: once a grab (the record is new each time); a crate rides on the cart the puller moves
+		host._goal_event(peer, "handcart_hauled")
+
 	_note_pace(id, cart, v, _grade(to, heading))
 
 
