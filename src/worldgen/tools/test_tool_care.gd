@@ -214,9 +214,10 @@ func _init() -> void:
 	empty_pack()
 
 	# 4. Tempered: eligible steel only, with a Quenching trough beside the Smithy; a higher base set once, slower dulling only on edges,
-	# craftsmanship adds to it (no multiplication), and repair never gives it.
+	# craftsmanship adds to it (no multiplication), and repair never gives it. Steel is worked at the Advanced smithy (brick_forge level 3,
+	# GOALS-REPAIR R4).
 	clear_stations()
-	place("blacksmithy", HERE + Vector3(0.0, 0.0, 3.0))
+	place("advanced_smithy", HERE + Vector3(0.0, 0.0, 3.0))
 	var steel: String = "steel_pickaxe"
 	var steel_row: Dictionary = items.table.entry(steel)
 	var steel_recipe: int = recipe_of(steel)
@@ -263,14 +264,15 @@ func _init() -> void:
 	check(ss >= 0 and inv.max_durability(ss) == added and inv.max_durability(ss) < int(round(temper_d * (1.0 + 2.0 * float(c["craft"]["durability"])))), "4i. Tempered +2: the craftsmanship bonus adds to the tempered base (%d), no multiplication" % (inv.max_durability(ss) if ss >= 0 else -1))
 	empty_pack()
 
-	# 5. The client cannot forge a variant: an unknown code, or one the stations here do not allow, is refused and takes nothing.
+	# 5. The client cannot forge a variant: an unknown code, or one the stations here do not allow, is refused and takes nothing (at the
+	# Advanced smithy, where plain steel is made).
 	clear_stations()
-	place("blacksmithy", HERE + Vector3(0.0, 0.0, 3.0))
+	place("advanced_smithy", HERE + Vector3(0.0, 0.0, 3.0))
 
 	for bad in [SmithingRules.code(true, 2), 7, -1]:
 		said.clear()
 		craft(steel_recipe, bad, steel_s * 4.0)
-		check(have(steel) == 0 and have("steel_ingot") > 0 and items._craft_queues.values().all(func(q): return q["entries"].is_empty()), "5. variant %d at a plain Smithy without a trough is refused (%s)" % [bad, str(said)])
+		check(have(steel) == 0 and have("steel_ingot") > 0 and items._craft_queues.values().all(func(q): return q["entries"].is_empty()), "5. variant %d at an Advanced smithy without a trough is refused (%s)" % [bad, str(said)])
 		empty_pack()
 
 	# 6. A queued variant survives a restart and still makes its variant.

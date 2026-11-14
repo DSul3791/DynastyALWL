@@ -26,15 +26,15 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-func make(dir: String):
-	DirAccess.make_dir_recursive_absolute(dir)
+func make(at_dir: String):
+	DirAccess.make_dir_recursive_absolute(at_dir)
 	var w = ItemsScript.new()
 	w.send_full = func(_p, _b): pass
 	w.send_slots = func(_p, _b): pass
 	w.send_world_items = func(_p, _a, _r): pass
 	w.send_notice = func(_p, _t): pass
 	w.ground_height = func(_x, _z): return 10.0
-	w.setup(ItemTableScript.load_default(), dir)
+	w.setup(ItemTableScript.load_default(), at_dir)
 	return w
 
 

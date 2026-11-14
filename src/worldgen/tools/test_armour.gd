@@ -346,8 +346,9 @@ func _init() -> void:
 	clear_stations()
 	strip()
 
-	# 6. Tempered steel armour: durability only, never sharpness (s3.7 rule 5, s4 item 15); iron armour is never Tempered.
-	place("blacksmithy", HERE + Vector3(0.0, 0.0, 3.0))
+	# 6. Tempered steel armour: durability only, never sharpness (s3.7 rule 5, s4 item 15); iron armour is never Tempered. Steel is worked at the
+	# Advanced smithy (brick_forge level 3, GOALS-REPAIR R4).
+	place("advanced_smithy", HERE + Vector3(0.0, 0.0, 3.0))
 	place("quenching_trough", HERE + Vector3(1.5, 0.0, 3.0))
 	var cuirass_recipe: int = recipe_number("plate_cuirass")
 	var cr: Dictionary = items.recipes.recipe(cuirass_recipe)

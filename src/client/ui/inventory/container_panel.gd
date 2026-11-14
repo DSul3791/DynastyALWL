@@ -131,15 +131,16 @@ func _hint(text: String, key_action: String, tip: String, action: Callable) -> B
 
 
 # Puts a pack stack (real slot `slot`) into the open container. False when nothing was sent: no container, an empty slot, or a fire that
-# does not take it (the same rule as the server's, so the slot can flash at once).
-func put_from_pack(slot: int) -> bool:
+# does not take it (the same rule as the server's, so the slot can flash at once). `target`: the container slot it was dragged onto (-1 none),
+# sent as at.x + 1 (protocol 121): Coal or Charcoal dragged onto the Advanced smelter's input goes in as steel carbon.
+func put_from_pack(slot: int, target: int = -1) -> bool:
 	if not view.chest_mode or slot < 0 or slot >= view.inventory.slot_count or view.inventory.numbers[slot] == 0:
 		return false
 
 	if is_fire() and not fire_takes(view.table.id_of(view.inventory.numbers[slot])):
 		return false
 
-	view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, slot, view.chest_id, view.inventory.counts[slot], Vector3.ZERO)
+	view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, slot, view.chest_id, view.inventory.counts[slot], Vector3(float(target + 1), 0.0, 0.0))
 
 	if view.chest_event.is_valid() and view._world.has(view.chest_id):
 		view.chest_event.call("put", view._world[view.chest_id]["pos"])
@@ -210,7 +211,7 @@ func _fit_wells() -> void:
 		# Dragging a pack stack onto the container puts it in; dragging out of the container is not wired (a click or shift-click takes it).
 		slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
 		slot.on_drop = func(data: Variant) -> void:
-			if not put_from_pack(int(data["slot"])):
+			if not put_from_pack(int(data["slot"]), i):
 				slot.flash_refused()
 		_grid.add_child(slot)
 		view._chest_buttons.append(slot)
@@ -284,6 +285,9 @@ func smelter_parts() -> String:
 	var slots: int = int(def.get("slots", 0))
 	var out: int = int(def.get("out_slots", 0))
 	var text: String = "Slot%s 1%s: fuel, Coal or Charcoal (%d). Slots %d to %d: ore (%d)." % ["s" if hs > 1 else "", " to %d" % hs if hs > 1 else "", int(smelt.get("hopper", 0)), hs + 1, slots, int(smelt.get("input", 0))]
+
+	if bool(smelt.get("carbon", false)):
+		text += " For steel, drag Coal or Charcoal onto an ore slot too: it goes in as carbon, not fuel."
 	text += " Slots %d to %d: the ingots." % [slots + 1, slots + out] if out > 0 else " The ingots drop in front of it."
 	return text
 
