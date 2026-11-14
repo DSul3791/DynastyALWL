@@ -7,6 +7,9 @@ extends RefCounted
 # at it, opening its store and taking it down say exactly "Needs repair" (server_items.gd). A hammer on Repair mends it (server_items.gd
 # _repair_struct, repair_needs here): use wear back to 0, station, store, add-ons and fire state untouched.
 # struct["use_wear"] = the wear so far, never above the durability; saved in smithies.json by the station's uid.
+# shortcut: use_wear is not sent to clients, so a recipe card beside a worn-out smithy still looks craftable; the server refuses the craft
+# with "Needs repair" (server_items.gd _queue_craft / _broken_station_near), which is the guard. Send a broken flag on the station row if
+# players find the card misleading.
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 
@@ -51,8 +54,11 @@ func durability(def: Dictionary) -> float:
 
 # Broken: a smithy whose use wear has reached its durability. Built sites are never broken (a site is not a smithy yet).
 func broken(id: int) -> bool:
-	var it: Dictionary = host._items.get(id, {})
+	return broken_row(host._items.get(id, {}))
 
+
+# The same for a world row: its store is shut to every use (server_items.gd _is_storage, _chest_of) until it is repaired.
+func broken_row(it: Dictionary) -> bool:
 	if not it.has("struct") or it["struct"].has("site"):
 		return false
 

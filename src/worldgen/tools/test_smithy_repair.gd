@@ -14,7 +14,8 @@ extends SceneTree
 #   7. a repair keeps the station: its store's contents, kind, place and fire; it crafts again and its store opens; the Advanced and Master
 #      smithies' repair never asks for their anvils;
 #   8. save and load keep a broken smithy broken (still "Needs repair") and a repaired one repaired;
-#   9. once repaired and emptied it takes down again.
+#   9. once repaired and emptied it takes down again;
+#  10. a Tempered craft is worked at the Master smithy even with a lit Advanced smithy nearer.
 #   godot --headless --path . --script res://src/worldgen/tools/test_smithy_repair.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -26,7 +27,7 @@ const DIR := "user://test_smithy_repair"
 const HERE := Vector3(5.0, 10.0, 0.0)
 const SMITHY_AT := Vector3(5.0, 10.0, 2.5)
 const CHEST_AT := Vector3(6.5, 10.0, 0.0)
-const GROUND_AT := Vector3(4.0, 10.0, 1.5)
+const GROUND_AT := Vector3(5.0, 10.0, 6.5)   # within the repair ground_m (6) of the smithy, past the 3 m log pull of the player at HERE
 
 var failures: int = 0
 var items
@@ -301,6 +302,7 @@ func _init() -> void:
 		clear_world()
 		smithy = place("blacksmithy", SMITHY_AT)
 		chest = place("chest", CHEST_AT)
+		box(smithy).add(n("bronze_ingot"), 5)   # its own store holds what the repair needs: never taken (a repair keeps the station's contents)
 		break_it(smithy)
 		needs = repair_needs(smithy)
 		clear_pack()
@@ -320,6 +322,7 @@ func _init() -> void:
 		var left_ok: bool = needs.all(func(need): return pack(str(need[0])) + box(chest).count_of(n(str(need[0]))) + ground(str(need[0])) == 1 + maxi(0, _over(need, sources[i])))
 		check(not items._smithies.broken(smithy) and is_equal_approx(items._smithies.wear_of(smithy), 0.0), "6a. a %s repairs it from %s (%s)" % [hammers[i], sources[i], str(said)])
 		check(left_ok and pack(hammers[i]) == 1, "6b. exactly the cost (%s) is taken, the hammer kept" % str(needs))
+		check(box(smithy).count_of(n("bronze_ingot")) == 5, "6c. nothing is taken from the smithy's own store (%d of 5 Bronze ingots left)" % box(smithy).count_of(n("bronze_ingot")))
 
 	# 7. The repair keeps the station; it works again. The Advanced and Master smithies never pay their anvils again.
 	clear_world()
@@ -396,6 +399,28 @@ func _init() -> void:
 	said.clear()
 	items.action(1, Net.ACT_PICKUP, smithy, 0, 0, Vector3.ZERO)
 	check(not items._items.has(smithy) and pack("bronze_ingot") > 0, "9. once repaired it takes down into its materials (%s)" % str(said))
+
+	# 10. A Tempered craft is worked at the Master smithy, its quencher, even with a lit Advanced smithy nearer: the product goes to the
+	# Master's store and the wear to the Master (repair plan P3: the Advanced smithy has no quencher).
+	clear_world()
+	clear_pack()
+	items.report_position(1, HERE)
+	var adv: int = place("advanced_smithy", HERE + Vector3(0.0, 0.0, 2.0))
+	var master: int = place("master_forge", HERE + Vector3(0.0, 0.0, -3.0))
+	var tempered: int = SmithingRules.code(true, 0)
+	var knife_r: Dictionary = items.recipes.recipe(recipe_number("steel_knife"))
+
+	for need in SmithingRules.scaled_needs(knife_r["needs"], tempered):
+		items.give(1, int(need[0]), int(need[1]))
+
+	check(items.craft_variants(1, knife_r).has(tempered), "10a. beside the Master smithy Tempered is offered")
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("steel_knife"), tempered, 1, Vector3.ZERO)
+	run(float(knife_r["craft_s"]) * SmithingRules.time_mult(tempered) + 4.0)
+	var in_master: int = box(master).count_of(n("steel_knife"))
+	var at: int = box(master).numbers.find(n("steel_knife"))
+	check(in_master == 1 and at >= 0 and int(box(master).inst_of(at).get("temper", 0)) == 1 and box(adv).count_of(n("steel_knife")) == 0, "10b. the Tempered Steel - Knife is made at the Master smithy, not the nearer Advanced smithy (%s)" % str(said.slice(maxi(said.size() - 2, 0))))
+	check(is_equal_approx(items._smithies.wear_of(master), per_craft) and is_equal_approx(items._smithies.wear_of(adv), 0.0), "10c. and it wears the Master smithy, not the Advanced smithy")
 
 	print("test_smithy_repair: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	items._finish_writer()

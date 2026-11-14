@@ -16,7 +16,7 @@
 		"time": [1.0, 2.0, 3.0]
 	},
 	"station_wear": {
-		"note": "GOALS-REPAIR R3/R5 (master s2.2 item 9, s2.7 item 5): every craft finished at a smithy (structures.json anvil) adds per_craft to its use wear; a craft that works a hard_metals ingot or makes a hard_metals product on a bronze anvil adds iron_on_bronze times that. At durability (by the smithy's anvil) the smithy is broken: it stays placed, and crafting, opening its store and taking it down say Needs repair. A hammer on Repair (building_wear.json) mends it: the smithy's blueprint cost less repair_skip, times building_wear repair_share and the share it lost, from the ground, nearby storage and the pack, all or nothing. Read by src/stream/server_smithy.gd. iron_on_bronze PROVISIONAL (GOALS-REPAIR A-17); durability PROVISIONAL (A-25); repair_skip PROVISIONAL (A-26).",
+		"note": "GOALS-REPAIR R3/R5 (master s2.2 item 9, s2.7 item 5): every craft finished at a smithy (structures.json anvil) adds per_craft to its use wear; a craft that works a hard_metals ingot or makes a hard_metals product on a bronze anvil adds iron_on_bronze times that. At durability (by the smithy's anvil) the smithy is broken: it stays placed, and crafting, opening its store and taking it down say Needs repair. A hammer on Repair (building_wear.json) mends it: the smithy's blueprint cost less repair_skip, times building_wear repair_share and the share it lost, from the ground, nearby storage and the pack, all or nothing. Read by src/stream/server_smithy.gd. iron_on_bronze PROVISIONAL (GOALS-REPAIR A-17); durability PROVISIONAL (A-26); repair_skip PROVISIONAL (A-27).",
 		"per_craft": 1.0,
 		"iron_on_bronze": 3.0,
 		"hard_metals": ["iron", "steel"],
