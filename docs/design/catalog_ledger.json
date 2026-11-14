@@ -2936,7 +2936,7 @@
   {
    "key": "roof_section_kit",
    "number": 196,
-   "name": "Refined - Roof",
+   "name": "Refined - Roof 45",
    "category": "placeable",
    "catalog": "RETIRED",
    "section": null,
@@ -2945,21 +2945,23 @@
    "state": "RETIRED BEFORE CATALOG",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35: name follows its piece (Refined - Roof 45)."
   },
   {
    "key": "roof_section",
    "number": 197,
-   "name": "Refined - Roof",
+   "name": "Refined - Roof 45",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
    "state": "NO CHANGE",
-   "tests": [],
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Refined - Roof (id, number and state 24 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
   },
   {
    "key": "foundation_section_kit",
@@ -6872,7 +6874,7 @@
   {
    "key": "log_roof_kit",
    "number": 468,
-   "name": "Rustic - Roof",
+   "name": "Rustic - Roof 45",
    "category": "placeable",
    "catalog": "RETIRED",
    "section": null,
@@ -6881,21 +6883,23 @@
    "state": "RETIRED BEFORE CATALOG",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35: name follows its piece (Rustic - Roof 45)."
   },
   {
    "key": "log_roof",
    "number": 469,
-   "name": "Rustic - Roof",
+   "name": "Rustic - Roof 45",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
    "state": "NO CHANGE",
-   "tests": [],
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Rustic - Roof (id, number and state 52 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
   },
   {
    "key": "stone_wall_kit",
@@ -6956,7 +6960,7 @@
   {
    "key": "stone_roof_kit",
    "number": 474,
-   "name": "Sturdy - Roof",
+   "name": "Sturdy - Roof 45",
    "category": "placeable",
    "catalog": "RETIRED",
    "section": null,
@@ -6965,21 +6969,23 @@
    "state": "RETIRED BEFORE CATALOG",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35: name follows its piece (Sturdy - Roof 45)."
   },
   {
    "key": "stone_roof",
    "number": 475,
-   "name": "Sturdy - Roof",
+   "name": "Sturdy - Roof 45",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
    "state": "NO CHANGE",
-   "tests": [],
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Sturdy - Roof (id, number and state 55 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
   },
   {
    "key": "brick_wall_kit",
@@ -7040,7 +7046,7 @@
   {
    "key": "brick_roof_kit",
    "number": 480,
-   "name": "Superior - Roof",
+   "name": "Superior - Roof 45",
    "category": "placeable",
    "catalog": "RETIRED",
    "section": null,
@@ -7049,21 +7055,23 @@
    "state": "RETIRED BEFORE CATALOG",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35: name follows its piece (Superior - Roof 45)."
   },
   {
    "key": "brick_roof",
    "number": 481,
-   "name": "Superior - Roof",
+   "name": "Superior - Roof 45",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
    "state": "NO CHANGE",
-   "tests": [],
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Superior - Roof (id, number and state 58 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
   },
   {
    "key": "log_cabin_set_kit",
@@ -9665,9 +9673,9 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-   "test_blueprints",
-   "test_doors"
-  ],
+    "test_blueprints",
+    "test_doors"
+   ],
    "accepted_commit": null,
    "note": "Dave 13 Nov 2026: no Iron or Steel tier, remove them. Retired; a saved one loads as the Refined - Doorway (doorway_section) (renames.json, legacy_kinds)."
   },
@@ -9696,9 +9704,9 @@
    "depends": [],
    "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [
-   "test_blueprints",
-   "test_doors"
-  ],
+    "test_blueprints",
+    "test_doors"
+   ],
    "accepted_commit": null,
    "note": "Dave 13 Nov 2026: no Iron or Steel tier, remove them. Retired; a saved one loads as the Fortified - Doorway (fortified_doorway) (renames.json, legacy_kinds)."
   },
@@ -12733,7 +12741,7 @@
   {
    "key": "engineered_roof_kit",
    "number": 876,
-   "name": "Engineered - Roof",
+   "name": "Engineered - Roof 45",
    "category": "placeable",
    "catalog": "RETIRED",
    "section": null,
@@ -12742,21 +12750,23 @@
    "state": "RETIRED BEFORE CATALOG",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35: name follows its piece (Engineered - Roof 45)."
   },
   {
    "key": "engineered_roof",
    "number": 877,
-   "name": "Engineered - Roof",
+   "name": "Engineered - Roof 45",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
    "state": "NO CHANGE",
-   "tests": [],
+   "tests": [
+    "test_roof_panels"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Engineered - Roof (id, number and state 219 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
   },
   {
    "key": "engineered_roof_corner_kit",
@@ -17297,6 +17307,96 @@
    ],
    "accepted_commit": null,
    "note": "BUGLIST-002 (13 Nov 2026): double arched door, blueprint 299, structure states 366 (shut) and 367 (open); fits any double arched doorway; recipe as approved by Dave in the master catalog s3.0. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Rustic - Roof 65",
+   "id": "log_roof_65",
+   "number": 1320,
+   "name": "Rustic - Roof 65",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Rustic - Roof 45, blueprint 310, structure state 380, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Refined - Roof 65",
+   "id": "roof_section_65",
+   "number": 1321,
+   "name": "Refined - Roof 65",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Refined - Roof 45, blueprint 311, structure state 381, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Sturdy - Roof 65",
+   "id": "stone_roof_65",
+   "number": 1322,
+   "name": "Sturdy - Roof 65",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Sturdy - Roof 45, blueprint 312, structure state 382, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Superior - Roof 65",
+   "id": "brick_roof_65",
+   "number": 1323,
+   "name": "Superior - Roof 65",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Superior - Roof 45, blueprint 313, structure state 383, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Engineered - Roof 65",
+   "id": "engineered_roof_65",
+   "number": 1324,
+   "name": "Engineered - Roof 65",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Engineered - Roof 45, blueprint 314, structure state 384, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
   }
  ],
  "acceptance_note": "Mission 001 (12 Nov 2026): TESTED - ACCEPTED means implemented, independently reviewed and passing automated server-side tests (per-phase tests, the integrated walkthrough test_mission001_walkthrough, full suite 358/360 with 2 known flakes at aa8113c33). NOT included: in-game visual, UI and two-client checks, which were not run, and final art: most new pieces use marked placeholder looks. RETIRED - MIGRATION VERIFIED: retired with numbers kept and tests passing; Dave ruled no old-save migration is needed (new game)."
