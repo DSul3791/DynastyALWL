@@ -375,7 +375,7 @@ func _refresh_shop() -> void:
 		return
 
 	_shop_title_label.text = _shop_title
-	var purse_line: Array = ["Purse: ", items.purse_copper, "    "]
+	var purse_line: Array = ["Purse: ", items.purse_coins, "    "]   # coins as held
 
 	if _shop_till >= 0:
 		purse_line.append_array(["His purse: ", _shop_till, "    "])
