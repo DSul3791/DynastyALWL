@@ -1185,7 +1185,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_HARVEST:
 		harvest(peer, inv, a)
 	elif kind == Net.ACT_WATER_BED:
-		water_bed(peer, inv, a)
+		water_bed(peer, inv, a, b)   # b: the pack slot of the filled container in hand (WP-R1B), -1 for none; a slot with no water in it is refused
 	elif kind == Net.ACT_HOE_PATH:
 		_hoe_path(peer, inv, at, a)
 	elif kind == Net.ACT_HOE_SMOOTH:
@@ -6534,6 +6534,20 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 			else:
 				give(peer, table.number_of(str(own[0][0])), roll_amount(peer, rng, int(own[0][1]), int(own[0][2])))
 
+		if not by_pick:
+			var extra_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # its own stream: the first row's rolls above stay what they were
+			extra_rng.seed = rng.seed ^ EXTRA_ROWS_SEED
+
+			for row in (cfg.get("by_species", {}).get(str(tree.get("species", "")), []) as Array).slice(1):   # the rows after the first: willow withies, Scots pine tar (GOALS-REPAIR GA-02)
+				if roll_chance(peer, extra_rng, float(cfg.get("seed_chance", 0.15))):
+					give(peer, table.number_of(str(row[0])), roll_amount(peer, extra_rng, int(row[1]), int(row[2])))
+
+			var stripped: Array = _bark_row(cfg, str(tree.get("species", "")))   # the felled trunk's bark, once per tree (GOALS-REPAIR GA-01)
+
+			if not stripped.is_empty() and not bool(tree.get("bark_taken", false)):
+				tree["bark_taken"] = true
+				give(peer, int(stripped[0]), int(stripped[1]))
+
 		if int(tree["logs_left"]) <= 0:
 			var roots: Array = cfg.get("roots", [])
 
@@ -6870,6 +6884,20 @@ func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> A
 	return rows
 
 
+const EXTRA_ROWS_SEED := 0x2f6e2b1   # the stream of a trunk's extra by_species rows (_trunk_extras, _process_trunk)
+
+
+# The bark a felled trunk of `species` gives once, as [item number, count], or [] for a species that gives none: drops.json trunk "bark_species" names them,
+# and the amount is that species' harvest_yield row (oak: tannin_bark 3; GOALS-REPAIR GA-01). A standing tree is never stripped: E on it is not offered.
+func _bark_row(cfg: Dictionary, species: String) -> Array:
+	if not (cfg.get("bark_species", []) as Array).has(species):
+		return []
+
+	var row: Dictionary = (_drops.get("harvest_yield", {}) as Dictionary).get(species, {})
+	var number: int = table.number_of(str(row.get("item", "")))
+	return [number, int(row.get("count", 0))] if number > 0 and int(row.get("count", 0)) > 0 else []
+
+
 # What cutting a trunk by hand gives besides the logs, as [item number, count] rows, for a trunk of `logs` whole logs (_process_trunk): the branch blows' sticks and leaves,
 # then per log the bark (or thatch) and seed rolls, and the root ball at the end. Rolled from the trunk's id like hand cutting; no player, so no luck (world drops).
 func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_branches: bool = true) -> Array:
@@ -6900,6 +6928,20 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_b
 		if rng.randf() < float(cfg.get("seed_chance", 0.15)):   # luck-exempt: world drop, no player
 			var sn: int = table.number_of("seed_bundle") if own.is_empty() else table.number_of(str(own[0][0]))
 			totals[sn] = int(totals.get(sn, 0)) + (1 if own.is_empty() else rng.randi_range(int(own[0][1]), int(own[0][2])))   # luck-exempt: world drop, no player
+
+	var extra_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # the rows after the first (willow withies, Scots pine tar) roll on their own stream, so the rolls above stay what they were
+	extra_rng.seed = rng.seed ^ EXTRA_ROWS_SEED
+
+	for k in range(logs):
+		for row in own.slice(1):
+			if extra_rng.randf() < float(cfg.get("seed_chance", 0.15)):   # luck-exempt: world drop, no player
+				var xn: int = table.number_of(str(row[0]))
+				totals[xn] = int(totals.get(xn, 0)) + extra_rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
+
+	var stripped: Array = _bark_row(cfg, species)   # the trunk's own bark, once (GOALS-REPAIR GA-01)
+
+	if not stripped.is_empty():
+		totals[int(stripped[0])] = int(totals.get(int(stripped[0]), 0)) + int(stripped[1])
 
 	var roots: Array = cfg.get("roots", [])
 
@@ -11367,10 +11409,11 @@ func take_from(peer: int, id: String, count: int, ready_only: bool = false) -> b
 
 
 # Group-aware count and take for an NPC's ask (Mission 001 phase 2a): Hob's "firewood" is met by Hard or Soft firewood, since a plain Log now
-# chops into softwood (master s4 item 3). The literal count_for / take_from stay for everything else.
+# chops into softwood (master s4 item 3). The literal count_for / take_from stay for everything else. Plain units only: an NPC's ask never takes the water
+# out of a container (the liquid ingredient is for recipes and the bed).
 func count_fill_for(peer: int, id: String) -> int:
 	var inv = inventory_of(peer)
-	return inv.count_fill(table.number_of(id)) if inv != null and table.number_of(id) > 0 else 0
+	return inv.count_fill(table.number_of(id), true) if inv != null and table.number_of(id) > 0 else 0
 
 
 func take_fill_from(peer: int, id: String, count: int) -> bool:
@@ -11380,7 +11423,7 @@ func take_fill_from(peer: int, id: String, count: int) -> bool:
 		return false
 
 	var before: Array = _snapshot(inv)
-	var ok: bool = inv.remove_fill(table.number_of(id), count)
+	var ok: bool = inv.remove_fill(table.number_of(id), count, [], true)
 	_send_changes(peer, inv, before)
 	return ok
 
@@ -14083,7 +14126,7 @@ func take_nest(peer: int, inv) -> bool:
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (key "x,z" of the bed). The client side
 # (a hoe mode that sends ACT_TILL, a seed use that sends ACT_SOW, E on a crop that sends ACT_HARVEST, the stage looks) is not built: see PROTOCOL.md.
 const TILLED_STATE := 47
-var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured (one pour a day)}; the bed's moisture is in _plot_water
+var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured, "poured_ml": mL poured that day (a bucket a day, water_bed)}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
 var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
@@ -14671,23 +14714,50 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	return true
 
 
-# One `water` item from the pack on the bed: that game day counts as watered.
-func water_bed(peer: int, inv, bed_id: int) -> bool:
+# Water from the pack's containers on the bed (GOALS-REPAIR GA-04, A-3): one bucket (crops.json moisture pour_ml, 8 L) is pour_pct, so a pour adds pour_pct
+# by the share of a bucket poured, and a bed takes up to a bucket a game day (several small pours add up). The water comes first from the container in
+# hand (`held`, the pack slot the client names, -1 for none: when named it must hold a filled container, else the pour is refused), then from the pack's
+# other containers, so the pour is the full bucket whenever the pack holds that much. Every refusal says why (a notice) and takes nothing.
+func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
-	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+	if bed.is_empty() or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		_say(peer, "Too far from the bed to water it.")
 		return false
 
 	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {})
-	var water: int = table.number_of("water")
 
-	if crop.is_empty() or int(crop["poured"]) == _game_day() or not inv.has(water, 1):
+	if crop.is_empty():
+		_say(peer, "Nothing is growing there to water.")
 		return false
 
-	inv.remove(water, 1)
-	crop["poured"] = _game_day()
+	if held >= 0 and not (held < inv.slot_count and inv.numbers[held] != 0 and _container_cap(inv.numbers[held]) > 0 and inv.wear[held] > 0):   # never trust the slot the client names
+		_say(peer, "That holds no water.")
+		return false
+
+	var bucket_ml: int = maxi(int(_moisture_cfg.get("pour_ml", 8000)), 1)
+	var today: int = _game_day()
+	var done_ml: int = int(crop.get("poured_ml", bucket_ml)) if int(crop["poured"]) == today else 0
+	var ml: int = mini(bucket_ml - done_ml, inv.liquid_ml())
+
+	if ml <= 0:
+		if done_ml >= bucket_ml:
+			_say(peer, "The bed has had its water today.")
+		elif inv.count_of(table.number_of("sea_water")) > 0:
+			_say(peer, "Salt water would kill the crop. You need fresh water in a container.")
+		else:
+			_say(peer, "You have no water to pour.")
+
+		return false
+
+	inv.drain_liquid(ml, held)
+	crop["poured"] = today
+	crop["poured_ml"] = done_ml + ml
 	var key: String = _bed_key(bed["pos"])
-	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"])), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]   # a bucket's worth (pour_pct)
+	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"]), float(ml) / float(bucket_ml)), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]
 	_dirty = true
 	return true
 
@@ -16201,8 +16271,16 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Arr
 	for i in boxes.size():
 		var share: int = int(plan[1 + ground.size() + i])
 
+		var rows_before: int = taken_inst.size()
+
 		if share > 0 and boxes[i][1].remove_fill(number, share, taken_inst, plain_only):
 			took += share
+
+			for k in range(rows_before, taken_inst.size()):   # water taken from this chest's containers goes back there on a refund (_pour_back)
+				if (taken_inst[k][1] as Dictionary).has("liquid_ml"):
+					taken_inst[k][1]["box"] = int(boxes[i][0])
+					taken_inst[k][1]["uid"] = int(_items[int(boxes[i][0])]["struct"]["uid"])
+
 			_push_box(int(boxes[i][0]), boxes[i][1])   # whoever has that chest open sees it go
 			_dirty = true
 
@@ -16266,6 +16344,12 @@ func _send_stock(peer: int, poll: bool = false, building: bool = false) -> void:
 		for slot in box[1].slot_count:
 			if int(box[1].numbers[slot]) != 0:
 				counts[int(box[1].numbers[slot])] = int(counts.get(int(box[1].numbers[slot]), 0)) + int(box[1].counts[slot])
+
+		var water_n: int = table.number_of("water")
+		var water_units: int = box[1].liquid_units(water_n)   # filled containers in the chest fill the water ingredient too (GA-04)
+
+		if water_units > 0:
+			counts[water_n] = int(counts.get(water_n, 0)) + water_units
 
 	var numbers: PackedInt32Array = PackedInt32Array()
 	var amounts: PackedInt32Array = PackedInt32Array()
@@ -17289,6 +17373,42 @@ func _start_deferred(peer: int, head: Array) -> bool:
 	return true
 
 
+# Water given back (a cancelled or failed craft, GA-04) goes into containers with room: first where it came from (the row's source: a storage container of the
+# player's, wherever they are now), then the pack's, then their own storage in craft reach. Whatever no container has room for is spilled; the stackable
+# `water` item is never minted. `src`: the refund row's instance data ("box": the world id and "uid" the store's uid of the chest it was taken from, none: the pack).
+func _pour_back(peer: int, ml: int, src: Dictionary = {}) -> void:
+	var inv = inventory_of(peer)
+
+	if inv == null or ml <= 0:
+		return
+
+	var left: int = ml
+	var from_id: int = int(src.get("box", -1))
+
+	if from_id >= 0 and _items.has(from_id) and _items[from_id].has("struct") and int(_items[from_id]["struct"].get("uid", -2)) == int(src.get("uid", -1)) and _chests.has(int(src["uid"])) and CraftStock.owner_ok(str(_items[from_id]["struct"].get("owner", "")), str(_peer_key.get(peer, ""))):   # the water was the player's own, so the chest must still be theirs; a stale or changed source falls through to the pack, and the row is spent once
+		left = _chests[int(src["uid"])].pour_liquid(left)
+
+		if left < ml:
+			_push_box(from_id, _chests[int(src["uid"])])
+
+	var before: Array = _snapshot(inv)
+	left = inv.pour_liquid(left)
+	_send_changes(peer, inv, before)
+
+	if left > 0:
+		for box in _craft_boxes(peer):
+			var was: int = left
+			left = box[1].pour_liquid(left)
+
+			if left < was:
+				_push_box(int(box[0]), box[1])
+
+	if left > 0:
+		_say(peer, "The water spills: nothing here has room for it.")
+
+	_dirty = true
+
+
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
 	for need in entry[2]:
@@ -17303,7 +17423,10 @@ func _refund_entry(peer: int, entry: Array) -> void:
 			var unit: Array = rows[k]
 			var n: int = mini(left, int(unit[3]) if unit.size() > 3 else 1)
 
-			if n > 0:
+			if n > 0 and (unit[1] as Dictionary).has("liquid_ml"):   # water that came out of containers goes back into containers, never as the stackable item (GA-04)
+				_pour_back(peer, floori(float(unit[1]["liquid_ml"]) * float(n) / float(maxi(int(unit[3]), 1))), unit[1])
+				left -= n
+			elif n > 0:
 				give(peer, int(unit[0]), n, unit[1], int(unit[2]) if unit.size() > 2 else 0)
 				left -= n
 
@@ -17669,7 +17792,14 @@ func _load_craft_queues() -> void:
 
 				for unit in (need[2] if need.size() > 2 and typeof(need[2]) == TYPE_ARRAY else []):
 					if typeof(unit) == TYPE_ARRAY and (unit as Array).size() >= 2:
-						units.append([int(unit[0]), InventoryScript.clean_inst(unit[1]), maxi(int(unit[2]), 0) if unit.size() > 2 else 0, clampi(int(unit[3]), 1, 65535) if unit.size() > 3 else 1])   # what the craft took (_hold_insts); older rows: one unit, older still: wear 0
+						var kept: Dictionary = InventoryScript.clean_inst(unit[1])
+
+						if typeof(unit[1]) == TYPE_DICTIONARY and (unit[1] as Dictionary).has("liquid_ml"):   # a liquid row (Inventory.remove_fill): clean_inst drops its keys, a refund needs them (GA-04)
+							for liquid_key in ["liquid_ml", "box", "uid"]:
+								if (unit[1] as Dictionary).has(liquid_key):
+									kept[liquid_key] = int(unit[1][liquid_key])
+
+						units.append([int(unit[0]), kept, maxi(int(unit[2]), 0) if unit.size() > 2 else 0, clampi(int(unit[3]), 1, 65535) if unit.size() > 3 else 1])   # what the craft took (_hold_insts); older rows: one unit, older still: wear 0
 
 				needs.append([int(need[0]), int(need[1]), units] if not units.is_empty() else [int(need[0]), int(need[1])])
 

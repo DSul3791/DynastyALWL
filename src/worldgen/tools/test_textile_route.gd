@@ -8,7 +8,7 @@ extends SceneTree
 #   4. leather at a Tanning rack, then the Leatherworking table from logs, sticks, twine and stone, and a Leather strap there;
 #   5. the Loom, and Fibre cloth woven on it (refused by hand);
 #   6. the Tailor's table, and a Fibre - Gambeson made there (refused at the Loom alone).
-# The scraper, hammer, tannin bark, water and the stations' logs, twine, clay and stones are given: they are gathered or made elsewhere and
+# The scraper, hammer and the stations' logs, twine, clay and stones are given: they are gathered or made elsewhere and
 # covered by other tests (test_first_hour, test_server_items).
 #   godot --headless --path . --script res://src/worldgen/tools/test_textile_route.gd
 
@@ -53,6 +53,73 @@ func need_of(recipe_id: String, id: String) -> int:
 			return int(need[1])
 
 	return 0
+
+
+# Water by the player's route (GOALS-REPAIR GA-04): the real fill action at fresh water puts 500 mL a fill into a bucket in the pack; a recipe's water ingredient is drawn from it.
+func fill_water(units: int) -> void:
+	items.water_near = func(_pos, _reach): return true
+	var bucket: int = items.table.number_of("bucket")
+
+	if items.inventory_of(1).count_of(bucket) == 0:
+		items.action(1, Net.ACT_ADMIN_GIVE, bucket, 0, 1, Vector3.ZERO)
+
+	var slot: int = items.inventory_of(1).numbers.find(bucket)
+
+	for k in range(units):
+		items._last_drink.clear()
+		items.action(1, Net.ACT_DRINK, slot, 0, 0, Vector3.ZERO)
+
+	check(items.inventory_of(1).count_fill(items.table.number_of("water")) >= units and have("water") == 0, "4a1. %d fills of 500 mL make %d water ingredients; no stackable water exists" % [units, units])
+
+
+# What the pack holds, item number -> count.
+func pack_counts() -> Dictionary:
+	var out: Dictionary = {}
+	var pack = items.inventory_of(1)
+
+	for i in pack.slot_count:
+		if pack.numbers[i] != 0:
+			out[pack.numbers[i]] = int(out.get(pack.numbers[i], 0)) + pack.counts[i]
+
+	return out
+
+
+# Cutting a trunk also gives its branches' sticks and leaves, seeds and roots; this test counts its stations' materials exactly, so what came besides the tannin bark is put down again.
+func drop_byproducts(before: Dictionary) -> void:
+	var pack = items.inventory_of(1)
+	var bark: int = items.table.number_of("tannin_bark")
+
+	for number in pack_counts():
+		var extra: int = int(pack_counts()[number]) - int(before.get(number, 0))
+
+		if extra > 0 and number != bark:
+			pack.remove(int(number), extra)
+
+
+# One felled oak (the fall: test_fell_autosplit) cut up with a Stone - Axe in hand, away from the stations: it gives its harvest_yield count of tannin bark, once.
+func bark_from_oak() -> void:
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	var id: int = 960001
+	var at: Vector3 = Vector3(300.0, 10.0, 300.0)
+	var back: Vector3 = items.position_of(1)
+	var before: Dictionary = pack_counts()
+	items._items[id] = {"number": 0, "count": 1, "pos": at, "left": 1.0e9, "tree": {"state": 3, "species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 9.0, "radius": 0.3, "chunk": [4, 4]}}
+
+	for blow in range(40):
+		if not items._items.has(id):
+			break
+
+		var tree: Dictionary = items._items[id]["tree"]
+		var logs_phase: bool = int(tree.get("blows", 0)) >= int(items._drops["trunk"]["branch_blows"]) and int(tree.get("logs_left", 0)) > 0
+		var length_now: float = float(tree["length"])
+		var piece: float = length_now if int(tree.get("logs_left", 0)) <= 1 else minf(float(items._drops["trunk"]["log_length_m"]), length_now)
+		items.report_position(1, at + Vector3(0.3, 0.0, (length_now - piece * 0.5) if logs_phase else 0.5))
+		items._last_process.erase(1)
+		items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
+
+	items.report_position(1, back)
+	drop_byproducts(before)
+	check(have("tannin_bark") == int(items._drops["harvest_yield"]["oak"]["count"]), "4a0. a felled oak cut up with the axe gives its tannin bark (%d)" % have("tannin_bark"))
 
 
 func gives_of(recipe_id: String) -> int:
@@ -205,10 +272,11 @@ func _init() -> void:
 	check(have("processed_hide") == 1, "4. at the Drying rack the hide is scraped and dried")
 	items._items.erase(rack)   # cleared away so the Tailor's table can stand on that side later
 	build("tanning_rack", HERE + Vector3(0.0, 0.0, -3.0))
-	items.give(1, items.table.number_of("tannin_bark"), need_of("leather", "tannin_bark"))
-	items.give(1, items.table.number_of("water"), need_of("leather", "water"))
+	bark_from_oak()   # the bark: a felled oak cut up with the axe (GOALS-REPAIR GA-01)
+	fill_water(need_of("leather", "water"))   # the water: a bucket filled at fresh water (GOALS-REPAIR GA-04)
 	craft("leather", 1, 60)
 	check(have("leather") == 1 and have("processed_hide") == 0, "4a. the dried hide is tanned at the Tanning rack")
+	check(items.inventory_of(1).liquid_ml() == 0 and have("bucket") == 1, "4a2. tanning used up the bucket's water; the bucket stays (%d mL left)" % items.inventory_of(1).liquid_ml())
 	check(str(items.recipes.recipe(recipe_number("leather_strap")).get("station", "")) == "leatherworking_table", "4b. the Leather strap is a Leatherworking table recipe")
 	craft("leather_strap", 1, 30)
 	check(have("leather_strap") == 0 and have("leather") == 1, "4c. no Leather strap at the Tanning rack; the leather is kept")

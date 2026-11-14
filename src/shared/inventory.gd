@@ -259,7 +259,7 @@ func fills_of(number: int) -> PackedInt32Array:
 	return PackedInt32Array([number])
 
 
-# `plain_only`: units with instance data do not count (building costs never take them).
+# `plain_only`: units with instance data do not count (building costs never take them), and neither does container water.
 func count_fill(number: int, plain_only: bool = false) -> int:
 	var fills: PackedInt32Array = fills_of(number)
 	var total: int = 0
@@ -268,7 +268,70 @@ func count_fill(number: int, plain_only: bool = false) -> int:
 		if numbers[i] != 0 and fills.has(numbers[i]) and not (plain_only and not inst[i].is_empty()) and not maturing_at(i):
 			total += counts[i]
 
+	return total if plain_only else total + liquid_units(number)
+
+
+# Liquid ingredients (GOALS-REPAIR GA-04): an item with a table "unit_ml" (water) is also filled by the fresh water in this inventory's containers
+# (capacity_ml items keep their water in `wear`, in mL; a container only ever holds fresh water, a drink at salt water is refused), pooled across them:
+# two half-full skins make a unit. Recipes and the crafting stock use count_fill / remove_fill, so they see it; count_of / has stay literal.
+# shortcut: pooled per inventory (the pack, each chest), so 300 mL in the pack and 300 mL in a chest do not make a unit; revisit if players hit it.
+# Limit: a container's instance data names no liquid kind, so every container's mL counts as fresh water. That holds today (nothing fills one but the drink/fill
+# action at fresh water and a pump). Ale or mead in a jug (items.json clay_jug, mug) must add a liquid kind to the instance data and count only "water" here.
+func liquid_ml() -> int:
+	var total: int = 0
+
+	if table == null or not table.has_method("container_cap"):
+		return 0
+
+	for i in slot_count:
+		if numbers[i] != 0 and table.container_cap(numbers[i]) > 0:
+			total += mini(wear[i], table.container_cap(numbers[i]))
+
 	return total
+
+
+func liquid_units(number: int) -> int:
+	var unit: int = table.liquid_unit_ml(number) if table != null and table.has_method("liquid_unit_ml") else 0
+	return floori(float(liquid_ml()) / float(unit)) if unit > 0 else 0
+
+
+# Takes `ml` of water out of the containers, the one in slot `first` (-1 none) before the others, then slot by slot; the containers stay, empty ones too.
+# False and no change when they hold less.
+func drain_liquid(ml: int, first: int = -1) -> bool:
+	if ml <= 0 or liquid_ml() < ml:
+		return false
+
+	var order: Array = range(slot_count)
+
+	if first >= 0 and first < slot_count:
+		order.erase(first)
+		order.push_front(first)
+
+	var left: int = ml
+
+	for i in order:
+		if left > 0 and numbers[i] != 0 and table.container_cap(numbers[i]) > 0:
+			var take: int = mini(left, mini(wear[i], table.container_cap(numbers[i])))
+			wear[i] -= take
+			left -= take
+
+	return true
+
+
+# Pours `ml` back into containers with room, slot by slot; returns what no container had room for.
+func pour_liquid(ml: int) -> int:
+	var left: int = ml
+
+	if table == null or not table.has_method("container_cap"):
+		return left
+
+	for i in slot_count:
+		if left > 0 and numbers[i] != 0 and table.container_cap(numbers[i]) > 0:
+			var put: int = mini(left, maxi(table.container_cap(numbers[i]) - wear[i], 0))
+			wear[i] += put
+			left -= put
+
+	return left
 
 
 func has_fill(number: int, count: int) -> bool:
@@ -292,6 +355,11 @@ func remove_fill(number: int, count: int, taken_inst: Array = [], plain_only: bo
 			if taken > 0:
 				remove(fill, taken, taken_inst, true)
 				left -= taken
+
+	if left > 0:   # a liquid ingredient: what the stacks lacked comes out of the containers; the row lets a refund pour it back (never mint the item)
+		var ml: int = left * table.liquid_unit_ml(number)
+		drain_liquid(ml)
+		taken_inst.append([number, {"liquid_ml": ml}, 0, left])
 
 	return true
 
