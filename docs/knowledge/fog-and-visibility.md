@@ -181,11 +181,11 @@
 ## How ours works today (read from the code, 8 Nov, not tested)
 
 - **`weather.gd` valley fog:**
-  - `mist` (0..1) and `mist_top_m` (30 to 140 m), gathering from 22:00 (`MIST_FROM_HOUR`) over 4 hours;
+  - `mist` (0..1) and `mist_top_m` (30 to 140 m), gathering from 22:00 (`MIST_FROM_HOUR`) over 4 hours (as of 8 Nov; since 14 Nov 2026 `mist_depth_m` over the local low ground and Dave's fog rules, docs/design/FOG_PLAN.md);
   - burning off 1 to 3 hours after sunrise, only in calm (`MIST_CALM_WIND` 0.3, none from 0.5) and clear weather;
   - `MIST_BY_ZONE` temperate 1.0.
   - `SUN_LATITUDE_DEG` is 52.0 on main. #711 (open) makes the burn-off read the island's latitude behind `--one-sky`; it sets −57 today, which should become the position's latitude (about −34 at the starter).
-- **`weather_look.gd`:** has a "fog" look preset with `mist` 1.0 and `mist_top_m` 90. Its thickness grows by 12 × fog on top of rain and snow.
+- **`weather_look.gd`:** has a "fog" look preset with `mist` 1.0 and `mist_top_m` 90 (since 14 Nov 2026 `mist_depth_m` 90). Its thickness grows by 12 × fog on top of rain and snow.
 - **Sea fog** is Kathleen's #608 (open), and fog from above is #672 (open). Neither was read for this page.
 - **Animals:** no fog rule found in `server_animals.gd` in this pass (not searched in depth).
 
