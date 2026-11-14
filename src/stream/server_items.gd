@@ -6192,6 +6192,7 @@ func _repair(peer: int, inv, slot: int) -> void:
 
 	inv.wear[slot] = 0
 	practice(peer, "tool_care")
+	_goal_event(peer, "tool_repaired")   # ADD-10: the tool took its repair materials and its wear is back to 0
 
 
 # What to do with a broken tool: where and with what it is repaired, or that a disposable one is made anew.
@@ -6329,6 +6330,7 @@ func _apply_sharpen(peer: int, inv, job: Dictionary) -> void:
 	inv.inst[slot] = InventoryScript.clean_inst(item_inst)
 	practice(peer, "tool_care")
 	_dirty = true
+	_goal_event(peer, "tool_sharpened")   # ADD-09: some edge really came back (restored > 0); a job stopped part-way counts, it restored in proportion
 
 	if _is_broken(inv, slot):   # the lower maximum reached its wear: it breaks as a use would break it
 		_tool_broke(peer, inv, slot, entry)
@@ -7337,6 +7339,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s - SAPLING_GROWN_S})   # a dug bush goes in full size
 	_dirty = true
+	_goal_event(peer, "bush_replanted")   # ADD-07: a dug-up bush (only digging gives a <species>_bush) planted again
 
 	if flora_changed.is_valid():
 		flora_changed.call(home)
@@ -7782,6 +7785,7 @@ func _cook(peer: int, inv, id: int) -> void:
 			_gain_source = SRC_CRAFT   # a roast is made, not gathered (goal got: counter)
 			_take_in(peer, inv, cooked, 1, age)
 			_gain_source = was_src
+			_goal_event(peer, "cooked_on_fire")   # ADD-03: a roast made on the campfire (the campfire cooks only meat and fish, cooking.json cooks_into)
 
 			return
 
@@ -8765,6 +8769,9 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 	_smithies.repaired(id)
 	_dirty = true
 	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
+
+	if not smithy:
+		_goal_event(peer, "building_repaired")   # ADD-11: a hammer mended a worn building piece
 
 
 # Loose items (not structures, fires or trees) of one kind, or of any member of its group, within `radius` of a spot.
@@ -10217,6 +10224,10 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
+
+	if amount > left and id >= 0 and bool(_structures.get(kind, {}).get("lockable", false)):
+		_goal_event(peer, "stored_item")   # ADD-13: items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
+
 	return amount - left
 
 
@@ -14900,6 +14911,7 @@ func till(peer: int, inv, at: Vector3, held_slot: int) -> int:
 	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": 0.0}}
 	_next_id += 1
 	_dirty = true
+	_goal_event(peer, "bed_tilled")   # ADD-04: a new bed tilled by this hoe stroke (the early returns above are not a tilling)
 	return _next_id - 1
 
 
@@ -14946,6 +14958,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	inv.remove(inv.numbers[slot], 1)
 	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
 	_dirty = true
+	_goal_event(peer, "seed_sown")   # ADD-05
 	return true
 
 
@@ -15111,6 +15124,7 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 
 	_crops.erase(key)
 	_dirty = true
+	_goal_event(peer, "crop_harvested")   # ADD-06: a ripe crop taken by hand from the bed (Dave 14 Nov: gathering counts by your own hand)
 	return true
 
 
@@ -18200,8 +18214,14 @@ func _strain_tick(peer: int, spent: float) -> void:
 			if bool(rest.get("nap", false)):
 				if strain <= float(rest["nap_end"]) + 0.001:
 					_wake(peer, "You wake refreshed")
-			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9 and not on_good_bed(peer):
-				_wake(peer, "You wake rested")   # on a good bed the sleeper stays (bed.json): only moving, a stance key, a hit or the bed going wakes them
+			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9:
+				# ADD-12: a night slept = a sleep (not a nap or a collapse) that filled the energy while lying on a bed or beside a lean-to; once per sleep.
+				if not rest.has("night") and (_bed_of(peer) != 0 or _shelter_near(_peer_pos[peer]) >= 0):
+					rest["night"] = true
+					_goal_event(peer, "slept_night")
+
+				if not on_good_bed(peer):
+					_wake(peer, "You wake rested")   # on a good bed the sleeper stays (bed.json): only moving, a stance key, a hit or the bed going wakes them
 
 	if state == 2:
 		if float(st["t"]) >= float(cfg.get("faint_s", 8.0)):
