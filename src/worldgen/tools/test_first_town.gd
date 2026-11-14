@@ -86,6 +86,7 @@ func _init() -> void:
 	items.ground_height = func(_x, _z): return 10.0
 	items.respawn_point = Vector3(5.0, 10.0, 5.0)
 	items.setup(table, dir)
+	items._goals_loaded = true   # no goals here: a goal's own reward (coins, or 4 sticks for twine) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "first-town-key01")
 	items._vitals_cfg["eat_pace_ms"] = 0
 	items.vitals_of(1)["weight"] = 90.0
