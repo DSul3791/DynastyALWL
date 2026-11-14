@@ -6782,6 +6782,7 @@ func split_trunk(id: int) -> bool:
 	_drop_scoped = true
 
 	var laid: int = 0
+	var feller_peer: Variant = _feller_peer(id)
 
 	for spot in spots:   # the log mesh lies along its x axis: turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
 		if drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius)):
@@ -6790,19 +6791,17 @@ func split_trunk(id: int) -> bool:
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
 	for extra in extras:
-		drop_in_world(int(extra[0]), int(extra[1]), heap, 0, SPLIT_LIFETIME_S)
+		if drop_in_world(int(extra[0]), int(extra[1]), heap, 0, SPLIT_LIFETIME_S):
+			_credit_feller(feller_peer, int(extra[0]), int(extra[1]))
 
 	for row in litter:
-		drop_in_world(int(row[0]), int(row[1]), row[2], 0, SPLIT_LIFETIME_S)
+		if drop_in_world(int(row[0]), int(row[1]), row[2], 0, SPLIT_LIFETIME_S):
+			_credit_feller(feller_peer, int(row[0]), int(row[1]))
 
 	_drop_scoped = false
 	_drop_scope = []
 	_dirty = true
-	var feller_peer: Variant = _peer_key.find_key(str(_fellers[id])) if _fellers.has(id) else null   # null when that character is not online
-
-	if feller_peer != null:
-		_goal_got(int(feller_peer), log_n, laid)   # the feller's gathering; a trunk cut by hand never splits by itself (blows > 0), so _cut_log_off's logs are not counted twice
-
+	_credit_feller(feller_peer, log_n, laid)   # a trunk cut by hand never splits by itself (blows > 0), so _cut_log_off's logs are not counted twice
 	_fellers.erase(id)
 
 	return true
@@ -6837,16 +6836,28 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 
 	var yaw: float = float(tree["yaw"])
 	var heap: Vector3 = it["pos"] + Vector3(sin(yaw), 0.0, cos(yaw)) * (float(tree["length"]) * 0.5) + Vector3(0.0, float(tree["radius"]), 0.0)
+	var feller_peer: Variant = _feller_peer(id)
 	_items.erase(id)
 
-	for row in rows:
-		drop_in_world(int(row[0]), int(row[1]), heap, 0, SPLIT_LIFETIME_S)
+	for row in rows + litter:
+		if drop_in_world(int(row[0]), int(row[1]), heap if row.size() < 3 else row[2], 0, SPLIT_LIFETIME_S):
+			_credit_feller(feller_peer, int(row[0]), int(row[1]))
 
-	for row in litter:
-		drop_in_world(int(row[0]), int(row[1]), row[2], 0, SPLIT_LIFETIME_S)
-
+	_fellers.erase(id)
 	_dirty = true
 	return true
+
+
+# The online peer who felled trunk `id`, null when no one is recorded or that character is not online (_fellers).
+func _feller_peer(id: int) -> Variant:
+	return _peer_key.find_key(str(_fellers[id])) if _fellers.has(id) else null
+
+
+# What a felled tree breaks into by itself is its feller's gathering, once (Dave 14 Nov 2026: "gathering counts when you pick it or cut it down or
+# harvest something by your own hand"): the logs, and the crown's sticks and leaves, bark, seeds and roots that land on the ground (goal got: counter).
+func _credit_feller(feller_peer: Variant, number: int, n: int) -> void:
+	if feller_peer != null:
+		_goal_got(int(feller_peer), number, n)
 
 
 # What one branch blow of a felled trunk gives (drops.json trunk.branch) when it is cut by hand, with the leaves sized to the crown (Dave 10 Nov 2026: "everyone
@@ -7021,10 +7032,11 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kind
 	var radius: float = float(tree["radius"])
 	var at: Vector3 = it["pos"] + along * (mid * cos(pitch)) + side * (radius + 0.7) + Vector3(0.0, sin(pitch) * mid + radius, 0.0)
 	var log_n: int = _log_number(str(tree.get("species", "")))
-	var dropped: bool = drop_in_world(table.number_of("kindling"), _pick_kindling(true), at) if as_kindling else drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius))
+	var kindling: int = _pick_kindling(true) if as_kindling else 0
+	var dropped: bool = drop_in_world(table.number_of("kindling"), kindling, at) if as_kindling else drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius))
 
-	if dropped and not as_kindling:
-		_goal_got(peer, log_n, 1)   # the log this player cut lands on the ground; picking it up later is not counted again (goal got: counter)
+	if dropped:   # the log or kindling pile this player cut lands on the ground; picking it up later is not counted again (goal got: counter)
+		_goal_got(peer, table.number_of("kindling") if as_kindling else log_n, kindling if as_kindling else 1)
 
 	if not dropped:
 		_say(peer, "Too many things lie here. Clear some away first.")
