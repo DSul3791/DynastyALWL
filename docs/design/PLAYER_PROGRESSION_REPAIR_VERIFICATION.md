@@ -158,7 +158,7 @@ Everything below is **PROVISIONAL**. None of it is approved. Each entry is in `R
 | A-32 | Bin storage form | units (1000/5000/10000), no kg cap |
 | A-33 | Is the 300 s pull interval real or game time? | 300 real seconds |
 | A-34 | A pull that empties someone's laid fire | the fire keeps its normal life |
-| A-35 | Roof names (roofs PR) | each tier's Roof becomes "<Tier> - Roof 45" and a "<Tier> - Roof 65" is added; goal and structure ids unchanged. Whether each Roof 65 gets a goal is listed in the catalog md. `DYNASTY_MASTER_ITEMS.md` still lists one "<Tier> - Roof" per tier: Dave to reconcile it with #1110 |
+| A-35 | Roof names (#1110) | Naming CONFIRMED by Dave (14 Nov 2026 05:29Z: "all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof", Fortified included). Still an assumption: a Roof 65 costs the same as its Roof 45. Goal and structure ids unchanged; rewards for the new Roof 65 goals are for Dave (catalog md) |
 
 These are also listed for your review: retirements made under the approved catalog (the standalone Smithy Bellows #909, the Blast furnace and `smelt_steel` 193, the Quenching trough), and the station display names Primitive smelter and Primitive smithy (REPAIR_DECISIONS §1).
 
@@ -171,7 +171,7 @@ These are also listed for your review: retirements made under the approved catal
 5. The HUD skipping goals whose mechanic isn't live (recommended: yes).
 6. The provisional values the corrected text teaches, and R-1 (above).
 
-**Earlier questions still open** (BUGLIST-001, PLAYTEST-001): the Crude Roof 45 and 65 names, backpack carry bonus 12/18 kg, the wicker basket (+8 kg) and rucksack (+24 kg) starting values, and the pickaxe kindling amounts (5 and 10 kindling per broken log, `docs/ai-team/missions/PLAYTEST-001/combat-tools.md`).
+**Earlier questions still open** (BUGLIST-001, PLAYTEST-001): backpack carry bonus 12/18 kg, the wicker basket (+8 kg) and rucksack (+24 kg) starting values, and the pickaxe kindling amounts (5 and 10 kindling per broken log, `docs/ai-team/missions/PLAYTEST-001/combat-tools.md`).
 
 ## 7. Recheck of the #1096 catalog rows against `dev` `54b2c51c`, then `d4b2473`
 

@@ -17,7 +17,7 @@
     - "Reachable" comes from the reach model in `tools/encyclopedia_reach.py`, run with the smelting jobs added (that tool does not know the self-running smelters yet). It is a static read of the data, not play. Every such row is NEEDS PLAYER VERIFICATION.
     - The correction text of those rows was spot-checked, not re-read row by row, against the final R3 and R4 data. The review of #1108 found stale R3/R4 text in `build:large_forge`, `craft:steel_ingot` and `build:blacksmithy`; it is corrected, and the 252 build rows' GAP-PRIM-F1 note now says #1095 is in dev.
     - The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/r9_reach_with_smelters.py . out.json` (it wraps `tools/encyclopedia_reach.py` and adds the smelting jobs; 1,072 items reachable on `d4b2473`).
-  - **Roof 45 and 65 (A-35, provisional; the roofs PR):** each tier's Roof is renamed "<Tier> - Roof 45" and a "<Tier> - Roof 65" is added. The five `build:*roof` rows for Rustic, Sturdy, Superior, Refined and Engineered now say "choose <Tier> - Roof 45" and are FIX (they were OK). Goal ids and structure ids are unchanged. The Crude pair (`build:thatch_roof`, `build:thatch_roof_65`) already had both goals. The five new 65 panels are listed below as possible goals for Dave; they are not rows yet. The roofs PR is #1110. `PLAYER_GOALS_REWARDS_DRAFT.md` and the audit CSVs are the historical review inputs and are left as they were; this catalog supersedes them.
+  - **Roof 45 and 65 (#1110; naming CONFIRMED by Dave (14 Nov 2026 05:29Z: "all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof", Fortified included)):** every tier has a "<Tier> - Roof 45" and a "<Tier> - Roof 65". A Roof 65 costing the same as its Roof 45 is still an assumption (A-35). The five `build:*roof` rows for Rustic, Sturdy, Superior, Refined and Engineered now say "choose <Tier> - Roof 45" and are FIX (they were OK). Goal ids and structure ids are unchanged. The Crude pair (`build:thatch_roof`, `build:thatch_roof_65`) already had both goals. The five new 65 panels and a Fortified pair are listed below as PROPOSED goals; their rewards are for Dave, and they are not rows yet. The roofs PR is #1110. `PLAYER_GOALS_REWARDS_DRAFT.md` and the audit CSVs are the historical review inputs and are left as they were; this catalog supersedes them.
     - Still blocked (29): the 24 locked water and garden blueprints (all now UNASSIGNED; their materials are reachable), R5 (`build:master_forge`, `activity:temper_steel`), R6 (`build:open_storage_bin`), `activity:operate_bellows` (no `bellows_iron` event) and `activity:chop_log_blocks` (no `made_item_any` check type).
   - The counts below include these changes.
 - **Rewards:** unchanged. Every ORIGINAL row carries the draft figure, which totals 15,670 copper. In the PROPOSED rows `reward_copper` is empty, and `notes` says "Reward: for Dave".
@@ -129,7 +129,7 @@ Ids from R5 and R6 are **not yet in dev**: they come from the blocking WP. The I
 | `activity:map_survey` | Map new ground | event `map_surveyed`, one per survey (every 8 m walked) that finds never-seen ground (count N for Dave: placeholder) | data/map.json, skill `mapping` (A-5) | WP-MAP (#1105) |
 | `activity:map_redraw` | Redraw an old map area | event `map_redrawn`, one per survey that redraws known ground at a higher skill | data/map.json revisit rule (A-5) | WP-MAP (#1105) |
 
-**Possible PROPOSED goals for Dave (A-35, not rows yet).** If Dave wants each Roof 65 to have its own goal, as Crude has (`build:thatch_roof_65`), these would be added with the structure ids the roofs PR sets. They have no reward until Dave sets one.
+**PROPOSED roof goals (not rows yet; rewards for Dave).** Each Roof 65 gets its own goal, as Crude has (`build:thatch_roof_65`), and Fortified gets both. Ids come from the structure ids #1110 and its Fortified extension set (no Fortified roof is in dev data yet). They have no reward until Dave sets one.
 
 | Possible id | Title | Completes when |
 |---|---|---|
@@ -138,6 +138,8 @@ Ids from R5 and R6 are **not yet in dev**: they come from the blocking WP. The I
 | `build:<Superior Roof 65 kind>` | Build Superior - Roof 65 | placed:<the roofs PR's kind> |
 | `build:<Refined Roof 65 kind>` | Build Refined - Roof 65 | placed:<the roofs PR's kind> |
 | `build:<Engineered Roof 65 kind>` | Build Engineered - Roof 65 | placed:<the roofs PR's kind> |
+| `build:<Fortified Roof 45 kind>` | Build Fortified - Roof 45 | placed:<the extension's kind> |
+| `build:<Fortified Roof 65 kind>` | Build Fortified - Roof 65 | placed:<the extension's kind> |
 
 The proposed How-to text for each goal is in the CSV `correction` column.
 
