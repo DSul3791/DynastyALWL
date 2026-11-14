@@ -37,6 +37,8 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const BagRules := preload("res://src/shared/bag_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
+const FarmRules := preload("res://src/shared/farm_rules.gd")   # what E does on a tilled bed or garden plot (WP-R1B)
+const CropLook := preload("res://src/client/crop_look.gd")   # PLACEHOLDER stage looks of a bed's crop
 const KEY_FILE := "user://player_key.txt"
 const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
@@ -211,6 +213,7 @@ var trail_mult: float = 1.0                 # Tracking skill -> trail life multi
 var _tracking_index: int = -1               # position of "tracking" in skills.json order, found once
 var _cooking_cfg: Dictionary = {}
 var _structures_cfg: Dictionary = {}
+var _crops_cfg: Dictionary = {}   # data/items/crops.json "crops", read once (_crop_cfg)
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
@@ -949,6 +952,9 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 	var station_def: Dictionary = _structure_by_state(state)
 
+	if _is_bed_def(station_def):   # a tilled bed or garden plot (FARMING_SPEC.md steps 3 to 5): E sows, waters or harvests; a plot, which has a kit, still comes down with hold E
+		return _bed_interaction(id, station_def, take_down)
+
 	if str(station_def.get("use", "")) == "storage_view":   # a Storage sign or Warehouse desk (catalog phase 9): E shows what the containers round it hold
 		return {"prompt": "Press E to see what is stored here (hold E to take it down)", "tap": func(): _storage_ui.ask_view(id), "hold": take_down}
 
@@ -995,6 +1001,81 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.sentence_name(table.number_of(str(station_def.get("fuel", "stick"))))]), "tap": tap, "hold": take_down}
 
 	return {"prompt": "Hold E to take down the %s" % table.sentence_name(_world[id]["number"]), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
+
+
+func _is_bed_def(def: Dictionary) -> bool:
+	return str(def.get("item", "")) == "tilled_bed" or bool(def.get("plot", false))
+
+
+# crops.json, read once: the client's wording needs the crop names, seeds and harvest tools (the server rules on all of it).
+func _crop_cfg() -> Dictionary:
+	if _crops_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+		_crops_cfg = parsed.get("crops", {}) if typeof(parsed) == TYPE_DICTIONARY else {"none": {}}
+
+	return _crops_cfg
+
+
+# The pack slot of the seed E would sow: the one in hand, else the first seed in the pack; -1 for none.
+func _seed_slot() -> int:
+	var hand: int = _hand_slot()
+
+	if hand >= 0 and hand < inventory.slot_count and inventory.numbers[hand] != 0 and FarmRules.crop_of_seed(_crop_cfg(), table.id_of(inventory.numbers[hand])) != "":
+		return hand
+
+	for slot in range(inventory.slot_count):
+		if inventory.numbers[slot] != 0 and FarmRules.crop_of_seed(_crop_cfg(), table.id_of(inventory.numbers[slot])) != "":
+			return slot
+
+	return -1
+
+
+# E on a bed: the one request FarmRules.bed_action words (sow the seed in hand or pack, water with the filled container in hand, harvest a ripe crop). The server does
+# the checking; a refusal (not the season, not ripe, too far) comes back as its notice.
+func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictionary:
+	var seed_slot: int = _seed_slot()
+	var water_slot: int = held_container_slot() if held_container_has_water() else -1
+	var row: Dictionary = _world[id]
+	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot >= 0)
+	var found: Dictionary = {"prompt": plan["prompt"], "tap": func():
+		match str(plan["act"]):
+			"sow":
+				net.inventory_action.rpc_id(1, Net.ACT_SOW, id, seed_slot, 0, Vector3.ZERO)
+			"harvest":
+				net.inventory_action.rpc_id(1, Net.ACT_HARVEST, id, 0, 0, Vector3.ZERO)
+			"water":
+				net.inventory_action.rpc_id(1, Net.ACT_WATER_BED, id, water_slot, 0, Vector3.ZERO)   # b: the container in hand, which the server draws the water from
+			_:
+				show_notice(str(plan["prompt"]))}
+
+	if str(def.get("kit", "")) != "":
+		found["hold"] = take_down
+
+	return found
+
+
+# A bed's crop and stage from its world row (server_items.crop_row_extra): kept on the record for the E prompt, with its PLACEHOLDER stage look hung on the bed's node;
+# swapped when the stage changes and dropped when the crop is gone (harvest, frost).
+func _note_crop(id: int, row: Array) -> void:
+	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+	var crop: String = str(extra.get("crop", ""))
+	var stage: int = int(extra.get("stage", 0)) if crop != "" else -1
+	var rec: Dictionary = _world[id]
+
+	if str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage:
+		return
+
+	if is_instance_valid(rec.get("crop_node")):
+		(rec["crop_node"] as Node).queue_free()
+
+	rec["crop"] = crop
+	rec["stage"] = stage
+	rec["crop_node"] = null
+
+	if crop != "":
+		var look: Node3D = CropLook.build(crop, stage, float(_structure_by_state(int(rec["state"])).get("footprint_x", 1.0)))
+		(rec["node"] as Node3D).add_child(look)
+		rec["crop_node"] = look
 
 
 func press_e() -> bool:
@@ -2569,6 +2650,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 				_note_platter(id, row, state)
 				_note_store(id, row)
+				_note_crop(id, row)
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
 				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
@@ -2633,6 +2715,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_note_store(id, row)
 
 			_note_platter(id, row, state)
+			_note_crop(id, row)
 
 			if site_extra != null:
 				pass   # a site is walked through and climbed by nobody until it is finished

@@ -4812,6 +4812,11 @@ func _sync_world_items() -> void:
 				if fill >= 0:
 					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
 
+				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
+
+				if not crop_extra.is_empty():
+					signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997)   # a crop sown, grown a stage or gone (harvested, frost) is sent again
+
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
 
@@ -4855,6 +4860,9 @@ func _sync_world_items() -> void:
 
 						if fill >= 0:
 							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
+
+						if not crop_extra.is_empty():
+							(added[added.size() - 1][5] as Dictionary).merge(crop_extra)   # a bed's crop and stage (FARMING_SPEC.md step 6): the client draws the stage and words its E prompt
 					known[id] = signature
 
 		for bog in _bog_rows_near(peer, here):
@@ -14079,7 +14087,7 @@ func take_nest(peer: int, inv) -> bool:
 # crop (data/items/crops.json); a game day that ends with the bed's moisture at wet_min_pct or more (plot_water.gd: rain and pours fill it, the weather dries it) counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
 # pauses growth (turnip excepted) and frost kills a seedling; compost speeds one crop cycle by 20 percent; E on a ripe crop gives its yields (half without the sickle
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (key "x,z" of the bed). The client side
-# (a hoe mode that sends ACT_TILL, a seed use that sends ACT_SOW, E on a crop that sends ACT_HARVEST, the stage looks) is not built: see PROTOCOL.md.
+# (hoe till mode, E on a bed to sow, water or harvest, the placeholder stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
 const TILLED_STATE := 47
 var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured (one pour a day)}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
@@ -14660,7 +14668,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
 
 	if not sow_seasons.has(_season()):
-		_say(peer, "Wrong season to sow %s" % table.in_sentence(str(def.get("name", crop_id))))
+		_say(peer, "Not the season for %s." % table.in_sentence(str(def.get("name", crop_id))))
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
@@ -14704,6 +14712,15 @@ func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	crop["compost"] = true
 	_dirty = true
 	return true
+
+
+# A bed's world-row extra: {"crop": crop id, "stage": 0 to 3} for a bed with a crop on it, {} for an empty bed or any other piece (no protocol bump: PROTOCOL.md, row extras).
+func crop_row_extra(it: Dictionary) -> Dictionary:
+	if not _is_plot_kind(str(it["struct"].get("kind", ""))):
+		return {}
+
+	var crop: Dictionary = _crops.get(_bed_key(it["pos"]), {})
+	return {} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop)}
 
 
 # The stage of a crop 0 seedling .. 3 ripe; a crop short of water stays at 2.
