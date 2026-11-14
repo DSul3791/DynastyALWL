@@ -85,7 +85,8 @@ class Acc:
 		tri(a, b, d)
 		tri(a, d, e)
 
-	func commit(mesh: ArrayMesh, material: Material) -> void:
+	# Adds this accumulator as one surface [arrays, material] to `out` (plain data, safe on a worker thread; to_mesh makes the mesh on the main thread).
+	func commit(out: Array, material: Material) -> void:
 		if v.is_empty():
 			return
 
@@ -96,8 +97,7 @@ class Acc:
 		arrays[Mesh.ARRAY_TEX_UV] = uv
 		arrays[Mesh.ARRAY_COLOR] = c
 		arrays[Mesh.ARRAY_INDEX] = i
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		mesh.surface_set_material(mesh.get_surface_count() - 1, material)
+		out.append([arrays, material])
 
 
 # `materials`: {"bark": Material, "broad": Material, "conifer": Material, "palm": Material,
@@ -105,9 +105,26 @@ class Acc:
 # have a bare model (birch) no leaves; anything else gives the leafy model (the
 # leaf color is the per-tree tint, so summer and autumn share one model).
 static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false, fruit_share: float = 1.0) -> ArrayMesh:
+	return to_mesh(build_surfaces(entry, h, variant, far, materials, season, stripped, mid, fruit_share))
+
+
+# Makes the mesh of build_surfaces' surfaces. Main thread only.
+static func to_mesh(surfaces: Array) -> ArrayMesh:
+	var mesh: ArrayMesh = ArrayMesh.new()
+
+	for surface in surfaces:
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface[0])
+		mesh.surface_set_material(mesh.get_surface_count() - 1, surface[1])
+
+	return mesh
+
+
+# One model as plain surfaces [[mesh arrays, material], ...], without making a mesh. Worker threads call this: an ArrayMesh made off the main thread
+# crashed the client at join (signal 11 after "can't call propagate_notification()", David4 smoke 14 Nov 2026); the main thread calls to_mesh.
+static func build_surfaces(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false, fruit_share: float = 1.0) -> Array:
 	# A flower or herb out of its season is not there at all (Dave 2026-10-31); only rows flagged "seasonal": true in flora.json are built per season, so the flag is also the switch.
 	if season != "" and bool(entry.get("seasonal", false)) and str(entry.get("model", entry.get("shape", ""))) in ["wildflower", "herb_nettle", "flower"] and not in_season(entry, season):
-		return ArrayMesh.new()
+		return []
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
@@ -232,18 +249,18 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 	_crown_variety(entry, leaves, twigs, bark, variant, h, crown, far)
 
-	var mesh: ArrayMesh = ArrayMesh.new()
-	bark.commit(mesh, materials["bark"])
-	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
-	smooth.commit(mesh, materials.get("smooth_bark", materials["bark"]))
-	fruit.commit(mesh, materials.get("fruit", materials.get("smooth_bark", materials["bark"])))
-	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
-	ember.commit(mesh, materials.get("ember", materials["bark"]))
-	greens.commit(mesh, materials.get("greens", materials["bark"]))
-	fungi.commit(mesh, materials.get("fungus", materials["bark"]))
-	berries.commit(mesh, materials.get("berry", materials["bark"]))
-	petals.commit(mesh, materials.get("petal", materials["bark"]))
-	twigs.commit(mesh, materials.get("twig", materials["broad"]))
+	var surfaces: Array = []
+	bark.commit(surfaces, materials["bark"])
+	white.commit(surfaces, materials.get("birch_bark", materials["bark"]))
+	smooth.commit(surfaces, materials.get("smooth_bark", materials["bark"]))
+	fruit.commit(surfaces, materials.get("fruit", materials.get("smooth_bark", materials["bark"])))
+	chrome.commit(surfaces, materials.get("chrome", materials["bark"]))
+	ember.commit(surfaces, materials.get("ember", materials["bark"]))
+	greens.commit(surfaces, materials.get("greens", materials["bark"]))
+	fungi.commit(surfaces, materials.get("fungus", materials["bark"]))
+	berries.commit(surfaces, materials.get("berry", materials["bark"]))
+	petals.commit(surfaces, materials.get("petal", materials["bark"]))
+	twigs.commit(surfaces, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
 
@@ -267,8 +284,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 	# A species can name its own leaf texture (oak: lobed leaves).
 	leaf_kind = str(entry.get("leaf", leaf_kind))
-	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
-	return mesh
+	leaves.commit(surfaces, materials.get(leaf_kind, materials["broad"]))
+	return surfaces
 
 
 # The butt radius of the trunk `build` draws for this species, variant and height (before root flare and flutes). The server lays a felled trunk, its
