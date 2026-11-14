@@ -1,8 +1,8 @@
 extends SceneTree
 
 # Starter goals (data/items/starter_goals.json, Sal; code by Tyler 31 Oct 2026): the real first-hour goals, played on the server logic. Drink at the water, gather
-# fibre, twist twine, make the axe, fell a tree, make and light a fire, build a lean-to and a workbench. Checks: each goal completes when its check is met, its reward
-# is given (coins or items), a goal completes out of its authored order (`after` is no lock, GA-40), the player is told "Goal done" and the next goal, goal_done
+# fibre, twist twine, make the axe, fell a tree, make and light a fire, build a lean-to and a workbench. Checks: each goal completes when its check is met, it pays its
+# stage's copper (coins only), a goal completes out of its authored order (`after` is no lock, GA-40), the player is told "Goal done" and the next goal, goal_done
 # goes to the client once per completion with the copper paid, the done goals are saved with the character and still done after a restart, a rejoin sends the
 # list silently and pays nothing again, the next tick saves (GA-55), and Admin mode and admin gives earn nothing (GA-54). Protocol 119.
 #   godot --headless --path . --script res://src/worldgen/tools/test_goals.gd
