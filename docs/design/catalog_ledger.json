@@ -2961,7 +2961,7 @@
     "test_roof_panels"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Refined - Roof (id, number and state 24 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Refined - Roof (id, number and state 24 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\")."
   },
   {
    "key": "foundation_section_kit",
@@ -6899,7 +6899,7 @@
     "test_roof_panels"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Rustic - Roof (id, number and state 52 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Rustic - Roof (id, number and state 52 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\")."
   },
   {
    "key": "stone_wall_kit",
@@ -6985,7 +6985,7 @@
     "test_roof_panels"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Sturdy - Roof (id, number and state 55 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Sturdy - Roof (id, number and state 55 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\")."
   },
   {
    "key": "brick_wall_kit",
@@ -7071,7 +7071,7 @@
     "test_roof_panels"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Superior - Roof (id, number and state 58 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Superior - Roof (id, number and state 58 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\")."
   },
   {
    "key": "log_cabin_set_kit",
@@ -12766,7 +12766,7 @@
     "test_roof_panels"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Engineered - Roof (id, number and state 219 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. PROVISIONAL, for Dave to confirm."
+   "note": "GOALS-REPAIR A-35 (14 Nov 2026): renamed from Engineered - Roof (id, number and state 219 kept); now a 45 degree roof panel with no posts, the Crude panel's rules. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\")."
   },
   {
    "key": "engineered_roof_corner_kit",
@@ -17324,7 +17324,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Rustic - Roof 45, blueprint 310, structure state 380, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Rustic - Roof 45, blueprint 310, structure state 380, same materials. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\"); equal cost PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Refined - Roof 65",
@@ -17342,7 +17342,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Refined - Roof 45, blueprint 311, structure state 381, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Refined - Roof 45, blueprint 311, structure state 381, same materials. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\"); equal cost PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Sturdy - Roof 65",
@@ -17360,7 +17360,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Sturdy - Roof 45, blueprint 312, structure state 382, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Sturdy - Roof 45, blueprint 312, structure state 382, same materials. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\"); equal cost PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Superior - Roof 65",
@@ -17378,7 +17378,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Superior - Roof 45, blueprint 313, structure state 383, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Superior - Roof 45, blueprint 313, structure state 383, same materials. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\"); equal cost PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Engineered - Roof 65",
@@ -17396,7 +17396,43 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Engineered - Roof 45, blueprint 314, structure state 384, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+   "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Engineered - Roof 45, blueprint 314, structure state 384, same materials. Name confirmed by Dave 14 Nov 2026 (\"all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof\"); equal cost PROVISIONAL. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Fortified - Roof 45",
+   "id": "fortified_roof",
+   "number": 1325,
+   "name": "Fortified - Roof 45",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR (14 Nov 2026), Dave: \"all tiers get a tier - Roof 45 and tier - Roof 65\": blueprint 315, structure state 391; cost Engineered - Roof 45 plus 4 Iron band, PROVISIONAL (GOALS-REPAIR A-39). Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Fortified - Roof 65",
+   "id": "fortified_roof_65",
+   "number": 1326,
+   "name": "Fortified - Roof 65",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_roof_panels",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR (14 Nov 2026), Dave: \"all tiers get a tier - Roof 45 and tier - Roof 65\": blueprint 316, structure state 392; cost Engineered - Roof 45 plus 4 Iron band, PROVISIONAL (GOALS-REPAIR A-39). Not run: the Godot tests wait for the test PC."
   }
  ],
  "acceptance_note": "Mission 001 (12 Nov 2026): TESTED - ACCEPTED means implemented, independently reviewed and passing automated server-side tests (per-phase tests, the integrated walkthrough test_mission001_walkthrough, full suite 358/360 with 2 known flakes at aa8113c33). NOT included: in-game visual, UI and two-client checks, which were not run, and final art: most new pieces use marked placeholder looks. RETIRED - MIGRATION VERIFIED: retired with numbers kept and tests passing; Dave ruled no old-save migration is needed (new game)."
