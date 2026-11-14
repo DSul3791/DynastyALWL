@@ -190,10 +190,10 @@ func route() -> void:
 	pick_up(["stone", "stick", "plant_fibre", "thatch"])
 	check(have("stone") >= 8 and have("stick") >= 30 and have("plant_fibre") >= 42 and have("thatch") >= 20, "the heaps are gathered by hand (%d stones, %d sticks, %d fibre, %d thatch)" % [have("stone"), have("stick"), have("plant_fibre"), have("thatch")])
 
-	# Tools: twine from fibre (recipe 1), then the Stone Axe (recipe 2); the axe goes on the hotbar.
+	# Tools: twine from fibre (recipe 1: 3 fibre each, 14 crafts = 14 twine), then the Stone Axe (recipe 2: 1 stone, 1 stick, 2 twine, so 12 twine are left); the axe goes on the hotbar.
 	craft(1, 14, 60)
 	craft(2, 1, 15)
-	check(have("twine") >= 13 and have("stone_axe") == 1 and counts("made:stone_axe") == 1 and done("axe"), "twine and the Stone Axe are made by hand and the axe goal is done (%d twine)" % have("twine"))
+	check(have("twine") == 12 and have("stone_axe") == 1 and counts("made:stone_axe") == 1 and done("axe"), "twine and the Stone Axe are made by hand and the axe goal is done (%d twine)" % have("twine"))
 	to_hotbar("stone_axe", 0)
 
 	# Tree: fell the oak with the axe in hand.
