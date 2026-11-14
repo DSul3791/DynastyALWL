@@ -6532,6 +6532,20 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 			else:
 				give(peer, table.number_of(str(own[0][0])), roll_amount(peer, rng, int(own[0][1]), int(own[0][2])))
 
+		if not by_pick:
+			var extra_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # its own stream: the first row's rolls above stay what they were
+			extra_rng.seed = rng.seed ^ EXTRA_ROWS_SEED
+
+			for row in (cfg.get("by_species", {}).get(str(tree.get("species", "")), []) as Array).slice(1):   # the rows after the first: willow withies, Scots pine tar (GOALS-REPAIR GA-02)
+				if roll_chance(peer, extra_rng, float(cfg.get("seed_chance", 0.15))):
+					give(peer, table.number_of(str(row[0])), roll_amount(peer, extra_rng, int(row[1]), int(row[2])))
+
+			var stripped: Array = _bark_row(cfg, str(tree.get("species", "")))   # the felled trunk's bark, once per tree (GOALS-REPAIR GA-01)
+
+			if not stripped.is_empty() and not bool(tree.get("bark_taken", false)):
+				tree["bark_taken"] = true
+				give(peer, int(stripped[0]), int(stripped[1]))
+
 		if int(tree["logs_left"]) <= 0:
 			var roots: Array = cfg.get("roots", [])
 
@@ -6868,6 +6882,20 @@ func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> A
 	return rows
 
 
+const EXTRA_ROWS_SEED := 0x2f6e2b1   # the stream of a trunk's extra by_species rows (_trunk_extras, _process_trunk)
+
+
+# The bark a felled trunk of `species` gives once, as [item number, count], or [] for a species that gives none: drops.json trunk "bark_species" names them,
+# and the amount is that species' harvest_yield row (oak: tannin_bark 3; GOALS-REPAIR GA-01). A standing tree is never stripped: E on it is not offered.
+func _bark_row(cfg: Dictionary, species: String) -> Array:
+	if not (cfg.get("bark_species", []) as Array).has(species):
+		return []
+
+	var row: Dictionary = (_drops.get("harvest_yield", {}) as Dictionary).get(species, {})
+	var number: int = table.number_of(str(row.get("item", "")))
+	return [number, int(row.get("count", 0))] if number > 0 and int(row.get("count", 0)) > 0 else []
+
+
 # What cutting a trunk by hand gives besides the logs, as [item number, count] rows, for a trunk of `logs` whole logs (_process_trunk): the branch blows' sticks and leaves,
 # then per log the bark (or thatch) and seed rolls, and the root ball at the end. Rolled from the trunk's id like hand cutting; no player, so no luck (world drops).
 func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_branches: bool = true) -> Array:
@@ -6898,6 +6926,20 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_b
 		if rng.randf() < float(cfg.get("seed_chance", 0.15)):   # luck-exempt: world drop, no player
 			var sn: int = table.number_of("seed_bundle") if own.is_empty() else table.number_of(str(own[0][0]))
 			totals[sn] = int(totals.get(sn, 0)) + (1 if own.is_empty() else rng.randi_range(int(own[0][1]), int(own[0][2])))   # luck-exempt: world drop, no player
+
+	var extra_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # the rows after the first (willow withies, Scots pine tar) roll on their own stream, so the rolls above stay what they were
+	extra_rng.seed = rng.seed ^ EXTRA_ROWS_SEED
+
+	for k in range(logs):
+		for row in own.slice(1):
+			if extra_rng.randf() < float(cfg.get("seed_chance", 0.15)):   # luck-exempt: world drop, no player
+				var xn: int = table.number_of(str(row[0]))
+				totals[xn] = int(totals.get(xn, 0)) + extra_rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
+
+	var stripped: Array = _bark_row(cfg, species)   # the trunk's own bark, once (GOALS-REPAIR GA-01)
+
+	if not stripped.is_empty():
+		totals[int(stripped[0])] = int(totals.get(int(stripped[0]), 0)) + int(stripped[1])
 
 	var roots: Array = cfg.get("roots", [])
 

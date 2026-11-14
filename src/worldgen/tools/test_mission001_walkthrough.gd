@@ -403,6 +403,35 @@ func leave(keep: Dictionary) -> void:
 				break
 
 
+# Tannin bark by the player's route (GOALS-REPAIR GA-01): felled oak trunks (the fall itself: test_fell_autosplit) cut up with the Stone - Axe in hand, far from the
+# stations so their logs are no craft stock. Each oak gives its drops.json harvest_yield count, once. The player is put back where they were.
+func bark_from_oaks(wanted: int) -> void:
+	var back: Vector3 = items.position_of(1)
+	var per_oak: int = int(items._drops["harvest_yield"]["oak"]["count"])
+	var oaks: int = ceili(float(wanted) / float(per_oak))
+	var have_before: int = have("tannin_bark")
+
+	for k in range(oaks):
+		var id: int = 960000 + k
+		var at: Vector3 = Vector3(300.0 + float(k) * 40.0, 10.0, 300.0)
+		items._items[id] = {"number": 0, "count": 1, "pos": at, "left": 1.0e9, "tree": {"state": 3, "species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 9.0, "radius": 0.3, "chunk": [4, 4]}}
+
+		for blow in range(40):
+			if not items._items.has(id):
+				break
+
+			var tree: Dictionary = items._items[id]["tree"]
+			var logs_phase: bool = int(tree.get("blows", 0)) >= int(items._drops["trunk"]["branch_blows"]) and int(tree.get("logs_left", 0)) > 0
+			var length_now: float = float(tree["length"])
+			var piece: float = length_now if int(tree.get("logs_left", 0)) <= 1 else minf(float(items._drops["trunk"]["log_length_m"]), length_now)
+			go(at + Vector3(0.3, 0.0, (length_now - piece * 0.5) if logs_phase else 0.5))
+			items._last_process.erase(1)
+			items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
+
+	go(back)
+	check(have("tannin_bark") - have_before == oaks * per_oak, "tannin bark came off %d felled oaks, %d each, cut with the axe (%d)" % [oaks, per_oak, have("tannin_bark") - have_before])
+
+
 func pack_str(peer: int = 1) -> String:
 	var out: Array = []
 	var pinv = items.inventory_of(peer)
@@ -603,13 +632,14 @@ func step3_construction_and_equipment() -> void:
 	craft("hide_scraper", 1)
 	check(have("hide_scraper") == 1, "3b. a hide scraper at the workbench")
 
-	# Leather: the hide scraped and dried at a Drying rack, tanned at a Tanning rack (tannin bark and water are given as test_textile_route gives them: no route test proves stripping bark or drawing water, T19_RESULTS gaps).
+	# Leather: the hide scraped and dried at a Drying rack, tanned at a Tanning rack (tannin bark: felled oaks cut up with the axe, bark_from_oaks; water is given as test_textile_route gives it: no route test proves drawing it, T19_RESULTS gaps).
 	give_cost("drying_rack", ["stick"])
 	build("drying_rack", WORKSHOP + Vector3(-3.0, 0.0, 0.5), "3c")
 	craft("processed_hide", 2)
 	give_cost("tanning_rack", ["log"])   # logs felled and worked (test_first_hour)
 	build("tanning_rack", WORKSHOP + Vector3(0.0, 0.0, -3.5), "3c")
-	give_needs("leather", ["tannin_bark", "water"], 2)
+	bark_from_oaks(need_of("leather", "tannin_bark") * 2)
+	give_needs("leather", ["water"], 2)
 	craft("leather", 2)
 	check(have("leather") == 2 and have("processed_hide") == 0, "3c. two hides scraped, dried and tanned into Leather")
 
