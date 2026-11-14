@@ -15807,7 +15807,7 @@ func _hints_check(peer: int) -> void:
 # Goals (data/items/starter_goals.json by Sal, camp_goals.json; Tyler 31 Oct 2026; GOALS-REPAIR WP-GUIDE-UI 14 Nov 2026): the guide's goals in their authored order.
 # Every goal tracks on its own from the start of the character and completes the moment its check is met, in any order (GA-40): `after` names the goals
 # taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
-# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished), {got_item, count} (gathered first-hand, _goal_got), {have_item, count} and {have_item_any: [ids], count}
+# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {have_item, count} and {have_item_any: [ids], count}
 # (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
 # goal_counts, the same atomic file as the coins); the reward ({coin_copper: n} into the purse, or {item: [id, n]} into the pack) is paid in the same step and a
 # save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
@@ -15968,6 +15968,14 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 			made = maxi(made, _goal_have(st, inv, str(check["made_item"])))
 
 		return made >= need
+
+	if check.has("made_item_any"):   # crafts of any of these ids add up: the four kinds of wooden block (chop_log_blocks, GAP-GUIDE-ANY)
+		var made_any: int = 0
+
+		for id in check["made_item_any"]:
+			made_any += int(st["goal_counts"].get("made:" + str(id), 0))
+
+		return made_any >= need
 
 	if inv == null:
 		return false
