@@ -2046,7 +2046,7 @@ func _hoe_repeat(delta: float) -> void:
 # What the hoe's mode does (left click, held). Grade needs points A and B (Shift + right click); Shift + left click grades in any mode.
 const HOE_MODES := [
 	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
-	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
+	{"id": "smooth", "name": "Smooth", "note": "levels the ground about 3 m round to where you stand (a little under your feet on a foundation), no path"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
 	{"id": "garden", "name": "Garden", "note": "plant seeds or a dug-up bush from your pack (the next list picks which)"},

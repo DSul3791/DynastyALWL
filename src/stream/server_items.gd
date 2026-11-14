@@ -2787,10 +2787,19 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 # --- The garden hoe (Dave 2026-10-22, items/HOE_AND_SHOVEL_DESIGN.md) ---
 # Path: one stroke treads the metre of ground under the crosshair: a path patch (state 32) clears the grass and draws flat tan; the height does
-# not change. Smooth: ground is MOVED within SMOOTH_REACH_M of the point, cut from the spots above the average height and put on the spots
-# below it (volume balanced), at most SMOOTH_MAX_M a stroke. No items go in or out; the only cost is the hoe's own wear.
+# not change. Smooth (the levelling stroke, _hoe_smooth): the ground within SMOOTH_REACH_M of the point is cut or filled toward the height the player
+# stands at. No items go in or out; the only cost is the hoe's own wear.
 const HOE_COOLDOWN_MS := 500
-const SMOOTH_REACH_M := 1.5
+# Levelling (Dave 14 Nov 2026: "its to small an area and its too week"; "make the ground level with where you are standing and if you are standing on say a
+# foundation it make the ground just a little bit below your feet so it stays below the top of the foundation", the Valheim feel). PROVISIONAL values for Dave
+# to tune. Before: 5 spots (the point and 1 m each way), toward their own average, at most 0.25 m a spot a stroke, 0.9 m spheres.
+const SMOOTH_REACH_M := 3.0       # the point, a ring of 8 spots at half this and a ring of 8 at this: 17 spots over a 6 m circle
+const LEVEL_MAX_M := 0.5          # at most this much cut or filled at a spot a stroke
+const LEVEL_MIN_M := 0.03         # a spot this close to the target height is left alone
+const LEVEL_SPHERE_M := 1.2       # the cut and fill spheres, wide enough that neighbouring spots (1.5 m apart) join into one surface
+const LEVEL_MAX_OPS := 8          # at most this many ground edits a stroke, the biggest first (every edit is a message to every client and a remesh)
+const LEVEL_ON_PIECE_M := 0.2     # feet this far above the ground under them stand on something built (a foundation, a floor)...
+const LEVEL_BELOW_PIECE_M := 0.1  # ...and the ground is levelled this far below the feet, so the soil stays under the top of the piece
 const SMOOTH_MAX_M := 0.25
 const SMOOTH_MIN_M := 0.04
 const SMOOTH_SPHERE_M := 0.9
@@ -3000,19 +3009,54 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if hoe < 0:
 		return
 
-	var spots: Array = [Vector2.ZERO, Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.0, -1.0)]
+	var feet: Vector3 = _peer_pos[peer]
+	var under: float = float(ground_height.call(feet.x, feet.z))
 
-	for offset in spots:
-		if is_nan(float(ground_height.call(at.x + offset.x, at.z + offset.y))):
-			return
+	if is_nan(under):
+		return
 
-	if not _average_ground(at, spots):
-		_say(peer, "The ground here is already smooth, or worked enough.")
+	var target: float = feet.y - LEVEL_BELOW_PIECE_M if feet.y - under > LEVEL_ON_PIECE_M else under   # on a foundation: a little below the feet; on the ground: the ground the player stands on
+	var spots: Array = [Vector2.ZERO]
+
+	for k in 8:
+		spots.append(Vector2.from_angle(float(k) * TAU / 8.0) * SMOOTH_REACH_M * 0.5)
+		spots.append(Vector2.from_angle(float(k) * TAU / 8.0) * SMOOTH_REACH_M)
+
+	if not _level_ground(at, spots, target):
+		_say(peer, "The ground here is already level with where you stand.")
 		return
 
 	_wear_slot(peer, inv, hoe, "dig")
 	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
 	_dirty = true
+
+
+# Cuts or fills the ground at the sample spots (offsets from `at`) toward `target`: at most LEVEL_MAX_M a spot, LEVEL_MAX_OPS edits, the farthest from level first.
+# Not volume balanced (the Valheim feel Dave asked for): the soil is the hoe's to move. True when any ground moved.
+func _level_ground(at: Vector3, spots: Array, target: float) -> bool:
+	var moves: Array = []   # [spot, ground height, depth, +1 cut / -1 fill]
+
+	for offset in spots:
+		var h: float = float(ground_height.call(at.x + offset.x, at.z + offset.y))
+
+		if is_nan(h):
+			return false
+
+		if absf(h - target) >= LEVEL_MIN_M:
+			moves.append([offset, h, minf(absf(h - target), LEVEL_MAX_M), 1 if h > target else -1])
+
+	moves.sort_custom(func(p, q): return float(p[2]) > float(q[2]))
+	var worked: int = 0
+
+	for move in moves.slice(0, LEVEL_MAX_OPS):
+		var spot: Vector3 = Vector3(at.x + move[0].x, float(move[1]), at.z + move[0].y)
+		var depth: float = float(move[2])
+		var done: Variant = dig_ground.call(Vector3(spot.x, spot.y - depth + LEVEL_SPHERE_M, spot.z), LEVEL_SPHERE_M) if int(move[3]) > 0 else fill_ground.call(Vector3(spot.x, spot.y + depth - LEVEL_SPHERE_M, spot.z), LEVEL_SPHERE_M, int(FILL_SOIL["soil"]))
+
+		if typeof(done) != TYPE_BOOL or bool(done):
+			worked += 1
+
+	return worked > 0
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.

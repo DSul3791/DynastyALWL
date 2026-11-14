@@ -955,8 +955,20 @@ func _init() -> void:
 	accept[0] = true
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 1 and fills.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "smoothing cuts the high spot and fills the low ones (%d cuts, %d fills)" % [digs.size(), fills.size()])
-	check(patches_of.call() == 1, "smoothed ground loses its path patches within 2.5 m (the far one stays)")
+	# Levelling (Dave 14 Nov 2026): 17 spots over a 6 m circle toward the ground the player stands on (10.0 at x 5): the 6 spots past the 0.4 m step at x 6.5 are cut, none filled.
+	check(digs.size() == 6 and fills.is_empty() and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "levelling cuts the 6 high spots down to the ground the player stands on, fills nothing (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	check(digs.all(func(d): return absf(float(d[1]) - ItemsScript.LEVEL_SPHERE_M) < 0.001 and absf(float(d[0].y) - (10.0 + ItemsScript.LEVEL_SPHERE_M)) < 0.001), "each cut takes the whole 0.4 m step at once (bottom of the cut sphere at the player's ground)")
+	check(digs.any(func(d): return float(d[0].x) > 8.5), "the levelling reaches 3 m from the point")
+	check(patches_of.call() == 0, "levelled ground loses its path patches within 4 m (all three, the farthest 3.6 m away)")
+	# Standing on a foundation 0.5 m up: the ground is levelled to 0.1 m below the feet (10.4), so the low ground is filled and the high spots, already there, left alone.
+	digs.clear()
+	fills.clear()
+	m._last_dig.clear()
+	m.report_position(1, Vector3(5.0, 10.5, 0.0))
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.is_empty() and fills.size() == ItemsScript.LEVEL_MAX_OPS, "on a foundation: the low ground is filled toward just under the feet, at most %d edits a stroke (%d cuts, %d fills)" % [ItemsScript.LEVEL_MAX_OPS, digs.size(), fills.size()])
+	check(fills.all(func(f): return absf(float(f[0].y) + ItemsScript.LEVEL_SPHERE_M - 10.4) < 0.001), "each fill tops out at 10.4, a tenth below the feet")
+	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	# The grade line: nothing happens before both points are set; then a stroke brings the high side toward the ramp (A 10.0 at x 4 to B 10.2 at x 8).
 	digs.clear()
 	fills.clear()
