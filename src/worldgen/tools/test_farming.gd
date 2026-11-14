@@ -305,7 +305,7 @@ func _hoe_plot_checks() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var hoe_slot: int = HeldTool.slot_of(items, "hoe")
 	check(hoe_slot >= 0 and hoe_slot < 10 and HeldTool.slot_of(items, "hammer") < 0, "the farmer has a hoe on the hand bar and no hammer")
-	var plot_bp: int = int(items._blueprint_of_kit["thatch_garden_plot_kit"])
+	var plot_bp: int = int(items._blueprint_of_kit["wooden_garden_plot_kit"])
 	notes.clear()
 	var count_before: int = items._items.size()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, plot_bp, 0, 0, Vector3(4.0, 10.0, 4.0))
@@ -374,6 +374,34 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	items.place_piece(1, "flower_pot_kit", Vector3(2.7, 10.0, 2.7))   # free build, as from the hammer (the Flower pot kit itself is retired)
 	check(items._items.size() == before and notes.has("A bed or planter is already in that spot."), "a second flower pot in the same metre cell is refused (%s)" % str(notes))
 	items._items.erase(920006)
+
+
+# Gardening plots (Dave 14 Nov 2026: "Gardening plots can come in three sizes small medium and large ... A small takes two planks and eight nails a medium
+# takes three planks, and eight nails and a large takes four planks, and eight nails"; no tiers): the three blueprints and footprints, and a saved Thatch,
+# Stone or Brick plot loads as the Medium one.
+func _plot_size_checks(dir: String) -> void:
+	for row in [["small_garden_plot", 1.0, 2], ["wooden_garden_plot", 2.0, 3], ["large_garden_plot", 3.0, 4]]:
+		var bp: Dictionary = items._blueprints.get(int(items._blueprint_of_kit.get(str(items._structures.get(str(row[0]), {}).get("kit", "")), 0)), {})
+		var def: Dictionary = items._structures.get(str(row[0]), {})
+		check(bp.get("cost", []) == [["lumber", int(row[2])], ["nails", 8]] and is_equal_approx(float(def.get("footprint_x", 0.0)), float(row[1])) and bool(def.get("plot", false)), "%s: %d m square, %d planks and 8 nails (%s)" % [str(bp.get("name", row[0])), int(row[1]), int(row[2]), str(bp.get("cost", []))])
+
+	for old in ["thatch_garden_plot", "stone_garden_plot", "brick_garden_plot"]:
+		check(not items._structures.has(old), "the %s tier is gone" % old)
+
+	var spot: Vector3 = Vector3(60.0, 10.0, 60.0)
+	items._items[920007] = {"number": items.table.number_of("stone_garden_plot"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "stone_garden_plot", "yaw": 0.0}}   # what an old save holds
+	items._dirty = true
+	items.save()
+	items._finish_writer()
+	var again = make(dir)
+	var found: Dictionary = {}
+
+	for id in again._items:
+		if again._items[id].has("struct") and (again._items[id]["pos"] as Vector3).distance_to(spot) < 0.01:
+			found = again._items[id]
+
+	check(not found.is_empty() and str(found["struct"]["kind"]) == "wooden_garden_plot" and int(found["number"]) == again.table.number_of("wooden_garden_plot"), "a saved Stone - Garden plot loads as the Medium gardening plot (%s)" % str(found.get("struct", {})))
+	items._items.erase(920007)
 
 
 func _init() -> void:
@@ -512,6 +540,7 @@ func _init() -> void:
 	_plot_takedown_checks()
 	_hoe_plot_checks()
 	_herb_seed_checks(crops)
+	_plot_size_checks(dir)
 
 	# Save and restart: a barley crop grown to a stage keeps its crop, its age and its stage (the world save, not a hand-written file).
 	season[0] = "spring"

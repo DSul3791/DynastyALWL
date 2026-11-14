@@ -18,15 +18,15 @@ const B1A := {"log_foundation": 600, "thatch_window": 400, "log_doorway": 800, "
 # with a third eave or a fascia and a corner post, 400 (the thatch doorway's). A fence section or gate is a 2 m wall piece between two shared
 # eight-sided posts, 600 (door_double's); the log palisade is six whole sharpened stakes, a log wall stood upright, 900 (under log_wall's 1500). The
 # barrel, the stone well and the deep well pump are round builds like the clay hearth and flower pot, 500 (the well 550); the stone torch pillar
-# and the lamp posts are a round pillar or iron standard with a lantern on it, 450 (the oven's; the chandelier is 600); the thatch garden plot is
-# a 2 m bed with four lashed stakes and a woven edge, 600 (the foundation's).
+# and the lamp posts are a round pillar or iron standard with a lantern on it, 450 (the oven's; the chandelier is 600). The garden plots'
+# tiers are gone (Dave 14 Nov 2026: one Gardening plot).
 const FENCES := ["thatch_fence", "thatch_gate", "thatch_gate_open", "wood_fence", "wood_gate", "wood_gate_open", "log_fence", "log_gate", "log_gate_open",
 	"stone_fence", "stone_gate", "stone_gate_open", "brick_fence", "brick_gate", "brick_gate_open", "iron_fence", "iron_gate", "iron_gate_open",
 	"engineered_fence", "engineered_gate", "engineered_gate_open", "fortified_fence"]   # GOALS-REPAIR A-40: the brick fence and gate builders
 const B1B_B6 := {"log_stairs": 350,
 	"log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
 	"wooden_barrel": 500, "stone_well": 550, "primitive_well": 700, "advanced_well": 700, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
-	"stone_lamp_post": 450, "thatch_garden_plot": 600}
+	"stone_lamp_post": 450}
 # The tier roofs: the straight roofs are panels since GOALS-REPAIR A-35/A-36 (tier_panel, 132 to 240 triangles with the Fortified iron straps) and the corners hips over the corner
 # square since A-37 (roof_hip: two faces, a cap, two eaves), all under the default cap.
 # The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with bolted bands, 450.

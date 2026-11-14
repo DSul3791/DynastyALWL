@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1472,
+	"next_number": 1474,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -7340,6 +7340,7 @@
 				"value": 22
 			},
 			"thatch_garden_plot": {
+				"retired": true,
 				"number": 693,
 				"name": "Thatch - Garden plot",
 				"description": "A stick-edged bed of soil, two metres square. Sow and tend it like a tilled bed.",
@@ -7347,13 +7348,13 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 156."
+				"note": "Retired 14 Nov 2026 (Dave: one Gardening plot, no tiers). A saved one becomes the Medium gardening plot (renames.json, structures legacy_kinds). State 156 is retired and never reused."
 			},
 			"wooden_garden_plot_kit": {
 				"number": 694,
 				"retired": true,
-				"name": "Wooden - Garden plot",
-				"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+				"name": "Medium gardening plot",
+				"description": "A plank-edged bed of soil, two metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 				"kind": "placeable",
 				"stack": 1,
 				"unstackable": true,
@@ -7362,13 +7363,13 @@
 			},
 			"wooden_garden_plot": {
 				"number": 695,
-				"name": "Wooden - Garden plot",
-				"description": "A plank raised bed, two metres square. Holds its water better than open ground.",
+				"name": "Medium gardening plot",
+				"description": "A plank-edged bed of soil, two metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 157."
+				"note": "Placed piece: row state 157. The Medium gardening plot (Dave 14 Nov 2026: one gardening plot, no tiers, three sizes; 3 planks + 8 nails); saved Thatch, Stone and Brick plots load as this (renames.json, structures legacy_kinds)."
 			},
 			"stone_garden_plot_kit": {
 				"number": 696,
@@ -7382,6 +7383,7 @@
 				"value": 48
 			},
 			"stone_garden_plot": {
+				"retired": true,
 				"number": 697,
 				"name": "Stone - Garden plot",
 				"description": "A stone-edged raised bed, two metres square. Holds its water best.",
@@ -7389,7 +7391,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 158."
+				"note": "Retired 14 Nov 2026 (Dave: one Gardening plot, no tiers). A saved one becomes the Medium gardening plot (renames.json, structures legacy_kinds). State 158 is retired and never reused."
 			},
 			"brick_garden_plot_kit": {
 				"number": 698,
@@ -7403,6 +7405,7 @@
 				"value": 58
 			},
 			"brick_garden_plot": {
+				"retired": true,
 				"number": 699,
 				"name": "Brick - Garden plot",
 				"description": "A brick raised bed, two metres square. Holds its water best.",
@@ -7410,7 +7413,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 159."
+				"note": "Retired 14 Nov 2026 (Dave: one Gardening plot, no tiers). A saved one becomes the Medium gardening plot (renames.json, structures legacy_kinds). State 159 is retired and never reused."
 			},
 			"wooden_planter_box_kit": {
 				"number": 700,
@@ -12091,6 +12094,26 @@
 			"value": 1,
 			"sell_lot": 15,
 			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+		},
+		"small_garden_plot": {
+			"number": 1472,
+			"name": "Small gardening plot",
+			"description": "A plank-edged bed of soil, one metre square, nailed at the corners. Sow and tend it like a tilled bed.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Gardening plot (Dave 14 Nov 2026: three sizes, no tiers). Placed piece: row state 440."
+		},
+		"large_garden_plot": {
+			"number": 1473,
+			"name": "Large gardening plot",
+			"description": "A plank-edged bed of soil, three metres square, nailed at the corners. Sow and tend it like a tilled bed.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Gardening plot (Dave 14 Nov 2026: three sizes, no tiers). Placed piece: row state 441."
 		}
 	}
 }
