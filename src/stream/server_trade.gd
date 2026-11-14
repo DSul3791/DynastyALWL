@@ -337,6 +337,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		items._gain_source = "trade"
 		items.give(peer, number, count)
 		items._gain_source = items.SRC_PICKUP
+		items._goal_event(peer, "bought")   # ADD-19: a purchase from a trader's shelf
 		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(each * count)]
 
 	if a < 0 or a >= inv.slot_count or inv.numbers[a] == 0:

@@ -280,6 +280,10 @@ func on_placed(peer: int, id: int) -> void:
 	st["set_at"] = host._now_game_s()
 	st["seq"] = host._next_uid
 	host._next_uid += 1
+
+	if kind == str(cfg.get("kind", "snare_trap")):
+		host._goal_event(peer, "snare_set")   # ADD-08: a snare, not the Bird trap kind
+
 	var mine: Array = []
 
 	for other_id in host._items:
