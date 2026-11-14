@@ -8057,7 +8057,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 187. Live in the water network since plumbing PR 3 (unlocked)."
+				"note": "Water piece: row state 187. In the water network since plumbing PR 3, locked until the Deep-well pump of plumbing PR 4 can fill it."
 			},
 			"horn": {
 				"number": 757,
