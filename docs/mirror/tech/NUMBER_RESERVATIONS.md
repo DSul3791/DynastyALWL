@@ -29,3 +29,6 @@ R4: items 1308 `advanced_smithy`, 1309 `steel_anvil_part`; blueprint 301 (Advanc
 
 ## GOALS-REPAIR WP-GUIDE-UI (14 Nov 2026, tier roof panels A-35/A-36)
 Block from the lead (items from 1320, blueprints from 310, states from 380, recipes from 740), clear of WP-METAL's next numbers: items 1320-1324 `log_roof_65`, `roof_section_65`, `stone_roof_65`, `brick_roof_65`, `engineered_roof_65`; blueprints 310-314; structure states 380-384 (same order). No recipes (blueprint-only, like `thatch_roof_65`). next_number is now items 1325, blueprints 315 (above every number in use); numbers below the block that nobody has used yet (items 1310-1319, blueprints 302-309, states 370-379) stay free for whoever reserves them here. Next free above this block: item 1325, blueprint 315, structure state 385.
+
+## GOALS-REPAIR tier pieces (14 Nov 2026, A-40)
+Block from the lead: items 1330-1349, blueprints 320-339, structure states 400-419. Used: items 1330-1335 `fortified_window`, `fortified_floor` (Fortified - Ceiling), `fortified_stairs`, `fortified_fence`, `engineered_fence`, `engineered_gate`; blueprints 320-325 (same order); states 400-405 (same order) and 406 `engineered_gate_open`. No recipes (blueprint-only). next_number is now at least items 1336, blueprints 326.

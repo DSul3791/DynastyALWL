@@ -17397,6 +17397,120 @@
    ],
    "accepted_commit": null,
    "note": "GOALS-REPAIR A-36 (14 Nov 2026): the 65 degree roof panel of Engineered - Roof 45, blueprint 314, structure state 384, same materials. PROVISIONAL, for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Engineered - Fence",
+   "id": "engineered_fence",
+   "number": 1334,
+   "name": "Engineered - Fence",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tier_pieces",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-40 (14 Nov 2026): the missing Engineered - Fence of the enclosing set (buildables_plan.md s1), blueprint 324, structure state 404. Cost PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Engineered - Gate",
+   "id": "engineered_gate",
+   "number": 1335,
+   "name": "Engineered - Gate",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tier_pieces",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-40 (14 Nov 2026): the missing Engineered - Gate of the enclosing set (buildables_plan.md s1), blueprint 325, structure state 405 and 406. Cost PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Fortified - Window",
+   "id": "fortified_window",
+   "number": 1330,
+   "name": "Fortified - Window",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tier_pieces",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-40 (14 Nov 2026): the missing Fortified - Window of the enclosing set (buildables_plan.md s1), blueprint 320, structure state 400. Cost PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Fortified - Ceiling",
+   "id": "fortified_floor",
+   "number": 1331,
+   "name": "Fortified - Ceiling",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tier_pieces",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-40 (14 Nov 2026): the missing Fortified - Ceiling of the enclosing set (buildables_plan.md s1), blueprint 321, structure state 401. Cost PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Fortified - Stairs",
+   "id": "fortified_stairs",
+   "number": 1332,
+   "name": "Fortified - Stairs",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tier_pieces",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-40 (14 Nov 2026): the missing Fortified - Stairs of the enclosing set (buildables_plan.md s1), blueprint 322, structure state 402. Cost PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm. Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Fortified - Fence",
+   "id": "fortified_fence",
+   "number": 1333,
+   "name": "Fortified - Fence",
+   "category": null,
+   "catalog": "GOALS-REPAIR",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_tier_pieces",
+    "test_blueprints",
+    "test_hammer_list"
+   ],
+   "accepted_commit": null,
+   "note": "GOALS-REPAIR A-40 (14 Nov 2026): the missing Fortified - Fence of the enclosing set (buildables_plan.md s1), blueprint 323, structure state 403. Cost PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm. Not run: the Godot tests wait for the test PC."
   }
  ],
  "acceptance_note": "Mission 001 (12 Nov 2026): TESTED - ACCEPTED means implemented, independently reviewed and passing automated server-side tests (per-phase tests, the integrated walkthrough test_mission001_walkthrough, full suite 358/360 with 2 known flakes at aa8113c33). NOT included: in-game visual, UI and two-client checks, which were not run, and final art: most new pieces use marked placeholder looks. RETIRED - MIGRATION VERIFIED: retired with numbers kept and tests passing; Dave ruled no old-save migration is needed (new game)."
