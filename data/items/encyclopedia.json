@@ -2626,8 +2626,7 @@
 				"Used in Fortified - Arched door",
 				"Used in Fortified - Double arched door"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_pickaxe": {
 			"name": "Iron - Pickaxe",
@@ -2647,8 +2646,7 @@
 				"Craft at a brick forge: 3 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"soil": {
 			"name": "Soil",
@@ -2813,7 +2811,8 @@
 				"Craft at a workbench: 1 Wooden - Spade, 2 Stone, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_spade": {
 			"name": "Iron - Spade",
@@ -2833,8 +2832,7 @@
 				"Craft at a brick forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bone": {
 			"name": "Bone",
@@ -3387,8 +3385,7 @@
 			"description": "A big arched forge with a riveted iron frame, ready to raise.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"large_forge": {
 			"name": "Advanced smelter",
@@ -3404,8 +3401,7 @@
 			"description": "An ornate black iron and gold forge set with red gems, ready to raise.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"master_forge": {
 			"name": "Master smithy",
@@ -3460,7 +3456,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"beam_oak": {
 			"name": "Oak beam",
@@ -3471,7 +3467,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_birch": {
 			"name": "Birch log",
@@ -3518,7 +3514,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"beam_birch": {
 			"name": "Birch beam",
@@ -3529,7 +3525,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_scots_pine": {
 			"name": "Scots pine log",
@@ -3576,7 +3572,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"beam_scots_pine": {
 			"name": "Scots pine beam",
@@ -3587,7 +3583,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_spruce": {
 			"name": "Spruce log",
@@ -3634,7 +3630,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"beam_spruce": {
 			"name": "Spruce beam",
@@ -3645,7 +3641,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_tropical_hardwood": {
 			"name": "Mahogany log",
@@ -3692,7 +3688,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"beam_tropical_hardwood": {
 			"name": "Mahogany beam",
@@ -3703,7 +3699,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_walnut": {
 			"name": "Walnut log",
@@ -3750,7 +3746,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"beam_walnut": {
 			"name": "Walnut beam",
@@ -3761,7 +3757,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_maple": {
 			"name": "Sugar maple log",
@@ -3808,7 +3804,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"beam_maple": {
 			"name": "Sugar maple beam",
@@ -3819,7 +3815,7 @@
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"berry_compote": {
 			"name": "Berry compote",
@@ -4305,8 +4301,7 @@
 				"Craft at a brick forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"path_patch": {
 			"name": "Path",
@@ -4526,7 +4521,8 @@
 				"Used in Iron - Saw",
 				"Used to build Sawmill"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"water_wheel": {
 			"name": "Water wheel",
@@ -4566,7 +4562,8 @@
 				"Build with a hammer (press R): 12 Plank, 60 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"woodworking_table": {
 			"name": "Woodworking table",
@@ -4574,7 +4571,8 @@
 			"description": "A woodworking table. Stand near it for fine woodwork.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"rock_pile": {
 			"name": "Rock pile",
@@ -5084,8 +5082,7 @@
 				"Craft at a brick forge: 1 Steel ingot"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"javelin": {
 			"name": "Javelin",
@@ -5130,7 +5127,8 @@
 				"Craft at a workbench: 1 Flint, 1 Stick, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"scythe": {
 			"name": "Iron - Scythe",
@@ -5312,8 +5310,7 @@
 				"Craft at a forge: 2 Bronze ingot, 1 Leather"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bronze_mace": {
 			"name": "Bronze - Mace",
@@ -5323,8 +5320,7 @@
 				"Craft at a forge: 2 Bronze ingot, 1 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bronze_shield": {
 			"name": "Bronze - Shield",
@@ -5334,8 +5330,7 @@
 				"Craft at a forge: 1 Wicker - Shield, 1 Bronze ingot, 1 Hide"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_sword": {
 			"name": "Iron - Sword",
@@ -5345,8 +5340,7 @@
 				"Craft at a brick forge: 2 Iron ingot, 1 Leather"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_mace": {
 			"name": "Iron - Mace",
@@ -5356,8 +5350,7 @@
 				"Craft at a brick forge: 2 Iron ingot, 1 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_shield": {
 			"name": "Iron - Shield",
@@ -5367,8 +5360,7 @@
 				"Craft at a brick forge: 2 Plank, 2 Iron ingot"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_sword": {
 			"name": "Steel - Sword",
@@ -5378,8 +5370,7 @@
 				"Craft at a brick forge: 2 Steel ingot, 1 Leather"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_mace": {
 			"name": "Steel - Mace",
@@ -5389,8 +5380,7 @@
 				"Craft at a brick forge: 2 Steel ingot, 1 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_shield": {
 			"name": "Steel - Shield",
@@ -5400,8 +5390,7 @@
 				"Craft at a brick forge: 2 Plank, 2 Steel ingot"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"leather_cap": {
 			"name": "Leather - Cap",
@@ -5431,8 +5420,7 @@
 				"Craft at a forge: 3 Bronze ingot, 1 Leather"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"gambeson": {
 			"name": "Fibre - Gambeson",
@@ -5452,8 +5440,7 @@
 				"Craft at a brick forge: 3 Iron ingot, 1 Leather"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"mail_shirt": {
 			"name": "Iron - Mail shirt",
@@ -5463,8 +5450,7 @@
 				"Craft at a brick forge: 4 Iron ingot, 20 Rivets, 1 Leather"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"steel_helm": {
 			"name": "Steel - Helm",
@@ -5474,8 +5460,7 @@
 				"Craft at a brick forge: 2 Steel ingot, 1 Heavy leather, 1 Rivets"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"plate_cuirass": {
 			"name": "Steel - Cuirass",
@@ -5485,8 +5470,7 @@
 				"Craft at a brick forge: 5 Steel ingot, 1 Heavy leather, 10 Rivets"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wheat": {
 			"name": "Wheat",
@@ -5726,7 +5710,8 @@
 			"used_for": [
 				"Used in Hand-split planks"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"fibre_arrow": {
 			"name": "Fibre - Arrow",
@@ -7887,8 +7872,7 @@
 				"Craft at a brick forge: 2 Steel ingot, 1 Stick"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"thatch_fence_kit": {
 			"name": "Crude - Fence",
@@ -9989,7 +9973,8 @@
 				"Build with a hammer (press R): 24 Clay, 10 Stone, 2 Clay mortar"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"clay_bloomery": {
 			"name": "Clay bloomery",
@@ -9997,7 +9982,8 @@
 			"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"stonecutters_bench_kit": {
 			"name": "Stonecutter's bench",
@@ -10057,8 +10043,7 @@
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"carved_stone_block": {
 			"name": "Carved stone block",
@@ -10305,7 +10290,8 @@
 				"Build with a hammer (press R): 5 Iron ingot, 1 Log"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"iron_anvil": {
 			"name": "Anvil",
@@ -10313,7 +10299,8 @@
 			"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"preserving_jar_kit": {
 			"name": "Preserving jar",
@@ -10395,8 +10382,7 @@
 				"Craft at a campfire pot: 3 Raw meat, 1 Flour, 1 Salt (keep Copper - Pot)"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bronze_scale_shirt": {
 			"name": "Bronze - Scale shirt",
@@ -10406,8 +10392,7 @@
 				"Craft at a forge: 4 Bronze ingot, 1 Leather"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"claw_necklace": {
 			"name": "Claw - Necklace",
@@ -10490,8 +10475,7 @@
 			"description": "A wooden frame loom for weaving thread into cloth.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"leather_belt": {
 			"name": "Leather - Belt",
