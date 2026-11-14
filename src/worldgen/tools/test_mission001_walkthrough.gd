@@ -1029,6 +1029,7 @@ func live() -> Dictionary:
 
 func fitness_xp(ticks: int) -> float:
 	var row: Dictionary = items._characters[KEYS[1]]
+	items._train_fitness(1, 0.0, 0.0)   # a game midnight passed since the last tick is paid out first (xp_today back to 0), so it is not counted as XP lost
 	var before: float = float(row.get("xp_today", 0.0))
 
 	for k in ticks:
