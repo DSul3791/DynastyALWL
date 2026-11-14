@@ -606,7 +606,8 @@ func _init() -> void:
 	for recipe_id in recipes_file.get("recipes", {}):
 		var station: String = String(recipes_file["recipes"][recipe_id].get("station", ""))
 
-		if station != "" and not stations.has(station):
+		# A retired recipe is kept only for its number and is never crafted, so its station may be gone (the old smelter recipes).
+		if station != "" and not stations.has(station) and not bool(recipes_file["recipes"][recipe_id].get("retired", false)):
 			fail("recipes.json %s: unknown station '%s'" % [recipe_id, station])
 
 	# Fishing: every catch and bait is an item, and the catches are obtainable (by fishing).
@@ -848,6 +849,61 @@ func _init() -> void:
 			for cls in wood_file.get("class_items", {}):   # softwood logs give softwood blocks, big logs large blocks (wood_species.json class_items)
 				for step in wood_file["class_items"][cls]:
 					obtainable[String(wood_file["class_items"][cls][step])] = true
+
+	# The Smelters (structures.json "smelting", src/stream/server_smelter.gd): a job a live smelter does gives its ingot when its ore has a
+	# source. Every job, fuel and smelter job name must be real, a smelter's parts must fit its slots, and what it takes must be its fuel or ore.
+	var smelting: Dictionary = _read("structures.json").get("smelting", {})
+
+	for fuel_id in smelting.get("fuel", []):
+		want_item.call(String(fuel_id), "structures.json smelting fuel")
+
+	for job_id in smelting.get("jobs", {}):
+		for row in smelting["jobs"][job_id].get("in", []):
+			want_item.call(String(row[0]), "structures.json smelting job %s" % job_id)
+
+		want_item.call(String(smelting["jobs"][job_id].get("out", [""])[0]), "structures.json smelting job %s" % job_id)
+
+	for kind in _read("structures.json").get("structures", {}):
+		var sdef: Dictionary = _read("structures.json")["structures"][kind]
+
+		if String(sdef.get("use", "")) != "smelt" or bool(sdef.get("retired", false)):
+			continue
+
+		var smelt: Dictionary = sdef.get("smelt", {})
+
+		if int(smelt.get("hopper_slots", 0)) < 1 or int(smelt.get("hopper_slots", 0)) >= int(sdef.get("slots", 0)) or int(smelt.get("hopper", 0)) <= 0 or int(smelt.get("input", 0)) <= 0 or float(smelt.get("ingot_s", 0.0)) <= 0.0:
+			fail("structures.json %s: a smelter needs smelt.hopper_slots (1 to slots - 1), hopper, input and ingot_s above 0" % kind)
+
+		if int(sdef.get("out_slots", 0)) > 0 and int(smelt.get("output", 0)) <= 0:
+			fail("structures.json %s: a smelter with an output rack needs smelt.output, the ingots the rack holds, above 0" % kind)
+
+		var smelter_takes: Dictionary = {}
+
+		for fuel_id in smelting.get("fuel", []):
+			smelter_takes[String(fuel_id)] = true
+
+		for job_id in smelt.get("jobs", []):
+			if not smelting.get("jobs", {}).has(String(job_id)):
+				fail("structures.json %s: smelt job '%s' is not in structures.json smelting.jobs" % [kind, job_id])
+				continue
+
+			var job: Dictionary = smelting["jobs"][String(job_id)]
+
+			if bool(job.get("bellows", false)) and not bool(smelt.get("bellows", false)):
+				fail("structures.json %s: job '%s' needs worked bellows and the station has none" % [kind, job_id])
+
+			var job_ok: bool = true
+
+			for row in job.get("in", []):
+				smelter_takes[String(row[0])] = true
+				job_ok = job_ok and obtainable.has(String(row[0]))
+
+			if job_ok:
+				obtainable[String(job.get("out", [""])[0])] = true
+
+		for take in sdef.get("takes", []):
+			if not smelter_takes.has(String(take)):
+				fail("structures.json %s: takes '%s', which is neither its fuel nor the ore of one of its jobs" % [kind, take])
 
 	# What a fire cooks (cooking.json cooks_into) is obtainable when the raw item is.
 	for raw_id in cooking.get("cooks_into", {}):

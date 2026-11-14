@@ -3590,7 +3590,7 @@
 		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "brick_forge"},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 2},
-		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "smelter"},
+		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "smelter", "retired": true},
 		"stone_pickaxe": {
 			"number": 186,
 			"name": "Stone - Pickaxe",
@@ -3683,9 +3683,9 @@
 			"craft_s": 4.0,
 			"known": true
 		},
-		"smelt_copper": {"number": 190, "name": "Copper ingot", "category": "Materials", "needs": [["copper_ore", 3], ["fuel", 5]], "gives": ["copper_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
-		"smelt_tin": {"number": 191, "name": "Tin ingot", "category": "Materials", "needs": [["tin_ore", 3], ["fuel", 5]], "gives": ["tin_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
-		"smelt_iron": {"number": 192, "name": "Iron ingot", "category": "Materials", "needs": [["iron_ore", 4], ["fuel", 5]], "gives": ["iron_ingot", 1], "craft_s": 45.0, "known": true, "station": "smelter"},
+		"smelt_copper": {"number": 190, "name": "Copper ingot", "category": "Materials", "needs": [["copper_ore", 3], ["fuel", 5]], "gives": ["copper_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter", "retired": true},
+		"smelt_tin": {"number": 191, "name": "Tin ingot", "category": "Materials", "needs": [["tin_ore", 3], ["fuel", 5]], "gives": ["tin_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter", "retired": true},
+		"smelt_iron": {"number": 192, "name": "Iron ingot", "category": "Materials", "needs": [["iron_ore", 4], ["fuel", 5]], "gives": ["iron_ingot", 1], "craft_s": 45.0, "known": true, "station": "smelter", "retired": true},
 		"smelt_steel": {"number": 193, "name": "Steel ingot", "category": "Materials", "needs": [["iron_ingot", 2], ["fuel", 5]], "gives": ["steel_ingot", 1], "craft_s": 14.0, "known": true, "station": "blast_furnace"},
 		"hide_tunic": {
 			"number": 194,

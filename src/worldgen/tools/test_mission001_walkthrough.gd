@@ -4,7 +4,7 @@ extends SceneTree
 # (server_items.gd and its helpers, the live data), a new character from nothing to a warehouse, checking the resulting game state at each step:
 #   1. early survival: gather by hand, Stone - Axe and Stone - Knife, a Lean-to and a Wicker - Chest from their blueprints, a hunted deer cooked at a
 #      campfire and eaten, items stored in the chest;
-#   2. wood and metal: bog iron dug with a Wooden spade, charcoal, the Smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
+#   2. wood and metal: bog iron dug with a Wooden spade, charcoal, the Improved smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
 #      boards, nothing bought;
 #   3. construction and equipment: Leatherworking table, Loom, Tailor's table; Thread, Leather strap, Fibre cloth, a Fibre - Gambeson; a Rustic - Chest
 #      and a Crude - Chair from boards; an iron weapon and an iron armour piece at the Smithy; gambeson + mail worn in layers; a backpack
@@ -341,15 +341,15 @@ func feed(place: String, firewood: int) -> void:
 		items.action(1, Net.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
 
 
-# Iron made the wilderness way (step 2's route): bog ore dug with the spade at the forge yard, charcoal at its campfire, smelted at the Smelter.
+# Iron made the wilderness way (step 2's route): bog ore dug with the spade at the forge yard, charcoal at its campfire, smelted by the Improved
+# smelter while the player works its bellows (master s2.7 items 3 and 4: 1 Iron ore makes 1 Iron ingot), a hopper and an input load at a time.
 func make_iron(wanted: int) -> bool:
 	go(FORGE)
-	var smelts: int = maxi(ceili(float(wanted - have("iron_ingot")) / float(gives_of("smelt_iron"))), 0)
+	var ore_n: int = maxi(wanted - have("iron_ingot"), 0)
 
-	if smelts == 0:
+	if ore_n == 0:
 		return true
 
-	var ore_n: int = smelts * need_of("smelt_iron", "iron_ore")
 	var dry: int = 0
 
 	for k in range(ore_n * 20):
@@ -369,9 +369,31 @@ func make_iron(wanted: int) -> bool:
 			dry = 0
 
 	go(FORGE)
+	var smelt: Dictionary = items._structures["improved_smelter"]["smelt"]
+	var per_ore: float = float(items._structures_cfg["smelting"].get("fuel_per_ore", 1))
+	make_charcoal(int(ceil(per_ore * float(ore_n))))
+	var load_n: int = mini(int(smelt["input"]), int(floor(float(smelt["hopper"]) / maxf(per_ore, 0.01))))
 
-	make_charcoal(smelts * need_of("smelt_iron", "fuel"))
-	craft("smelt_iron", smelts)
+	while have("iron_ore") > 0 and smelter >= 0:
+		var ore: int = mini(have("iron_ore"), load_n)
+		var ore_before: int = have("iron_ore")
+		var fuel: int = mini(have("charcoal"), int(ceil(per_ore * float(ore))))
+		items.action(1, Net.ACT_CHEST_OPEN, smelter, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), smelter, fuel, Vector3.ZERO)
+		items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), smelter, ore, Vector3.ZERO)
+		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+		go((items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
+		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: work the bellows
+		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) + 5.0)
+		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again: leave them
+		items.action(1, Net.ACT_CHEST_OPEN, smelter, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
+		if have("iron_ore") >= ore_before:   # nothing smelted: stop rather than loop
+			break
+
+	go(FORGE)
 
 	if have("iron_ingot") < wanted:
 		print("     make_iron short: ore %d of %d, charcoal %d; pack %s" % [have("iron_ore"), ore_n, have("charcoal"), pack_str()])
@@ -612,12 +634,13 @@ func step2_wood_and_metal() -> void:
 	check(have("wooden_spade") == 1, "2a. a Wooden spade is made by hand")
 	campfire_at("forge yard", FORGE + Vector3(-3.0, 0.0, 0.0))
 
-	# The Smelter: stone and clay dug and gathered (test_iron_saw_route gives them the same way).
-	give_cost("smelter", ["stone", "clay"])
-	smelter = build("smelter", FORGE + Vector3(3.0, 0.0, -0.5), "2b")
+	# The Improved smelter: stone, clay, logs and hide gathered (test_iron_saw_route gives them the same way); its bronze fittings come from the
+	# Primitive smelter and smithy (test_bronze_path proves that route), so they are given here.
+	give_cost("improved_smelter", ["stone", "clay", "log", "hide", "bronze_hinges", "bronze_nails"])
+	smelter = build("improved_smelter", FORGE + Vector3(3.0, 0.0, -0.5), "2b")
 	var smithy_iron: int = cost_of("blacksmithy", "iron_ingot")
 	var saw_iron: int = need_of("hand_saw", "iron_ingot")
-	check(make_iron(smithy_iron + saw_iron), "2c. bog iron dug with the spade, charcoal burnt at the campfire and smelted at the Smelter: %d Iron ingots (%d needed)" % [have("iron_ingot"), smithy_iron + saw_iron])
+	check(make_iron(smithy_iron + saw_iron), "2c. bog iron dug with the spade, charcoal burnt at the campfire and smelted at the Improved smelter with its bellows worked: %d Iron ingots (%d needed)" % [have("iron_ingot"), smithy_iron + saw_iron])
 
 	# The Smithy from stones, clay, logs (gathered: test_iron_saw_route) and the route's iron; cold, it is fired by the craft with charcoal.
 	give_cost("blacksmithy", ["stone", "clay", "log"])
@@ -1006,6 +1029,7 @@ func live() -> Dictionary:
 
 func fitness_xp(ticks: int) -> float:
 	var row: Dictionary = items._characters[KEYS[1]]
+	items._train_fitness(1, 0.0, 0.0)   # a game midnight passed since the last tick is paid out first (xp_today back to 0), so it is not counted as XP lost
 	var before: float = float(row.get("xp_today", 0.0))
 
 	for k in ticks:

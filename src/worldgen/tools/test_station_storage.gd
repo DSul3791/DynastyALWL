@@ -2,9 +2,9 @@ extends SceneTree
 
 # Station stores, the Kiln batch, the Chopping block station, the wood renames and hammer sourcing range (Mission 001 T18; master s2.1 hammer row,
 # s2.4, s2.5, s2.6, s3.2, s4 items 8 and 14), on real server state:
-#   1. a Smelter keeps what its owner smelts in its output, never in the pack; a full output pauses the craft (inputs held), room lets it finish;
+#   1. a Primitive smithy keeps what its owner crafts in its output, never in the pack; a full output pauses the craft (inputs held), room lets it finish;
 #   2. deposits go to the input slots and withdrawals come out, item totals kept; a guest's craft goes to the guest's pack;
-#   3. the Smithy draws Iron ingots from the Smelter's output (after the pack and the player's own chest), and keeps the Iron - Saw;
+#   3. the Smithy draws Iron ingots from the player's own chest, then their own station store, and keeps the Iron - Saw (the Smelters: test_smelters);
 #   4. locks: a stranger never draws on someone's station store nor opens their locked chest; the owner draws on their own locked chest;
 #   5. a Kiln of 6 logs (a 7th refused) makes 600 Charcoal over its burn, gradually; put out it keeps everything; relit it goes on; done and still
 #      lit it burns its own charcoal and goes out when none is left; save and load keep a part-burnt log;
@@ -168,71 +168,79 @@ func _init() -> void:
 	var charcoal: int = n("charcoal")
 	var stone: int = n("stone")
 
-	# --- 1. The Smelter keeps its product; a full output pauses the craft ---
-	var smelter: int = place("smelter@8,-0.5,0", 1)
-	check(smelter > 0 and int(def_of(smelter).get("out_slots", 0)) > 0 and items._is_station_store(items._items[smelter]), "the Smelter is a station with a store")
-	var first_out: int = int(def_of(smelter)["slots"])
-	var ore_need: int = 4
-	items.give(1, n("iron_ore"), ore_need * 3)
+	# --- 1. A station keeps its product; a full output pauses the craft (the Primitive smithy and Bronze nails; the Smelters smelt by themselves, test_smelters) ---
+	var forge: int = place("stone_forge@8,-0.5,0", 1)
+	check(forge > 0 and int(def_of(forge).get("out_slots", 0)) > 0 and items._is_station_store(items._items[forge]), "the Primitive smithy is a station with a store")
+	var first_out: int = int(def_of(forge)["slots"])
+	var bronze: int = n("bronze_ingot")
+	var nail: int = n("bronze_nails")
+	var nails_each: int = 0
+	var bronze_each: int = 0
+
+	for need in items.recipes.recipe(recipe_number("bronze_nails")).get("needs", []):
+		if int(need[0]) == bronze:
+			bronze_each = int(need[1])
+
+	nails_each = int(items.recipes.recipe(recipe_number("bronze_nails"))["gives"][1])
+	items.give(1, bronze, bronze_each * 3)
 	items.give(1, charcoal, 40)
 
-	for i in range(first_out, first_out + int(def_of(smelter)["out_slots"])):   # the output is full of stone
-		box(smelter).numbers[i] = stone
-		box(smelter).counts[i] = items.table.stack_of(stone)
+	for i in range(first_out, first_out + int(def_of(forge)["out_slots"])):   # the output is full of stone
+		box(forge).numbers[i] = stone
+		box(forge).counts[i] = items.table.stack_of(stone)
 
-	var ore_before: int = pack(1, n("iron_ore"))
-	craft(1, "smelt_iron", 1, 60)
-	check(out_count(smelter, ingot) == 0 and pack(1, ingot) == 0 and not items.craft_queue_of(1).is_empty(), "with the output full the finished smelt waits in the queue (nothing made, nothing on the ground)")
-	check(pack(1, n("iron_ore")) == ore_before - ore_need, "the waiting smelt holds its ore (taken when queued, not lost)")
-	var loose_ingots: int = 0
+	var bronze_before: int = pack(1, bronze)
+	craft(1, "bronze_nails", 1, 60)
+	check(out_count(forge, nail) == 0 and pack(1, nail) == 0 and not items.craft_queue_of(1).is_empty(), "with the output full the finished craft waits in the queue (nothing made, nothing on the ground)")
+	check(pack(1, bronze) == bronze_before - bronze_each, "the waiting craft holds its Bronze ingot (taken when queued, not lost)")
+	var loose_nails: int = 0
 
 	for id in items._items:
-		if int(items._items[id].get("number", 0)) == ingot and not items._items[id].has("struct"):
-			loose_ingots += int(items._items[id]["count"])
+		if int(items._items[id].get("number", 0)) == nail and not items._items[id].has("struct"):
+			loose_nails += int(items._items[id]["count"])
 
-	box(smelter).clear_slot(first_out)   # room for one
+	box(forge).clear_slot(first_out)   # room for one stack
 	for s in 3:
 		items.tick(1.0)
 
-	check(out_count(smelter, ingot) == 1 and pack(1, ingot) == 0 and loose_ingots == 0 and items.craft_queue_of(1).is_empty(), "room in the output lets it finish: the Iron ingot is in the Smelter, not the pack or the ground")
+	check(out_count(forge, nail) == nails_each and pack(1, nail) == 0 and loose_nails == 0 and items.craft_queue_of(1).is_empty(), "room in the output lets it finish: the Bronze nails are in the Primitive smithy, not the pack or the ground")
 
-	for i in range(first_out + 1, first_out + int(def_of(smelter)["out_slots"])):
-		box(smelter).clear_slot(i)
+	for i in range(first_out + 1, first_out + int(def_of(forge)["out_slots"])):
+		box(forge).clear_slot(i)
 
-	craft(1, "smelt_iron", 2, 100)
-	check(out_count(smelter, ingot) == 3, "two more smelts: 3 Iron ingots in the Smelter's output")
-	var fill_row: int = items._store_fill(items._items[smelter])
-	check(fill_row >= 1 and fill_row <= 4, "the Smelter's world row carries a fill level (%d)" % fill_row)
+	craft(1, "bronze_nails", 1, 60)
+	check(out_count(forge, nail) == nails_each * 2, "one more craft: %d Bronze nails in the output" % (nails_each * 2))
+	var fill_row: int = items._store_fill(items._items[forge])
+	check(fill_row >= 1 and fill_row <= 4, "the Primitive smithy's world row carries a fill level (%d)" % fill_row)
 
 	# --- 2. Deposit and withdraw keep the totals; a guest's craft goes to the guest ---
 	items.give(1, stone, 7)
-	var stone_all: int = pack(1, stone) + in_count(smelter, stone) + out_count(smelter, stone)
-	act(1, Net.ACT_CHEST_OPEN, smelter)
-	act(1, Net.ACT_CHEST_PUT, slot_of(1, stone), smelter, 5)
-	check(in_count(smelter, stone) == 5 and out_count(smelter, stone) == 0 and pack(1, stone) + in_count(smelter, stone) == stone_all, "5 stone deposited go to the input slots, the total kept")
+	var stone_all: int = pack(1, stone) + in_count(forge, stone) + out_count(forge, stone)
+	act(1, Net.ACT_CHEST_OPEN, forge)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, stone), forge, 5)
+	check(in_count(forge, stone) == 5 and out_count(forge, stone) == 0 and pack(1, stone) + in_count(forge, stone) == stone_all, "5 stone deposited go to the input slots, the total kept")
 	var out_slot: int = -1
 
-	for i in range(first_out, first_out + int(def_of(smelter)["out_slots"])):
-		if box(smelter).numbers[i] == ingot:
+	for i in range(first_out, first_out + int(def_of(forge)["out_slots"])):
+		if box(forge).numbers[i] == nail:
 			out_slot = i
 
-	act(1, Net.ACT_CHEST_TAKE, out_slot, smelter, 1)
-	check(pack(1, ingot) == 1 and out_count(smelter, ingot) == 2, "one Iron ingot withdrawn from the output into the pack, the total kept")
-	act(1, Net.ACT_CHEST_PUT, slot_of(1, ingot), smelter, 1)
-	check(pack(1, ingot) == 0 and in_count(smelter, ingot) == 1 and out_count(smelter, ingot) == 2, "put back, it goes to an input slot: players never fill the output")
-	act(1, Net.ACT_CHEST_TAKE, slot_of_box(smelter, stone), smelter, 5)
+	act(1, Net.ACT_CHEST_TAKE, out_slot, forge, 1)
+	check(pack(1, nail) == 1 and out_count(forge, nail) == nails_each * 2 - 1, "one Bronze nail withdrawn from the output into the pack, the total kept")
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, nail), forge, 1)
+	check(pack(1, nail) == 0 and in_count(forge, nail) == 1 and out_count(forge, nail) == nails_each * 2 - 1, "put back, it goes to an input slot: players never fill the output")
+	act(1, Net.ACT_CHEST_TAKE, slot_of_box(forge, stone), forge, 5)
 	act(1, Net.ACT_CHEST_CLOSE, 0)
 
 	items.peer_connected_hello(2, keys[2])
 	items.report_position(2, HERE + Vector3(0.5, 0.0, 0.0))
 	items.vitals_of(2)["weight"] = 5000.0
-	items.give(2, n("iron_ore"), ore_need)
-	items.give(2, charcoal, 10)
-	var out_before: int = out_count(smelter, ingot)
-	craft(2, "smelt_iron", 1, 50)
-	check(pack(2, ingot) == 1 and out_count(smelter, ingot) == out_before, "a guest's smelt at someone's Smelter goes to the guest's pack, never into the owner's store")
+	items.give(2, bronze, bronze_each)
+	var out_before: int = out_count(forge, nail)
+	craft(2, "bronze_nails", 1, 50)
+	check(pack(2, nail) == nails_each and out_count(forge, nail) == out_before, "a guest's craft at someone's Primitive smithy goes to the guest's pack, never into the owner's store")
 
-	# --- 3 and 4. The Smithy draws Iron ingots from the Smelter's output, after the pack and the player's own (locked) chest ---
+	# --- 3 and 4. The Smithy draws Iron ingots from the player's own (locked) chest first, then from their own station store ---
 	var smithy: int = place("blacksmithy@5,3.5,0", 1)
 	var chest: int = place("chest@3,-2,0", 1)
 	box(chest).add(ingot, 1)
@@ -240,16 +248,21 @@ func _init() -> void:
 	check(items._items[chest]["struct"].has("lock"), "the owner's chest is locked")
 	items.give(1, n("stick"), 4)
 	var saw: int = n("hand_saw")
-	var ingot_total: int = pack(1, ingot) + box(chest).count_of(ingot) + box(smelter).count_of(ingot)
 	var ingot_need: int = 0
 
 	for need in items.recipes.recipe(recipe_number("hand_saw")).get("needs", []):
 		if int(need[0]) == ingot:
 			ingot_need = int(need[1])
 
-	var guest_ingots: int = box(smelter).count_of(ingot)
+	items.give(1, ingot, ingot_need)
+	act(1, Net.ACT_CHEST_OPEN, forge)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, ingot), forge, ingot_need)   # into the owner's own station store
+	act(1, Net.ACT_CHEST_CLOSE, 0)
+	var ingot_total: int = pack(1, ingot) + box(chest).count_of(ingot) + box(forge).count_of(ingot)
+	check(in_count(forge, ingot) == ingot_need and pack(1, ingot) == 0, "the owner keeps %d Iron ingots in the Primitive smithy's store" % ingot_need)
+	var guest_ingots: int = box(forge).count_of(ingot)
 	craft(2, "hand_saw", 1, 20)
-	check(box(smelter).count_of(ingot) == guest_ingots and pack(2, saw) == 0, "a stranger's craft never draws on someone's station store")
+	check(box(forge).count_of(ingot) == guest_ingots and pack(2, saw) == 0, "a stranger's craft never draws on someone's station store")
 	items._last_queue_act.clear()
 	act(2, Net.ACT_CRAFT_CANCEL, 0)
 	act(2, Net.ACT_CHEST_OPEN, chest)
@@ -258,7 +271,7 @@ func _init() -> void:
 
 	craft(1, "hand_saw", 1, 30)
 	check(box(chest).count_of(ingot) == 0, "the owner's own locked chest gave its Iron ingot first (containers before station stores)")
-	check(pack(1, ingot) + box(chest).count_of(ingot) + box(smelter).count_of(ingot) == ingot_total - ingot_need, "the rest came from the Smelter's output: %d ingots used, none from nowhere" % ingot_need)
+	check(pack(1, ingot) + box(chest).count_of(ingot) + box(forge).count_of(ingot) == ingot_total - ingot_need, "the rest came from the Primitive smithy's store: %d ingots used, none from nowhere" % ingot_need)
 	check(out_count(smithy, saw) == 1 and pack(1, saw) == 0, "the Iron - Saw is kept in the Smithy's output")
 
 	# --- 5. The Kiln batch ---
@@ -306,9 +319,9 @@ func _init() -> void:
 	items.vitals_of(1)["weight"] = 5000.0
 	kiln = id_of_kind("kiln")
 	check(kiln > 0 and not bool(items._items[kiln]["struct"].get("lit", false)) and int(items._items[kiln]["struct"].get("kiln", {}).get("left", 0)) == per_log - 50 and out_count(kiln, charcoal) == 50, "save and load keep the put-out Kiln, its part-burnt log and its charcoal")
-	smelter = id_of_kind("smelter")
+	forge = id_of_kind("stone_forge")
 	smithy = id_of_kind("blacksmithy")
-	check(smelter > 0 and out_count(smelter, ingot) + in_count(smelter, ingot) == box(smelter).count_of(ingot) and smithy > 0 and out_count(smithy, saw) == 1, "save and load keep the station stores (the Saw still in the Smithy)")
+	check(forge > 0 and out_count(forge, nail) == nails_each * 2 - 1 and smithy > 0 and out_count(smithy, saw) == 1, "save and load keep the station stores (the nails still in the Primitive smithy, the Saw in the Smithy)")
 
 	act(1, Net.ACT_USE_STRUCT, kiln)
 	check(bool(items._items[kiln]["struct"].get("lit", false)), "relit")
@@ -352,8 +365,8 @@ func _init() -> void:
 
 	act(1, Net.ACT_PICKUP, kiln)
 	check(items._items.has(kiln) and int(items._items[kiln]["struct"]["kiln"]["left"]) > 0 and said.back() == "Empty it first.", "an empty Kiln with a part-burnt log is not taken down (the log would be lost)")
-	act(1, Net.ACT_PICKUP, smelter)
-	check(items._items.has(smelter) and said.back() == "Empty it first.", "a Smelter with things in its store is not taken down")
+	act(1, Net.ACT_PICKUP, forge)
+	check(items._items.has(forge) and said.back() == "Empty it first.", "a Primitive smithy with things in its store is not taken down")
 
 	# --- 6. The Chopping block ---
 	var block: int = place("chopping_block@6,-2,0", 1)
@@ -455,48 +468,7 @@ func _init() -> void:
 
 	check(repair_ids.has(own_chest) and not repair_ids.has(other_chest) and not repair_ids.has(kept_out), "repair sourcing: the own chest, not a stranger's open chest or a kept-out one")
 
-	# --- 10. A queued chain through a station: Bronze ingots from ores at the player's own Smelter (the parts wait in its output) ---
-	items.report_position(1, HERE)
-	clear_pack(1)
-	var copper: int = n("copper_ingot")
-	var tin: int = n("tin_ingot")
-	var bronze: int = n("bronze_ingot")
-
-	for i in range(first_out, first_out + int(def_of(smelter)["out_slots"])):
-		box(smelter).clear_slot(i)
-
-	for i in int(def_of(smelter)["slots"]):
-		box(smelter).clear_slot(i)
-
-	var bronze_row: Dictionary = items.recipes.recipe(recipe_number("bronze_ingot"))
-	var copper_need: int = 0
-	var tin_need: int = 0
-
-	for need in bronze_row["needs"]:
-		if int(need[0]) == copper:
-			copper_need = int(need[1])
-		elif int(need[0]) == tin:
-			tin_need = int(need[1])
-
-	var ore_per_copper: int = 0
-	var ore_per_tin: int = 0
-
-	for need in items.recipes.recipe(recipe_number("smelt_copper"))["needs"]:
-		if int(need[0]) == n("copper_ore"):
-			ore_per_copper = int(need[1])
-
-	for need in items.recipes.recipe(recipe_number("smelt_tin"))["needs"]:
-		if int(need[0]) == n("tin_ore"):
-			ore_per_tin = int(need[1])
-
-	items.give(1, n("copper_ore"), ore_per_copper * copper_need)
-	items.give(1, n("tin_ore"), ore_per_tin * tin_need)
-	items.give(1, charcoal, 100)
-	craft(1, "bronze_ingot", 1, 200)
-	check(out_count(smelter, bronze) == int(bronze_row["gives"][1]) and box(smelter).count_of(copper) == 0 and box(smelter).count_of(tin) == 0 and items.craft_queue_of(1).is_empty(), "queued from ores, the copper and tin smelts wait in the Smelter's output and the Bronze ingot craft takes them there: %d Bronze ingots" % int(bronze_row["gives"][1]))
-	check(pack(1, n("copper_ore")) == 0 and pack(1, n("tin_ore")) == 0 and pack(1, bronze) == 0, "every ore used, the Bronze kept in the Smelter")
-
-	# --- 9. The Stone - Forge 88 (master s2.7 item 4, Phase 2b, verified here): an iron-free cost, bronze work only, no smelting ---
+	# --- 9. The Primitive smithy 88 (master s2.7 item 2; GOALS-REPAIR R2): an iron-free cost, bronze work only, no smelting ---
 	var forge_cost_ok: bool = false
 
 	for b in items._blueprints:
@@ -506,7 +478,7 @@ func _init() -> void:
 			for need in items._blueprints[b].get("cost", []):
 				forge_cost_ok = forge_cost_ok and not str(need[0]).contains("iron") and not str(need[0]).contains("steel")
 
-	check(forge_cost_ok, "the Stone - Forge blueprint costs no iron or steel")
+	check(forge_cost_ok, "the Primitive smithy blueprint costs no iron or steel")
 	var bronze_only: bool = true
 
 	for r in items.recipes.numbers():
@@ -517,9 +489,9 @@ func _init() -> void:
 			bronze_only = bronze_only and made_material != "iron" and made_material != "steel" and not items.table.id_of(int(row["gives"][0])).ends_with("_ingot")
 
 	check(bronze_only, "forge-station recipes make no iron, steel or ingots")
-	place("stone_forge@60,60,0", 1)   # away from the Smelter and the Smithy
+	place("stone_forge@60,60,0", 1)   # away from the other stations
 	items.report_position(1, Vector3(60.0, 10.0, 58.5))
-	check(items.station_near(1, "forge", 1) and not items.station_near(1, "brick_forge", 1) and not items.station_near(1, "smelter", 1), "a Stone - Forge serves bronze work (forge 1) and neither iron work nor smelting")
+	check(items.station_near(1, "forge", 1) and not items.station_near(1, "brick_forge", 1) and not items.station_near(1, "smelter", 1), "a Primitive smithy serves bronze work (forge 1) and neither iron work nor smelting")
 
 	print("test_station_storage: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

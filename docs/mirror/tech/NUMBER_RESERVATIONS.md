@@ -20,3 +20,6 @@ Structure state 91 (`thatch_doorway_open`) is RETIRED and never reused: the Crud
 
 ## BUGLIST-002 (13 Nov 2026, separate doors and empty doorway frames)
 Structure states 28 (`door_open`), 82, 84, 86, 140, 142, 144, 214 and 224 are RETIRED and never reused: the nine old open twins are gone (no dead twin); each kind is in `legacy_kinds` of its doorway frame, so a saved one loads as the empty frame (state 91, `thatch_doorway_open`, was retired in BUGLIST-001). New: blueprints 252-271 / items 1256-1275 / states 292-311 = 20 empty doorway frames (double, single arched, double arched per tier; Refined has no new double); blueprints 272-299 / items 1276-1303 / states 312-367 = 28 doors (single, double, single arched, double arched per tier; shut state 312+2i, open 313+2i). Next free: blueprint 300, item 1304, structure state 368.
+
+## GOALS-REPAIR WP-METAL (14 Nov 2026, metalworking tiers R2-R6)
+R2a (PR #1092): item 1304 `improved_smelter`, blueprint 300, structure state 368. Recipes 185, 190, 191 and 192 (the old craft-queue smelts) are RETIRED and never reused; smelting is the stations' own (`src/stream/server_smelter.gd`). Next free: blueprint 301, item 1305, structure state 369.

@@ -367,6 +367,7 @@ const FishSchoolsScript := preload("res://src/server/server_fish.gd")
 const BowScript := preload("res://src/stream/server_bow.gd")
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const TrapsScript := preload("res://src/stream/server_traps.gd")
+const SmelterScript := preload("res://src/stream/server_smelter.gd")   # the Smelters: hopper, input, output or ground, bellows (master s2.5, s2.7)
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const FoodEffects := preload("res://src/shared/food_effects.gd")   # temporary food effects in three group slots (catalog Phase 7)
 const CarryRules := preload("res://src/shared/carry_rules.gd")
@@ -390,6 +391,7 @@ var season_stamp: Callable            # set by the server: () -> int, game year 
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
 var _traps = null                   # server_traps.gd (snares), made in setup
+var _smelters = null                # server_smelter.gd (the Smelters), made in setup
 const CartsScript := preload("res://src/stream/server_carts.gd")
 var _carts = null                   # server_carts.gd (the Handcart and crates riding on it, catalog Phase 10), made in setup
 var send_cart_pull: Callable        # (peer, cart world id or 0, pace in tenths of m/s): the cart this player holds the handle of (protocol 111)
@@ -456,6 +458,9 @@ func setup(item_table, store_dir: String) -> void:
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
 
+	_smelters = SmelterScript.new()
+	_smelters.host = self
+	_smelters.setup(_structures_cfg)
 	_load_blueprints()
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
@@ -502,6 +507,7 @@ func setup(item_table, store_dir: String) -> void:
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
+	_smelters.load_rows(_read_json_version("smelters.json", 1))
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
@@ -1401,6 +1407,7 @@ func tick(delta: float) -> void:
 		_water_tick(spent)
 		_slow_mark("crops-water", t0)
 		_lights_tick(spent)
+		_smelters.tick_all(spent)
 		_dev_pending_tick(spent)
 		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
@@ -1560,6 +1567,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
+	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
 
 
@@ -4820,7 +4828,7 @@ func _sync_world_items() -> void:
 				if it.has("struct"):
 					signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
 
-				var fill: int = _store_fill(it) if it.has("struct") and _out_slots(str(it["struct"]["kind"])) > 0 else -1
+				var fill: int = _store_fill(it) if it.has("struct") and (_out_slots(str(it["struct"]["kind"])) > 0 or _smelters.is_smelter(_structures.get(str(it["struct"]["kind"]), {}))) else -1
 
 				if fill >= 0:
 					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
@@ -8533,6 +8541,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
+
+	if _smelters.is_smelter(_structures.get(str(def["kind"]), {})):
+		_smelters.note(_next_id)
+
 	_next_id += 1
 	_add_roof(entry)
 
@@ -9240,6 +9252,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 
 	if str(def.get("use", "")) == "kiln":   # E lights the Kiln while it holds wood and puts it out (master s2.6)
 		_kiln_use(peer, it, def)
+		return
+
+	if _smelters.is_smelter(def):   # E at a Smelter: works its bellows (Improved), or says how it is fed (master s2.7)
+		_smelters.use(peer, id, it, def)
 		return
 
 	if str(def.get("use", "")) != "split_log":
@@ -10091,6 +10107,16 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 	var held_inst: Dictionary = inv.inst_of(a)
 	var amount: int = mini(count, inv.counts[a])
 	var max_kg: float = float(_structures.get(kind, {}).get("max_kg", 0.0))
+	var smelter: bool = id >= 0 and _smelters.is_smelter(_structures.get(kind, {}))
+
+	if smelter:   # a Smelter's hopper holds smelt.hopper units of fuel and its input smelt.input units of ore (master s2.7)
+		amount = _smelters.room(_structures[kind], chest, number, amount)
+
+		if amount == 0:
+			_say(peer, _smelters.refusal(_structures[kind], chest, number))
+			_reject(peer, 3)
+			return 0
+
 	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
 		amount = _kiln_room(id, chest, amount)
 
@@ -10113,7 +10139,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int) -> int:
 			_say(peer, "It is too heavy for the chest" if cart_room >= room else "The handcart cannot carry more.")
 			_reject(peer, 2)
 
-	var left: int = chest.add(number, amount, held_wear, held_inst) if amount > 0 else 0
+	var left: int = 0
+
+	if amount > 0:
+		left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst) if smelter else chest.add(number, amount, held_wear, held_inst)
+
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
 	return amount - left
@@ -15452,6 +15482,10 @@ func dev_place(spec: String) -> int:
 
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
+
+	if _smelters.is_smelter(def):
+		_smelters.note(_next_id)
+
 	_next_id += 1
 	_add_roof(entry)
 	_dirty = true
@@ -16229,7 +16263,7 @@ func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String, reach_
 	if _is_loose(s):
 		if d <= CraftStock.LOOSE_STOCK_M * reach_x:
 			(stock["near"] as Array).append([sid, d])
-	elif _is_storage(s) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
+	elif _is_storage(s) and not _smelters.is_smelter(_structures.get(str(s["struct"]["kind"]), {})) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
 		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _out_slots(str(s["struct"]["kind"])) > 0 else 0])
 
 
@@ -17002,6 +17036,10 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
 	amount = _kiln_room(sid, box, amount)
+	var sdef: Dictionary = _structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {})
+
+	if _smelters.is_smelter(sdef):
+		amount = _smelters.room(sdef, box, number, amount)
 
 	if max_kg <= 0.0 or _carry_cfg.is_empty() or box == null:
 		return amount
@@ -17053,7 +17091,11 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 				continue   # only chests that already hold it, and take it (structures.json takes)
 
 			var amount: int = _box_room(int(box[0]), number, inv.counts[slot])
-			var put: int = amount - (box[1].add(number, amount, inv.wear[slot]) if amount > 0 else 0)
+			var box_def: Dictionary = _structures.get(str(_items[int(box[0])]["struct"]["kind"]), {})
+			var put: int = 0
+
+			if amount > 0:
+				put = amount - (_smelters.put(box_def, box[1], number, amount, inv.wear[slot]) if _smelters.is_smelter(box_def) else box[1].add(number, amount, inv.wear[slot]))
 
 			if put > 0:
 				inv.take_from_slot(slot, put)
