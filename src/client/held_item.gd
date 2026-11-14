@@ -2515,7 +2515,6 @@ func _garden_preview() -> void:
 	garden_preview_cells = plan.size()
 
 
-# A till has gone out: the sows waiting for beds start their wait clock (a sow_at queued behind tills not yet sent waits until its own till is out).
 # A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
 	var from: Vector3 = _camera.global_position
