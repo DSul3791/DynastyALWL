@@ -1249,6 +1249,14 @@
    "priority": 4
   },
   {
+   "name": "ui_goal",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "goal_placard.gd: the Goal Achieved placard's fanfare, once per completed goal",
+   "to_supply": "A short triumphal trumpet fanfare, 1 to 2 s, original or properly licensed",
+   "priority": 3
+  },
+  {
    "name": "swim_splash_small",
    "state": "generated",
    "variants": 3,
