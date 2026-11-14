@@ -114,10 +114,10 @@ static func temper_ok(item_id: String, entry: Dictionary, gives_count: int) -> b
 	return steel and craft_ok(entry, gives_count) and not t.get("exclude", []).has(item_id)
 
 
-# The variant codes a recipe's output may be made as here: 0 always; Tempered with a quenching trough beside a serving Smithy (`trough_here`);
-# +1 and +2 at a Master smithy that serves the recipe (`master_here`); both together where both apply.
-static func variants(item_id: String, entry: Dictionary, gives_count: int, master_here: bool, trough_here: bool) -> Array:
-	var temper: bool = trough_here and temper_ok(item_id, entry, gives_count)
+# The variant codes a recipe's output may be made as here: 0 always; Tempered at a temper.station that serves the recipe (`temper_here`: the
+# Master smithy, its quenching trough built in); +1 and +2 at a craft.station that serves it (`master_here`); both together where both apply.
+static func variants(item_id: String, entry: Dictionary, gives_count: int, master_here: bool, temper_here: bool) -> Array:
+	var temper: bool = temper_here and temper_ok(item_id, entry, gives_count)
 	var crafts: int = 2 if master_here and craft_ok(entry, gives_count) else 0
 	var out: Array = []
 
