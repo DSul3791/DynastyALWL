@@ -168,6 +168,7 @@ var spyglass_look: Callable = Callable()   # (on, pack slot, tier): the held spy
 var _spyglass_up: bool = false             # right mouse is held on a spyglass in hand
 var _blueprint: Node3D
 var _blueprint_kit: String = ""
+var _ghost_state: int = -1   # the structure state the ghost model shows (a roof corner swaps between its 45 and 65 shapes, A-37)
 var _ghost_material: StandardMaterial3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
@@ -965,6 +966,11 @@ func _is_roof_panel(kit: String) -> bool:
 	return str(PlacementRules.structure_of_kit(_placement, kit).get("piece_kind", "")) == PlacementRules.ROOF_PANEL_KIND
 
 
+# Whether `kit` places a roof corner (piece_kind "roof_hip", A-37): it rests where two edges meet and the wheel picks its 45 or 65 shape when no panel is beside it.
+func _is_roof_hip(kit: String) -> bool:
+	return str(PlacementRules.structure_of_kit(_placement, kit).get("piece_kind", "")) == PlacementRules.ROOF_HIP_KIND
+
+
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
 	if _hoe_menu_open:
@@ -991,6 +997,11 @@ func wheel(down: bool) -> bool:
 		if str(picked_def.get("piece_kind", "")) == PlacementRules.ROOF_PANEL_KIND:
 			lift_steps = 1 - clampi(lift_steps, 0, 1)   # the wheel flips which end rests on the edge: the low one (the panel rises from it) or the high one (it falls)
 			_inv._on_notice("Roof panel rests on its %s end and %s from the edge" % [("high" if lift_steps == 1 else "low"), ("falls" if lift_steps == 1 else "rises")])
+			return true
+
+		if str(picked_def.get("piece_kind", "")) == PlacementRules.ROOF_HIP_KIND:
+			lift_steps = 1 - clampi(lift_steps, 0, 1)   # the corner's shape where no panel stands beside it yet (a panel beside it decides)
+			_inv._on_notice("Roof corner at %d degrees where no roof panel is beside it (a panel beside it sets the slope)" % (65 if lift_steps == 1 else 45))
 			return true
 
 		return false
@@ -1796,7 +1807,7 @@ func _update_blueprint() -> void:
 			_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			_ghost_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
-		if _is_roof_panel(_blueprint_kit) or _is_roof_panel(kit):
+		if _is_roof_panel(_blueprint_kit) or _is_roof_panel(kit) or _is_roof_hip(_blueprint_kit) or _is_roof_hip(kit):
 			lift_steps = 0   # a roof panel's mode (rise or fall) and a foundation's lift share the number: neither carries over to the other piece
 
 		_blueprint_kit = kit
@@ -1805,7 +1816,8 @@ func _update_blueprint() -> void:
 			child.queue_free()
 
 		var def: Dictionary = PlacementRules.structure_of_kit(_placement, kit)
-		var model: Node3D = _inv.ghost_model(int(def.get("state", 1)))
+		_ghost_state = int(def.get("state", 1))
+		var model: Node3D = _inv.ghost_model(_ghost_state)
 		_ghost_clean(model)
 		_blueprint.add_child(model)
 		_blueprint_shape = footprint
@@ -1835,6 +1847,23 @@ func _update_blueprint() -> void:
 
 	if attach == "table" and not on_base:
 		blueprint_state = "notable"   # a Serving Platter only goes on a table top (catalog phase 8)
+
+	if _is_roof_hip(kit):
+		var hip: Array = PlacementRules.roof_hip_pick(_placement, PlacementRules.structure_of_kit(_placement, kit), _blueprint_at, clampi(lift_steps, 0, 1), _inv.foundation_rows()) if on_base else []
+
+		if hip.is_empty():
+			blueprint_state = "nocorner"   # a roof corner only goes where two edges meet at a corner
+		else:
+			var shape_state: int = int(_placement["structures"].get(str(hip[2]), {}).get("state", _ghost_state))
+
+			if shape_state != _ghost_state:   # the panel beside it, or the wheel, picked the other slope: show that shape
+				for child in _blueprint.get_children():
+					child.queue_free()
+
+				_ghost_state = shape_state
+				var shaped: Node3D = _inv.ghost_model(shape_state)
+				_ghost_clean(shaped)
+				_blueprint.add_child(shaped)
 
 	if _is_roof_panel(kit):
 		if not on_base:
@@ -1876,7 +1905,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "buried" or blueprint_state == "nodoorway" or blueprint_state == "mismatch"
+	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "nocorner" or blueprint_state == "buried" or blueprint_state == "nodoorway" or blueprint_state == "mismatch"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
