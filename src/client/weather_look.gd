@@ -817,8 +817,7 @@ func _process_body(delta: float) -> void:
 		# Where the land fog lies (fog_ground.gd): the valley fog's top is the cold-air floor here plus its depth; steam fog is a shallow
 		# layer over the water near rivers and lakes; the sea fog over the land keeps its own top. The land layer is the one the eye is
 		# most inside (strength x depth at the eye), or, above them all, the strongest (fog_look.gd pick_layer).
-		var eye: Vector3 = _client.camera.global_position
-		var eye_y: float = eye.y
+		var eye_y: float = eye.y           # eye: the camera's position, read above for the night light
 
 		if _summits_set and fog_shown:          # the world's tiles are known (set with the summits); no reading for an undrawn fog
 			fog_ground.update(eye)

@@ -223,10 +223,10 @@ func _init() -> void:
 	for day in range(60):
 		for hour in [2, 5, 7, 9, 12, 20]:
 			var t_a: float = (float(180 + day) * 24.0 + float(hour)) * 3600.0
-			var low: Dictionary = Weather.state(777, t_a, "temperate", 0.0)
-			var high: Dictionary = Weather.state(777, t_a, "temperate", 1500.0)
+			var at_sea: Dictionary = Weather.state(777, t_a, "temperate", 0.0)
+			var at_height: Dictionary = Weather.state(777, t_a, "temperate", 1500.0)
 
-			if not is_equal_approx(float(low["mist"]), float(high["mist"])) or not is_equal_approx(float(low["water_steam"]), float(high["water_steam"])):
+			if not is_equal_approx(float(at_sea["mist"]), float(at_height["mist"])) or not is_equal_approx(float(at_sea["water_steam"]), float(at_height["water_steam"])):
 				alt_bad += 1
 
 		# Burn-off: some fog is left an hour after sunrise when there was fog at dawn, and five hours on it is thinner.
