@@ -269,6 +269,34 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items._items.erase(far_chest)
 
+	# A stale source: the chest the water came from is gone (its world id and uid no longer match), so the cancel pours into the pack, once: no stackable water, nothing doubled.
+	fresh()
+	var gone_chest: int = items.dev_place("chest@8,0,0")
+	items._items[gone_chest]["struct"]["owner"] = str(items._peer_key[1])
+	var gone_box = items._chests[int(items._items[gone_chest]["struct"]["uid"])]
+	gone_box.add(n("waterskin"), 1, 1000)
+	var carrier: int = vessel("bucket", 0)
+	queue_only()
+	check(gone_box.liquid_ml() == 500 and inv().liquid_ml() == 0, "the queued craft took its 500 mL from the chest's skin (a bucket waits empty in the pack)")
+	items._items.erase(gone_chest)
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(inv().wear[carrier] == 500 and inv().liquid_ml() == 500 and have("water") == 0 and gone_box.liquid_ml() == 500, "the source chest is gone: the 500 mL land in the pack's bucket once, nothing minted, nothing poured into the old box")
+
+	# The same, with the chest still standing but no longer the player's: the owner is re-checked, so the water goes to the pack.
+	fresh()
+	var sold_chest: int = items.dev_place("chest@8,0,0")
+	items._items[sold_chest]["struct"]["owner"] = str(items._peer_key[1])
+	var sold_box = items._chests[int(items._items[sold_chest]["struct"]["uid"])]
+	sold_box.add(n("waterskin"), 1, 1000)
+	carrier = vessel("bucket", 0)
+	queue_only()
+	items._items[sold_chest]["struct"]["owner"] = str(items._peer_key[2])
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(inv().wear[carrier] == 500 and have("water") == 0 and sold_box.liquid_ml() == 500, "a chest that is no longer theirs gets none of it back: the 500 mL land in the pack")
+	items._items.erase(sold_chest)
+
 	# The bed: a bucket's 8000 mL is pour_pct; the container in hand first, the pack's other water after; up to a bucket a game day; every refusal says why.
 	fresh()
 	items._structures["test_plot"] = {"kit": "test_plot_kit", "item": "tilled_bed", "state": 9907, "plot": true, "moisture_factor": 1.0, "cap_per_chunk": 12}

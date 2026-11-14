@@ -17321,7 +17321,7 @@ func _pour_back(peer: int, ml: int, src: Dictionary = {}) -> void:
 	var left: int = ml
 	var from_id: int = int(src.get("box", -1))
 
-	if from_id >= 0 and _items.has(from_id) and _items[from_id].has("struct") and int(_items[from_id]["struct"].get("uid", -2)) == int(src.get("uid", -1)) and _chests.has(int(src["uid"])):
+	if from_id >= 0 and _items.has(from_id) and _items[from_id].has("struct") and int(_items[from_id]["struct"].get("uid", -2)) == int(src.get("uid", -1)) and _chests.has(int(src["uid"])) and CraftStock.owner_ok(str(_items[from_id]["struct"].get("owner", "")), str(_peer_key.get(peer, ""))):   # the water was the player's own, so the chest must still be theirs; a stale or changed source falls through to the pack, and the row is spent once
 		left = _chests[int(src["uid"])].pour_liquid(left)
 
 		if left < ml:
