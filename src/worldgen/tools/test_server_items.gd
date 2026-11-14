@@ -955,8 +955,61 @@ func _init() -> void:
 	accept[0] = true
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 1 and fills.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "smoothing cuts the high spot and fills the low ones (%d cuts, %d fills)" % [digs.size(), fills.size()])
-	check(patches_of.call() == 1, "smoothed ground loses its path patches within 2.5 m (the far one stays)")
+	# Levelling (Dave 14 Nov 2026): a 1 m grid of 29 spots within 3 m, toward the ground the player stands on (10.0 at x 5), at most LEVEL_MAX_OPS edits a stroke,
+	# the spot farthest from level first. The 0.4 m step past x 6.5 is cut, nothing filled, and no cut goes below the player's ground.
+	check(digs.size() >= 1 and digs.size() <= ItemsScript.LEVEL_MAX_OPS and fills.is_empty() and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "levelling cuts the high side toward the ground the player stands on, fills nothing, at most %d edits (%d cuts, %d fills)" % [ItemsScript.LEVEL_MAX_OPS, digs.size(), fills.size()])
+	check(digs.all(func(cut): return absf(float(cut[1]) - ItemsScript.LEVEL_SPHERE_M) < 0.001 and float(cut[0].y) - ItemsScript.LEVEL_SPHERE_M >= 10.0 - 0.001), "no cut sphere reaches below the player's ground")
+	check(patches_of.call() == 0, "levelled ground loses its path patches within 4 m (all three, the farthest 3.6 m away)")
+	# Strokes add up: the heights are read through the edits made (the server's saved-edit log, here the digs and fills recorded), so held strokes level the whole circle and then stop.
+	var level_ops = func(_point, _radius) -> Array:
+		var ops: Array = []
+
+		for cut in digs:
+			ops.append([0, cut[0], cut[1]])
+
+		for put in fills:
+			ops.append([1, put[0], put[1]])
+
+		return ops
+	m.edits_near = level_ops
+	var level_at: Vector3 = Vector3(6.0, 10.0, 0.0)
+	var flat_after = func(height: float, slack: float) -> bool:
+		var ops: Array = level_ops.call(level_at, 0.0)
+
+		for cell_i in range(-3, 4):
+			for cell_j in range(-3, 4):
+				if cell_i * cell_i + cell_j * cell_j <= 9 and absf(m._edited_height(level_at.x + cell_i, level_at.z + cell_j, ops) - height) > slack:
+					return false
+
+		return true
+	for stroke in 40:
+		m._last_dig.clear()
+		m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	var level_made: int = digs.size() + fills.size()
+	check(fills.is_empty() and flat_after.call(10.0, ItemsScript.LEVEL_MIN_M), "held strokes level every spot of the 6 m circle to the player's ground (%d cuts)" % digs.size())
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(digs.size() + fills.size() == level_made, "once level, a stroke makes no more edits (the edit log does not grow)")
+	# Standing on a foundation 0.5 m up: levelled to 0.1 m below the feet (10.4); fills top out there.
+	var cuts_before: int = digs.size()
+	m.report_position(1, Vector3(5.0, 10.5, 0.0))
+
+	for stroke in 40:
+		m._last_dig.clear()
+		m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(digs.size() == cuts_before and not fills.is_empty() and fills.all(func(put): return float(put[0].y) + ItemsScript.LEVEL_SPHERE_M <= 10.4 + 0.001), "on a foundation: the ground is filled up toward just under the feet, never above (%d fills)" % fills.size())
+	check(flat_after.call(10.4, ItemsScript.LEVEL_MIN_M), "and the whole circle ends 0.1 m under the feet")
+	# Feet far above the ground (a jump, a cart): the target is capped LEVEL_MAX_RAISE_M above the ground under the feet.
+	m.report_position(1, Vector3(5.0, 14.0, 0.0))
+	m._last_dig.clear()
+	var fills_before: int = fills.size()
+	var under_feet: float = m._edited_height(5.0, 0.0, level_ops.call(level_at, 0.0))
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(fills.size() > fills_before and fills.slice(fills_before).all(func(put): return float(put[0].y) + ItemsScript.LEVEL_SPHERE_M <= under_feet + ItemsScript.LEVEL_MAX_RAISE_M + 0.001), "feet 3.6 m up: nothing is filled higher than %.1f m over the ground under them" % ItemsScript.LEVEL_MAX_RAISE_M)
+	m.edits_near = Callable()
+	digs.clear()
+	fills.clear()
+	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	# The grade line: nothing happens before both points are set; then a stroke brings the high side toward the ramp (A 10.0 at x 4 to B 10.2 at x 8).
 	digs.clear()
 	fills.clear()

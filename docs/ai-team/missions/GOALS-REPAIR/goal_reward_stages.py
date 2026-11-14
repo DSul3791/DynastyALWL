@@ -22,6 +22,8 @@ WRITE = "--write" in sys.argv
 STAGES = [("stone", 5, {"copper_ingot", "tin_ingot", "bronze_ingot", "iron_ingot", "steel_ingot"}), ("bronze", 10, {"iron_ingot", "steel_ingot"}),
     ("iron", 15, {"steel_ingot"}), ("steel", 20, set())]
 COPPER = {name: c for name, c, _ban in STAGES}
+# The stage names of the live goal data (data/items/goal_rewards.json, #1121): what each row's `stage` column holds.
+STAGE_KEY = {"stone": "start", "bronze": "copper_bronze", "iron": "iron", "steel": "steel"}
 # Events with no item or structure to trace: the stage of what the event needs (the tool, station or skill named).
 EVENT_STAGES = {
     "drink": "stone", "tree_felled": "stone", "fire_lit": "stone", "ate_food": "stone", "sold": "stone", "fish_caught": "stone", "wanted_order": "stone",
@@ -156,6 +158,10 @@ raw = open(path, newline="", encoding="utf-8").read()
 term = "\r\n" if "\r\n" in raw.splitlines(True)[0] else "\n"
 rd = csv.DictReader(io.StringIO(raw, newline=""))
 rows = list(rd)
+fields = list(rd.fieldnames)
+
+if "stage" not in fields:
+    fields.insert(fields.index("reward_text") + 1, "stage")
 unplaced = []
 counts = {name: 0 for name, _c, _b in STAGES}
 
@@ -180,6 +186,7 @@ def named_stage(title):
 
 for row in rows:
     if row["status"] == "MERGED":   # folded into another goal (A-43): no reward of its own
+        row["stage"] = ""
         continue
 
     data_stage = stage_of(row)
@@ -196,6 +203,7 @@ for row in rows:
     counts[stage] += 1
     row["reward_copper"] = str(COPPER[stage])
     row["reward_text"] = text(COPPER[stage])
+    row["stage"] = STAGE_KEY[stage]
 
 assert len({r["id"] for r in rows}) == len(rows), "duplicate goal ids"
 total = sum(int(r["reward_copper"] or 0) for r in rows)
@@ -204,7 +212,7 @@ print(json.dumps({"stages": counts, "total_copper": total, "total_original": sum
 
 if WRITE:
     out = io.StringIO(newline="")
-    w = csv.DictWriter(out, fieldnames=rd.fieldnames, lineterminator=term)
+    w = csv.DictWriter(out, fieldnames=fields, lineterminator=term)
     w.writeheader()
     w.writerows(rows)
     open(path, "w", newline="", encoding="utf-8").write(out.getvalue())

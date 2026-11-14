@@ -37,11 +37,13 @@
 
 | Stage | Pays | Covers | Rows |
 |---|---:|---|---:|
-| Stone | 5 copper | the start, stone tools, Crude | 416 |
-| Bronze | 10 copper (1 bronze) | Copper, Bronze, Improved | 27 |
-| Iron | 15 copper (1 bronze + 5 copper) | Iron, Refined, Advanced | 198 |
-| Steel | 20 copper (2 bronze) | Steel, Fortified, Master | 60 |
+| `start` (stone) | 5 copper | the start, stone tools, Crude | 416 |
+| `copper_bronze` | 10 copper (1 bronze) | Copper, Bronze, Improved | 27 |
+| `iron` | 15 copper (1 bronze + 5 copper) | Iron, Refined, Advanced | 198 |
+| `steel` | 20 copper (2 bronze) | Steel, Fortified, Master | 60 |
 | **All** | **6,520 copper** | 701 paying rows (651 ORIGINAL: 6,010; 25 PROPOSED: 360; 25 APPROVED: 150); the MERGED ADD-16 row pays nothing | **701** |
+
+Each row's `stage` column holds the stage name the live goal data uses (`data/items/goal_rewards.json`, #1121), so a row can go live as it stands; the 28 live goals' stages in `starter_goals.json` and `camp_goals.json` match their rows (all `start`).
 
 **How a row gets its stage.** A row pays the higher of two stages:
 

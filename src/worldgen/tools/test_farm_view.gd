@@ -2,7 +2,7 @@ extends SceneTree
 
 # The inventory view's bed interaction (GOALS-REPAIR WP-R1B): E on a tilled bed or garden plot sends the request the bed's row and the hand call for (inventory_view._bed_interaction),
 # with the right args: ACT_SOW with the seed's pack slot, ACT_WATER_BED with the held container's pack slot as b, ACT_HARVEST; and the crop look follows the row's crop and stage
-# (_note_crop): swapped when the stage changes, dropped when the crop goes. The rules behind the wording are in test_farm_prompt.gd; the server's in test_farming.gd.
+# (_note_crop): swapped when the stage changes, dropped when the crop goes; and the hoe Garden mode's bed lookup (bed_id_at, bed_crop). The rules behind the wording are in test_farm_prompt.gd; the server's in test_farming.gd.
 #   godot --headless --path . --script res://src/worldgen/tools/test_farm_view.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -113,5 +113,15 @@ func _init() -> void:
 	check(second != first and first.is_queued_for_deletion() and node.get_child_count() == 2 and int(view._world[3]["stage"]) == 2, "a new stage swaps the look and frees the old one")
 	view._note_crop(3, [3, bed_number, 1, Vector3.ZERO, 47, {"yaw": 0.0}])
 	check(view._world[3]["crop_node"] == null and second.is_queued_for_deletion() and str(view._world[3]["crop"]) == "", "a row with no crop drops the look")
+
+	# The hoe's Garden mode finds the bed under the crosshair by footprint (inventory_view.bed_id_at): a 1 m bed and a 2 m plot, a plot's blueprint site is skipped.
+	view._world.clear()
+	view._world[10] = {"node": null, "number": bed_number, "count": 1, "pos": Vector3(0.5, 0.0, 0.5), "state": 47, "yaw": 0.0, "light": null}
+	view._world[11] = {"node": null, "number": table.number_of("wooden_garden_plot"), "count": 1, "pos": Vector3(10.0, 0.0, 10.0), "state": 157, "yaw": 0.0, "light": null, "crop": "wheat"}
+	view._world[12] = {"node": null, "number": table.number_of("stone_garden_plot"), "count": 1, "pos": Vector3(20.0, 0.0, 20.0), "state": 158, "yaw": 0.0, "light": null, "site": {}}
+	check(view.bed_id_at(Vector3(0.5, 0.0, 0.5)) == 10 and view.bed_id_at(Vector3(0.95, 0.0, 0.1)) == 10 and view.bed_id_at(Vector3(1.2, 0.0, 0.5)) == 0, "bed_id_at: a 1 m bed holds its own square and not 0.7 m out")
+	check(view.bed_id_at(Vector3(10.9, 0.0, 9.1)) == 11 and view.bed_id_at(Vector3(11.3, 0.0, 10.0)) == 0, "bed_id_at: a 2 m plot holds its corner and not 1.3 m out")
+	check(view.bed_id_at(Vector3(20.0, 0.0, 20.0)) == 0, "bed_id_at: a plot still a blueprint site is not a bed")
+	check(view.bed_crop(11) == "wheat" and view.bed_crop(10) == "" and view.bed_crop(99) == "", "bed_crop reads the row's crop, empty for none or an unknown id")
 	print("farm view: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
