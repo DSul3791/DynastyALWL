@@ -35,7 +35,7 @@ The creator instructed us to **remove obsolete instructions directly from active
 
 **First authority pass:** compared creator's later explicit decisions with master, progression, old item system, buildables, warehouse, 651-goal draft, Journal, Map, repair plan and historical audit; rewrote active source sections in place instead of layering contradictory instructions.
 
-**Independent structure pass:** after edits, checked 14 active documents for live imperative old Stone/Brick Forge directions, obsolete ingot recipes, detached smithy add-ons, false existing World Map, and obsolete fuel/hammer rules; **zero matches**. Checked the master plan and storage agree on capacities/speeds and all three bin sizes.
+**Independent structure pass:** after edits, checked 14 active documents for live imperative old Stone/Brick Forge directions, obsolete ingot recipes, detached smithy add-ons, false existing World Map, and obsolete fuel/hammer rules; **the original pass reported zero matches, but that conclusion was incomplete**. A follow-up found surviving weapon, armour, animal-armour and Appendix A prescriptions in the master catalog; see §5. Checked the master plan and storage agree on capacities/speeds and all three bin sizes.
 
 **Goal integrity pass:** confirmed **651 goal rows, 651 distinct identifiers and unchanged reward field values**. Compared against original 651 ledger IDs; 28 pre-existing legacy plain IDs are represented in draft by `existing:<id>` presentation markers, and **two proposed replacements** `build:bellows → activity:operate_bellows` and `build:quenching_trough → activity:temper_steel` require stable-ID review before runtime work. No new paid goal silently activated.
 
@@ -51,3 +51,15 @@ The creator instructed us to **remove obsolete instructions directly from active
 6. **Goal conversion** 2 legacy add-on goal identifiers + missing new-tier goal concepts require review; 651 original baseline goal audit still needs full play validation. Reward rebalance and retroactive payouts remain deferred by creator.
 
 **Exit for this mission:** obsolete rules cleaned from surveyed active documents; the next team may prepare reviewed gameplay changes against **one current set of design specifications**, but must not claim live systems are fixed from docs alone.
+
+## 5. Follow-up correction: surviving master-catalog rules
+
+**13 November 2026 — creator requested cleanup after review of CCR05.** Corrected active weapon and Bronze armour stations, animal-armour metalworking rules, and the Iron Ore acquisition note. Removed obsolete Appendix A prescriptions that promoted legacy station IDs to a Blast Furnace or prescribed proximity-anvil upgrades. Legacy IDs and snapshot station labels remain factual data evidence; final tier mapping is explicitly pending, not inferred. The Iron Anvil note now distinguishes the legacy standalone blueprint from the required Advanced Smithy construction component. Kiln withdrawal wording now agrees with §2.5's permission-free automatic fuel pull.
+
+Verification: reviewed the complete diff against master §2.7 and the current progression/repair specifications; searched active design Markdown for Stone/Brick Forge, Blast Furnace and Clay Bloomery references and classified remaining matches as explicit exclusions, historical audit evidence or legacy identifiers. Appendix item-row count and identifiers are unchanged. No code, data, goal rows or rewards changed. Independent review and Library synchronization remain pending; no Godot/F6 tests run for this documentation-only correction.
+
+### Coordinator-handoff consistency pass
+
+Reconciled the repair plan with the consolidated R0–R9 implementation sequence: replaced remaining positive Bellows Smelter/Blast Furnace display names with Improved/Advanced Smelter; placed approved Journal/HUD/placard and discovered charcoal Map at R8 while leaving reward balancing and unresolved Map Scroll details deferred. Clarified that the P work packages describe repair concerns rather than a competing execution sequence. Removed the unsupported blanket approval blocker for every MISSING FEATURE or TEST NEEDED classification; existing authority still governs actual design/protected changes.
+
+Prompt review covered out-of-order goal completion, missing recipe values, unmerged cleanup, simultaneous reward events/reconnect, input-context collisions, and progression cycles. The handoff must distinguish the 651-row draft and proposed new goals from approved live payouts; retain reward review/migration gates and ongoing work on independent approved mechanics. Independent review remains pending.
