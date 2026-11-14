@@ -806,7 +806,8 @@ func _process_body(delta: float) -> void:
 		var land: float = maxf(mist, sea_land)
 		var land_top: float = float(_s["mist_top_m"]) if mist >= sea_land else sea_top
 		var eye_y: float = _client.camera.global_position.y
-		var in_land: float = land * smoothstep(-MIST_EDGE_M, MIST_EDGE_M, land_top - eye_y)
+		var eye_in_land: float = smoothstep(-MIST_EDGE_M, MIST_EDGE_M, land_top - eye_y)   # 0 above the layer's top .. 1 below it, whatever its strength
+		var in_land: float = land * eye_in_land
 		var in_sea: float = sea_fog * smoothstep(-MIST_EDGE_M, MIST_EDGE_M, sea_top - eye_y) if eye_y < SEA_LEVEL_EYE_M else 0.0
 		mist_inside = maxf(in_land, in_sea) * under_rock
 		# How foggy the air looks overall, and how much of it is the grey sea fog rather than the white valley fog.
@@ -830,7 +831,7 @@ func _process_body(delta: float) -> void:
 		# ground fills white with a soft top. Inside the layer the height fog steps aside (it would whiten the ground at your feet
 		# as much as the far valley) and the distance fog above carries it. Under rock it goes, like the light.
 		environment.fog_height = land_top
-		environment.fog_height_density = MIST_HEIGHT_DENSITY * land * (1.0 - mist_inside) * under_rock
+		environment.fog_height_density = layer_height_density(land, eye_in_land) * under_rock
 		# The water draws its own fog with the same sums (water_material.gd): rivers and lakes take the land layer, the sea plane only
 		# the sea fog, so a calm night's valley fog leaves the open sea clear (radiation fog forms over land, not the open sea).
 		_water_fog(environment, sea_top, MIST_HEIGHT_DENSITY * sea_fog * (1.0 - mist_inside) * under_rock, under_rock)
@@ -926,6 +927,16 @@ static func sky_under_rock(environment: Environment, sky_part: float, under_rock
 
 	if environment.reflected_light_source != reflect:
 		environment.reflected_light_source = reflect
+
+
+# Height fog of the valley fog layer (per metre below its top) for a layer of this strength, the eye `eye_in` inside it (0 above the
+# top .. 1 below it). Godot's height fog whitens a point by its depth below the top, not by the distance to it, so seen from inside
+# the layer it would whiten the grass at your feet as much as the far valley: inside, it steps aside and the distance fog carries
+# the mist. Stepping aside follows where the eye is, not the layer's strength: scaled by strength (as before 14 Nov 2026), a thinning
+# morning mist (strength 0.3 to 0.8) left 0.013 to 0.02 per metre on, and 30 m down in a valley everything near was a third to a half
+# white under a clear sky (Dave's shots, 14 Nov 2026).
+static func layer_height_density(strength: float, eye_in: float) -> float:
+	return MIST_HEIGHT_DENSITY * clampf(strength, 0.0, 1.0) * (1.0 - clampf(eye_in, 0.0, 1.0))
 
 
 # Share of the sun and sky light that reaches the player at this rock enclosure (0 open air .. 1 a tunnel).
