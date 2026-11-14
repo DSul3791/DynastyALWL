@@ -196,8 +196,8 @@ func _init() -> void:
 	check(count("twine") == 8, "fibre is twisted into twine (lean-to 4 + chest 4)")
 	items._vitals_cfg["eat_pace_ms"] = 0
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # admin give is capped at 100 a call
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the lean-to now needs 200 (Dave 4 Nov), which the real player sweeps from many trees
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)   # the lean-to needs 10 twine (30 fibre; the 8 twisted above cover the chest and part of it)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # the lean-to needs 60 leaves, 20 sticks and 6 twine (blueprints.json bp 25); a felled crown scatters about 100, and test_primitive_route.gd walks that route with no gives
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)   # extra twine beyond the 8 twisted above, so the lean-to (6) and the chest (4) are both covered
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 20, Vector3.ZERO)   # the 36 gathered sticks do not cover the lean-to (32) and the chest (10); the real player sweeps more (31 Oct)
 	queue(13, 1)
 	queue(14, 1)

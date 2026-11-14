@@ -1563,8 +1563,8 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 		core.position = face.position + Vector3(0.0, end * 0.001, 0.0)
 		mesh_node.add_child(core)
 
-	if trunk and bool(extra.get("keywood", false)) and length > 2.44 * 1.2:   # the next cut line: a pale band round the trunk one log length from the far end
-		var cut_at: float = (length - 2.44) / length
+	if trunk and bool(extra.get("keywood", false)) and length > 3.0 * 1.2:   # the next cut line: a pale band round the trunk one log length from the far end
+		var cut_at: float = (length - 3.0) / length
 		var band: MeshInstance3D = MeshInstance3D.new()
 		var band_cyl: CylinderMesh = CylinderMesh.new()
 		var band_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, cut_at) * 1.04
@@ -1577,7 +1577,7 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 		band_mat.emission = Color(0.35, 0.3, 0.15)
 		band_cyl.material = band_mat
 		band.mesh = band_cyl
-		band.position = Vector3(0.0, length * 0.5 - 2.44, 0.0)
+		band.position = Vector3(0.0, length * 0.5 - 3.0, 0.0)
 		mesh_node.add_child(band)
 
 	var stub_rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -3888,7 +3888,7 @@ func _mesh_for(number: int) -> Mesh:
 		var mesh: Mesh
 
 		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood" or id.begins_with("log_"):
-			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}.get(id, [2.5, 0.28, 0.22, 0.02])   # a species log is the full-size 2.5 m length
+			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}.get(id, [3.0, 0.28, 0.22, 0.02])   # a species log is the full-size 3.0 m length (drops.json log_length_m)
 			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, LogLookScript.color_of(id))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
@@ -3919,10 +3919,10 @@ func _mesh_for(number: int) -> Mesh:
 	return _meshes[number]
 
 
-# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 2.5 m for a species log, 1 m for the plain log.
+# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 3.0 m for a species log (drops.json log_length_m), 1 m for the plain log.
 func _log_mesh(id: String) -> ArrayMesh:
 	var plain: bool = id == "log"
-	var length: float = 1.0 if plain else 2.5
+	var length: float = 1.0 if plain else 3.0
 	var r0: float = 0.13 if plain else 0.28
 	var r1: float = 0.11 if plain else 0.22
 	var cyl: CylinderMesh = CylinderMesh.new()

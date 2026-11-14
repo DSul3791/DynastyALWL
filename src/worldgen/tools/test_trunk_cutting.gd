@@ -92,7 +92,8 @@ func _init() -> void:
 	# A log on the shoulder never blocks the chopping.
 	w._give_shoulder(1, log_n, 1)
 	check(w.shoulder_of(1) == "log_oak", "a log is on the shoulder")
-	var cut_point: Vector3 = base + along * (length0 - 1.2)
+	var log_len: float = float(w._drops["trunk"]["log_length_m"])   # 3.0 m (Master s2.3 item 1)
+	var cut_point: Vector3 = base + along * (length0 - log_len * 0.5)
 	w.report_position(1, cut_point)
 
 	for n in range(3):
@@ -101,7 +102,7 @@ func _init() -> void:
 
 	check(loose_logs(w, log_n).size() == 1, "the cut drops one log on the ground, not into the pack (loose logs: %d)" % loose_logs(w, log_n).size())
 	check(w.shoulder_of(1) == "log_oak" and w.inventory_of(1).count_of(log_n) == 1, "the carried log (a pack item) is unchanged and the cut log did not join it")
-	check(absf(float(tree["length"]) - (length0 - 2.44)) < 0.01, "the trunk is one log shorter (%.2f from %.2f)" % [float(tree["length"]), length0])
+	check(absf(float(tree["length"]) - (length0 - log_len)) < 0.01, "the trunk is one log shorter (%.2f from %.2f)" % [float(tree["length"]), length0])
 
 	# Save and load mid-way keeps the shortened trunk.
 	w.save()
@@ -125,7 +126,7 @@ func _init() -> void:
 
 	check(not w._items.has(trunk_id), "the last cut removes the trunk")
 	var logs: int = loose_logs(w, log_n).size()
-	check(logs == int(18.0 / 2.44), "every log of the tree lies on the ground: %d of %d" % [logs, int(18.0 / 2.44)])
+	check(logs == int(18.0 / log_len), "every log of the tree lies on the ground: %d of %d" % [logs, int(18.0 / log_len)])
 	check(w.inventory_of(1).count_of(log_n) == 1, "no cut log went into the pack (only the carried one)")
 	var stumps: int = 0
 
