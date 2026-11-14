@@ -26,6 +26,7 @@ const FENCE_TAKEN_M := 0.3           # a section already this close to a candida
 const WALL_TOP_KIND := "wall_top"    # structures.json piece_kind of a wall top (the Fortified battlement, Dave 10 Nov 2026): it sits on a wall's top
 const WALL_HEIGHT_M := 2.4           # a wall's top above its spot unless its row has height_m (piece_look walls are 2.4 m)
 const ROOF_PANEL_KIND := "roof_panel"   # structures.json piece_kind of a sloped roof panel (Crude - Roof 45 and 65, BUG-011): it rests by either end on a wall top, a ceiling edge or another panel's end
+const ROOF_HIP_KIND := "roof_hip"     # structures.json piece_kind of a roof corner (GOALS-REPAIR A-37): a hip over a building's corner, two sloped faces meeting the panels on both sides
 const ROOF_PANEL_WIDTH_M := 2.0      # a panel is as wide as a wall (and a ceiling cell), so a row of them roofs a wall's length
 const ROOF_ROW_REACH_M := 6.0        # roof edges are looked for only on pieces this near the cursor (an edge within ANCHOR_REACH_M, or a panel middle with its run and a wall cell)
 const ROOF_BURY_M := 0.1             # a panel's low edge may sink this far into the ground before it is "buried"
@@ -55,10 +56,11 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 
 
 # Building pieces (structures.json "piece": true) click to a grid: x and z to the piece's snap_m (else piece_snap_m) metres, the turn to
-# a quarter circle, so neighbours meet edge to edge. A wall, floor or roof near a foundation (rows: {"pos", "state"}) snaps to the
+# a quarter circle, so neighbours meet edge to edge. A wall or floor near a foundation (rows: {"pos", "state"}) snaps to the
 # nearest of the foundation's anchors instead and stands on its top; a pillar snaps to the middle or a corner of a foundation or a ceiling
 # (pillar_anchors). Where two bases offer the same point (a ceiling laid on a foundation), the one whose top is nearest the cursor's height
-# wins. Anything else keeps its spot and turn. `mode` is a roof panel's rise or fall from where it rests (0 rises, 1 falls: roof_panel_spot).
+# wins. Anything else keeps its spot and turn. `mode` is a roof panel's rise or fall from where it rests (0 rises, 1 falls: roof_panel_spot), or a
+# roof corner's shape where no panel beside it decides (0: 45, 1: 65: roof_hip_pick).
 # Returns [spot, yaw in degrees, on_foundation].
 static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, rows: Array = [], mode: int = 0) -> Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
@@ -101,6 +103,12 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 		if not rested.is_empty():
 			return rested
+
+	if piece_kind == ROOF_HIP_KIND:
+		var hip: Array = roof_hip_pick(cfg, def, spot, mode, rows)
+
+		if not hip.is_empty():
+			return [hip[0], hip[1], true]
 
 	var step: int = FENCE_TURN_DEG if piece_kind == FENCE_KIND else 90
 	var turned: int = posmod(int(round(float(yaw_deg) / float(step))) * step, 360)
@@ -218,18 +226,35 @@ static func _pillar_at(cfg: Dictionary, at: Vector3, rows: Array) -> bool:
 	return _kind_at(cfg, at, rows, PILLAR_KIND)
 
 
-# Whether a piece of `piece_kind` already stands within ANCHOR_TAKEN_M of `at` (one pillar to a point, one wall top to a wall).
-static func _kind_at(cfg: Dictionary, at: Vector3, rows: Array, piece_kind: String) -> bool:
+# Whether a piece of `piece_kind` (row `def`, standing at `at`) already stands on that point (point_of within ANCHOR_TAKEN_M): one pillar to a point,
+# one wall top to a wall, one roof panel or corner to a square at either slope.
+static func _kind_at(cfg: Dictionary, at: Vector3, rows: Array, piece_kind: String, def: Dictionary = {}) -> bool:
 	for row in rows:
-		if (row["pos"] as Vector3).distance_to(at) < ANCHOR_TAKEN_M and str(structure_of_state(cfg, int(row["state"])).get("piece_kind", "")) == piece_kind:
+		var other: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if point_family(str(other.get("piece_kind", ""))) == point_family(piece_kind) and point_of(other, row["pos"]).distance_to(point_of(def, at)) < ANCHOR_TAKEN_M:
 			return true
 
 	return false
 
 
+# Which pieces share a point: a roof panel and a roof corner over the same square are the same piece of roof (A-37), anything else only its own kind.
+static func point_family(piece_kind: String) -> String:
+	return ROOF_PANEL_KIND if piece_kind == ROOF_HIP_KIND else piece_kind
+
+
+# The point a piece of row `def` at `pos` takes to itself: its spot, but for a roof panel or corner (whose spot is its middle, half its rise above or below
+# where it rests) the spot half a rise lower, so its 45 and 65 shapes on the same edges take the same point.
+static func point_of(def: Dictionary, pos: Vector3) -> Vector3:
+	if str(def.get("piece_kind", "")) in [ROOF_PANEL_KIND, ROOF_HIP_KIND]:
+		return pos - Vector3(0.0, roof_panel_rise(def) * 0.5, 0.0)
+
+	return pos
+
+
 # Pieces that take a point to themselves: a second one on the same point is refused ("close"), by the ghost and the server alike.
 static func one_to_a_point(piece_kind: String) -> bool:
-	return piece_kind == PILLAR_KIND or piece_kind == WALL_TOP_KIND or piece_kind == ROOF_PANEL_KIND
+	return piece_kind == PILLAR_KIND or piece_kind == WALL_TOP_KIND or piece_kind == ROOF_PANEL_KIND or piece_kind == ROOF_HIP_KIND
 
 
 # A wall top (Dave 10 Nov 2026: the battlement sits on top of a wall) goes on the top of the nearest wall (piece_kind "wall", any tier) whose middle is
@@ -335,6 +360,103 @@ static func roof_panel_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw
 	return [] if is_nan(best.x) else [best, yaw, true]
 
 
+# A roof corner (GOALS-REPAIR A-37, piece_kind ROOF_HIP_KIND) covers the 2 m square at a building's corner where two roof runs meet: two sloped faces, each
+# the continuation of the panels rising from one of the two edges, meeting along a hip from the low outer corner up to the high inner one. In its own space
+# its spot is the square's middle, its faces rise toward -Z and toward -X: the outer corner is (+1, -rise / 2, +1), the inner (-1, +rise / 2, -1).
+# It rests on two horizontal edges at right angles (roof_connections: wall tops, ceiling edges, panel ends) whose rising panels would have the same middle:
+# the two wall tops meeting at a corner. One item and blueprint per tier, two placed shapes: the row's own slope (45) and its "slope_twin" row (65). The
+# shape follows the panel already standing beside it on either side (the same edge height, rising the same way); with none there, `mode` picks it
+# (0: the row's own, 1: the twin; the wheel), unless `spot` is exactly one shape's middle (a saved plan replayed, an answer re-picked): that shape.
+# Returns [middle, yaw in degrees, the structure kind] or [] when no corner is near `spot`. Edges count by their corner's middle across the ground, and
+# between storeys by the edge whose corner (at either shape) stands nearest the cursor's height, so an answer snaps to itself.
+static func roof_hip_pick(cfg: Dictionary, def: Dictionary, spot: Vector3, mode: int, rows: Array) -> Array:
+	var half_run: float = float(def.get("run_m", ROOF_PANEL_WIDTH_M)) * 0.5
+	var edges: Array = roof_connections(cfg, rows, spot)
+	var best: Array = []
+	var best_d: float = ANCHOR_REACH_M
+	var twin_def: Dictionary = cfg["structures"].get(str(def.get("slope_twin", "")), def)
+	var lifts: Array = [0.0, roof_panel_rise(def) * 0.5, roof_panel_rise(twin_def) * 0.5]   # the cursor may be at the edges' height or at either shape's middle
+	var gap_of: Callable = func(y: float) -> float: return lifts.map(func(l): return absf(y + float(l) - spot.y)).min()
+
+	for i in edges.size():
+		for j in edges.size():
+			if i == j or absf((edges[i]["n"] as Vector2).dot(edges[j]["n"])) > 0.01 or absf((edges[i]["p"] as Vector3).y - (edges[j]["p"] as Vector3).y) > 0.05:
+				continue
+
+			for si in [1.0, -1.0]:
+				for sj in [1.0, -1.0]:
+					var a: Vector3 = edges[i]["p"]
+					var b: Vector3 = edges[j]["p"]
+					var ra: Vector2 = (edges[i]["n"] as Vector2) * si
+					var rb: Vector2 = (edges[j]["n"] as Vector2) * sj
+					var mid: Vector2 = Vector2(a.x, a.z) + ra * half_run
+
+					if mid.distance_to(Vector2(b.x, b.z) + rb * half_run) > 0.05:
+						continue
+
+					var d: float = mid.distance_to(Vector2(spot.x, spot.z))
+
+					if d < best_d - ANCHOR_TIE_M or (best.size() > 0 and d <= best_d + ANCHOR_TIE_M and float(gap_of.call(a.y)) < float(gap_of.call(float(best[1])))):   # stacked storeys: the corner nearest the cursor's height
+						best = [mid, a.y, ra, rb]
+						best_d = d
+
+	if best.is_empty():
+		return []
+
+	var m: Vector2 = best[0]
+	var base_y: float = best[1]
+	var yaw: int = -1
+
+	for q in [0, 90, 180, 270]:   # the quarter turn whose -Z and -X are the two rising ways
+		var t: float = deg_to_rad(float(q))
+		var minus_z: Vector2 = Vector2(-sin(t), -cos(t))
+		var minus_x: Vector2 = Vector2(-cos(t), sin(t))
+
+		if (minus_z.dot(best[2]) > 0.99 and minus_x.dot(best[3]) > 0.99) or (minus_z.dot(best[3]) > 0.99 and minus_x.dot(best[2]) > 0.99):
+			yaw = q
+			break
+
+	var kind: String = str(def.get("kind", ""))
+	var twin: String = str(def.get("slope_twin", ""))
+	var shape: String = twin if mode > 0 and twin != "" else kind
+	var beside: String = _hip_neighbor_slope(cfg, m, base_y, best[2], best[3], rows)
+
+	if twin != "" and absf(spot.y - (base_y + roof_panel_rise(twin_def) * 0.5)) < 0.05:
+		shape = twin   # the cursor is exactly the 65 shape's middle (a saved plan replayed, or the answer re-picked): that shape
+	elif twin != "" and absf(spot.y - (base_y + roof_panel_rise(def) * 0.5)) < 0.05:
+		shape = kind
+
+	if beside != "" and twin != "":
+		shape = kind if absf(float(beside) - float(def.get("slope_deg", 45.0))) < 0.5 else twin
+
+	var shaped: Dictionary = cfg["structures"].get(shape, def)
+	return [Vector3(m.x, base_y + roof_panel_rise(shaped) * 0.5, m.y), yaw, shape]
+
+
+# The slope (as a String, "" for none) of a roof panel standing beside a corner square: on the edge height `base_y`, its middle one run along the edges
+# from the square's middle `m` and rising the way of the face it continues (ra or rb).
+static func _hip_neighbor_slope(cfg: Dictionary, m: Vector2, base_y: float, ra: Vector2, rb: Vector2, rows: Array) -> String:
+	for row in rows:
+		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if str(base.get("piece_kind", "")) != ROOF_PANEL_KIND:
+			continue
+
+		var turn: float = deg_to_rad(float(row.get("yaw", 0.0)))
+		var rising: Vector2 = Vector2(-sin(turn), -cos(turn))
+		var pos: Vector3 = row["pos"]
+		var run: float = float(base.get("run_m", ROOF_PANEL_WIDTH_M))
+
+		if absf(pos.y - roof_panel_rise(base) * 0.5 - base_y) > 0.05:
+			continue
+
+		for pair in [[ra, rb], [rb, ra]]:   # the panel continuing face ra stands one run along rb, rising ra
+			if rising.dot(pair[0]) > 0.99 and Vector2(pos.x, pos.z).distance_to(m + (pair[1] as Vector2) * run) < 0.1:
+				return str(float(base.get("slope_deg", 45.0)))
+
+	return ""
+
+
 # True when the low edge of a roof panel of `kit_id` at `spot` (its middle), turned `yaw_deg`, would sink into the ground: `height` is Callable(x, z) -> ground
 # height (NAN where unknown). The low edge's middle and both its ends are sampled; a panel falling away from a wall top can run into the ground.
 static func roof_panel_buried(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, height: Callable) -> bool:
@@ -437,7 +559,7 @@ static func foundation_neighbor(def: Dictionary, spot: Vector3, rows: Array) -> 
 
 
 # Joins a piece to the pieces already standing (rows with "yaw", in degrees): a wall continues a wall end to end or turns the corner
-# at its end, and also stands on the edge of a floor; a floor or roof sits edge to edge against its own kind; a fence section or gate
+# at its end, and also stands on the edge of a floor; a floor sits edge to edge against its own kind; a fence section or gate
 # leaves either end of a standing section straight on or turned 45 or 90 degrees, sharing that end's post (buildables plan, batch B2). A
 # fence stands on the ground (its height is the cursor's, the server's ground), never on a foundation, and never doubles a section. Returns [spot, yaw] of the
 # candidate within JOIN_REACH_M of the cursor, or [] when none is near.
@@ -478,7 +600,7 @@ static func _join(cfg: Dictionary, piece_kind: String, spot: Vector3, rows: Arra
 			for s in [-1.0, 1.0]:
 				candidates.append([row["pos"] + along * s, yaw_turned])
 				candidates.append([row["pos"] + across * s, yaw_row])
-		elif piece_kind == other and (piece_kind == "floor" or piece_kind == "roof"):
+		elif piece_kind == other and piece_kind == "floor":
 			for s in [-2.0, 2.0]:
 				candidates.append([row["pos"] + along * s, yaw_row])
 				candidates.append([row["pos"] + across * s, yaw_row])
@@ -722,7 +844,13 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
 
-	if one_to_a_point(str(def.get("piece_kind", ""))) and _kind_at(cfg, spot, rows, str(def.get("piece_kind", ""))):
+	if str(def.get("piece_kind", "")) == ROOF_HIP_KIND:   # a roof corner's point is the shape at `spot` (the ghost's own, by the exact-middle rule)
+		var hip: Array = roof_hip_pick(cfg, def, spot, 0, rows)
+
+		if not hip.is_empty():
+			def = cfg["structures"].get(str(hip[2]), def)
+
+	if one_to_a_point(str(def.get("piece_kind", ""))) and _kind_at(cfg, spot, rows, str(def.get("piece_kind", "")), def):
 		return "close"   # one pillar to a point, one wall top to a wall (the server says the same)
 
 	if str(def.get("attach_to", "")) == DOOR_ATTACH:   # a door: the doorway under it decides (no gap, no cap: it stands inside the frame)
@@ -836,6 +964,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "too far away: step closer"
 		"nopanel":
 			return "a roof panel rests on a wall top, a ceiling edge or another panel's end: aim at one and face across it"
+		"nocorner":
+			return "a roof corner goes where two wall tops (or ceiling edges, or panel ends) meet at a corner: aim at that corner"
 		"buried":
 			return "that end would sink into the ground"
 		"wheel_dry":
