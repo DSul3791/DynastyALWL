@@ -50,11 +50,15 @@ Call it **about 20 L a person a day** with a couple of beds.
 
 | Tier | Id | Size | Daily yield | Serves | Reaches down | Cost | Hammer |
 |---|---|---|---|---|---|---|---|
-| Primitive - Well | `primitive_well` (new) | 1.6 x 1.6 m, log curb | 100 L | a household, ~5 | 6 m | 8 Log, 4 Twine, 1 Bucket | 1 |
+| Primitive - Well | `primitive_well` (new) | 1.6 x 1.6 m, log curb | 100 L | a household, ~5 | 6 m | 8 Log, 4 Twine, 1 Clay - Pot | 1 |
 | Improved - Well | `stone_well` (kept) | 1.6 x 1.6 m, stone curb | 200 L (double) | a hamlet, ~10 | 25 m | 30 Cobblestone, 8 Clay mortar, 4 Plank, 1 Rope, 1 Bucket (unchanged) | 1 |
 | Advanced - Well | `advanced_well` (new) | 3.2 x 3.2 m, round, four-posted roof | 600 L (triple) | a village, ~30 | 40 m | 60 Cobblestone, 16 Clay mortar, 12 Plank, 4 Log, 16 Bark shingle, 2 Rope, 2 Bucket | 1 |
 
-Each draw is the windlass's 10 L bucket; at 5 m down that is about 40 L a minute, so a full Primitive well is drawn in under three real
+**The gate is the materials, not the hammer** (all three are hammer tier 1): the Primitive well is first-day work (logs, twine and a
+campfire Clay - Pot, which hauls 3 L at a time); the Improved and Advanced wells need Planks (and a Bucket, itself 6 Planks), and Planks need
+the Iron saw, so they arrive at the iron stage; the Advanced well also needs Bark shingles and twice the stone.
+
+The Improved and Advanced windlass hauls a 10 L bucket; at 5 m down that is about 40 L a minute, so a full Primitive well is drawn in under three real
 minutes and is full again an hour later. Wells are a source of clean water and keep the engine's 4-sources-a-chunk limit.
 
 Goals: `build:stone_well` (Build Well) keeps its id; its title follows the rename. Goals for the two new wells belong to the goals thread.

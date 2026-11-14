@@ -73,8 +73,10 @@ func _init() -> void:
 	check(items._water_refusal(items._structures["stone_well"], Vector3(100.0, 10.0, 450.0), 0) == "", "an Improved well reaches it")
 
 	# A new well is full.
-	var well: int = put("primitive_well", Vector3(100.0, 10.0, 100.0))
-	check(is_equal_approx(items._well_left(well), 100.0), "a new Primitive well holds its 100 L (%.1f)" % items._well_left(well))
+	check(is_equal_approx(items._well_left(put("primitive_well", Vector3(50.0, 10.0, 100.0))), 100.0), "a new Primitive well holds its 100 L")
+	check(is_equal_approx(float(items._structures["primitive_well"]["water"]["draw_l"]), 3.0), "the Primitive well hauls a 3 L clay pot")
+	var well: int = put("stone_well", Vector3(100.0, 10.0, 100.0))
+	check(is_equal_approx(items._well_left(well), 200.0), "a new Improved well holds its 200 L (%.1f)" % items._well_left(well))
 
 	# E draws with the windlass: 10 L a bucket each 4 + 1.5 x 4 s at 4 m down, 60 L/min; what is poured comes out of the well.
 	items.peer_connected_hello(1, "drawer000001")
@@ -85,11 +87,12 @@ func _init() -> void:
 	items._use_struct(1, inv, well)
 	check(int(items._pumping.get(1, 0)) == well and is_equal_approx(float(items._water.pieces[well]["rate_lpm"]), Network.windlass_lpm(4.0, 10.0)), "E starts drawing at the windlass rate (%.1f L/min)" % float(items._water.pieces[well].get("rate_lpm", 0.0)))
 	items._water_tick(5.0)
-	check(bucket >= 0 and int(inv.wear[bucket]) == 5000 and absf(items._well_left(well) - 95.0) < 0.01, "5 s pour 5 L into the bucket and the well holds 95 L (%d ml, %.2f L)" % [int(inv.wear[bucket]) if bucket >= 0 else -1, items._well_left(well)])
+	check(bucket >= 0 and int(inv.wear[bucket]) == 5000 and absf(items._well_left(well) - 195.0) < 0.01, "5 s pour 5 L into the bucket and the well holds 195 L (%d ml, %.2f L)" % [int(inv.wear[bucket]) if bucket >= 0 else -1, items._well_left(well)])
 	items._water_tick(5.0)
-	check(int(inv.wear[bucket]) == 8000 and absf(items._well_left(well) - 92.0) < 0.01, "a full bucket takes only its 8 L: the well gives only what was poured (%.2f L left)" % items._well_left(well))
+	check(int(inv.wear[bucket]) == 8000 and absf(items._well_left(well) - 192.0) < 0.01, "a full bucket takes only its 8 L: the well gives only what was poured (%.2f L left)" % items._well_left(well))
 
 	# Drawn dry: it stops, says so and refuses E until it fills again.
+	items._stop_pump(1, "")
 	inv.wear[bucket] = 0
 	items._well_store[well] = [3.0, clock[0]]
 	items._use_struct(1, inv, well)
@@ -102,9 +105,9 @@ func _init() -> void:
 
 	# It fills again at its yield over a game day, never past one day's water.
 	clock[0] += GameClockScript.SECONDS_PER_DAY * 0.5
-	check(absf(items._well_left(well) - 50.0) < 0.01, "half a game day later it holds 50 L (%.2f)" % items._well_left(well))
+	check(absf(items._well_left(well) - 100.0) < 0.01, "half a game day later it holds 100 L (%.2f)" % items._well_left(well))
 	clock[0] += GameClockScript.SECONDS_PER_DAY * 3.0
-	check(is_equal_approx(items._well_left(well), 100.0), "and never more than a day's 100 L")
+	check(is_equal_approx(items._well_left(well), 200.0), "and never more than a day's 200 L")
 
 	# Saved by place and back at load.
 	items._well_store[well] = [40.0, clock[0]]
@@ -113,7 +116,7 @@ func _init() -> void:
 	items._water_rebuild({}, wells)
 	check(items._well_store.has(well) and absf(items._well_left(well) - 40.0) < 0.01, "and come back at load (%.2f)" % items._well_left(well))
 	items._water_rebuild({}, {})
-	check(is_equal_approx(items._well_left(well), 100.0), "a well with nothing saved loads full")
+	check(is_equal_approx(items._well_left(well), 200.0), "a well with nothing saved loads full")
 
 	# The Advanced well holds 600 L; a well taken down leaves its store.
 	var big: int = put("advanced_well", Vector3(300.0, 10.0, 100.0))

@@ -9126,9 +9126,9 @@
 		"primitive_well": {
 			"name": "Primitive - Well",
 			"kind": "structure",
-			"description": "A log-lined well with a windlass and bucket. Gives a household's water each day.",
+			"description": "A log-lined well with a windlass and clay pot. Gives a household's water each day.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Log, 4 Twine, 1 Bucket"
+				"Build with a hammer (press R): 8 Log, 4 Twine, 1 Clay - Pot"
 			],
 			"used_for": [],
 			"obtainable_now": false,

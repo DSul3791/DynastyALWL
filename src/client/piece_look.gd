@@ -3305,7 +3305,7 @@ static func stone_well() -> Node3D:
 
 
 # Primitive - Well (plumbing PR 1), 1.6 m square, 1.1 m high: a curb of four courses of logs laid crib-fashion round the shaft (ends crossing at the
-# corners), dark water down it, two forked log posts carrying a log windlass with a crank, rope and a bucket over the shaft.
+# corners), dark water down it, two forked log posts carrying a log windlass with a crank, rope and a clay pot over the shaft.
 static func primitive_well() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -3329,7 +3329,7 @@ static func primitive_well() -> Node3D:
 	_box(root, Vector3(0.03, 0.03, 0.18), Vector3(0.74, 1.2, 0.09), _frame)                           # the crank, a pegged stick
 	_box(root, Vector3(0.03, 0.12, 0.03), Vector3(0.74, 1.15, 0.18), _frame)
 	_box(root, Vector3(0.01, 0.4, 0.01), Vector3(0.0, 0.98, 0.05), _frame)                            # rope
-	_cyl(root, 0.08, 0.12, Vector3(0.0, 0.72, 0.05), _planks, 10, 0.09)                               # the bucket
+	_cyl(root, 0.08, 0.14, Vector3(0.0, 0.72, 0.05), _clay, 10, 0.06)                                 # the clay pot it hauls with
 	_solid(root, Vector3(1.6, 0.76, 1.6), Vector3(0.0, 0.38, 0.0))
 	return root
 

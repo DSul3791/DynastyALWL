@@ -7552,7 +7552,7 @@
 			"primitive_well": {
 				"number": 1350,
 				"name": "Primitive - Well",
-				"description": "A log-lined well with a windlass and bucket. Gives a household's water each day.",
+				"description": "A log-lined well with a windlass and clay pot. Gives a household's water each day.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
