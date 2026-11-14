@@ -3425,7 +3425,7 @@
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump. An Improved smelter turns each one into an iron ingot while its bellows are worked.",
+			"description": "A rusty brown lump. Smelts to iron in an Improved smelter with its bellows worked, or an Advanced smelter.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],

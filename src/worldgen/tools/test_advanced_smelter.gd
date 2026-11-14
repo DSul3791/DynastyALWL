@@ -13,7 +13,7 @@ extends SceneTree
 #      Steel, the carbon and the hopper fuel each taken once; at the Improved smelter a drag onto its input still goes to its hopper;
 #   5. the lanes never share ore: one Iron ore is one ingot; Iron ore and carbon beside more Iron ore make one Steel and one Iron; 1 Copper and
 #      1 Tin ore make exactly 2 Bronze ingots, 1 Copper ore alone 1 Copper ingot;
-#   6. a full rack (160) makes it wait;
+#   6. a full rack (160) makes it wait, and a calm holds even the finished ingot; an idle lane keeps no job;
 #   7. save and load keep both lanes' banked time and the carbon in the input, and it finishes after the load;
 #   8. nothing is lost or made: every item counted in the store, the pack and in front of it is the same before and after each run but for
 #      the ore, carbon and fuel a finished ingot took.
@@ -303,9 +303,28 @@ func _init() -> void:
 	put_in(adv, "iron_ore", 1)
 	run(lane_s * 3.0)
 	check(part(adv, "output", n("iron_ingot")) == 0 and part(adv, "input") == 1 and part(adv, "hopper") == per_ore, "a full rack (%d, its other slots empty): the finished ingot waits, nothing taken" % int(smelt["output"]))
+	var wind_was: float = wind[0]
+	wind[0] = 0.0
 	box(adv).counts[rack.x] = int(smelt["output"]) - 1
+	run(5.0)
+	check(part(adv, "output", n("iron_ingot")) == 0 and part(adv, "input") == 1, "room for one but a calm: even the finished ingot waits (zero production in a calm)")
+	wind[0] = wind_was
 	run(2.0)
-	check(part(adv, "output", n("iron_ingot")) == 1 and part(adv, "input") == 0, "room for one: it delivers")
+	check(part(adv, "output", n("iron_ingot")) == 1 and part(adv, "input") == 0, "room for one and the wind back: it delivers")
+	empty(adv)
+	clear_pack()
+
+	# An idle lane keeps no job: ore without fuel is no job between ticks (a job with no time banked would flap and mark the world dirty
+	# every tick, forcing a save each time).
+	items.give(1, n("iron_ore"), 1)
+	put_in(adv, "iron_ore", 1)
+	var flapped: bool = false
+
+	for _t in 5:
+		items.tick(1.0)
+		flapped = flapped or str(items._items[adv]["struct"].get("smelt_job", "")) != "" or (items._items[adv]["struct"].get("smelt_lanes", []) as Array).any(func(l): return str(l[1]) != "")
+
+	check(not flapped and part(adv, "input", n("iron_ore")) == 1, "ore with no fuel: no lane keeps a job with no time (no flapping), the ore kept")
 	empty(adv)
 	clear_pack()
 
