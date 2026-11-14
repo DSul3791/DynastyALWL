@@ -97,7 +97,8 @@ var _wx: Dictionary = {}           # this tick's weather (animals_in_weather_des
 # thread. fog_world {"tiles_dir", "tile_size_m"} is set by the host; empty (tests, no tiles) keeps the floor at sea level.
 var fog_world: Dictionary = {}
 var _fog_grounds: Array = []
-const FOG_GROUNDS_MAX := 16        # windows kept (one per player; more players share the nearest)
+const FOG_GROUNDS_MAX := 16        # windows kept (players together share one)
+const CLEAR_SIGHT_M := 800.0      # in clear air with no fog the haze takes under FogShape's 53 % this near (about 900 m): sight needs no sums
 var _water_spots: Dictionary = {}  # animals at water: Vector2i 50 m cell of the asker and reach -> [[stand spot, water point] or [], msec found]
 var _storm_ahead: bool = false     # a storm (storm 0.5 or more) 12 to 24 game hours ahead: the falling pressure prey feel (lesson 4)
 var _ahead_acc: float = INF        # real seconds since weather_ahead was last sampled
@@ -1922,8 +1923,15 @@ func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> 
 	if not fog_on():
 		return _sight_clear(a, def, p, d, low)
 
+	var clear: float = _sight_clear(a, def, p, d, low)
+	var strength: float = fog_strength_between(a["pos"], p) if clear > 0.0 else 0.0
+	var haze: float = WeatherRules.fog_haze_density(_wx)
+
+	if clear <= 0.0 or (strength <= 0.0 and haze <= WeatherRules.VIS_HAZE_DENSITY and d < CLEAR_SIGHT_M):
+		return clear     # the ground is in the way, or clear air well inside the haze's own reach (the common case, no sums)
+
 	var fc: Dictionary = _fog_cfg()
-	return _sight_clear(a, def, p, d, low) * fog_sight_share(d, fog_shape_between(a["pos"], p), float(fc.get("sight_full_fog", 0.53)), float(fc.get("sight_gone_fog", 0.78)))
+	return clear * fog_sight_share(d, FogShape.depth(haze, strength), float(fc.get("sight_full_fog", 0.53)), float(fc.get("sight_gone_fog", 0.78)))
 
 
 func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
@@ -2149,22 +2157,59 @@ func fog_on() -> bool:
 	return _wx_on()
 
 
-# One cold-air floor window per player (the first FOG_GROUNDS_MAX), rebuilt as they move (fog_ground.gd).
+# Cold-air floor windows (fog_ground.gd) round the players: a player inside a window's rebuild reach shares it, so players together read
+# the tiles once; a player outside every one moves a window nobody is using, or opens a new one (at most FOG_GROUNDS_MAX).
 func _fog_ground_tick(players: Array) -> void:
 	if fog_world.is_empty():
 		return
 
-	var want: int = mini(players.size(), FOG_GROUNDS_MAX)
+	# First the windows some player is already inside, then a window for each player left outside them all.
+	var used: Array = []
+	used.resize(_fog_grounds.size())
+	used.fill(false)
+	var outside: Array = []
 
-	while _fog_grounds.size() < want:
-		var ground = FogGroundScript.new()
-		ground.tiles_dir = str(fog_world.get("tiles_dir", ground.tiles_dir))
-		ground.tile_size_m = float(fog_world.get("tile_size_m", ground.tile_size_m))
-		_fog_grounds.append(ground)
+	for p in players:
+		var here: Vector2 = Vector2(p.x, p.z)
+		var inside: bool = false
 
-	for i in range(want):
-		var p: Vector3 = players[i]
-		_fog_grounds[i].update(p)
+		for i in range(_fog_grounds.size()):
+			if here.distance_to(_fog_grounds[i].centre()) < FogGroundScript.REBUILD_M:
+				used[i] = true
+				inside = true
+
+		if not inside:
+			outside.append(p)
+
+	for p in outside:
+		var here: Vector2 = Vector2(p.x, p.z)
+		var have: int = -1
+
+		for i in range(_fog_grounds.size()):      # a window moved for an earlier player this tick may hold this one too
+			if used[i] and here.distance_to(_fog_grounds[i].centre()) < FogGroundScript.REBUILD_M:
+				have = i
+				break
+
+		if have == -1:
+			for i in range(_fog_grounds.size()):
+				if not used[i] and not _fog_grounds[i].busy():
+					have = i
+					break
+
+		if have == -1 and _fog_grounds.size() < FOG_GROUNDS_MAX:
+			var ground = FogGroundScript.new()
+			ground.tiles_dir = str(fog_world.get("tiles_dir", ground.tiles_dir)).trim_suffix("/")
+			ground.tile_size_m = float(fog_world.get("tile_size_m", ground.tile_size_m))
+			_fog_grounds.append(ground)
+			used.append(false)
+			have = _fog_grounds.size() - 1
+
+		if have != -1:
+			used[have] = true
+			_fog_grounds[have].update(p)     # starts a read centred on this player (a moved window keeps its old floor until it lands)
+
+	for ground in _fog_grounds:
+		ground.poll()
 
 
 # The server is closing: wait for a read still running.
@@ -2173,15 +2218,20 @@ func fog_ground_finish() -> void:
 		ground.finish()
 
 
-# The cold-air floor under a point: the first window that holds it; sea level where none does (the old single layer).
+# The cold-air floor under a point: from the window it lies deepest inside (a window's edge cells see only part of the low ground
+# round them); sea level where no window holds it (the old single layer).
 func fog_floor(pos: Vector3) -> float:
+	var best: float = -1.0
+	var floor_m: float = 0.0
+
 	for ground in _fog_grounds:
-		var f: float = FogGroundScript.sample(ground.grid, "floor", pos.x, pos.z, NAN)
+		var margin: float = FogGroundScript.margin(ground.grid, pos.x, pos.z)
 
-		if not is_nan(f):
-			return f
+		if margin > best:
+			best = margin
+			floor_m = FogGroundScript.sample(ground.grid, "floor", pos.x, pos.z, 0.0)
 
-	return 0.0
+	return floor_m
 
 
 # The fog's shape at a point (fog_shape.gd).
@@ -2189,12 +2239,15 @@ func fog_shape_at(pos: Vector3) -> Vector3:
 	return WeatherRules.fog_shape(_wx, pos.y, fog_floor(pos))
 
 
-# The fog along a line of sight: its strength the mean of the two ends' (a deer in the valley fog looking up at a player on the
-# clear slope above sees through half the fog; the floor is the animal's, the nearer window).
+# The fog's strength along a line of sight (Weather.fog_strength_along: the share of the line under each layer's top; the floor is
+# the animal's end, the nearer one): a deer in the valley fog looking up at a player on the clear slope sees through only the fog
+# below the top.
+func fog_strength_between(from_pos: Vector3, to_pos: Vector3) -> float:
+	return WeatherRules.fog_strength_along(_wx, from_pos.y, to_pos.y, fog_floor(from_pos))
+
+
 func fog_shape_between(from_pos: Vector3, to_pos: Vector3) -> Vector3:
-	var floor_m: float = fog_floor(from_pos)
-	var strength: float = 0.5 * (WeatherRules.fog_strength(_wx, from_pos.y, floor_m) + WeatherRules.fog_strength(_wx, to_pos.y, floor_m))
-	return FogShape.depth(WeatherRules.fog_haze_density(_wx), strength)
+	return FogShape.depth(WeatherRules.fog_haze_density(_wx), fog_strength_between(from_pos, to_pos))
 
 
 # V at a point (rain and snow thicken it too). Vector3.INF: the fog's own V deep inside it, from the valley or sea fog alone, for the

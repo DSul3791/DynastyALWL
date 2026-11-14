@@ -333,6 +333,21 @@ static func fog_strength(weather_state: Dictionary, height_m: float, floor_m: fl
 	return maxf(in_valley, in_sea)
 
 
+# The fog's strength along a line between heights y1 and y2 (an animal's eye and a player): for each layer, its strength times the share
+# of the line below its top (eased over VIS_MIST_EDGE_M, so a level line is the point rule's ramp), whichever layer is more. Both ends
+# deep in the fog: the full fog; a ridge-to-ridge line over a filled basin: none (it never dips into it).
+static func fog_strength_along(weather_state: Dictionary, y1: float, y2: float, floor_m: float = 0.0) -> float:
+	var lo: float = minf(y1, y2)
+	var span: float = absf(y2 - y1) + 2.0 * VIS_MIST_EDGE_M
+	var mist: float = clampf(float(weather_state.get("mist", 0.0)), 0.0, 1.0)
+	var valley_top: float = floor_m + float(weather_state.get("mist_depth_m", 0.0))
+	var sea_land: float = clampf(float(weather_state.get("sea_fog_land", 0.0)), 0.0, 1.0)
+	var sea_top: float = float(weather_state.get("sea_fog_top_m", 0.0))
+	var in_valley: float = mist * clampf((valley_top - lo + VIS_MIST_EDGE_M) / span, 0.0, 1.0)
+	var in_sea: float = sea_land * clampf((sea_top - lo + VIS_MIST_EDGE_M) / span, 0.0, 1.0)
+	return maxf(in_valley, in_sea)
+
+
 # The clear-air haze thickened by rain, snow and storm, as a Godot exponential density.
 static func fog_haze_density(weather_state: Dictionary) -> float:
 	var thick: float = 1.0 + 5.0 * float(weather_state.get("rain", 0.0)) + 4.0 * float(weather_state.get("snow", 0.0)) + 3.0 * float(weather_state.get("storm", 0.0))

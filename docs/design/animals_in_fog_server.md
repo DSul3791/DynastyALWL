@@ -90,7 +90,7 @@ New `test_animals_fog.gd`, with stub weather and ground:
   - a point 20 m above `mist_top_m` gives 3,333 m;
   - mist 1 with rain 1 gives the cap, 167 m.
 - **Sight:** at V 120, the fog share is 1 at 25 m, 0.5 at 45 m and 0 at 70 m.
-- **Sight in full valley fog:** a player 100 m off is sensed at about 200 m; in clear air at 100 m.
+- **Sight in full valley fog:** a player 100 m off is sensed at about 200 m; in clear air at 100 m. (14 Nov 2026: out of sight in the new fog, so 100 / blind_factor, about 285 m.)
 - **No switch:** the test checks that the fog rules are on, with no `on` key (9 Nov 2026).
 - **Wolves:** the ring is 25 m in clear air and in full valley fog, 15 m at V 30, and never under 10 m.
 - **Birds:** a perched crow in full valley fog does not come down after its timer, and in clear air it does.

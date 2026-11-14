@@ -9,6 +9,7 @@ extends SceneTree
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const FogShape := preload("res://src/shared/fog_shape.gd")
+const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const WeatherRules := preload("res://src/shared/weather.gd")
 
 var failures: int = 0
@@ -72,11 +73,32 @@ func _init() -> void:
 	var basin: Dictionary = {"mist": 1.0, "mist_depth_m": 50.0}
 	check(WeatherRules.visibility_m(basin, 220.0, 200.0) < 60.0 and WeatherRules.visibility_m(basin, 220.0, 0.0) > 2500.0, "a high basin's fog lies over its own floor")
 	check(near(a.fog_floor(Vector3(10.0, 0.0, 10.0)), 0.0), "no tiles known: the floor is sea level (the old single layer)")
+	# A real window (fog_ground.gd build_grid): a basin floored at 200 m. Inside it the fog lies over the basin; outside the window, sea level.
+	var n: int = 64
+	var heights := PackedFloat32Array()
+	var fresh := PackedFloat32Array()
+	heights.resize(n * n)
+	fresh.resize(n * n)
+	heights.fill(200.0)
+	fresh.fill(INF)
+	var ground = FogGroundScript.new()
+	ground.grid = FogGroundScript.build_grid(heights, fresh, n, Vector2(5000.0, 5000.0))
+	a._fog_grounds = [ground]
+	var in_basin := Vector3(5000.0 + 32.0 * FogGroundScript.CELL_M, 220.0, 5000.0 + 32.0 * FogGroundScript.CELL_M)
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
+	check(absf(a.fog_floor(in_basin) - 200.0) < 1.0 and near(a.fog_v(in_basin), full_v), "through the server: the basin's floor (%.0f m) and its fog" % a.fog_floor(in_basin))
+	check(near(a.fog_floor(Vector3(0.0, 220.0, 0.0)), 0.0) and near(a.fog_v(Vector3(0.0, 220.0, 0.0)), clear_v), "outside every window: sea level, so 220 m up is clear")
+	a._fog_grounds = []
 	# Along the line: both ends in the fog is the full fog; a player on the clear slope above sees and is seen through half of it.
 	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	var both_in: Vector3 = a.fog_shape_between(Vector3.ZERO, Vector3(40.0, 10.0, 0.0))
 	var one_out: Vector3 = a.fog_shape_between(Vector3.ZERO, Vector3(40.0, 90.0, 0.0))
-	check(near(FogShape.visibility(both_in), full_v) and FogShape.visibility(one_out) > 3.0 * full_v and FogShape.visibility(one_out) < clear_v, "the line of sight: all fog %.0f m, half out of it %.0f m" % [FogShape.visibility(both_in), FogShape.visibility(one_out)])
+	var over: Vector3 = a.fog_shape_between(Vector3(0.0, 100.0, 0.0), Vector3(40.0, 100.0, 0.0))
+	check(near(FogShape.visibility(both_in), full_v) and FogShape.visibility(one_out) > 3.0 * full_v and FogShape.visibility(one_out) < clear_v, "the line of sight: all fog %.0f m, partly out of it %.0f m" % [FogShape.visibility(both_in), FogShape.visibility(one_out)])
+	check(near(FogShape.visibility(over), clear_v), "a line above the layer's top does not dip into it")
+	# Clear air takes the short way and gives the same answer as the sums.
+	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
+	check(near(AnimalsScript.fog_sight_share(600.0, FogShape.depth(WeatherRules.VIS_HAZE_DENSITY, 0.0)), 1.0), "clear air: full sight inside CLEAR_SIGHT_M by the sums too")
 
 	# Sight share in full fog: all of a player to about 31 m (the fog takes 53 %), none past about 42 m (78 %): Dave's silhouettes at 20 to 40 m.
 	var dense: Vector3 = FogShape.depth(WeatherRules.VIS_HAZE_DENSITY, 1.0)
@@ -94,14 +116,16 @@ func _init() -> void:
 
 	check(falls, "sight never grows with distance")
 
-	# Sensing: in full valley fog a standing player 100 m off seems about 200 m off (heard and smelt only); in clear air 100 m.
+	# Sensing: in full valley fog a standing player 100 m off is out of sight, so only heard and smelt (senses.blind_factor: about 285 m
+	# off at 0.35); in clear air 100 m.
 	var deer_row: Dictionary = {"pos": Vector3.ZERO}
 	var p: Vector3 = Vector3(100.0, 0.0, 0.0)
 	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	var foggy: float = 100.0 / a._sense_factor(deer_row, deer, p, 100.0, 0)
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
 	var clear: float = 100.0 / a._sense_factor(deer_row, deer, p, 100.0, 0)
-	check(foggy > 180.0 and foggy < 230.0 and near(clear, 100.0), "100 m off: sensed at %.0f m in full valley fog, %.0f m in clear air" % [foggy, clear])
+	var blind: float = float(a.cfg["senses"]["blind_factor"])
+	check(near(foggy, 100.0 / blind) and near(clear, 100.0), "100 m off: sensed at %.0f m in full valley fog (hearing and smell only), %.0f m in clear air" % [foggy, clear])
 	check(near(a.weather_spook_x(deer), 1.0), "flag on: no flat mist cut on the spook range")
 
 	# Wolves: the ring.

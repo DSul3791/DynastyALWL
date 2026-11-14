@@ -42,13 +42,7 @@ func setup(world: Dictionary) -> void:
 # Every frame or so: starts a read when the player has moved far enough, picks up a finished one.
 func update(at: Vector3) -> void:
 	if _task != -1:
-		if WorkerThreadPool.is_task_completed(_task):
-			WorkerThreadPool.wait_for_task_completion(_task)
-			_task = -1
-
-			if not _next.is_empty():
-				grid = _next
-
+		poll()
 		return
 
 	var here: Vector2 = Vector2(at.x, at.z)
@@ -64,6 +58,26 @@ func update(at: Vector3) -> void:
 		_next = read_window(dir, size, origin)
 
 	_task = WorkerThreadPool.add_task(job, false, "fog ground")
+
+
+# The centre (x, z) of the last read started (INF before any).
+func centre() -> Vector2:
+	return _centre
+
+
+# Picks up a finished read without moving the window.
+func poll() -> void:
+	if _task != -1 and WorkerThreadPool.is_task_completed(_task):
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
+
+		if not _next.is_empty():
+			grid = _next
+
+
+# Is a read running?
+func busy() -> bool:
+	return _task != -1
 
 
 # Waits for a read still running (the client is closing).
@@ -247,6 +261,17 @@ static func box_blur(values: PackedFloat32Array, n: int) -> PackedFloat32Array:
 
 
 # A grid value at a world point, bilinear between cell centres; `outside` when the grid is empty or the point is off it.
+# How far a point lies inside a grid's window (m to its nearest edge); -1 when outside or no grid.
+static func margin(g: Dictionary, x: float, z: float) -> float:
+	if g.is_empty():
+		return -1.0
+
+	var origin: Vector2 = g["origin"]
+	var size: float = float(int(g["n"])) * CELL_M
+	var inside: float = minf(minf(x - origin.x, origin.x + size - x), minf(z - origin.y, origin.y + size - z))
+	return inside if inside >= 0.0 else -1.0
+
+
 static func sample(g: Dictionary, key: String, x: float, z: float, outside: float) -> float:
 	if g.is_empty():
 		return outside
