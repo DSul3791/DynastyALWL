@@ -1032,20 +1032,29 @@ func _is_bed_def(def: Dictionary) -> bool:
 
 # The tilled bed or garden plot whose square footprint holds `point` (flat), 0 for none: the hoe's Garden mode sows it (held_item._garden_here).
 func bed_id_at(point: Vector3) -> int:
+	return bed_in(bed_rows(), point)
+
+
+# Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm], read once for a whole Garden grid (held_item._garden_plan).
+func bed_rows() -> Array:
+	var rows: Array = []
+
 	for id in _world:
 		if not _world[id].has("yaw") or int(_world[id]["state"]) < 5 or _world[id].get("site") != null:   # a plot's blueprint site is not a bed yet (the server refuses it)
 			continue
 
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
-		if not _is_bed_def(def):
-			continue
+		if _is_bed_def(def):
+			rows.append([int(id), _world[id]["pos"], float(def.get("footprint_x", 1.0)) * 0.5 + 0.05])
 
-		var half: float = float(def.get("footprint_x", 1.0)) * 0.5 + 0.05
-		var at: Vector3 = _world[id]["pos"]
+	return rows
 
-		if absf(at.x - point.x) <= half and absf(at.z - point.z) <= half:
-			return int(id)
+
+static func bed_in(rows: Array, point: Vector3) -> int:
+	for row in rows:
+		if absf(row[1].x - point.x) <= float(row[2]) and absf(row[1].z - point.z) <= float(row[2]):
+			return int(row[0])
 
 	return 0
 

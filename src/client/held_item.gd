@@ -987,7 +987,7 @@ func wheel(down: bool) -> bool:
 		_hoe_menu_refresh()
 		return true
 
-	if _hoe_in_hand() and hoe_mode == "garden" and not garden_pick.begins_with("bp:"):   # Garden planting: the wheel steps the grid (one, a row of 5, 3 by 3, 5 by 5)
+	if _hoe_in_hand() and hoe_mode == "garden" and garden_pick != "" and not garden_pick.begins_with("bp:"):   # Garden planting: the wheel steps the grid (one, a row of 5, 3 by 3, 5 by 5)
 		garden_grid = posmod(garden_grid + (1 if down else -1), FarmRules.GARDEN_GRIDS.size())
 		_inv._on_notice("Garden: plant %s at a time" % str(FarmRules.GARDEN_GRIDS[garden_grid]["name"]))
 		return true
@@ -2153,7 +2153,7 @@ func _hoe_menu_line(n: int) -> String:
 	if str(row["kind"]) == "plot":
 		return "%s: lay out a 2 m garden plot (%s)" % [str(row["name"]), str(row["text"])]
 
-	var hint: String = "click a bed or garden plot to sow, open ground to till a bed first" if str(row["kind"]) == "seed" else "click open ground to plant it"
+	var hint: String = "click a bed or garden plot to sow, open ground to till and sow" if str(row["kind"]) == "seed" else "click open ground to plant it"
 	var number: int = _inv.table.number_of(str(row["id"]))
 	return "%s (%d): %s" % [_inv.table.name_of(number), _inv.inventory.count_of(number), hint]
 
@@ -2172,6 +2172,7 @@ func _hoe_menu_choose() -> void:
 		if _hoe_menu_index < _garden_rows.size():
 			var row: Dictionary = _garden_rows[_hoe_menu_index]
 			garden_pick = str(row["id"])
+			_garden_queue.clear()   # what was queued for the last pick is dropped, not sent with the new pick's slot
 
 			if str(row["kind"]) == "plot":
 				_pick_plot(int(row["number"]))
@@ -2339,7 +2340,7 @@ func _hoe_here(action: int) -> void:
 # A Garden-mode click (hoe): the picked seeds go into every cell of the chosen grid (the wheel picks one cell, a row of 5, 3 by 3 or 5 by 5; FarmRules.garden_cells):
 # an empty bed or garden plot is sown, open ground is tilled and then sown once the bed is there; a picked dug-up bush is planted in open ground, 2 m apart.
 # Never more cells than the pack holds of the pick. The requests go out one by one (_garden_step); the server checks reach, season, ground and spacing and says why it refuses.
-var garden_grid: int = 0                 # index of FarmRules.GARDEN_GRIDS (tests read it)
+var garden_grid: int = 0                 # index of FarmRules.GARDEN_GRIDS
 var _garden_queue: Array = []            # [{"act": "till" | "sow" | "sow_at" | "plant_bush", "pos": Vector3, "bed": id, "until": msec a sow_at waits for its bed}]
 var _garden_next_msec: int = 0
 const GARDEN_STEP_MSEC := 150            # between sows and plantings
@@ -2348,6 +2349,10 @@ const GARDEN_BED_WAIT_MSEC := 3000       # how long a sow waits for the bed its 
 
 
 func _garden_here() -> void:
+	if not _garden_queue.is_empty():
+		_inv._on_notice("Still planting the last lot")
+		return
+
 	var hit: Dictionary = _ground_under_crosshair()
 
 	if hit.is_empty():
@@ -2390,20 +2395,29 @@ func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 
 	var have: int = _inv.inventory.count_of(_inv.table.number_of(garden_pick))
 	var facing: Vector3 = -_camera.global_transform.basis.z
-	var feet: Vector3 = _camera.global_position
+	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
+	var beds: Array = _inv.bed_rows()   # read once for the whole grid
+	var beds_used: Dictionary = {}       # a 2 m plot holds several 1 m cells but takes one crop: only its first cell sows it
 	var out: Array = []
 
 	for flat in FarmRules.garden_cells(garden_grid, kind, aim, facing):
-		var pos: Vector3 = _ground_at(flat, aim.y)
-		var bed: int = _inv.bed_id_at(pos)
+		var pos: Vector3 = Vector3(flat.x, _terrain_y(flat.x, flat.y, aim.y, 3.0), flat.y)
+		var bed: int = _inv.bed_in(beds, pos)
+
+		if bed != 0 and beds_used.has(bed):
+			continue
+
+		if bed != 0:
+			beds_used[bed] = true
+
 		var cell: Dictionary = FarmRules.garden_action(kind, plant_name, bed != 0, _inv.bed_crop(bed) if bed != 0 else "")
 		cell["pos"] = pos
 		cell["bed"] = bed
 		cell["ok"] = str(cell["act"]) != "none" and Vector2(pos.x - feet.x, pos.z - feet.z).length() <= GARDEN_REACH_M and not is_nan(pos.y)
 
 		if not bool(cell["ok"]) and str(cell["act"]) != "none":
+			cell["say"] = "No ground to plant there" if is_nan(pos.y) else "Too far to plant there: step closer"
 			cell["act"] = "none"
-			cell["say"] = "Too far to plant there: step closer"
 
 		if bool(cell["ok"]):
 			if have <= 0:
@@ -2416,7 +2430,7 @@ func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 	return out
 
 
-const GARDEN_REACH_M := 4.0   # the server's PLANT_BUSH_REACH_M (and within its DIG_REACH_M for tilling and sowing), flat from the player
+const GARDEN_REACH_M := 3.7   # inside the server's PLANT_BUSH_REACH_M (4 m flat; DIG_REACH_M 4.5 for tilling and sowing), flat from the player's feet, with room for the server's position lagging a tick
 
 
 # The ground point under the crosshair within reach, {} for none (or a plant's collider).
@@ -2424,13 +2438,6 @@ func _ground_under_crosshair() -> Dictionary:
 	var from: Vector3 = _camera.global_position
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M))
 	return {} if hit.is_empty() or hit["collider"].has_meta("species_ids") else hit
-
-
-# The ground height at a flat spot, by a ray down from above the aim's height; NAN when there is none within 3 m.
-func _ground_at(flat: Vector2, near_y: float) -> Vector3:
-	var top: Vector3 = Vector3(flat.x, near_y + 3.0, flat.y)
-	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(top, top - Vector3(0.0, 6.0, 0.0)))
-	return Vector3(flat.x, float(hit["position"].y) if not hit.is_empty() else NAN, flat.y)
 
 
 # Sends the queued Garden requests one at a time: a till waits GARDEN_TILL_MSEC after the last one (the server's hoe pace), a sow of a just-tilled cell waits for its bed
@@ -2494,7 +2501,7 @@ var _garden_marks: Array = []            # MeshInstance3D pool
 var _garden_mark_ok: StandardMaterial3D = null
 var _garden_mark_bad: StandardMaterial3D = null
 var _garden_preview_msec: int = 0
-var garden_preview_cells: int = 0        # how many markers show now (tests read it)
+var garden_preview_cells: int = 0        # how many markers show now
 
 
 func _garden_preview() -> void:
@@ -2540,7 +2547,7 @@ func _garden_preview() -> void:
 		mark.visible = n < plan.size() and not is_nan(float(plan[n]["pos"].y))
 
 		if mark.visible:
-			mark.global_position = plan[n]["pos"] + Vector3(0.0, 0.05, 0.0)
+			mark.global_position = plan[n]["pos"] + Vector3(0.0, 0.05 if int(plan[n]["bed"]) == 0 else 0.35, 0.0)   # over a bed or plot: above its frame
 			mark.material_override = _garden_mark_ok if bool(plan[n]["ok"]) else _garden_mark_bad
 
 	garden_preview_cells = plan.size()
