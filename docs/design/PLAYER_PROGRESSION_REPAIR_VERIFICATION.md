@@ -24,7 +24,7 @@ This is the R9 report that Dave's 14 Nov brief and [CATALOG_IMPLEMENTATION_PLAN.
 - **Tested at the branch head, merged later.** Each PR was tested at its own branch head and then merged after `dev` had moved on. The merge relied on a reviewer's clean-replay check, not a rerun, unless a later full run covers it.
 - **The broad run on `dev` covers #1085 to #1100.** That run was on `0bc19301`: 384/384 (372 fast, 8 timing, 4 slow), no flakes, 1198 s. validate_items gave 0 errors and 114 warnings, the same as before. check_look_names passed, and the startup smoke showed 0 SCRIPT ERRORs. Logs: `broad_dev0bc1*`.
 - **#1101 and later are not covered by a run on `dev` itself.**
-- **#1095's merged head is not lane-run.** It merged at `becd736`, one reviewed commit after the lane run at `2145537` (an unused local removed). Neither that run nor the broad run includes `becd736` on its own. The broad run on `0bc1930` does contain it as part of `dev`.
+- **#1095's merged head was not lane-run as a branch.** It merged at `becd736`, one reviewed commit after the lane run at `2145537` (an unused local removed). `becd736` is an ancestor of `0bc19301` (checked with `git merge-base --is-ancestor`), so the broad run on `dev` does cover it. The coordinator's relay said otherwise; the git history shows the broad run includes it.
 
 ## 2. Work merged to `dev` in this mission
 
@@ -38,7 +38,7 @@ This is the R9 report that Dave's 14 Nov brief and [CATALOG_IMPLEMENTATION_PLAN.
 | #1091 | Oak tannin bark, Scots pine tar, recipe water from containers | `c619968`, 219/219; `pr1091b_first`, `_rest`, `_extra`. First run failed at `a50d304`: one real bug (refund rows lost liquid keys on load), fixed | `77460e3` |
 | #1092 | R2a: Primitive and Improved smelters work by themselves | `cf8166b`, 238/238; `pr1092d_a`, `_b`, `_rest`, `_extra`. Three earlier runs failed, all fixed | `596d156` |
 | #1093 | Journal (J/G/M), Goals box, Goal Achieved placard and fanfare | `3d0881fa`, 73/73 + test_goal_ui; `pr1093c_goalui`, `_plan`, `_extra` | `55b1254` |
-| #1095 | Primitive route: 3 m logs, site goal kind, hand-chop credit, fire tiers, route test | `2145537`, 223/223; `pr1095b_g1`, `_rest`, `_extra`. The merged head `becd736` was not lane-run on its own | `b94b1e7` |
+| #1095 | Primitive route: 3 m logs, site goal kind, hand-chop credit, fire tiers, route test | `2145537`, 223/223; `pr1095b_g1`, `_rest`, `_extra`. The merged head `becd736` is covered by the broad run on `0bc19301` | `b94b1e7` |
 | #1096 | Corrected 651-goal catalog for Dave's review (R7 content) | docs only, static review | `69e941e` |
 | #1097 | Map sketch drawn on a worker thread | `cf83be1`, 36/36, test_goal_ui and test_map run 3 times each; `pr1097_twice1`..`3`, `pr1097_rest` | `272278f` |
 | #1099 | R2b: Copper pickaxe and Copper axe | `bd86f165`, 255/255; `pr1099_first`, `_rest`, `_extra` | `eedef36` |
