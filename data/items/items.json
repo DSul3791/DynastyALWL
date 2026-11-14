@@ -10760,7 +10760,7 @@
 		"spruce_cones": {
 			"number": 1362,
 			"name": "Spruce cones",
-			"description": "Long hanging cones from a spruce, seeds still inside. Plant one with the hoe in open ground and a spruce grows.",
+			"description": "Long hanging spruce cones, seeds still inside. Plant one with the hoe in open ground and a spruce grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -10815,7 +10815,7 @@
 		"mangrove_propagules": {
 			"number": 1367,
 			"name": "Mangrove propagules",
-			"description": "Long green seedlings that drop from a mangrove ready to root. Plant one with the hoe in open ground and a mangrove grows.",
+			"description": "Green seedlings that drop from a mangrove ready to root. Plant one with the hoe and a mangrove grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],

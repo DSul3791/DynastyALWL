@@ -10732,6 +10732,126 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"birch_seeds": {
+			"name": "Birch seeds",
+			"kind": "material",
+			"description": "Tiny winged seeds shaken from birch catkins. Plant them with the hoe in open ground and a birch grows.",
+			"how_to_get": [
+				"From a felled birch"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a birch"
+			],
+			"obtainable_now": true
+		},
+		"pine_cones": {
+			"name": "Scots pine cones",
+			"kind": "material",
+			"description": "Woody cones from a Scots pine, seeds still inside. Plant one with the hoe in open ground and a pine grows.",
+			"how_to_get": [
+				"From a felled scots pine"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a scots pine"
+			],
+			"obtainable_now": true
+		},
+		"spruce_cones": {
+			"name": "Spruce cones",
+			"kind": "material",
+			"description": "Long hanging spruce cones, seeds still inside. Plant one with the hoe in open ground and a spruce grows.",
+			"how_to_get": [
+				"From a felled spruce"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a spruce"
+			],
+			"obtainable_now": true
+		},
+		"alder_cones": {
+			"name": "Alder cones",
+			"kind": "material",
+			"description": "Little black cones from an alder. Plant one with the hoe in open ground and an alder grows.",
+			"how_to_get": [
+				"From a felled alder"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a alder"
+			],
+			"obtainable_now": true
+		},
+		"willow_seeds": {
+			"name": "Willow seeds",
+			"kind": "material",
+			"description": "Fluffy willow seeds from the catkins. Plant them with the hoe in open ground and a willow grows.",
+			"how_to_get": [
+				"From a felled willow"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a willow"
+			],
+			"obtainable_now": true
+		},
+		"hardwood_seeds": {
+			"name": "Hardwood seeds",
+			"kind": "material",
+			"description": "Hard seeds of a tropical hardwood. Plant them with the hoe in open ground and a hardwood grows.",
+			"how_to_get": [
+				"From a felled mahogany"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a mahogany"
+			],
+			"obtainable_now": true
+		},
+		"acacia_pods": {
+			"name": "Acacia pods",
+			"kind": "material",
+			"description": "Dry acacia seed pods. Plant one with the hoe in open ground and an acacia grows.",
+			"how_to_get": [
+				"From a felled acacia"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a acacia"
+			],
+			"obtainable_now": true
+		},
+		"mangrove_propagules": {
+			"name": "Mangrove propagules",
+			"kind": "material",
+			"description": "Green seedlings that drop from a mangrove ready to root. Plant one with the hoe and a mangrove grows.",
+			"how_to_get": [
+				"From a felled mangrove"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a mangrove"
+			],
+			"obtainable_now": true
+		},
+		"fir_cones": {
+			"name": "Balsam fir cones",
+			"kind": "material",
+			"description": "Upright cones from a balsam fir, seeds still inside. Plant one with the hoe in open ground and a fir grows.",
+			"how_to_get": [
+				"From a felled balsam fir"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a balsam fir"
+			],
+			"obtainable_now": true
+		},
+		"maple_keys": {
+			"name": "Maple keys",
+			"kind": "material",
+			"description": "Winged maple seeds that spin as they fall. Plant them with the hoe in open ground and a maple grows.",
+			"how_to_get": [
+				"From a felled sugar maple"
+			],
+			"used_for": [
+				"Planted with the hoe (Garden) to grow a sugar maple"
+			],
+			"obtainable_now": true
+		},
 		"fortified_roof_65": {
 			"name": "Fortified - Roof 65",
 			"kind": "structure",
