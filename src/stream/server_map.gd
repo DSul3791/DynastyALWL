@@ -15,6 +15,8 @@ var cfg: Dictionary = {}
 var key_of: Callable          # (peer) -> the character key ("" when not in the game)
 var skill_of: Callable        # (peer) -> Mapping working level 1..100 (server_items.working_level(peer, "mapping"))
 var practice: Callable        # (peer) -> practice once at the "survey" action (server_items.practice(peer, "survey"))
+var goal_event: Callable      # (peer, name) -> the goals' event counter (server_items._goal_event, which pauses in Admin mode): "map_surveyed" once per survey that
+                              # found ground never seen before, "map_redrawn" once per survey that redrew known ground at a higher skill; unset: no goal events
 var observe: Callable         # (x, z) -> [ground height m, water (map_codec WATER_*)], or [] where the ground is not loaded yet
 var trees_near: Callable      # (Vector3, radius) -> Array of tree root positions (Vector3); unset: no trees are drawn
 var in_cave: Callable         # (Vector3) -> true inside a cave (nothing to survey there); unset: never
@@ -131,6 +133,7 @@ func survey(peer: int, pos: Vector3) -> int:
 			trees[c] = int(trees.get(c, 0)) + 1
 
 	var fresh: int = 0
+	var redrawn: int = 0
 	var improve: int = int(cfg.get("improve_min_levels", 3))
 
 	for cz in range(lo.y, hi.y + 1):
@@ -164,6 +167,8 @@ func survey(peer: int, pos: Vector3) -> int:
 
 			if had.is_empty():
 				fresh += 1
+			else:
+				redrawn += 1
 
 	if fresh > 0:
 		var per_practice: int = maxi(int(cfg.get("cells_per_practice", 20)), 1)
@@ -174,6 +179,13 @@ func survey(peer: int, pos: Vector3) -> int:
 
 			if practice.is_valid():
 				practice.call(peer)
+
+	if goal_event.is_valid():
+		if fresh > 0:
+			goal_event.call(peer, "map_surveyed")   # the goal "Map new ground" (activity:map_survey) counts surveys of new ground
+
+		if redrawn > 0:
+			goal_event.call(peer, "map_redrawn")   # the goal "Redraw an old map area" (activity:map_redraw)
 
 	return fresh
 
