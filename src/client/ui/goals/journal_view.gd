@@ -36,7 +36,7 @@ var _right: VBoxContainer
 var _whole: VBoxContainer
 var _list_scroll: ScrollContainer
 var map_knowledge = null                                # MapKnowledge (terrain_client.gd sets it): what this character has surveyed
-var _map_page: Control                                  # MapPage, made at the first look and kept
+var _map_page: MapPageScript                            # made at the first look and kept
 
 
 class JournalFrame extends Control:
@@ -376,7 +376,7 @@ func _goal_link(id: String) -> Control:
 
 
 func _show_map() -> void:
-	if _map_page == null:
+	if _map_page == null or not is_instance_valid(_map_page):
 		_map_page = MapPageScript.new()
 		_map_page.name = "MapPage"
 		_map_page.size_flags_vertical = Control.SIZE_EXPAND_FILL

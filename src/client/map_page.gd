@@ -29,8 +29,10 @@ func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visibility_changed.connect(func() -> void:
+		_dragging = false   # a drag cut off by closing the Journal never carries over
 		if is_visible_in_tree():
 			follow = true)
+	tree_exited.connect(func() -> void: _dragging = false)
 
 
 func set_knowledge(store) -> void:
