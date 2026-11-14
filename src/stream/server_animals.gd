@@ -2200,6 +2200,7 @@ func _fog_ground_tick(players: Array) -> void:
 			var ground = FogGroundScript.new()
 			ground.tiles_dir = str(fog_world.get("tiles_dir", ground.tiles_dir)).trim_suffix("/")
 			ground.tile_size_m = float(fog_world.get("tile_size_m", ground.tile_size_m))
+			ground.who = "server"
 			_fog_grounds.append(ground)
 			used.append(false)
 			have = _fog_grounds.size() - 1

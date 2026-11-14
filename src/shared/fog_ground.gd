@@ -29,6 +29,7 @@ var grid: Dictionary = {}           # the last finished build (build_grid), empt
 var _task: int = -1
 var _next: Dictionary = {}
 var _centre: Vector2 = Vector2(INF, INF)
+var who: String = "client"          # for the log line: "client" or "server"
 
 
 func setup(world: Dictionary) -> void:
@@ -73,6 +74,25 @@ func poll() -> void:
 
 		if not _next.is_empty():
 			grid = _next
+
+		_log_read()
+
+
+# One line per finished read, so a smoke can show the worker ran (client and server).
+func _log_read() -> void:
+	if _next.is_empty():
+		print("fog ground (%s): no tile at %.0f, %.0f" % [who, _centre.x, _centre.y])
+		return
+
+	var floor_m: PackedFloat32Array = _next["floor"]
+	var low_m: float = INF
+	var high_m: float = -INF
+
+	for value in floor_m:
+		low_m = minf(low_m, value)
+		high_m = maxf(high_m, value)
+
+	print("fog ground (%s): read %d x %d cells round %.0f, %.0f; cold-air floor %.0f to %.0f m" % [who, int(_next["n"]), int(_next["n"]), _centre.x, _centre.y, low_m, high_m])
 
 
 # Is a read running?

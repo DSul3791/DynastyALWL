@@ -232,6 +232,7 @@ var mist_inside: float = 0.0             # 0 above or out of the valley fog .. 1
 var fog_body                            # FogVolume: the fog's drifting body and the fire halos in it (High and Ultra)
 var fog_sky: float = 0.0                 # share of the sky the fog overhead hides now (fog_look.gd sky_hide; dims the sun)
 var _fog_veil_sent: float = -1.0
+var _forced_logged: bool = false        # the one log line for a --weather=KIND look
 var _valley_floor: float = NAN           # the cold-air floor at the eye, eased (fog_ground.gd)
 var _view_floor: float = NAN             # and the wider ground's
 const FLOOR_EASE_MS := 25.0              # metres a second the floors follow a new reading (a first grid, a teleport)
@@ -559,6 +560,10 @@ func _target() -> Dictionary:
 		return out
 
 	if _client.sound != null and _client.sound.weather != null and (int(_client.sound_tests.weather_at) >= 0 or bool(_client.sound.weather.forced)):
+		if bool(_client.sound.weather.forced) and not _forced_logged:
+			_forced_logged = true
+			print("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
+
 		return TEST.get(_client.sound.weather.kind, out)
 
 	var world: Dictionary = _client.weather
