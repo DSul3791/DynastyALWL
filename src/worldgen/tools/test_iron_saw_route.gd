@@ -228,6 +228,7 @@ func _init() -> void:
 	check(have("iron_ingot") >= ore_n and not items._smelters.bellows_worked(smelter), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); E again leaves them" % [ore_n, manned_s, have("iron_ingot")])
 
 	# 4. The Improved smithy from stones, clay, logs and bronze (given: the bronze route is test_bronze_path); it must burn to craft.
+	items.vitals_of(1)["weight"] = 5000.0   # the ticks above may have drawn the body weight down (empty stomach): the given build cost must fit the pack
 	var iron_before: int = have("iron_ingot")
 	var bp: Dictionary = blueprint_of("blacksmithy")
 	var smithy_id: int = -1
