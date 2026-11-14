@@ -26,6 +26,7 @@ recipes = load("recipes.json")["recipes"]
 problems = []
 warnings = []
 toggled = {d.get("toggle") for d in structs.values() if isinstance(d, dict) and d.get("toggle")}   # an open door is a state of its door, not a thing to place
+twins = {kind: d["slope_twin"] for kind, d in structs.items() if isinstance(d, dict) and d.get("slope_twin")}   # a roof corner's 65 shape (A-37): placed by its 45 row's blueprint
 
 kit_of = {}
 for kind, d in structs.items():
@@ -69,6 +70,8 @@ for kind, d in structs.items():
         problems.append("structure %s has the unknown kit item %s" % (kind, d["kit"]))
         continue
     if kit.get("retired") and kind not in live_struct_of_bp and kind in toggled:
+        continue
+    if kind in twins.values() and any(twin == kind and base in live_struct_of_bp for base, twin in twins.items()):
         continue
 
     if kit.get("retired") and kind not in live_struct_of_bp and kind in KNOWN_OPEN:
