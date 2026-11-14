@@ -83,10 +83,12 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 
 **The 24 kept blueprints (future goals; 1 to 23 still locked):**
 
+*14 Nov 2026: Dave retired clay plumbing ("We should remove clay plumbing altogether"). The three Clay - Pipe goals below and `craft:clay_pipe` are `status` RETIRED in the CSV; they are still counted in this document's totals until the next catalog recount.*
+
 1. `build:stone_cistern`: Cistern
-2. `build:clay_pipe_run`: Clay - Pipe
-3. `build:clay_pipe_elbow`: Clay - Pipe elbow
-4. `build:clay_pipe_tee`: Clay - Pipe tee
+2. ~~`build:clay_pipe_run`: Clay - Pipe~~ (retired 14 Nov 2026 with clay plumbing)
+3. ~~`build:clay_pipe_elbow`: Clay - Pipe elbow~~ (retired 14 Nov 2026 with clay plumbing)
+4. ~~`build:clay_pipe_tee`: Clay - Pipe tee~~ (retired 14 Nov 2026 with clay plumbing)
 5. `build:stone_channel`: Stone - Channel
 6. `build:stone_channel_corner`: Stone - Channel corner
 7. `build:stone_channel_tee`: Stone - Channel tee

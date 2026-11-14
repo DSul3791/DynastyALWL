@@ -298,37 +298,17 @@ func _plot_takedown_checks() -> void:
 	items._items.erase(920003)
 
 
-# The hoe lays out a garden plot (Dave 14 Nov 2026, the hoe's Garden mode; PROVISIONAL): with a hoe and no hammer on the hand bar a plot blueprint is placed, any
-# other blueprint still needs a hammer and says so.
+# The hoe only tills (Dave 14 Nov 2026: "There doesn't actually need to be garden plots. It should just till the soil so you can put seeds in the ground."): with a hoe
+# and no hammer on the hand bar a garden plot blueprint is refused like any other blueprint; the hoe tills the ground and the seed goes into the bed.
 func _hoe_plot_checks() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var hoe_slot: int = HeldTool.slot_of(items, "hoe")
 	check(hoe_slot >= 0 and hoe_slot < 10 and HeldTool.slot_of(items, "hammer") < 0, "the farmer has a hoe on the hand bar and no hammer")
 	var plot_bp: int = int(items._blueprint_of_kit["thatch_garden_plot_kit"])
-	var other_bp: int = 0
-
-	for number in items._blueprints:
-		var row: Dictionary = items._blueprints[number]
-
-		if bool(row.get("known", true)) and int(row.get("hammer", 1)) <= 1 and not bool(items._structures.get(str(row["structure"]), {}).get("plot", false)) and not items._structures.get(str(row["structure"]), {}).is_empty():
-			other_bp = int(number)
-			break
-
-	var plots_of = func() -> int:
-		var n: int = 0
-
-		for it in items._items.values():
-			if it.has("struct") and str(it["struct"]["kind"]) == "thatch_garden_plot":
-				n += 1
-
-		return n
-	var before: int = plots_of.call()
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, plot_bp, 0, 0, Vector3(4.0, 10.0, 4.0))
-	check(plots_of.call() == before + 1, "with a hoe and no hammer a Thatch - Garden plot is laid out (notices: %s)" % str(notes.slice(-2)))
 	notes.clear()
 	var count_before: int = items._items.size()
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, other_bp, 0, 0, Vector3(-4.0, 10.0, -4.0))
-	check(other_bp != 0 and items._items.size() == count_before and notes.any(func(t): return str(t).contains("need a hammer")), "any other blueprint still needs a hammer (%s)" % str(notes))
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, plot_bp, 0, 0, Vector3(4.0, 10.0, 4.0))
+	check(items._items.size() == count_before and notes.any(func(t): return str(t).contains("need a hammer")), "a hoe alone lays out no garden plot: it needs a hammer (%s)" % str(notes))
 
 
 func _init() -> void:

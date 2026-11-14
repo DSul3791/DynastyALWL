@@ -265,9 +265,6 @@ const LOOKS := {
 	"wooden_pipe": {"builder": "conduit", "args": ["log", "straight"]},
 	"wooden_pipe_elbow": {"builder": "conduit", "args": ["log", "corner"]},
 	"wooden_pipe_tee": {"builder": "conduit", "args": ["log", "tee"]},
-	"clay_pipe_run": {"builder": "conduit", "args": ["clay", "straight"]},
-	"clay_pipe_elbow": {"builder": "conduit", "args": ["clay", "corner"]},
-	"clay_pipe_tee": {"builder": "conduit", "args": ["clay", "tee"]},
 	"iron_pipe": {"builder": "conduit", "args": ["iron", "straight"]},
 	"iron_pipe_elbow": {"builder": "conduit", "args": ["iron", "corner"]},
 	# BUGLIST-002: the new empty doorway frames (double, single arched, double arched) of every tier; the singles and the Refined double are above.
