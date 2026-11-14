@@ -609,6 +609,7 @@ func _ready() -> void:
 	map_knowledge.key_of = func(peer): return items.key_of(peer)
 	map_knowledge.skill_of = func(peer): return items.working_level(peer, "mapping")
 	map_knowledge.practice = func(peer): return items.practice(peer, "survey")
+	map_knowledge.goal_event = func(peer, name): items._goal_event(peer, name)
 	map_knowledge.observe = _map_observe
 	map_knowledge.trees_near = func(point, radius): return _cached_trees(point, radius).map(func(tree): return tree[1]) if flora != null else []
 	map_knowledge.in_cave = _in_cave
