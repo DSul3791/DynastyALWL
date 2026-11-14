@@ -39,6 +39,8 @@ const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
+const MapScript := preload("res://src/stream/server_map.gd")
+const MapCodec := preload("res://src/shared/map_codec.gd")
 const IdentityScript := preload("res://src/stream/identity_provider.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
@@ -84,6 +86,7 @@ var generator
 var store
 var flora
 var trails                             # ServerTrails: worn game trails the animals leave
+var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
 var _animal_sent: Dictionary = {}
 var _send_round: int = 0
@@ -600,6 +603,15 @@ func _ready() -> void:
 	trails.game_seconds = func(): return game_clock.seconds
 	trails.setup(store_dir)
 	animals.trails = trails
+	map_knowledge = MapScript.new()
+	map_knowledge.key_of = func(peer): return items.key_of(peer)
+	map_knowledge.skill_of = func(peer): return items.working_level(peer, "mapping")
+	map_knowledge.practice = func(peer): return items.practice(peer, "survey")
+	map_knowledge.observe = _map_observe
+	map_knowledge.trees_near = func(point, radius): return _cached_trees(point, radius).map(func(tree): return tree[1]) if flora != null else []
+	map_knowledge.in_cave = _in_cave
+	map_knowledge.setup(store_dir)
+	items.forgot_key = func(key): map_knowledge.forget_key(key)
 	animals.wolves.player_info = func(): return items.wolf_info()
 	animals.wolves.fires = func(): return items._lit_fires()
 	animals.wolves.fire_radius = func(at): return items.fire_protect_m(at)
@@ -857,6 +869,26 @@ func _trunks_near(at: Vector2, reach: float) -> PackedVector2Array:
 	return out
 
 
+# What a character surveying a point sees there for its Map (server_map.gd observe): [ground height m, water kind], or [] while that
+# tile is not in memory yet (a first look reads the file on the main thread; the next survey step gets it).
+func _map_observe(x: float, z: float) -> Array:
+	if not generator.tile_cached(x, z):
+		return []
+
+	var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+	if tile_data == null:
+		return []
+
+	var height: float = float(generator.surface_height(x, z))
+
+	if tile_data.placeholder:
+		return [height, MapCodec.WATER_SEA]
+
+	var water_class: int = int(tile_data.water_class[tile_data.nearest(x, z)]) if not tile_data.water_class.is_empty() else 0
+	return [height, MapScript.water_kind(water_class)]
+
+
 # Whether the baked tile has water (any class but none) at a point.
 func _baked_wet(x: float, z: float) -> bool:
 	var tile_data = generator.get_tile(generator.tile_of(x, z))
@@ -996,6 +1028,10 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
 	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
 	items.report_position(peer_id, position)
+
+	if map_knowledge != null:
+		map_knowledge.note_position(peer_id, position)   # the charcoal Map: a survey every few metres walked (server_map.gd)
+
 	# The player's own tile's cave streams and pools, once (Dave 6 Nov 2026: "nope there is no water in the tunnels", and in a spring pool "I cant swim
 	# in it. its not really there" while the breath ran down). They went only with the first water asked in a tile, and since the client asks only for
 	# the chunks the live water touches (#218) a tile could go without them: the client then had no stream to draw and no pool to swim in, the server
@@ -1051,6 +1087,10 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
+
+	if map_knowledge != null:
+		map_knowledge.forget_peer(peer_id)
+
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
 	_nests_sent.erase(peer_id)
@@ -2425,6 +2465,9 @@ func _send_npcs(delta: float) -> void:
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2])
 
+		for block in map_knowledge.updates_for(peer):
+			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
+
 		var trail: PackedVector3Array = animals.blood_near(at)
 		var trail_sig: int = hash(trail)
 
@@ -2510,6 +2553,7 @@ func _process(delta: float) -> void:
 	animals.tick(delta)
 	_events.mark("trails")
 	trails.tick(delta)
+	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)
 	_events.mark("deliver blocks")
@@ -2938,6 +2982,9 @@ func _exit_tree() -> void:
 
 	if trails != null:
 		trails.save()
+
+	if map_knowledge != null:
+		map_knowledge.save()
 
 	if items != null:
 		items.save()

@@ -69,6 +69,7 @@ const LADDER_RUNG_M := 0.35               # rungs are about a third of a metre a
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
+const MapKnowledgeScript := preload("res://src/client/map_knowledge.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const BurrowViewScript := preload("res://src/client/burrow_view.gd")
 const NestViewScript := preload("res://src/client/nest_view.gd")
@@ -484,6 +485,7 @@ var heart_pulse                       # HeartPulse: the line of light over the h
 var hud_fade                          # HudFade: passing out fades the whole HUD but the heartbeat line (heartbeat_design.md "Passing out")
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var map_knowledge = MapKnowledgeScript.new()   # this character's surveyed map cells (protocol 120); the Journal's Map page draws them (map_page.gd)
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
 var sound                             # SoundStage: wind, footsteps, grass swish
@@ -1369,6 +1371,7 @@ func _welcome_body(info: Dictionary) -> void:
 		)
 
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
+	net.map_block_received.connect(map_knowledge.receive)
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
 	burrow_view.name = "Burrows"
