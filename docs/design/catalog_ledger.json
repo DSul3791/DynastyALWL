@@ -10367,7 +10367,7 @@
   {
    "key": "stone_well_kit",
    "number": 712,
-   "name": "Well",
+   "name": "Improved - Well",
    "category": "placeable",
    "catalog": "RETIRED",
    "section": null,
@@ -10381,16 +10381,19 @@
   {
    "key": "stone_well",
    "number": 713,
-   "name": "Well",
+   "name": "Improved - Well",
    "category": "structure",
    "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "NO CHANGE",
-   "tests": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_wells",
+    "test_blueprints"
+   ],
    "accepted_commit": null,
-   "note": ""
+   "note": "Plumbing PR 1 (14 Nov 2026): renamed from \"Well\" (Dave, three well tiers), id/number/blueprint 128/cost kept; 200 L a game day; unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "wooden_hand_pump_kit",
@@ -17577,6 +17580,42 @@
    ],
    "accepted_commit": null,
    "note": "GOALS-REPAIR (14 Nov 2026), lead: Fortified is the only tier with no roof corner; A-37's two-shape corner: blueprint 317, structure states 393 (45) and 394 (65); cost Engineered - Roof corner plus 2 Iron band, PROVISIONAL (GOALS-REPAIR A-40). Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Primitive - Well",
+   "id": "primitive_well",
+   "number": 1350,
+   "name": "Primitive - Well",
+   "category": null,
+   "catalog": "PLUMBING",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_wells",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "Plumbing PR 1 (Dave 14 Nov 2026 06:35Z, three well tiers): blueprint 340, structure state 420; 100 L a game day, 6 m down, hauls a 3 L clay pot. PROVISIONAL (docs/design/PLUMBING_DESIGN.md s4). Not run: the Godot tests wait for the test PC."
+  },
+  {
+   "key": "new:Advanced - Well",
+   "id": "advanced_well",
+   "number": 1351,
+   "name": "Advanced - Well",
+   "category": null,
+   "catalog": "PLUMBING",
+   "section": null,
+   "phase": null,
+   "depends": [],
+   "state": "IMPLEMENTED - UNVERIFIED",
+   "tests": [
+    "test_wells",
+    "test_blueprints"
+   ],
+   "accepted_commit": null,
+   "note": "Plumbing PR 1 (Dave 14 Nov 2026 06:35Z, three well tiers): blueprint 341, structure state 421; twice the size with a four-posted roof, 600 L a game day, 40 m down. PROVISIONAL (docs/design/PLUMBING_DESIGN.md s4). Not run: the Godot tests wait for the test PC."
   }
  ],
  "acceptance_note": "Mission 001 (12 Nov 2026): TESTED - ACCEPTED means implemented, independently reviewed and passing automated server-side tests (per-phase tests, the integrated walkthrough test_mission001_walkthrough, full suite 358/360 with 2 known flakes at aa8113c33). NOT included: in-game visual, UI and two-client checks, which were not run, and final art: most new pieces use marked placeholder looks. RETIRED - MIGRATION VERIFIED: retired with numbers kept and tests passing; Dave ruled no old-save migration is needed (new game)."

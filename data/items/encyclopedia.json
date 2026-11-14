@@ -2496,7 +2496,7 @@
 				"Used in Superior - Roof 45",
 				"Used in Superior - Roof 65",
 				"Used in Superior - Roof corner",
-				"Used in Well",
+				"Used in Improved - Well",
 				"Used in Wooden shingle",
 				"Used in Refined - Arched doorway",
 				"Used in Refined - Double arched doorway",
@@ -2747,7 +2747,7 @@
 				"Craft: 6 Plank, 2 Twine"
 			],
 			"used_for": [
-				"Used in Well"
+				"Used in Improved - Well"
 			],
 			"obtainable_now": true
 		},
@@ -2799,7 +2799,7 @@
 			],
 			"used_for": [
 				"Used in Hide - Backpack",
-				"Used in Well"
+				"Used in Improved - Well"
 			],
 			"obtainable_now": true
 		},
@@ -4232,7 +4232,7 @@
 				"Used in Superior - Wall",
 				"Used in Superior - Window",
 				"Used in Torch pillar",
-				"Used in Well",
+				"Used in Improved - Well",
 				"Used in Stone - Planter",
 				"Used in Sturdy - Double doorway",
 				"Used in Sturdy - Arched doorway",
@@ -4387,7 +4387,7 @@
 				"Used in Sturdy - Pillar",
 				"Used in Sturdy - Stairs",
 				"Used in Torch pillar",
-				"Used in Well",
+				"Used in Improved - Well",
 				"Used in Stone - Planter"
 			],
 			"obtainable_now": true
@@ -9116,25 +9116,43 @@
 			"obtainable_now": false,
 			"status": "planned"
 		},
+		"primitive_well": {
+			"name": "Primitive - Well",
+			"kind": "structure",
+			"description": "A log-lined well with a windlass and clay pot. Gives a household's water each day.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Log, 4 Twine, 1 Clay - Pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"advanced_well": {
+			"name": "Advanced - Well",
+			"kind": "structure",
+			"description": "A wide round stone well under a four-posted roof. Gives a village's water each day.",
+			"how_to_get": [
+				"Build with a hammer (press R): 60 Cobblestone, 16 Clay mortar, 12 Plank, 4 Log, 16 Bark shingle, 2 Rope, 2 Bucket"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"stone_well_kit": {
-			"name": "Well",
+			"name": "Improved - Well",
 			"kind": "placeable",
 			"description": "A stone well with a windlass and bucket. E draws ten litres.",
 			"how_to_get": [
 				"Build with a hammer (press R): 30 Cobblestone, 8 Clay mortar, 4 Plank, 1 Rope, 1 Bucket"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_well": {
-			"name": "Well",
+			"name": "Improved - Well",
 			"kind": "structure",
 			"description": "A stone well with a windlass and bucket. E draws ten litres.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_hand_pump_kit": {
 			"name": "Wooden - Hand pump",

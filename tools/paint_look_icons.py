@@ -68,7 +68,7 @@ ITEMS = {
     "wooden_trellis": ("wooden_trellis", STATION_VIEW), "wooden_compost_bin": ("wooden_compost_bin", STATION_VIEW),
     "thatch_scarecrow": ("thatch_scarecrow", STATION_VIEW), "wooden_cold_frame": ("wooden_cold_frame", STATION_VIEW),
     # B6: water
-    "stone_well": ("stone_well", STATION_VIEW), "wooden_hand_pump": ("wooden_hand_pump", STATION_VIEW), "iron_hand_pump": ("iron_hand_pump", STATION_VIEW),
+    "primitive_well": ("primitive_well", STATION_VIEW), "stone_well": ("stone_well", STATION_VIEW), "advanced_well": ("advanced_well", STATION_VIEW), "wooden_hand_pump": ("wooden_hand_pump", STATION_VIEW), "iron_hand_pump": ("iron_hand_pump", STATION_VIEW),
     "log_trough": ("log_trough", STATION_VIEW), "wooden_trough": ("wooden_trough", STATION_VIEW), "stone_trough": ("stone_trough", STATION_VIEW),
     "wooden_channel": ("wooden_channel", STATION_VIEW), "wooden_channel_corner": ("wooden_channel_corner", STATION_VIEW),
     "wooden_channel_tee": ("wooden_channel_tee", STATION_VIEW), "wooden_sluice": ("wooden_sluice", STATION_VIEW),

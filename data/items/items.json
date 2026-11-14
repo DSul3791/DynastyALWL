@@ -7541,7 +7541,7 @@
 			"stone_well_kit": {
 				"number": 712,
 				"retired": true,
-				"name": "Well",
+				"name": "Improved - Well",
 				"description": "A stone well with a windlass and bucket. E draws ten litres.",
 				"kind": "placeable",
 				"stack": 1,
@@ -7549,15 +7549,35 @@
 				"look_alikes": [],
 				"value": 215
 			},
+			"primitive_well": {
+				"number": 1350,
+				"name": "Primitive - Well",
+				"description": "A log-lined well with a windlass and clay pot. Gives a household's water each day.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 420 (PROVISIONAL, plumbing PR 1, docs/design/PLUMBING_DESIGN.md s4): 100 L a game day, built with the hammer (blueprint 340)."
+			},
+			"advanced_well": {
+				"number": 1351,
+				"name": "Advanced - Well",
+				"description": "A wide round stone well under a four-posted roof. Gives a village's water each day.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Water piece: row state 421 (PROVISIONAL, plumbing PR 1, docs/design/PLUMBING_DESIGN.md s4): 600 L a game day, built with the hammer (blueprint 341)."
+			},
 			"stone_well": {
 				"number": 713,
-				"name": "Well",
+				"name": "Improved - Well",
 				"description": "A stone well with a windlass and bucket. E draws ten litres.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 166. Locked until Steve's water_network module lands."
+				"note": "Water piece: row state 166. Improved - Well (renamed from Well, plumbing PR 1): 200 L a game day (PROVISIONAL)."
 			},
 			"wooden_hand_pump_kit": {
 				"number": 714,
