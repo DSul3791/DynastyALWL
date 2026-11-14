@@ -66,6 +66,7 @@ func _init() -> void:
 	items.send_notice = func(_p, t): said.append(str(t))
 	items.ground_height = func(_x, _z): return ground[0]
 	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true   # no goals here: a goal's own reward or line (4 sticks for twine, "Goal done" for a bed) would change what this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "placenotice01")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
