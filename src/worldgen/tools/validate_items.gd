@@ -1116,6 +1116,14 @@ func _init() -> void:
 			for row in recipes[rid].get(list, []):
 				used[String(row[0])] = true
 
+	# A live, known hammer blueprint's cost uses a material too (the Iron and Steel anvils go only into building the Advanced and Master smithies, GOALS-REPAIR R4/R5).
+	var bp_rows: Dictionary = _read("blueprints.json").get("blueprints", {})
+
+	for bid in bp_rows:
+		if typeof(bp_rows[bid]) == TYPE_DICTIONARY and not bool(bp_rows[bid].get("retired", false)) and bool(bp_rows[bid].get("known", true)):   # a live blueprint the hammer lists (hammer_blueprints.gd: known unless false)
+			for row in bp_rows[bid].get("cost", []):
+				used[String(row[0])] = true
+
 	for id in cooking.get("fuel", {}):
 		used[String(id)] = true
 
@@ -1142,7 +1150,7 @@ func _init() -> void:
 			dead_core.append(id)
 
 	if not dead_core.is_empty():
-		warn("dead-end materials (obtainable, no recipe, fuel or repair uses them): %s" % ", ".join(dead_core))
+		warn("dead-end materials (obtainable, no recipe, blueprint, fuel or repair uses them): %s" % ", ".join(dead_core))
 
 	var edible_suffixes: Array = []
 
