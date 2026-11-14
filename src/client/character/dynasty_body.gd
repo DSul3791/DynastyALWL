@@ -125,7 +125,9 @@ static func load_status(path: String) -> int:
 
 static func load_warm(path: String) -> Resource:
 	if _loaded_here.get(path) != null:
-		return _loaded_here[path]
+		var got_here: Resource = _loaded_here[path]
+		_loaded_here.erase(path)     # taken, as load_threaded_get takes a threaded load: load_status then says what it says in a window
+		return got_here
 
 	var status: int = ResourceLoader.load_threaded_get_status(path)
 

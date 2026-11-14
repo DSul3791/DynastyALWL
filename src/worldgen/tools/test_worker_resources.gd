@@ -99,6 +99,8 @@ func _arguments(text: String, from: int) -> String:
 
 
 # Adds [path, function] for each call in `text` that names a function of this script, or of a script it preloads or a class_name.
+# shortcut: calls through a member or local instance (flora.chunk_bytes, store.block_bytes), self., super. and inherited functions are not followed, so the
+# reach is a lower bound; widen this when a worker's helpers live on an object it was handed.
 func _calls(path: String, text: String, into: Array) -> void:
 	var known: Dictionary = _preloads(path)
 
@@ -113,8 +115,8 @@ func _calls(path: String, text: String, into: Array) -> void:
 func _init() -> void:
 	var paths: Array = []
 
-	for root in ROOTS:
-		_scripts(root, paths)
+	for top in ROOTS:
+		_scripts(top, paths)
 
 	for path in paths:
 		_read(path)
@@ -128,7 +130,7 @@ func _init() -> void:
 		var text: String = _sources[path]
 		var starts: String = "WorkerThreadPool\\.add_(?:group_)?task\\("
 
-		for thread in RegEx.create_from_string("(\\w+)\\s*=\\s*Thread\\.new\\(\\)").search_all(text):
+		for thread in RegEx.create_from_string("(\\w+)(?:[ \\t]*:[ \\t]*\\w+)?[ \\t]*=[ \\t]*Thread\\.new\\(\\)").search_all(text):
 			starts += "|\\b%s\\.start\\(" % thread.get_string(1)
 
 		for start in RegEx.create_from_string(starts).search_all(text):
