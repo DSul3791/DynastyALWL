@@ -3304,6 +3304,73 @@ static func stone_well() -> Node3D:
 	return root
 
 
+# Primitive - Well (plumbing PR 1), 1.6 m square, 1.1 m high: a curb of four courses of logs laid crib-fashion round the shaft (ends crossing at the
+# corners), dark water down it, two forked log posts carrying a log windlass with a crank, rope and a bucket over the shaft.
+static func primitive_well() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for course in 4:
+		var y: float = 0.09 + 0.17 * float(course)
+		var along_x: bool = course % 2 == 0
+
+		for s in [-0.66, 0.66]:
+			var log_mesh: MeshInstance3D = _cyl(root, 0.09, 1.6, Vector3(0.0, y, s) if along_x else Vector3(s, y, 0.0), _log, 6)
+			log_mesh.rotation = Vector3(0.0, 0.0, PI * 0.5) if along_x else Vector3(PI * 0.5, 0.0, 0.0)
+
+	_box(root, Vector3(1.12, 0.02, 1.12), Vector3(0.0, 0.7, 0.0), _tone_mat(Color(0.05, 0.05, 0.05)))   # the shaft's mouth
+	_box(root, Vector3(1.1, 0.02, 1.1), Vector3(0.0, 0.25, 0.0), _still_water())
+
+	for x in [-0.66, 0.66]:
+		_cyl(root, 0.06, 0.5, Vector3(x, 0.98, 0.0), _log, 6)
+		_box(root, Vector3(0.04, 0.1, 0.16), Vector3(x, 1.24, 0.0), _frame)                            # the fork
+
+	_cyl(root, 0.05, 1.36, Vector3(0.0, 1.2, 0.0), _log, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the roller
+	_box(root, Vector3(0.03, 0.03, 0.18), Vector3(0.74, 1.2, 0.09), _frame)                           # the crank, a pegged stick
+	_box(root, Vector3(0.03, 0.12, 0.03), Vector3(0.74, 1.15, 0.18), _frame)
+	_box(root, Vector3(0.01, 0.4, 0.01), Vector3(0.0, 0.98, 0.05), _frame)                            # rope
+	_cyl(root, 0.08, 0.12, Vector3(0.0, 0.72, 0.05), _planks, 10, 0.09)                               # the bucket
+	_solid(root, Vector3(1.6, 0.76, 1.6), Vector3(0.0, 0.38, 0.0))
+	return root
+
+
+# Advanced - Well (plumbing PR 1), 3.2 m across, 3.3 m high: a wide round curb of fitted stone 0.9 m high with a flagstone coping, dark water down the
+# shaft, four squared posts at the corners carrying a plank frame and a four-sided pyramid roof of shingles with a finial, a long windlass roller between
+# two of the posts with a crank, rope and a bucket over the shaft.
+static func advanced_well() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 1.5, 0.9, Vector3(0.0, 0.45, 0.0), _stone, 16)
+	_cyl(root, 1.56, 0.1, Vector3(0.0, 0.95, 0.0), _flag, 16)
+	_cyl(root, 1.1, 0.02, Vector3(0.0, 1.005, 0.0), _tone_mat(Color(0.05, 0.05, 0.05)), 16)   # the shaft's mouth
+	_cyl(root, 1.08, 0.02, Vector3(0.0, 0.35, 0.0), _still_water(), 16)
+
+	for x in [-1.3, 1.3]:
+		for z in [-1.3, 1.3]:
+			_box(root, Vector3(0.14, 2.3, 0.14), Vector3(x, 2.05, z), _frame)                      # a corner post, standing on the coping's edge
+
+	for s in [-1.3, 1.3]:
+		_box(root, Vector3(2.76, 0.12, 0.12), Vector3(0.0, 3.2, s), _frame)                         # the plate beams under the eaves
+		_box(root, Vector3(0.12, 0.12, 2.76), Vector3(s, 3.2, 0.0), _frame)
+
+	var pitch: float = 0.62
+	for side in 4:
+		var face: Node3D = Node3D.new()
+		face.rotation = Vector3(0.0, PI * 0.5 * float(side), 0.0)
+		root.add_child(face)
+		_box_rot(face, Vector3(3.3, 0.05, 1.95), Vector3(0.0, 3.82, 0.82), Vector3(pitch, 0.0, 0.0), _roof)   # one face of the pyramid, its eave over the post line
+
+	_cyl(root, 0.08, 0.3, Vector3(0.0, 4.48, 0.0), _frame, 6, 0.02)                                 # the finial
+	_cyl(root, 0.07, 2.5, Vector3(0.0, 2.2, -1.3), _log, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)  # the roller, between the two back posts
+	_box(root, Vector3(0.04, 0.04, 0.24), Vector3(1.42, 2.2, -1.18), _iron_mat())                   # the crank
+	_box(root, Vector3(0.04, 0.16, 0.04), Vector3(1.42, 2.13, -1.06), _iron_mat())
+	_box(root, Vector3(0.015, 1.1, 0.015), Vector3(0.0, 1.65, -1.25), _frame)                       # rope
+	_cyl(root, 0.11, 0.16, Vector3(0.0, 1.05, -1.0), _planks, 10, 0.12)                             # the bucket on the coping
+
+	_solid(root, Vector3(3.2, 1.0, 3.2), Vector3(0.0, 0.5, 0.0))
+	return root
+
+
 # A hand pump, 0.5 x 0.5 x 1.1, its spout to +Z and its handle back over -Z. "wood": the old lever pump, a squared bored log on a plank base, a spout pegged
 # into its side, a long handle on a forked pivot. "iron": the cast-iron pitcher pump, a round body on a stone plinth, a lipped spout and a curved handle.
 static func hand_pump(kind: String = "wood") -> Node3D:

@@ -9123,8 +9123,30 @@
 			"obtainable_now": false,
 			"status": "planned"
 		},
+		"primitive_well": {
+			"name": "Primitive - Well",
+			"kind": "structure",
+			"description": "A log-lined well with a windlass and bucket. Gives a household's water each day.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Log, 4 Twine, 1 Bucket"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"advanced_well": {
+			"name": "Advanced - Well",
+			"kind": "structure",
+			"description": "A wide round stone well under a four-posted roof. Gives a village's water each day.",
+			"how_to_get": [
+				"Build with a hammer (press R): 60 Cobblestone, 16 Clay mortar, 12 Plank, 4 Log, 16 Bark shingle, 2 Rope, 2 Bucket"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
 		"stone_well_kit": {
-			"name": "Well",
+			"name": "Improved - Well",
 			"kind": "placeable",
 			"description": "A stone well with a windlass and bucket. E draws ten litres.",
 			"how_to_get": [
@@ -9135,7 +9157,7 @@
 			"status": "planned"
 		},
 		"stone_well": {
-			"name": "Well",
+			"name": "Improved - Well",
 			"kind": "structure",
 			"description": "A stone well with a windlass and bucket. E draws ten litres.",
 			"how_to_get": [],
