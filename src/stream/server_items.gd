@@ -1137,7 +1137,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
+		var fuel_tier: int = _lit_tier_at(a)
 		_fuel(peer, inv, a)
+		_goal_fire_tier(peer, a, fuel_tier)
 	elif kind == Net.ACT_STANCE:
 		_set_stance(peer, a)
 	elif kind == Net.ACT_SLEEP:
@@ -1148,6 +1150,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 
 		if was_laid and _items.has(a) and _items[a].has("fire") and fire_is_lit(int(_items[a]["fire"]["state"])):
 			_goal_event(peer, "fire_lit")
+			_goal_fire_tier(peer, a, 0)   # lit straight to a bigger tier (wood already in the store) credits it too
 	elif kind == Net.ACT_COOK:
 		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
@@ -1157,7 +1160,10 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at, a - 1, b == 1)   # a: the held pack slot + 1 (protocol 117); b = 1: the swing struck nothing (protocol 118)
 	elif kind == Net.ACT_CHEST_CLOSE:
-		_sync_fire_from_box(peer, int(_chest_viewer.get(peer, 0)))
+		var closed: int = int(_chest_viewer.get(peer, 0))
+		var close_tier: int = _lit_tier_at(closed)
+		_sync_fire_from_box(peer, closed)   # a burning fire's store counts when its window closes: the wood put in may lift the tier
+		_goal_fire_tier(peer, closed, close_tier)
 		_chest_viewer.erase(peer)
 	elif kind == Net.ACT_CHEST_KEEP_OUT:
 		_set_keep_out(peer, a, b == 1)
@@ -6477,11 +6483,15 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	var from_base: Vector3 = _peer_pos[peer] - it["pos"]
 	var flat: float = cos(float(tree.get("pitch", 0.0)))
 	var length_now: float = float(tree["length"])
+
+	if tree.has("logs_left"):   # a trunk saved when logs were 2.44 m holds more logs than its length now has: the last one would be 0 m long
+		tree["logs_left"] = mini(int(tree["logs_left"]), maxi(int(length_now / float(cfg.get("log_length_m", 3.0))), 1))
+
 	var logs_phase: bool = int(tree.get("blows", 0)) >= int(cfg.get("branch_blows", 3)) and int(tree.get("logs_left", 0)) > 0
 	var t: float = clampf(from_base.dot(along), 0.0, length_now * flat)
 
 	if logs_phase:   # logs come off the far end: the player stands by the next cut line (the middle of the piece that comes off)
-		var piece: float = length_now if int(tree["logs_left"]) <= 1 else minf(float(cfg.get("log_length_m", 2.44)), length_now)
+		var piece: float = length_now if int(tree["logs_left"]) <= 1 else minf(float(cfg.get("log_length_m", 3.0)), length_now)
 		t = (length_now - piece * 0.5) * flat
 
 	var nearest: Vector3 = it["pos"] + along * t
@@ -6504,7 +6514,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	tree["landed"] = true   # the client draws it lying from now on (a shorter trunk is not felled again)
 
 	if not tree.has("logs_left"):
-		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.44))), 0, int(cfg.get("max_logs", 20)))   # whole 8 ft (2.44 m) lengths only
+		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 3.0))), 0, int(cfg.get("max_logs", 20)))   # whole 3 m lengths only (Master s2.3 item 1)
 		tree["blows"] = 0   # every tree makes logs (Dave 1 Nov); a species without its own log item drops the plain Log (_cut_log_off)
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -6654,7 +6664,7 @@ func cut_line_point(id: int) -> Vector3:
 		return Vector3.ZERO
 
 	var tree: Dictionary = it["tree"]
-	var log_len: float = float(_drops.get("trunk", {}).get("log_length_m", 2.44))
+	var log_len: float = float(_drops.get("trunk", {}).get("log_length_m", 3.0))
 	var length_now: float = float(tree["length"])
 	var piece: float = length_now if int(tree.get("logs_left", 1)) <= 1 else minf(log_len, length_now)
 	var yaw: float = float(tree["yaw"])
@@ -6671,7 +6681,7 @@ func _log_number(species: String) -> int:
 	return log_n
 
 
-# A felled tree breaks into its logs by itself once it has hit the ground (Dave 2 Nov): the same whole 2.44 m lengths as cutting it would give
+# A felled tree breaks into its logs by itself once it has hit the ground (Dave 2 Nov): the same whole 3 m lengths as cutting it would give
 # (_process_trunk: logs_left), the same species log, lying along the line where the trunk fell. The trunk record goes, so the client drops one
 # mesh and shows the logs as ordinary loose items (one cached mesh per species): no repeated trunk rebuild as in bug 6. A trunk already worked with
 # the axe (it has blows), one with no whole log in it, or one with no room for all its logs is left as a trunk to cut by hand.
@@ -6714,7 +6724,7 @@ func split_trunk(id: int) -> bool:
 
 	var tree: Dictionary = it["tree"]
 	var cfg: Dictionary = _drops.get("trunk", {})
-	var log_len: float = float(cfg.get("log_length_m", 2.44))
+	var log_len: float = float(cfg.get("log_length_m", 3.0))
 	var length: float = float(tree["length"])
 	var count: int = clampi(int(length / log_len), 0, int(cfg.get("max_logs", 20)))
 
@@ -6984,7 +6994,7 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, with_b
 # dropped log item beside the trunk, so it obeys the drop rules; false (nothing changes, the next blow tries again) when the spot is too crowded. The last log takes whatever is left of the trunk.
 func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kindling: bool = false) -> bool:   # as_kindling: cut with a pick, the piece is a pile of kindling
 	var it: Dictionary = _items[id]
-	var log_len: float = float(cfg.get("log_length_m", 2.44))
+	var log_len: float = float(cfg.get("log_length_m", 3.0))
 	var length_now: float = float(tree["length"])
 	var seg: float = length_now if int(tree.get("logs_left", 1)) <= 1 else minf(log_len, length_now)
 	var yaw: float = float(tree["yaw"])
@@ -7365,6 +7375,25 @@ static func fire_is_lit(state: int) -> bool:
 # A lit fire's tier for its look: 1 survival (40), 2 campfire (1), 3 bonfire (41), as the client's inventory_view._fire_tier.
 static func fire_tier_of(state: int) -> int:
 	return 1 if state == FIRE_STATE_SURVIVAL else (3 if state == FIRE_STATE_BONFIRE else 2)
+
+
+# The tier of the lit fire `id` (1 small, 2 medium, 3 large), 0 when it is not a lit fire.
+func _lit_tier_at(id: int) -> int:
+	var fire: Dictionary = _items.get(id, {}).get("fire", {})
+	return fire_tier_of(int(fire["state"])) if not fire.is_empty() and fire_is_lit(int(fire["state"])) else 0
+
+
+# A player action took the fire `id` up from tier `before` (0: not burning): each tier newly reached from medium up is a goal event, so a fire
+# lit straight to large credits medium too (GOALS-REPAIR F4). Each tier is credited at most once per character, so a fire that burned down and is
+# lifted again through the store window cannot farm it. Called only after player actions: burning down credits nothing.
+func _goal_fire_tier(peer: int, id: int, before: int) -> void:
+	var counts: Dictionary = _goal_state_of(peer).get("goal_counts", {})
+
+	for tier in range(maxi(before, 1) + 1, _lit_tier_at(id) + 1):
+		var what: String = ["small", "medium", "large"][tier - 1]
+
+		if int(counts.get(_goal_count_key("fire_tier", what), 0)) == 0:
+			_goal_event(peer, "fire_tier", what)
 
 
 # Far campfire smoke (TEST-011, Dave approved 13 Nov 2026: smoke seen up to 2 km so a camp can be found from a hill): the lit campfires
@@ -8566,7 +8595,7 @@ func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 	if bool(def.get("shelter", false)):
 		_record_rest(str(_peer_key.get(peer, "")), _shelter_floor(spot, def), "shelter")   # a lean-to you built is a place to come back to
 
-	_goal_event(peer, "placed", str(def.get("kind", "")))
+	_goal_event(peer, "placed", str(entry["struct"]["kind"]))   # the piece's own kind: a finished site passes the raw structures row, which has none (GOALS-REPAIR F1)
 
 
 # A campfire pot goes onto the nearest small fire (laid, lit or burnt out; never a bonfire) within POT_ATTACH_M of where it was put and
@@ -9274,7 +9303,9 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 	inv.remove(block_n, 1)
 	var large: bool = block_n == table.number_of("wooden_block_large") or block_n == table.number_of("wooden_block_soft_large")
 	var soft: bool = block_n == table.number_of("wooden_block_soft") or block_n == table.number_of("wooden_block_soft_large")
-	_drop_firewood_beside(it, int(def.get("firewood_per_large_block", 4)) if large else int(def.get("firewood_per_block", 1)), "firewood_soft" if soft else "firewood")
+	var firewood: String = "firewood_soft" if soft else "firewood"
+	_drop_firewood_beside(it, int(def.get("firewood_per_large_block", 4)) if large else int(def.get("firewood_per_block", 1)), firewood)
+	_goal_made(peer, table.number_of(firewood))   # splitting by hand counts like one craft of the firewood, as the block's F queue does (GOALS-REPAIR F3)
 	_wear_slot(peer, inv, axe, "split")
 	practice(peer, "split_log")
 	_dirty = true
@@ -9350,7 +9381,9 @@ func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: 
 		_items.erase(id)
 
 	_wear_slot(peer, inv, int(tool[0]), "split")
-	drop_in_world(table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
+	var block_n: int = table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", ""))))
+	drop_in_world(block_n, blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
+	_goal_made(peer, block_n)   # chopping a log by hand counts like one craft of its block (GOALS-REPAIR F3); the pick's kindling above counts nothing
 	practice(peer, "split_log")
 	_dirty = true
 
