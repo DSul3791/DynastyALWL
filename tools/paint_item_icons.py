@@ -792,14 +792,6 @@ def horn_pane():
     return faces
 
 
-def clay_pipe():
-    """Clay pipe: one fired length of round clay pipe, its collar at one end, both ends dark and open."""
-    clay, hollow = (186, 120, 78), (60, 40, 30)
-    faces = rod((-1.15, 0, 0), (0.75, 0, 0), 0.3, clay, end=hollow, sides=10, seed=120)
-    faces += rod((0.75, 0, 0), (1.2, 0, 0), 0.4, shade(clay, 1.06), end=hollow, sides=10, seed=121)
-    return faces
-
-
 def carved_stone_block():
     """Carved stone block: a squared ashlar block, its faces dressed with a raised panel inside a tooled margin."""
     stone = (184, 178, 166)
@@ -1205,7 +1197,6 @@ def _pieces():
         **{m + "_hammer": ((lambda m=m: hammer(m)), SPADE_VIEW) for m in ("wooden", "stone", "bronze", "iron", "steel")},
         **{m + "_chisel": ((lambda m=m: chisel(m)), SPADE_VIEW) for m in ("bronze", "iron", "steel")},
         "horn_pane": (horn_pane, rot_x(math.radians(40.0)) @ rot_y(math.radians(15.0))),
-        "clay_pipe": (clay_pipe, DIAGONAL),
         "carved_stone_block": (carved_stone_block, rot_y(math.radians(-28.0))),
         "carved_stone_shingle": (carved_stone_shingle, rot_x(math.radians(35.0))),
         "parsnip": (lambda: parsnip(46), rot_z(math.radians(-28.0))),
