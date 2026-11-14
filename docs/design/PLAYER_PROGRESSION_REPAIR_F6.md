@@ -12,7 +12,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - [ ] **Journal is empty for a new character.** J opens the Index, G opens Goals, M opens Map, and Esc closes. The Map page reads "Nothing mapped yet. Explore to fill this page." Opening the inventory closes the Journal, and the other way round.
 - [ ] **Keys under a screen** (#1104). Open the inventory (I) or the character screen (Tab). Hold Space and Ctrl on the ground, in water and on a ladder; on a ladder also press W and S. Nothing should move you: no jump, rise, dive, climb or letting go. Space still wakes you if you are asleep with a screen open.
 - [ ] **Goals box.** At the upper right, a thin cream border, the heading "Goals" and the first two unfinished goals. It sits clear of the Comfort and food lines and hides while any screen is open.
-- [ ] **Note any crash while joining.** Join a few times. Headless test runs still crash now and then while joining (1 of 3 in the final run, in the animal models; cause unknown, open). If the game crashes or freezes at a join, note when, and save the log if you can. #1124 fixed one cause (trees); trees may finish setting up a moment later than before, with unchanged looks.
+- [ ] **Note any crash while joining.** Join a few times. Headless test runs used to crash now and then while joining (1 of 3 in the final run). The confirmed cause is fixed by #1132 (20 of 20 test joins clean since), which is strong evidence but not proof, and windowed play has not been seen yet. If the game crashes or freezes at a join, note when, and save the log if you can. #1124 fixed one cause (trees); trees may finish setting up a moment later than before, with unchanged looks.
 
 ## 1. First minutes: gathering, tools, fire, shelter
 
