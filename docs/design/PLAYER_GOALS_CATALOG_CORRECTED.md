@@ -7,8 +7,14 @@
   - Draft: `PLAYER_GOALS_REWARDS_DRAFT.md` (651 rows, 15,670 copper in total).
   - Audit: `PLAYER_GOALS_AUDIT_LEDGER.csv` (audit at `dc2fa52`).
   - Recovery: `PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md`, which holds the GA dispositions.
-  - Data baseline: dev `9db936d` (data identical to `77460e3`). The hand-chop, fire-tier and site-kind fixes were read in PR #1095's worktree; that PR is not in dev.
-- **Dev moved after the baseline.** Dev has since taken #1090 (Map), #1092 (R2a smelters), #1097 and #1098, and is now at `596d156`. Rows that cite #1092 or #1090 as "not in dev" were not recomputed against `596d156`. Re-check the WP-METAL R2 rows, `build:improved_smelter` and the two map goals there.
+  - Data baseline: dev `9db936d` (data identical to `77460e3`). The hand-chop, fire-tier and site-kind fixes were read in PR #1095's worktree; #1095 has since merged to dev (`b94b1e7`).
+- **Dev moved after the baseline.** Dev has since taken #1090 (Map), #1092 (R2a smelters), #1097 and #1098, and later #1089, #1095, #1099, #1100 and #1101.
+- **Rechecked on dev `54b2c51` (R9, PR #1105; static read of data and code):**
+  - **Verdicts changed:** the 22 WP-METAL R2 rows and `craft:iron_ingot` are no longer blocked: 17 are OK and 6 are FIX (they carry text corrections).
+  - **Refs verified:** `build:improved_smelter` and the two Copper tool rows have their ids checked.
+  - **Map goals:** the two map goals have their events from PR #1105.
+  - **Not rechecked yet:** the rows blocked by WP-METAL R3, WP-R1B, WP-PRIM and WP-GUIDE-UI were not rechecked here, although those PRs are now in dev.
+  - The counts below include these changes.
 - **Rewards:** unchanged. Every ORIGINAL row carries the draft figure, which totals 15,670 copper. In the PROPOSED rows `reward_copper` is empty, and `notes` says "Reward: for Dave".
 - **Wording:** "go live" means the day the corrected catalog replaces the live goal files. It is not a player action; the player never activates anything.
 
@@ -33,13 +39,13 @@
 
 | Verdict | All 651 | 328 rule-only rows (reviewed individually in this pass) | 323 rows already reviewed individually in the audit |
 |---|---:|---:|---:|
-| OK | 178 | 54 | 124 |
-| FIX | 163 | 56 | 107 |
-| BLOCKED-BY-MECHANIC | 310 | 218 | 92 |
+| OK | 195 | 59 | 136 |
+| FIX | 169 | 57 | 112 |
+| BLOCKED-BY-MECHANIC | 287 | 212 | 75 |
 | DESIGN-QUESTION | 0 | 0 | 0 |
 | **Total** | **651** | **328** | **323** |
 
-- **Blocked rows that also have text corrections:** 146, of which 97 are rule-only rows.
+- **Blocked rows that also have text corrections:** 140, of which 96 are rule-only rows.
 - **New goals (verdict PROPOSED):** 11.
 - **Rows with a play test or player-verification note:**
   - 109 need player verification of the PR #1091 sources (Tanbark, Pine tar, water from containers).
@@ -55,8 +61,8 @@
 
 | WP | Rows | What it unblocks |
 |---|---:|---|
-| WP-METAL R2 (PR #1092) | 22 | Bronze route: the Primitive smithy cost (A-8), the copper, tin and bronze smelting jobs, Bronze tools, nails and hinges |
-| WP-METAL R3 | 197 | Iron route. The Improved smelter and its bellows are in #1092, the Improved smithy without iron is A-15, and the Iron Saw is needed for Planks and Hardwood boards. Anything that uses Planks, Nails or Hinges waits for it |
+| WP-METAL R2 (PR #1092) | 0 | Was 22. The Bronze route is in dev, and the rows were rechecked on `54b2c51` |
+| WP-METAL R3 | 196 | Iron route. The Improved smelter and its bellows are in #1092, the Improved smithy without iron is A-15, and the Iron Saw is needed for Planks and Hardwood boards. Anything that uses Planks, Nails or Hinges waits for it |
 | WP-METAL R4 | 41 | Steel (A-19, A-24), the Advanced smelter (wind, A-18) and the Advanced smithy |
 | WP-METAL R5 | 2 | Master smithy and tempering |
 | WP-METAL R6 | 1 | Small Resource Bin (16 Planks and 32 Nails, single type) |
@@ -102,21 +108,21 @@
 
 ## New proposed goals (rewards for Dave)
 
-These ids are **not yet in dev**: they come from the blocking WP. The improved smelter ids arrived with #1092 after this review's baseline, and were not re-verified. A `runtime_check` that contains a `<...TBD>` value or `count: "N"` is a placeholder. It is **not loadable** as goal data until the value is set.
+Ids from R4 to R6 are **not yet in dev**: they come from the blocking WP. The Improved smelter and Copper tool ids were rechecked on dev `54b2c51` (R9, PR #1105). A `runtime_check` that contains a `<...TBD>` value or `count: "N"` is a placeholder. It is **not loadable** as goal data until the value is set.
 
 | id | Title | Completes when | Stable refs | Blocked by |
 |---|---|---|---|---|
-| `build:improved_smelter` | Build Improved Smelter | placed:improved_smelter | item #1304, state 368, bp 300 (A-9) | WP-METAL R3 (#1092) |
+| `build:improved_smelter` | Build Improved Smelter | placed:improved_smelter | item #1304, state 368, bp 300 (A-9), rechecked on dev | in dev (#1092) |
 | `build:advanced_smithy` | Build Advanced Smithy | placed:advanced_smithy | item #1308, state 369, bp 301 (A-20) | WP-METAL R4 |
-| `craft:copper_pickaxe` | Make a Copper - Pickaxe | made:copper_pickaxe | new from #1305, key to be set (A-13) | WP-METAL R2b |
-| `craft:copper_axe` | Make a Copper - Axe | made:copper_axe | new from #1305, key to be set (A-13) | WP-METAL R2b |
+| `craft:copper_pickaxe` | Make a Copper - Pickaxe | made:copper_pickaxe | item #1305, recipe 722 (A-13) | in dev (#1099) |
+| `craft:copper_axe` | Make a Copper - Axe | made:copper_axe | item #1306, recipe 723 (A-13) | in dev (#1099) |
 | `craft:iron_anvil_part` | Make an Iron anvil | made:iron_anvil_part | item #1307 (A-16), not #827 | WP-METAL R3 |
 | `craft:steel_anvil_part` | Make a Steel anvil | made:steel_anvil_part | item #1309, recipe 725 (A-21) | WP-METAL R4 |
 | `build:medium_resource_bin` | Build Medium Resource Bin | placed:<R6 structure> (placeholder) | to be set in R6 | WP-METAL R6 |
 | `build:large_resource_bin` | Build Large Resource Bin | placed:<R6 structure> (placeholder) | to be set in R6 | WP-METAL R6 |
 | `activity:repair_station` | Repair a worn smithy | new event `station_repaired` | none until R5 durability | WP-METAL R5 |
-| `activity:map_survey` | Map new ground | new event `map_surveyed` (count N for Dave: placeholder) | data/map.json, skill `mapping` (A-5) | WP-MAP (#1090) |
-| `activity:map_redraw` | Redraw an old map area | new event `map_redrawn` | data/map.json revisit rule (A-5) | WP-MAP (#1090) |
+| `activity:map_survey` | Map new ground | event `map_surveyed`, one per survey (every 8 m walked) that finds never-seen ground (count N for Dave: placeholder) | data/map.json, skill `mapping` (A-5) | WP-MAP (#1105) |
+| `activity:map_redraw` | Redraw an old map area | event `map_redrawn`, one per survey that redraws known ground at a higher skill | data/map.json revisit rule (A-5) | WP-MAP (#1105) |
 
 The proposed How-to text for each goal is in the CSV `correction` column.
 
@@ -180,7 +186,7 @@ Every row has a `condition`, a `runtime_check` in the goal engine's own JSON, an
     - `workbench` checks for the workbench only.
   - **The HUD skip** (Dave decision 5).
   - **Optional:** add the item to `ate_food`. Indexing goals by event (GA-49) is a performance shortcut, not a gap.
-- **WP-PRIM (PR #1095, not in dev):**
+- **WP-PRIM (PR #1095, in dev since `b94b1e7`):**
   - **F1.** In dev, `_finish_site` loses the structure kind; #1095 fixes this. The 256 build rows assume the fix.
   - **F3.** There is no `log_chopped` event. Instead, #1095 credits the hand chop as `_goal_made(peer, <species block>)`, which covers Hardwood, Softwood and Large blocks, and the hand split as `_goal_made(peer, <firewood>)`.
     - **Overlap:** a hand chop now also feeds `craft:wooden_block` and `craft:wooden_block_soft`. Under GA-38 each goal still pays once.
@@ -194,7 +200,7 @@ Every row has a `condition`, a `runtime_check` in the goal engine's own JSON, an
   - **The event `tempered`** is needed for `activity:temper_steel` (R5).
   - **The event `station_repaired`**, sent from `_repair_struct`, is needed for `activity:repair_station` (R5).
   - **The bins** need no new event, because `placed:<kind>` covers them once the R6 structures exist.
-- **WP-MAP:** needs the events `map_surveyed` and `map_redrawn`, or an equivalent cells-seen check, from `server_map.gd` (#1090).
+- **WP-MAP:** PR #1105 emits `map_surveyed` and `map_redrawn` from `server_map.gd`, through `_goal_event`, so Admin mode pauses them. Each survey counts once (a survey runs every 8 m walked), not each cell, so a survey costs one goal check (GA-49).
 
 ## Migration (A-12, and what going live really does)
 
@@ -226,10 +232,10 @@ Whether the burst in point 1 is acceptable is Dave decision 4: accept it, reset 
 **Not verified:**
 
 - No Godot run, no tests and no play.
-- PR #1095 is not in dev. The rows that rely on it (F1, F3, F4) were checked against its worktree code only.
+- PR #1095 was not in dev at the review baseline. The rows that rely on it (F1, F3, F4) were checked against its worktree code; it has since merged (`b94b1e7`).
 - Dev moved to `596d156` (#1090, #1092, #1097, #1098) after the baseline, and the rows were not recomputed there.
 - The player sources from PR #1091 (Tanbark, Pine tar, water from containers) are marked NEEDS PLAYER VERIFICATION in 109 rows.
 - The acquisition evidence comes from the audit at `dc2fa52`. Its text was cut at 90 characters, and the cuts are shown as "...".
-- The planned ids from R2b–R6 (#1305–#1309, bp 301, recipe 725, copper tool keys, bin structures) are not in dev.
+- At the review baseline the planned ids from R2b–R6 were not in dev. Since then #1305–#1307 (copper tools, Iron anvil, recipes 722–724) are in dev and were rechecked on `54b2c51` (R9, PR #1105); #1308, #1309, bp 301, recipe 725 and the bin structures are not yet.
 - The Leaves drop from felling is not verified.
 - Whether a newly placed Campfire kit starts with sticks in its fuel store is not verified.
