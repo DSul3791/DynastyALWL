@@ -17722,7 +17722,14 @@ func _load_craft_queues() -> void:
 
 				for unit in (need[2] if need.size() > 2 and typeof(need[2]) == TYPE_ARRAY else []):
 					if typeof(unit) == TYPE_ARRAY and (unit as Array).size() >= 2:
-						units.append([int(unit[0]), InventoryScript.clean_inst(unit[1]), maxi(int(unit[2]), 0) if unit.size() > 2 else 0, clampi(int(unit[3]), 1, 65535) if unit.size() > 3 else 1])   # what the craft took (_hold_insts); older rows: one unit, older still: wear 0
+						var kept: Dictionary = InventoryScript.clean_inst(unit[1])
+
+						if typeof(unit[1]) == TYPE_DICTIONARY and (unit[1] as Dictionary).has("liquid_ml"):   # a liquid row (Inventory.remove_fill): clean_inst drops its keys, a refund needs them (GA-04)
+							for liquid_key in ["liquid_ml", "box", "uid"]:
+								if (unit[1] as Dictionary).has(liquid_key):
+									kept[liquid_key] = int(unit[1][liquid_key])
+
+						units.append([int(unit[0]), kept, maxi(int(unit[2]), 0) if unit.size() > 2 else 0, clampi(int(unit[3]), 1, 65535) if unit.size() > 3 else 1])   # what the craft took (_hold_insts); older rows: one unit, older still: wear 0
 
 				needs.append([int(need[0]), int(need[1]), units] if not units.is_empty() else [int(need[0]), int(need[1])])
 

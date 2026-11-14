@@ -88,7 +88,13 @@ func hand_cut(id: int, limit: int = 60) -> void:
 		blow(id)
 
 
+func _watchdog() -> void:
+	print("FAIL the test did not finish (a script error stopped it)")
+	quit(1)
+
+
 func _init() -> void:
+	create_timer(200.0).timeout.connect(_watchdog)   # a script error part-way would leave the test hanging
 	dir = "user://test_wood_sources_%d" % Time.get_ticks_usec()
 	items = make(dir)
 	items.peer_connected_hello(1, "woodsrc00001")
@@ -213,7 +219,13 @@ func _init() -> void:
 	items._finish_writer()   # the write runs in the background
 	items = make(dir)
 	items.peer_connected_hello(1, "woodsrc00001")
-	check(items._items.has(half) and bool(items._items[half]["tree"].get("bark_taken", false)), "the half-cut trunk comes back from the save with bark_taken")
+	half = -1
+
+	for k in items._items:   # a saved trunk is given a fresh record id on load: find it where it lay
+		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3 and (items._items[k]["pos"] as Vector3).distance_to(Vector3(3.0, 10.0, 120.0)) < 1.0:
+			half = k
+
+	check(half >= 0 and bool(items._items[half]["tree"].get("bark_taken", false)) and int(items._items[half]["tree"].get("blows", 0)) > 0, "the half-cut trunk comes back from the save with bark_taken")
 	hand_cut(half)
 	check(pack("tannin_bark") == 6, "the rest of that oak gives none")
 

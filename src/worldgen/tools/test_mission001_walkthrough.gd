@@ -420,6 +420,30 @@ func fill_water(units: int) -> void:
 	check(items.inventory_of(1).count_fill(n("water")) >= units and have("water") == 0, "%d fills of 500 mL make %d water ingredients, and no stackable water exists" % [units, units])
 
 
+# What the pack holds, item number -> count.
+func pack_counts() -> Dictionary:
+	var out: Dictionary = {}
+	var pack = items.inventory_of(1)
+
+	for i in pack.slot_count:
+		if pack.numbers[i] != 0:
+			out[pack.numbers[i]] = int(out.get(pack.numbers[i], 0)) + pack.counts[i]
+
+	return out
+
+
+# Cutting a trunk also gives its branches' sticks and leaves, seeds and roots; this test counts its stations' materials exactly, so what came besides the tannin bark is put down again.
+func drop_byproducts(before: Dictionary) -> void:
+	var pack = items.inventory_of(1)
+	var bark: int = n("tannin_bark")
+
+	for number in pack_counts():
+		var extra: int = int(pack_counts()[number]) - int(before.get(number, 0))
+
+		if extra > 0 and number != bark:
+			pack.remove(int(number), extra)
+
+
 # Tannin bark by the player's route (GOALS-REPAIR GA-01): felled oak trunks (the fall itself: test_fell_autosplit) cut up with the Stone - Axe in hand, far from the
 # stations so their logs are no craft stock. Each oak gives its drops.json harvest_yield count, once. The player is put back where they were.
 func bark_from_oaks(wanted: int) -> void:
@@ -427,6 +451,7 @@ func bark_from_oaks(wanted: int) -> void:
 	var per_oak: int = int(items._drops["harvest_yield"]["oak"]["count"])
 	var oaks: int = ceili(float(wanted) / float(per_oak))
 	var have_before: int = have("tannin_bark")
+	var before: Dictionary = pack_counts()
 
 	for k in range(oaks):
 		var id: int = 960000 + k
@@ -446,6 +471,7 @@ func bark_from_oaks(wanted: int) -> void:
 			items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
 
 	go(back)
+	drop_byproducts(before)
 	check(have("tannin_bark") - have_before == oaks * per_oak, "tannin bark came off %d felled oaks, %d each, cut with the axe (%d)" % [oaks, per_oak, have("tannin_bark") - have_before])
 
 

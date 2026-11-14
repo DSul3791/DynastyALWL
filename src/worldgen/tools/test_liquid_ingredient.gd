@@ -139,15 +139,27 @@ func fresh() -> void:
 	reset()
 
 
-func _init() -> void:
-	dir = "user://test_liquid_ingredient_%d" % Time.get_ticks_usec()
-	items = make()
+# Both players in the world, one at the origin, one far off, able to carry anything.
+func join() -> void:
 	items.peer_connected_hello(1, "liquidtest001")
 	items.peer_connected_hello(2, "liquidtest002")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.report_position(2, Vector3(0.0, 10.0, 300.0))
 	items.vitals_of(1)["weight"] = 2000.0
 	items.vitals_of(2)["weight"] = 2000.0
+
+
+func _watchdog() -> void:
+	print("FAIL the test did not finish (a script error stopped it)")
+	quit(1)
+
+
+func _init() -> void:
+	# A script error part-way would leave the test hanging: this ends it, failed, well inside the lane's 300 s.
+	create_timer(200.0).timeout.connect(_watchdog)
+	dir = "user://test_liquid_ingredient_%d" % Time.get_ticks_usec()
+	items = make()
+	join()
 	var water: int = n("water")
 	var unit: int = items.table.liquid_unit_ml(water)
 
@@ -218,14 +230,22 @@ func _init() -> void:
 	items.save()
 	items._finish_writer()
 	items = make()
-	items.peer_connected_hello(1, "liquidtest001")
+	join()   # a restarted server knows no one's position until they report it: without it nothing is in reach
 	skin = inv().numbers.find(n("waterskin"))
 	check(skin >= 0 and inv().wear[skin] == 500, "the container's water survives a save and load (%d mL)" % (inv().wear[skin] if skin >= 0 else -1))
 	var queue: Dictionary = items._craft_queues.get(items._peer_key[1], {})
 	check(not queue.is_empty() and (queue["entries"] as Array).size() == 1, "the waiting craft survives it too")
+	var water_rows: Array = []
+
+	if not queue.is_empty() and (queue["entries"] as Array).size() == 1:
+		for need in queue["entries"][0][2]:
+			if int(need[0]) == water and need.size() > 2:
+				water_rows = need[2]
+
+	check(not water_rows.is_empty() and (water_rows[0][1] as Dictionary).has("liquid_ml"), "and the row that records the water taken keeps its liquid_ml through the save (the instance cleaner must not drop it)")
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
-	check(inv().wear[skin] == 1000 and have("water") == 0, "and a cancel after the reload still pours the water back (%d mL)" % inv().wear[skin])
+	check(skin >= 0 and inv().wear[skin] == 1000 and have("water") == 0, "and a cancel after the reload still pours the water back (%d mL)" % (inv().wear[skin] if skin >= 0 else -1))
 
 	# Two crafts for the same 500 mL: the second is refused; the Inventory seam agrees.
 	fresh()

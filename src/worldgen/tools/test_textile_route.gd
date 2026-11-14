@@ -72,12 +72,37 @@ func fill_water(units: int) -> void:
 	check(items.inventory_of(1).count_fill(items.table.number_of("water")) >= units and have("water") == 0, "4a1. %d fills of 500 mL make %d water ingredients; no stackable water exists" % [units, units])
 
 
+# What the pack holds, item number -> count.
+func pack_counts() -> Dictionary:
+	var out: Dictionary = {}
+	var pack = items.inventory_of(1)
+
+	for i in pack.slot_count:
+		if pack.numbers[i] != 0:
+			out[pack.numbers[i]] = int(out.get(pack.numbers[i], 0)) + pack.counts[i]
+
+	return out
+
+
+# Cutting a trunk also gives its branches' sticks and leaves, seeds and roots; this test counts its stations' materials exactly, so what came besides the tannin bark is put down again.
+func drop_byproducts(before: Dictionary) -> void:
+	var pack = items.inventory_of(1)
+	var bark: int = items.table.number_of("tannin_bark")
+
+	for number in pack_counts():
+		var extra: int = int(pack_counts()[number]) - int(before.get(number, 0))
+
+		if extra > 0 and number != bark:
+			pack.remove(int(number), extra)
+
+
 # One felled oak (the fall: test_fell_autosplit) cut up with a Stone - Axe in hand, away from the stations: it gives its harvest_yield count of tannin bark, once.
 func bark_from_oak() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 	var id: int = 960001
 	var at: Vector3 = Vector3(300.0, 10.0, 300.0)
 	var back: Vector3 = items.position_of(1)
+	var before: Dictionary = pack_counts()
 	items._items[id] = {"number": 0, "count": 1, "pos": at, "left": 1.0e9, "tree": {"state": 3, "species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 9.0, "radius": 0.3, "chunk": [4, 4]}}
 
 	for blow in range(40):
@@ -93,6 +118,7 @@ func bark_from_oak() -> void:
 		items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
 
 	items.report_position(1, back)
+	drop_byproducts(before)
 	check(have("tannin_bark") == int(items._drops["harvest_yield"]["oak"]["count"]), "4a0. a felled oak cut up with the axe gives its tannin bark (%d)" % have("tannin_bark"))
 
 
