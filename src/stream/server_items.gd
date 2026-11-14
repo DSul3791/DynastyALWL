@@ -6461,6 +6461,10 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	var from_base: Vector3 = _peer_pos[peer] - it["pos"]
 	var flat: float = cos(float(tree.get("pitch", 0.0)))
 	var length_now: float = float(tree["length"])
+
+	if tree.has("logs_left"):   # a trunk saved when logs were 2.44 m holds more logs than its length now has: the last one would be 0 m long
+		tree["logs_left"] = mini(int(tree["logs_left"]), maxi(int(length_now / float(cfg.get("log_length_m", 3.0))), 1))
+
 	var logs_phase: bool = int(tree.get("blows", 0)) >= int(cfg.get("branch_blows", 3)) and int(tree.get("logs_left", 0)) > 0
 	var t: float = clampf(from_base.dot(along), 0.0, length_now * flat)
 
@@ -7358,11 +7362,16 @@ func _lit_tier_at(id: int) -> int:
 
 
 # A player action took the fire `id` up from tier `before` (0: not burning): each tier newly reached from medium up is a goal event, so a fire
-# lit straight to large credits medium too (GOALS-REPAIR F4). Called only after player actions: burning down, and a burn-down that a later
-# put lifts back, are not progress by themselves.
+# lit straight to large credits medium too (GOALS-REPAIR F4). Each tier is credited at most once per character, so a fire that burned down and is
+# lifted again through the store window cannot farm it. Called only after player actions: burning down credits nothing.
 func _goal_fire_tier(peer: int, id: int, before: int) -> void:
+	var counts: Dictionary = _goal_state_of(peer).get("goal_counts", {})
+
 	for tier in range(maxi(before, 1) + 1, _lit_tier_at(id) + 1):
-		_goal_event(peer, "fire_tier", ["small", "medium", "large"][tier - 1])
+		var what: String = ["small", "medium", "large"][tier - 1]
+
+		if int(counts.get(_goal_count_key("fire_tier", what), 0)) == 0:
+			_goal_event(peer, "fire_tier", what)
 
 
 # Far campfire smoke (TEST-011, Dave approved 13 Nov 2026: smoke seen up to 2 km so a camp can be found from a hill): the lit campfires

@@ -3902,7 +3902,7 @@ func _mesh_for(number: int) -> Mesh:
 		var mesh: Mesh
 
 		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood" or id.begins_with("log_"):
-			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}.get(id, [3.0, 0.28, 0.22, 0.02])   # a species log is the full-size 3.0 m length (drops.json log_length_m)
+			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01]}.get(id, [3.0, 0.28, 0.22, 0.02])   # every log, the plain Log too, is the full-size 3.0 m length (drops.json log_length_m; Master 2.3.1 "3 m basic Log")
 			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, LogLookScript.color_of(id))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
@@ -3933,12 +3933,12 @@ func _mesh_for(number: int) -> Mesh:
 	return _meshes[number]
 
 
-# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 3.0 m for a species log (drops.json log_length_m), 1 m for the plain log.
+# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 3.0 m for every log, the plain Log too (drops.json log_length_m).
 func _log_mesh(id: String) -> ArrayMesh:
 	var plain: bool = id == "log"
-	var length: float = 1.0 if plain else 3.0
-	var r0: float = 0.13 if plain else 0.28
-	var r1: float = 0.11 if plain else 0.22
+	var length: float = 3.0
+	var r0: float = 0.28
+	var r1: float = 0.22
 	var cyl: CylinderMesh = CylinderMesh.new()
 	cyl.top_radius = r1
 	cyl.bottom_radius = r0

@@ -1884,7 +1884,7 @@ func _sync_cleared() -> void:
 				if items._rolling.has(id) and _loose_segs.has(id):
 					seg = _loose_segs[id]
 				else:
-					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 3.0, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 3.0, 0.22, 0.28)
 
 				segs_now[id] = seg
 				lying.append(seg)

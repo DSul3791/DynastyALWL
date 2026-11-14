@@ -6,7 +6,7 @@ extends SceneTree
 #   1. the P2 route with ZERO admin gives: hand, tree, blocks, hammer, Chopping Block, firewood, medium fire, bonfire, charcoal, lean-to, a Crude piece;
 #   2. F1: a lean-to placed short of sticks and finished by depositing the rest counts `placed:lean_to` once (the site path lost the kind);
 #   3. F3: the axe on a ground log and the E split at the Chopping Block count like one craft each, the F queue still counts once, a pick and Admin mode count nothing;
-#   4. F4: a fire newly reaching medium or large through a player action credits `fire_tier` once; a direct bonfire credits medium too; a re-feed at the same tier and Admin mode credit nothing;
+#   4. F4: a fire newly reaching medium or large through a player action credits `fire_tier` once per character; a direct bonfire credits medium too; a re-feed at the same tier, a drop and re-raise, and Admin mode credit nothing;
 #   5. F5: a fresh character drinks (and eats a berry) about 10 s after spawning and the goal event counts once.
 # Fixtures that stand in for the world (scatter heaps on the ground, a tree record) are placed with drop_in_world and tree_info, never given to the pack.
 #   godot --headless --path . --script res://src/worldgen/tools/test_primitive_route.gd
@@ -166,6 +166,7 @@ func _init() -> void:
 	site_lean_to()
 	manual_firewood()
 	fire_tiers()
+	direct_bonfire()
 	drink_and_eat()
 	print("primitive route tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -291,7 +292,7 @@ func route() -> void:
 	for key in items._goal_state_of(1)["goal_counts"]:
 		admin_keys += 1 if str(key).begins_with("admin:") else 0
 
-	check(admin_keys == 0, "no admin give was used anywhere on the route")
+	check(admin_keys == 0, "no Admin-mode craft (an admin: counter) was written on the route")
 
 
 # --- 2. F1: a site finished by deposit counts the piece's own kind ---
@@ -319,6 +320,7 @@ func manual_firewood() -> void:
 	to_hotbar("stone_axe", 0)
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var block: int = items.dev_place("chopping_block@2,0,0")
+	items._items[block]["struct"]["owner"] = "primroute0001"   # a dev_placed block has no owner: set it as test_station_storage does, so the F-queue stores into the owner's own station
 	items.drop_in_world(n("log_oak"), 1, Vector3(0.0, 10.0, 2.0))
 	items.drop_in_world(n("log"), 1, Vector3(0.0, 10.0, -2.0))
 
@@ -402,30 +404,41 @@ func fire_tiers() -> void:
 
 	check(state_of(a) == ItemsScript.FIRE_STATE_BONFIRE and counts("event:fire_tier:large") == 1 and counts("event:fire_tier:medium") == 1 and counts("event:fire_tier") == 2, "the third log makes the bonfire: large credited once, medium not again")
 
-	# Burning down credits nothing.
-	items._fire_burn(items._items[a]["fire"], 1.0e7)
-	check(counts("event:fire_tier") == 2, "burning down is no progress (%d tier events)" % counts("event:fire_tier"))
+	# The fire burned down to small (set here, as test_fire_store does) and a put lifts it again through the store window: no second credit.
+	items._items[a]["fire"]["state"] = ItemsScript.FIRE_STATE_SURVIVAL
+	items.give(1, n("firewood"), 1)
+	put_in_fire(a, "firewood", 1)
+	check(state_of(a) == ItemsScript.FIRE_STATE_BONFIRE and counts("event:fire_tier:medium") == 1 and counts("event:fire_tier:large") == 1 and counts("event:fire_tier") == 2, "dropped and lifted again: each tier is credited once per character (medium %d, large %d)" % [counts("event:fire_tier:medium"), counts("event:fire_tier:large")])
 
-	# A direct bonfire: three logs loaded in a laid fire, then lit, credits medium and large together.
-	items.report_position(1, Vector3(9.0, 10.0, 0.0))
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(n("campfire_kit")), 0, 0, Vector3(10.0, 10.0, 0.0))
-	var b: int = fire_ids().filter(func(k): return k != a)[0]
+
+# --- 4b. F4: a direct bonfire, and Admin mode ---
+func direct_bonfire() -> void:
+	fresh("direct")
+	items.vitals_of(1)["weight"] = 150.0
+	items.give(1, n("campfire_kit"), 2)
 	items.give(1, n("log"), 3)
-	put_in_fire(b, "log", 3)
-	check(counts("event:fire_tier") == 2, "loading a laid fire credits nothing")
-	light(b)
-	check(state_of(b) == ItemsScript.FIRE_STATE_BONFIRE and counts("event:fire_tier:medium") == 2 and counts("event:fire_tier:large") == 2, "a fire lit straight to a bonfire credits medium and large (medium %d, large %d)" % [counts("event:fire_tier:medium"), counts("event:fire_tier:large")])
-
-	# Admin mode: lighting counts nothing.
-	items.report_position(1, Vector3(-9.0, 10.0, 0.0))
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(n("campfire_kit")), 0, 0, Vector3(-10.0, 10.0, 0.0))
-	var c: int = fire_ids().filter(func(k): return k != a and k != b)[0]
 	items.give(1, n("firewood"), 3)
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(n("campfire_kit")), 0, 0, Vector3(1.0, 10.0, 0.0))
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(n("campfire_kit")), 0, 0, Vector3(-1.0, 10.0, 3.0))
+	var ids: Array = fire_ids()
+	var b: int = ids[0]
+	var c: int = ids[1]
+	put_in_fire(b, "log", 3)
 	put_in_fire(c, "firewood", 3)
+	check(counts("event:fire_tier") == 0, "loading a laid fire credits nothing")
+
+	# Admin mode: lighting a medium fire counts nothing, and a later real credit is not blocked by it.
 	items.admin_ok = func(_p): return true
 	items.admin_mode_on = func(_p): return true
 	light(c)
-	check(items.fire_is_lit(state_of(c)) and counts("event:fire_tier:medium") == 2 and counts("event:fire_lit") == 2, "in Admin mode a lit medium fire counts nothing (GA-54)")
+	check(items.fire_is_lit(state_of(c)) and counts("event:fire_tier:medium") == 0 and counts("event:fire_lit") == 0, "in Admin mode a lit medium fire counts nothing (GA-54)")
+	items.admin_ok = Callable()
+	items.admin_mode_on = func(_p): return false
+
+	# A fire lit straight to a bonfire credits medium and large together.
+	light(b)
+	check(state_of(b) == ItemsScript.FIRE_STATE_BONFIRE and counts("event:fire_tier:medium") == 1 and counts("event:fire_tier:large") == 1, "a fire lit straight to a bonfire credits medium and large (medium %d, large %d)" % [counts("event:fire_tier:medium"), counts("event:fire_tier:large")])
 
 
 # --- 5. F5: drink and eat soon after spawning ---
