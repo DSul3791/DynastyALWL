@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1304,
+	"next_number": 1305,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -1013,7 +1013,7 @@
 			"value": 120,
 			"look_alikes": []
 		},
-		"stone_forge": {"number": 88, "name": "Stone - Forge", "description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 8},
+		"stone_forge": {"number": 88, "name": "Primitive smithy", "description": "A clay and rough stone forge with a stone anvil under a log lean-to. Shapes copper and bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 8},
 		"blacksmithy_kit": {
 			"number": 89,
 			"retired": true,
@@ -3407,7 +3407,7 @@
 		"copper_ore": {
 			"number": 301,
 			"name": "Copper ore",
-			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
+			"description": "A heavy lump streaked green and red. A smelter turns each one into a copper ingot.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -3416,7 +3416,7 @@
 		"tin_ore": {
 			"number": 302,
 			"name": "Tin ore",
-			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
+			"description": "A dark, very heavy lump. A smelter turns each one into a tin ingot; with copper ore, into bronze.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -3425,7 +3425,7 @@
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump. Smelts to iron in a smelter.",
+			"description": "A rusty brown lump. An Improved smelter turns each one into an iron ingot while its bellows are worked.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -9474,7 +9474,8 @@
 				"look_alikes": [],
 				"value": 12
 			},
-			"smelter": {"number": 908, "name": "Smelter", "description": "A stone and clay furnace. Smelts ore into copper, tin and iron ingots, and alloys bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b).", "slots": 8},
+			"smelter": {"number": 908, "name": "Primitive smelter", "description": "A stone and clay furnace. Fed Coal or Charcoal and ore, it smelts copper, tin and bronze by itself.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b; Primitive Smelter, GOALS-REPAIR R2).", "slots": 3},
+			"improved_smelter": {"number": 1304, "name": "Improved smelter", "description": "A smelter with bronze fittings and hand bellows. Work the bellows to smelt faster and to smelt iron.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 368 (Improved Smelter, GOALS-REPAIR R3).", "slots": 10},
 			"bellows": {"number": 909, "name": "Bellows", "description": "Leather bellows for a smithy. It heats faster and burns less fuel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
 			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
 			"leatherworking_table": {"number": 911, "name": "Leatherworking table", "description": "A bench with tools for cutting and stitching leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 243 (Mission 001 phase 2b).", "slots": 8},

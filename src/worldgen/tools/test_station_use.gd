@@ -42,11 +42,12 @@ func _init() -> void:
 	var hearth: Dictionary = StationUse.usable(["clay_hearth", "campfire"], false, [], recipes, table, cooking)
 	check(hearth.get(n.call("beet"), -1) == StationUse.INPUT and hearth.get(n.call("raw_meat"), -1) == StationUse.INPUT, "a clay hearth: its own recipes and the campfire's it stands in for")
 
-	# Mission 001 phase 2b (master s2.7 item 3): no smelting at any forge or smithy; the Smelter takes the ores, the forges take ingots.
+	# Master s2.7: smithies shape metal, never ore; the Smelters smelt by themselves from their own store (server_smelter.gd, test_smelters),
+	# so no recipe is made at a smelter and none lifts ore.
 	var forge: Dictionary = StationUse.usable(["forge"], false, [], recipes, table, cooking)
-	check(not forge.has(n.call("copper_ore")) and not forge.has(n.call("iron_ore")) and forge.get(n.call("bronze_ingot"), -1) == StationUse.INPUT, "a stone forge takes bronze ingots, no ore")
+	check(not forge.has(n.call("copper_ore")) and not forge.has(n.call("iron_ore")) and forge.get(n.call("bronze_ingot"), -1) == StationUse.INPUT, "a Primitive smithy takes bronze ingots, no ore")
 	var smelter: Dictionary = StationUse.usable(["smelter"], false, [], recipes, table, cooking)
-	check(smelter.get(n.call("iron_ore"), -1) == StationUse.INPUT and smelter.get(n.call("copper_ore"), -1) == StationUse.INPUT and smelter.get(n.call("tin_ore"), -1) == StationUse.INPUT, "the Smelter takes iron, copper and tin ore")
+	check(smelter.is_empty(), "no recipe is crafted at a smelter: the Smelters smelt by themselves")
 	var brick: Dictionary = StationUse.usable(["brick_forge", "forge"], false, [], recipes, table, cooking)
 	check(brick.get(n.call("iron_ingot"), -1) == StationUse.INPUT and not brick.has(n.call("iron_ore")), "the Smithy takes iron ingots, no ore")
 
