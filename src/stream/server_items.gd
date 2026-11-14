@@ -140,6 +140,7 @@ const SRC_PICKUP := "pickup"
 const SRC_GATHER := "harvest"
 const SRC_CRAFT := "craft"
 const SRC_REWARD := "quest"
+const SRC_RETURN := "returned"   # handed back, not gathered: a refund, a site taken down, a rock pile unpiled, shovelfuls the ground refused (no goal got: count)
 var _gain_source: String = SRC_PICKUP   # who is adding right now; callers set it around give()
 var _gain_quiet: bool = false        # wearing and taking off gear moves items without gaining any
 var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
@@ -843,6 +844,9 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_w
 	_gain_source = was_src
 	_dirty = true
 
+	if was_src == SRC_PICKUP:   # no caller tagged it: a harvest, dig, mine, carcass or catch (goal got: counter)
+		_goal_got(peer, number, count)
+
 	if left > 0:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, 0.0, NAN, NAN, "", item_inst)
 
@@ -1102,10 +1106,11 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_use_struct(peer, inv, a, b, count - 1)   # count: the held pack slot + 1, for the chopping block's axe (protocol 117)
 	elif kind == Net.ACT_EAT:
 		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
+		var eaten: String = table.id_of(int(inv.numbers[a])) if a >= 0 and a < inv.slot_count else ""   # before it is eaten: the goal counter names the food
 		_eat(peer, inv, a, b)
 
 		if float(vitals_of(peer).get("fed", 0.0)) > fed_before:
-			_goal_event(peer, "ate_food")
+			_goal_event(peer, "ate_food", eaten)
 	elif kind == Net.ACT_DRINK:
 		var wet_before: float = float(vitals_of(peer).get("wet", 0.0))
 		_drink_water(peer, a, inv)
@@ -2750,7 +2755,10 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), int(FILL_SOIL.get(material_item, 5)))
 
 	if typeof(done) == TYPE_BOOL and not bool(done):
+		var was_src: String = _gain_source
+		_gain_source = SRC_RETURN
 		give(peer, table.number_of(material_item), pieces)   # the ground refused it: the shovelfuls come back
+		_gain_source = was_src
 
 	_dirty = true
 
@@ -4681,6 +4689,10 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		return
 
 	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {})) + (want - fits)
+
+	if it.has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
+		_goal_got(peer, int(it["number"]), int(it["count"]) - left)
+
 	_take_from(id, int(it["count"]) - left)
 
 
@@ -4748,6 +4760,10 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 
 		var share: int = mini(int(_items[heap[1]]["count"]), wanted)
 		var over: int = inv.add(number, share, 0)
+
+		if _items[heap[1]].has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
+			_goal_got(peer, number, share - over)
+
 		_take_from(int(heap[1]), share - over)
 		taken += share - over
 		wanted -= share - over
@@ -6980,6 +6996,9 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kind
 	var log_n: int = _log_number(str(tree.get("species", "")))
 	var dropped: bool = drop_in_world(table.number_of("kindling"), _pick_kindling(true), at) if as_kindling else drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius))
 
+	if dropped and not as_kindling:
+		_goal_got(peer, log_n, 1)   # the log this player cut lands on the ground; picking it up later is not counted again (goal got: counter)
+
 	if not dropped:
 		_say(peer, "Too many things lie here. Clear some away first.")
 		return false
@@ -7713,7 +7732,10 @@ func _cook(peer: int, inv, id: int) -> void:
 			var left_units: float = float(table.shelf_units(int(raw["number"])) - int(raw.get("wear", 0))) if table.shelf_units(int(raw["number"])) > 0 else 1.0e9
 			var life: int = table.shelf_units(cooked)
 			var age: int = maxi(life - int(minf(left_units * float(_cooking.get("cooked_life_mult", 2.0)), float(life))), 0)
+			var was_src: String = _gain_source
+			_gain_source = SRC_CRAFT   # a roast is made, not gathered (goal got: counter)
 			_take_in(peer, inv, cooked, 1, age)
+			_gain_source = was_src
 
 			return
 
@@ -9013,7 +9035,10 @@ func _take_down_site(peer: int, _inv, id: int) -> void:
 		var count: int = int(_site_of(it)["have"][item_id])
 
 		if count > 0:
+			var was_src: String = _gain_source
+			_gain_source = SRC_RETURN
 			give(peer, _refund_number(table.number_of(str(item_id))), count)
+			_gain_source = was_src
 
 	_items.erase(id)
 	_dirty = true
@@ -9204,7 +9229,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 
 	if str(def.get("use", "")) == "unpile":
 		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
+		var was_src: String = _gain_source
+		_gain_source = SRC_RETURN
 		give(peer, table.number_of("stone"), int(def.get("stones", 45)))
+		_gain_source = was_src
 		_items.erase(id)
 		_dirty = true
 		return
@@ -10196,6 +10224,9 @@ func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: V
 
 	if left > 0:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO) if at == Vector3.INF else at, item_wear)
+
+	if _gain_source == SRC_PICKUP:   # litter, mining, boulders, fish (goal got: counter); a cooked roast is tagged craft
+		_goal_got(peer, number, count)
 
 	return count - left
 
@@ -15776,6 +15807,24 @@ func _goal_made(peer: int, item: int, crafts: int = 1) -> void:
 	_goals_check(peer)
 
 
+# Gathered first-hand (give() or _take_in() with no caller's source: a harvest, dig, mine, carcass, catch or litter): the got_item checks count it as
+# history, not possession. Trades, crafts, cooking, rewards, refunds and returns are tagged by their callers and do not count, nor do admin gives
+# (they go straight to Inventory.add). Ground items count only when found: natural scatter at its pickup (_pickup, _pickup_batch), and a log when
+# this player cuts it off a trunk (_cut_log_off; it lands on the ground).
+# shortcut: other ground pickups never count, since a dropped item cannot be told from a found one; the logs a felled tree breaks into by itself
+# (_auto_split, no player) are not counted; revisit with GA-41 origin events.
+func _goal_got(peer: int, item: int, n: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or n <= 0 or _goals_data().is_empty() or _goals_paused(peer):
+		return
+
+	var k: String = "got:" + table.id_of(item)
+	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + n
+	_dirty = true
+	_goals_check(peer)
+
+
 # An admin give (ACT_ADMIN_GIVE): those units do not count towards a have check.
 func _goal_admin_gave(peer: int, item: int, n: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
@@ -15831,6 +15880,9 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 
 	if check.has("event"):
 		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
+
+	if check.has("got_item"):
+		return int(st["goal_counts"].get("got:" + str(check["got_item"]), 0)) >= need
 
 	if check.has("made_item"):
 		var made: int = int(st["goal_counts"].get("made:" + str(check["made_item"]), 0))
@@ -15898,7 +15950,10 @@ func _goals_check(peer: int) -> void:
 			paid = coins_of(peer) - paid
 
 			if reward.has("item"):
+				var was_src: String = _gain_source
+				_gain_source = SRC_REWARD   # a reward is not gathered (goal got: counter)
 				give(peer, table.number_of(str(reward["item"][0])), int(reward["item"][1]))
+				_gain_source = was_src
 
 			if send_goal_done.is_valid():
 				send_goal_done.call(peer, id, paid)
@@ -17416,6 +17471,9 @@ func _pour_back(peer: int, ml: int, src: Dictionary = {}) -> void:
 
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
+	var was_src: String = _gain_source
+	_gain_source = SRC_RETURN   # given back, not gathered (goal got: counter)
+
 	for need in entry[2]:
 		var left: int = int(need[1]) * int(entry[1])
 
@@ -17436,6 +17494,8 @@ func _refund_entry(peer: int, entry: Array) -> void:
 				left -= n
 
 		give(peer, _refund_number(int(need[0])), left)   # a group ingredient gives back its lowest member, as a taken-down piece does
+
+	_gain_source = was_src
 
 
 # Keeps what a craft took, in order, so a refund gives back as it was what is still owed: row k gains a third value, the list of

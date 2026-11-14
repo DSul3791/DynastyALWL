@@ -20,7 +20,7 @@
 			"hint": "Nettles and tall grass give plant fibre. Press E on a plant.",
 			"after": [],
 			"check": {
-				"have_item": "plant_fibre",
+				"got_item": "plant_fibre",
 				"count": 12
 			},
 			"reward": {
@@ -87,12 +87,9 @@
 				"fell"
 			],
 			"check": {
-				"have_item_any": [
-					"wooden_hammer",
-					"wooden_hammer_soft",
-					"stone_hammer"
-				],
-				"count": 1
+				"made_item": "wooden_hammer",
+				"count": 1,
+				"or_have": true
 			},
 			"reward": {
 				"coin_copper": 3
@@ -121,12 +118,9 @@
 				"fire"
 			],
 			"check": {
-				"have_item_any": [
-					"wooden_hoe",
-					"stone_hoe",
-					"steel_hoe"
-				],
-				"count": 1
+				"made_item": "wooden_hoe",
+				"count": 1,
+				"or_have": true
 			},
 			"reward": {
 				"coin_copper": 3
@@ -204,10 +198,7 @@
 			],
 			"check": {
 				"event": "placed",
-				"what_any": [
-					"workbench",
-					"log_workbench"
-				],
+				"what": "workbench",
 				"count": 1
 			},
 			"reward": {
@@ -252,20 +243,8 @@
 				"twine"
 			],
 			"check": {
-				"have_item_any": [
-					"trout",
-					"perch",
-					"carp",
-					"pike",
-					"salmon",
-					"eel",
-					"herring",
-					"mackerel",
-					"smelt",
-					"cod"
-				],
-				"count": 1,
-				"or_event": "fish_caught"
+				"event": "fish_caught",
+				"count": 1
 			},
 			"reward": {
 				"coin_copper": 10

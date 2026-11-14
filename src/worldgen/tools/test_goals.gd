@@ -117,9 +117,42 @@ func _init() -> void:
 	craft("twine", 2)
 	check(done("twine") and not done("fibre") and count("stick") >= sticks_before + 4, "two crafts of twine complete the twine goal before the fibre goal and give 4 sticks (reward)")
 	check(said.any(func(t): return t.begins_with("Goal done: ") and t.contains(" Next: Gather plant fibre.")), "and the line names the first unfinished goal in the authored order")
-	items.give(1, items.table.number_of("plant_fibre"), 12)   # as a harvest gives them
+	var got: Callable = func(id: String) -> int: return int(items._goal_state_of(1)["goal_counts"].get("got:" + id, 0))
+	check(got.call("plant_fibre") == 0 and got.call("stick") == 0, "admin gives and a goal's item reward are not gathered (got: %d fibre, %d sticks)" % [got.call("plant_fibre"), got.call("stick")])
+	items._gain_source = "trade"
+	items.give(1, items.table.number_of("plant_fibre"), 5)   # as server_trade.gd gives a purchase
+	items._gain_source = items.SRC_RETURN
+	items.give(1, items.table.number_of("plant_fibre"), 5)   # as a refund or a taken-down site gives back
+	items._gain_source = items.SRC_PICKUP
 	items._goals_tick()
-	check(done("fibre"), "12 gathered plant fibre on top of the admin-given ones complete the fibre goal")
+	check(got.call("plant_fibre") == 0 and not done("fibre"), "bought and handed-back fibre are not gathered either, though held (%d held)" % count("plant_fibre"))
+	items.give(1, items.table.number_of("plant_fibre"), 11)   # as a harvest gives them
+	check(got.call("plant_fibre") == 11 and not done("fibre"), "11 gathered first-hand: not yet")
+	items.give(1, items.table.number_of("plant_fibre"), 1)
+	items._goals_tick()
+	check(got.call("plant_fibre") == 12 and done("fibre"), "the 12th gathered plant fibre completes the fibre goal: history, not what is held (got_item)")
+	# On the ground: natural scatter is found and counts; a stick someone dropped does not (it could be the player's own, picked up again).
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var stick_n: int = items.table.number_of("stick")
+	var dropped_id: int = items._next_id
+	items._items[dropped_id] = {"number": stick_n, "count": 1, "pos": Vector3(-1.5, 10.0, 0.0), "left": 1.0e9}
+	items._next_id += 1
+	var scatter_id: int = items._next_id
+	items._items[scatter_id] = {"number": stick_n, "count": 1, "pos": Vector3(1.5, 10.0, 0.0), "left": 1.0e9, "scatter": 987654321}
+	items._next_id += 1
+	var sticks_got: int = got.call("stick")
+	var sticks_held: int = count("stick")
+	items.action(1, Net.ACT_PICKUP, dropped_id, 0, 0, Vector3.ZERO)
+	check(count("stick") == sticks_held + 1 and got.call("stick") == sticks_got, "a dropped stick picked up is held but not counted as gathered")
+	items.action(1, Net.ACT_PICKUP, scatter_id, 0, 0, Vector3.ZERO)
+	check(count("stick") == sticks_held + 2 and got.call("stick") == sticks_got + 1, "a natural scatter stick picked up is counted as gathered (%d)" % (got.call("stick") - sticks_got))
+	var live: Dictionary = {}
+
+	for goal in items._goals_data():
+		live[str(goal["id"])] = goal["check"]
+
+	check(live["fish"] == {"event": "fish_caught", "count": 1} and live["workbench"] == {"event": "placed", "what": "workbench", "count": 1}, "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
+	check(str(live["hammer"].get("made_item", "")) == "wooden_hammer" and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer and hoe goals count a made Wooden - Hammer and Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 6, Vector3.ZERO)
