@@ -292,16 +292,18 @@
 		]
 	},
 	"wood_tools": {
-		"note": "The tool in hand on wood (Dave 12 Nov 2026, TEST-013: \"the axe should be the same for wood ... I also would expect the pickaxe to give me more thatch, sticks, kindling from a tree and to take longer to cut it down\"). speed is how much of the work one blow does, by the held tool's class and items.json material: the blows a tree, a stump or a log cut needs are divided by it (a stone axe, 1.0, is the timing everything was tuned with). With an axe the logs, branches and stump yields are the tree's own whatever its material. A pickaxe is the wrong tool (Dave 12 Nov 2026: \"it would take a very very long time for a pickaxe to cut down a tree\"): about a seventh of a stone axe's speed, and it only tears the wood up (Dave 12 Nov 2026: \"using a pickaxe on a tree or a log will give you thatch, and kindling. not sticks or wood. if you break a log with a pickaxe it will just leave a pile of kindling\"): every pick blow on a tree, trunk, stump or log gives pick_splinters (kindling and thatch) and nothing else (no branches, sticks, firewood or bark); a trunk length cut through with a pick, and a log on the ground broken with one (1 / speed blows), leave a pile of pick_log_kindling.big (a shoulder log or trunk length) or .small (a small log) kindling on the ground; a stump broken up with a pick gives pick_log_kindling.small kindling. A tree a pick fells falls and breaks into logs as any felled tree does. Wood cannot dull or wear a pick (Dave 12 Nov 2026: \"a tree cant dull a pickaxe but it just takes much longer to cut\"; tool_wear pick tree, trunk and split 0). pick_log_kindling counts are a first guess for Dave to tune.",
+		"note": "The tool in hand on wood (Dave 12 Nov 2026, TEST-013: \"the axe should be the same for wood ... I also would expect the pickaxe to give me more thatch, sticks, kindling from a tree and to take longer to cut it down\"). speed is how much of the work one blow does, by the held tool's class and items.json material: the blows a tree, a stump or a log cut needs are divided by it (a stone axe, 1.0, is the timing everything was tuned with). With an axe the logs, branches and stump yields are the tree's own whatever its material. A pickaxe is the wrong tool (Dave 12 Nov 2026: \"it would take a very very long time for a pickaxe to cut down a tree\"): about a seventh of a stone axe's speed, and it only tears the wood up (Dave 12 Nov 2026: \"using a pickaxe on a tree or a log will give you thatch, and kindling. not sticks or wood. if you break a log with a pickaxe it will just leave a pile of kindling\"): every pick blow on a tree, trunk, stump or log gives pick_splinters (kindling and thatch) and nothing else (no branches, sticks, firewood or bark); a trunk length cut through with a pick, and a log on the ground broken with one (1 / speed blows), leave a pile of pick_log_kindling.big (a shoulder log or trunk length) or .small (a small log) kindling on the ground; a stump broken up with a pick gives pick_log_kindling.small kindling. A tree a pick fells falls and breaks into logs as any felled tree does. Wood cannot dull or wear a pick (Dave 12 Nov 2026: \"a tree cant dull a pickaxe but it just takes much longer to cut\"; tool_wear pick tree, trunk and split 0). pick_log_kindling counts are a first guess for Dave to tune. 14 Nov 2026 (GOALS-REPAIR R2b): copper axe 1.25 and copper pick 0.175, between stone and bronze, PROVISIONAL (GOALS-REPAIR A-14).",
 		"speed": {
 			"axe": {
 				"stone": 1.0,
+				"copper": 1.25,
 				"bronze": 1.5,
 				"iron": 2.0,
 				"steel": 2.5
 			},
 			"pick": {
 				"stone": 0.15,
+				"copper": 0.175,
 				"bronze": 0.2,
 				"iron": 0.25,
 				"steel": 0.3

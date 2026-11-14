@@ -99,6 +99,8 @@ const ART_OVERRIDES := {
 	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
 	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
 	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
+	"copper_pickaxe": {"shape": "pick", "color": "#b87333", "size": 1.0, "bits": ["bronze"]},   # PLACEHOLDER: the bronze pick look in copper
+	"copper_axe": {"shape": "axe", "color": "#b87333", "size": 1.6, "bits": ["bronze"]},   # PLACEHOLDER: the bronze axe look in copper
 	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze", "forged"]},
 	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["forged"]},
 	"wooden_lantern": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},
