@@ -343,7 +343,7 @@ func _init() -> void:
 			fail("items.json: '%s' has a durability below 1" % id)
 
 		# Master s2.2: stone, wooden and primitive gear is disposable (no repair); a metal tool is repaired at the station type that makes it.
-		if String(item.get("kind", "")) == "tool" and ["bronze", "iron", "steel"].has(String(item.get("material", ""))) and item.has("durability") and not bool(item.get("retired", false)) and (item.get("repair", []).is_empty() or String(item.get("repair_station", "")) == ""):
+		if String(item.get("kind", "")) == "tool" and ["copper", "bronze", "iron", "steel"].has(String(item.get("material", ""))) and item.has("durability") and not bool(item.get("retired", false)) and (item.get("repair", []).is_empty() or String(item.get("repair_station", "")) == ""):
 			fail("items.json: metal tool '%s' needs repair materials and a repair_station" % id)
 
 		# Catalog Phase 2c code (src/shared/smithing_rules.gd): a row with durability and no repair is disposable, gone when it breaks; any
@@ -566,7 +566,7 @@ func _init() -> void:
 		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet", "accuracy"]:   # quiet: less noise (stalk, server_animals brush noise); accuracy: the Map sketch (survey, server_map.gd)
 			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness, quiet or accuracy" % action)
 
-	# smithing.json (catalog Phase 2c): its whetstone is an item, its grindstone, Master smithy and Smithy are stations and the temper add-on a structure.
+	# smithing.json (catalog Phase 2c): its whetstone is an item, and its grindstone, Master smithy and temper stations are served.
 	var smithing: Dictionary = _read("smithing.json")
 
 	if not items_file.get("items", {}).has(String(smithing.get("whetstone", {}).get("item", ""))):
@@ -576,8 +576,18 @@ func _init() -> void:
 		if not served.has(String(station_ref)):
 			fail("smithing.json names the station '%s' that no live structure serves" % station_ref)
 
-	if not structure_defs.has(String(smithing.get("temper", {}).get("addon", ""))):
-		fail("smithing.json temper.addon is not a structure")
+	# Smithy wear (GOALS-REPAIR R5): every live smithy's anvil has a durability, and the repair_skip rows are items.
+	var station_wear: Dictionary = smithing.get("station_wear", {})
+
+	for smithy_kind in structure_defs:
+		var anvil: String = String(structure_defs[smithy_kind].get("anvil", "")) if typeof(structure_defs[smithy_kind]) == TYPE_DICTIONARY else ""
+
+		if anvil != "" and float(station_wear.get("durability", {}).get(anvil, 0.0)) <= 0.0:
+			fail("smithing.json station_wear.durability has no durability for the '%s' anvil of '%s'" % [anvil, smithy_kind])
+
+	for skip_id in station_wear.get("repair_skip", []):
+		if not items_file.get("items", {}).has(String(skip_id)) and not gathered_file.get("items", {}).has(String(skip_id)):
+			fail("smithing.json station_wear.repair_skip names '%s', which is not an item" % skip_id)
 
 	# Tempered (s4 item 15): every steel weapon and armour row (a "Steel - " weapon or clothing row, unstackable) is listed in temper.include,
 	# since those rows carry no material; every listed id is an item.
@@ -606,7 +616,8 @@ func _init() -> void:
 	for recipe_id in recipes_file.get("recipes", {}):
 		var station: String = String(recipes_file["recipes"][recipe_id].get("station", ""))
 
-		if station != "" and not stations.has(station):
+		# A retired recipe is kept only for its number and is never crafted, so its station may be gone (the old smelter recipes).
+		if station != "" and not stations.has(station) and not bool(recipes_file["recipes"][recipe_id].get("retired", false)):
 			fail("recipes.json %s: unknown station '%s'" % [recipe_id, station])
 
 	# Fishing: every catch and bait is an item, and the catches are obtainable (by fishing).
@@ -849,6 +860,70 @@ func _init() -> void:
 				for step in wood_file["class_items"][cls]:
 					obtainable[String(wood_file["class_items"][cls][step])] = true
 
+	# The Smelters (structures.json "smelting", src/stream/server_smelter.gd): a job a live smelter does gives its ingot when its ore has a
+	# source. Every job, fuel and smelter job name must be real, a smelter's parts must fit its slots, and what it takes must be its fuel or ore.
+	var smelting: Dictionary = _read("structures.json").get("smelting", {})
+
+	for fuel_id in smelting.get("fuel", []):
+		want_item.call(String(fuel_id), "structures.json smelting fuel")
+
+	for job_id in smelting.get("jobs", {}):
+		for row in smelting["jobs"][job_id].get("in", []):
+			want_item.call(String(row[0]), "structures.json smelting job %s" % job_id)
+
+		want_item.call(String(smelting["jobs"][job_id].get("out", [""])[0]), "structures.json smelting job %s" % job_id)
+
+	for kind in _read("structures.json").get("structures", {}):
+		var sdef: Dictionary = _read("structures.json")["structures"][kind]
+
+		if String(sdef.get("use", "")) != "smelt" or bool(sdef.get("retired", false)):
+			continue
+
+		var smelt: Dictionary = sdef.get("smelt", {})
+
+		if int(smelt.get("hopper_slots", 0)) < 1 or int(smelt.get("hopper_slots", 0)) >= int(sdef.get("slots", 0)) or int(smelt.get("hopper", 0)) <= 0 or int(smelt.get("input", 0)) <= 0 or float(smelt.get("ingot_s", 0.0)) <= 0.0:
+			fail("structures.json %s: a smelter needs smelt.hopper_slots (1 to slots - 1), hopper, input and ingot_s above 0" % kind)
+
+		if bool(smelt.get("wind", false)) and float(smelting.get("wind_min_mps", 0.0)) <= 0.0:
+			fail("structures.json %s: a windmill smelter needs smelting.wind_min_mps above 0" % kind)
+
+		if int(smelt.get("lanes", 1)) < 1 or float(smelt.get("speed", 1.0)) <= 0.0:
+			fail("structures.json %s: smelt.lanes must be 1 or more and smelt.speed above 0" % kind)
+
+		if int(sdef.get("out_slots", 0)) > 0 and int(smelt.get("output", 0)) <= 0:
+			fail("structures.json %s: a smelter with an output rack needs smelt.output, the ingots the rack holds, above 0" % kind)
+
+		var smelter_takes: Dictionary = {}
+
+		for fuel_id in smelting.get("fuel", []):
+			smelter_takes[String(fuel_id)] = true
+
+		for job_id in smelt.get("jobs", []):
+			if not smelting.get("jobs", {}).has(String(job_id)):
+				fail("structures.json %s: smelt job '%s' is not in structures.json smelting.jobs" % [kind, job_id])
+				continue
+
+			var job: Dictionary = smelting["jobs"][String(job_id)]
+
+			if bool(job.get("bellows", false)) and not bool(smelt.get("bellows", false)) and not bool(smelt.get("wind", false)):
+				fail("structures.json %s: job '%s' needs air from bellows and the station has neither worked bellows nor a windmill" % [kind, job_id])
+
+			if int(job.get("carbon", 0)) > 0 and not bool(smelt.get("carbon", false)):
+				fail("structures.json %s: job '%s' takes carbon from the input and the station has no carbon input (smelt.carbon)" % [kind, job_id])
+
+			var job_ok: bool = true
+
+			for row in job.get("in", []):
+				smelter_takes[String(row[0])] = true
+				job_ok = job_ok and obtainable.has(String(row[0]))
+
+			if job_ok:
+				obtainable[String(job.get("out", [""])[0])] = true
+
+		for take in sdef.get("takes", []):
+			if not smelter_takes.has(String(take)):
+				fail("structures.json %s: takes '%s', which is neither its fuel nor the ore of one of its jobs" % [kind, take])
+
 	# What a fire cooks (cooking.json cooks_into) is obtainable when the raw item is.
 	for raw_id in cooking.get("cooks_into", {}):
 		if obtainable.has(String(raw_id)):
@@ -913,6 +988,10 @@ func _init() -> void:
 		for take in def.get("takes", []):
 			if not items_file["items"].has(String(take)) or bool(items_file["items"][String(take)].get("retired", false)):
 				fail("structures.json %s: takes '%s', which is not a live item or group" % [kind, take])
+
+		# Resource bins (GOALS-REPAIR R6, src/shared/bin_rules.gd): units of one kind, never weight; slots for layout; a takes list of what it holds.
+		if def.has("bin") and (typeof(def["bin"]) != TYPE_DICTIONARY or int(def["bin"].get("units", 0)) < 1 or int(def["bin"].get("units", 0)) > 65535 or def.has("max_kg") or int(def.get("slots", 0)) < 1 or def.get("takes", []).is_empty()):
+			fail("structures.json %s: a bin needs bin.units 1 to 65535, slots, a takes list and no max_kg" % kind)
 
 		for take_kind in def.get("takes_kinds", []):
 			if not String(take_kind) in ["tool", "weapon", "material", "clothing", "gear", "container", "medicine", "food", "coin", "placeable", "structure"]:
@@ -1051,6 +1130,14 @@ func _init() -> void:
 			for row in recipes[rid].get(list, []):
 				used[String(row[0])] = true
 
+	# A live, known hammer blueprint's cost uses a material too (the Iron and Steel anvils go only into building the Advanced and Master smithies, GOALS-REPAIR R4/R5).
+	var bp_rows: Dictionary = _read("blueprints.json").get("blueprints", {})
+
+	for bid in bp_rows:
+		if typeof(bp_rows[bid]) == TYPE_DICTIONARY and not bool(bp_rows[bid].get("retired", false)) and bool(bp_rows[bid].get("known", true)):   # a live blueprint the hammer lists (hammer_blueprints.gd: known unless false)
+			for row in bp_rows[bid].get("cost", []):
+				used[String(row[0])] = true
+
 	for id in cooking.get("fuel", {}):
 		used[String(id)] = true
 
@@ -1077,7 +1164,7 @@ func _init() -> void:
 			dead_core.append(id)
 
 	if not dead_core.is_empty():
-		warn("dead-end materials (obtainable, no recipe, fuel or repair uses them): %s" % ", ".join(dead_core))
+		warn("dead-end materials (obtainable, no recipe, blueprint, fuel or repair uses them): %s" % ", ".join(dead_core))
 
 	var edible_suffixes: Array = []
 

@@ -4986,6 +4986,16 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "iron_anvil_part": {
+   "shape": "chunk",
+   "color": "#4a4c50",
+   "size": 1.4
+  },
+  "steel_anvil_part": {
+   "shape": "chunk",
+   "color": "#8f989f",
+   "size": 1.4
   }
  }
 }

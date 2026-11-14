@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs. 'ready_age' (game hours, Mission 001 phase 6, master s3.14): a sealed batch at the Preserving jar; the whole queued count is made at once at age 0 and is Maturing (not eaten, used, sold or merged with a Ready stack) until its age reaches ready_age; its inputs must be at least half fresh.",
-	"next_number": 722,
+	"next_number": 726,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -427,7 +427,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_pickaxe": {"number": 19, "name": "Steel - Pickaxe", "category": "Tools", "needs": [["steel_ingot", 3], ["stick", 2]], "gives": ["steel_pickaxe", 1], "craft_s": 12.0, "known": true, "station": "brick_forge"},
+		"steel_pickaxe": {"number": 19, "name": "Steel - Pickaxe", "category": "Tools", "needs": [["steel_ingot", 3], ["stick", 2]], "gives": ["steel_pickaxe", 1], "craft_s": 12.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"wooden_bowl": {
 			"number": 20,
 			"name": "Wooden bowl",
@@ -601,7 +601,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_spade": {"number": 28, "name": "Steel - Spade", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_spade", 1], "craft_s": 12.0, "known": true, "station": "brick_forge"},
+		"steel_spade": {"number": 28, "name": "Steel - Spade", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_spade", 1], "craft_s": 12.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"sewing_needle": {
 			"number": 29,
 			"name": "Bone - Needle",
@@ -3179,7 +3179,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_hoe": {"number": 142, "name": "Steel - Hoe", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_hoe", 1], "craft_s": 14.0, "known": true, "station": "brick_forge"},
+		"steel_hoe": {"number": 142, "name": "Steel - Hoe", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_hoe", 1], "craft_s": 14.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"rough_plank": {
 			"number": 143,
 			"retired": true,
@@ -3588,9 +3588,9 @@
 		"hide_scraper": {"number": 180, "name": "Scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
-		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "brick_forge"},
+		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 2},
-		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "smelter"},
+		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "smelter", "retired": true},
 		"stone_pickaxe": {
 			"number": 186,
 			"name": "Stone - Pickaxe",
@@ -3683,10 +3683,10 @@
 			"craft_s": 4.0,
 			"known": true
 		},
-		"smelt_copper": {"number": 190, "name": "Copper ingot", "category": "Materials", "needs": [["copper_ore", 3], ["fuel", 5]], "gives": ["copper_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
-		"smelt_tin": {"number": 191, "name": "Tin ingot", "category": "Materials", "needs": [["tin_ore", 3], ["fuel", 5]], "gives": ["tin_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter"},
-		"smelt_iron": {"number": 192, "name": "Iron ingot", "category": "Materials", "needs": [["iron_ore", 4], ["fuel", 5]], "gives": ["iron_ingot", 1], "craft_s": 45.0, "known": true, "station": "smelter"},
-		"smelt_steel": {"number": 193, "name": "Steel ingot", "category": "Materials", "needs": [["iron_ingot", 2], ["fuel", 5]], "gives": ["steel_ingot", 1], "craft_s": 14.0, "known": true, "station": "blast_furnace"},
+		"smelt_copper": {"number": 190, "name": "Copper ingot", "category": "Materials", "needs": [["copper_ore", 3], ["fuel", 5]], "gives": ["copper_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter", "retired": true},
+		"smelt_tin": {"number": 191, "name": "Tin ingot", "category": "Materials", "needs": [["tin_ore", 3], ["fuel", 5]], "gives": ["tin_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter", "retired": true},
+		"smelt_iron": {"number": 192, "name": "Iron ingot", "category": "Materials", "needs": [["iron_ore", 4], ["fuel", 5]], "gives": ["iron_ingot", 1], "craft_s": 45.0, "known": true, "station": "smelter", "retired": true},
+		"smelt_steel": {"number": 193, "name": "Steel ingot", "category": "Materials", "needs": [["iron_ingot", 2], ["fuel", 5]], "gives": ["steel_ingot", 1], "craft_s": 14.0, "known": true, "station": "blast_furnace", "retired": true, "note_retired": "GOALS-REPAIR R4: steel is the Advanced smelter's own job (structures.json smelting.jobs.steel: Iron ore and carbon in its input, CATALOG_IMPLEMENTATION_PLAN R4); the old 2 Iron ingot route is not carried over. Kept for its number."},
 		"hide_tunic": {
 			"number": 194,
 			"name": "Hide - Tunic",
@@ -3930,9 +3930,9 @@
 		"iron_sword": {"number": 207, "name": "Iron - Sword", "category": "Weapons", "needs": [["iron_ingot", 2], ["leather", 1]], "gives": ["iron_sword", 1], "craft_s": 18.0, "known": true, "station": "brick_forge", "station_level": 2},
 		"iron_mace": {"number": 208, "name": "Iron - Mace", "category": "Weapons", "needs": [["iron_ingot", 2], ["stick", 1]], "gives": ["iron_mace", 1], "craft_s": 18.0, "known": true, "station": "brick_forge", "station_level": 2},
 		"iron_shield": {"number": 209, "name": "Iron - Shield", "category": "Armour", "needs": [["lumber", 2], ["iron_ingot", 2]], "gives": ["iron_shield", 1], "craft_s": 18.0, "known": true, "station": "brick_forge", "station_level": 2},
-		"steel_sword": {"number": 210, "name": "Steel - Sword", "category": "Weapons", "needs": [["steel_ingot", 2], ["leather", 1]], "gives": ["steel_sword", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
-		"steel_mace": {"number": 211, "name": "Steel - Mace", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 1]], "gives": ["steel_mace", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
-		"steel_shield": {"number": 212, "name": "Steel - Shield", "category": "Armour", "needs": [["lumber", 2], ["steel_ingot", 2]], "gives": ["steel_shield", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_sword": {"number": 210, "name": "Steel - Sword", "category": "Weapons", "needs": [["steel_ingot", 2], ["leather", 1]], "gives": ["steel_sword", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_mace": {"number": 211, "name": "Steel - Mace", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 1]], "gives": ["steel_mace", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_shield": {"number": 212, "name": "Steel - Shield", "category": "Armour", "needs": [["lumber", 2], ["steel_ingot", 2]], "gives": ["steel_shield", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"leather_cap": {
 			"number": 213,
 			"name": "Leather - Cap",
@@ -4014,8 +4014,8 @@
 		},
 		"iron_helm": {"number": 217, "name": "Iron - Helm", "category": "Armour", "needs": [["iron_ingot", 3], ["leather", 1]], "gives": ["iron_helm", 1], "craft_s": 16.0, "known": true, "station": "brick_forge", "station_level": 2},
 		"mail_shirt": {"number": 218, "name": "Iron - Mail shirt", "category": "Armour", "needs": [["iron_ingot", 4], ["rivets", 20], ["leather", 1]], "gives": ["mail_shirt", 1], "craft_s": 16.0, "known": true, "station": "brick_forge", "station_level": 2},
-		"steel_helm": {"number": 219, "name": "Steel - Helm", "category": "Armour", "needs": [["steel_ingot", 2], ["heavy_leather", 1], ["rivets", 1]], "gives": ["steel_helm", 1], "craft_s": 16.0, "known": true, "station": "brick_forge"},
-		"plate_cuirass": {"number": 220, "name": "Steel - Cuirass", "category": "Armour", "needs": [["steel_ingot", 5], ["heavy_leather", 1], ["rivets", 10]], "gives": ["plate_cuirass", 1], "craft_s": 16.0, "known": true, "station": "brick_forge"},
+		"steel_helm": {"number": 219, "name": "Steel - Helm", "category": "Armour", "needs": [["steel_ingot", 2], ["heavy_leather", 1], ["rivets", 1]], "gives": ["steel_helm", 1], "craft_s": 16.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"plate_cuirass": {"number": 220, "name": "Steel - Cuirass", "category": "Armour", "needs": [["steel_ingot", 5], ["heavy_leather", 1], ["rivets", 10]], "gives": ["plate_cuirass", 1], "craft_s": 16.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"quern": {
 			"number": 221,
 			"name": "Hand mill",
@@ -5397,6 +5397,103 @@
 			"known": true,
 			"station": "forge"
 		},
+		"copper_pickaxe": {
+			"number": 722,
+			"name": "Copper - Pickaxe",
+			"category": "Tools",
+			"needs": [
+				[
+					"copper_ingot",
+					3
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"copper_pickaxe",
+				1
+			],
+			"craft_s": 25.0,
+			"known": true,
+			"station": "forge",
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-13): the Bronze - Pickaxe recipe with Copper ingots."
+		},
+		"copper_axe": {
+			"number": 723,
+			"name": "Copper - Axe",
+			"category": "Tools",
+			"needs": [
+				[
+					"copper_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"leather_strap",
+					1
+				]
+			],
+			"gives": [
+				"copper_axe",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "forge",
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-13): the Bronze - Axe recipe with Copper ingots."
+		},
+		"iron_anvil_part": {
+			"number": 724,
+			"name": "Iron anvil",
+			"category": "Workshops and stations",
+			"needs": [
+				[
+					"iron_ingot",
+					5
+				],
+				[
+					"log",
+					1
+				]
+			],
+			"gives": [
+				"iron_anvil_part",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "brick_forge",
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-16): cost from the obsolete blueprint 164 (the old placed Anvil); made at the Improved smithy (master s2.7 item 5)."
+		},
+		"steel_anvil_part": {
+			"number": 725,
+			"name": "Steel anvil",
+			"category": "Workshops and stations",
+			"needs": [
+				[
+					"steel_ingot",
+					5
+				],
+				[
+					"log",
+					1
+				]
+			],
+			"gives": [
+				"steel_anvil_part",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "brick_forge",
+			"station_level": 3,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-21): the Iron anvil's recipe in steel; made at the Advanced smithy (brick_forge level 3; plan P3)."
+		},
 		"stairs_wood_kit": {
 			"number": 294,
 			"name": "Wooden stairs",
@@ -6456,7 +6553,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_hammer": {"number": 347, "name": "Steel - Hammer", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 1]], "gives": ["steel_hammer", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_hammer": {"number": 347, "name": "Steel - Hammer", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 1]], "gives": ["steel_hammer", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"horn_pane": {
 			"number": 348,
 			"name": "Horn pane",
@@ -6952,7 +7049,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_chisel": {"number": 373, "name": "Steel - Chisel", "category": "Tools", "needs": [["steel_ingot", 1], ["stick", 1]], "gives": ["steel_chisel", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_chisel": {"number": 373, "name": "Steel - Chisel", "category": "Tools", "needs": [["steel_ingot", 1], ["stick", 1]], "gives": ["steel_chisel", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"cook_meat_skewer": {"number": 374, "name": "Meat skewer", "category": "Food and drink", "needs": [["uncooked_meat_skewers", 2]], "gives": ["meat_skewer", 2], "craft_s": 8.0, "station": "campfire", "known": true},
 		"cook_sausage": {"number": 375, "name": "Sausage", "category": "Food and drink", "needs": [["uncooked_sausages", 2]], "gives": ["sausage", 2], "craft_s": 12.0, "station": "campfire_pot", "known": true},
 		"fruit_juice": {"number": 376, "name": "Fruit juice", "category": "Food and drink", "needs": [["fruit", 3], ["water", 1]], "gives": ["fruit_juice", 1], "craft_s": 4.0, "known": true, "station": "food_preparation_table"},
@@ -7632,7 +7729,7 @@
 			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "brick_forge"
+			"station": "brick_forge", "station_level": 3
 		},
 		"iron_knife": {
 			"number": 412,
@@ -7677,7 +7774,7 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "brick_forge"
+			"station": "brick_forge", "station_level": 3
 		},
 		"steel_saw": {
 			"number": 414,
@@ -7699,7 +7796,7 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "brick_forge"
+			"station": "brick_forge", "station_level": 3
 		},
 		"bronze_sickle": {
 			"number": 415,
@@ -7766,7 +7863,7 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "brick_forge"
+			"station": "brick_forge", "station_level": 3
 		},
 		"bronze_scythe": {
 			"number": 418,
@@ -7810,7 +7907,7 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "brick_forge"
+			"station": "brick_forge", "station_level": 3
 		},
 		"prep_mushroom_skewer": {"number": 430, "name": "Uncooked mushroom skewers", "category": "Food and drink", "needs": [["mushrooms", 3], ["wild_garlic_leaves", 1]], "gives": ["uncooked_mushroom_skewers", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
 		"cook_mushroom_skewer_iron_grill_grate": {"number": 431, "name": "Mushroom skewer (grill)", "category": "Food and drink", "needs": [["uncooked_mushroom_skewers", 4]], "keeps": [["iron_grill_grate", 1]], "gives": ["mushroom_skewer", 4], "craft_s": 8.0, "station": "campfire", "known": true},
@@ -7861,48 +7958,48 @@
 		"dried_mushrooms_puffball": {"number": 476, "name": "Dried mushrooms (puffball)", "category": "Food and drink", "needs": [["puffball", 3]], "gives": ["dried_mushrooms", 1], "craft_s": 10.0, "station": "drying_rack", "known": true},
 		"prep_mushroom_skewer_dried": {"number": 477, "name": "Uncooked mushroom skewers (dried)", "category": "Food and drink", "needs": [["dried_mushrooms", 2], ["wild_garlic_leaves", 1], ["water", 1]], "gives": ["uncooked_mushroom_skewers", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
 		"iron_shortsword": {"number": 500, "name": "Iron - Shortsword", "category": "Weapons", "needs": [["iron_ingot", 1], ["leather", 1]], "gives": ["iron_shortsword", 1], "craft_s": 16.0, "known": true, "station": "brick_forge"},
-		"steel_shortsword": {"number": 501, "name": "Steel - Shortsword", "category": "Weapons", "needs": [["steel_ingot", 1], ["leather", 1]], "gives": ["steel_shortsword", 1], "craft_s": 18.0, "known": true, "station": "brick_forge"},
+		"steel_shortsword": {"number": 501, "name": "Steel - Shortsword", "category": "Weapons", "needs": [["steel_ingot", 1], ["leather", 1]], "gives": ["steel_shortsword", 1], "craft_s": 18.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_greatsword": {"number": 502, "name": "Iron - Greatsword", "category": "Weapons", "needs": [["iron_ingot", 3], ["leather", 1]], "gives": ["iron_greatsword", 1], "craft_s": 22.0, "known": true, "station": "brick_forge"},
-		"steel_greatsword": {"number": 503, "name": "Steel - Greatsword", "category": "Weapons", "needs": [["steel_ingot", 3], ["leather", 1]], "gives": ["steel_greatsword", 1], "craft_s": 24.0, "known": true, "station": "brick_forge"},
-		"steel_rapier": {"number": 504, "name": "Steel - Rapier", "category": "Weapons", "needs": [["steel_ingot", 1], ["leather", 1]], "gives": ["steel_rapier", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
-		"steel_scimitar": {"number": 505, "name": "Steel - Scimitar", "category": "Weapons", "needs": [["steel_ingot", 2], ["leather", 1]], "gives": ["steel_scimitar", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_greatsword": {"number": 503, "name": "Steel - Greatsword", "category": "Weapons", "needs": [["steel_ingot", 3], ["leather", 1]], "gives": ["steel_greatsword", 1], "craft_s": 24.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_rapier": {"number": 504, "name": "Steel - Rapier", "category": "Weapons", "needs": [["steel_ingot", 1], ["leather", 1]], "gives": ["steel_rapier", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_scimitar": {"number": 505, "name": "Steel - Scimitar", "category": "Weapons", "needs": [["steel_ingot", 2], ["leather", 1]], "gives": ["steel_scimitar", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_battleaxe": {"number": 506, "name": "Iron - Battleaxe", "category": "Weapons", "needs": [["iron_ingot", 2], ["stick", 1], ["leather_strap", 1]], "gives": ["iron_battleaxe", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
-		"steel_battleaxe": {"number": 507, "name": "Steel - Battleaxe", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 1], ["leather_strap", 1]], "gives": ["steel_battleaxe", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_battleaxe": {"number": 507, "name": "Steel - Battleaxe", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 1], ["leather_strap", 1]], "gives": ["steel_battleaxe", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_greataxe": {"number": 508, "name": "Iron - Greataxe", "category": "Weapons", "needs": [["iron_ingot", 3], ["stick", 2], ["leather_strap", 1]], "gives": ["iron_greataxe", 1], "craft_s": 22.0, "known": true, "station": "brick_forge"},
-		"steel_greataxe": {"number": 509, "name": "Steel - Greataxe", "category": "Weapons", "needs": [["steel_ingot", 3], ["stick", 2], ["leather_strap", 1]], "gives": ["steel_greataxe", 1], "craft_s": 22.0, "known": true, "station": "brick_forge"},
+		"steel_greataxe": {"number": 509, "name": "Steel - Greataxe", "category": "Weapons", "needs": [["steel_ingot", 3], ["stick", 2], ["leather_strap", 1]], "gives": ["steel_greataxe", 1], "craft_s": 22.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_warhammer": {"number": 510, "name": "Iron - Warhammer", "category": "Weapons", "needs": [["iron_ingot", 2], ["stick", 1]], "gives": ["iron_warhammer", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
-		"steel_warhammer": {"number": 511, "name": "Steel - Warhammer", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 1]], "gives": ["steel_warhammer", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
-		"steel_maul": {"number": 512, "name": "Steel - Maul", "category": "Weapons", "needs": [["steel_ingot", 3], ["stick", 2]], "gives": ["steel_maul", 1], "craft_s": 22.0, "known": true, "station": "brick_forge"},
+		"steel_warhammer": {"number": 511, "name": "Steel - Warhammer", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 1]], "gives": ["steel_warhammer", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_maul": {"number": 512, "name": "Steel - Maul", "category": "Weapons", "needs": [["steel_ingot", 3], ["stick", 2]], "gives": ["steel_maul", 1], "craft_s": 22.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"quarterstaff": {"number": 513, "name": "Quarterstaff", "category": "Weapons", "needs": [["wooden_block", 1]], "gives": ["quarterstaff", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]]},
 		"bronze_spear": {"number": 514, "name": "Bronze - Spear", "category": "Weapons", "needs": [["bronze_ingot", 1], ["stick", 2]], "gives": ["bronze_spear", 1], "craft_s": 14.0, "known": true, "station": "forge"},
 		"iron_spear": {"number": 515, "name": "Iron - Spear", "category": "Weapons", "needs": [["iron_ingot", 1], ["stick", 2]], "gives": ["iron_spear", 1], "craft_s": 14.0, "known": true, "station": "brick_forge"},
-		"steel_spear": {"number": 516, "name": "Steel - Spear", "category": "Weapons", "needs": [["steel_ingot", 1], ["stick", 2]], "gives": ["steel_spear", 1], "craft_s": 16.0, "known": true, "station": "brick_forge"},
+		"steel_spear": {"number": 516, "name": "Steel - Spear", "category": "Weapons", "needs": [["steel_ingot", 1], ["stick", 2]], "gives": ["steel_spear", 1], "craft_s": 16.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_pike": {"number": 517, "name": "Iron - Pike", "category": "Weapons", "needs": [["iron_ingot", 2], ["stick", 4]], "gives": ["iron_pike", 1], "craft_s": 18.0, "known": true, "station": "brick_forge"},
 		"iron_halberd": {"number": 518, "name": "Iron - Halberd", "category": "Weapons", "needs": [["iron_ingot", 2], ["stick", 4]], "gives": ["iron_halberd", 1], "craft_s": 22.0, "known": true, "station": "brick_forge"},
-		"steel_halberd": {"number": 519, "name": "Steel - Halberd", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 4]], "gives": ["steel_halberd", 1], "craft_s": 24.0, "known": true, "station": "brick_forge"},
+		"steel_halberd": {"number": 519, "name": "Steel - Halberd", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 4]], "gives": ["steel_halberd", 1], "craft_s": 24.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_trident": {"number": 520, "name": "Iron - Trident", "category": "Weapons", "needs": [["iron_ingot", 2], ["stick", 2]], "gives": ["iron_trident", 1], "craft_s": 18.0, "known": true, "station": "brick_forge"},
 		"light_crossbow": {"number": 521, "name": "Light crossbow", "category": "Weapons", "needs": [["wooden_block", 1], ["sinew", 2], ["twine", 2]], "gives": ["light_crossbow", 1], "craft_s": 24.0, "known": true, "station": "workbench"},
 		"heavy_crossbow": {"number": 522, "name": "Heavy crossbow", "category": "Weapons", "needs": [["iron_ingot", 2], ["wooden_block", 1], ["sinew", 2]], "gives": ["heavy_crossbow", 1], "craft_s": 30.0, "known": true, "station": "brick_forge"},
 		"iron_buckler": {"number": 523, "name": "Iron - Buckler", "category": "Armour", "needs": [["iron_ingot", 1], ["leather", 1]], "gives": ["iron_buckler", 1], "craft_s": 16.0, "known": true, "station": "brick_forge"},
 		"bronze_arrow": {"number": 524, "name": "Bronze - Arrow", "category": "Tools", "needs": [["bronze_ingot", 1], ["stick", 8], ["feather", 8]], "gives": ["bronze_arrow", 8], "craft_s": 12.0, "known": true, "station": "forge"},
 		"iron_arrow": {"number": 525, "name": "Iron - Arrow", "category": "Tools", "needs": [["iron_ingot", 1], ["stick", 8], ["feather", 8]], "gives": ["iron_arrow", 8], "craft_s": 12.0, "known": true, "station": "brick_forge"},
-		"steel_arrow": {"number": 526, "name": "Steel - Arrow", "category": "Tools", "needs": [["steel_ingot", 1], ["stick", 8], ["feather", 8]], "gives": ["steel_arrow", 8], "craft_s": 14.0, "known": true, "station": "brick_forge"},
+		"steel_arrow": {"number": 526, "name": "Steel - Arrow", "category": "Tools", "needs": [["steel_ingot", 1], ["stick", 8], ["feather", 8]], "gives": ["steel_arrow", 8], "craft_s": 14.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"wooden_bolt": {"number": 527, "name": "Wooden - Bolt", "category": "Tools", "needs": [["stick", 2], ["feather", 2]], "gives": ["wooden_bolt", 4], "craft_s": 4.0, "known": true},
 		"iron_bolt": {"number": 528, "name": "Iron - Bolt", "category": "Tools", "needs": [["iron_ingot", 1], ["stick", 4], ["feather", 4]], "gives": ["iron_bolt", 8], "craft_s": 12.0, "known": true, "station": "brick_forge"},
 		"iron_brigandine": {"number": 529, "name": "Iron - Brigandine", "category": "Armour", "needs": [["iron_ingot", 3], ["heavy_leather", 1], ["fibre_cloth", 1], ["rivets", 20]], "gives": ["iron_brigandine", 1], "craft_s": 24.0, "known": true, "station": "brick_forge"},
 		"iron_breastplate": {"number": 530, "name": "Iron - Breastplate", "category": "Armour", "needs": [["iron_ingot", 4], ["leather", 1]], "gives": ["iron_breastplate", 1], "craft_s": 22.0, "known": true, "station": "brick_forge"},
 		"iron_mail_hauberk": {"number": 531, "name": "Iron - Mail hauberk", "category": "Armour", "needs": [["iron_ingot", 6], ["rivets", 30], ["leather", 1]], "gives": ["iron_mail_hauberk", 1], "craft_s": 30.0, "known": true, "station": "brick_forge"},
-		"steel_half_plate": {"number": 532, "name": "Steel - Half plate", "category": "Armour", "needs": [["steel_ingot", 7], ["heavy_leather", 1], ["rivets", 15]], "gives": ["steel_half_plate", 1], "craft_s": 30.0, "known": true, "station": "brick_forge"},
-		"steel_plate_harness": {"number": 533, "name": "Steel - Plate harness", "category": "Armour", "needs": [["steel_ingot", 9], ["heavy_leather", 2], ["rivets", 20]], "gives": ["steel_plate_harness", 1], "craft_s": 36.0, "known": true, "station": "brick_forge"},
+		"steel_half_plate": {"number": 532, "name": "Steel - Half plate", "category": "Armour", "needs": [["steel_ingot", 7], ["heavy_leather", 1], ["rivets", 15]], "gives": ["steel_half_plate", 1], "craft_s": 30.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_plate_harness": {"number": 533, "name": "Steel - Plate harness", "category": "Armour", "needs": [["steel_ingot", 9], ["heavy_leather", 2], ["rivets", 20]], "gives": ["steel_plate_harness", 1], "craft_s": 36.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_mail_coif": {"number": 534, "name": "Iron - Mail coif", "category": "Armour", "needs": [["iron_ingot", 1], ["rivets", 5]], "gives": ["iron_mail_coif", 1], "craft_s": 16.0, "known": true, "station": "brick_forge"},
 		"iron_gauntlets": {"number": 535, "name": "Iron - Gauntlets", "category": "Armour", "needs": [["iron_ingot", 1], ["leather", 1]], "gives": ["iron_gauntlets", 1], "craft_s": 18.0, "known": true, "station": "brick_forge"},
-		"steel_gauntlets": {"number": 536, "name": "Steel - Gauntlets", "category": "Armour", "needs": [["steel_ingot", 1], ["leather", 1], ["rivets", 5]], "gives": ["steel_gauntlets", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_gauntlets": {"number": 536, "name": "Steel - Gauntlets", "category": "Armour", "needs": [["steel_ingot", 1], ["leather", 1], ["rivets", 5]], "gives": ["steel_gauntlets", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"bronze_greaves": {"number": 537, "name": "Bronze - Greaves", "category": "Armour", "needs": [["bronze_ingot", 2], ["leather_strap", 2]], "gives": ["bronze_greaves", 1], "craft_s": 16.0, "known": true, "station": "forge"},
 		"iron_mail_chausses": {"number": 538, "name": "Iron - Mail chausses", "category": "Armour", "needs": [["iron_ingot", 4], ["rivets", 15], ["leather_strap", 2]], "gives": ["iron_mail_chausses", 1], "craft_s": 24.0, "known": true, "station": "brick_forge"},
 		"iron_greaves": {"number": 539, "name": "Iron - Greaves", "category": "Armour", "needs": [["iron_ingot", 2], ["leather_strap", 2]], "gives": ["iron_greaves", 1], "craft_s": 18.0, "known": true, "station": "brick_forge"},
-		"steel_greaves": {"number": 540, "name": "Steel - Greaves", "category": "Armour", "needs": [["steel_ingot", 2], ["leather_strap", 2], ["rivets", 5]], "gives": ["steel_greaves", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_greaves": {"number": 540, "name": "Steel - Greaves", "category": "Armour", "needs": [["steel_ingot", 2], ["leather_strap", 2], ["rivets", 5]], "gives": ["steel_greaves", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"iron_sabatons": {"number": 541, "name": "Iron - Sabatons", "category": "Armour", "needs": [["iron_ingot", 2], ["leather", 1]], "gives": ["iron_sabatons", 1], "craft_s": 18.0, "known": true, "station": "brick_forge"},
-		"steel_sabatons": {"number": 542, "name": "Steel - Sabatons", "category": "Armour", "needs": [["steel_ingot", 2], ["leather", 1], ["rivets", 5]], "gives": ["steel_sabatons", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
+		"steel_sabatons": {"number": 542, "name": "Steel - Sabatons", "category": "Armour", "needs": [["steel_ingot", 2], ["leather", 1], ["rivets", 5]], "gives": ["steel_sabatons", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"linen_trousers": {"number": 543, "name": "Linen - Trousers", "category": "Clothing", "needs": [["linen", 4], ["thread", 1]], "gives": ["linen_trousers", 1], "craft_s": 16.0, "known": true, "station": "tailors_table", "keeps": [["sewing_needle", 1]]},
 		"linen_skirt": {"number": 544, "name": "Linen - Skirt", "category": "Clothing", "needs": [["linen", 3], ["thread", 1]], "gives": ["linen_skirt", 1], "craft_s": 14.0, "known": true, "station": "tailors_table", "keeps": [["sewing_needle", 1]]},
 		"linen_dress": {"number": 545, "name": "Linen - Dress", "category": "Clothing", "needs": [["linen", 6], ["thread", 2]], "gives": ["linen_dress", 1], "craft_s": 20.0, "known": true, "station": "tailors_table", "keeps": [["sewing_needle", 1]]},

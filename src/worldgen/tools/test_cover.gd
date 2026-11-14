@@ -26,7 +26,7 @@ func _structure_roof_checks() -> void:
 	for kind in structures:
 		var def: Dictionary = structures[kind]
 
-		if str(def.get("piece_kind", "")) == "roof" or kind == "lean_to":
+		if str(def.get("piece_kind", "")) in ["roof", "roof_panel"] or kind == "lean_to":   # the corners, the roof panels of every tier (GOALS-REPAIR A-35/A-36)
 			check(not Cover.structure_roof(def, Vector3.ZERO, 0.0).is_empty(), "%s has a roof box (structures.json height, half_x, half_z)" % kind)
 			roofs += 1
 

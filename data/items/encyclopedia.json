@@ -2001,7 +2001,7 @@
 		"plant_fibre": {
 			"name": "Plant fibre",
 			"kind": "material",
-			"description": "Stringy strands from nettles and grass. Twist 3 into twine, or use one to light a fire.",
+			"description": "Stringy strands from nettles and grass. Twist 3 into twine.",
 			"how_to_get": [
 				"Picked from flax",
 				"Picked from nettle",
@@ -2027,7 +2027,7 @@
 		"log": {
 			"name": "Log",
 			"kind": "material",
-			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
+			"description": "A heavy length of trunk. Chop it into blocks and firewood, or saw it into planks.",
 			"how_to_get": [
 				"Any species' log from a felled tree counts (oak log, pine log and the rest)"
 			],
@@ -2048,7 +2048,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -2131,7 +2132,8 @@
 				"Used in Refined - Foundation",
 				"Used in Refined - Gate",
 				"Used in Refined - Pillar",
-				"Used in Refined - Roof",
+				"Used in Refined - Roof 45",
+				"Used in Refined - Roof 65",
 				"Used in Refined - Roof corner",
 				"Used in Refined - Stairs",
 				"Used in Refined - Wall",
@@ -2142,7 +2144,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -2188,7 +2191,7 @@
 		"campfire_kit": {
 			"name": "Campfire",
 			"kind": "placeable",
-			"description": "Stones and sticks for a fire. Set it down, then light it with fibre.",
+			"description": "Stones and sticks for a fire. Set it down, put wood on it, then press E to light it.",
 			"how_to_get": [
 				"Craft: 6 Stick, 3 Stone"
 			],
@@ -2414,7 +2417,7 @@
 		"lumber": {
 			"name": "Plank",
 			"kind": "material",
-			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
+			"description": "Boards from a log. Make them at a saw mill or with a saw.",
 			"how_to_get": [
 				"Craft at a saw mill: 1 Log",
 				"Craft at a workbench: 1 Log (keep Stone - Wedge)",
@@ -2458,7 +2461,8 @@
 				"Used in Crate",
 				"Used in Cupboard",
 				"Used in Engineered - Ceiling",
-				"Used in Engineered - Roof",
+				"Used in Engineered - Roof 45",
+				"Used in Engineered - Roof 65",
 				"Used in Engineered - Roof corner",
 				"Used in Fortified - Gate",
 				"Used in Mixer",
@@ -2471,7 +2475,8 @@
 				"Used in Refined - Foundation",
 				"Used in Refined - Gate",
 				"Used in Refined - Pillar",
-				"Used in Refined - Roof",
+				"Used in Refined - Roof 45",
+				"Used in Refined - Roof 65",
 				"Used in Refined - Roof corner",
 				"Used in Refined - Stairs",
 				"Used in Refined - Wall",
@@ -2480,11 +2485,13 @@
 				"Used in Sluice",
 				"Used in Sturdy - Ceiling",
 				"Used in Sturdy - Gate",
-				"Used in Sturdy - Roof",
+				"Used in Sturdy - Roof 45",
+				"Used in Sturdy - Roof 65",
 				"Used in Sturdy - Roof corner",
 				"Used in Superior - Ceiling",
 				"Used in Superior - Gate",
-				"Used in Superior - Roof",
+				"Used in Superior - Roof 45",
+				"Used in Superior - Roof 65",
 				"Used in Superior - Roof corner",
 				"Used in Well",
 				"Used in Wooden shingle",
@@ -2528,8 +2535,7 @@
 			"kind": "material",
 			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
-				"Craft at a smelter: 4 Iron ore, 5 Fuel",
-				"Craft at a clay bloomery: 5 Iron ore, 3 Fuel"
+				"Smelted by an Improved smelter from Iron ore, one ingot an ore, while its bellows are worked"
 			],
 			"used_for": [
 				"Used in Hinges",
@@ -2590,9 +2596,9 @@
 		"steel_ingot": {
 			"name": "Steel ingot",
 			"kind": "material",
-			"description": "A bar of steel. Placeholder until smelting exists.",
+			"description": "A bar of steel, smelted from iron ore and carbon in an Advanced smelter in the wind.",
 			"how_to_get": [
-				"Craft at a blast furnace: 2 Iron ingot, 5 Fuel"
+				"Smelt at an Advanced smelter in the wind: Iron ore with Coal or Charcoal dragged into its input as carbon"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -3329,9 +3335,9 @@
 			"obtainable_now": true
 		},
 		"stone_forge": {
-			"name": "Stone - Forge",
+			"name": "Primitive smithy",
 			"kind": "structure",
-			"description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.",
+			"description": "A clay and rough stone forge with a stone anvil under a log lean-to. Shapes copper and bronze.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -3347,9 +3353,17 @@
 			"obtainable_now": true
 		},
 		"blacksmithy": {
-			"name": "Brick - Forge",
+			"name": "Improved smithy",
 			"kind": "structure",
-			"description": "A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel.",
+			"description": "A forge with a bronze anvil. Fire it with charcoal or coal to work copper, bronze and iron; iron wears it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"advanced_smithy": {
+			"name": "Advanced smithy",
+			"kind": "structure",
+			"description": "A smithy with an iron anvil. Fire it with charcoal or coal to work every metal up to steel.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -3372,13 +3386,12 @@
 			"status": "planned"
 		},
 		"large_forge": {
-			"name": "Large forge",
+			"name": "Advanced smelter",
 			"kind": "structure",
-			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
+			"description": "A furnace with its own windmill and two bellows. In wind it smelts two ingots at once, and steel with carbon.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"master_forge_kit": {
 			"name": "Master forge",
@@ -3390,13 +3403,12 @@
 			"status": "planned"
 		},
 		"master_forge": {
-			"name": "Master forge",
+			"name": "Master smithy",
 			"kind": "structure",
-			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
+			"description": "An ornate smithy with a steel anvil and its own quenching trough, for masterwork and Tempered steel.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_oak": {
 			"name": "Oak log",
@@ -3420,7 +3432,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3477,7 +3490,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3534,7 +3548,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3591,7 +3606,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3648,7 +3664,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3705,7 +3722,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -3762,7 +3780,8 @@
 				"Used in Rustic - Foundation",
 				"Used in Rustic - Gate",
 				"Used in Rustic - Pillar",
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner",
 				"Used in Rustic - Stairs",
 				"Used in Rustic - Wall",
@@ -4004,7 +4023,7 @@
 			"obtainable_now": true
 		},
 		"roof_section_kit": {
-			"name": "Refined - Roof",
+			"name": "Refined - Roof 45",
 			"kind": "placeable",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [
@@ -4014,9 +4033,17 @@
 			"obtainable_now": true
 		},
 		"roof_section": {
-			"name": "Refined - Roof",
+			"name": "Refined - Roof 45",
 			"kind": "structure",
-			"description": "A plank roof on four posts, to set over walls and ceilings.",
+			"description": "A sloped roof panel of wooden shakes on sawn boards.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"roof_section_65": {
+			"name": "Refined - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of wooden shakes on sawn boards.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -4375,7 +4402,8 @@
 			"used_for": [
 				"Planned: a stone roof.",
 				"Used in Carved stone shingle",
-				"Used in Sturdy - Roof",
+				"Used in Sturdy - Roof 45",
+				"Used in Sturdy - Roof 65",
 				"Used in Sturdy - Roof corner"
 			],
 			"obtainable_now": true
@@ -4428,7 +4456,8 @@
 				"Used in Carpenter's bench",
 				"Used in Sturdy - Ceiling",
 				"Used in Superior - Ceiling",
-				"Used in Engineered - Roof",
+				"Used in Engineered - Roof 45",
+				"Used in Engineered - Roof 65",
 				"Used in Engineered - Roof corner"
 			],
 			"obtainable_now": true
@@ -4436,7 +4465,7 @@
 		"wooden_block": {
 			"name": "Hardwood block",
 			"kind": "material",
-			"description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.",
+			"description": "A short round cut from a hardwood log. Burns longer than hard firewood, or split it on a chopping block.",
 			"how_to_get": [
 				"Strike a small log lying on the ground with an axe: 3 blocks"
 			],
@@ -4946,7 +4975,7 @@
 			"kind": "material",
 			"description": "Smelted copper. Soft, but good for early tools.",
 			"how_to_get": [
-				"Craft at a smelter: 3 Copper ore, 5 Fuel"
+				"Smelted by a Primitive or Improved smelter from Copper ore, one ingot an ore"
 			],
 			"used_for": [
 				"Used in Bronze ingot",
@@ -4959,7 +4988,7 @@
 			"kind": "material",
 			"description": "Smelted tin. Mixed with copper it makes bronze.",
 			"how_to_get": [
-				"Craft at a smelter: 3 Tin ore, 5 Fuel"
+				"Smelted by a Primitive or Improved smelter from Tin ore, one ingot an ore"
 			],
 			"used_for": [
 				"Used in Bronze ingot"
@@ -4971,7 +5000,7 @@
 			"kind": "material",
 			"description": "Copper and tin melted together. Harder than copper.",
 			"how_to_get": [
-				"Craft at a forge: 3 Copper ingot, 1 Tin ingot"
+				"Smelted by a Primitive or Improved smelter from Copper ore and Tin ore together: two ingots a pair"
 			],
 			"used_for": [
 				"Used in Bronze - Helm",
@@ -5117,7 +5146,7 @@
 		"copper_ore": {
 			"name": "Copper ore",
 			"kind": "material",
-			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
+			"description": "A heavy lump streaked green and red. A smelter turns each one into a copper ingot.",
 			"how_to_get": [
 				"Broken from a boulder over a copper body with any pick"
 			],
@@ -5129,7 +5158,7 @@
 		"tin_ore": {
 			"name": "Tin ore",
 			"kind": "material",
-			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
+			"description": "A dark, very heavy lump. A smelter turns each one into a tin ingot; with copper ore, into bronze.",
 			"how_to_get": [
 				"Broken from a boulder over a tin body with any pick"
 			],
@@ -5141,13 +5170,12 @@
 		"iron_ore": {
 			"name": "Iron ore",
 			"kind": "material",
-			"description": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
+			"description": "A rusty brown lump. Smelts to iron in an Improved smelter with its bellows worked, or an Advanced smelter.",
 			"how_to_get": [
 				"Dig with a spade in fen or marsh mud, most often at its edge. Bog iron grows back slowly."
 			],
 			"used_for": [
-				"Used in Iron ingot",
-				"Used in Iron ingot (bloomery)"
+				"Smelted into Iron ingots and, with carbon, Steel ingots"
 			],
 			"obtainable_now": true
 		},
@@ -5160,8 +5188,7 @@
 				"Used in Copper ingot",
 				"Used in Iron ingot",
 				"Used in Steel ingot",
-				"Used in Tin ingot",
-				"Used in Iron ingot (bloomery)"
+				"Used in Tin ingot"
 			],
 			"obtainable_now": true
 		},
@@ -6901,6 +6928,46 @@
 			],
 			"obtainable_now": true
 		},
+		"copper_pickaxe": {
+			"name": "Copper - Pickaxe",
+			"kind": "tool",
+			"description": "A copper head on a hardwood handle. Breaks rock and takes copper, tin and coal, but not iron ore.",
+			"how_to_get": [
+				"Craft: 3 Copper ingot, 2 Stick at a forge"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"copper_axe": {
+			"name": "Copper - Axe",
+			"kind": "tool",
+			"description": "A copper blade on a hardwood handle. Fells trees faster than stone; bronze is faster still.",
+			"how_to_get": [
+				"Craft at a forge: 2 Copper ingot, 1 Stick, 1 Leather strap"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"iron_anvil_part": {
+			"name": "Iron anvil",
+			"kind": "material",
+			"description": "A forged iron anvil on a banded log stump. Not set down on its own: it goes into building an Advanced smithy.",
+			"how_to_get": [
+				"Craft: 5 Iron ingot, 1 Log at a brick forge"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"steel_anvil_part": {
+			"name": "Steel anvil",
+			"kind": "material",
+			"description": "A forged steel anvil on a banded log stump. Not set down on its own: it goes into building a Master smithy.",
+			"how_to_get": [
+				"Craft: 5 Steel ingot, 1 Log at a brick forge"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"stairs_wood_kit": {
 			"name": "Refined - Stairs",
 			"kind": "placeable",
@@ -6966,7 +7033,7 @@
 			"obtainable_now": true
 		},
 		"log_roof_kit": {
-			"name": "Rustic - Roof",
+			"name": "Rustic - Roof 45",
 			"kind": "placeable",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"how_to_get": [
@@ -6978,12 +7045,20 @@
 			"obtainable_now": true
 		},
 		"log_roof": {
-			"name": "Rustic - Roof",
+			"name": "Rustic - Roof 45",
 			"kind": "structure",
-			"description": "A log-framed thatch roof.",
+			"description": "A sloped roof panel of bark shingles on split logs.",
 			"how_to_get": [
 				"Found in the world"
 			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_roof_65": {
+			"name": "Rustic - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of bark shingles on split logs.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
 		},
@@ -7028,7 +7103,7 @@
 			"obtainable_now": true
 		},
 		"stone_roof_kit": {
-			"name": "Sturdy - Roof",
+			"name": "Sturdy - Roof 45",
 			"kind": "placeable",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"how_to_get": [
@@ -7038,12 +7113,20 @@
 			"obtainable_now": true
 		},
 		"stone_roof": {
-			"name": "Sturdy - Roof",
+			"name": "Sturdy - Roof 45",
 			"kind": "structure",
-			"description": "A stone-shingle roof.",
+			"description": "A sloped roof panel of stone shingles.",
 			"how_to_get": [
 				"Found in the world"
 			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_roof_65": {
+			"name": "Sturdy - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of stone shingles.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
 		},
@@ -7088,7 +7171,7 @@
 			"obtainable_now": true
 		},
 		"brick_roof_kit": {
-			"name": "Superior - Roof",
+			"name": "Superior - Roof 45",
 			"kind": "placeable",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"how_to_get": [
@@ -7098,12 +7181,20 @@
 			"obtainable_now": true
 		},
 		"brick_roof": {
-			"name": "Superior - Roof",
+			"name": "Superior - Roof 45",
 			"kind": "structure",
-			"description": "A tiled brick roof.",
+			"description": "A sloped roof panel of fired clay tiles.",
 			"how_to_get": [
 				"Found in the world"
 			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_roof_65": {
+			"name": "Superior - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of fired clay tiles.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
 		},
@@ -7533,8 +7624,7 @@
 				"Used in Copper ingot",
 				"Used in Iron ingot",
 				"Used in Steel ingot",
-				"Used in Tin ingot",
-				"Used in Iron ingot (bloomery)"
+				"Used in Tin ingot"
 			],
 			"obtainable_now": true
 		},
@@ -10605,7 +10695,7 @@
 			"obtainable_now": true
 		},
 		"engineered_roof_kit": {
-			"name": "Engineered - Roof",
+			"name": "Engineered - Roof 45",
 			"kind": "placeable",
 			"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 			"how_to_get": [
@@ -10615,9 +10705,17 @@
 			"obtainable_now": true
 		},
 		"engineered_roof": {
-			"name": "Engineered - Roof",
+			"name": "Engineered - Roof 45",
 			"kind": "structure",
-			"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
+			"description": "A sloped roof panel of clay tiles on pinned plank rafters. Does not burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_roof_65": {
+			"name": "Engineered - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of clay tiles on pinned plank rafters. Does not burn.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -10756,7 +10854,8 @@
 				"Craft: 2 Bark"
 			],
 			"used_for": [
-				"Used in Rustic - Roof",
+				"Used in Rustic - Roof 45",
+				"Used in Rustic - Roof 65",
 				"Used in Rustic - Roof corner"
 			],
 			"obtainable_now": true
@@ -10769,7 +10868,8 @@
 				"Craft at a workbench: 1 Plank"
 			],
 			"used_for": [
-				"Used in Refined - Roof",
+				"Used in Refined - Roof 45",
+				"Used in Refined - Roof 65",
 				"Used in Refined - Roof corner"
 			],
 			"obtainable_now": true
@@ -10782,9 +10882,11 @@
 				"Craft at a kiln: 2 Clay"
 			],
 			"used_for": [
-				"Used in Engineered - Roof",
+				"Used in Engineered - Roof 45",
+				"Used in Engineered - Roof 65",
 				"Used in Engineered - Roof corner",
-				"Used in Superior - Roof",
+				"Used in Superior - Roof 45",
+				"Used in Superior - Roof 65",
 				"Used in Superior - Roof corner"
 			],
 			"obtainable_now": true
@@ -11412,11 +11514,11 @@
 				},
 				{
 					"title": "Copper",
-					"text": "Red-brown ore that smelts at a stone forge. A little farther out than tin, on the same kind of rocky slopes. Copper melts into ingots, and with tin it makes bronze."
+					"text": "Red-brown ore that a Primitive smelter turns into ingots, one for each ore. A little farther out than tin, on the same kind of rocky slopes. The Primitive smithy shapes copper into the first metal tools, and copper ore smelted with tin ore makes bronze."
 				},
 				{
 					"title": "Bronze",
-					"text": "Three parts copper to one part tin, smelted together in a Stone - Forge. Bronze makes the first real metal tools and weapons, and any metal hammer, bronze included, lets you build at every tier."
+					"text": "Copper ore and tin ore smelted together, one of each for two ingots, in a Primitive smelter. Bronze makes the first real metal tools and weapons and the fittings of the Improved smelter, and any metal hammer, bronze included, lets you build at every tier."
 				},
 				{
 					"title": "River placers",
@@ -11424,7 +11526,7 @@
 				},
 				{
 					"title": "Iron",
-					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and you smelt it in a Brick - Forge (or slowly in a Clay bloomery). Iron rock is not found near your first camp, and the deposits we know of lie out of easy reach. Bog iron is the nearer way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and only an Improved smelter with its bellows worked smelts it. Iron rock is not found near your first camp, and the deposits we know of lie out of easy reach. Bog iron is the nearer way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
 				},
 				{
 					"title": "Bog iron",

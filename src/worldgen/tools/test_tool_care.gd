@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Catalog Phase 2c (M001-T10): breaking, repair, Master smithy craftsmanship +1/+2 and Tempered steel, through the real server
+# Catalog Phase 2c (M001-T10): breaking, repair, Master smithy craftsmanship +1/+2 and Tempered steel (GOALS-REPAIR R5: at the Master smithy only), through the real server
 # (master s2.2 rules 1-5, s2.7 items 5-6, s2.9, s4 items 1, 15, 16; data/items/smithing.json). Sharpening is test_whetstone.
 # Amounts come from the live data (T09's Phase 2c tool rows) and smithing.json, so tuning keeps the test valid. Section 7 runs break and
 # repair over every Phase 2c tool row the catalog ledger lists for this code.
@@ -213,10 +213,11 @@ func _init() -> void:
 	check(bool(pick_row.get("edge", false)) and SmithingRules.dull_at(pick_row, {"craft": 2}) > SmithingRules.dull_at(pick_row, {}) and SmithingRules.value_mult({"craft": 2}) > SmithingRules.value_mult({}), "3g. a +2 edge dulls more slowly and is worth more")
 	empty_pack()
 
-	# 4. Tempered: eligible steel only, with a Quenching trough beside the Smithy; a higher base set once, slower dulling only on edges,
-	# craftsmanship adds to it (no multiplication), and repair never gives it.
+	# 4. Tempered: eligible steel only, and only at the Master smithy, whose quenching trough is built in (GOALS-REPAIR R5, master s2.7 item 9);
+	# a higher base set once, slower dulling only on edges, craftsmanship adds to it (no multiplication), and repair never gives it. Plain steel
+	# is worked at the Advanced smithy (brick_forge level 3, GOALS-REPAIR R4), and a standalone Quenching trough beside it tempers nothing.
 	clear_stations()
-	place("blacksmithy", HERE + Vector3(0.0, 0.0, 3.0))
+	place("advanced_smithy", HERE + Vector3(0.0, 0.0, 3.0))
 	var steel: String = "steel_pickaxe"
 	var steel_row: Dictionary = items.table.entry(steel)
 	var steel_recipe: int = recipe_of(steel)
@@ -225,19 +226,22 @@ func _init() -> void:
 	var steel_s: float = float(sr["craft_s"])
 	var tempered: int = SmithingRules.code(true, 0)
 	craft(steel_recipe, tempered, steel_s * 2.0)
-	check(have(steel) == 0 and have("steel_ingot") > 0, "4a. without a Quenching trough Tempered is refused")
+	check(have(steel) == 0 and have("steel_ingot") > 0, "4a. at the Advanced smithy Tempered is refused")
 	craft(steel_recipe, 0, steel_s + 2.0, false)
-	check(have(steel) == 1 and inv.inst_of(slot_of(steel)).is_empty(), "4b. the plain steel recipe works without the trough")
+	check(have(steel) == 1 and inv.inst_of(slot_of(steel)).is_empty(), "4b. the plain steel recipe works there")
 	empty_pack()
 	place("quenching_trough", HERE + Vector3(1.5, 0.0, 3.0))
+	check(not items.craft_variants(1, sr).has(tempered), "4b. an old standalone Quenching trough beside the Advanced smithy tempers nothing (%s)" % str(items.craft_variants(1, sr)))
+	clear_stations()
+	place("master_forge", HERE + Vector3(0.0, 0.0, 3.0))
 	craft(pick_recipe, tempered, craft_s * 2.0)
-	check(have(pick) == 0 and have("iron_ingot") > 0, "4c. iron is never Tempered, trough or not")
+	check(have(pick) == 0 and have("iron_ingot") > 0, "4c. iron is never Tempered, even at the Master smithy")
 	empty_pack()
 	craft(steel_recipe, tempered, steel_s * SmithingRules.time_mult(tempered) * 1.5)
 	var ss: int = slot_of(steel)
 	var steel_d: int = int(steel_row["durability"])
 	var temper_d: int = int(round(steel_d * (1.0 + float(c["temper"]["durability"]))))
-	check(ss >= 0 and int(inv.inst[ss].get("temper", 0)) == 1 and inv.max_durability(ss) == temper_d and not inv.inst[ss].has("craft"), "4d. with the trough the Smithy makes a Tempered Steel - Pickaxe (max %d > %d)" % [inv.max_durability(ss) if ss >= 0 else -1, steel_d])
+	check(ss >= 0 and int(inv.inst[ss].get("temper", 0)) == 1 and inv.max_durability(ss) == temper_d and not inv.inst[ss].has("craft"), "4d. with its own quencher the Master smithy makes a Tempered Steel - Pickaxe, no trough beside it (max %d > %d)" % [inv.max_durability(ss) if ss >= 0 else -1, steel_d])
 	check(bool(steel_row.get("edge", false)) and SmithingRules.dull_at(steel_row, {"temper": 1}) > SmithingRules.dull_at(steel_row, {}) and SmithingRules.dull_at(items.table.entry("steel_hammer"), {"temper": 1}) == 0, "4e. Tempered dulls more slowly on an edge; a hammer has no sharpness at all")
 	check(not SmithingRules.temper_ok("steel_striker", items.table.entry("steel_striker"), 1) and not SmithingRules.temper_ok("steel_ingot", items.table.entry("steel_ingot"), 1), "4f. the Steel - Striker and steel ingots are never Tempered")
 	inv.wear[ss] = temper_d   # broken
@@ -251,26 +255,26 @@ func _init() -> void:
 	check(inv.wear[ss] == 0 and inv.max_durability(ss) == temper_d - 300 and int(inv.inst[ss].get("temper", 0)) == 1, "4g. a repair restores up to the sharpened maximum (%d) and the flag stays once" % inv.max_durability(ss))
 	empty_pack()
 
-	# Tempered +2 at a Master smithy with the trough beside it: the bonuses add.
+	# Tempered +2 at the Master smithy: the bonuses add.
 	clear_stations()
 	place("master_forge", HERE + Vector3(0.0, 0.0, 3.0))
-	place("quenching_trough", HERE + Vector3(2.0, 0.0, 4.0))
 	var both: int = SmithingRules.code(true, 2)
-	check(items.craft_variants(1, sr).has(both) and items.craft_variants(1, sr).size() == 6, "4h. a Master smithy with a trough offers Plain, Tempered, +1, +2 and both (%s)" % str(items.craft_variants(1, sr)))
+	check(items.craft_variants(1, sr).has(both) and items.craft_variants(1, sr).size() == 6, "4h. the Master smithy offers Plain, Tempered, +1, +2 and both (%s)" % str(items.craft_variants(1, sr)))
 	craft(steel_recipe, both, steel_s * SmithingRules.time_mult(both) * 1.5)
 	ss = slot_of(steel)
 	var added: int = int(round(steel_d * (1.0 + float(c["temper"]["durability"]) + 2.0 * float(c["craft"]["durability"]))))
 	check(ss >= 0 and inv.max_durability(ss) == added and inv.max_durability(ss) < int(round(temper_d * (1.0 + 2.0 * float(c["craft"]["durability"])))), "4i. Tempered +2: the craftsmanship bonus adds to the tempered base (%d), no multiplication" % (inv.max_durability(ss) if ss >= 0 else -1))
 	empty_pack()
 
-	# 5. The client cannot forge a variant: an unknown code, or one the stations here do not allow, is refused and takes nothing.
+	# 5. The client cannot forge a variant: an unknown code, or one the stations here do not allow, is refused and takes nothing (at the
+	# Advanced smithy, where plain steel is made).
 	clear_stations()
-	place("blacksmithy", HERE + Vector3(0.0, 0.0, 3.0))
+	place("advanced_smithy", HERE + Vector3(0.0, 0.0, 3.0))
 
 	for bad in [SmithingRules.code(true, 2), 7, -1]:
 		said.clear()
 		craft(steel_recipe, bad, steel_s * 4.0)
-		check(have(steel) == 0 and have("steel_ingot") > 0 and items._craft_queues.values().all(func(q): return q["entries"].is_empty()), "5. variant %d at a plain Smithy without a trough is refused (%s)" % [bad, str(said)])
+		check(have(steel) == 0 and have("steel_ingot") > 0 and items._craft_queues.values().all(func(q): return q["entries"].is_empty()), "5. variant %d at an Advanced smithy (no quencher, no craftsmanship) is refused (%s)" % [bad, str(said)])
 		empty_pack()
 
 	# 6. A queued variant survives a restart and still makes its variant.

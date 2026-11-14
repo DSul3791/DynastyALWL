@@ -28,6 +28,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const BinRules := preload("res://src/shared/bin_rules.gd")   # resource bins: the resource surface (_note_bin, GOALS-REPAIR R6)
 const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
@@ -37,6 +38,8 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const BagRules := preload("res://src/shared/bag_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
+const FarmRules := preload("res://src/shared/farm_rules.gd")   # what E does on a tilled bed or garden plot (WP-R1B)
+const CropLook := preload("res://src/client/crop_look.gd")   # PLACEHOLDER stage looks of a bed's crop
 const KEY_FILE := "user://player_key.txt"
 const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
@@ -215,6 +218,7 @@ var trail_mult: float = 1.0                 # Tracking skill -> trail life multi
 var _tracking_index: int = -1               # position of "tracking" in skills.json order, found once
 var _cooking_cfg: Dictionary = {}
 var _structures_cfg: Dictionary = {}
+var _crops_cfg: Dictionary = {}   # data/items/crops.json "crops", read once (_crop_cfg)
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
@@ -949,6 +953,14 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(store_def.get("use", "")) == "kiln":   # the Kiln (master s2.6): E lights it and puts it out, like a fire; F for its logs and charcoal
 		return {"prompt": "Press E to %s, F for its logs and charcoal%s (hold E to take it down)" % ["put the kiln out" if bool(_world[id].get("lit", false)) else "light the kiln", _fill_note(id)], "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
+	if str(store_def.get("use", "")) == "smelt":   # a Smelter (master s2.7): F for its fuel and ore; E works the bellows of one that has them
+		var smelt_tap: Callable = func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+		if not bool(store_def.get("smelt", {}).get("bellows", false)):
+			smelt_tap = func(): _ask_open(id)
+
+		return {"prompt": "Press %s for its fuel and ore%s (hold E to take it down)" % ["E to work the bellows, F" if bool(store_def.get("smelt", {}).get("bellows", false)) else "E or F", _fill_note(id)], "tap": smelt_tap, "hold": take_down}
+
 	if str(store_def.get("station", "")) != "" and int(store_def.get("out_slots", 0)) > 0:   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
 
@@ -962,6 +974,9 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to close the door" if not bool(_structure_by_state(state).get("blocks_walk", false)) else "Press E to open the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	var station_def: Dictionary = _structure_by_state(state)
+
+	if _is_bed_def(station_def):   # a tilled bed or garden plot (FARMING_SPEC.md steps 3 to 5): E sows, waters or harvests; a plot, which has a kit, still comes down with hold E
+		return _bed_interaction(id, station_def, take_down)
 
 	if str(station_def.get("use", "")) == "storage_view":   # a Storage sign or Warehouse desk (catalog phase 9): E shows what the containers round it hold
 		return {"prompt": "Press E to see what is stored here (hold E to take it down)", "tap": func(): _storage_ui.ask_view(id), "hold": take_down}
@@ -1009,6 +1024,86 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.sentence_name(table.number_of(str(station_def.get("fuel", "stick"))))]), "tap": tap, "hold": take_down}
 
 	return {"prompt": "Hold E to take down the %s" % table.sentence_name(_world[id]["number"]), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
+
+
+func _is_bed_def(def: Dictionary) -> bool:
+	return str(def.get("item", "")) == "tilled_bed" or bool(def.get("plot", false))
+
+
+# crops.json, read once: the client's wording needs the crop names, seeds and harvest tools (the server rules on all of it).
+func _crop_cfg() -> Dictionary:
+	if _crops_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+		_crops_cfg = parsed.get("crops", {}) if typeof(parsed) == TYPE_DICTIONARY else {"none": {}}
+
+	return _crops_cfg
+
+
+# The pack slot of the seed E would sow: the one in hand, else the first seed in the pack; -1 for none.
+# PROVISIONAL (GOALS-REPAIR A-6): E on an empty bed sows the seed in hand, else the first seed in the pack (REPAIR_DECISIONS.md section 4).
+func _seed_slot() -> int:
+	var hand: int = _hand_slot()
+
+	if hand >= 0 and hand < inventory.slot_count and inventory.numbers[hand] != 0 and FarmRules.crop_of_seed(_crop_cfg(), table.id_of(inventory.numbers[hand])) != "":
+		return hand
+
+	for slot in range(inventory.slot_count):
+		if inventory.numbers[slot] != 0 and FarmRules.crop_of_seed(_crop_cfg(), table.id_of(inventory.numbers[slot])) != "":
+			return slot
+
+	return -1
+
+
+# E on a bed: the one request FarmRules.bed_action words (sow the seed in hand or pack, water with the filled container in hand, harvest a ripe crop). The server does
+# the checking; a refusal (not the season, not ripe, too far) comes back as its notice.
+func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictionary:
+	var row: Dictionary = _world[id]
+	var seed_slot: int = _seed_slot() if str(row.get("crop", "")) == "" else -1   # only an empty bed takes a seed (this probe runs every frame the bed is aimed at)
+	var water_slot: int = held_container_slot() if held_container_has_water() else -1
+	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), seed_slot, table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot)
+	var found: Dictionary = {"prompt": plan["prompt"], "tap": func(): _bed_tap(id, plan)}
+
+	if str(def.get("kit", "")) != "":
+		found["hold"] = take_down
+
+	return found
+
+
+# Sends the one request the bed's plan names (a block body in a lambda inside a dictionary literal does not parse with a match in it: hence a method).
+func _bed_tap(id: int, plan: Dictionary) -> void:
+	match str(plan["act"]):
+		"sow":
+			net.inventory_action.rpc_id(1, Net.ACT_SOW, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the seed's pack slot
+		"harvest":
+			net.inventory_action.rpc_id(1, Net.ACT_HARVEST, id, 0, 0, Vector3.ZERO)
+		"water":
+			net.inventory_action.rpc_id(1, Net.ACT_WATER_BED, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the container in hand, which the server draws the water from
+		_:
+			show_notice(str(plan["prompt"]))
+
+
+# A bed's crop and stage from its world row (server_items.crop_row_extra): kept on the record for the E prompt, with its PLACEHOLDER stage look hung on the bed's node;
+# swapped when the stage changes and dropped when the crop is gone (harvest, frost).
+func _note_crop(id: int, row: Array) -> void:
+	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+	var crop: String = str(extra.get("crop", ""))
+	var stage: int = int(extra.get("stage", 0)) if crop != "" else -1
+	var rec: Dictionary = _world[id]
+
+	if str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage:
+		return
+
+	if is_instance_valid(rec.get("crop_node")):
+		(rec["crop_node"] as Node).queue_free()
+
+	rec["crop"] = crop
+	rec["stage"] = stage
+	rec["crop_node"] = null
+
+	if crop != "":
+		var look: Node3D = CropLook.build(crop, stage, float(_structure_by_state(int(rec["state"])).get("footprint_x", 1.0)))
+		(rec["node"] as Node3D).add_child(look)
+		rec["crop_node"] = look
 
 
 func press_e() -> bool:
@@ -1118,6 +1213,10 @@ func open_container() -> bool:
 		return false
 
 	var best_def: Dictionary = _structure_by_state(int(_world[best]["state"]))
+
+	if str(best_def.get("use", "")) == "smelt":   # a Smelter: its store (hopper, input, rack); it crafts nothing
+		_ask_open(best)
+		return true
 
 	if str(best_def.get("station", "")) != "" and int(best_def.get("out_slots", 0)) > 0:   # a station with a store: its window, on the Craft tab (the Kiln: on its store)
 		_ask_open(best, str(best_def.get("use", "")) != "kiln")
@@ -1577,8 +1676,8 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 		core.position = face.position + Vector3(0.0, end * 0.001, 0.0)
 		mesh_node.add_child(core)
 
-	if trunk and bool(extra.get("keywood", false)) and length > 2.44 * 1.2:   # the next cut line: a pale band round the trunk one log length from the far end
-		var cut_at: float = (length - 2.44) / length
+	if trunk and bool(extra.get("keywood", false)) and length > 3.0 * 1.2:   # the next cut line: a pale band round the trunk one log length from the far end
+		var cut_at: float = (length - 3.0) / length
 		var band: MeshInstance3D = MeshInstance3D.new()
 		var band_cyl: CylinderMesh = CylinderMesh.new()
 		var band_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, cut_at) * 1.04
@@ -1591,7 +1690,7 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 		band_mat.emission = Color(0.35, 0.3, 0.15)
 		band_cyl.material = band_mat
 		band.mesh = band_cyl
-		band.position = Vector3(0.0, length * 0.5 - 2.44, 0.0)
+		band.position = Vector3(0.0, length * 0.5 - 3.0, 0.0)
 		mesh_node.add_child(band)
 
 	var stub_rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -2583,6 +2682,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 				_note_platter(id, row, state)
 				_note_store(id, row)
+				_note_crop(id, row)
+				_note_bin(id, row, state)
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
 				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
@@ -2647,6 +2748,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_note_store(id, row)
 
 			_note_platter(id, row, state)
+			_note_crop(id, row)
+			_note_bin(id, row, state)
 
 			if site_extra != null:
 				pass   # a site is walked through and climbed by nobody until it is finished
@@ -2859,6 +2962,54 @@ func _note_platter(id: int, row: Array, state: int) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	_world[id]["board"] = int(extra.get("board", 0))
 	_world[id]["portions"] = int(extra.get("portions", 0))
+
+
+# A resource bin's row (GOALS-REPAIR R6; row extras "res": the item it holds, -1 mixed from before R6, and "fill_pm": its fill in per mille):
+# its resource surface, one flat layer inside the walls that rises with the fill and is gone when empty (master s2.5, BinRules.surface_height).
+# PLACEHOLDER look: a plain slab in a colour for what it holds, until the art pipeline draws the resources.
+func _note_bin(id: int, row: Array, state: int) -> void:
+	var def: Dictionary = _structure_by_state(state)
+
+	if not BinRules.is_bin(def) or _world.get(id, {}).get("node") == null:
+		return
+
+	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+	var node: Node3D = _world[id]["node"]
+	var surface: MeshInstance3D = node.get_node_or_null("ResourceSurface")
+	var side: float = float(def.get("footprint_x", 1.0))
+	var y: float = BinRules.surface_height(float(extra.get("fill_pm", 0)) / 1000.0, 0.06, PieceLook.bin_wall_m(side) - 0.05)
+
+	if y < 0.0 or extra.get("site") != null:
+		if surface != null:
+			surface.visible = false
+
+		return
+
+	if surface == null:
+		surface = MeshInstance3D.new()
+		surface.name = "ResourceSurface"
+		var slab: BoxMesh = BoxMesh.new()
+		slab.size = Vector3(side - 0.1, 0.04, side - 0.1)
+		surface.mesh = slab
+		node.add_child(surface)
+
+	surface.position = Vector3(0.0, y, 0.0)
+	surface.material_override = _bin_material(int(extra.get("res", 0)))
+	surface.visible = true
+
+
+var _bin_materials: Dictionary = {}   # item number -> the placeholder surface material (_note_bin)
+
+
+func _bin_material(number: int) -> StandardMaterial3D:
+	if not _bin_materials.has(number):
+		var colours: Dictionary = {"stone": Color(0.5, 0.5, 0.48), "cobblestone": Color(0.45, 0.44, 0.42), "gravel": Color(0.56, 0.54, 0.5), "flint": Color(0.3, 0.3, 0.32), "clay": Color(0.62, 0.36, 0.25), "sand": Color(0.85, 0.75, 0.5), "soil": Color(0.35, 0.25, 0.15), "charcoal": Color(0.08, 0.08, 0.08), "coal": Color(0.1, 0.1, 0.11), "copper_ore": Color(0.42, 0.55, 0.4), "tin_ore": Color(0.6, 0.6, 0.62), "iron_ore": Color(0.5, 0.28, 0.18)}
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.albedo_color = colours.get(table.id_of(number) if number > 0 else "", Color(0.5, 0.45, 0.4))
+		m.roughness = 1.0
+		_bin_materials[number] = m
+
+	return _bin_materials[number]
 
 
 # The table tops a Serving Platter's ghost may snap to: the placed structures of `states` (its attach_kinds) with their turn, as the server's _surface_rows.
@@ -3349,13 +3500,17 @@ func station_in_reach(r: Dictionary) -> bool:
 	return str(r.get("station", "")) != "" and station_near(str(r["station"]), int(r.get("station_level", 1)), CraftStock.CRAFT_REACH_M)
 
 
+# The station that makes a recipe, by name: the first structure whose own station serves it at the recipe's level (steel at brick forge level 3
+# names the Advanced smithy, not the Improved one; GOALS-REPAIR R4), else one that carries it as an "also" station at that level.
 func _station_label(r: Dictionary) -> String:
+	var level: int = int(r.get("station_level", 1))
+
 	for kind in _structure_kinds():
-		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")):
+		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")) and int(_structures_cfg[kind].get("station_level", 1)) >= level and not bool(_structures_cfg[kind].get("retired", false)):
 			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	for kind in _structure_kinds():
-		if _structures_cfg[kind].get("also", {}).has(str(r.get("station", ""))):
+		if int(_structures_cfg[kind].get("also", {}).get(str(r.get("station", "")), 0)) >= level and not bool(_structures_cfg[kind].get("retired", false)):
 			return table.sentence_name(table.number_of(str(_structures_cfg[kind].get("item", ""))))
 
 	return str(r.get("station", "")).replace("_", " ")
@@ -3646,7 +3801,7 @@ func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 
 
 # The variant codes the recipe card offers here (SmithingRules.variants; the server checks again): +1/+2 beside a Master smithy that serves the
-# recipe, Tempered with the temper add-on (the Quenching trough) beside a Smithy or Master smithy that serves it.
+# recipe, Tempered beside a temper.station that serves it (the Master smithy, its quenching trough built in).
 func craft_variants(r: Dictionary) -> Array:
 	var gives: Array = r.get("gives", [0, 0])
 	var made_id: String = table.id_of(int(gives[0])) if not gives.is_empty() else ""
@@ -3661,27 +3816,19 @@ func craft_variants(r: Dictionary) -> Array:
 	if not _near_memo.has(key):
 		var level: int = int(r.get("station_level", 1))
 		var c: Dictionary = SmithingRules.cfg()
-		# As the server: the nearest Master smithy and the nearest Smithy within reach (ServerItems.serving_station), each serving the recipe.
+		# As the server: the nearest craft.station and temper.station within reach (ServerItems.serving_station), each serving the recipe.
 		var master_id: int = _nearest_serving(str(c.get("craft", {}).get("station", "master_smithy")))
-		var smithy_id: int = _nearest_serving(str(c.get("temper", {}).get("station", "brick_forge")))
+		var temper_station: String = str(c.get("temper", {}).get("station", "master_smithy"))
+		var temper_id: int = _nearest_serving(temper_station, level if temper_station == station else 1)   # as the server: at the recipe's level
 		var master: bool = master_id >= 0 and _def_serves(_structure_by_state(int(_world[master_id]["state"])), station, level)
-		var trough: bool = false
-
-		if smithy_id >= 0 and _def_serves(_structure_by_state(int(_world[smithy_id]["state"])), station, level):
-			var addon_state: int = int(_structures_cfg.get(str(c.get("temper", {}).get("addon", "")), {}).get("state", -2))
-			var reach: float = float(_structure_by_state(int(_world[smithy_id]["state"])).get("addon_reach_m", 5.0))
-
-			for other in _world:
-				if int(_world[other]["state"]) == addon_state and _world[smithy_id]["pos"].distance_to(_world[other]["pos"]) <= reach:
-					trough = true
-
-		_near_memo[key] = SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)
+		var temper: bool = temper_id >= 0 and _def_serves(_structure_by_state(int(_world[temper_id]["state"])), station, level)
+		_near_memo[key] = SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, temper)
 
 	return _near_memo[key]
 
 
-# The world id of the nearest placed structure within its reach that serves `station` (its own or "also"), or -1.
-func _nearest_serving(station: String) -> int:
+# The world id of the nearest placed structure within its reach that serves `station` (its own or "also") at `level` or above, or -1.
+func _nearest_serving(station: String, level: int = 1) -> int:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 	var best: int = -1
 	var best_d: float = INF
@@ -3690,7 +3837,7 @@ func _nearest_serving(station: String) -> int:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 		var d: float = here.distance_to(_world[id]["pos"])
 
-		if not def.is_empty() and d <= float(def.get("reach_m", 3.0)) + 1.0 and d < best_d and _def_serves(def, station, 1):
+		if not def.is_empty() and d <= float(def.get("reach_m", 3.0)) + 1.0 and d < best_d and _def_serves(def, station, level):
 			best = int(id)
 			best_d = d
 
@@ -3902,7 +4049,7 @@ func _mesh_for(number: int) -> Mesh:
 		var mesh: Mesh
 
 		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood" or id.begins_with("log_"):
-			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}.get(id, [2.5, 0.28, 0.22, 0.02])   # a species log is the full-size 2.5 m length
+			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01]}.get(id, [3.0, 0.28, 0.22, 0.02])   # every log, the plain Log too, is the full-size 3.0 m length (drops.json log_length_m; Master 2.3.1 "3 m basic Log")
 			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, LogLookScript.color_of(id))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
@@ -3933,12 +4080,12 @@ func _mesh_for(number: int) -> Mesh:
 	return _meshes[number]
 
 
-# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 2.5 m for a species log, 1 m for the plain log.
+# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 3.0 m for every log, the plain Log too (drops.json log_length_m).
 func _log_mesh(id: String) -> ArrayMesh:
 	var plain: bool = id == "log"
-	var length: float = 1.0 if plain else 2.5
-	var r0: float = 0.13 if plain else 0.28
-	var r1: float = 0.11 if plain else 0.22
+	var length: float = 3.0
+	var r0: float = 0.28
+	var r1: float = 0.22
 	var cyl: CylinderMesh = CylinderMesh.new()
 	cyl.top_radius = r1
 	cyl.bottom_radius = r0

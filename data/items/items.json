@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1304,
+	"next_number": 1325,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -28,7 +28,7 @@
 		"plant_fibre": {
 			"number": 3,
 			"name": "Plant fibre",
-			"description": "Stringy strands from nettles and grass. Twist 3 into twine, or use one to light a fire.",
+			"description": "Stringy strands from nettles and grass. Twist 3 into twine.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -38,7 +38,7 @@
 		"log": {
 			"number": 4,
 			"name": "Log",
-			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
+			"description": "A heavy length of trunk. Chop it into blocks and firewood, or saw it into planks.",
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
@@ -73,7 +73,7 @@
 		"campfire_kit": {
 			"number": 8,
 			"name": "Campfire",
-			"description": "Stones and sticks for a fire. Set it down, then light it with fibre.",
+			"description": "Stones and sticks for a fire. Set it down, put wood on it, then press E to light it.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
@@ -282,7 +282,7 @@
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
-			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
+			"description": "Boards from a log. Make them at a saw mill or with a saw.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -322,7 +322,7 @@
 			"look_alikes": [],
 			"value": 30
 		},
-		"steel_ingot": {"number": 32, "name": "Steel ingot", "description": "A bar of steel from the blast furnace.", "kind": "material", "stack": 20, "look_alikes": [], "value": 60},
+		"steel_ingot": {"number": 32, "name": "Steel ingot", "description": "A bar of steel, smelted from iron ore and carbon in an Advanced smelter in the wind.", "kind": "material", "stack": 20, "look_alikes": [], "value": 60},
 		"iron_pickaxe": {
 			"number": 33,
 			"name": "Iron - Pickaxe",
@@ -1013,7 +1013,7 @@
 			"value": 120,
 			"look_alikes": []
 		},
-		"stone_forge": {"number": 88, "name": "Stone - Forge", "description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 8},
+		"stone_forge": {"number": 88, "name": "Primitive smithy", "description": "A clay and rough stone forge with a stone anvil under a log lean-to. Shapes copper and bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 8},
 		"blacksmithy_kit": {
 			"number": 89,
 			"retired": true,
@@ -1025,7 +1025,7 @@
 			"value": 600,
 			"look_alikes": []
 		},
-		"blacksmithy": {"number": 90, "name": "Smithy", "description": "A smithy with its own forge, anvil and bench. Fire it with charcoal or coal to work bronze, iron and steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 12},
+		"blacksmithy": {"number": 90, "name": "Improved smithy", "description": "A forge with a bronze anvil. Fire it with charcoal or coal to work copper, bronze and iron; iron wears it.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "slots": 12},
 		"carcass": {
 			"number": 91,
 			"name": "Carcass",
@@ -1046,7 +1046,7 @@
 			"value": 900,
 			"look_alikes": []
 		},
-		"large_forge": {"number": 93, "name": "Blast furnace", "description": "A tall furnace that holds great heat. Makes steel and smelts in bulk.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20.", "slots": 12},
+		"large_forge": {"number": 93, "name": "Advanced smelter", "description": "A furnace with its own windmill and two bellows. In wind it smelts two ingots at once, and steel with carbon.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 20.", "slots": 12},
 		"master_forge_kit": {
 			"number": 94,
 			"future": true,
@@ -1058,7 +1058,7 @@
 			"value": 3000,
 			"look_alikes": []
 		},
-		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy for special and masterwork pieces.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21.", "slots": 12},
+		"master_forge": {"number": 95, "name": "Master smithy", "description": "An ornate smithy with a steel anvil and its own quenching trough, for masterwork and Tempered steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 21.", "slots": 12},
 		"log_oak": {
 			"number": 100,
 			"name": "Oak log",
@@ -2193,7 +2193,7 @@
 		"roof_section_kit": {
 			"number": 196,
 			"retired": true,
-			"name": "Refined - Roof",
+			"name": "Refined - Roof 45",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2203,14 +2203,14 @@
 		},
 		"roof_section": {
 			"number": 197,
-			"name": "Refined - Roof",
-			"description": "A plank roof on four posts, to set over walls and ceilings.",
+			"name": "Refined - Roof 45",
+			"description": "A sloped roof panel of wooden shakes on sawn boards.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
-			"note": "Building piece: row state 24; sits on a 1 m grid, turns in quarter circles."
+			"note": "Placed piece: row state 24; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"foundation_section_kit": {
 			"number": 198,
@@ -2772,7 +2772,7 @@
 			"value": 1,
 			"sell_lot": 12
 		},
-		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round of a small hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
+		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round cut from a hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
 		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
 		"wooden_block_soft": {
 			"number": 237,
@@ -3407,7 +3407,7 @@
 		"copper_ore": {
 			"number": 301,
 			"name": "Copper ore",
-			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
+			"description": "A heavy lump streaked green and red. A smelter turns each one into a copper ingot.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -3416,7 +3416,7 @@
 		"tin_ore": {
 			"number": 302,
 			"name": "Tin ore",
-			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
+			"description": "A dark, very heavy lump. A smelter turns each one into a tin ingot; with copper ore, into bronze.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -3425,7 +3425,7 @@
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump. Smelts to iron in a smelter.",
+			"description": "A rusty brown lump. Smelts to iron in an Improved smelter with its bellows worked, or an Advanced smelter.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -4842,6 +4842,82 @@
 			"value": 30,
 			"edge": true
 		},
+		"copper_pickaxe": {
+			"number": 1305,
+			"name": "Copper - Pickaxe",
+			"description": "A copper head on a hardwood handle. Breaks rock and takes copper, tin and coal, but not iron ore.",
+			"kind": "tool",
+			"stack": 1,
+			"unstackable": true,
+			"material": "copper",
+			"tool_class": "pick",
+			"tier": 2,
+			"durability": 5750,
+			"repair": [
+				[
+					"copper_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 55,
+			"edge": true,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-13): Copper pickaxe and axe only (master s2: no Copper variant without a verified role); knife and hammer are a question for Dave. PROVISIONAL (GOALS-REPAIR A-14): stats midway between Stone and Bronze (durability, value; per-material rates in boulders.json and drops.json)."
+		},
+		"copper_axe": {
+			"number": 1306,
+			"name": "Copper - Axe",
+			"description": "A copper blade on a hardwood handle. Fells trees faster than stone; bronze is faster still.",
+			"kind": "tool",
+			"stack": 1,
+			"unstackable": true,
+			"material": "copper",
+			"tool_class": "axe",
+			"tier": 2,
+			"durability": 1700,
+			"repair": [
+				[
+					"copper_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 40,
+			"edge": true,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-13): Copper pickaxe and axe only (master s2: no Copper variant without a verified role); knife and hammer are a question for Dave. PROVISIONAL (GOALS-REPAIR A-14): stats midway between Stone and Bronze (durability, value; per-material rates in boulders.json and drops.json)."
+		},
+		"iron_anvil_part": {
+			"number": 1307,
+			"name": "Iron anvil",
+			"description": "A forged iron anvil on a banded log stump. Not set down on its own: it goes into building an Advanced smithy.",
+			"kind": "material",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"value": 90,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-16): a new id for the Iron anvil component (master s2.7 item 6, s3.3); #827 stays the retired placed Anvil so old saves load. Its recipe copies the obsolete blueprint 164 cost (5 Iron ingot, 1 Log)."
+		},
+		"steel_anvil_part": {
+			"number": 1309,
+			"name": "Steel anvil",
+			"description": "A forged steel anvil on a banded log stump. Not set down on its own: it goes into building a Master smithy.",
+			"kind": "material",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"value": 160,
+			"note_provisional": "PROVISIONAL (GOALS-REPAIR A-21): the Steel anvil component (master s2.7 item 6, s3.3), made at the Advanced smithy from 5 Steel ingot and 1 Log, the Iron anvil's recipe in steel."
+		},
 		"stairs_wood_kit": {
 			"number": 462,
 			"retired": true,
@@ -4905,7 +4981,7 @@
 		"log_roof_kit": {
 			"number": 468,
 			"retired": true,
-			"name": "Rustic - Roof",
+			"name": "Rustic - Roof 45",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"kind": "placeable",
 			"stack": 1,
@@ -4915,12 +4991,13 @@
 		},
 		"log_roof": {
 			"number": 469,
-			"name": "Rustic - Roof",
-			"description": "A log-framed thatch roof.",
+			"name": "Rustic - Roof 45",
+			"description": "A sloped roof panel of bark shingles on split logs.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"note": "Placed piece: row state 52; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"stone_wall_kit": {
 			"number": 470,
@@ -4965,7 +5042,7 @@
 		"stone_roof_kit": {
 			"number": 474,
 			"retired": true,
-			"name": "Sturdy - Roof",
+			"name": "Sturdy - Roof 45",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"kind": "placeable",
 			"stack": 1,
@@ -4975,12 +5052,13 @@
 		},
 		"stone_roof": {
 			"number": 475,
-			"name": "Sturdy - Roof",
-			"description": "A stone-shingle roof.",
+			"name": "Sturdy - Roof 45",
+			"description": "A sloped roof panel of stone shingles.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"note": "Placed piece: row state 55; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"brick_wall_kit": {
 			"number": 476,
@@ -5025,7 +5103,7 @@
 		"brick_roof_kit": {
 			"number": 480,
 			"retired": true,
-			"name": "Superior - Roof",
+			"name": "Superior - Roof 45",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"kind": "placeable",
 			"stack": 1,
@@ -5035,12 +5113,13 @@
 		},
 		"brick_roof": {
 			"number": 481,
-			"name": "Superior - Roof",
-			"description": "A tiled brick roof.",
+			"name": "Superior - Roof 45",
+			"description": "A sloped roof panel of fired clay tiles.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"note": "Placed piece: row state 58; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 		},
 		"log_cabin_set_kit": {
 			"number": 482,
@@ -9099,7 +9178,7 @@
 			"engineered_roof_kit": {
 				"number": 876,
 				"retired": true,
-				"name": "Engineered - Roof",
+				"name": "Engineered - Roof 45",
 				"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
 				"kind": "placeable",
 				"stack": 1,
@@ -9109,13 +9188,13 @@
 			},
 			"engineered_roof": {
 				"number": 877,
-				"name": "Engineered - Roof",
-				"description": "Clay roof tiles on pinned plank rafters. Does not burn.",
+				"name": "Engineered - Roof 45",
+				"description": "A sloped roof panel of clay tiles on pinned plank rafters. Does not burn.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 219."
+				"note": "Placed piece: row state 219; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
 			},
 			"engineered_roof_corner_kit": {
 				"number": 878,
@@ -9474,9 +9553,11 @@
 				"look_alikes": [],
 				"value": 12
 			},
-			"smelter": {"number": 908, "name": "Smelter", "description": "A stone and clay furnace. Smelts ore into copper, tin and iron ingots, and alloys bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b).", "slots": 8},
-			"bellows": {"number": 909, "name": "Bellows", "description": "Leather bellows for a smithy. It heats faster and burns less fuel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
-			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "A stone trough of water beside a smithy, for quenching hot steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
+			"smelter": {"number": 908, "name": "Primitive smelter", "description": "A stone and clay furnace. Fed Coal or Charcoal and ore, it smelts copper, tin and bronze by itself.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b; Primitive Smelter, GOALS-REPAIR R2).", "slots": 3},
+			"improved_smelter": {"number": 1304, "name": "Improved smelter", "description": "A smelter with bronze fittings and hand bellows. Work the bellows to smelt faster and to smelt iron.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 368 (Improved Smelter, GOALS-REPAIR R3).", "slots": 10},
+			"advanced_smithy": {"number": 1308, "name": "Advanced smithy", "description": "A smithy with an iron anvil. Fire it with charcoal or coal to work every metal up to steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 369 (Advanced Smithy, GOALS-REPAIR R4).", "slots": 12},
+			"bellows": {"number": 909, "name": "Bellows", "description": "Old leather bellows from a smithy. They no longer speed a forge; take them down for the leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
+			"quenching_trough": {"number": 910, "name": "Quenching trough", "description": "An old stone trough from a smithy. It no longer tempers steel; take it down for the stone.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 242 (add-on of the Smithy)."},
 			"leatherworking_table": {"number": 911, "name": "Leatherworking table", "description": "A bench with tools for cutting and stitching leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 243 (Mission 001 phase 2b).", "slots": 8},
 			"tailors_table": {"number": 912, "name": "Tailor's table", "description": "A broad table for cutting and sewing cloth into clothes.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 244 (Mission 001 phase 2b).", "slots": 8},
 			"thread": {
@@ -10042,7 +10123,9 @@
 			"apothecary_cabinet": {"number": 1229, "name": "Apothecary cabinet", "description": "A small cabinet for herbs, tonics and remedies.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 264 (Mission 001 phase 9, master s3.13).", "slots": 16},
 			"bottle_and_jar_rack": {"number": 1230, "name": "Bottle and jar rack", "description": "A rack that shows off stored bottles, jars and preserves.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 265 (Mission 001 phase 9, master s3.13).", "slots": 12},
 			"tool_cabinet": {"number": 1231, "name": "Tool cabinet", "description": "A cabinet for tools and repair gear.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 266 (Mission 001 phase 9, master s3.13).", "slots": 16},
-			"open_storage_bin": {"number": 1232, "name": "Open storage bin", "description": "A bin for loose stone, clay, ore and charcoal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 267 (Mission 001 phase 9, master s3.13).", "slots": 8},
+			"open_storage_bin": {"number": 1232, "name": "Small resource bin", "description": "An open plank bin for one kind of loose stone, clay, ore or charcoal, up to 1000.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 267 (GOALS-REPAIR R6, master s2.5); holds 1000 of one kind (A-32, PROVISIONAL).", "slots": 8},
+			"medium_resource_bin": {"number": 1310, "name": "Medium resource bin", "description": "A bigger plank bin for one kind of loose stone, clay, ore or charcoal, up to 5000.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 370 (GOALS-REPAIR R6, master s2.5); holds 5000 of one kind (A-32, PROVISIONAL).", "slots": 8},
+			"large_resource_bin": {"number": 1311, "name": "Large resource bin", "description": "A great plank bin for one kind of loose stone, clay, ore or charcoal, up to 10000.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 371 (GOALS-REPAIR R6, master s2.5); holds 10000 of one kind (A-32, PROVISIONAL).", "slots": 8},
 			"firewood_rack": {"number": 1233, "name": "Firewood rack", "description": "A rack that stacks firewood to dry, under cover.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 268 (Mission 001 phase 9, master s3.13).", "slots": 10},
 			"log_rack": {"number": 1234, "name": "Log rack", "description": "A heavy rack for whole logs.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 269 (Mission 001 phase 9, master s3.13).", "slots": 6},
 			"board_rack": {"number": 1235, "name": "Board rack", "description": "A rack for planks, hardwood boards and beams, kept apart.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 270 (Mission 001 phase 9, master s3.13).", "slots": 10},
@@ -10581,6 +10664,56 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row states 366 (shut) and 367 (open) (BUGLIST-002): a door that fits any double arched doorway, built with the hammer (blueprint 299). Take-down refunds its cost."
+			},
+			"log_roof_65": {
+				"number": 1320,
+				"name": "Rustic - Roof 65",
+				"description": "A steep roof panel of bark shingles on split logs.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 380 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Rustic - Roof 45 (log_roof), built with the hammer (blueprint 310)."
+			},
+			"roof_section_65": {
+				"number": 1321,
+				"name": "Refined - Roof 65",
+				"description": "A steep roof panel of wooden shakes on sawn boards.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 381 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Refined - Roof 45 (roof_section), built with the hammer (blueprint 311)."
+			},
+			"stone_roof_65": {
+				"number": 1322,
+				"name": "Sturdy - Roof 65",
+				"description": "A steep roof panel of stone shingles.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 382 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Sturdy - Roof 45 (stone_roof), built with the hammer (blueprint 312)."
+			},
+			"brick_roof_65": {
+				"number": 1323,
+				"name": "Superior - Roof 65",
+				"description": "A steep roof panel of fired clay tiles.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 383 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Superior - Roof 45 (brick_roof), built with the hammer (blueprint 313)."
+			},
+			"engineered_roof_65": {
+				"number": 1324,
+				"name": "Engineered - Roof 65",
+				"description": "A steep roof panel of clay tiles on pinned plank rafters. Does not burn.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 384 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Engineered - Roof 45 (engineered_roof), built with the hammer (blueprint 314)."
 			}
 	}
 }

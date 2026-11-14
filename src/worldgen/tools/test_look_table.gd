@@ -26,9 +26,10 @@ const B1B_B6 := {"log_stairs": 350,
 	"thatch_roof_corner": 400, "log_roof_corner": 400, "log_palisade": 900, "log_palisade_gate": 900, "log_palisade_gate_open": 900,
 	"wooden_barrel": 500, "stone_well": 550, "iron_deep_well_pump": 500, "stone_torch_pillar": 450, "wooden_lamp_post": 450, "iron_lamp_post": 450,
 	"stone_lamp_post": 450, "thatch_garden_plot": 600}
-# The pitched tier roofs (Kathleen, 10 Nov 2026): the clay tile roofs add a rib down the slope every 0.24 m and a round ridge tile to the courses, 350;
+# The pitched tier roof corners (Kathleen, 10 Nov 2026): the clay tile roofs add a rib down the slope every 0.24 m and a round ridge tile to the courses;
+# the straight roofs are panels since GOALS-REPAIR A-35/A-36 (tier_panel, 132 to 216 triangles, under the default cap);
 # their hip corners carry the ribs over three faces and two hip caps, 400 (the thatch and log corners').
-const TILE_ROOFS := {"brick_roof": 350, "engineered_roof": 350, "brick_roof_corner": 400, "engineered_roof_corner": 400}
+const TILE_ROOFS := {"brick_roof_corner": 400, "engineered_roof_corner": 400}
 # The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with bolted bands, 450.
 const FORTIFIED := {"fortified_doorway": 450}
 # BUGLIST-002 (13 Nov 2026): the new empty doorway frames. The double is the single's wall twice as wide, so the single's cap; an arched frame adds the wall steps and

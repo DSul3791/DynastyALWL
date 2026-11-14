@@ -16,6 +16,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 var failures: int = 0
 var observed: Array = []      # every (x, z) the server looked at
 var practised: Array = []     # peers practised
+var goaled: Array = []        # [peer, goal event name] the map raised
 var skill: Dictionary = {}    # peer -> Mapping level the fake skill system reports
 var keys: Dictionary = {}     # peer -> key
 var cave: bool = false
@@ -56,6 +57,7 @@ func make(dir: String):
 	m.key_of = func(peer): return keys.get(peer, "")
 	m.skill_of = func(peer): return skill.get(peer, 1.0)
 	m.practice = func(peer): practised.append(peer); return 1.0
+	m.goal_event = func(peer, name): goaled.append([peer, name])
 	m.observe = ground
 	m.trees_near = trees
 	m.in_cave = func(_p): return cave
@@ -162,6 +164,8 @@ func _init() -> void:
 
 	check(outside == 0, "the server never even looks at ground away from the path (%d looks outside)" % outside)
 	check(sent_cells(m, 1).is_empty(), "nothing new is sent while nothing changed")
+	var new_ground: int = goaled.count([1, "map_surveyed"])
+	check(new_ground >= 1 and new_ground <= m.surveys and goaled.count([1, "map_redrawn"]) == 0 and goaled.size() == new_ground, "a survey of new ground raises one map_surveyed goal event at most, and nothing is redrawn (%d for %d surveys)" % [new_ground, m.surveys])
 
 	# 3. Player-specific: the other character knows nothing of it.
 	check(sent_cells(m, 2).is_empty() and m.blocks_of("map-key-0002").is_empty(), "another character's map stays blank")
@@ -202,6 +206,7 @@ func _init() -> void:
 		break
 
 	var practices: int = practised.size()
+	var goal_events: int = goaled.size()
 	m._last_at.erase(1)   # start the walk afresh, so the revisit surveys from the same points as the first walk
 
 	for p in path:
@@ -220,6 +225,8 @@ func _init() -> void:
 
 	check(at60 > 20 and at1 == 0, "revisiting at Mapping 60 redraws the old cells at 60 (%d at 60, %d left)" % [at60, at1])
 	check(practised.size() == practices, "a redraw practises nothing")
+	var raised: Array = goaled.slice(goal_events)
+	check(raised.count([1, "map_redrawn"]) >= 1 and raised.count([1, "map_surveyed"]) == 0, "a revisit at a higher skill raises map_redrawn, not map_surveyed (%s)" % str(raised))
 	var rough: Array = m.cell_rows({0: [1, 17.0, 0, 3]})[0]
 	var sharp: Array = m.cell_rows({0: [100, 17.0, 0, 3]})[0]
 	check(absf(float(sharp[1]) - 17.0) < 0.01 and absf(float(rough[1]) - 17.0) > 2.0 and int(rough[3]) == 1 and int(sharp[3]) == 3, "Mapping 1 is sent coarse (%s), Mapping 100 exact (%s)" % [str(rough), str(sharp)])
@@ -389,6 +396,26 @@ func _init() -> void:
 	items.peer_connected_hello(1, "map-key-0009")
 	check(absf(items.working_level(1, "mapping") - 1.0) < 0.001, "a new character's Mapping is 1")
 	check(items.practice(1, "survey") > 0.0 and items._characters["map-key-0009"]["skills"].has("mapping"), "the survey action practises Mapping")
+	# The goal events reach the real goal counters (event:map_surveyed), and Admin mode counts nothing (GA-54).
+	var gm = make("")
+	keys[1] = "map-key-0009"
+	gm.goal_event = func(peer, name): items._goal_event(peer, name)
+
+	for k in 6:
+		gm.note_position(1, Vector3(-900.0 + float(k) * 9.0, 10.0, -900.0))
+
+	var counts: Dictionary = items._goal_state_of(1).get("goal_counts", {})
+	var surveyed: int = int(counts.get("event:map_surveyed", 0))
+	check(surveyed == gm.surveys and surveyed > 0, "a survey of new ground counts once in the character's goal counters (%d for %d surveys)" % [surveyed, gm.surveys])
+	items.admin_ok = func(_p): return true
+	items.admin_mode_on = func(_p): return true
+
+	for k in range(6, 12):
+		gm.note_position(1, Vector3(-900.0 + float(k) * 9.0, 10.0, -900.0))
+
+	check(int(items._goal_state_of(1)["goal_counts"].get("event:map_surveyed", 0)) == surveyed, "in Admin mode mapping counts toward no goal")
+	items.admin_ok = Callable()
+	items.admin_mode_on = Callable()
 	var forgot: Array = []
 	items.forgot_key = func(key): forgot.append(key)
 	items.peer_connected_hello(2, "map-key-0010")

@@ -117,9 +117,48 @@ func _init() -> void:
 	craft("twine", 2)
 	check(done("twine") and not done("fibre") and count("stick") >= sticks_before + 4, "two crafts of twine complete the twine goal before the fibre goal and give 4 sticks (reward)")
 	check(said.any(func(t): return t.begins_with("Goal done: ") and t.contains(" Next: Gather plant fibre.")), "and the line names the first unfinished goal in the authored order")
-	items.give(1, items.table.number_of("plant_fibre"), 12)   # as a harvest gives them
+	var got: Callable = func(id: String) -> int: return int(items._goal_state_of(1)["goal_counts"].get("got:" + id, 0))
+	check(got.call("plant_fibre") == 0 and got.call("stick") == 0, "admin gives and a goal's item reward are not gathered (got: %d fibre, %d sticks)" % [got.call("plant_fibre"), got.call("stick")])
+	items._gain_source = "trade"
+	items.give(1, items.table.number_of("plant_fibre"), 5)   # as server_trade.gd gives a purchase
+	items._gain_source = items.SRC_RETURN
+	items.give(1, items.table.number_of("plant_fibre"), 5)   # as a refund or a taken-down site gives back
+	items._gain_source = items.SRC_PICKUP
 	items._goals_tick()
-	check(done("fibre"), "12 gathered plant fibre on top of the admin-given ones complete the fibre goal")
+	check(got.call("plant_fibre") == 0 and not done("fibre"), "bought and handed-back fibre are not gathered either, though held (%d held)" % count("plant_fibre"))
+	items.give(1, items.table.number_of("plant_fibre"), 11)   # as a harvest gives them
+	check(got.call("plant_fibre") == 11 and not done("fibre"), "11 gathered first-hand: not yet")
+	items.give(1, items.table.number_of("plant_fibre"), 1)
+	items._goals_tick()
+	check(got.call("plant_fibre") == 12 and done("fibre"), "the 12th gathered plant fibre completes the fibre goal: history, not what is held (got_item)")
+	# On the ground: natural scatter is found and counts; a stick someone dropped does not (it could be the player's own, picked up again).
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var stick_n: int = items.table.number_of("stick")
+
+	for k in items._items.keys():   # no other sticks or scatter near the two test sticks (a batch pickup sweeps nearby heaps of the same item)
+		if (items._items[k].has("scatter") or int(items._items[k].get("number", 0)) == stick_n) and (items._items[k]["pos"] as Vector3).distance_to(Vector3(0.0, 10.0, 0.0)) < 8.0:
+			items._items.erase(k)
+
+	var dropped_id: int = items._next_id
+	items._items[dropped_id] = {"number": stick_n, "count": 1, "pos": Vector3(-1.5, 10.0, 0.0), "left": 1.0e9}
+	items._next_id += 1
+	var scatter_id: int = items._next_id
+	items._items[scatter_id] = {"number": stick_n, "count": 1, "pos": Vector3(1.5, 10.0, 0.0), "left": 1.0e9, "scatter": 987654321}
+	items._next_id += 1
+	var sticks_got: int = got.call("stick")
+	var sticks_held: int = count("stick")
+	items.action(1, Net.ACT_PICKUP, dropped_id, 0, 0, Vector3.ZERO)
+	check(count("stick") == sticks_held + 1 and got.call("stick") == sticks_got, "a dropped stick picked up is held but not counted as gathered")
+	items.action(1, Net.ACT_PICKUP, scatter_id, 0, 0, Vector3.ZERO)
+	check(count("stick") == sticks_held + 2 and got.call("stick") == sticks_got + 1, "a natural scatter stick picked up is counted as gathered (%d)" % (got.call("stick") - sticks_got))
+	var live: Dictionary = {}
+
+	for goal in items._goals_data():
+		live[str(goal["id"])] = goal["check"]
+
+	check(str(live["fish"].get("event", "")) == "fish_caught" and int(live["fish"].get("count", 0)) == 1 and not live["fish"].has("have_item_any") and not live["fish"].has("or_event")
+		and str(live["workbench"].get("what", "")) == "workbench" and not live["workbench"].has("what_any"), "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
+	check(str(live["hammer"].get("made_item", "")) == "wooden_hammer" and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer and hoe goals count a made Wooden - Hammer and Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 6, Vector3.ZERO)
@@ -138,6 +177,30 @@ func _init() -> void:
 		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	check(standing.is_empty() and done("fell") and count("kindling") >= 3, "felling a tree completes the fell goal and gives kindling")
+	# The logs a felled tree breaks into by itself are its feller's gathering, once; the record clients get does not name the feller.
+	var trunk_id: int = -1
+
+	for k in items._items:
+		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3:
+			trunk_id = int(k)
+
+	check(trunk_id >= 0 and str(items._fellers.get(trunk_id, "")) == "goals0000001" and not JSON.stringify(items._items[trunk_id]["tree"]).contains("goals0000001"), "the felled trunk remembers its feller on the server only")
+	var log_n: int = items._log_number(str(items._items[trunk_id]["tree"].get("species", ""))) if trunk_id >= 0 else 0
+	var ground_logs: Callable = func() -> int:
+		var total: int = 0
+
+		for k in items._items:
+			if int(items._items[k].get("number", 0)) == log_n and not items._items[k].has("tree"):
+				total += int(items._items[k]["count"])
+
+		return total
+
+	var logs_before: int = ground_logs.call()
+	var logs_got: int = got.call(items.table.id_of(log_n))
+	var split: bool = items.split_trunk(trunk_id)
+	var laid: int = ground_logs.call() - logs_before
+	check(split and laid > 0 and got.call(items.table.id_of(log_n)) == logs_got + laid, "the trunk splits into %d logs and the feller has gathered them (%d)" % [laid, got.call(items.table.id_of(log_n)) - logs_got])
+	check(not items.split_trunk(trunk_id) and got.call(items.table.id_of(log_n)) == logs_got + laid and not items._fellers.has(trunk_id), "it splits once and is credited once")
 
 	# Fire: kit, place, light.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
@@ -309,6 +372,9 @@ func _init() -> void:
 	camp._next_id += 1
 	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "once a pot stands at the fire the plant food hint stops")
 	# Hint triggers that used to match nothing (3 Nov 2026): the sea water ones (the fell hint is Sal's #245).
+	check(not camp._hint_trigger_true(1, camp._goal_state_of(1), "wall_placed"), "no wall built: no roof panel hint")
+	camp._goal_event(1, "placed", "thatch_wall")
+	check(camp._hint_trigger_true(1, camp._goal_state_of(1), "wall_placed"), "a Crude - Wall standing brings the roof panel hint (GA-18)")
 	check(not camp._hint_trigger_true(1, pot_state, "has_sea_water"), "no sea water in the pack: no hint")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("sea_water"), 0, 1, Vector3.ZERO)
 	check(camp._hint_trigger_true(1, pot_state, "has_sea_water"), "sea water in the pack triggers its hint")
@@ -330,6 +396,15 @@ func _init() -> void:
 	check(not camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "an admin-given stone axe does not complete the axe goal")
 	camp.give(1, camp.table.number_of("stone_axe"), 1)   # as Hob's sale gives it
 	check(camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "a bought stone axe in the pack completes the axe goal (was %s before)" % str(bought_before))
+	# made_item_any (chop_log_blocks, GAP-GUIDE-ANY): crafts of any of the four wooden blocks add up; blocks only held, admin-given, count nothing.
+	var blocks_check := {"made_item_any": ["wooden_block", "wooden_block_soft", "wooden_block_large", "wooden_block_soft_large"], "count": 2}
+	check(not camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "no block made: the blocks goal is open")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("wooden_block"), 0, 3, Vector3.ZERO)
+	check(not camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "three admin-given blocks in the pack do not complete it")
+	camp._goal_made(1, camp.table.number_of("wooden_block"))
+	check(not camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "one block made: still open (count 2)")
+	camp._goal_made(1, camp.table.number_of("wooden_block_soft_large"))
+	check(camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "two different blocks made: met")
 	camp.trees_near = func(_p, _r): return [[Vector2i.ZERO, 1]]
 	check(camp._tool_slot(camp.inventory_of(1), "axe") < 0 or camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "an axe on the hotbar beside a tree fires the fell hint")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
