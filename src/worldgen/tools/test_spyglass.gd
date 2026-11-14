@@ -24,7 +24,7 @@ func check(ok: bool, what: String) -> void:
 
 func _init() -> void:
 	var glass = Spyglass.new()
-	check(not glass.active and glass.toggle() and glass.active and is_equal_approx(glass.zoom, Spyglass.START_ZOOM), "Ctrl+L raises it at 4x")
+	check(not glass.active and glass.toggle() and glass.active and is_equal_approx(glass.zoom, Spyglass.START_ZOOM), "Ctrl+Shift+L raises it at 4x")
 	check(absf(glass.fov(75.0) - 21.7) < 0.2, "4x narrows 75 degrees to about 22 (%.1f)" % glass.fov(75.0))
 	check(is_equal_approx(glass.mouse_scale(), 0.25), "the mouse slows by the zoom")
 
@@ -45,7 +45,7 @@ func _init() -> void:
 	check(glass.pick(Vector3(0.0, 0.6, 0.0), Vector3(0.05, 0.0, -1.0), [[7, Vector3(5.0, 0.0, -100.0)]]) == 7, "turn a little and the other one is")
 	check(glass.pick(Vector3(0.0, 0.6, 0.0), Vector3(0.0, 0.0, -1.0), [[7, Vector3(5.0, 0.0, -100.0)]]) == 0, "nothing near the centre: none")
 	check(glass.pick(Vector3(0.0, 0.6, 0.0), Vector3(0.0, 0.0, 1.0), bodies) == 0, "farther than any sent animal: none")
-	check(not glass.toggle() and glass.watched == 0 and glass.info.is_empty(), "Ctrl+L again lowers it and forgets the watched one")
+	check(not glass.toggle() and glass.watched == 0 and glass.info.is_empty(), "Ctrl+Shift+L again lowers it and forgets the watched one")
 
 	var text: String = Spyglass.readout({"name": "Red deer", "level": 4, "hp": 17.6, "hp_max": 24.0, "state": 21, "temper": "defensive", "group": 3}, 182.4)
 	check(text == "Red deer\nLevel 4\nHealth 18 / 24\ndrinking\nTemperament: defensive\nHerd 3\n182 m", "the readout lines (%s)" % text.c_escape())

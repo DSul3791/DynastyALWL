@@ -6,12 +6,16 @@ extends RefCounted
 # never a KEY_ constant. Mouse buttons, Esc and the hotbar number keys are fixed and shown in the list as such.
 #
 # A binding is a key plus optional Ctrl / Shift. The held (polled) actions take a plain key only.
+# Every action in the "Admin and debug" group always needs BOTH Ctrl and Shift (Creator, 13 Nov 2026, docs/design/ADMIN_KEYBINDINGS_POLICY.md): the
+# group rule is applied in one place (_forced), so defaults, the saved file, rebinding, reset and swap all keep it. The modifiers are no authorization;
+# the server still checks who is an admin.
 # Two actions in the same context (world or inventory screen) must not share a binding; the Controls page warns and offers a swap.
 
 const PATH := "user://key_bindings.json"
 
 const CONTEXT_WORLD := "world"
 const CONTEXT_PACK := "inventory screen"
+const ADMIN_GROUP := "Admin and debug"
 
 # id, label, group, context, default key, ctrl, shift, polled (held keys and inventory-screen keys take a plain key only: Shift changes what some of them do)
 const ACTIONS := [
@@ -50,20 +54,20 @@ const ACTIONS := [
 	["store_all", "Container open: store all it takes", "Inventory screen", CONTEXT_PACK, KEY_G, false, false, true],
 	["sort_both", "Container open: sort the pack and the container", "Inventory screen", CONTEXT_PACK, KEY_F, false, false, true],
 	["stack_nearby", "Container open: stack into my chests nearby", "Inventory screen", CONTEXT_PACK, KEY_Q, false, false, true],
-	["fly", "Admin: walk or fly", "Admin and debug", CONTEXT_WORLD, KEY_G, false, false, false],
-	["quality", "Quality: Low, Medium, High, Ultra", "Admin and debug", CONTEXT_WORLD, KEY_F2, false, false, false],
-	["debug_details", "Debug details on / off", "Admin and debug", CONTEXT_WORLD, KEY_F3, false, false, false],
-	["sound_panel", "Sound panel", "Admin and debug", CONTEXT_WORLD, KEY_F3, false, true, false],
-	["hud_text", "All screen text on / off", "Admin and debug", CONTEXT_WORLD, KEY_F4, false, false, false],
-	["spring_up", "Spring flow up (tuning)", "Admin and debug", CONTEXT_WORLD, KEY_EQUAL, false, false, false],
-	["spring_down", "Spring flow down (tuning)", "Admin and debug", CONTEXT_WORLD, KEY_MINUS, false, false, false],
-	["starter_items", "Admin: starter items", "Admin and debug", CONTEXT_WORLD, KEY_BRACKETRIGHT, false, false, false],
-	["admin_npc", "Admin: stand by the nearest NPC", "Admin and debug", CONTEXT_WORLD, KEY_N, true, false, false],
-	["admin_rabbit", "Admin: put a rabbit where you aim", "Admin and debug", CONTEXT_WORLD, KEY_R, true, false, false],
-	["admin_dig", "Admin: dig a hole where you aim", "Admin and debug", CONTEXT_WORLD, KEY_X, true, false, false],
-	["admin_spyglass", "Admin: spyglass (toggle; wheel zooms)", "Admin and debug", CONTEXT_WORLD, KEY_L, true, false, false],
-	["jitter_test", "Float jitter test", "Admin and debug", CONTEXT_WORLD, KEY_J, false, false, false],
-	["gpu_probe", "GPU probe", "Admin and debug", CONTEXT_WORLD, KEY_G, true, true, false],
+	["fly", "Admin: walk or fly", "Admin and debug", CONTEXT_WORLD, KEY_G, true, true, false],
+	["quality", "Quality: Low, Medium, High, Ultra", "Admin and debug", CONTEXT_WORLD, KEY_F2, true, true, false],
+	["debug_details", "Debug details on / off", "Admin and debug", CONTEXT_WORLD, KEY_F3, true, true, false],
+	["sound_panel", "Sound panel", "Admin and debug", CONTEXT_WORLD, KEY_F5, true, true, false],
+	["hud_text", "All screen text on / off", "Admin and debug", CONTEXT_WORLD, KEY_F4, true, true, false],
+	["spring_up", "Spring flow up (tuning)", "Admin and debug", CONTEXT_WORLD, KEY_EQUAL, true, true, false],
+	["spring_down", "Spring flow down (tuning)", "Admin and debug", CONTEXT_WORLD, KEY_MINUS, true, true, false],
+	["starter_items", "Admin: starter items", "Admin and debug", CONTEXT_WORLD, KEY_BRACKETRIGHT, true, true, false],
+	["admin_npc", "Admin: stand by the nearest NPC", "Admin and debug", CONTEXT_WORLD, KEY_N, true, true, false],
+	["admin_rabbit", "Admin: put a rabbit where you aim", "Admin and debug", CONTEXT_WORLD, KEY_R, true, true, false],
+	["admin_dig", "Admin: dig a hole where you aim", "Admin and debug", CONTEXT_WORLD, KEY_X, true, true, false],
+	["admin_spyglass", "Admin: spyglass (toggle; wheel zooms)", "Admin and debug", CONTEXT_WORLD, KEY_L, true, true, false],
+	["jitter_test", "Float jitter test", "Admin and debug", CONTEXT_WORLD, KEY_J, true, true, false],
+	["gpu_probe", "GPU probe", "Admin and debug", CONTEXT_WORLD, KEY_P, true, true, false],
 	# Dave 5 Nov 2026 (every river and lake vanished while flying): fly down (Ctrl) + fly faster (Shift) + forward (W) is Ctrl+Shift+W, which hid all the
 	# water. The two water debug keys moved off the movement keys to F7 and F8.
 	["water_hide", "Hide or show every river and lake", "Admin and debug", CONTEXT_WORLD, KEY_F7, true, true, false],
@@ -83,6 +87,7 @@ const MODIFIER_KEYS := [KEY_CTRL, KEY_SHIFT, KEY_ALT, KEY_META]
 
 static var _changed: Dictionary = {}        # id -> {"key": int, "ctrl": bool, "shift": bool}
 static var _loaded: bool = false
+static var _chord_lock: bool = false        # an admin chord fired: Ctrl (down) and Shift (run) are ignored by held() until both are let go
 static var path: String = PATH              # tests point this at their own file with use_path() (use_path keeps the file, loaded choices and statics together)
 
 
@@ -138,9 +143,67 @@ static func ensure_loaded() -> void:
 		var row: Array = _row(str(id))
 
 		var key: int = int(entry.get("key", KEY_NONE))
-		var ctrl: bool = bool(entry.get("ctrl", false)) and not bool(row[7])
-		var shift: bool = bool(entry.get("shift", false)) and not bool(row[7])
-		_changed[str(id)] = {"key": key, "ctrl": ctrl, "shift": shift}
+		if row[2] == ADMIN_GROUP and key != KEY_NONE and _plain_refusal(str(id), key) != "":
+			continue   # Esc, a hotbar digit or a lone modifier cannot be an admin key: the default
+
+		var mods: Array = _forced(row, bool(entry.get("ctrl", false)), bool(entry.get("shift", false)))   # an old bare-G fly keeps G and gains Ctrl+Shift
+		var bind: Dictionary = {"key": key, "ctrl": mods[0], "shift": mods[1]}
+
+		if bind != default_binding(str(id)):
+			_changed[str(id)] = bind
+
+	_resolve_admin_clashes()
+
+
+# The group rule: held actions take no modifiers, Admin and debug actions always both, the rest as asked. Returns [ctrl, shift].
+static func _forced(row: Array, ctrl: bool, shift: bool) -> Array:
+	if bool(row[7]):
+		return [false, false]
+
+	return [true, true] if row[2] == ADMIN_GROUP else [ctrl, shift]
+
+
+# The binding this action really gets for the key and modifiers the player pressed.
+static func forced_binding(id: String, key: int, ctrl: bool, shift: bool) -> Dictionary:
+	var mods: Array = _forced(_row(id), ctrl, shift)
+	return {"key": key, "ctrl": mods[0], "shift": mods[1]}
+
+
+static func is_admin(id: String) -> bool:
+	var row: Array = _row(id)
+	return not row.is_empty() and row[2] == ADMIN_GROUP
+
+
+# After loading a file (an old one, or one edited by hand): a saved change that clashes with another action, where either is an admin/debug
+# one, goes back to its default (in ACTIONS order, until nothing clashes; each pass drops at least one change, so it ends). The default
+# chords are clash-free, so this always ends with every admin chord unique.
+static func _resolve_admin_clashes() -> void:
+	var again: bool = true
+
+	while again:
+		again = false
+
+		for row in ACTIONS:
+			var id: String = row[0]
+
+			if not _changed.has(id):
+				continue
+
+			var bind: Dictionary = _changed[id]
+			var key: int = int(bind["key"])
+
+			if key == KEY_NONE:
+				continue
+
+			var other: String = conflict(id, key, bind["ctrl"], bind["shift"])
+
+			if other == "":
+				other = _held_admin_clash(id, key)
+
+			if other != "" and (row[2] == ADMIN_GROUP or is_admin(other)):
+				_changed.erase(id)
+				again = true
+				break
 
 
 static func save() -> void:
@@ -198,15 +261,41 @@ static func matches(event: InputEventKey, id: String) -> bool:
 	var row: Array = _row(id)
 
 	if not row.is_empty() and bool(row[7]):
-		return true   # held-type actions ignore modifiers (Shift+W is run, not another key)
+		return not (event.ctrl_pressed and event.shift_pressed and _admin_key(event.keycode))   # held-type actions ignore modifiers (Shift+W is run), but never fire on an admin chord (Ctrl+Shift+G is not Store all)
 
-	return event.ctrl_pressed == bool(bind["ctrl"]) and event.shift_pressed == bool(bind["shift"])
+	if row[2] == ADMIN_GROUP and (event.alt_pressed or event.meta_pressed):
+		return false   # AltGr (Ctrl+Alt on Windows) types characters on some layouts: never an admin chord
+
+	var hit: bool = event.ctrl_pressed == bool(bind["ctrl"]) and event.shift_pressed == bool(bind["shift"])
+
+	if hit and row[2] == ADMIN_GROUP:
+		_chord_lock = true
+
+	return hit
+
+
+static func _admin_key(key: int) -> bool:
+	for row in ACTIONS:
+		if row[2] == ADMIN_GROUP and int(binding(row[0])["key"]) == key:
+			return true
+
+	return false
 
 
 # A held key (movement, interact hold, photo camera raise and lower).
 static func held(id: String) -> bool:
-	var bind: Dictionary = binding(id)
-	return int(bind["key"]) != KEY_NONE and Input.is_key_pressed(int(bind["key"]))
+	var key: int = int(binding(id)["key"])
+
+	if key == KEY_NONE:
+		return false
+
+	if _chord_lock and (key == KEY_CTRL or key == KEY_SHIFT):   # Ctrl is "down" and Shift is "run": an admin chord must not also dive, fly down or run
+		_chord_lock = Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_SHIFT)
+
+		if _chord_lock:
+			return false
+
+	return Input.is_key_pressed(key)
 
 
 static func released(event: InputEventKey, id: String) -> bool:
@@ -219,6 +308,10 @@ static func conflict(id: String, key: int, ctrl: bool, shift: bool) -> String:
 
 	if mine.is_empty():
 		return ""
+
+	var forced: Array = _forced(mine, ctrl, shift)
+	ctrl = forced[0]
+	shift = forced[1]
 
 	for row in ACTIONS:
 		if row[0] == id or row[3] != mine[3]:
@@ -247,6 +340,21 @@ static func label_of_action(id: String) -> String:
 
 # Why a key cannot be bound to this action, or "" when it can.
 static func refusal(id: String, key: int) -> String:
+	var why: String = _plain_refusal(id, key)
+
+	if why != "":
+		return why
+
+	var other: String = _held_admin_clash(id, key)
+
+	if other != "":
+		return "%s is also used for \"%s\", a key that works with any Ctrl or Shift held. Pick another key." % [OS.get_keycode_string(key), label_of_action(other)]
+
+	return ""
+
+
+# The refusals that depend on the key alone (the held-key clash needs the other bindings, which are not all loaded yet when a file is read).
+static func _plain_refusal(id: String, key: int) -> String:
 	if key == KEY_ESCAPE or (key >= KEY_0 and key <= KEY_9):   # the menu and the hotbar
 		return "%s is kept for the menu and the hotbar." % OS.get_keycode_string(key)
 
@@ -256,7 +364,25 @@ static func refusal(id: String, key: int) -> String:
 	return ""
 
 
-# Sets a binding. Returns "" when done, else the refusal text. Held actions ignore Ctrl and Shift.
+# The world action that would fire together with this one when `key` is bound to it: a held (polled) action ignores Ctrl and Shift, so it
+# also fires on an admin chord that uses its key (Ctrl+Shift+W would walk, and a held action cannot be moved onto an admin key either).
+static func _held_admin_clash(id: String, key: int) -> String:
+	var mine: Array = _row(id)
+
+	if mine.is_empty() or mine[3] != CONTEXT_WORLD or not (bool(mine[7]) or mine[2] == ADMIN_GROUP):
+		return ""
+
+	for row in ACTIONS:
+		if row[0] == id or row[3] != CONTEXT_WORLD or int(binding(row[0])["key"]) != key:
+			continue
+
+		if (bool(mine[7]) and row[2] == ADMIN_GROUP) or (mine[2] == ADMIN_GROUP and bool(row[7])):
+			return str(row[0])
+
+	return ""
+
+
+# Sets a binding. Returns "" when done, else the refusal text. Held actions ignore Ctrl and Shift; admin/debug actions always get both.
 static func set_binding(id: String, key: int, ctrl: bool, shift: bool) -> String:
 	ensure_loaded()
 	var row: Array = _row(id)
@@ -269,11 +395,7 @@ static func set_binding(id: String, key: int, ctrl: bool, shift: bool) -> String
 	if why != "":
 		return why
 
-	if bool(row[7]):
-		ctrl = false
-		shift = false
-
-	var bind: Dictionary = {"key": key, "ctrl": ctrl, "shift": shift}
+	var bind: Dictionary = forced_binding(id, key, ctrl, shift)
 
 	if bind == default_binding(id):
 		_changed.erase(id)
@@ -288,8 +410,9 @@ static func set_binding(id: String, key: int, ctrl: bool, shift: bool) -> String
 static func swap(id: String, other: String, key: int, ctrl: bool, shift: bool) -> void:
 	var old: Dictionary = binding(id)
 	set_binding(id, key, ctrl, shift)
-	var held_kind: bool = bool(_row(other)[7])
-	set_binding(other, int(old["key"]), bool(old["ctrl"]) and not held_kind, bool(old["shift"]) and not held_kind)
+
+	if set_binding(other, int(old["key"]), bool(old["ctrl"]), bool(old["shift"])) != "":
+		clear(other)   # the old key cannot go to the other action (an admin key beside a held one): it is left without a key, not clashing
 
 
 static func clear(id: String) -> void:

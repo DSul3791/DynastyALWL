@@ -171,6 +171,31 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "flax" and count("flax_seeds") == flax_seeds - 1, "in spring flax is sown by bed id and seed slot and the seed is used")
 	var extra: Dictionary = row_extra(bed)
 	check(extra.get("crop", "") == "flax" and int(extra.get("stage", -1)) == 0, "the bed's world row now says flax, stage 0 (%s)" % str(extra))
+
+	# Water from a real filled bucket in hand, as the client sends it (b = the container's pack slot; crops.json moisture pour_ml, GOALS-REPAIR A-3): a full bucket is pour_pct
+	# and empties, the same day's second pour is refused with a notice, and an empty container or an item that is no container is refused. Nothing is taken when refused.
+	if slot_of("bucket") < 0:
+		give("bucket", 1)
+
+	var bucket: int = slot_of("bucket")
+	var pos: Vector3 = items._items[bed]["pos"]
+	items._plot_water[key] = [30.0, clock[0]]
+	inv.wear[bucket] = 0
+	notes.clear()
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(notes.has("That holds no water.") and items.plot_moisture(pos) == 30.0, "an empty bucket in hand pours nothing and the player is told")
+	act(Net.ACT_WATER_BED, bed, sickle_slot)
+	check(items.plot_moisture(pos) == 30.0 and count("bronze_sickle") == 1, "a sickle named as the container pours nothing")
+	inv.wear[bucket] = 8000
+	notes.clear()
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(inv.wear[bucket] == 0 and absf(items.plot_moisture(pos) - 38.0) < 0.01 and int(items._crops[key]["poured"]) == items._game_day(), "a filled bucket in hand waters the bed: the bucket is emptied, the bed gains a bucket's 8 percent (%.1f)" % items.plot_moisture(pos))
+	inv.wear[bucket] = 8000
+	notes.clear()
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(inv.wear[bucket] == 8000 and absf(items.plot_moisture(pos) - 38.0) < 0.01 and notes.has("The bed has had its water today."), "a second bucket the same day is refused, kept full, and the player is told")
+	inv.wear[bucket] = 0
+
 	notes.clear()
 	var fibre: int = count("plant_fibre")
 	act(Net.ACT_HARVEST, bed)
@@ -366,10 +391,11 @@ func _init() -> void:
 
 	# Water poured counts: sow, pour, next day wet.
 	season[0] = "spring"
-	give("water", 1)
+	give("bucket", 1)
+	items.inventory_of(1).wear[slot_of("bucket")] = 8000   # a filled bucket (the fill and the pour scaling: test_liquid_ingredient)
 	give("barley_seeds", 1)
 	items.sow(1, items.inventory_of(1), bed, slot_of("barley_seeds"))
-	check(items.water_bed(1, items.inventory_of(1), bed) and not items.water_bed(1, items.inventory_of(1), bed), "one water pours on the bed per day")
+	check(items.water_bed(1, items.inventory_of(1), bed) and not items.water_bed(1, items.inventory_of(1), bed), "one bucket of water pours on the bed per day")
 	days(1)
 	check(int(items._crops[key]["wet"]) == 1, "water poured makes the next game day wet")
 

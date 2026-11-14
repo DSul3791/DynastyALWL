@@ -140,5 +140,23 @@ func _init() -> void:
 	packed.counts[1] = 0
 	check(recipes.can_make(1, packed) and recipes.craft(1, packed), "fibre slot is freed for the result")
 
+	# Liquid ingredients (GOALS-REPAIR GA-04): water is filled by the water in containers, 500 mL a unit, pooled across them; stacks first; salt never.
+	var water: int = table.number_of("water")
+	var wet = Inventory.new(table)
+	var skin: int = table.number_of("waterskin")
+	var bowl: int = table.number_of("wooden_bowl")
+	wet.add(skin, 1, 300)
+	wet.add(bowl, 1, 300)
+	check(wet.liquid_ml() == 600 and wet.count_fill(water) == 1 and wet.count_fill(water, true) == 0 and wet.count_of(water) == 0, "300 + 300 mL pool into one water ingredient; building costs and count_of ignore it")
+	check(wet.add(table.number_of("sea_water"), 3) == 0 and wet.count_fill(water) == 1, "sea water adds nothing")
+	var rows: Array = []
+	check(not wet.remove_fill(water, 2, rows) and wet.liquid_ml() == 600 and rows.is_empty(), "too few: nothing changes")
+	check(wet.remove_fill(water, 1, rows) and wet.liquid_ml() == 100 and wet.count_of(skin) == 1 and wet.count_of(bowl) == 1 and rows.size() == 1 and int(rows[0][1]["liquid_ml"]) == 500, "one unit takes 500 mL, the containers stay, and the row records the mL")
+	wet.add(water, 1)
+	rows.clear()
+	check(wet.count_fill(water) == 1 and wet.remove_fill(water, 1, rows) and wet.liquid_ml() == 100 and wet.count_of(water) == 0, "a stack of water is used before the containers")
+	check(wet.pour_liquid(5000) == 3300 and wet.liquid_ml() == 1800, "pouring back fills containers with room (1500 + 300 mL) and returns the rest")
+	check(wet.drain_liquid(100, 1) and wet.wear[1] == 200 and wet.liquid_ml() == 1700 and not wet.drain_liquid(5000), "a named container is drained first, and more than it all holds is refused")
+
 	print("inventory tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
