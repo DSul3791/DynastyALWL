@@ -3151,8 +3151,8 @@ static func advanced_well() -> Node3D:
 	var root: Node3D = Node3D.new()
 	_cyl(root, 1.5, 0.9, Vector3(0.0, 0.45, 0.0), _stone, 16)
 	_cyl(root, 1.56, 0.1, Vector3(0.0, 0.95, 0.0), _flag, 16)
-	_cyl(root, 1.1, 0.02, Vector3(0.0, 1.005, 0.0), _tone_mat(Color(0.05, 0.05, 0.05)), 16)   # the shaft's mouth
-	_cyl(root, 1.08, 0.02, Vector3(0.0, 0.35, 0.0), _still_water(), 16)
+	_cyl(root, 1.1, 0.02, Vector3(0.0, 1.005, 0.0), _tone_mat(Color(0.05, 0.05, 0.05)), 12)   # the shaft's mouth (12 sides: inside the 16-sided wall it reads round, and keeps the look under its 700 cap)
+	_cyl(root, 1.08, 0.02, Vector3(0.0, 0.35, 0.0), _still_water(), 12)
 
 	for x in [-1.3, 1.3]:
 		for z in [-1.3, 1.3]:
