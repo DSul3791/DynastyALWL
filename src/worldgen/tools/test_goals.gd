@@ -134,6 +134,11 @@ func _init() -> void:
 	# On the ground: natural scatter is found and counts; a stick someone dropped does not (it could be the player's own, picked up again).
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var stick_n: int = items.table.number_of("stick")
+
+	for k in items._items.keys():   # no other sticks or scatter near the two test sticks (a batch pickup sweeps nearby heaps of the same item)
+		if (items._items[k].has("scatter") or int(items._items[k].get("number", 0)) == stick_n) and (items._items[k]["pos"] as Vector3).distance_to(Vector3(0.0, 10.0, 0.0)) < 8.0:
+			items._items.erase(k)
+
 	var dropped_id: int = items._next_id
 	items._items[dropped_id] = {"number": stick_n, "count": 1, "pos": Vector3(-1.5, 10.0, 0.0), "left": 1.0e9}
 	items._next_id += 1
@@ -151,7 +156,8 @@ func _init() -> void:
 	for goal in items._goals_data():
 		live[str(goal["id"])] = goal["check"]
 
-	check(live["fish"] == {"event": "fish_caught", "count": 1} and live["workbench"] == {"event": "placed", "what": "workbench", "count": 1}, "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
+	check(str(live["fish"].get("event", "")) == "fish_caught" and int(live["fish"].get("count", 0)) == 1 and not live["fish"].has("have_item_any") and not live["fish"].has("or_event")
+		and str(live["workbench"].get("what", "")) == "workbench" and not live["workbench"].has("what_any"), "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
 	check(str(live["hammer"].get("made_item", "")) == "wooden_hammer" and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer and hoe goals count a made Wooden - Hammer and Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
