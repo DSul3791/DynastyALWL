@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1325,
+	"next_number": 1327,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2210,7 +2210,7 @@
 			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
-			"note": "Placed piece: row state 24; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
+			"note": "Placed piece: row state 24; a sloped roof panel, no posts (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL)."
 		},
 		"foundation_section_kit": {
 			"number": 198,
@@ -4997,7 +4997,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"note": "Placed piece: row state 52; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
+			"note": "Placed piece: row state 52; a sloped roof panel, no posts (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL)."
 		},
 		"stone_wall_kit": {
 			"number": 470,
@@ -5058,7 +5058,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"note": "Placed piece: row state 55; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
+			"note": "Placed piece: row state 55; a sloped roof panel, no posts (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL)."
 		},
 		"brick_wall_kit": {
 			"number": 476,
@@ -5119,7 +5119,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"note": "Placed piece: row state 58; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
+			"note": "Placed piece: row state 58; a sloped roof panel, no posts (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL)."
 		},
 		"log_cabin_set_kit": {
 			"number": 482,
@@ -9194,7 +9194,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 219; a sloped roof panel, no posts (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm)."
+				"note": "Placed piece: row state 219; a sloped roof panel, no posts (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL)."
 			},
 			"engineered_roof_corner_kit": {
 				"number": 878,
@@ -10671,7 +10671,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 380 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Rustic - Roof 45 (log_roof), built with the hammer (blueprint 310)."
+				"note": "Placed piece: row state 380 (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL): the 65 degree twin of Rustic - Roof 45 (log_roof), built with the hammer (blueprint 310)."
 			},
 			"roof_section_65": {
 				"number": 1321,
@@ -10681,7 +10681,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 381 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Refined - Roof 45 (roof_section), built with the hammer (blueprint 311)."
+				"note": "Placed piece: row state 381 (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL): the 65 degree twin of Refined - Roof 45 (roof_section), built with the hammer (blueprint 311)."
 			},
 			"stone_roof_65": {
 				"number": 1322,
@@ -10691,7 +10691,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 382 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Sturdy - Roof 45 (stone_roof), built with the hammer (blueprint 312)."
+				"note": "Placed piece: row state 382 (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL): the 65 degree twin of Sturdy - Roof 45 (stone_roof), built with the hammer (blueprint 312)."
 			},
 			"brick_roof_65": {
 				"number": 1323,
@@ -10701,7 +10701,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 383 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Superior - Roof 45 (brick_roof), built with the hammer (blueprint 313)."
+				"note": "Placed piece: row state 383 (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL): the 65 degree twin of Superior - Roof 45 (brick_roof), built with the hammer (blueprint 313)."
 			},
 			"engineered_roof_65": {
 				"number": 1324,
@@ -10711,7 +10711,27 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 384 (PROVISIONAL (GOALS-REPAIR A-35/A-36), for Dave to confirm): the 65 degree twin of Engineered - Roof 45 (engineered_roof), built with the hammer (blueprint 314)."
+				"note": "Placed piece: row state 384 (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL): the 65 degree twin of Engineered - Roof 45 (engineered_roof), built with the hammer (blueprint 314)."
+			},
+			"fortified_roof": {
+				"number": 1325,
+				"name": "Fortified - Roof 45",
+				"description": "A sloped roof panel of clay tiles on pinned plank rafters, strapped with iron bands. Does not burn.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 391; a sloped roof panel, no posts (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL), built with the hammer (blueprint 315)."
+			},
+			"fortified_roof_65": {
+				"number": 1326,
+				"name": "Fortified - Roof 65",
+				"description": "A steep roof panel of clay tiles on pinned plank rafters, strapped with iron bands. Does not burn.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 392 (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL): the 65 degree twin of Fortified - Roof 45 (fortified_roof), built with the hammer (blueprint 316)."
 			}
 	}
 }

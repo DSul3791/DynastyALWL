@@ -186,6 +186,8 @@ const TIERS := {
 	"roof_section_65": "roof_65",              # GOALS-REPAIR A-36: each tier roof's 65 degree panel
 	"engineered_roof": "engineered_roof",
 	"engineered_roof_65": "engineered_roof_65",
+	"fortified_roof": "fortified_roof",        # Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65
+	"fortified_roof_65": "fortified_roof_65",
 }
 
 var _failures: int = 0

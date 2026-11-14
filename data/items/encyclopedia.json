@@ -10720,6 +10720,22 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"fortified_roof": {
+			"name": "Fortified - Roof 45",
+			"kind": "structure",
+			"description": "A sloped roof panel of clay tiles on pinned plank rafters, strapped with iron bands. Does not burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_roof_65": {
+			"name": "Fortified - Roof 65",
+			"kind": "structure",
+			"description": "A steep roof panel of clay tiles on pinned plank rafters, strapped with iron bands. Does not burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"engineered_roof_corner_kit": {
 			"name": "Engineered - Roof corner",
 			"kind": "placeable",
