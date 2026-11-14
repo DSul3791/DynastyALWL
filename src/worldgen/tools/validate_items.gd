@@ -989,6 +989,10 @@ func _init() -> void:
 			if not items_file["items"].has(String(take)) or bool(items_file["items"][String(take)].get("retired", false)):
 				fail("structures.json %s: takes '%s', which is not a live item or group" % [kind, take])
 
+		# Resource bins (GOALS-REPAIR R6, src/shared/bin_rules.gd): units of one kind, never weight; slots for layout; a takes list of what it holds.
+		if def.has("bin") and (typeof(def["bin"]) != TYPE_DICTIONARY or int(def["bin"].get("units", 0)) < 1 or int(def["bin"].get("units", 0)) > 65535 or def.has("max_kg") or int(def.get("slots", 0)) < 1 or def.get("takes", []).is_empty()):
+			fail("structures.json %s: a bin needs bin.units 1 to 65535, slots, a takes list and no max_kg" % kind)
+
 		for take_kind in def.get("takes_kinds", []):
 			if not String(take_kind) in ["tool", "weapon", "material", "clothing", "gear", "container", "medicine", "food", "coin", "placeable", "structure"]:
 				fail("structures.json %s: takes_kinds '%s' is not an items.json kind" % [kind, take_kind])

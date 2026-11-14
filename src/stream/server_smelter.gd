@@ -28,13 +28,19 @@ const NEAR_M := 1.0          # beyond the station's reach_m: how far a bellows w
 # PROVISIONAL (GOALS-REPAIR A-11): ingots a smelter drops in front last as long as a pile (server_items.PILE_LIFETIME_S), not the 20 minutes of a
 # loose item, so a player back from a long run still finds them. To change it, change this value.
 const GROUND_S := 7200.0
+# PROVISIONAL (GOALS-REPAIR A-33): every PULL_S real seconds each smelter tops up its fuel hopper by itself from the fuel sources within
+# server_items.FUEL_SOURCE_M (a Coal or Charcoal bin, a Kiln's charcoal, an unlit fire's store: server_items.fuel_sources; master s2.5,
+# plan R6), oldest smelter first. Only the hopper: never an Advanced smelter's input (its carbon is put there by hand, plan P3).
+const PULL_S := 300.0
 
 const Weather := preload("res://src/shared/weather.gd")
 
 var host = null              # the items module (server_items.gd)
 var _cfg: Dictionary = {}    # structures.json "smelting"
 var _bellows: Dictionary = {}   # world id -> the peer working its bellows
+var _bellows_goal: Dictionary = {}   # world id -> true once this stint at the bellows has counted toward the goal event bellows_iron
 var _ids: Dictionary = {}       # world id -> true for every placed smelter (note() at placing and loading; tick_all forgets the gone ones)
+var _pull_t: float = 0.0        # seconds toward the next fuel pull (not saved: a restart starts the wait again)
 
 
 func setup(structures_cfg: Dictionary) -> void:
@@ -206,6 +212,7 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
 		return
 
 	_bellows[id] = peer
+	_bellows_goal.erase(id)   # a new stint at the bellows
 	host._say(peer, "You work the bellows: it smelts faster and can work iron while you stay at it (E again to stop).")
 
 
@@ -322,8 +329,74 @@ func tick_all(spent: float) -> void:
 		if not is_smelter(def):
 			_ids.erase(id)
 			_bellows.erase(id)
+			_bellows_goal.erase(id)
 		elif not it["struct"].has("site"):
 			tick(int(id), it, def, spent)
+
+	_pull_t += spent
+
+	if _pull_t >= PULL_S:
+		_pull_t = 0.0
+		pull_fuel()
+
+
+# The fuel pull (A-33): every placed smelter, in the order they were built (the store uid only grows), takes what its hopper still holds
+# from the nearest fuel sources first. Every unit moved is taken from its source as it goes in: nothing is made or lost.
+func pull_fuel() -> void:
+	var order: Array = []
+
+	for id in _ids:
+		var it: Dictionary = host._items.get(id, {})
+		var def: Dictionary = host._structures.get(str(it.get("struct", {}).get("kind", "")), {}) if it.has("struct") else {}
+
+		if is_smelter(def) and not it["struct"].has("site") and host._chests.has(int(it["struct"].get("uid", -1))):
+			order.append([int(it["struct"]["uid"]), int(id)])
+
+	order.sort()
+
+	for pair in order:
+		_pull_into(int(pair[1]))
+
+
+func _pull_into(id: int) -> void:
+	var it: Dictionary = host._items[id]
+	var def: Dictionary = host._structures[str(it["struct"]["kind"])]
+	var box = host._chests[int(it["struct"]["uid"])]
+	var wants: bool = false
+
+	for fuel_id in _cfg.get("fuel", []):
+		wants = wants or room(def, box, host.table.number_of(str(fuel_id)), 1) > 0
+
+	if not wants:
+		return   # a full hopper looks for nothing
+
+	var moved: bool = false
+
+	for src in host.fuel_sources(it["pos"], host.FUEL_SOURCE_M, id):
+		var taken: bool = false
+
+		for i in range(int(src[2]), int(src[3])):
+			var number: int = src[1].numbers[i]
+
+			if number == 0 or not is_fuel(number) or not src[1].inst[i].is_empty():
+				continue
+
+			var n: int = room(def, box, number, src[1].counts[i])
+
+			if n <= 0:
+				continue
+
+			var went: int = n - put(def, box, number, n, src[1].wear[i])
+			src[1].take_from_slot(i, went)
+			taken = taken or went > 0
+
+		if taken:
+			host.fuel_taken(int(src[0]), src[1])
+			moved = true
+
+	if moved:
+		host._push_box(id, box)
+		host._dirty = true
 
 
 # The lanes' [seconds, job] (lane 0 from smelt_t / smelt_job, the others from smelt_lanes), smelt.lanes of them.
@@ -433,6 +506,12 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			current = ""
 			changed = true
 			_credit(it, host.table.number_of(str(out[0])), count)
+
+			# The player working the bellows (not the owner) gets the goal event bellows_iron, once a stint, when an iron job they gave air to
+			# delivers (goal activity:operate_bellows, PLAYER_GOALS_CATALOG_CORRECTED.csv; paused in admin mode inside _goal_event).
+			if str(out[0]) == "iron_ingot" and bool(smelt.get("bellows", false)) and _bellows.has(id) and not _bellows_goal.has(id):
+				_bellows_goal[id] = true
+				host._goal_event(int(_bellows[id]), "bellows_iron")
 
 		lanes[k] = [t, current] if t > 0.0 and current != "" else [0.0, ""]   # a job with no time banked is not kept: it is picked again next tick
 

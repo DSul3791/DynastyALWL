@@ -273,10 +273,14 @@ func _init() -> void:
 	var needs: Array = repair_needs(smithy)
 	clear_pack()
 	give_needs(needs, "pack")
-	var war: int = hold("iron_warhammer")
-	said.clear()
-	repair(smithy, war)
-	check(items._smithies.broken(smithy) and needs.all(func(need): return pack(str(need[0])) == int(need[1])), "4. an Iron - Warhammer in hand does not repair it and takes nothing (%s)" % str(said))
+
+	for war_id in ["iron_warhammer", "steel_warhammer"]:
+		var war: int = hold(war_id)
+		said.clear()
+		repair(smithy, war)
+		check(items._smithies.broken(smithy) and needs.all(func(need): return pack(str(need[0])) == int(need[1])), "4. an %s in hand does not repair it and takes nothing (%s)" % [str(items.table.entry(war_id).get("name", war_id)), str(said)])
+		inv().clear_slot(war)
+
 	clear_pack()
 
 	# 5. Missing materials: told what is needed, nothing taken from anywhere.
@@ -323,6 +327,27 @@ func _init() -> void:
 		check(not items._smithies.broken(smithy) and is_equal_approx(items._smithies.wear_of(smithy), 0.0), "6a. a %s repairs it from %s (%s)" % [hammers[i], sources[i], str(said)])
 		check(left_ok and pack(hammers[i]) == 1, "6b. exactly the cost (%s) is taken, the hammer kept" % str(needs))
 		check(box(smithy).count_of(n("bronze_ingot")) == 5, "6c. nothing is taken from the smithy's own store (%d of 5 Bronze ingots left)" % box(smithy).count_of(n("bronze_ingot")))
+
+	# 6d. With enough in every source, a repair takes from the ground first, then nearby stores, and the pack last.
+	clear_world()
+	smithy = place("blacksmithy", SMITHY_AT)
+	chest = place("chest", CHEST_AT)
+	break_it(smithy)
+	needs = repair_needs(smithy)
+	clear_pack()
+	give_needs(needs, "pack")
+	give_needs(needs, "chest")
+	give_needs(needs, "ground")
+	slot = hold("wooden_hammer")
+	repair(smithy, slot)
+	check(not items._smithies.broken(smithy) and needs.all(func(need): return ground(str(need[0])) == 0 and box(chest).count_of(n(str(need[0]))) == int(need[1]) and pack(str(need[0])) == int(need[1])), "6d. the ground is used first: the chest and the pack keep theirs")
+	break_it(smithy)
+	repair(smithy, slot)
+	check(not items._smithies.broken(smithy) and needs.all(func(need): return box(chest).count_of(n(str(need[0]))) == 0 and pack(str(need[0])) == int(need[1])), "6d. then the nearby chest: the pack keeps its own")
+	break_it(smithy)
+	repair(smithy, slot)
+	check(not items._smithies.broken(smithy) and needs.all(func(need): return pack(str(need[0])) == 0), "6d. and the pack last")
+	clear_pack()
 
 	# 7. The repair keeps the station; it works again. The Advanced and Master smithies never pay their anvils again.
 	clear_world()

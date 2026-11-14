@@ -216,6 +216,8 @@ func _init() -> void:
 
 	check(items._chests[int(items._items[smelter]["struct"]["uid"])].count_of(items.table.number_of("iron_ingot")) == 0, "3e. nobody at the bellows: no iron in %d s" % int(unmanned_s))
 	items.report_position(1, (items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
+	var goal_counts: Dictionary = items._goal_state_of(1).get("goal_counts", {})
+	var bellows_before: int = int(goal_counts.get("event:bellows_iron", 0))
 	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: work the bellows
 	var manned_s: float = float(items._structures["improved_smelter"]["smelt"]["ingot_s"]) / float(items._structures["improved_smelter"]["smelt"]["bellows_speed"])
 
@@ -226,6 +228,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again, still beside it: leave the bellows
 	items.report_position(1, HERE)
 	check(have("iron_ingot") >= ore_n and not items._smelters.bellows_worked(smelter), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); E again leaves them" % [ore_n, manned_s, have("iron_ingot")])
+	check(int(items._goal_state_of(1).get("goal_counts", {}).get("event:bellows_iron", 0)) == bellows_before + 1, "3g. working the bellows through an iron smelt counts the goal event bellows_iron once for the worker, not once an ingot (%d ingots)" % ore_n)
 
 	# 4. The Improved smithy from stones, clay, logs and bronze (given: the bronze route is test_bronze_path); it must burn to craft.
 	items.vitals_of(1)["weight"] = 5000.0   # the ticks above may have drawn the body weight down (empty stomach): the given build cost must fit the pack

@@ -28,6 +28,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const BinRules := preload("res://src/shared/bin_rules.gd")   # resource bins: the resource surface (_note_bin, GOALS-REPAIR R6)
 const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
@@ -2682,6 +2683,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				_note_platter(id, row, state)
 				_note_store(id, row)
 				_note_crop(id, row)
+				_note_bin(id, row, state)
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
 				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
@@ -2747,6 +2749,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			_note_platter(id, row, state)
 			_note_crop(id, row)
+			_note_bin(id, row, state)
 
 			if site_extra != null:
 				pass   # a site is walked through and climbed by nobody until it is finished
@@ -2959,6 +2962,54 @@ func _note_platter(id: int, row: Array, state: int) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	_world[id]["board"] = int(extra.get("board", 0))
 	_world[id]["portions"] = int(extra.get("portions", 0))
+
+
+# A resource bin's row (GOALS-REPAIR R6; row extras "res": the item it holds, -1 mixed from before R6, and "fill_pm": its fill in per mille):
+# its resource surface, one flat layer inside the walls that rises with the fill and is gone when empty (master s2.5, BinRules.surface_height).
+# PLACEHOLDER look: a plain slab in a colour for what it holds, until the art pipeline draws the resources.
+func _note_bin(id: int, row: Array, state: int) -> void:
+	var def: Dictionary = _structure_by_state(state)
+
+	if not BinRules.is_bin(def) or _world.get(id, {}).get("node") == null:
+		return
+
+	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+	var node: Node3D = _world[id]["node"]
+	var surface: MeshInstance3D = node.get_node_or_null("ResourceSurface")
+	var side: float = float(def.get("footprint_x", 1.0))
+	var y: float = BinRules.surface_height(float(extra.get("fill_pm", 0)) / 1000.0, 0.06, PieceLook.bin_wall_m(side) - 0.05)
+
+	if y < 0.0 or extra.get("site") != null:
+		if surface != null:
+			surface.visible = false
+
+		return
+
+	if surface == null:
+		surface = MeshInstance3D.new()
+		surface.name = "ResourceSurface"
+		var slab: BoxMesh = BoxMesh.new()
+		slab.size = Vector3(side - 0.1, 0.04, side - 0.1)
+		surface.mesh = slab
+		node.add_child(surface)
+
+	surface.position = Vector3(0.0, y, 0.0)
+	surface.material_override = _bin_material(int(extra.get("res", 0)))
+	surface.visible = true
+
+
+var _bin_materials: Dictionary = {}   # item number -> the placeholder surface material (_note_bin)
+
+
+func _bin_material(number: int) -> StandardMaterial3D:
+	if not _bin_materials.has(number):
+		var colours: Dictionary = {"stone": Color(0.5, 0.5, 0.48), "cobblestone": Color(0.45, 0.44, 0.42), "gravel": Color(0.56, 0.54, 0.5), "flint": Color(0.3, 0.3, 0.32), "clay": Color(0.62, 0.36, 0.25), "sand": Color(0.85, 0.75, 0.5), "soil": Color(0.35, 0.25, 0.15), "charcoal": Color(0.08, 0.08, 0.08), "coal": Color(0.1, 0.1, 0.11), "copper_ore": Color(0.42, 0.55, 0.4), "tin_ore": Color(0.6, 0.6, 0.62), "iron_ore": Color(0.5, 0.28, 0.18)}
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.albedo_color = colours.get(table.id_of(number) if number > 0 else "", Color(0.5, 0.45, 0.4))
+		m.roughness = 1.0
+		_bin_materials[number] = m
+
+	return _bin_materials[number]
 
 
 # The table tops a Serving Platter's ghost may snap to: the placed structures of `states` (its attach_kinds) with their turn, as the server's _surface_rows.

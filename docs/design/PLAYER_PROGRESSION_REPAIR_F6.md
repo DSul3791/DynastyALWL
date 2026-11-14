@@ -1,6 +1,6 @@
 # Progression repair: F6 play checklist (GOALS-REPAIR)
 
-**DRAFT, updated as work lands.** Written against `dev` `54b2c51c`. Pull `dev`, press F6 and play. The client and the server must be on the same build: protocol 121 (R4, #1102, is in `dev`; its checks are added to this list in the follow-up update). Every step is NEEDS PLAYER VERIFICATION. Tests have passed headless, but nothing has been seen in a running game. The evidence for each item is in [PLAYER_PROGRESSION_REPAIR_VERIFICATION.md](PLAYER_PROGRESSION_REPAIR_VERIFICATION.md).
+**DRAFT, updated as work lands.** Written against `dev` `d4b2473`. Pull `dev`, press F6 and play. The client and the server must be on the same build: protocol 121 (R4, #1102, is in `dev`; its checks are in section 4). Every step is NEEDS PLAYER VERIFICATION. Tests have passed headless, but nothing has been seen in a running game. The evidence for each item is in [PLAYER_PROGRESSION_REPAIR_VERIFICATION.md](PLAYER_PROGRESSION_REPAIR_VERIFICATION.md).
 
 Play with **Admin mode off**. While Admin mode is on, goals count nothing. Start from a **new character with an empty pack**. Each line says what to do, then what you should see. Tick it, or note what you saw.
 
@@ -10,6 +10,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 
 - [ ] **Admin keys** (do this in a spare world, or after the run: Ctrl+Shift+J moves you far away, and X, R and N dig, spawn and teleport). Plain G opens the Journal's Goals page; Ctrl+Shift+G toggles flying. Try Ctrl+Shift with F2, F3, F4, F5, F7, F8, =, -, ], N, R, X, L, J and P. Each works only with both Ctrl and Shift held. Check that = - ] work on your keyboard, and that the editor doesn't swallow F5 or F8.
 - [ ] **Journal is empty for a new character.** J opens the Index, G opens Goals, M opens Map, and Esc closes. The Map page reads "Nothing mapped yet. Explore to fill this page." Opening the inventory closes the Journal, and the other way round.
+- [ ] **Keys under a screen** (#1104). Open the inventory (I) or the character screen (Tab). Hold Space and Ctrl on the ground, in water and on a ladder; on a ladder also press W and S. Nothing should move you: no jump, rise, dive, climb or letting go. Space still wakes you if you are asleep with a screen open.
 - [ ] **Goals box.** At the upper right, a thin cream border, the heading "Goals" and the first two unfinished goals. It sits clear of the Comfort and food lines and hides while any screen is open.
 
 ## 1. First minutes: gathering, tools, fire, shelter
@@ -49,7 +50,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 
 ## 4. Metal: copper, bronze, iron
 
-- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on ore outcrop boulders (not every boulder) gives copper ore, tin ore and coal. It does not give iron.
+- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on ore outcrop boulders (not every boulder) gives copper ore, tin ore and coal. It does not give iron. **Iron ore** on these tiles comes from **bog iron**: dig wet lowland soil (bog, marsh) with a spade and now and then rust-red lumps come up with the peat ("bog iron", about 1 dig in 25). The iron boulders lie under the sea.
 - [ ] **Primitive smelter** (bp 200: 24 clay, 10 stone).
   - **Build and load:** build it and press E to open its store. Coal or Charcoal goes in the fuel part; ore goes in the ore part, one kind per slot.
   - **Smelting:** it smelts by itself, one ingot every 20 s. 1 copper ore makes 1 copper ingot; 1 copper ore + 1 tin ore make 2 bronze.
@@ -60,19 +61,28 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - [ ] **Improved smelter** (bp 300: clay 24, stone 16, log 2, hide 3, bronze hinges 2, bronze nails 20; A-9).
   - **Capacity:** 40 fuel, 40 ore and an 80-ingot rack. F opens its store; E works the bellows.
   - **Bellows:** press E and stay beside it to work the bellows. It smelts 1.3 times faster.
-  - **Iron:** iron ore (mined with a Bronze pickaxe) smelts only while someone is working the bellows. Walk away and it pauses without losing time.
+  - **Iron:** iron ore (dug as bog iron, see Mine ore) smelts only while someone is working the bellows. Walk away and it pauses without losing time.
   - **Looks:** the look is a placeholder.
 - [ ] **Improved smithy** (bp 10: stone 16, clay 10, log 4, bronze ingot 6, bronze nails 20, bronze hinges 2; A-15). It is built with no iron. It must be fired to craft: keep Coal or Charcoal in your pack and the first craft lights it (the Primitive smithy needs no fuel). Make Hinges from iron, and the **Iron anvil** (5 iron ingot + 1 log, A-16).
+- [ ] **Advanced smelter** (bp 201: brick 40, stone 20, mortar 8, iron ingot 6).
+  - **Wind:** its built-in windmill works it. In a calm (under 4 m/s, A-18) nothing smelts and every lane keeps its time; when the wind picks up it carries on.
+  - **Two lanes:** it smelts two ingots at once, faster than the Improved smelter.
+  - **Steel:** put iron ore in the input, and drag Coal or Charcoal **onto an input slot** as carbon (A-24). 1 iron ore + 1 carbon makes 1 Steel ingot (A-19). Fuel put in the plain way (F, or Store all) goes to the hopper and is burned as fuel, never as carbon. Iron ore with no carbon makes iron.
+- [ ] **Advanced smithy** (bp 301: stone 24, clay 12, log 6, the Iron anvil, nails 30, hinges 4; A-20). It works every metal up to steel. Make the **Steel anvil** there (5 steel ingot + 1 log, A-21) and a steel tool. Tempered and +1/+2 variants are offered at their own station level.
 - [ ] **Carry feel.** The Improved smithy needs about 101 kg of materials, and the Primitive smithy and the Improved smelter about 62 kg each, against your 52.5 kg carry. Place the blueprint and deposit in 2–3 trips with E. Is that fair?
 - [ ] **Two players at one smelter.** A second player can't work the bellows while you do, but can take ore out. Logging out pauses the iron.
 - [ ] **Save.** Quit mid-smelt and rejoin. Nothing in the store is lost or doubled, and the banked time carries on.
 
 ## 5. Not in `dev` yet (to be added when they land)
 
-- R4 (#1102): Advanced smelter (wind, two lanes, steel carbon dragged onto the input, A-18, A-19, A-24), Advanced smithy with the Iron anvil (A-20), Steel anvil (A-21).
 - R5: Master smithy with the Steel anvil, smithy wear and "Needs repair", hammer repair (War Hammers excluded), Tempered steel (A-23, A-26, A-27).
 - R6: Small, Medium and Large resource bins (one material, 1000/5000/10000), fuel pulls every 300 s from within 30 m (A-28 to A-34).
 - Building tiers work.
+- #1107 (GA-18, in review): the roof panel hint once a wall stands, and the roof wheel in the Controls list.
+- Tier roofs, #1110 (names confirmed by Dave 14 Nov; waiting on the lane), then its Fortified extension. Checks when they land:
+  - [ ] On two facing walls of **every tier, Fortified included**, place Roof 45 and Roof 65. Each rises from the wall top, the wheel flips it, and there are no posts.
+  - [ ] A tier roof placed before #1110 reloads as a 45 panel, sitting low at its old spot. Take it down (you get the refund) and build it again.
+  - [ ] Names and icons: every tier has "<Tier> - Roof 45" and "<Tier> - Roof 65"; no plain "Roof" is left. Does a Roof 65 costing the same as its 45 feel right (A-35)? NEEDS PLAYER VERIFICATION: the five tier Roof 45 icons still show the old gables and the 65s have no icon until a PC re-render (the cloud cannot render them: `look_runtime` has no `tier_panel`).
 
 ## 6. Building, doors and roofs (already in `dev`)
 
