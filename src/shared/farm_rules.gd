@@ -47,9 +47,10 @@ static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_slot
 
 
 # The hoe's Garden mode (Dave 14 Nov 2026: "gardening should also be another option on the right click of the Hoe ... make garden plots or plant seeds, plants, shrubs";
-# master s2.1 "Create Garden Plot, Plant"). What the pack carries that the hoe can plant, one row per kind, in pack order: {"id", "kind": "seed" | "bush"}.
-# `ids`: the item id in each pack slot ("" for an empty slot). A bush is a dug-up shrub (`<species>_bush`, drops.json shrub_work dig_suffix); trees have no item yet.
-static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bush") -> Array:
+# master s2.1 "Create Garden Plot, Plant"). What the pack carries that the hoe can plant, one row per kind, in pack order: {"id", "kind": "seed" | "bush" | "tree"}.
+# `ids`: the item id in each pack slot ("" for an empty slot). A bush is a dug-up shrub (`<species>_bush`, drops.json shrub_work dig_suffix); a tree seed is any item
+# in `tree_seeds` (item id -> species, from drops.json trunk.felled_seeds: a species' own fruit or nut, or its own seed). A crop seed is a crop seed first.
+static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bush", tree_seeds: Dictionary = {}) -> Array:
 	var rows: Array = []
 	var seen: Dictionary = {}
 
@@ -59,7 +60,7 @@ static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bu
 		if item == "" or seen.has(item):
 			continue
 
-		var kind: String = "seed" if crop_of_seed(crops, item) != "" else ("bush" if item.ends_with(bush_suffix) else "")
+		var kind: String = "seed" if crop_of_seed(crops, item) != "" else ("bush" if item.ends_with(bush_suffix) else ("tree" if tree_seeds.has(item) else ""))
 
 		if kind != "":
 			seen[item] = true
@@ -74,10 +75,10 @@ static func plantables(crops: Dictionary, ids: Array, bush_suffix: String = "_bu
 # PROVISIONAL (gardening, 14 Nov 2026): a seed clicked on open ground tills a bed there and then sows it.
 static func garden_action(kind: String, name: String, bed: bool, bed_crop: String) -> Dictionary:
 	if kind == "":
-		return {"act": "none", "say": "Nothing to plant: carry seeds or a dug-up bush, then right click and pick it"}
+		return {"act": "none", "say": "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, then right click and pick it"}
 
-	if kind == "bush":
-		return {"act": "none", "say": "A bush goes in open ground, not in a bed"} if bed else {"act": "plant_bush", "say": ""}
+	if kind == "bush" or kind == "tree":   # both go in open ground through the server's ACT_PLANT_BUSH; a tree seed starts as a sapling
+		return {"act": "none", "say": "%s goes in open ground, not in a bed" % ("A bush" if kind == "bush" else "A tree")} if bed else {"act": "plant_bush", "say": ""}
 
 	if not bed:
 		return {"act": "till", "say": ""}   # the hoe tills the cell and sows it as soon as the bed is there (held_item._garden_step)
@@ -92,14 +93,15 @@ static func garden_action(kind: String, name: String, bed: bool, bed_crop: Strin
 const GARDEN_GRIDS := [{"name": "one", "w": 1, "d": 1}, {"name": "a row of 5", "w": 1, "d": 5}, {"name": "3 by 3", "w": 3, "d": 3}, {"name": "5 by 5", "w": 5, "d": 5}]
 const SEED_SPACING_M := 1.0   # seeds go one to a tilled metre (the server tills 1 m cells, floor + 0.5)
 const BUSH_SPACING_M := 2.0   # PROVISIONAL: bushes two metres apart (the server's own gap is PLANT_BUSH_GAP_M, 1 m)
+const TREE_SPACING_M := 3.0   # PROVISIONAL: tree seeds three metres apart (the server's own gap is PLANT_TREE_GAP_M, 2 m)
 
 
-# The flat spots one Garden click works, nearest the aim first: seeds on the 1 m cell centres round the aimed cell, bushes BUSH_SPACING_M apart round the aim.
+# The flat spots one Garden click works, nearest the aim first: seeds on the 1 m cell centres round the aimed cell, bushes BUSH_SPACING_M and tree seeds TREE_SPACING_M apart round the aim.
 # A row runs along the axis the player faces most (`facing`: a flat direction). `grid`: an index of GARDEN_GRIDS.
 static func garden_cells(grid: int, kind: String, aim: Vector3, facing: Vector3) -> Array:
 	var size: Dictionary = GARDEN_GRIDS[clampi(grid, 0, GARDEN_GRIDS.size() - 1)]
-	var step: float = BUSH_SPACING_M if kind == "bush" else SEED_SPACING_M
-	var centre: Vector2 = Vector2(aim.x, aim.z) if kind == "bush" else Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)
+	var step: float = BUSH_SPACING_M if kind == "bush" else (TREE_SPACING_M if kind == "tree" else SEED_SPACING_M)
+	var centre: Vector2 = Vector2(aim.x, aim.z) if kind != "seed" else Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)
 	var along_x: bool = absf(facing.x) > absf(facing.z)
 	var across: int = int(size["w"])
 	var ahead: int = int(size["d"])

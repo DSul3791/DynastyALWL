@@ -68,6 +68,14 @@ func _init() -> void:
 	check(FarmRules.garden_action("bush", "hazel bush", false, "")["act"] == "plant_bush", "garden: a bush on open ground is planted")
 	check(FarmRules.garden_action("bush", "hazel bush", true, "")["act"] == "none", "garden: a bush is not planted in a bed")
 	check(FarmRules.garden_action("", "", false, "")["act"] == "none", "garden: nothing picked sends nothing")
+	# Tree seeds (a felled tree drops 1 to 5): a fruit or nut is its tree's seed; planted in open ground through the bush action, 3 m apart.
+	var trees: Dictionary = {"acorns": "oak", "maple_keys": "maple"}
+	var with_trees: Array = FarmRules.plantables(crops, ["acorns", "wheat_seeds", "maple_keys", "stone"], "_bush", trees)
+	check(with_trees.size() == 3 and with_trees[0] == {"id": "acorns", "kind": "tree"} and with_trees[1]["kind"] == "seed" and with_trees[2] == {"id": "maple_keys", "kind": "tree"}, "plantables: tree seeds list as trees (%s)" % str(with_trees))
+	check(FarmRules.plantables(crops, ["acorns"]).is_empty(), "plantables: no tree seed table, no tree rows")
+	check(FarmRules.garden_action("tree", "acorns", false, "")["act"] == "plant_bush" and FarmRules.garden_action("tree", "acorns", true, "")["act"] == "none", "garden: a tree seed goes in open ground, not a bed")
+	var tree_cells: Array = FarmRules.garden_cells(1, "tree", Vector3(0.3, 0.0, 0.3), Vector3(1.0, 0.0, 0.0))
+	check(tree_cells[0] == Vector2(0.3, 0.3) and tree_cells.any(func(c): return c.is_equal_approx(Vector2(6.3, 0.3))), "garden cells: a row of tree seeds 3 m apart round the aim (%s)" % str(tree_cells))
 	# A click's plan: a 2 m plot holding several 1 m cells takes one seed (its first cell); reach from the feet, no ground, and the pack's count stop the rest.
 	var spots: Array = [[Vector3(0.5, 1.0, 0.5), 7, ""], [Vector3(1.5, 1.0, 0.5), 7, ""], [Vector3(0.5, 1.0, 1.5), 0, ""], [Vector3(1.5, NAN, 1.5), 0, ""], [Vector3(9.5, 1.0, 0.5), 0, ""], [Vector3(-0.5, 1.0, 0.5), 8, "flax"], [Vector3(2.5, 1.0, 0.5), 0, ""]]
 	var made: Array = FarmRules.garden_plan("seed", "wheat seeds", spots, Vector3.ZERO, 3.7, 2)

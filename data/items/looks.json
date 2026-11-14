@@ -4052,6 +4052,56 @@
    "color": "#a89a70",
    "size": 0.5
   },
+  "birch_seeds": {
+   "shape": "chunk",
+   "color": "#9a8a5a",
+   "size": 0.4
+  },
+  "pine_cones": {
+   "shape": "nut",
+   "color": "#7a5a34",
+   "size": 1.0
+  },
+  "spruce_cones": {
+   "shape": "nut",
+   "color": "#6e4e2e",
+   "size": 1.0
+  },
+  "alder_cones": {
+   "shape": "nut",
+   "color": "#3e3024",
+   "size": 0.6
+  },
+  "willow_seeds": {
+   "shape": "chunk",
+   "color": "#d8d2c0",
+   "size": 0.4
+  },
+  "hardwood_seeds": {
+   "shape": "nut",
+   "color": "#5a3e22",
+   "size": 0.8
+  },
+  "acacia_pods": {
+   "shape": "chunk",
+   "color": "#8a6a3a",
+   "size": 0.6
+  },
+  "mangrove_propagules": {
+   "shape": "rod",
+   "color": "#5a7a3a",
+   "size": 0.6
+  },
+  "fir_cones": {
+   "shape": "nut",
+   "color": "#6a5a3a",
+   "size": 1.0
+  },
+  "maple_keys": {
+   "shape": "chunk",
+   "color": "#a8884a",
+   "size": 0.4
+  },
   "sling": {
    "shape": "bundle",
    "color": "#8a6a4a",

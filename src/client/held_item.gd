@@ -2074,10 +2074,10 @@ const HOE_MODES := [
 	{"id": "smooth", "name": "Smooth", "note": "levels the ground about 3 m round to where you stand (a little under your feet on a foundation), no path"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
-	{"id": "garden", "name": "Garden", "note": "lay out a garden plot, or plant seeds or a dug-up bush from your pack (the next list picks which)"},
+	{"id": "garden", "name": "Garden", "note": "lay out a garden plot, or plant seeds, a dug-up bush or a tree's seed from your pack (the next list picks which)"},
 ]
 var hoe_mode: String = "path"
-var garden_pick: String = ""             # Garden mode: the item id picked to plant (seeds or a dug-up bush), "" for none (tests read it)
+var garden_pick: String = ""             # Garden mode: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
 var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what the pack can plant, FarmRules.plantables)
 var _garden_rows: Array = []             # the Garden list as opened: [{"id", "kind"}]
 var _hoe_menu_open: bool = false
@@ -2196,10 +2196,10 @@ func _hoe_menu_choose() -> void:
 	for slot in range(_inv.inventory.slot_count):
 		ids.append(_inv.table.id_of(_inv.inventory.numbers[slot]) if _inv.inventory.numbers[slot] != 0 else "")
 
-	_garden_rows = _garden_plot_rows() + FarmRules.plantables(_inv.crop_table(), ids)
+	_garden_rows = _garden_plot_rows() + FarmRules.plantables(_inv.crop_table(), ids, "_bush", _inv.tree_seed_table())
 
 	if _garden_rows.is_empty():
-		_inv._on_notice("Hoe: Garden. Carry seeds or a dug-up bush to plant them")
+		_inv._on_notice("Hoe: Garden. Carry seeds, a dug-up bush or a tree's seed to plant them")
 		_hoe_menu_close()
 		return
 
@@ -2338,7 +2338,7 @@ func _hoe_here(action: int) -> void:
 
 
 # A Garden-mode click (hoe): the picked seeds go into every cell of the chosen grid (the wheel picks one cell, a row of 5, 3 by 3 or 5 by 5; FarmRules.garden_cells):
-# an empty bed or garden plot is sown, open ground is tilled and then sown once the bed is there; a picked dug-up bush is planted in open ground, 2 m apart.
+# an empty bed or garden plot is sown, open ground is tilled and then sown once the bed is there; a picked dug-up bush is planted in open ground, 2 m apart, and a tree seed 3 m apart as a sapling.
 # Never more cells than the pack holds of the pick. The requests go out one by one (_garden_step); the server checks reach, season, ground and spacing and says why it refuses.
 var garden_grid: int = 0                 # index of FarmRules.GARDEN_GRIDS
 var _garden_queue: Array = []            # [{"act": "till" | "sow" | "sow_at" | "plant_bush", "pos": Vector3, "bed": id, "until": msec a sow_at waits for its bed}]
@@ -2380,7 +2380,7 @@ func _garden_here() -> void:
 # nothing is picked or none is left (the notice says so). The preview draws the same plan.
 func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
 	var slot: int = _pack_slot_of(garden_pick) if garden_pick != "" else -1
-	var picked: Array = FarmRules.plantables(_inv.crop_table(), [garden_pick] if slot >= 0 else [])
+	var picked: Array = FarmRules.plantables(_inv.crop_table(), [garden_pick] if slot >= 0 else [], "_bush", _inv.tree_seed_table())
 	var kind: String = str(picked[0]["kind"]) if not picked.is_empty() else ""
 	var plant_name: String = _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower() if garden_pick != "" else ""
 
@@ -2541,7 +2541,7 @@ func _other_tool_hint() -> String:
 		"net":
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
-			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till, survey a path or garden (plant seeds or a dug-up bush from your pack). Only Garden uses items" % hoe_mode
+			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till, survey a path or garden (plant seeds, a dug-up bush or a tree's seed from your pack). Only Garden uses items" % hoe_mode
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"spade":

@@ -1069,6 +1069,25 @@ func crop_table() -> Dictionary:
 	return _crop_cfg()
 
 
+# The tree seeds, item id -> species (drops.json trunk.felled_seeds by_species, read once), for the hoe's Garden list.
+func tree_seed_table() -> Dictionary:
+	if _tree_seeds.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+		var by: Dictionary = (((parsed as Dictionary).get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+
+		for species in by:
+			if not _tree_seeds.has(str(by[species])):
+				_tree_seeds[str(by[species])] = str(species)
+
+		if _tree_seeds.is_empty():
+			_tree_seeds = {"": ""}   # read once even when there are none
+
+	return _tree_seeds
+
+
+var _tree_seeds: Dictionary = {}
+
+
 # crops.json, read once: the client's wording needs the crop names, seeds and harvest tools (the server rules on all of it).
 func _crop_cfg() -> Dictionary:
 	if _crops_cfg.is_empty():
@@ -4375,6 +4394,11 @@ func _trunk_drop_ids() -> Array:
 	for species in trunk.get("by_species", {}):
 		for row in trunk["by_species"][species]:
 			ids.append(str(row[0]))
+
+	var seeds: Dictionary = (trunk.get("felled_seeds", {}) as Dictionary).get("by_species", {})
+
+	for species in seeds:   # every felled tree drops its seed (gardening, 14 Nov 2026)
+		ids.append(str(seeds[species]))
 
 	var out: Array = []
 

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1327,
+	"next_number": 1370,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -10734,6 +10734,116 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 392 (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL (GOALS-REPAIR A-39)): the 65 degree twin of Fortified - Roof 45 (fortified_roof), built with the hammer (blueprint 316)."
-			}
+			},
+		"birch_seeds": {
+			"number": 1360,
+			"name": "Birch seeds",
+			"description": "Tiny winged seeds shaken from birch catkins. Plant them with the hoe in open ground and a birch grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"pine_cones": {
+			"number": 1361,
+			"name": "Scots pine cones",
+			"description": "Woody cones from a Scots pine, seeds still inside. Plant one with the hoe in open ground and a pine grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"spruce_cones": {
+			"number": 1362,
+			"name": "Spruce cones",
+			"description": "Long hanging cones from a spruce, seeds still inside. Plant one with the hoe in open ground and a spruce grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"alder_cones": {
+			"number": 1363,
+			"name": "Alder cones",
+			"description": "Little black cones from an alder. Plant one with the hoe in open ground and an alder grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"willow_seeds": {
+			"number": 1364,
+			"name": "Willow seeds",
+			"description": "Fluffy willow seeds from the catkins. Plant them with the hoe in open ground and a willow grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"hardwood_seeds": {
+			"number": 1365,
+			"name": "Hardwood seeds",
+			"description": "Hard seeds of a tropical hardwood. Plant them with the hoe in open ground and a hardwood grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"acacia_pods": {
+			"number": 1366,
+			"name": "Acacia pods",
+			"description": "Dry acacia seed pods. Plant one with the hoe in open ground and an acacia grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"mangrove_propagules": {
+			"number": 1367,
+			"name": "Mangrove propagules",
+			"description": "Long green seedlings that drop from a mangrove ready to root. Plant one with the hoe in open ground and a mangrove grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"fir_cones": {
+			"number": 1368,
+			"name": "Balsam fir cones",
+			"description": "Upright cones from a balsam fir, seeds still inside. Plant one with the hoe in open ground and a fir grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		},
+		"maple_keys": {
+			"number": 1369,
+			"name": "Maple keys",
+			"description": "Winged maple seeds that spin as they fall. Plant them with the hoe in open ground and a maple grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Name PROVISIONAL (coordinator, 14 Nov 2026)."
+		}
 	}
 }
