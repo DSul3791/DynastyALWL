@@ -631,7 +631,6 @@ func ore_checks() -> void:
 	var ore_admin: int = inv().count_of(n("copper_ore"))
 	check(ore_admin > 0 and ev("ore_mined") == 0, "copper ore taken in Admin mode fires nothing (%d ore)" % ore_admin)
 	admin_on[0] = false
-	blows(20)
 	var ores: int = 0
 
 	for k in 20:   # one event for a blow that takes ore, however many pieces it breaks off
