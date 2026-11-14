@@ -7,9 +7,11 @@ extends RefCounted
 # Goals: every goal in the authored order, done and not done, in a scrolling list; selecting one shows its how-to, its reward (coins as the purse shows
 # them) and its prerequisites as links ("Learn first", from the goal's `after`) and what it leads to. Selecting or following a link changes only what
 # is shown: goals track and pay on the server whether or not they are looked at (decision 4). Back steps through the goals looked at.
-# Map: the charcoal map of explored land (PLAYER_CARTOGRAPHY_MAP_DESIGN.md) is not built yet; the page says so plainly (an interim state, not the Map).
+# Map: the charcoal sketch of only the land this character has surveyed (PLAYER_CARTOGRAPHY_MAP_DESIGN.md; map_page.gd draws map_knowledge.gd, which
+# the server fills, protocol 120). One map page lives as long as the Journal, so its drawn blocks are kept between openings.
 
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
+const MapPageScript := preload("res://src/client/map_page.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const INDEX := "index"
 const GOALS := "goals"
@@ -33,6 +35,8 @@ var _left: VBoxContainer
 var _right: VBoxContainer
 var _whole: VBoxContainer
 var _list_scroll: ScrollContainer
+var map_knowledge = null                                # MapKnowledge (terrain_client.gd sets it): what this character has surveyed
+var _map_page: Control                                  # MapPage, made at the first look and kept
 
 
 class JournalFrame extends Control:
@@ -155,7 +159,9 @@ func _show() -> void:
 	for column in [_left, _right, _whole]:
 		for child in column.get_children():
 			column.remove_child(child)
-			child.queue_free()
+
+			if child != _map_page:
+				child.queue_free()   # the map page is kept: its drawn blocks survive a page change
 
 	_left.visible = page != MAP
 	_right.visible = page != MAP
@@ -370,6 +376,15 @@ func _goal_link(id: String) -> Control:
 
 
 func _show_map() -> void:
-	_whole.add_child(_section("Interim page"))
-	_whole.add_child(_text("Your map is not drawn yet. The Journal's Map will be a charcoal sketch of only the land you have explored. It will grow sharper as your Mapping skill improves, and you will be able to copy it onto Map Scrolls. That map is being built. This page is a placeholder, not the finished Map.", 26, ArtKit.CREAM))
-	_whole.add_child(_text("J  Index      G  Goals      Esc  Close", 18, ArtKit.DIM))
+	if _map_page == null:
+		_map_page = MapPageScript.new()
+		_map_page.name = "MapPage"
+		_map_page.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_map_page.where = _items._player_position
+
+	if _map_page.knowledge != map_knowledge:
+		_map_page.knowledge = map_knowledge
+
+	_map_page.follow = true   # each opening starts on where you stand
+	_whole.add_child(_map_page)
+	_whole.add_child(_text("Wheel  Zoom      Drag  Move      J  Index      G  Goals      Esc  Close", 18, ArtKit.DIM))

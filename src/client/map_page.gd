@@ -1,8 +1,8 @@
 extends Control
 
 # The Journal's Map page (docs/design/PLAYER_JOURNAL_GOALS_UI.md, PLAYER_CARTOGRAPHY_MAP_DESIGN.md s1.6): one paper surface showing the
-# charcoal sketch of what THIS character has surveyed, nothing else. A fresh character sees a blank page. The Journal window puts this
-# control in its Map slot and sets `knowledge` (map_knowledge.gd) and `player_at` (the body's position, for the small cross).
+# charcoal sketch of what THIS character has surveyed, nothing else. A fresh character sees a blank page. The Journal (journal_view.gd)
+# puts this control in its Map panel and sets `knowledge` (map_knowledge.gd) and `where` (the body's position, for the small cross).
 # Mouse wheel zooms, dragging pans; nothing else on the page. Block sketches are cached and only changed blocks (and their neighbours,
 # whose edges read them) are drawn again, a few milliseconds a frame while the page is visible.
 
@@ -14,6 +14,7 @@ const ZOOM_MIN := 0.5
 const ZOOM_MAX := 6.0
 
 var knowledge = null: set = set_knowledge
+var where: Callable                 # () -> Vector3, the body's position
 var player_at: Vector3 = Vector3.ZERO
 var zoom: float = 1.5               # screen pixels per sketch pixel
 var centre: Vector2 = Vector2.ZERO  # the world sketch pixel at the middle of the page
@@ -69,6 +70,13 @@ func _world_to_sketch(at: Vector3) -> Vector2:
 func _process(_delta: float) -> void:
 	if knowledge == null or not is_visible_in_tree():
 		return
+
+	if where.is_valid():
+		var at: Vector3 = where.call()
+
+		if at.distance_squared_to(player_at) > 0.01:
+			player_at = at
+			queue_redraw()
 
 	if follow:
 		var want: Vector2 = _world_to_sketch(player_at)

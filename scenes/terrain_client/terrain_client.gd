@@ -1396,6 +1396,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
 	var tq_dialogue: int = Probe.start()
