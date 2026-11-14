@@ -140,6 +140,7 @@ const SRC_PICKUP := "pickup"
 const SRC_GATHER := "harvest"
 const SRC_CRAFT := "craft"
 const SRC_REWARD := "quest"
+const SRC_RETURN := "returned"   # handed back, not gathered: a refund, a site taken down, a rock pile unpiled, shovelfuls the ground refused (no goal got: count)
 var _gain_source: String = SRC_PICKUP   # who is adding right now; callers set it around give()
 var _gain_quiet: bool = false        # wearing and taking off gear moves items without gaining any
 var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
@@ -416,6 +417,7 @@ var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe g
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
+var _fellers: Dictionary = {}       # trunk id -> the character key that felled it, until it splits by itself (server only: the trunk record goes to clients; not saved)
 var _split_due: Dictionary = {}      # trunk id -> tick msec after which it breaks into logs by itself (a felled tree nobody has cut yet)
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
@@ -854,6 +856,9 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_w
 	_gain_source = was_src
 	_dirty = true
 
+	if was_src == SRC_PICKUP:   # no caller tagged it: a harvest, dig, mine, carcass or catch (goal got: counter)
+		_goal_got(peer, number, count)
+
 	if left > 0:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, 0.0, NAN, NAN, "", item_inst)
 
@@ -1113,10 +1118,11 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_use_struct(peer, inv, a, b, count - 1)   # count: the held pack slot + 1, for the chopping block's axe (protocol 117)
 	elif kind == Net.ACT_EAT:
 		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
+		var eaten: String = table.id_of(int(inv.numbers[a])) if a >= 0 and a < inv.slot_count else ""   # before it is eaten: the goal counter names the food
 		_eat(peer, inv, a, b)
 
 		if float(vitals_of(peer).get("fed", 0.0)) > fed_before:
-			_goal_event(peer, "ate_food")
+			_goal_event(peer, "ate_food", eaten)
 	elif kind == Net.ACT_DRINK:
 		var wet_before: float = float(vitals_of(peer).get("wet", 0.0))
 		_drink_water(peer, a, inv)
@@ -2158,6 +2164,7 @@ func reset_world() -> int:
 	_mined.clear()
 	_chops.clear()
 	_split_due.clear()
+	_fellers.clear()
 	_saplings.clear()
 
 	if restore_flora.is_valid():
@@ -2769,7 +2776,10 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), int(FILL_SOIL.get(material_item, 5)))
 
 	if typeof(done) == TYPE_BOOL and not bool(done):
+		var was_src: String = _gain_source
+		_gain_source = SRC_RETURN
 		give(peer, table.number_of(material_item), pieces)   # the ground refused it: the shovelfuls come back
+		_gain_source = was_src
 
 	_dirty = true
 
@@ -4667,6 +4677,10 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		return
 
 	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {})) + (want - fits)
+
+	if it.has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
+		_goal_got(peer, int(it["number"]), int(it["count"]) - left)
+
 	_take_from(id, int(it["count"]) - left)
 
 
@@ -4734,6 +4748,10 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 
 		var share: int = mini(int(_items[heap[1]]["count"]), wanted)
 		var over: int = inv.add(number, share, 0)
+
+		if _items[heap[1]].has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
+			_goal_got(peer, number, share - over)
+
 		_take_from(int(heap[1]), share - over)
 		taken += share - over
 		wanted -= share - over
@@ -4805,6 +4823,11 @@ func _sync_world_items() -> void:
 				if fill >= 0:
 					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
 
+				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
+
+				if not crop_extra.is_empty():
+					signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997)   # a crop sown, grown a stage or gone (harvested, frost) is sent again
+
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
 
@@ -4848,6 +4871,10 @@ func _sync_world_items() -> void:
 
 						if fill >= 0:
 							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
+
+						if not crop_extra.is_empty():
+							(added[added.size() - 1][5] as Dictionary).merge(crop_extra)   # a bed's crop and stage (FARMING_SPEC.md step 6): the client draws the stage and words its E prompt
+
 					known[id] = signature
 
 		for bog in _bog_rows_near(peer, here):
@@ -5889,7 +5916,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 		return
 
 	_chops.erase(key)
-	_fell_record(chunk, info, Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z))
+	_fell_record(chunk, info, Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z), str(_peer_key.get(peer, "")))
 	_goal_event(peer, "tree_felled")
 	practice(peer, "fell_tree", clampf(float(info["trunk"]) * 3.0, 0.4, 2.0))   # a thick trunk teaches more than a sapling
 
@@ -5932,7 +5959,7 @@ func _crown_circle(spot: Vector3, info: Dictionary, yaw: float, pitch: float) ->
 	return [spot.x + sin(yaw) * along, spot.z + cos(yaw) * along, radius]
 
 
-func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
+func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: String = "") -> void:   # feller: the character key whose axe felled it (its auto-split logs are their gathering)
 	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
 	var pitch: float = 0.0
@@ -5958,6 +5985,10 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	stump["chunk"] = [chunk.x, chunk.y]
 	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": trunk}
 	_split_due[_next_id] = Time.get_ticks_msec() + FALL_SETTLE_MS
+
+	if feller != "":
+		_fellers[_next_id] = feller   # the logs it breaks into count as this character's gathering (goal got: counter, split_trunk)
+
 	_next_id += 1
 	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}
 	_next_id += 1
@@ -6677,6 +6708,9 @@ func _auto_split() -> void:
 				_items[id]["tree"].erase("auto_split")
 				_dirty = true
 
+		if not _split_due.has(id):
+			_fellers.erase(id)   # split, cut by hand or given up: no logs left to credit
+
 
 # Breaks the felled trunk `id` into logs now; true when it did. See _auto_split.
 func split_trunk(id: int) -> bool:
@@ -6738,8 +6772,11 @@ func split_trunk(id: int) -> bool:
 	_drop_scope = scope
 	_drop_scoped = true
 
+	var laid: int = 0
+
 	for spot in spots:   # the log mesh lies along its x axis: turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
-		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius))
+		if drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius)):
+			laid += 1
 
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
@@ -6752,6 +6789,13 @@ func split_trunk(id: int) -> bool:
 	_drop_scoped = false
 	_drop_scope = []
 	_dirty = true
+	var feller_peer: Variant = _peer_key.find_key(str(_fellers[id])) if _fellers.has(id) else null   # null when that character is not online
+
+	if feller_peer != null:
+		_goal_got(int(feller_peer), log_n, laid)   # the feller's gathering; a trunk cut by hand never splits by itself (blows > 0), so _cut_log_off's logs are not counted twice
+
+	_fellers.erase(id)
+
 	return true
 
 
@@ -6969,6 +7013,9 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kind
 	var at: Vector3 = it["pos"] + along * (mid * cos(pitch)) + side * (radius + 0.7) + Vector3(0.0, sin(pitch) * mid + radius, 0.0)
 	var log_n: int = _log_number(str(tree.get("species", "")))
 	var dropped: bool = drop_in_world(table.number_of("kindling"), _pick_kindling(true), at) if as_kindling else drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius))
+
+	if dropped and not as_kindling:
+		_goal_got(peer, log_n, 1)   # the log this player cut lands on the ground; picking it up later is not counted again (goal got: counter)
 
 	if not dropped:
 		_say(peer, "Too many things lie here. Clear some away first.")
@@ -7722,7 +7769,10 @@ func _cook(peer: int, inv, id: int) -> void:
 			var left_units: float = float(table.shelf_units(int(raw["number"])) - int(raw.get("wear", 0))) if table.shelf_units(int(raw["number"])) > 0 else 1.0e9
 			var life: int = table.shelf_units(cooked)
 			var age: int = maxi(life - int(minf(left_units * float(_cooking.get("cooked_life_mult", 2.0)), float(life))), 0)
+			var was_src: String = _gain_source
+			_gain_source = SRC_CRAFT   # a roast is made, not gathered (goal got: counter)
 			_take_in(peer, inv, cooked, 1, age)
+			_gain_source = was_src
 
 			return
 
@@ -9026,7 +9076,10 @@ func _take_down_site(peer: int, _inv, id: int) -> void:
 		var count: int = int(_site_of(it)["have"][item_id])
 
 		if count > 0:
+			var was_src: String = _gain_source
+			_gain_source = SRC_RETURN
 			give(peer, _refund_number(table.number_of(str(item_id))), count)
+			_gain_source = was_src
 
 	_items.erase(id)
 	_dirty = true
@@ -9156,6 +9209,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_items.erase(id)
 	_dirty = true
 
+	if _is_plot_kind(str(it["struct"]["kind"])):
+		_crops.erase(_bed_key(it["pos"]))   # a garden plot taken down takes its crop with it, so a plot built there later starts empty
+
 	if str(def.get("attach_to", "")) == "fire":
 		_refresh_pots()   # the fire keeps burning and gets its tiers back
 
@@ -9217,7 +9273,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 
 	if str(def.get("use", "")) == "unpile":
 		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
+		var was_src: String = _gain_source
+		_gain_source = SRC_RETURN
 		give(peer, table.number_of("stone"), int(def.get("stones", 45)))
+		_gain_source = was_src
 		_items.erase(id)
 		_dirty = true
 		return
@@ -10231,6 +10290,9 @@ func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: V
 
 	if left > 0:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO) if at == Vector3.INF else at, item_wear)
+
+	if _gain_source == SRC_PICKUP:   # litter, mining, boulders, fish (goal got: counter); a cooked roast is tagged craft
+		_goal_got(peer, number, count)
 
 	return count - left
 
@@ -14141,7 +14203,7 @@ func take_nest(peer: int, inv) -> bool:
 # crop (data/items/crops.json); a game day that ends with the bed's moisture at wet_min_pct or more (plot_water.gd: rain and pours fill it, the weather dries it) counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
 # pauses growth (turnip excepted) and frost kills a seedling; compost speeds one crop cycle by 20 percent; E on a ripe crop gives its yields (half without the sickle
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (key "x,z" of the bed). The client side
-# (a hoe mode that sends ACT_TILL, a seed use that sends ACT_SOW, E on a crop that sends ACT_HARVEST, the stage looks) is not built: see PROTOCOL.md.
+# (hoe till mode, E on a bed to sow, water or harvest, the placeholder stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
 const TILLED_STATE := 47
 var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured, "poured_ml": mL poured that day (a bucket a day, water_bed)}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
@@ -14177,7 +14239,7 @@ func _season() -> String:
 
 func _bed_at(id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
-	return it if (not it.is_empty() and it.has("struct") and _is_plot_kind(str(it["struct"].get("kind", "")))) else {}
+	return it if (not it.is_empty() and it.has("struct") and not it["struct"].has("site") and _is_plot_kind(str(it["struct"].get("kind", "")))) else {}   # a blueprint site of a plot is not a bed yet
 
 
 # A tilled bed, or a garden plot (structures.json "plot": true, buildables plan B5): it takes a seed, holds moisture and is tended the same way.
@@ -14697,7 +14759,15 @@ func till(peer: int, inv, at: Vector3, held_slot: int) -> int:
 func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
-	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M or slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
+	if bed.is_empty() or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		_say(peer, "Too far from the bed to sow it.")
+		return false
+
+	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
+		_say(peer, "There are no seeds in that slot to sow.")
 		return false
 
 	var key: String = _bed_key(bed["pos"])
@@ -14722,7 +14792,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
 
 	if not sow_seasons.has(_season()):
-		_say(peer, "Wrong season to sow %s" % table.in_sentence(str(def.get("name", crop_id))))
+		_say(peer, "Not the season for %s. Hold the seeds you want to sow." % table.in_sentence(str(def.get("name", crop_id))))   # the client sows the seed in hand, else the first seed in the pack (A-6)
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
@@ -14795,6 +14865,15 @@ func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	return true
 
 
+# A bed's world-row extra: {"crop": crop id, "stage": 0 to 3} for a bed with a crop on it, {} for an empty bed or any other piece (no protocol bump: PROTOCOL.md, row extras).
+func crop_row_extra(it: Dictionary) -> Dictionary:
+	if not _is_plot_kind(str(it["struct"].get("kind", ""))):
+		return {}
+
+	var crop: Dictionary = _crops.get(_bed_key(it["pos"]), {})
+	return {} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop)}
+
+
 # The stage of a crop 0 seedling .. 3 ripe; a crop short of water stays at 2.
 func crop_stage(crop: Dictionary) -> int:
 	var def: Dictionary = _crop_table().get(str(crop["crop"]), {})
@@ -14846,13 +14925,18 @@ func _crops_tick() -> void:
 func harvest(peer: int, inv, bed_id: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
-	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+	if bed.is_empty() or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		_say(peer, "Too far from the bed to harvest it.")
 		return false
 
 	var key: String = _bed_key(bed["pos"])
 	var crop: Dictionary = _crops.get(key, {})
 
 	if crop.is_empty():
+		_say(peer, "Nothing is growing there to harvest.")
 		return false
 
 	if crop_stage(crop) < 3:
@@ -15715,7 +15799,7 @@ func _hints_check(peer: int) -> void:
 # Goals (data/items/starter_goals.json by Sal, camp_goals.json; Tyler 31 Oct 2026; GOALS-REPAIR WP-GUIDE-UI 14 Nov 2026): the guide's goals in their authored order.
 # Every goal tracks on its own from the start of the character and completes the moment its check is met, in any order (GA-40): `after` names the goals
 # taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
-# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished), {have_item, count} and {have_item_any: [ids], count}
+# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished), {got_item, count} (gathered first-hand, _goal_got), {have_item, count} and {have_item_any: [ids], count}
 # (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
 # goal_counts, the same atomic file as the coins); the reward ({coin_copper: n} into the purse, or {item: [id, n]} into the pack) is paid in the same step and a
 # save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
@@ -15792,6 +15876,24 @@ func _goal_made(peer: int, item: int, crafts: int = 1) -> void:
 	_goals_check(peer)
 
 
+# Gathered first-hand (give() or _take_in() with no caller's source: a harvest, dig, mine, carcass, catch or litter): the got_item checks count it as
+# history, not possession. Trades, crafts, cooking, rewards, refunds and returns are tagged by their callers and do not count, nor do admin gives
+# (they go straight to Inventory.add). Ground items count only when found: natural scatter at its pickup (_pickup, _pickup_batch), and a log when
+# this player cuts it off a trunk (_cut_log_off; it lands on the ground), and the logs a tree breaks into by itself go to its feller (split_trunk, _fellers).
+# shortcut: other ground pickups never count, since a dropped item cannot be told from a found one; a trunk that splits while its feller is offline,
+# or after a server restart (_fellers is not saved), credits no one; revisit with GA-41 origin events.
+func _goal_got(peer: int, item: int, n: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or n <= 0 or _goals_data().is_empty() or _goals_paused(peer):
+		return
+
+	var k: String = "got:" + table.id_of(item)
+	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + n
+	_dirty = true
+	_goals_check(peer)
+
+
 # An admin give (ACT_ADMIN_GIVE): those units do not count towards a have check.
 func _goal_admin_gave(peer: int, item: int, n: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
@@ -15847,6 +15949,9 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 
 	if check.has("event"):
 		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
+
+	if check.has("got_item"):
+		return int(st["goal_counts"].get("got:" + str(check["got_item"]), 0)) >= need
 
 	if check.has("made_item"):
 		var made: int = int(st["goal_counts"].get("made:" + str(check["made_item"]), 0))
@@ -15914,7 +16019,10 @@ func _goals_check(peer: int) -> void:
 			paid = coins_of(peer) - paid
 
 			if reward.has("item"):
+				var was_src: String = _gain_source
+				_gain_source = SRC_REWARD   # a reward is not gathered (goal got: counter)
 				give(peer, table.number_of(str(reward["item"][0])), int(reward["item"][1]))
+				_gain_source = was_src
 
 			if send_goal_done.is_valid():
 				send_goal_done.call(peer, id, paid)
@@ -17440,6 +17548,9 @@ func _pour_back(peer: int, ml: int, src: Dictionary = {}) -> void:
 
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
+	var was_src: String = _gain_source
+	_gain_source = SRC_RETURN   # given back, not gathered (goal got: counter)
+
 	for need in entry[2]:
 		var left: int = int(need[1]) * int(entry[1])
 
@@ -17460,6 +17571,8 @@ func _refund_entry(peer: int, entry: Array) -> void:
 				left -= n
 
 		give(peer, _refund_number(int(need[0])), left)   # a group ingredient gives back its lowest member, as a taken-down piece does
+
+	_gain_source = was_src
 
 
 # Keeps what a craft took, in order, so a refund gives back as it was what is still owed: row k gains a third value, the list of

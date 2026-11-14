@@ -3,6 +3,9 @@ extends SceneTree
 # Farming rules on the server (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026). A hoe tills a bed; a seed is sown only in its season and is used up; a game day that
 # ends with the bed's moisture at 25 percent or more (rain fills it, a pour adds to it, the weather dries it) is a wet day; a crop is ripe only when old enough AND wet enough (a dry bed stalls at stage 2); winter pauses growth and kills a seedling (turnip
 # grows on); compost speeds growth by 20 percent; harvest gives the yields and seeds back, half without the sickle for grain; an unripe crop is refused; crops are saved.
+# GOALS-REPAIR WP-R1B adds the player's route through the requests the client sends (ACT_SOW with the bed id and the seed's pack slot, ACT_WATER_BED, ACT_HARVEST): a real flax
+# crop from wild seed to harvest, the sowing seasons of flax and the four grains in every season, a wrong seed, too far, a double harvest, the crop and stage in the bed's world
+# row, and the crop's stage through a save and restart. The client half (prompts, stage looks) is held by test_farm_prompt.gd.
 #   godot --headless --path . --script res://src/worldgen/tools/test_farming.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
@@ -16,6 +19,9 @@ var items
 var clock: Array = [0.0]
 var season: Array = ["spring"]
 var rain: Array = [0.0]
+var sent: Array = []     # every send_world_items call: [peer, added rows, removed ids]
+var notes: Array = []    # every notice the server said to the player
+var last_extra: Dictionary = {}
 
 
 func check(ok: bool, what: String) -> void:
@@ -30,9 +36,9 @@ func make(dir: String):
 	var it = ItemsScript.new()
 	it.send_full = func(_p, _b): pass
 	it.send_slots = func(_p, _b): pass
-	it.send_world_items = func(_p, _a, _r): pass
+	it.send_world_items = func(p, a, r): sent.append([p, a, r])
 	it.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	it.send_notice = func(_p, _t): pass
+	it.send_notice = func(_p, t): notes.append(t)
 	it.ground_height = func(_x, _z): return 10.0
 	it.game_seconds = func(): return clock[0]
 	it.season_now = func(): return season[0]
@@ -59,6 +65,24 @@ func bed_id() -> int:
 			return k
 
 	return 0
+
+
+# What the server sends the farmer for this bed now: the extras of its latest world row (a row is resent only when its signature changed, so a stage that did not reach the wire
+# would still show the old extras here and fail the check).
+func row_extra(bed: int) -> Dictionary:
+	sent.clear()
+	items._sync_world_items()
+
+	for batch in sent:
+		for row in batch[1]:
+			if int(row[0]) == bed:
+				last_extra = row[5]
+
+	return last_extra
+
+
+func act(kind: int, a: int, b: int = 0) -> void:
+	items.action(1, kind, a, b, 0, Vector3.ZERO)
 
 
 func days(n: int) -> void:
@@ -105,6 +129,173 @@ func _moisture_checks(bed: int) -> void:
 	check(bed_loss > 0.0 and absf(plot_loss - bed_loss * 0.7) < 0.01, "the framed plot loses 0.7 of the bed's water (%.1f, %.1f)" % [plot_loss, bed_loss])
 	items._items.erase(920001)
 	items._structures.erase("test_plot")
+
+
+# The player's route, as the client sends it (inventory_view.gd _bed_interaction): sow by bed id and seed slot, water, harvest. Leaves the bed empty.
+func _route_checks(bed: int, crops: Dictionary) -> void:
+	var inv = items.inventory_of(1)
+	var key: String = items._bed_key(items._items[bed]["pos"])
+	items._crops.erase(key)
+	rain[0] = 0.0
+	season[0] = "spring"
+	check(row_extra(bed).get("crop", "") == "", "an empty bed's world row carries no crop")
+
+	# Refusals first: a seed is kept, the bed stays empty, and the player is told why.
+	var sickle_slot: int = slot_of("bronze_sickle")
+	notes.clear()
+	act(Net.ACT_SOW, bed, sickle_slot)
+	check(not items._crops.has(key) and count("bronze_sickle") == 1 and notes.has("That cannot be sown."), "a wrong seed (a sickle) is refused: nothing sown, nothing used, the player told")
+	act(Net.ACT_SOW, bed, 99)
+	check(not items._crops.has(key), "a slot that does not exist sows nothing")
+	var moisture_before: float = items.plot_moisture(items._items[bed]["pos"])
+	act(Net.ACT_WATER_BED, bed)
+	check(not items._crops.has(key) and items.plot_moisture(items._items[bed]["pos"]) == moisture_before, "watering an empty bed does nothing")
+	notes.clear()
+	act(Net.ACT_HARVEST, bed)
+	check(not items._crops.has(key) and notes.has("Nothing is growing there to harvest."), "harvesting an empty bed does nothing and says so")
+	items.report_position(1, Vector3(40.0, 10.0, 40.0))
+	notes.clear()
+	act(Net.ACT_HARVEST, bed)
+	act(Net.ACT_SOW, bed, sickle_slot)
+	check(notes.has("Too far from the bed to harvest it.") and notes.has("Too far from the bed to sow it."), "harvesting or sowing a bed out of reach is refused with a notice (%s)" % str(notes))
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	notes.clear()
+	act(Net.ACT_SOW, bed, 99)
+	check(not items._crops.has(key) and notes.has("There are no seeds in that slot to sow."), "a stale seed slot sows nothing and says so")
+
+	# A blueprint site of a plot is not a bed yet: it takes no seed.
+	items._items[920004] = {"number": items.table.number_of("wooden_garden_plot"), "count": 1, "pos": Vector3(-1.5, 10.0, 1.5), "left": 1.0e9, "struct": {"kind": "wooden_garden_plot", "yaw": 0.0, "site": {}}}
+	check(items._bed_at(920004).is_empty() and not items.sow(1, items.inventory_of(1), 920004, sickle_slot) and not items._crops.has(items._bed_key(Vector3(-1.5, 10.0, 1.5))), "a plot's blueprint site is not a bed: nothing is sown on it")
+	items._items.erase(920004)
+
+	# Flax, from the wild seed the gather above gave to a harvest.
+	if count("flax_seeds") == 0:
+		give("flax_seeds", 1)
+
+	var flax_seeds: int = count("flax_seeds")
+	var flax_seasons: Array = crops["flax"].get("sow_seasons", [crops["flax"].get("sow_season", "spring")])   # the season comes from the data, as the matrix below does
+	var in_season: String = str(flax_seasons[0])
+	var off_season: String = str(["spring", "summer", "autumn", "winter"].filter(func(x): return not flax_seasons.has(x))[0])
+	season[0] = off_season
+	notes.clear()
+	act(Net.ACT_SOW, bed, slot_of("flax_seeds"))
+	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds and notes.has("Not the season for flax. Hold the seeds you want to sow."), "flax is refused in %s (sow_seasons %s): seed kept, the server's text says why and what to do (%s)" % [off_season, str(flax_seasons), str(notes)])
+	season[0] = in_season
+	items.report_position(1, Vector3(40.0, 10.0, 40.0))
+	act(Net.ACT_SOW, bed, slot_of("flax_seeds"))
+	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds, "sowing a bed out of reach is refused")
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	act(Net.ACT_SOW, bed, slot_of("flax_seeds"))
+	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "flax" and count("flax_seeds") == flax_seeds - 1, "in %s flax is sown by bed id and seed slot and the seed is used" % in_season)
+	var extra: Dictionary = row_extra(bed)
+	check(extra.get("crop", "") == "flax" and int(extra.get("stage", -1)) == 0, "the bed's world row now says flax, stage 0 (%s)" % str(extra))
+
+	# Water from a real filled bucket in hand, as the client sends it (b = the container's pack slot; crops.json moisture pour_ml, GOALS-REPAIR A-3): a full bucket is pour_pct
+	# and empties, the same day's second pour is refused with a notice, and an empty container or an item that is no container is refused. Nothing is taken when refused.
+	if slot_of("bucket") < 0:
+		give("bucket", 1)
+
+	var bucket: int = slot_of("bucket")
+	var pos: Vector3 = items._items[bed]["pos"]
+	items._plot_water[key] = [30.0, clock[0]]
+	inv.wear[bucket] = 0
+	notes.clear()
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(notes.has("That holds no water.") and items.plot_moisture(pos) == 30.0, "an empty bucket in hand pours nothing and the player is told")
+	act(Net.ACT_WATER_BED, bed, sickle_slot)
+	check(items.plot_moisture(pos) == 30.0 and count("bronze_sickle") == 1, "a sickle named as the container pours nothing")
+	inv.wear[bucket] = 8000
+	notes.clear()
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(inv.wear[bucket] == 0 and absf(items.plot_moisture(pos) - 38.0) < 0.01 and int(items._crops[key]["poured"]) == items._game_day(), "a filled bucket in hand waters the bed: the bucket is emptied, the bed gains a bucket's 8 percent (%.1f)" % items.plot_moisture(pos))
+	inv.wear[bucket] = 8000
+	notes.clear()
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(inv.wear[bucket] == 8000 and absf(items.plot_moisture(pos) - 38.0) < 0.01 and notes.has("The bed has had its water today."), "a second bucket the same day is refused, kept full, and the player is told")
+	inv.wear[bucket] = 0
+
+	notes.clear()
+	var fibre: int = count("plant_fibre")
+	act(Net.ACT_HARVEST, bed)
+	check(items._crops.has(key) and notes.has("It is not ripe yet.") and count("plant_fibre") == fibre, "a flax seedling is not harvested: the player is told it is not ripe")
+
+	var grow: int = int(crops["flax"]["grow_days"])
+	season[0] = "summer"
+	rain[0] = 0.5
+	days(int(grow * 0.5))
+	check(int(row_extra(bed).get("stage", -1)) == 2, "half way through the grow days the row says stage 2")
+	days(grow - int(grow * 0.5))
+	check(int(row_extra(bed).get("stage", -1)) == 3, "after the grow days with rain on each the row says stage 3, ripe")
+	var flax_before: int = count("flax")
+	var back_before: int = count("flax_seeds")
+	act(Net.ACT_HARVEST, bed)
+	check(not items._crops.has(key) and count("flax") - flax_before == int(crops["flax"]["yields"][0][1]) and count("plant_fibre") - fibre == int(crops["flax"]["yields"][1][1]) and count("flax_seeds") - back_before >= 2, "harvest with the sickle gives the full flax and plant fibre and seeds back (flax +%d, fibre +%d)" % [count("flax") - flax_before, count("plant_fibre") - fibre])
+	check(row_extra(bed).get("crop", "") == "", "the bed's row loses its crop after the harvest")
+	var after: int = count("flax")
+	act(Net.ACT_HARVEST, bed)
+	check(count("flax") == after and not items._crops.has(key), "a second harvest of the same bed gives nothing")
+
+	# Flax and the four grains in every season: sown exactly in their sow_seasons (data/items/crops.json, GOALS-REPAIR A-4: no season data change).
+	var sowable: int = 0
+
+	for crop in ["flax", "wheat", "barley", "oats", "rye"]:
+		var def: Dictionary = crops[crop]
+		var seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])
+		var seed_id: String = str(def["seed"])
+		var shown: Array = []
+
+		for s in ["spring", "summer", "autumn", "winter"]:
+			season[0] = s
+			give(seed_id, 1)
+			var seeds: int = count(seed_id)
+			act(Net.ACT_SOW, bed, slot_of(seed_id))
+			var sown: bool = items._crops.has(key)
+			var right: bool = sown == seasons.has(s) and (count(seed_id) == seeds - 1 if sown else count(seed_id) == seeds)
+			items._crops.erase(key)
+			inv.remove(items.table.number_of(seed_id), count(seed_id))
+			sowable += 1 if sown else 0
+
+			if not right:
+				check(false, "%s sown in %s: expected %s" % [crop, s, str(seasons.has(s))])
+			elif sown:
+				shown.append(s)
+
+		check(not shown.is_empty() and shown.size() == seasons.size(), "%s sows in exactly its seasons %s (sown in %s)" % [crop, str(seasons), str(shown)])
+
+	check(sowable >= 5, "every one of flax and the four grains can be sown in some season (%d season slots)" % sowable)
+	season[0] = "spring"
+
+
+# A garden plot taken down takes its crop with it: a plot built on the same spot later starts empty (the crop record is keyed by the spot, not by the plot).
+func _plot_takedown_checks() -> void:
+	var spot: Vector3 = Vector3(-1.5, 10.0, -1.5)
+	var kind: String = "wooden_garden_plot"
+	items._items[920002] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
+	var key: String = items._bed_key(spot)
+	season[0] = "spring"
+	give("barley_seeds", 1)
+	act(Net.ACT_SOW, 920002, slot_of("barley_seeds"))
+	check(items._crops.has(key) and items.crop_row_extra(items._items[920002]).get("crop", "") == "barley", "barley is sown in a garden plot")
+	# A garden plot is a hammer blueprint piece (blueprints.json), so taking it down gives its materials back, not a kit.
+	var cost: Array = items._blueprints[int(items._blueprint_of_kit["wooden_garden_plot_kit"])]["cost"]
+	var before: Dictionary = {}
+
+	for need in cost:
+		before[str(need[0])] = count(str(need[0]))
+
+	act(Net.ACT_PICKUP, 920002)
+	var refunded: bool = true
+
+	for need in cost:
+		refunded = refunded and count(str(need[0])) - int(before[str(need[0])]) == int(need[1])
+
+	check(not items._items.has(920002) and refunded, "the plot is taken down and its blueprint materials come back (%s)" % str(cost))
+	check(not items._crops.has(key), "its crop record went with it")
+	items._items[920003] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
+	check(not items._bed_at(920003).is_empty() and items.crop_row_extra(items._items[920003]).is_empty(), "a new plot built on the same spot is empty")
+	act(Net.ACT_HARVEST, 920003)
+	check(not items._crops.has(key), "and has nothing to harvest")
+	items._items.erase(920003)
 
 
 func _init() -> void:
@@ -239,12 +430,23 @@ func _init() -> void:
 	check(int(items._crops[key]["wet"]) == 1, "water poured makes the next game day wet")
 
 	_moisture_checks(bed)
+	_route_checks(bed, crops)
+	_plot_takedown_checks()
 
-	# Save and restart.
-	items._save_characters()
-	items._write_atomic("crops.json", {"version": 1, "crops": items._crops})
+	# Save and restart: a barley crop grown to a stage keeps its crop, its age and its stage (the world save, not a hand-written file).
+	season[0] = "spring"
+	give("barley_seeds", 1)
+	act(Net.ACT_SOW, bed, slot_of("barley_seeds"))
+	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "barley", "barley is sown again for the save")
+	season[0] = "summer"
+	rain[0] = 0.5
+	days(int(int(crops["barley"]["grow_days"]) * 0.5) + 1)
+	var stage_saved: int = items.crop_stage(items._crops[key])
+	check(stage_saved >= 2, "the barley has grown (stage %d)" % stage_saved)
+	items.save()
 	items._finish_writer()
 	var again = make(dir)
 	check(again._crops.has(key) and str(again._crops[key]["crop"]) == "barley", "the crop is saved and still growing after a restart")
+	check(again._crops.has(key) and again.crop_stage(again._crops[key]) == stage_saved and float(again._crops[key]["age"]) == float(items._crops[key]["age"]), "and its age and stage (%d) are the same after the restart" % stage_saved)
 	print("farming: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
