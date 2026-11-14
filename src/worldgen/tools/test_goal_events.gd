@@ -322,6 +322,16 @@ func store_checks() -> void:
 	check(ev("stored_item") == 0, "wood put on a fire is fuel, not storage: stored_item stays 0")
 	chest = items.dev_place("chest@-1.5,0.0,0")
 	admin_then_real("stored_item", do_store, "a stick put into a chest")
+	var bag: int = inv().hotbar_slots   # Store all moves the bag slots: three stacks go in at once, one act
+	inv().numbers[bag] = n("stick")
+	inv().counts[bag] = 2
+	inv().numbers[bag + 1] = n("stone")
+	inv().counts[bag + 1] = 2
+	inv().numbers[bag + 2] = n("flint")
+	inv().counts[bag + 2] = 2
+	items._chest_viewer[1] = chest
+	items.action(1, Net.ACT_BULK, 1, 0, 0, Vector3.ZERO)
+	check(items._chests[int(items._items[chest]["struct"]["uid"])].count_of(n("flint")) == 2 and ev("stored_item") == 2, "Store all of three stacks is one act: stored_item rose by 1, not 3 (%d)" % ev("stored_item"))
 
 
 # ---------------- Part 2: a fresh world (no stations or fires left over from part 1) ----------------
@@ -608,8 +618,18 @@ func ore_checks() -> void:
 	check(ore_admin > 0 and ev("ore_mined") == 0, "copper ore taken in Admin mode fires nothing (%d ore)" % ore_admin)
 	admin_on[0] = false
 	blows(20)
-	var ore_real: int = inv().count_of(n("copper_ore")) - ore_admin
-	check(ore_real > 0 and ev("ore_mined") == ore_real, "each copper piece taken with the pick fires ore_mined (%d pieces, %d events)" % [ore_real, ev("ore_mined")])
+	var ores: int = 0
+
+	for k in 20:   # one event for a blow that takes ore, however many pieces it breaks off
+		var before: int = inv().count_of(n("copper_ore"))
+		var events: int = ev("ore_mined")
+		blows(1)
+
+		if inv().count_of(n("copper_ore")) > before:
+			ores += 1
+			check(ev("ore_mined") == events + 1, "a blow that took %d copper ore fires ore_mined once" % (inv().count_of(n("copper_ore")) - before))
+
+	check(ores > 0 and ev("ore_mined") == ores, "the pick took ore on %d blows and fired %d events" % [ores, ev("ore_mined")])
 
 
 func _init() -> void:

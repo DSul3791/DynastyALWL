@@ -1086,6 +1086,7 @@ const SLOW_ACTION_MS := 20.0
 
 
 func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
+	_act_events.clear()
 	var t0: int = Time.get_ticks_usec()
 	_action(peer, kind, a, b, count, at)
 	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
@@ -5686,7 +5687,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 				ore_item = table.number_of(piece_id)
 
 				if ore_item > 0 and not rock_piece:
-					_goal_event(peer, "ore_mined")   # ADD-26: a pick took ore from an outcrop (the piece goes into the pack just below); limestone is a rock piece, not ore
+					_goal_event_act(peer, "ore_mined")   # ADD-26: once per blow, however many pieces; a pick took ore from an outcrop (the piece goes into the pack just below); limestone is a rock piece, not ore
 
 		# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule or an ore is one piece, never a double.
 		if ore_item > 0:
@@ -10242,7 +10243,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 
 	if amount > left and id >= 0:
 		if bool(_structures.get(kind, {}).get("lockable", false)):
-			_goal_event(peer, "stored_item")   # ADD-13: items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
+			_goal_event_act(peer, "stored_item")   # ADD-13: once per act (Store all and a view deposit put many stacks); items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
 		elif str(_structures.get(kind, {}).get("use", "")) == "serve":
 			_goal_event(peer, "platter_served")   # ADD-21: a food board set out on a Serving platter (it stands on a table, _place), by its owner (_platter_mine)
 
@@ -16063,6 +16064,19 @@ func _goal_event(peer: int, name: String, what: String = "") -> void:
 
 	_dirty = true
 	_goals_check(peer)
+
+
+# An event that counts once per player act, however many stacks or pieces the act moved (Store all, a boulder blow that breaks several pieces):
+# _act_events is cleared when each action starts.
+var _act_events: Dictionary = {}   # "<peer>:<event>" fired during the current action
+
+
+func _goal_event_act(peer: int, name: String) -> void:
+	var k: String = "%d:%s" % [peer, name]
+
+	if not _act_events.has(k):
+		_act_events[k] = true
+		_goal_event(peer, name)
 
 
 # An event that counts only the first time per `what` (a plant, a fish kind): its own "event:<name>:<what>" count is the seen mark, so nothing else is saved.
