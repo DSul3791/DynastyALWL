@@ -1,5 +1,7 @@
 # Valley fog: height fog with a mist value
 
+> **14 Nov 2026:** Dave's fog instruction ([FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md), approved) supersedes the look described here where they differ. The inside-the-layer look is now depth fog with his dense-fog distances and a sky hidden by the fog overhead ([FOG_PLAN.md](FOG_PLAN.md)). The layer seen from above and the weather values (`mist`, `mist_top_m`) are unchanged until the second fog PR.
+
 Jamie, 8 Nov 2026. This builds item 1 of Kathleen's fog table in `docs/design/art_weather_light.md` (#598, section 7). It follows the coordinator's decision 6 of 8 Nov 2026: height fog and a `mist` value in the weather state, valley fog first. Her document stays the source of truth for the look. This note only adds the numbers and limits the code needed.
 
 ## What the real thing does
