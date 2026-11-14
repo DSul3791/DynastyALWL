@@ -937,6 +937,8 @@ func step3_construction_and_equipment() -> void:
 	var ks: int = slot_of("steel_knife")
 	var base_d: int = int(items.table.entry("steel_knife")["durability"])
 	check(ks >= 0 and int(inv.inst_of(ks).get("temper", 0)) == 1 and inv.max_durability(ks) > base_d, "3y. a Tempered Steel - Knife from Advanced smelter steel (lasts %d against %d)" % [inv.max_durability(ks) if ks >= 0 else -1, base_d])
+	if master >= 0:
+		items._items[master]["struct"]["lit"] = false   # the Master smithy is let go out (its fuel runs 1800 s): later crafts at the yard are worked at the Improved smithy beside the player
 
 	# Building stuff left over stays at the forge yard (the carry limit); the small things go into the Rustic - Chest at depot A.
 	leave({"brick": 0, "mortar": 0, "stone": 0, "log": 0, "stick": 4, "charcoal": 12, "plant_fibre": 0, "clay": 0, "sand": 0})

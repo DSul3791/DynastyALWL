@@ -17282,7 +17282,11 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 
 	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
 	# A Tempered or +1/+2 craft goes to the station that makes it (the Master smithy), not to a nearer smithy that serves only the plain recipe.
-	var work: Dictionary = _variant_recipe(recipe, variant) if variant != 0 and SmithingRules.valid(variant) else recipe
+	# Only for a variant this item may have at all (the stations aside), so a bad request never moves the player.
+	var gives_v: Array = recipe.get("gives", [0, 0])
+	var made_v: String = table.id_of(int(gives_v[0])) if not gives_v.is_empty() else ""
+	var eligible: bool = variant != 0 and SmithingRules.valid(variant) and made_v != "" and SmithingRules.variants(made_v, table.entry(made_v), int(gives_v[1]) if gives_v.size() > 1 else 1, true, true).has(variant)
+	var work: Dictionary = _variant_recipe(recipe, variant) if eligible else recipe
 	var station_name: String = str(work.get("station", ""))
 	var station_level: int = int(work.get("station_level", 1))
 
