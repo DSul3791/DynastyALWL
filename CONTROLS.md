@@ -16,7 +16,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Shift + right click with a hoe | Sets grade point A, then B (stakes show). The moment B is set the ground along the line is levelled to the ramp between the two heights and a path is laid along it, by itself (about 2 stations a second, up to 40 m); a third click starts a new line |
 | Hold Shift + left click with a hoe | Grades the ground within 1.5 m of the A-B line toward a straight ramp (0.25 m per stroke, within 12 m of A, free; only the hoe wears) |
 | (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when running (9 m, BUG-011) than walking (4.2 m, the old jog stride) |
-| Space | Jump (walking) or go up (flying); on a ladder, let go and drop back |
+| Space | Jump (walking) or go up (flying); on a ladder, let go and drop back. Nothing while a screen (inventory, Tab, Journal, a talk) is open, as Ctrl (down) and the ladder keys too; holding it still wakes you from sleep |
 | Ladder (W / S) | Walk up to a placed ladder facing it and hold W to grab on and climb (1.1 m/s); S climbs down and steps off at the bottom; at the top W steps you onto the edge |
 | Ctrl | Go down (flying) |
 | Ctrl+Shift+G | Admin: switch between walking and flying (admin and debug shortcuts always need both Ctrl and Shift; plain G opens the Journal's Goals page) |
