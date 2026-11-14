@@ -70,7 +70,20 @@ David4 ran the release_check set (`tests_for_diff.py --paths project.godot --ful
 
 Seven files are over the warning baseline. `test_wood_sources.gd` came in with #1091 and is fixed in PR #1103. The other six (server_items.gd 9/8, test_serving_platter, test_item_instances, test_storage_locks, storage_dialogs, item_slot) are pre-existing, and `tools/warning_baseline.txt` looks stale. Those six are unrelated to this mission and are not fixed here.
 
+## Final broad run (14 Nov, dev 55c5b2a)
+
+David4 ran the full release_check set on dev `55c5b2ab6a62ea9d1e101a4ba470aae80f93b0c9` (all mission code plus plumbing #1120, gardening #1123/#1128). Logs: David4 /work/lanerun/final_dev55c5b2a/.
+
+- Tests: 379 fast + 8 timing + 4 slow = 391; 391 pass, 0 fail, no FLAKE, 0 SCRIPT ERRORs in any test output; wall 1217 s. New test files since the 0bc1930 run: test_advanced_smelter, test_flora_workers, test_goal_events, test_resource_bins, test_smithy_repair, test_tier_pieces, test_wells.
+- `--check-only` on all 58 .gd under src changed since 0bc1930: all parse.
+- validate_items 0 errors, 114 warnings (dead-end line names 83). check_look_names: all 329 structure looks drawable. placeables_check ok (293 structures with kits, 278 live blueprints). merge_check all clear (protocol 121, build 826, the known carry_audit warning). encyclopedia_reach `--check` exit 0 (0 now / 0 no longer / 3 future / 28 not reached); `--write` was a no-op.
+- check_warnings: 914 scripts, 403 warnings across 137 files; new baseline saved on the lane as warning_baseline_55c5b2a.txt.
+- Smokes: 2 of 3 reached ground ready (+128.6 s, +127.7 s) with no errors. **Run 2 CRASHED** 5 s after the welcome (signal 11): "Attempting to initialize the wrong RID" and "mem" null lines at 4 s, before the welcome and any flora task, then renderer errors in make_avatar (dynasty_body.gd:124) and the dynasty_shapes prewarm (:157, SCRIPT ERROR at :177), fatal in animal_view.gd:1705 `_ball` building a grouse. Not the flora path #1124 fixed.
+- **Status: not complete and not verified clean.** All mission code is in dev (the verification report #1130 is in dev ab8a6c2; this tracker PR is docs only) and all 391 automated tests pass, but the REPAIR_DECISIONS §5 RID defect (older than the mission) stays OPEN as a known intermittent client crash at join in headless runs: 2 crashes (signal 11) in 58 smokes on 14 Nov, 14 of the 58 with RID or null-mesh lines, 44 clean; cause unconfirmed; windowed impact unknown. The Journal thread is on it again. F6 play checks and Dave's review of the A-n, G-n and P-n assumptions stay with him.
+
 ## Next actions
+
+(Historical start-of-mission list; superseded by the Final broad run section above and the last "Remaining for completion" note below.)
 
 1. Finish baselines; assign first ready packages (R1 sources/water/farming, admin Ctrl+Shift shortcuts, goal-state sync foundation).
 2. Ask the coordinator to start separate threads for large independent packages (Journal/HUD/placard UI; charcoal Map; smelting/smithy chain) with self-contained briefs.
@@ -99,3 +112,4 @@ Seven files are over the warning baseline. `test_wood_sources.gd` came in with #
 - Follow-on work, NOT part of this mission's completion criteria: plumbing (thread "Build wooden and iron plumbing", PR #1120 and later; P- list in docs/design/PLUMBING_DESIGN.md) and Hoe gardening (thread "Add gardening to the Hoe", #1119 in dev 02c04ca; G- list in docs/design/HOE_GARDENING_DESIGN.md), both added by Dave on 14 Nov around 06:30Z.
 - Remaining for completion (14 Nov 08:32Z): #1125 goal events; #1124 flora worker fix (Journal thread); the verification thread's final R9 docs PR; the lead's final tracker PR; then encyclopedia_reach --write/--check and one full tools/release_check.sh on the final dev head; then the report to Dave. #1113 tier pieces in dev 0574fab completes the building pieces.
 - Remaining for completion (14 Nov 10:20Z): #1125 IN DEV at fbd5c3c and #1124 flora fix IN DEV at 55b38a4. Left: the verification thread's final R9 docs PR; this tracker PR; after plumbing #1120 and gardening #1123 merge (both add items), encyclopedia_reach `--write`/`--check` and one full `tools/release_check.sh` on that final dev head (one run, not two: coordinator 10:16Z, lead agreed); then the short report to Dave. Not called complete: F6 play checks and his review of the A-n, G-n and P-n assumptions stay with him.
+- Update 14 Nov 11:56Z: the full release_check ran on dev 55c5b2a (see "Final broad run" above). Left: this tracker PR, the open join crash (§5), then the report to Dave.
