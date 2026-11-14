@@ -17414,7 +17414,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR (14 Nov 2026), Dave: \"all tiers get a tier - Roof 45 and tier - Roof 65\": blueprint 315, structure state 391; cost Engineered - Roof 45 plus 4 Iron band, PROVISIONAL. Not run: the Godot tests wait for the test PC."
+   "note": "GOALS-REPAIR (14 Nov 2026), Dave: \"all tiers get a tier - Roof 45 and tier - Roof 65\": blueprint 315, structure state 391; cost Engineered - Roof 45 plus 4 Iron band, PROVISIONAL (GOALS-REPAIR A-39). Not run: the Godot tests wait for the test PC."
   },
   {
    "key": "new:Fortified - Roof 65",
@@ -17432,7 +17432,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "GOALS-REPAIR (14 Nov 2026), Dave: \"all tiers get a tier - Roof 45 and tier - Roof 65\": blueprint 316, structure state 392; cost Engineered - Roof 45 plus 4 Iron band, PROVISIONAL. Not run: the Godot tests wait for the test PC."
+   "note": "GOALS-REPAIR (14 Nov 2026), Dave: \"all tiers get a tier - Roof 45 and tier - Roof 65\": blueprint 316, structure state 392; cost Engineered - Roof 45 plus 4 Iron band, PROVISIONAL (GOALS-REPAIR A-39). Not run: the Godot tests wait for the test PC."
   }
  ],
  "acceptance_note": "Mission 001 (12 Nov 2026): TESTED - ACCEPTED means implemented, independently reviewed and passing automated server-side tests (per-phase tests, the integrated walkthrough test_mission001_walkthrough, full suite 358/360 with 2 known flakes at aa8113c33). NOT included: in-game visual, UI and two-client checks, which were not run, and final art: most new pieces use marked placeholder looks. RETIRED - MIGRATION VERIFIED: retired with numbers kept and tests passing; Dave ruled no old-save migration is needed (new game)."

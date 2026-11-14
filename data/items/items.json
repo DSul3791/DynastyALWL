@@ -10721,7 +10721,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 391; a sloped roof panel, no posts (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL), built with the hammer (blueprint 315)."
+				"note": "Placed piece: row state 391; a sloped roof panel, no posts (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL (GOALS-REPAIR A-39)), built with the hammer (blueprint 315)."
 			},
 			"fortified_roof_65": {
 				"number": 1326,
@@ -10731,7 +10731,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 392 (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL): the 65 degree twin of Fortified - Roof 45 (fortified_roof), built with the hammer (blueprint 316)."
+				"note": "Placed piece: row state 392 (GOALS-REPAIR, Dave 14 Nov 2026: every tier has a Roof 45 and a Roof 65; cost PROVISIONAL (GOALS-REPAIR A-39)): the 65 degree twin of Fortified - Roof 45 (fortified_roof), built with the hammer (blueprint 316)."
 			}
 	}
 }
