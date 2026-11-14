@@ -275,6 +275,8 @@ func count_fill(number: int, plain_only: bool = false) -> int:
 # (capacity_ml items keep their water in `wear`, in mL; a container only ever holds fresh water, a drink at salt water is refused), pooled across them:
 # two half-full skins make a unit. Recipes and the crafting stock use count_fill / remove_fill, so they see it; count_of / has stay literal.
 # shortcut: pooled per inventory (the pack, each chest), so 300 mL in the pack and 300 mL in a chest do not make a unit; revisit if players hit it.
+# Limit: a container's instance data names no liquid kind, so every container's mL counts as fresh water. That holds today (nothing fills one but the drink/fill
+# action at fresh water and a pump). Ale or mead in a jug (items.json clay_jug, mug) must add a liquid kind to the instance data and count only "water" here.
 func liquid_ml() -> int:
 	var total: int = 0
 

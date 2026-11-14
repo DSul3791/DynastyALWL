@@ -11407,10 +11407,11 @@ func take_from(peer: int, id: String, count: int, ready_only: bool = false) -> b
 
 
 # Group-aware count and take for an NPC's ask (Mission 001 phase 2a): Hob's "firewood" is met by Hard or Soft firewood, since a plain Log now
-# chops into softwood (master s4 item 3). The literal count_for / take_from stay for everything else.
+# chops into softwood (master s4 item 3). The literal count_for / take_from stay for everything else. Plain units only: an NPC's ask never takes the water
+# out of a container (the liquid ingredient is for recipes and the bed).
 func count_fill_for(peer: int, id: String) -> int:
 	var inv = inventory_of(peer)
-	return inv.count_fill(table.number_of(id)) if inv != null and table.number_of(id) > 0 else 0
+	return inv.count_fill(table.number_of(id), true) if inv != null and table.number_of(id) > 0 else 0
 
 
 func take_fill_from(peer: int, id: String, count: int) -> bool:
@@ -11420,7 +11421,7 @@ func take_fill_from(peer: int, id: String, count: int) -> bool:
 		return false
 
 	var before: Array = _snapshot(inv)
-	var ok: bool = inv.remove_fill(table.number_of(id), count)
+	var ok: bool = inv.remove_fill(table.number_of(id), count, [], true)
 	_send_changes(peer, inv, before)
 	return ok
 
@@ -14743,7 +14744,7 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 	if ml <= 0:
 		if done_ml >= bucket_ml:
 			_say(peer, "The bed has had its water today.")
-		elif inv.count_of(table.number_of("sea_water")) > 0 and inv.liquid_ml() <= 0:
+		elif inv.count_of(table.number_of("sea_water")) > 0:
 			_say(peer, "Salt water would kill the crop. You need fresh water in a container.")
 		else:
 			_say(peer, "You have no water to pour.")
@@ -16206,8 +16207,16 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Arr
 	for i in boxes.size():
 		var share: int = int(plan[1 + ground.size() + i])
 
+		var rows_before: int = taken_inst.size()
+
 		if share > 0 and boxes[i][1].remove_fill(number, share, taken_inst, plain_only):
 			took += share
+
+			for k in range(rows_before, taken_inst.size()):   # water taken from this chest's containers goes back there on a refund (_pour_back)
+				if (taken_inst[k][1] as Dictionary).has("liquid_ml"):
+					taken_inst[k][1]["box"] = int(boxes[i][0])
+					taken_inst[k][1]["uid"] = int(_items[int(boxes[i][0])]["struct"]["uid"])
+
 			_push_box(int(boxes[i][0]), boxes[i][1])   # whoever has that chest open sees it go
 			_dirty = true
 
@@ -17300,16 +17309,26 @@ func _start_deferred(peer: int, head: Array) -> bool:
 	return true
 
 
-# Water given back (a cancelled or failed craft, GA-04) goes into containers with room: the pack's first, then the player's own storage in craft reach.
-# Whatever no container has room for is spilled; the stackable `water` item is never minted.
-func _pour_back(peer: int, ml: int) -> void:
+# Water given back (a cancelled or failed craft, GA-04) goes into containers with room: first where it came from (the row's source: a storage container of the
+# player's, wherever they are now), then the pack's, then their own storage in craft reach. Whatever no container has room for is spilled; the stackable
+# `water` item is never minted. `src`: the refund row's instance data ("box": the world id and "uid" the store's uid of the chest it was taken from, none: the pack).
+func _pour_back(peer: int, ml: int, src: Dictionary = {}) -> void:
 	var inv = inventory_of(peer)
 
 	if inv == null or ml <= 0:
 		return
 
+	var left: int = ml
+	var from_id: int = int(src.get("box", -1))
+
+	if from_id >= 0 and _items.has(from_id) and _items[from_id].has("struct") and int(_items[from_id]["struct"].get("uid", -2)) == int(src.get("uid", -1)) and _chests.has(int(src["uid"])):
+		left = _chests[int(src["uid"])].pour_liquid(left)
+
+		if left < ml:
+			_push_box(from_id, _chests[int(src["uid"])])
+
 	var before: Array = _snapshot(inv)
-	var left: int = inv.pour_liquid(ml)
+	left = inv.pour_liquid(left)
 	_send_changes(peer, inv, before)
 
 	if left > 0:
@@ -17341,7 +17360,7 @@ func _refund_entry(peer: int, entry: Array) -> void:
 			var n: int = mini(left, int(unit[3]) if unit.size() > 3 else 1)
 
 			if n > 0 and (unit[1] as Dictionary).has("liquid_ml"):   # water that came out of containers goes back into containers, never as the stackable item (GA-04)
-				_pour_back(peer, floori(float(unit[1]["liquid_ml"]) * float(n) / float(maxi(int(unit[3]), 1))))
+				_pour_back(peer, floori(float(unit[1]["liquid_ml"]) * float(n) / float(maxi(int(unit[3]), 1))), unit[1])
 				left -= n
 			elif n > 0:
 				give(peer, int(unit[0]), n, unit[1], int(unit[2]) if unit.size() > 2 else 0)

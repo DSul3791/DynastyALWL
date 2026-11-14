@@ -127,6 +127,13 @@ func queue_only() -> void:
 	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("herb_antidote"), 0, 1, Vector3.ZERO)
 
 
+# One pour on the test bed through the real action (b = the pack slot of the container in hand, -1 none); true when water left the pack.
+func pour(held: int) -> bool:
+	var before: int = inv().liquid_ml()
+	items.action(1, Net.ACT_WATER_BED, 920001, held, 0, Vector3.ZERO)
+	return inv().liquid_ml() < before
+
+
 func fresh() -> void:
 	_taken.clear()
 	reset()
@@ -247,6 +254,21 @@ func _init() -> void:
 	craft()
 	check(have("herb_antidote") == 0 and box.liquid_ml() == 500, "another player's chest is never used for water")
 
+	# A cancel from afar: the water came from the player's own chest, they walked out of reach, the cancel pours it back into that chest (never the pack, never minted).
+	fresh()
+	var far_chest: int = items.dev_place("chest@8,0,0")
+	items._items[far_chest]["struct"]["owner"] = str(items._peer_key[1])
+	var far_box = items._chests[int(items._items[far_chest]["struct"]["uid"])]
+	far_box.add(n("waterskin"), 1, 1000)
+	queue_only()
+	check(far_box.liquid_ml() == 500 and inv().liquid_ml() == 0, "the queued craft took its 500 mL from the chest's skin")
+	items.report_position(1, Vector3(0.0, 10.0, 100.0))
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(far_box.liquid_ml() == 1000 and inv().liquid_ml() == 0 and have("water") == 0 and have("plantain_leaves") == 2, "cancelled 100 m away: the 500 mL went back into the chest's skin, nothing minted")
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	items._items.erase(far_chest)
+
 	# The bed: a bucket's 8000 mL is pour_pct; the container in hand first, the pack's other water after; up to a bucket a game day; every refusal says why.
 	fresh()
 	items._structures["test_plot"] = {"kit": "test_plot_kit", "item": "tilled_bed", "state": 9907, "plot": true, "moisture_factor": 1.0, "cap_per_chunk": 12}
@@ -259,28 +281,28 @@ func _init() -> void:
 	var cfg: Dictionary = items._moisture_cfg
 	var full_pct: float = float(cfg["pour_pct"])
 	check(int(cfg.get("pour_ml", 0)) == 8000 and str(cfg.get("pour_ml_note", "")).begins_with("PROVISIONAL (GOALS-REPAIR A-3)"), "a bed's bucket is 8000 mL, tagged PROVISIONAL (GOALS-REPAIR A-3)")
-	check(not items.water_bed(1, inv(), 920001) and absf(items.plot_moisture(spot) - 50.0) < 0.01 and said.any(func(t): return t.contains("no water")), "no water: refused with a notice, nothing changes")
+	check(not pour(-1) and absf(items.plot_moisture(spot) - 50.0) < 0.01 and said.any(func(t): return t.contains("no water")), "no water: refused with a notice, nothing changes")
 	var big: int = vessel("bucket", 6500)
 	var little: int = vessel("waterskin", 1500)
-	check(items.water_bed(1, inv(), 920001), "8000 mL across two containers pour as one bucket")
+	check(pour(-1), "8000 mL across two containers pour as one bucket")
 	check(absf(items.plot_moisture(spot) - (50.0 + full_pct)) < 0.01 and inv().wear[little] == 0 and inv().wear[big] == 0 and have("bucket") == 1 and have("waterskin") == 1, "that adds pour_pct (%.2f); both containers stay, empty" % items.plot_moisture(spot))
 	inv().wear[big] = 3000
 	said.clear()
-	check(not items.water_bed(1, inv(), 920001, big) and inv().wear[big] == 3000 and said.any(func(t): return t.contains("had its water")), "a second pour the same day is refused with a notice: the day's bucket is poured, nothing is taken")
+	check(not pour(big) and inv().wear[big] == 3000 and said.any(func(t): return t.contains("had its water")), "a second pour the same day is refused with a notice: the day's bucket is poured, nothing is taken")
 
 	clock[0] += 86400.0
 	items._plot_water[key] = [50.0, clock[0]]
 	inv().wear[big] = 0
 	inv().wear[little] = 1500
-	check(items.water_bed(1, inv(), 920001, little) and absf(items.plot_moisture(spot) - (50.0 + full_pct * 1500.0 / 8000.0)) < 0.01 and inv().wear[little] == 0, "1500 mL adds pour_pct x 1500/8000 (%.3f)" % (items.plot_moisture(spot) - 50.0))
+	check(pour(little) and absf(items.plot_moisture(spot) - (50.0 + full_pct * 1500.0 / 8000.0)) < 0.01 and inv().wear[little] == 0, "1500 mL adds pour_pct x 1500/8000 (%.3f)" % (items.plot_moisture(spot) - 50.0))
 	inv().wear[little] = 1500
-	check(items.water_bed(1, inv(), 920001, little) and absf(items.plot_moisture(spot) - (50.0 + full_pct * 3000.0 / 8000.0)) < 0.01, "small pours the same day add up toward the one bucket (%.3f)" % (items.plot_moisture(spot) - 50.0))
+	check(pour(little) and absf(items.plot_moisture(spot) - (50.0 + full_pct * 3000.0 / 8000.0)) < 0.01, "small pours the same day add up toward the one bucket (%.3f)" % (items.plot_moisture(spot) - 50.0))
 
 	clock[0] += 86400.0
 	items._plot_water[key] = [50.0, clock[0]]
 	inv().wear[big] = 8000
 	inv().wear[little] = 1500
-	check(items.water_bed(1, inv(), 920001, little) and inv().wear[little] == 0 and inv().wear[big] == 1500, "the container in hand is drained first, the others make up the bucket")
+	check(pour(little) and inv().wear[little] == 0 and inv().wear[big] == 1500, "the container in hand is drained first, the others make up the bucket")
 
 	clock[0] += 86400.0
 	items._plot_water[key] = [50.0, clock[0]]
@@ -288,15 +310,15 @@ func _init() -> void:
 	inv().wear[little] = 0
 	var axe: int = vessel("stone_axe", 0)
 	said.clear()
-	check(not items.water_bed(1, inv(), 920001, axe) and not items.water_bed(1, inv(), 920001, 999) and not items.water_bed(1, inv(), 920001, little) and inv().wear[big] == 2000, "a slot that is no container, does not exist, or holds no water is refused: nothing is poured")
+	check(not pour(axe) and not pour(999) and not pour(little) and inv().wear[big] == 2000, "a slot that is no container, does not exist, or holds no water is refused: nothing is poured")
 	check(said.any(func(t): return t.contains("holds no water")), "and the player is told")
 	inv().wear[big] = 0
 	give("sea_water", 3)
 	said.clear()
-	check(not items.water_bed(1, inv(), 920001) and have("sea_water") == 3 and said.any(func(t): return t.contains("Salt water")), "sea water cannot water a bed: refused with a notice")
+	check(not pour(-1) and have("sea_water") == 3 and said.any(func(t): return t.contains("Salt water")), "sea water cannot water a bed: refused with a notice")
 	items.report_position(1, spot + Vector3(30.0, 0.0, 0.0))
 	said.clear()
-	check(not items.water_bed(1, inv(), 920001) and said.any(func(t): return t.contains("Too far")), "too far from the bed: refused with a notice")
+	check(not pour(-1) and said.any(func(t): return t.contains("Too far")), "too far from the bed: refused with a notice")
 	items._items.erase(920001)
 	items._structures.erase("test_plot")
 
