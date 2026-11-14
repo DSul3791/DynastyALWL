@@ -103,14 +103,16 @@ Each entry: question; answer chosen; precedent it was reasoned from; what it aff
   - Suspects: a startup worker task (piece_look "building pictures" prewarm, where the look count rose from 303 to 310; ground_material; body or arms shapes; summits) creating RID-backed resources off the main thread, possibly exposed by faster frames on the lane machine.
   - The exit-134 shutdown abort ("corrupted size vs. prev_size") is a separate, known issue.
   - No visible failure has been seen.
-  - **Traced 14 Nov 06:00Z (static read). It is pre-existing, not a mission regression.**
-    - The same two messages are already in docs/archive/2026-11/SMOKE_TEST.md lines 54 and 57.
-    - Both come from the headless dummy renderer's mesh store, which is not thread safe (`RID_Alloc<DummyMesh,0>`). dynasty_arms.gd ~97 already notes this.
-    - The likely source is src/flora/flora_view.gd's worker tasks, which build ArrayMeshes and read surfaces off the main thread:
-      - models task, line ~943 (TreeBuilder.build to ArrayMesh.new);
-      - seasonal models task, line ~2108, started by set_season on the welcome path;
-      - decimate task, line ~3201.
-    - Faster lane frames raise the overlap rate.
-    - Every other startup worker was read and is clean: piece_look prewarm, body/arms/shapes, ground_material, summits, map sketch and terrain_client decode/cache.
-    - Proposed fix, outside this mission, for Dave or the coordinator to schedule: run those three tasks inline when headless. ground_material.gd:643 already does this.
+  - **Status, 14 Nov 06:00Z: pre-existing, intermittent, seen only in headless runs. Cause not confirmed.**
+    - The same messages are already in docs/archive/2026-11/SMOKE_TEST.md lines 54 and 57.
+    - They come from the headless dummy renderer's mesh store, which is not thread safe. dynasty_arms.gd around line 97 notes this.
+    - Lane tally: 874be30e failed 0 of 3; dev 6df3051 failed 1 of 3.
+    - One run's first error is a variant: "Attempting to initialize the wrong RID".
+  - **Lane log evidence (coordinator):**
+    - No flora "models" or "seasonal" line is near the error. The first flora lines come 40 or more lines later.
+    - The lines next to it are early-join lines: "JOIN: waiting for ground", the ground/column answer, "block line open", and the animal code-built bodies (wildebeest, crow).
+    - In two runs, "client prewarm: loose item meshes" appears 10 to 30 lines before the error.
+  - **Most likely kind of cause:** a threaded mesh build during early join. The nearest suspects are the client loose-item prewarm and the animal code-built bodies.
+  - **Hypotheses only, not recommendations** (static read, nothing confirmed by a run): flora_view.gd worker tasks (around lines 943, 2108 and 3201) building ArrayMeshes off the main thread. A possible fix is to run them inline when headless, following ground_material.gd:643.
+  - Not fixed in this mission. Report it separately.
 - `scenes/terrain_preview/terrain_preview.gd`: bare `KEY_G` (tool scene), handled in WP-KEYS.
