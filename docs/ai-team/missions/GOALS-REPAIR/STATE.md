@@ -40,7 +40,7 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 | data/items/drops.json, inventory shared code | WP-R1A | 14 Nov |
 | src/client/key_bindings.gd, key_bindings_page.gd, game_menu.gd, CONTROLS.md, terrain_client.gd input dispatch | WP-KEYS (lead) | 14 Nov |
 | src/client/held_item.gd, harvest.gd | WP-R1B (farming) | 14 Nov |
-| PROTOCOL_VERSION | 119 → guide-UI thread (#1088); 120 → map thread (#1090, after 119); next number on request | 14 Nov |
+| PROTOCOL_VERSION | 119 → guide-UI thread (#1088); 120 → map thread (#1090, after 119); 121 → WP-METAL R4 (slot-targeted station put, after 120); next number on request | 14 Nov |
 
 ## Work packages
 
