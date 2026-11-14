@@ -244,7 +244,8 @@ var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
 var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
-var purse_copper: int = 0                      # the purse, in copper (protocol 61)
+var purse_copper: int = 0                      # the purse's worth in copper (what can be afforded)
+var purse_coins: Dictionary = {}               # the purse as held, {coin id: count} (protocol 123): coins keep the denomination they came in until a trader changes them
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
 var rep_points: PackedInt32Array = PackedInt32Array()
 var _coins_cfg: Dictionary = {}
@@ -309,7 +310,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.worn_received.connect(_on_worn)
 	net.thought_received.connect(func(...args): _timed("_on_thought", _on_thought, args))
 	net.skills_received.connect(func(...args): _timed("_on_skills", _on_skills, args))
-	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
+	net.purse_received.connect(_on_purse)
 	net.carry_received.connect(func(item_id):
 		shoulder_id = item_id
 
@@ -2167,7 +2168,8 @@ func make_coin_label(px: int) -> RichTextLabel:
 	return label
 
 
-# Fills the label with segments: a String is text, an int is a coin amount in copper drawn as "4 (copper icon) 3 (bronze icon) ...",
+# Fills the label with segments: a String is text, a Dictionary {coin id: count} is coins as held (the purse), an int is an amount in copper
+# drawn as its fewest coins, "4 (gold icon) 3 (silver icon) ...",
 # richest coin first (gold, silver, bronze, copper, left to right; TEST-002). A zero amount reads "nothing".
 func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
 	label.clear()
@@ -2180,17 +2182,22 @@ func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
 			label.add_text(segment)
 			continue
 
-		var left: int = int(segment)
 		var amounts: Array = []
 
 		for row in rows.duplicate():
 			amounts.append([row, 0])
 
-		for n in amounts.size():
-			var each: int = maxi(int(amounts[n][0]["copper"]), 1)
-			@warning_ignore("integer_division")
-			amounts[n][1] = left / each
-			left = left % each
+		if typeof(segment) == TYPE_DICTIONARY:   # coins as held {coin id: count} (the purse): shown as they are, not changed into bigger coins
+			for pair in amounts:
+				pair[1] = int(segment.get(str(pair[0]["id"]), 0))
+		else:   # a price or sum in copper: the fewest coins
+			var left: int = int(segment)
+
+			for n in amounts.size():
+				var each: int = maxi(int(amounts[n][0]["copper"]), 1)
+				@warning_ignore("integer_division")
+				amounts[n][1] = left / each
+				left = left % each
 
 		var any: bool = false
 
@@ -2219,9 +2226,23 @@ func rank_word(points: int) -> String:
 	return word
 
 
+# The purse (protocol 123): counts in coins.json ladder order.
+func _on_purse(counts: PackedInt32Array) -> void:
+	var ladder: Array = _coins_cfg.get("ladder", [])
+	purse_coins = {}
+	purse_copper = 0
+
+	for i in mini(counts.size(), ladder.size()):
+		if counts[i] > 0:
+			purse_coins[str(ladder[i]["id"])] = counts[i]
+			purse_copper += counts[i] * int(ladder[i]["copper"])
+
+	_refresh_purse()
+
+
 func _refresh_purse() -> void:
 	if _purse_label != null:
-		fill_coin_line(_purse_label, ["Purse: ", purse_copper])
+		fill_coin_line(_purse_label, ["Purse: ", purse_coins])
 
 
 func _refresh_carried() -> void:

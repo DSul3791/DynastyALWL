@@ -131,7 +131,7 @@ var recipes
 # Set by the server scene: how to talk to one peer.
 var send_full: Callable        # (peer, bytes)
 var send_slots: Callable       # (peer, bytes)
-var send_purse: Callable       # (peer, copper total): the purse (protocol 61)
+var send_purse: Callable       # (peer, PackedInt32Array coin counts in ladder order): the purse (protocol 123)
 var send_carry: Callable       # (peer, item id or ""): the large log on the shoulder (protocol 64)
 var send_reputation: Callable  # (peer, ids PackedStringArray, names PackedStringArray, points PackedInt32Array)
 var _coins_cfg: Dictionary = {}
@@ -10348,7 +10348,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, targe
 	var rec_struct: Dictionary = _items.get(id, {}).get("struct", {})
 
 	if kind != Net.ACT_CHEST_PUT and str(rec_struct.get("kind", "")) == "remains" and int(rec_struct.get("coins", 0)) > 0:
-		add_coins(peer, int(rec_struct["coins"]), "pickup")
+		for pair in purse_breakdown(int(rec_struct["coins"])):   # the remains keep the purse's worth (a world row number), found as the fewest coins
+			_add_coin(peer, str(pair[0]), int(pair[1]), "pickup")
+
 		rec_struct["coins"] = 0
 		_dirty = true
 
@@ -11610,7 +11612,7 @@ func count_for(peer: int, id: String, ready_only: bool = false) -> int:
 
 func give_to(peer: int, id: String, count: int) -> void:
 	if id.begins_with("coin_"):
-		add_coins(peer, count * coin_copper(id), SRC_REWARD)
+		_add_coin(peer, id, count, SRC_REWARD)
 		return
 
 	var inv = inventory_of(peer)
@@ -11640,12 +11642,25 @@ func coin_copper(id: String) -> int:
 	return 0
 
 
-# The purse as a number of copper. Coins are not item stacks: the purse is part of the character row.
+# The purse: the coins as held, {coin id: count} (characters.json "purse"). Coins are not item stacks: the purse is part of the character row.
+# Coins keep the denomination they came in (Dave, 14 Nov 2026: "if I have gathered 200 copper I should have 200 copper until the next time I am
+# talking to a vendor"); only a trader changes them into the fewest coins (redenominate, called when a trader's talk or trade window opens).
+func purse_of(peer: int) -> Dictionary:
+	return _characters.get(_peer_key.get(peer, ""), {}).get("purse", {})
+
+
+# The purse's worth in copper.
 func coins_of(peer: int) -> int:
-	return maxi(int(_characters.get(_peer_key.get(peer, ""), {}).get("coins", 0)), 0)
+	var total: int = 0
+	var held: Dictionary = purse_of(peer)
+
+	for id in held:
+		total += int(held[id]) * coin_copper(str(id))
+
+	return total
 
 
-# The purse as [[coin item id, count], ...], richest first.
+# The fewest coins worth `copper`, as [[coin item id, count], ...], richest first.
 func purse_breakdown(copper: int) -> Array:
 	var out: Array = []
 	var left: int = copper
@@ -11661,36 +11676,105 @@ func purse_breakdown(copper: int) -> Array:
 	return out
 
 
-# Pays copper into the purse and tells the feed what came (as coins, richest first).
-func add_coins(peer: int, copper: int, source: String = "pickup") -> void:
+# Puts `count` coins of one kind in the purse as they are, and tells the feed. The purse's worth never passes max_copper.
+func _add_coin(peer: int, id: String, count: int, source: String) -> void:
 	var key: String = _peer_key.get(peer, "")
+	var each: int = coin_copper(id)
 
-	if copper <= 0 or not _characters.has(key):
+	if count <= 0 or each <= 0 or not _characters.has(key):
 		return
 
-	var cap: int = int(_coins_cfg.get("max_copper", 100000000))
-	var before: int = coins_of(peer)
-	var after: int = mini(before + copper, cap)
-	_characters[key]["coins"] = after
+	@warning_ignore("integer_division")
+	count = mini(count, maxi(int(_coins_cfg.get("max_copper", 100000000)) - coins_of(peer), 0) / each)
+
+	if count <= 0:
+		return
+
+	var held: Dictionary = purse_of(peer).duplicate()
+	held[id] = int(held.get(id, 0)) + count
+	_characters[key]["purse"] = held
 	_dirty = true
 	sync_purse(peer)
 
 	if send_received.is_valid():
-		for row in purse_breakdown(after - before):
-			send_received.call(peer, row[0], row[1], source)
+		send_received.call(peer, id, count, source)
 
 
-# Takes copper out of the purse, all or nothing.
+# Pays `copper` into the purse as that many copper coins (goal rewards, a trader's payment); a trader changes them later.
+func add_coins(peer: int, copper: int, source: String = "pickup") -> void:
+	_add_coin(peer, "coin_copper", copper, source)
+
+
+# Takes `copper` out of the purse, all or nothing: the cheapest coins go first, and a bigger coin broken for the last of it gives its change
+# back as the fewest coins. Coins the payment does not reach stay as they were.
 func take_coins(peer: int, copper: int) -> bool:
 	var key: String = _peer_key.get(peer, "")
 
 	if copper < 0 or not _characters.has(key) or coins_of(peer) < copper:
 		return false
 
-	_characters[key]["coins"] = coins_of(peer) - copper
+	var held: Dictionary = purse_of(peer).duplicate()
+	var need: int = copper
+	var rows: Array = _coins_cfg.get("ladder", []).duplicate()
+	rows.sort_custom(func(x, y): return int(x["copper"]) < int(y["copper"]))
+
+	for row in rows:
+		var id: String = str(row["id"])
+		var each: int = maxi(int(row["copper"]), 1)
+
+		if need <= 0 or int(held.get(id, 0)) <= 0:
+			continue
+
+		@warning_ignore("integer_division")
+		var used: int = mini(int(held[id]), (need + each - 1) / each)
+		held[id] = int(held[id]) - used
+		need -= used * each
+
+		if int(held[id]) <= 0:
+			held.erase(id)
+
+	for change in purse_breakdown(-need):   # need is 0 or minus the change owed
+		held[change[0]] = int(held.get(change[0], 0)) + int(change[1])
+
+	_characters[key]["purse"] = held
 	_dirty = true
 	sync_purse(peer)
 	return true
+
+
+# At a trader (a talk or trade window opening): the purse becomes the fewest coins of the same worth.
+func redenominate(peer: int) -> void:
+	var key: String = _peer_key.get(peer, "")
+
+	if not _characters.has(key):
+		return
+
+	var held: Dictionary = {}
+
+	for row in purse_breakdown(coins_of(peer)):
+		held[row[0]] = int(row[1])
+
+	if held != purse_of(peer):
+		_characters[key]["purse"] = held
+		_dirty = true
+		sync_purse(peer)
+
+
+# A purse row from characters.json: known coin ids with a positive count. An older row's "coins" (a copper worth) becomes the fewest coins.
+func _clean_purse(row: Dictionary) -> Dictionary:
+	var held: Dictionary = {}
+	var raw: Variant = row.get("purse", {})
+
+	if typeof(raw) == TYPE_DICTIONARY:
+		for id in raw:
+			if coin_copper(str(id)) > 0 and int(raw[id]) > 0:
+				held[str(id)] = int(raw[id])
+
+	if not row.has("purse"):
+		for pair in purse_breakdown(maxi(int(row.get("coins", 0)), 0)):
+			held[pair[0]] = int(pair[1])
+
+	return held
 
 
 # The copper amount in words, richest coin first: "2 silver, 3 bronze".
@@ -11711,9 +11795,16 @@ func _coin_name(id: String) -> String:
 	return id
 
 
+# The purse to its player: the count of each coin in coins.json ladder order (richest first).
 func sync_purse(peer: int) -> void:
 	if send_purse.is_valid() and _characters.has(_peer_key.get(peer, "")):
-		send_purse.call(peer, coins_of(peer))
+		var counts: PackedInt32Array = PackedInt32Array()
+		var held: Dictionary = purse_of(peer)
+
+		for row in _coins_cfg.get("ladder", []):
+			counts.append(int(held.get(str(row["id"]), 0)))
+
+		send_purse.call(peer, counts)
 
 
 func rep_points(peer: int, npc_id: String) -> int:
@@ -13248,7 +13339,7 @@ func kill(peer: int, cause: String) -> bool:
 
 	# Dave 2026-10-21: the purse stays on the body, so the whole purse lies with the remains and is found like the other things.
 	if _characters.has(key):
-		_characters[key]["coins"] = 0
+		_characters[key]["purse"] = {}
 		sync_purse(peer)
 
 	_sync_remains(peer, true)
@@ -19439,7 +19530,7 @@ func _load_characters() -> void:
 			"dexterity": clampi(int(parsed["players"][key].get("dexterity", 0)), -10, 10),
 			"perception": clampi(int(parsed["players"][key].get("perception", 0)), -10, 10),
 			"charisma": clampi(int(parsed["players"][key].get("charisma", 0)), -10, 10),
-			"coins": maxi(int(parsed["players"][key].get("coins", 0)), 0),
+			"purse": _clean_purse(parsed["players"][key]),
 			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
