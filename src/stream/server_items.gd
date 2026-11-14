@@ -13213,7 +13213,7 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_within(it["pos"], "fireplace", float(def.get("attach_m", 2.5))):
 				continue   # the Fireplace cooking crane (master s3.12) hangs its pot over a fireplace: only while that fireplace burns
 
-			# A station that must be burning to craft (the Smithy, Blast furnace and Master smithy, master s4 item 10): a cold one serves while the crafter
+			# A station that must be burning to craft (the Smithies and the Master smithy, master s4 item 10): a cold one serves while the crafter
 			# carries its fuel, and the craft itself (light_it) fires it from the pack. Without fuel the craft waits and nothing is lost.
 			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
 				if d < cold_d:
@@ -17379,7 +17379,9 @@ func craft_variants(peer: int, recipe: Dictionary) -> Array:
 	if station != "" and made_id != "":
 		var master_id: int = serving_station(peer, str(c.get("craft", {}).get("station", "master_smithy")))
 		master = master_id >= 0 and _station_serves(master_id, station, level)
-		var smithy_id: int = serving_station(peer, str(c.get("temper", {}).get("station", "brick_forge")))
+		var temper_station: String = str(c.get("temper", {}).get("station", "brick_forge"))
+		# The nearest smithy at the recipe's own level (a lit Improved smithy beside an Advanced smithy must not hide the steel one).
+		var smithy_id: int = serving_station(peer, temper_station, level if temper_station == station else 1)
 		trough = smithy_id >= 0 and _station_serves(smithy_id, station, level) and _addon_beside(smithy_id, str(c.get("temper", {}).get("addon", "")))
 
 	return SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)

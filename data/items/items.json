@@ -322,7 +322,7 @@
 			"look_alikes": [],
 			"value": 30
 		},
-		"steel_ingot": {"number": 32, "name": "Steel ingot", "description": "A bar of steel from the blast furnace.", "kind": "material", "stack": 20, "look_alikes": [], "value": 60},
+		"steel_ingot": {"number": 32, "name": "Steel ingot", "description": "A bar of steel, smelted from iron ore and carbon in an Advanced smelter in the wind.", "kind": "material", "stack": 20, "look_alikes": [], "value": 60},
 		"iron_pickaxe": {
 			"number": 33,
 			"name": "Iron - Pickaxe",

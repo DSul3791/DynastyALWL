@@ -417,8 +417,8 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			t += add
 			budget -= add
 
-			if t < need_s:
-				break
+			if t < need_s or rate <= 0.0:
+				break   # not done yet, or a calm: a windmill smelter makes nothing at all, not even an ingot waiting on a full rack
 
 			if not _deliver(id, it, def, host.table.number_of(str(out[0])), count):
 				t = need_s   # nowhere to put it: it waits
@@ -434,7 +434,7 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			changed = true
 			_credit(it, host.table.number_of(str(out[0])), count)
 
-		lanes[k] = [t if current != "" else 0.0, current]
+		lanes[k] = [t, current] if t > 0.0 and current != "" else [0.0, ""]   # a job with no time banked is not kept: it is picked again next tick
 
 	if lanes.map(func(l): return str(l[1])) != jobs_before:
 		host._dirty = true   # a job started or ended; time alone does not force a save (a crash loses at most the time since the last one)

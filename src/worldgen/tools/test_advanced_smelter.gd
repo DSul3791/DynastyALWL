@@ -11,7 +11,8 @@ extends SceneTree
 #   4. carbon: Coal or Charcoal put plainly (or onto a hopper slot) goes to the hopper, never the input; Iron ore with fuel in the hopper only
 #      makes Iron, not Steel; Coal or Charcoal dragged onto an input slot (protocol 121) goes into the input as carbon, and Iron ore with it makes
 #      Steel, the carbon and the hopper fuel each taken once; at the Improved smelter a drag onto its input still goes to its hopper;
-#   5. the lanes never share ore: one Iron ore is one ingot; Iron ore and carbon beside more Iron ore make one Steel and one Iron;
+#   5. the lanes never share ore: one Iron ore is one ingot; Iron ore and carbon beside more Iron ore make one Steel and one Iron; 1 Copper and
+#      1 Tin ore make exactly 2 Bronze ingots, 1 Copper ore alone 1 Copper ingot;
 #   6. a full rack (160) makes it wait;
 #   7. save and load keep both lanes' banked time and the carbon in the input, and it finishes after the load;
 #   8. nothing is lost or made: every item counted in the store, the pack and in front of it is the same before and after each run but for
@@ -274,6 +275,21 @@ func _init() -> void:
 	put_in(adv, "iron_ore", 2)
 	run(lane_s + 1.0)
 	check(part(adv, "output", n("steel_ingot")) == 1 and part(adv, "output", n("iron_ingot")) == 1 and part(adv, "input") == 0, "Iron ore with carbon beside more Iron ore: one lane makes Steel, the other Iron, together")
+	empty(adv)
+	clear_pack()
+	# Bronze (plan P3: a pair never doubles because two lanes exist): 1 Copper ore + 1 Tin ore is one bronze job, 2 Bronze ingots in one lane's
+	# 2 x ingot_s; the other lane takes neither ore, so no Copper or Tin ingot and no extra fuel.
+	items.give(1, n("charcoal"), 4 * per_ore)
+	items.give(1, n("copper_ore"), 2)
+	items.give(1, n("tin_ore"), 1)
+	put_in(adv, "charcoal", 4 * per_ore)
+	put_in(adv, "copper_ore", 1)
+	put_in(adv, "tin_ore", 1)
+	run(lane_s * 2.0 + 1.0)
+	check(part(adv, "output", n("bronze_ingot")) == 2 and part(adv, "output", n("copper_ingot")) == 0 and part(adv, "output", n("tin_ingot")) == 0 and part(adv, "input") == 0 and part(adv, "hopper") == 2 * per_ore, "1 Copper ore + 1 Tin ore make exactly 2 Bronze ingots in %.1f s, the two lanes notwithstanding (%d fuel used)" % [lane_s * 2.0, 2 * per_ore])
+	put_in(adv, "copper_ore", 1)
+	run(lane_s + 1.0)
+	check(part(adv, "output", n("copper_ingot")) == 1 and part(adv, "output", n("bronze_ingot")) == 2 and part(adv, "hopper") == per_ore, "1 Copper ore alone makes 1 Copper ingot")
 	empty(adv)
 	clear_pack()
 

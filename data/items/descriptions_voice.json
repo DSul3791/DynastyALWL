@@ -85,7 +85,7 @@
 		"flint": "A hard grey stone that sparks when struck. Common near rivers.",
 		"copper_ore": "A heavy lump streaked green and red. A smelter turns each one into a copper ingot.",
 		"tin_ore": "A dark, very heavy lump. A smelter turns each one into a tin ingot; with copper ore, into bronze.",
-		"iron_ore": "A rusty brown lump. An Improved smelter with its bellows worked, or an Advanced smelter in wind, turns each one into an iron ingot.",
+		"iron_ore": "A rusty brown lump. An Improved smelter turns each one into an iron ingot while its bellows are worked.",
 		"coal": "A black lump that burns hot. Smelts iron and makes steel.",
 		"copper_ingot": "Smelted copper. Soft, but good for early tools.",
 		"iron_ingot": "A bar of smelted iron. Hard, for tools and nails.",

@@ -2589,9 +2589,9 @@
 		"steel_ingot": {
 			"name": "Steel ingot",
 			"kind": "material",
-			"description": "A bar of steel. Placeholder until smelting exists.",
+			"description": "A bar of steel, smelted from iron ore and carbon in an Advanced smelter in the wind.",
 			"how_to_get": [
-				"Craft at a blast furnace: 2 Iron ingot, 5 Fuel"
+				"Smelt at an Advanced smelter in the wind: 1 Iron ore with 1 Coal or Charcoal dragged into its input as carbon"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -5147,13 +5147,12 @@
 		"iron_ore": {
 			"name": "Iron ore",
 			"kind": "material",
-			"description": "A rusty brown lump. Smelts to iron in a clay bloomery, or in a brick forge.",
+			"description": "A rusty brown lump. An Improved smelter turns each one into an iron ingot while its bellows are worked.",
 			"how_to_get": [
 				"Dig with a spade in fen or marsh mud, most often at its edge. Bog iron grows back slowly."
 			],
 			"used_for": [
-				"Used in Iron ingot",
-				"Used in Iron ingot (bloomery)"
+				"Smelted into Iron ingots and, with carbon, Steel ingots"
 			],
 			"obtainable_now": true
 		},
