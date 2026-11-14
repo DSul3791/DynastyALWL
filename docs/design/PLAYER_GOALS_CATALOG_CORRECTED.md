@@ -62,7 +62,7 @@ A row with no stage of its own (an event such as drinking or selling) takes the 
 | `build:crude_chest` | stone (Crude) | iron, 15: planks |
 | `build:crude_table` | stone (Crude) | iron, 15: planks |
 
-The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_reward_stages.py .` prints the counts, the total and these rows (`--write` rewrites `reward_copper` and `reward_text`). It is a static read of the data, not play.
+The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_reward_stages.py .` prints the counts, the total and these rows (`--write` rewrites `reward_copper`, `reward_text` and `stage`). It is a static read of the data, not play.
 
 **Roof corners (A-37, #1118):** a corner now has a 45 and a 65 shape, and one placed at 65 records its `<kind>_65` twin, so the six corner goals and the new Fortified one count either shape (`what_any`).
 
