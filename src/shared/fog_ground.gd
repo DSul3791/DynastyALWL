@@ -9,7 +9,7 @@ extends RefCounted
 #
 # Read on the player's machine from the baked tiles (the coarse "low_height" map, 32 m, and the "fresh_m" distance to fresh water), in a
 # WINDOW_M square round the player on a worker thread, rebuilt when the player has moved REBUILD_M from its centre. No network traffic.
-# Every function below the loader is pure, so the server can build the same grid from its own tiles (third fog PR).
+# Every function below the loader is pure, so the server builds the same grid from its own tiles (server_animals.gd: animals' sight in fog).
 
 const TileFile := preload("res://src/worldgen/tile/tile_file.gd")
 

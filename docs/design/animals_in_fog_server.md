@@ -1,5 +1,7 @@
 # Animals in fog: the server half
 
+> **14 Nov 2026 (Dave's fog instruction, docs/design/FOG_PLAN.md "Animals"):** the fog at a point is now `Weather.fog_shape`, the client's depth fog over the cold-air floor (about 52 m V in full fog, not 220 m), and the strength along the line of sight is the mean of its ends. Sight is the same contrast rule as below, restated as the fog taking 53 % and 78 % (all of a player to about 31 m in full fog, none past about 42 m). `sit_below_m` is now 100 and `deer_v_m` 1400, the same fog strengths as before. The numbers below are the 8 Nov history.
+
 **Owner:** Steve, for `src/stream/server_animals.gd`, `server_wolves.gd` and `server_flight.gd`.
 **Asked by:** MikeW, `docs/design/ANIMAL_FOG.md` (his branch `claude/mikew-eye-placement`), section "Requests to Steve". The client half (eye shine, steam, herd spacing on screen) is his.
 **Research:** Jamie, `docs/knowledge/fog-and-visibility.md` (#716), lessons 1, 4 and 5 and the Animals table.

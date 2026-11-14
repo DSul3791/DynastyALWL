@@ -1,12 +1,15 @@
 extends SceneTree
 
 # Animals in fog, the server half (docs/design/animals_in_fog_server.md section 7; Jamie docs/knowledge/fog-and-visibility.md; MikeW
-# ANIMAL_FOG.md): the visibility V at a point (Weather.visibility_m, the client look's rule, #724; clear above the layer); sight full to V/4 and gone
-# past V/2, so an unseen player is sensed by hearing and smell only; wolves shadow at half V in dense fog; perched birds sit out thick fog;
+# ANIMAL_FOG.md; Dave's fog instruction 14 Nov 2026): the fog at a point (Weather.fog_shape, the depth fog the client draws, over the cold-air
+# floor; clear above the layer); sight full while the fog takes under 53 % and gone once it takes 78 %, so an unseen player is sensed by
+# hearing and smell only; wolves shadow at half V in dense fog; perched birds sit out thick fog;
 # deer keep their dawn hours later. Always on with the weather rules (the fog.on switch and the old flat mist cut are gone, 9 Nov 2026).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animals_fog.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const FogShape := preload("res://src/shared/fog_shape.gd")
+const WeatherRules := preload("res://src/shared/weather.gd")
 
 var failures: int = 0
 var hour: float = 12.0
@@ -45,22 +48,53 @@ func _init() -> void:
 	check(not fog.has("on") and a.fog_on(), "the fog rules are always on (no switch, no old flat mist cut)")
 	a.ground_height = Callable()
 
-	# V (Weather.visibility_m, the rule the client's look draws by, #724).
+	# V (Weather.visibility_m: where the client's depth fog takes 95 %).
+	var clear_v: float = FogShape.visibility(FogShape.depth(WeatherRules.VIS_HAZE_DENSITY, 0.0))
+	var full_v: float = FogShape.visibility(FogShape.depth(WeatherRules.VIS_HAZE_DENSITY, 1.0))
+	check(clear_v > 2500.0 and clear_v < 3100.0 and full_v > 45.0 and full_v < 60.0, "clear air about 2.8 km, full fog about 52 m (%.0f, %.0f)" % [clear_v, full_v])
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
-	check(near(a.fog_v(Vector3.ZERO), 3333.3), "clear air: V about 3.3 km (%.0f)" % a.fog_v(Vector3.ZERO))
+	check(near(a.fog_v(Vector3.ZERO), clear_v), "clear air through the server (%.0f)" % a.fog_v(Vector3.ZERO))
 	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
-	check(near(a.fog_v(Vector3.ZERO), 222.2), "full valley fog inside the layer: about 220 m (%.0f)" % a.fog_v(Vector3.ZERO))
-	check(near(a.fog_v(Vector3(0.0, 70.0, 0.0)), 3333.3), "20 m above the top: clear (%.0f)" % a.fog_v(Vector3(0.0, 70.0, 0.0)))
-	check(near(a.fog_v(), 222.2), "the layer's own V for rules with no position")
+	check(near(a.fog_v(Vector3.ZERO), full_v), "full valley fog inside the layer: the client's dense fog (%.0f)" % a.fog_v(Vector3.ZERO))
+	check(near(a.fog_v(Vector3(0.0, 70.0, 0.0)), clear_v), "20 m above the top: clear (%.0f)" % a.fog_v(Vector3(0.0, 70.0, 0.0)))
+	check(near(a.fog_v(), full_v), "the layer's own V for rules with no position")
 	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0, "rain": 1.0}, 0.1)
-	check(near(a.fog_v(Vector3.ZERO), 166.7) and near(a.fog_v(), 222.2), "fog and heavy rain: the 167 m cap at a point; the layer's own V is still the fog's")
+	check(a.fog_v(Vector3.ZERO) <= full_v + 0.01 and near(a.fog_v(), full_v), "fog and heavy rain: no clearer at a point; the layer's own V is still the fog's")
 	a._read_weather({"wind": 0.0, "mist": 0.0, "rain": 1.0}, 0.1)
-	check(a.fog_v() >= 3333.0, "heavy rain alone does not set off the fog rules")
+	check(a.fog_v() >= clear_v - 0.01 and a.fog_v(Vector3.ZERO) > float(a._fog_cfg()["sit_below_m"]), "heavy rain alone does not set off the fog rules")
+	a._read_weather({"wind": 0.0, "mist": 0.0, "storm": 1.0, "rain": 1.0, "snow": 1.0}, 0.1)
+	check(a.fog_v(Vector3.ZERO) > float(a._fog_cfg()["sit_below_m"]), "the thickest storm alone does not ground the birds (%.0f)" % a.fog_v(Vector3.ZERO))
+	# Sea fog over the land counts too, under its own top.
+	a._read_weather({"wind": 0.0, "mist": 0.0, "sea_fog_land": 1.0, "sea_fog_top_m": 80.0}, 0.1)
+	check(near(a.fog_v(Vector3.ZERO), full_v) and near(a.fog_v(Vector3(0.0, 100.0, 0.0)), clear_v) and near(a.fog_v(), full_v), "sea fog on the land: dense below its top, clear above")
 
-	# Sight share at V 120: full to 30 m, half at 45 m, none past 60 m.
-	check(near(AnimalsScript.fog_sight_share(25.0, 120.0), 1.0) and near(AnimalsScript.fog_sight_share(45.0, 120.0), 0.5) and near(AnimalsScript.fog_sight_share(70.0, 120.0), 0.0), "sight share 1, 0.5, 0 at 25, 45, 70 m in V 120")
+	# The cold-air floor: a valley fog 50 m deep over a floor at 200 m fills the high basin; at sea level the old layer would be clear there.
+	var basin: Dictionary = {"mist": 1.0, "mist_depth_m": 50.0}
+	check(WeatherRules.visibility_m(basin, 220.0, 200.0) < 60.0 and WeatherRules.visibility_m(basin, 220.0, 0.0) > 2500.0, "a high basin's fog lies over its own floor")
+	check(near(a.fog_floor(Vector3(10.0, 0.0, 10.0)), 0.0), "no tiles known: the floor is sea level (the old single layer)")
+	# Along the line: both ends in the fog is the full fog; a player on the clear slope above sees and is seen through half of it.
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
+	var both_in: Vector3 = a.fog_shape_between(Vector3.ZERO, Vector3(40.0, 10.0, 0.0))
+	var one_out: Vector3 = a.fog_shape_between(Vector3.ZERO, Vector3(40.0, 90.0, 0.0))
+	check(near(FogShape.visibility(both_in), full_v) and FogShape.visibility(one_out) > 3.0 * full_v and FogShape.visibility(one_out) < clear_v, "the line of sight: all fog %.0f m, half out of it %.0f m" % [FogShape.visibility(both_in), FogShape.visibility(one_out)])
 
-	# Sensing: in full valley fog a standing player 100 m off seems about 200 m off; in clear air 100 m.
+	# Sight share in full fog: all of a player to about 31 m (the fog takes 53 %), none past about 42 m (78 %): Dave's silhouettes at 20 to 40 m.
+	var dense: Vector3 = FogShape.depth(WeatherRules.VIS_HAZE_DENSITY, 1.0)
+	check(near(AnimalsScript.fog_sight_share(25.0, dense), 1.0) and near(AnimalsScript.fog_sight_share(50.0, dense), 0.0), "full fog: sight 1 at 25 m, 0 at 50 m")
+	var mid: float = AnimalsScript.fog_sight_share(36.5, dense)
+	check(mid > 0.3 and mid < 0.7, "full fog: about half at 36 m (%.2f)" % mid)
+	check(near(AnimalsScript.fog_sight_share(500.0, FogShape.depth(WeatherRules.VIS_HAZE_DENSITY, 0.0)), 1.0), "clear air: a player 500 m off is seen in full")
+	var falls: bool = true
+	var last: float = 2.0
+
+	for metres in range(0, 80, 2):
+		var share: float = AnimalsScript.fog_sight_share(float(metres), dense)
+		falls = falls and share <= last + 1e-6
+		last = share
+
+	check(falls, "sight never grows with distance")
+
+	# Sensing: in full valley fog a standing player 100 m off seems about 200 m off (heard and smelt only); in clear air 100 m.
 	var deer_row: Dictionary = {"pos": Vector3.ZERO}
 	var p: Vector3 = Vector3(100.0, 0.0, 0.0)
 	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
@@ -71,7 +105,7 @@ func _init() -> void:
 	check(near(a.weather_spook_x(deer), 1.0), "flag on: no flat mist cut on the spook range")
 
 	# Wolves: the ring.
-	check(near(AnimalsScript.fog_ring_m(25.0, 3333.0, 10.0), 25.0) and near(AnimalsScript.fog_ring_m(25.0, 222.0, 10.0), 25.0), "the pack shadows at 25 m in clear air and in full valley fog")
+	check(near(AnimalsScript.fog_ring_m(25.0, clear_v, 10.0), 25.0) and near(AnimalsScript.fog_ring_m(25.0, full_v, 10.0), 25.0), "the pack shadows at 25 m in clear air and in full valley fog")
 	check(near(AnimalsScript.fog_ring_m(25.0, 30.0, 10.0), 15.0) and near(AnimalsScript.fog_ring_m(25.0, 8.0, 10.0), 10.0), "15 m at V 30, never under 10 m")
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
 	check(near(a.fog_stalk_m(25.0, Vector3.ZERO), 25.0), "clear air through the server: 25 m")

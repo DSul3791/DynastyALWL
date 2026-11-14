@@ -6,6 +6,7 @@ extends SceneTree
 
 const FogVolumeScript := preload("res://src/client/fog_volume.gd")
 const FogLook := preload("res://src/client/fog_look.gd")
+const FogShape := preload("res://src/shared/fog_shape.gd")
 
 var _fails: int = 0
 
@@ -51,10 +52,10 @@ func _initialize() -> void:
 	body.update(0.1, env, 1, eye, 1.0, 1.0, 90.0, 6.0, 2.0, 0.0)
 	_check(not body.on and not env.volumetric_fog_enabled, "down to Medium in fog: off")
 	# With the body on, the depth fog's end is longer so the two together keep Dave's dense-fog distances (fog_look.gd DENSE_END_VOL_M).
-	var shape: Vector3 = FogLook.depth(0.0009, 1.0, FogLook.dense_end(3))
+	var shape: Vector3 = FogShape.depth(0.0009, 1.0, FogLook.dense_end(3))
 	var total: Array = []
 	for metres in [10.0, 20.0, 40.0]:
-		total.append(1.0 - (1.0 - FogLook.amount(metres, shape)) * exp(-FogVolumeScript.VOL_DENSITY * metres))
+		total.append(1.0 - (1.0 - FogShape.amount(metres, shape)) * exp(-FogVolumeScript.VOL_DENSITY * metres))
 	_check(total[0] < 0.15 and total[1] > 0.15 and total[1] < 0.45 and total[2] > 0.6 and total[2] < 0.9, "Ultra, full fog: 10 m %.2f, 20 m %.2f, 40 m %.2f (Dave's targets)" % total)
 	print("test_fog_volume: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)

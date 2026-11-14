@@ -14,6 +14,8 @@ const GoblinsScript := preload("res://src/stream/server_goblins.gd")
 const CompanionsScript := preload("res://src/stream/server_companions.gd")
 const FlightScript := preload("res://src/stream/server_flight.gd")
 const WeatherRules := preload("res://src/shared/weather.gd")
+const FogShape := preload("res://src/shared/fog_shape.gd")
+const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -91,6 +93,11 @@ var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
 var _wx: Dictionary = {}           # this tick's weather (animals_in_weather_design.md 3): rain, snow, storm, wind, mist
+# Where the valley fog lies (fog_ground.gd, the client's cold-air floor): one window per player, read from the world's tiles on a worker
+# thread. fog_world {"tiles_dir", "tile_size_m"} is set by the host; empty (tests, no tiles) keeps the floor at sea level.
+var fog_world: Dictionary = {}
+var _fog_grounds: Array = []
+const FOG_GROUNDS_MAX := 16        # windows kept (one per player; more players share the nearest)
 var _water_spots: Dictionary = {}  # animals at water: Vector2i 50 m cell of the asker and reach -> [[stand spot, water point] or [], msec found]
 var _storm_ahead: bool = false     # a storm (storm 0.5 or more) 12 to 24 game hours ahead: the falling pressure prey feel (lesson 4)
 var _ahead_acc: float = INF        # real seconds since weather_ahead was last sampled
@@ -786,6 +793,7 @@ func tick(delta: float) -> void:
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
 	_read_weather(weather, delta)
+	_fog_ground_tick(players)
 	_thunder_tick(players)
 	_dogs = _dog_presences()
 	_sample_noise(players, delta)
@@ -1911,7 +1919,11 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
 # tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Fog cuts it by distance (animals_in_fog_server.md 4.1).
 func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
-	return _sight_clear(a, def, p, d, low) * (fog_sight_share(d, fog_v(a["pos"])) if fog_on() else 1.0)
+	if not fog_on():
+		return _sight_clear(a, def, p, d, low)
+
+	var fc: Dictionary = _fog_cfg()
+	return _sight_clear(a, def, p, d, low) * fog_sight_share(d, fog_shape_between(a["pos"], p), float(fc.get("sight_full_fog", 0.53)), float(fc.get("sight_gone_fog", 0.78)))
 
 
 func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
@@ -2051,7 +2063,8 @@ func _wx_on() -> bool:
 func _read_weather(weather: Dictionary, delta: float) -> void:
 	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
 		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0)), "temp_c": float(weather.get("temp_c", 10.0)),
-		"mist_depth_m": float(weather.get("mist_depth_m", 0.0))}
+		"mist_depth_m": float(weather.get("mist_depth_m", 0.0)), "sea_fog_land": float(weather.get("sea_fog_land", 0.0)),
+		"sea_fog_top_m": float(weather.get("sea_fog_top_m", 0.0))}
 	_ahead_acc += delta
 
 	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
@@ -2123,9 +2136,10 @@ func weather_wander_x(def: Dictionary, sp: String = "") -> float:
 	return minf(x, float(_wx_rules().get("storm_wander_x", 0.3)))
 
 
-# --- animals in fog (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md) ---
-# Behind animals.json weather.fog.on. The visibility V at a point is Weather.visibility_m: the rule the client's look draws its fog by
-# (#724), from rain, snow, storm and how deep the point is in the valley fog (mist, mist_depth_m), so server and client agree.
+# --- animals in fog (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md; Dave's fog
+# instruction 14 Nov 2026: fog cuts their sight, never their hearing) ---
+# The fog at a point is Weather.fog_shape: the depth fog the client draws (rain, snow, storm, and how deep the point is in the valley fog
+# over the cold-air floor or in the sea fog over the land), so server and client see one fog. V is where it takes 95 %.
 
 func _fog_cfg() -> Dictionary:
 	return _wx_rules().get("fog", {})
@@ -2135,19 +2149,68 @@ func fog_on() -> bool:
 	return _wx_on()
 
 
-# V at a point (rain and snow thicken it too). Vector3.INF: the valley fog's own V deep inside it, from mist alone, for the rules with no
-# animal position (activity, wander), so heavy rain alone does not make deer keep fog hours.
+# One cold-air floor window per player (the first FOG_GROUNDS_MAX), rebuilt as they move (fog_ground.gd).
+func _fog_ground_tick(players: Array) -> void:
+	if fog_world.is_empty():
+		return
+
+	var want: int = mini(players.size(), FOG_GROUNDS_MAX)
+
+	while _fog_grounds.size() < want:
+		var ground = FogGroundScript.new()
+		ground.tiles_dir = str(fog_world.get("tiles_dir", ground.tiles_dir))
+		ground.tile_size_m = float(fog_world.get("tile_size_m", ground.tile_size_m))
+		_fog_grounds.append(ground)
+
+	for i in range(want):
+		var p: Vector3 = players[i]
+		_fog_grounds[i].update(p)
+
+
+# The server is closing: wait for a read still running.
+func fog_ground_finish() -> void:
+	for ground in _fog_grounds:
+		ground.finish()
+
+
+# The cold-air floor under a point: the first window that holds it; sea level where none does (the old single layer).
+func fog_floor(pos: Vector3) -> float:
+	for ground in _fog_grounds:
+		var f: float = FogGroundScript.sample(ground.grid, "floor", pos.x, pos.z, NAN)
+
+		if not is_nan(f):
+			return f
+
+	return 0.0
+
+
+# The fog's shape at a point (fog_shape.gd).
+func fog_shape_at(pos: Vector3) -> Vector3:
+	return WeatherRules.fog_shape(_wx, pos.y, fog_floor(pos))
+
+
+# The fog along a line of sight: its strength the mean of the two ends' (a deer in the valley fog looking up at a player on the
+# clear slope above sees through half the fog; the floor is the animal's, the nearer window).
+func fog_shape_between(from_pos: Vector3, to_pos: Vector3) -> Vector3:
+	var floor_m: float = fog_floor(from_pos)
+	var strength: float = 0.5 * (WeatherRules.fog_strength(_wx, from_pos.y, floor_m) + WeatherRules.fog_strength(_wx, to_pos.y, floor_m))
+	return FogShape.depth(WeatherRules.fog_haze_density(_wx), strength)
+
+
+# V at a point (rain and snow thicken it too). Vector3.INF: the fog's own V deep inside it, from the valley or sea fog alone, for the
+# rules with no animal position (activity, wander), so heavy rain alone does not make deer keep fog hours.
 func fog_v(pos: Vector3 = Vector3.INF) -> float:
 	if pos == Vector3.INF:
-		return WeatherRules.visibility_m({"mist": float(_wx.get("mist", 0.0)), "mist_depth_m": 0.0}, -1.0e9)
+		return WeatherRules.visibility_m({"mist": float(_wx.get("mist", 0.0)), "mist_depth_m": 0.0, "sea_fog_land": float(_wx.get("sea_fog_land", 0.0)), "sea_fog_top_m": 0.0}, -1.0e9)
 
-	return WeatherRules.visibility_m(_wx, pos.y)
+	return FogShape.visibility(fog_shape_at(pos))
 
 
-# How much of a player an animal can make out at distance d in visibility v (Jamie lesson 1): all of it to v/4 (detail), none past v/2
-# (it can no longer tell a person from a stump), straight between.
-static func fog_sight_share(d: float, v: float) -> float:
-	return clampf((v * 0.5 - d) / maxf(v * 0.25, 0.01), 0.0, 1.0)
+# How much of a player an animal can make out at distance d through fog of this shape (Jamie lesson 1, on Dave's fog): all of it while
+# the fog takes under `full` of the view (detail), none once it takes `gone` (it can no longer tell a person from a stump), straight
+# between. In full fog that is all to about 31 m and nothing past about 42 m, his "silhouettes at 20 to 40 m".
+static func fog_sight_share(d: float, shape: Vector3, full: float = 0.53, gone: float = 0.78) -> float:
+	return FogShape.sight_share(d, shape, full, gone)
 
 
 # Wander in fog (4.4 and 4.6): birds sit it out under sit_below_m, herds stay close under deer_v_m.
