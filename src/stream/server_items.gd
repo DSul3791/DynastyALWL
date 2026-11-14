@@ -1184,7 +1184,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_HARVEST:
 		harvest(peer, inv, a)
 	elif kind == Net.ACT_WATER_BED:
-		water_bed(peer, inv, a)
+		water_bed(peer, inv, a, b)   # b: the pack slot of the filled container in hand (WP-R1B), -1 for none; a slot with no water in it is refused
 	elif kind == Net.ACT_HOE_PATH:
 		_hoe_path(peer, inv, at, a)
 	elif kind == Net.ACT_HOE_SMOOTH:
@@ -14123,7 +14123,7 @@ func take_nest(peer: int, inv) -> bool:
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (key "x,z" of the bed). The client side
 # (a hoe mode that sends ACT_TILL, a seed use that sends ACT_SOW, E on a crop that sends ACT_HARVEST, the stage looks) is not built: see PROTOCOL.md.
 const TILLED_STATE := 47
-var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured (one pour a day)}; the bed's moisture is in _plot_water
+var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured, "poured_ml": mL poured that day (a bucket a day, water_bed)}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
 var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
@@ -14711,23 +14711,50 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	return true
 
 
-# One `water` item from the pack on the bed: that game day counts as watered.
-func water_bed(peer: int, inv, bed_id: int) -> bool:
+# Water from the pack's containers on the bed (GOALS-REPAIR GA-04, A-3): one bucket (crops.json moisture pour_ml, 8 L) is pour_pct, so a pour adds pour_pct
+# by the share of a bucket poured, and a bed takes up to a bucket a game day (several small pours add up). The water comes first from the container in
+# hand (`held`, the pack slot the client names, -1 for none: when named it must hold a filled container, else the pour is refused), then from the pack's
+# other containers, so the pour is the full bucket whenever the pack holds that much. Every refusal says why (a notice) and takes nothing.
+func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
-	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+	if bed.is_empty() or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		_say(peer, "Too far from the bed to water it.")
 		return false
 
 	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {})
-	var water: int = table.number_of("water")
 
-	if crop.is_empty() or int(crop["poured"]) == _game_day() or not inv.has(water, 1):
+	if crop.is_empty():
+		_say(peer, "Nothing is growing there to water.")
 		return false
 
-	inv.remove(water, 1)
-	crop["poured"] = _game_day()
+	if held >= 0 and not (held < inv.slot_count and inv.numbers[held] != 0 and _container_cap(inv.numbers[held]) > 0 and inv.wear[held] > 0):   # never trust the slot the client names
+		_say(peer, "That holds no water.")
+		return false
+
+	var bucket_ml: int = maxi(int(_moisture_cfg.get("pour_ml", 8000)), 1)
+	var today: int = _game_day()
+	var done_ml: int = int(crop.get("poured_ml", bucket_ml)) if int(crop["poured"]) == today else 0
+	var ml: int = mini(bucket_ml - done_ml, inv.liquid_ml())
+
+	if ml <= 0:
+		if done_ml >= bucket_ml:
+			_say(peer, "The bed has had its water today.")
+		elif inv.count_of(table.number_of("sea_water")) > 0 and inv.liquid_ml() <= 0:
+			_say(peer, "Salt water would kill the crop. You need fresh water in a container.")
+		else:
+			_say(peer, "You have no water to pour.")
+
+		return false
+
+	inv.drain_liquid(ml, held)
+	crop["poured"] = today
+	crop["poured_ml"] = done_ml + ml
 	var key: String = _bed_key(bed["pos"])
-	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"])), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]   # a bucket's worth (pour_pct)
+	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"]), float(ml) / float(bucket_ml)), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]
 	_dirty = true
 	return true
 
@@ -16245,6 +16272,12 @@ func _send_stock(peer: int, poll: bool = false, building: bool = false) -> void:
 			if int(box[1].numbers[slot]) != 0:
 				counts[int(box[1].numbers[slot])] = int(counts.get(int(box[1].numbers[slot]), 0)) + int(box[1].counts[slot])
 
+		var water_n: int = table.number_of("water")
+		var water_units: int = box[1].liquid_units(water_n)   # filled containers in the chest fill the water ingredient too (GA-04)
+
+		if water_units > 0:
+			counts[water_n] = int(counts.get(water_n, 0)) + water_units
+
 	var numbers: PackedInt32Array = PackedInt32Array()
 	var amounts: PackedInt32Array = PackedInt32Array()
 
@@ -17267,6 +17300,32 @@ func _start_deferred(peer: int, head: Array) -> bool:
 	return true
 
 
+# Water given back (a cancelled or failed craft, GA-04) goes into containers with room: the pack's first, then the player's own storage in craft reach.
+# Whatever no container has room for is spilled; the stackable `water` item is never minted.
+func _pour_back(peer: int, ml: int) -> void:
+	var inv = inventory_of(peer)
+
+	if inv == null or ml <= 0:
+		return
+
+	var before: Array = _snapshot(inv)
+	var left: int = inv.pour_liquid(ml)
+	_send_changes(peer, inv, before)
+
+	if left > 0:
+		for box in _craft_boxes(peer):
+			var was: int = left
+			left = box[1].pour_liquid(left)
+
+			if left < was:
+				_push_box(int(box[0]), box[1])
+
+	if left > 0:
+		_say(peer, "The water spills: nothing here has room for it.")
+
+	_dirty = true
+
+
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
 	for need in entry[2]:
@@ -17281,7 +17340,10 @@ func _refund_entry(peer: int, entry: Array) -> void:
 			var unit: Array = rows[k]
 			var n: int = mini(left, int(unit[3]) if unit.size() > 3 else 1)
 
-			if n > 0:
+			if n > 0 and (unit[1] as Dictionary).has("liquid_ml"):   # water that came out of containers goes back into containers, never as the stackable item (GA-04)
+				_pour_back(peer, floori(float(unit[1]["liquid_ml"]) * float(n) / float(maxi(int(unit[3]), 1))))
+				left -= n
+			elif n > 0:
 				give(peer, int(unit[0]), n, unit[1], int(unit[2]) if unit.size() > 2 else 0)
 				left -= n
 

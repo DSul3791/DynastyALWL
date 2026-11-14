@@ -174,6 +174,16 @@ func id_of(number: int) -> String:
 	return String(_by_number.get(number, {}).get("id", ""))
 
 
+# A water container's capacity in mL (items.json "capacity_ml": its water is its slot's wear, in mL), 0 for anything else.
+func container_cap(number: int) -> int:
+	return int(_by_number.get(number, {}).get("capacity_ml", 0))
+
+
+# The mL one unit of a liquid ingredient takes out of the containers (the item's "unit_ml": water 500), 0 for an item that is no liquid ingredient.
+func liquid_unit_ml(number: int) -> int:
+	return int(_by_number.get(number, {}).get("unit_ml", 0))
+
+
 # An item's name inside a sentence: "Stone - Knife" (the UI label, item_system.md "Tier - Item") reads "stone knife" there
 # ("You hone the stone knife."). Labels, lists and tooltips keep name_of.
 func sentence_name(number: int) -> String:

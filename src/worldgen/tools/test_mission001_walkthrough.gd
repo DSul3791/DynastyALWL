@@ -403,6 +403,23 @@ func leave(keep: Dictionary) -> void:
 				break
 
 
+# Water by the player's route (GOALS-REPAIR GA-04): the real fill action at fresh water puts 500 mL a fill into a bucket in the pack, which the recipes draw from.
+func fill_water(units: int) -> void:
+	items.water_near = func(_pos, _reach): return true
+	var bucket: int = n("bucket")
+
+	if have("bucket") == 0:
+		items.give(1, bucket, 1)
+
+	var slot: int = items.inventory_of(1).numbers.find(bucket)
+
+	for k in range(units):
+		items._last_drink.clear()
+		items.action(1, Net.ACT_DRINK, slot, 0, 0, Vector3.ZERO)
+
+	check(items.inventory_of(1).count_fill(n("water")) >= units and have("water") == 0, "%d fills of 500 mL make %d water ingredients, and no stackable water exists" % [units, units])
+
+
 # Tannin bark by the player's route (GOALS-REPAIR GA-01): felled oak trunks (the fall itself: test_fell_autosplit) cut up with the Stone - Axe in hand, far from the
 # stations so their logs are no craft stock. Each oak gives its drops.json harvest_yield count, once. The player is put back where they were.
 func bark_from_oaks(wanted: int) -> void:
@@ -632,14 +649,14 @@ func step3_construction_and_equipment() -> void:
 	craft("hide_scraper", 1)
 	check(have("hide_scraper") == 1, "3b. a hide scraper at the workbench")
 
-	# Leather: the hide scraped and dried at a Drying rack, tanned at a Tanning rack (tannin bark: felled oaks cut up with the axe, bark_from_oaks; water is given as test_textile_route gives it: no route test proves drawing it, T19_RESULTS gaps).
+	# Leather: the hide scraped and dried at a Drying rack, tanned at a Tanning rack (tannin bark: felled oaks cut up with the axe, bark_from_oaks; water: a bucket filled with the real fill action, fill_water).
 	give_cost("drying_rack", ["stick"])
 	build("drying_rack", WORKSHOP + Vector3(-3.0, 0.0, 0.5), "3c")
 	craft("processed_hide", 2)
 	give_cost("tanning_rack", ["log"])   # logs felled and worked (test_first_hour)
 	build("tanning_rack", WORKSHOP + Vector3(0.0, 0.0, -3.5), "3c")
 	bark_from_oaks(need_of("leather", "tannin_bark") * 2)
-	give_needs("leather", ["water"], 2)
+	fill_water(need_of("leather", "water") * 2)
 	craft("leather", 2)
 	check(have("leather") == 2 and have("processed_hide") == 0, "3c. two hides scraped, dried and tanned into Leather")
 
@@ -859,7 +876,7 @@ func step4_cooking_and_preservation() -> void:
 	leave({"sinew": 0, "antler": 0, "gut": 0, "bone": 0, "hide": 0, "animal_fat": need_of("cook_onion_roast", "animal_fat"), "plant_fibre": 0})
 
 	# The Food preparation table (logs: test_first_hour); Flatbread from flour milled by hand with a quern (wheat harvested: test_farming; water
-	# given: no route test proves drawing it, T19_RESULTS gaps), prepared at the table and baked at a Clay hearth of campfire bricks.
+	# filled at fresh water with the real fill action, fill_water), prepared at the table and baked at a Clay hearth of campfire bricks.
 	give_cost("food_preparation_table", ["log"])
 	prep_table = build("food_preparation_table", KITCHEN + Vector3(3.0, 0.0, 0.0), "4a")
 	give_needs("quern", ["stone", "stick"])   # stones and sticks lie about (test_first_hour)
@@ -867,7 +884,7 @@ func step4_cooking_and_preservation() -> void:
 	give_needs("flour_from_wheat", ["wheat"])
 	craft("flour_from_wheat", 1)
 	check(have("flour") >= need_of("prep_flatbread", "flour"), "4b. wheat milled by hand with the quern: %d flour" % have("flour"))
-	items.give(1, n("water"), need_of("prep_flatbread", "water"))
+	fill_water(need_of("prep_flatbread", "water"))
 	go(KITCHEN + Vector3(1.5, 0.0, 0.0))
 	craft("prep_flatbread", 1)
 	check(have("unbaked_flatbread") == gives_of("prep_flatbread"), "4c. the table prepares %d Unbaked flatbread" % have("unbaked_flatbread"))

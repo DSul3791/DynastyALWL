@@ -8,7 +8,7 @@ extends SceneTree
 #   4. leather at a Tanning rack, then the Leatherworking table from logs, sticks, twine and stone, and a Leather strap there;
 #   5. the Loom, and Fibre cloth woven on it (refused by hand);
 #   6. the Tailor's table, and a Fibre - Gambeson made there (refused at the Loom alone).
-# The scraper, hammer, tannin bark, water and the stations' logs, twine, clay and stones are given: they are gathered or made elsewhere and
+# The scraper, hammer and the stations' logs, twine, clay and stones are given: they are gathered or made elsewhere and
 # covered by other tests (test_first_hour, test_server_items).
 #   godot --headless --path . --script res://src/worldgen/tools/test_textile_route.gd
 
@@ -53,6 +53,23 @@ func need_of(recipe_id: String, id: String) -> int:
 			return int(need[1])
 
 	return 0
+
+
+# Water by the player's route (GOALS-REPAIR GA-04): the real fill action at fresh water puts 500 mL a fill into a bucket in the pack; a recipe's water ingredient is drawn from it.
+func fill_water(units: int) -> void:
+	items.water_near = func(_pos, _reach): return true
+	var bucket: int = items.table.number_of("bucket")
+
+	if items.inventory_of(1).count_of(bucket) == 0:
+		items.action(1, Net.ACT_ADMIN_GIVE, bucket, 0, 1, Vector3.ZERO)
+
+	var slot: int = items.inventory_of(1).numbers.find(bucket)
+
+	for k in range(units):
+		items._last_drink.clear()
+		items.action(1, Net.ACT_DRINK, slot, 0, 0, Vector3.ZERO)
+
+	check(items.inventory_of(1).count_fill(items.table.number_of("water")) >= units and have("water") == 0, "4a1. %d fills of 500 mL make %d water ingredients; no stackable water exists" % [units, units])
 
 
 # One felled oak (the fall: test_fell_autosplit) cut up with a Stone - Axe in hand, away from the stations: it gives its harvest_yield count of tannin bark, once.
@@ -230,9 +247,10 @@ func _init() -> void:
 	items._items.erase(rack)   # cleared away so the Tailor's table can stand on that side later
 	build("tanning_rack", HERE + Vector3(0.0, 0.0, -3.0))
 	bark_from_oak()   # the bark: a felled oak cut up with the axe (GOALS-REPAIR GA-01)
-	items.give(1, items.table.number_of("water"), need_of("leather", "water"))
+	fill_water(need_of("leather", "water"))   # the water: a bucket filled at fresh water (GOALS-REPAIR GA-04)
 	craft("leather", 1, 60)
 	check(have("leather") == 1 and have("processed_hide") == 0, "4a. the dried hide is tanned at the Tanning rack")
+	check(items.inventory_of(1).liquid_ml() == 0 and have("bucket") == 1, "4a2. tanning used up the bucket's water; the bucket stays (%d mL left)" % items.inventory_of(1).liquid_ml())
 	check(str(items.recipes.recipe(recipe_number("leather_strap")).get("station", "")) == "leatherworking_table", "4b. the Leather strap is a Leatherworking table recipe")
 	craft("leather_strap", 1, 30)
 	check(have("leather_strap") == 0 and have("leather") == 1, "4c. no Leather strap at the Tanning rack; the leather is kept")
