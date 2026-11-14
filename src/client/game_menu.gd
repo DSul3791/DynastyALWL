@@ -474,14 +474,14 @@ func _build_admin() -> void:
 func _build_developer() -> void:
 	var dev: VBoxContainer = _page("developer")
 	_heading(dev, "Developer tools")
-	_button(dev, "Debug text on screen (F3): on or off", func():
+	_button(dev, "Debug text on screen (Ctrl+Shift+F3): on or off", func():
 		_c.debug_hud.enabled = not _c.debug_hud.enabled
 		note.text = "Debug text %s" % ("on" if _c.debug_hud.enabled else "off"))
 	_button(dev, "Ground report for the spot you look at (copied)", func(): _c.ground_debug.dump_ground_here())
-	_button(dev, "Camera smoothness test (next spot, or J)", func():
+	_button(dev, "Camera smoothness test (next spot, or Ctrl+Shift+J)", func():
 		_c._jitter_test.next_spot()
 		_c._set_menu(false))
-	_button(dev, "Graphics timing table (stand still; Ctrl+Shift+G)", func():
+	_button(dev, "Graphics timing table (stand still; Ctrl+Shift+P)", func():
 		_c._set_menu(false)
 		_c._gpu_probe.toggle())
 	_button(dev, "One-minute speed test of this PC", func():

@@ -27,10 +27,90 @@ func _key(code: int, ctrl: bool = false, shift: bool = false) -> InputEventKey:
 	return event
 
 
+# Writes a saved-bindings file the way an older build did (key, ctrl, shift per action) and makes the next lookup read it.
+func _write(saved: Dictionary) -> void:
+	var file: FileAccess = FileAccess.open(TEMP, FileAccess.WRITE)
+	file.store_string(JSON.stringify(saved))
+	file.close()
+	Bindings.forget_loaded()
+
+
+# ADMIN_KEYBINDINGS_POLICY.md: the default chord of every Admin and debug action.
+func _admin_defaults() -> void:
+	var table: Dictionary = {"fly": KEY_G, "quality": KEY_F2, "debug_details": KEY_F3, "sound_panel": KEY_F5, "hud_text": KEY_F4, "spring_up": KEY_EQUAL, "spring_down": KEY_MINUS,
+		"starter_items": KEY_BRACKETRIGHT, "admin_npc": KEY_N, "admin_rabbit": KEY_R, "admin_dig": KEY_X, "admin_spyglass": KEY_L, "jitter_test": KEY_J, "gpu_probe": KEY_P,
+		"water_hide": KEY_F7, "water_debug": KEY_F8}
+	var seen: Dictionary = {}
+	var count: int = 0
+
+	for row in Bindings.ACTIONS:
+		if row[2] != Bindings.ADMIN_GROUP:
+			continue
+
+		var id: String = row[0]
+		var key: int = int(row[4])
+		count += 1
+		check(table.has(id) and key == int(table[id]), "%s default key is the policy key" % id)
+		check(bool(row[5]) and bool(row[6]) and not bool(row[7]), "%s default needs Ctrl and Shift and is not a held action" % id)
+		check(Bindings.matches(_key(key, true, true), id), "%s matches Ctrl+Shift+%s" % [id, OS.get_keycode_string(key)])
+		check(not Bindings.matches(_key(key), id), "%s: the plain key does not match" % id)
+		check(not Bindings.matches(_key(key, true), id), "%s: Ctrl alone does not match" % id)
+		check(not Bindings.matches(_key(key, false, true), id), "%s: Shift alone does not match" % id)
+		check(not seen.has(key), "%s: no other admin action has the same chord" % id)
+		seen[key] = true
+
+	check(count == table.size(), "the policy table covers every Admin and debug action (%d)" % count)
+
+
+# The group rule on a saved file, rebinding, reset and swap; the inventory keys.
+func _admin_rules() -> void:
+	# An old file: bare G fly, Ctrl+N npc, Shift+F3 sound panel (F3 is Debug details now), a held key (W) as an admin key, a disabled action.
+	_write({"fly": {"key": KEY_G}, "admin_npc": {"key": KEY_N, "ctrl": true}, "sound_panel": {"key": KEY_F3, "shift": true}, "admin_dig": {"key": KEY_W, "ctrl": true}, "admin_rabbit": {"key": KEY_NONE}})
+	check(Bindings.label("fly") == "Ctrl+Shift+G" and Bindings.is_default("fly"), "an old bare-G fly becomes Ctrl+Shift+G (its default)")
+	check(Bindings.label("admin_npc") == "Ctrl+Shift+N", "an old Ctrl+N npc becomes Ctrl+Shift+N")
+	check(Bindings.label("sound_panel") == "Ctrl+Shift+F5" and Bindings.is_default("sound_panel"), "an old Shift+F3 sound panel would clash with Debug details, so it goes back to Ctrl+Shift+F5")
+	check(Bindings.label("debug_details") == "Ctrl+Shift+F3", "Debug details keeps Ctrl+Shift+F3")
+	check(Bindings.label("admin_dig") == "Ctrl+Shift+X", "a held key (W) cannot be an admin key: back to the default")
+	check(Bindings.label("admin_rabbit") == "(none)", "a disabled admin action stays disabled")
+	check(Bindings.conflicts().is_empty(), "the sanitized file leaves no clashes (found %s)" % str(Bindings.conflicts()))
+	check(Bindings.matches(_key(KEY_G, true, true), "fly") and not Bindings.matches(_key(KEY_G), "fly"), "the migrated fly needs both modifiers")
+
+	# Two old overrides on one key: the earlier action in the table goes back to its default, the other keeps the key (both with Ctrl+Shift).
+	_write({"admin_npc": {"key": KEY_K, "ctrl": true}, "spring_up": {"key": KEY_K, "shift": true}})
+	check(Bindings.label("admin_npc") == "Ctrl+Shift+K" and Bindings.label("spring_up") == "Ctrl+Shift+" + OS.get_keycode_string(KEY_EQUAL), "two old overrides on one key are resolved")
+	check(Bindings.conflicts().is_empty(), "no duplicate admin chords after the file is read")
+	_write({"jitter_test": {"key": KEY_K, "ctrl": false, "shift": false}})
+	check(Bindings.label("jitter_test") == "Ctrl+Shift+K", "the player's own primary key is kept, both modifiers added")
+
+	# Rebinding keeps both modifiers whatever was pressed; swap and reset too.
+	Bindings.reset_all()
+	check(Bindings.set_binding("fly", KEY_K, false, false) == "" and Bindings.label("fly") == "Ctrl+Shift+K", "rebinding fly to a plain K gives Ctrl+Shift+K")
+	check(Bindings.conflict("quality", KEY_K, false, false) == "fly", "the clash check sees the forced Ctrl+Shift")
+	check(Bindings.set_binding("quality", KEY_W, true, true) != "" and Bindings.set_binding("quality", KEY_E, true, true) != "", "an admin action cannot take a held key (W, E)")
+	check(Bindings.set_binding("move_forward", KEY_N, false, false) != "", "a held action cannot take an admin key")
+	Bindings.swap("quality", "fly", KEY_K, false, false)
+	check(Bindings.label("quality") == "Ctrl+Shift+K" and Bindings.label("fly") == "Ctrl+Shift+F2", "swap between admin actions keeps both chords")
+	Bindings.swap("crouch", "admin_npc", KEY_N, true, true)
+	check(Bindings.label("crouch") == "Ctrl+Shift+N" and Bindings.label("admin_npc") == "Ctrl+Shift+C", "swap with a normal action gives the admin action Ctrl+Shift+their old key")
+	Bindings.forget_loaded()
+	check(Bindings.label("quality") == "Ctrl+Shift+K" and Bindings.label("admin_npc") == "Ctrl+Shift+C", "the new admin choices are saved and loaded back")
+	Bindings.reset("quality")
+	check(Bindings.label("quality") == "Ctrl+Shift+F2", "reset puts an admin chord back")
+	Bindings.reset_all()
+
+	# An admin chord never fires a normal action; plain G is still Store all in the inventory screen and plain G and J fire nothing in the world.
+	check(Bindings.matches(_key(KEY_G), "store_all") and not Bindings.matches(_key(KEY_G, true, true), "store_all"), "plain G is Store all, Ctrl+Shift+G is not")
+	check(Bindings.matches(_key(KEY_R), "repair_item") and not Bindings.matches(_key(KEY_R, true, true), "repair_item"), "plain R repairs, Ctrl+Shift+R does not")
+	check(Bindings.matches(_key(KEY_D, false, true), "drop_item"), "Shift+D still drops one")
+	check(not Bindings.matches(_key(KEY_G), "fly") and not Bindings.matches(_key(KEY_J), "jitter_test"), "plain G and J fire no admin action (they are free for the Journal)")
+	check(Bindings.conflict("store_all", KEY_G, false, false) == "", "Store all on plain G clashes with nothing")
+
+
 func _init() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP))
 	Bindings.use_path(TEMP)
 
+	_admin_defaults()
 	var ids: Dictionary = {}
 
 	for row in Bindings.ACTIONS:
@@ -40,11 +120,11 @@ func _init() -> void:
 	check(Bindings.conflicts().is_empty(), "the defaults have no clashes (found %s)" % str(Bindings.conflicts()))
 	check(Bindings.matches(_key(KEY_E), "interact") and not Bindings.matches(_key(KEY_F), "interact"), "E interacts by default")
 	check(Bindings.matches(_key(KEY_F), "open"), "F opens by default")
-	check(Bindings.matches(_key(KEY_R, true), "admin_rabbit") and not Bindings.matches(_key(KEY_R), "admin_rabbit"), "Ctrl+R is the rabbit, plain R is not")
-	check(Bindings.matches(_key(KEY_R), "blueprints") and not Bindings.matches(_key(KEY_R, true), "blueprints"), "plain R is blueprints, Ctrl+R is not")
+	check(Bindings.matches(_key(KEY_R, true, true), "admin_rabbit") and not Bindings.matches(_key(KEY_R), "admin_rabbit"), "Ctrl+Shift+R is the rabbit, plain R is not")
+	check(Bindings.matches(_key(KEY_R), "blueprints") and not Bindings.matches(_key(KEY_R, true, true), "blueprints"), "plain R is blueprints, Ctrl+Shift+R is not")
 	check(Bindings.matches(_key(KEY_D, false, true), "drop_item"), "Shift+D still drops one (inventory keys ignore Shift)")
 	check(Bindings.matches(_key(KEY_H), "ruler"), "the inclination ruler has a key")
-	check(Bindings.label("admin_rabbit") == "Ctrl+R", "label shows the Ctrl")
+	check(Bindings.label("admin_rabbit") == "Ctrl+Shift+R", "label shows the Ctrl and Shift")
 
 	check(Bindings.set_binding("interact", KEY_ESCAPE, false, false) != "", "Esc cannot be bound")
 	check(Bindings.set_binding("interact", KEY_5, false, false) != "", "hotbar digits cannot be bound")
@@ -102,6 +182,8 @@ func _init() -> void:
 	check(Bindings.localize("Press E at a fruit tree to pick.") == "Press Q at a fruit tree to pick.", "'press E at' shows the bound key")
 	check(Bindings.localize("Hold E.") == "Hold Q.", "a key at the end of a sentence shows the bound key")
 	check(Bindings.localize("Press Enter at the gate") == "Press Enter at the gate", "a word that starts with a key letter is left alone")
+	Bindings.reset_all()
+	_admin_rules()
 	Bindings.reset_all()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP))
 	Bindings.use_path(Bindings.PATH)
