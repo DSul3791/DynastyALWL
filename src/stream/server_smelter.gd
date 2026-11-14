@@ -38,6 +38,7 @@ const Weather := preload("res://src/shared/weather.gd")
 var host = null              # the items module (server_items.gd)
 var _cfg: Dictionary = {}    # structures.json "smelting"
 var _bellows: Dictionary = {}   # world id -> the peer working its bellows
+var _bellows_goal: Dictionary = {}   # world id -> true once this stint at the bellows has counted toward the goal event bellows_iron
 var _ids: Dictionary = {}       # world id -> true for every placed smelter (note() at placing and loading; tick_all forgets the gone ones)
 var _pull_t: float = 0.0        # seconds toward the next fuel pull (not saved: a restart starts the wait again)
 
@@ -211,6 +212,7 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
 		return
 
 	_bellows[id] = peer
+	_bellows_goal.erase(id)   # a new stint at the bellows
 	host._say(peer, "You work the bellows: it smelts faster and can work iron while you stay at it (E again to stop).")
 
 
@@ -327,6 +329,7 @@ func tick_all(spent: float) -> void:
 		if not is_smelter(def):
 			_ids.erase(id)
 			_bellows.erase(id)
+			_bellows_goal.erase(id)
 		elif not it["struct"].has("site"):
 			tick(int(id), it, def, spent)
 
@@ -503,6 +506,12 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			current = ""
 			changed = true
 			_credit(it, host.table.number_of(str(out[0])), count)
+
+			# The player working the bellows (not the owner) gets the goal event bellows_iron, once a stint, when an iron job they gave air to
+			# delivers (goal activity:operate_bellows, PLAYER_GOALS_CATALOG_CORRECTED.csv; paused in admin mode inside _goal_event).
+			if str(out[0]) == "iron_ingot" and bool(smelt.get("bellows", false)) and _bellows.has(id) and not _bellows_goal.has(id):
+				_bellows_goal[id] = true
+				host._goal_event(int(_bellows[id]), "bellows_iron")
 
 		lanes[k] = [t, current] if t > 0.0 and current != "" else [0.0, ""]   # a job with no time banked is not kept: it is picked again next tick
 
