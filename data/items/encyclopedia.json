@@ -2511,7 +2511,9 @@
 				"Used in Engineered - Door",
 				"Used in Engineered - Double door",
 				"Used in Engineered - Arched door",
-				"Used in Engineered - Double arched door"
+				"Used in Engineered - Double arched door",
+				"Used in Engineered - Gate",
+				"Used in Fortified - Ceiling"
 			],
 			"obtainable_now": true
 		},
@@ -4437,7 +4439,8 @@
 				"Used in Refined - Gate",
 				"Used in Sluice",
 				"Used in Sturdy - Gate",
-				"Used in Superior - Gate"
+				"Used in Superior - Gate",
+				"Used in Engineered - Gate"
 			],
 			"obtainable_now": true
 		},
@@ -10734,6 +10737,54 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"engineered_fence": {
+			"name": "Engineered - Fence",
+			"kind": "structure",
+			"description": "A low poured concrete wall, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"engineered_gate": {
+			"name": "Engineered - Gate",
+			"kind": "structure",
+			"description": "A timber gate between poured concrete piers. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_window": {
+			"name": "Fortified - Window",
+			"kind": "structure",
+			"description": "A banded concrete wall with a window opening, two metres wide.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_floor": {
+			"name": "Fortified - Ceiling",
+			"kind": "structure",
+			"description": "A concrete slab tied with iron bands, cast over planks. A ceiling below and a floor above.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_stairs": {
+			"name": "Fortified - Stairs",
+			"kind": "structure",
+			"description": "A flight of concrete steps bound with iron bands, up to the next storey.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fortified_fence": {
+			"name": "Fortified - Fence",
+			"kind": "structure",
+			"description": "A low concrete wall bound with iron bands, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"engineered_roof_corner_kit": {
 			"name": "Engineered - Roof corner",
 			"kind": "placeable",
@@ -10958,7 +11009,13 @@
 				"Used in Engineered - Double arched doorway",
 				"Used in Fortified - Double doorway",
 				"Used in Fortified - Arched doorway",
-				"Used in Fortified - Double arched doorway"
+				"Used in Fortified - Double arched doorway",
+				"Used in Engineered - Fence",
+				"Used in Engineered - Gate",
+				"Used in Fortified - Window",
+				"Used in Fortified - Ceiling",
+				"Used in Fortified - Stairs",
+				"Used in Fortified - Fence"
 			],
 			"obtainable_now": true
 		},
@@ -10981,7 +11038,11 @@
 				"Used in Fortified - Double arched doorway",
 				"Used in Fortified - Roof 45",
 				"Used in Fortified - Roof 65",
-				"Used in Fortified - Roof corner"
+				"Used in Fortified - Roof corner",
+				"Used in Fortified - Window",
+				"Used in Fortified - Ceiling",
+				"Used in Fortified - Stairs",
+				"Used in Fortified - Fence"
 			],
 			"obtainable_now": true
 		},

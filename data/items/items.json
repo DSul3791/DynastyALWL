@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1328,
+	"next_number": 1336,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -10714,6 +10714,66 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 384 (GOALS-REPAIR A-35/A-36; names confirmed by Dave 14 Nov 2026, the 65's equal cost PROVISIONAL): the 65 degree twin of Engineered - Roof 45 (engineered_roof), built with the hammer (blueprint 314)."
+			},
+			"engineered_fence": {
+				"number": 1334,
+				"name": "Engineered - Fence",
+				"description": "A low poured concrete wall, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 404 (PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm): the missing Engineered - Fence of the enclosing set (buildables_plan.md s1), built with the hammer (blueprint 324)."
+			},
+			"engineered_gate": {
+				"number": 1335,
+				"name": "Engineered - Gate",
+				"description": "A timber gate between poured concrete piers. Opens like a door.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 405 and 406 (PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm): the missing Engineered - Gate of the enclosing set (buildables_plan.md s1), built with the hammer (blueprint 325)."
+			},
+			"fortified_window": {
+				"number": 1330,
+				"name": "Fortified - Window",
+				"description": "A banded concrete wall with a window opening, two metres wide.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 400 (PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm): the missing Fortified - Window of the enclosing set (buildables_plan.md s1), built with the hammer (blueprint 320)."
+			},
+			"fortified_floor": {
+				"number": 1331,
+				"name": "Fortified - Ceiling",
+				"description": "A concrete slab tied with iron bands, cast over planks. A ceiling below and a floor above.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 401 (PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm): the missing Fortified - Ceiling of the enclosing set (buildables_plan.md s1), built with the hammer (blueprint 321)."
+			},
+			"fortified_stairs": {
+				"number": 1332,
+				"name": "Fortified - Stairs",
+				"description": "A flight of concrete steps bound with iron bands, up to the next storey.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 402 (PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm): the missing Fortified - Stairs of the enclosing set (buildables_plan.md s1), built with the hammer (blueprint 322)."
+			},
+			"fortified_fence": {
+				"number": 1333,
+				"name": "Fortified - Fence",
+				"description": "A low concrete wall bound with iron bands, two metres long.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 403 (PROVISIONAL (GOALS-REPAIR A-40), for Dave to confirm): the missing Fortified - Fence of the enclosing set (buildables_plan.md s1), built with the hammer (blueprint 323)."
 			},
 			"fortified_roof": {
 				"number": 1325,
