@@ -102,5 +102,15 @@ Each entry: question; answer chosen; precedent it was reasoned from; what it aff
   - The only game code that reached dev between 874be30e and 6df3051 is #1104 terrain_client input, the #1105 server_map goal events plus one terrain_server line, and #1107 hints.json. None of these touches rendering.
   - Suspects: a startup worker task (piece_look "building pictures" prewarm, where the look count rose from 303 to 310; ground_material; body or arms shapes; summits) creating RID-backed resources off the main thread, possibly exposed by faster frames on the lane machine.
   - The exit-134 shutdown abort ("corrupted size vs. prev_size") is a separate, known issue.
-  - No visible failure has been seen. It is being traced (lead, 14 Nov 05:55Z).
+  - No visible failure has been seen.
+  - **Traced 14 Nov 06:00Z (static read). It is pre-existing, not a mission regression.**
+    - The same two messages are already in docs/archive/2026-11/SMOKE_TEST.md lines 54 and 57.
+    - Both come from the headless dummy renderer's mesh store, which is not thread safe (`RID_Alloc<DummyMesh,0>`). dynasty_arms.gd ~97 already notes this.
+    - The likely source is src/flora/flora_view.gd's worker tasks, which build ArrayMeshes and read surfaces off the main thread:
+      - models task, line ~943 (TreeBuilder.build to ArrayMesh.new);
+      - seasonal models task, line ~2108, started by set_season on the welcome path;
+      - decimate task, line ~3201.
+    - Faster lane frames raise the overlap rate.
+    - Every other startup worker was read and is clean: piece_look prewarm, body/arms/shapes, ground_material, summits, map sketch and terrain_client decode/cache.
+    - Proposed fix, outside this mission, for Dave or the coordinator to schedule: run those three tasks inline when headless. ground_material.gd:643 already does this.
 - `scenes/terrain_preview/terrain_preview.gd`: bare `KEY_G` (tool scene), handled in WP-KEYS.
