@@ -56,6 +56,10 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 | WP-PRIM | R1/R2 | Primitive route: F1 site goal kind, F2 3 m logs (A-25), F3 manual firewood credit, F4 fire tier events, F5/P2 route tests, F9 text (items.json text passed to WP-METAL); F6-F8, F10 proposals only | lead worker | #1088, #1091 (both in dev) | IN REVIEW (gate PASS WITH FIXES on `ea7f12b`, fixes in progress) | goals-repair/wp-prim / #1095 | | |
 | WP-GOALS | R7 | 651-row catalog correction (328 rule-only rows individually), new-station coverage, completion conditions, migration; creator-review package | lead worker | mechanics PRs (content work started in parallel) | IN REVIEW (catalog for Dave: 178 OK, 162 FIX, 311 blocked by mechanics, 11 new proposed) | goals-repair/wp-goals / #1096 | | static review only |
 
+## Lane rule (from 14 Nov 02:51Z)
+
+The lane runs `godot --check-only` on every changed .gd file before tests. Cloud gdparse (gdtoolkit) cannot parse `src/client/inventory_view.gd` even on dev (shader string), so a clean cloud parse is not evidence; parse_scan.py catches only duplicate/clash patterns. Lane requests need an independent review pass on the exact SHA (an author read does not count).
+
 ## Post-merge broad run (owed)
 
 One full fast run (`tests_for_diff.py --all`) on `dev` once #1089 and #1095 land, covering: #1091 terrain_net comment rule; #1092 merged without retest; #1089/#1095 tested on heads that predate #1092 (clean merge-trees, overlap in server_items.gd and inventory_view.gd in different sections).
