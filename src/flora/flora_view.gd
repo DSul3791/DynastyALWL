@@ -547,6 +547,7 @@ var _load_worst_ms: int = 0            # the longest a chunk waited from being a
 var _load_start_msec: int = 0          # when the first of this batch was asked
 var _setup_queue: Array = []           # species entries still to build (see _setup_step)
 var _setup_next: int = 0
+var _meshing: Array = []               # [near, far, mid] meshes made so far for the species _setup_entry is on (it makes a few per frame)
 var _models_ready: Dictionary = {}      # species id -> [near, far, mid] from the worker, each a list of TreeBuilder.build_surfaces results (made into meshes in _setup_entry), or [] for the plain model
 var _models_mutex: Mutex = Mutex.new()
 var _models_task_id: int = -1
@@ -1041,21 +1042,35 @@ func _use_game_materials(mesh: ArrayMesh) -> void:
 			mesh.surface_set_material(s, _tree_materials[key])
 
 
-# Meshes of the worker's surface lists (TreeBuilder.to_mesh), main thread only. A list that is the very same one as in `shared_from` reuses
-# that list's mesh (a small plant draws one model near and far).
-func _meshes_of(surface_lists: Array, shared_from: Array = [], shared_meshes: Array = []) -> Array:
-	var out: Array = []
+# Makes a species' meshes from the worker's [near, far, mid] surface lists into _meshing, on the main thread, until deadline_usec (at least one mesh
+# a call). Returns true once all are made. A far list that is the very same one as a near list reuses that mesh (a small plant draws one model near and far).
+func _mesh_some(models: Array, deadline_usec: int) -> bool:
+	if _meshing.is_empty():
+		_meshing = [[], [], []]
 
-	for n in range(surface_lists.size()):
-		var at: int = -1
+	var made: bool = false
 
-		for m in range(shared_from.size()):
-			if is_same(shared_from[m], surface_lists[n]):
-				at = m
+	for list in range(3):
+		while (_meshing[list] as Array).size() < (models[list] as Array).size():
+			if made and Time.get_ticks_usec() >= deadline_usec:
+				return false
 
-		out.append(shared_meshes[at] if at >= 0 else TreeBuilder.to_mesh(surface_lists[n]))
+			var surfaces: Array = models[list][(_meshing[list] as Array).size()]
+			var mesh: ArrayMesh = null
 
-	return out
+			for m in range((_meshing[0] as Array).size() if list == 1 else 0):
+				if is_same(models[0][m], surfaces):
+					mesh = _meshing[0][m]
+
+			_meshing[list].append(mesh if mesh != null else TreeBuilder.to_mesh(surfaces))
+			made = true
+
+	return true
+
+
+# Meshes of a list of surface lists (TreeBuilder.to_mesh), main thread only.
+func _meshes_of(surface_lists: Array) -> Array:
+	return surface_lists.map(func(surfaces: Array) -> ArrayMesh: return TreeBuilder.to_mesh(surfaces))
 
 
 # A mesh's surfaces as [[arrays, material], ...] (main thread: reads the mesh back).
@@ -1081,8 +1096,8 @@ func _setup_step(budget_usec: int = 4000) -> bool:
 	var start: int = Time.get_ticks_usec()
 
 	while _setup_next < _setup_queue.size():
-		if not _setup_entry(_setup_queue[_setup_next]):
-			break      # the worker has not built this species yet
+		if not _setup_entry(_setup_queue[_setup_next], start + budget_usec):
+			break      # the worker has not built this species yet, or its meshes go on next frame
 
 		_setup_next += 1
 
@@ -1110,7 +1125,7 @@ func _setup_step(budget_usec: int = 4000) -> bool:
 
 # Builds one species (models and look table). setup queues them; _setup_step does a few per frame
 # so the welcome does not stall on all of them at once (build 233).
-func _setup_entry(entry: Dictionary) -> bool:
+func _setup_entry(entry: Dictionary, deadline_usec: int = 1 << 62) -> bool:
 	var height: Array = entry["height_m"]
 	var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 	_labels[int(entry["id"])] = _label_for(entry)
@@ -1126,11 +1141,10 @@ func _setup_entry(entry: Dictionary) -> bool:
 	var models: Array = _models_ready.get(int(entry["id"]), [])
 	_models_mutex.unlock()
 
-	if models.is_empty():
+	if models.is_empty() or (built and not _mesh_some(models, deadline_usec)):
 		return false
 
-	# The worker made plain surfaces; the meshes are made here on the main thread. _setup_step spreads the species over frames (4 ms budget,
-	# at least one species a frame), so the hitch is bounded by one species: up to 12 meshes of a tree species.
+	# The worker made plain surfaces; _mesh_some made the meshes here on the main thread, a few a frame within _setup_step's budget (at least one mesh a frame).
 	var near_meshes: Array = []
 	var far_meshes: Array = []
 	var mid_from_builder: Array = []
@@ -1141,9 +1155,10 @@ func _setup_entry(entry: Dictionary) -> bool:
 		near_meshes = [plain]
 		far_meshes = [plain]
 	else:
-		near_meshes = _meshes_of(models[0])
-		far_meshes = _meshes_of(models[1], models[0], near_meshes)
-		mid_from_builder = _meshes_of(models[2])
+		near_meshes = _meshing[0]
+		far_meshes = _meshing[1]
+		mid_from_builder = _meshing[2]
+		_meshing = []
 		built_near = near_meshes.duplicate()
 
 		if kind != KIND_PLANT:
@@ -2640,8 +2655,6 @@ func _launch_plans(from_position: Vector3) -> void:
 		items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
 		items["fruit_levels"] = _fruit_levels_of(chunk, items)
 		items["from"] = from_position
-		items["species"] = _species.duplicate()   # shallow: each species' own dictionary is complete once it is in the table
-		items["slugs"] = _slugs.duplicate()
 		_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, int(entry["serial"]), int(entry["building"]), items, entry.get("building_masks", {})), false, "flora chunk"))
 
 
@@ -2962,10 +2975,6 @@ func _load_far() -> void:
 
 
 func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
-	# The species tables as they were when the plan was asked for (_launch_plans): the main thread still adds species while plans run
-	# (_setup_entry, a few a frame after the welcome), and a dictionary must not grow under a worker reading it. Tests calling here directly read the live tables.
-	var species: Dictionary = items.get("species", _species)
-	var slugs: Dictionary = items.get("slugs", _slugs)
 	var has_from: bool = items.has("from")   # the player position when the plan was asked for (distance thinning); tests may leave it out
 	var from: Vector3 = items.get("from", Vector3.ZERO)
 	var ids: PackedInt32Array = items["ids"]
@@ -2977,7 +2986,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 	for n in range(count):
 		var species_id: int = ids[n] >> 16
-		var info: Dictionary = species.get(species_id, {})
+		var info: Dictionary = _species.get(species_id, {})
 
 		if info.is_empty() or (level & (1 << int(info["kind"]))) == 0:
 			continue
@@ -3032,10 +3041,10 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			continue
 
 		# Out of season a herb, flower or mushroom is not drawn at all (berry bushes and woody plants stay; GatherRules.hidden_out_of_season).
-		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(slugs.get(species_id, "")))):
+		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(_slugs.get(species_id, "")))):
 			continue
 
-		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(slugs.get(species_id, "")))
+		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
 		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
 		# Trees only for now: a tree chunk is re-planned whenever one of its 64 m cells changes model tier, so the distance stays close enough;
@@ -3077,7 +3086,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 		var lit: Dictionary = {}
 
 		for n in range(count):
-			var info: Dictionary = species.get(ids[n] >> 16, {})
+			var info: Dictionary = _species.get(ids[n] >> 16, {})
 
 			if not info.has("glow") or lit.size() >= GLOW_LIGHTS:
 				continue
@@ -3100,7 +3109,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var draws: Array = []
 
 	for key in groups:
-		var info: Dictionary = species[key[0]]
+		var info: Dictionary = _species[key[0]]
 		var indices: PackedInt32Array = groups[key]
 		var tinted: bool = bool(info["tinted"])
 		var stride: int = 16 if tinted else 12
@@ -3284,6 +3293,8 @@ func _decimate_task(wanted: Array) -> void:
 			triangles += (index as PackedInt32Array).size() / 3
 			arrays_list.append(arrays)
 			materials.append(surface[1])
+
+		item[2] = []     # read: the bound task list must not keep every tree's full arrays for the session (the pool holds it until finish_tasks)
 
 		if triangles < MID_MIN_TRIANGLES:
 			continue
