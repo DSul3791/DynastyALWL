@@ -60,9 +60,11 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 
 The lane runs `godot --check-only` on every changed .gd file before tests. Cloud gdparse (gdtoolkit) cannot parse `src/client/inventory_view.gd` even on dev (shader string), so a clean cloud parse is not evidence; parse_scan.py catches only duplicate/clash patterns. Lane requests need an independent review pass on the exact SHA (an author read does not count).
 
-## Post-merge broad run (owed)
+## Post-merge broad run (DONE)
 
-One full fast run (`tests_for_diff.py --all`) on `dev` once #1089 and #1095 land, covering: #1091 terrain_net comment rule; #1092 merged without retest; #1089/#1095 tested on heads that predate #1092 (clean merge-trees, overlap in server_items.gd and inventory_view.gd in different sections).
+David4 ran the release_check set (`tests_for_diff.py --paths project.godot --full`, broader than `--all`) on dev `0bc193016610d753fafcbec11ddd5e20146d7fa2`, which has #1085–#1100 but not #1101. It passed 384/384 (372 fast, 8 timing, 4 slow) with no flakes in 1198 s. validate_items had 0 errors and 114 warnings, the same as before. check_look_names passed. The startup smoke showed 0 SCRIPT ERRORs. Picture lanes were not run. Logs are in /work/lanerun/broad_dev0bc1*. This clears the debt from #1091 terrain_net, #1092 and the R1 merges.
+
+Seven files are over the warning baseline. `test_wood_sources.gd` came in with #1091 and is fixed in PR #1103. The other six (server_items.gd 9/8, test_serving_platter, test_item_instances, test_storage_locks, storage_dialogs, item_slot) are pre-existing, and `tools/warning_baseline.txt` looks stale. Those six are unrelated to this mission and are not fixed here.
 
 ## Next actions
 
