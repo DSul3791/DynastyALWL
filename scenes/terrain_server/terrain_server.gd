@@ -512,6 +512,7 @@ func _ready() -> void:
 	items.reset_terrain_edits = _reset_terrain_edits
 	items.restore_flora = func() -> void: flora.restore_all()
 	items.floor_below = _floor_below
+	items.edits_near = func(point, radius): return store.ops.edits_near(point, radius)   # the hoe's levelling reads the ground through the saved digs and fills
 	items.water_flow_at = _water_flow_at
 	items.water_wheel = _water_wheel
 	items.dump_water = _dump_water
