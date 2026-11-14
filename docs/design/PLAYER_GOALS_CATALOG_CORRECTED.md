@@ -15,7 +15,9 @@
   - **Map goals:** the two map goals have their events from PR #1105.
   - **Second recheck on dev `d4b2473` (R9 follow-up; static):** every row blocked by WP-METAL R3, WP-METAL R4, WP-R1B, the `got_item` gap (#1100) or the `fire_tier` gap (#1095) whose goal item or structure is reachable from an empty character is no longer blocked: 258 rows, 123 OK and 135 FIX.
     - "Reachable" comes from the reach model in `tools/encyclopedia_reach.py`, run with the smelting jobs added (that tool does not know the self-running smelters yet). It is a static read of the data, not play. Every such row is NEEDS PLAYER VERIFICATION.
-    - The correction text of those rows was spot-checked, not re-read row by row, against the final R3 and R4 data.
+    - The correction text of those rows was spot-checked, not re-read row by row, against the final R3 and R4 data. The review of #1108 found stale R3/R4 text in `build:large_forge`, `craft:steel_ingot` and `build:blacksmithy`; it is corrected, and the 252 build rows' GAP-PRIM-F1 note now says #1095 is in dev.
+    - The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/r9_reach_with_smelters.py . out.json` (it wraps `tools/encyclopedia_reach.py` and adds the smelting jobs; 1,072 items reachable on `d4b2473`).
+  - **Roof 45 and 65 (A-35, provisional; the roofs PR):** each tier's Roof is renamed "<Tier> - Roof 45" and a "<Tier> - Roof 65" is added. The five `build:*roof` rows for Rustic, Sturdy, Superior, Refined and Engineered now say "choose <Tier> - Roof 45" and are FIX (they were OK). Goal ids and structure ids are unchanged. The Crude pair (`build:thatch_roof`, `build:thatch_roof_65`) already had both goals. The five new 65 panels are listed below as possible goals for Dave; they are not rows yet. `PLAYER_GOALS_REWARDS_DRAFT.md` and the audit CSVs are the historical review inputs and are left as they were; this catalog supersedes them.
     - Still blocked (29): the 24 locked water and garden blueprints (all now UNASSIGNED; their materials are reachable), R5 (`build:master_forge`, `activity:temper_steel`), R6 (`build:open_storage_bin`), `activity:operate_bellows` (no `bellows_iron` event) and `activity:chop_log_blocks` (no `made_item_any` check type).
   - The counts below include these changes.
 - **Rewards:** unchanged. Every ORIGINAL row carries the draft figure, which totals 15,670 copper. In the PROPOSED rows `reward_copper` is empty, and `notes` says "Reward: for Dave".
@@ -42,8 +44,8 @@
 
 | Verdict | All 651 | 328 rule-only rows (reviewed individually in this pass) | 323 rows already reviewed individually in the audit |
 |---|---:|---:|---:|
-| OK | 318 | 159 | 159 |
-| FIX | 304 | 150 | 154 |
+| OK | 313 | 156 | 157 |
+| FIX | 309 | 153 | 156 |
 | BLOCKED-BY-MECHANIC | 29 | 19 | 10 |
 | DESIGN-QUESTION | 0 | 0 | 0 |
 | **Total** | **651** | **328** | **323** |
@@ -127,6 +129,16 @@ Ids from R5 and R6 are **not yet in dev**: they come from the blocking WP. The I
 | `activity:map_survey` | Map new ground | event `map_surveyed`, one per survey (every 8 m walked) that finds never-seen ground (count N for Dave: placeholder) | data/map.json, skill `mapping` (A-5) | WP-MAP (#1105) |
 | `activity:map_redraw` | Redraw an old map area | event `map_redrawn`, one per survey that redraws known ground at a higher skill | data/map.json revisit rule (A-5) | WP-MAP (#1105) |
 
+**Possible PROPOSED goals for Dave (A-35, not rows yet).** If Dave wants each Roof 65 to have its own goal, as Crude has (`build:thatch_roof_65`), these would be added with the structure ids the roofs PR sets. They have no reward until Dave sets one.
+
+| Possible id | Title | Completes when |
+|---|---|---|
+| `build:<Rustic Roof 65 kind>` | Build Rustic - Roof 65 | placed:<the roofs PR's kind> |
+| `build:<Sturdy Roof 65 kind>` | Build Sturdy - Roof 65 | placed:<the roofs PR's kind> |
+| `build:<Superior Roof 65 kind>` | Build Superior - Roof 65 | placed:<the roofs PR's kind> |
+| `build:<Refined Roof 65 kind>` | Build Refined - Roof 65 | placed:<the roofs PR's kind> |
+| `build:<Engineered Roof 65 kind>` | Build Engineered - Roof 65 | placed:<the roofs PR's kind> |
+
 The proposed How-to text for each goal is in the CSV `correction` column.
 
 ### Coverage of the required stations
@@ -135,9 +147,9 @@ The proposed How-to text for each goal is in the CSV `correction` column.
 |---|---|
 | Primitive smelter (`smelter` #908, bp 200) | `build:smelter` (existing, FIX: the cost is 24 Clay and 10 Stone) |
 | Improved smelter | `build:improved_smelter` (NEW) and `activity:operate_bellows` (existing) |
-| Advanced smelter (`large_forge` #93, bp 201) | `build:large_forge` (existing, blocked by R4) |
-| Primitive smithy (`stone_forge` #88, bp 9) | `build:stone_forge` (existing, blocked by R2, cost A-8) |
-| Improved smithy (`blacksmithy` #90, bp 10) | `build:blacksmithy` (existing, blocked by R3, cost A-15) |
+| Advanced smelter (`large_forge` #93, bp 201) | `build:large_forge` (existing, FIX; R4 in dev) |
+| Primitive smithy (`stone_forge` #88, bp 9) | `build:stone_forge` (existing, FIX; R2 in dev, cost A-8) |
+| Improved smithy (`blacksmithy` #90, bp 10) | `build:blacksmithy` (existing, FIX; R3 in dev, cost A-15) |
 | Advanced smithy | `build:advanced_smithy` (NEW) |
 | Master smithy (`master_forge` #95, bp 202) | `build:master_forge` (existing, R5) and `activity:temper_steel` (existing, R5) |
 | Copper pickaxe and axe | `craft:copper_pickaxe` and `craft:copper_axe` (NEW, A-13) |
@@ -190,16 +202,16 @@ Every row has a `condition`, a `runtime_check` in the goal engine's own JSON, an
   - **The HUD skip** (Dave decision 5).
   - **Optional:** add the item to `ate_food`. Indexing goals by event (GA-49) is a performance shortcut, not a gap.
 - **WP-PRIM (PR #1095, in dev since `b94b1e7`):**
-  - **F1.** In dev, `_finish_site` loses the structure kind; #1095 fixes this. The 256 build rows assume the fix.
+  - **F1.** `_finish_site` lost the structure kind; #1095 fixed this and is in dev, so the build rows rely on code that is in dev.
   - **F3.** There is no `log_chopped` event. Instead, #1095 credits the hand chop as `_goal_made(peer, <species block>)`, which covers Hardwood, Softwood and Large blocks, and the hand split as `_goal_made(peer, <firewood>)`.
     - **Overlap:** a hand chop now also feeds `craft:wooden_block` and `craft:wooden_block_soft`. Under GA-38 each goal still pays once.
   - **F4.** `_goal_fire_tier` sends `fire_tier` with what `medium` or `large`, at most once per character for each tier, and only after player actions. A fire lit straight to large credits medium too.
   - **Cooking in the fire store** does not credit `roast_forage`; the Clay hearth recipe does. The owner of this fix is still to be confirmed.
 - **WP-METAL:**
-  - **Smelter credit** goes only to the station owner, and only while the owner is online. This affects 4 ingot rows. Decide whether the owner or the operator gets the credit.
+  - **Smelter credit** goes only to the station owner, and only while the owner is online. This affects 5 ingot rows (copper, tin, bronze, iron, steel). Decide whether the owner or the operator gets the credit.
   - **Kiln charcoal** is not credited (`craft:charcoal`; the campfire recipe 341 counts).
   - **The event `bellows_iron`** is needed for `activity:operate_bellows` (R3).
-  - **Steel smelting credit** is needed (R4).
+  - **Steel smelting credit** is in dev (#1102): the steel job credits `made:steel_ingot` per ingot, with the same owner caveat.
   - **The event `tempered`** is needed for `activity:temper_steel` (R5).
   - **The event `station_repaired`**, sent from `_repair_struct`, is needed for `activity:repair_station` (R5).
   - **The bins** need no new event, because `placed:<kind>` covers them once the R6 structures exist.

@@ -1,6 +1,6 @@
 # Progression repair: F6 play checklist (GOALS-REPAIR)
 
-**DRAFT, updated as work lands.** Written against `dev` `d4b2473`. Pull `dev`, press F6 and play. The client and the server must be on the same build: protocol 121 (R4, #1102, is in `dev`; its checks are added to this list in the follow-up update). Every step is NEEDS PLAYER VERIFICATION. Tests have passed headless, but nothing has been seen in a running game. The evidence for each item is in [PLAYER_PROGRESSION_REPAIR_VERIFICATION.md](PLAYER_PROGRESSION_REPAIR_VERIFICATION.md).
+**DRAFT, updated as work lands.** Written against `dev` `d4b2473`. Pull `dev`, press F6 and play. The client and the server must be on the same build: protocol 121 (R4, #1102, is in `dev`; its checks are in section 4). Every step is NEEDS PLAYER VERIFICATION. Tests have passed headless, but nothing has been seen in a running game. The evidence for each item is in [PLAYER_PROGRESSION_REPAIR_VERIFICATION.md](PLAYER_PROGRESSION_REPAIR_VERIFICATION.md).
 
 Play with **Admin mode off**. While Admin mode is on, goals count nothing. Start from a **new character with an empty pack**. Each line says what to do, then what you should see. Tick it, or note what you saw.
 
@@ -50,7 +50,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 
 ## 4. Metal: copper, bronze, iron
 
-- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on ore outcrop boulders (not every boulder) gives copper ore, tin ore and coal. It does not give iron.
+- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on ore outcrop boulders (not every boulder) gives copper ore, tin ore and coal. It does not give iron. **Iron ore** on these tiles comes from **bog iron**: dig wet lowland soil (bog, marsh) with a spade and now and then rust-red lumps come up with the peat ("bog iron", about 1 dig in 25). The iron boulders lie under the sea.
 - [ ] **Primitive smelter** (bp 200: 24 clay, 10 stone).
   - **Build and load:** build it and press E to open its store. Coal or Charcoal goes in the fuel part; ore goes in the ore part, one kind per slot.
   - **Smelting:** it smelts by itself, one ingot every 20 s. 1 copper ore makes 1 copper ingot; 1 copper ore + 1 tin ore make 2 bronze.
@@ -61,7 +61,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - [ ] **Improved smelter** (bp 300: clay 24, stone 16, log 2, hide 3, bronze hinges 2, bronze nails 20; A-9).
   - **Capacity:** 40 fuel, 40 ore and an 80-ingot rack. F opens its store; E works the bellows.
   - **Bellows:** press E and stay beside it to work the bellows. It smelts 1.3 times faster.
-  - **Iron:** iron ore (mined with a Bronze pickaxe) smelts only while someone is working the bellows. Walk away and it pauses without losing time.
+  - **Iron:** iron ore (dug as bog iron, see Mine ore) smelts only while someone is working the bellows. Walk away and it pauses without losing time.
   - **Looks:** the look is a placeholder.
 - [ ] **Improved smithy** (bp 10: stone 16, clay 10, log 4, bronze ingot 6, bronze nails 20, bronze hinges 2; A-15). It is built with no iron. It must be fired to craft: keep Coal or Charcoal in your pack and the first craft lights it (the Primitive smithy needs no fuel). Make Hinges from iron, and the **Iron anvil** (5 iron ingot + 1 log, A-16).
 - [ ] **Advanced smelter** (bp 201: brick 40, stone 20, mortar 8, iron ingot 6).
@@ -79,6 +79,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 - R6: Small, Medium and Large resource bins (one material, 1000/5000/10000), fuel pulls every 300 s from within 30 m (A-28 to A-34).
 - Building tiers work.
 - #1107 (GA-18, in review): the roof panel hint once a wall stands, and the roof wheel in the Controls list.
+- Roofs PR (A-35/A-36, provisional names): each tier gets "<Tier> - Roof 45" (renamed) and a new "<Tier> - Roof 65". NEEDS PLAYER VERIFICATION: the five tier Roof 45 icons still show the old gables and the 65s have no icon until a PC re-render (the cloud cannot render them: `look_runtime` has no `tier_panel`).
 
 ## 6. Building, doors and roofs (already in `dev`)
 
