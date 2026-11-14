@@ -187,6 +187,8 @@ class Reach:
                     changed |= g(r[0], "a felled %s trunk" % sp)
             for r in trunk.get("branch", []):
                 changed |= g(r[0], "a felled trunk's branches")
+            for sp, seed in trunk.get("felled_seeds", {}).get("by_species", {}).items():   # every felled tree drops 1 to 5 of its seed (server_items._felled_seeds)
+                changed |= g(seed, "the seeds of a felled %s" % sp)
         pick = self.tool("pick")
         if pick and self.drops.get("shrub_work", {}).get("dig_suffix"):
             for e in self.flora:
