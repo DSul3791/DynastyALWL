@@ -3750,7 +3750,7 @@ func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 
 
 # The variant codes the recipe card offers here (SmithingRules.variants; the server checks again): +1/+2 beside a Master smithy that serves the
-# recipe, Tempered with the temper add-on (the Quenching trough) beside a Smithy or Master smithy that serves it.
+# recipe, Tempered beside a temper.station that serves it (the Master smithy, its quenching trough built in).
 func craft_variants(r: Dictionary) -> Array:
 	var gives: Array = r.get("gives", [0, 0])
 	var made_id: String = table.id_of(int(gives[0])) if not gives.is_empty() else ""
@@ -3765,22 +3765,13 @@ func craft_variants(r: Dictionary) -> Array:
 	if not _near_memo.has(key):
 		var level: int = int(r.get("station_level", 1))
 		var c: Dictionary = SmithingRules.cfg()
-		# As the server: the nearest Master smithy and the nearest Smithy within reach (ServerItems.serving_station), each serving the recipe.
+		# As the server: the nearest craft.station and temper.station within reach (ServerItems.serving_station), each serving the recipe.
 		var master_id: int = _nearest_serving(str(c.get("craft", {}).get("station", "master_smithy")))
-		var temper_station: String = str(c.get("temper", {}).get("station", "brick_forge"))
-		var smithy_id: int = _nearest_serving(temper_station, level if temper_station == station else 1)   # as the server: at the recipe's level
+		var temper_station: String = str(c.get("temper", {}).get("station", "master_smithy"))
+		var temper_id: int = _nearest_serving(temper_station, level if temper_station == station else 1)   # as the server: at the recipe's level
 		var master: bool = master_id >= 0 and _def_serves(_structure_by_state(int(_world[master_id]["state"])), station, level)
-		var trough: bool = false
-
-		if smithy_id >= 0 and _def_serves(_structure_by_state(int(_world[smithy_id]["state"])), station, level):
-			var addon_state: int = int(_structures_cfg.get(str(c.get("temper", {}).get("addon", "")), {}).get("state", -2))
-			var reach: float = float(_structure_by_state(int(_world[smithy_id]["state"])).get("addon_reach_m", 5.0))
-
-			for other in _world:
-				if int(_world[other]["state"]) == addon_state and _world[smithy_id]["pos"].distance_to(_world[other]["pos"]) <= reach:
-					trough = true
-
-		_near_memo[key] = SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, trough)
+		var temper: bool = temper_id >= 0 and _def_serves(_structure_by_state(int(_world[temper_id]["state"])), station, level)
+		_near_memo[key] = SmithingRules.variants(made_id, table.entry(made_id), int(gives[1]) if gives.size() > 1 else 1, master, temper)
 
 	return _near_memo[key]
 

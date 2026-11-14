@@ -8,7 +8,8 @@ extends SceneTree
 #      boards, nothing bought;
 #   3. construction and equipment: Leatherworking table, Loom, Tailor's table; Thread, Leather strap, Fibre cloth, a Fibre - Gambeson; a Rustic - Chest
 #      and a Crude - Chair from boards; an iron weapon and an iron armour piece at the Smithy; gambeson + mail worn in layers; a backpack
-#      worn (it has no slots: it cannot be opened); wear from use and repair at the station; a Tempered steel item from Advanced smelter steel;
+#      worn (it has no slots: it cannot be opened); wear from use and repair at the station; a Tempered steel item from Advanced smelter steel
+#      at the Master smithy, built with the Steel anvil;
 #   4. cooking and preservation: Food preparation table, Flatbread, a Sauerkraut batch sealed and matured, Smoked meat, Dried mushrooms, a board set
 #      on a Serving platter on the table, a portion eaten, portions conserved;
 #   5. food effects: three groups active, XP only when earned, expiry, an energy aid costs no Fitness;
@@ -868,15 +869,17 @@ func step3_construction_and_equipment() -> void:
 	items.action(1, Net.ACT_WEAR, slot_of("mail_shirt"), 0, 0, Vector3.ZERO)
 	check(items.worn_of(1)[mail_at] == n("mail_shirt"), "3s. and worn again")
 
-	# Steel and a Tempered steel item (GOALS-REPAIR R4): the Iron anvil forged at the Improved smithy, nails and hinges there, the Advanced smithy
+	# Steel and a Tempered steel item (GOALS-REPAIR R4, R5): the Iron anvil forged at the Improved smithy, nails and hinges there, the Advanced smithy
 	# built with them; bricks fired at the campfire and mortar by hand (clay and sand dug: test_server_items) for the Advanced smelter, steel
-	# smelted in it from bog iron and carbon in the wind; a Quenching trough beside the Advanced smithy, a Tempered Steel - Knife made there.
-	var steel_n: int = need_of("steel_knife", "steel_ingot")
+	# smelted in it from bog iron and carbon in the wind; the Steel anvil forged at the Advanced smithy, a Bronze - Hammer at the Improved smithy
+	# (the Master smithy's blueprint needs a hammer of tier 3), the Master smithy built with the Steel anvil, and a Tempered Steel - Knife made
+	# there with its own quencher (no trough).
+	var steel_n: int = need_of("steel_knife", "steel_ingot") + need_of("steel_anvil_part", "steel_ingot")
 	var nail_crafts: int = crafts_for("nails", cost_of("advanced_smithy", "nails"))
 	var hinge_crafts: int = crafts_for("hinges", cost_of("advanced_smithy", "hinges"))
-	var iron_more: int = cost_of("large_forge", "iron_ingot") + cost_of("quenching_trough", "iron_ingot") + need_of("iron_anvil_part", "iron_ingot") + nail_crafts * need_of("nails", "iron_ingot") + hinge_crafts * need_of("hinges", "iron_ingot")
+	var iron_more: int = cost_of("large_forge", "iron_ingot") + cost_of("master_forge", "iron_ingot") + need_of("iron_anvil_part", "iron_ingot") + nail_crafts * need_of("nails", "iron_ingot") + hinge_crafts * need_of("hinges", "iron_ingot")
 	check(cost_of("advanced_smithy", "steel_ingot") == 0 and cost_of("large_forge", "steel_ingot") == 0 and cost_of("advanced_smithy", "iron_anvil_part") == 1, "3t. the Advanced smithy and the Advanced smelter cost no steel; the smithy takes the Iron anvil (no cycle)")
-	check(make_iron(have("iron_ingot") + iron_more), "3t. %d more Iron ingots for the Iron anvil, its nails and hinges, the Advanced smelter and the trough" % iron_more)
+	check(make_iron(have("iron_ingot") + iron_more), "3t. %d more Iron ingots for the Iron anvil, its nails and hinges, the Advanced smelter and the Master smithy" % iron_more)
 	make_charcoal(have("charcoal") + 4)   # to keep the Improved smithy burning
 	go(FORGE + Vector3(0.0, 0.0, 1.5))
 	items.give(1, n("log"), need_of("iron_anvil_part", "log") + cost_of("advanced_smithy", "log"))   # logs (test_first_hour)
@@ -891,28 +894,51 @@ func step3_construction_and_equipment() -> void:
 	check(adv_smithy >= 0 and items.table.entry("advanced_smithy")["name"] == "Advanced smithy" and have("iron_anvil_part") == 0, "3u. the Advanced smithy stands, built with the Iron anvil")
 	go(FORGE + Vector3(-2.0, 0.0, 0.0))
 	feed("forge yard", 6)
-	var brick_crafts: int = crafts_for("brick", cost_of("large_forge", "brick"))
+	var brick_crafts: int = crafts_for("brick", cost_of("large_forge", "brick") + cost_of("master_forge", "brick"))
 	items.give(1, n("clay"), brick_crafts * need_of("brick", "clay"))   # dug clay (test_server_items)
 	craft("brick", brick_crafts)
 	var mortar_crafts: int = crafts_for("mortar", cost_of("large_forge", "mortar"))
 	give_needs("mortar", ["sand", "clay"], mortar_crafts)   # dug sand and clay (test_server_items)
 	craft("mortar", mortar_crafts)
-	check(have("brick") >= cost_of("large_forge", "brick") and have("mortar") >= cost_of("large_forge", "mortar"), "3v. %d bricks fired at the campfire and %d mortar mixed by hand" % [have("brick"), have("mortar")])
+	check(have("brick") >= cost_of("large_forge", "brick") + cost_of("master_forge", "brick") and have("mortar") >= cost_of("large_forge", "mortar"), "3v. %d bricks fired at the campfire and %d mortar mixed by hand" % [have("brick"), have("mortar")])
 	give_cost("large_forge", ["stone"])   # stones lie about (test_first_hour)
 	go(FORGE + Vector3(3.0, 0.0, 3.0))
 	var furnace: int = build("large_forge", FORGE + Vector3(4.5, 0.0, 5.0), "3v")
 	check(furnace >= 0 and items.table.entry("large_forge")["name"] == "Advanced smelter", "3v. the Advanced smelter stands, its windmill and two bellows built in")
 	check(make_steel(furnace, steel_n), "3w. in the wind the Advanced smelter makes %d Steel ingot from bog iron and carbon" % have("steel_ingot"))
-	give_cost("quenching_trough", ["stone", "log"])   # stones and logs (test_first_hour)
 	go(adv_at + Vector3(0.0, 0.0, -1.5))
-	var trough: int = build("quenching_trough", FORGE + Vector3(-3.0, 0.0, 4.5), "3x")
+	items.give(1, n("log"), need_of("steel_anvil_part", "log"))   # logs (test_first_hour)
+	craft("steel_anvil_part", 1)
+	check(have("steel_anvil_part") == 1, "3x. the Advanced smithy forges the Steel anvil from %d Steel ingots" % need_of("steel_anvil_part", "steel_ingot"))
+	go(FORGE + Vector3(0.0, 0.0, 1.5))
+	give_needs("bronze_hammer", ["bronze_ingot", "stick"])   # bronze (test_bronze_path) and a stick
+	craft("bronze_hammer", 1)
+	var bronze_at: int = items.inventory_of(1).numbers.find(n("bronze_hammer"))
+
+	if bronze_at >= 0 and not inv.on_hotbar(bronze_at):
+		var free_key: int = -1
+
+		for k in range(inv.hotbar_slots):
+			if inv.numbers[k] == 0 and free_key < 0:
+				free_key = k
+
+		items.action(1, Net.ACT_MOVE, bronze_at, free_key if free_key >= 0 else 1, 0, Vector3.ZERO)   # into a hotbar slot, as a player would drag it
+
+	check(have("bronze_hammer") == 1 and inv.on_hotbar(slot_of("bronze_hammer")), "3x. a Bronze - Hammer from the Improved smithy, in the hand bar")
+	give_cost("master_forge", ["stone", "log"])   # stones and logs (test_first_hour)
+	var master_at: Vector3 = FORGE + Vector3(-3.0, 0.0, 4.5)
+	go(master_at + Vector3(-3.5, 0.0, 0.0))
+	var master: int = build("master_forge", master_at, "3x")
+	check(master >= 0 and have("steel_anvil_part") == 0 and items.table.entry("master_forge")["name"] == "Master smithy", "3x. the Master smithy stands, built with the Steel anvil")
 	var tempered: int = SmithingRules.code(true, 0)
 	items.give(1, n("stick"), need_of("steel_knife", "stick"))   # sticks lie about (test_first_hour)
-	check(trough >= 0 and items.craft_variants(1, recipe("steel_knife")).has(tempered), "3x. with the trough beside the Advanced smithy, Tempered is offered for the Steel - Knife")
+	check(items.craft_variants(1, recipe("steel_knife")).has(tempered), "3y. beside the Master smithy Tempered is offered for the Steel - Knife, its quencher built in")
 	craft("steel_knife", 1, -1.0, tempered)
 	var ks: int = slot_of("steel_knife")
 	var base_d: int = int(items.table.entry("steel_knife")["durability"])
 	check(ks >= 0 and int(inv.inst_of(ks).get("temper", 0)) == 1 and inv.max_durability(ks) > base_d, "3y. a Tempered Steel - Knife from Advanced smelter steel (lasts %d against %d)" % [inv.max_durability(ks) if ks >= 0 else -1, base_d])
+	if master >= 0:
+		items._items[master]["struct"]["lit"] = false   # the Master smithy is let go out (its fuel runs 1800 s): later crafts at the yard are worked at the Improved smithy beside the player
 
 	# Building stuff left over stays at the forge yard (the carry limit); the small things go into the Rustic - Chest at depot A.
 	leave({"brick": 0, "mortar": 0, "stone": 0, "log": 0, "stick": 4, "charcoal": 12, "plant_fibre": 0, "clay": 0, "sand": 0})

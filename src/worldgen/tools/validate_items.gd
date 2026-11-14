@@ -566,7 +566,7 @@ func _init() -> void:
 		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet", "accuracy"]:   # quiet: less noise (stalk, server_animals brush noise); accuracy: the Map sketch (survey, server_map.gd)
 			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness, quiet or accuracy" % action)
 
-	# smithing.json (catalog Phase 2c): its whetstone is an item, its grindstone, Master smithy and Smithy are stations and the temper add-on a structure.
+	# smithing.json (catalog Phase 2c): its whetstone is an item, and its grindstone, Master smithy and temper stations are served.
 	var smithing: Dictionary = _read("smithing.json")
 
 	if not items_file.get("items", {}).has(String(smithing.get("whetstone", {}).get("item", ""))):
@@ -576,8 +576,18 @@ func _init() -> void:
 		if not served.has(String(station_ref)):
 			fail("smithing.json names the station '%s' that no live structure serves" % station_ref)
 
-	if not structure_defs.has(String(smithing.get("temper", {}).get("addon", ""))):
-		fail("smithing.json temper.addon is not a structure")
+	# Smithy wear (GOALS-REPAIR R5): every live smithy's anvil has a durability, and the repair_skip rows are items.
+	var station_wear: Dictionary = smithing.get("station_wear", {})
+
+	for smithy_kind in structure_defs:
+		var anvil: String = String(structure_defs[smithy_kind].get("anvil", "")) if typeof(structure_defs[smithy_kind]) == TYPE_DICTIONARY else ""
+
+		if anvil != "" and float(station_wear.get("durability", {}).get(anvil, 0.0)) <= 0.0:
+			fail("smithing.json station_wear.durability has no durability for the '%s' anvil of '%s'" % [anvil, smithy_kind])
+
+	for skip_id in station_wear.get("repair_skip", []):
+		if not items_file.get("items", {}).has(String(skip_id)) and not gathered_file.get("items", {}).has(String(skip_id)):
+			fail("smithing.json station_wear.repair_skip names '%s', which is not an item" % skip_id)
 
 	# Tempered (s4 item 15): every steel weapon and armour row (a "Steel - " weapon or clothing row, unstackable) is listed in temper.include,
 	# since those rows carry no material; every listed id is an item.
