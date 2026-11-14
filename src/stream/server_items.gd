@@ -15202,7 +15202,7 @@ func _game_hour() -> float:
 func note_talked(peer: int, npc_id: String) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
-	if st.is_empty():
+	if st.is_empty() or _goals_paused(peer):
 		return
 
 	var hour: float = _game_hour()
@@ -15237,7 +15237,7 @@ func _night_walk_tick() -> void:
 		_night_last_pos[peer] = _peer_pos[peer]
 		var st: Dictionary = _goal_state_of(peer)
 
-		if st.is_empty() or not night:
+		if st.is_empty() or not night or _goals_paused(peer):
 			continue
 
 		var step: float = Vector2(_peer_pos[peer].x - last.x, _peer_pos[peer].z - last.z).length()
@@ -15246,7 +15246,7 @@ func _night_walk_tick() -> void:
 			continue   # standing still, or a jump (respawn, teleport)
 
 		var inv = inventory_of(peer)
-		var lit: bool = _lit_fire_within(_peer_pos[peer], 4.0) or (inv != null and inv.count_of(table.number_of("torch")) > 0)
+		var lit: bool = _lit_fire_within(_peer_pos[peer], 4.0) or (inv != null and _goal_have(st, inv, "torch") > 0)   # an admin-given torch lights no goal (GA-54)
 
 		if lit:
 			st["goal_counts"]["moved_lit_night"] = float(st["goal_counts"].get("moved_lit_night", 0.0)) + step
@@ -17472,7 +17472,11 @@ func _craft_tick(spent: float) -> void:
 				if int(head[1]) - times <= 0:
 					_say(peer, "%s done: it is in the %s." % [str(recipe.get("name", "Your craft")), table.sentence_name(int(_items[store_id]["number"]))])
 			else:
-				give(peer, made_n, _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count, made_inst, made_age)
+				var gave_n: int = _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count
+				give(peer, made_n, gave_n, made_inst, made_age)
+
+				if free_entry:   # an admin-mode craft's product earns no goal by being held (GA-54)
+					_goal_admin_gave(peer, made_n, gave_n)
 
 			_gain_source = SRC_PICKUP
 

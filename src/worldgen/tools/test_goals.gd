@@ -200,6 +200,34 @@ func _init() -> void:
 	check(admin._goal_state_of(1)["goals_done"].is_empty(), "turning Admin mode off completes nothing done in it")
 	admin._goal_made(1, admin.table.number_of("twine"), 2)
 	check(admin._goal_state_of(1)["goals_done"].has("twine"), "a sealed batch of two crafts counts as two (the twine goal needs 2)")
+	# A free craft's product in the pack, a talk and a night walk in Admin mode earn nothing after it is switched off (GA-54).
+	var hoe: int = admin.table.number_of("wooden_hoe")
+	var hoe_recipe: int = -1
+
+	for k in admin.recipes.numbers():
+		if int(admin.recipes.recipe(int(k)).get("gives", [0])[0]) == hoe:
+			hoe_recipe = int(k)
+
+	admin_on[0] = true
+	admin._last_queue_act.clear()
+	admin.action(1, Net.ACT_CRAFT_QUEUE, hoe_recipe, 0, 1, Vector3.ZERO)
+
+	for s in range(60):
+		admin.tick(1.0)
+
+	admin.game_seconds = func(): return 21.0 * 3600.0
+	admin.note_talked(1, "edda")
+	admin.give(1, admin.table.number_of("torch"), 1)
+
+	for n in range(12):
+		admin.report_position(1, Vector3(float(n + 1) * 10.0, 10.0, 0.0))
+		admin._night_walk_tick()
+
+	admin_on[0] = false
+	admin._goals_check(1)
+	var gone: Dictionary = admin._goal_state_of(1)
+	check(hoe_recipe >= 0 and admin.count_for(1, "wooden_hoe") == 1, "Admin mode crafted a Wooden - Hoe for free (recipe %d)" % hoe_recipe)
+	check(not gone["goals_done"].has("hoe") and not gone["goals_done"].has("story") and float(gone["goal_counts"].get("moved_lit_night", 0.0)) == 0.0, "and neither the free hoe, a talk at 21:00 nor a night walk in Admin mode counts once it is off (%s)" % str(gone["goals_done"].keys()))
 	# Hints: said once when their trigger holds, saved with the character, repeated only for a goal still open after 5 minutes.
 	said.clear()
 	var hinter = make("user://test_goals_hints", {}, [false])
@@ -252,7 +280,7 @@ func _init() -> void:
 	check(not other._goal_state_of(1)["goals_done"].has("story"), "at noon the same talk does not count")
 
 	# A night walk with a torch in the pack: 100 m.
-	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("torch"), 0, 1, Vector3.ZERO)
+	camp.give(1, camp.table.number_of("torch"), 1)   # a crafted or bought torch (an admin-given one lights no goal)
 	camp._night_walk_tick()
 
 	for n in range(12):
