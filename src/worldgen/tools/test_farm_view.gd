@@ -123,5 +123,11 @@ func _init() -> void:
 	check(view.bed_id_at(Vector3(10.9, 0.0, 9.1)) == 11 and view.bed_id_at(Vector3(11.3, 0.0, 10.0)) == 0, "bed_id_at: a 2 m plot holds its corner and not 1.3 m out")
 	check(view.bed_id_at(Vector3(20.0, 0.0, 20.0)) == 0, "bed_id_at: a plot still a blueprint site is not a bed")
 	check(view.bed_crop(11) == "wheat" and view.bed_crop(10) == "" and view.bed_crop(99) == "", "bed_crop reads the row's crop, empty for none or an unknown id")
+	# A plot holds a crop on each square metre (Dave 14 Nov 2026: Medium 4): the row's cells, in the server's order (across, then along); the grid reads the one it aims at.
+	view._world[11]["cells"] = [["wheat", 1], ["", -1], ["", -1], ["barley", 2]]
+	check(view.bed_cell_index(11, Vector3(9.6, 0.0, 9.4)) == 0 and view.bed_cell_index(11, Vector3(10.4, 0.0, 9.6)) == 1 and view.bed_cell_index(11, Vector3(10.6, 0.0, 10.7)) == 3 and view.bed_cell_index(10, Vector3(0.5, 0.0, 0.5)) == 0 and view.bed_cell_index(99, Vector3.ZERO) == -1, "bed_cell_index: a Medium plot's four square metres, a 1 m bed's one, -1 for an unknown id")
+	check(view.bed_crop(11, Vector3(9.6, 0.0, 9.4)) == "wheat" and view.bed_crop(11, Vector3(10.4, 0.0, 9.6)) == "" and view.bed_crop(11, Vector3(10.6, 0.0, 10.7)) == "barley", "bed_crop at a point reads that square metre's crop")
+	var near_rows: Array = view.bed_rows(Vector3(0.0, 0.0, 0.0), 3.0)
+	check(near_rows.size() == 1 and int(near_rows[0][0]) == 10 and view.bed_rows().size() == 2, "bed_rows near a point keeps only the beds within reach (the site is never a bed)")
 	print("farm view: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

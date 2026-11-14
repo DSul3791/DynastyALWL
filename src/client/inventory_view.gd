@@ -1043,33 +1043,60 @@ func bed_id_at(point: Vector3) -> int:
 	return bed_in(bed_rows(), point)
 
 
-# Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm], read once for a whole Garden grid (held_item._garden_plan).
-func bed_rows() -> Array:
+# Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm, yaw degrees], read once for a whole Garden grid (held_item._garden_plan).
+func bed_rows(near: Vector3 = Vector3.INF, radius: float = 0.0) -> Array:   # `near`/`radius`: only the beds within that flat distance (the hoe grid's area)
 	var rows: Array = []
 
 	for id in _world:
 		if not _world[id].has("yaw") or int(_world[id]["state"]) < 5 or _world[id].get("site") != null:   # a plot's blueprint site is not a bed yet (the server refuses it)
 			continue
 
+		if near.is_finite() and Vector2(_world[id]["pos"].x - near.x, _world[id]["pos"].z - near.z).length() > radius:
+			continue
+
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
 		if _is_bed_def(def):
-			rows.append([int(id), _world[id]["pos"], float(def.get("footprint_x", 1.0)) * 0.5 + 0.05])
+			rows.append([int(id), _world[id]["pos"], float(def.get("footprint_x", 1.0)) * 0.5 + 0.05, float(_world[id]["yaw"])])
 
 	return rows
 
 
 static func bed_in(rows: Array, point: Vector3) -> int:
 	for row in rows:
-		if absf(row[1].x - point.x) <= float(row[2]) and absf(row[1].z - point.z) <= float(row[2]):
+		if FarmRules.on_square(Vector2(point.x, point.z), Vector2(row[1].x, row[1].z), float(row[2]), float(row[3]) if row.size() > 3 else 0.0):   # a turned bed or plot by its own square
 			return int(row[0])
 
 	return 0
 
 
-# The crop on a bed from its world row ("" for an empty bed or an unknown id).
-func bed_crop(id: int) -> String:
-	return str(_world.get(id, {}).get("crop", ""))
+# The crop on a bed from its world row ("" for an empty bed or an unknown id); on a plot of several square metres, the crop of the one nearest `at`.
+func bed_crop(id: int, at: Vector3 = Vector3.INF) -> String:
+	var rec: Dictionary = _world.get(id, {})
+	var cells: Array = rec.get("cells", [])
+
+	if cells.is_empty() or at == Vector3.INF:
+		return str(rec.get("crop", "")) if cells.is_empty() else ""
+
+	var k: int = bed_cell_index(id, at)
+	return str(cells[k][0]) if k >= 0 and k < cells.size() else ""
+
+
+# Which square metre of a bed `at` falls on (0 for a 1 m bed, a pot or a planter; -1 for an unknown id), in the server's _bed_cells order.
+func bed_cell_index(id: int, at: Vector3) -> int:
+	if not _world.has(id):
+		return -1
+
+	var rec: Dictionary = _world[id]
+	var n: int = FarmRules.bed_side(_structure_by_state(int(rec["state"])))
+	var best: int = 0
+	var spots: Array = FarmRules.grid_points(n, n, 1.0, Vector2(rec["pos"].x, rec["pos"].z), int(round(float(rec["yaw"]))))
+
+	for k in spots.size():
+		if (spots[k] as Vector2).distance_to(Vector2(at.x, at.z)) < (spots[best] as Vector2).distance_to(Vector2(at.x, at.z)):
+			best = k
+
+	return best
 
 
 # The crops.json table, for the hoe's Garden list (which seeds sow a crop).
@@ -1154,9 +1181,10 @@ func _note_crop(id: int, row: Array) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	var crop: String = str(extra.get("crop", ""))
 	var stage: int = int(extra.get("stage", 0)) if crop != "" else -1
+	var cells: Array = extra.get("cells", [])   # a plot of several square metres: one crop each (server_items.crop_row_extra)
 	var rec: Dictionary = _world[id]
 
-	if str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage:
+	if str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage and str(rec.get("cells", [])) == str(cells):
 		return
 
 	if is_instance_valid(rec.get("crop_node")):
@@ -1164,10 +1192,24 @@ func _note_crop(id: int, row: Array) -> void:
 
 	rec["crop"] = crop
 	rec["stage"] = stage
+	rec["cells"] = cells
 	rec["crop_node"] = null
+	var bed_def: Dictionary = _structure_by_state(int(rec["state"]))
 
-	if crop != "":
-		var bed_def: Dictionary = _structure_by_state(int(rec["state"]))
+	if not cells.is_empty():
+		var holder: Node3D = Node3D.new()   # a crop look on each square metre, laid out as the server's _bed_cells (the bed's node is already turned)
+		var n: int = FarmRules.bed_side(bed_def)
+		var spots: Array = FarmRules.grid_points(n, n, 1.0, Vector2.ZERO, 0)
+
+		for k in mini(cells.size(), spots.size()):
+			if str(cells[k][0]) != "":
+				var one: Node3D = CropLook.build(str(cells[k][0]), int(cells[k][1]), 1.0)
+				one.position = Vector3(spots[k].x, float(bed_def.get("soil_y", 0.0)), spots[k].y)
+				holder.add_child(one)
+
+		(rec["node"] as Node3D).add_child(holder)
+		rec["crop_node"] = holder
+	elif crop != "":
 		var look: Node3D = CropLook.build(crop, stage, minf(float(bed_def.get("footprint_x", 1.0)), float(bed_def.get("footprint_z", bed_def.get("footprint_x", 1.0)))))
 		look.position.y = float(bed_def.get("soil_y", 0.0))   # a planter's soil is raised (structures.json soil_y); a bed or plot grows from the ground
 		(rec["node"] as Node3D).add_child(look)
