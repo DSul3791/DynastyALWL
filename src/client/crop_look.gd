@@ -27,6 +27,7 @@ static func build(crop_id: String, stage: int, side_m: float) -> Node3D:
 		for iz in range(per_side):
 			var tuft: MeshInstance3D = MeshInstance3D.new()
 			tuft.mesh = _mesh(s, grain)
+			tuft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # placeholder tufts: no shadow cost per bed
 			tuft.material_override = _material(crop_id, s, grain)
 			tuft.position = Vector3((float(ix) + 0.5) / float(per_side) * side_m - side_m * 0.5, high * 0.5, (float(iz) + 0.5) / float(per_side) * side_m - side_m * 0.5)
 			root.add_child(tuft)

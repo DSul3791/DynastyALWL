@@ -14172,7 +14172,7 @@ func _season() -> String:
 
 func _bed_at(id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
-	return it if (not it.is_empty() and it.has("struct") and _is_plot_kind(str(it["struct"].get("kind", "")))) else {}
+	return it if (not it.is_empty() and it.has("struct") and not it["struct"].has("site") and _is_plot_kind(str(it["struct"].get("kind", "")))) else {}   # a blueprint site of a plot is not a bed yet
 
 
 # A tilled bed, or a garden plot (structures.json "plot": true, buildables plan B5): it takes a seed, holds moisture and is tended the same way.
@@ -14692,7 +14692,15 @@ func till(peer: int, inv, at: Vector3, held_slot: int) -> int:
 func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
-	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M or slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
+	if bed.is_empty() or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		_say(peer, "Too far from the bed to sow it.")
+		return false
+
+	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
+		_say(peer, "There are no seeds in that slot to sow.")
 		return false
 
 	var key: String = _bed_key(bed["pos"])
@@ -14717,7 +14725,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
 
 	if not sow_seasons.has(_season()):
-		_say(peer, "Not the season for %s." % table.in_sentence(str(def.get("name", crop_id))))
+		_say(peer, "Not the season for %s. Hold the seeds you want to sow." % table.in_sentence(str(def.get("name", crop_id))))   # the client sows the seed in hand, else the first seed in the pack (A-6)
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
@@ -14850,13 +14858,18 @@ func _crops_tick() -> void:
 func harvest(peer: int, inv, bed_id: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
-	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+	if bed.is_empty() or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		_say(peer, "Too far from the bed to harvest it.")
 		return false
 
 	var key: String = _bed_key(bed["pos"])
 	var crop: Dictionary = _crops.get(key, {})
 
 	if crop.is_empty():
+		_say(peer, "Nothing is growing there to harvest.")
 		return false
 
 	if crop_stage(crop) < 3:

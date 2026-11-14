@@ -150,25 +150,43 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	var moisture_before: float = items.plot_moisture(items._items[bed]["pos"])
 	act(Net.ACT_WATER_BED, bed)
 	check(not items._crops.has(key) and items.plot_moisture(items._items[bed]["pos"]) == moisture_before, "watering an empty bed does nothing")
+	notes.clear()
 	act(Net.ACT_HARVEST, bed)
-	check(not items._crops.has(key), "harvesting an empty bed does nothing")
+	check(not items._crops.has(key) and notes.has("Nothing is growing there to harvest."), "harvesting an empty bed does nothing and says so")
+	items.report_position(1, Vector3(40.0, 10.0, 40.0))
+	notes.clear()
+	act(Net.ACT_HARVEST, bed)
+	act(Net.ACT_SOW, bed, sickle_slot)
+	check(notes.has("Too far from the bed to harvest it.") and notes.has("Too far from the bed to sow it."), "harvesting or sowing a bed out of reach is refused with a notice (%s)" % str(notes))
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	notes.clear()
+	act(Net.ACT_SOW, bed, 99)
+	check(not items._crops.has(key) and notes.has("There are no seeds in that slot to sow."), "a stale seed slot sows nothing and says so")
+
+	# A blueprint site of a plot is not a bed yet: it takes no seed.
+	items._items[920004] = {"number": items.table.number_of("wooden_garden_plot"), "count": 1, "pos": Vector3(-1.5, 10.0, 1.5), "left": 1.0e9, "struct": {"kind": "wooden_garden_plot", "yaw": 0.0, "site": {}}}
+	check(items._bed_at(920004).is_empty() and not items.sow(1, items.inventory_of(1), 920004, sickle_slot) and not items._crops.has(items._bed_key(Vector3(-1.5, 10.0, 1.5))), "a plot's blueprint site is not a bed: nothing is sown on it")
+	items._items.erase(920004)
 
 	# Flax, from the wild seed the gather above gave to a harvest.
 	if count("flax_seeds") == 0:
 		give("flax_seeds", 1)
 
 	var flax_seeds: int = count("flax_seeds")
-	season[0] = "summer"
+	var flax_seasons: Array = crops["flax"].get("sow_seasons", [crops["flax"].get("sow_season", "spring")])   # the season comes from the data, as the matrix below does
+	var in_season: String = str(flax_seasons[0])
+	var off_season: String = str(["spring", "summer", "autumn", "winter"].filter(func(x): return not flax_seasons.has(x))[0])
+	season[0] = off_season
 	notes.clear()
 	act(Net.ACT_SOW, bed, slot_of("flax_seeds"))
-	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds and notes.has("Not the season for flax."), "flax is refused in summer (sow_seasons is spring): seed kept, the server's text says why (%s)" % str(notes))
-	season[0] = "spring"
+	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds and notes.has("Not the season for flax. Hold the seeds you want to sow."), "flax is refused in %s (sow_seasons %s): seed kept, the server's text says why and what to do (%s)" % [off_season, str(flax_seasons), str(notes)])
+	season[0] = in_season
 	items.report_position(1, Vector3(40.0, 10.0, 40.0))
 	act(Net.ACT_SOW, bed, slot_of("flax_seeds"))
 	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds, "sowing a bed out of reach is refused")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	act(Net.ACT_SOW, bed, slot_of("flax_seeds"))
-	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "flax" and count("flax_seeds") == flax_seeds - 1, "in spring flax is sown by bed id and seed slot and the seed is used")
+	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "flax" and count("flax_seeds") == flax_seeds - 1, "in %s flax is sown by bed id and seed slot and the seed is used" % in_season)
 	var extra: Dictionary = row_extra(bed)
 	check(extra.get("crop", "") == "flax" and int(extra.get("stage", -1)) == 0, "the bed's world row now says flax, stage 0 (%s)" % str(extra))
 
