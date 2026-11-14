@@ -280,7 +280,9 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
 	var wind: float = clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0)
 	# The fog's air is the low ground's (sea level), not the caller's altitude: one fog for the zone row, the same on server and client.
-	var low_air: float = air_c(game_s, group, 0.0, seed_value, row, equator_row) - RAIN_COOL_C * (0.0 if snowing else precip)
+	var low_temp: float = air_c(game_s, group, 0.0, seed_value, row, equator_row)
+	var low_snowing: bool = low_temp + Climate.snow_bias_c(Climate.of_zone(group)) < 0.5
+	var low_air: float = low_temp - RAIN_COOL_C * (0.0 if low_snowing else precip)
 	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit, latitude_deg, need, low_air)
 	var sea_fog: float = _sea_fog(seed_value, game_s, group, phase, wind, front, precip)
 	var sea_fog_land: float = sea_fog * _land_keeps_sea_fog(year_phase(game_s), hour, latitude_deg)   # the calendar's phase: the sunrise takes the hemisphere from the latitude

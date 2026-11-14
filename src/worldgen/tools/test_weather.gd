@@ -218,6 +218,7 @@ func _init() -> void:
 	# One fog for the zone row: the caller's altitude (server at sea level, client at the eye) never changes it.
 	var alt_bad: int = 0
 	var burn_bad: int = 0
+	var burn_seen: int = 0
 
 	for day in range(60):
 		for hour in [2, 5, 7, 9, 12, 20]:
@@ -235,14 +236,18 @@ func _init() -> void:
 		var dry: bool = float(at_rise["rain"]) + float(at_rise["snow"]) < 0.05
 
 		if dry and float(at_rise["mist"]) > 0.3:
-			var plus1: float = float(Weather.state(777, t_rise + 3600.0, "temperate")["mist"])
-			var plus5: float = float(Weather.state(777, t_rise + 5.0 * 3600.0, "temperate")["mist"])
+			var w1: Dictionary = Weather.state(777, t_rise + 3600.0, "temperate")
+			var w5: Dictionary = Weather.state(777, t_rise + 5.0 * 3600.0, "temperate")
 
-			if plus1 <= 0.0 or plus5 > plus1 + 0.001:
-				burn_bad += 1
+			# Radiation fog only: a morning that stays dry (fog in rain is its own rule).
+			if float(w1["rain"]) + float(w1["snow"]) < 0.05 and float(w5["rain"]) + float(w5["snow"]) < 0.05:
+				burn_seen += 1
+
+				if float(w1["mist"]) <= 0.0 or float(w5["mist"]) > float(w1["mist"]) + 0.001:
+					burn_bad += 1
 
 	check(alt_bad == 0, "the fog and the steam are the same at any caller's altitude (%d differ)" % alt_bad)
-	check(burn_bad == 0, "the fog clears gradually after sunrise, not at once (%d bad mornings)" % burn_bad)
+	check(burn_seen > 0 and burn_bad == 0, "the fog clears gradually after sunrise, not at once (%d of %d mornings bad)" % [burn_bad, burn_seen])
 	check(mist_in_rain_bad == 0, "fog in rain stays thin (%d hours)" % mist_in_rain_bad)
 	var in_rain_any: bool = false
 
