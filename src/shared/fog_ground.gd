@@ -56,7 +56,20 @@ func update(at: Vector3) -> void:
 	var size: float = tile_size_m
 	var origin: Vector2 = Vector2(snappedf(here.x - WINDOW_M * 0.5, CELL_M), snappedf(here.y - WINDOW_M * 0.5, CELL_M))
 	var job: Callable = func() -> void:
-		_next = read_window(dir, size, origin)
+		var read: Dictionary = read_window(dir, size, origin)
+
+		if not read.is_empty():     # the floor's range for the log line, here on the worker, not on the main thread
+			var floor_m: PackedFloat32Array = read["floor"]
+			var low_m: float = INF
+			var high_m: float = -INF
+
+			for value in floor_m:
+				low_m = minf(low_m, value)
+				high_m = maxf(high_m, value)
+
+			read["floor_range"] = Vector2(low_m, high_m)
+
+		_next = read
 
 	_task = WorkerThreadPool.add_task(job, false, "fog ground")
 
@@ -84,15 +97,8 @@ func _log_read() -> void:
 		print("fog ground (%s): no tile at %.0f, %.0f" % [who, _centre.x, _centre.y])
 		return
 
-	var floor_m: PackedFloat32Array = _next["floor"]
-	var low_m: float = INF
-	var high_m: float = -INF
-
-	for value in floor_m:
-		low_m = minf(low_m, value)
-		high_m = maxf(high_m, value)
-
-	print("fog ground (%s): read %d x %d cells round %.0f, %.0f; cold-air floor %.0f to %.0f m" % [who, int(_next["n"]), int(_next["n"]), _centre.x, _centre.y, low_m, high_m])
+	var span: Vector2 = _next.get("floor_range", Vector2.ZERO)
+	print("fog ground (%s): read %d x %d cells round %.0f, %.0f; cold-air floor %.0f to %.0f m" % [who, int(_next["n"]), int(_next["n"]), _centre.x, _centre.y, span.x, span.y])
 
 
 # Is a read running?
@@ -280,7 +286,6 @@ static func box_blur(values: PackedFloat32Array, n: int) -> PackedFloat32Array:
 	return out
 
 
-# A grid value at a world point, bilinear between cell centres; `outside` when the grid is empty or the point is off it.
 # How far a point lies inside a grid's window (m to its nearest edge); -1 when outside or no grid.
 static func margin(g: Dictionary, x: float, z: float) -> float:
 	if g.is_empty():
@@ -292,6 +297,7 @@ static func margin(g: Dictionary, x: float, z: float) -> float:
 	return inside if inside >= 0.0 else -1.0
 
 
+# A grid value at a world point, bilinear between cell centres; `outside` when the grid is empty or the point is off it.
 static func sample(g: Dictionary, key: String, x: float, z: float, outside: float) -> float:
 	if g.is_empty():
 		return outside
