@@ -382,6 +382,7 @@ func make_iron(wanted: int) -> bool:
 		items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), smelter, fuel, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), smelter, ore, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+		go((items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
 		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: work the bellows
 		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) + 5.0)
 		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again: leave them
@@ -391,6 +392,8 @@ func make_iron(wanted: int) -> bool:
 
 		if have("iron_ore") >= ore_before:   # nothing smelted: stop rather than loop
 			break
+
+	go(FORGE)
 
 	if have("iron_ingot") < wanted:
 		print("     make_iron short: ore %d of %d, charcoal %d; pack %s" % [have("iron_ore"), ore_n, have("charcoal"), pack_str()])

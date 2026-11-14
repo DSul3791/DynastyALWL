@@ -170,6 +170,11 @@ func pick_out(ore: String, item: String, want: int, blows: int) -> void:
 	items._items.erase(OUTCROP_ID)
 
 
+# A job's [id, count] rows as "id count" text: parsed JSON numbers are floats, so the rows are not compared as JSON text.
+func rows_text(rows: Array) -> String:
+	return ", ".join(rows.map(func(r): return "%s %d" % [str(r[0]), int(r[1])]))
+
+
 func _init() -> void:
 	var dir: String = "user://test_bronze_path"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -201,7 +206,7 @@ func _init() -> void:
 
 	# The amounts follow the live data: the bronze job (1 Copper ore + 1 Tin ore -> 2 Bronze ingots) and the pick's recipe.
 	var job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("bronze", {})
-	check(JSON.stringify(job.get("in", [])) == JSON.stringify([["copper_ore", 1], ["tin_ore", 1]]) and JSON.stringify(job.get("out", [])) == JSON.stringify(["bronze_ingot", 2]), "the bronze job: 1 Copper ore + 1 Tin ore -> 2 Bronze ingots (master s2.7 item 3)")
+	check(rows_text(job.get("in", [])) == "copper_ore 1, tin_ore 1" and rows_text([job.get("out", ["", 0])]) == "bronze_ingot 2", "the bronze job: 1 Copper ore + 1 Tin ore -> 2 Bronze ingots (master s2.7 item 3)")
 	var pick_bronze: int = need_of("bronze_pickaxe", "bronze_ingot")
 	var pairs: int = ceili(float(pick_bronze) / 2.0)
 	var fuel_n: int = int(ceil(float(items._structures_cfg["smelting"].get("fuel_per_ore", 1)) * float(pairs * 2)))

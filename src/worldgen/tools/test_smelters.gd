@@ -276,7 +276,7 @@ func _init() -> void:
 	var imp: int = place("improved_smelter@3,-2,0")
 	var idef: Dictionary = def_of(imp)
 	var bellows_x: float = float(idef["smelt"]["bellows_speed"])
-	check(imp > 0 and int(idef["smelt"]["hopper"]) == 40 and int(idef["smelt"]["input"]) == 40 and int(idef["out_slots"]) * items.table.stack_of(iron) == 80 and is_equal_approx(bellows_x, 1.3), "the Improved smelter: hopper 40, input 40, an 80-ingot rack, bellows 1.30x (master s2.7 item 4)")
+	check(imp > 0 and int(idef["smelt"]["hopper"]) == 40 and int(idef["smelt"]["input"]) == 40 and int(idef["out_slots"]) > 0 and int(idef["smelt"]["output"]) == 80 and is_equal_approx(bellows_x, 1.3), "the Improved smelter: hopper 40, input 40, an 80-ingot rack, bellows 1.30x (master s2.7 item 4)")
 	items.give(1, charcoal, 40)
 	items.give(1, cu_ore, 1)
 	put_in(imp, "charcoal", 40)
@@ -308,13 +308,14 @@ func _init() -> void:
 	act(Net.ACT_USE_STRUCT, imp)
 	check(not items._smelters.bellows_worked(imp), "E again leaves the bellows")
 
-	# A full rack makes it wait.
+	# A full rack (smelt.output ingots across its slots) makes it wait.
 	var first_out: int = int(idef["slots"])
+	var rack_n: int = int(idef["smelt"]["output"])
 
 	for i in range(first_out, first_out + int(idef["out_slots"])):
 		box(imp).clear_slot(i)
 		box(imp).numbers[i] = n("stone")
-		box(imp).counts[i] = items.table.stack_of(n("stone"))
+		box(imp).counts[i] = rack_n / int(idef["out_slots"]) + (rack_n % int(idef["out_slots"]) if i == first_out else 0)
 
 	items.give(1, cu_ore, 1)
 	put_in(imp, "copper_ore", 1)
@@ -323,7 +324,7 @@ func _init() -> void:
 	check(part(imp, "input", cu_ore) == 1 and part(imp, "hopper") == hopper_before and in_front(imp, cu) == 0, "a full rack: the finished ingot waits, nothing taken, nothing on the ground")
 	box(imp).clear_slot(first_out)
 	run(2.0)
-	check(part(imp, "output", cu) == 1 and part(imp, "input", cu_ore) == 0, "room in the rack: it delivers")
+	check(part(imp, "output", cu) == 1 and part(imp, "input", cu_ore) == 0, "room in the rack: it delivers (rack copper %d, copper ore in %d, banked %.1f s on '%s')" % [part(imp, "output", cu), part(imp, "input", cu_ore), float(items._items[imp]["struct"].get("smelt_t", 0.0)), str(items._items[imp]["struct"].get("smelt_job", ""))])
 
 	# --- 3b. Two players at one smelter ---
 	empty(imp)

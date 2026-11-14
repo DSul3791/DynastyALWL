@@ -120,6 +120,11 @@ func build(structure: String, at: Vector3) -> int:
 	return -1
 
 
+# A job's [id, count] rows as "id count" text: parsed JSON numbers are floats, so the rows are not compared as JSON text.
+func rows_text(rows: Array) -> String:
+	return ", ".join(rows.map(func(r): return "%s %d" % [str(r[0]), int(r[1])]))
+
+
 func _init() -> void:
 	var dir: String = "user://test_iron_saw_route"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -158,7 +163,7 @@ func _init() -> void:
 	var job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("iron", {})
 	var ore_n: int = smithy_iron + saw_iron   # 1 Iron ore makes 1 Iron ingot (master s2.7 item 3)
 	var fuel_n: int = int(ceil(float(items._structures_cfg["smelting"].get("fuel_per_ore", 1)) * float(ore_n))) + 4   # and a few to fire the Smithy
-	check(JSON.stringify(job.get("in", [])) == JSON.stringify([["iron_ore", 1]]) and JSON.stringify(job.get("out", [])) == JSON.stringify(["iron_ingot", 1]) and bool(job.get("bellows", false)), "the iron job: 1 Iron ore to 1 Iron ingot, only with the bellows worked")
+	check(rows_text(job.get("in", [])) == "iron_ore 1" and rows_text([job.get("out", ["", 0])]) == "iron_ingot 1" and bool(job.get("bellows", false)), "the iron job: 1 Iron ore to 1 Iron ingot, only with the bellows worked")
 	# The pre-saw stations take only what the wilderness gives and the route makes (master s4 item 10): no Planks, no nails, no bought metal.
 	for st in ["smelter", "stone_forge", "improved_smelter", "blacksmithy"]:
 		var ids: Array = blueprint_of(st).get("cost", []).map(func(c): return str(c[0]))
@@ -205,6 +210,7 @@ func _init() -> void:
 		items.tick(1.0)
 
 	check(items._chests[int(items._items[smelter]["struct"]["uid"])].count_of(items.table.number_of("iron_ingot")) == 0, "3e. nobody at the bellows: no iron in %d s" % int(unmanned_s))
+	items.report_position(1, (items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
 	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: work the bellows
 	var manned_s: float = float(items._structures["improved_smelter"]["smelt"]["ingot_s"]) / float(items._structures["improved_smelter"]["smelt"]["bellows_speed"])
 
@@ -212,6 +218,7 @@ func _init() -> void:
 		items.tick(1.0)
 
 	take_all(smelter)
+	items.report_position(1, HERE)
 	check(have("iron_ingot") >= smithy_iron + saw_iron, "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d)" % [smithy_iron + saw_iron, manned_s, have("iron_ingot")])
 	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again: leave the bellows
 

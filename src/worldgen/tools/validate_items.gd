@@ -606,7 +606,8 @@ func _init() -> void:
 	for recipe_id in recipes_file.get("recipes", {}):
 		var station: String = String(recipes_file["recipes"][recipe_id].get("station", ""))
 
-		if station != "" and not stations.has(station):
+		# A retired recipe is kept only for its number and is never crafted, so its station may be gone (the old smelter recipes).
+		if station != "" and not stations.has(station) and not bool(recipes_file["recipes"][recipe_id].get("retired", false)):
 			fail("recipes.json %s: unknown station '%s'" % [recipe_id, station])
 
 	# Fishing: every catch and bait is an item, and the catches are obtainable (by fishing).
@@ -872,6 +873,9 @@ func _init() -> void:
 
 		if int(smelt.get("hopper_slots", 0)) < 1 or int(smelt.get("hopper_slots", 0)) >= int(sdef.get("slots", 0)) or int(smelt.get("hopper", 0)) <= 0 or int(smelt.get("input", 0)) <= 0 or float(smelt.get("ingot_s", 0.0)) <= 0.0:
 			fail("structures.json %s: a smelter needs smelt.hopper_slots (1 to slots - 1), hopper, input and ingot_s above 0" % kind)
+
+		if int(sdef.get("out_slots", 0)) > 0 and int(smelt.get("output", 0)) <= 0:
+			fail("structures.json %s: a smelter with an output rack needs smelt.output, the ingots the rack holds, above 0" % kind)
 
 		var smelter_takes: Dictionary = {}
 

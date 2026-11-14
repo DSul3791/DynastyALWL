@@ -4,7 +4,8 @@ extends RefCounted
 # structures.json row has "use": "smelt" and a "smelt" block; the jobs and the fuel are structures.json "smelting". It works by itself, like
 # the Kiln, never through the player's craft queue:
 #   - the store's first smelt.hopper_slots slots are the fuel hopper (Coal or Charcoal only, at most smelt.hopper units), the rest of its
-#     `slots` the material input (the ore its jobs take, at most smelt.input units), and its out_slots (if any) the output rack;
+#     `slots` the material input (the ore its jobs take, at most smelt.input units), and its out_slots (if any) the output rack (at most
+#     smelt.output ingots);
 #   - while the hopper holds fuel and the input holds a job's ore, it smelts: smelt.ingot_s real seconds an ingot (a job that gives two
 #     takes twice as long), the first possible job in smelting.jobs order;
 #   - a finished job takes its ore and its fuel (smelting.fuel_per_ore a unit of ore) only when it delivers: into the output rack, or, with
@@ -344,7 +345,10 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 # Ingots into the output rack, or on the ground in front with no rack. False (nothing moved) when there is no room.
 func _deliver(id: int, it: Dictionary, def: Dictionary, number: int, count: int) -> bool:
 	if int(def.get("out_slots", 0)) > 0:
-		if host._out_room(it, number) < count:
+		var box = host._chests.get(int(it["struct"].get("uid", 0)))
+
+		# The rack holds smelt.output ingots (a slot holds any number, item_table.stack_of; the 80-ingot rack is master s2.7 item 4).
+		if host._out_room(it, number) < count or box == null or _units(box, _span(def, "output")) + count > int(def["smelt"].get("output", 0)):
 			return false
 
 		host._out_add(id, number, count)
