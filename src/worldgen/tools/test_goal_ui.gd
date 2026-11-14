@@ -3,7 +3,7 @@ extends SceneTree
 # The client side of the goals (protocol 119; docs/design/PLAYER_JOURNAL_GOALS_UI.md, GOALS-REPAIR WP-GUIDE-UI): the goal book keeps the server's list,
 # a rejoin's list is silent and a goal_done announces once; the upper-right Goals box shows the first two unfinished titles in the authored order (one
 # when one is left, hidden when none); the Goal Achieved placard queues completions one at a time, fits a long name, finds Dave's art and the fanfare,
-# and takes no input. Looks, motion and sound are for the eye and ear (NEEDS PLAYER VERIFICATION); this checks the logic.
+# and takes no input; a goal with an amount shows its count after its title while unfinished (protocol 122, Dave 14 Nov 2026). Looks, motion and sound are for the eye and ear (NEEDS PLAYER VERIFICATION); this checks the logic.
 #   godot --headless --path . --script res://src/worldgen/tools/test_goal_ui.gd
 
 const GoalBook := preload("res://src/client/ui/goals/goal_book.gd")
@@ -26,8 +26,8 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-func row(id: String, title: String, done: bool, after: Array = [], copper: int = 3) -> Array:
-	return [id, title, "How to " + title, copper, "", 0, PackedStringArray(after), done]
+func row(id: String, title: String, done: bool, after: Array = [], copper: int = 3, need: int = 1, have: int = 0) -> Array:
+	return [id, title, "How to " + title, copper, "", 0, PackedStringArray(after), done, need, have]
 
 
 func _key(code: int, ctrl: bool = false, shift: bool = false) -> InputEventKey:
@@ -52,7 +52,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	var net: Node = Net.new()
 	var methods: Array = net.get_method_list().map(func(m): return str(m["name"]))
 	net.free()
-	check(Net.PROTOCOL_VERSION >= 119 and methods.has("goals") and methods.has("goal_done"), "protocol 119 carries goals and goal_done (%d)" % Net.PROTOCOL_VERSION)
+	check(Net.PROTOCOL_VERSION >= 122 and methods.has("goals") and methods.has("goal_done") and methods.has("goal_progress"), "protocol 122 carries goals, goal_done and goal_progress (%d)" % Net.PROTOCOL_VERSION)
 
 	# The book.
 	var book = GoalBook.new()
@@ -75,6 +75,19 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	book.on_done("unknown_goal", 2)
 	check(heard[-1] == ["unknown_goal", 2], "a goal_done for a goal not in the list is still announced once (by its id)")
 	check(book.row("twine")["after"] == PackedStringArray(["fibre"]) and str(book.row("twine")["howto"]) == "How to Twist twine", "a row keeps its how-to and the goals taught first (the Journal's links)")
+
+	# Counts (Dave 14 Nov 2026: "Gather plant fiber 0/50" ... "for everything except single items like "Make a stone axe"").
+	book.on_goals([row("fibre", "Gather plant fibre", false, [], 3, 12, 0), row("axe", "Make a Stone - Axe", false), row("twine", "Twist twine", false, [], 3, 2, 1)])
+	check(GoalsHud.titles(book) == PackedStringArray(["Gather plant fibre 0/12", "Make a Stone - Axe"]), "a goal with an amount shows its count from 0; a single item shows its plain title (%s)" % str(GoalsHud.titles(book)))
+	var moved: Array = [changes[0]]
+	book.on_progress({"fibre": 5})
+	check(GoalsHud.titles(book)[0] == "Gather plant fibre 5/12" and changes[0] == moved[0] + 1, "goal_progress moves the count and redraws (%s)" % GoalsHud.titles(book)[0])
+	book.on_progress({"fibre": 5, "not_listed": 2})
+	check(changes[0] == moved[0] + 1, "a count that did not move, or a goal not in the list, redraws nothing")
+	book.on_progress({"twine": 40})
+	check(GoalBook.label(book.row("twine")) == "Twist twine 2/2", "a count never shows past its amount (%s)" % GoalBook.label(book.row("twine")))
+	book.on_done("fibre", 3)
+	check(GoalBook.label(book.row("fibre")) == "Gather plant fibre", "a done goal shows its plain title")
 
 	# The placard: in the tree, under a view that only lends its coin line and item table.
 	var view = ViewScript.new()
@@ -118,7 +131,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	view._layer = layer
 	var coins: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	view._coins_cfg = coins
-	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", false), row("twine", "Twist twine", false, ["fibre"], 0),
+	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", false, [], 3, 12, 4), row("twine", "Twist twine", false, ["fibre"], 0),
 		row("axe", "Make a Stone - Axe", false, ["twine"], 5)])
 	var journal = Journal.new()
 	journal.setup(view, layer, book)
@@ -154,6 +167,8 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	text.clear()
 	_collect(layer, text)
 	check(text.has("LEADS TO") and text.any(func(t): return str(t).contains("Twist twine")), "Gather plant fibre leads to Twist twine")
+	check(text.any(func(t): return str(t).contains("Gather plant fibre 4/12")) and text.any(func(t): return str(t).contains("4 of 12 so far")), "the Journal shows the count in the list and on the card")
+	check(not text.any(func(t): return str(t).contains("Make a Stone - Axe ")), "a single-item goal has no count in the Journal")
 	journal.map_knowledge = MapKnowledge.new()
 	journal.map_knowledge.set_block(Vector2i(0, 0), {0: [50, 10.0, 0, 2], 1: [50, 14.0, 0, 0], 32: [50, 12.0, 1, 0]})
 	journal.show_page(Journal.MAP)
