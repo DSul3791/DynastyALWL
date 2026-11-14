@@ -20,7 +20,7 @@ Dave's words that set this (10 Nov 2026): the tier pieces get looks as a "placeh
 
 ## Roofs (#973)
 
-- Straight roofs above Crude (GOALS-REPAIR A-35/A-36, 14 Nov 2026): `piece_look.tier_panel(kind, slope_deg)`, the Crude panel's shape (no posts, 2 m wide over a 2 m run) in the tier's `ROOF_SPEC` cover: boards, courses with proud low edges, tile ribs on the clay tiers, three rafters, a fascia; `<Tier> - Roof 45` and `<Tier> - Roof 65` (`*_roof_65`, `roof_65`). Placeholder look, NEEDS PLAYER VERIFICATION.
+- Straight roofs above Crude (GOALS-REPAIR A-35/A-36, 14 Nov 2026): `piece_look.tier_panel(kind, slope_deg)`, the Crude panel's shape (no posts, 2 m wide over a 2 m run) in the tier's `ROOF_SPEC` cover: boards, courses with proud low edges, tile ribs on the clay tiers, three rafters, a fascia; `<Tier> - Roof 45` and `<Tier> - Roof 65` (`*_roof_65`, `roof_65`). Fortified (Dave, 14 Nov 2026: every tier has both) is the Engineered tiles a shade darker with two iron straps across (`ROOF_SPEC["fortified"]`). Placeholder look, NEEDS PLAYER VERIFICATION.
 - Corners: `piece_look.pitched_roof(kind, true)`, driven by `ROOF_SPEC` (cover colour, rows of shingles or tiles, thickness, underside material, ridge style, posts, verges, post width). Pitch `ROOF_PITCH` 0.3 rad, half span 1.2 m, eaves at 2.45 m.
 - Corners are hip ends (`*_roof_corner`), built by clipping the same rows (`_clip_band`), so the courses line up with the straight piece.
 - Rows are real geometry (no texture tiles): the edge of every course shows against the sky.
