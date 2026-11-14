@@ -415,6 +415,7 @@ var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe g
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
+var _fellers: Dictionary = {}       # trunk id -> the character key that felled it, until it splits by itself (server only: the trunk record goes to clients; not saved)
 var _split_due: Dictionary = {}      # trunk id -> tick msec after which it breaks into logs by itself (a felled tree nobody has cut yet)
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
@@ -5933,7 +5934,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 		return
 
 	_chops.erase(key)
-	_fell_record(chunk, info, Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z))
+	_fell_record(chunk, info, Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z), str(_peer_key.get(peer, "")))
 	_goal_event(peer, "tree_felled")
 	practice(peer, "fell_tree", clampf(float(info["trunk"]) * 3.0, 0.4, 2.0))   # a thick trunk teaches more than a sapling
 
@@ -5976,7 +5977,7 @@ func _crown_circle(spot: Vector3, info: Dictionary, yaw: float, pitch: float) ->
 	return [spot.x + sin(yaw) * along, spot.z + cos(yaw) * along, radius]
 
 
-func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
+func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: String = "") -> void:   # feller: the character key whose axe felled it (its auto-split logs are their gathering)
 	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
 	var pitch: float = 0.0
@@ -6002,6 +6003,10 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	stump["chunk"] = [chunk.x, chunk.y]
 	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": trunk}
 	_split_due[_next_id] = Time.get_ticks_msec() + FALL_SETTLE_MS
+
+	if feller != "":
+		_fellers[_next_id] = feller   # the logs it breaks into count as this character's gathering (goal got: counter, split_trunk)
+
 	_next_id += 1
 	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}
 	_next_id += 1
@@ -6721,6 +6726,9 @@ func _auto_split() -> void:
 				_items[id]["tree"].erase("auto_split")
 				_dirty = true
 
+		if not _split_due.has(id):
+			_fellers.erase(id)   # split, cut by hand or given up: no logs left to credit
+
 
 # Breaks the felled trunk `id` into logs now; true when it did. See _auto_split.
 func split_trunk(id: int) -> bool:
@@ -6782,8 +6790,12 @@ func split_trunk(id: int) -> bool:
 	_drop_scope = scope
 	_drop_scoped = true
 
+	var laid: int = 0
+
 	for spot in spots:   # the log mesh lies along its x axis: turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
-		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius))
+		if drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius)):
+			laid += 1
+
 
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
@@ -6796,6 +6808,13 @@ func split_trunk(id: int) -> bool:
 	_drop_scoped = false
 	_drop_scope = []
 	_dirty = true
+	var feller_peer: Variant = _peer_key.find_key(str(_fellers[id])) if _fellers.has(id) else null   # null when that character is not online
+
+	if feller_peer != null:
+		_goal_got(int(feller_peer), log_n, laid)   # the feller's gathering; a trunk cut by hand never splits by itself (blows > 0), so _cut_log_off's logs are not counted twice
+
+	_fellers.erase(id)
+
 	return true
 
 

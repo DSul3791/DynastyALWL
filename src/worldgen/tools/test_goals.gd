@@ -177,6 +177,30 @@ func _init() -> void:
 		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	check(standing.is_empty() and done("fell") and count("kindling") >= 3, "felling a tree completes the fell goal and gives kindling")
+	# The logs a felled tree breaks into by itself are its feller's gathering, once; the record clients get does not name the feller.
+	var trunk_id: int = -1
+
+	for k in items._items:
+		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3:
+			trunk_id = int(k)
+
+	check(trunk_id >= 0 and str(items._fellers.get(trunk_id, "")) == "goals0000001" and not JSON.stringify(items._items[trunk_id]["tree"]).contains("goals0000001"), "the felled trunk remembers its feller on the server only")
+	var log_n: int = items._log_number(str(items._items[trunk_id]["tree"].get("species", ""))) if trunk_id >= 0 else 0
+	var ground_logs: Callable = func() -> int:
+		var total: int = 0
+
+		for k in items._items:
+			if int(items._items[k].get("number", 0)) == log_n and not items._items[k].has("tree"):
+				total += int(items._items[k]["count"])
+
+		return total
+
+	var logs_before: int = ground_logs.call()
+	var logs_got: int = got.call(items.table.id_of(log_n))
+	var split: bool = items.split_trunk(trunk_id)
+	var laid: int = ground_logs.call() - logs_before
+	check(split and laid > 0 and got.call(items.table.id_of(log_n)) == logs_got + laid, "the trunk splits into %d logs and the feller has gathered them (%d)" % [laid, got.call(items.table.id_of(log_n)) - logs_got])
+	check(not items.split_trunk(trunk_id) and got.call(items.table.id_of(log_n)) == logs_got + laid and not items._fellers.has(trunk_id), "it splits once and is credited once")
 
 	# Fire: kit, place, light.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
