@@ -6790,18 +6790,20 @@ func split_trunk(id: int) -> bool:
 
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
+	var landed: Dictionary = {log_n: laid}   # number -> count that reached the ground, credited once the scoped drops are over
+
 	for extra in extras:
 		if drop_in_world(int(extra[0]), int(extra[1]), heap, 0, SPLIT_LIFETIME_S):
-			_credit_feller(feller_peer, int(extra[0]), int(extra[1]))
+			landed[int(extra[0])] = int(landed.get(int(extra[0]), 0)) + int(extra[1])
 
 	for row in litter:
 		if drop_in_world(int(row[0]), int(row[1]), row[2], 0, SPLIT_LIFETIME_S):
-			_credit_feller(feller_peer, int(row[0]), int(row[1]))
+			landed[int(row[0])] = int(landed.get(int(row[0]), 0)) + int(row[1])
 
 	_drop_scoped = false
 	_drop_scope = []
 	_dirty = true
-	_credit_feller(feller_peer, log_n, laid)   # a trunk cut by hand never splits by itself (blows > 0), so _cut_log_off's logs are not counted twice
+	_credit_feller(feller_peer, landed)   # a trunk cut by hand never splits by itself (blows > 0), so _cut_log_off's logs are not counted twice
 	_fellers.erase(id)
 
 	return true
@@ -6839,10 +6841,13 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	var feller_peer: Variant = _feller_peer(id)
 	_items.erase(id)
 
+	var landed: Dictionary = {}
+
 	for row in rows + litter:
 		if drop_in_world(int(row[0]), int(row[1]), heap if row.size() < 3 else row[2], 0, SPLIT_LIFETIME_S):
-			_credit_feller(feller_peer, int(row[0]), int(row[1]))
+			landed[int(row[0])] = int(landed.get(int(row[0]), 0)) + int(row[1])
 
+	_credit_feller(feller_peer, landed)
 	_fellers.erase(id)
 	_dirty = true
 	return true
@@ -6855,9 +6860,13 @@ func _feller_peer(id: int) -> Variant:
 
 # What a felled tree breaks into by itself is its feller's gathering, once (Dave 14 Nov 2026: "gathering counts when you pick it or cut it down or
 # harvest something by your own hand"): the logs, and the crown's sticks and leaves, bark, seeds and roots that land on the ground (goal got: counter).
-func _credit_feller(feller_peer: Variant, number: int, n: int) -> void:
-	if feller_peer != null:
-		_goal_got(int(feller_peer), number, n)
+# `landed`: item number -> count. shortcut: each item is its own _goal_got (and goal check); a split lays a handful of kinds, so that stays cheap.
+func _credit_feller(feller_peer: Variant, landed: Dictionary) -> void:
+	if feller_peer == null:
+		return
+
+	for number in landed:
+		_goal_got(int(feller_peer), int(number), int(landed[number]))
 
 
 # What one branch blow of a felled trunk gives (drops.json trunk.branch) when it is cut by hand, with the leaves sized to the crown (Dave 10 Nov 2026: "everyone
@@ -7035,9 +7044,6 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kind
 	var kindling: int = _pick_kindling(true) if as_kindling else 0
 	var dropped: bool = drop_in_world(table.number_of("kindling"), kindling, at) if as_kindling else drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius))
 
-	if dropped:   # the log or kindling pile this player cut lands on the ground; picking it up later is not counted again (goal got: counter)
-		_goal_got(peer, table.number_of("kindling") if as_kindling else log_n, kindling if as_kindling else 1)
-
 	if not dropped:
 		_say(peer, "Too many things lie here. Clear some away first.")
 		return false
@@ -7046,6 +7052,7 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary, as_kind
 		tree["orig_length"] = length_now
 
 	tree["length"] = maxf(length_now - seg, 0.0)
+	_goal_got(peer, table.number_of("kindling") if as_kindling else log_n, kindling if as_kindling else 1)   # the log or kindling pile this player cut lands on the ground; picking it up later is not counted again (goal got: counter)
 	return true
 
 
