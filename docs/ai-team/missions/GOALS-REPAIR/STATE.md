@@ -8,7 +8,7 @@ Ledger states: NOT STARTED / IN PROGRESS / IN REVIEW / IN DEV / BLOCKED. Evidenc
 
 - Dave 14 Nov 00:34Z: the brief (implement, independently review and integrate the approved repairs and player guide into `dev`; `main` untouched).
 - Dave 14 Nov 00:35Z: work autonomously from the documents; he checks in for updates.
-- Dave 14 Nov 00:36Z: questions meant for him are answered from his earlier rulings with a reasonable assumption and logged in REPAIR_DECISIONS.md, section "Assumed on Dave's behalf, for his review". Not for `main`, destructive or security-sensitive actions, or live/retrospective payouts.
+- Dave 14 Nov 00:36Z (verbatim in REPAIR_DECISIONS.md §3 intro): questions meant for him are answered from his earlier rulings with a reasonable assumption and logged in REPAIR_DECISIONS.md, section "Assumed on Dave's behalf, for his review". Not for `main`, destructive or security-sensitive actions, or live/retrospective payouts. Reach into catalog data: ruling R-1.
 - Godot tests only on Dave's machines (lane B David4 preferred, via the coordinator with an exact reviewed SHA). Never in the cloud.
 
 ## Baseline (R0)
@@ -26,7 +26,7 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 
 ## Shared-file ownership
 
-`src/stream/server_items.gd` (18.5k lines) and shared `data/items/*.json` carry a per-file owner lock (CATALOG_IMPLEMENTATION_PLAN §1). Engineering decision D-E1 (REPAIR_DECISIONS.md): the lock is held per **section** of server_items.gd and per JSON file, recorded here, one writer at a time; every PR rebases on `dev` before merge. `src/stream/terrain_net.gd` `PROTOCOL_VERSION` + `PROTOCOL.md`: one bump owner at a time, assigned here.
+`src/stream/server_items.gd` (18.5k lines) and shared `data/items/*.json` carry a per-file owner lock (CATALOG_IMPLEMENTATION_PLAN §1). Until proposed refinement D-E1 (per-section lock) is adopted, the plan's **per-file** lock holds: one writer of server_items.gd and of each shared JSON at a time, recorded here; every PR rebases on `dev` before merge. `src/stream/terrain_net.gd` `PROTOCOL_VERSION` + `PROTOCOL.md`: one bump owner at a time, assigned here.
 
 | Shared file / section | Current owner | Since |
 |---|---|---|
