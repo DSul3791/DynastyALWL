@@ -40,5 +40,6 @@ Fortified - Roof corner (lead, 14 Nov 2026; cost PROVISIONAL A-40): item 1327 `f
 
 ## GOALS-REPAIR tier pieces (14 Nov 2026, A-40)
 Block from the lead: items 1330-1349, blueprints 320-339, structure states 400-419. Used: items 1330-1335 `fortified_window`, `fortified_floor` (Fortified - Ceiling), `fortified_stairs`, `fortified_fence`, `engineered_fence`, `engineered_gate`; blueprints 320-325 (same order); states 400-405 (same order) and 406 `engineered_gate_open`. No recipes (blueprint-only). next_number is now at least items 1336, blueprints 326.
+
 ## Plumbing and wells (14 Nov 2026, thread "Build wooden and iron plumbing"; docs/design/PLUMBING_DESIGN.md)
 Block from the coordinator, clear of the verification thread (items 1330-1349, blueprints 320-339, states 400-419) and the Journal thread (items 1320-1329, blueprints 310-319, states 380-399): items 1350-1359, blueprints 340-349, structure states 420-439. PR 1 (wells): item 1350 `primitive_well`, 1351 `advanced_well`; blueprints 340, 341; states 420, 421. `stone_well` (#713, blueprint 128, state 166) is now Improved - Well, same id. Later plumbing PRs take the rest of the block in order (wooden pipes, the Sluice and Tap open twins, Iron - Pipe tee, Iron pipe section) and one recipe number recorded here when taken. next_number is now items 1352, blueprints 342.

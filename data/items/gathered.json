@@ -2,7 +2,7 @@
 	"table": "gathered_items",
 	"format_version": 1,
 	"note": "Generated from data/tables/flora.json yields by tools/gen_gathered_items.py. Numbers start at 1000 and are append-only: re-running only adds new yields. Each yield becomes a plain material until food, herb and potion systems give them effects. Numbers 1008 and 1083 are retired (bark and leaves became core items 13 and 14); never reuse them.",
-	"next_number": 1336,
+	"next_number": 1352,
 	"items": {
 		"acorns": {
 			"number": 1000,

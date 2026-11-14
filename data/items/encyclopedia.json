@@ -2496,7 +2496,7 @@
 				"Used in Superior - Roof 45",
 				"Used in Superior - Roof 65",
 				"Used in Superior - Roof corner",
-				"Used in Well",
+				"Used in Improved - Well",
 				"Used in Wooden shingle",
 				"Used in Refined - Arched doorway",
 				"Used in Refined - Double arched doorway",
@@ -2747,7 +2747,7 @@
 				"Craft: 6 Plank, 2 Twine"
 			],
 			"used_for": [
-				"Used in Well"
+				"Used in Improved - Well"
 			],
 			"obtainable_now": true
 		},
@@ -2799,7 +2799,7 @@
 			],
 			"used_for": [
 				"Used in Hide - Backpack",
-				"Used in Well"
+				"Used in Improved - Well"
 			],
 			"obtainable_now": true
 		},
@@ -4232,7 +4232,7 @@
 				"Used in Superior - Wall",
 				"Used in Superior - Window",
 				"Used in Torch pillar",
-				"Used in Well",
+				"Used in Improved - Well",
 				"Used in Stone - Planter",
 				"Used in Sturdy - Double doorway",
 				"Used in Sturdy - Arched doorway",
@@ -4387,7 +4387,7 @@
 				"Used in Sturdy - Pillar",
 				"Used in Sturdy - Stairs",
 				"Used in Torch pillar",
-				"Used in Well",
+				"Used in Improved - Well",
 				"Used in Stone - Planter"
 			],
 			"obtainable_now": true
