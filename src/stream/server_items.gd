@@ -3767,6 +3767,17 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "A roof panel rests on a wall top, a ceiling edge or another panel's end.")   # never a panel standing free on the ground
 		return
 
+	var hip_kind: String = ""   # a roof corner's shape (its 45 row or its 65 twin, A-37): the panel beside it decides, else the wheel
+
+	if str(_structure_of_kit(kit_id).get("piece_kind", "")) == PlacementRules.ROOF_HIP_KIND:
+		var hip: Array = PlacementRules.roof_hip_pick(_structures_cfg, _structure_of_kit(kit_id), at, clampi(lift_steps, 0, 1), _foundation_rows()) if on_base else []
+
+		if hip.is_empty():
+			_say(peer, "A roof corner goes where two wall tops, ceiling edges or panel ends meet at a corner.")
+			return
+
+		hip_kind = str(hip[2])
+
 	if str(_structure_of_kit(kit_id).get("attach_to", "")) == PlacementRules.DOOR_ATTACH:   # a door hangs in a doorway of its own shape (BUGLIST-002): `at` is that frame's spot, so it skips the ground checks like a platter on a table
 		var fit: Dictionary = PlacementRules.doorway_fit(_structures_cfg, _structure_of_kit(kit_id), at, _foundation_rows())
 
@@ -3821,6 +3832,10 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	if kit_id != "campfire_kit":
 		var placed_def: Dictionary = _structure_of_kit(kit_id)
+
+		if hip_kind != "" and _structures.has(hip_kind):
+			placed_def = _structures[hip_kind].duplicate()
+			placed_def["kind"] = hip_kind
 
 		if placed_def.has("needs_base_lift_m") or placed_def.has("needs_running_water"):
 			spot = _station_site(peer, placed_def, spot, yaw_deg)
@@ -8547,7 +8562,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		if bed_in_shelter:
 			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
 
-		if PlacementRules.one_to_a_point(str(def.get("piece_kind", ""))) and other.has("struct") and str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", "")) == str(def.get("piece_kind", "")) and other["pos"].distance_to(spot) < PlacementRules.ANCHOR_TAKEN_M:
+		if PlacementRules.one_to_a_point(str(def.get("piece_kind", ""))) and other.has("struct") and PlacementRules.point_family(str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", ""))) == PlacementRules.point_family(str(def.get("piece_kind", ""))) and PlacementRules.point_of(_structures.get(str(other["struct"]["kind"]), {}), other["pos"]).distance_to(PlacementRules.point_of(def, spot)) < PlacementRules.ANCHOR_TAKEN_M:
 			_say(peer, "Something is in the way.")   # one pillar to a point, one wall top to a wall (PlacementRules.blocked)
 			return
 
@@ -10713,10 +10728,10 @@ func rest_point_for(peer: int, from: Vector3) -> Vector3:
 	return best if best_d < INF else respawn_for(peer)
 
 
-# Where a shelter is rested in or returned to: its spot, but for a roof panel (its spot is its middle, metres above the floor it covers) the floor under it, the
+# Where a shelter is rested in or returned to: its spot, but for a roof panel or corner (its spot is its middle, metres above the floor it covers) the floor under it, the
 # foundation top there else the ground, so a player never wakes or respawns in mid-air under a roof that sits on a wall top.
 func _shelter_floor(pos: Vector3, def: Dictionary) -> Vector3:
-	if str(def.get("piece_kind", "")) != PlacementRules.ROOF_PANEL_KIND:
+	if not str(def.get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]:
 		return pos
 
 	var top: float = PlacementRules.foundation_top(_structures_cfg, pos, _foundation_rows())

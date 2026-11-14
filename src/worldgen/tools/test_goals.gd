@@ -159,6 +159,21 @@ func _init() -> void:
 	for goal in items._goals_data():
 		live[str(goal["id"])] = goal["check"]
 
+	# Dave 14 Nov 2026: "the first goal should always be the first goal a play can do next. the second one will be what should be next". The Goals box and the
+	# "Next:" line show the first goal not done and the one after it in the authored order; that first goal is always one the player can do because every
+	# goal a goal follows (`after`) comes before it in the order, so it is done by then. This keeps that true for every goal added later.
+	var earlier: Dictionary = {}
+	var late: Array = []
+
+	for goal in items._goals_data():
+		for a in goal.get("after", []):
+			if not earlier.has(str(a)):
+				late.append("%s after %s" % [str(goal["id"]), str(a)])
+
+		earlier[str(goal["id"])] = true
+
+	check(late.is_empty(), "every goal comes after the goals it follows, so the first goal not done is one the player can do next (%s)" % str(late))
+
 	check(str(live["fish"].get("event", "")) == "fish_caught" and int(live["fish"].get("count", 0)) == 1 and not live["fish"].has("have_item_any") and not live["fish"].has("or_event")
 		and str(live["workbench"].get("what", "")) == "workbench" and not live["workbench"].has("what_any"), "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
 	check(str(live["hammer"].get("made_item", "")) == "wooden_hammer" and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer and hoe goals count a made Wooden - Hammer and Wooden - Hoe; no wooden_hammer_soft item is named")

@@ -8,7 +8,7 @@ The tables below are the 30 Oct snapshot. Since then, these assets were added or
 
 | Asset | Where | Stage | Evidence |
 |---|---|---|---|
-| Tier roofs (Rustic, Refined, Sturdy, Superior, Engineered) and hip corners | `piece_look.pitched_roof`, `ROOF_SPEC` (#973) | 2 | sheet `kathleen/roof_ladder_sheet.png`; no world shot yet |
+| Tier roofs (Rustic to Fortified, Roof 45 and 65) and hip corners at both slopes | `piece_look.tier_panel`, `piece_look.roof_hip`, `ROOF_SPEC` (#973; GOALS-REPAIR A-35 to A-37) | 2 | sheet `kathleen/roof_ladder_sheet.png`; no world shot yet |
 | Tier ceilings (joisted floors) | `piece_look.tier_floor` (#973) | 2 | sheet only |
 | Fortified wall, doorway, gate, pillar, foundation, wall top | `piece_look` concrete builders, banded (#989, #1017) | 3 | Dino world shots `fortified_world_*`, `fortified_beach_*` (10 Nov), reviewed |
 | Bog iron deposit patch (dry, wet, dug) | `piece_look.bog_iron_patch` (#1012) | 2 | sheet `kathleen/bog_iron_sheet.png`; not drawn in the world until `_show_bog` lands |
