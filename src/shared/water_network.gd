@@ -12,6 +12,9 @@ extends RefCounted
 #   quality    a source's water: "clean" or "river"                push_m  a force pump's push above its spout (the deep-well pump: 10)
 #   litres_max a tank's size                                      tap_lpm  most a tank lets into a consumer straight below it (30)
 #   room_l     a consumer's litres to full (the server sets it from plot moisture; 0 = full, a closed branch)
+#   outlets    more outlets besides `outlet` (a tee's second branch; plumbing PR 2): each feeds like the outlet; the cap and fall use `outlet`
+#   catch_m    how far across the ground from its inlet an open piece catches a feeder's water (a trough's length, a flume's mouth; default PORT_JOIN_M)
+#   drop_m     how far a feeder's water may fall into an open piece (a spout over a trough; default PORT_JOIN_M)
 #
 # Rules (Sonny's numbers):
 #   - Links: an outlet feeds an inlet within PORT_JOIN_M across the ground. Into an open piece only when its inlet is at or below the outlet (+2 cm),
@@ -129,14 +132,44 @@ func _links(from_piece: Dictionary, to_piece: Dictionary) -> bool:
 	if not from_piece.has("outlet") or not to_piece.has("inlet"):
 		return false
 
-	var a: Vector3 = from_piece["outlet"]
 	var b: Vector3 = to_piece["inlet"]
-
-	if Vector2(a.x - b.x, a.z - b.z).length() > PORT_JOIN_M or absf(a.y - b.y) > PORT_JOIN_M:
-		return false
-
 	var sealed: bool = bool(from_piece.get("closed", false)) and bool(to_piece.get("closed", false))
-	return sealed or b.y <= a.y + OPEN_SLACK_M
+
+	var ends: Array = [from_piece["outlet"]]
+
+	if from_piece.has("outlets"):
+		ends.append_array(from_piece["outlets"])
+
+	for a in ends:
+		if sealed:
+			if Vector2(a.x - b.x, a.z - b.z).length() <= PORT_JOIN_M and absf(a.y - b.y) <= PORT_JOIN_M:
+				return true
+		elif Vector2(a.x - b.x, a.z - b.z).length() <= maxf(PORT_JOIN_M, float(to_piece.get("catch_m", 0.0))) \
+				and b.y <= a.y + OPEN_SLACK_M and a.y - b.y <= maxf(PORT_JOIN_M, float(to_piece.get("drop_m", 0.0))):
+			return true
+
+	return false
+
+
+# After the server builds the network again from the same pieces (a channel turned): each tank's litres, the water's quality and the still clock
+# carry over from `old`, which was solved at `now_s`. Solve again after.
+func carry_from(old, now_s: float) -> void:
+	for id in pieces:
+		if _litres.has(id) and old._litres.has(id):
+			_litres[id] = clampf(old.litres(id, now_s), 0.0, float(pieces[id].get("litres_max", 0.0)))
+
+		if old._quality.has(id):
+			_quality[id] = old._quality[id]
+
+		if old._last_in_s.has(id):
+			_last_in_s[id] = old._last_in_s[id]
+
+	_solved_s = now_s
+
+
+# The pieces whose outlet would feed `piece` as it stands (the server turns a channel or pipe so its inlet is the port the water comes from).
+func feeders_of(piece: Dictionary) -> Array:
+	return _feeders(piece)
 
 
 func _feeders(piece: Dictionary) -> Array:

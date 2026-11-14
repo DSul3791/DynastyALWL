@@ -63,3 +63,23 @@ real minutes. The Primitive well's 3 L clay pot gives about 16 L a minute there,
 hour) later. Wells are a source of clean water and keep the engine's 4-sources-a-chunk limit.
 
 Goals: `build:stone_well` (Build Well) keeps its id; its title follows the rename. Goals for the two new wells belong to the goals thread.
+
+## 5. Wooden plumbing (PR 2), PROVISIONAL values
+
+| Piece | Water block | Cost |
+|---|---|---|
+| Wooden - Hand pump (unlocked) | suction source, 7 m (less 1 m per 1,000 m up), 0.8 L/s at 40 W: 48 L/min at 4 m; spout 0.7 m up, 0.27 m to +Z | unchanged |
+| Wooden - Channel / corner / tee (unlocked) | open, 120 L/min, ends 0.23 m up, 1 cm built-in fall per piece (full flow on a level run); catches a spout up to 0.4 m across and 1 m above | unchanged |
+| Sluice (unlocked) | a channel with a gate; built shut, E opens and shuts it (open twin `wooden_sluice_open`, state 422) | unchanged |
+| Wooden - Trough (unlocked) | tank 100 L; catches water over its rim (0.48 m) from up to 1 m across and 1.5 m above; a bung at its base (0.15 m up at +X) feeds a pipe | unchanged |
+| Wooden - Pipe / elbow / tee (new, 1352-1354) | a bored log, closed, 60 L/min under head, ends 0.13 m up | 1 Log + 1 Twine (tee 2 Log + 1 Twine) |
+
+How it fits together:
+- **Channels and pipes have no fixed direction.** Whichever end the water reaches is the inlet; the server turns every channel and pipe from the
+  sources down whenever a piece is built or taken away, and again at load, so build order does not matter.
+- **Open channels** run downhill (the engine's rules: no climbing between open pieces; full flow from a 0.5 % fall). A spout, a well's rim or
+  a channel's end pours into a channel or trough below it.
+- **Log pipes** are closed: they carry water under head from a trough's or cistern's base outlet, downhill, with no siphons. A trough on higher
+  ground gives a small head (12 cm gives 12 % of 60 L/min); a cistern (PR 3) gives more.
+- What a player does: build a well or hand pump, lay channels from its spout downhill to a trough, open the sluices, and work the pump (E).
+  Drink or fill a container at the trough (E). Lay log pipes from a trough's base downhill to another trough.

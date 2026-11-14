@@ -9162,8 +9162,7 @@
 				"Build with a hammer (press R): 6 Plank, 20 Nails, 2 Twine, 1 Hide"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_hand_pump": {
 			"name": "Wooden - Hand pump",
@@ -9171,8 +9170,7 @@
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_hand_pump_kit": {
 			"name": "Iron - Hand pump",
@@ -9222,8 +9220,7 @@
 				"Build with a hammer (press R): 4 Plank, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_trough": {
 			"name": "Wooden - Trough",
@@ -9231,8 +9228,7 @@
 			"description": "A plank trough that holds a hundred litres. Can sit at a channel's end.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_channel_kit": {
 			"name": "Wooden - Channel",
@@ -9242,8 +9238,7 @@
 				"Build with a hammer (press R): 3 Plank, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_channel": {
 			"name": "Wooden - Channel",
@@ -9251,8 +9246,7 @@
 			"description": "An open plank flume on trestles, two metres long. Water runs downhill along it.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_channel_corner_kit": {
 			"name": "Wooden - Channel corner",
@@ -9262,8 +9256,7 @@
 				"Build with a hammer (press R): 3 Plank, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_channel_corner": {
 			"name": "Wooden - Channel corner",
@@ -9271,8 +9264,7 @@
 			"description": "A flume that turns a quarter circle.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_channel_tee_kit": {
 			"name": "Wooden - Channel tee",
@@ -9282,8 +9274,7 @@
 				"Build with a hammer (press R): 4 Plank, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_channel_tee": {
 			"name": "Wooden - Channel tee",
@@ -9291,8 +9282,7 @@
 			"description": "A flume that splits its water two ways.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_sluice_kit": {
 			"name": "Sluice",
@@ -9302,8 +9292,7 @@
 				"Build with a hammer (press R): 2 Plank, 1 Hinges"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wooden_sluice": {
 			"name": "Sluice",
@@ -9311,8 +9300,37 @@
 			"description": "A flume with a gate. E opens or shuts it.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
+		},
+		"wooden_pipe": {
+			"name": "Wooden - Pipe",
+			"kind": "structure",
+			"description": "A bored log, two metres long. A closed pipe that carries water downhill.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_pipe_elbow": {
+			"name": "Wooden - Pipe elbow",
+			"kind": "structure",
+			"description": "A bored log pipe that turns a quarter circle.",
+			"how_to_get": [
+				"Build with a hammer (press R): 1 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_pipe_tee": {
+			"name": "Wooden - Pipe tee",
+			"kind": "structure",
+			"description": "A bored log pipe that splits its water two ways.",
+			"how_to_get": [
+				"Build with a hammer (press R): 2 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
 		},
 		"clay_pipe": {
 			"name": "Clay pipe",
