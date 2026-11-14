@@ -15974,12 +15974,13 @@ func _hints_check(peer: int) -> void:
 # taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
 # tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {have_item, count} and {have_item_any: [ids], count}
 # (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
-# goal_counts, the same atomic file as the coins); the reward ({coin_copper: n} into the purse, or {item: [id, n]} into the pack) is paid in the same step and a
+# goal_counts, the same atomic file as the coins); the reward (its stage's copper, goal_rewards.json; coins only, Dave 14 Nov) is paid in the same step and a
 # save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
 # pack units an admin gave are taken off the have checks. The client gets the whole list at the join (goals, silent) and goal_done for each new completion
 # (the placard; protocol 119).
 var _goals: Array = []
 var _goals_loaded: bool = false
+var _goal_stage_copper: Dictionary = {}   # stage -> copper a goal of that stage pays (data/items/goal_rewards.json; GOALS-REPAIR A-42)
 var send_goals: Callable       # (peer, rows Array): the whole goal list at the join, rows as goals_rows (protocol 119)
 var send_goal_done: Callable   # (peer, id String, copper int): a goal this character has just completed and the copper it paid (protocol 119)
 
@@ -15994,7 +15995,19 @@ func _goals_data() -> Array:
 		if typeof(camp) == TYPE_DICTIONARY:
 			_goals = _goals + (camp.get("goals", []) as Array)   # the camp and winter goals follow the starter ones in the authored order
 
+		var rewards: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/goal_rewards.json"))
+		_goal_stage_copper = rewards.get("stages", {}) if typeof(rewards) == TYPE_DICTIONARY else {}
+
+		for goal in _goals:
+			if not _goal_stage_copper.has(str(goal.get("stage", ""))):
+				push_error("goal %s: stage '%s' is not in goal_rewards.json, it pays nothing" % [str(goal.get("id", "")), str(goal.get("stage", ""))])
+
 	return _goals
+
+
+# The copper a goal pays: its stage's amount (Dave 14 Nov 2026: "all goals only payout coins"; coins only, no items or reputation).
+func _goal_copper(goal: Dictionary) -> int:
+	return int(_goal_stage_copper.get(str(goal.get("stage", "")), 0))
 
 
 func _goal_state_of(peer: int) -> Dictionary:
@@ -16191,19 +16204,9 @@ func _goals_check(peer: int) -> void:
 			changed = true
 			_dirty = true
 			_save_in = 0.0   # the next tick saves (GA-55)
-			var reward: Dictionary = goal.get("reward", {})
 			var paid: int = coins_of(peer)
-
-			if reward.has("coin_copper"):
-				add_coins(peer, int(reward["coin_copper"]), "goal")
-
+			add_coins(peer, _goal_copper(goal), "goal")
 			paid = coins_of(peer) - paid
-
-			if reward.has("item"):
-				var was_src: String = _gain_source
-				_gain_source = SRC_REWARD   # a reward is not gathered (goal got: counter)
-				give(peer, table.number_of(str(reward["item"][0])), int(reward["item"][1]))
-				_gain_source = was_src
 
 			if send_goal_done.is_valid():
 				send_goal_done.call(peer, id, paid)
@@ -16266,9 +16269,7 @@ func goals_rows(peer: int) -> Array:
 		return rows
 
 	for goal in _goals_data():
-		var reward: Dictionary = goal.get("reward", {})
-		var item: Array = reward.get("item", ["", 0])
-		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), int(reward.get("coin_copper", 0)), str(item[0]), int(item[1]),
+		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), _goal_copper(goal), "", 0,   # reward item fields stay in the protocol 119 row, always empty: goals pay coins only
 			PackedStringArray(goal.get("after", [])), st["goals_done"].has(str(goal["id"]))])
 
 	return rows

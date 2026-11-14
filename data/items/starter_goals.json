@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {got_item, count} counted when the player gathers it first-hand (not trades, rewards, refunds or admin gives), {have_item_any, count}), and `reward` ({coin_copper: n} through the purse, or {item: [id, n]} given to the pack; both small on purpose). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked. Rewards total about 70 copper plus a few sticks and kindling.",
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {got_item, count} counted when the player gathers it first-hand (not trades, rewards, refunds or admin gives), {have_item_any, count}), and `stage` (the progression stage; the goal pays that stage's copper from data/items/goal_rewards.json, coins only). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked.",
 	"goals": [
 		{
 			"id": "drink",
@@ -10,9 +10,7 @@
 				"event": "drink",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 2
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fibre",
@@ -23,9 +21,7 @@
 				"got_item": "plant_fibre",
 				"count": 12
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "twine",
@@ -38,12 +34,7 @@
 				"made_item": "twine",
 				"count": 2
 			},
-			"reward": {
-				"item": [
-					"stick",
-					4
-				]
-			}
+			"stage": "start"
 		},
 		{
 			"id": "axe",
@@ -57,9 +48,7 @@
 				"count": 1,
 				"or_have": true
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fell",
@@ -72,12 +61,7 @@
 				"event": "tree_felled",
 				"count": 1
 			},
-			"reward": {
-				"item": [
-					"kindling",
-					3
-				]
-			}
+			"stage": "start"
 		},
 		{
 			"id": "hammer",
@@ -91,9 +75,7 @@
 				"count": 1,
 				"or_have": true
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fire",
@@ -106,9 +88,7 @@
 				"event": "fire_lit",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "hoe",
@@ -122,9 +102,7 @@
 				"count": 1,
 				"or_have": true
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "path",
@@ -137,9 +115,7 @@
 				"event": "path_laid",
 				"count": 15
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "berries",
@@ -152,9 +128,7 @@
 				"event": "ate_food",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "shelter",
@@ -169,9 +143,7 @@
 				"what": "lean_to",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 8
-			}
+			"stage": "start"
 		},
 		{
 			"id": "bed",
@@ -185,9 +157,7 @@
 				"what": "rough_bed",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 8
-			}
+			"stage": "start"
 		},
 		{
 			"id": "workbench",
@@ -201,9 +171,7 @@
 				"what": "workbench",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 10
-			}
+			"stage": "start"
 		},
 		{
 			"id": "spear",
@@ -216,9 +184,7 @@
 				"made_item": "spear",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "knife",
@@ -231,9 +197,7 @@
 				"event": "carcass_worked",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 10
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fish",
@@ -246,9 +210,7 @@
 				"event": "fish_caught",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 10
-			}
+			"stage": "start"
 		},
 		{
 			"id": "sell",
@@ -261,9 +223,7 @@
 				"event": "sold",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 2
-			}
+			"stage": "start"
 		},
 		{
 			"id": "order",
@@ -276,9 +236,7 @@
 				"event": "wanted_order",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		}
 	]
 }
