@@ -48,11 +48,11 @@ func _init() -> void:
 	# V (Weather.visibility_m, the rule the client's look draws by, #724).
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
 	check(near(a.fog_v(Vector3.ZERO), 3333.3), "clear air: V about 3.3 km (%.0f)" % a.fog_v(Vector3.ZERO))
-	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	check(near(a.fog_v(Vector3.ZERO), 222.2), "full valley fog inside the layer: about 220 m (%.0f)" % a.fog_v(Vector3.ZERO))
 	check(near(a.fog_v(Vector3(0.0, 70.0, 0.0)), 3333.3), "20 m above the top: clear (%.0f)" % a.fog_v(Vector3(0.0, 70.0, 0.0)))
 	check(near(a.fog_v(), 222.2), "the layer's own V for rules with no position")
-	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0, "rain": 1.0}, 0.1)
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0, "rain": 1.0}, 0.1)
 	check(near(a.fog_v(Vector3.ZERO), 166.7) and near(a.fog_v(), 222.2), "fog and heavy rain: the 167 m cap at a point; the layer's own V is still the fog's")
 	a._read_weather({"wind": 0.0, "mist": 0.0, "rain": 1.0}, 0.1)
 	check(a.fog_v() >= 3333.0, "heavy rain alone does not set off the fog rules")
@@ -63,7 +63,7 @@ func _init() -> void:
 	# Sensing: in full valley fog a standing player 100 m off seems about 200 m off; in clear air 100 m.
 	var deer_row: Dictionary = {"pos": Vector3.ZERO}
 	var p: Vector3 = Vector3(100.0, 0.0, 0.0)
-	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	var foggy: float = 100.0 / a._sense_factor(deer_row, deer, p, 100.0, 0)
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
 	var clear: float = 100.0 / a._sense_factor(deer_row, deer, p, 100.0, 0)
@@ -79,13 +79,13 @@ func _init() -> void:
 	# Birds: a perched crow with its timer run out stays up in full valley fog and comes down in clear air.
 	a.ground_height = func(_x, _z): return 0.0
 	var crow: Dictionary = {"sp": "crow", "pos": Vector3(0.0, 8.0, 0.0), "perched": true, "timer": 0.0, "state": 0}
-	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	a.flight.step(crow, 0.1, 1.0e9, Vector3.INF)
 	check(bool(crow.get("perched", false)) and not crow.has("fly"), "in full valley fog a perched crow sits it out")
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
 	a.flight.step(crow, 0.1, 1.0e9, Vector3.INF)
 	check(crow.has("fly"), "in clear air it comes down")
-	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	check(near(a.weather_wander_x(a.species_def("songbirds"), "songbirds"), 0.15) and near(a.weather_wander_x(a.species_def("seabird"), "seabird"), 0.15), "in thick fog songbirds and seabirds hardly move")
 	check(near(a.weather_wander_x(a.species_def("horse"), "horse"), 0.5) and near(a.fog_herd_x(deer), 0.5), "in fog stock wander half as far and herds keep half the distance")
 

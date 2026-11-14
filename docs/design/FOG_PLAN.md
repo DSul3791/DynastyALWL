@@ -43,6 +43,24 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
 - **Halo strength.** The billboard halo now follows any fog at the eye, valley or sea (before: valley fog only, and squared).
 - **Visibility number.** The client's `visibility_m` is now the depth fog's 95 % distance (about 50 m in full fog, about 60 m on High and Ultra, about 2.8 km in clear air). The server's animal rule stays at about 220 m in full fog until PR 3.
 
+## Where and when: what the code does (PR 2)
+
+- **Weather** (`src/shared/weather.gd`, still a pure function of seed, clock and zone, the same on server and client). `mist` is now the land fog's strength from these tendencies, each with natural variation:
+  - **Radiation fog.** It needs calm, clear nights. It starts gathering an hour after sunset and has fully gathered six hours later, deepening toward dawn. It starts clearing half an hour after sunrise and takes 1.5 h in dry air up to 5 h in damp air ("sunrise should not instantly remove it"). Some nights it does not form at all.
+  - **After rain.** Rain in the last 3, 8 or 14 hours is moisture. It makes a cooling calm night's fog likelier and thicker (up to 1.3 ×) and longer-lasting. It never makes fog on its own on a warm, dry, windy afternoon: no fog from 14:00 to 18:00 without rain.
+  - **In rain.** Light, steady rain (0.05 to 0.6) in cool (full at 7 °C, none from 14 °C), quiet air brings a thin fog (at most 0.45) at any hour, though not with every shower. Heavy rain washes the air.
+  - **Steam fog.** `water_steam` (0..1) forms when the air is 3 to 8 °C colder than the water (the year's mean warmth), in calm air, at any hour.
+  - **Sea fog.** Unchanged: banks carried in on a light onshore wind, in the day too, and longer while the conditions last.
+  - **Depth.** `mist_depth_m` replaces `mist_top_m`. It is the fog's depth over the local low ground: 15 to 90 m, a new depth each night, shallower while the fog is thin (it starts shallow and sinks as it clears).
+- **Place** (`src/shared/fog_ground.gd`, client).
+  - From the tiles' coarse heights (32 m) in a 4 km window round the player, read on a worker thread, it builds the cold-air floor: the lowest ground within 320 m, smoothed. The fog's top is that floor plus its depth, so valleys and high basins fill while the slopes and hilltops round them stay clear. The top belongs to the place, not to the player, and changes smoothly across the land.
+  - Seen from above, the layer lies over the wider floor (1280 m), which is the valley below a hill.
+  - Steam fog is a 4 m layer over the water, fading out within 60 m of rivers and lakes (the tiles' fresh-water distance).
+  - The land layer at the eye is the strongest of valley fog, sea fog over the land and steam.
+  - Where no tile is known, the floor is sea level, which was the old single layer.
+- **Wind.** It mixes away the shallow ground fog and the steam (none from wind 0.5 and 0.4). It carries the sea fog banks in (sea fog needs a breeze). Drifting patches move with it (fog look, High and Ultra).
+- Not in PR 2: the server still reads the fog's depth as height above sea level for animal sight. PR 3 gives it the same floor.
+
 ## Tunables, in one place: `src/client/fog_look.gd` (and `fog_volume.gd` for the drifting body)
 
 | Number | Now | What it does |
@@ -61,6 +79,10 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
 | `VOL_DRIFT`, `VOL_DRIFT_MIN_MS` | 0.25, 0.15 m/s | drift as a share of the wind, and its least speed |
 | `VOL_CONTRAST` | 0.8 | patchiness (0 even) |
 | `FireWeather.FIRE_FOG_SHARE` | 1.0 | fire light halo in the volumetric fog |
+| `Weather.MIST_*`, `RAIN_FOG*`, `STEAM_*` | see weather.gd | when fog forms and clears (PR 2): gathering and burn-off hours, wind, moisture, fog in rain, steam |
+| `Weather.MIST_DEPTH_MIN_M`, `MAX` | 15, 90 m | how deep a full fog lies over the low ground |
+| `FogGround.FLOOR_REACH_M`, `VIEW_REACH_M` | 320, 1280 m | how far round counts as the low ground (bigger: broader valleys fill) |
+| `FogGround.STEAM_REACH_M`, `STEAM_DEPTH_M` | 60 m, 4 m | steam fog's reach from the water and its depth |
 
 ## Graphics presets (Dave 14 Nov 2026: "full on ultra setting but off on lowest setting")
 

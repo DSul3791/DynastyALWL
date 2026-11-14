@@ -2051,7 +2051,7 @@ func _wx_on() -> bool:
 func _read_weather(weather: Dictionary, delta: float) -> void:
 	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
 		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0)), "temp_c": float(weather.get("temp_c", 10.0)),
-		"mist_top_m": float(weather.get("mist_top_m", 0.0))}
+		"mist_depth_m": float(weather.get("mist_depth_m", 0.0))}
 	_ahead_acc += delta
 
 	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
@@ -2125,7 +2125,7 @@ func weather_wander_x(def: Dictionary, sp: String = "") -> float:
 
 # --- animals in fog (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md) ---
 # Behind animals.json weather.fog.on. The visibility V at a point is Weather.visibility_m: the rule the client's look draws its fog by
-# (#724), from rain, snow, storm and how deep the point is in the valley fog (mist, mist_top_m), so server and client agree.
+# (#724), from rain, snow, storm and how deep the point is in the valley fog (mist, mist_depth_m), so server and client agree.
 
 func _fog_cfg() -> Dictionary:
 	return _wx_rules().get("fog", {})
@@ -2139,7 +2139,7 @@ func fog_on() -> bool:
 # animal position (activity, wander), so heavy rain alone does not make deer keep fog hours.
 func fog_v(pos: Vector3 = Vector3.INF) -> float:
 	if pos == Vector3.INF:
-		return WeatherRules.visibility_m({"mist": float(_wx.get("mist", 0.0)), "mist_top_m": 0.0}, -1.0e9)
+		return WeatherRules.visibility_m({"mist": float(_wx.get("mist", 0.0)), "mist_depth_m": 0.0}, -1.0e9)
 
 	return WeatherRules.visibility_m(_wx, pos.y)
 

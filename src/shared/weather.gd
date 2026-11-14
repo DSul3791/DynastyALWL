@@ -93,21 +93,36 @@ const SEA_BREEZE_HOURS := [10.0, 14.5]     # starts about 10:00, full by 14:00 t
 const SEA_BREEZE_CALM_MPS := [2.0, 4.0]    # none when the world's wind is over 4 m/s (Jamie #714, sourced)
 const LAND_BREEZE_MPS := 1.5               # offshore on clear calm nights (Jamie #714: 1 to 2)
 
-# Valley fog (radiation fog; docs/design/valley_fog.md, art_weather_light.md section 7, coordinator decision 6 of 8 Nov 2026).
-# It forms on calm, clear nights in low ground, is thickest at dawn and burns off 1 to 3 hours after sunrise; most common in
-# autumn. `mist` (0..1) is the strength of the fog layer and `mist_top_m` the height of its top above sea level (0 when there
-# is none). Neither depends on the altitude passed in: the layer is one for the whole zone row, the same for everyone.
+# Land fog (Dave's fog instruction, 14 Nov 2026, docs/design/FOG_DESIGN_DAVE.md; it grew out of the valley fog of
+# docs/design/valley_fog.md). Fog forms from moisture, cooling, wind and terrain, as tendencies with natural variation:
+#  - radiation fog: calm, clear nights, gathering from the evening, deepest toward dawn, burning off after sunrise over 1.5 to 5
+#    hours (longer when the air is damp: "sunrise should not instantly remove it");
+#  - after rain: recent rain is moisture; it makes a cooling calm night's fog likelier and thicker, never fog by itself on a warm,
+#    dry, windy afternoon;
+#  - in rain: light, steady rain in cool, quiet air can bring a thin fog at any hour;
+#  - steam fog: air much colder than the rivers and lakes raises wisps over the water (`water_steam`, any hour, calm air).
+# `mist` (0..1) is the strength of the land fog and `mist_depth_m` how deep it lies above the local low ground (the client and the
+# server find the low ground from the terrain, fog_ground.gd, so valleys and basins fill while slopes and hilltops stay clear; where no
+# ground is known it is the height above sea level). Neither depends on the altitude passed in: one weather for the zone row.
 const MIST_BY_ZONE := {"desert": 0.1, "transition": 0.45, "temperate": 1.0, "arctic": 0.5}
-const MIST_FROM_HOUR := 22.0               # the fog starts to gather from here (it is full four hours later)
-const MIST_GATHER_H := 4.0
-const MIST_BURN_FROM_H := 1.0              # hours after sunrise when it starts to burn off
-const MIST_BURN_TO_H := 3.0                # and when it is gone
+const MIST_FROM_SUNSET_H := 1.0            # the fog starts to gather this long after sunset ...
+const MIST_GATHER_H := 6.0                 # ... and has gathered fully this long later (it deepens toward dawn)
+const MIST_BURN_FROM_H := 0.5              # hours after sunrise when it starts to clear
+const MIST_BURN_H := [1.5, 5.0]            # and how long it takes to go: dry air .. damp air
 const MIST_CALM_WIND := 0.3                # full fog at or below this wind (0.15 is dead calm, 1 a storm)
-const MIST_WINDY := 0.5                    # none at or above this
+const MIST_WINDY := 0.5                    # none at or above this (a shallow ground fog is mixed away; sea fog banks are carried, below)
 const MIST_CLEAR_FRONT := 0.4              # a clear night (front noise at or below this: no cloud building)
 const MIST_CLOUDY_FRONT := 0.6             # none from here (cloud cover stops the ground cooling)
-const MIST_TOP_MIN_M := 30.0               # the top of a full layer lies between these, a new height each night
-const MIST_TOP_MAX_M := 140.0
+const MIST_DEPTH_MIN_M := 15.0             # a full layer lies this deep over the low ground, a new depth each night, up to ...
+const MIST_DEPTH_MAX_M := 90.0             # ... this
+const MIST_WET_HOURS := [3.0, 8.0, 14.0]   # recent rain: the rain this many game hours ago counts as moisture
+const MIST_WET_GAIN := 0.6                 # moisture from recent rain adds up to this share to a cooling night's fog
+const MIST_DAMP_BASE := 0.35               # the air's own moisture without recent rain (autumn adds to it)
+const RAIN_FOG := 0.45                     # fog in light, steady rain reaches at most this strength
+const RAIN_FOG_PRECIP := [0.05, 0.25, 0.6] # rain from, full at, gone by (heavy rain washes the air instead)
+const RAIN_FOG_COOL_C := [7.0, 14.0]       # full in air at or below 7 C, none from 14 C
+const STEAM_WARMER_C := [3.0, 8.0]         # steam fog: the water warmer than the air by this, from .. full
+const STEAM_WIND := 0.4                    # none at or above this wind
 # Sea fog (advection fog, haar; docs/design/fog_pools_and_sea_fog.md part B): mild moist air over a colder sea, carried in by a
 # light onshore wind, most in late spring and early summer while the land warms and the sea stays cold, none in a calm or a gale.
 # `sea_fog` is its strength over the sea, `sea_fog_land` how far it lies over the land (thinned by the afternoon's heating, back
@@ -264,7 +279,7 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	var snowing: bool = temp + Climate.snow_bias_c(Climate.of_zone(group)) < 0.5   # rain or snow: the snow layer's air (snow_bias_c, row 21)
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
 	var wind: float = clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0)
-	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit, latitude_deg)
+	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit, latitude_deg, need, temp - RAIN_COOL_C * (0.0 if snowing else precip))
 	var sea_fog: float = _sea_fog(seed_value, game_s, group, phase, wind, front, precip)
 	var sea_fog_land: float = sea_fog * _land_keeps_sea_fog(year_phase(game_s), hour, latitude_deg)   # the calendar's phase: the sunrise takes the hemisphere from the latitude
 
@@ -280,7 +295,8 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		"temp_c": temp - RAIN_COOL_C * (0.0 if snowing else precip),
 		"season": GameClockScript.SEASON_NAMES[int(phase * 4.0) % 4],
 		"mist": mist,
-		"mist_top_m": mist_top_m(seed_value, game_s, mist),
+		"mist_depth_m": mist_depth_m(seed_value, game_s, mist),
+		"water_steam": water_steam(temp, group, wind, precip),
 		"sea_fog": sea_fog,
 		"sea_fog_land": sea_fog_land,
 		"sea_fog_top_m": sea_fog_top_m(seed_value, game_s, sea_fog),
@@ -291,7 +307,7 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 # the look now follows Dave's fog instruction (fog_look.gd, about 50 m in full fog) and the animals move to it in the third fog PR
 # (docs/design/FOG_PLAN.md). So the server (animals in fog, docs/design/animals_in_fog_server.md) and the client agree on one V. Koschmieder with a
 # 5 % threshold: V = 3 / extinction, the extinction the clear haze VIS_HAZE_DENSITY times 1 + 5 rain + 4 snow + 3 storm + VIS_MIST_THICK
-# x how deep the point is in the valley fog (eased over VIS_MIST_EDGE_M across mist_top_m), at most VIS_THICK_MAX times. Clear air about
+# x how deep the point is in the valley fog (eased over VIS_MIST_EDGE_M across mist_depth_m above sea level until the third fog PR), at most VIS_THICK_MAX times. Clear air about
 # 3.3 km, full valley fog about 220 m, the thickest about 170 m (Jamie #716: recognise at half V, detail at a quarter). No caves or water.
 const VIS_HAZE_DENSITY := 0.0009      # = LookSettings.FOG_DENSITY (client)
 const VIS_MIST_THICK := 14.0          # = WeatherLook.MIST_INSIDE_THICK
@@ -301,7 +317,7 @@ const VIS_THICK_MAX := 20.0           # = the look's cap on the fog multiple
 
 static func visibility_m(weather_state: Dictionary, height_m: float) -> float:
 	var mist: float = clampf(float(weather_state.get("mist", 0.0)), 0.0, 1.0)
-	var inside: float = mist * smoothstep(-VIS_MIST_EDGE_M, VIS_MIST_EDGE_M, float(weather_state.get("mist_top_m", 0.0)) - height_m)
+	var inside: float = mist * smoothstep(-VIS_MIST_EDGE_M, VIS_MIST_EDGE_M, float(weather_state.get("mist_depth_m", 0.0)) - height_m)
 	var thick: float = 1.0 + 5.0 * float(weather_state.get("rain", 0.0)) + 4.0 * float(weather_state.get("snow", 0.0)) + 3.0 * float(weather_state.get("storm", 0.0)) + VIS_MIST_THICK * inside
 	return 3.0 / (VIS_HAZE_DENSITY * minf(thick, VIS_THICK_MAX))
 
@@ -316,25 +332,48 @@ static func sunrise_hour(day_of_year: float, latitude_deg: float = NAN) -> float
 	return 12.0 - half_day_h
 
 
-# Valley fog strength, 0..1 (see the MIST_ constants): calm, clear nights in a humid zone, gathering from 22:00, thickest at
-# dawn, burnt off 1 to 3 hours after sunrise, strongest in autumn, a different night each time. None while rain or snow falls.
-static func _mist(seed_value: int, game_s: float, group: String, phase: float, hour: float, wind: float, front: float, precip: float, spirit: float, latitude_deg: float = NAN) -> float:
-	var since: float = fposmod(hour - MIST_FROM_HOUR, 24.0)                  # hours since the fog started to gather
+# Land fog strength, 0..1 (see the MIST_ and RAIN_FOG_ constants): the stronger of the radiation fog of a calm, clear night (made
+# likelier and thicker by recent rain) and the thin fog of light, cool rain. A different night each time; strongest in autumn.
+# `need`: the front noise above which rain falls (state()), so the rain of the last hours can be read back from the same noise.
+static func _mist(seed_value: int, game_s: float, group: String, phase: float, hour: float, wind: float, front: float, precip: float, spirit: float, latitude_deg: float, need: float, temp_c: float) -> float:
 	var day_of_year: float = year_phase(game_s) * float(GameClockScript.DAYS_PER_YEAR)   # the calendar's day: sunrise_hour takes the hemisphere from the latitude
-	var sunrise_since: float = fposmod(sunrise_hour(day_of_year, latitude_deg) - MIST_FROM_HOUR, 24.0)
-	var timing: float = smoothstep(0.0, MIST_GATHER_H, since) * (1.0 - smoothstep(sunrise_since + MIST_BURN_FROM_H, sunrise_since + MIST_BURN_TO_H, since))
-
-	if timing <= 0.0:
-		return 0.0
-
+	var sunrise: float = sunrise_hour(day_of_year, latitude_deg)
+	var gather_from: float = 24.0 - sunrise + MIST_FROM_SUNSET_H              # sunset is as far after noon as sunrise is before it
+	var since: float = fposmod(hour - gather_from, 24.0)                      # hours since the fog could start to gather
+	var dawn_since: float = fposmod(sunrise - gather_from, 24.0)
 	var calm: float = 1.0 - smoothstep(MIST_CALM_WIND, MIST_WINDY, wind)
-	var clear: float = 1.0 - smoothstep(MIST_CLEAR_FRONT, MIST_CLOUDY_FRONT, front)
-	var dry: float = 1.0 - smoothstep(0.02, 0.1, precip)
-	var autumn: float = 0.55 + 0.45 * cos(TAU * (phase - 0.625))              # 1 in mid autumn, 0.1 in mid spring
-	var night: float = smoothstep(0.25, 0.75, _noise(seed_value, 6, game_s / GameClockScript.SECONDS_PER_DAY))   # some nights none
 	var zone: float = float(MIST_BY_ZONE.get(group, MIST_BY_ZONE["temperate"]))
 	var spirit_gain: float = 1.0 + 0.5 * maxf(spirit, 0.0)                   # high spirit: clear mornings with valley mist
-	return clampf(timing * calm * clear * dry * autumn * night * zone * spirit_gain, 0.0, 1.0)
+	# Moisture: the air's own (more in autumn) and the rain of the last hours (the same front noise state() rains from).
+	var autumn: float = 0.55 + 0.45 * cos(TAU * (phase - 0.625))              # 1 in mid autumn, 0.1 in mid spring
+	var wet_before: float = 0.0
+
+	for hours in MIST_WET_HOURS:
+		var past_front: float = _noise(seed_value, 1, (game_s - float(hours) * 3600.0) / (FRONT_HOURS * 3600.0))
+		wet_before = maxf(wet_before, smoothstep(need, need + 0.3, past_front))
+
+	var damp: float = clampf(MIST_DAMP_BASE + 0.35 * autumn + MIST_WET_GAIN * wet_before, 0.0, 1.0)
+	# Radiation fog: the night's cooling, then a burn-off that takes longer in damp air.
+	var burn_h: float = lerpf(float(MIST_BURN_H[0]), float(MIST_BURN_H[1]), damp)
+	var burn_from: float = dawn_since + MIST_BURN_FROM_H
+	var timing: float = smoothstep(0.0, MIST_GATHER_H, since) * (1.0 - smoothstep(burn_from, burn_from + burn_h, since))
+	var clear: float = 1.0 - smoothstep(MIST_CLEAR_FRONT, MIST_CLOUDY_FRONT, front)
+	var dry: float = 1.0 - smoothstep(0.02, 0.1, precip)
+	var night: float = smoothstep(0.25, 0.75, _noise(seed_value, 6, game_s / GameClockScript.SECONDS_PER_DAY))   # some nights none
+	var radiation: float = timing * calm * clear * dry * autumn * night * lerpf(0.7, 1.3, damp)
+	# Fog in rain: light, steady rain in cool, quiet air, at any hour; heavy rain washes the air instead.
+	var light_rain: float = smoothstep(float(RAIN_FOG_PRECIP[0]), float(RAIN_FOG_PRECIP[1]), precip) * (1.0 - smoothstep(float(RAIN_FOG_PRECIP[1]), float(RAIN_FOG_PRECIP[2]), precip))
+	var cool: float = 1.0 - smoothstep(float(RAIN_FOG_COOL_C[0]), float(RAIN_FOG_COOL_C[1]), temp_c)
+	var in_rain: float = RAIN_FOG * light_rain * cool * calm * smoothstep(0.2, 0.7, _noise(seed_value, 12, game_s / (FRONT_HOURS * 3600.0)))   # not every shower
+	return clampf(maxf(radiation, in_rain) * zone * spirit_gain, 0.0, 1.0)
+
+
+# Steam fog over rivers and lakes, 0..1: air much colder than the water (the water keeps near the year's mean warmth), in calm air,
+# at any hour; heavy rain or snow ends it. The client draws it as low wisps over the water (fog_ground.gd).
+static func water_steam(temp_c: float, group: String, wind: float, precip: float) -> float:
+	var warmer: float = year_mean_c(group) - temp_c
+	var calm: float = 1.0 - smoothstep(STEAM_WIND * 0.6, STEAM_WIND, wind)
+	return clampf(smoothstep(float(STEAM_WARMER_C[0]), float(STEAM_WARMER_C[1]), warmer) * calm * (1.0 - smoothstep(0.2, 0.5, precip)), 0.0, 1.0)
 
 
 # Sea fog strength over the sea, 0..1 (see the SEA_FOG_ constants). None while rain or snow falls or under thick cloud.
@@ -366,14 +405,14 @@ static func sea_fog_top_m(seed_value: int, game_s: float, sea_fog: float) -> flo
 	return full * (0.6 + 0.4 * sea_fog)
 
 
-# Top of the fog layer above sea level (m): a new height each night between MIST_TOP_MIN_M and MIST_TOP_MAX_M, lower while
-# the layer is thin (it sinks as it burns off). 0 when there is no fog.
-static func mist_top_m(seed_value: int, game_s: float, mist: float) -> float:
+# Depth of the land fog over the local low ground (m): a new depth each night between MIST_DEPTH_MIN_M and MIST_DEPTH_MAX_M, shallower
+# while the fog is thin (it sinks as it clears, and starts as shallow mist). 0 when there is none.
+static func mist_depth_m(seed_value: int, game_s: float, mist: float) -> float:
 	if mist <= 0.0:
 		return 0.0
 
-	var full: float = lerpf(MIST_TOP_MIN_M, MIST_TOP_MAX_M, _noise(seed_value, 7, game_s / GameClockScript.SECONDS_PER_DAY))
-	return full * (0.5 + 0.5 * mist)
+	var full: float = lerpf(MIST_DEPTH_MIN_M, MIST_DEPTH_MAX_M, _noise(seed_value, 7, game_s / GameClockScript.SECONDS_PER_DAY))
+	return full * (0.3 + 0.7 * mist)
 
 
 # The heading the wind blows TOWARD (radians, as wind_dir) before the storm's swing.
