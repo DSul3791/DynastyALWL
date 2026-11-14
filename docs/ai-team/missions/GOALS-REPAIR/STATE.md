@@ -55,7 +55,7 @@ Baseline investigations (read-only, in progress): R1 resources/water/farming; go
 | WP-GUIDE-UI | R7 runtime + R8 | Goal sync (protocol 119), Journal J/G/M, HUD, placard (A-12) | thread "Build the Journal, goal HUD and placard" | WP-KEYS for J/G/M | server IN DEV; client IN REVIEW | #1088; client #1093 (`43e0f53`) | #1088 → `e7d4919` | #1088: gate PASS on `0cca037`, David4 371/371 (HEADLESS_GODOT); smoke/validate_items not run |
 | WP-MAP | R8 | Discovered charcoal Map foundation (protocol 120, A-5) | thread "Build the discovered charcoal map" | #1088 merges first | IN REVIEW | #1090 | | |
 | WP-PRIM | R1/R2 | Primitive route: F1 site goal kind, F2 3 m logs, F3 manual firewood credit, F4 fire tier events, F5/P2 route tests, F9 text (baseline/PRIMITIVE_ROUTE_d990abd.md); F6-F8, F10 proposals only | lead worker | #1088, #1091 (both in dev) | IN PROGRESS | goals-repair/wp-prim | | |
-| WP-GOALS | R7 | 651-row catalog correction (328 rule-only rows individually), new-station coverage, completion conditions, migration; creator-review package | lead | mechanics PRs | NOT STARTED | | | |
+| WP-GOALS | R7 | 651-row catalog correction (328 rule-only rows individually), new-station coverage, completion conditions, migration; creator-review package | lead worker | mechanics PRs (content work started in parallel) | IN PROGRESS | goals-repair/wp-goals | | |
 
 ## Next actions
 
