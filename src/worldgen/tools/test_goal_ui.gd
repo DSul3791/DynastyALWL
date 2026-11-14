@@ -155,11 +155,19 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	_collect(layer, text)
 	check(text.has("LEADS TO") and text.any(func(t): return str(t).contains("Twist twine")), "Gather plant fibre leads to Twist twine")
 	journal.map_knowledge = MapKnowledge.new()
+	journal.map_knowledge.set_block(Vector2i(0, 0), {0: [50, 10.0, 0, 2], 1: [50, 14.0, 0, 0], 32: [50, 12.0, 1, 0]})
 	journal.show_page(Journal.MAP)
 	var pages: Array = layer.find_children("MapPage", "", true, false)
 	check(pages.size() == 1 and pages[0].knowledge == journal.map_knowledge and pages[0].is_visible_in_tree(), "M shows the charcoal map page, drawing this character's map knowledge")
 	await process_frame
 	check(pages.size() == 1 and pages[0].size.x > 100.0 and pages[0].size.y > 100.0, "the map page fills the Map panel (%s)" % (str(pages[0].size) if pages.size() == 1 else "none"))
+
+	var waited_from: int = Time.get_ticks_msec()
+
+	while pages.size() == 1 and not pages[0]._textures.has(Vector2i(0, 0)) and Time.get_ticks_msec() - waited_from < 10000:
+		await process_frame   # the worker takes about 55 ms a block; headless frames can be far shorter
+
+	check(pages.size() == 1 and pages[0]._textures.has(Vector2i(0, 0)), "the surveyed block is sketched off the main thread and shows on the page")
 	journal.show_page(Journal.GOALS)
 	journal.show_page(Journal.MAP)
 	check(layer.find_children("MapPage", "", true, false) == pages, "the same map page comes back (its drawn blocks are kept)")
