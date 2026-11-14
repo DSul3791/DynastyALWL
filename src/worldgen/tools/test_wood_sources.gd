@@ -238,6 +238,40 @@ func _init() -> void:
 	items.split_trunk(auto_pine)
 	check(on_ground("tannin_bark") - before_ground == 3, "a pine adds no tannin bark")
 
+	# Felled seeds (gardening, Dave 14 Nov 2026: "a random number of seeds between 1 and 5 seeds per tree"), cut by hand: a maple gives its maple keys with the
+	# first axe blow, exactly the trunk's roll, and never again (the flag rides the save); a pick gives none. A maple has no other seed row, so the pack count is the roll.
+	var maple: int = trunk("maple", 9.0, Vector3(3.0, 10.0, 320.0))
+	var roll: Array = items._felled_seeds(maple, items._items[maple]["tree"])
+	check(roll.size() == 2 and int(roll[0]) == items.table.number_of("maple_keys") and int(roll[1]) >= 1 and int(roll[1]) <= 5, "a maple's seed is 1 to 5 maple keys (%s)" % str(roll))
+	blow(maple)
+	check(pack("maple_keys") == int(roll[1]) and bool(items._items[maple]["tree"].get("seeds_taken", false)), "the first axe blow gives the roll's maple keys (%d)" % pack("maple_keys"))
+	blow(maple)
+	check(pack("maple_keys") == int(roll[1]), "the next blow gives none")
+	items.save()
+	items._finish_writer()
+	items = make(dir)
+	items.peer_connected_hello(1, "woodsrc00001")
+	maple = -1
+
+	for k in items._items:
+		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3 and (items._items[k]["pos"] as Vector3).distance_to(Vector3(3.0, 10.0, 320.0)) < 1.0:
+			maple = k
+
+	check(maple >= 0 and bool(items._items[maple]["tree"].get("seeds_taken", false)), "the half-cut maple comes back from the save with seeds_taken")
+	var keys_before: int = pack("maple_keys")
+	hand_cut(maple)
+	check(pack("maple_keys") == keys_before, "the rest of that maple gives no more keys (%d)" % pack("maple_keys"))
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
+	var picked: int = trunk("maple", 9.0, Vector3(3.0, 10.0, 360.0))
+	items.report_position(1, items._items[picked]["pos"] + Vector3(0.3, 0.0, 0.5))
+	items._last_process.erase(1)
+	items.action(1, Net.ACT_PROCESS, picked, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
+	check(pack("maple_keys") == keys_before and not bool(items._items[picked]["tree"].get("seeds_taken", false)) and int(items._items[picked]["tree"].get("blows", 0)) == 1, "a pick blow gives no seeds and leaves them for the axe")
+	var ground_keys: int = on_ground("maple_keys")
+	var auto_maple: int = trunk("maple", 9.0, Vector3(3.0, 10.0, 400.0))
+	var auto_roll: Array = items._felled_seeds(auto_maple, items._items[auto_maple]["tree"])
+	check(items.split_trunk(auto_maple) and on_ground("maple_keys") - ground_keys == int(auto_roll[1]) and pack("maple_keys") == keys_before, "a maple that breaks up by itself lays its roll on the ground, not in the pack")
+
 	check(bark > 0, "tannin_bark is a real item")
 
 	print("wood sources: %d failures" % failures)

@@ -63,6 +63,7 @@ const HIT_REACH_M := 3.5                 # from the trunk's edge
 const HIT_COOLDOWN_MS := 400
 const PLANT_BUSH_REACH_M := 4.0         # a dug bush is planted this close (flat) to the player
 const PLANT_BUSH_GAP_M := 1.0           # and no closer than this to another planted bush or sapling
+const PLANT_TREE_GAP_M := 2.0           # PROVISIONAL (gardening, 14 Nov 2026): a tree seed goes no closer than this to another planted bush or sapling
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
 const SCATTER_PAD_M := 30.0             # how far past its own square the layout of a scatter cell reads the ground (water probe 24 m)
 const SLOW_TICK_LOG_MS := 100.0          # an items tick this long logs its slow parts (Tyler's join-stall aid, 31 Oct 2026)
@@ -6655,6 +6656,13 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	if blows < int(cfg.get("branch_blows", 3)):
 		for row in ([] if by_pick else _branch_rows(tree, cfg, it["pos"])):
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
+		if not by_pick and not bool(tree.get("seeds_taken", false)):   # the crown's seeds come with its branches, once (a trunk that never broke up by itself)
+			var seeds: Array = _felled_seeds(id, tree)
+			tree["seeds_taken"] = true
+
+			if not seeds.is_empty():
+				give(peer, int(seeds[0]), int(seeds[1]))
 	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
 		for row in ([] if by_pick else cfg.get("small", [])):
 			var small_id: String = _wood_item("firewood", str(tree.get("species", ""))) if str(row[0]) == "firewood" else str(row[0])
@@ -6895,8 +6903,9 @@ func split_trunk(id: int) -> bool:
 
 	var litter: Array = _crown_litter(id, tree, cfg, it["pos"])   # the crown's sticks and leaves, all over the circle it landed on
 	var extras: Array = _trunk_extras(id, tree, count, cfg, litter.is_empty())   # what hand-cutting gives besides the logs (bark, seeds, roots; the branches when there is no crown litter)
+	var seeds: Array = _seed_litter(id, tree, it["pos"] + along * (length * 0.5 * cos(pitch)))   # its 1 to 5 seeds, in the crown circle
 
-	if near + count + extras.size() + litter.size() > MAX_DROPPED_NEAR:
+	if near + count + extras.size() + litter.size() + seeds.size() > MAX_DROPPED_NEAR:
 		_dirty = true
 		return false
 
@@ -6920,7 +6929,7 @@ func split_trunk(id: int) -> bool:
 		if drop_in_world(int(extra[0]), int(extra[1]), heap, 0, SPLIT_LIFETIME_S):
 			landed[int(extra[0])] = int(landed.get(int(extra[0]), 0)) + int(extra[1])
 
-	for row in litter:
+	for row in litter + seeds:   # the crown's sticks and leaves, and its seeds
 		if drop_in_world(int(row[0]), int(row[1]), row[2], 0, SPLIT_LIFETIME_S):
 			landed[int(row[0])] = int(landed.get(int(row[0]), 0)) + int(row[1])
 
@@ -6962,12 +6971,13 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 
 	var yaw: float = float(tree["yaw"])
 	var heap: Vector3 = it["pos"] + Vector3(sin(yaw), 0.0, cos(yaw)) * (float(tree["length"]) * 0.5) + Vector3(0.0, float(tree["radius"]), 0.0)
+	var seeds: Array = _seed_litter(id, tree, heap)   # its 1 to 5 seeds, in the crown circle
 	var feller_peer: Variant = _feller_peer(id)
 	_items.erase(id)
 
 	var landed: Dictionary = {}
 
-	for row in rows + litter:
+	for row in rows + litter + seeds:
 		if drop_in_world(int(row[0]), int(row[1]), heap if row.size() < 3 else row[2], 0, SPLIT_LIFETIME_S):
 			landed[int(row[0])] = int(landed.get(int(row[0]), 0)) + int(row[1])
 
@@ -6975,6 +6985,49 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	_fellers.erase(id)
 	_dirty = true
 	return true
+
+
+# A felled tree's seeds (Dave 14 Nov 2026: "Trees should drop some seeds when cut down. a random number of seeds between 1 and 5 seeds per tree"): [item number,
+# count] of its drops.json trunk.felled_seeds by_species seed (a species' own fruit or nut, or its own seed item), count from felled_seeds.count; [] for a species
+# with none (the fantasy trees). Rolled from the trunk's id like the crown litter; no player, so no luck (world drop).
+func _felled_seeds(id: int, tree: Dictionary) -> Array:
+	var cfg: Dictionary = (_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {})
+	var number: int = table.number_of(str((cfg.get("by_species", {}) as Dictionary).get(str(tree.get("species", "")), "")))
+
+	if number <= 0:
+		return []
+
+	var span: Array = cfg.get("count", [1, 5])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ FELLED_SEEDS_SEED
+	return [number, rng.randi_range(int(span[0]), int(span[1]))]   # luck-exempt: world drop, no player
+
+
+const FELLED_SEEDS_SEED := 0x5eed5   # the stream of a felled tree's seed roll (its own, so the crown litter's rolls stay what they were)
+
+
+# The felled tree's seeds as one heap in its crown circle (tree.crown, _crown_circle), or at `fallback` for a trunk saved without one: [[number, count, Vector3]] or [].
+func _seed_litter(id: int, tree: Dictionary, fallback: Vector3) -> Array:
+	var seeds: Array = _felled_seeds(id, tree)
+
+	if seeds.is_empty():
+		return []
+
+	var circle: Array = tree.get("crown", [])
+	var spot: Vector3 = fallback
+
+	if circle.size() >= 3:
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.seed = hash(id) ^ FELLED_SEEDS_SEED ^ 0x1
+		var angle: float = rng.randf() * TAU   # luck-exempt: where it lands, no player
+		var far: float = sqrt(rng.randf()) * float(circle[2]) * 0.5   # luck-exempt: where it lands, no player
+		spot = Vector3(float(circle[0]) + cos(angle) * far, fallback.y, float(circle[1]) + sin(angle) * far)
+
+		if ground_height.is_valid():
+			var ground: float = float(ground_height.call(spot.x, spot.z))
+			spot.y = ground + 0.1 if not is_nan(ground) else spot.y
+
+	return [[int(seeds[0]), int(seeds[1]), spot]]
 
 
 # The online peer who felled trunk `id`, null when no one is recorded or that character is not online (_fellers).
@@ -7432,14 +7485,16 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 
 	var suffix: String = str(_drops.get("shrub_work", {}).get("dig_suffix", "_bush"))
 	var item_id: String = table.id_of(inv.numbers[slot])
+	var tree_species: String = tree_seed_species(item_id)   # a tree's seed goes in as a sapling that grows (gardening, 14 Nov 2026)
+	var entry: Dictionary = _flora_by_name.get(tree_species if tree_species != "" else item_id.trim_suffix(suffix), {})
 
-	if not item_id.ends_with(suffix):
+	if tree_species == "" and (not item_id.ends_with(suffix) or entry.is_empty() or str(entry.get("kind", "")) != "shrub"):
 		return
 
-	var entry: Dictionary = _flora_by_name.get(item_id.trim_suffix(suffix), {})
-
-	if entry.is_empty() or str(entry.get("kind", "")) != "shrub":
+	if tree_species != "" and (entry.is_empty() or str(entry.get("kind", "")) != "tree"):
 		return
+
+	var gap: float = PLANT_TREE_GAP_M if tree_species != "" else PLANT_BUSH_GAP_M
 
 	if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > PLANT_BUSH_REACH_M:
 		_reject(peer, 0)
@@ -7463,7 +7518,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		if sapling["chunk"] == [home.x, home.y]:
 			used[sapling["slot"]] = true
 
-			if (sapling["pos"] as Vector3).distance_to(spot) < PLANT_BUSH_GAP_M:
+			if (sapling["pos"] as Vector3).distance_to(spot) < gap:
 				_say(peer, "Too close to another plant.")
 				return
 
@@ -7478,12 +7533,26 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 
 	inv.take_from_slot(slot, 1)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
-	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s - SAPLING_GROWN_S})   # a dug bush goes in full size
+	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s if tree_species != "" else now_s - SAPLING_GROWN_S})   # a dug bush goes in full size; a seed starts as a sapling and grows like wild regrowth
 	_dirty = true
-	_goal_event(peer, "bush_replanted")   # ADD-07: a dug-up bush (only digging gives a <species>_bush) planted again
+
+	if tree_species == "":   # a tree seed is not a replanted bush (no goal counts tree planting yet)
+		_goal_event(peer, "bush_replanted")   # ADD-07: a dug-up bush (only digging gives a <species>_bush) planted again
 
 	if flora_changed.is_valid():
 		flora_changed.call(home)
+
+
+# The tree species whose seed `item_id` is (drops.json trunk.felled_seeds by_species: a species' own fruit or nut, or its own seed item), "" for none. The
+# first species listed for an item wins (each seed is one species' today).
+func tree_seed_species(item_id: String) -> String:
+	var by: Dictionary = ((_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})
+
+	for species in by:
+		if str(by[species]) == item_id:
+			return str(species)
+
+	return ""
 
 
 # A grown dynamic tree was felled: the record goes. True if there was one.
@@ -8402,12 +8471,16 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		return false
 
 	var hammer: int = _heaviest_hammer_slot(inv)
+	# A garden plot is laid out with the hoe too (Dave 14 Nov 2026, the hoe's Garden mode; master s2.1 "Create Garden Plot"). PROVISIONAL: a working hoe on the
+	# hand bar stands in for a hammer for plot blueprints only, at the lightest hammer's tier.
+	var plot_row: bool = bool(_structures.get(str(row["structure"]), {}).get("plot", false))
+	var hoe_plot: bool = hammer < 0 and plot_row and int(row.get("hammer", 1)) <= 1 and _has_tool(inv, "hoe")
 
-	if hammer < 0:
-		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
+	if hammer < 0 and not hoe_plot:
+		_say(peer, "You need a hammer or a hoe in your hand bar to lay out a garden plot." if plot_row else "You need a hammer in your hand bar to build from a blueprint.")
 		return false
 
-	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
+	if hammer >= 0 and int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
 		_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
 		return false
 

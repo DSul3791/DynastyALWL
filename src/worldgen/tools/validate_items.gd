@@ -454,6 +454,21 @@ func _init() -> void:
 		want_item.call(String(row[0]), "drops.json trunk.branch")
 		obtainable[String(row[0])] = true
 
+	var felled_seeds: Dictionary = trunk.get("felled_seeds", {})   # every felled tree drops 1 to 5 of its seed (gardening, Dave 14 Nov 2026)
+
+	for species_name in felled_seeds.get("by_species", {}):
+		if not species.has(species_name):
+			fail("drops.json trunk.felled_seeds.by_species: unknown flora species '%s'" % species_name)
+
+		want_item.call(String(felled_seeds["by_species"][species_name]), "drops.json trunk.felled_seeds.by_species.%s" % species_name)
+		obtainable[String(felled_seeds["by_species"][species_name])] = true
+
+	if not felled_seeds.is_empty():
+		var span: Array = felled_seeds.get("count", [])
+
+		if span.size() != 2 or int(span[0]) < 1 or int(span[1]) < int(span[0]):
+			fail("drops.json trunk.felled_seeds.count must be [low, high] with 1 <= low <= high")
+
 	# Bushes and shrubs (Dave 2 Nov 2026): the axe chops them into axe_gives; the pickaxe digs each shrub species up whole as <species><dig_suffix>.
 	var shrub_work: Dictionary = drops.get("shrub_work", {})
 

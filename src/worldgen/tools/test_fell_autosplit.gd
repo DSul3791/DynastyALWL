@@ -133,6 +133,36 @@ func _init() -> void:
 
 	var logs: Array = loose_logs(w, log_n)
 	check(logs.size() == int(6.0 / log_len), "log count equals what cutting gives: %d" % logs.size())
+	# Its seeds (Dave 14 Nov 2026: "a random number of seeds between 1 and 5 seeds per tree"): a beech drops 1 to 5 beechnuts as one heap in its crown circle.
+	var seed_roll: Array = w._felled_seeds(small[0], tree)
+	var seed_heap: bool = false
+
+	if seed_roll.size() == 2:
+		for k in w._items:
+			var row: Dictionary = w._items[k]
+
+			if not row.has("tree") and int(row["number"]) == int(seed_roll[0]) and int(row["count"]) == int(seed_roll[1]) and tree.get("crown", []).size() >= 3:
+				seed_heap = seed_heap or Vector2(row["pos"].x - float(tree["crown"][0]), row["pos"].z - float(tree["crown"][1])).length() <= float(tree["crown"][2])
+
+	check(seed_roll.size() == 2 and int(seed_roll[0]) == w.table.number_of("beechnuts") and seed_heap, "the beech's 1 to 5 beechnuts lie in its crown circle (%s)" % str(seed_roll))
+	var counts: Dictionary = {}
+
+	for k in range(300):
+		var roll: Array = w._felled_seeds(k, {"species": "oak"})
+		counts[int(roll[1])] = true
+		check(int(roll[0]) == w.table.number_of("acorns") and int(roll[1]) >= 1 and int(roll[1]) <= 5, "an oak drops 1 to 5 acorns (%s)" % str(roll))
+
+	check(counts.size() == 5, "every count from 1 to 5 comes up (%s)" % str(counts.keys()))
+	check(w._felled_seeds(1, {"species": "mirrorbark"}).is_empty(), "a fantasy tree drops no seeds (deferred)")
+	var no_seed: Array = []
+
+	for species in w._flora_by_name:
+		var entry: Dictionary = w._flora_by_name[species]
+
+		if str(entry.get("kind", "")) == "tree" and not bool(entry.get("retired", false)) and not bool(entry.get("fantasy", false)) and w._felled_seeds(1, {"species": species}).is_empty():
+			no_seed.append(species)
+
+	check(no_seed.is_empty(), "every real tree species drops a seed (%s)" % str(no_seed))
 	check(felled(w, 4).size() == 1, "the stump stays")
 
 	# The crown (Dave 10 Nov 2026): its sticks and leaves lie all over the circle it landed on, the canopy's size (Cover.crown_radius), by the tree's height;
