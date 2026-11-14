@@ -76,6 +76,7 @@ Each entry: question; answer chosen; precedent it was reasoned from; what it aff
 | A-31 | Does a lit kiln's finished Charcoal count? | **Yes**, its finished output counts while lit | Repair plan P3 (pull from kilns) | WP-METAL R6 PR | Exclude lit kilns |
 | A-32 | Bin storage form | Capacity in units (1000/5000/10000); 8 slots kept as internal layout only; `max_kg` dropped | Master §2.5 ("previous 8-slot mixed-material rule is not the target"); STORAGE §3.1 | WP-METAL R6 PR | Restore a kg cap |
 | A-33 | Is the 300 s pull interval real or game time? | **300 real server seconds** | Master §2.5 "every 300 s" (unit unstated) | WP-METAL R6 PR | Switch to game seconds |
+| A-34 | A-30 side effect: a smelter drawing all Coal/Charcoal out of someone's laid (unlit) fire empties it, so it turns to ash after 300 s instead of lasting its normal 1800 s | A draw must **not shorten or remove** the fire: an emptied laid fire keeps its normal lifetime and stays a laid fire. No owner check (pulls stay permission-free as ruled) | Master §2.5 line ~1058 (no-permission pulls settled); the pull is a convenience and must not destroy another player's structure | WP-METAL R6 PR | Limit fire draws to the station owner's own fires |
 
 ## 5. Findings outside this mission (reported, not fixed)
 
