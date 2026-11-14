@@ -2,7 +2,7 @@
 
 **Status: REVIEW DRAFT. Not activated.** Dave approved the 26 audit ADD goals and the coins-only rewards on 14 Nov 2026; the A-42 amounts are provisional, and the catalog goes into the game only on his explicit go. This is the GOALS-REPAIR R7 (WP-GOALS) package for Dave's catalog review, made under the item catalog freeze (`docs/ai-team/DECISION_AUTHORITY.md`). Nothing in it changes game code, `starter_goals.json`, `camp_goals.json` or `PLAYER_GOALS_REWARDS_DRAFT.md`. Values tagged A-n are provisional engineering assumptions from `docs/ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md` §4. They are not Dave-approved.
 
-- **Rows:** `PLAYER_GOALS_CATALOG_CORRECTED.csv` has one row per goal, 699 in all: the draft's 651 goals (`status` ORIGINAL), 22 new goals (`status` PROPOSED NEW: the 11 of R7, the five tier Roof 65 panels and the six tier pieces of PR #1113) and the audit's 26 ADD goals, approved by Dave (`status` APPROVED NEW, see "Approved new goals" below).
+- **Rows:** `PLAYER_GOALS_CATALOG_CORRECTED.csv` has one row per goal, 699 in all: the draft's 651 goals (`status` ORIGINAL), 22 new goals (`status` PROPOSED NEW: the 11 of R7, the five tier Roof 65 panels and the six tier pieces of PR #1113) and the audit's 26 ADD goals, approved by Dave: 25 `status` APPROVED NEW and ADD-16, `status` MERGED into `activity:temper_steel` (A-43). See "Approved new goals" below.
 - **Sources:**
   - Draft: `PLAYER_GOALS_REWARDS_DRAFT.md` (651 rows, 15,670 copper in total).
   - Audit: `PLAYER_GOALS_AUDIT_LEDGER.csv` (audit at `dc2fa52`).
@@ -20,7 +20,7 @@
   - **Roof 45 and 65 (#1110; naming CONFIRMED by Dave (14 Nov 2026 05:29Z: "all tiers get a tier - Roof 45 and tier - Roof 65. there is no such item as just roof", Fortified included)):** every tier has a "<Tier> - Roof 45" and a "<Tier> - Roof 65". A Roof 65 costing the same as its Roof 45 is still an assumption (A-35). The five `build:*roof` rows for Rustic, Sturdy, Superior, Refined and Engineered now say "choose <Tier> - Roof 45" and are FIX (they were OK). Goal ids and structure ids are unchanged. The Crude pair (`build:thatch_roof`, `build:thatch_roof_65`) already had both goals. The five new 65 panels are PROPOSED rows now (the R9 reward pass), and the Fortified pair follows when its data is in dev. The roofs PR is #1110. `PLAYER_GOALS_REWARDS_DRAFT.md` and the audit CSVs are the historical review inputs and are left as they were; this catalog supersedes them.
     - Still blocked (28): the 24 locked water and garden blueprints (all now UNASSIGNED; their materials are reachable; Dave 14 Nov 06:26Z keeps them as future goals, still locked), R5 (`build:master_forge`, `activity:temper_steel`), R6 (`build:open_storage_bin`) and `activity:chop_log_blocks` (no `made_item_any` check type). `activity:operate_bellows` is OK since the reward pass: `server_smelter.gd` emits `bellows_iron` in dev. R5, R6 and `made_item_any` have since landed in dev too; their rows are rechecked in the final R9 docs update, not here.
   - The counts below include these changes.
-- **Rewards:** every row now pays the A-42 coin scale (section "Rewards (A-42)" below): 6,480 copper over the 699 rows, 6,010 of it on the 651 ORIGINAL rows. The draft's 15,670 copper is replaced.
+- **Rewards:** every row now pays the A-42 coin scale (section "Rewards (A-42)" below): 6,460 copper over the 698 paying rows, 6,010 of it on the 651 ORIGINAL rows. The draft's 15,670 copper is replaced.
 - **Wording:** "go live" means the day the corrected catalog replaces the live goal files. It is not a player action; the player never activates anything.
 
 ## Rewards (A-42)
@@ -40,8 +40,8 @@
 | Stone | 5 copper | the start, stone tools, Crude | 416 |
 | Bronze | 10 copper (1 bronze) | Copper, Bronze, Improved | 27 |
 | Iron | 15 copper (1 bronze + 5 copper) | Iron, Refined, Advanced | 198 |
-| Steel | 20 copper (2 bronze) | Steel, Fortified, Master | 58 |
-| **All** | **6,480 copper** | 699 rows (651 ORIGINAL: 6,010; 22 PROPOSED: 300; 26 APPROVED: 170) | **699** |
+| Steel | 20 copper (2 bronze) | Steel, Fortified, Master | 57 |
+| **All** | **6,460 copper** | 698 paying rows (651 ORIGINAL: 6,010; 22 PROPOSED: 300; 25 APPROVED: 150); the MERGED ADD-16 row pays nothing | **698** |
 
 **How a row gets its stage.** A row pays the higher of two stages:
 
@@ -127,7 +127,7 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 | **Total** | **651** | **328** | **323** |
 
 - **Blocked rows that also have text corrections:** 5, of which 3 are rule-only rows.
-- **New goals:** 22 PROPOSED (verdict PROPOSED) and 26 APPROVED NEW (2 OK, 24 BLOCKED-BY-MECHANIC until their new event is built). They are not in the table above.
+- **New goals:** 22 PROPOSED (verdict PROPOSED), 25 APPROVED NEW (2 OK, 23 BLOCKED-BY-MECHANIC until their new event is built) and 1 MERGED (ADD-16). They are not in the table above.
 - **Rows with a play test or player-verification note:**
   - 109 need player verification of the PR #1091 sources (Tanbark, Pine tar, water from containers).
   - 58 are F6 door, doorway and bed checks.
@@ -206,7 +206,7 @@ A `runtime_check` that contains `count: "N"` is a placeholder. It is **not loada
 
 ## Approved new goals (audit ADD, Dave 14 Nov 2026 06:26Z)
 
-The 26 goals the audit recommended (`PLAYER_GOALS_REWARDS_AUDIT.md` section 7, ADD-01 to ADD-26). Approved as goals; the catalog is not switched on. Two complete with today's craft counter. The other 24 each need a new server goal event, named in `runtime_check`; no work package owns those events yet, so they are BLOCKED-BY-MECHANIC and stay out of the HUD until their event ships. The counts in `activity:forage_new_plant` (5) and `activity:catch_different_fish` (3) are assumptions. Gathering, foraging and harvesting count only by the character's own hand (06:20Z).
+The 26 goals the audit recommended (`PLAYER_GOALS_REWARDS_AUDIT.md` section 7, ADD-01 to ADD-26). Approved as goals; the catalog is not switched on. Two complete with today's craft counter. ADD-16 is merged into `activity:temper_steel` (A-43). The other 23 each need a new server goal event, named in `runtime_check` and listed under "Server events the approved goals need" below; they are BLOCKED-BY-MECHANIC and stay out of the live goal files until their event ships. The counts in `activity:forage_new_plant` (5) and `activity:catch_different_fish` (3) are assumptions. Gathering, foraging and harvesting count only by the character's own hand (06:20Z).
 
 | Audit | id | Title | Completes when | Pays |
 |---|---|---|---|---:|
@@ -225,7 +225,7 @@ The 26 goals the audit recommended (`PLAYER_GOALS_REWARDS_AUDIT.md` section 7, A
 | ADD-13 | `activity:store_in_chest` | Put items in a chest or crate | new event `stored_item` | 5 |
 | ADD-14 | `activity:set_container_code` | Lock a chest with a four-digit code | new event `container_locked` | 5 |
 | ADD-15 | `activity:haul_with_handcart` | Move a loaded crate with a Handcart | new event `handcart_hauled` | 15 |
-| ADD-16 | `activity:craft_tempered_item` | Craft a Tempered steel item at a Smithy with a Quenching trough | new event `tempered` | 20 |
+| ADD-16 | `activity:craft_tempered_item` | Craft a Tempered steel item at a Smithy with a Quenching trough | MERGED into `activity:temper_steel` (A-43) | 0 |
 | ADD-17 | `activity:craft_masterwork` | Craft a +1/+2 craftsmanship item at the Master smithy | new event `masterwork_made` | 20 |
 | ADD-18 | `activity:burn_kiln_charcoal` | Burn a kiln batch of charcoal | new event `kiln_charcoal` | 5 |
 | ADD-19 | `activity:buy_from_trader` | Buy something from Hob | new event `bought` | 5 |
@@ -237,10 +237,46 @@ The 26 goals the audit recommended (`PLAYER_GOALS_REWARDS_AUDIT.md` section 7, A
 | ADD-25 | `activity:catch_different_fish` | Catch several kinds of fish | new event `fish_kind_caught` x3 | 5 |
 | ADD-26 | `activity:mine_ore_with_pick` | Mine a boulder with a pickaxe | new event `ore_mined` | 5 |
 
-**Overlaps to settle before going live** (both kept, as approved):
+**Overlaps, settled:**
 
-- `activity:craft_tempered_item` (ADD-16) and `activity:temper_steel` use the same event, `tempered`. One should be dropped or reworded so the same act does not pay twice.
+- `activity:craft_tempered_item` (ADD-16) and `activity:temper_steel` were the same act on the same event, `tempered`. ADD-16 is merged into `activity:temper_steel`: the row stays for the record (`status` MERGED) and pays nothing (A-43, assumed on Dave's behalf; he approved the 26 as adjustable). `activity:temper_steel` still needs the `tempered` event, which dev does not emit yet.
 - `activity:repair_building` (ADD-11) repairs a building piece; `activity:repair_station` repairs a smithy. They are different acts, so both stay.
+
+### Server events the approved goals need (a package for the lead)
+
+The 23 approved goals below wait for one new goal event each. Each should be sent through `server_items._goal_event(peer, "<event>")`, so Admin mode pauses it, once per act, crediting the character whose own hand does it (Dave 06:20Z). The names are the ones in each row's `runtime_check`; the lead may rename them, as long as the row changes with it. Kindling and Tinder need nothing new.
+
+| Goal | Event | Fires when |
+|---|---|---|
+| `activity:cook_on_campfire` | `cooked_on_fire` | a roast (meat, fish, shellfish, seal) taken off a campfire |
+| `activity:till_garden_bed` | `bed_tilled` | the hoe's till action on soil |
+| `activity:sow_seed` | `seed_sown` | a seed sown into a tilled bed |
+| `activity:harvest_crop` | `crop_harvested` | a ripe crop harvested by the character's own hand |
+| `activity:plant_bush` | `bush_replanted` | a dug-up bush replanted |
+| `activity:set_snare` | `snare_set` | a snare placed and set |
+| `activity:sharpen_tool` | `tool_sharpened` | a tool sharpened on a whetstone or grindstone |
+| `activity:repair_tool` | `tool_repaired` | a worn or broken tool repaired |
+| `activity:repair_building` | `building_repaired` | a hammer repair of a damaged building piece (not a station; stations use `station_repaired`) |
+| `activity:sleep_in_bed` | `slept_night` | a night slept through in a bed or lean-to |
+| `activity:store_in_chest` | `stored_item` | an item put into a chest, crate or bin |
+| `activity:set_container_code` | `container_locked` | a four-digit code set on a container the character owns |
+| `activity:haul_with_handcart` | `handcart_hauled` | a loaded crate moved some distance on a Handcart |
+| `activity:craft_masterwork` | `masterwork_made` | a +1 or +2 craftsmanship item made at the Master smithy |
+| `activity:burn_kiln_charcoal` | `kiln_charcoal` | a kiln charcoal batch collected |
+| `activity:buy_from_trader` | `bought` | an item bought from Hob |
+| `activity:preserve_in_jar` | `jar_matured` | a matured batch taken out of a Preserving jar |
+| `activity:serve_platter` | `platter_served` | a Serving platter with food placed on a table |
+| `activity:eat_prepared_meal` | `meal_effect` | a prepared meal eaten that gives a temporary food effect |
+| `activity:place_torch` | `torch_placed` | a torch put into a wall bracket or a stand |
+| `activity:forage_new_plant` | `foraged_new` | a herb, nut or fruit foraged by hand that this character has not foraged before (count 5) |
+| `activity:catch_different_fish` | `fish_kind_caught` | a kind of fish this character has not caught before (count 3) |
+| `activity:mine_ore_with_pick` | `ore_mined` | an ore boulder mined with a pickaxe |
+
+Also still owed by earlier rows: `tempered` (`activity:temper_steel`, which now covers ADD-16 too) and `station_repaired` (`activity:repair_station`). Neither is emitted in dev.
+
+### Order of the rows (the HUD)
+
+The live HUD shows the first goal not yet done, in authored order, and the Journal thread's test guards that no goal is listed before a goal it follows. So the CSV order is the authored order, and every new row sits right after the row for what it needs: for example `craft:kindling` after placing the first campfire, the Improved smelter before the first Iron ingot, each Roof 65 after its Roof 45, the tier pieces after their tier's last piece, sowing after the hoe, and setting a snare after crafting one. New side goals that need nothing beyond the start (map, tinder, cooking, sleeping and the rest) open the side goals, right after the main route. The kiln and jar goals close the stone-stage side goals, after the main route has built both. `PLAYER_GOALS_REWARDS_DRAFT.md` keeps the draft's order for the record.
 
 ### Coverage of the required stations
 

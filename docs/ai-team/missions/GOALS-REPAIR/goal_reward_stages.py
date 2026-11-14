@@ -179,6 +179,9 @@ def named_stage(title):
 
 
 for row in rows:
+    if row["status"] == "MERGED":   # folded into another goal (A-43): no reward of its own
+        continue
+
     data_stage = stage_of(row)
     name_stage = named_stage(row["title"])
     stage = max([s for s in (data_stage, name_stage) if s], key=lambda s: COPPER[s]) if (data_stage or name_stage) else None
@@ -196,6 +199,7 @@ for row in rows:
 
 assert len({r["id"] for r in rows}) == len(rows), "duplicate goal ids"
 total = sum(int(r["reward_copper"] or 0) for r in rows)
+assert all(r["reward_copper"] in ("5", "10", "15", "20") for r in rows if r["status"] != "MERGED"), "a reward off the scale"
 print(json.dumps({"stages": counts, "total_copper": total, "total_original": sum(int(r["reward_copper"] or 0) for r in rows if r["status"] == "ORIGINAL"), "unplaced": unplaced, "raised_above_name": raised}, indent=1))
 
 if WRITE:
