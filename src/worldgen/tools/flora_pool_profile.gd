@@ -3,7 +3,7 @@ extends SceneTree
 # How often and how slowly the server places the flora chunks round a player who joins at the spawn (coordinator 15 Nov 2026: cover chunk
 # jobs took 5 to 56 s each on David4 against about 0.5 s alone). Read only; one Godot instance, many threads.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/flora_pool_profile.gd -- [--workers=11]
+#   godot --headless --path . --script res://src/worldgen/tools/flora_pool_profile.gd -- [--workers=N]   (default: as the server, usable CPUs - 1)
 #
 # Phase "alone": each of the 9 chunks round the spawn placed once, full and trees only, one at a time.
 # Phase "join": what terrain_server starts at a join, all at once on a fresh ServerFlora: the warm thread (_warm_flora: items_of on the 9),
@@ -72,7 +72,7 @@ func _stream() -> void:
 
 
 func _init() -> void:
-	var workers: int = 11
+	var workers: int = maxi(load("res://src/shared/cpu_budget.gd").usable() - 1, 1)   # as terrain_server picks them
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--workers="):

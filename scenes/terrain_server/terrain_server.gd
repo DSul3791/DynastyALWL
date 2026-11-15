@@ -12,7 +12,7 @@ extends Node
 #                     while running, creating the file clear_generated.now in the
 #                     store folder does the same
 #   --store=DIR     server store folder (default user://server_store/<world name>)
-#   --threads=N     worker threads making blocks (default: processor count - 1)
+#   --threads=N     worker threads making blocks (default: usable CPUs - 1; cpu_budget.gd counts a container's CPU limit)
 #   --quit-after=S  stop after S seconds (headless checks)
 #   --timeout=S     (testing, also "--timeout S") the same as --quit-after; --watch-parent=PID stops when that process is gone. Neither flag = no limit.
 #   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
@@ -25,6 +25,7 @@ const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
+const CpuBudgetScript := preload("res://src/shared/cpu_budget.gd")
 const RUN_NOTE := "user://server_run.json"      # which server holds the port (read by the launcher)
 const WATER_CHUNKS_MAX := 64              # flora chunks answered per water request
 const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled at most this often
@@ -175,6 +176,7 @@ var _tiles_changed: Dictionary = {}     # tiles edited since the clients were to
 var _tiles_told_msec: int = 0
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
+var _usable_cpus: int = 1               # CPUs this process may use (cpu_budget.gd: a container's limit counts)
 var _idle_threads: int = 2             # idle builder threads (--idle-threads=N, 0 turns it off)
 var _idle_workers: Array = []
 var _idle_offsets: Array = []          # [lod, dx, dz] nearest first, same for every player
@@ -196,7 +198,8 @@ func _ready() -> void:
 	var port: int = 24600
 	var world_dir: String = "res://worlds/base_world"
 	var store_dir: String = ""
-	_max_running = maxi(OS.get_processor_count() - 1, 1)
+	_usable_cpus = CpuBudgetScript.usable()
+	_max_running = maxi(_usable_cpus - 1, 1)   # a container held to fewer CPUs than the machine has gets fewer threads (David4, 15 Nov 2026)
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--port="):
@@ -821,7 +824,7 @@ func _ready() -> void:
 		idle.start(_idle_loop, Thread.PRIORITY_LOW)
 		_idle_workers.append(idle)
 
-	print("Terrain server listening on port %d with %d worker threads; store %s; spawn %s" % [port, _max_running, store_dir, str(spawn)])
+	print("Terrain server listening on port %d with %d worker threads (%d usable CPUs of %d); store %s; spawn %s" % [port, _max_running, _usable_cpus, OS.get_processor_count(), store_dir, str(spawn)])
 
 
 # Owner (2026-10-19): spawn here (x, z in meters) instead of the baked spot at the bay

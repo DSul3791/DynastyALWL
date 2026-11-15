@@ -67,8 +67,9 @@ func _host_and_play() -> void:
 		"res://scenes/terrain_server/terrain_server.tscn",
 		"--",
 		"--quit-when-empty",
-		# The server shares this PC with the game: half the cores (it used all but one, 11 threads on 12 cores, and the game froze for seconds).
-		"--threads=%d" % maxi(OS.get_processor_count() >> 1, 2),
+		# The server shares this PC with the game: half the cores (it used all but one, 11 threads on 12 cores, and the game froze for seconds);
+		# half of the CPUs this process may use when a container limits them (cpu_budget.gd; the same as before on a PC).
+		"--threads=%d" % maxi(load("res://src/shared/cpu_budget.gd").usable() >> 1, 2),
 	])
 
 	var pid: int = OS.create_process(OS.get_executable_path(), arguments)
