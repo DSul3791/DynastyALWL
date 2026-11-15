@@ -413,7 +413,9 @@
 		"old_branch_blows": 3
 	},
 	"rolling_note": "A loose log lying on a slope rolls downhill and settles (TREE_WOOD_TOOLS_DESIGN.md s1.1, s5; server_items.gd _roll_tick). Only a shoulder log (items.json carry shoulder) or an item in also, just dropped, split or moved, is looked at; it is put to sleep once it stops. It rolls while the ground slope ACROSS it (perpendicular to its long axis, over probe_m either side) is over slope, gaining accel_mps2 up to max_mps, and stops where that slope falls under slope, at water deeper than water_m, at a wall or after max_m; it only rolls while it lies within rest_m of the ground (not on a floor, deck or rock). send_s is how often the players who see it are told where it is. DELEGATED, tunable.",
-	"rolling": {"slope": 0.35, "probe_m": 0.4, "accel_mps2": 2.0, "max_mps": 3.0, "max_m": 60.0, "water_m": 0.05, "rest_m": 0.5, "send_s": 0.1, "also": ["log"]},
+	"rolling": {"slope": 0.35, "probe_m": 0.4, "accel_mps2": 2.0, "max_mps": 3.0, "max_m": 60.0, "water_m": 0.05, "rest_m": 0.5, "send_s": 0.1, "also": ["log"],
+		"half_len_m": 1.5, "radius_m": 0.2, "look_m": 4.0, "look_s": 0.25, "pivot_end": 0.5, "pivot_deg": 15.0, "max_turns": 8, "transfer": 0.5, "friction_mps2": 0.3,
+		"drag": {"default": 0.5, "loam": 0.6, "silt": 0.6, "clay": 0.6, "alluvium": 0.6, "forest_humus": 0.6, "peat": 0.8, "mud": 1.0, "sand": 0.9, "beach_sand": 0.9, "volcanic_ash": 0.5, "stony_soil": 0.3, "gravel": 0.3, "rock": 0.15, "bare_rock": 0.15, "snow": 0.2, "glacial_ice": 0.05}},
 	"trunk": {
 		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle. Any further by_species rows (willow withies, Scots pine tar) each roll the same chance on their own (GA-02).",
 		"branch_blows": 2,

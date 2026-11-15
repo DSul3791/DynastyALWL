@@ -86,6 +86,125 @@ func log_id_near(w, item: String, from: Vector3) -> int:
 	return best
 
 
+# Rolls the log `id` for `ticks` ticks of 0.05 s and returns the closest it ever came (its middle line against `point`, x/z) to `point`.
+func roll_for(w, id: int, ticks: int, point: Vector2 = Vector2(INF, INF)) -> float:
+	var closest: float = INF
+
+	for n in range(ticks):
+		w._roll_tick(0.05)
+
+		if point.x != INF and w._items.has(id):
+			var it: Dictionary = w._items[id]
+			var mid: Vector2 = Vector2(it["pos"].x, it["pos"].z)
+			var half: Vector2 = Vector2(cos(float(it["rot_y"])), -sin(float(it["rot_y"]))) * 1.5
+			closest = minf(closest, float(ItemsScript._seg_gap(mid - half, mid + half, point, point)[0]))
+
+	return closest
+
+
+# Dave 15 Nov 2026: "logs should collide like they would naturally. they should also have a little drag to simulate the grasses effect".
+func roll_hits(oak: int, across: float) -> void:
+	var r = make("user://test_wood_phase3_hits")
+	r.ground_height = func(x2, _z): return 10.0 + 0.5 * x2   # rolls toward -x; the log's length runs along z (-1.5 .. 1.5)
+	r._sync_grid = {}   # no world sync here: every item is looked at
+
+	# A boulder in its way stops it against the rock.
+	r._items[r._next_id] = {"number": r.table.number_of("stone"), "count": 1, "pos": Vector3(-10.0, 5.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.8}}
+	r._next_id += 1
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	var id: int = log_id_near(r, "log_oak", Vector3.ZERO)
+	roll_for(r, id, 400)
+	var x: float = float(r._items[id]["pos"].x)
+	check(r._rolling.is_empty() and x > -9.2 and x < -8.8, "a boulder in the way stops it against the rock (x %.2f)" % x)
+
+	# A felled trunk lying across its way stops it too.
+	r._items.clear()
+	r._items[r._next_id] = {"number": oak, "count": 1, "pos": Vector3(-10.0, 5.0, -5.0), "left": 1.0e9, "tree": {"state": 3, "yaw": 0.0, "length": 10.0, "radius": 0.4}}
+	r._next_id += 1
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	id = log_id_near(r, "log_oak", Vector3.ZERO)
+	roll_for(r, id, 400)
+	x = float(r._items[id]["pos"].x)
+	check(r._rolling.is_empty() and x > -9.6 and x < -9.2, "a felled trunk across the way stops it (x %.2f)" % x)
+
+	# A standing tree square in its way stops it; one near an end turns it round the trunk instead, and it never rolls through the tree.
+	r._items.clear()
+	var tree_at: Array = [Vector3(-10.0, 5.0, 0.0)]
+	r.trees_near = func(_p, _rad): return [[Vector2i.ZERO, 7]]
+	r.tree_info = func(_c, _i): return {"name": "oak", "position": tree_at[0], "height": 20.0, "trunk": 0.3}
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	id = log_id_near(r, "log_oak", Vector3.ZERO)
+	roll_for(r, id, 400)
+	x = float(r._items[id]["pos"].x)
+	check(r._rolling.is_empty() and x > -9.6 and x < -9.3 and is_equal_approx(float(r._items[id]["rot_y"]), across), "a tree square in the way stops it against the trunk (x %.2f)" % x)
+	r._items.clear()
+	tree_at[0] = Vector3(-10.0, 5.0, 1.3)
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	id = log_id_near(r, "log_oak", Vector3.ZERO)
+	var closest: float = roll_for(r, id, 600, Vector2(-10.0, 1.3))
+	var swung: float = absf(angle_difference(float(r._items[id]["rot_y"]), across))
+	check(r._rolling.is_empty() and swung > deg_to_rad(14.0) and closest > 0.49, "a tree near one end swings it round the trunk (turned %.0f degrees, never closer than %.2f m)" % [rad_to_deg(swung), closest])
+	r.trees_near = Callable()
+	r.tree_info = Callable()
+
+	# A wall stops it when only one end would run into it (the wall stands 0.5 .. 2.5 m along z; the log's middle path is clear).
+	r._items.clear()
+	check(r.dev_place("stone_wall@-10,1.5,90") != 0, "a stone wall stands across one end's path")
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	id = log_id_near(r, "log_oak", Vector3.ZERO)
+	roll_for(r, id, 400)
+	x = float(r._items[id]["pos"].x)
+	check(r._rolling.is_empty() and x > -10.0 and x < -9.0, "the wall stops it (x %.2f)" % x)
+
+	# A rolling log strikes a log lying on flat ground below the slope: the struck log rolls on a little, the first stops behind it, and neither rolls through the other.
+	r._items.clear()
+	r.ground_height = func(x2, _z): return 10.0 + 0.5 * maxf(x2, -5.0)
+	r.drop_in_world(oak, 1, Vector3(-7.0, 7.5, 0.0), 0, 0.0, across)
+	var lying: int = log_id_near(r, "log_oak", Vector3(-7.0, 7.5, 0.0))
+	r._roll_tick(0.05)
+	check(not r._rolling.has(lying), "the lower log lies still on the flat")
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	id = log_id_near(r, "log_oak", Vector3.ZERO)
+	roll_for(r, id, 600)
+	var front: float = float(r._items[lying]["pos"].x)
+	var back: float = float(r._items[id]["pos"].x)
+	check(r._rolling.is_empty() and front < -7.05 and back > front + 0.39, "it knocks the log it strikes on (that one to x %.2f) and stops behind it (x %.2f)" % [front, back])
+
+	# A log rolling into one pinned on the slope by a boulder pushes a few times, then gives up: neither stays awake for ever, and it never rolls through it.
+	r._items.clear()
+	r._rolling.clear()
+	r.ground_height = func(x2, _z): return 10.0 + 0.5 * x2
+	r._items[r._next_id] = {"number": r.table.number_of("stone"), "count": 1, "pos": Vector3(-9.7, 5.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.8}}
+	r._next_id += 1
+	r.drop_in_world(oak, 1, Vector3(-8.6, 5.7, 0.0), 0, 0.0, across)
+	var pinned: int = log_id_near(r, "log_oak", Vector3(-8.6, 5.7, 0.0))
+	roll_for(r, pinned, 40)
+	check(r._rolling.is_empty(), "the lower log rests against the boulder (x %.2f)" % float(r._items[pinned]["pos"].x))
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	id = log_id_near(r, "log_oak", Vector3.ZERO)
+	roll_for(r, id, 600)
+	front = float(r._items[pinned]["pos"].x)
+	back = float(r._items[id]["pos"].x)
+	check(r._rolling.is_empty() and back > front + 0.39 and front > -8.71, "the upper log stops behind it and both fall asleep (lower x %.2f, upper x %.2f)" % [front, back])
+
+	# Drag: on bare rock a log coasts further past the foot of the slope than on grass (loam).
+	var rested: Array = []
+
+	for ground in ["rock", "loam"]:
+		r._items.clear()
+		r.ground_height = func(x2, _z): return 10.0 + 0.5 * maxf(x2, -10.0)
+		r.ground_material = func(_x, _z): return ground
+		r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+		id = log_id_near(r, "log_oak", Vector3.ZERO)
+		roll_for(r, id, 1200)
+		rested.append(float(r._items[id]["pos"].x))
+		check(r._rolling.is_empty(), "on %s it comes to rest (x %.2f)" % [ground, float(rested[-1])])
+
+	check(float(rested[0]) < float(rested[1]) - 1.0 and float(rested[1]) < -10.3, "grass holds it back sooner than rock (rock x %.2f, grass x %.2f)" % [float(rested[0]), float(rested[1])])
+	r.ground_material = Callable()
+	r._finish_writer()
+
+
 func _init() -> void:
 	var w = make("user://test_wood_phase3_trees")
 	var cfg: Dictionary = w._drops["trunk"]
@@ -260,7 +379,7 @@ func _init() -> void:
 	r._roll_tick(0.05)
 	check(r._rolling.is_empty() and loose(r, "log_oak") == 2, "on flat ground it stays")
 
-	# It settles where the slope across it falls under 0.35 (here the ground flattens at x = -10).
+	# It coasts on where the slope across it falls under 0.35 (here the ground flattens at x = -10) until drag and friction stop it.
 	r._items.clear()
 	r.ground_height = func(x, _z): return 10.0 + 0.5 * maxf(x, -10.0)
 	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
@@ -270,7 +389,7 @@ func _init() -> void:
 		r._roll_tick(0.05)
 
 	var settled: float = float(r._items[settle_id]["pos"].x)
-	check(r._rolling.is_empty() and settled < -9.7 and settled > -10.3, "it stops where the ground flattens (x %.2f)" % settled)
+	check(r._rolling.is_empty() and settled < -10.3 and settled > -15.0, "it coasts a little past where the ground flattens, then the grass stops it (x %.2f)" % settled)
 
 	# Water stops it (a shore at x = -5), and the plain Log rolls like a species log.
 	r._items.clear()
@@ -344,6 +463,8 @@ func _init() -> void:
 		r._roll_tick(0.05)
 
 	check(r._rolling.is_empty() and r._items[high_id]["pos"] == Vector3(0.0, 13.0, 0.0), "but a log 3 m above the ground stays where it is, not snapped down")
+
+	roll_hits(oak, across)
 
 	# Only logs roll: a stone dropped on the same slope is not checked.
 	r.water_depth_at = Callable()
