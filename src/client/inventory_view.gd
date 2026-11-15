@@ -6601,7 +6601,19 @@ func _wait_inventory_ready() -> bool:
 
 
 func run_chest_test(client) -> void:
-	await get_tree().create_timer(14.0).timeout
+	# Wait until the body has landed (as the arrival test does): a fixed 14 s wait ended the run before the ground's collision was in on the PCs (W-27).
+	var waited: float = 0.0
+
+	while client.arrival_protect_until_msec == 0 and waited < 90.0:
+		await get_tree().create_timer(0.5).timeout
+		waited += 0.5
+
+	if client.arrival_protect_until_msec == 0:
+		print("Chest test: the player never landed on the ground in 90 s")
+		_finish_early(client)
+		return
+
+	print("Chest test: landed after %.1f s" % waited)
 
 	if not await _wait_inventory_ready():
 		print("Chest test: the pack never arrived")
