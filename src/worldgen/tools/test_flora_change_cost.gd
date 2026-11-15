@@ -68,7 +68,7 @@ func _init() -> void:
 	var felled: int = int(flora.items_of(chunk)["ids"][0])
 	check(flora.cut(chunk, felled), "a tree of the chunk is felled")
 
-	# The change, as terrain_server._flora_changed handles it: forget the packed copy, then trees only and full again.
+	# The change, as terrain_server._flora_changed handles it: forget the packed copy, re-pack the kept form, then full for the players near.
 	planted[0] = true
 	t0 = Time.get_ticks_usec()
 	flora.invalidate(chunk)
