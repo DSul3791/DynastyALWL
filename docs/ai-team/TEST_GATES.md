@@ -1,7 +1,14 @@
 # Validation gates and trusted testing environment
 **Status: IN FORCE (activated by Dave, 12 Nov 2026; `INSTALL_RECORD.md`). Drafted as PROPOSED.** Implement mechanical enforcement, not prompt-only promises.
 
-## dev playtest gate (each nightly commit)
+## Review and evidence by risk
+Author self-review is followed by non-author review before integration. Review depth follows the actual diff and consequences: a typo/link correction needs a light documentation check; changes to authority, creative policy or safety boundaries need source/impact review and applicable Dave authorization. Changed code/data needs the relevant checks below. A documentation-only change does not require a new Godot run or create new gameplay-playability evidence; static/package/link checks and non-author review apply. Changes to executable tools still require checks appropriate to their behavior.
+
+Record the exact reviewed head and relevant base. Subsequent edits require review of the additional diff and reconsideration of affected tests. When integration changes the candidate, review the merge diff and reuse prior test results only where the same behavior and environment remain valid; rerun affected checks when that cannot be established. A green result on another SHA is evidence with a scope, not a blanket PASS. Do not claim an independent review happened when only author self-review ran.
+
+Required critical failures hold integration. A known noncritical baseline defect or unavailable optional check needs a bounded explanation and reviewer disposition; do not silently ignore it or demand unrelated repairs. Deferred broader checks retain an owner and a specific integration/release checkpoint, and remain visible until discharged.
+
+## dev playtest gate (runtime changes and nightly playable candidates)
 1. Agent commits are recorded; dev merge result is an immutable **exact SHA**.
 2. Relevant automated checks pass on the proper machine. Full suite is not mandatory for dev but critical targeted checks cannot be skipped without labeling dev 'untested'.
 3. Dedicated local Godot 4.7.2 voxel-tools build loads correct scene; PC-based startup/world load smoke test passes without stealing resources from Dave's active playtest.
@@ -30,4 +37,4 @@ All required CI on exact proposed merge SHA green; required suite including corr
 - At handoff, final main was **not** fully retested: reported 155 passes on final commit vs 342 on earlier fully tested checkpoint. Treat as historical reported state, not current passing gate.
 
 ## Evidence format
-Task ID, base SHA, head SHA, final merged SHA (if any), runner identity, machine, tool/Godot version, test plan, test counts including skips, output location, screenshots/visual review if applicable, reviewer, decision on safe promotion. For a scoped dev plan also: the selector's original selection and `why`, tests deferred, residual risk, and where the deferred run is recorded. A claim without output/commit reference is NOT a passed gate.
+Task ID, base SHA, head SHA, final merged SHA (if any), runner identity, machine, tool/Godot version, test plan, test counts including skips, output location, screenshots/visual review if applicable, reviewer, decision on safe promotion. For a scoped dev plan also: the selector's original selection and `why`, tests deferred, residual risk, and where the deferred run is recorded. A claim without output/commit reference is NOT a passed gate. Report implementation, review, automated verification, dev integration and player validation as distinct states. Visuals, sound and feel remain unverified without appropriate observation; static review or a headless smoke cannot certify them.

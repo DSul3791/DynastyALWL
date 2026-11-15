@@ -1,3 +1,5 @@
+> **CURRENT DISPOSITION — 15 Nov 2026:** The numbered list below preserves the 11 Nov investigation. #1–3, #7, #9–10 are historical/resolved; DOC_MAP was refreshed 13 Nov, dev exists, the general freeze is lifted and workers are task-based. #4 routes to current `TEST_GATES.md` and the actual assigned lane; #8 is scoped by `DECISION_AUTHORITY.md`. Historical QA surfaces (#5) and unrecovered decision sources (#6) still require verification if a task depends on them. Do not infer that an inaccessible historical QA page is mandatory for ordinary work. Current operating reconciliation and remaining external limitations: `audits/2026-11-15_operating_rules_reconciliation.md`.
+
 # Identified legacy conflicts — verify before editing
 **Status: PARTLY RESOLVED (12 Nov 2026).** Resolved: #1, #2, #9, #10 (install, `INSTALL_RECORD.md`); #3 banner only (the DOC_MAP file list is still STALE), #2's deletion half and #7 (Dave's 12 Nov rulings, `DECISION_AUTHORITY.md`). Open: #4, #5, #6, #8. Original text below kept for history (source reads from the default branch on 11 Nov 2026).
 

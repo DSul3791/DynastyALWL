@@ -1,5 +1,5 @@
 # AI Team Operating System v1.0 — install record
-**Status: INSTALLED in repo (11 Nov 2026, on Dave's written instruction "First install and validate our new AI Team Operating System"). IN FORCE; the general handoff freeze was lifted by Dave on 12 Nov 2026** (rulings in `DECISION_AUTHORITY.md`). The policy files' status lines now say IN FORCE; the package copies under `package/` keep their original STAGING text for provenance. This record says what is in force.
+**Status: INSTALLED in repo (11 Nov 2026, on Dave's written instruction "First install and validate our new AI Team Operating System"). IN FORCE; the general handoff freeze was lifted by Dave on 12 Nov 2026** (rulings in `DECISION_AUTHORITY.md`). The policy files are IN FORCE. The original distribution remains historical; the reusable project-instructions/bootstrap templates under `package/cowork/` were refreshed on Dave's 15 Nov operating-rules instruction. See `audits/2026-11-15_operating_rules_reconciliation.md` for that source, scope and validation. This repo update does not prove live project settings or private copies were updated.
 
 ## Dave's instructions (verbatim source: project thread "Install AI Team Operating System", 11 Nov 2026 17:40 UTC)
 - Install and validate the AI Team Operating System from the configuration package.

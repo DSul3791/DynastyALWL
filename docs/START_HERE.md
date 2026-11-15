@@ -1,44 +1,29 @@
-# Start here (Jamie, updated 5 Nov 2026; roster and QA page updated 11 Nov 2026 for the handoff)
-
-One page for a new agent or a new thread of Dave's. Everything else is found through `docs/DOC_MAP.md`.
+# Start here — current engineering entry point
+**Updated 15 Nov 2026 on Dave's operating-rules instruction.** Historical rosters and superseded rhythms remain in Git history and dated handoffs, not this active checklist.
 
 ## The game
-*Dynasty: a life well lived*: a rough-medieval, multiplayer survival and town-building world with a "Sims vibe" (heirs, a dynasty that outlives one character). Godot 4.7.2, GDScript, Voxel Tools, built for weak hardware (1050-class GPU, 8 GB, 30 fps). Repo `C:\GodotProjects\DynastyALWL`, owner Dave (wants SHORT reports). Design: `DESIGN_IDEAS.md`, `DESIGN_PRINCIPLES.md`; short picture: `BIG_PICTURE.md`.
+*Dynasty: a life well lived*: rough-medieval multiplayer survival and town building, with families/heirs and a dynasty beyond one character. Godot 4.7.2, GDScript, Voxel Tools; low-tier target 1050-class GPU, 8 GB RAM, 30 fps. Dave owns creative direction and wants concise reports. His checkout `C:\GodotProjects\DynastyALWL` is protected from worker experiments.
 
-## Who does what (roster on 11 Nov 2026, at the handoff)
+## Read only what the task needs
+1. Fetch current `origin/dev`, cut a scoped task branch from it and read `CLAUDE.md` there. PRs target `dev`; `main` requires the full gate and Dave's explicit approval.
+2. Policy: `docs/ai-team/CONSTITUTION.md`. Authority/delegation: `DECISION_AUTHORITY.md`; procedures: `WORKFLOW.md`, `TEST_GATES.md`, `DOCUMENT_AUTHORITY.md` in the same directory. The general handoff freeze is lifted; specific holds and catalog controls still apply within their recorded scope.
+3. Current topic authority: `docs/DOC_MAP.md`, relevant approved design, current mission `STATE.md` and decision record. Distinguish intended design, implemented code/data and actual test/player evidence. Do not use an old index or handoff as the latest status.
+4. Engineering: `docs/PONYTAIL_RULES.md`, relevant `docs/knowledge/` entry, callers/contracts and tests. Reuse existing systems and build the smallest complete change. Preserve approved Foundation/Ceiling names, realism, looks and sound.
 
-**The team is being restructured (Dave, 11 Nov 2026).** The handoff index is `/mnt/project-files/HANDOFF.md` in the project files: one section per agent, and each agent's full file is in `/mnt/project-files/handoffs/<Name>_handoff_11Nov.md`. The roster below is the one that is handing off, so read the handoff files before you trust it.
+## Assignment, autonomy and continuity
+The coordinator prioritizes and assigns bounded tasks; permanent responsibilities and temporary workers are described in `docs/ai-team/ROLE_CATALOG.md`. Do not infer active ownership or machine access from a historical personal name. Record branch, current file/section owner, reviewer and runner in the task state. One owner per shared file unless the mission explicitly defines reviewed section boundaries.
 
-| Agent | Owns |
-|---|---|
-| Coordinator | speaks for Dave, staffs jobs, decides reversible choices; never writes code itself |
-| Morgan | design documents and the QA page (questions for Dave) |
-| Steve | game code and sub-system rules (server_items, building, fire, warmth, lanterns, mining) |
-| Sonny | terrain, water, geology and ore bodies, bake verification |
-| Jamie | item, recipe and blueprint data, names, id numbers, the encyclopedia, documentation (this page, `DOC_MAP.md`) |
-| Kathleen | looks: models, icons, the look rig, art |
-| Tyler | merges PRs (only on green CI plus a David4 PASS on the exact head) |
-| David4 | the test gate on a gate PC (fastgate.sh); data PRs always gate there |
-| Dino | Remote Control on Dave's PC: bakes, shots, world probes |
-| MikeW | flora and fauna placement (offline since 8 Nov 2026) |
+Standing priority default (Dave, 4 Nov 2026): terrain/water; freezes/lag; testing; first-hour bugs; body/movement; flora/fauna; art direction; audio; tuning; guides/docs; parked new ideas. Dave's playtest bugs go immediately after terrain. Staff top-down rather than keeping workers in fixed lanes; newer explicit priorities and assigned missions govern within their scope.
 
-## Rules
-- **Branches (Dave, 11 Nov 2026; supersedes the 2 Nov no-daily-branch rule, kept as history in `docs/ai-team/KNOWN_CONFLICTS.md` #1):** task branches (`claude/<task>`) cut from `dev` -> reviewed, fully committed `dev` for Dave's nightly playtest (Godot F6) -> protected, gated `main` by PR only. Never push or merge to `main` yourself; never merge your own PR. Never delete the `qa` branch (the old QA page, kept as a record). Process: `docs/ai-team/WORKFLOW.md`, gates: `docs/ai-team/TEST_GATES.md`.
-- **AI Team Operating System v1.0 (installed 11 Nov 2026):** Claude Code entry `CLAUDE.md`; policy `docs/ai-team/CONSTITUTION.md`; install record and what is still unverified: `docs/ai-team/INSTALL_RECORD.md`. The general handoff freeze was **lifted by Dave on 12 Nov 2026**: normal development on `dev` is authorized under the established workflow; Dave still approves significant design, architectural, destructive, security-sensitive and other protected decisions (`docs/ai-team/DECISION_AUTHORITY.md`). The roster and daily rhythm below are the handing-off team, kept for history.
-- **Item catalog FROZEN (Dave, 11 Nov 2026):** no discretionary additions, removals, renames or recipe redesigns in `data/items/`; implement, validate and report problems only. Ruling: `docs/ai-team/DECISION_AUTHORITY.md`.
-- **Assignments (Dave, 12 Nov 2026; supersedes the 2 Nov rhythm, steps 2-4, and "find three more" below):** the coordinator controls prioritization and assignment. Workers complete their assigned work, document results, and request their next assignment. They do not independently create unrelated work.
-- *SUPERSEDED (history)* Daily rhythm (Dave, 2 Nov 2026): (1) start with an efficiency audit of yesterday's work and decide what to improve in workflow; (2) the moderator hands each agent its first 3 tasks; (3) each agent makes its new branch and carries on; (4) when the 3 are done or blocked, the agent finds 3 more in its own purview and continues, until told otherwise.
-- Blocked or stuck (Dave, 2 Nov 2026): note it in your handoff, put a card on the QA page (Morgan keeps it; its link is in `/mnt/project-files/HANDOFF.md`, and the list is `design/decisions_pending.md` in the project files), and move straight on to your next assigned job (no next job: ask the coordinator for one; the old "find three more" is superseded, 12 Nov 2026).
-- Priority order (Dave approved 4 Nov 2026): 1 terrain and water, 2 freezes and lag, 3 testing, 4 first-hour bugs, 5 body and movement feel, 6 flora and fauna, 7 Art Direction pass, 8 audio, 9 tuning, 10 guides and docs, 11 new ideas (parked). Bugs Dave finds in play go right after terrain. The ranked list with reasons and the live staffing table are at the top of `/mnt/project-files/BACKLOG.md` (owner: Jamie).
-- Staffing (Dave, 4 Nov 2026): work is staffed top-down by priority, not by lane. One agent per job; the coordinator assigns the next open job at the highest rank (12 Nov 2026). Leftovers go to `/mnt/project-files/backlog/<name>.md`.
-- NO cloud testing (Dave, 5 Nov 2026): no cloud renders, headless runs or test runs; they use up his tokens. The only testing allowed is on Dave's PC, and only while he is not play testing.
-- Knowledge library (Dave, 6 Nov 2026): before you code a system or fix a bug, read its topic doc in `docs/knowledge/` (index: `docs/knowledge/README.md`), then ask Jamie for fresh web research if it is missing or old. Add your lesson to the doc when you finish.
-- LAW (Dave, 5 Nov 2026 18:48): absolutely no tests and no bakes in the cloud. All heavy work (tests, bakes, settles, builds) goes to Dave's PC through the coordinator.
-- Questions for Dave (Dave, 5 Nov 2026): every open question or input he needs is a card on the QA page (Morgan keeps it; link in `/mnt/project-files/HANDOFF.md`), one card per question.
-- Max 3 heavy Godot jobs at once on this PC: run them through `tools/godot_slot.sh` (`run_tests.sh`/`run_one_test.sh` do it themselves). Never start a Godot run without a timeout (hung headless scripts have held all slots); never kill Godot processes blindly (one may be Dave's editor).
-- Deleting (decision 61, 11 Nov 2026; Dave's explicit clarification 12 Nov 2026 in `RULES.md`): **code that is replaced is deleted**, with no flags and no dead paths left behind; this never covers unrelated assets, user work, historical documents or anything the game still needs (`tools/merge_check.py` checks it). **Documents are archived, never deleted** (`docs/archive/YYYY-MM/`, `git mv`). Other unused files on disk are moved aside to `proposed_removals/`, not deleted.
-- Dave decides design; reversible choices are decided and logged in `MODERATOR_QA_LOG.md`. Questions for Dave go on the QA page (Morgan; link in `/mnt/project-files/HANDOFF.md`): pickable answers, one item per card. Never wait for Dave: ask the coordinator for your next assignment.
-- Rules in full: `RULES.md`, `docs/PONYTAIL_RULES.md` (engineering method for all code, Ponytail v5.3.3), `CONTROLS.md` (update on any input change). Wire format: `PROTOCOL.md`.
+Complete assigned work autonomously. Recover settled decisions before asking questions; make and record meaningful provisional choices only within applicable delegation. A specific settled instruction beats an assumption. Report unrelated findings for prioritization, finish scope and request the next assignment. Hold only actions genuinely beyond authority or missing required evidence; continue unaffected work. Checkpoint at meaningful milestones and before handoff, not every command.
+
+## Testing and work protection
+- Follow the risk-based dev gate in `docs/ai-team/TEST_GATES.md`; relevant checks and non-author review precede integration. Full regression is deferred only with recorded rationale, owner and checkpoint; it is required before `main`.
+- No cloud Godot/headless runs, bakes, renders or heavy jobs. Permitted static Python/lint/CI checks may run in the cloud. Godot testing uses the designated authorized PC lane with the correct build, timeouts and available resources; do not disturb Dave's active F6 session.
+- At most 3 heavy Godot jobs on the shared PC, through `tools/godot_slot.sh` (test runners do this). Never kill Godot blindly. Verify current runner paths and water-record prerequisites before testing/baking; David4 must not bake without the required record.
+- For docs-only changes use static/link/package checks and proportionate non-author review; do not claim new gameplay verification. Mark missing checks NOT RUN. A runtime build without the required smoke is `DEV COMMITTED — PLAYABILITY UNVERIFIED`.
+- Protect stable IDs, supported saves, user work and active checkout. Decision 61 and removal details are in `RULES.md`: delete genuinely replaced code, archive retired documents, move other proposed removals aside. Do not delete the historical `qa` branch or run unauthorized backups.
+- Use the established approved backup arrangement without repeated permission; scope/retention changes require applicable approval and backup verification remains necessary (`WORKFLOW.md`).
 
 ## Two Godot builds (do not mix up)
 | Build | Path | Use |
@@ -54,26 +39,18 @@ GODOT_EXE=/c/GodotInstaller/Godot_v4.7.2-stable_win64_console.exe tools/run_one_
 python3 tools/tests_for_diff.py origin/dev HEAD > /tmp/plan.json          # the change's tests; read its "why" first (docs/ai-team/TEST_GATES.md, risk-based selection). --full (or tools/release_check.sh) only for the deferred broad run and before main
 GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json   # runs the plan
 ```
-Tests live in `src/worldgen/tools/` and `src/water2/`. Latest full-run result: `docs/TYLER_NEXT_TASKS.md` (Tyler's final report); the Phase 2 order is `docs/handoff/PHASE2_RUNBOOK.md`.
+Tests live in `src/worldgen/tools/` and `src/water2/`. Use the current mission verification report and exact tested SHA for results; old role handoffs and Phase 2 runbooks describe historical checkpoints.
 
 ## Run the game
 From the project folder with the voxel build: `godot --path . -- --role=play` (play is the default role in `scenes/launcher.gd`; starts a server and joins it; pressing Play in the editor does the same). Water: the Dynasty water (`src/water2`) is the only water; the old hub and its `--water-old` switch were deleted on 9 Nov. The body is Dave's `Dynasty_Base_Male.glb`, the only one since 8 Nov (the old-body switches are gone; `docs/DYNASTY_BODY.md`). In game: K = photo camera, `/` = inspection mode (`CONTROLS.md`). Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md`.
 
-## Where everything is (for a new thread of Dave's)
-| I want | Go to |
+
+## Find current sources
+| Need | Source |
 |---|---|
-| every document, its owner and verdict | `docs/DOC_MAP.md` |
-| who does what now, and each agent's state and next steps | `docs/handoff/SCOPE_<NAME>.md`, `HANDOFF_<NAME>.md`; backlogs table in `DOC_MAP.md` |
-| what was decided and why (roles, rulings) | `MODERATOR_QA_LOG.md` |
-| what was left to finish at handoff, and the Phase 2 order | `docs/CLOSING_PLAN.md`, `docs/handoff/PHASE2_RUNBOOK.md` |
-| unmerged old branches and what to do with each | `docs/OLD_BRANCH_REVIEW.md` |
-| the findings from playing it | `docs/handoff/FINDINGS_REPORT.md`, `PLAYTHROUGH_STEP_STATUS.md` |
-| design, principles, rejected ideas | `DESIGN_IDEAS.md`, `DESIGN_PRINCIPLES.md`, `DESIGN_REJECTED.md` |
-| items, recipes, economy, carry weights | `docs/ITEMS_HANDOVER.md`, `docs/CARRY_WEIGHTS.md`, `docs/ECONOMY_FIRST_DAY.md` (stones sell 5 for 1 copper through `sell_lot`), `data/items/` |
-| death rule | `data/items/death.json` (respawn at the bed until character level 10, then real death) |
-| water, terrain | `docs/TERRAIN_WATER_BACKLOG.md`, `docs/DYNASTY_WATER_HISTORY.md` |
-| sound | `docs/SOUND_MAP.md`, `docs/handoff/JASON_NEXT_TASKS.md` |
-| looks, the player body | `docs/DYNASTY_BODY.md`, `docs/KATHLEEN_NEXT_TASKS.md`, `docs/handoff/HANDOFF_KATHREEN.md`, `art/CRITIQUES/` |
-| controls, wire format, world files | `CONTROLS.md`, `PROTOCOL.md`, `WORLD_FORMAT_SPEC.md` |
-| code and data | `src/`, `data/` (JSON tables), `tools/` (scripts); Dave's questions on the QA page (link in `/mnt/project-files/HANDOFF.md`; the old `qa` branch is a record) |
-| old material | `docs/archive/YYYY-MM/` (nothing is deleted), `docs/mirror/` (frozen 22 Oct copy that tools cite) |
+| Topic design and approved item/building mechanics | `docs/DOC_MAP.md` -> current topic spec |
+| Actual implementation | Current `src/`, `data/`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md` |
+| Task progress, delegated assumptions, next steps and evidence | Current task/mission checkpoint under `docs/ai-team/missions/` or its brief's recorded location |
+| Role responsibilities and staffing defaults | `docs/ai-team/ROLE_CATALOG.md`; actual ownership in task state |
+| Principles, rejected ideas, performance | `DESIGN_PRINCIPLES.md`, `DESIGN_REJECTED.md`, `ARCHITECTURE_BUDGET.md` (resolve topic decisions through DOC_MAP) |
+| Historical context | Dated handoffs, `docs/archive/`, Git history; not new approval or current test evidence |
