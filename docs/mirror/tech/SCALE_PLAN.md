@@ -161,7 +161,7 @@ This table is the contract for section 9: every row's S column gets the validati
 | System | Today | File |
 |---|---|---|
 | RPC dispatch, input handlers, all gameplay ticks (items, vitals, NPCs, animals, trails, weather, clock) | MAIN thread, one frame loop | terrain_server._process, server_items.tick |
-| Block generation | worker Threads: processor count - 1 (11 on Dave's 12-core PC, --threads=N) | terrain_server _worker_loop, _idle_workers |
+| Block generation | worker Threads: usable CPUs - 1 (11 on Dave's 12-core PC; a container's CPU quota or CPU set caps it, cpu_budget.gd; --threads=N) | terrain_server _worker_loop, _idle_workers |
 | Block delivery | main thread batches (MAX_BATCH_BYTES) plus a direct TCP block line with its OWN thread and worker writes (already off the main thread) | block_link_server.gd |
 | Flora chunks | made on the block workers (server_flora has a Mutex); client side flora_view uses WorkerThreadPool for plans and models | server_flora.gd, flora_view.gd |
 | Water simulation | ONE water thread (water_hub, up to MAX_ACTIVE 4 live tiles stepped in it); results polled on the MAIN thread by _poll_water (250 ms per frame measured by Willy) | water_hub.gd, water_live.gd, terrain_server._poll_water |
