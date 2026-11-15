@@ -10694,7 +10694,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		amount = clampi(int(floor(minf(room, cart_room) / each + 0.0001)), 0, amount)
 
 		if amount == 0:
-			_say(peer, "It is too heavy for the chest" if cart_room >= room else "The %s cannot carry more." % _carts.noun_for(id))
+			_say(peer, "It is too heavy for the chest" if cart_room > maxf(room, 0.0) else "The %s cannot carry more." % _carts.noun_for(id))
 			_reject(peer, 2)
 
 	var left: int = 0

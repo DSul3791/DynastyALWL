@@ -7,8 +7,9 @@ extends SceneTree
 #   2. a player builds both from their blueprints with a Stone hammer;
 #   3. cargo: the Handcart takes shoulder logs and plain Logs and stops at 120 kg; the sled takes logs, blocks and firewood only, up to its payload; the wagon takes anything;
 #   4. crates: a sled has no bed for one, the wagon carries two, and each says its own name;
-#   5. surface (W-16): the sled works on any ground, slower on bare rock and gravel, faster on snow, ice and (in rain) wet grass; it keeps pace on snow where the
-#      Handcart cannot, and loses the handle on rock when walked at a pace it holds on snow.
+#   5. surface (W-16): the sled works on any ground, slower on bare rock, gravel and a laid path, faster on snow, ice and (in rain) wet grass; it keeps pace on snow where the
+#      Handcart cannot, and loses the handle on rock when walked at a pace it holds on snow;
+#   6. a full vehicle says so by name; a Handcart holding 150 kg (an old save) takes nothing more, still gives, pulls and comes apart; a sled is built with logs from the shoulder.
 #   godot --headless --path . --script res://src/worldgen/tools/test_wood_phase5.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -141,7 +142,9 @@ func _init() -> void:
 	data_checks()
 	join(Vector3(3.0, 10.0, 5.0))
 	build_checks()
+	shoulder_build_checks()
 	cargo_checks()
+	old_save_checks()
 	crate_checks()
 	surface_checks()
 	print("test_wood_phase5: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
@@ -222,6 +225,26 @@ func build_checks() -> void:
 	check(inv.count_of(n("lumber")) == 0 and inv.count_of(n("wooden_cart_wheel")) == 0 and inv.count_of(n("axle")) == 0 and inv.count_of(n("wooden_pin")) == 0, "its planks, wheels, axles and pins were used")
 
 
+# A sled is built with the two logs on the shoulder (the pack's log group counts them as its Logs).
+func shoulder_build_checks() -> void:
+	var inv = items.inventory_of(1)
+	items.give(1, n("log_oak"), 2)
+	inv.add(n("stick"), 6)
+	inv.add(n("twine"), 4)
+	check(items.shoulder_count(1) == 2, "two oak logs are carried on the shoulder")
+	var before: Array = of_kind("small_log_sled")
+	said.erase(1)
+	act(Net.ACT_PLACE_BLUEPRINT, 356, 0, 0, Vector3(1.0, 10.0, 3.0))
+	var after: Array = of_kind("small_log_sled").filter(func(id): return not before.has(id))
+	var made: int = after[0] if after.size() == 1 else 0
+
+	if made != 0 and items._items[made]["struct"].has("site"):
+		act(Net.ACT_USE_STRUCT, made)
+
+	check(made != 0 and not items._items[made]["struct"].has("site") and items.shoulder_count(1) == 0 and inv.count_of(n("log_oak")) == 0, "a sled is placed and built with two shoulder logs as its Logs (%s)" % str(said.get(1, "")))
+	check(inv.count_of(n("stick")) == 0 and inv.count_of(n("twine")) == 0, "with its sticks and twine")
+
+
 # --- 3. Cargo and payload ---
 func cargo_checks() -> void:
 	clear_pack()
@@ -238,7 +261,7 @@ func cargo_checks() -> void:
 
 	check(in_box(cart, "log_oak") == 5, "five hardwood logs (110 kg) fit the 120 kg Handcart")
 	put(cart, "log_oak", 1)
-	check(in_box(cart, "log_oak") == 5 and items.shoulder_of(1) == "log_oak", "a sixth would pass 120 kg: it stays on the shoulder (the old 300 kg took it)")
+	check(in_box(cart, "log_oak") == 5 and items.shoulder_of(1) == "log_oak" and str(said.get(1, "")) == "The handcart cannot carry more.", "a sixth would pass 120 kg: it stays on the shoulder (the old 300 kg took it) and the Handcart says so (%s)" % str(said.get(1, "")))
 	items.lay_down_shoulder(1)
 	put(cart, "firewood", 13)
 	check(in_box(cart, "firewood") == 13 and items._carts.room_kg(cart) < 0.5 and items._carts.payload_kg(items._items[cart]) == 120.0, "firewood fills the last kilograms: %.2f kg of 120 left" % items._carts.room_kg(cart))
@@ -275,6 +298,7 @@ func cargo_checks() -> void:
 
 	put(sled, "log_oak", 1)
 	check(in_box(sled, "log_oak") == 9 and items.shoulder_of(1) == "log_oak" and items._carts.payload_kg(items._items[sled]) == 200.0, "nine hardwood logs (198 kg) load on the sled, a tenth passes its 200 kg and stays on the shoulder")
+	check(str(said.get(1, "")) == "The sled cannot carry more.", "a full sled says 'The sled cannot carry more.' (%s)" % str(said.get(1, "")))
 	clear_pack()
 
 	var wagon: int = place("small_wagon", 50.0, 30.0)
@@ -285,7 +309,7 @@ func cargo_checks() -> void:
 	empty(wagon)
 	box(wagon).add(n("stone"), 300)
 	put(wagon, "stone", 1)
-	check(in_box(wagon, "stone") == 300 and items.inventory_of(1).count_of(n("stone")) == 1 and items._carts.room_kg(wagon) < 0.01, "300 kg of stone fill the wagon; one more stays in the pack")
+	check(in_box(wagon, "stone") == 300 and items.inventory_of(1).count_of(n("stone")) == 1 and items._carts.room_kg(wagon) < 0.01 and str(said.get(1, "")) == "The wagon cannot carry more.", "300 kg of stone fill the wagon; one more stays in the pack, and the wagon says so (%s)" % str(said.get(1, "")))
 	clear_pack()
 
 
@@ -313,6 +337,31 @@ func crate_checks() -> void:
 	said.erase(1)
 	act(Net.ACT_PICKUP, items._carts.riders_of(wagon)[0])
 	check(str(said.get(1, "")) == "Set it down off the wagon first.", "a crate on the wagon must be set down before it is taken apart (%s)" % str(said.get(1, "")))
+	box(wagon).add(n("stone"), 230)   # 70 kg of crates and 230 kg of stone: the wagon is full, the crate on it is not
+	put(items._carts.riders_of(wagon)[0], "stone", 1)
+	check(str(said.get(1, "")) == "The wagon cannot carry more." and items.inventory_of(1).count_of(n("stone")) == 1, "a crate riding on the full wagon refuses more with the wagon's message, not the chest's (%s)" % str(said.get(1, "")))
+
+
+# --- A Handcart saved before the 120 kg limit, holding 150 kg ---
+func old_save_checks() -> void:
+	clear_pack()
+	items.report_position(1, Vector3(198.5, 10.0, 30.0))
+	var cart: int = place("handcart", 200.0, 30.0)
+	box(cart).add(n("stone"), 150)
+	put(cart, "stone", 1)
+	check(in_box(cart, "stone") == 150 and items.inventory_of(1).count_of(n("stone")) == 1 and items._carts.room_kg(cart) == 0.0 and str(said.get(1, "")) == "The handcart cannot carry more.", "a Handcart holding 150 kg refuses a put and says so (%s)" % str(said.get(1, "")))
+	act(Net.ACT_CHEST_TAKE, box(cart).numbers.find(n("stone")), cart, 1)
+	check(in_box(cart, "stone") == 149 and items.inventory_of(1).count_of(n("stone")) == 2, "but a take still works")
+	check(pace_on(cart, "loam") > 0, "grabbing it gives a pace above 0 (%.1f m/s)" % [float(int(pulls.get(1, [0, 0])[1])) / 10.0])
+	items._carts.release(1, "")
+	clear_pack()
+	said.erase(1)
+	act(Net.ACT_PICKUP, cart)
+	check(items._items.has(cart) and in_box(cart, "stone") == 149 and str(said.get(1, "")).begins_with("Empty the handcart first"), "taking it down with a load the player cannot carry does nothing, as before (%s)" % str(said.get(1, "")))
+	box(cart).remove(n("stone"), 129)
+	act(Net.ACT_PICKUP, cart)
+	check(not items._items.has(cart) and items.inventory_of(1).count_of(n("stone")) == 20 and items.inventory_of(1).count_of(n("axle")) == 1, "with 20 kg left it comes apart: the cargo and every part are in the pack")
+	clear_pack()
 
 
 # --- 5. Surface (W-16) ---
@@ -320,6 +369,7 @@ func crate_checks() -> void:
 func pace_on(id: int, material: String, rain_v: float = 0.0) -> int:
 	mat[0] = material
 	rain[0] = rain_v
+	items._on_path_cache.erase(1)   # the server looks a path up once a second of real time
 	items._carts.release(1, "")
 	items.report_position(1, (items._items[id]["pos"] as Vector3) + Vector3(0.0, 0.0, -1.7))
 	act(Net.ACT_CART, id, Carts.OP_GRAB)
@@ -354,6 +404,15 @@ func surface_checks() -> void:
 	pace_on(sled, "bare_rock")
 	walk(here + Vector3(0.0, 0.0, -16.7), 0.6)
 	check(int(items._carts.puller_of.get(1, 0)) == 0 and str(said.get(1, "")) == "You lose hold of the sled.", "but at 3 m/s on bare rock the handle slips (%s)" % str(said.get(1, "")))
+
+	# A laid path (a path_patch within path_speed.json range_m of the sled) slows the sled, not the Handcart.
+	var sled2: int = place("small_log_sled", 300.0, 30.0)
+	var hand2: int = place("handcart", 310.0, 30.0)
+	var dry_sled: int = pace_on(sled2, "loam")
+	var dry_hand: int = pace_on(hand2, "loam")
+	place("path_patch", 300.0, 30.0)
+	place("path_patch", 310.0, 30.0)
+	check(pace_on(sled2, "loam") < dry_sled and pace_on(sled2, "loam") > 0 and pace_on(hand2, "loam") == dry_hand, "a laid path slows the sled (%.1f against %.1f m/s) and not the Handcart" % [float(pace_on(sled2, "loam")) / 10.0, float(dry_sled) / 10.0])
 
 
 # The puller walks from where they are to `to` in 0.2 s reports of `step` metres; the clock moves with them.

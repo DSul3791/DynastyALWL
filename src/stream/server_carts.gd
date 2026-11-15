@@ -351,6 +351,10 @@ func _move(id: int, cart: Dictionary, to: Vector3, yaw_deg: float, riders: Array
 # Where a crate at spot `spot` rides on the cart (vehicle crate_spots: right, up, forward in the cart's frame).
 func spot_pos(cart: Dictionary, spot: int) -> Vector3:
 	var spots: Array = vehicle_of(cart).get("crate_spots", [[0.0, 0.55, 0.0]])
+
+	if spots.is_empty():   # a sled has no bed: nothing rides, so nothing asks, but never index an empty list
+		return cart["pos"]
+
 	var local: Array = spots[clampi(spot, 0, spots.size() - 1)]
 	return cart["pos"] + Basis(Vector3.UP, deg_to_rad(float(cart["struct"]["yaw"]))) * Vector3(float(local[0]), float(local[1]), float(local[2]))
 
@@ -368,10 +372,13 @@ func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 		var wet: Dictionary = v.get("wet", {})
 		rough = float(v.get("rough", {}).get(ground, 1.0))
 
-		# shortcut (W-16): the surface is the terrain material under the cart, so a built road or path (a laid patch, not a material) does not slow a sled, and
-		# "wet grass" is any rain at all over a soft grass soil (no per-cell wetness, and under a roof it still reads as rain); revisit with a wetness or road query.
+		# shortcut (W-16): "wet grass" is any rain at all over a soft grass soil (no per-cell wetness, and under a roof it still reads as rain); revisit with a wetness query.
 		if not wet.is_empty() and host.rain_now.is_valid() and float(host.rain_now.call()) >= float(wet.get("rain", 0.2)):
 			rough = float(wet.get("rough", {}).get(ground, rough))
+
+	# A laid path or road (a path_patch within path_speed.json range_m of the puller, looked up at most once a second) slows a vehicle with a "path" multiplier: the sled's runners drag on it.
+	if v.has("path") and host._on_path(int(rec["peer"]), cart["pos"]):
+		rough *= float(v["path"])
 
 	var cap: float = float(v.get("speed_mps", 3.2)) * (1.0 - float(v.get("load_slow", 0.4)) * float(rec["share"])) * (1.0 - float(v.get("slope_slow", 0.5)) * clampf(grade / maxf(float(v.get("slope_max", 0.36)), 0.01), 0.0, 1.0)) * rough
 	rec["cap"] = maxf(cap, 0.3)
