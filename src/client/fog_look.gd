@@ -21,7 +21,7 @@ const DISC_DEG := 1.6              # its soft radius in degrees
 
 # --- per graphics preset (Dave 14 Nov 2026: "full on ultra setting but off on lowest setting") ---
 # Low, Medium, High, Ultra.
-#  weather: the weather fog (valley mist, sea fog, fog banks) is drawn. The clear-air haze and rain murk are always drawn (free).
+#  weather: the weather fog (valley mist, sea fog, fog banks) is drawn (Low: the depth fade only, LOW_WEATHER_FOG). The clear-air haze and rain murk are always drawn (free).
 #  sky: the fog hides the sky and dims the sun. volumetric: drifting fog with light halos (FogVolume), its froxel size and reach.
 const PRESETS := [
 	{"name": "Low", "weather": false, "sky": false, "volumetric": false, "vol_size": 0, "vol_depth": 0, "vol_length_m": 0.0},
@@ -29,9 +29,9 @@ const PRESETS := [
 	{"name": "High", "weather": true, "sky": true, "volumetric": true, "vol_size": 48, "vol_depth": 48, "vol_length_m": 48.0},
 	{"name": "Ultra", "weather": true, "sky": true, "volumetric": true, "vol_size": 64, "vol_depth": 96, "vol_length_m": 64.0},
 ]
-# The lowest preset, until Dave says otherwise: "off" (his words: no weather fog drawn at all) or "distance" (the cheap distance
-# fade only: no sky hiding, no layer seen from above), so a Low player does not see through fog that hides things from everyone else.
-const LOW_WEATHER_FOG := "off"
+# The lowest preset: "distance" (Dave 15 Nov 2026: "yes low gets a cheap distance fade"): the depth fade only, no sky hiding, no layer
+# seen from above, no volumetric body, so a Low player does not see through fog that hides things from everyone else. "off" draws none.
+const LOW_WEATHER_FOG := "distance"
 
 
 static func preset(quality: int) -> Dictionary:
