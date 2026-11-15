@@ -228,7 +228,9 @@ func build_checks() -> void:
 # A sled is built with the two logs on the shoulder (the pack's log group counts them as its Logs).
 func shoulder_build_checks() -> void:
 	var inv = items.inventory_of(1)
-	items.give(1, n("log_oak"), 2)
+	# One log at a time, as the game picks them up (_give_shoulder takes one a call and lays any more at the feet; the two-log carry is test_wood_phase3).
+	items.give(1, n("log_oak"), 1)
+	items.give(1, n("log_oak"), 1)
 	inv.add(n("stick"), 6)
 	inv.add(n("twine"), 4)
 	check(items.shoulder_count(1) == 2, "two oak logs are carried on the shoulder")
@@ -287,10 +289,10 @@ func cargo_checks() -> void:
 	var every_log: bool = true
 
 	for id in items.table.ids():
-		if str(items.table.entry(id).get("carry", "")) == "shoulder":
+		if str(items.table.entry(id).get("carry", "")) == "shoulder" and not bool(items.table.entry(id).get("retired", false)):   # a retired species log never drops (a felled tree gives the plain Log) and is in no group
 			every_log = every_log and items._box_takes("small_log_sled", n(id)) and items._box_takes("handcart", n(id))
 
-	check(every_log and not items._box_takes("small_log_sled", n("stone")), "every species log is a log for both (the plain Log group)")
+	check(every_log and not items._box_takes("small_log_sled", n("stone")), "every live species log is a log for both (the plain Log group)")
 	empty(sled)
 
 	for i in 9:
