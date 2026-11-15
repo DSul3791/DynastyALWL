@@ -22,7 +22,7 @@
 | Save/version compatibility | [`design/CATALOG_SAVE_MIGRATION.md`](design/CATALOG_SAVE_MIGRATION.md) | Current no-loss/version rules, not the old mandatory blanket pre-release migration |
 | Water and spring dynamics | [`design/drinking_water_design.md`](design/drinking_water_design.md), [`design/drinking_water_step2b_design.md`](design/drinking_water_step2b_design.md), `DYNASTY_WATER_DESIGN.md` | Use their **dated supported subfeatures and actual code**; current goal repair must not invent missing water actions |
 | Food preparation and preserving | [`design/FOOD_PREPARATION_PRESERVATION_SERVING.md`](design/FOOD_PREPARATION_PRESERVATION_SERVING.md) | Approved relevant food categories, station use and preserving workflows |
-| Active workflow, testing and branch rules | `docs/ai-team/WORKFLOW.md`, `docs/ai-team/TEST_GATES.md`, `CLAUDE.md`, `PROTOCOL.md` | Follow actual current files; feature branches through review into `dev`, `main` protected |
+| Operating policy, delegated authority, workflow and testing | `ai-team/CONSTITUTION.md`, `ai-team/DECISION_AUTHORITY.md`, `ai-team/WORKFLOW.md`, `ai-team/TEST_GATES.md`, `../CLAUDE.md` | Current origin/dev; scoped delegation and mission records; independently reviewed task branches into dev; full gate plus Dave approval for main. `../PROTOCOL.md` owns wire contracts, not operating policy. |
 
 ## Baseline evidence, NOT active instructions
 

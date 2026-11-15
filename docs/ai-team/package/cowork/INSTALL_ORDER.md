@@ -1,3 +1,5 @@
+> **HISTORICAL DISTRIBUTION RECORD — 11 Nov 2026.** Do not use its staging/freeze/install steps as current instructions. Operating policy is installed and the general freeze is lifted; see repo `CLAUDE.md`, `docs/START_HERE.md` and `docs/ai-team/INSTALL_RECORD.md` on current `origin/dev`. The reusable `PROJECT_INSTRUCTIONS.txt` and `COORDINATOR_BOOTSTRAP.md` templates were refreshed 15 Nov; editing them does not update live account settings.
+
 # Cowork configuration installation order (proposed)
 **Status: STAGING, no automatic installation.**
 

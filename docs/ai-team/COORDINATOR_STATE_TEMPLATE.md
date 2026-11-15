@@ -4,12 +4,15 @@
 Updated (timezone): UNKNOWN
 Project operating policy: IN FORCE (handoff freeze lifted 12 Nov 2026) / VERIFY
 Current stable main SHA: VERIFY LIVE
-Current dev SHA: NOT CREATED / VERIFY LIVE
+Current dev SHA: VERIFY LIVE
 Water record and test machine status: VERIFY
 
 | Task ID | Priority | Role owner | Session | Branch & SHA | Status | Blocker | Next action | Reviewer |
 |---|---|---|---|---|---|---|---|---|
 | EXAMPLE-001 | P1 | Sonny | retired | feature/example @ example-sha | EXAMPLE ONLY | none | verify current data | Tyler |
+
+## Scoped delegation and provisional decisions
+Link the current mission decision records, limits, meaningful assumptions and review checkpoints. Do not infer global catalog permission from a scoped mission.
 
 ## Decisions needing Dave
 None recorded in this template. Do not infer that there are no real decisions until the live backlog and QA page are checked.
