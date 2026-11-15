@@ -1,6 +1,7 @@
 extends RefCounted
 
-# The Handcart and loaded crates as cargo (master s3.11 [D11] and s3.13 [D13]; STORAGE_WAREHOUSING_DESIGN.md s4 to s6; Mission 001 phase 10, M001-T17).
+# The Handcart, the Small log sled, the Small wagon and loaded crates as cargo (master s3.11 [D11] and s3.13 [D13]; STORAGE_WAREHOUSING_DESIGN.md s4 to s6; Mission 001 phase 10, M001-T17;
+# TREE_WOOD_TOOLS_DESIGN.md W-14 to W-16: the sled and the wagon are more structures.json "vehicle" rows on this one controller, with a different pace, payload and cargo).
 # The first persistent movable world entity. A cart is a placed structure with slots (its own cargo store, a chests.json entry by uid, like any chest)
 # and a structures.json "vehicle" row. One player at a time holds its handle (the puller; s3.11 RECOMMEND: the player is the puller of the shared vehicle
 # controller). Each position report of the puller moves the cart toward the point hitch_m from them on the line back to the cart, so it swings in behind
@@ -99,17 +100,31 @@ func payload_kg(cart: Dictionary) -> float:
 
 # Kilograms more a container may take before the cart it is or rides on is full; INF for one not on a cart (its own max_kg still applies).
 func room_kg(id: int) -> float:
-	var it: Dictionary = host._items.get(id, {})
-
-	if not it.has("struct"):
-		return INF
-
-	var cart_id: int = id if not vehicle_of(it).is_empty() else (cart_of_uid(int(it["struct"]["on"])) if it["struct"].has("on") else 0)
+	var cart_id: int = cart_for(id)
 
 	if cart_id == 0:
 		return INF
 
 	return maxf(payload_kg(host._items[cart_id]) - load_kg(cart_id), 0.0)
+
+
+# The cart a container is or rides on, 0 for one not on a cart.
+func cart_for(id: int) -> int:
+	var it: Dictionary = host._items.get(id, {})
+
+	if not it.has("struct"):
+		return 0
+
+	return id if not vehicle_of(it).is_empty() else (cart_of_uid(int(it["struct"]["on"])) if it["struct"].has("on") else 0)
+
+
+# What a vehicle is called in what the player is told (its structures.json vehicle "noun": handcart, sled, wagon).
+func noun_of(v: Dictionary) -> String:
+	return str(v.get("noun", "cart"))
+
+
+func noun_for(id: int) -> String:
+	return noun_of(vehicle_of(host._items.get(cart_for(id), {})))
 
 
 # The place_mult kind a container ages at (spoilage.json): the cart's for a crate riding on one (s3.13: contents keep ageing in transit), else its own.
@@ -213,7 +228,7 @@ func _follow(peer: int, id: int) -> void:
 	var away: Vector2 = Vector2(from.x - here.x, from.z - here.z)
 
 	if away.length() > hitch + float(v.get("slack_m", 1.5)):
-		release(peer, str(rec["why"]) if str(rec["why"]) != "" else "You lose hold of the handcart.")
+		release(peer, str(rec["why"]) if str(rec["why"]) != "" else "You lose hold of the %s." % noun_of(v))
 		return
 
 	for rider in rec["riders"]:   # a crate locked after the grab stops a player who may not open it (s3.13: only the owner or a player with access moves it)
@@ -253,27 +268,27 @@ func _follow(peer: int, id: int) -> void:
 # Why the cart cannot go from `from` to `to` heading `heading` ("" when it can): no ground, too steep, deep water, a wall or a tree in the way.
 func _blocked(from: Vector3, to: Vector3, heading: Vector2, v: Dictionary) -> String:
 	if not host.ground_height.is_valid() or is_nan(float(host.ground_height.call(to.x, to.z))):
-		return "The handcart cannot go there."
+		return "The %s cannot go there." % noun_of(v)
 
 	var grade: float = _grade(to, heading)
 
 	# Over slope_max a step must be less steep than where the cart stands: a cart left on a steep spot may come off it, but never creeps up a
 	# ramp that steepens a little at a time.
 	if grade > float(v.get("slope_max", 0.36)) and grade >= _grade(from, heading):
-		return "Too steep for the handcart."
+		return "Too steep for the %s." % noun_of(v)
 
 	if host.water_depth_at.is_valid() and float(host.water_depth_at.call(Vector3(to.x, float(host.ground_height.call(to.x, to.z)), to.z))) > float(v.get("water_max_m", 0.5)):
-		return "The water is too deep for the handcart."
+		return "The water is too deep for the %s." % noun_of(v)
 
 	var fit: float = float(v.get("fit_m", 0.6))
 
 	if host.structure_blocks(to.x, to.z, fit) or host.structure_blocks_step(from.x, from.z, to.x, to.z, fit):   # the step too: a thin wall is never jumped
-		return "The handcart will not fit through there."
+		return "The %s will not fit through there." % noun_of(v)
 
 	if host.trunks_near.is_valid():
 		for trunk in host.trunks_near.call(to, fit + 2.0):
 			if Vector2(to.x - trunk[0].x, to.z - trunk[0].z).length() < fit + float(trunk[1]):
-				return "The handcart will not fit through there."
+				return "The %s will not fit through there." % noun_of(v)
 
 	return ""
 
@@ -341,7 +356,7 @@ func spot_pos(cart: Dictionary, spot: int) -> Vector3:
 
 
 # The cart's pace now (m/s): speed_mps slowed by its load (load_slow at full payload), the grade (slope_slow at slope_max) and rough ground (vehicle
-# rough: the wheels drag on rock, sand, mud and snow). Sent to the puller, whose client walks no faster, when it changes by a tenth.
+# rough: the wheels drag on rock, sand, mud and snow; a sled's runners drag on rock and gravel and glide on snow and, in the rain, wet grass: vehicle wet). Sent to the puller, whose client walks no faster, when it changes by a tenth.
 func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 	var rec: Dictionary = pulls[id]
 	var payload: float = maxf(payload_kg(cart), 1.0)
@@ -349,7 +364,14 @@ func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 	var rough: float = 1.0
 
 	if host.ground_material.is_valid():
-		rough = float(v.get("rough", {}).get(str(host.ground_material.call(cart["pos"].x, cart["pos"].z)), 1.0))
+		var ground: String = str(host.ground_material.call(cart["pos"].x, cart["pos"].z))
+		var wet: Dictionary = v.get("wet", {})
+		rough = float(v.get("rough", {}).get(ground, 1.0))
+
+		# shortcut (W-16): the surface is the terrain material under the cart, so a built road or path (a laid patch, not a material) does not slow a sled, and
+		# "wet grass" is any rain at all over a soft grass soil (no per-cell wetness, and under a roof it still reads as rain); revisit with a wetness or road query.
+		if not wet.is_empty() and host.rain_now.is_valid() and float(host.rain_now.call()) >= float(wet.get("rain", 0.2)):
+			rough = float(wet.get("rough", {}).get(ground, rough))
 
 	var cap: float = float(v.get("speed_mps", 3.2)) * (1.0 - float(v.get("load_slow", 0.4)) * float(rec["share"])) * (1.0 - float(v.get("slope_slow", 0.5)) * clampf(grade / maxf(float(v.get("slope_max", 0.36)), 0.01), 0.0, 1.0)) * rough
 	rec["cap"] = maxf(cap, 0.3)
@@ -389,16 +411,16 @@ func _load(peer: int, crate_id: int) -> void:
 		var v: Dictionary = vehicle_of(host._items[id])
 		var d: float = (host._items[id]["pos"] as Vector3).distance_to(crate["pos"])
 
-		if not v.is_empty() and d <= float(v.get("load_reach_m", 3.0)) and d < best_d:
+		if not v.is_empty() and not v.get("crate_spots", []).is_empty() and d <= float(v.get("load_reach_m", 3.0)) and d < best_d:   # a sled has no bed for a crate
 			best = id
 			best_d = d
 
 	if best == 0:
-		host._say(peer, "There is no handcart close enough.")
+		host._say(peer, "There is no cart close enough.")
 		return
 
 	if pulls.has(best):
-		host._say(peer, "Someone has the handle: the handcart must stand still to load.")
+		host._say(peer, "Someone has the handle: the %s must stand still to load." % noun_for(best))
 		return
 
 	var cart: Dictionary = host._items[best]
@@ -415,11 +437,11 @@ func _load(peer: int, crate_id: int) -> void:
 			spot = s
 
 	if spot < 0:
-		host._say(peer, "The handcart has no room for another crate.")
+		host._say(peer, "The %s has no room for another crate." % noun_for(best))
 		return
 
 	if load_kg(best) + box_kg(crate_id) > payload_kg(cart):
-		host._say(peer, "The crate is too heavy for the handcart. Take some out first.")
+		host._say(peer, "The crate is too heavy for the %s. Take some out first." % noun_for(best))
 		return
 
 	crate["struct"]["on"] = int(cart["struct"]["uid"])
@@ -444,7 +466,7 @@ func _unload(peer: int, crate_id: int) -> void:
 	var cart_id: int = cart_of_uid(int(crate["struct"]["on"]))
 
 	if pulls.has(cart_id):
-		host._say(peer, "The handcart must stand still to unload: let go of the handle first.")
+		host._say(peer, "The %s must stand still to unload: let go of the handle first." % noun_for(cart_id))
 		return
 
 	var spot: Vector3 = set_down_spot(cart_id, crate_id, false)
@@ -547,19 +569,19 @@ func dismantle(peer: int, inv, id: int) -> void:
 			logs += box.counts[slot]
 
 	if host.shoulder_count(peer) + logs > CarryRules.shoulder_max(host._carry_cfg):   # two large logs at most, on the shoulder
-		host._say(peer, "Take the large logs off the handcart first: you can carry only two.")
+		host._say(peer, "Take the large logs off the %s first: you can carry only two." % noun_for(id))
 		return
 
 	var cargo_kg: float = CarryRules.carried_kg(box, host.table, host._carry_cfg) if box != null and not host._carry_cfg.is_empty() else 0.0
 
 	if cargo_kg > 0.0 and host.carried_kg_of(peer) + cargo_kg > CarryRules.cap_kg(host._carry_body(peer), host._carry_cfg):
-		host._say(peer, "Empty the handcart first: you cannot carry its load.")
+		host._say(peer, "Empty the %s first: you cannot carry its load." % noun_for(id))
 		return
 
 	var trial = inv.copy()
 
 	if not _unpack(trial, box, row):
-		host._say(peer, "Make room in your pack first: the handcart's load and its parts must all fit.")
+		host._say(peer, "Make room in your pack first: the %s's load and its parts must all fit." % noun_for(id))
 		return
 
 	release(peer, "")
