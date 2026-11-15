@@ -7,7 +7,9 @@ Source: Dave's explicit clarification of Decision 61, 12 Nov 2026 (recorded in R
     file (its res:// or bare path, its uid, or its class_name in game files, runner scripts or CI).
   - This does not allow deleting unrelated assets, user work, historical documents or anything the game still needs.
     Code with no declared replacement is "other unused" and goes through the proposed-removal procedure like any other file.
-  - Documents are archived (git mv to docs/archive/YYYY-MM/...), never deleted; nothing in docs/archive/ is ever deleted.
+  - Dave's 15 Nov clarification: retire documents out of active reading, preserve recoverable Git history,
+    and delete after seven days once dependencies and preservation are verified. doc_retirement.py validates
+    explicit expiry receipts; unregistered or unexpired documents still require exact archival preservation.
   - Other unused files go through the proposed-removal procedure: a copy under proposed_removals/ plus a REMOVALS.md row.
 Limits (check these by hand in review): uses built from strings at run time ("res://dir/" + name), directory scans and relative
 preload() paths are not seen.
@@ -16,13 +18,13 @@ import os
 import re
 
 CODE_EXT = (".gd", ".gdshader", ".shader")
-DOC_EXT = (".md",)
+DOC_EXT = ('.md', '.markdown', '.txt', '.rst', '.adoc')
 KEEP_EXT = (".glb", ".gltf", ".obj", ".fbx", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".tga", ".exr", ".hdr", ".dds", ".ogg", ".wav", ".mp3",
             ".tscn", ".tres") + CODE_EXT + DOC_EXT
 KEEP_DIRS = ("art/", "assets/", "design/", "docs/", "items/", "src/", "scenes/", "worlds/", "data/")
 ARCHIVE = "docs/archive/"
 # Copies and records whose loss is not a loss: the removal area itself, Library mirrors and task evidence. ARCHIVE is NOT here.
-SKIP_PREFIX = ("proposed_removals/", "docs/mirror/", "questions/", "evidence/", "results/")
+SKIP_PREFIX = ("proposed_removals/", "questions/", "evidence/", "results/")
 # Files that can use a code file: the game's own files, runner scripts and CI. Docs that mention a path are not uses.
 USE_EXT = (".gd", ".tscn", ".tres", ".gdshader", ".shader", ".godot", ".cfg", ".json", ".import",
            ".sh", ".py", ".yml", ".yaml", ".bat", ".cmd", ".ps1")
@@ -90,7 +92,7 @@ def _live_use(path, base_text, base_uid, use_files):
     return None
 
 
-def deletion_problems(deleted, added, head_exists, base_read, head_read, use_files, removals_text, modified=()):
+def deletion_problems(deleted, added, head_exists, base_read, head_read, use_files, removals_text, modified=(), expired_documents=()):
     """Problems for files deleted since BASE.
     deleted: paths in BASE gone from HEAD; added: paths in HEAD not in BASE; head_exists(p) -> bool;
     base_read(p) / head_read(p) -> text of p at BASE / HEAD ('' if absent); use_files: {path: text} of HEAD files with USE_EXT;
@@ -100,6 +102,8 @@ def deletion_problems(deleted, added, head_exists, base_read, head_read, use_fil
     ledger = _rows(_split_ledger(removals_text)[1])
     changed = set(added) | set(modified)
     for f in sorted(deleted):
+        if f in expired_documents and f.startswith((ARCHIVE, 'docs/mirror/')) and f.endswith(('.md','.markdown','.txt','.rst','.adoc')):
+            continue  # Supplied only after manifest, integration-time, recovery and reader validation.
         if f.startswith(ARCHIVE):
             out.append("historical document deleted: %s (nothing in docs/archive/ is deleted; restore it)" % f)
             continue
@@ -108,7 +112,7 @@ def deletion_problems(deleted, added, head_exists, base_read, head_read, use_fil
             continue
         if is_doc:
             old = base_read(f)
-            ok = any(("/" in f and a.endswith("/" + f)) or (os.path.basename(a) == os.path.basename(f) and head_read(a) == old)
+            ok = any((("/" in f and a.endswith("/" + f)) or os.path.basename(a) == os.path.basename(f)) and head_read(a) == old
                      for a in archived)
             if not ok:
                 out.append("document deleted instead of archived: %s (git mv it to docs/archive/YYYY-MM/%s; documents are never "

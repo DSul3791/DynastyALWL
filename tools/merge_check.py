@@ -106,14 +106,32 @@ for f in sh("git", "ls-files", "-o", "--exclude-standard").splitlines():
 
 
 # 7. Deletions (Decision 61 as clarified by Dave, 12 Nov 2026; rules and their source in tools/deletion_rules.py):
-#    replaced code is deleted when its replacement is declared in REMOVALS.md and nothing uses it; documents are archived,
-#    never deleted; everything else goes to proposed_removals/ with a REMOVALS.md row. Tests: tools/test_deletion_rules.py.
+#    Replaced code requires a declared live replacement. Document expiry additionally requires verified seven-day
+#    integration/recovery receipts. Other files keep their existing removal safeguards.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import deletion_rules
+import doc_retirement
 if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
-    _deleted = sh("git", "diff", "--name-only", "--diff-filter=D", BASE).splitlines()
-    _added = sh("git", "diff", "--name-only", "--diff-filter=AR", BASE).splitlines()
+    _deleted = sh("git", "diff", "--no-renames", "--name-only", "--diff-filter=D", BASE).splitlines()
+    _added = sh("git", "diff", "--no-renames", "--name-only", "--diff-filter=A", BASE).splitlines()
     _modified = sh("git", "diff", "--name-only", "--diff-filter=M", BASE).splitlines()
+    _prior_retirements = sh("git", "show", BASE + ":" + doc_retirement.MANIFEST)
+    try:
+        _retirement_data = doc_retirement.load('.')
+        _retirement_events = doc_retirement.integration_events(_retirement_data)
+        _retirement_errors, _expired_docs = doc_retirement.validate(
+            '.', _retirement_data, _deleted, integrations=_retirement_events,
+            previous=json.loads(_prior_retirements) if _prior_retirements.strip() else None)
+        _retirement_touched = set(_deleted) & {e[k] for b in _retirement_data['batches'] for e in b['entries'] for k in ('original','retired')}
+        if _retirement_touched and not _retirement_errors:
+            _retirement_errors, _expired_docs = doc_retirement.validate(
+                '.', _retirement_data, _deleted, integrations=_retirement_events,
+                previous=json.loads(_prior_retirements) if _prior_retirements.strip() else None,
+                protected=doc_retirement.active_work('.'))
+    except (ValueError, OSError) as exc:
+        _retirement_errors, _expired_docs = [str(exc)], set()
+    for msg in _retirement_errors:
+        bad(msg)
     _game = {}
     for f in (sh("git", "ls-files").splitlines() if _deleted else []):   # read game files only when something was deleted
         if f.endswith(deletion_rules.USE_EXT) and os.path.isfile(f):
@@ -128,7 +146,7 @@ if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
         except OSError:
             return ""
     for msg in deletion_rules.deletion_problems(_deleted, _added, os.path.isfile, lambda p: sh("git", "show", BASE + ":" + p),
-                                                _head_read, _game, _removals, _modified):
+                                                _head_read, _game, _removals, _modified, _expired_docs):
         bad(msg)
     # looks: a look entry that was in BASE must still be in data/items/looks.json
     try:

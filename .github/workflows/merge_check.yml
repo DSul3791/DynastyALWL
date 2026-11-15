@@ -1,4 +1,7 @@
 name: merge guard
+permissions:
+  contents: read
+  pull-requests: read
 on:
   push:
     branches: ["main", "dev"]
@@ -14,6 +17,7 @@ jobs:
         env:
           BEFORE: ${{ github.event.before }}
           BASE_REF: ${{ github.base_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -n "$BASE_REF" ]; then
             export MERGE_CHECK_BASE="origin/$BASE_REF"
@@ -27,3 +31,5 @@ jobs:
         run: python3 -I tools/check_ai_team_package.py
       - name: AI team package regression checks (isolated fixtures, no Godot)
         run: python3 -I tools/test_ai_team_package.py
+      - name: Document expiry regression checks (isolated Git fixtures, no Godot)
+        run: python3 -I tools/test_doc_retirement.py
