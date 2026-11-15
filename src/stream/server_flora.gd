@@ -65,6 +65,11 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		return kept
 
 	var made: Dictionary = placer.chunk_items(home, trees_only)
+	_keep_items(key, made)
+	return made
+
+
+func _keep_items(key: Vector3i, made: Dictionary) -> void:
 	_items_mutex.lock()
 
 	while _items.size() >= ITEMS_CHUNKS:
@@ -72,7 +77,49 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 	_items[key] = made
 	_items_mutex.unlock()
+
+
+# The placer's own list for a chunk in exactly the asked form (no removals, no saplings), for chunk_bytes and the undergrowth index: from the
+# items_of store when it holds it, so a planted bush, a new sapling or a felled tree re-packs the chunk without placing it again (Dave 15 Nov
+# 2026: that re-placing paused the server's main thread for seconds). Trees only comes from a stored full list by keeping its trees, which are
+# the same trees in the same order (FloraPlacer.chunk_items places trees first and never makes room for the rest). A full list placed here
+# is stored; a trees-only one is not, so far chunks streamed past do not push the near ones out.
+# shortcut: a chunk dropped from the store (over ITEMS_CHUNKS) is placed again on the next change, as before; revisit if that shows in play.
+func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
+	var full_key: Vector3i = Vector3i(home.x, home.y, 1)
+	_items_mutex.lock()
+	var full: Dictionary = _items.get(full_key, {})
+	var trees: Dictionary = _items.get(Vector3i(home.x, home.y, 0), {}) if trees_only else {}
+	_items_mutex.unlock()
+
+	if not trees_only and not full.is_empty():
+		return full
+
+	if trees_only and not trees.is_empty():
+		return trees
+
+	if trees_only and not full.is_empty():
+		return _trees_of(full)
+
+	var made: Dictionary = placer.chunk_items(home, trees_only)
+
+	if not trees_only:
+		_keep_items(full_key, made)
+
 	return made
+
+
+# The trees of a placed list, in its order.
+func _trees_of(items: Dictionary) -> Dictionary:
+	var result: Dictionary = {"ids": PackedInt32Array(), "positions": PackedVector3Array(), "heights": PackedFloat32Array(), "yaws": PackedFloat32Array()}
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(ids.size()):
+		if int(placer.species_of(ids[n]).get("kind", PlacerScript.KIND_TREE)) == PlacerScript.KIND_TREE:
+			for field in result:
+				result[field].append(items[field][n])
+
+	return result
 
 
 # The placed items of a chunk only when items_of has already made them (for this or the full list), else {}: for a look that must never make a chunk on the
@@ -148,7 +195,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 	if not bytes.is_empty():
 		return bytes
 
-	var items: Dictionary = PlacerScript.without(placer.chunk_items(home, not full), removed)
+	var items: Dictionary = PlacerScript.without(_placed(home, not full), removed)
 
 	if dynamic.is_valid():
 		var extra: Dictionary = dynamic.call(home)
@@ -274,7 +321,7 @@ func _make_brush(home: Vector2i) -> void:
 	_mutex.lock()
 	var removed: Dictionary = _removed.get(home, {}).duplicate()
 	_mutex.unlock()
-	var made: Dictionary = _brush_cells(PlacerScript.without(placer.chunk_items(home, false), removed))
+	var made: Dictionary = _brush_cells(PlacerScript.without(_placed(home, false), removed))
 	_mutex.lock()
 	_keep_brush(home, made)
 	_brush_pending.erase(home)
@@ -329,6 +376,9 @@ func clear_memory() -> void:
 	_memory.clear()
 	_water.clear()
 	_mutex.unlock()
+	_items_mutex.lock()
+	_items.clear()   # the placed lists stand on the old ground too
+	_items_mutex.unlock()
 
 
 # Forgets the packed water (the simulated water changed).
