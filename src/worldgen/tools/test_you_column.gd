@@ -10,10 +10,10 @@ const ArtKit := preload("res://src/client/ui/art_kit.gd")
 
 class FakeTable:
 	func id_of(number: int) -> String:
-		return {3: "linen_shirt", 7: "stone_axe", 8: "hide_cloak", 9: "hide_hood", 10: "iron_helm"}.get(number, "")
+		return {3: "linen_shirt", 7: "stone_axe", 8: "hide_cloak", 9: "hide_hood", 10: "iron_helm", 11: "simple_backpack"}.get(number, "")
 
 	func name_of(number: int) -> String:
-		return {3: "Linen shirt", 7: "Stone axe", 8: "Hide cloak", 9: "Hide hood", 10: "Iron helm"}.get(number, "")
+		return {3: "Linen shirt", 7: "Stone axe", 8: "Hide cloak", 9: "Hide hood", 10: "Iron helm", 11: "Simple - Backpack"}.get(number, "")
 
 	func shelf_units(_number: int) -> int:
 		return 0
@@ -36,6 +36,7 @@ class FakeInventory:
 	func _init() -> void:
 		numbers.resize(SLOTS)
 		numbers[4] = 7
+		numbers[6] = 11   # a Simple - Backpack in the inventory
 
 	func inst_of(_slot: int) -> Dictionary:   # protocol 106: no instance data here
 		return {}
@@ -79,6 +80,21 @@ class FakeView:
 	func inst_label(number: int, _item_inst: Dictionary) -> String:
 		return table.name_of(number)
 
+	var sent: Array = []   # what the wells asked the server: ["wear", pack slot] or ["off", worn position]
+
+	# As inventory_view.gd wear_slot_of: the body slot of the piece in a pack slot (only the backpack is wearable here).
+	func wear_slot_of(slot: int) -> String:
+		return "back" if slot >= 0 and slot < inventory.slot_count and inventory.numbers[slot] == 11 else ""
+
+	func wear_slot(slot: int) -> void:
+		sent.append(["wear", slot])
+
+	func take_off(place: int) -> void:
+		sent.append(["off", place])
+
+	func open_bag(_place: int) -> void:
+		pass
+
 var failures: int = 0
 
 
@@ -109,6 +125,17 @@ func _initialize() -> void:
 	check(not part.wells["right"].is_empty(), "the item in hand shows in the right hand")
 	check(part.wells["left"].is_empty(), "the left hand is empty until the game has an off-hand item")
 	check(part.wells["head"].custom_minimum_size.is_equal_approx(Vector2(96.0, 96.0)), "gear wells are 96 px")
+	# The pack slot (Dave 15 Nov 2026): a backpack dragged from the inventory onto the Back well is put on; the worn one dragged off comes off.
+	var back_well = part.wells["back"]
+	check(back_well.can_drop.call({"slot": 6}) and not back_well.can_drop.call({"slot": 4}) and not back_well.can_drop.call({"worn": 5}) and not part.wells["head"].can_drop.is_valid(), "the Back well takes a backpack from the inventory, not an axe or a worn piece; other wells take no drops")
+	check(back_well.drag_data.call() == null, "an empty Back well has nothing to drag")
+	back_well.on_drop.call({"slot": 6})
+	check(view.sent == [["wear", 6]], "dropping the backpack on the Back well puts it on (%s)" % str(view.sent))
+	var back_at: int = view.worn_places().find("back:base")
+	view.worn[back_at] = 11
+	view.inventory.numbers[6] = 0
+	part.refresh()
+	check(back_well.tooltip_text.contains("Simple - Backpack") and back_well.drag_data.call() == {"worn": back_at}, "the worn backpack shows in the Back well and drags out as its worn position (%s)" % str(back_well.drag_data.call()))
 	check(part.preview.render_target_update_mode == SubViewport.UPDATE_DISABLED, "the preview does not render while the window is shut")
 	part.set_active(true)
 	await process_frame
