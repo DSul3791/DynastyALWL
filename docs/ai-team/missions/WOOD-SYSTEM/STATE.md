@@ -5,8 +5,8 @@ Thread: "Rebuild tree harvesting and wood system" (Dave, 15 Nov 2026 06:06Z). De
 | Phase | State | Head | Tests |
 |---|---|---|---|
 | 1 Documents | DONE, merged to dev (PR #1148) | 3761fb79 | docs only |
-| 2 Materials and tools | IN REVIEW (PR #1149; gate review round 1 fixes pushed) | see PR head | Godot tests NOT RUN (lanes) |
-| 3 Trees and logs | IN PROGRESS (local, stacked on phase 2) | | not run |
+| 2 Materials and tools | IN REVIEW (PR #1149, review passed on 3db7f28b, waiting on lanes) | 3db7f28b | Godot tests NOT RUN (lanes) |
+| 3 Trees and logs | IN REVIEW (local, stacked on phase 2; small trees, two shoulder logs, rolling logs) | see phase 3 PR | NOT RUN |
 | 4 Carving and knife menu | NOT STARTED | | |
 | 5 Hauling | NOT STARTED | | |
 
