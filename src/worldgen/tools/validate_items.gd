@@ -1129,6 +1129,9 @@ func _init() -> void:
 			for row in recipes[rid].get(list, []):
 				used[String(row[0])] = true
 
+				for member in groups.get(String(row[0]), []):   # a group need (plain "nails") is filled by any member, so each member is used (Copper nails)
+					used[String(member)] = true
+
 	# A live, known hammer blueprint's cost uses a material too (the Iron and Steel anvils go only into building the Advanced and Master smithies, GOALS-REPAIR R4/R5).
 	var bp_rows: Dictionary = _read("blueprints.json").get("blueprints", {})
 

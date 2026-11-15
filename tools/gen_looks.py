@@ -96,6 +96,9 @@ SPECIAL.update({
     "garlic_meat": ("joint", "#6a3c20", 0.9),
     "feast_roast": ("joint", "#62301a", 1.5),
     "backpack": ("backpack", "#8a6a4a", 1.4),
+    "simple_backpack": ("backpack", "#8a6a4a", 1.4), "improved_backpack": ("backpack", "#6a4024", 1.4),   # the backpack tiers (Dave 15 Nov 2026)
+    "quality_backpack": ("backpack", "#5a3620", 1.4), "advanced_backpack": ("backpack", "#4a3428", 1.4),
+    "copper_nails": ("needle", "#b06a3a", 0.5),
     "wooden_bowl": ("bowl", "#9a6b38", 1.3),
 })
 SPECIAL.update({

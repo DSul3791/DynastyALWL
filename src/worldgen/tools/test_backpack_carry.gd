@@ -1,7 +1,8 @@
 extends SceneTree
 
-# DESIGN-001 (BUGLIST-001): a worn back pack improves the comfortable carry weight and the limit (items.json carry_bonus_kg: 12 Hide - Backpack,
-# 18 Leather - Backpack, 8 Wicker - Pack basket, 24 Traveller's rucksack, so quality matters) and never changes the pack's inventory slot count.
+# DESIGN-001 (BUGLIST-001): a worn back pack improves the comfortable carry weight and the limit (items.json carry_bonus_kg; Dave 15 Nov 2026, four
+# tiers that replace the old packs: Simple 5, Improved 15, Quality 30, Advanced 50, so quality matters) and never changes the pack's inventory slot count.
+# The four old packs (Hide and Leather backpacks, Wicker pack basket, Traveller's rucksack) are retired; a saved one loads as its new tier (renames.json).
 # No back pack has slots of its own or can be opened (Dave 13 Nov 2026: "Backpacks do not have slots. The only thing they do is give you more
 # carry weight." and "no backpacks have slots they only improve the weight you can carry due to ergonomics"); an older save's back pack that
 # still carries bag contents loads plain, and a real bag (the Fibre - Shoulder bag) keeps its contents. Real server state: slots and thresholds measured
@@ -108,22 +109,64 @@ func _init() -> void:
 	var items = make()
 	var table = items.table
 	var inv = items.inventory_of(1)
-	var hide: int = table.number_of("backpack")
-	var leather: int = table.number_of("leather_backpack")
+	var hide: int = table.number_of("simple_backpack")
+	var leather: int = table.number_of("improved_backpack")
 	var stone: int = table.number_of("stone")
 	var axe: int = table.number_of("stone_axe")
 	items.vitals_of(1)["weight"] = 75.0
 	var cfg: Dictionary = items._carry_cfg
 	empty(inv)
 
-	# 1. The data: both backpacks name a weight effect, the better one a larger one.
-	var hide_kg: float = float(table.entry("backpack").get("carry_bonus_kg", 0.0))
-	var leather_kg: float = float(table.entry("leather_backpack").get("carry_bonus_kg", 0.0))
-	check(hide > 0 and leather > 0 and hide_kg == 12.0 and leather_kg == 18.0 and leather_kg > hide_kg, "carry_bonus_kg: Hide - Backpack %.0f, Leather - Backpack %.0f (quality matters)" % [hide_kg, leather_kg])
-	check(BagRules.slots_of(table, hide) == 0 and BagRules.slots_of(table, leather) == 0 and not table.entry("backpack").has("bag_takes") and not table.entry("leather_backpack").has("bag_takes"), "neither backpack has slots (no bag_slots, no bag_takes): they only give carry weight")
+	# 0. The four recipes as Dave gave them (15 Nov 2026): Simple by hand, Improved and Quality at the Leatherworking table, Advanced at the Advanced
+	# smithy (brick_forge level 3); the old packs' recipes are retired. The Quality pack takes any nails, Copper nails (new, item 1487) included.
+	var made_as: Dictionary = {
+		"simple_backpack": [[["hide", 5], ["twine", 20], ["stick", 4]], "", 1],
+		"improved_backpack": [[["leather", 5], ["twine", 20], ["hardwood_board", 1]], "leatherworking_table", 1],
+		"quality_backpack": [[["leather", 10], ["sinew", 20], ["nails", 15], ["hardwood_board", 2]], "leatherworking_table", 1],
+		"advanced_backpack": [[["steel_ingot", 2], ["leather", 25], ["sinew", 40]], "brick_forge", 3],
+	}
 
-	# 1b. The other back packs (basket 8, rucksack 24; the Wooden - Pack frame is retired): no slots, a carry bonus that raises the server's limit, never opened.
-	var back_packs: Dictionary = {"backpack": 12.0, "leather_backpack": 18.0, "wicker_pack_basket": 8.0, "travellers_rucksack": 24.0}
+	for id in made_as:
+		var makers: Array = items.recipes.makers_of(table.number_of(id))
+		var r: Dictionary = items.recipes.recipe(int(makers[0])) if makers.size() == 1 else {}
+		var needs: Array = []
+
+		for need in r.get("needs", []):
+			needs.append([table.id_of(int(need[0])), int(need[1])])
+
+		check(needs == made_as[id][0] and str(r.get("station", "")) == made_as[id][1] and int(r.get("station_level", 1)) == made_as[id][2] and bool(r.get("known", false)), "%s: one known recipe, %s at %s" % [id, str(needs), made_as[id][1] if made_as[id][1] != "" else "hand"])
+
+	for id in ["backpack", "leather_backpack", "wicker_pack_basket", "travellers_rucksack"]:
+		check(items.recipes.makers_of(table.number_of(id)).is_empty(), "the old %s is not made any more (its recipe is retired)" % id)
+
+	var copper_nails: int = table.number_of("copper_nails")
+	var copper_makers: Array = items.recipes.makers_of(copper_nails)
+	check(copper_nails == 1487 and table.group_members(table.number_of("nails")).has(copper_nails) and copper_makers.size() == 1 and str(items.recipes.recipe(int(copper_makers[0])).get("station", "")) == "forge", "Copper nails are made at the Primitive smithy and fill any nails need")
+	inv.add(table.number_of("leather"), 10)
+	inv.add(table.number_of("sinew"), 20)
+	inv.add(copper_nails, 15)
+	inv.add(table.number_of("hardwood_board"), 2)
+	check(items.recipes.craft(int(items.recipes.makers_of(table.number_of("quality_backpack"))[0]), inv) and inv.count_of(table.number_of("quality_backpack")) == 1 and inv.count_of(copper_nails) == 0, "a Quality - Backpack takes 15 Copper nails for its nails")
+	empty(inv)
+	inv.add(table.number_of("hide"), 5)
+	inv.add(table.number_of("twine"), 20)
+	inv.add(table.number_of("stick"), 4)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(items.recipes.makers_of(hide)[0]), 0, 1, Vector3.ZERO)
+
+	for _tick in 120:
+		items._craft_tick(0.25)
+
+	check(inv.count_of(hide) == 1 and inv.count_of(table.number_of("hide")) == 0, "a Simple - Backpack is made by hand from 5 Hide, 20 Twine and 4 Sticks")
+	empty(inv)
+
+	# 1. The data: the Simple and Improved backpacks name a weight effect, the better one a larger one.
+	var hide_kg: float = float(table.entry("simple_backpack").get("carry_bonus_kg", 0.0))
+	var leather_kg: float = float(table.entry("improved_backpack").get("carry_bonus_kg", 0.0))
+	check(hide > 0 and leather > 0 and hide_kg == 5.0 and leather_kg == 15.0 and leather_kg > hide_kg, "carry_bonus_kg: Simple - Backpack %.0f, Improved - Backpack %.0f (quality matters)" % [hide_kg, leather_kg])
+	check(BagRules.slots_of(table, hide) == 0 and BagRules.slots_of(table, leather) == 0 and not table.entry("simple_backpack").has("bag_takes") and not table.entry("improved_backpack").has("bag_takes"), "neither backpack has slots (no bag_slots, no bag_takes): they only give carry weight")
+
+	# 1b. The four tiers (Dave 15 Nov 2026: lowest +5, top +50 kg; the middle two are provisional): no slots, a carry bonus that raises the server's limit, never opened.
+	var back_packs: Dictionary = {"simple_backpack": 5.0, "improved_backpack": 15.0, "quality_backpack": 30.0, "advanced_backpack": 50.0}
 	var body_plain: float = items._carry_body(1)
 
 	for id in back_packs:
@@ -138,6 +181,11 @@ func _init() -> void:
 
 	check(is_equal_approx(items._carry_body(1), body_plain), "with none worn the limit is the plain one")
 	check(not table.entry("wooden_pack_frame").has("slot") and bool(table.entry("wooden_pack_frame").get("retired", false)) and not table.entry("wooden_pack_frame").has("worn_speed_mult"), "the Wooden - Pack frame is retired (Dave 13 Nov 2026): no slot to wear it in, no speed penalty left")
+	var replaced_by: Dictionary = {"backpack": "simple_backpack", "leather_backpack": "improved_backpack", "wicker_pack_basket": "simple_backpack", "travellers_rucksack": "quality_backpack"}
+
+	for id in replaced_by:
+		var old_row: Dictionary = table.entry(id)
+		check(bool(old_row.get("retired", false)) and not old_row.has("slot") and not old_row.has("carry_bonus_kg") and table.current_number(table.number_of(id)) == table.number_of(replaced_by[id]), "%s is retired (Dave 15 Nov 2026): nothing to wear, and a saved one loads as %s" % [id, replaced_by[id]])
 	empty(inv)
 
 	# 2. Before: 30 slots, the plain limit and comfortable load of a 75 kg body.
@@ -145,36 +193,36 @@ func _init() -> void:
 	print("INFO bare: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg" % bare)
 	check(bare[0] == 30 and is_equal_approx(bare[2], 52.5) and is_equal_approx(bare[3], 42.0), "before: 30 slots, limit 52.5 kg, comfortable 42 kg")
 
-	# 3. Equipped: the slot count does not move; the limit and the comfortable load rise by the backpack's effect; leather beats hide.
+	# 3. Equipped: the slot count does not move; the limit and the comfortable load rise by the backpack's effect; Improved beats Simple.
 	items.give(1, hide, 1)
 	items.give(1, leather, 1)
 	put_on(items, hide)
 	var with_hide: Array = measure(items)
 	print("INFO hide: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg" % with_hide)
-	check(items.worn_of(1)[back_place(items)] == hide, "the Hide - Backpack is worn")
-	check(refuses_container(items), "the worn Hide - Backpack cannot be opened as a container and takes nothing")
-	check(with_hide[0] == bare[0] and with_hide[1] == bare[1], "worn Hide - Backpack: the pack's slot count is unchanged (%d)" % with_hide[0])
-	check(is_equal_approx(with_hide[2], bare[2] + 12.0) and is_equal_approx(with_hide[3], bare[3] + 12.0 * float(cfg.get("free_ratio", 0.8))), "worn Hide - Backpack: limit +12 kg and comfortable load +%.1f kg" % (with_hide[3] - bare[3]))
-	put_on(items, leather)   # swaps: the hide pack comes off into the pack
+	check(items.worn_of(1)[back_place(items)] == hide, "the Simple - Backpack is worn")
+	check(refuses_container(items), "the worn Simple - Backpack cannot be opened as a container and takes nothing")
+	check(with_hide[0] == bare[0] and with_hide[1] == bare[1], "worn Simple - Backpack: the pack's slot count is unchanged (%d)" % with_hide[0])
+	check(is_equal_approx(with_hide[2], bare[2] + 5.0) and is_equal_approx(with_hide[3], bare[3] + 5.0 * float(cfg.get("free_ratio", 0.8))), "worn Simple - Backpack: limit +5 kg and comfortable load +%.1f kg" % (with_hide[3] - bare[3]))
+	put_on(items, leather)   # swaps: the Simple pack comes off into the pack
 	var with_leather: Array = measure(items)
 	print("INFO leather: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg" % with_leather)
-	check(items.worn_of(1)[back_place(items)] == leather and inv.count_of(hide) == 1, "swapping to the Leather - Backpack returns the hide one to the pack")
-	check(refuses_container(items), "the worn Leather - Backpack cannot be opened as a container and takes nothing")
-	check(with_leather[0] == bare[0] and with_leather[1] == bare[1], "worn Leather - Backpack: the pack's slot count is unchanged (%d)" % with_leather[0])
-	check(is_equal_approx(with_leather[2], bare[2] + 18.0) and with_leather[3] > with_hide[3], "worn Leather - Backpack: limit +18 kg, comfortable load above the hide pack's")
+	check(items.worn_of(1)[back_place(items)] == leather and inv.count_of(hide) == 1, "swapping to the Improved - Backpack returns the Simple one to the pack")
+	check(refuses_container(items), "the worn Improved - Backpack cannot be opened as a container and takes nothing")
+	check(with_leather[0] == bare[0] and with_leather[1] == bare[1], "worn Improved - Backpack: the pack's slot count is unchanged (%d)" % with_leather[0])
+	check(is_equal_approx(with_leather[2], bare[2] + 15.0) and with_leather[3] > with_hide[3], "worn Improved - Backpack: limit +15 kg, comfortable load above the Simple pack's")
 
 	# The client's carry_body_kg is CarryRules.carry_body_kg over its worn numbers (the server's worn_of): the same call gives the same body value.
 	check(is_equal_approx(CarryRules.carry_body_kg(75.0, items.worn_of(1), table, cfg), items._carry_body(1)) and is_equal_approx(CarryRules.carry_body_kg(75.0, [0, 0, 0], table, cfg), 75.0), "client and server work the carry body weight out through one shared helper (%.2f kg worn)" % items._carry_body(1))
 
 	# 4. Hindering follows the new comfortable load: a load that slows a bare body does not slow a pack-wearer.
 	var load_kg: float = bare[3] + 3.0
-	check(CarryRules.speed_factor(load_kg, 75.0, cfg) < 1.0 and is_equal_approx(CarryRules.speed_factor(load_kg, items._carry_body(1), cfg), 1.0), "%.0f kg slows a bare body but not one in a Leather - Backpack" % load_kg)
+	check(CarryRules.speed_factor(load_kg, 75.0, cfg) < 1.0 and is_equal_approx(CarryRules.speed_factor(load_kg, items._carry_body(1), cfg), 1.0), "%.0f kg slows a bare body but not one in a Improved - Backpack" % load_kg)
 
 	# 5. Unequipped: the plain numbers return.
 	take_off(items)
 	var unworn: Array = measure(items)
 	print("INFO unworn: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg" % unworn)
-	check(items.worn_of(1)[back_place(items)] == 0 and inv.count_of(leather) == 1, "the Leather - Backpack is back in the pack")
+	check(items.worn_of(1)[back_place(items)] == 0 and inv.count_of(leather) == 1, "the Improved - Backpack is back in the pack")
 	check(unworn[0] == bare[0] and unworn[1] == bare[1] and is_equal_approx(unworn[2], bare[2]) and is_equal_approx(unworn[3], bare[3]), "unequipped: slots, limit and comfortable load are the plain ones again")
 
 	# 6. Near capacity: a pack of more than 30 slots loaded to a weight only the worn backpack allows, then the backpack comes off: nothing is lost
@@ -183,13 +231,13 @@ func _init() -> void:
 	inv.add(leather, 1)
 	put_on(items, leather)
 	inv.add(axe, 40)     # unstackable: 40 slots, 40 kg
-	inv.add(stone, 28)   # 28 kg more: 68 kg, over the plain 52.5 and under 52.5 + 18 = 70.5 (a worn backpack's own weight is not counted)
+	inv.add(stone, 25)   # 25 kg more: 65 kg, over the plain 52.5 and under 52.5 + 15 = 67.5 (a worn backpack's own weight is not counted)
 	var axes: int = total(items, axe)
 	var stones: int = total(items, stone)
 	var packs: int = total(items, leather)
 	var worn_state: Array = measure(items)
 	var kg_worn: float = items.carried_kg_of(1)
-	check(axes == 40 and stones == 28 and packs == 1 and worn_state[0] > 30 and kg_worn > bare[2] and kg_worn < worn_state[2], "near capacity worn: %d slots, %.1f kg carried, between the plain limit %.1f and the backpack's %.1f" % [worn_state[0], kg_worn, bare[2], worn_state[2]])
+	check(axes == 40 and stones == 25 and packs == 1 and worn_state[0] > 30 and kg_worn > bare[2] and kg_worn < worn_state[2], "near capacity worn: %d slots, %.1f kg carried, between the plain limit %.1f and the backpack's %.1f" % [worn_state[0], kg_worn, bare[2], worn_state[2]])
 	var room: int = items._fit(1, inv, stone, 50)
 	check(room > 0 and room < 50 and room == int((worn_state[2] - kg_worn) / CarryRules.weight_of("stone", cfg)), "the server's room for more is what is left under the backpack's limit (%d stone)" % room)
 	notices.clear()
@@ -198,7 +246,7 @@ func _init() -> void:
 	items._carry_notice(1)
 	var after: Array = measure(items)
 	print("INFO near capacity unworn: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg, carried %.2f kg" % [after[0], after[1], after[2], after[3], items.carried_kg_of(1)])
-	check(total(items, axe) == axes and total(items, stone) == stones and total(items, leather) == packs and inv.count_of(leather) == 1 and items.worn_of(1)[back_place(items)] == 0, "taking the backpack off near capacity loses and doubles nothing (40 axes, 28 stones, 1 backpack, now in the pack)")
+	check(total(items, axe) == axes and total(items, stone) == stones and total(items, leather) == packs and inv.count_of(leather) == 1 and items.worn_of(1)[back_place(items)] == 0, "taking the backpack off near capacity loses and doubles nothing (40 axes, 25 stones, 1 backpack, now in the pack)")
 	var occupied: int = 0
 
 	for slot in inv.slot_count:
@@ -221,14 +269,14 @@ func _init() -> void:
 	var back = make()
 	var back_body: float = float(back.vitals_of(1).get("weight", 75.0))
 	var back_inv = back.inventory_of(1)
-	check(back.worn_of(1)[back_place(back)] == leather, "after a reload the Leather - Backpack is still worn")
-	check(is_equal_approx(back._carry_body(1), back_body + 18.0 / 0.7) and back_inv.slot_count == saved[0] and back_inv.count_of(stone) == 10 and back_inv.count_of(leather) == 0, "and still raises the limit by 18 kg, with the same %d slots and 10 stones" % saved[0])
+	check(back.worn_of(1)[back_place(back)] == leather, "after a reload the Improved - Backpack is still worn")
+	check(is_equal_approx(back._carry_body(1), back_body + 15.0 / 0.7) and back_inv.slot_count == saved[0] and back_inv.count_of(stone) == 10 and back_inv.count_of(leather) == 0, "and still raises the limit by 15 kg, with the same %d slots and 10 stones" % saved[0])
 	take_off(back)
 	check(back_inv.count_of(leather) == 1 and is_equal_approx(back._carry_body(1), back_body) and back_inv.slot_count == saved[0], "unequipped after the reload: the plain limit, the backpack in the pack, slot count unchanged")
 
 	# 9. An older save: backpacks that still carry `bag` rows load plain (a pack row, a worn one and one on the ground), their contents add no
 	# weight, and a real bag with contents keeps them through the same load.
-	var wicker: int = table.number_of("wicker_pack_basket")
+	var wicker: int = table.number_of("quality_backpack")
 	var real_bag: int = table.number_of("fibre_shoulder_bag")
 	var kg_stone: float = CarryRules.weight_of("stone", cfg)
 	empty(back_inv)
@@ -269,12 +317,28 @@ func _init() -> void:
 		if int(older._items[id].get("number", 0)) == hide:
 			older_ground = older._items[id].get("inst", {})
 
-	check(older_hide >= 0 and not older_inv.inst_of(older_hide).has("bag"), "an older save's Hide - Backpack in the pack loads with no bag contents")
-	check(older.worn_of(1)[back_place(older)] == leather and not older.worn_slots_of(1)[back_place(older)][3].has("bag"), "an older save's worn Leather - Backpack loads with no bag contents")
-	check(on_ground >= 0 and not older_ground.has("bag"), "an older save's Hide - Backpack on the ground loads with no bag contents")
-	check(older_wicker >= 0 and not older_inv.inst_of(older_wicker).has("bag"), "an older save's Wicker - Pack basket (no slots now) loads with no bag contents")
-	check(absf(kg_with_bags - older.carried_kg_of(1) - 11.0 * kg_stone) < 0.001, "the dropped contents leave no invisible weight (%.2f kg before, %.2f after: the 11 kg of the Hide pack, the worn backpack and the basket are gone)" % [kg_with_bags, older.carried_kg_of(1)])
+	check(older_hide >= 0 and not older_inv.inst_of(older_hide).has("bag"), "an older save's Simple - Backpack in the pack loads with no bag contents")
+	check(older.worn_of(1)[back_place(older)] == leather and not older.worn_slots_of(1)[back_place(older)][3].has("bag"), "an older save's worn Improved - Backpack loads with no bag contents")
+	check(on_ground >= 0 and not older_ground.has("bag"), "an older save's Simple - Backpack on the ground loads with no bag contents")
+	check(older_wicker >= 0 and not older_inv.inst_of(older_wicker).has("bag"), "an older save's Quality - Backpack (no slots now) loads with no bag contents")
+	check(absf(kg_with_bags - older.carried_kg_of(1) - 11.0 * kg_stone) < 0.001, "the dropped contents leave no invisible weight (%.2f kg before, %.2f after: the 11 kg of the Simple pack, the worn backpack and the Quality pack are gone)" % [kg_with_bags, older.carried_kg_of(1)])
 	check(older_real >= 0 and older_inv.inst_of(older_real).get("bag", []) == [[stone, 2, 0]], "a real bag (the Fibre - Shoulder bag) keeps its contents through the same load")
+
+	# 10. A save from before the four tiers (Dave 15 Nov 2026): the retired packs it holds, in the pack and worn, load as their new tiers
+	# (renames.json), and the worn one raises the limit by its new tier's bonus.
+	empty(older_inv)
+	older.inventory_of(1).add(table.number_of("leather_backpack"), 1)
+	older.inventory_of(1).add(table.number_of("wicker_pack_basket"), 1)
+	older.inventory_of(1).add(table.number_of("travellers_rucksack"), 1)
+	older._characters[older._peer_key[1]]["worn"][back_place(older)] = [table.number_of("backpack"), 1, 0, {}]
+	older._dirty = true
+	older.save()
+	older._finish_writer()
+	var renamed = make()
+	var renamed_inv = renamed.inventory_of(1)
+	var quality: int = table.number_of("quality_backpack")
+	check(renamed.worn_of(1)[back_place(renamed)] == hide and renamed_inv.count_of(leather) == 1 and renamed_inv.count_of(hide) == 1 and renamed_inv.count_of(quality) == 1, "an older save's Hide backpack (worn), Leather backpack, Wicker basket and Traveller's rucksack load as Simple (worn), Improved, Simple and Quality")
+	check(is_equal_approx(renamed._carry_body(1), float(renamed.vitals_of(1).get("weight", 75.0)) + 5.0 / 0.7), "the worn pack from the older save raises the limit by the Simple - Backpack's 5 kg")
 
 	print("FAILURES: %d" % failures)
 	quit(1 if failures > 0 else 0)

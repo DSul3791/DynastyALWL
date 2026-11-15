@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1483,
+	"next_number": 1488,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -580,7 +580,7 @@
 			"value": 8,
 			"look_alikes": []
 		},
-		"backpack": {"number": 50, "name": "Hide - Backpack", "description": "A hide pack worn on the back. It lets you carry more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 40, "look_alikes": [], "slot": "back", "carry_bonus_kg": 12},
+		"backpack": {"number": 50, "name": "Hide - Backpack", "description": "A hide pack worn on the back. It lets you carry more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 40, "look_alikes": [], "retired": true, "note": "Retired 15 Nov 2026 (Dave: the four backpack tiers replace the old packs); the row stays for its number, renames.json loads a saved one as simple_backpack."},
 		"energy_bar": {
 			"number": 51,
 			"name": "Nut cake",
@@ -8120,7 +8120,7 @@
 			"leather_trousers": {"number": 764, "name": "Leather - Trousers", "description": "Leather trousers laced with straps. Tougher than hide and better in the wet.", "kind": "clothing", "slot": "legs", "wear_layer": "base", "fabric": "leather", "warmth": 0.16, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Trousers"], "value": 55, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.06, "projectile": 0.1}, "cover": 0.9},
 			"leather_boots": {"number": 765, "name": "Leather - Boots", "description": "Leather boots with a strapped ankle. They keep the feet dry for longer.", "kind": "clothing", "slot": "feet", "wear_layer": "footwear", "fabric": "leather", "warmth": 0.13, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Boots"], "value": 40, "protect": {"slashing": 0.15, "piercing": 0.1, "blunt": 0.08, "projectile": 0.1}, "cover": 1.0},
 			"leather_gloves": {"number": 766, "name": "Leather - Gloves", "description": "Leather gloves with fingers. For work, the bowstring and the cold.", "kind": "clothing", "slot": "hands", "wear_layer": "base", "fabric": "leather", "warmth": 0.09, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Gloves"], "value": 30, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.05, "projectile": 0.08}, "cover": 1.0},
-			"leather_backpack": {"number": 767, "name": "Leather - Backpack", "description": "A leather pack worn on the back. Lets you carry more weight than a hide pack, and sheds a little rain.", "kind": "gear", "slot": "back", "stack": 1, "unstackable": true, "value": 90, "look_alikes": ["Hide - Backpack"], "carry_bonus_kg": 18},
+			"leather_backpack": {"number": 767, "name": "Leather - Backpack", "description": "A leather pack worn on the back. Lets you carry more weight than a hide pack, and sheds a little rain.", "kind": "gear", "stack": 1, "unstackable": true, "value": 90, "look_alikes": ["Hide - Backpack"], "retired": true, "note": "Retired 15 Nov 2026 (Dave: the four backpack tiers replace the old packs); the row stays for its number, renames.json loads a saved one as improved_backpack."},
 			"straw_hat": {
 				"number": 768,
 				"name": "Straw - Hat",
@@ -9775,11 +9775,11 @@
 			"wool_socks": {"number": 980, "name": "Wool - Socks", "description": "Wool socks worn under footwear for warmth.", "kind": "clothing", "slot": "feet", "wear_layer": "socks", "fabric": "wool", "stack": 1, "unstackable": true, "look_alikes": [], "value": 10, "warmth": 0.06},
 			"wool_scarf": {"number": 981, "name": "Wool - Scarf", "description": "A wool scarf that keeps the neck and face warm.", "kind": "clothing", "slot": "neck", "wear_layer": "base", "fabric": "wool", "stack": 1, "unstackable": true, "look_alikes": [], "value": 14, "warmth": 0.08},
 			"fibre_shoulder_bag": {"number": 982, "name": "Fibre - Shoulder bag", "description": "A small plant-fibre bag on a strap. The first pack, before hides.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 12, "slot": "shoulder", "bag_slots": 4, "bag_takes": "any"},
-			"wicker_pack_basket": {"number": 983, "name": "Wicker - Pack basket", "description": "A woven basket worn on the back. Cheap, lets you carry a little more, but awkward and poor in the wet.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "slot": "back", "carry_bonus_kg": 8},
+			"wicker_pack_basket": {"number": 983, "name": "Wicker - Pack basket", "description": "A woven basket worn on the back. Cheap, lets you carry a little more, but awkward and poor in the wet.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "retired": true, "note": "Retired 15 Nov 2026 (Dave: the four backpack tiers replace the old packs); the row stays for its number, renames.json loads a saved one as simple_backpack."},
 			"leather_satchel": {"number": 984, "name": "Leather - Satchel", "description": "A small leather bag worn on the shoulder for light things.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 45, "slot": "shoulder", "bag_slots": 6, "bag_takes": "small"},
 			"belt_pouch": {"number": 985, "name": "Belt pouch", "description": "A small pouch worn on the belt for quick reach.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 12, "slot": "waist", "wear_layer": "pouch", "bag_slots": 4, "bag_takes": "small"},
 			"tool_roll": {"number": 986, "name": "Tool roll", "description": "A rolled cloth or leather case that keeps small tools and repair kit in order.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 25, "slot": "waist", "wear_layer": "tools", "bag_slots": 6, "bag_takes": "small_tool"},
-			"travellers_rucksack": {"number": 987, "name": "Traveller's rucksack", "description": "A large cloth and leather pack for long journeys. Spreads the load, so you can carry much more weight.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 130, "slot": "back", "carry_bonus_kg": 24},
+			"travellers_rucksack": {"number": 987, "name": "Traveller's rucksack", "description": "A large cloth and leather pack for long journeys. Spreads the load, so you can carry much more weight.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 130, "retired": true, "note": "Retired 15 Nov 2026 (Dave: the four backpack tiers replace the old packs); the row stays for its number, renames.json loads a saved one as quality_backpack."},
 			"wooden_pack_frame": {"number": 988, "name": "Wooden - Pack frame", "description": "A wooden frame with straps for awkward loads such as logs and ore sacks.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 30, "retired": true},
 			"weapon_scabbard": {"number": 989, "name": "Weapon scabbard", "description": "A leather scabbard worn on the hip or back. Sheathes a sword.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 25, "slot": "waist", "wear_layer": "scabbard", "bag_slots": 1, "bag_takes": "blade"},
 			"utility_bandolier": {"number": 990, "name": "Utility bandolier", "description": "A leather strap of loops for small things you need at hand.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 30, "slot": "strap", "bag_slots": 6, "bag_takes": "consumable"},
@@ -12234,6 +12234,22 @@
 			"unstackable": true,
 			"look_alikes": [],
 			"note": "Placed vehicle (W-14, PROVISIONAL: 8 Planks, 4 Cart wheels, 2 Axles and 16 Wooden pins, hammer blueprint 357). Row state 447; the Handcart's pulled-vehicle controller (server_carts.gd)."
+		},
+		"simple_backpack": {"number": 1483, "name": "Simple - Backpack", "description": "A hide pack laced with twine on a stick frame. Worn on the back, it spreads the load so you can carry a little more.", "kind": "gear", "stack": 1, "unstackable": true, "value": 30, "look_alikes": [], "slot": "back", "carry_bonus_kg": 5, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
+		"improved_backpack": {"number": 1484, "name": "Improved - Backpack", "description": "A leather pack on a hardwood board. Worn on the back, it lets you carry more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 70, "look_alikes": [], "slot": "back", "carry_bonus_kg": 15, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
+		"quality_backpack": {"number": 1485, "name": "Quality - Backpack", "description": "A well made leather pack sewn with sinew, its boards nailed. Worn on the back, it lets you carry much more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 120, "look_alikes": [], "slot": "back", "carry_bonus_kg": 30, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
+		"advanced_backpack": {"number": 1486, "name": "Advanced - Backpack", "description": "A heavy leather pack on a steel frame. Worn on the back, it lets you carry the most weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 220, "look_alikes": [], "slot": "back", "carry_bonus_kg": 50, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
+		"copper_nails": {
+			"number": 1487,
+			"name": "Copper nails",
+			"description": "Small copper nails. Soft, but they fix boards in builds the same as iron ones.",
+			"kind": "material",
+			"material": "copper",
+			"stack": 200,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note_provisional": "Dave 15 Nov 2026: \"add copper nails to our items list\". The recipe (1 Copper ingot to 100 at the Primitive smithy) mirrors Bronze nails and is assumed for his review; they fill the nails ingredient group, so they work wherever nails do."
 		}
 	}
 }

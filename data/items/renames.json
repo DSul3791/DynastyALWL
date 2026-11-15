@@ -1,6 +1,10 @@
 {
 	"_note": "A retired item -> the item that took its place (src/shared/item_table.gd load_renames, current_number). When a save loads, every pack, chest, ground item, worn slot and hotbar key holding the old number gets the new one. A pair counts only while the old row in items.json is \"retired\": true and the new row exists. Keep the old row in items.json: its number must never be reused. A pair may be [new id, count]: each saved one loads as that many of the new item (the wood merge, Dave 15 Nov 2026: a large block is 4 Wooden blocks; docs/design/TREE_WOOD_TOOLS_DESIGN.md s4).",
 	"renames": {
+		"backpack": "simple_backpack",
+		"leather_backpack": "improved_backpack",
+		"wicker_pack_basket": "simple_backpack",
+		"travellers_rucksack": "quality_backpack",
 		"hide_leggings": "hide_trousers",
 		"salt": "sea_salt",
 		"iron_doorway": "doorway_section",

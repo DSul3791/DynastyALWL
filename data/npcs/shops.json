@@ -13,7 +13,7 @@
 			"bandage",
 			"waterskin",
 			"wooden_bowl",
-			"backpack",
+			"simple_backpack",
 			"roast_forage",
 			"firewood",
 			"stone",
@@ -81,7 +81,7 @@
 				4,
 				2
 			],
-			"backpack": [
+			"simple_backpack": [
 				1,
 				1
 			],

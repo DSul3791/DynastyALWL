@@ -73,6 +73,14 @@ func _gear_column(names: Array) -> Control:
 		slot.clicked.connect(func(button: int, _shift: bool) -> void:
 			if button == MOUSE_BUTTON_LEFT:
 				view.open_bag(int(well_at.get(gear, -1))))
+
+		# The pack slot (Dave 15 Nov 2026): drop a back piece from the inventory here to put it on, drag the worn pack back into the
+		# inventory to take it off. Only a worn pack raises the carry limit (CarryRules.carry_bonus_kg); one in the inventory does nothing.
+		if gear == "back":
+			slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot") and view.wear_slot_of(int(data["slot"])) == "back"
+			slot.on_drop = func(data: Variant) -> void: view.wear_slot(int(data["slot"]))
+			slot.drag_data = func() -> Variant: return {"worn": int(well_at["back"])} if int(well_at.get("back", -1)) >= 0 else null
+
 		column.add_child(slot)
 		wells[gear] = slot
 

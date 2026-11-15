@@ -2856,10 +2856,11 @@
 			"kind": "gear",
 			"description": "A hide pack worn on the back. It lets you carry more weight.",
 			"how_to_get": [
-				"Craft: 4 Hide, 1 Rope (keep Bone - Needle)"
+				"No longer made: replaced by Simple - Backpack"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"energy_bar": {
 			"name": "Nut cake",
@@ -9763,10 +9764,11 @@
 			"kind": "gear",
 			"description": "A leather pack worn on the back. Lets you carry more weight than a hide pack, and sheds a little rain.",
 			"how_to_get": [
-				"Craft at a workbench: 4 Leather, 4 Leather strap (keep Bone - Needle)"
+				"No longer made: replaced by Improved - Backpack"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"straw_hat": {
 			"name": "Straw - Hat",
@@ -13025,6 +13027,59 @@
 				"Build with a hammer (press R): 20 Iron ingot, 20 Steel ingot"
 			],
 			"used_for": [],
+			"obtainable_now": true
+		},
+		"simple_backpack": {
+			"name": "Simple - Backpack",
+			"kind": "gear",
+			"description": "A hide pack laced with twine on a stick frame. Worn on the back, it spreads the load so you can carry a little more.",
+			"how_to_get": [
+				"Craft by hand: 5 Hide, 20 Twine, 4 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"improved_backpack": {
+			"name": "Improved - Backpack",
+			"kind": "gear",
+			"description": "A leather pack on a hardwood board. Worn on the back, it lets you carry more weight.",
+			"how_to_get": [
+				"Craft at a Leatherworking table: 5 Leather, 20 Twine, 1 Hardwood board"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"quality_backpack": {
+			"name": "Quality - Backpack",
+			"kind": "gear",
+			"description": "A well made leather pack sewn with sinew, its boards nailed. Worn on the back, it lets you carry much more weight.",
+			"how_to_get": [
+				"Craft at a Leatherworking table: 10 Leather, 20 Sinew, 15 Nails (any kind), 2 Hardwood board"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"advanced_backpack": {
+			"name": "Advanced - Backpack",
+			"kind": "gear",
+			"description": "A heavy leather pack on a steel frame. Worn on the back, it lets you carry the most weight.",
+			"how_to_get": [
+				"Craft at the Advanced smithy: 2 Steel ingot, 25 Leather, 40 Sinew"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"copper_nails": {
+			"name": "Copper nails",
+			"kind": "material",
+			"description": "Small copper nails. Soft, but they fix boards in builds the same as iron ones.",
+			"how_to_get": [
+				"Craft at the Primitive smithy: 1 Copper ingot"
+			],
+			"used_for": [
+				"Fills any Nails need, the same as Nails and Bronze nails",
+				"Used in Quality - Backpack"
+			],
 			"obtainable_now": true
 		}
 	},

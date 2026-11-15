@@ -713,11 +713,11 @@ var crude_chair: int = -1
 func step3_construction_and_equipment() -> void:
 	step("3 construction and equipment")
 	go(WORKSHOP)
-	items.give(1, n("plant_fibre"), 3 * (cost_of("workbench", "twine") + cost_of("drying_rack", "twine") + cost_of("tanning_rack", "twine") + cost_of("leatherworking_table", "twine") + cost_of("loom", "twine") + cost_of("tailors_table", "twine") + need_of("rope", "twine") + need_of("hide_scraper", "twine")))   # plant fibre gathered by hand (step 1, test_first_hour)
-	craft("twine", cost_of("workbench", "twine") + cost_of("drying_rack", "twine") + cost_of("tanning_rack", "twine") + cost_of("leatherworking_table", "twine") + cost_of("loom", "twine") + cost_of("tailors_table", "twine") + need_of("rope", "twine") + need_of("hide_scraper", "twine"))
+	items.give(1, n("plant_fibre"), 3 * (cost_of("workbench", "twine") + cost_of("drying_rack", "twine") + cost_of("tanning_rack", "twine") + cost_of("leatherworking_table", "twine") + cost_of("loom", "twine") + cost_of("tailors_table", "twine") + need_of("simple_backpack", "twine") + need_of("hide_scraper", "twine")))   # plant fibre gathered by hand (step 1, test_first_hour)
+	craft("twine", cost_of("workbench", "twine") + cost_of("drying_rack", "twine") + cost_of("tanning_rack", "twine") + cost_of("leatherworking_table", "twine") + cost_of("loom", "twine") + cost_of("tailors_table", "twine") + need_of("simple_backpack", "twine") + need_of("hide_scraper", "twine"))
 
 	# Hides: deer hunted (test_hunt_feedback) and dressed with the stone knife until there are leather and backpack hides; a bone for the needle.
-	var hides_n: int = 2 + need_of("backpack", "hide")
+	var hides_n: int = 2 + need_of("simple_backpack", "hide")
 
 	for k in range(8):
 		if have("hide") >= hides_n:
@@ -784,11 +784,11 @@ func step3_construction_and_equipment() -> void:
 	craft("gambeson", 1)
 	check(have("gambeson") == 1, "3g. the Tailor's table makes a Fibre - Gambeson")
 
-	# A Bone - Needle and a Hide - Backpack by hand.
+	# A Bone - Needle and a Simple - Backpack by hand (Dave 15 Nov 2026: 5 Hide, 20 Twine, 4 Stick).
 	craft("sewing_needle", 1)
-	craft("rope", 1)
-	craft("backpack", 1)
-	check(have("backpack") == 1 and have("sewing_needle") == 1, "3h. a Hide - Backpack sewn by hand (the needle is kept)")
+	give_needs("simple_backpack", ["stick"])   # sticks lie about (test_first_hour)
+	craft("simple_backpack", 1)
+	check(have("simple_backpack") == 1 and have("sewing_needle") == 1, "3h. a Simple - Backpack made by hand")
 
 	# Boards and pins for the furniture: oak logs sawn (test_lumber_route), a Plank into wooden pins at the workbench.
 	var boards_n: int = cost_of("plank_chest", "hardwood_board") + cost_of("crude_chair", "hardwood_board")
@@ -839,16 +839,16 @@ func step3_construction_and_equipment() -> void:
 	check(both > alone_g and both > alone_m - 0.0001 and both < alone_g + alone_m + 0.0001, "3o. layered they stop %.3f of a cut: more than the gambeson alone (%.3f), not more than both summed" % [both, alone_g])
 
 	# The backpack: worn. It has no slots (Dave 13 Nov 2026: only carry weight), so it cannot be opened or filled as a container.
-	items.action(1, Net.ACT_WEAR, slot_of("backpack"), 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_WEAR, slot_of("simple_backpack"), 0, 0, Vector3.ZERO)
 	var back_at: int = items._worn_places().find("back:base")
-	check(back_at >= 0 and items.worn_of(1)[back_at] == n("backpack"), "3p. the backpack is worn on the back with the gambeson and mail")
+	check(back_at >= 0 and items.worn_of(1)[back_at] == n("simple_backpack"), "3p. the backpack is worn on the back with the gambeson and mail")
 	var pack_id: int = -1 - back_at
 	items.give(1, n("stone"), 3)
 	var stone_before: int = have("stone")
 	var sends_before: int = int(chest_sends.get(1, 0))
 	items.action(1, Net.ACT_CHEST_OPEN, pack_id, 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("stone"), pack_id, have("stone"), Vector3.ZERO)
-	check(BagRules.slots_of(items.table, n("backpack")) == 0 and int(chest_sends.get(1, 0)) == sends_before and have("stone") == stone_before and items.worn_slots_of(1)[back_at][3].get("bag", []).is_empty(), "3q. the worn backpack has no slots: it is not opened, takes nothing and the stones stay in the pack")
+	check(BagRules.slots_of(items.table, n("simple_backpack")) == 0 and int(chest_sends.get(1, 0)) == sends_before and have("stone") == stone_before and items.worn_slots_of(1)[back_at][3].get("bag", []).is_empty(), "3q. the worn backpack has no slots: it is not opened, takes nothing and the stones stay in the pack")
 	leave({"stone": 0, "stick": 0, "plant_fibre": 0, "clay": 0, "sand": 0, "flint": 0, "leaves": 0, "firewood": 0, "bone": 0, "charcoal": 0, "twine": 0})   # the gathered kinds are put down, as before this check lost its bag
 
 	# Wear from use and repair at the station: a wolf bite wears the mail shirt; away from a Smithy it is not mended, at the Smithy it is.
@@ -1399,6 +1399,6 @@ func step7_save_and_reload() -> void:
 		check(differ.is_empty() and not a.is_empty(), "7. %s: %d before, all identical after the reload %s" % [part, a.size(), str(differ.slice(0, 6))])
 
 	var worn_now: Array = items.worn_of(1)
-	check(worn_now.has(n("gambeson")) and worn_now.has(n("mail_shirt")) and worn_now.has(n("backpack")), "7. the gambeson, the mail shirt and the backpack are still worn")
+	check(worn_now.has(n("gambeson")) and worn_now.has(n("mail_shirt")) and worn_now.has(n("simple_backpack")), "7. the gambeson, the mail shirt and the backpack are still worn")
 	var chest_again: int = standing_at("plank_chest", DEPOT_A + Vector3(2.0, 0.0, 0.0))
 	check(chest_again >= 0 and not items._lock_of(items._items[chest_again]).is_empty(), "7. the Rustic - Chest is still locked")
