@@ -638,10 +638,13 @@ var _resume_to: Dictionary = {}      # peer -> [resume spot Vector3, msec sent]:
 
 
 func note_logout(peer: int) -> void:
-	if _peer_key.has(peer):
+	if _peer_key.has(peer) and not _logout_peers.has(peer):   # once per session: a repeated logout is not another save
 		_logout_peers[peer] = true
 		_note_spot(peer, "deliberate")   # written and saved now: the line may close slowly or the game die on exit before the disconnect arrives
+		_async_writes = true   # as the periodic save: the files are written off the tick
 		save()
+		_async_writes = false
+		_start_writer()
 
 
 # Writes where the peer is and how they last left into the character row: "online" while playing, then "deliberate" (the client
