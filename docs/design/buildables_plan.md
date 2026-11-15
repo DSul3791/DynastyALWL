@@ -8,9 +8,9 @@
 
 | Quality | Main character | Prerequisite material path |
 |---|---|---|
-| Crude | Scrounged sticks, thatch, twine and other early material | Hands, Stone Axe, basic Hammer |
+| Crude | Scrounged sticks, thatch, twine and other early material | Hands, Stone Axe, Stone Hammer |
 | Rustic | Whole-log structural framing | Logs from sufficiently large trees |
-| Refined | Sawn wooden construction | Iron Saw (from Improved Smithy), Planks / Hardwood Boards as specifically costed |
+| Refined | Sawn wooden construction | A saw (the first is the Copper saw from the Primitive Smithy), Planks / Hardwood Boards as specifically costed |
 | Sturdy | Cut stone and mortar | Stone processing and suitable metal/tool access |
 | Superior | Brick and masonry | Campfire/Kiln brick plus relevant processing |
 | Engineered | Concrete structures | Limestone→Lime Powder, Mixer, Sand/Stone and Water from filled containers |
@@ -46,6 +46,7 @@ Each roof panel is a **simple roof surface with NO support legs**. The player ca
 
 - **Fences and Gates:** meaningful terrain-following sections and actual opening gates, not duplicate door items. Honor established material tiers and the existing foundation/terrain placement conventions.
 - **Workbench and Carpentry:** Wooden Workbench, Carpenter's Bench, Stone Workbench and approved Vice/Tool Rack upgrades retain their own material names and levels. **Metalworking is separate:** Primitive, Improved, Advanced Smelters; Primitive, Improved, Advanced, Master Smithies. No Stone Forge or Brick Forge manufacturing stages, no nearby free-standing Anvil required for forge level.
+- **Knife versus hammer blueprints (Dave, 15 Nov 2026; [TREE_WOOD_TOOLS_DESIGN.md](TREE_WOOD_TOOLS_DESIGN.md)):** simple furnishings and stations made only of wood, or wood and twine, are placed from the **knife's right-click menu** (log seat, log benches, log table, simple racks and stations, the Wood Carving Station) and leave the hammer menu; the exact list is W-9 there. Structural pieces (foundations, walls, doorways, doors, windows, ceilings, roofs, stairs, fences, pipes) stay with the hammer. Both use the same preview, rotation, material sourcing and placement validation; the knife does not create sawn materials. The hammer's top option is "Hammer/Repair Tool": repair, place blueprints, harvest stone and ore.
 - **Furniture:** graded furniture follows the master catalog's Crude/Rustic/Fine/Ornate quality rules (different from seven construction tiers); Crude furniture never arbitrarily needs late metals.
 - **Lighting:** standing/wall torches, lantern posts and braziers have real usable lighting/fuel, and player interaction remains normal.
 - **Gardening:** tilled plots, garden furniture, planters, raised beds, compost and cold frames must correspond to actual sow/water/harvest actions. Some blueprints remain locked because the underlying gameplay is missing: **do not simply set known=true** and claim the feature works.
@@ -61,6 +62,6 @@ The prior design approved a local network graph for built water structures witho
 
 The live item, recipe, blueprint and structure files hold stable numeric IDs, and old IDs cannot be recycled. Current master §3.0 holds exact door identities and material costs. New buildable sizes/items (including the three resource-bin capacities and their Planks/Nails recipes) are designed separately; avoid duplicate Open Storage Bin IDs. Reconcile existing families to approved items rather than installing a second buildables system.
 
-Playtest: build an early Crude shelter without Iron Saw; place Crude roofs 45/65 including corners and inverted edges; make walls with actual open doorways and add physical doors, both arched and double; build one full example of each seven-tier family where currently implemented; take down/restore construction materials without loss; verify copper/bronze-to-iron station route; test the 23 currently locked infrastructure targets after their mechanics ship; reproduce earlier unwanted "ground too steep" and falsely blocked green ghosts with coordinates. Do not claim completion from static tables or thumbnails.
+Playtest: build an early Crude shelter without a saw; place Crude roofs 45/65 including corners and inverted edges; make walls with actual open doorways and add physical doors, both arched and double; build one full example of each seven-tier family where currently implemented; take down/restore construction materials without loss; verify copper/bronze-to-iron station route; test the 23 currently locked infrastructure targets after their mechanics ship; reproduce earlier unwanted "ground too steep" and falsely blocked green ghosts with coordinates. Do not claim completion from static tables or thumbnails.
 
 **Development:** independently reviewed small feature branches into `dev`; `main` stays stable. This document makes no gameplay code or save-format change.

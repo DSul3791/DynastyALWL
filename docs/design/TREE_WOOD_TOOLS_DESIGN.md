@@ -48,6 +48,7 @@ Labels: **[DAVE]** confirmed by Dave in the handoff (15 Nov 2026 review) or his 
 
 ### 1.7 Simple furnishings
 - Knife-placed **log bench**, single and double: a thick half-log slab seat with a flat top and rough edge on two short round log sections laid on their sides, set in from the ends (Dave's reference picture, 15 Nov 2026: `art/references/wood_system_2026-11-15/log_bench_reference.png`; "That would be the single version, and then you could simply make it longer to be the double version"). Made of existing logs/blocks; no split-log material.
+- A second bench with a backrest (Dave's design sheet, 15 Nov 2026: `art/references/wood_system_2026-11-15/log_bench_with_backrest_design.png`) so several seats can stand round a fire; row and cost W-17.
 - Block seats, log tables and eligible wooden stations form the knife menu.
 
 ## 2. What the game did before this change (dev 40bea035) and what changes
@@ -111,6 +112,7 @@ Assumed values are proposals only. Phase work that does not depend on a row cont
 | W-8 | Longbow | 1 Log (any) + 1 Sinew + 2 Twine, keeps a knife, at the carving station (was 1 large block + 1 sinew + 2 twine at the workbench). | Longbow |
 | W-9 | Knife menu (moves out of the hammer menu) | Seat, Log bench single and double, Log table, Stool, Wood carving station, Chopping block, Drying rack, Tool rack, Firewood rack, Log rack, Tanning rack, Tailor's table, Food preparation table, Wicker chest, Basket, and the Crude grade wood-only furniture (Crude chair, table, bench, shelf, chest). Walls, floors, roofs, fences, doors, stairs, pipes and garden pieces stay with the hammer. | Knife menu |
 | W-10 | Log benches | Single = existing "Log - Bench" (629, its retired blueprint 88 returns), 1.2 m, seats one, cost 1 Log. Double = new "Log - Double bench", 2.2 m, seats two, cost 2 Logs. | Benches |
+| W-17 | Log bench with a backrest (Dave's design sheet, 15 Nov 2026: `art/references/wood_system_2026-11-15/log_bench_with_backrest_design.png`) | New item "Log - Backed bench", knife menu: live-edge slab seat about 1.5 m long and 45 cm high on two half-log bases, live-edge backrest on two round log posts leaning slightly back, about 90 cm tall; seats two; cost 3 Logs + 2 Twine. | Backed bench |
 | W-11 | Log table | Existing "Log - Table" (631, blueprint 89 returns) at its old cost, 3 Logs + 2 Twine, knife menu. | Log table |
 | W-12 | Stone pickaxe | Retire recipe 186 (no longer craftable); keep item 297 so saved ones load and still work. Copper pickaxe and the metal picks stay. | Starter tools |
 | W-13 | Unified names | "Firewood" (26) and "Wooden block" (234); the other four wood rows retire (s4). | Phase 2 |

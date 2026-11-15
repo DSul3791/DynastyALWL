@@ -25,6 +25,8 @@ Normal steps:
 
 **Goals and character state:** persist automatic completed-goal IDs, counters and coin payment together with adequate crash consistency. Rejoin and world restart must not repay awards, replay old placards or erase exploration/mapping records. Old-character retrospective payout migration remains a distinct later approval, **not** a default rule. The new skill-based charcoal Map must save only per-character observed/recorded territory (and its accuracy) rather than granting a pre-revealed World Map.
 
+**Wood merge (Dave, 15 Nov 2026; [TREE_WOOD_TOOLS_DESIGN.md](TREE_WOOD_TOOLS_DESIGN.md) s4):** supported saves are those written by dev 40bea035 or later. `firewood_soft` loads as 1 Firewood, `wooden_block_soft` as 1 Wooden block, `wooden_block_large` and `wooden_block_soft_large` as **4** Wooden blocks each (the old large-to-small recipes gave 4), wherever saved items are read (packs, chests and station stores, ground items, worn slots, hotbar keys). Craft queues holding a retired wood recipe refund its inputs. Old numbers are never reused.
+
 ## Tests before merging into dev
 
 - New character builds the full metalwork progression, breaks/repairs a Smithy, saves and loads inventories and physical drops with exact counts.
