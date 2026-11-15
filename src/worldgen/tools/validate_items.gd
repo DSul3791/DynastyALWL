@@ -953,6 +953,11 @@ func _init() -> void:
 				changed = true
 
 	for rid in recipes:
+		# A retired recipe is never crafted (recipe_table.gd skips it), so its ingredients may have no source left
+		# (small_soft_blocks_from_large after the wood rows were unified, wood system phase 2).
+		if bool(recipes[rid].get("retired", false)):
+			continue
+
 		if not obtainable.has(String(recipes[rid].get("gives", [""])[0])):
 			fail("recipe '%s' can never be made (an ingredient has no source)" % rid)
 
