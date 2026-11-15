@@ -412,6 +412,8 @@
 		"old_blows_per_log": 3,
 		"old_branch_blows": 3
 	},
+	"rolling_note": "A loose log lying on a slope rolls downhill and settles (TREE_WOOD_TOOLS_DESIGN.md s1.1, s5; server_items.gd _roll_tick). Only a shoulder log (items.json carry shoulder) or an item in also, just dropped, split or moved, is looked at; it is put to sleep once it stops. It rolls while the ground slope ACROSS it (perpendicular to its long axis, over probe_m either side) is over slope, gaining accel_mps2 up to max_mps, and stops where that slope falls under slope, at water deeper than water_m, at a wall or after max_m. send_s is how often the players who see it are told where it is. DELEGATED, tunable.",
+	"rolling": {"slope": 0.35, "probe_m": 0.4, "accel_mps2": 2.0, "max_mps": 3.0, "max_m": 60.0, "water_m": 0.05, "send_s": 0.1, "also": ["log"]},
 	"trunk": {
 		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle. Any further by_species rows (willow withies, Scots pine tar) each roll the same chance on their own (GA-02).",
 		"branch_blows": 2,
@@ -444,7 +446,9 @@
 		"log_length_m": 3.0,
 		"max_logs": 20,
 		"small_blows": 2,
-		"small": [["firewood", 2, 3], ["kindling", 3, 6], ["stick", 3, 6]],
+		"small": [["kindling", 3, 6], ["stick", 3, 6]],
+		"small_tree_note": "A felled tree is SMALL when its trunk is shorter than max_length_m or its drawn butt radius is under min_radius_m (TREE_WOOD_TOOLS_DESIGN.md s1.1, s5; Dave 15 Nov 2026: a small tree breaks directly into Firewood, a large one into logs). It breaks entirely into Firewood, firewood_per_m a metre of trunk rounded, clamped to the firewood range (the largest, 24, is 18 kg at 0.75 kg a piece: carryable with an axe, food and water), plus the kindling and sticks of the small rows, no logs; its seeds and crown litter drop as for any tree. DELEGATED, tunable.",
+		"small_tree": {"max_length_m": 8.0, "min_radius_m": 0.12, "firewood_per_m": 3.0, "firewood": [2, 24]},
 		"roots": [
 			"tree_roots",
 			1,

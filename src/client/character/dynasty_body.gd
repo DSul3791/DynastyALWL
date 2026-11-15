@@ -82,6 +82,7 @@ var hand_mount_r: Marker3D
 var hand_mount_l: Marker3D
 var head_mount: Marker3D
 var _log: MeshInstance3D
+var _log_two: MeshInstance3D   # the second log, beside it
 var _model: Node3D
 var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
 var breath: SkeletonModifier3D               # dynasty_breath.gd, made with the body
@@ -786,11 +787,15 @@ func set_clothed(_on: bool) -> void:
 	pass
 
 
-# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the arm does not rise to steady it yet).
-func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
+# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the arm does not rise to steady it yet). `second`: the colour of a second
+# log carried beside it (TREE_WOOD_TOOLS_DESIGN.md s1.2, two logs at most), null for one.
+func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15), second: Variant = null) -> void:
 	if length <= 0.0:
 		if _log != null:
 			_log.visible = false
+
+		if _log_two != null:
+			_log_two.visible = false
 
 		return
 
@@ -805,9 +810,7 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 		attachment.add_child(_log)
 
 	# The trees' own bark (flora_view.gd BARK_SHADER, as a felled trunk in inventory_view.gd draws it), tinted by the species: a carried log was a plain plastic-brown cylinder.
-	var bark: ShaderMaterial = _log.material_override as ShaderMaterial
-	bark.set_shader_parameter("tint", Vector3(color.r, color.g, color.b))
-	bark.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(length / 1.6, 1.0)))
+	_tint_log(_log, color, radius, length)
 	var cyl: CylinderMesh = _log.mesh as CylinderMesh if _log.mesh != null else CylinderMesh.new()
 	cyl.top_radius = radius * 0.8
 	cyl.bottom_radius = radius
@@ -817,6 +820,30 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	_log.position = Vector3(-17.0, 24.0, -4.0)      # on top of the right shoulder beside the head (TEST-010, Dave 12 Nov 2026: it rode at chest height): the shoulder joint is 18.7 cm right and 1.6 cm above Spine2, the log's 14 cm radius rests on the muscle above it (model space: right is -X, front +Z), in centimetres
 	_log.visible = true
+
+	if not (second is Color):
+		if _log_two != null:
+			_log_two.visible = false
+
+		return
+
+	if _log_two == null:
+		_log_two = MeshInstance3D.new()
+		_log_two.material_override = _log_bark()
+		_log_two.scale = Vector3.ONE * 100.0
+		_log.get_parent().add_child(_log_two)
+
+	_tint_log(_log_two, second, radius, length)
+	_log_two.mesh = _log.mesh
+	_log_two.rotation = _log.rotation
+	_log_two.position = _log.position + Vector3(-radius * 210.0, -radius * 40.0, 0.0)   # side by side, out over the arm (model space: right is -X, centimetres)
+	_log_two.visible = true
+
+
+func _tint_log(log: MeshInstance3D, color: Color, radius: float, length: float) -> void:
+	var bark: ShaderMaterial = log.material_override as ShaderMaterial
+	bark.set_shader_parameter("tint", Vector3(color.r, color.g, color.b))
+	bark.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(length / 1.6, 1.0)))
 
 
 static var _log_shader: Shader

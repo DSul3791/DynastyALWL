@@ -485,8 +485,9 @@ func _init() -> void:
 	var birch: int = items.table.number_of("log_birch")
 	box(cart).add(birch, 1)
 	box(cart).add(birch, 1)
+	box(cart).add(birch, 1)
 	act(1, Net.ACT_PICKUP, cart)
-	check(items._items.has(cart) and box(cart).count_of(birch) == 2, "two large logs in its store: it does not come apart (one large log at a time)")
+	check(items._items.has(cart) and box(cart).count_of(birch) == 3, "three large logs in its store: it does not come apart (two logs at most on the shoulder)")
 	box(cart).remove(birch, 1)
 	act(1, Net.ACT_PICKUP, cart)
 	check(not items._items.has(cart), "the loaded cart comes apart")
@@ -496,7 +497,7 @@ func _init() -> void:
 		if inv.numbers[s] == bag_n:
 			bag_slot = s
 
-	check(bag_slot >= 0 and JSON.stringify(inv.inst_of(bag_slot)) == JSON.stringify(bag_inst) and items.shoulder_of(1) == "log_birch", "the bag comes out with its 3 stones inside, the large log onto the shoulder")
+	check(bag_slot >= 0 and JSON.stringify(inv.inst_of(bag_slot)) == JSON.stringify(bag_inst) and items.shoulder_of(1) == "log_birch" and items.shoulder_count(1) == 2, "the bag comes out with its 3 stones inside, the two large logs onto the shoulder")
 	check(have(1, "raw_meat") == 4 and have(1, "wooden_cart_wheel") == 2 and have(1, "axle") == 1 and have(1, "lumber") == 6 and have(1, "wooden_pin") == 12, "its cargo and every part are in the pack (4 raw meat, 2 wheels, 1 axle, 6 Planks, 12 pins)")
 	check(items._items.has(heavy) and not items._items[heavy]["struct"].has("on") and absf(float(items._items[heavy]["pos"].y) - 10.0) < 0.06 and items._chests.has(int(items._items[heavy]["struct"]["uid"])), "the crate on it is set down whole")
 

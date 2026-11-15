@@ -148,7 +148,7 @@ func _init() -> void:
 	items.send_notice = func(_p, _t): pass
 	items.ground_height = func(_x, _z): return 10.0
 	var standing: Dictionary = {7: true}
-	items.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
+	items.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3} if standing.has(id) else {}
 	items.cut_tree = func(_chunk, id): standing.erase(id); return true
 	items.water_near = func(_pos, _reach): return false
 	items.setup(ItemTableScript.load_default(), dir)

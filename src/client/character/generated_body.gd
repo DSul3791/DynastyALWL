@@ -80,6 +80,7 @@ var genome: Dictionary = {}
 var face: Node3D
 var _material: ShaderMaterial
 var _log: MeshInstance3D
+var _log_two: MeshInstance3D   # the second log, beside it
 var _near_mesh: ArrayMesh
 var _far_mesh: ArrayMesh
 var _far: bool = false
@@ -238,11 +239,15 @@ func dress(skin_color: Color, coat: Color, trousers: Color, shoes: Color = Color
 	_material.set_shader_parameter("boot_color", shoes)
 
 
-# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres.
-func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
+# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres. `second`: the colour of a second log carried beside it
+# (TREE_WOOD_TOOLS_DESIGN.md s1.2, two logs at most), null for one.
+func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15), second: Variant = null) -> void:
 	if length <= 0.0:
 		if _log != null:
 			_log.visible = false
+
+		if _log_two != null:
+			_log_two.visible = false
 
 		return
 
@@ -267,3 +272,20 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	_log.position = Vector3(0.18, 0.2, 0.15)
 	_log.visible = true
+
+	if not (second is Color):
+		if _log_two != null:
+			_log_two.visible = false
+
+		return
+
+	if _log_two == null:
+		_log_two = MeshInstance3D.new()
+		_log_two.material_override = StandardMaterial3D.new()
+		_log.get_parent().add_child(_log_two)
+
+	(_log_two.material_override as StandardMaterial3D).albedo_color = second
+	_log_two.mesh = _log.mesh
+	_log_two.rotation = _log.rotation
+	_log_two.position = _log.position + Vector3(radius * 2.1, -radius * 0.4, 0.0)   # side by side, out over the arm
+	_log_two.visible = true

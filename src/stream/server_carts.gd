@@ -546,8 +546,8 @@ func dismantle(peer: int, inv, id: int) -> void:
 		if host.is_shoulder_item(box.numbers[slot]):
 			logs += box.counts[slot]
 
-	if logs > 1 or (logs == 1 and host.shoulder_of(peer) != ""):   # one large log at a time, on the shoulder
-		host._say(peer, "Take the large logs off the handcart first: you can carry only one.")
+	if host.shoulder_count(peer) + logs > CarryRules.shoulder_max(host._carry_cfg):   # two large logs at most, on the shoulder
+		host._say(peer, "Take the large logs off the handcart first: you can carry only two.")
 		return
 
 	var cargo_kg: float = CarryRules.carried_kg(box, host.table, host._carry_cfg) if box != null and not host._carry_cfg.is_empty() else 0.0

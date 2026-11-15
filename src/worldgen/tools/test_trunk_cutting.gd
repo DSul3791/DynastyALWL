@@ -89,19 +89,25 @@ func _init() -> void:
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 	check(int(tree["blows"]) == before_blows and notices.has("Walk along the trunk to the cut line."), "standing far from the cut line the blow does not count and the player is told")
 
-	# A log on the shoulder never blocks the chopping.
+	# Logs on the shoulder stow the axe (TREE_WOOD_TOOLS_DESIGN.md s1.2): no blow while one is carried; laid down, the chopping goes on.
 	w._give_shoulder(1, log_n, 1)
 	check(w.shoulder_of(1) == "log_oak", "a log is on the shoulder")
 	var log_len: float = float(w._drops["trunk"]["log_length_m"])   # 3.0 m (Master s2.3 item 1)
 	var cut_point: Vector3 = base + along * (length0 - log_len * 0.5)
 	w.report_position(1, cut_point)
+	notices.clear()
+	var blows_carrying: int = int(tree["blows"])
+	w._last_process.clear()
+	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
+	check(int(tree["blows"]) == blows_carrying and notices.has("Your hands are full of logs. Put them down first (Q)."), "with a log on the shoulder the axe is stowed: no blow, and the player is told")
+	check(w.lay_down_shoulder(1) and w.shoulder_of(1) == "" and loose_logs(w, log_n).size() == 1, "the carried log is laid down")
 
 	for n in range(3):
 		w._last_process.clear()
 		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
 
-	check(loose_logs(w, log_n).size() == 1, "the cut drops one log on the ground, not into the pack (loose logs: %d)" % loose_logs(w, log_n).size())
-	check(w.shoulder_of(1) == "log_oak" and w.inventory_of(1).count_of(log_n) == 1, "the carried log (a pack item) is unchanged and the cut log did not join it")
+	check(loose_logs(w, log_n).size() == 2, "the cut drops one log on the ground beside it, not into the pack (loose logs: %d)" % loose_logs(w, log_n).size())
+	check(w.shoulder_of(1) == "" and w.inventory_of(1).count_of(log_n) == 0, "the cut log did not go into the pack")
 	check(absf(float(tree["length"]) - (length0 - log_len)) < 0.01, "the trunk is one log shorter (%.2f from %.2f)" % [float(tree["length"]), length0])
 
 	# Save and load mid-way keeps the shortened trunk.

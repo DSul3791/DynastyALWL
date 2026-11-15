@@ -1,7 +1,6 @@
 extends SceneTree
 
-# Logs as they are really carried (guide finding F-16, second half; moderator decision for Dave, Tyler 31 Oct 2026): a picked-up log rides on the SHOULDER (one at a
-# time, never in the pack) and a cut log lies on the GROUND. A craft or blueprint that needs plain `log` takes the shoulder log, then logs lying within 3 m of the player,
+# Logs as they are really carried (guide finding F-16, second half; moderator decision for Dave, Tyler 31 Oct 2026): a picked-up log rides on the SHOULDER (two at most; each is a pack item) and a cut log lies on the GROUND. A craft or blueprint that needs plain `log` takes the shoulder log, then logs lying within 3 m of the player,
 # then the pack. This test uses the real mechanics (give -> shoulder, drop_in_world -> a log on the ground), not pack.add: a two-log test recipe (a chopping block needed
 # 2 logs until Dave's 10 Nov ruling made it one large wooden block) from one shoulder log and one ground log; rough planks from a shoulder log at a workbench; nothing is taken when the logs do not cover the recipe; a log 6 m away is not used; a blueprint paid with logs
 # on the ground; the player is told "Using nearby logs".
