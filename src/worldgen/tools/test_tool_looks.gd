@@ -99,20 +99,39 @@ func _init() -> void:
 		_check(box.size.y > 0.15 and box.size.y < 0.19 and box.end.z > 0.15, id + ": the blade is wide across y (%.3f) and hangs toward +z (to %.3f)" % [box.size.y, box.end.z])
 		_check(tris <= 1200, id + ": %d triangles" % tris)
 
-	# Hand saw: about 60 cm overall, a thin blade (z extent 11 cm at the heel), narrower at the toe, on the metal surface.
-	var saw: Mesh = BasicLook.mesh_for("hand_saw")
-	_check(saw.get_surface_count() == 2, "hand_saw: wooden grip plus the metal blade surface")
-	_check(saw.get_aabb().size.x > 0.55 and saw.get_aabb().size.x < 0.66, "hand_saw: about 60 cm overall (%.2f)" % saw.get_aabb().size.x)
-	_check(_width_near(saw, -0.1, 0.02) > _width_near(saw, 0.25, 0.02) + 0.02, "hand_saw: the blade narrows toward the toe (%.3f to %.3f)" % [_width_near(saw, -0.1, 0.02), _width_near(saw, 0.25, 0.02)])
-	_check(_width_near(saw, -0.1, 0.015) > 0.12 and _width_near(saw, -0.1, 0.015) < 0.16, "hand_saw: about 14 cm across at the heel (%.3f)" % _width_near(saw, -0.1, 0.015))
-	_check(_width_near(saw, 0.32, 0.012) < 0.06, "hand_saw: about 5 cm or less at the rounded toe (%.3f)" % _width_near(saw, 0.32, 0.012))
-	var saw_tris: int = 0
+	# The procedural hand saw (Steel - Saw, and the stand-in while a model is not imported): about 60 cm overall, a thin blade (z extent 11 cm at the heel), narrower at the toe, on the metal surface.
+	var saw: Mesh = BasicLook.mesh("saw", Color.html("#8a8a90"), 1.0, [])
+	_check(saw.get_surface_count() == 2, "procedural saw: wooden grip plus the metal blade surface")
+	_check(saw.get_aabb().size.x > 0.55 and saw.get_aabb().size.x < 0.66, "procedural saw: about 60 cm overall (%.2f)" % saw.get_aabb().size.x)
+	_check(_width_near(saw, -0.1, 0.02) > _width_near(saw, 0.25, 0.02) + 0.02, "procedural saw: the blade narrows toward the toe (%.3f to %.3f)" % [_width_near(saw, -0.1, 0.02), _width_near(saw, 0.25, 0.02)])
+	_check(_width_near(saw, -0.1, 0.015) > 0.12 and _width_near(saw, -0.1, 0.015) < 0.16, "procedural saw: about 14 cm across at the heel (%.3f)" % _width_near(saw, -0.1, 0.015))
+	_check(_width_near(saw, 0.32, 0.012) < 0.06, "procedural saw: about 5 cm or less at the rounded toe (%.3f)" % _width_near(saw, 0.32, 0.012))
+	_check(_tris(saw) <= 1200, "procedural saw: %d triangles" % _tris(saw))
+	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "procedural saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
 
-	for surface in saw.get_surface_count():
-		saw_tris += int((saw.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3.0)
+	# Dave's handsaw meshes (assets/tools/handsaws, 15 Nov 2026) for the Copper, Bronze and Iron saws: drawn from the file with its own textured material, on the
+	# procedural saw's axes (handle at -x, blade toward +x, flat across y), copper the shortest, bronze a little longer, iron the longest.
+	var lengths: Array = []
 
-	_check(saw_tris <= 1200, "hand_saw: %d triangles" % saw_tris)
-	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "hand_saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
+	for id in ["copper_saw", "bronze_saw", "hand_saw"]:
+		var def: Dictionary = BasicLook.entry(id)
+		var drawn: Mesh = BasicLook.mesh_for(id)
+		var box: AABB = drawn.get_aabb()
+		var material: StandardMaterial3D = drawn.surface_get_material(0) as StandardMaterial3D
+		lengths.append(box.size.x)
+		_check(drawn.get_surface_count() == 1 and material != null and material.albedo_texture != null and material.normal_texture != null, id + ": drawn from %s with its own colour and normal textures (imported?)" % def.get("model", "?"))
+		_check(absf(box.size.x - float(def.get("model_length_m", 0.0))) < 0.005, id + ": %.3f m overall (looks.json %.2f)" % [box.size.x, float(def.get("model_length_m", 0.0))])
+		var blade_x: float = box.position.x + 0.8 * box.size.x
+		_check(_y_extent(drawn, blade_x, 0.04 * box.size.x, 1.0) < 0.6 * _width_near(drawn, blade_x, 0.04 * box.size.x), id + ": the blade lies flat, thin across y (%.3f) and deep across z (%.3f)" % [_y_extent(drawn, blade_x, 0.04 * box.size.x, 1.0), _width_near(drawn, blade_x, 0.04 * box.size.x)])
+		_check(absf(box.get_center().x) < 0.002 and absf(box.get_center().y) < 0.002 and absf(box.get_center().z) < 0.002, id + ": centred on its origin")
+		var x0: float = box.position.x
+		_check(_y_extent(drawn, x0 + 0.06 * box.size.x, 0.04 * box.size.x, 1.0) > 1.5 * _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0), id + ": the thick handle is at -x and the thin blade toward +x (%.3f vs %.3f)" % [_y_extent(drawn, x0 + 0.06 * box.size.x, 0.04 * box.size.x, 1.0), _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0)])
+		var edge: Vector2i = _blade_edges(drawn, box)
+		_check(edge.x > int(1.5 * float(edge.y)), id + ": the toothed edge is on +z, down when held (%d vertices on the +z edge, %d on the -z spine)" % [edge.x, edge.y])
+		_check(_tris(drawn) <= 5000, id + ": %d triangles (Dave's 5000 cap)" % _tris(drawn))
+		_check(BasicLook.mesh_for(id) == drawn, id + ": built once and shared")
+
+	_check(lengths[0] < lengths[1] and lengths[1] < lengths[2], "copper saw shortest, bronze longer, iron longest (%.2f, %.2f, %.2f)" % lengths)
 
 	# Stone knife: about 23 cm overall at size 1, blade about as long as the handle, a leaf blade (widest in the middle, narrow at the tip), matt stone (not bright steel).
 	var knife: Mesh = BasicLook.mesh_for("stone_knife")
@@ -207,6 +226,50 @@ func _y_extent(mesh: Mesh, from_x: float, window: float, z_limit: float) -> floa
 				high = maxf(high, v.y)
 
 	return high - low
+
+
+# Along the blade (the front 55 percent), in 20 slices: x = vertices within 8 percent of the blade depth of the slice's +z edge, y = of its -z edge. The teeth
+# make the toothed edge much denser than the plain spine.
+func _blade_edges(mesh: Mesh, box: AABB) -> Vector2i:
+	var verts: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var from_x: float = box.position.x + 0.4 * box.size.x
+	var step: float = 0.55 * box.size.x / 20.0
+	var depth: float = box.size.z
+	var slices: Array = []
+	slices.resize(20)
+
+	for k in 20:
+		slices[k] = []
+
+	for v in verts:
+		var k: int = int(floorf((v.x - from_x) / step))
+
+		if k >= 0 and k < 20:
+			slices[k].append(v.z)
+
+	var counts: Vector2i = Vector2i.ZERO
+
+	for slice in slices:
+		if slice.is_empty():
+			continue
+
+		var top: float = slice.max()
+		var bottom: float = slice.min()
+
+		for z in slice:
+			counts.x += 1 if z > top - 0.08 * depth else 0
+			counts.y += 1 if z < bottom + 0.08 * depth else 0
+
+	return counts
+
+
+func _tris(mesh: Mesh) -> int:
+	var count: int = 0
+
+	for surface in mesh.get_surface_count():
+		count += int((mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3.0)
+
+	return count
 
 
 # The z extent of the vertices whose x is within `within` of `at`.

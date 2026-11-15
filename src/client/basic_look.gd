@@ -3,7 +3,8 @@ extends RefCounted
 # Stage-one models (Kathleen, art/MODEL_PLAN.md): any loose item drawn from a small shape and a colour, so every item has a look before
 # any item gets a good one. `data/items/looks.json` maps an item id to {shape, color, size}; `mesh()` returns one vertex-coloured ArrayMesh
 # (a few hundred triangles, 1200 at most for a bowl of stew, one shared material) centred on its middle with the underside near y = -0.06 * size. Upgrading an item later means
-# deleting its looks.json entry or giving it a real model; nothing here changes.
+# deleting its looks.json entry or giving it a real model; nothing here changes. A row with "model" is drawn from that .glb instead (_model_mesh: Dave's own mesh
+# with its own textured material and up to his 5000 triangle cap), the procedural shape standing in until the file is imported.
 
 const LOOKS_PATH := "res://data/items/looks.json"
 const BOW_HALF_M := 0.85       # a self bow: nock to nock about the archer's height, 1.7 m (the "bow" shape; held_item.gd places the hands and the string by these)
@@ -325,6 +326,13 @@ static func mesh_for(item_id: String) -> Mesh:
 	if def.is_empty():
 		return null
 
+	if def.has("model"):
+		var drawn: ArrayMesh = _model_mesh(item_id, def)
+
+		if drawn != null:
+			_built[item_id] = drawn
+			return drawn
+
 	_building = item_id
 	_short = false
 	var made: ArrayMesh = mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
@@ -334,6 +342,66 @@ static func mesh_for(item_id: String) -> Mesh:
 		_built[item_id] = made
 
 	return made
+
+
+# A look from one of Dave's own meshes (looks.json "model": a .glb holding one mesh, used as it is): turned by "model_turn" (where the file's x, y and z axes
+# go, so it lies on the axes of its procedural "shape", which held_item.gd turns and grips by), centred, and scaled to "model_length_m" along x. Its own
+# materials and textures are kept. Null while the file is missing or not imported yet: the procedural shape stands in.
+static func _model_mesh(item_id: String, def: Dictionary) -> ArrayMesh:
+	var path: String = str(def["model"])
+	var packed: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
+
+	if packed == null:
+		push_warning("basic_look: %s: model %s is missing or not imported; drawing the procedural %s" % [item_id, path, str(def.get("shape", ""))])
+		return null
+
+	var scene: Node = packed.instantiate()
+	var found: Array = scene.find_children("*", "MeshInstance3D", true, false)
+	var source: Mesh = (found[0] as MeshInstance3D).mesh if not found.is_empty() else null
+	var materials: Array = []
+
+	for surface in (source.get_surface_count() if source != null else 0):
+		materials.append((found[0] as MeshInstance3D).get_active_material(surface))   # the surface's own material, or an override the import put on the node
+
+	scene.free()
+
+	if source == null:
+		push_warning("basic_look: %s: model %s holds no mesh; drawing the procedural %s" % [item_id, path, str(def.get("shape", ""))])
+		return null
+
+	var axes: Array = def.get("model_turn", [[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+	var turn: Basis = Basis(Vector3(axes[0][0], axes[0][1], axes[0][2]), Vector3(axes[1][0], axes[1][1], axes[1][2]), Vector3(axes[2][0], axes[2][1], axes[2][2]))
+	if not turn.is_conformal() or absf(turn.determinant() - 1.0) > 0.001:
+		push_warning("basic_look: %s: model_turn is not a plain turn (axes must be unit, square to each other, right-handed); drawing the procedural %s" % [item_id, str(def.get("shape", ""))])
+		return null
+
+	var box: AABB = Transform3D(turn, Vector3.ZERO) * source.get_aabb()
+	var scale: float = float(def.get("model_length_m", box.size.x)) / maxf(box.size.x, 0.001)
+	var place: Transform3D = Transform3D(turn.scaled(Vector3.ONE * scale), -box.get_center() * scale)
+	var out: ArrayMesh = ArrayMesh.new()
+
+	for surface in source.get_surface_count():
+		var arrays: Array = source.surface_get_arrays(surface)
+		arrays[Mesh.ARRAY_VERTEX] = place * (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array)   # whole arrays at once in the engine, cheaper than a GDScript loop per vertex (test_look_build_cost 40 ms bar)
+
+		if arrays[Mesh.ARRAY_NORMAL] is PackedVector3Array:
+			arrays[Mesh.ARRAY_NORMAL] = Transform3D(turn, Vector3.ZERO) * (arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array)
+
+		if arrays[Mesh.ARRAY_TANGENT] is PackedFloat32Array:   # x, y, z and the bitangent sign, which a pure turn keeps
+			var tangents: PackedFloat32Array = arrays[Mesh.ARRAY_TANGENT]
+
+			for i in range(0, tangents.size() - 3, 4):
+				var t: Vector3 = turn * Vector3(tangents[i], tangents[i + 1], tangents[i + 2])
+				tangents[i] = t.x
+				tangents[i + 1] = t.y
+				tangents[i + 2] = t.z
+
+			arrays[Mesh.ARRAY_TANGENT] = tangents
+
+		out.add_surface_from_arrays(source.surface_get_primitive_type(surface), arrays)
+		out.surface_set_material(out.get_surface_count() - 1, materials[surface])
+
+	return out
 
 
 static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = []) -> ArrayMesh:
