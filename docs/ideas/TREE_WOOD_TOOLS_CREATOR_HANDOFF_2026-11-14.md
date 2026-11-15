@@ -16,6 +16,14 @@ Source: the creator discussion beginning “How felling trees work,” through D
 - Knife menu: “any simple stations that only require wood to make or wood and twine, could be on the knife build menu”
 This request authorizes the scoped implementation handoff; it does not approve unrelated catalog changes or promotion to main. Dave's acceptance of this handoff is scoped design input, not blanket approval of a breaking save/protocol or major architectural change. Follow current decision authority for any such implementation choice and identify the concrete decision rather than asking Dave to reapprove the already agreed gameplay.
 
+### Applying the existing catalog freeze
+Current docs/ai-team/DECISION_AUTHORITY.md permits implementation of Dave-approved catalog decisions but forbids discretionary ingredient, station, blueprint and recipe redesign. The confirmed changes below are the specific approved input; they do not lift that freeze globally.
+- Implement the explicit changes: unified Firewood and Wooden Block, Copper-first saw access, two-block carving-station cost, log/Twine longbow inputs, approved menus and transport roles.
+- Preserve compatible existing costs/yields. For unspecified new ingredient counts, new furniture/vehicle costs, block/firewood yields or other discretionary catalog choices, produce ONE concise proposal table identifying proposed values, rationale and dependencies. Obtain the required approval only for those unresolved entries; do not ask Dave to approve the already settled concept again.
+- Distinguish code parameters within delegated authority from frozen catalog choices. A provisional label does not authorize writing an unapproved recipe into live data.
+- Continue independent coding, validation and documentation while such decisions are pending; checkpoint the exact blocked rows. Avoid a mission-wide stop or an artificial claim of completion.
+- The requested Stone Hammer replaces the starter pick role; the final disposition of any redundant Stone Pickaxe and later Wooden Hammer records must be explicit. Do not silently delete saved identities, or keep the Stone Pickaxe as a required progression step.
+
 ## 2. Confirmed design
 
 ### 2.1 Felling and materials
@@ -106,9 +114,9 @@ Inspect CURRENT dev code/data, not just the old catalog appendix. Earlier desk c
 - Inventory IDs, display text, generated catalog tables, menu filters and goals must all agree. Keep historical audit evidence labelled historical rather than rewriting its past findings.
 
 ## 4. Open points and recommendations — NOT verbatim creator decisions
-Claude should choose routine engineering/balance defaults within its authority, record assumptions, and ask only where a consequential unresolved design choice requires Dave. Continue independent work rather than blocking the entire mission.
+Claude should choose routine engineering/balance defaults only within current decision authority and the catalog-freeze boundary above. Record recommendations distinctly from approved data. Batch required catalog decisions and other consequential unresolved design choices for Dave; continue independent work rather than blocking the entire mission.
 - Recommended: axe splits Wooden Blocks into Firewood anywhere; Chopping Block speeds that operation. Never reintroduce axe-cut logs→blocks, since blocks now come from sawing. Resolve whether retaining this optional ground operation fits the intended station progression.
-- Set tree size thresholds, logs/tree, Firewood/tree, blocks/log, Firewood/block, weights and recipe costs. Honour carrying targets and established board yields.
+- Propose tree size thresholds, logs/tree, Firewood/tree, blocks/log, Firewood/block, weights and recipe costs. Honour carrying targets and established board yields; route frozen catalog choices through the approval table rather than treating this list as approval of arbitrary values.
 - Define tolerable durations, saw wear, copper/bronze/iron/steel benefits and sawbuck/mill operating requirements. Distinguish game-time duration from real-world elapsed interaction time using project terminology. Check the existing time conversion before tuning; no mandatory real-world waits are approved.
 - Define directional fall control, collision damage to characters/animals/buildings, obstructed falls, and log settling. Impact damage was discussed as a question, NOT explicitly approved.
 - Define stump persistence/removal and regrowth; preserve existing approved behaviour until intentionally reconciled.
@@ -138,7 +146,7 @@ Inspect other CURRENT references and runtime data for matching dependencies. Do 
 
 ## 6. Suggested implementation sequence and evidence
 1. Read live rules and inspect current dev implementation. Produce a scoped dependency/material/ID mapping and check for concurrent work before changing shared paths.
-2. Reconcile canonical documents with this creator brief; separate confirmed requirements from provisional balance decisions.
+2. Reconcile canonical documents with this creator brief; separate confirmed requirements from proposed balance decisions. Produce the bounded catalog proposal table required above for remaining discretionary data choices, and continue unblocked work.
 3. Implement merged materials and the scoped supported-save/version policy, Stone Hammer harvesting/context mode, Copper-first sawing and first-block progression.
 4. Implement physical tree falling/automatic log breakup, small-tree Firewood, rolling logs and two-log carrying.
 5. Implement sawbuck, Wood Carving Station, recipe reassignment and knife blueprint placement/furniture.
@@ -159,6 +167,8 @@ Acceptance evidence:
 - Every hauler size is tested with its approved puller and alternative handcart load examples; persistence works loaded/parked/hitched.
 - Supported old firewood/block variants map across all supported saved locations without silent loss or duplication; explicitly unsupported versions are rejected before loading/mutation. Fuel and affected recipe consumers still function; document conversion quantities rather than assuming all old block sizes map 1:1.
 Use relevant tests permitted by the actual gates. Clearly label code/data checks versus actual Godot/F6 validation, and tests not run. No test count or documentation update proves playability.
+Remove replaced obsolete runtime code under the existing decision-61 rule after its consumers are migrated; do not leave competing legacy harvest paths or compatibility flags that revive the old design. Keep intentionally required supported-save readers distinct from obsolete gameplay code.
+Use the current risk-based test gate, with relevant tests, required integration/startup checks and independent review. Do not run forbidden cloud Godot jobs or expand routinely to a full suite; label unavailable PC/F6 checks NOT RUN.
 Checkpoint progress and remaining issues in the repo. Before completing, iteratively review the diff AND cross-document consistency until no substantive unresolved issue is hidden.
 
 ### Review record — 15 November 2026
@@ -166,6 +176,7 @@ This review checked the conversation, the committed handoff and current dev vers
 1. Creator-decision pass: preserved confirmed behaviour; removed an unsupported restriction on decorative knives, moved sled surface assumptions to open choices, and clarified that longbow yield efficiency is not a new fractional-log requirement.
 2. Dependency/compatibility pass: corrected blanket migration overreach to the actual supported-save policy; added first-tool prerequisites, species-aware input matching, transaction/interruption handling and existing reset semantics.
 3. Scenario/prompt pass: walked the fresh copper/first-block route, post-saw furniture access, carried/stored/processed log lifecycle, concurrent pickup and unsupported-save rejection. Clarified how to retrieve the brief while implementing from current dev. Remaining undecided design/balance points stay explicitly listed in section 4.
+4. Authority/execution pass: read the complete current decision-authority rule and rechecked starter recipes. The three stone tools already use gathered materials. Corrected the brief's overbroad delegation of unspecified catalog choices: preserve approved decisions, batch only unresolved frozen-data entries, and continue independent implementation. Added obsolete-code cleanup and explicit risk-based test boundaries.
 No gameplay code or official design documents were changed by this review. Static handoff review does not prove runtime correctness or absolute completeness.
 
 ## 7. Ready-to-use Claude build prompt
@@ -177,6 +188,6 @@ As lead designer and implementation authority, consolidate the requirements into
 
 Make the starting journey playable: Stone Axe/Hammer/Knife; small-tree Firewood; campfire charcoal; copper harvesting/smelting/smithing; Copper Handsaw; first Wooden Blocks; knife-built two-block Wood Carving Station; sawbuck; appropriate woodworking; physical logs and approved hauling. Keep the established six-Plank/four-Hardwood-Board yields.
 
-Use the phased sequence and acceptance evidence in section 6. Resolve routine details within your authority, record provisional balance values, and escalate only consequential design choices that are genuinely undecided. Do not block all independent work on an open detail. Continue through implementation and relevant verification, with independent review and normal dev integration gates. Report exact commits, completed behaviour, known limitations and any F6 checks Dave still needs to perform. Do not call the full mission complete while required transport or runtime verification remains missing.
+Use the phased sequence and acceptance evidence in section 6. Resolve routine engineering details within your authority. The catalog freeze still applies: implement the confirmed changes, preserve compatible existing values, and batch unspecified catalog costs/yields or recipe redesigns in one proposal table for the approval that the current rule requires. Do not use provisional values as permission to change frozen live data. Escalate other consequential design choices only when genuinely undecided. Do not block all independent work on an open detail. Continue through implementation and relevant verification, with independent review and normal dev integration gates. Report exact commits, completed behaviour, known limitations and any F6 checks Dave still needs to perform. Do not call the full mission complete while required transport or runtime verification remains missing.
 
 Before finishing, review the implementation and all affected current documents iteratively for old material variants, iron-only saw gates, obsolete starter pick/hammer dependencies, duplicate blueprint ownership, missing tree products and item-loss/duplication routes. Leave a durable checkpoint if the work spans sessions. Retire this temporary brief only after its decisions and unresolved dispositions are safely incorporated.
