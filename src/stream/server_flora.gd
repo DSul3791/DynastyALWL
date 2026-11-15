@@ -20,7 +20,7 @@ const LayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 const LAYOUT_KEY := "layout"        # flora_removed.json: the flora layout version the marks were made under (flora_layout.gd)
 const MEMORY_CHUNKS := 2048
 const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
-const TREES_CHUNKS := 512             # trees-only placed lists kept for chunk_bytes (_placed; about 30 KB each)
+const TREES_CHUNKS := 512             # trees-only placed lists kept (_placed; about 30 KB each)
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 const BRUSH_CELL_M := 2.0             # in_undergrowth: a shrub or tall plant marks the 2 m cell it stands in
 const BRUSH_MIN_M := 0.5              # only shrubs and plants this tall or taller rustle (ferns, tall grass, bushes; not moss or berries)
@@ -40,6 +40,7 @@ var _mutex: Mutex = Mutex.new()
 var _items: Dictionary = {}            # Vector3i (chunk x, z, 1 full / 0 trees only) -> chunk_items result, shared read-only
 var _items_mutex: Mutex = Mutex.new()
 var _trees_kept: Dictionary = {}       # Vector3i (chunk x, z, 0) -> chunk_items(trees only) result, shared read-only (_placed; under _items_mutex)
+var _placing: Dictionary = {}          # Vector3i keys being placed now (_placed; under _items_mutex)
 var _removed_dirty: bool = false       # removals not yet written to flora_removed.json
 var _removed_saved_msec: int = 0
 var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
@@ -49,66 +50,67 @@ var _brush_pending: Dictionary = {}    # home chunks whose index a worker is mak
 
 
 # The chunk's placed items (FloraPlacer.chunk_items), kept for a while: placing a chunk takes seconds the first time and the
-# server asks about the same nine chunks at every dig, chop and gather. Callers only read the result. Safe from any thread (the
-# placer only reads); two threads missing at once both place it and the last result is kept.
+# server asks about the same nine chunks at every dig, chop and gather. Callers only read the result. Safe from any thread. Trees only
+# gives the full list when that is kept (callers then skip what is not a tree).
 func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var home: Vector2i = placer.normalize(chunk)
-	var full_key: Vector3i = Vector3i(home.x, home.y, 1)
-	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
-	_items_mutex.lock()
-	var kept: Dictionary = _items.get(full_key, {}) if trees_only else {}
 
-	if kept.is_empty():
-		kept = _items.get(key, {})
+	if trees_only:
+		_items_mutex.lock()
+		var full: Dictionary = _items.get(Vector3i(home.x, home.y, 1), {})
+		_items_mutex.unlock()
 
-	_items_mutex.unlock()
+		if not full.is_empty():
+			return full
 
-	if not kept.is_empty():
-		return kept
-
-	var made: Dictionary = placer.chunk_items(home, trees_only)
-	_keep_items(key, made)
-	return made
+	return _placed(home, trees_only)
 
 
-func _keep_items(key: Vector3i, made: Dictionary) -> void:
-	_items_mutex.lock()
-
-	while _items.size() >= ITEMS_CHUNKS:
-		_items.erase(_items.keys()[0])
-
-	_items[key] = made
-	_items_mutex.unlock()
-
-
-# The placer's own list for a chunk in exactly the asked form (no removals, no saplings), for chunk_bytes and the undergrowth index: kept, so a
-# planted bush, a new sapling or a felled tree re-packs the chunk without placing it again (Dave 15 Nov 2026: that re-placing paused the
-# server's main thread for seconds). Full lists share the items_of store; trees-only lists have their own (a trees-only list is not the
-# trees of the full one: spring cover shrubs make room before trees in the full list), so far chunks streamed past do not push near ones out.
+# The placer's own list for a chunk in exactly the asked form (no removals, no saplings), for items_of, chunk_bytes and the undergrowth index:
+# kept, so a planted bush, a new sapling or a felled tree re-packs the chunk without placing it again (Dave 15 Nov 2026: that re-placing paused
+# the server's main thread for seconds). Full lists in _items; trees-only lists in their own store (a trees-only list is not the trees of the
+# full one: spring cover shrubs make room before trees in the full list), so far chunks streamed past do not push near ones out.
+# One placement per chunk and form at a time: a second asker waits for the first instead of placing it again (a join at the spawn placed
+# 11 to 13 of its 36 chunk lists twice side by side, Dave's PC and David4, 15 Nov 2026; flora_pool_profile.gd).
 # shortcut: a kept list does not follow later live water (sim_snapshot) until new tiles clear it, as items_of already did; a chunk dropped
 # from a store is placed again on its next change, as before. Revisit if either shows in play.
 func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
-	_items_mutex.lock()
-	var kept: Dictionary = (_trees_kept if trees_only else _items).get(key, {})
-	_items_mutex.unlock()
 
-	if not kept.is_empty():
-		return kept
+	while true:
+		_items_mutex.lock()
+		var kept: Dictionary = (_trees_kept if trees_only else _items).get(key, {})
+		var start: bool = kept.is_empty() and not _placing.has(key)
+
+		if start:
+			_placing[key] = true
+
+		_items_mutex.unlock()
+
+		if not kept.is_empty():
+			return kept
+
+		if start:
+			break
+
+		OS.delay_msec(5)
 
 	var made: Dictionary = placer.chunk_items(home, trees_only)
+	_items_mutex.lock()
 
 	if trees_only:
-		_items_mutex.lock()
-
 		while _trees_kept.size() >= TREES_CHUNKS:
 			_trees_kept.erase(_trees_kept.keys()[0])
 
 		_trees_kept[key] = made
-		_items_mutex.unlock()
 	else:
-		_keep_items(key, made)
+		while _items.size() >= ITEMS_CHUNKS:
+			_items.erase(_items.keys()[0])
 
+		_items[key] = made
+
+	_placing.erase(key)
+	_items_mutex.unlock()
 	return made
 
 
@@ -120,10 +122,20 @@ func items_cached(chunk: Vector2i) -> Dictionary:
 	var kept: Dictionary = _items.get(Vector3i(home.x, home.y, 1), {})
 
 	if kept.is_empty():
-		kept = _items.get(Vector3i(home.x, home.y, 0), {})
+		kept = _trees_kept.get(Vector3i(home.x, home.y, 0), {})
 
 	_items_mutex.unlock()
 	return kept
+
+
+# Whether the chunk's full list is kept or being placed now: asking for the full form then costs no placement of its own (_placed waits).
+func full_known(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	var key: Vector3i = Vector3i(home.x, home.y, 1)
+	_items_mutex.lock()
+	var known: bool = _items.has(key) or _placing.has(key)
+	_items_mutex.unlock()
+	return known
 
 
 func has_items(chunk: Vector2i) -> bool:

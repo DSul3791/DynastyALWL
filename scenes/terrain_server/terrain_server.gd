@@ -1555,7 +1555,7 @@ func _cover_ready(point: Vector3) -> bool:
 
 
 func _warm_cover_chunk(chunk: Vector2i) -> void:
-	flora.chunk_bytes(chunk, false)
+	flora.chunk_bytes(chunk, flora.full_known(chunk))   # the full list when it is kept or being placed (a chunk by a player): no second placement
 	_cover_warm_done.call_deferred(chunk)
 
 
