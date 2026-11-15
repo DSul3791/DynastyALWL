@@ -814,7 +814,7 @@ func _process_body(delta: float) -> void:
 		var ground_wet: float = puddles.wet_mean      # the ground's own wetness, which dries in game hours (rain_look_design.md 3.4)
 
 		haze.update(delta, float(_client.weather.get("temp_c", 10.0)), float(_s["cloud"]), rain, float(_client.weather.get("mist", 0.0)), ground_wet)
-		# The weather fog is drawn by graphics preset (fog_look.gd PRESETS; Dave: off on the lowest, full on Ultra).
+		# The weather fog is drawn by graphics preset (fog_look.gd PRESETS; Dave: full on Ultra, the distance fade only on Low).
 		var fog_shown: bool = not clear_day and FogLook.weather_drawn(_quality)
 		var mist: float = float(_s["mist"]) if fog_shown else 0.0
 		var sea_fog: float = float(_s["sea_fog"]) if fog_shown else 0.0

@@ -72,6 +72,6 @@ func _init() -> void:
 	# Graphics presets (Dave 14 Nov 2026: full on Ultra, off on the lowest).
 	_check(FogLook.PRESETS.size() == 4 and not bool(FogLook.preset(0)["volumetric"]) and bool(FogLook.preset(3)["volumetric"]), "four presets: volumetric off on Low, on on Ultra")
 	_check(FogLook.weather_drawn(3) and FogLook.sky_drawn(3) and FogLook.weather_drawn(1), "Ultra and Medium draw the weather fog")
-	_check(FogLook.weather_drawn(0) == (FogLook.LOW_WEATHER_FOG == "distance") and not FogLook.sky_drawn(0), "Low: the one switch (off by default)")
+	_check(FogLook.weather_drawn(0) and not FogLook.sky_drawn(0) and not bool(FogLook.preset(0)["volumetric"]), "Low: the cheap distance fade only (Dave 15 Nov)")
 	print("test_fog_above: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)

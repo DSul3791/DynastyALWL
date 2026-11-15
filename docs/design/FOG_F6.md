@@ -17,7 +17,7 @@ All NEEDS PLAYER VERIFICATION. The test lane runs headless and cannot see. Desig
 - [ ] **Through a doorway.** Inside a built room the air is clear; looking out of the doorway shows the fog outside. In a cave the fog is gone deep inside, and the mouth shows it.
 - [ ] **Drift (High and Ultra).** Slow, broad patches, thicker and thinner, drifting gently with the wind (the fog kind is dead calm: they only creep). No boiling, no repeating pattern, not following you.
 - [ ] **Clear day unchanged.** On a clear day, far hills haze to the sky colour as before.
-- [ ] **Presets.** Ultra: everything above. High: the same with a coarser body. Medium: distance, sky and halos, no drifting body. Low: no weather fog (the switch), clear-day haze as before. Note the frame rate in fog on each.
+- [ ] **Presets.** Ultra: everything above. High: the same with a coarser body. Medium: distance, sky and halos, no drifting body. Low: the distance fade only (no sky hiding, no layer from above, no body), clear-day haze as before. Note the frame rate in fog on each.
 
 ## PR "fog where and when"
 

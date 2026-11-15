@@ -29,9 +29,9 @@ const PRESETS := [
 	{"name": "High", "weather": true, "sky": true, "volumetric": true, "vol_size": 48, "vol_depth": 48, "vol_length_m": 48.0},
 	{"name": "Ultra", "weather": true, "sky": true, "volumetric": true, "vol_size": 64, "vol_depth": 96, "vol_length_m": 64.0},
 ]
-# The lowest preset, until Dave says otherwise: "off" (his words: no weather fog drawn at all) or "distance" (the cheap distance
-# fade only: no sky hiding, no layer seen from above), so a Low player does not see through fog that hides things from everyone else.
-const LOW_WEATHER_FOG := "off"
+# The lowest preset: "distance" (Dave 15 Nov 2026: "yes low gets a cheap distance fade"): the depth fade only, no sky hiding, no layer
+# seen from above, no volumetric body, so a Low player does not see through fog that hides things from everyone else. "off" draws none.
+const LOW_WEATHER_FOG := "distance"
 
 
 static func preset(quality: int) -> Dictionary:

@@ -83,7 +83,7 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
 | `OVERHEAD_M` | 15 m | fog depth above you that hides 63 % of that |
 | `SUN_DIM` | 0.7 | share of the sunlight deep fog takes |
 | `DISC`, `DISC_DEG` | 0.35, 1.6° | faint sun or moon disc |
-| `LOW_WEATHER_FOG` | "off" | lowest preset: "off" (no weather fog) or "distance" (distance fade only) |
+| `LOW_WEATHER_FOG` | "distance" | lowest preset: "distance" (distance fade only, Dave 15 Nov) or "off" (no weather fog) |
 | `VOL_DENSITY` | 0.006 /m | the drifting body's thickness (High, Ultra) |
 | `VOL_PATCH_M`, `VOL_DETAIL_M` | 70 m, 23 m | the two patch sizes |
 | `VOL_DRIFT`, `VOL_DRIFT_MIN_MS` | 0.25, 0.15 m/s | drift as a share of the wind, and its least speed |
@@ -100,11 +100,11 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
 
 | Preset | Weather fog | Sky hidden, sun dims, layer from above | Volumetric body and halos |
 |---|---|---|---|
-| Low | off (switch: "distance" draws the distance fade only) | no | no |
+| Low | distance fade only (Dave 15 Nov 2026) | no | no |
 | Medium | yes | yes | no (billboard halos only) |
 | High | yes | yes | yes, 48 × 48 × 48 froxels, 48 m reach |
 | Ultra | yes | yes | yes, 64 × 64 × 96 froxels, 64 m reach |
 
 The clear-air haze and rain murk are drawn on every preset as before; they cost nothing. The volumetric fog runs only while there is fog (fog at the eye or the layer's strength over 0.02).
 
-Open question from the coordinator to Dave, not yet answered: with weather fog off on Low, a Low player sees through fog that hides things from everyone else and from animals. `LOW_WEATHER_FOG = "distance"` is the cheap alternative.
+Dave, 15 Nov 2026: "yes low gets a cheap distance fade". Low draws the depth fade, so a Low player does not see through fog that hides things from everyone else and from animals; it keeps no sky hiding, no layer from above and no volumetric body.
