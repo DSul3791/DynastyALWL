@@ -115,6 +115,7 @@ var hand_mount_l: Marker3D
 var head_mount: Marker3D         # a hat, or a camera for a head cam: the middle of the head
 var _bones: Dictionary = {}      # name -> index
 var _log: MeshInstance3D         # the log on the shoulder (set_shoulder_log)
+var _log_two: MeshInstance3D     # the second log, beside it
 
 
 func _init(arms: bool = false) -> void:
@@ -631,14 +632,18 @@ func _carry(base: Dictionary, p: float, weight: float) -> Dictionary:
 	return pose
 
 
-# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the species' log).
-func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
+# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the species' log). `second`: the colour of a second log carried beside it
+# (TREE_WOOD_TOOLS_DESIGN.md s1.2, two logs at most), null for one.
+func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15), second: Variant = null) -> void:
 	if arms_only or not _bones.has("chest"):
 		return
 
 	if length <= 0.0:
 		if _log != null:
 			_log.visible = false
+
+		if _log_two != null:
+			_log_two.visible = false
 
 		return
 
@@ -663,6 +668,23 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)           # lying along the body's front to back
 	_log.position = Vector3(CARRY_LOG_X, CARRY_LOG_Y, 0.15)
 	_log.visible = true
+
+	if not (second is Color):
+		if _log_two != null:
+			_log_two.visible = false
+
+		return
+
+	if _log_two == null:
+		_log_two = MeshInstance3D.new()
+		_log_two.material_override = StandardMaterial3D.new()
+		_log.get_parent().add_child(_log_two)
+
+	(_log_two.material_override as StandardMaterial3D).albedo_color = second
+	_log_two.mesh = _log.mesh
+	_log_two.rotation = _log.rotation
+	_log_two.position = _log.position + Vector3(radius * 2.1, -radius * 0.4, 0.0)   # side by side, out over the arm
+	_log_two.visible = true
 
 
 # A thrust straight ahead from the shoulder (a spear).

@@ -243,7 +243,7 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
-var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
+var shoulder_id: String = ""                  # the first large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this; shoulder_logs() counts them all in the pack
 var purse_copper: int = 0                      # the purse's worth in copper (what can be afforded)
 var purse_coins: Dictionary = {}               # the purse as held, {coin id: count} (protocol 123): coins keep the denomination they came in until a trader changes them
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
@@ -788,7 +788,7 @@ func sweep_nothing() -> void:
 func _say_too_heavy(id: int) -> void:
 	_sweep_said = true
 	var number: int = int(_world[id]["number"]) if _world.has(id) else 0
-	_on_notice("Put your log down first (Q)." if _is_shoulder(number) and shoulder_id != "" else "Too heavy to carry any more")
+	_on_notice(CarryRules.logs_full_say(_carry_cfg) if _is_shoulder(number) and _logs_full() else "Too heavy to carry any more")
 	refuse_cue("full_pack")
 
 
@@ -812,14 +812,14 @@ func sweep_reset() -> void:
 
 
 # Whether the loose ground item `id` can be taken now, as the server will judge it: within the carry limit (data/items/weights.json, CarryRules) and,
-# for a large log, with nothing on the shoulder already. Not one the server refused this hold. Without a carry config (tests) everything can.
+# for a large log, with fewer than two on the shoulder already. Not one the server refused this hold. Without a carry config (tests) everything can.
 func liftable(id: int) -> bool:
 	if not _world.has(id) or int(_world[id]["state"]) != 0 or _sweep_refused.has(id):
 		return false
 
 	var number: int = int(_world[id]["number"])
 
-	if _is_shoulder(number) and shoulder_id != "":
+	if _is_shoulder(number) and _logs_full():
 		return false
 
 	if _carry_cfg.is_empty() or inventory == null:
@@ -830,6 +830,25 @@ func liftable(id: int) -> bool:
 
 func _is_shoulder(number: int) -> bool:
 	return number > 0 and str(table.entry(table.id_of(number)).get("carry", "")) == "shoulder"
+
+
+# The item ids of the large logs in the pack, slot order: what is on the shoulders (up to weights.json shoulder_logs_max, as the server keeps it; protocol 64 names the first).
+func shoulder_logs() -> Array:
+	return CarryRules.shoulder_logs(inventory, table) if inventory != null else []
+
+
+func _logs_full() -> bool:
+	return shoulder_logs().size() >= CarryRules.shoulder_max(_carry_cfg)
+
+
+# "Oak log, Beech log": the names of what is on the shoulder, for the weight line and the carried label.
+func _carried_names() -> String:
+	var names: PackedStringArray = PackedStringArray()
+
+	for id in shoulder_logs():
+		names.append(table.name_of(table.number_of(id)))
+
+	return ", ".join(names)
 
 
 func pickup_batch_cfg() -> Dictionary:
@@ -2089,7 +2108,7 @@ func carried_kg() -> float:
 	return kg
 
 
-# Q or D with nothing selected: lay the log on your shoulder down in front of you.
+# Q or D with nothing selected: lay a log from your shoulder down in front of you (one at a time).
 func lay_down_shoulder() -> void:
 	if shoulder_id == "":
 		_on_notice("You are not carrying a log.")
@@ -2149,13 +2168,18 @@ func _glide_tick(delta: float) -> void:
 			continue
 
 		var node: Node3D = _world[id]["node"]
+		var loose: bool = int(_world[id]["state"]) == 0   # a rolling log (server_items.gd _roll_tick) rests 12 cm over its ground point, as _snap_loose puts it
+		var target: Vector3 = _world[id]["pos"] + (Vector3(0.0, 0.12, 0.0) if loose else Vector3.ZERO)
 		var share: float = clampf(delta * GLIDE_RATE, 0.0, 1.0)
-		node.position = node.position.lerp(_world[id]["pos"], share)
+		node.position = node.position.lerp(target, share)
 		node.rotation.y = lerp_angle(node.rotation.y, deg_to_rad(float(_world[id]["yaw"])), share)
 
-		if node.position.distance_to(_world[id]["pos"]) < 0.01:
-			node.position = _world[id]["pos"]
+		if node.position.distance_to(target) < 0.01:
+			node.position = target
 			_gliding.erase(id)
+
+			if loose:
+				_snap_loose(id)   # onto the drawn ground, which can differ a little from the server's height
 
 
 # The purse as words, richest coin first: "2 silver, 3 bronze, 4 copper" (copper = items.json value unit; Dave, playtest 12 Nov 2026 TEST-002:
@@ -2300,7 +2324,7 @@ func _refresh_purse() -> void:
 func _refresh_carried() -> void:
 	if _carried_slot != null:
 		_carried_slot.visible = shoulder_id != ""
-		_carried_slot.text = ("Carried: %s   (F twice or Q puts it down)" % table.name_of(table.number_of(shoulder_id))) if shoulder_id != "" else ""
+		_carried_slot.text = ("Carried: %s   (F twice or Q puts one down)" % _carried_names()) if shoulder_id != "" else ""
 
 
 func _refresh_weight() -> void:
@@ -2318,7 +2342,7 @@ func _load_text() -> String:
 	var free: float = CarryRules.comfort_kg(carry_body_kg(), _carry_cfg)
 	var limit: float = CarryRules.cap_kg(carry_body_kg(), _carry_cfg)
 	var state: String = "" if load_kg <= free else ("   (heavy: you move slower)" if load_kg < limit else "   (at the limit)")
-	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays it down)" % table.name_of(table.number_of(shoulder_id)) if shoulder_id != "" else "")
+	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays one down)" % _carried_names() if shoulder_id != "" else "")
 
 
 func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
@@ -2805,7 +2829,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_refresh_pile(id)
 			prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_a
 
-			if int(_world[id]["state"]) == 0 and state == 0 and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+			if int(_world[id]["state"]) == 0 and state == 0 and not _gliding.has(id) and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
 				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
 				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
 				var t_b: int = Time.get_ticks_usec()
@@ -3327,7 +3351,7 @@ func _roll_tick(delta: float, now: int) -> void:
 			for id in _world:
 				var entry: Dictionary = _world[id]
 
-				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id):
+				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id) or _gliding.has(id):   # a log the server rolls is moved by _glide_tick
 					continue
 
 				var apart: Vector2 = Vector2(entry["pos"].x - here.x, entry["pos"].z - here.z)
@@ -4513,7 +4537,7 @@ func _drop_felled_warm() -> void:
 func _trunk_drop_ids() -> Array:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
 	var trunk: Dictionary = (parsed as Dictionary).get("trunk", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
-	var ids: Array = ["bark", "thatch", "seed_bundle", "kindling", "leaves"]
+	var ids: Array = ["bark", "thatch", "seed_bundle", "kindling", "leaves", "firewood"]   # a small tree breaks into Firewood (trunk.small_tree)
 
 	for key in ["branch", "small"]:
 		for row in trunk.get(key, []):

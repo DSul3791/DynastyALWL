@@ -129,6 +129,7 @@ var _model: Node3D
 var _arms                                 # first-person arms (Ragdoll.new(true)) on the camera; the held tool sits in its right hand
 var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
+var _shoulder_log_two: MeshInstance3D      # the second log beside it
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
 var water_depth_at: Callable = Callable()   # (x, z) -> metres of standing water there; set by the client scene, unset in tests
 var variant_slot: int = -1               # the pack slot of the wall variant the wheel chose (doorway, window), -1 for the held one
@@ -1557,10 +1558,14 @@ func _process_body(delta: float) -> void:
 
 # The large log on the shoulder in first person (Dave 2026-10-21): across the right shoulder, fixed to the body (the way you face), so it
 # shows at the edge of the view and when you look down.
-func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
+# `second`: the colour of a second log carried beside it (TREE_WOOD_TOOLS_DESIGN.md s1.2, two logs at most), null for one.
+func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15), second: Variant = null) -> void:
 	if not on:
 		if _shoulder_log != null:
 			_shoulder_log.visible = false
+
+		if _shoulder_log_two != null:
+			_shoulder_log_two.visible = false
 
 		return
 
@@ -1585,6 +1590,25 @@ func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0
 	var yaw: Basis = Basis(Vector3.UP, _camera.global_rotation.y)
 	var at: Vector3 = _camera.global_position + yaw * Vector3(SHOULDER_LOG_X, -0.55, -SHOULDER_LOG_FWD)
 	_shoulder_log.global_transform = Transform3D(yaw * Basis(Vector3.RIGHT, PI * 0.5 + 0.05), at)
+
+	if not (second is Color):
+		if _shoulder_log_two != null:
+			_shoulder_log_two.visible = false
+
+		return
+
+	if _shoulder_log_two == null:
+		_shoulder_log_two = MeshInstance3D.new()
+		_shoulder_log_two.mesh = mesh
+		_shoulder_log_two.material_override = StandardMaterial3D.new()
+		_shoulder_log_two.top_level = true
+		_shoulder_log_two.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_camera.add_child(_shoulder_log_two)
+
+	(_shoulder_log_two.material_override as StandardMaterial3D).albedo_color = second
+	_shoulder_log_two.visible = true
+	var beside: Vector3 = _camera.global_position + yaw * Vector3(SHOULDER_LOG_X - radius * 2.2, -0.55, -SHOULDER_LOG_FWD)   # side by side, on the side toward the middle of the view
+	_shoulder_log_two.global_transform = Transform3D(yaw * Basis(Vector3.RIGHT, PI * 0.5 + 0.05), beside)
 
 
 # The arms follow the body at rest and the camera while working: blends the two poses by _arm_up.

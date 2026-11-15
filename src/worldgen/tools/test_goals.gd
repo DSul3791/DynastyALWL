@@ -41,7 +41,7 @@ func make(dir: String, standing: Dictionary, near_water: Array):
 	it.send_goals = func(_p, rows): lists_sent.append(rows)
 	it.send_goal_progress = func(_p, changes): progress_sent.append(changes)
 	it.ground_height = func(_x, _z): return 10.0
-	it.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
+	it.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3} if standing.has(id) else {}
 	it.cut_tree = func(_chunk, id): standing.erase(id); return true
 	it.water_near = func(_pos, _reach): return near_water[0]
 	it.setup(ItemTableScript.load_default(), dir)

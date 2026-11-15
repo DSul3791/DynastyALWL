@@ -3942,6 +3942,19 @@ func _clear_view_m(from: Vector3, to: Vector3) -> float:
 	return maxf(reach - VIEW_CLEAR_M, 0.0)
 
 
+# The colour of the second log on the shoulders (the pack's second large log), null when only one or none is carried.
+func _second_log_color() -> Variant:
+	if items == null or items.shoulder_id == "":
+		return null   # nothing on the shoulders: no pack scan
+
+	var logs: Array = items.shoulder_logs()
+
+	if logs.size() < 2:
+		return null
+
+	return LogLookScript.color_of(str(logs[1]))
+
+
 # Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.
 # The log on the shoulder: a full 3 m log (drops.json log_length_m; the species' real length is not sent; Radar's item data has the weight).
 const CARRY_LOG_LENGTH_M := 3.0
@@ -4008,7 +4021,7 @@ func _update_view(delta: float) -> void:
 		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
 		held.carrying_log = items != null and items.shoulder_id != ""
-		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
+		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""), _second_log_color())
 	if _avatar.animation_player != null:
 		_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
@@ -4048,7 +4061,7 @@ func _update_view(delta: float) -> void:
 
 		_avatar.set_meta("torch_in_hand", held != null and held.holding_torch())
 		_avatar.set_meta("torch_left", held != null and held.torch_in_left())
-		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
+		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""), _second_log_color())
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)

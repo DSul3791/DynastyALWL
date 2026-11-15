@@ -1217,7 +1217,7 @@ func _init() -> void:
 	var notices: Array = []
 	var gs: Array = [5000.0]
 	w.game_seconds = func(): return gs[0]
-	w.tree_info = func(chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
+	w.tree_info = func(chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3} if standing.has(id) else {}
 	w.cut_tree = func(chunk, id): standing.erase(id); felled_log.append(id); return true
 	w.send_notice = func(peer, text): notices.append(text)
 	w.peer_connected_hello(1, "abcdef123456")
@@ -1564,10 +1564,12 @@ func _init() -> void:
 	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
 	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
 	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")
+	ch._chests[1].add(stones_n, 14)   # 20 kg of stone in the 40 kg woven chest: a 22 kg oak log no longer fits
 	ch.give(1, ch.table.number_of("log_oak"), 1)
 	ch.action(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO)
-	check(ch.shoulder_of(1) == "log_oak", "a 45 kg oak log is too heavy for the 40 kg woven chest and stays on the shoulder")
+	check(ch.shoulder_of(1) == "log_oak", "a 22 kg oak log is too heavy for the 40 kg woven chest holding 20 kg of stone and stays on the shoulder")
 	ch.lay_down_shoulder(1)
+	ch._chests[1].remove(stones_n, 14)
 	var chest_log: int = ch.table.number_of("log_willow")
 	ch.give(1, chest_log, 1)
 	check(ch.shoulder_of(1) == "log_willow", "a willow log goes on the shoulder")
@@ -1720,7 +1722,7 @@ func _init() -> void:
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	check(blocks_before >= 1 and loose_of.call(block_n) == blocks_before - 1 and loose_of.call(firewood_n) == fire_before + 4 and cb.inventory_of(1).count_of(block_n) == 0, "E on the chopping block with an empty pack takes a block lying on the ground and drops 4 Firewood")
 
-	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
+	# The large logs on the shoulder (Dave 2026-10-21; two at most since 15 Nov 2026): named for their tree, heavy, split at the block, fall with the body.
 	var oak_log: int = cb.table.number_of("log_oak")
 	var shoulder_sent: Array = []
 	cb.send_carry = func(_p, id): shoulder_sent.append(id)
@@ -1728,24 +1730,30 @@ func _init() -> void:
 	var kg_before: float = cb.carried_kg_of(1)
 	cb.give(1, oak_log, 1)
 	check(cb.shoulder_of(1) == "log_oak" and shoulder_sent.back() == "log_oak" and cb.inventory_of(1).count_of(oak_log) == 1, "an oak log is a pack item, shown on the shoulder")
-	check(cb.carried_kg_of(1) - kg_before > 40.0, "and its weight counts in the load (%.1f kg more)" % (cb.carried_kg_of(1) - kg_before))
+	check(absf(cb.carried_kg_of(1) - kg_before - 22.0) < 0.01, "and its weight counts in the load, 22 kg for a hardwood log (%.1f kg more)" % (cb.carried_kg_of(1) - kg_before))
+	var logs_said: Array = []
+	cb.send_notice = func(_p, text): logs_said.append(text)
 	cb.give(1, cb.table.number_of("log_beech"), 1)
-	check(cb.shoulder_of(1) == "log_oak" and cb.world_item_count() >= 2, "a second large log lies on the ground: only one on the shoulder")
-	var beech_id: int = 0
+	check(cb.shoulder_count(1) == 2 and cb.shoulder_of(1) == "log_oak" and cb.inventory_of(1).count_of(cb.table.number_of("log_beech")) == 1 and logs_said.is_empty(), "a second large log goes on the shoulder too")
+	cb.give(1, cb.table.number_of("log_birch"), 1)
+	var birch_id: int = 0
 
 	for k in cb._items:
-		if int(cb._items[k]["number"]) == cb.table.number_of("log_beech"):
-			beech_id = k
+		if int(cb._items[k]["number"]) == cb.table.number_of("log_birch"):
+			birch_id = k
 
-	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
-	check(cb.shoulder_of(1) == "log_oak" and cb._items.has(beech_id), "it cannot be picked up while carrying one")
-	cb.lay_down_shoulder(1)
-	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
-	check(cb.shoulder_of(1) == "log_beech" and not cb._items.has(beech_id), "with the shoulder free the beech log is picked up")
-	check(cb.lay_down_shoulder(1) and cb.shoulder_of(1) == "" and shoulder_sent.back() == "", "laying it down puts it on the ground")
+	check(cb.shoulder_count(1) == 2 and birch_id != 0 and logs_said.has("You can carry two logs at most. Put one down first (Q)."), "a third large log lies on the ground and the player is told")
+	logs_said.clear()
+	cb.action(1, Net.ACT_PICKUP, birch_id, 0, 0, Vector3.ZERO)
+	check(cb.shoulder_count(1) == 2 and cb._items.has(birch_id) and logs_said.has("You can carry two logs at most. Put one down first (Q)."), "it cannot be picked up while carrying two")
+	check(cb.lay_down_shoulder(1) and cb.shoulder_count(1) == 1 and cb.shoulder_of(1) == "log_beech", "laying down puts one log on the ground and the other stays on the shoulder")
+	cb.action(1, Net.ACT_PICKUP, birch_id, 0, 0, Vector3.ZERO)
+	check(cb.shoulder_count(1) == 2 and not cb._items.has(birch_id), "with a hand free the birch log is picked up")
+	check(cb.lay_down_shoulder(1) and cb.lay_down_shoulder(1) and cb.shoulder_count(1) == 0 and cb.shoulder_of(1) == "" and shoulder_sent.back() == "", "laying both down, one at a time, puts them on the ground")
 	cb.give(1, oak_log, 1)
+	cb.give(1, cb.table.number_of("log_beech"), 1)
 	cb.kill(1, "test")
-	check(cb.shoulder_of(1) == "", "dying drops the shoulder log")
+	check(cb.shoulder_count(1) == 0, "dying drops both shoulder logs")
 
 	# Hunger, health and weight.
 	var vd: String = "user://test_server_items_vitals"

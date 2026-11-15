@@ -82,12 +82,12 @@ func _init() -> void:
 	w.ground_height = func(_x, _z): return 10.0
 	var standing: Dictionary = {7: true, 8: true}
 	w.game_seconds = func(): return 5000.0
-	# A small beech (6 m of a 17 m reference) and a tall one: very different standing sizes.
+	# A young beech (10 m of a 17 m reference, large: it makes logs) and a tall one: very different standing sizes.
 	w.tree_info = func(_c, id):
 		if not standing.has(id):
 			return {}
 
-		return {"name": "beech", "position": Vector3(10.0, 10.0, 0.0), "height": 6.0, "trunk": 0.4, "ref_height": 17.0, "broadleaf": false, "id": id} if id == 7 else {"name": "oak", "position": Vector3(60.0, 10.0, 0.0), "height": 22.0, "trunk": 0.6, "ref_height": 19.5, "broadleaf": false}
+		return {"name": "beech", "position": Vector3(10.0, 10.0, 0.0), "height": 10.0, "trunk": 0.4, "ref_height": 17.0, "broadleaf": false, "id": id} if id == 7 else {"name": "oak", "position": Vector3(60.0, 10.0, 0.0), "height": 22.0, "trunk": 0.6, "ref_height": 19.5, "broadleaf": false}
 
 	w.cut_tree = func(_c, id): standing.erase(id); return true
 	w.send_notice = func(_p, _text): pass
@@ -100,8 +100,8 @@ func _init() -> void:
 	var small: Array = felled(w, 3)
 	check(small.size() == 1, "the small beech is a trunk")
 	var tree: Dictionary = w._items[small[0]]["tree"]
-	check(absf(float(tree["radius"]) - 0.24 * 6.0 / 17.0) < 0.001, "felled radius is the drawn young-beech radius (%.3f)" % float(tree["radius"]))
-	check(is_equal_approx(float(tree["length"]), 6.0), "felled length is the standing height")
+	check(absf(float(tree["radius"]) - 0.24 * 10.0 / 17.0) < 0.001, "felled radius is the drawn young-beech radius (%.3f)" % float(tree["radius"]))
+	check(is_equal_approx(float(tree["length"]), 10.0), "felled length is the standing height")
 	var stump: Dictionary = w._items[felled(w, 4)[0]]["tree"]
 	check(absf(float(stump["radius"]) - float(tree["radius"])) < 0.001, "the stump has the same radius")
 
@@ -110,7 +110,7 @@ func _init() -> void:
 	check(felled(w, 3).size() == 1, "still a trunk while it falls")
 
 	var log_len: float = float(w._drops["trunk"]["log_length_m"])   # 3.0 m (Master s2.3 item 1)
-	# 6 m = 2 whole logs (cutting would give int(6 / 3.0) = 2). After the fall time it is two logs lying along the trunk.
+	# 10 m = 3 whole logs (cutting would give int(10 / 3.0) = 3; the last takes the rest). After the fall time it is three logs lying along the trunk.
 	var log_n: int = w.table.number_of("log_beech")
 
 	if log_n <= 0:
@@ -132,7 +132,7 @@ func _init() -> void:
 		w._items.erase(900000 + far)
 
 	var logs: Array = loose_logs(w, log_n)
-	check(logs.size() == int(6.0 / log_len), "log count equals what cutting gives: %d" % logs.size())
+	check(logs.size() == int(10.0 / log_len), "log count equals what cutting gives: %d" % logs.size())
 	# Its seeds (Dave 14 Nov 2026: "a random number of seeds between 1 and 5 seeds per tree"): a beech drops 1 to 5 Beech seeds as one heap in its crown circle.
 	var seed_roll: Array = w._felled_seeds(small[0], tree)
 	var seed_heap: bool = false
@@ -175,9 +175,9 @@ func _init() -> void:
 	# the split gives no branch row besides (no second lot). The root ball lies at the trunk.
 	var circle: Array = tree.get("crown", [])
 	var scatter: Dictionary = w._drops.get("trunk", {}).get("crown_scatter", {})
-	var want_r: float = maxf(Cover.crown_radius(5.0, 17.0, 6.0), float(scatter.get("min_radius_m", 1.5)))
+	var want_r: float = maxf(Cover.crown_radius(5.0, 17.0, 10.0), float(scatter.get("min_radius_m", 1.5)))
 	check(circle.size() == 3 and absf(float(circle[2]) - want_r) < 0.001, "the trunk carries its crown circle, the canopy's size (%s, radius %.2f)" % [str(circle), want_r])
-	var centre: Vector3 = base + along * (6.0 * 0.75 * cos(float(tree.get("pitch", 0.0))))
+	var centre: Vector3 = base + along * (10.0 * 0.75 * cos(float(tree.get("pitch", 0.0))))
 	check(circle.size() == 3 and Vector2(float(circle[0]) - centre.x, float(circle[1]) - centre.z).length() < 0.01, "centred on the middle of the upper half as it lies")
 	var sticks: int = 0
 	var leaves: int = 0
@@ -202,8 +202,8 @@ func _init() -> void:
 
 	var stick_m: Array = scatter.get("sticks_per_m", [0, 0])
 	var leaf_m: Array = scatter.get("leaves_per_m", [0, 0])
-	check(sticks >= roundi(float(stick_m[0]) * 6.0) and sticks <= roundi(float(stick_m[1]) * 6.0), "the 6 m beech's crown drops sticks by its size: %d" % sticks)
-	check(leaves >= roundi(float(leaf_m[0]) * 6.0) and leaves <= roundi(float(leaf_m[1]) * 6.0), "and leaves by its size: %d" % leaves)
+	check(sticks >= roundi(float(stick_m[0]) * 10.0) and sticks <= roundi(float(stick_m[1]) * 10.0), "the 10 m beech's crown drops sticks by its size: %d" % sticks)
+	check(leaves >= roundi(float(leaf_m[0]) * 10.0) and leaves <= roundi(float(leaf_m[1]) * 10.0), "and leaves by its size: %d" % leaves)
 	check(inside and heaps >= 2, "all over the crown circle, in %d little heaps (close ones join), none outside it" % heaps)
 	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == 0, "none of it went into the pack")
 	_check_crown_leaves(w)
@@ -214,7 +214,7 @@ func _init() -> void:
 	for k in logs:
 		var off: Vector3 = w._items[k]["pos"] - base
 		var cross: float = absf(off.x * along.z - off.z * along.x)
-		check(cross < 0.01 and off.dot(along) > 0.0 and off.dot(along) < 6.0, "a log lies on the line of the trunk")
+		check(cross < 0.01 and off.dot(along) > 0.0 and off.dot(along) < 10.0, "a log lies on the line of the trunk")
 
 	check(w.inventory_of(1).count_of(log_n) == 0, "no log went into the pack")
 
@@ -278,7 +278,7 @@ func _init() -> void:
 
 	check(not w.split_trunk(hand[0]) and felled(w, 3).size() == 1, "no room: the trunk stays to cut by hand")
 
-	# A sapling-sized tree (1.5 m, no whole log) breaks up into firewood, kindling and sticks instead of staying a trunk.
+	# A sapling-sized tree (1.5 m, a small tree) breaks up into Firewood, kindling and sticks instead of staying a trunk.
 	for n in range(70):
 		w._items.erase(900000 + n)
 
@@ -306,6 +306,15 @@ func _init() -> void:
 			kindling += int(row["count"])
 
 	check(kindling >= 1, "kindling lies where it fell")
+	var tiny_firewood: int = 0
+
+	for k in w._items:
+		var row: Dictionary = w._items[k]
+
+		if not row.has("tree") and not row.has("struct") and absf(row["pos"].x - 200.0) < 3.0 and int(row["number"]) == w.table.number_of("firewood"):
+			tiny_firewood += int(row["count"])
+
+	check(tiny_firewood == 5, "a 1.5 m tree breaks into 3 Firewood a metre, rounded: 5 (%d)" % tiny_firewood)
 
 	# No room: it is tried again later, and after three tries stays a trunk for the axe.
 	standing[11] = true

@@ -409,6 +409,9 @@ var _bow = null                     # server_bow.gd, made at the first shot
 var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the bow's aim spread stream (luck then nudges each draw, _shoot)
 var _last_shot: Dictionary = {}     # peer -> msec
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
+var _rolling: Dictionary = {}       # loose logs being checked for a roll (just dropped, split or moved): world id -> {v: speed m/s, dist: metres rolled, sign: -1/1 downhill side}; asleep once absent (_roll_tick)
+var _roll_moved: Dictionary = {}    # world id -> true: rolled since the players who see them were last told (_roll_send)
+var _roll_send_in: float = 0.0
 var _last_throw: Dictionary = {}    # peer -> msec
 var showroom_enabled: bool = true   # off in a real shared world: showroom items become real items in the economy
 var _showroom_todo: Array = []     # [key, number, count, Vector3 spot] still waiting for their ground to load
@@ -868,15 +871,16 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_w
 	return count - left
 
 
-# --- The large log on the shoulder (Dave 2026-10-21; 1 Nov 2026: it is a normal pack item, the shoulder is only how it is shown) ---
+# --- The large logs on the shoulder (Dave 2026-10-21; 1 Nov 2026: a normal pack item, the shoulder is only how it is shown; 15 Nov 2026: up to two) ---
 # A large log (items.json "carry": "shoulder") sits in the pack like any item: one slot, its weight counted once in the load, the same fuel / chest / craft rules as
-# any log. Only one may be picked up at a time (the next one lies where it was), and the client draws the carry pose while the pack holds one.
+# any log. Up to weights.json shoulder_logs_max (two) may be picked up (a third lies where it was), and the client draws the carry pose while the pack holds one.
+# Tools are stowed while one is carried (_held_tool): both hands steady the logs. Eating and drinking still work.
 
 func is_shoulder_item(number: int) -> bool:
 	return number > 0 and str(table.entry(table.id_of(number)).get("carry", "")) == "shoulder"
 
 
-# The pack slot holding the large log, -1 when there is none.
+# The pack slot of the first large log, -1 when there is none.
 func _shoulder_slot(peer: int) -> int:
 	var inv = inventory_of(peer)
 
@@ -890,10 +894,21 @@ func _shoulder_slot(peer: int) -> int:
 	return -1
 
 
-# The item id of the large log in this player's pack (the one shown on the shoulder), "" when there is none.
+# The item id of the first large log in this player's pack (protocol 64: the client counts the rest in its own pack), "" when there is none.
 func shoulder_of(peer: int) -> String:
 	var slot: int = _shoulder_slot(peer)
 	return table.id_of(inventory_of(peer).numbers[slot]) if slot >= 0 else ""
+
+
+# How many large logs this player carries.
+func shoulder_count(peer: int) -> int:
+	var inv = inventory_of(peer)
+	return CarryRules.shoulder_logs(inv, table).size() if inv != null else 0
+
+
+# Both hands are on logs (a third is refused), so no more can be picked up.
+func _shoulder_full(peer: int) -> bool:
+	return shoulder_count(peer) >= CarryRules.shoulder_max(_carry_cfg)
 
 
 # Its weight is already in the pack's total, so the shoulder adds nothing on top.
@@ -917,7 +932,7 @@ func _sync_shoulder_if_changed(peer: int) -> void:
 var _shoulder_sent: Dictionary = {}
 
 
-# Puts one large log in the pack (it shows on the shoulder); with a log already carried the new one lies at the player's feet. Returns how many were taken.
+# Puts one large log in the pack (it shows on the shoulder); with two already carried the new one lies at the player's feet. Returns how many were taken.
 # `drop_rest` false: a caller that keeps its source (a ground pile, a chest) takes only what went in, so nothing is laid down and nothing is doubled.
 func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = {}, drop_rest: bool = true) -> int:
 	var key: String = str(_peer_key.get(peer, ""))
@@ -928,8 +943,8 @@ func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = 
 
 	var here: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 
-	if shoulder_of(peer) != "":
-		_say(peer, "Put your log down first (Q).")
+	if _shoulder_full(peer):
+		_say(peer, CarryRules.logs_full_say(_carry_cfg))
 
 		if drop_rest:
 			drop_in_world(number, count, here, 0, 0.0, NAN, NAN, "", item_inst)
@@ -950,7 +965,7 @@ func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = 
 	return took
 
 
-# D or the lay-down key with a log carried: it lies on the ground in front of the player.
+# D or the lay-down key with a log carried: one log lies on the ground in front of the player (the first in the pack; the key again lays the next).
 func lay_down_shoulder(peer: int, at: Vector3 = Vector3.ZERO) -> bool:
 	var slot: int = _shoulder_slot(peer)
 
@@ -1073,6 +1088,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if _drop_scoped:
 		_drop_scope.append(_next_id)
 
+	_wake_roll(_next_id)   # a log dropped on a slope rolls (_roll_tick)
 	_next_id += 1
 	_dirty = true
 
@@ -1401,6 +1417,7 @@ func tick(delta: float) -> void:
 	_slow_parts = []
 	_slow_prev_usec = t0
 	_fly(delta)
+	_roll_tick(delta)
 	_showroom_retry(delta)
 	_road_tick(delta)
 	_slow_mark("fly-showroom-roads", t0)
@@ -2250,6 +2267,7 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 
 		if it["pos"].distance_to(centre) <= radius + 1.5:
 			it["pos"] = _settled(it["pos"])
+			_wake_roll(id)   # a log on ground that was dug or filled under it may roll
 			_dirty = true
 
 
@@ -2665,6 +2683,121 @@ func _fly(delta: float) -> void:
 
 			_land_thrown(flight, spot)
 			_flights.erase(flight)
+
+
+const GOLDEN_ANGLE := 2.399963   # radians: successive ids spread their turns evenly round the circle
+
+
+# --- Rolling logs (TREE_WOOD_TOOLS_DESIGN.md s1.1, s5; Dave 15 Nov 2026: "logs are physical world objects that can roll on terrain") ---
+# A loose shoulder log (or an item in drops.json rolling.also: the plain Log) rolls downhill while the ground slope ACROSS it, perpendicular to its long axis
+# (rot_y, 0 = along x), is over rolling.slope; it gains rolling.accel_mps2 up to max_mps, and settles where the slope across it falls under that, at water, at a
+# wall or after max_m, and only while it lies on that ground (within rolling.rest_m of ground_height: not on a floor, a deck or a rock). Only a log just dropped,
+# split or moved is looked at (_wake_roll); the check puts it to sleep by taking it out of _rolling, so a log lying still costs nothing. A log with no turn of its own
+# is given one when it wakes (the golden angle of its id), and it goes out with the first row, so the client draws the log the way the server rolls it. The position is the item's own (saved with it); the players who see it are told at send_s (items_moved, protocol 111: their client glides it).
+# shortcut: slope is read from the server's ground_height, which does not know saved digs and fills (edits_near), and a log rolls as a point; fine for hillsides,
+# revisit if logs should stop against boulders, trees and other logs.
+func _rolls_item(number: int) -> bool:
+	return is_shoulder_item(number) or (_drops.get("rolling", {}) as Dictionary).get("also", []).has(table.id_of(number))
+
+
+func _wake_roll(id: int) -> void:
+	if _items.has(id) and _rolls_item(int(_items[id]["number"])) and ground_height.is_valid():
+		var it: Dictionary = _items[id]
+
+		if not it.has("rot_y"):
+			it["rot_y"] = fposmod(float(id) * GOLDEN_ANGLE, TAU)   # a log laid down or dropped has a turn of its own, so the server rolls it across the way the client draws it
+
+		_rolling[id] = {"v": 0.0, "dist": 0.0, "sign": 0}
+
+
+# The unit vector in x, z across the log (perpendicular to its long axis) and the ground slope along it: rise over run, positive when the ground climbs that way.
+func _roll_across(it: Dictionary, probe: float) -> Array:
+	var turn: float = float(it.get("rot_y", 0.0))
+	var across: Vector2 = Vector2(sin(turn), cos(turn))
+	var here: Vector3 = it["pos"]
+	var up: float = float(ground_height.call(here.x + across.x * probe, here.z + across.y * probe))
+	var down: float = float(ground_height.call(here.x - across.x * probe, here.z - across.y * probe))
+	return [across, (up - down) / (2.0 * probe) if not is_nan(up) and not is_nan(down) else 0.0]
+
+
+func _roll_tick(delta: float) -> void:
+	if _rolling.is_empty() and _roll_moved.is_empty():
+		return
+
+	var cfg: Dictionary = _drops.get("rolling", {})
+
+	for id in _rolling.keys():
+		var it: Dictionary = _items.get(id, {})
+
+		if it.is_empty() or it.has("tree") or it.has("struct") or it.has("fire") or it.has("boulder") or not ground_height.is_valid():
+			_rolling.erase(id)
+			continue
+
+		var roll: Dictionary = _rolling[id]
+		var rest: float = float(ground_height.call(it["pos"].x, it["pos"].z))
+
+		if is_nan(rest) or absf(it["pos"].y - rest) > float(cfg.get("rest_m", 0.5)):
+			_rolling.erase(id)   # not lying on the ground (a floor, a bridge, a boulder, a tunnel): it stays where it is
+			continue
+
+		var across: Array = _roll_across(it, float(cfg.get("probe_m", 0.4)))
+		var slope: float = float(across[1])
+
+		if absf(slope) <= float(cfg.get("slope", 0.35)):
+			_rolling.erase(id)   # flat enough: it settles here
+			continue
+
+		var downhill: int = -1 if slope > 0.0 else 1   # it rolls toward the lower ground
+		var speed: float = float(roll["v"]) if int(roll["sign"]) == downhill else 0.0   # a hollow turns it round: it starts again
+		speed = minf(speed + float(cfg.get("accel_mps2", 2.0)) * delta, float(cfg.get("max_mps", 3.0)))
+		var step: float = speed * delta
+		var here: Vector3 = it["pos"]
+		var to: Vector2 = Vector2(here.x, here.z) + (across[0] as Vector2) * float(downhill) * step
+		var ground: float = float(ground_height.call(to.x, to.y))
+		var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(Vector3(to.x, here.y, to.y))) > float(cfg.get("water_m", 0.05))
+
+		if is_nan(ground) or wet or structure_blocks_step(here.x, here.z, to.x, to.y, 0.1):
+			_rolling.erase(id)   # the shore, a hole in the ground or a wall: it stops where it is
+			continue
+
+		it["pos"] = Vector3(to.x, ground, to.y)
+		roll["v"] = speed
+		roll["sign"] = downhill
+		roll["dist"] = float(roll["dist"]) + step
+		_roll_moved[id] = true
+		_dirty = true
+
+		if float(roll["dist"]) >= float(cfg.get("max_m", 60.0)):
+			_rolling.erase(id)
+
+	_roll_send_in -= delta
+
+	if _roll_send_in <= 0.0 and not _roll_moved.is_empty():
+		_roll_send_in = float(cfg.get("send_s", 0.1))
+		_roll_send()
+
+
+# Tells the players who know each log that rolled where it is now. A log that settled is in the last of these.
+func _roll_send() -> void:
+	var moved: Array = _roll_moved.keys().filter(func(id): return _items.has(id))
+	_roll_moved.clear()
+
+	if moved.is_empty() or not send_items_moved.is_valid():
+		return
+
+	for peer in _known:
+		var ids: PackedInt32Array = PackedInt32Array()
+		var at: PackedVector3Array = PackedVector3Array()
+		var yaws: PackedFloat32Array = PackedFloat32Array()
+
+		for id in moved:
+			if (_known[peer] as Dictionary).has(id):
+				ids.append(id)
+				at.append(_items[id]["pos"])
+				yaws.append(rad_to_deg(float(_items[id].get("rot_y", 0.0))))
+
+		if not ids.is_empty():
+			send_items_moved.call(peer, ids, at, yaws)
 
 
 # A thrown weapon lands as a pickup, unless the throw broke a disposable one (the Javelin): that one is gone (master s2.2 rule 2).
@@ -3726,10 +3859,13 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 	if tool < 0:
 		tool = _held_tool(inv, held_slot, "axe")
 
-	if tool < 0:
-		_reject(peer, 1)
-
 	var now: int = Time.get_ticks_msec()
+
+	if tool < 0:
+		if now - int(_last_mine.get(peer, -100000)) >= HANDS_FULL_SAY_GAP_MS and _say_hands_full(peer, inv):   # a swing a tick would say it every time: once in a while
+			_last_mine[peer] = now
+
+		_reject(peer, 1)
 
 	if tool < 0 or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock"):
 		return
@@ -4793,8 +4929,8 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		return
 
 	if is_shoulder_item(int(it["number"])):
-		if shoulder_of(peer) != "":
-			_say(peer, "Put your log down first (Q).")
+		if _shoulder_full(peer):
+			_say(peer, CarryRules.logs_full_say(_carry_cfg))
 			return
 
 		if _fit(peer, inv, int(it["number"]), 1, it.get("inst", {})) == 0:
@@ -5736,7 +5872,7 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 # hotbar did the work, whatever was held): [slot, stones per blow] from boulders.json tools by its class and material, [] when the held slot
 # is not a usable boulder tool on the hotbar.
 func _boulder_tool(inv, slot: int) -> Array:
-	if slot < 0 or slot >= inv.slot_count or not inv.on_hotbar(slot) or _is_broken(inv, slot):
+	if slot < 0 or slot >= inv.slot_count or not inv.on_hotbar(slot) or _is_broken(inv, slot) or _hands_full(inv):
 		return []
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -5762,6 +5898,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var tool: Array = _boulder_tool(inv, held_slot)
 
 	if tool.is_empty():
+		_say_hands_full(peer, inv)
 		_reject(peer, 1)
 		return
 
@@ -6032,6 +6169,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 	var tool: Array = _wood_tool(inv, held_slot)   # an axe, or (very slowly) a pick
 
 	if tool.is_empty():
+		_say_hands_full(peer, inv)
 		_reject(peer, 1)
 		return
 
@@ -6147,7 +6285,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	var trunk: Dictionary = base.duplicate()
 	trunk["state"] = 3
 	trunk["pitch"] = pitch
-	trunk["keywood"] = true   # every full-size tree is cut into logs (Dave 1 Nov): the client marks the next cut line on them. Only key woods have their own log item; the rest drop the plain Log
+	trunk["keywood"] = not _is_small_tree(trunk, _drops.get("trunk", {}))   # every large tree is cut into logs (Dave 1 Nov): the client marks the next cut line on them; a small tree breaks into Firewood. Only key woods have their own log item; the rest drop the plain Log
 	trunk["chunk"] = [chunk.x, chunk.y]
 	trunk["auto_split"] = true   # it breaks into its logs by itself once it has hit the ground (_auto_split)
 	trunk["crown"] = _crown_circle(spot, info, yaw, pitch)   # where its crown lands: the client flattens the grass there, the split litters it
@@ -6172,10 +6310,28 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 # 2026: "if you do an attack on anything at anytime it needs to know what weapon is in hand"; "swinging any tool or weapon needs to always
 # check the tool or weapon first because they might have bonuses to be able to hit stuff"). TEST-013 playtest repair.
 func _held_tool(inv, slot: int, tool_class: String) -> int:
-	if slot < 0 or slot >= inv.slot_count or not inv.on_hotbar(slot) or _is_broken(inv, slot):
+	if slot < 0 or slot >= inv.slot_count or not inv.on_hotbar(slot) or _is_broken(inv, slot) or _hands_full(inv):
 		return -1
 
 	return slot if str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class else -1
+
+
+# Logs on the shoulder keep both hands busy: the tool in hand is stowed and no swing uses it (TREE_WOOD_TOOLS_DESIGN.md s1.2; the client puts it away, held_item.gd
+# carrying_log). Eating and drinking are not tool work and still go through.
+func _hands_full(inv) -> bool:
+	return not CarryRules.shoulder_logs(inv, table).is_empty()
+
+
+const HANDS_FULL_SAY_GAP_MS := 3000
+
+
+# Says why a swing did nothing when logs are carried; true when that was the reason.
+func _say_hands_full(peer: int, inv) -> bool:
+	if not _hands_full(inv):
+		return false
+
+	_say(peer, "Your hands are full of logs. Put them down first (Q).")
+	return true
 
 
 # The wood tool in hand as [slot, tool class, speed]: an axe, or a pick (the wrong tool: very slow, tears loose sticks and kindling), with
@@ -6223,6 +6379,9 @@ func _swing_tool(peer: int, inv, slot: int, tool_class: String) -> int:
 
 	if tool >= 0:
 		return tool
+
+	if _say_hands_full(peer, inv):
+		return -1
 
 	if slot >= 0 and slot < inv.slot_count and inv.numbers[slot] != 0 and _is_broken(inv, slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
 		_say(peer, "Your %s is broken. %s" % [table.sentence_name(inv.numbers[slot]), _repair_hint(table.entry(table.id_of(inv.numbers[slot])))])
@@ -6628,6 +6787,9 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	var a_log: bool = not it.is_empty() and not it.has("tree") and not it.has("struct") and (table.id_of(int(it["number"])) in ["log", "wooden_block"] or is_shoulder_item(int(it["number"])))
 
 	if tool.is_empty():
+		if _say_hands_full(peer, inv):
+			return
+
 		if a_log or (not it.is_empty() and it.has("tree")):
 			_say(peer, "You need an axe in hand to work wood.")   # the wood sound played, so say why nothing came of it
 
@@ -6681,7 +6843,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 	tree["landed"] = true   # the client draws it lying from now on (a shorter trunk is not felled again)
 
 	if not tree.has("logs_left"):
-		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 3.0))), 0, int(cfg.get("max_logs", 20)))   # whole 3 m lengths only (Master s2.3 item 1)
+		tree["logs_left"] = 0 if _is_small_tree(tree, cfg) else clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 3.0))), 0, int(cfg.get("max_logs", 20)))   # whole 3 m lengths only (Master s2.3 item 1); a small tree makes no logs
 		tree["blows"] = 0   # every tree makes logs (Dave 1 Nov); a species without its own log item drops the plain Log (_cut_log_off)
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -6702,11 +6864,20 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 
 			if not seeds.is_empty():
 				give(peer, int(seeds[0]), int(seeds[1]))
-	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
+	elif int(tree["logs_left"]) <= 0:   # a small tree: only Firewood, kindling and sticks, the Firewood of its length shared over the small blows
+		var small_blows: int = maxi(int(cfg.get("small_blows", 3)), 1)
+		var firewood: int = _small_firewood(tree, cfg)
+
+		@warning_ignore("integer_division")
+		var share: int = firewood / small_blows + (1 if blows - int(cfg.get("branch_blows", 3)) < firewood % small_blows else 0)
+
+		if not by_pick:
+			give(peer, table.number_of("firewood"), share)
+
 		for row in ([] if by_pick else cfg.get("small", [])):
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 
-		if blows + 1 >= int(cfg.get("branch_blows", 3)) + int(cfg.get("small_blows", 3)):
+		if blows + 1 >= int(cfg.get("branch_blows", 3)) + small_blows:
 			_items.erase(id)
 	else:
 		var per_log: float = float(cfg.get("blows_per_log", 3))   # a fraction is fine (1.6: a log every 1 or 2 blows, the remainder carries over)
@@ -6902,8 +7073,7 @@ func split_trunk(id: int) -> bool:
 	var length: float = float(tree["length"])
 	var count: int = clampi(int(length / log_len), 0, int(cfg.get("max_logs", 20)))
 
-	if count <= 0:   # too short for one whole log (a sapling-sized tree): it breaks up into what hand-cutting gives, firewood, kindling and sticks (and the branches)
-		tree.erase("auto_split")
+	if count <= 0 or _is_small_tree(tree, cfg):   # a small tree (young, short or thin): it breaks up into Firewood, kindling and sticks (and the branches), no logs
 		return _split_small(id, it, cfg)
 
 	var yaw: float = float(tree["yaw"])
@@ -6978,7 +7148,21 @@ func split_trunk(id: int) -> bool:
 	return true
 
 
-# A trunk too short for a whole log breaks up into what hand-cutting gives it: the branch blows' sticks and leaves, then the small rows (firewood, kindling, sticks) of every small blow.
+# A felled tree is SMALL when its trunk is shorter than drops.json trunk.small_tree max_length_m or its butt radius is under min_radius_m (TREE_WOOD_TOOLS_DESIGN.md s5):
+# it makes no logs, only Firewood (_small_firewood) and what hand-cutting gives besides. A large tree splits into 3 m logs (split_trunk).
+func _is_small_tree(tree: Dictionary, cfg: Dictionary) -> bool:
+	var small: Dictionary = cfg.get("small_tree", {})
+	return float(tree["length"]) < float(small.get("max_length_m", 8.0)) or float(tree["radius"]) < float(small.get("min_radius_m", 0.12))
+
+
+# The Firewood a small tree breaks into: small_tree firewood_per_m a metre of trunk, rounded, within the firewood range (2 to 24).
+func _small_firewood(tree: Dictionary, cfg: Dictionary) -> int:
+	var small: Dictionary = cfg.get("small_tree", {})
+	var span: Array = small.get("firewood", [2, 24])
+	return clampi(roundi(float(tree["length"]) * float(small.get("firewood_per_m", 3.0))), int(span[0]), int(span[1]))
+
+
+# A small tree breaks up into the Firewood of its length, then what hand-cutting gives it: the branch blows' sticks and leaves, then the small rows (kindling, sticks) of every small blow.
 func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	var tree: Dictionary = it["tree"]
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -6997,6 +7181,8 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 			var m: int = table.number_of(str(row[0]))
 			totals[m] = int(totals.get(m, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
 
+	var firewood_n: int = table.number_of("firewood")
+	totals[firewood_n] = int(totals.get(firewood_n, 0)) + _small_firewood(tree, cfg)
 	var rows: Array = []
 
 	for n in totals:
@@ -7006,6 +7192,22 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	var yaw: float = float(tree["yaw"])
 	var heap: Vector3 = it["pos"] + Vector3(sin(yaw), 0.0, cos(yaw)) * (float(tree["length"]) * 0.5) + Vector3(0.0, float(tree["radius"]), 0.0)
 	var seeds: Array = _seed_litter(id, tree, heap)   # its 1 to 5 seeds, in the crown circle
+	var near: int = 0
+
+	for other_id in _items:   # room for every heap, or none (the crowd rule of drop_in_world, as split_trunk counts it): the trunk stays and tries again
+		var other: Dictionary = _items[other_id]
+
+		if other.has("scatter") or other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree"):
+			continue
+
+		if Vector2(other["pos"].x - heap.x, other["pos"].z - heap.z).length() <= DROP_CROWD_M:
+			near += 1
+
+	if near + rows.size() + litter.size() + seeds.size() > MAX_DROPPED_NEAR:
+		_dirty = true
+		return false
+
+	tree.erase("auto_split")
 	var feller_peer: Variant = _feller_peer(id)
 	_items.erase(id)
 
@@ -7455,6 +7657,7 @@ func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, held_slot: int) 
 		slot = _held_tool(inv, held_slot, "axe")
 
 	if slot < 0:
+		_say_hands_full(peer, inv)
 		_reject(peer, 1)
 		return
 
@@ -9586,7 +9789,9 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 	var axe: int = _held_tool(inv, held_slot, "axe")
 
 	if axe < 0:
-		_say(peer, "You need an axe in hand to split wood.")
+		if not _say_hands_full(peer, inv):
+			_say(peer, "You need an axe in hand to split wood.")
+
 		return
 
 	if _stock_take(inv, table.number_of("wooden_block"), 1, _stock_of(peer)) < 1:
@@ -10504,7 +10709,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	return amount - left
 
 
-# One take of up to `count` from container slot `a` into the pack (a large log onto the shoulder, one at a time), under the carry cap.
+# One take of up to `count` from container slot `a` into the pack (a large log onto the shoulder, one at a time, two at most), under the carry cap.
 # The caller has already checked reach and access. Returns how many came out. `weighed`: out of a worn bag, whose load is carried already.
 func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false) -> int:
 	if a < 0 or a >= chest.slot_count or chest.numbers[a] == 0 or count <= 0:
@@ -10516,8 +10721,8 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 	var amount: int = mini(count, chest.counts[a])
 
 	if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
-		if shoulder_of(peer) != "":
-			_say(peer, "Put your log down first (Q).")
+		if _shoulder_full(peer):
+			_say(peer, CarryRules.logs_full_say(_carry_cfg))
 		elif _give_shoulder(peer, number, 1, held_inst, false) == 1:
 			chest.take_from_slot(a, 1)
 			_dirty = true
@@ -17254,7 +17459,7 @@ func _sync_goals(peer: int) -> void:
 
 
 # --- Logs from the shoulder and the ground (guide finding F-16, moderator decision for Dave, 31 Oct 2026) ---
-# A log is carried on the shoulder (one at a time) and a cut log lies on the ground; neither is in the pack. A craft or blueprint that needs the log group (plain `log`)
+# A log is carried on the shoulder (two at most) and a cut log lies on the ground. A craft or blueprint that needs the log group (plain `log`)
 # takes its logs in this order: the log on the shoulder, then log items lying on the ground within LOG_NEAR_M of the player, then the pack. The ones taken from the
 # shoulder or the ground move into the pack at that moment and are used up by the craft like any ingredient (a craft that is refused takes nothing). The player is told
 # "Using nearby logs". Ground logs go with the same authority as a pickup (removed on the server, the clients see them vanish).
