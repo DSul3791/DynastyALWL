@@ -3573,7 +3573,7 @@ static func carving_station() -> Node3D:
 	var seat: Node3D = slab_bench(1.2)
 	seat.position = Vector3(-0.35, 0.0, 0.0)
 	root.add_child(seat)
-	_cyl(root, 0.22, 0.6, Vector3(0.62, 0.3, 0.05), _log, 8)                                  # the chopping block, upright
+	_cyl(root, 0.22, 0.62, Vector3(0.62, 0.31, 0.05), _log, 8)                                # the chopping block, upright, 0.62 m (clears the 0.6 m look-height check)
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 443
 	var pale: StandardMaterial3D = _tone_mat(Color(0.82, 0.64, 0.4))
