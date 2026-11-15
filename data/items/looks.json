@@ -2076,6 +2076,12 @@
    "color": "#a8804a",
    "size": 1.0
   },
+  "primitive_bow": {
+   "shape": "bow",
+   "color": "#7a5a35",
+   "size": 0.9,
+   "placeholder": true
+  },
   "wooden_arrow": {
    "shape": "arrow",
    "color": "#d8b070",

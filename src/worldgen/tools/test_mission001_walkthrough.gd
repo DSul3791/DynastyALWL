@@ -596,10 +596,10 @@ func step1_early_survival() -> void:
 
 	# Gathering by hand: stones, sticks, plant fibre and a large wooden block lie about (the ground scatter, plants and a felled trunk give them;
 	# test_first_hour and test_first_town gather them the same way).
-	var twine_n: int = need_of("stone_axe", "twine") + cost_of("lean_to", "twine") + cost_of("chest", "twine") + need_of("wooden_hammer", "twine")
+	var twine_n: int = need_of("stone_axe", "twine") + cost_of("lean_to", "twine") + cost_of("chest", "twine") + need_of("stone_hammer", "twine")
 	var fibre_n: int = twine_n * need_of("twine", "plant_fibre") + 4
-	var stick_n: int = need_of("stone_axe", "stick") + need_of("stone_knife", "stick") + need_of("wooden_hammer", "stick") + cost_of("lean_to", "stick") + cost_of("chest", "stick") + need_of("wooden_spade", "stick")
-	var stone_n: int = need_of("stone_axe", "stone") + need_of("stone_knife", "stone") + 1
+	var stick_n: int = need_of("stone_axe", "stick") + need_of("stone_knife", "stick") + need_of("stone_hammer", "stick") + cost_of("lean_to", "stick") + cost_of("chest", "stick") + need_of("wooden_spade", "stick")
+	var stone_n: int = need_of("stone_axe", "stone") + need_of("stone_knife", "stone") + need_of("stone_hammer", "stone") + 1
 
 	for k in range(8):
 		var around: Vector3 = Vector3(cos(float(k) * TAU / 8.0), 0.0, sin(float(k) * TAU / 8.0))   # more than a metre apart, or heaps merge
@@ -615,8 +615,8 @@ func step1_early_survival() -> void:
 	craft("stone_axe", 1)
 	craft("stone_knife", 1)
 	check(have("stone_axe") == 1 and have("stone_knife") == 1, "1d. a Stone - Axe and a Stone - Knife are made by hand")
-	craft("wooden_hammer", 1)
-	check(have("wooden_hammer") == 1 and inv.on_hotbar(slot_of("wooden_hammer")), "1e. a Wooden - Hammer is made by hand from a wooden block; it sits in the hand bar")
+	craft("stone_hammer", 1)
+	check(have("stone_hammer") == 1 and inv.on_hotbar(slot_of("stone_hammer")) and inv.on_hotbar(slot_of("stone_knife")), "1e. a Stone - Hammer is made by hand (the Wooden - Hammer is carved at the carving station now); the hammer and the knife sit in the hand bar")
 
 	# The Lean-to and the Wicker - Chest from their blueprints. Leaves: a felled tree gives a few (test_first_hour fells one and counts them); the
 	# rest are swept from many trees, so the remainder is given.
@@ -1080,9 +1080,14 @@ func step4_cooking_and_preservation() -> void:
 	var made: int = have("roast_platter")
 	check(made == gives_of("roast_platter"), "4k. the table assembles a Roast platter of %d portions" % made)
 
-	# The Serving platter (wooden blocks from step 1, the knife kept) set on the table, the board on it, a portion eaten.
+	# The wood carving station (2 wooden blocks from step 1, built with the knife: its own blueprint list, W-6), then the Serving platter carved at it
+	# (2 more blocks, the knife kept), set on the table, the board on it, a portion eaten.
+	go(KITCHEN + Vector3(1.5, 0.0, -2.0))
+	var carving: int = build("carving_station", KITCHEN + Vector3(3.0, 0.0, -3.5), "4l")   # clear of the kitchen campfire at (0, -3): structures stand 2.5 m apart
+	check(carving >= 0 and have("wooden_block") == 2, "4l. the wood carving station stands, built from two wooden blocks with the knife (%d blocks left)" % have("wooden_block"))
 	craft("serving_platter", 1)
-	check(have("serving_platter") == 1, "4l. a Serving platter is carved by hand")
+	check(have("serving_platter") == 1 and have("stone_knife") == 1, "4l. a Serving platter is carved at the carving station, the knife kept")
+	go(KITCHEN + Vector3(1.5, 0.0, 0.0))
 	var table_pos: Vector3 = items._items[prep_table]["pos"] if prep_table >= 0 else KITCHEN
 	items.action(1, Net.ACT_PLACE, slot_of("serving_platter"), 0, 0, table_pos + Vector3(0.3, 0.0, 0.1))
 

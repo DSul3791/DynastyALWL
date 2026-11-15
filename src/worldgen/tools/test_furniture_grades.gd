@@ -136,7 +136,7 @@ func _place_checks() -> void:
 			x += 5.0
 			items.report_position(1, spot + Vector3(0.0, 0.0, -1.5))
 			_clear()
-			_give("iron_hammer", 1)
+			_give("stone_knife" if str(bp.get("tool", "hammer")) == "knife" else "iron_hammer", 1)   # the Crude chest, chair, table and the Bench are knife rows (15 Nov 2026, W-9)
 
 			for row in bp["cost"]:
 				_give("lumber" if str(row[0]) == "hardwood_board" else str(row[0]), int(row[1]))

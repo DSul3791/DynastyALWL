@@ -16,7 +16,7 @@ An item is obtainable now when a player can get it today, starting with empty ha
   * a recipe that is not locked or retired, at a station a player can build to the level the recipe asks for
     (structures.json station + station_level, +1 per add-on kind, "also" stations), with every need and kept tool
     obtainable;
-  * a hammer blueprint (not locked or retired) whose cost, hammer tier, station and "near" piece are all reachable
+  * a hammer blueprint (not locked or retired; a knife blueprint, "tool": "knife", needs a knife instead of a hammer) whose cost, hammer tier, station and "near" piece are all reachable
     builds its structure, and so its station;
   * cooking.json cooks_into from a raw item at a fire, spoilage rotten_item, doused_item/relit_item twins, and an
     ingredient group when any member is.
@@ -254,7 +254,10 @@ class Reach:
             kind = b.get("structure")
             if kind in self.built or b.get("locked") or b.get("retired") or kind not in self.structures:
                 continue
-            if hammer_tier < int(b.get("hammer", 1)):
+            if b.get("tool") == "knife":   # a knife row (W-9) wants any knife, not a hammer
+                if not self.tool("knife"):
+                    continue
+            elif hammer_tier < int(b.get("hammer", 1)):
                 continue
             if b.get("station") and self.station_level(b["station"]) < int(b.get("station_level", 1)):
                 continue
@@ -339,7 +342,7 @@ class Reach:
                 for key, lvl in [("station", "station_level"), ("near", "near_level")]:
                     if b.get(key) and self.station_level(b[key]) < int(b.get(lvl, 1)):
                         lack.append("%s %s L%d" % (key, b[key], int(b.get(lvl, 1))))
-                out.append("blueprint %s lacks %s" % (bid, ", ".join(lack) or "a hammer of tier %s" % b.get("hammer", 1)))
+                out.append("blueprint %s lacks %s" % (bid, ", ".join(lack) or ("a knife" if b.get("tool") == "knife" else "a hammer of tier %s" % b.get("hammer", 1))))
         for jid, job in self.smelting.get("jobs", {}).items():
             if job.get("out", [""])[0] == iid:
                 at = [k for k, d in self.structures.items() if d.get("use") == "smelt" and jid in d.get("smelt", {}).get("jobs", [])]

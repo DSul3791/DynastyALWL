@@ -5,6 +5,9 @@ extends RefCounted
 # opens the list (Dave 3 Nov: same window style as the hoe's, 40 pt), the mouse wheel moves the highlight, a left click picks one (the
 # ghost follows the aim, a left click places it), right click (or R) shuts the list. Pure rows live in rows() so a
 # test can read them without a screen.
+# The knife has its own list from the same window (Dave 15 Nov 2026, TREE_WOOD_TOOLS_DESIGN.md s1.4, W-9): right click with a knife in hand opens the
+# blueprints whose data row says "tool": "knife" (simple wood and twine furnishings and stations); the hammer's list no longer shows them. `tool` says which
+# list this is; held_item.gd sets it from the tool in hand. The knife has no Repair or Save lines and no saved plans.
 
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const STRUCTURES_PATH := "res://data/items/structures.json"
@@ -16,6 +19,7 @@ const BuildingPlans := preload("res://src/client/building_plans.gd")
 const TIER_ORDER := ["Crude", "Thatch", "Rustic", "Log", "Fine", "Ornate", "Refined", "Wooden", "Sturdy", "Stone", "Superior", "Brick", "Engineered", "Fortified", "Bronze", "Iron", "Steel"]
 
 const DEFAULT_MODE := "repair"           # Dave 10 Nov 2026: a hammer first taken in hand (and after a game start) is on Repair, the first line of its list
+var tool: String = "hammer"              # whose list: "hammer" (every row without a "tool", with Repair, Save and plans) or "knife" (the rows with "tool": "knife")
 var mode: String = DEFAULT_MODE          # "place" (blueprints and saved plans), "save" (left click saves the building you aim at) or "repair" (left click repairs the piece you aim at)
 var plan_picked: int = -1                # index of the saved plan chosen, -1 for none (picked then holds the plan's anchor blueprint)
 var plans = BuildingPlans.new()
@@ -58,6 +62,7 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 				continue
 
 			row["id"] = id
+			row["tool"] = str(row.get("tool", "hammer"))
 			row["kit"] = str(kinds[str(row["structure"])].get("kit", ""))
 			row["state"] = int(kinds[str(row["structure"])].get("state", 0))
 			row["twin_state"] = int(kinds.get(str(kinds[str(row["structure"])].get("slope_twin", "")), {}).get("state", -1))   # a roof corner's 65 shape (A-37)
@@ -117,7 +122,7 @@ func rows(hammer_tier: int) -> Array:
 	var out: Array = []
 
 	for row in _book:
-		if int(row.get("hammer", 1)) > hammer_tier:
+		if str(row["tool"]) != tool or (tool == "hammer" and int(row.get("hammer", 1)) > hammer_tier):
 			continue
 
 		var parts: PackedStringArray = []
@@ -172,6 +177,9 @@ func bp_of_state() -> Dictionary:
 	var out: Dictionary = {}
 
 	for row in _book:
+		if str(row["tool"]) != "hammer":
+			continue   # a saved plan is placed with the hammer; knife pieces are left out of it
+
 		out[int(row["state"])] = int(row["number"])
 
 		if int(row["twin_state"]) >= 0:
@@ -180,11 +188,25 @@ func bp_of_state() -> Dictionary:
 	return out
 
 
+# Whether a blueprint number is a knife row (a plan saved before 15 Nov 2026 may hold pieces the knife builds now; the server refuses them with a hammer).
+func is_knife_bp(number: int) -> bool:
+	for row in _book:
+		if int(row["number"]) == number:
+			return str(row["tool"]) == "knife"
+
+	return false
+
+
+# The pieces of a saved plan a hammer places: the knife's pieces are left out of its cost and its placing.
+func hammer_pieces(plan: Dictionary) -> Array:
+	return (plan["pieces"] as Array).filter(func(piece): return not is_knife_bp(int(piece["bp"])))
+
+
 # Total materials of a plan as {item id: count}.
 func plan_cost(plan: Dictionary) -> Dictionary:
 	var total: Dictionary = {}
 
-	for piece in plan["pieces"]:
+	for piece in hammer_pieces(plan):
 		for row in _book:
 			if int(row["number"]) == int(piece["bp"]):
 				for need in row["cost"]:
@@ -195,7 +217,9 @@ func plan_cost(plan: Dictionary) -> Dictionary:
 
 # Where each piece of saved plan `index` goes with its anchor at `at`, turned `yaw_deg` (see BuildingPlans.placements).
 func placements_of(index: int, at: Vector3, yaw_deg: float) -> Array:
-	return BuildingPlans.placements(plans.plans[index], at, yaw_deg)
+	var kept: Dictionary = (plans.plans[index] as Dictionary).duplicate()
+	kept["pieces"] = hammer_pieces(plans.plans[index])
+	return BuildingPlans.placements(kept, at, yaw_deg)
 
 
 func plan_can(plan: Dictionary) -> bool:
@@ -215,7 +239,7 @@ func plan_text(plan: Dictionary) -> String:
 	for id in cost:
 		parts.append("%s %d/%d" % [_table.cost_sentence(_table.number_of(str(id))) if _table.number_of(str(id)) > 0 else str(id), _have(_table.number_of(str(id))), int(cost[id])])
 
-	return "%d pieces: %s" % [plan["pieces"].size(), ", ".join(parts)]
+	return "%d pieces: %s" % [hammer_pieces(plan).size(), ", ".join(parts)]
 
 
 # Keeps the building at `near` as a new plan. Returns {"ok", "name", "pieces", "skipped"} (ok false when no placeable piece is near).
@@ -236,7 +260,11 @@ func save_plan_near(structure_rows: Array, near: Vector3) -> Dictionary:
 
 # The menu: "Save building plan" first, then the blueprints, then the saved plans. Each entry: {kind, name, text, can, ...}.
 func entries(hammer_tier: int) -> Array:
-	var out: Array = [{"kind": "repair", "name": "Hammer/Repair Tool", "text": "repair structures, place blueprints or harvest stones and ores. Left click a worn piece: it is mended from materials on the ground nearby, in containers or in your pack. Left click a blueprint: it takes what it still needs from your pack, the ground and your containers all around you. Left click a boulder: break stone and ore from it", "can": true}, {"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
+	# The knife's first line picks no blueprint (kind "repair" is only the plain, default mode), so a knife taken back to a carcass can drop its pick.
+	var out: Array = [{"kind": "repair", "name": "Knife", "text": "dress a kill, cut bark and carve. Pick a blueprint below to set down a simple wood furnishing or station: it takes what it needs from your pack, the ground and your containers all around you", "can": true}]
+
+	if tool == "hammer":
+		out = [{"kind": "repair", "name": "Hammer/Repair Tool", "text": "repair structures, place blueprints or harvest stones and ores. Left click a worn piece: it is mended from materials on the ground nearby, in containers or in your pack. Left click a blueprint: it takes what it still needs from your pack, the ground and your containers all around you. Left click a boulder: break stone and ore from it", "can": true}, {"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
 
 	for row in rows(hammer_tier):
 		if category != "" and str(row["category"]) != category:
@@ -244,7 +272,7 @@ func entries(hammer_tier: int) -> Array:
 
 		out.append({"kind": "bp", "number": int(row["number"]), "name": str(row["name"]), "text": str(row["text"]), "can": bool(row["can"])})
 
-	for n in range(plans.plans.size()):
+	for n in range(plans.plans.size() if tool == "hammer" else 0):
 		var plan: Dictionary = plans.plans[n]
 		out.append({"kind": "plan", "index": n, "name": str(plan["name"]), "text": plan_text(plan), "can": plan_can(plan)})
 
@@ -378,7 +406,7 @@ func visible_lines(total: int) -> int:
 # The list as lines. With `window` above 0 only that many lines show, the highlight held on the middle one and the others sliding past it; blank lines pad
 # the ends, so the first and the last entry can both come up to the middle (Dave 5 Nov 2026).
 func list_text(hammer_tier: int, window: int = 0) -> String:
-	var lines: PackedStringArray = ["Hammer: < %s >  (left and right arrows: group, wheel: move, left click: choose, right click: close)" % category_title(), ""]
+	var lines: PackedStringArray = ["%s: < %s >  (left and right arrows: group, wheel: move, left click: choose, right click: close)" % [tool.capitalize(), category_title()], ""]
 	var list: Array = entries(hammer_tier)
 
 	if window <= 0:

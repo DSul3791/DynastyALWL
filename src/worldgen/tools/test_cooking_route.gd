@@ -192,6 +192,7 @@ func _init() -> void:
 
 	# 2. Pre-iron Flatbread.
 	items.give(1, num("wooden_hammer"), 1)
+	items.give(1, num("stone_knife"), 1)   # the Food preparation table is a knife blueprint now (15 Nov 2026, W-9): a knife in the hand bar builds it
 	give_needs("prep_flatbread")
 	craft("prep_flatbread", 1, 20)
 	check(have("unbaked_flatbread") == 0 and have("flour") > 0, "2a. no table: the dough is not made in the pack")

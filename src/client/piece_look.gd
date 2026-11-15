@@ -1365,6 +1365,18 @@ static func _box_rot(parent: Node3D, size: Vector3, at: Vector3, rotation: Vecto
 	parent.add_child(mesh)
 
 
+# A flat chip or shaving lying on a surface: one quad (two triangles) seen from above, turned `yaw` about its middle.
+static func _chip(parent: Node3D, size: Vector2, at: Vector3, yaw: float, material: StandardMaterial3D) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: PlaneMesh = PlaneMesh.new()
+	shape.size = size
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = at
+	mesh.rotation = Vector3(0.0, yaw, 0.0)
+	parent.add_child(mesh)
+
+
 # A brick oven (cooking station tier 3), 1.8 m by 1.4 m, 1.2 m high: a base of fitted stone, a clay dome over it, an arched dark mouth with a stone surround at the front,
 # and a round stone flue on top at the back.
 static func oven() -> Node3D:
@@ -1718,6 +1730,39 @@ static func bench() -> Node3D:
 	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(-0.86, 0.2, 0.0), _frame)                   # the wedge pins
 	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(0.86, 0.2, 0.0), _frame)
 	_solid(root, Vector3(2.0, 0.45, 0.34), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# The log benches (TREE_WOOD_TOOLS_DESIGN.md s1.7, W-10 and W-17; Dave's pictures in art/references/wood_system_2026-11-15/): a thick half-log slab seat 0.45 m up, flat on
+# top with a rough bark edge, on two short round log sections laid on their sides and set in from the ends. `length` is 1.2 (single), 2.2 (double) or 1.5 with `backed`: a
+# live-edge back slab on two round posts leaning a little back, about 0.9 m high; it faces -Z and the back is at +Z. PLACEHOLDER-quality look (boxes and eight-sided logs).
+static func slab_bench(length: float = 1.2, backed: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = _tone_mat(Color(0.72, 0.4, 0.2))               # fresh-cut orange wood, as in Dave's picture
+	var heart: StandardMaterial3D = _tone_mat(Color(0.42, 0.2, 0.1))
+	var deep: float = 0.4
+	var mid: float = -0.1 if backed else 0.0                                       # a backed seat sits forward of the middle, so the back slab stays inside the footprint
+	_box(root, Vector3(length - 0.02, 0.12, deep), Vector3(0.0, 0.39, mid), wood)  # the slab: seat top at 0.45 m
+	_box(root, Vector3(length * 0.8, 0.08, 0.04), Vector3(length * 0.05, 0.4, mid - deep * 0.5 - 0.005), _log)   # the rough bark edge, front
+	_box(root, Vector3(length * 0.7, 0.07, 0.04), Vector3(-length * 0.08, 0.4, mid + deep * 0.5 + 0.005), _log)  # and back
+
+	for x in [-1.0, 1.0]:
+		var foot: MeshInstance3D = _cyl(root, 0.17, 0.36, Vector3(x * (length * 0.5 - 0.22), 0.17, mid), wood, 8)   # a round log section on its side
+		foot.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+		var end: MeshInstance3D = _cyl(root, 0.06, 0.012, Vector3(x * (length * 0.5 - 0.22), 0.17, mid + 0.181), heart, 6)   # its heart on the +Z end
+		end.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+
+	_solid(root, Vector3(length, 0.45, deep + 0.02), Vector3(0.0, 0.225, mid))
+
+	if backed:
+		for x in [-1.0, 1.0]:
+			_rod(root, Vector3(x * (length * 0.5 - 0.3), 0.42, 0.13), Vector3(x * (length * 0.5 - 0.3), 0.78, 0.2), 0.08, _log)   # the two round posts
+		_box_rot(root, Vector3(length - 0.05, 0.3, 0.07), Vector3(0.0, 0.74, 0.215), Vector3(0.15, 0.0, 0.0), wood)              # the back slab, leaning back
+		_box_rot(root, Vector3(length * 0.5, 0.05, 0.08), Vector3(-length * 0.12, 0.885, 0.225), Vector3(0.15, 0.0, 0.0), _log)  # its rough top edge
+		_box_rot(root, Vector3(length * 0.6, 0.04, 0.08), Vector3(length * 0.06, 0.6, 0.205), Vector3(0.15, 0.0, 0.0), _log)     # and bottom edge
+		_solid(root, Vector3(length - 0.1, 0.5, 0.12), Vector3(0.0, 0.65, 0.22))
+
 	return root
 
 
@@ -2606,19 +2651,13 @@ static func gate(kind: String = "wood", open: bool = false) -> Node3D:
 # --- Buildables B3 (buildables_plan.md, 10 Nov 2026): furniture tiers, work benches and storage. Free-placed, centred on the footprint, standing on y = 0.
 # Seats face -Z (the back of a chair at +Z, as chair()); shelves, cupboards and racks have their back at -Z and open toward +Z.
 
-# A bench of a tier, 2.0 x 0.4 x 0.45 like the wooden bench. "log": a split log seat, flat face up, on two pairs of splayed round legs. "stone": a stone
-# slab on two dressed blocks. "iron": a plank seat bound with iron straps on two iron frame ends.
-static func tier_bench(kind: String = "log") -> Node3D:
+# A bench of a tier, 2.0 x 0.4 x 0.45 like the wooden bench. "stone": a stone slab on two dressed blocks. "iron" (any other kind): a plank seat bound with iron
+# straps on two iron frame ends. The log benches are slab_bench.
+static func tier_bench(kind: String = "stone") -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
 
 	match kind:
-		"log":
-			_box(root, Vector3(2.0, 0.12, 0.36), Vector3(0.0, 0.39, 0.0), _log)
-			_box(root, Vector3(1.96, 0.02, 0.3), Vector3(0.0, 0.45, 0.0), _planks)
-			for x in [-0.75, 0.75]:
-				for z in [-0.09, 0.09]:
-					_cyl(root, 0.04, 0.38, Vector3(x, 0.19, z * 1.3), _log, 6).rotation = Vector3(-z * 1.4, 0.0, 0.08 * signf(x))
 		"stone":
 			_box(root, Vector3(2.0, 0.12, 0.4), Vector3(0.0, 0.39, 0.0), _flag)
 			for x in [-0.7, 0.7]:
@@ -3523,6 +3562,28 @@ static func sawbuck() -> Node3D:
 	_box(root, Vector3(1.2, 0.05, 0.05), Vector3(0.0, 0.3, 0.0), _planks)                   # the rail between the frames
 	_rod(root, Vector3(-0.7, 0.74, 0.0), Vector3(0.7, 0.74, 0.0), 0.12, _log)               # the log in the crotches
 	_solid(root, Vector3(1.4, 0.95, 0.8), Vector3(0.0, 0.48, 0.0))
+	return root
+
+
+# The Wood carving station, 1.9 x 1.1 (2 Wooden blocks; TREE_WOOD_TOOLS_DESIGN.md W-6, Dave 15 Nov 2026): the log bench (slab_bench, 1.2 m) sitting beside a chopping
+# block, with wood shavings all over the ground round them. The look only: the cost is two blocks. PLACEHOLDER quality, under the 300 triangle cap (348 measured with 24 shavings and a cut-top disc; both trimmed).
+static func carving_station() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var seat: Node3D = slab_bench(1.2)
+	seat.position = Vector3(-0.35, 0.0, 0.0)
+	root.add_child(seat)
+	_cyl(root, 0.22, 0.62, Vector3(0.62, 0.31, 0.05), _log, 8)                                # the chopping block, upright, 0.62 m (clears the 0.6 m look-height check)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 443
+	var pale: StandardMaterial3D = _tone_mat(Color(0.82, 0.64, 0.4))
+	var dark: StandardMaterial3D = _tone_mat(Color(0.68, 0.48, 0.28))
+
+	for k in 12:                                                                              # shavings and chips, all over the ground round both
+		var at: Vector3 = Vector3(rng.randf_range(-0.85, 0.85), 0.006, rng.randf_range(-0.47, 0.47))
+		_chip(root, Vector2(rng.randf_range(0.07, 0.2), rng.randf_range(0.03, 0.07)), at, rng.randf_range(0.0, PI), pale if k % 3 != 0 else dark)
+
+	_solid(root, Vector3(0.46, 0.62, 0.46), Vector3(0.62, 0.31, 0.05))
 	return root
 
 

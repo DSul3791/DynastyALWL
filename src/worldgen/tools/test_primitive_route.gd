@@ -3,7 +3,7 @@ extends SceneTree
 # The primitive route and its goal credit (GOALS-REPAIR WP-PRIM, findings F1, F3, F4, F5 and the P2 gate gap; baseline/PRIMITIVE_ROUTE_d990abd.md).
 # Everything is played through the server's player actions (pickup, craft queue, hits, process, place, put, light, drink, eat), and the goal counters
 # (characters.json goal_counts, what the starter goals read) are checked for exactly the counts each action should leave:
-#   1. the P2 route with ZERO admin gives: hand, tree, blocks, hammer, Chopping Block, firewood, medium fire, bonfire, charcoal, lean-to, a Crude piece;
+#   1. the P2 route with ZERO admin gives: hand, tree, blocks, Stone Hammer, Chopping Block, firewood, medium fire, bonfire, charcoal, lean-to, a Crude piece;
 #   2. F1: a lean-to placed short of sticks and finished by depositing the rest counts `placed:lean_to` once (the site path lost the kind);
 #   3. F3: the axe on a ground wooden block and the E split at the Chopping Block count like one craft each, the axe on a log counts nothing, a pick and Admin mode count nothing;
 #   4. F4: a fire newly reaching medium or large through a player action credits `fire_tier` once per character; a direct bonfire credits medium too; a re-feed at the same tier, a drop and re-raise, and Admin mode credit nothing;
@@ -222,20 +222,20 @@ func route() -> void:
 	check(loose("log_oak").size() >= 4 and have("leaves") >= 60, "four oak logs lie on the ground and the branch blows gave the lean-to's 60 leaves (%d logs, %d leaves, %d sticks)" % [loose("log_oak").size(), have("leaves"), have("stick")])
 
 	# Blocks: an axe on a ground log only says to saw it into blocks first (TREE_WOOD_TOOLS_DESIGN.md), and the primitive route has no saw (the Copper saw
-	# needs copper), so the four blocks the hammer, the Chopping Block and two splits need lie on the ground like the other fixtures.
+	# needs copper), so the three blocks the Chopping Block and two splits need lie on the ground like the other fixtures.
 	var chopped: int = loose("log_oak")[0]
 	items.report_position(1, items._items[chopped]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items._last_process.clear()
 	items.action(1, Net.ACT_PROCESS, chopped, 0, 0, HeldTool.at_axe(items))
 	check(items._items.has(chopped) and loose("log_oak").size() >= 4 and have("wooden_block") == 0 and counts("made:wooden_block") == 0, "the axe on a ground log leaves it whole and counts nothing")
-	items.drop_in_world(n("wooden_block"), 4, items._items[chopped]["pos"] + Vector3(1.0, 0.0, 1.0))
+	items.drop_in_world(n("wooden_block"), 3, items._items[chopped]["pos"] + Vector3(1.0, 0.0, 1.0))
 	pick_up(["wooden_block"])
-	check(have("wooden_block") == 4, "four wooden blocks are gathered (%d)" % have("wooden_block"))
+	check(have("wooden_block") == 3, "three wooden blocks are gathered (%d)" % have("wooden_block"))
 
-	# Hammer and Chopping Block.
-	craft(161, 1, 10)
-	to_hotbar("wooden_hammer", 1)
-	check(have("wooden_hammer") == 1 and counts("made:wooden_hammer") == 1 and done("hammer"), "the Wooden Hammer is made and its goal is done")
+	# Hammer and Chopping Block. The Wooden Hammer is carved at the wood carving station now (15 Nov 2026, W-8), so the route's first hammer is the Stone Hammer (recipe 156, by hand).
+	craft(156, 1, 20)
+	to_hotbar("stone_hammer", 1)
+	check(have("stone_hammer") == 1 and counts("made:stone_hammer") == 1 and done("hammer"), "the Stone Hammer is made by hand and its goal is done")
 	craft(15, 1, 12)
 	items.report_position(1, Vector3(0.0, 10.0, 3.0))
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(n("chopping_block")), 0, 0, Vector3(2.0, 10.0, 3.0))

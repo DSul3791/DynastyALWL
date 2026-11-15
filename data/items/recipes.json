@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs. 'ready_age' (game hours, Mission 001 phase 6, master s3.14): a sealed batch at the Preserving jar; the whole queued count is made at once at age 0 and is Maturing (not eaten, used, sold or merged with a Ready stack) until its age reaches ready_age; its inputs must be at least half fresh.",
-	"next_number": 729,
+	"next_number": 730,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -449,7 +449,8 @@
 					"knife",
 					1
 				]
-			]
+			],
+			"station": "carving_station"
 		},
 		"clay_pot": {
 			"number": 21,
@@ -3411,7 +3412,14 @@
 				1
 			],
 			"craft_s": 5.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"knife",
+					1
+				]
+			],
+			"station": "carving_station"
 		},
 		"stone_hammer": {
 			"number": 156,
@@ -3490,7 +3498,7 @@
 			"craft_s": 24.0,
 			"known": true
 		},
-		"wooden_bow": {"number": 170, "name": "Shortbow", "category": "Weapons", "needs": [["stick", 2], ["twine", 3]], "gives": ["wooden_bow", 1], "craft_s": 20.0, "known": true, "station": "workbench"},
+		"wooden_bow": {"number": 170, "name": "Shortbow", "category": "Weapons", "needs": [["wooden_block", 1], ["twine", 2]], "keeps": [["knife", 1]], "gives": ["wooden_bow", 1], "craft_s": 20.0, "known": true, "station": "carving_station"},
 		"wooden_arrow": {
 			"number": 171,
 			"name": "Wooden - Arrow",
@@ -3683,7 +3691,14 @@
 				1
 			],
 			"craft_s": 4.0,
-			"known": true
+			"known": true,
+			"keeps": [
+				[
+					"knife",
+					1
+				]
+			],
+			"station": "carving_station"
 		},
 		"smelt_copper": {"number": 190, "name": "Copper ingot", "category": "Materials", "needs": [["copper_ore", 3], ["fuel", 5]], "gives": ["copper_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter", "retired": true},
 		"smelt_tin": {"number": 191, "name": "Tin ingot", "category": "Materials", "needs": [["tin_ore", 3], ["fuel", 5]], "gives": ["tin_ingot", 1], "craft_s": 30.0, "known": true, "station": "smelter", "retired": true},
@@ -6756,7 +6771,7 @@
 			],
 			"station": "leatherworking_table"
 		},
-		"wooden_longbow": {"number": 357, "name": "Longbow", "category": "Weapons", "needs": [["wooden_block", 4], ["sinew", 1], ["twine", 2]], "gives": ["wooden_longbow", 1], "craft_s": 20.0, "known": true, "station": "workbench", "station_level": 2},
+		"wooden_longbow": {"number": 357, "name": "Longbow", "category": "Weapons", "needs": [["log", 1], ["twine", 3]], "keeps": [["knife", 1]], "gives": ["wooden_longbow", 1], "craft_s": 20.0, "known": true, "station": "carving_station"},
 		"leather_trousers": {
 			"number": 358,
 			"name": "Leather - Trousers",
@@ -7976,7 +7991,7 @@
 		"iron_warhammer": {"number": 510, "name": "Iron - Warhammer", "category": "Weapons", "needs": [["iron_ingot", 2], ["stick", 1]], "gives": ["iron_warhammer", 1], "craft_s": 20.0, "known": true, "station": "brick_forge"},
 		"steel_warhammer": {"number": 511, "name": "Steel - Warhammer", "category": "Weapons", "needs": [["steel_ingot", 2], ["stick", 1]], "gives": ["steel_warhammer", 1], "craft_s": 20.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"steel_maul": {"number": 512, "name": "Steel - Maul", "category": "Weapons", "needs": [["steel_ingot", 3], ["stick", 2]], "gives": ["steel_maul", 1], "craft_s": 22.0, "known": true, "station": "brick_forge", "station_level": 3},
-		"quarterstaff": {"number": 513, "name": "Quarterstaff", "category": "Weapons", "needs": [["wooden_block", 1]], "gives": ["quarterstaff", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]]},
+		"quarterstaff": {"number": 513, "name": "Quarterstaff", "category": "Weapons", "needs": [["wooden_block", 1]], "gives": ["quarterstaff", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]], "station": "carving_station"},
 		"bronze_spear": {"number": 514, "name": "Bronze - Spear", "category": "Weapons", "needs": [["bronze_ingot", 1], ["stick", 2]], "gives": ["bronze_spear", 1], "craft_s": 14.0, "known": true, "station": "forge"},
 		"iron_spear": {"number": 515, "name": "Iron - Spear", "category": "Weapons", "needs": [["iron_ingot", 1], ["stick", 2]], "gives": ["iron_spear", 1], "craft_s": 14.0, "known": true, "station": "brick_forge"},
 		"steel_spear": {"number": 516, "name": "Steel - Spear", "category": "Weapons", "needs": [["steel_ingot", 1], ["stick", 2]], "gives": ["steel_spear", 1], "craft_s": 16.0, "known": true, "station": "brick_forge", "station_level": 3},
@@ -8043,13 +8058,14 @@
 		"tavern_supper_board": {"number": 655, "name": "Tavern supper board", "category": "Food and drink", "needs": [["venison_pie", 1], ["fish_pie", 1], ["flatbread", 1], ["roast_roots", 1]], "gives": ["tavern_supper_board", 4], "craft_s": 6.0, "known": true, "station": "food_preparation_table"},
 		"breakfast_platter": {"number": 656, "name": "Breakfast platter", "category": "Food and drink", "needs": [["boiled_egg", 2], ["oat_cakes", 2], ["sausage", 1]], "gives": ["breakfast_platter", 5], "craft_s": 6.0, "known": true, "station": "food_preparation_table"},
 		"dessert_platter": {"number": 657, "name": "Dessert platter", "category": "Food and drink", "needs": [["apple_pie", 1], ["honey_loaf", 1], ["baked_apples", 1], ["berry_compote", 1]], "gives": ["dessert_platter", 4], "craft_s": 6.0, "known": true, "station": "food_preparation_table"},
-		"serving_platter": {"number": 658, "name": "Serving platter", "category": "Containers and furniture", "needs": [["wooden_block", 2]], "gives": ["serving_platter", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]]},
+		"serving_platter": {"number": 658, "name": "Serving platter", "category": "Containers and furniture", "needs": [["wooden_block", 2]], "gives": ["serving_platter", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]], "station": "carving_station"},
 		"wooden_cart_wheel": {"number": 700, "name": "Wooden - Cart wheel", "category": "Materials", "needs": [["lumber", 2], ["wooden_pin", 8], ["iron_band", 1]], "gives": ["wooden_cart_wheel", 1], "craft_s": 30.0, "known": true, "station": "workbench", "station_level": 2},
 		"axle": {"number": 701, "name": "Axle", "category": "Materials", "needs": [["lumber", 4], ["iron_band", 1]], "gives": ["axle", 1], "craft_s": 24.0, "known": true, "station": "workbench", "station_level": 2},
 		"chopping_soft_firewood": {"number": 720, "retired": true, "name": "Soft firewood", "category": "Materials", "needs": [["log_spruce", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood_soft", 12], "craft_s": 12.0, "known": true, "station": "chopping_block", "chop": true},
 		"chopping_hard_firewood": {"number": 721, "retired": true, "name": "Hard firewood", "category": "Materials", "needs": [["log_oak", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood", 12], "craft_s": 12.0, "known": true, "station": "chopping_block", "chop": true},
 		"copper_saw": {"number": 726, "name": "Copper - Saw", "category": "Tools", "needs": [["copper_ingot", 2], ["stick", 2]], "gives": ["copper_saw", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-1): the Iron - Saw recipe in copper, at the Primitive Smithy."},
 		"bronze_saw": {"number": 727, "name": "Bronze - Saw", "category": "Tools", "needs": [["bronze_ingot", 2], ["stick", 2]], "gives": ["bronze_saw", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-2)."},
-		"saw_blocks": {"number": 728, "name": "Wooden block", "category": "Materials", "needs": [["log", 1]], "keeps": [["saw", 1]], "wears_tool": "saw", "gives": ["wooden_block", 6], "craft_s": 15.0, "known": true, "sawbuck": true, "note": "Dave 15 Nov 2026 (W-3): six wooden blocks per log. craft_s is for an Iron saw; the saw in the pack and a Sawbuck in reach change it (server_items._saw_slow, design s5)."}
+		"saw_blocks": {"number": 728, "name": "Wooden block", "category": "Materials", "needs": [["log", 1]], "keeps": [["saw", 1]], "wears_tool": "saw", "gives": ["wooden_block", 6], "craft_s": 15.0, "known": true, "sawbuck": true, "note": "Dave 15 Nov 2026 (W-3): six wooden blocks per log. craft_s is for an Iron saw; the saw in the pack and a Sawbuck in reach change it (server_items._saw_slow, design s5)."},
+		"primitive_bow": {"number": 729, "name": "Primitive bow", "category": "Weapons", "needs": [["stick", 2], ["plant_fibre", 2]], "gives": ["primitive_bow", 1], "craft_s": 10.0, "known": true, "note": "W-8 (TREE_WOOD_TOOLS_DESIGN.md, PROVISIONAL): a hand craft, so it comes before any saw."}
 	}
 }
