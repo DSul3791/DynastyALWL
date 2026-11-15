@@ -1567,15 +1567,40 @@ func _log_off_main(line: String) -> void:
 		else:
 			still.append(task)
 
-	still.append(WorkerThreadPool.add_task(func() -> void: print(line), false, "items log line"))
+	var queued_usec: int = Time.get_ticks_usec()
+	still.append(WorkerThreadPool.add_task(func() -> void: print("%s [SAVEDIAG log line waited %.1f ms in the worker pool]" % [line, float(Time.get_ticks_usec() - queued_usec) / 1000.0]), false, "items log line"))
 	_log_tasks = still
+
+
+# DIAGNOSTIC (first-save freeze, 15 Nov 2026): times each part of save(); not for merge.
+var _diag_prev: int = 0
+var _diag_parts: Array = []
+
+
+func _diag(part: String) -> void:
+	var now: int = Time.get_ticks_usec()
+	_diag_parts.append("%s %.1f" % [part, float(now - _diag_prev) / 1000.0])
+	_diag_prev = now
 
 
 func save() -> void:
 	if _dir == "" or not _dirty:
 		return
 
+	var diag_t0: int = Time.get_ticks_usec()
+	_diag_prev = diag_t0
+	_diag_parts = []
+	var diag_logs: int = _log_tasks.size()
+	var diag_logs_open: int = 0
+
+	for task in _log_tasks:
+		if not WorkerThreadPool.is_task_completed(task):
+			diag_logs_open += 1
+
+	var diag_writer_alive: bool = _writer != null and _writer.is_alive()
+	_diag("start")
 	_finish_writer()   # an earlier background write finishes first, so files land in order
+	_diag("finish_writer(log tasks %d, not done %d, writer alive %s)" % [diag_logs, diag_logs_open, str(diag_writer_alive)])
 
 	_dirty = false
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
@@ -1590,6 +1615,7 @@ func save() -> void:
 		invs[key] = _inventories[key].to_json_array()
 
 	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs})
+	_diag("inventories")
 	var items: Array = []
 	var world_rows: Array = []
 
@@ -1641,17 +1667,30 @@ func save() -> void:
 
 		items.append(row)
 
+	_diag("items loop (%d items)" % _items.size())
 	_save_trees()
+	_diag("trees")
 	_save_chests()
+	_diag("chests")
 	_save_vitals()
+	_diag("vitals")
 	_save_characters()
+	_diag("characters")
 	_save_craft_queues()
+	_diag("craft queues")
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
+	_diag("crops-lights-kilns-smelters-smithies")
+	var diag_stripped: Dictionary = _stripped_now()
+	_diag("stripped_now")
+	var diag_fruit: Dictionary = _fruit_now()
+	_diag("fruit_now")
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": diag_stripped, "fruit": diag_fruit, "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
+	_diag("world_items")
+	print("SAVEDIAG save total %.1f ms (async %s, cores %d, pool max_threads %s, low_priority_ratio %s): %s" % [float(Time.get_ticks_usec() - diag_t0) / 1000.0, str(_async_writes), OS.get_processor_count(), str(ProjectSettings.get_setting("threading/worker_pool/max_threads", -1)), str(ProjectSettings.get_setting("threading/worker_pool/low_priority_thread_ratio", -1)), ", ".join(_diag_parts)])
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -5930,8 +5969,12 @@ func _start_writer() -> void:
 
 
 static func _write_batch(batch: Array) -> void:
+	var t0: int = Time.get_ticks_usec()
+
 	for row in batch:
 		_write_file(str(row[0]), str(row[1]))
+
+	print("SAVEDIAG writer thread wrote %d files in %.1f ms" % [batch.size(), float(Time.get_ticks_usec() - t0) / 1000.0])
 
 
 func _reap_writer() -> void:

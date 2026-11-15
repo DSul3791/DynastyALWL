@@ -286,7 +286,9 @@ func prefetch_tile(x: float, z: float) -> void:
 		return
 
 	WorkerThreadPool.add_task(func():
+		var diag_t0: int = Time.get_ticks_usec()   # DIAGNOSTIC (first-save freeze): not for merge
 		get_tile(coord)
+		print("SAVEDIAG tile prefetch %s took %.1f ms on a pool worker" % [str(coord), float(Time.get_ticks_usec() - diag_t0) / 1000.0])
 		_mutex.lock()
 		_prefetching.erase(coord)
 		_mutex.unlock())

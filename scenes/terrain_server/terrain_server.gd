@@ -1555,7 +1555,9 @@ func _cover_ready(point: Vector3) -> bool:
 
 
 func _warm_cover_chunk(chunk: Vector2i) -> void:
+	var diag_t0: int = Time.get_ticks_usec()   # DIAGNOSTIC (first-save freeze): not for merge
 	flora.chunk_bytes(chunk, false)
+	print("SAVEDIAG cover chunk %s made in %.1f ms on a pool worker" % [str(chunk), float(Time.get_ticks_usec() - diag_t0) / 1000.0])
 	_cover_warm_done.call_deferred(chunk)
 
 
