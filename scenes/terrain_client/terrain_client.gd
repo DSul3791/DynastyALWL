@@ -2176,6 +2176,10 @@ func _arrive_on_ground() -> void:
 		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
 
 	var ground: float = _ground_below(body.global_position)
+	var water: Dictionary = _water_here()
+
+	if not is_nan(ground) and not water.is_empty():
+		ground = maxf(ground, float(water["surface"]) - ARRIVAL_HEIGHT_M)   # water has no collider: arriving over it is at its surface, swimming, never on the bed
 
 	if not is_nan(ground) and body.global_position.y - ground > ARRIVAL_HEIGHT_M + 0.2:
 		body.global_position.y = ground + ARRIVAL_HEIGHT_M

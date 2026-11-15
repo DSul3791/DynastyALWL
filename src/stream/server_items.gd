@@ -649,6 +649,10 @@ func _note_spot(peer: int, how: String) -> void:
 		return
 
 	var at: Vector3 = _peer_pos[peer]
+
+	if not at.is_finite():
+		return   # a broken report is never saved (JSON has no NaN: the whole characters.json would fail to load)
+
 	_characters[key]["last"] = {"pos": [at.x, at.y, at.z], "t": int(Time.get_unix_time_from_system()), "left": how}
 	_dirty = true
 
@@ -673,8 +677,8 @@ func start_position_for(peer: int) -> Array:
 func _safe_resume(peer: int, spot: Vector3) -> Vector3:
 	var top: float = PlacementRules.foundation_top(_structures_cfg, spot, _foundation_rows())
 
-	if not is_nan(top) and spot.y < top + SwimRules.BODY_HEIGHT_M * 0.5 and spot.y > top - 2.0 * SwimRules.BODY_HEIGHT_M:
-		spot.y = top + SwimRules.BODY_HEIGHT_M * 0.5   # a foundation laid over the spot, not one a storey above a cellar
+	if not is_nan(top) and spot.y < top + SwimRules.BODY_HEIGHT_M * 0.5 and spot.y > top - SwimRules.BODY_HEIGHT_M * 0.5:
+		spot.y = top + SwimRules.BODY_HEIGHT_M * 0.5   # the slab laid through the body; one above a tunnel or cellar leaves them there
 
 	if not structure_blocks(spot.x, spot.z, RESUME_CLEAR_M):
 		return spot
@@ -788,8 +792,11 @@ func report_position(peer: int, position: Vector3) -> void:
 		var now: int = Time.get_ticks_msec()
 		_note_zone(peer, position)
 
-		if _resume_to.has(peer) and (Vector2(position.x - _resume_to[peer][0].x, position.z - _resume_to[peer][0].z).length() <= 8.0 or now - int(_resume_to[peer][1]) >= RESUME_WAIT_MSEC):
-			_resume_to.erase(peer)   # the client is at its resume spot (it ignores one within 8 m of where it stands)
+		if _resume_to.has(peer):
+			var target: Vector3 = _resume_to[peer][0]
+
+			if position.distance_to(target) <= 8.0 or now - int(_resume_to[peer][1]) >= RESUME_WAIT_MSEC:
+				_resume_to.erase(peer)   # the client is at its resume spot (it ignores one within 8 m of where it stands)
 
 		if now - int(_spot_saved_msec.get(peer, 0)) >= SAVE_SPOT_EVERY_MSEC:
 			_spot_saved_msec[peer] = now
@@ -13649,6 +13656,7 @@ func kill(peer: int, cause: String) -> bool:
 
 	var back: Vector3 = respawn_for(peer, true)
 	_peer_pos[peer] = back
+	_resume_to.erase(peer)   # a death before the client reached its resume spot: from here the spot saved is where they come back
 	_motion.erase(peer)
 	_sync_breath(peer, -1)
 	_sync_vitals(peer, true)

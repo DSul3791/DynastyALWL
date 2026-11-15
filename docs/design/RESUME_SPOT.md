@@ -21,7 +21,7 @@ Code: `src/stream/server_items.gd` (`start_position_for`, `_safe_resume`, `note_
 
 ## For Dave (assumed on your behalf, values provisional; change any of them)
 - **RS-1, disconnects resume in place too.** Your 15 Nov ask replaces the 22 Oct collapse-offline rule that sent a player who dropped for more than 2 minutes to their nearest rest or shelter point. Now a crash, editor Stop or dropped line resumes at the spot like Quit game. The deliberate/disconnect flag is kept for the future tunnel collapse rule.
-- **RS-2, built over while away: a foundation.** The player stands on its top.
+- **RS-2, built over while away: a foundation.** The player stands on its top (only when the slab cuts through the body; a player in a tunnel or cellar under one stays there).
 - **RS-3, built over while away: a wall or heavy station.** The player is moved to the nearest clear point within 6 m. With none, the nearest rest or shelter point; with none, their bed or the world spawn (the respawn rules). A player who stood against a wall (within 0.3 m) is not moved.
 - **RS-4, head under water** (they left diving, or the water rose): they come up to the surface, swimming. A cave under a lake is not affected.
 - **RS-5, mid-air** (left while falling, on a roof that was taken down, admin fly): set down on whatever is below on arrival with the usual few seconds of arrival protection, so no fall damage.
@@ -30,6 +30,8 @@ Code: `src/stream/server_items.gd` (`start_position_for`, `_safe_resume`, `note_
 
 ## Known limits
 - Movement is client-authoritative in this game: the saved spot is the position the server last accepted from the client, written by the server. The server validates it (finite, made safe above); it does not re-simulate movement.
+- Walls and stations are checked across the ground only (`structure_grid.gd` is 2D): a player on an upper floor over a wall line below is moved sideways up to 6 m.
+- A position report that is not a finite number is never saved.
 - An upper storey: if the floor's collider arrives after the ground, the arrival can set the body down to the floor below (the first-arrival rule). Not seen; noted.
 
 ## Not run / not played
