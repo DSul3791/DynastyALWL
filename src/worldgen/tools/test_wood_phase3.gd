@@ -107,6 +107,24 @@ func _init() -> void:
 	check(loose(w, "firewood") == 18 and loose(w, "log_oak") == 0 and loose(w, "log") == 0, "a 6 m tree gives 18 Firewood and no logs (%d Firewood)" % loose(w, "firewood"))
 	check(loose(w, "kindling") >= 1 and loose(w, "oak_seed") >= 1 and loose(w, "oak_seed") <= 5, "with its kindling and its 1 to 5 seeds (%d seed)" % loose(w, "oak_seed"))
 
+	# A crowded spot keeps the trunk: it tries again instead of losing the Firewood (the crowd rule of drop_in_world, as for a large tree).
+	var crowded = make("user://test_wood_phase3_crowd")
+	var axe_n: int = crowded.table.number_of("stone_axe")
+
+	for n in range(64):
+		crowded.drop_in_world(axe_n, 1, Vector3(500.0, 10.0, 0.0), 1)   # worn, so each lies as its own item
+
+	var packed: int = fell(crowded, 6.0, 0.3, Vector3(500.0, 10.0, 0.0))
+	split_now(crowded, packed)
+	check(crowded._items.has(packed) and loose(crowded, "firewood") == 0, "with no room for the heaps the small trunk stays and nothing is lost")
+
+	for k in crowded._items.keys():
+		if int(crowded._items[k]["number"]) == axe_n:
+			crowded._items.erase(k)
+
+	split_now(crowded, packed)
+	check(not crowded._items.has(packed) and loose(crowded, "firewood") == 18, "and it breaks up once there is room (%d Firewood)" % loose(crowded, "firewood"))
+
 	var thin: int = fell(w, 12.0, 0.1, Vector3(200.0, 10.0, 0.0))
 	split_now(w, thin)
 	check(loose(w, "firewood") == 18 + 24 and loose(w, "log_oak") == 0, "a 12 m tree with a 0.1 m butt radius is small too: 24 Firewood (%d in all)" % loose(w, "firewood"))
@@ -202,7 +220,7 @@ func _init() -> void:
 	r.send_items_moved = func(p, ids, at, _yaws): moved.append([p, ids, at])
 	r.ground_height = func(x, _z): return 10.0 + 0.5 * x   # rises along +x at 0.5
 	var across: float = PI * 0.5   # rot_y: the log's long axis runs along z, so +x is across it
-	r.drop_in_world(oak, 1, Vector3(0.0, 5.0, 0.0), 0, 0.0, across)
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
 	var rolling_id: int = log_id_near(r, "log_oak", Vector3.ZERO)
 	r._known[1] = {rolling_id: 1}
 	check(r._rolling.has(rolling_id), "a log dropped on a slope is checked")
@@ -266,6 +284,66 @@ func _init() -> void:
 
 	var shore: float = float(r._items[plain_id]["pos"].x)
 	check(r._rolling.is_empty() and shore <= -4.0 and shore > -5.01, "a plain Log rolls and stops at the water's edge (x %.2f)" % shore)
+
+	# A log laid down or dropped with no turn of its own gets one in the same tick: the server rolls it across the way it goes out in its first row, which is how the
+	# client draws it (inventory_view reads rot_y; _loose_extra sends it).
+	r._items.clear()
+	r._rolling.clear()
+	r._known[1] = {}
+	var rows: Array = []
+	r.ground_height = func(x, z): return 10.0 + 2.0 * x + 2.0 * z
+	r.send_items_moved = func(_p, ids, at, yaws): rows.append([ids, at, yaws])
+	var turned: int = 0
+
+	for n in range(8):
+		r.drop_in_world(oak, 1, Vector3(float(n) * 20.0, 10.0 + 2.0 * float(n) * 20.0, 0.0))   # no rot_y given (a pack drop, the Q key)
+
+	for k in r._items.keys():
+		var rec: Dictionary = r._items[k]
+		check(rec.has("rot_y") and r._loose_extra(rec).has("rot_y") and is_equal_approx(float(r._loose_extra(rec)["rot_y"]), float(rec["rot_y"])), "a log dropped with no turn is given one that its first row carries (id %d)" % k)
+		r._known[1][k] = 1
+
+	var starts: Dictionary = {}
+
+	for k in r._items:
+		starts[k] = r._items[k]["pos"]
+
+	for n in range(6):
+		r._roll_tick(0.1)
+
+	for k in r._items:
+		var turn: float = float(r._items[k]["rot_y"])
+		var slope: float = 2.0 * (sin(turn) + cos(turn))   # the ground rises 2 a metre along x and along z
+		var gone: Vector3 = r._items[k]["pos"] - starts[k]
+
+		if absf(slope) > 0.35:
+			turned += 1
+			var along: Vector2 = Vector2(gone.x, gone.z).normalized()
+			check(Vector2(gone.x, gone.z).length() > 0.1 and absf(along.dot(Vector2(sin(turn), cos(turn)))) > 0.999, "it rolls across its own turn (id %d, rot_y %.2f)" % [k, turn])
+		else:
+			check(gone.length() < 0.001, "a log turned along the slope stays (id %d, rot_y %.2f)" % [k, turn])
+
+	var sent_ok: bool = not rows.is_empty()
+
+	for row in rows:
+		for i in range((row[0] as PackedInt32Array).size()):
+			var id: int = (row[0] as PackedInt32Array)[i]
+			sent_ok = sent_ok and absf(float((row[2] as PackedFloat32Array)[i]) - rad_to_deg(float(r._items[id]["rot_y"]))) < 0.01
+
+	check(turned >= 1 and sent_ok, "the rows sent while it rolls carry the same turn the server rolls by (%d of 8 logs rolled)" % turned)
+
+	# A log not lying on the ground (3 m above it: a floor, a deck, a rock) does not move.
+	r._items.clear()
+	r._rolling.clear()
+	r.ground_height = func(x, _z): return 10.0 + 0.5 * x
+	r.drop_in_world(oak, 1, Vector3(0.0, 13.0, 0.0), 0, 0.0, across)
+	var high_id: int = log_id_near(r, "log_oak", Vector3.ZERO)
+	check(r._rolling.has(high_id), "it is looked at once")
+
+	for n in range(20):
+		r._roll_tick(0.05)
+
+	check(r._rolling.is_empty() and r._items[high_id]["pos"] == Vector3(0.0, 13.0, 0.0), "but a log 3 m above the ground stays where it is, not snapped down")
 
 	# Only logs roll: a stone dropped on the same slope is not checked.
 	r.water_depth_at = Callable()

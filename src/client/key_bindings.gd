@@ -32,7 +32,7 @@ const ACTIONS := [
 	["lie", "Lie down (toggle; hold to sleep)", "Stances", CONTEXT_WORLD, KEY_Z, false, false, true],
 	["interact", "Interact: gather, drink, talk, open (hold for the long action)", "Actions", CONTEXT_WORLD, KEY_E, false, false, true],
 	["open", "Open a chest, fire store or station", "Actions", CONTEXT_WORLD, KEY_F, false, false, false],
-	["put_down_log", "Put down the log on your shoulder", "Actions", CONTEXT_WORLD, KEY_Q, false, false, false],
+	["put_down_log", "Put down a log from your shoulder", "Actions", CONTEXT_WORLD, KEY_Q, false, false, false],
 	["blueprints", "Hammer in hand: blueprint list", "Actions", CONTEXT_WORLD, KEY_R, false, false, false],
 	["delete_plan", "Hammer in hand: delete the blueprint you aim at", "Actions", CONTEXT_WORLD, KEY_DELETE, false, false, false],
 	["hammer_group_next", "Hammer menu open: next group of blueprints", "Actions", CONTEXT_WORLD, KEY_RIGHT, false, false, false],

@@ -144,7 +144,13 @@ static func fit_count(item_id: String, count: int, carried: float, body_kg: floa
 # --- Logs on the shoulder (TREE_WOOD_TOOLS_DESIGN.md s1.2, s5; Dave 15 Nov 2026: a character carries up to two logs) ---
 # A shoulder log is any pack item whose items.json "carry" is "shoulder". weights.json "shoulder_logs_max" is how many one body carries (the server refuses a third,
 # the client shows that many). Server and client count them in their own pack through the same helper.
-const LOGS_FULL_SAY := "You can carry two logs at most. Put one down first (Q)."
+const COUNT_WORDS := ["no", "one", "two", "three", "four"]
+
+
+# What a refused extra log is told: "You can carry two logs at most. Put one down first (Q)." for the weights.json limit.
+static func logs_full_say(cfg: Dictionary) -> String:
+	var most: int = shoulder_max(cfg)
+	return "You can carry %s log%s at most. Put one down first (Q)." % [COUNT_WORDS[most] if most < COUNT_WORDS.size() else str(most), "" if most == 1 else "s"]
 
 
 static func shoulder_max(cfg: Dictionary) -> int:

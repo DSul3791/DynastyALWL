@@ -3409,7 +3409,7 @@
 		"log_oak": {
 			"name": "Oak log",
 			"kind": "material",
-			"description": "A full-size oak log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size oak log. Too big for the pack: carried on the shoulder, two at most.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3467,7 +3467,7 @@
 		"log_birch": {
 			"name": "Birch log",
 			"kind": "material",
-			"description": "A full-size birch log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size birch log. Too big for the pack: carried on the shoulder, two at most.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3525,7 +3525,7 @@
 		"log_scots_pine": {
 			"name": "Scots pine log",
 			"kind": "material",
-			"description": "A full-size scots pine log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size scots pine log. Too big for the pack: carried on the shoulder, two at most.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3583,7 +3583,7 @@
 		"log_spruce": {
 			"name": "Spruce log",
 			"kind": "material",
-			"description": "A full-size spruce log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size spruce log. Too big for the pack: carried on the shoulder, two at most.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3641,7 +3641,7 @@
 		"log_tropical_hardwood": {
 			"name": "Mahogany log",
 			"kind": "material",
-			"description": "A full-size mahogany log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size mahogany log. Too big for the pack: carried on the shoulder, two at most.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3699,7 +3699,7 @@
 		"log_walnut": {
 			"name": "Walnut log",
 			"kind": "material",
-			"description": "A full-size walnut log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size walnut log. Too big for the pack: carried on the shoulder, two at most.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3757,7 +3757,7 @@
 		"log_maple": {
 			"name": "Sugar maple log",
 			"kind": "material",
-			"description": "A full-size sugar maple log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size sugar maple log. Too big for the pack: carried on the shoulder, two at most.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",

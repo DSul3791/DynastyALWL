@@ -840,8 +840,8 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log_two.visible = true
 
 
-func _tint_log(log: MeshInstance3D, color: Color, radius: float, length: float) -> void:
-	var bark: ShaderMaterial = log.material_override as ShaderMaterial
+func _tint_log(node: MeshInstance3D, color: Color, radius: float, length: float) -> void:
+	var bark: ShaderMaterial = node.material_override as ShaderMaterial
 	bark.set_shader_parameter("tint", Vector3(color.r, color.g, color.b))
 	bark.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(length / 1.6, 1.0)))
 

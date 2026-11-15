@@ -3944,7 +3944,10 @@ func _clear_view_m(from: Vector3, to: Vector3) -> float:
 
 # The colour of the second log on the shoulders (the pack's second large log), null when only one or none is carried.
 func _second_log_color() -> Variant:
-	var logs: Array = items.shoulder_logs() if items != null else []
+	if items == null or items.shoulder_id == "":
+		return null   # nothing on the shoulders: no pack scan
+
+	var logs: Array = items.shoulder_logs()
 	return LogLookScript.color_of(str(logs[1])) if logs.size() >= 2 else null
 
 

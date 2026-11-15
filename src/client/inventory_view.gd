@@ -788,7 +788,7 @@ func sweep_nothing() -> void:
 func _say_too_heavy(id: int) -> void:
 	_sweep_said = true
 	var number: int = int(_world[id]["number"]) if _world.has(id) else 0
-	_on_notice(CarryRules.LOGS_FULL_SAY if _is_shoulder(number) and _logs_full() else "Too heavy to carry any more")
+	_on_notice(CarryRules.logs_full_say(_carry_cfg) if _is_shoulder(number) and _logs_full() else "Too heavy to carry any more")
 	refuse_cue("full_pack")
 
 
@@ -3351,7 +3351,7 @@ func _roll_tick(delta: float, now: int) -> void:
 			for id in _world:
 				var entry: Dictionary = _world[id]
 
-				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id):
+				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id) or _gliding.has(id):   # a log the server rolls is moved by _glide_tick
 					continue
 
 				var apart: Vector2 = Vector2(entry["pos"].x - here.x, entry["pos"].z - here.z)
