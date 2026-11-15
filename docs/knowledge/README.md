@@ -1,33 +1,8 @@
-# Knowledge library
+# Topic research index
 
-This folder holds one doc per topic. Each doc records what we learned building a system, what other people do, what we tried, and what worked. Jamie (documentation) keeps it. This is Dave's idea, from 6 Nov 2026.
+Supporting research, estimates and dated implementation notes. Find current approved feature authority through `../DOC_MAP.md` and scoped decisions through `../ai-team/CONSTITUTION.md`. Research and old code observations do not automatically become current requirements or passing test evidence.
 
-## The rule: read here first
-
-Before you code a system or fix a bug:
-
-1. **Read the topic doc here.** Check its "Lessons" and "What we tried" sections, so you don't repeat a dead end.
-2. **If the doc is missing or its "Last checked" date is old, ask Jamie** to research the topic. Jamie searches the web for best practice, tips and other people's experience, and writes it up here. You can also search yourself, but put what you find in the doc.
-3. **When you finish, add your lesson** to the doc's "What we tried" table: what you did, the PR, and whether it worked. A short line is enough. Jamie tidies it up.
-
-Docs only. No tests or bakes in the cloud, ever (Dave's law, 5 Nov 2026). Anything that needs a run goes to Dave's PC through the coordinator.
-
-## Doc layout
-
-Pages from 8 Nov on use this order:
-
-- **Last checked:** the date the web research was last refreshed, and the owners and related pages.
-- **Lessons:** what the sources say, each with its source, the most important first.
-- **Judged numbers for the game:** the values to build with.
-- **Never-see checks:** things that must never appear in the game.
-- **How ours works today:** what the code does, read from the code (not tested), with its date.
-- **Sources:** every link.
-
-Older pages (6 and 7 Nov) use Lessons, How ours works, What we tried (each attempt, its PR and the result), What others do, and Decided / next. Both layouts are fine. Add your lesson to whichever the page has.
-
-**Labels:** "Our sums" means arithmetic done here from a sourced formula. "Judged" means no source was found, so the number is our best estimate.
-
-**Contradictions:** [CONTRADICTIONS.md](CONTRADICTIONS.md) lists every place two pages, or a page and the code, give different numbers for the same thing, and which one to follow. Check it before you code from a number.
+Read only the relevant page and distinguish sourced results, arithmetic, judged values, delegated choices and direct approvals. Preserve useful lessons in the owning topic rather than creating another report. Current assignments and reviewer/runner ownership live in mission state; old personal names and research refresh dates do not impose staffing or approval gates. The previous mandatory-reading/research procedure is preserved in Git history, not maintained as another rulebook.
 
 ## Index
 
@@ -66,7 +41,7 @@ Where a number still needs a source, the cell names it.
 | Warmth and weather (cold, rain, wet, drying, fire heat) | [warmth-weather.md](warmth-weather.md) | 2026-11-06 | Steve | Game values |
 | Soils and ground wetness (infiltration by soil, puddle drain times, peat and clay waterlogging, frost heave, mud season) | [soils-ground-wetness.md](soils-ground-wetness.md) | 2026-11-08 | Sonny (record), Kathleen (puddles) | Mostly sourced: the wetness class for each soil, frost heave size and mud-season walking speed are judged |
 | Snow on slopes (wind drift and scour, cornices, melt order by aspect, last patches) | [snow-on-slopes.md](snow-on-slopes.md) | 2026-11-08 | Sonny, Kathleen | Mixed: the drift factors, cornice size and snow_off delays by aspect are judged |
-| The guiding document (G-ids, D-ids, how designs reach the game) | [guiding-document.md](guiding-document.md) | 2026-11-07 | Coordinator | Own work |
+| The guiding document (G-ids, D-ids, how designs reach the game) | [guiding-document.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/knowledge/guiding-document.md) | 2026-11-07 | Coordinator | Own work |
 | Snow lines and mountain climate (snow line, lapse rate, aspect, drift, summer snow patches) | [snow-lines-mountain-climate.md](snow-lines-mountain-climate.md) | 2026-11-08 | Sonny, weather owner, Kathleen (look) | Sourced: the worked case is our sums, and its gully drift ×3 is assumed |
 | Glaciers and mountains (cirques, horns, arêtes, U-valleys, tarns, slope limits) | [glaciers-mountains.md](glaciers-mountains.md) | 2026-11-08 | Sonny | Sourced |
 | Rivers and floodplains (meanders, braids, floodplains, levees, terraces, fans, deltas) | [rivers-floodplains.md](rivers-floodplains.md) | 2026-11-08 | Sonny | Sourced |

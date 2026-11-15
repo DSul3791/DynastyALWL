@@ -436,7 +436,7 @@ Every number below is already in the repo; this section only gathers it so one p
 
 ## 55. State at the 11 Nov 2026 handoff (Kathleen; main bd3146aa)
 
-What shipped since section 54, what is practice now, and where the rest lives. Handoff notes for the next art owner: `docs/handoff/HANDOFF_KATHLEEN.md`.
+What shipped since section 54, what is practice now, and where the rest lives. Handoff notes for the next art owner: [historical HANDOFF_KATHLEEN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/handoff/HANDOFF_KATHLEEN.md).
 
 **Shipped looks (10 to 11 Nov, all on main).**
 - Building tiers: pitched roofs per tier with hip corners and ceilings (#973), the Fortified set (#989), footing without a ledge (#1017). The as-built table is `art/BUILDING_TIERS_LOOKS.md`.

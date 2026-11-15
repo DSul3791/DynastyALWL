@@ -135,3 +135,7 @@ These twelve paintings are **the** example of this art direction: when a written
 - **Cloth.** Heavy wool and velvet with gold trim, cloaks with weight and folds; banners are red with gold beasts.
 - **Places.** Packed with detail and life: crowds in the background, food on every table, moss and stone in the wild, flowers along the road.
 - **Mood.** Warm, funny, adventurous: most scenes are a joke or a small story (caught cheating, a stolen chicken, too tired to stand). Even the dragon battle is heroic, not grim.
+
+
+### Public repository and asset provenance
+Preserved existing direction from `docs/design/GUIDING_DOCUMENT.md` §1.5 at `286af10b`: purchased models/assets and a purchased pack's file names must not be committed to the public repository; Dave's own models may be. Retain required notices and source/license information with distributed assets. This transfers the prior instruction without treating cleanup as new asset-distribution permission.

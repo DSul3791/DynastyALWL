@@ -174,7 +174,7 @@ Platform and dead scripts:
 - `ship.sh` carried another session's `Claude-Session:` trailer in every commit message. **Fixed**. It also writes `/tmp/ship_lc.txt`; now honours `TMPDIR`.
 - Nothing references: `tools/merge_check.sh` (wrapper for `merge_check.py`), `pause_for_backup.sh`, `rebuild_starter_cache.sh`, `selftest_gate_tools.sh` (used by hand only). Not removed: move them to `proposed_removals/` on Dave's OK.
 - `merge_check.yml` named a branch that was retired (**fixed**). Its `fetch-depth: 0` clone is the only CI cost.
-- Docs: `GATE_FIX_PLAN.md` and `GATE_BEFORE_AFTER.md` describe `gate.sh`, `gate_queue.sh` and a nightly job that are archived or never ran. `docs/mirror/tech/TEST_BASELINE.md` says "generator-v2". Left as history.
+- Docs: `GATE_FIX_PLAN.md` and `GATE_BEFORE_AFTER.md` describe `gate.sh`, `gate_queue.sh` and a nightly job that are archived or never ran. [historical TEST_BASELINE.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/TEST_BASELINE.md) says "generator-v2". Left as history.
 - Git line endings (correction): the repo stores `.import` files as LF, the checkout is CRLF (`autocrlf=true`), and Godot rewrites them as LF. After an import git listed 79 as modified; ignoring line endings only 6 differ for real (`assets/stations/forge_*_N.png.import`: Godot picks the plain texture format here instead of the VRAM-compressed one stored in the repo). The other 73 were phantom changes, and `*.import text eol=lf` removed them. The 6 real differences are platform import settings and will reappear after each import; not changed.
 
 ## 4. Recommendations, in order of value

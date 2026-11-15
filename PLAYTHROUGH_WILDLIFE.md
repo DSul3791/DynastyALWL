@@ -91,7 +91,7 @@ Made with `art/playthrough/animal_sheet.gd` from the client's own builders (`ani
 | wolf | 3.5 | grey, hunched, believable at a distance | Kathleen |
 | duck flock | 3 | blobby, flocks of ducks sit on single bodies; a flock of three birds is visible | Kathleen |
 
-(`art/CRITIQUES/fauna_2026-10-30/CRITIQUE.md` already has Kathleen's rounds on the deer, fox and rabbit.)
+([historical CRITIQUE.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/art/CRITIQUES/fauna_2026-10-30/CRITIQUE.md) already has Kathleen's rounds on the deer, fox and rabbit.)
 
 ## 6. Action rows (F-28 and up)
 

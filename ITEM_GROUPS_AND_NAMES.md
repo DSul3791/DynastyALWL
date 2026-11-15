@@ -6,7 +6,7 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 
 ## How to read this
 
-- **Source:** `Items_in_other_games_Analysis.md` (the "analysis") plus our `data/items/items.json` ("ours", numbers are item numbers) and `docs/mirror/design/ITEM_TRIM_LIST.md` (Tyler's proposals, not yet approved).
+- **Source:** `Items_in_other_games_Analysis.md` (the "analysis") plus our `data/items/items.json` ("ours", numbers are item numbers) and [historical ITEM_TRIM_LIST.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/design/ITEM_TRIM_LIST.md) (Tyler's proposals, not yet approved).
 - **Flag after a name:** none = the analysis marks the row C (sub-agent says it read it; "likely", not proof). `*` = the analysis marks it U (unconfirmed). Names are as the analysis lists them, sometimes shortened by me; a few rows group several items under one name.
 - **Weak coverage:** Atlas, Aska, Medieval Engineers, Medieval Dynasty, Farming Simulator, Space Engineers and Astroneer are thin; Rust is a sample; The Forest, Don't Starve, Vintage Story, Valheim and No Man's Sky are partial. A game missing from a group may simply not have been catalogued. Absence is not evidence.
 - **Not used for grouping:** sci-fi, electronics, nuclear, spaceship, magic and Tek-tier items (Satisfactory/NMS/Space Engineers/Astroneer/Ark Tek/Dragonwilds magic). They are listed in the closing "Excluded" section so nothing is hidden.
@@ -302,7 +302,7 @@ Dave approved the plan and said to decide without him where possible, research o
 | First animals | Chicken (eggs), bees (honey), then sheep (wool), goats/cows (milk), pigs. |
 
 ## B3. Tyler's trim list A to J: CORRECTED (Dave already answered these on 25 Oct)
-I found `docs/mirror/design/ITEM_TRIM_DECISIONS.md` (Dave's answers, read by Tyler 25 Oct). My first version of this table decided the groups myself and CONTRADICTED several of Dave's earlier answers. Dave's answers win; the corrected result:
+I found [historical ITEM_TRIM_DECISIONS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/design/ITEM_TRIM_DECISIONS.md) (Dave's answers, read by Tyler 25 Oct). My first version of this table decided the groups myself and CONTRADICTED several of Dave's earlier answers. Dave's answers win; the corrected result:
 | Group | Dave's answer (25 Oct) | Note |
 |---|---|---|
 | A spades | YES: one spade per material; 213-220 retire; all spades same weight | needs a bite-size setting in code |

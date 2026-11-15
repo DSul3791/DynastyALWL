@@ -79,7 +79,11 @@ check("scene moved, folder recorded", run(["scenes/old/a.tscn"], head={"proposed
                                           removals="| scenes/old/ | Claude | 12 Nov | old | new |"), True)
 check("resource deleted outright", run(["worlds/base/strat.tres"]), False, "without approval")
 check("scene deleted outright", run(["scenes/old/a.tscn"]), False, "without approval")
-check("unguarded paths", run(["tools/old.py", "docs/mirror/x.md", "README.txt"]), True)
+check("unguarded non-document paths", run(["tools/old.py"]), True)
+check("mirror document requires preservation", run(["docs/mirror/x.md"]), False, "archived")
+check("root text document requires preservation", run(["README.txt"]), False, "archived")
+check("expiry cannot authorize asset deletion", dr.deletion_problems(['assets/x.png'], [], lambda p:False,
+      lambda p:'', lambda p:'', {}, '', expired_documents={'assets/x.png'}), False, 'without approval')
 
 # --- second-round review cases ---
 check("replacement not changed in this diff", run(["src/move/old_mover.gd"], base=B, head=NEW, removals=REPL), False, "without approval")
@@ -94,6 +98,8 @@ check("root doc archive collision", run(["RULES.md"], added=["docs/archive/2026-
       base={"RULES.md": "a"}, head={"docs/archive/2026-11/RULES.md": "b"}), False, "instead of archived")
 check("root doc archived with same content", run(["RULES.md"], added=["docs/archive/2026-11/RULES.md"],
       base={"RULES.md": "a"}, head={"docs/archive/2026-11/RULES.md": "a"}), True)
+check("nested archive must preserve exact content", run(["docs/OLD_PLAN.md"], added=["docs/archive/2026-11/docs/OLD_PLAN.md"],
+      base={"docs/OLD_PLAN.md":"original"}, head={"docs/archive/2026-11/docs/OLD_PLAN.md":"different"}), False, "instead of archived")
 check("agent definition deleted", run([".claude/agents/old-role.md"]), False, "instead of archived")
 check("code moved aside but still used", run(["src/zz/y.gd"], head={"proposed_removals/src/zz/y.gd.removed": ""},
       removals="| src/zz/y.gd | Claude | 12 Nov | unused | none |", users={"scenes/s.tscn": "res://src/zz/y.gd"}), False, "still used")
