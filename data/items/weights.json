@@ -1033,6 +1033,8 @@
 		"wooden_cart_wheel": 6.0,
 		"axle": 10.0,
 		"reinforced_wagon_wheel": 18.0,
+		"small_log_sled": 37.0,
+		"small_wagon": 69.6,
 		"iron_frying_pan": 1.5,
 		"iron_cauldron": 5.0,
 		"unbaked_flatbread": 0.3,

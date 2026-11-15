@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1481,
+	"next_number": 1483,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -12214,6 +12214,26 @@
 				"Shortbow"
 			],
 			"note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-8): 2 Sticks + 2 Plant fibre by hand; bow.json 0.7 speed, 0.7 damage, 0.6 range; durability 150 and no repair are assumed (primitive gear is disposable, master s2.2)."
+		},
+		"small_log_sled": {
+			"number": 1481,
+			"name": "Small log sled",
+			"description": "A small sled pulled by hand. Hauls logs, blocks and firewood on any ground.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Placed vehicle (W-14, PROVISIONAL: 2 Logs, 6 Sticks and 4 Twine, hammer blueprint 356). Row state 446; the Handcart's pulled-vehicle controller (server_carts.gd)."
+		},
+		"small_wagon": {
+			"number": 1482,
+			"name": "Small wagon",
+			"description": "A four-wheeled wagon pulled by hand. Carries more than a handcart.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Placed vehicle (W-14, PROVISIONAL: 8 Planks, 4 Cart wheels, 2 Axles and 16 Wooden pins, hammer blueprint 357). Row state 447; the Handcart's pulled-vehicle controller (server_carts.gd)."
 		}
 	}
 }
