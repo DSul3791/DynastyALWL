@@ -376,7 +376,7 @@ func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 		if not wet.is_empty() and host.rain_now.is_valid() and float(host.rain_now.call()) >= float(wet.get("rain", 0.2)):
 			rough = float(wet.get("rough", {}).get(ground, rough))
 
-	# A laid path or road (a path_patch within path_speed.json range_m of the puller, looked up at most once a second) slows a vehicle with a "path" multiplier: the sled's runners drag on it.
+	# A laid path or road (a path_patch within path_speed.json range_m near the puller: the server shares its one-second path look-up with the player, so the cart position is used only when that is stale) slows a vehicle with a "path" multiplier: the sled's runners drag on it.
 	if v.has("path") and host._on_path(int(rec["peer"]), cart["pos"]):
 		rough *= float(v["path"])
 
