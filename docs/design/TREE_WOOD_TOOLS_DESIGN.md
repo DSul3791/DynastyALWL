@@ -72,7 +72,7 @@ Labels: **[DAVE]** confirmed by Dave in the handoff (15 Nov 2026 review) or his 
 ## 3. Phases (each a reviewed PR into `dev`)
 
 1. **Documents** (this file, s7 reconciliations, the s6 table). No game change.
-2. **Materials and tools:** unified Firewood and Wooden Block with save conversion; Stone Hammer harvesting and the "Hammer/Repair Tool" mode; axe splits blocks; log-on-ground axe route removed; saw speeds by material; Copper/Bronze saws and saw-made blocks once s6 rows are answered.
+2. **Materials and tools:** unified Firewood and Wooden Block with save conversion; Stone Hammer harvesting and the "Hammer/Repair Tool" mode; axe splits blocks; log-on-ground axe route removed; saw speeds by material; Copper/Bronze saws and saw-made blocks per the adopted s6 rows.
 3. **Trees and logs:** small-tree threshold and Firewood; two-log carrying with tools stowed; rolling logs.
 4. **Carving and knife menu:** sawbuck, Wood Carving Station, recipe moves, knife blueprint menu, log benches and table.
 5. **Hauling:** Handcart loads and logs; Small log sled and Small wagon. Medium/Large after animal keeping.
@@ -121,4 +121,4 @@ Dave answered W-3, W-4, W-5 and part of W-8 directly (15 Nov 2026 06:18Z). For e
 | W-16 | Sled surfaces | Small log sled works on any ground, slower on bare rock, gravel and road, faster on snow and wet grass. | Sled |
 
 ## 7. Documents reconciled with this design
-`DYNASTY_MASTER_ITEMS.md` (s2.1 to s2.4, s2.6, s3.1, s3.2, s3.11), `item_system.md`, `progression.md`, `buildables_plan.md`, `STORAGE_WAREHOUSING_DESIGN.md`, `PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md`, `CATALOG_IMPLEMENTATION_PLAN.md`, `CATALOG_SAVE_MIGRATION.md`, `docs/DOC_MAP.md`, `PLAYER_JOURNAL_GOALS_UI.md`, `PLAYER_GOALS_REWARDS_DRAFT.md`, `PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md`, `wood_tier_note.md`. `CONTROLS.md` describes live controls and changes with the phase 2 and 3 code. Mission checkpoint: `docs/ai-team/missions/WOOD-SYSTEM/STATE.md`.
+`DYNASTY_MASTER_ITEMS.md` (s2.1 to s2.4, s2.6, s3.1, s3.2, s3.11), `item_system.md`, `progression.md`, `buildables_plan.md`, `STORAGE_WAREHOUSING_DESIGN.md`, `PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md`, `CATALOG_IMPLEMENTATION_PLAN.md`, `CATALOG_SAVE_MIGRATION.md`, `docs/DOC_MAP.md`, `PLAYER_JOURNAL_GOALS_UI.md`, `PLAYER_GOALS_REWARDS_DRAFT.md`, `PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md`, `wood_tier_note.md`, `PLUMBING_DESIGN.md`, `PLAYER_GOALS_CATALOG_CORRECTED.md` (banner). `CONTROLS.md` describes live controls and changes with the phase 2 and 3 code. Mission checkpoint: `docs/ai-team/missions/WOOD-SYSTEM/STATE.md`.
