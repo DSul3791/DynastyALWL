@@ -277,8 +277,8 @@ func menus() -> void:
 	var knife_structures: Array = KNIFE_ROWS.map(func(k): return str(bp_rows[k]["name"]))
 	check(knife_list.rows(1).size() == KNIFE_ROWS.size() and knife_names.size() == knife_structures.size() and knife_structures.all(func(s): return knife_names.has(s)), "the knife's list holds exactly its %d rows (%d listed)" % [KNIFE_ROWS.size(), knife_names.size()])
 	check(knife_names.has("Wood carving station") and knife_names.has("Log - Bench") and knife_names.has("Log - Double bench") and knife_names.has("Log - Backed bench") and knife_names.has("Log - Table"), "among them the station, the three benches and the table")
-	var hammer_names: Array = hammer_list.rows(1).map(func(r): return str(r["name"]))
-	check(not knife_structures.any(func(s): return hammer_names.has(s)) and hammer_names.size() + knife_names.size() == 233, "the hammer's list has none of them (%d hammer rows, %d knife rows)" % [hammer_names.size(), knife_names.size()])
+	var hammer_names: Array = hammer_list.rows(1).map(func(r): return str(r["name"]))   # 214 hammer rows since phase 5 added the Small log sled and Small wagon (hammer blueprints, W-14) + 21 knife rows
+	check(not knife_structures.any(func(s): return hammer_names.has(s)) and hammer_names.size() + knife_names.size() == 235, "the hammer's list has none of them (%d hammer rows, %d knife rows)" % [hammer_names.size(), knife_names.size()])
 	var first: Dictionary = knife_list.entries(1)[0]
 	check(str(first["kind"]) == "repair" and str(first["name"]) == "Knife" and knife_list.entries(1).all(func(e): return str(e["kind"]) != "save" and str(e["kind"]) != "plan"), "the knife's menu starts on a plain Knife line and has no Save or plan lines")
 	check(str(hammer_list.entries(1)[0]["name"]) == "Hammer/Repair Tool" and str(hammer_list.entries(1)[1]["kind"]) == "save", "the hammer's menu still starts with Repair and Save")
