@@ -640,6 +640,7 @@ var _resume_to: Dictionary = {}      # peer -> [resume spot Vector3, msec sent]:
 func note_logout(peer: int) -> void:
 	if _peer_key.has(peer) and not _logout_peers.has(peer):   # once per session: a repeated logout is not another save
 		_logout_peers[peer] = true
+		print("Resume spot: peer %d quit on purpose at %s" % [peer, str(_peer_pos.get(peer, "no position"))])
 		_note_spot(peer, "deliberate")   # written and saved now: the line may close slowly or the game die on exit before the disconnect arrives
 		_async_writes = true   # as the periodic save: the files are written off the tick
 		save()
@@ -675,6 +676,7 @@ func start_position_for(peer: int) -> Array:
 
 	var spot: Vector3 = _safe_resume(peer, Vector3(float(pos[0]), float(pos[1]), float(pos[2])))
 	_resume_to[peer] = [spot, Time.get_ticks_msec()]
+	print("Resume spot: peer %d starts at %s (saved %s, left %s)" % [peer, str(spot), str(pos), str(row["last"].get("left", "?"))])
 	return [spot.x, spot.y, spot.z]
 
 
@@ -723,6 +725,7 @@ func peer_left(peer: int) -> void:
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
+	print("Resume spot: peer %d left (%s) at %s%s" % [peer, "deliberate" if _logout_peers.has(peer) else "disconnect", str(_peer_pos.get(peer, "no position")), ", still on the way to the resume spot: kept" if _resume_to.has(peer) else ""])
 	_logout_peers.erase(peer)
 	_admin_mode_on.erase(peer)   # Admin mode never outlives a session: every login starts with it off
 	_food_sent.erase(peer)
