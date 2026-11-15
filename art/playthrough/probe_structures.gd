@@ -93,8 +93,9 @@ func _init() -> void:
 				continue
 
 			var p2: int = fresh(x + 300.0)
-			items.give(p2, n("stone_hammer"), 1)
-			items.action(p2, Net.ACT_MOVE, items.inventory_of(p2).numbers.find(n("stone_hammer")), 0, 0, Vector3.ZERO)
+			var builder: String = "stone_knife" if str(bp.get("tool", "hammer")) == "knife" else "stone_hammer"   # a knife row is built with a knife (W-9)
+			items.give(p2, n(builder), 1)
+			items.action(p2, Net.ACT_MOVE, items.inventory_of(p2).numbers.find(n(builder)), 0, 0, Vector3.ZERO)
 			var bench_kit: String = ["workbench_kit", "workbench_kit", "log_workbench_kit", "stone_forge_kit"][clampi(int(bp.get("station_level", 1)), 0, 3)]
 			items.give(p2, n(bench_kit), 1)
 			items.action(p2, Net.ACT_PLACE, items.inventory_of(p2).numbers.find(n(bench_kit)), 0, 0, Vector3(x + 301.5, 10.0, -1.0))

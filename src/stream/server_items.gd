@@ -3971,7 +3971,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
 	else:
 		if slot < 0:
-			_say(peer, "That blueprint is not in this game's list. Open the hammer menu (right click) and pick it again.")   # an unknown blueprint number reaches here with no kit
+			_say(peer, "That blueprint is not in this game's list. Open the hammer or knife menu (right click) and pick it again.")   # an unknown blueprint number reaches here with no kit
 			return
 
 		if slot >= inv.slot_count or inv.numbers[slot] == 0:
@@ -4002,7 +4002,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 		if bp_number > 0 and _refund_blueprint(peer, inv, _blueprints[bp_number]):
 			inv.take_from_slot(slot, 1)
-			_say(peer, "That old kit is gone. Its materials are back in your pack: build it with the hammer (right click for blueprints).")
+			_say(peer, "That old kit is gone. Its materials are back in your pack: build it with a hammer or a knife (right click for blueprints).")
 			_dirty = true
 
 		return

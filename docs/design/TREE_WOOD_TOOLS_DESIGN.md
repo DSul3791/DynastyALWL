@@ -42,7 +42,7 @@ Labels: **[DAVE]** confirmed by Dave in the handoff (15 Nov 2026 review) or his 
 ### 1.6 Wood Carving Station
 - Cost exactly **two Wooden Blocks**; placed from the knife menu. Look: one upright carving block and one block with a worn seat, sawdust and shavings around (decorative knives may lie about; they give no usable tool).
 - Opens the normal station crafting window. Materials come from the station, the character's pack or nearby ground (and eligible nearby storage under the existing sourcing rules).
-- Carving recipes need a **knife in the character's inventory** as a kept tool (not consumed); the Stone Knife counts. The knife wears by its normal durability rules [DELEGATED, not Dave's wording].
+- Carving recipes need a **knife in the character's inventory** as a kept tool (not consumed); the Stone Knife counts. Carving does not wear the knife: it is kept, like every kept tool (W-23, assumed on Dave's behalf, provisional) [DELEGATED, not Dave's wording].
 - The **Longbow** is made here from logs and Twine (no Wooden Block, no stave item, no partial logs).
 - It is separate from the Chopping Block (firewood); the model shows a bench beside a chopping block, look only.
 

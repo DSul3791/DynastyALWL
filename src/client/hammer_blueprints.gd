@@ -188,11 +188,25 @@ func bp_of_state() -> Dictionary:
 	return out
 
 
+# Whether a blueprint number is a knife row (a plan saved before 15 Nov 2026 may hold pieces the knife builds now; the server refuses them with a hammer).
+func is_knife_bp(number: int) -> bool:
+	for row in _book:
+		if int(row["number"]) == number:
+			return str(row["tool"]) == "knife"
+
+	return false
+
+
+# The pieces of a saved plan a hammer places: the knife's pieces are left out of its cost and its placing.
+func hammer_pieces(plan: Dictionary) -> Array:
+	return (plan["pieces"] as Array).filter(func(piece): return not is_knife_bp(int(piece["bp"])))
+
+
 # Total materials of a plan as {item id: count}.
 func plan_cost(plan: Dictionary) -> Dictionary:
 	var total: Dictionary = {}
 
-	for piece in plan["pieces"]:
+	for piece in hammer_pieces(plan):
 		for row in _book:
 			if int(row["number"]) == int(piece["bp"]):
 				for need in row["cost"]:
@@ -203,7 +217,9 @@ func plan_cost(plan: Dictionary) -> Dictionary:
 
 # Where each piece of saved plan `index` goes with its anchor at `at`, turned `yaw_deg` (see BuildingPlans.placements).
 func placements_of(index: int, at: Vector3, yaw_deg: float) -> Array:
-	return BuildingPlans.placements(plans.plans[index], at, yaw_deg)
+	var kept: Dictionary = (plans.plans[index] as Dictionary).duplicate()
+	kept["pieces"] = hammer_pieces(plans.plans[index])
+	return BuildingPlans.placements(kept, at, yaw_deg)
 
 
 func plan_can(plan: Dictionary) -> bool:
@@ -223,7 +239,7 @@ func plan_text(plan: Dictionary) -> String:
 	for id in cost:
 		parts.append("%s %d/%d" % [_table.cost_sentence(_table.number_of(str(id))) if _table.number_of(str(id)) > 0 else str(id), _have(_table.number_of(str(id))), int(cost[id])])
 
-	return "%d pieces: %s" % [plan["pieces"].size(), ", ".join(parts)]
+	return "%d pieces: %s" % [hammer_pieces(plan).size(), ", ".join(parts)]
 
 
 # Keeps the building at `near` as a new plan. Returns {"ok", "name", "pieces", "skipped"} (ok false when no placeable piece is near).

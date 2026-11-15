@@ -285,6 +285,19 @@ func menus() -> void:
 	knife_list.set_open(true, 1)
 	check(knife_list.list_text(1).begins_with("Knife:"), "the knife's window is titled Knife")
 	var station_state: int = int(items._structures["carving_station"]["state"])
+	# An older saved plan holding a knife piece (the Wicker - Chest, blueprint 26) and a hammer piece (the Lean-to, 25): the hammer's cost and placing skip the knife piece.
+	var lean_no: int = int(bp_rows["lean_to"]["number"])
+	var chest_no: int = int(bp_rows["chest"]["number"])
+	hammer_list.plans.plans.append({"name": "Old camp", "pieces": [{"bp": chest_no, "dx": 0.0, "dy": 0.0, "dz": 0.0, "yaw": 0}, {"bp": lean_no, "dx": 3.0, "dy": 0.0, "dz": 0.0, "yaw": 0}]})
+	var plan: Dictionary = hammer_list.plans.plans[hammer_list.plans.plans.size() - 1]
+	var placed: Array = hammer_list.placements_of(hammer_list.plans.plans.size() - 1, Vector3.ZERO, 0.0)
+	check(hammer_list.is_knife_bp(chest_no) and not hammer_list.is_knife_bp(lean_no) and hammer_list.hammer_pieces(plan).size() == 1 and placed.size() == 1 and int(placed[0]["bp"]) == lean_no, "an old plan's knife piece is left out of the hammer's placing")
+	var lean_cost: Dictionary = {}
+
+	for need in bp_rows["lean_to"]["cost"]:
+		lean_cost[str(need[0])] = int(need[1])
+
+	check(JSON.stringify(hammer_list.plan_cost(plan)) == JSON.stringify(lean_cost) and hammer_list.plan_text(plan).begins_with("1 pieces:"), "and out of its cost and its line in the menu")
 	check(not hammer_list.bp_of_state().has(station_state) and not knife_list.bp_of_state().has(station_state) and hammer_list.bp_of_state().has(int(items._structures["lean_to"]["state"])), "a saved building plan holds hammer pieces only")
 
 

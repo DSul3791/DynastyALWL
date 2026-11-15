@@ -440,6 +440,7 @@ func _sync_build_tool() -> void:
 
 	if tool != "" and tool != blueprints.tool:
 		blueprints.clear()
+		blueprints.category = ""   # the other list has other groups
 		blueprints.tool = tool
 		_plan_queue.clear()
 
@@ -512,9 +513,15 @@ var _plan_next_msec: int = 0
 func _start_plan_place() -> void:
 	var plan: Dictionary = blueprints.plans.plans[blueprints.plan_picked]
 	_plan_queue = blueprints.placements_of(blueprints.plan_picked, _blueprint_at, float(_blueprint_yaw))
+	var left_out: int = (plan["pieces"] as Array).size() - _plan_queue.size()   # pieces a knife builds now (an older plan): the hammer cannot place them
 	_plan_next_msec = 0
+
+	if _plan_queue.is_empty():
+		_inv._on_notice("%s holds only pieces a knife builds now. Pick them from the knife's list" % plan["name"])
+		return
+
 	_plan_queue[0]["lift"] = lift_steps
-	_inv._on_notice("Placing %s: %d pieces" % [plan["name"], _plan_queue.size()])
+	_inv._on_notice("Placing %s: %d pieces%s" % [plan["name"], _plan_queue.size(), " (%d left out: a knife builds them now)" % left_out if left_out > 0 else ""])
 
 
 func _plan_step() -> void:
