@@ -340,7 +340,7 @@ func surface_height_on(data, x: float, z: float) -> float:
 	var xw: float = wrap_x(x)
 	var zw: float = wrap_x(z)
 
-	if int(floor(xw / tile_size_m)) == int(round(data.x0 / tile_size_m)) and int(floor(zw / tile_size_m)) == int(round(data.z0 / tile_size_m)):
+	if Vector2i(int(floor(xw / tile_size_m)), int(floor(zw / tile_size_m))) == data.tile:
 		return _height(data, xw, zw, 1.0)
 
 	return surface_height(x, z)
