@@ -73,6 +73,9 @@ class FakeGround:
 	func surface_height(x: float, _z: float) -> float:
 		return 9.0 if x > cliff_x else 1.5
 
+	func surface_height_on(_data, x: float, z: float) -> float:
+		return surface_height(x, z)
+
 
 func _init() -> void:
 	check(is_equal_approx(NearWater.growth_near_water(0.0), 1.0) and is_equal_approx(NearWater.growth_near_water(3.0), 0.5), "W 1 at the edge, 0.5 at 3 m")

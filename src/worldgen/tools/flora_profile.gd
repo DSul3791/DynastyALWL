@@ -134,9 +134,9 @@ class Timed extends "res://src/worldgen/runtime/flora_placer.gd":
 		_add("_plateau", t0)
 		return r
 
-	func _groves_near(item: Dictionary, grove: Dictionary, seed: int, species_id: int, origin: Vector2) -> Array:
+	func _groves_near(item: Dictionary, grove: Dictionary, grove_seed: int, species_id: int, origin: Vector2) -> Array:
 		var t0: int = Time.get_ticks_usec()
-		var r: Array = super._groves_near(item, grove, seed, species_id, origin)
+		var r: Array = super._groves_near(item, grove, grove_seed, species_id, origin)
 		_add("_groves_near", t0)
 		return r
 

@@ -334,6 +334,18 @@ func surface_height(x: float, z: float, lod: int = 0):
 	return _height(data, xw, zw, float(1 << lod))
 
 
+# surface_height on a tile already in hand: the same value when the point lies on `data`'s tile, without get_tile's lock (the flora placer
+# asks it tens of thousands of times a chunk from many threads at once; the shared lock made 11 threads 6 times slower than 3, David4 15 Nov 2026).
+func surface_height_on(data, x: float, z: float) -> float:
+	var xw: float = wrap_x(x)
+	var zw: float = wrap_x(z)
+
+	if Vector2i(int(floor(xw / tile_size_m)), int(floor(zw / tile_size_m))) == data.tile:
+		return _height(data, xw, zw, 1.0)
+
+	return surface_height(x, z)
+
+
 func _height(data, xw: float, zw: float, spacing: float) -> float:
 	return data.height_at(xw, zw) + _detail_at(data, xw, zw, spacing)
 

@@ -974,7 +974,7 @@ func _spring_cover(origin: Vector2, data, found: Array) -> void:
 				continue
 
 			var height: float = lerpf(float(item["height_min"]), low_top, rng.randf())
-			found.append([TIER_FIRST, int(item["id"]), SPRING_BASE + index * SPRING_MAX_PLANTS + n, x, generator.surface_height(x, z), z, height, rng.randf() * TAU, float(_cover["spacing_m"])])
+			found.append([TIER_FIRST, int(item["id"]), SPRING_BASE + index * SPRING_MAX_PLANTS + n, x, generator.surface_height_on(data, x, z), z, height, rng.randf() * TAU, float(_cover["spacing_m"])])
 
 
 # Ground slope (rise over run) from the tile's height map, over 4 m.
@@ -983,8 +983,8 @@ func _slope_at(data, x: float, z: float) -> float:
 
 
 # Slope of the real surface within 1.5 m: small on a ledge or outcrop top even on a steep face.
-func _fine_slope(x: float, z: float) -> float:
-	return Vector2(generator.surface_height(x + 1.5, z) - generator.surface_height(x - 1.5, z), generator.surface_height(x, z + 1.5) - generator.surface_height(x, z - 1.5)).length() / 3.0
+func _fine_slope(data, x: float, z: float) -> float:
+	return Vector2(generator.surface_height_on(data, x + 1.5, z) - generator.surface_height_on(data, x - 1.5, z), generator.surface_height_on(data, x, z + 1.5) - generator.surface_height_on(data, x, z - 1.5)).length() / 3.0
 
 
 # The ground checks every spot must pass; the ground height, or NAN.
@@ -1021,10 +1021,10 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: boo
 
 	if slope > item["max_slope"]:
 		# Only hardy species, only on a flat ledge, and only some of the spots.
-		if not item["ledge"] or rng_pick(x + 17.0, z + 23.0, item["id"]) >= LEDGE_CHANCE or _fine_slope(x, z) > LEDGE_MAX_SLOPE:
+		if not item["ledge"] or rng_pick(x + 17.0, z + 23.0, item["id"]) >= LEDGE_CHANCE or _fine_slope(data, x, z) > LEDGE_MAX_SLOPE:
 			return NAN
 
-	var y: float = generator.surface_height(x, z)
+	var y: float = generator.surface_height_on(data, x, z)
 
 	if y < item["altitude_min"] or y > item["altitude_max"]:
 		return NAN
@@ -1584,7 +1584,7 @@ func _wetness(data, wet: Dictionary, x: float, z: float, cache: Dictionary) -> f
 	var w: float = 0.0
 
 	if best < INF:
-		w = NearWater.growth_near_water(maxf(best - sp * 0.5, 0.0), generator.surface_height(cx, cz) - level)
+		w = NearWater.growth_near_water(maxf(best - sp * 0.5, 0.0), generator.surface_height_on(data, cx, cz) - level)
 
 	cache[key] = w
 	return w
@@ -1645,13 +1645,13 @@ func _near_river(data, x: float, z: float) -> bool:
 
 
 func _near_water(data, x: float, z: float) -> bool:
+	var sim_here: PackedFloat32Array = data.sim_snapshot()   # once, not per offset: it takes the tile's lock
+
 	for offset in [Vector2.ZERO, Vector2(WATER_MARGIN_M, 0.0), Vector2(-WATER_MARGIN_M, 0.0), Vector2(0.0, WATER_MARGIN_M), Vector2(0.0, -WATER_MARGIN_M)]:
 		var k: int = data.nearest(x + offset.x, z + offset.y)
 
 		if data.water_class[k] > 1 and not is_nan(data.water_surface[k]):
 			return true
-
-		var sim_here: PackedFloat32Array = data.sim_snapshot()
 
 		if not sim_here.is_empty() and not is_nan(sim_here[k]):
 			return true
