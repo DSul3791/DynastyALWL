@@ -3,7 +3,8 @@ extends RefCounted
 # Stage-one models (Kathleen, art/MODEL_PLAN.md): any loose item drawn from a small shape and a colour, so every item has a look before
 # any item gets a good one. `data/items/looks.json` maps an item id to {shape, color, size}; `mesh()` returns one vertex-coloured ArrayMesh
 # (a few hundred triangles, 1200 at most for a bowl of stew, one shared material) centred on its middle with the underside near y = -0.06 * size. Upgrading an item later means
-# deleting its looks.json entry or giving it a real model; nothing here changes.
+# deleting its looks.json entry or giving it a real model; nothing here changes. A row with "model" is drawn from that .glb instead (_model_mesh: Dave's own mesh
+# with its own textured material and up to his 5000 triangle cap), the procedural shape standing in until the file is imported.
 
 const LOOKS_PATH := "res://data/items/looks.json"
 const BOW_HALF_M := 0.85       # a self bow: nock to nock about the archer's height, 1.7 m (the "bow" shape; held_item.gd places the hands and the string by these)

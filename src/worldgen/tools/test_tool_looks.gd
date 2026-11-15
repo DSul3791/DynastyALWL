@@ -126,6 +126,8 @@ func _init() -> void:
 		_check(absf(box.get_center().x) < 0.002 and absf(box.get_center().y) < 0.002 and absf(box.get_center().z) < 0.002, id + ": centred on its origin")
 		var x0: float = box.position.x
 		_check(_y_extent(drawn, x0 + 0.06 * box.size.x, 0.04 * box.size.x, 1.0) > 1.5 * _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0), id + ": the thick handle is at -x and the thin blade toward +x (%.3f vs %.3f)" % [_y_extent(drawn, x0 + 0.06 * box.size.x, 0.04 * box.size.x, 1.0), _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0)])
+		var edge: Vector2i = _blade_edges(drawn, box)
+		_check(edge.x > int(1.5 * float(edge.y)), id + ": the toothed edge is on +z, down when held (%d vertices on the +z edge, %d on the -z spine)" % [edge.x, edge.y])
 		_check(_tris(drawn) <= 5000, id + ": %d triangles (Dave's 5000 cap)" % _tris(drawn))
 		_check(BasicLook.mesh_for(id) == drawn, id + ": built once and shared")
 
@@ -224,6 +226,41 @@ func _y_extent(mesh: Mesh, from_x: float, window: float, z_limit: float) -> floa
 				high = maxf(high, v.y)
 
 	return high - low
+
+
+# Along the blade (the front 55 percent), in 20 slices: x = vertices within 8 percent of the blade depth of the slice's +z edge, y = of its -z edge. The teeth
+# make the toothed edge much denser than the plain spine.
+func _blade_edges(mesh: Mesh, box: AABB) -> Vector2i:
+	var verts: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var from_x: float = box.position.x + 0.4 * box.size.x
+	var step: float = 0.55 * box.size.x / 20.0
+	var depth: float = box.size.z
+	var slices: Array = []
+	slices.resize(20)
+
+	for k in 20:
+		slices[k] = []
+
+	for v in verts:
+		var k: int = int(floorf((v.x - from_x) / step))
+
+		if k >= 0 and k < 20:
+			slices[k].append(v.z)
+
+	var counts: Vector2i = Vector2i.ZERO
+
+	for slice in slices:
+		if slice.is_empty():
+			continue
+
+		var top: float = slice.max()
+		var bottom: float = slice.min()
+
+		for z in slice:
+			counts.x += 1 if z > top - 0.08 * depth else 0
+			counts.y += 1 if z < bottom + 0.08 * depth else 0
+
+	return counts
 
 
 func _tris(mesh: Mesh) -> int:
