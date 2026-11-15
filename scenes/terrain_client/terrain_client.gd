@@ -2203,7 +2203,7 @@ func _go_to_npc() -> void:
 	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
 
 
-# The server's answer to hello with where this character resumes (protocol 69): their last spot, or the nearest rest or shelter.
+# The server's answer to hello with where this character resumes (protocol 69): the spot they left, made safe by the server.
 func _on_start_at(spot: Vector3) -> void:
 	if body == null or body.global_position.distance_to(spot) < 8.0:
 		return
@@ -2211,6 +2211,7 @@ func _on_start_at(spot: Vector3) -> void:
 	_telemetry.event("JOIN: resuming at %s (from %s)" % [str(spot.round()), str(body.global_position.round())])
 	body.global_position = spot + Vector3(0.0, 1.0, 0.0)
 	body.velocity = Vector3.ZERO
+	_was_waiting = true   # set down like a first arrival once there is ground (_arrive_on_ground): a spot left in mid-air is not a fall
 
 
 # The server moved this player to a station to craft there (protocol 103, server_items._step_to_station): stand there facing it.

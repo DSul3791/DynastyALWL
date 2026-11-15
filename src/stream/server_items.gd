@@ -624,11 +624,15 @@ func forget_key(peer: int, key: String) -> bool:
 	return true
 
 
-# --- Where a character resumes (protocol 69, DECISIONS collapse-offline) ---
-const RESUME_GRACE_S := 120          # a reconnect within this long of a dropped connection resumes in place
-const SAVE_SPOT_EVERY_MSEC := 30000  # the last known spot is written to the character at most this often while playing
+# --- Where a character resumes (protocol 69; Dave 15 Nov 2026: "when a character quits a game their location should be saved and thats where they
+# should start the next time they log in", which replaces the 2-minute grace of DECISIONS collapse-offline for every way of leaving) ---
+const SAVE_SPOT_EVERY_MSEC := 10000  # the last known spot is written to the character at most this often while playing (a crash or a killed server loses no more)
+const RESUME_CLEAR_M := 0.3          # a saved spot inside a wall or heavy station moves out to this much room (under the body's 0.35 m: one who stood against a wall stays)
+const RESUME_SEARCH_M := 6.0         # ... looking this far around it; nothing clear that close: the nearest rest or shelter point (rest_point_for)
+const RESUME_WAIT_MSEC := 120000     # after the join, the spot is not overwritten until the client stands at the resume spot, or this long has passed
 var _logout_peers: Dictionary = {}   # peer -> true once the client said it is quitting on purpose
 var _spot_saved_msec: Dictionary = {}
+var _resume_to: Dictionary = {}      # peer -> [resume spot Vector3, msec sent]: until the client is there, its reports (still from the world spawn) are not saved
 
 
 func note_logout(peer: int) -> void:
@@ -641,7 +645,7 @@ func note_logout(peer: int) -> void:
 func _note_spot(peer: int, how: String) -> void:
 	var key: String = str(_peer_key.get(peer, ""))
 
-	if key == "" or not _characters.has(key) or not _peer_pos.has(peer):
+	if key == "" or not _characters.has(key) or not _peer_pos.has(peer) or _resume_to.has(peer):
 		return
 
 	var at: Vector3 = _peer_pos[peer]
@@ -649,26 +653,47 @@ func _note_spot(peer: int, how: String) -> void:
 	_dirty = true
 
 
-# [x, y, z] where this peer starts, or [] to stay at the world spawn. Deliberate quit: the saved spot. Disconnect (or a spot last
-# written while online, which a crash leaves): the saved spot when they come back within RESUME_GRACE_S, else where they last
-# rested or sheltered (rest_point_for: the nearest of their rest points), else the world spawn.
+# [x, y, z] where this peer starts, or [] to stay at the world spawn (a new character). Every way of leaving (quit, window closed, dropped line,
+# crash, server stop) resumes at the saved spot, made safe (_safe_resume); the "left" flag is kept for the offline tunnel collapse (DECISIONS collapse-offline 3).
 func start_position_for(peer: int) -> Array:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
-	var last: Dictionary = row.get("last", {})
-	var pos: Array = last.get("pos", [])
+	var pos: Array = row.get("last", {}).get("pos", [])
 
 	if pos.size() != 3:
 		return []
 
-	var spot := Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
-
-	if not (is_finite(spot.x) and is_finite(spot.y) and is_finite(spot.z)):
-		return []
-
-	if str(last.get("left", "")) != "deliberate" and int(Time.get_unix_time_from_system()) - int(last.get("t", 0)) > RESUME_GRACE_S:
-		spot = rest_point_for(peer, spot)   # the nearest rest or shelter point to where they dropped
-
+	var spot: Vector3 = _safe_resume(peer, Vector3(float(pos[0]), float(pos[1]), float(pos[2])))
+	_resume_to[peer] = [spot, Time.get_ticks_msec()]
 	return [spot.x, spot.y, spot.z]
+
+
+# A saved spot that something was built over while the character was away: on a foundation, stand on its top; inside a wall or heavy station
+# (structure_blocks), the nearest clear point within RESUME_SEARCH_M, else the nearest rest or shelter point (else the bed or world spawn). Water
+# (head under) is the scene's (terrain_server._resume_spot); ground dug or filled over the spot is the client's embed rescue, as for any player.
+func _safe_resume(peer: int, spot: Vector3) -> Vector3:
+	var top: float = PlacementRules.foundation_top(_structures_cfg, spot, _foundation_rows())
+
+	if not is_nan(top) and spot.y < top + SwimRules.BODY_HEIGHT_M * 0.5 and spot.y > top - 2.0 * SwimRules.BODY_HEIGHT_M:
+		spot.y = top + SwimRules.BODY_HEIGHT_M * 0.5   # a foundation laid over the spot, not one a storey above a cellar
+
+	if not structure_blocks(spot.x, spot.z, RESUME_CLEAR_M):
+		return spot
+
+	for ring in range(1, int(RESUME_SEARCH_M / 0.5) + 1):
+		for n in range(16):
+			var a: float = TAU * float(n) / 16.0
+			var at: Vector3 = spot + Vector3(cos(a), 0.0, sin(a)) * (0.5 * float(ring))
+
+			if not structure_blocks(at.x, at.z, RESUME_CLEAR_M):
+				return at
+
+	return rest_point_for(peer, spot)
+
+
+# The server is closing with players still in (an admin stop, a reset, the window of a hosted game): their spots now, as a disconnect (DECISIONS collapse-offline 5).
+func note_spots_on_close() -> void:
+	for peer in _peer_key.keys():
+		_note_spot(peer, "disconnect")
 
 
 func peer_left(peer: int) -> void:
@@ -696,6 +721,7 @@ func peer_left(peer: int) -> void:
 	_bag_edit.erase(peer)
 	_over_cap.erase(peer)
 	_spot_saved_msec.erase(peer)
+	_resume_to.erase(peer)
 	_station_said.erase(peer)
 	_hole_blows.erase(peer)
 	_fishing.erase(peer)
@@ -761,6 +787,9 @@ func report_position(peer: int, position: Vector3) -> void:
 		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
 		var now: int = Time.get_ticks_msec()
 		_note_zone(peer, position)
+
+		if _resume_to.has(peer) and (Vector2(position.x - _resume_to[peer][0].x, position.z - _resume_to[peer][0].z).length() <= 8.0 or now - int(_resume_to[peer][1]) >= RESUME_WAIT_MSEC):
+			_resume_to.erase(peer)   # the client is at its resume spot (it ignores one within 8 m of where it stands)
 
 		if now - int(_spot_saved_msec.get(peer, 0)) >= SAVE_SPOT_EVERY_MSEC:
 			_spot_saved_msec[peer] = now
@@ -11133,7 +11162,7 @@ func _shelter_near(pos: Vector3) -> int:
 
 
 # The places a character rested or built a shelter (characters.json "rests", newest last, at most REST_POINTS_MAX): [x, y, z, "shelter" or "fire"].
-# DECISIONS.md 2026-10-22 collapse-offline: after a dropped connection the player comes back at the nearest of these (rest_point_for).
+# A player whose saved spot is now built over with no clear room near it comes back at the nearest of these (rest_point_for, _safe_resume).
 const REST_POINTS_MAX := 12
 
 
@@ -11156,7 +11185,7 @@ func _record_rest(key: String, pos: Vector3, kind: String) -> void:
 	_dirty = true
 
 
-# Where a character who dropped off comes back: the nearest of their rest and shelter points (by distance from `from`) that still stands,
+# Where a character whose saved spot is built over comes back: the nearest of their rest and shelter points (by distance from `from`) that still stands,
 # in front of it; with none, their last shelter or the world spawn. Computed when they rejoin, never stored.
 func rest_point_for(peer: int, from: Vector3) -> Vector3:
 	var best: Vector3 = Vector3.ZERO
@@ -20049,6 +20078,36 @@ func migrate_old_skills(key: String, row: Dictionary, dry_run: bool = false) -> 
 	return report
 
 
+# A saved "last" {pos [x, y, z], t, left}, or {} when it is not a finite spot (an older save has none: the character starts at the world spawn).
+func _clean_last(last: Variant) -> Dictionary:
+	if typeof(last) != TYPE_DICTIONARY or typeof(last.get("pos", null)) != TYPE_ARRAY or (last["pos"] as Array).size() != 3:
+		return {}
+
+	var p: Array = []
+
+	for v in last["pos"]:
+		if not (typeof(v) in [TYPE_INT, TYPE_FLOAT]) or not is_finite(float(v)):
+			return {}
+
+		p.append(float(v))
+
+	return {"pos": p, "t": int(last.get("t", 0)) if typeof(last.get("t", 0)) in [TYPE_INT, TYPE_FLOAT] else 0, "left": str(last.get("left", "disconnect"))}
+
+
+# Saved rest points [x, y, z, "shelter" or "fire"]; a malformed one is dropped.
+func _clean_rests(rests: Variant) -> Array:
+	var out: Array = []
+
+	if typeof(rests) != TYPE_ARRAY:
+		return out
+
+	for r in rests:
+		if typeof(r) == TYPE_ARRAY and (r as Array).size() == 4 and str(r[3]) in ["shelter", "fire"] and [r[0], r[1], r[2]].all(func(v): return typeof(v) in [TYPE_INT, TYPE_FLOAT] and is_finite(float(v))):
+			out.append([float(r[0]), float(r[1]), float(r[2]), str(r[3])])
+
+	return out.slice(maxi(out.size() - REST_POINTS_MAX, 0))
+
+
 func _load_characters() -> void:
 	var parsed: Variant = _read_json_version("characters.json", 1)
 
@@ -20079,6 +20138,8 @@ func _load_characters() -> void:
 			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
 			"rested": parsed["players"][key].get("rested", {}) if typeof(parsed["players"][key].get("rested", {})) == TYPE_DICTIONARY else {},
 			"food": parsed["players"][key].get("food", {}) if typeof(parsed["players"][key].get("food", {})) == TYPE_DICTIONARY else {},   # food effects {group: {id, t, until game s}}
+			"last": _clean_last(parsed["players"][key].get("last", {})),   # where the character resumes (start_position_for)
+			"rests": _clean_rests(parsed["players"][key].get("rests", [])),
 			"spawn_bed": parsed["players"][key].get("spawn_bed", []) if typeof(parsed["players"][key].get("spawn_bed", [])) == TYPE_ARRAY and (parsed["players"][key].get("spawn_bed", []) as Array).size() == 3 else [],
 			"goals_done": parsed["players"][key].get("goals_done", {}) if typeof(parsed["players"][key].get("goals_done", {})) == TYPE_DICTIONARY else {},   # starter goals finished
 			"goal_counts": parsed["players"][key].get("goal_counts", {}) if typeof(parsed["players"][key].get("goal_counts", {})) == TYPE_DICTIONARY else {},

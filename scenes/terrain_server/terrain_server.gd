@@ -789,7 +789,7 @@ func _ready() -> void:
 		var resume: Array = items.start_position_for(peer)
 
 		if resume.size() == 3:
-			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2])))
+			net.start_at.rpc_id(peer, _resume_spot(Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
 
 		_slow_rpc("hello: done", t0))
 	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
@@ -1027,6 +1027,17 @@ func _player_water_at(position: Vector3) -> Array:
 			return [cave_surface, cave_surface - TileDataScript.CAVE_POOL_DEPTH_M]
 
 	return water
+
+
+# A saved spot with the head under water (they left diving, or the water rose) comes up to the surface, swimming: nobody wakes up drowning.
+func _resume_spot(spot: Vector3) -> Vector3:
+	var water: Array = _player_water_at(spot)
+	var in_cave: bool = spot.y < float(water[1]) - 1.0 and not _in_cave_pool(spot)   # under the ground, not in a cave pool: the lake above is not theirs
+
+	if not in_cave and SwimScript.head_under(spot.y, water[0], water[1]):
+		spot.y = float(water[0])
+
+	return spot
 
 
 # Where the player will touch the ground: straight below if hovering, farther
@@ -3000,6 +3011,7 @@ func _exit_tree() -> void:
 		map_knowledge.save()
 
 	if items != null:
+		items.note_spots_on_close()   # players still in: where they stand now, not the last 10 s note
 		items.save()
 
 	_bury_mutex.lock()
