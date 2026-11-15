@@ -196,7 +196,7 @@ func _init() -> void:
 		_sections(data)
 
 	if part in ["functions", "all"]:
-		_functions(data)
+		_functions()
 
 	print("PROFILE DONE")
 	quit(0)
@@ -280,7 +280,7 @@ func _sections(data) -> void:
 	_window(placer, "groves_first49_full", groves.slice(0, 49), false)
 
 
-func _functions(data) -> void:
+func _functions() -> void:
 	var placer = Timed.new()
 	placer.setup(generator, tables, rules)
 	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE
