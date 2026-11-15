@@ -114,3 +114,7 @@ Acceptance tests for subsequent engineering review (not tests already run):
 - **Transport:** §§3.10–3.11 of the master catalog; ship cargo and Captain's Table are *future design*.
 - **Food storage:** [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md); preservation roster approved [D14, D17] (2 ADD).
 - **Safety gate:** docs only. Nothing here is running in-game; no change to `data/items/*.json`, UI scripts, `dev` or `main`, and no merge until the complete catalog is approved and implementation is separately authorized.
+
+## Logs, Firewood and Wooden Blocks (Dave, 15 Nov 2026)
+
+Design: [TREE_WOOD_TOOLS_DESIGN.md](TREE_WOOD_TOOLS_DESIGN.md). A character carries up to **two logs** as physical carried objects (shown on the shoulder, counted in carried weight); a third is refused, tools are put away while carrying, and laying one down, loading it on a Handcart, log sled or wagon, putting it on a Log rack, or a craft/build consuming it removes it from the carrier exactly once. Log racks, Firewood racks and vehicle cargo take the single **Firewood** and **Wooden Block** materials (no soft/hard or large/small variants); racks keep their exact-item assignment rules. Whole logs on the ground or in reach stay valid materials for construction, stations, wells and pipes, log furniture and kiln charcoal under the existing ground and storage sourcing radius and permissions.

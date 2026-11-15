@@ -1,5 +1,7 @@
 # Player goals catalog: corrected (review draft)
 
+> **Derived from a pre-wood-system draft: regenerate from `PLAYER_GOALS_REWARDS_DRAFT.md`. Its wood and saw rows (and the matching CSV rows) are superseded by [TREE_WOOD_TOOLS_DESIGN.md](TREE_WOOD_TOOLS_DESIGN.md).**
+
 **Status: REVIEW DRAFT. Not activated.** Dave approved the 26 audit ADD goals and the coins-only rewards on 14 Nov 2026; the A-42 amounts are provisional, and the catalog goes into the game only on his explicit go. This is the GOALS-REPAIR R7 (WP-GOALS) package for Dave's catalog review, made under the item catalog freeze (`docs/ai-team/DECISION_AUTHORITY.md`). Nothing in it changes game code, `starter_goals.json`, `camp_goals.json` or `PLAYER_GOALS_REWARDS_DRAFT.md`. Values tagged A-n are provisional engineering assumptions from `docs/ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md` §4. They are not Dave-approved.
 
 - **Rows:** `PLAYER_GOALS_CATALOG_CORRECTED.csv` has one row per goal, 704 in all: the draft's 651 goals (`status` ORIGINAL), 27 new goals (`status` PROPOSED NEW: the 11 of R7, the five tier Roof 65 panels, the Fortified Roof 45, Roof 65 and Roof corner, the six tier pieces of PR #1113, and the Primitive and Advanced wells of PR #1120, P-6) and the audit's 26 ADD goals, approved by Dave: 25 `status` APPROVED NEW and ADD-16, `status` MERGED into `activity:temper_steel` (A-43). See "Approved new goals" below.

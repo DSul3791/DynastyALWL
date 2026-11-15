@@ -61,7 +61,7 @@ Call it **about 20 L a person a day** with a couple of beds.
 
 **The gate is the materials, not the hammer** (all three are hammer tier 1): the Primitive well is first-day work (logs, twine and a
 campfire Clay - Pot, which hauls 3 L at a time); the Improved and Advanced wells need Planks (and a Bucket, itself 6 Planks), and Planks need
-the Iron saw, so they arrive at the iron stage; the Advanced well also needs Bark shingles and twice the stone.
+a saw (the Copper saw is the first), so they arrive once a Primitive Smithy has made one; the Advanced well also needs Bark shingles and twice the stone.
 
 The Improved and Advanced windlass hauls a 10 L bucket: at 5 m down about 52 L a real minute, so a full Improved well (200 L) is drawn in about four
 real minutes. The Primitive well's 3 L clay pot gives about 16 L a minute there, so its 100 L take about six. Each is full again a game day (one real

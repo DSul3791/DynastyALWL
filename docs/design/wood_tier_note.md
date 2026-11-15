@@ -1,13 +1,13 @@
 # Dynasty — Wood and Building-Tier Design
 
-**Current owner-approved building and wood rules (13 November 2026).** Replaces the earlier running discussion and rejected Stone/Brick Forge, Brick-Forge-with-Anvil and incomplete building-tier ideas. Old discussion text remains available in Git history but is no longer an active instruction. See [master items §§2.3 and 3.0](DYNASTY_MASTER_ITEMS.md), [progression](progression.md) and [goal recovery](PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md).
+**Current owner-approved building and wood rules (13 November 2026; wood-processing rules updated 15 November 2026 to match [TREE_WOOD_TOOLS_DESIGN.md](TREE_WOOD_TOOLS_DESIGN.md), which wins on trees, wood, saws and the carving station).** Replaces the earlier running discussion and rejected Stone/Brick Forge, Brick-Forge-with-Anvil and incomplete building-tier ideas. Old discussion text remains available in Git history but is no longer an active instruction. See [master items §§2.3 and 3.0](DYNASTY_MASTER_ITEMS.md), [progression](progression.md) and [goal recovery](PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md).
 
 ## Materials and processing
 
-- Trees provide species-appropriate real logs, branches, leaves and other resource drops. A **full-size Log is 3 m**, and only a tree large enough for one yields that item; small trees may yield firewood and kindling instead. Harvesting resource drops must use actual gameplay actions.
-- Logs serve **Rustic log construction**, chopping into Blocks/Firewood, and production at the hand saw or Sawmill. A Chop/Firewood workstation may be convenient but is not mandatory to chop by hand where that action works.
-- **Iron/Steel Saw** or Waterwheel Sawmill converts one suitable softwood/basic Log into **6 Planks**, or one hardwood Log into **4 Hardwood Boards**. **No substitutions** between these item types. Retire redundant species-specific lumber/beam rows, keep species logs, and preserve approved dimensions (**Plank 6 in wide ×4 in thick, rough; Hardwood Board 6 in wide ×2 in thick, smooth**).
-- The **first Iron Saw is crafted at the Improved Smithy**, after operating the Improved Smelter bellows to make Iron Ingots. All components of the Primitive Smelter, Primitive Smithy and Improved Smelter/Smithy prerequisite route must be obtainable without already having an Iron Saw, Planks or Hardwood Boards.
+- Trees provide species-appropriate real logs, branches, leaves and other resource drops. A **full-size Log is 3 m**, and only a tree large enough for one yields that item; small trees break into Firewood, kindling and sticks instead. Harvesting resource drops must use actual gameplay actions.
+- Logs serve **Rustic log construction** and sawing. Any saw cuts a log into 6 Wooden blocks; an axe or a Chopping Block splits a Wooden block into 4 Firewood. An axe no longer chops a log into blocks. The Chopping Block is a convenience, not required (an axe works on a loose block).
+- **Any saw** (Copper first, then Bronze, Iron, Steel; each faster) or the Waterwheel Sawmill converts one suitable softwood/basic Log into **6 Planks**, or one hardwood Log into **4 Hardwood Boards**. **No substitutions** between these item types. Retire redundant species-specific lumber/beam rows, keep species logs, and preserve approved dimensions (**Plank 6 in wide ×4 in thick, rough; Hardwood Board 6 in wide ×2 in thick, smooth**).
+- The **first saw is the Copper saw, made at the Primitive Smithy** from smelted copper and a wooden handle. Bronze, Iron and Steel saws are later upgrades (the Iron saw is made at the Improved Smithy). All components of the Primitive Smelter, Primitive Smithy and Improved Smelter/Smithy prerequisite route must be obtainable without already having a saw, Planks or Hardwood Boards.
 
 ## Seven quality tiers for building pieces
 
@@ -31,7 +31,7 @@ Each applicable tier is a coherent construction *family*: Foundation, Wall, Door
 
 ## Metal/masonry dependencies
 
-- Stone pick/Stone tools access Copper/Tin before Iron; Primitive Smelter + Primitive Smithy are stone-tool buildable, and Bronze tools/fittings precede Improved Smelter and staffed Iron processing. **No Clay Bloomery, stand-alone Stone/Brick Forge or Anvil-within-five-metres station ladder.**
+- The Stone Hammer and other stone tools access Copper/Tin and Coal before Iron (iron ore needs a bronze or better pick); Primitive Smelter + Primitive Smithy are stone-tool buildable, and Bronze tools/fittings precede Improved Smelter and staffed Iron processing. **No Clay Bloomery, stand-alone Stone/Brick Forge or Anvil-within-five-metres station ladder.**
 - **Iron Bands**, if required by upper-tier construction, come from Iron Ingots at the appropriate actual smithy (Improved/Advanced), not an obsolete proximity-level Brick Forge. Exact ingredient counts remain governed by their approved item recipe when reconciled with live data; never invent new requirements.
 - **Concrete** follows Limestone → Kiln → Lime Powder, plus Sand, Stone and actual Water from a filled container at a Mixer. Real player access to a water source/filled container must be available before presenting this construction path as complete.
 - Construction material sourcing for a player uses inventory, eligible nearby storage and **nearby ground items**. This is unrelated to the specialized automatic Smelter/Smithy Coal/Charcoal pulls (30 m / 300s, no permission).

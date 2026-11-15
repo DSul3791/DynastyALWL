@@ -4,7 +4,7 @@
 
 ## Gate 1 — Hands and stone tools
 
-Collect sticks, stone, plant fibre, twine and suitable logs; make the Wooden/Stone Hammer and Stone Axe/Pickaxe. Construct a Campfire, Crude building pieces (including separate empty doorways and independently placed doors), Thatch Bed, Lean-to and Workbench with accessible materials. Craft basic charcoal at the campfire; a Kiln is a later bulk charcoal upgrade, **not** mandatory to access first metal. A full-grown tree produces a real log while tiny trees may yield only firewood/kindling. Building/repair materials follow existing player inventory, nearby storage and nearby ground sourcing. A repair action requires an equipped ordinary hammer's **right-click → Repair** (never a War Hammer).
+Collect sticks, stone, plant fibre and twine; make the **Stone Axe (first), Stone Hammer (second) and Stone Knife** (no forced order; the Stone Pickaxe is not a step). Fell trees: a small tree breaks into Firewood, a large one into logs that roll and can be carried two at a time ([TREE_WOOD_TOOLS_DESIGN.md](TREE_WOOD_TOOLS_DESIGN.md)). Construct a Campfire, Crude building pieces (including separate empty doorways and independently placed doors), Thatch Bed, Lean-to and Workbench with accessible materials. Craft basic charcoal at the campfire from small-tree Firewood; a Kiln is a later bulk charcoal upgrade, **not** mandatory to access first metal. Simple wood and wood-and-twine furnishings (log seats and benches, racks, simple stations) are placed from the knife's right-click menu; houses stay with the hammer. Building/repair materials follow existing player inventory, nearby storage and nearby ground sourcing. A repair action requires an equipped ordinary hammer's **right-click → Repair** (never a War Hammer).
 
 ## Gate 2 — Campsite, leather and early production
 
@@ -12,15 +12,15 @@ Build working Workbench, Tanning Rack and useful shelter and cooking facilities.
 
 ## Gate 3 — First copper and bronze
 
-With **stone tools**, build **Primitive Smelter** (natural draft) and **Primitive Smithy** (stone anvil), without Planks, Nails, Iron or pre-existing metal equipment. Stone Pick can find Copper/Tin-bearing boulders. Primitive Smelter:
+With **stone tools**, build **Primitive Smelter** (natural draft) and **Primitive Smithy** (stone anvil), without Planks, Nails, Iron or pre-existing metal equipment. The **Stone Hammer** harvests stone, Copper, Tin and Coal from boulders. Primitive Smelter:
 - Hopper **20 Coal/Charcoal**, input **20 material units**, **NO output inventory**; completed ingots drop safely on the ground in front.
 - **20 seconds per ingot**. **1 Copper Ore → 1 Copper Ingot**, **1 Tin Ore → 1 Tin Ingot**, **1 Copper Ore + 1 Tin Ore → 2 Bronze Ingots**.
 - No tracked temperature mechanic. Hopper fuel quantity and per-ingot consumption are distinct; fuel rates need tuning.
-The Primitive Smithy shapes copper tools and bronze items/fittings. Use Bronze tools to reach iron-bearing deposits as the existing ore data requires. Copper tool roster and performance need actual recipes/tool definitions; do not imagine all material families must have a copper rung.
+The Primitive Smithy shapes copper tools and bronze items/fittings, including the **Copper saw, the first saw**: it cuts logs on the ground into Wooden Blocks (axe-split into Firewood), Planks (6 per softwood log) or Hardwood Boards (4 per hardwood log). Two Wooden Blocks build the knife-placed **Wood Carving Station** (bowls, platters, clubs, the Longbow from logs and Twine); Planks and Nails build the **Sawbuck** (faster blocks). Use Bronze tools to reach iron-bearing deposits as the existing ore data requires. Copper tool roster and performance need actual recipes/tool definitions; do not imagine all material families must have a copper rung.
 
 ## Gate 4 — Improved stations and iron
 
-Construct **Improved Smithy** with integrated **Bronze Anvil**, forge and bellows; it can work iron, at accelerated station wear. Use Bronze fittings for **Improved Smelter**: hopper **40**, input **40**, finished-ingot rack **80**. With no player operating the bellows it produces Copper/Tin/Bronze at the **Primitive baseline 20 s/ingot**, no iron. A player operating the bellows allows **Iron Ingots** and raises throughput by **30%** (~**15.38 s/ingot**); leaving pauses unfinished Iron work. **1 Iron Ore → 1 Iron Ingot**. Forge **Iron Saw** and **Iron Anvil** at Improved Smithy. Iron Saw cuts a suitable 3 m softwood Log into **6 Planks**, or hardwood Log into **4 Hardwood Boards**, with no material substitution. Never require those boards to build the pre-saw stations.
+Construct **Improved Smithy** with integrated **Bronze Anvil**, forge and bellows; it can work iron, at accelerated station wear. Use Bronze fittings for **Improved Smelter**: hopper **40**, input **40**, finished-ingot rack **80**. With no player operating the bellows it produces Copper/Tin/Bronze at the **Primitive baseline 20 s/ingot**, no iron. A player operating the bellows allows **Iron Ingots** and raises throughput by **30%** (~**15.38 s/ingot**); leaving pauses unfinished Iron work. **1 Iron Ore → 1 Iron Ingot**. Forge **Iron Saw** (a faster saw, same yields) and **Iron Anvil** at Improved Smithy. No material substitution between Planks and Hardwood Boards. Never require sawn wood to build the pre-saw stations.
 
 ## Gate 5 — Advanced steel production and craftwork
 
@@ -44,7 +44,7 @@ The Journal **Map** page does **not** display an existing omniscient world map. 
 |---|---|
 | Crude | First gathered resources; 45° and 65° roof panels attach to wall tops and horizontal ends, not freestanding legs. |
 | Rustic | Logs and elementary carpentry; doors separate from empty frames. |
-| Refined | Planks/Hardwood Boards after Iron Saw, according to actual recipes (never interchangeable). |
+| Refined | Planks/Hardwood Boards after the first saw (Copper), according to actual recipes (never interchangeable). |
 | Sturdy | Stonework and relevant metal fittings. |
 | Superior | Brick/advanced masonry; exact door recipes in master §3.0. |
 | Engineered | Concrete and iron fittings where the blueprint requires. |
