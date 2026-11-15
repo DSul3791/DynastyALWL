@@ -13078,7 +13078,7 @@
 		"copper_nails": {
 			"name": "Copper nails",
 			"kind": "material",
-			"description": "Small copper nails. Soft, but they fix boards in builds the same as iron ones.",
+			"description": "Small copper nails. Soft; a Quality - Backpack is sewn and nailed with them.",
 			"how_to_get": [
 				"Craft at the Primitive smithy: 1 Copper ingot"
 			],

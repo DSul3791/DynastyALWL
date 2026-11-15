@@ -12242,7 +12242,7 @@
 		"copper_nails": {
 			"number": 1487,
 			"name": "Copper nails",
-			"description": "Small copper nails. Soft, but they fix boards in builds the same as iron ones.",
+			"description": "Small copper nails. Soft; a Quality - Backpack is sewn and nailed with them.",
 			"kind": "material",
 			"material": "copper",
 			"stack": 200,
