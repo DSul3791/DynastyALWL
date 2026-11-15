@@ -8664,7 +8664,7 @@ func _load_blueprints() -> void:
 		_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = int(row["number"])
 
 
-# Whether this blueprint can go down now: a hammer of enough tier on the hotbar, the station near when it needs one, every material in the pack.
+# Whether this blueprint can go down now: a hammer of enough tier on the hotbar (a knife for a "tool": "knife" row), the station near when it needs one, every material in the pack.
 # Says why when it cannot, and takes nothing.
 # Tests and admin tools: lay a piece by its old kit name with no hammer, station or materials needed (kits are gone from the game, Dave 4 Nov 2026).
 # The piece still takes down into its blueprint materials like any hammer build.
@@ -8707,15 +8707,20 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 	if not bool(row.get("known", true)) or _structures.get(str(row["structure"]), {}).is_empty():
 		return false
 
-	var hammer: int = _heaviest_hammer_slot(inv)
+	if str(row.get("tool", "hammer")) == "knife":   # a knife row (blueprints.json "tool": simple wood furnishings and stations, W-9) wants a knife on the hotbar, never a hammer
+		if _tool_slot(inv, "knife") < 0:
+			_say(peer, "You need a knife in your hand bar to build that. Hold it and right click for its blueprints.")
+			return false
+	else:
+		var hammer: int = _heaviest_hammer_slot(inv)
 
-	if hammer < 0:
-		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
-		return false
+		if hammer < 0:
+			_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
+			return false
 
-	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
-		_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
-		return false
+		if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
+			_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
+			return false
 
 	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"]), int(row.get("station_level", 1))):
 		_say(peer, "You need a %s close by." % str(row["station"]).replace("_", " "))

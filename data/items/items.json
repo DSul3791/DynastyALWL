@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1477,
+	"next_number": 1481,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -6637,12 +6637,12 @@
 			"log_bench": {
 				"number": 629,
 				"name": "Log - Bench",
-				"description": "A split log on two stumps. Seats two or three.",
+				"description": "A thick split-log seat on two log rounds. Seats one.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 123."
+				"note": "Placed piece: row state 123. Single bench 1.2 m, 1 Log, knife blueprint 88 (W-10)."
 			},
 			"log_table_kit": {
 				"number": 630,
@@ -6663,7 +6663,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 124."
+				"note": "Placed piece: row state 124. 3 Logs and 2 Twine, knife blueprint 89 (W-11)."
 			},
 			"stone_bench_kit": {
 				"number": 632,
@@ -8116,7 +8116,7 @@
 			},
 			"bone_club": {"number": 761, "name": "Bone - Club", "description": "A heavy leg bone bound with twine at the grip. Hits harder than wood and lasts longer.", "kind": "weapon", "weapon_class": "club", "tier": 1, "stack": 1, "unstackable": true, "damage": 8.0, "durability": 450, "look_alikes": ["Wooden - Club"], "repair": [["bone", 1]], "value": 12, "damage_mode": "blunt"},
 			"leather_quiver": {"number": 762, "name": "Leather - Quiver", "description": "A stiff leather tube worn at the hip, beside a pack. Holds 60 arrows and keeps them dry.", "kind": "gear", "slot": "waist", "ammo_class": "arrow", "ammo_capacity": 60, "stack": 1, "unstackable": true, "value": 45, "look_alikes": ["Hide - Quiver"], "wear_layer": "quiver", "bag_slots": 3, "bag_takes": "arrow"},
-			"wooden_longbow": {"number": 763, "name": "Longbow", "description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.", "kind": "weapon", "weapon_class": "bow", "tier": 2, "durability": 600, "repair": [["sinew", 1]], "stack": 1, "unstackable": true, "value": 50, "look_alikes": ["Shortbow"]},
+			"wooden_longbow": {"number": 763, "name": "Longbow", "description": "A tall bow cut from a log and strung with twine. Needs arrows.", "kind": "weapon", "weapon_class": "bow", "tier": 2, "durability": 600, "repair": [["sinew", 1]], "stack": 1, "unstackable": true, "value": 50, "look_alikes": ["Shortbow"]},
 			"leather_trousers": {"number": 764, "name": "Leather - Trousers", "description": "Leather trousers laced with straps. Tougher than hide and better in the wet.", "kind": "clothing", "slot": "legs", "wear_layer": "base", "fabric": "leather", "warmth": 0.16, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Trousers"], "value": 55, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.06, "projectile": 0.1}, "cover": 0.9},
 			"leather_boots": {"number": 765, "name": "Leather - Boots", "description": "Leather boots with a strapped ankle. They keep the feet dry for longer.", "kind": "clothing", "slot": "feet", "wear_layer": "footwear", "fabric": "leather", "warmth": 0.13, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Boots"], "value": 40, "protect": {"slashing": 0.15, "piercing": 0.1, "blunt": 0.08, "projectile": 0.1}, "cover": 1.0},
 			"leather_gloves": {"number": 766, "name": "Leather - Gloves", "description": "Leather gloves with fingers. For work, the bowstring and the cold.", "kind": "clothing", "slot": "hands", "wear_layer": "base", "fabric": "leather", "warmth": 0.09, "stack": 1, "unstackable": true, "look_alikes": ["Hide - Gloves"], "value": 30, "protect": {"slashing": 0.14, "piercing": 0.08, "blunt": 0.05, "projectile": 0.08}, "cover": 1.0},
@@ -12168,6 +12168,52 @@
 			"unstackable": true,
 			"look_alikes": [],
 			"note": "Placed station (Dave 15 Nov 2026, W-4: 8 Planks, 16 Nails, hammer blueprint 352). Row state 442."
+		},
+		"carving_station": {
+			"number": 1477,
+			"name": "Wood carving station",
+			"description": "A log bench beside a chopping block, shavings all round. Carve bowls, clubs and bows here with a knife.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Placed station (Dave 15 Nov 2026, W-6: exactly 2 Wooden blocks, knife blueprint 353). Row state 443."
+		},
+		"log_double_bench": {
+			"number": 1478,
+			"name": "Log - Double bench",
+			"description": "A long split-log seat on two log rounds. Seats two.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Placed piece (W-10, PROVISIONAL: 2.2 m, 2 Logs, knife blueprint 354). Row state 444."
+		},
+		"log_backed_bench": {
+			"number": 1479,
+			"name": "Log - Backed bench",
+			"description": "A split-log seat with a log backrest on two posts. Seats two by the fire.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Placed piece (W-17, PROVISIONAL: about 1.5 m, 3 Logs and 2 Twine, knife blueprint 355). Row state 445."
+		},
+		"primitive_bow": {
+			"number": 1480,
+			"name": "Primitive bow",
+			"description": "A bent stick strung with plant fibre. Weak and short, and it soon wears out. Needs arrows.",
+			"kind": "weapon",
+			"weapon_class": "bow",
+			"tier": 1,
+			"durability": 150,
+			"stack": 1,
+			"unstackable": true,
+			"value": 8,
+			"look_alikes": [
+				"Shortbow"
+			],
+			"note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-8): 2 Sticks + 2 Plant fibre by hand; bow.json 0.7 speed, 0.7 damage, 0.6 range; durability 150 and no repair are assumed (primitive gear is disposable, master s2.2)."
 		}
 	}
 }

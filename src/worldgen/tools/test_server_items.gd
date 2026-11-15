@@ -2560,7 +2560,7 @@ func _init() -> void:
 		for row in rec.get("needs", []):
 			live = live and int(row[0]) > 0 and not bool(hs.table.entry(hs.table.id_of(int(row[0]))).get("retired", false))
 
-		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made at a workbench from live items" % rid)
+		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made from live items (the Wooden hammer at the carving station, W-8)" % rid)
 
 	# Crafting queue: ingredients taken when queued, crafts run on the tick, cancel refunds, caps, restart.
 	var qd: String = "user://test_server_items_queue"
@@ -3357,7 +3357,7 @@ func _init() -> void:
 	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
 	check(vent_sent.size() == 4, "a returning player gets the vent again")
 
-	# Bow, arrows and quiver (recipes 170-173): arrows and the quiver by hand, the bow only at a workbench
+	# Bow, arrows and quiver (recipes 170-173): arrows and the quiver by hand, the bow only at the wood carving station (W-8)
 	var bw_dir: String = "user://test_server_items_bow"
 	DirAccess.make_dir_recursive_absolute(bw_dir)
 
@@ -3386,7 +3386,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("sewing_needle"), 1)   # sewn things keep a Bone - Needle (item system, 10 Nov 2026); it stays for the hood below
 	bw._last_queue_act.clear()
 	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
-	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a workbench")
+	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a carving station (W-8)")
 
 	for rid in ["wooden_arrow", "stone_arrow", "quiver"]:
 		bw._last_queue_act.clear()

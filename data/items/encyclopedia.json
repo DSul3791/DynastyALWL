@@ -2713,7 +2713,7 @@
 			"kind": "container",
 			"description": "A bowl hollowed from a bolt of wood. Carries a little water.",
 			"how_to_get": [
-				"Craft: 1 Wooden block (keep Stone - Knife)"
+				"Craft at a wood carving station: 1 Wooden block (keep Stone - Knife)"
 			],
 			"used_for": [
 				"Used in Chamomile tea",
@@ -4585,7 +4585,7 @@
 			"kind": "tool",
 			"description": "A wooden head on a stick. The weakest hammer; it wears out fast.",
 			"how_to_get": [
-				"Craft: 1 Wooden block, 1 Stick, 1 Twine"
+				"Craft at a wood carving station: 1 Wooden block, 1 Stick, 1 Twine (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4754,7 +4754,7 @@
 			"kind": "weapon",
 			"description": "A bow of bent wood and twine. Needs arrows.",
 			"how_to_get": [
-				"Craft at a workbench: 2 Stick, 3 Twine"
+				"Craft at a wood carving station: 1 Wooden block, 2 Twine (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5141,7 +5141,7 @@
 			"kind": "weapon",
 			"description": "A stout length of hardwood, heavy at one end. Hits hard and needs no skill.",
 			"how_to_get": [
-				"Craft: 1 Wooden block"
+				"Craft at a wood carving station: 1 Wooden block (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8312,17 +8312,15 @@
 				"No longer built (10 Nov 2026 building tiers)."
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_bench": {
 			"name": "Log - Bench",
 			"kind": "structure",
-			"description": "A split log on two stumps. Seats two or three.",
+			"description": "A thick split-log seat on two log rounds. Seats one.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_table_kit": {
 			"name": "Log table",
@@ -8332,8 +8330,7 @@
 				"No longer built (10 Nov 2026 building tiers)."
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"log_table": {
 			"name": "Log - Table",
@@ -8341,8 +8338,7 @@
 			"description": "A table with a hand-hewn log top.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_bench_kit": {
 			"name": "Stone - Bench",
@@ -9725,9 +9721,9 @@
 		"wooden_longbow": {
 			"name": "Longbow",
 			"kind": "weapon",
-			"description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.",
+			"description": "A tall bow cut from a log and strung with twine. Needs arrows.",
 			"how_to_get": [
-				"Craft at a workbench: 4 Wooden block, 1 Sinew, 2 Twine"
+				"Craft at a wood carving station: 1 Log, 3 Twine (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true

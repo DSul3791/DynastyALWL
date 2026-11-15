@@ -492,6 +492,7 @@
 		"sewing_needle": 0.01,
 		"backpack": 1.0,
 		"wooden_bow": 0.7,
+		"primitive_bow": 0.6,
 		"wooden_arrow": 0.05,
 		"stone_arrow": 0.08,
 		"quiver": 0.4,

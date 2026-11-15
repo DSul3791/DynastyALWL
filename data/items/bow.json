@@ -23,6 +23,11 @@
 			"damage_mult": 1.0,
 			"range_mult": 1.0
 		},
+		"primitive_bow": {
+			"speed_mult": 0.7,
+			"damage_mult": 0.7,
+			"range_mult": 0.6
+		},
 		"wooden_longbow": {
 			"speed_mult": 1.2,
 			"damage_mult": 1.4,

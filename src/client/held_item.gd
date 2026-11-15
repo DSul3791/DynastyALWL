@@ -419,14 +419,29 @@ func placing() -> bool:
 	return _blueprint != null
 
 
-# A hammer in hand and a blueprint picked from its list (R): the ghost and the click work like a kit's, but the materials come from the pack.
+# A hammer or knife in hand and a blueprint picked from its list (R or right click): the ghost and the click work like a kit's, but the materials come from the pack.
 func _blueprinting() -> bool:
 	return holding and blueprints.picked > 0 and _build_tier() > 0
 
 
-# The tier a picked blueprint is built with: the hammer in hand's, 0 when nothing in hand builds.
+# The tool in hand that builds blueprints: "hammer", "knife" (Dave 15 Nov 2026: right click with a knife opens the knife's list, TREE_WOOD_TOOLS_DESIGN.md s1.4) or "".
+func _build_tool() -> String:
+	return "hammer" if _hammer_tier() > 0 else ("knife" if _is_knife() else "")
+
+
+# The tier a picked blueprint is built with: the hammer in hand's; a knife builds every row of its list, so 1; 0 when nothing in hand builds.
 func _build_tier() -> int:
-	return _hammer_tier()
+	return _hammer_tier() if _hammer_tier() > 0 else (1 if _is_knife() else 0)
+
+
+# The list follows the tool in hand: another tool's pick and open menu go (the hammer's rows are not the knife's).
+func _sync_build_tool() -> void:
+	var tool: String = _build_tool()
+
+	if tool != "" and tool != blueprints.tool:
+		blueprints.clear()
+		blueprints.tool = tool
+		_plan_queue.clear()
 
 
 func _hoe_in_hand() -> bool:
@@ -481,7 +496,7 @@ func _save_plan_here() -> void:
 	var text: String = "Saved %s: %d pieces. Right click to place it" % [saved["name"], int(saved["pieces"])]
 
 	if int(saved["skipped"]) > 0:
-		text += " (%d pieces made from kits are left out)" % int(saved["skipped"])
+		text += " (%d pieces a hammer does not place are left out)" % int(saved["skipped"])
 
 	_inv._on_notice(text)
 
@@ -534,16 +549,17 @@ func step_blueprint_group(forward: bool) -> bool:
 	if not blueprints.is_open:
 		return false
 
-	blueprints.cycle_category(forward, _hammer_tier())
+	blueprints.cycle_category(forward, _build_tier())
 	return true
 
 
-# Right click (or R) with a hammer in hand opens or shuts its blueprint list.
+# Right click (or R) with a hammer or a knife in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
-	if _hammer_tier() <= 0:
+	if _build_tier() <= 0:
 		return false
 
-	blueprints.toggle(_hammer_tier())
+	_sync_build_tool()
+	blueprints.toggle(_build_tier())
 	return true
 
 
@@ -1002,7 +1018,7 @@ func wheel(down: bool) -> bool:
 		return true
 
 	if blueprints.is_open:
-		blueprints.move(down, _hammer_tier())
+		blueprints.move(down, _build_tier())
 		return true
 
 	if _blueprinting():
@@ -1096,9 +1112,9 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		_inv.eat_slot(held_slot)
 		return true
 
-	# Right click with a hammer opens its menu (or shuts it); left click in the menu picks (Dave 3 Nov 2026). Shift is left to other tools.
-	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _hammer_tier() > 0:
-		blueprints.toggle(_hammer_tier())
+	# Right click with a hammer or a knife opens its menu (or shuts it); left click in the menu picks (Dave 3 Nov 2026; the knife's list, Dave 15 Nov 2026). Shift is left to other tools.
+	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _build_tier() > 0:
+		toggle_blueprints()
 		return true
 
 	# Right click with a torch in the left hand and nothing in the right that uses right click: stick the torch in the ground or on a wall (Dave, 4 Nov 2026).
@@ -1108,7 +1124,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	if blueprints.is_open:
 		if button == MOUSE_BUTTON_LEFT and pressed:
-			blueprints.choose(_hammer_tier())
+			blueprints.choose(_build_tier())
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -1827,8 +1843,10 @@ func _hammer_stock(delta: float) -> void:
 
 
 func _update_blueprint() -> void:
+	_sync_build_tool()
+
 	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _build_tier() <= 0:
-		blueprints.clear()   # the hammer is put away: the pick and the list go with it
+		blueprints.clear()   # the hammer or knife is put away: the pick and the list go with it
 		_plan_queue.clear()
 
 	if not _is_placeable() and not _blueprinting():
