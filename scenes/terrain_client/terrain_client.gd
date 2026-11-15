@@ -3948,7 +3948,11 @@ func _second_log_color() -> Variant:
 		return null   # nothing on the shoulders: no pack scan
 
 	var logs: Array = items.shoulder_logs()
-	return LogLookScript.color_of(str(logs[1])) if logs.size() >= 2 else null
+
+	if logs.size() < 2:
+		return null
+
+	return LogLookScript.color_of(str(logs[1]))
 
 
 # Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.

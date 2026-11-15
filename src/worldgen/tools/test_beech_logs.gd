@@ -132,8 +132,8 @@ func _init() -> void:
 
 	check(not w._items.has(trunk_id), "the last cut removes the trunk")
 	var logs: int = loose_logs(w, log_n).size()
-	check(logs == int(18.0 / log_len), "every log of the tree lies on the ground: %d of %d" % [logs, int(18.0 / log_len)])
-	check(w.inventory_of(1).count_of(log_n) == 1, "no cut log went into the pack (only the carried one)")
+	check(logs == int(18.0 / log_len) + 1, "every log of the tree lies on the ground, beside the one laid down: %d of %d" % [logs, int(18.0 / log_len) + 1])
+	check(w.inventory_of(1).count_of(log_n) == 0, "no cut log went into the pack")
 	var stumps: int = 0
 
 	for k in w._items:
