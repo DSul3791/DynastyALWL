@@ -345,7 +345,9 @@ func chunk_origin(chunk: Vector2i) -> Vector2:
 # heights and yaws (PackedFloat32Array each). `trees_only` leaves out shrubs
 # and plants for chunks seen only from afar (owner, 2026-10-19: draw the big
 # trees far, the small stuff near). Trees are placed before shrubs and plants
-# and never make room for them, so the trees come out the same either way.
+# and never make room for them, so the trees come out the same either way,
+# except beside a spring with bush cover: those shrubs (_spring_cover, full only)
+# are placed first and keep a tree off 1 m round them.
 func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var result: Dictionary = {
 		"ids": PackedInt32Array(), "positions": PackedVector3Array(),

@@ -5,8 +5,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_flora_change_cost.gd
 # 1. After a change the re-sent chunk (trees only, then full, as terrain_server._flora_changed asks) costs under a quarter of making it the first time.
 # 2. The re-sent bytes are the bytes a server that never held the chunk makes (same removals, same sapling).
-# 3. The trees of a full chunk are the trees-only chunk, in order, on two real chunks (ServerFlora._trees_of).
-# 4. clear_memory (new tiles) forgets the placed lists too.
+# 3. clear_memory (new tiles) forgets the placed lists too.
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -77,6 +76,11 @@ func _init() -> void:
 	var full_bytes: PackedByteArray = flora.chunk_bytes(chunk, true)
 	var change_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 	print("chunk %s: made in %.0f ms, re-sent after a planting in %.0f ms (%d items)" % [str(chunk), first_ms, change_ms, PlacerScript.decode(full_bytes, origin)["ids"].size()])
+	if not flora.has_method("_placed"):   # dev before the fix: the timing above is the measurement
+		check(false, "ServerFlora keeps placed lists (_placed)")
+		quit(1)
+		return
+
 	check(change_ms * 4.0 < first_ms, "the re-send costs under a quarter of making the chunk (%.0f vs %.0f ms)" % [change_ms, first_ms])
 
 	var fresh = ServerFloraScript.new()
@@ -87,13 +91,6 @@ func _init() -> void:
 	check(fresh.chunk_bytes(chunk, true) == full_bytes, "the re-sent full bytes are a fresh server's")
 	var decoded: Dictionary = PlacerScript.decode(full_bytes, origin)
 	check(decoded["ids"].has(sapling["ids"][0]) and not decoded["ids"].has(felled), "the sapling is in and the felled tree is out")
-
-	for c in [chunk, chunk + Vector2i(1, 0)]:
-		var full: Dictionary = placer.chunk_items(c)
-		var trees: Dictionary = placer.chunk_items(c, true)
-		var kept: Dictionary = flora._trees_of(full)
-		check(kept["ids"] == trees["ids"] and kept["positions"] == trees["positions"] and kept["heights"] == trees["heights"] and kept["yaws"] == trees["yaws"],
-			"chunk %s: the full list's trees are the trees-only list (%d trees of %d items)" % [str(c), trees["ids"].size(), full["ids"].size()])
 
 	flora.clear_memory()
 	check(not flora.has_items(chunk), "new tiles forget the placed lists")
