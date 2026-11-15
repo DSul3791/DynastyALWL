@@ -26,7 +26,7 @@ Dave's design, 15 Nov 2026 (project chat and thread "Review backpack plan agains
 - B-4: "the tanners/leather station" is the Leatherworking table (the Tanning rack only turns scraped hide into leather).
 - B-5: Copper nails: 1 Copper ingot makes 100 at the Primitive smithy (Bronze nails' recipe in copper). The Quality pack asks for Copper nails and takes any nails (`wood_species.json` group `copper_nails`). Copper nails are not added to the building nails group, so building costs and what a taken-down piece gives back (Bronze nails) are unchanged; making them count for buildings too is Dave's call.
 - B-6: Hob sells the Simple - Backpack where he sold the hide pack, and the merchant wears one.
-- B-7: values 30, 70, 120 and 220 copper; craft times 20, 24, 30 and 40 s.
+- B-7: values 90, 130, 200 and 480 copper (a little above what the materials are worth, so crafting one never loses money: tools/test_economy_guard); craft times 20, 24, 30 and 40 s.
 - B-8: the menus call the player's own item grid "the inventory" instead of "the backpack" ("Your inventory is full.").
 - The packs are drawn with the existing placeholder pack shape until Dave supplies models; the Quality and Advanced icons are recoloured copies of the Simple one.
 
