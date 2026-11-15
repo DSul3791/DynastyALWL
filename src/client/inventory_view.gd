@@ -5709,6 +5709,7 @@ func run_arrival_test(client) -> void:
 	var above: float = client.body.global_position.y - ground if not is_nan(ground) else -1.0
 	await get_tree().create_timer(10.0).timeout
 	print("Arrival test: ground found %s, set down %.1f m above it, health %d, strain state %s" % [str(client.arrival_protect_until_msec > 0), above, health, str(strain_state)])
+	_finish_early(client)
 
 
 # Headless check (--strainrun with --walk --runspeed=11): the body runs and the strain the server sends must climb.
@@ -6601,7 +6602,20 @@ func _wait_inventory_ready() -> bool:
 
 
 func run_chest_test(client) -> void:
-	await get_tree().create_timer(14.0).timeout
+	# Wait until the body has landed: a fixed 14 s wait ended the run before the ground's collision was in (W-27). Up to 300 s, as a cold-cache join took
+	# 223 s on David4 (15 Nov 2026); how fast the ground comes is the arrival step's check (90 s), this one checks the chest.
+	var waited: float = 0.0
+
+	while client.arrival_protect_until_msec == 0 and waited < 300.0:
+		await get_tree().create_timer(0.5).timeout
+		waited += 0.5
+
+	if client.arrival_protect_until_msec == 0:
+		print("Chest test: the player never landed on the ground in 300 s")
+		_finish_early(client)
+		return
+
+	print("Chest test: landed after %.1f s" % waited)
 
 	if not await _wait_inventory_ready():
 		print("Chest test: the pack never arrived")
