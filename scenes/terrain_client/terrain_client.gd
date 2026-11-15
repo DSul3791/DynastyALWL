@@ -6771,7 +6771,7 @@ func _run_resume_test() -> void:
 		await get_tree().create_timer(1.0).timeout
 		waited += 1.0
 
-	await get_tree().create_timer(3.0).timeout
+	await _server_caught_up()
 	var spawn: Vector3 = world["spawn"]
 
 	if test_resume == "check":
@@ -6781,7 +6781,9 @@ func _run_resume_test() -> void:
 
 	body.global_position = spawn + Vector3(60.0, 4.0, 0.0)
 	body.velocity = Vector3.ZERO
-	await get_tree().create_timer(14.0).timeout   # past one 10 s spot note (server_items SAVE_SPOT_EVERY_MSEC): a drop is saved without the leave note
+	await _server_caught_up()   # the server has read the reports from the new spot (a slow first save can hold its tick for a minute)
+	await get_tree().create_timer(12.0).timeout   # past one 10 s spot note (server_items SAVE_SPOT_EVERY_MSEC): a drop is saved without the leave note
+	await _server_caught_up()
 	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
 
 	if test_resume == "logout":
@@ -6789,6 +6791,15 @@ func _run_resume_test() -> void:
 		await get_tree().create_timer(0.5).timeout
 
 	_finish(0)
+
+
+# Asks the server for the ground here and waits for the answer (up to 300 s): everything sent before has then reached a server that is ticking.
+func _server_caught_up() -> void:
+	var asked: int = Time.get_ticks_msec()
+	net.request_surface.rpc_id(1, body.global_position.x, body.global_position.z)
+
+	while _surface_answered_msec < asked and Time.get_ticks_msec() - asked < 300000:
+		await get_tree().create_timer(0.5).timeout
 
 
 # Headless check (--embed-test): put the body 4 m inside the ground; it must be out within 3 s.
