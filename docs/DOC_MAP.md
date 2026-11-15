@@ -1,6 +1,6 @@
 # Dynasty — Current Documentation Map
 
-**Current as of 13 November 2026.** This replaces the outdated early-November file inventory and its misleading source-of-truth pointers. The original contents remain available in Git history if provenance is needed. Use this document to find current design authority; do not treat older report filenames as a second set of gameplay instructions.
+**Topic navigation; operating-policy route updated 15 November 2026.** This replaces the outdated early-November file inventory and its misleading source-of-truth pointers. The original contents remain available in Git history if provenance is needed. Use this document to find current design authority; do not treat older report filenames as a second set of gameplay instructions.
 
 ## Start here: current approved target designs
 
@@ -22,7 +22,7 @@
 | Save/version compatibility | [`design/CATALOG_SAVE_MIGRATION.md`](design/CATALOG_SAVE_MIGRATION.md) | Current no-loss/version rules, not the old mandatory blanket pre-release migration |
 | Water and spring dynamics | [`design/drinking_water_design.md`](design/drinking_water_design.md), [`design/drinking_water_step2b_design.md`](design/drinking_water_step2b_design.md), `DYNASTY_WATER_DESIGN.md` | Use their **dated supported subfeatures and actual code**; current goal repair must not invent missing water actions |
 | Food preparation and preserving | [`design/FOOD_PREPARATION_PRESERVATION_SERVING.md`](design/FOOD_PREPARATION_PRESERVATION_SERVING.md) | Approved relevant food categories, station use and preserving workflows |
-| Operating policy, delegated authority, workflow and testing | `ai-team/CONSTITUTION.md`, `ai-team/DECISION_AUTHORITY.md`, `ai-team/WORKFLOW.md`, `ai-team/TEST_GATES.md`, `../CLAUDE.md` | Current origin/dev; scoped delegation and mission records; independently reviewed task branches into dev; full gate plus Dave approval for main. `../PROTOCOL.md` owns wire contracts, not operating policy. |
+| Operating policy, delegated authority, workflow and testing | `ai-team/CONSTITUTION.md`, `ai-team/WORKFLOW.md`, `ai-team/TEST_GATES.md`, `PONYTAIL_RULES.md`; entry point `../CLAUDE.md` | Current origin/dev; scoped delegation and mission records; independently reviewed task branches into dev; full gate plus Dave approval for main. `../PROTOCOL.md` owns wire contracts, not operating policy. |
 
 ## Baseline evidence, NOT active instructions
 

@@ -119,3 +119,16 @@ Also removed inside live files: the three clay_pipe rows of look_table.gd (their
 Code that new code replaced is deleted, not moved here. Add one row per deleted file in the same PR; `tools/merge_check.py` checks that the replacement exists and that nothing still uses the old file. Code with no replacement is an ordinary unused file: move it aside as above.
 | deleted path | replaced by (path at HEAD) | who | date | why |
 |---|---|---|---|---|
+
+## Core rulebook consolidation — 15 Nov 2026
+
+Dave approved the four-rulebook structure in Clauda Optimization. This is limited to core-policy consolidation; the wider draft cut list remains a proposal. Original text is recoverable from reachable source commit `dd566834db6496d0d8d2bb2a6bf2b9cb1ec882aa`. All six source paths below remain as short temporary redirects; no document is deleted in this change. Retirement merge/timestamps and expiry are PENDING INTEGRATION, never inferred from source age. Verify and finalize them from the actual merged retirement event before any expiry deletion. Existing deletion enforcement remains in force pending the separately reviewed expiry implementation. Live Claude project settings/private copies: SYNC PENDING.
+
+| Original path | Source blob | Preserved authority | Retirement / expiry |
+|---|---|---|---|
+| `docs/ai-team/DECISION_AUTHORITY.md` | `74784f27f47cc2aeef0ba9798f05102d2a30da09` | `docs/ai-team/CONSTITUTION.md` | PENDING INTEGRATION |
+| `docs/ai-team/DOCUMENT_AUTHORITY.md` | `8479456d6ee8fbfa2f720de9a368e90f721e72a9` | `docs/ai-team/CONSTITUTION.md` | PENDING INTEGRATION |
+| `docs/ai-team/ROLE_CATALOG.md` | `c3acf10c8388c5d22a1287f48259ac1ec281b51f` | `docs/ai-team/WORKFLOW.md` | PENDING INTEGRATION |
+| `docs/ai-team/SESSION_LIFECYCLE.md` | `1ec4dc4d750217b82df19b2c5c24174414761fec` | `docs/ai-team/WORKFLOW.md` | PENDING INTEGRATION |
+| `RULES.md` | `e4b80e5f85b8f5a6c76c40bb6e49845212b98f5c` | `docs/ai-team/WORKFLOW.md`; docs/PONYTAIL_RULES.md (code); CONSTITUTION.md (authority); TEST_GATES.md (testing) | PENDING INTEGRATION |
+| `docs/START_HERE.md` | `7710fb17f8ed653810a5f8177777828d25ebc525` | `README.md` | PENDING INTEGRATION |
