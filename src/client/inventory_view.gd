@@ -5709,6 +5709,7 @@ func run_arrival_test(client) -> void:
 	var above: float = client.body.global_position.y - ground if not is_nan(ground) else -1.0
 	await get_tree().create_timer(10.0).timeout
 	print("Arrival test: ground found %s, set down %.1f m above it, health %d, strain state %s" % [str(client.arrival_protect_until_msec > 0), above, health, str(strain_state)])
+	_finish_early(client)
 
 
 # Headless check (--strainrun with --walk --runspeed=11): the body runs and the strain the server sends must climb.
