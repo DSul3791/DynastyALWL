@@ -271,7 +271,6 @@ func _keep_brush(home: Vector2i, made: Dictionary) -> void:
 
 # Worker task: places a chunk whose undergrowth index was asked for before its flora was made (or after it was dropped).
 func _make_brush(home: Vector2i) -> void:
-	var diag_t0: int = Time.get_ticks_usec()   # DIAGNOSTIC (first-save freeze): not for merge
 	_mutex.lock()
 	var removed: Dictionary = _removed.get(home, {}).duplicate()
 	_mutex.unlock()
@@ -279,9 +278,7 @@ func _make_brush(home: Vector2i) -> void:
 	_mutex.lock()
 	_keep_brush(home, made)
 	_brush_pending.erase(home)
-	var diag_left: int = _brush_pending.size()
 	_mutex.unlock()
-	print("SAVEDIAG brush chunk %s made in %.1f ms on a pool worker; %d brush chunks still queued" % [str(home), float(Time.get_ticks_usec() - diag_t0) / 1000.0, diag_left])
 
 
 func roofed(pos: Vector3) -> bool:
