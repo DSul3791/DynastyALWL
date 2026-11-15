@@ -219,7 +219,7 @@ func _init() -> void:
 		check(str(r.get("station", "")) == "workbench" and int(r.get("station_level", 0)) == 2 and int(r.get("number", 0)) >= 700 and int(r.get("number", 0)) <= 719, "%s is made at the Carpenter's bench (recipe %d)" % [id, int(r.get("number", 0))])
 
 	var def: Dictionary = items._structures["handcart"]
-	check(int(def.get("slots", 0)) > 10 and float(def.get("max_kg", 0.0)) > 50.0 and def.has("vehicle"), "the Handcart has its own cargo store, more than a backpack (%d slots, %d kg)" % [int(def.get("slots", 0)), int(def.get("max_kg", 0))])
+	check(int(def.get("slots", 0)) > 10 and float(def.get("max_kg", 0.0)) == 120.0 and def.has("vehicle"), "the Handcart has its own cargo store of 120 kg (W-15), more than a backpack (%d slots, %d kg)" % [int(def.get("slots", 0)), int(def.get("max_kg", 0))])
 	check(bool(items._structures["wooden_crate"].get("cargo", false)) and bool(items._structures["warehouse_crate"].get("cargo", false)), "the Crate and the Warehouse crate ride as cargo")
 	check(Net.PROTOCOL_VERSION >= 111 and Net.ACT_CART == 78 and ItemsScript.VERSION == 3, "protocol 111, ACT_CART 78, world_items version 3")
 
@@ -373,7 +373,7 @@ func _init() -> void:
 	cart_act(1, Carts.OP_GRAB, cart)
 	walk(1, c_pos + Vector3(0.0, 0.0, -12.0), 2.0)   # 10 m/s: faster than the cart's pace
 	check(pulling(1) == 0 and str(said.get(1, "")) == "You lose hold of the handcart.", "a puller running ahead of the cart's pace loses the handle")
-	box(cart).add(stone, 120)
+	box(cart).add(stone, 60)   # 60 of the 120 kg payload (TREE_WOOD_TOOLS_DESIGN.md W-15)
 	items.report_position(1, items._items[cart]["pos"] + Vector3(0.0, 0.0, -1.7))
 	cart_act(1, Carts.OP_GRAB, cart)
 	check(pulling(1) == cart and int(pulls[1][1]) < pace_loaded_free, "a heavier load slows the cart (%.1f against %.1f m/s)" % [float(pulls[1][1]) / 10.0, float(pace_loaded_free) / 10.0])
@@ -442,7 +442,7 @@ func _init() -> void:
 
 	cart_act(1, Carts.OP_LOAD, heavy)
 	check(items._items[heavy]["struct"].has("on"), "empty, it goes on")
-	check(items._carts.room_kg(heavy) < float(def["max_kg"]) - 120.0, "the payload counts the cart's store and the crate's own wood (%.0f kg left)" % items._carts.room_kg(heavy))
+	check(items._carts.room_kg(heavy) < float(def["max_kg"]) - 60.0, "the payload counts the cart's store and the crate's own wood (%.0f kg left)" % items._carts.room_kg(heavy))
 
 	# --- 10b. A crate locked after the grab stops a puller without access ---
 	items._items[heavy]["struct"]["owner"] = keys[1]

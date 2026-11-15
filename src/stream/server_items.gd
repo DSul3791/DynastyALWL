@@ -9656,7 +9656,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return
 
 	if it["struct"].has("on"):
-		_say(peer, "Set it down off the handcart first.")
+		_say(peer, "Set it down off the %s first." % _carts.noun_for(id))
 		return
 
 	if not _carts.vehicle_of(it).is_empty():
@@ -10694,7 +10694,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		amount = clampi(int(floor(minf(room, cart_room) / each + 0.0001)), 0, amount)
 
 		if amount == 0:
-			_say(peer, "It is too heavy for the chest" if cart_room >= room else "The handcart cannot carry more.")
+			_say(peer, "It is too heavy for the chest" if cart_room > maxf(room, 0.0) else "The %s cannot carry more." % _carts.noun_for(id))
 			_reject(peer, 2)
 
 	var left: int = 0

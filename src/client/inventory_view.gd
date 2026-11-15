@@ -581,7 +581,7 @@ func register_interactable(interactable_name: String, priority: int, probe: Call
 # is where the nearby pick-up and gather live. "aimed" is set on a result that won because of the cursor.
 func current_interaction() -> Dictionary:
 	if pulling_id != 0:   # both hands on the handle: E only lets go (catalog Phase 10)
-		return {"kind": "structure", "prompt": "Press E to let go of the handcart", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CART, 0, CART_RELEASE, 0, Vector3.ZERO)}
+		return {"kind": "structure", "prompt": "Press E to let go of the %s" % str(_structure_by_state(int(_world.get(pulling_id, {}).get("state", -1))).get("vehicle", {}).get("noun", "cart")), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CART, 0, CART_RELEASE, 0, Vector3.ZERO)}
 
 	var first: Dictionary = {}
 	var best: Dictionary = {}
@@ -947,16 +947,16 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 	var cart_def: Dictionary = _structure_by_state(state)
 
-	if cart_def.has("vehicle"):   # the Handcart (catalog Phase 10): E takes the handle, F opens its cargo, hold E takes it apart
+	if cart_def.has("vehicle"):   # the Handcart, Small log sled and Small wagon (catalog Phase 10, W-14): E takes the handle, F opens its cargo, hold E takes it apart
 		return {"prompt": "Press E to take the handle (F to open it, hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CART, id, CART_GRAB, 0, Vector3.ZERO), "hold": take_down}
 
 	if bool(_world[id].get("on", false)):   # a crate riding on a cart: hold E sets it down beside the cart
-		return {"prompt": "Press E to open (hold E to set it down off the handcart)", "tap": func(): _ask_open(id), "hold": func():
+		return {"prompt": "Press E to open (hold E to set it down off the cart)", "tap": func(): _ask_open(id), "hold": func():
 			clear_prompt()
 			net.inventory_action.rpc_id(1, Net.ACT_CART, id, CART_UNLOAD, 0, Vector3.ZERO)}
 
 	if bool(cart_def.get("cargo", false)) and _cart_near(_world[id]["pos"]):   # a crate beside a cart: hold E lifts it on, with what it holds
-		return {"prompt": "Press E to open (hold E to lift it onto the handcart)", "tap": func(): _ask_open(id), "hold": func():
+		return {"prompt": "Press E to open (hold E to lift it onto the cart)", "tap": func(): _ask_open(id), "hold": func():
 			clear_prompt()
 			net.inventory_action.rpc_id(1, Net.ACT_CART, id, CART_LOAD, 0, Vector3.ZERO)}
 
@@ -2140,10 +2140,10 @@ var pull_pace_mps: float = 0.0   # and its pace: the walk is capped there (terra
 var _gliding: Dictionary = {}    # world id -> true while its node is still on the way to its place
 
 
-# True when a cart stands within 3 m of the point (a crate there can be lifted onto it).
+# True when a cart with a bed for crates stands within 3 m of the point (a crate there can be lifted onto it; a sled has no bed).
 func _cart_near(at: Vector3) -> bool:
 	for id in _world:
-		if _structure_by_state(int(_world[id].get("state", -1))).has("vehicle") and (_world[id]["pos"] as Vector3).distance_to(at) <= 3.0:
+		if not _structure_by_state(int(_world[id].get("state", -1))).get("vehicle", {}).get("crate_spots", []).is_empty() and (_world[id]["pos"] as Vector3).distance_to(at) <= 3.0:
 			return true
 
 	return false

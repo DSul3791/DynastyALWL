@@ -216,8 +216,10 @@ const LOOKS := {
 	"storage_sign": {"builder": "sign_post", "args": []},
 	"warehouse_crate": {"builder": "crate", "args": []},
 	"warehouse_desk": {"builder": "table", "args": []},
-	# shortcut: the Handcart (Mission 001 phase 10, master s3.11) borrows the wooden trough as its open bed, with no wheels or handles, until Art draws it (NOT visually complete).
+	# shortcut: the Handcart (Mission 001 phase 10, master s3.11), the Small log sled and the Small wagon (TREE_WOOD_TOOLS_DESIGN.md W-14) borrow the wooden trough as an open bed, with no wheels, runners or handles, until Art draws them (NOT visually complete).
 	"handcart": {"builder": "trough", "args": ["wood"]},
+	"small_log_sled": {"builder": "trough", "args": ["wood"]},
+	"small_wagon": {"builder": "trough", "args": ["wood"]},
 	"engineered_foundation": {"builder": "concrete_foundation", "args": [false]},
 	"engineered_wall": {"builder": "concrete_wall", "args": [false]},
 	"engineered_doorway": {"builder": "concrete_frame", "args": [false, "single"]},
