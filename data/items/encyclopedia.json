@@ -2376,7 +2376,7 @@
 		"chopping_block": {
 			"name": "Chopping block",
 			"kind": "placeable",
-			"description": "A log set on end. Split wooden blocks on it, or chop logs from your storage nearby into firewood.",
+			"description": "A wooden block set on end. Hold an axe and split wooden blocks on it into firewood.",
 			"how_to_get": [
 				"Craft: 1 Wooden block"
 			],
