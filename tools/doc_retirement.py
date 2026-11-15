@@ -66,12 +66,17 @@ def validate(root, data, deleted=(), now=None, previous=None, protected=(), inte
                 errors.append(f'immutable recovery receipt changed or removed: {path}')
         # Raw path references in executable/configuration sources are conservative reader leads.
         texts = []
-        for p in git(root, 'ls-files').decode().splitlines():
+        for record in git(root, 'ls-files', '-v', '-z').decode().split('\0'):
+            if not record:continue
+            flag,p=record.split(' ',1)
             if p == MANIFEST or not p.endswith(CODE_EXT):
                 continue
             f = root/p
             if f.is_file():
                 texts.append((p, f.read_text(errors='replace')))
+            elif flag.upper()=='S':
+                # A sparse checkout must not turn a tracked reader into an apparent nonreader.
+                texts.append((p,git(root,'show','HEAD:'+p).decode(errors='replace')))
         first_parent = set(git(root, 'rev-list', '--first-parent', 'origin/dev').decode().split())
         batch_ids = set()
         for b in data['batches']:

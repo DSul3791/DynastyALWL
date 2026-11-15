@@ -180,6 +180,18 @@
           "docs/mirror/design/PLAYABILITY_PREP.md",
           "docs/mirror/items/COINS.md",
           "docs/mirror/tech/DECISIONS.md"
+        ],
+        "ci_reader_holds": [
+          "art/playthrough/audit.md",
+          "art/playthrough/hunt_tests_output.txt",
+          "art/playthrough/probe_bot_output.txt",
+          "art/playthrough/probe_logs_output.txt",
+          "art/playthrough/probe_output.txt",
+          "art/playthrough/probe_place_output.txt",
+          "art/playthrough/probe_shelter_output.txt",
+          "art/playthrough/probe_spawn_output.txt",
+          "art/playthrough/probe_structures_output.txt",
+          "art/playthrough/smoke/notes.md"
         ]
       },
       "entries": [
@@ -664,33 +676,9 @@
           "target": null
         },
         {
-          "original": "art/playthrough/audit.md",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/audit.md",
-          "blob": "55404e9c2a41667f29265e7d80a51367bc8a94bc",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/hunt_tests_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/hunt_tests_output.txt",
-          "blob": "b6d1293d29aec04433c7b508338a1d6322ed292a",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
           "original": "art/playthrough/items_check_output.txt",
           "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/items_check_output.txt",
           "blob": "858662666d2e47a2dcd220e94145ba9c21099ff7",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/probe_bot_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_bot_output.txt",
-          "blob": "1f701cb19348b5815466bbba16288c4dabb2a59e",
           "disposition": "dated-evidence",
           "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
           "target": null
@@ -728,54 +716,6 @@
           "target": null
         },
         {
-          "original": "art/playthrough/probe_logs_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_logs_output.txt",
-          "blob": "36804fb03ac52c5936ad81e8c1fbaa896df2d6b9",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/probe_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_output.txt",
-          "blob": "b642b8aaa1151deb47ef77b1a1b3e9539b295f8c",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/probe_place_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_place_output.txt",
-          "blob": "7bae0c0db2168ec76327ae7620dc5f77d2d3b432",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/probe_shelter_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_shelter_output.txt",
-          "blob": "ea36b58151af3a00904b46723ff68fca9ccdd3a7",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/probe_spawn_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_spawn_output.txt",
-          "blob": "26cdf924c35c7a7aae28656742006a38ce307d39",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/probe_structures_output.txt",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_structures_output.txt",
-          "blob": "41b06c4376876ea8881dd593a388a38064d23846",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
           "original": "art/playthrough/probe_wildlife_output.txt",
           "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/probe_wildlife_output.txt",
           "blob": "d8d85bd3b904ea3982e818555fa9aa618f54cef3",
@@ -803,14 +743,6 @@
           "original": "art/playthrough/run_status_log.txt",
           "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/run_status_log.txt",
           "blob": "27522a30a993d5860811be1b553168ba3c4e1194",
-          "disposition": "dated-evidence",
-          "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
-          "target": null
-        },
-        {
-          "original": "art/playthrough/smoke/notes.md",
-          "retired": "docs/archive/2026-11/document-cleanup/art/playthrough/smoke/notes.md",
-          "blob": "b66952206b193efef98b6421390d40bf9301ab73",
           "disposition": "dated-evidence",
           "reason": "Dated handoff/probe/visual evidence; not current task state and not a claim of defect closure.",
           "target": null

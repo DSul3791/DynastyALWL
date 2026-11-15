@@ -1,4 +1,7 @@
 name: merge guard
+permissions:
+  contents: read
+  pull-requests: read
 on:
   push:
     branches: ["main", "dev"]
