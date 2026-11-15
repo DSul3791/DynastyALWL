@@ -1,3 +1,5 @@
+> **HISTORICAL SNAPSHOT — 11 Nov 2026.** Preserved handoff index, not the current navigation or status. Start with `CLAUDE.md`, `docs/START_HERE.md`, `docs/DOC_MAP.md` and the assigned mission records on current `origin/dev`. Its freeze, main-as-master and roster statements do not govern current work.
+
 > Copy of the original in the project Library (/mnt/project-files/); paths in this file refer to the Library unless they name the repo.
 
 # START HERE: the one entry point for a new agent (written 11 Nov 2026 by Morgan, design)
