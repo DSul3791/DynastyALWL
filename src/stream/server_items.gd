@@ -1558,16 +1558,23 @@ func _slow_mark(part: String, _since_usec: int) -> void:
 
 
 # A log line printed on a worker thread (a print flushes the log on the PC's debug build and stalled the main thread 400+ ms, #397).
+# High priority: the low-priority pool threads (30 % of them) can be held for a minute by the flora cover chunks a join starts
+# (David4 15 Nov 2026: lines waited 55-63 s behind them). The periodic save never waits for a line (_finish_writer).
 func _log_off_main(line: String) -> void:
+	_reap_log_lines()
+	_log_tasks.append(WorkerThreadPool.add_task(func() -> void: print(line), true, "items log line"))
+
+
+# Frees the log-line tasks already printed (a task must be waited for once); never waits for one still queued.
+func _reap_log_lines() -> void:
 	var still: Array = []
 
-	for task in _log_tasks:   # reap the lines already printed (a task must be waited for once)
+	for task in _log_tasks:
 		if WorkerThreadPool.is_task_completed(task):
 			WorkerThreadPool.wait_for_task_completion(task)
 		else:
 			still.append(task)
 
-	still.append(WorkerThreadPool.add_task(func() -> void: print(line), false, "items log line"))
 	_log_tasks = still
 
 
@@ -5940,11 +5947,17 @@ func _reap_writer() -> void:
 		_writer = null
 
 
+# The periodic save (_async_writes) waits for the last file batch only, never for log lines: it waited for queued lines, and those sat in the
+# worker pool behind the flora cover chunks of a join, so the first save after every server start froze the tick 55-110 s (David4 15 Nov 2026).
+# Any other save (shutdown, world reset, tests) still prints every line first.
 func _finish_writer() -> void:
-	for task in _log_tasks:
-		WorkerThreadPool.wait_for_task_completion(task)
+	if _async_writes:
+		_reap_log_lines()
+	else:
+		for task in _log_tasks:
+			WorkerThreadPool.wait_for_task_completion(task)
 
-	_log_tasks = []
+		_log_tasks = []
 
 	if _writer != null:
 		_writer.wait_to_finish()
