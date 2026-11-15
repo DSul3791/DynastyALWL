@@ -409,9 +409,11 @@ var _bow = null                     # server_bow.gd, made at the first shot
 var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the bow's aim spread stream (luck then nudges each draw, _shoot)
 var _last_shot: Dictionary = {}     # peer -> msec
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
-var _rolling: Dictionary = {}       # loose logs being checked for a roll (just dropped, split or moved): world id -> {v: speed m/s, dist: metres rolled, sign: -1/1 downhill side}; asleep once absent (_roll_tick)
+var _rolling: Dictionary = {}       # loose logs being checked for a roll (just dropped, split or moved): world id -> {v: signed speed m/s across the log, dist: metres rolled, turns: swings round an obstacle}; asleep once absent (_roll_tick)
 var _roll_moved: Dictionary = {}    # world id -> true: rolled since the players who see them were last told (_roll_send)
 var _roll_send_in: float = 0.0
+var _roll_near: Array = []        # what may stand in the rolling logs' way (_roll_obstacles), gathered every rolling.look_s or when a log wakes
+var _roll_near_in: float = 0.0
 var _last_throw: Dictionary = {}    # peer -> msec
 var showroom_enabled: bool = true   # off in a real shared world: showroom items become real items in the economy
 var _showroom_todo: Array = []     # [key, number, count, Vector3 spot] still waiting for their ground to load
@@ -2690,12 +2692,18 @@ const GOLDEN_ANGLE := 2.399963   # radians: successive ids spread their turns ev
 
 # --- Rolling logs (TREE_WOOD_TOOLS_DESIGN.md s1.1, s5; Dave 15 Nov 2026: "logs are physical world objects that can roll on terrain") ---
 # A loose shoulder log (or an item in drops.json rolling.also: the plain Log) rolls downhill while the ground slope ACROSS it, perpendicular to its long axis
-# (rot_y, 0 = along x), is over rolling.slope; it gains rolling.accel_mps2 up to max_mps, and settles where the slope across it falls under that, at water, at a
-# wall or after max_m, and only while it lies on that ground (within rolling.rest_m of ground_height: not on a floor, a deck or a rock). Only a log just dropped,
+# (rot_y, 0 = along x), is over rolling.slope; it gains rolling.accel_mps2 up to max_mps, coasts on where the slope across it falls under that until drag stops it,
+# and stops at water, at a wall, against what it strikes (below) or after max_m, and only while it lies on that ground (within rolling.rest_m of ground_height: not on a floor, a deck or a rock). Only a log just dropped,
 # split or moved is looked at (_wake_roll); the check puts it to sleep by taking it out of _rolling, so a log lying still costs nothing. A log with no turn of its own
 # is given one when it wakes (the golden angle of its id), and it goes out with the first row, so the client draws the log the way the server rolls it. The position is the item's own (saved with it); the players who see it are told at send_s (items_moved, protocol 111: their client glides it).
-# shortcut: slope is read from the server's ground_height, which does not know saved digs and fills (edits_near), and a log rolls as a point; fine for hillsides,
-# revisit if logs should stop against boulders, trees and other logs.
+# Collisions (Dave 15 Nov 2026: "logs should collide like they would naturally. they should also have a little drag to simulate the grasses effect"): the log is a
+# rolling.half_len_m x rolling.radius_m capsule. A standing tree, a stump or felled trunk, a boulder or another loose log in its way stops it when the log meets it
+# near its middle; met near an end (beyond rolling.pivot_end of the half length) the log swings round that point by rolling.pivot_deg, loses half its speed and rolls on,
+# so a log glancing off a tree turns and carries on. A loose log it strikes is woken with rolling.transfer of the speed. Walls are checked from the middle and both ends.
+# Grass drag: the ground slows a rolling log by rolling.drag[material] per second of its speed plus rolling.friction_mps2, so a log coasts a little past where the
+# hill flattens and runs slower on grass than on bare rock or snow.
+# shortcut: slope is read from the server's ground_height, which does not know saved digs and fills (edits_near); the obstacles come from the last world sync's grid
+# (up to SYNC_EVERY_S old; a full scan when none has run), so an item dropped in the last moment is not yet in the way; players and animals are not obstacles.
 func _rolls_item(number: int) -> bool:
 	return is_shoulder_item(number) or (_drops.get("rolling", {}) as Dictionary).get("also", []).has(table.id_of(number))
 
@@ -2707,7 +2715,8 @@ func _wake_roll(id: int) -> void:
 		if not it.has("rot_y"):
 			it["rot_y"] = fposmod(float(id) * GOLDEN_ANGLE, TAU)   # a log laid down or dropped has a turn of its own, so the server rolls it across the way the client draws it
 
-		_rolling[id] = {"v": 0.0, "dist": 0.0, "sign": 0}
+		_rolling[id] = {"v": 0.0, "dist": 0.0}
+		_roll_near_in = 0.0   # look round it on the next tick
 
 
 # The unit vector in x, z across the log (perpendicular to its long axis) and the ground slope along it: rise over run, positive when the ground climbs that way.
@@ -2725,6 +2734,13 @@ func _roll_tick(delta: float) -> void:
 		return
 
 	var cfg: Dictionary = _drops.get("rolling", {})
+	_roll_near_in -= delta
+
+	if _roll_near_in <= 0.0 and not _rolling.is_empty():
+		_roll_near_in = float(cfg.get("look_s", 0.25))
+		_roll_near = _roll_obstacles(cfg)
+
+	var near: Array = _roll_near
 
 	for id in _rolling.keys():
 		var it: Dictionary = _items.get(id, {})
@@ -2741,29 +2757,49 @@ func _roll_tick(delta: float) -> void:
 			continue
 
 		var across: Array = _roll_across(it, float(cfg.get("probe_m", 0.4)))
+		var dir: Vector2 = across[0]
 		var slope: float = float(across[1])
+		var steep: bool = absf(slope) > float(cfg.get("slope", 0.35))
+		var v: float = float(roll.get("v", 0.0))   # signed speed along `dir`
 
-		if absf(slope) <= float(cfg.get("slope", 0.35)):
-			_rolling.erase(id)   # flat enough: it settles here
+		if not steep and absf(v) < ROLL_STILL_MPS:
+			_rolling.erase(id)   # flat enough and (nearly) still: it settles here
 			continue
 
-		var downhill: int = -1 if slope > 0.0 else 1   # it rolls toward the lower ground
-		var speed: float = float(roll["v"]) if int(roll["sign"]) == downhill else 0.0   # a hollow turns it round: it starts again
-		speed = minf(speed + float(cfg.get("accel_mps2", 2.0)) * delta, float(cfg.get("max_mps", 3.0)))
-		var step: float = speed * delta
+		var drive: float = -signf(slope) * float(cfg.get("accel_mps2", 2.0)) if steep else 0.0   # downhill is toward the lower ground
 		var here: Vector3 = it["pos"]
-		var to: Vector2 = Vector2(here.x, here.z) + (across[0] as Vector2) * float(downhill) * step
+		v += (drive - _roll_drag(cfg, here) * v) * delta
+		var friction: float = float(cfg.get("friction_mps2", 0.3)) * delta
+		v = 0.0 if absf(v) <= friction else v - signf(v) * friction
+		v = clampf(v, -float(cfg.get("max_mps", 3.0)), float(cfg.get("max_mps", 3.0)))
+
+		if is_zero_approx(v):
+			if not steep:
+				_rolling.erase(id)
+
+			roll["v"] = 0.0
+			continue
+
+		var step: float = v * delta
+		var to: Vector2 = Vector2(here.x, here.z) + dir * step
 		var ground: float = float(ground_height.call(to.x, to.y))
 		var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(Vector3(to.x, here.y, to.y))) > float(cfg.get("water_m", 0.05))
 
-		if is_nan(ground) or wet or structure_blocks_step(here.x, here.z, to.x, to.y, 0.1):
+		if is_nan(ground) or wet or _roll_walled(it, here, to, cfg):
 			_rolling.erase(id)   # the shore, a hole in the ground or a wall: it stops where it is
 			continue
 
+		var hit: Array = _roll_hit(id, it, to, float(it.get("rot_y", 0.0)), near, cfg)
+
+		if not hit.is_empty():
+			if _roll_strike(id, it, roll, hit, dir, v, near, cfg):
+				_roll_moved[id] = true
+				_dirty = true
+			continue
+
 		it["pos"] = Vector3(to.x, ground, to.y)
-		roll["v"] = speed
-		roll["sign"] = downhill
-		roll["dist"] = float(roll["dist"]) + step
+		roll["v"] = v
+		roll["dist"] = float(roll.get("dist", 0.0)) + absf(step)
 		_roll_moved[id] = true
 		_dirty = true
 
@@ -2775,6 +2811,226 @@ func _roll_tick(delta: float) -> void:
 	if _roll_send_in <= 0.0 and not _roll_moved.is_empty():
 		_roll_send_in = float(cfg.get("send_s", 0.1))
 		_roll_send()
+
+
+const ROLL_STILL_MPS := 0.05   # slower than this on ground too flat to drive it, a log has stopped
+
+
+# How hard the ground holds a rolling log back (per second of its speed): rolling.drag by the ground material (grass soils most, bare rock and snow least), else its default.
+func _roll_drag(cfg: Dictionary, at: Vector3) -> float:
+	var drag: Dictionary = cfg.get("drag", {})
+	var fallback: float = float(drag.get("default", 0.5))
+
+	if not ground_material.is_valid():
+		return fallback
+
+	return float(drag.get(str(ground_material.call(at.x, at.z)), fallback))
+
+
+# The log's long axis in x, z (unit) for its turn: across is (sin, cos), so along is (cos, -sin).
+func _roll_axis(it: Dictionary) -> Vector2:
+	var turn: float = float(it.get("rot_y", 0.0))
+	return Vector2(cos(turn), -sin(turn))
+
+
+# A wall in the way of the log's middle or either end.
+func _roll_walled(it: Dictionary, here: Vector3, to: Vector2, cfg: Dictionary) -> bool:
+	var reach: Vector2 = _roll_axis(it) * float(cfg.get("half_len_m", 1.5))
+	var from: Vector2 = Vector2(here.x, here.z)
+
+	for end in [Vector2.ZERO, reach, -reach]:
+		if structure_blocks_step(from.x + end.x, from.y + end.y, to.x + end.x, to.y + end.y, 0.1):
+			return true
+
+	return false
+
+
+# What may stand in a rolling log's way this tick, from near any rolling log: [kind, centre Vector2, radius, world id or 0, segment half Vector2 (zero for a round thing)].
+# Standing trees (trees_near: root and trunk radius), stumps and felled trunks, boulders and the other loose logs.
+func _roll_obstacles(cfg: Dictionary) -> Array:
+	var out: Array = []
+	var reach: float = float(cfg.get("half_len_m", 1.5)) + float(cfg.get("look_m", 3.0))
+	var spots: Array = []
+
+	for id in _rolling:
+		if _items.has(id):
+			spots.append(Vector2(_items[id]["pos"].x, _items[id]["pos"].z))
+
+	if spots.is_empty():
+		return out
+
+	var ids: Array = []
+
+	if not _sync_grid.is_empty():
+		var seen: Dictionary = {}
+
+		for spot in spots:
+			for sid in _stock_cells(Vector3(spot.x, 0.0, spot.y), reach / maxf(maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M), 0.01)):
+				seen[sid] = true
+
+		ids = seen.keys()
+	else:
+		ids = _items.keys()
+
+	var r_log: float = float(cfg.get("radius_m", 0.2))
+
+	for sid in ids:
+		var other: Dictionary = _items.get(sid, {})
+
+		if other.is_empty():
+			continue
+
+		var at: Vector2 = Vector2(other["pos"].x, other["pos"].z)
+
+		if not spots.any(func(spot): return spot.distance_to(at) < reach + 20.0):
+			continue
+
+		if other.has("boulder"):
+			out.append(["rock", at, float((other["boulder"] as Dictionary).get("radius", 0.5)), sid, Vector2.ZERO])
+		elif other.has("tree"):
+			var tree: Dictionary = other["tree"]
+			var thick: float = float(tree.get("radius", 0.3))
+
+			if int(tree.get("state", 0)) == 3:   # a felled trunk lies along its yaw from its base
+				var along: Vector2 = Vector2(sin(float(tree.get("yaw", 0.0))), cos(float(tree.get("yaw", 0.0)))) * float(tree.get("length", 3.0)) * 0.5
+				out.append(["trunk", at + along, thick, sid, along])
+			else:
+				out.append(["stump", at, thick, sid, Vector2.ZERO])
+		elif not other.has("struct") and not other.has("fire") and _rolls_item(int(other["number"])):
+			out.append(["log", at, r_log * float(other.get("girth", 1.0)), sid, _roll_axis(other) * float(cfg.get("half_len_m", 1.5))])
+
+	if trees_near.is_valid() and tree_info.is_valid():
+		for spot in spots:
+			for found in trees_near.call(Vector3(spot.x, 0.0, spot.y), reach):
+				var info: Dictionary = tree_info.call(found[0], int(found[1]))
+
+				if not info.is_empty():
+					out.append(["tree", Vector2(info["position"].x, info["position"].z), float(info.get("trunk", 0.3)), 0, Vector2.ZERO])
+
+	return out
+
+
+# The nearest thing the log, moved to `to` and turned to `turn`, would overlap: [kind, where along the log it meets (-1 one end .. 1 the other), world id or 0],
+# [] when the way is clear. A thing the log already overlaps where it lies does not count (it was dropped against it), so a log is never held fast by what it
+# rests beside. Another log is read where it is now (it may be rolling too); the rest is where it was when `near` was gathered (it does not move).
+func _roll_hit(id: int, it: Dictionary, to: Vector2, turn: float, near: Array, cfg: Dictionary) -> Array:
+	var half_len: float = float(cfg.get("half_len_m", 1.5))
+	var half: Vector2 = Vector2(cos(turn), -sin(turn)) * half_len
+	var half_was: Vector2 = _roll_axis(it) * half_len
+	var r_log: float = float(cfg.get("radius_m", 0.2)) * float(it.get("girth", 1.0))   # girth scales a split log against the drawn one
+	var from: Vector2 = Vector2(it["pos"].x, it["pos"].z)
+	var best: Array = []
+	var best_gap: float = INF
+
+	for ob in near:
+		if int(ob[3]) == id:
+			continue
+
+		var centre: Vector2 = ob[1]
+		var reach: Vector2 = ob[4]
+
+		if str(ob[0]) == "log":
+			var other: Dictionary = _items.get(int(ob[3]), {})
+
+			if other.is_empty():
+				continue
+
+			centre = Vector2(other["pos"].x, other["pos"].z)
+			reach = _roll_axis(other) * half_len
+
+		var gap_to: Array = _seg_gap(to - half, to + half, centre - reach, centre + reach)
+		var touch: float = r_log + float(ob[2])
+
+		if float(gap_to[0]) >= touch:
+			continue
+
+		if float(_seg_gap(from - half_was, from + half_was, centre - reach, centre + reach)[0]) < touch:
+			continue   # already touching where it lay: not in the way of this roll
+
+		if float(gap_to[0]) < best_gap:
+			best_gap = float(gap_to[0])
+			best = [str(ob[0]), float(gap_to[1]) * 2.0 - 1.0, int(ob[3])]
+
+	return best
+
+
+# The shortest gap between segments a0-a1 and b0-b1 in x, z, and where on a (0 at a0 .. 1 at a1) it falls: [gap, t]. A segment may be a point (b0 == b1).
+# In the plane the nearest points are where they cross, else an end of one against the other.
+static func _seg_gap(a0: Vector2, a1: Vector2, b0: Vector2, b1: Vector2) -> Array:
+	var cross = Geometry2D.segment_intersects_segment(a0, a1, b0, b1)
+
+	if cross != null:
+		return [0.0, _seg_t(a0, a1, cross)]
+
+	var best: Array = [INF, 0.5]
+
+	for p in [b0, b1]:
+		var t: float = _seg_t(a0, a1, p)
+		var gap: float = a0.lerp(a1, t).distance_to(p)
+
+		if gap < float(best[0]):
+			best = [gap, t]
+
+	for end in [0.0, 1.0]:
+		var q: Vector2 = a0.lerp(a1, end)
+		var gap: float = b0.lerp(b1, _seg_t(b0, b1, q)).distance_to(q)
+
+		if gap < float(best[0]):
+			best = [gap, end]
+
+	return best
+
+
+static func _seg_t(a0: Vector2, a1: Vector2, p: Vector2) -> float:
+	var run: Vector2 = a1 - a0
+	var len_sq: float = run.length_squared()
+	return 0.0 if len_sq < 1e-8 else clampf((p - a0).dot(run) / len_sq, 0.0, 1.0)
+
+
+# What happens when a rolling log meets something. A loose log struck is woken with part of the speed (it rolls on if its own ground lets it). Met near
+# the middle, or by another log, the log stops (it stays awake while the log it struck rolls, so it can follow); met near an end, it swings round that point and
+# rolls on at half speed. True when the log's position or turn changed.
+func _roll_strike(id: int, it: Dictionary, roll: Dictionary, hit: Array, dir: Vector2, v: float, near: Array, cfg: Dictionary) -> bool:
+	var where: float = float(hit[1])
+
+	if str(hit[0]) == "log" and _items.has(int(hit[2])):
+		var other: Dictionary = _items[int(hit[2])]
+		var push: float = absf(v) * float(cfg.get("transfer", 0.5))
+		var o_dir: Vector2 = Vector2(sin(float(other.get("rot_y", 0.0))), cos(float(other.get("rot_y", 0.0))))
+		var share: float = (dir * signf(v)).dot(o_dir)   # how much of the push goes across the struck log (it can only roll across itself)
+
+		if not _rolling.has(int(hit[2])):
+			_wake_roll(int(hit[2]))
+
+		if _rolling.has(int(hit[2])) and absf(share) > 0.2:
+			_rolling[int(hit[2])]["v"] = float(_rolling[int(hit[2])].get("v", 0.0)) + push * share
+			roll["v"] = v * (1.0 - float(cfg.get("transfer", 0.5)))   # it stays awake, slowed, behind the log it struck
+			return false
+
+	if absf(where) < float(cfg.get("pivot_end", 0.5)) or str(hit[0]) == "log":
+		_rolling.erase(id)   # met square on: it stops against it
+		return false
+
+	# Met near an end: that end holds and the free end swings on downhill (the turn that moves the far end along dir * sign(v)). A swing that would put it
+	# into something else (wedged between two things) stops it instead.
+	var swing: float = deg_to_rad(float(cfg.get("pivot_deg", 15.0))) * signf(v) * signf(where)
+	var turn: float = fposmod(float(it.get("rot_y", 0.0)) + swing, TAU)
+	var at: Vector2 = Vector2(it["pos"].x, it["pos"].z) + dir * signf(v) * float(cfg.get("half_len_m", 1.5)) * absf(swing) * 0.5   # its middle comes round with it
+	var ground: float = float(ground_height.call(at.x, at.y))
+
+	if is_nan(ground) or not _roll_hit(id, it, at, turn, near, cfg).is_empty() or _roll_walled(it, it["pos"], at, cfg):
+		_rolling.erase(id)
+		return false
+
+	it["rot_y"] = turn
+	it["pos"] = Vector3(at.x, ground, at.y)
+	roll["v"] = v * 0.5
+	roll["turns"] = int(roll.get("turns", 0)) + 1
+
+	if int(roll["turns"]) > int(cfg.get("max_turns", 8)):
+		_rolling.erase(id)   # wedged: it has swung back and forth long enough
+
+	return true
 
 
 # Tells the players who know each log that rolled where it is now. A log that settled is in the last of these.
