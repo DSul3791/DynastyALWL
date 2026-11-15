@@ -6602,15 +6602,16 @@ func _wait_inventory_ready() -> bool:
 
 
 func run_chest_test(client) -> void:
-	# Wait until the body has landed (as the arrival test does): a fixed 14 s wait ended the run before the ground's collision was in on the PCs (W-27).
+	# Wait until the body has landed: a fixed 14 s wait ended the run before the ground's collision was in (W-27). Up to 300 s, as a cold-cache join took
+	# 223 s on David4 (15 Nov 2026); how fast the ground comes is the arrival step's check (90 s), this one checks the chest.
 	var waited: float = 0.0
 
-	while client.arrival_protect_until_msec == 0 and waited < 90.0:
+	while client.arrival_protect_until_msec == 0 and waited < 300.0:
 		await get_tree().create_timer(0.5).timeout
 		waited += 0.5
 
 	if client.arrival_protect_until_msec == 0:
-		print("Chest test: the player never landed on the ground in 90 s")
+		print("Chest test: the player never landed on the ground in 300 s")
 		_finish_early(client)
 		return
 

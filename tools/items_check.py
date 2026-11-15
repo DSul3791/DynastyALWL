@@ -79,7 +79,7 @@ OPT_IN = {"snare"}   # client steps that run only with --only NAME
 
 # name, client flags, frames, checks
 CLIENTS = [
-    ("chest", ["--chest"], 15000, [   # frames, not seconds: ~100 fps headless on the PC, so 3500 ended the run at ~33 s, before a cold-cache join had ground (W-27); the test ends itself when done
+    ("chest", ["--chest"], 40000, [   # frames, not seconds: 3500 ended the run at ~33 s on the PC (~110 fps), before a cold-cache join had ground (W-27); the test waits up to 300 s to land and ends itself when done
         ("chest screen opens", r"screen open (true)", None, None),
         ("stones taken out", r"after taking out, stones in chest \d+, in pack " + NUM, 10, 10),
     ]),
