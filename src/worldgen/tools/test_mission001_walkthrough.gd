@@ -1082,8 +1082,8 @@ func step4_cooking_and_preservation() -> void:
 
 	# The wood carving station (2 wooden blocks from step 1, built with the knife: its own blueprint list, W-6), then the Serving platter carved at it
 	# (2 more blocks, the knife kept), set on the table, the board on it, a portion eaten.
-	go(KITCHEN + Vector3(0.5, 0.0, -1.5))
-	var carving: int = build("carving_station", KITCHEN + Vector3(0.5, 0.0, -3.5), "4l")
+	go(KITCHEN + Vector3(1.5, 0.0, -2.0))
+	var carving: int = build("carving_station", KITCHEN + Vector3(3.0, 0.0, -3.5), "4l")   # clear of the kitchen campfire at (0, -3): structures stand 2.5 m apart
 	check(carving >= 0 and have("wooden_block") == 2, "4l. the wood carving station stands, built from two wooden blocks with the knife (%d blocks left)" % have("wooden_block"))
 	craft("serving_platter", 1)
 	check(have("serving_platter") == 1 and have("stone_knife") == 1, "4l. a Serving platter is carved at the carving station, the knife kept")

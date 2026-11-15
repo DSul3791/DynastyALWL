@@ -163,7 +163,7 @@ func station_data() -> void:
 
 	check(unique and int(def.get("state", 0)) == 443 and int(items._structures["log_double_bench"]["state"]) == 444 and int(items._structures["log_backed_bench"]["state"]) == 445, "the new structure states are unique (443, 444, 445)")
 	var bp: Dictionary = bp_rows.get("carving_station", {})
-	check(JSON.stringify(bp.get("cost", [])) == JSON.stringify([["wooden_block", 2]]) and str(bp.get("tool", "")) == "knife" and str(bp.get("station", "")) == "", "its blueprint costs two Wooden blocks, is built with a knife and needs no station")
+	check(_cost(bp.get("cost", [])) == _cost([["wooden_block", 2]]) and str(bp.get("tool", "")) == "knife" and str(bp.get("station", "")) == "", "its blueprint costs two Wooden blocks, is built with a knife and needs no station")
 
 	for look in ["carving_station", "log_bench", "log_double_bench", "log_backed_bench"]:
 		check(LookTable.has_look(look), "%s has a look" % look)
@@ -309,8 +309,18 @@ func benches() -> void:
 		var def: Dictionary = items._structures[kind]
 		var want: Array = rows[kind]
 		check((def.get("sit_spots_x", []) as Array).size() == int(want[0]) and is_equal_approx(float(def["footprint_x"]), float(want[1])) and str(def.get("use", "")) == "sit", "%s seats %d and is %.1f m long" % [kind, int(want[0]), float(want[1])])
-		check(JSON.stringify(bp_rows[kind]["cost"]) == JSON.stringify(want[2]) and str(bp_rows[kind]["tool"]) == "knife" and not bool(bp_rows[kind].get("retired", false)), "%s costs %s with a knife" % [kind, str(want[2])])
+		check(_cost(bp_rows[kind]["cost"]) == _cost(want[2]) and str(bp_rows[kind]["tool"]) == "knife" and not bool(bp_rows[kind].get("retired", false)), "%s costs %s with a knife" % [kind, str(want[2])])
 
 	check(str(items._structures["log_backed_bench"]["sit_face"]) == "front" and str(items._structures["log_bench"]["sit_face"]) == "sides", "the backed bench is sat facing out from its back, the plain ones from either side")
-	check(JSON.stringify(bp_rows["log_table"]["cost"]) == JSON.stringify([["log", 3], ["twine", 2]]) and str(bp_rows["log_table"]["tool"]) == "knife", "the Log - Table costs 3 Logs and 2 Twine with a knife")
+	check(_cost(bp_rows["log_table"]["cost"]) == _cost([["log", 3], ["twine", 2]]) and str(bp_rows["log_table"]["tool"]) == "knife", "the Log - Table costs 3 Logs and 2 Twine with a knife")
 	check(rows.keys().all(func(k): return str(items._structures[k]["comfort"]) == "bench"), "every bench counts as a bench for comfort")
+
+
+# A blueprint cost as text with whole counts: JSON loads 2 as 2.0, so JSON.stringify of a loaded cost never equals an int literal's.
+func _cost(cost: Array) -> String:
+	var parts: PackedStringArray = []
+
+	for c in cost:
+		parts.append("%s x%d" % [str(c[0]), int(c[1])])
+
+	return ", ".join(parts)

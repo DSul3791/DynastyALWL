@@ -3566,21 +3566,20 @@ static func sawbuck() -> Node3D:
 
 
 # The Wood carving station, 1.9 x 1.1 (2 Wooden blocks; TREE_WOOD_TOOLS_DESIGN.md W-6, Dave 15 Nov 2026): the log bench (slab_bench, 1.2 m) sitting beside a chopping
-# block, with wood shavings all over the ground round them. The look only: the cost is two blocks. PLACEHOLDER quality, 260 triangles.
+# block, with wood shavings all over the ground round them. The look only: the cost is two blocks. PLACEHOLDER quality, under the 300 triangle cap (348 measured with 24 shavings and a cut-top disc; both trimmed).
 static func carving_station() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	var bench: Node3D = slab_bench(1.2)
-	bench.position = Vector3(-0.35, 0.0, 0.0)
-	root.add_child(bench)
+	var seat: Node3D = slab_bench(1.2)
+	seat.position = Vector3(-0.35, 0.0, 0.0)
+	root.add_child(seat)
 	_cyl(root, 0.22, 0.6, Vector3(0.62, 0.3, 0.05), _log, 8)                                  # the chopping block, upright
-	_cyl(root, 0.205, 0.01, Vector3(0.62, 0.605, 0.05), _tone_mat(Color(0.64, 0.42, 0.24)), 8)   # its worn, cut top
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 443
 	var pale: StandardMaterial3D = _tone_mat(Color(0.82, 0.64, 0.4))
 	var dark: StandardMaterial3D = _tone_mat(Color(0.68, 0.48, 0.28))
 
-	for k in 24:                                                                              # shavings and chips, all over the ground round both
+	for k in 12:                                                                              # shavings and chips, all over the ground round both
 		var at: Vector3 = Vector3(rng.randf_range(-0.85, 0.85), 0.006, rng.randf_range(-0.47, 0.47))
 		_chip(root, Vector2(rng.randf_range(0.07, 0.2), rng.randf_range(0.03, 0.07)), at, rng.randf_range(0.0, PI), pale if k % 3 != 0 else dark)
 

@@ -190,8 +190,8 @@ func _init() -> void:
 	var extra: Dictionary = items._dig_cfg.get("tier_extra", {})
 	check(int(extra.get(str(int(row("wooden_spade").get("tier", 1))), 0)) == 0 and int(extra.get(str(int(row("iron_spade")["tier"])), 0)) == 2 and int(extra.get(str(int(row("steel_spade")["tier"])), 0)) == 3, "dig extra by spade: wooden 0, iron 2, steel 3 (as before the renumbering)")
 
-	# 2. The groups take the better tool. The bowl is carved at the wood carving station (15 Nov 2026, W-8), placed beside the player here.
-	check(items.dev_place("carving_station@3,0,0") != 0, "a wood carving station stands beside the player for the bowl")
+	# 2. The groups take the better tool. The bowl is carved at the wood carving station (15 Nov 2026, W-8), placed beside the player here, clear of the forge site 4 m east (structures stand 2.5 m apart).
+	check(items.dev_place("carving_station@0,0,-3") != 0, "a wood carving station stands beside the player for the bowl")
 
 	for pair in [["wooden_bowl", "iron_knife", "stone_knife"], ["saw_blocks", "copper_saw", "hand_saw"], ["lumber_by_hand", "steel_saw", "hand_saw"]]:
 		empty_pack()
