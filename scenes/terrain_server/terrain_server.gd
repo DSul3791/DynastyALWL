@@ -3013,6 +3013,7 @@ func _exit_tree() -> void:
 	if items != null:
 		items.note_spots_on_close()   # players still in: where they stand now, not the last 10 s note
 		items.save()
+		items._finish_writer()   # a save with nothing new returns early: the last autosave's files and log lines still finish before the exit
 
 	_bury_mutex.lock()
 	_bury_queue.clear()
