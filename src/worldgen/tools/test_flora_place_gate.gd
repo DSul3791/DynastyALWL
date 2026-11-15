@@ -117,8 +117,13 @@ func _init() -> void:
 	# New tiles (clear_memory) while a chunk is being placed: that old-ground list is not kept.
 	var early: Thread = Thread.new()
 	early.start(func() -> void: flora.items_of(Vector2i(5, 5)))
-	while int(placer.calls.get(Vector3i(5, 5, 1), 0)) == 0:   # its placement has begun (it runs 40 ms)
+	var begun: bool = false
+
+	while not begun:   # its placement has begun (it runs 40 ms)
 		OS.delay_msec(1)
+		placer.lock.lock()
+		begun = placer.calls.has(Vector3i(5, 5, 1))
+		placer.lock.unlock()
 
 	flora.clear_memory()
 	early.wait_to_finish()
