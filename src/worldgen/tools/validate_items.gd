@@ -171,21 +171,12 @@ func _init() -> void:
 			fail("weights.json: stackable gathered item '%s' has no weight (by_id or by_suffix); stacks have no cap now, weight is the limit" % gid)
 
 
-	# Every wood class names a firewood item and a block item that exist (wood_species.json class_items).
+	# One Firewood and one Wooden block for every species since 15 Nov 2026 (TREE_WOOD_TOOLS_DESIGN.md): wood_species.json has no class items.
 	var wood_file: Dictionary = _read("wood_species.json")
 
 	for gid in wood_file.get("ingredient_groups", {}):   # a group (plain "log") is obtainable when a member is (F-16: no server fallback gives the plain item)
 		if String(gid) != "note":
 			obtainable[String(gid)] = true
-
-	for cls in wood_file.get("class_items", {}):
-		for step in ["firewood", "block"]:
-			if not items_file.get("items", {}).has(String(wood_file["class_items"][cls].get(step, ""))):
-				fail("wood_species.json: class %s needs an existing %s item" % [cls, step])
-
-	for sp in wood_file.get("species", {}):
-		if not wood_file.get("class_items", {}).has(String(wood_file["species"][sp].get("class", ""))):
-			fail("wood_species.json: species %s has a class without class_items" % sp)
 
 	# Key woods (Dave 24 Oct): each is a tree with live log, lumber and beam items; no live recipe, drop table or building cost names a retired item.
 	var trees: Dictionary = {}
@@ -866,14 +857,8 @@ func _init() -> void:
 		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) in ["material", "food"]:   # future foods (shore foods, crops) count too, so dishes built from them are checked
 			obtainable[String(id)] = true
 
-	# A log struck with an axe falls apart into wooden blocks (structures.json blocks_per_log), so blocks count as a source for recipes.
-	for kind in _read("structures.json").get("structures", {}):
-		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
-			obtainable["wooden_block"] = true
-
-			for cls in wood_file.get("class_items", {}):   # softwood logs give softwood blocks, big logs large blocks (wood_species.json class_items)
-				for step in wood_file["class_items"][cls]:
-					obtainable[String(wood_file["class_items"][cls][step])] = true
+	# A felled small tree breaks into Firewood (server_items._split_small), and the chopping block (use split_log) splits a Wooden block into it.
+	obtainable["firewood"] = true
 
 	# The Smelters (structures.json "smelting", src/stream/server_smelter.gd): a job a live smelter does gives its ingot when its ore has a
 	# source. Every job, fuel and smelter job name must be real, a smelter's parts must fit its slots, and what it takes must be its fuel or ore.
@@ -968,6 +953,11 @@ func _init() -> void:
 				changed = true
 
 	for rid in recipes:
+		# A retired recipe is never crafted (recipe_table.gd skips it), so its ingredients may have no source left
+		# (small_soft_blocks_from_large after the wood rows were unified, wood system phase 2).
+		if bool(recipes[rid].get("retired", false)):
+			continue
+
 		if not obtainable.has(String(recipes[rid].get("gives", [""])[0])):
 			fail("recipe '%s' can never be made (an ingredient has no source)" % rid)
 
@@ -1026,13 +1016,6 @@ func _init() -> void:
 			fail("structures.json %s: cargo must be true or false, on a container with slots that is not itself a vehicle" % kind)
 		obtainable[String(def.get("item", ""))] = true
 
-		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks
-			obtainable["wooden_block"] = true
-
-		if def.has("blocks_per_log"):   # softwood logs give the softwood block and its firewood (wood_species.json class_items)
-			for cls in wood_file.get("class_items", {}):
-				for step in wood_file["class_items"][cls]:
-					obtainable[String(wood_file["class_items"][cls][step])] = true
 
 	# Recipe graph (job 72): every core item is gatherable, craftable from gatherables, or marked "future": true in items.json;
 	# no cycles; dead ends (obtainable materials nothing uses) are listed so Dave can see what still has no purpose.
@@ -1066,7 +1049,7 @@ func _init() -> void:
 	var renames: Dictionary = _read("renames.json").get("renames", {})
 
 	for old_id in renames:
-		var new_id: String = String(renames[old_id])
+		var new_id: String = String(renames[old_id][0]) if typeof(renames[old_id]) == TYPE_ARRAY else String(renames[old_id])   # [new id, count] (the wood merge, item_table.gd rename_count)
 		var old_row: Dictionary = items_file["items"].get(String(old_id), {})
 		var new_row: Dictionary = items_file["items"].get(new_id, {})
 
@@ -1082,7 +1065,8 @@ func _init() -> void:
 		if is_future:
 			future.append(id)
 
-		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id):
+		# "legacy": true keeps a live item that is no longer made, for the saves that hold one (the Stone - Pickaxe, TREE_WOOD_TOOLS_DESIGN.md W-12).
+		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id) and not bool(entry.get("legacy", false)):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)

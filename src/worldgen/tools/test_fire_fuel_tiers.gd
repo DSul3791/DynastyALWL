@@ -94,19 +94,13 @@ func _init() -> void:
 
 	check(float(many["wood"]["log"]) > 4.9 * float(cook["fuel"]["log"]) / rate, "five logs fit in the fire")
 
-	# Fire size from the pieces laid (Dave: a lot of firewood did not make the medium fire): hard or soft, laid then lit or added to a lit fire.
+	# Fire size from the pieces laid (Dave: a lot of firewood did not make the medium fire): laid then lit or added to a lit fire.
 	var mix: Dictionary = {"state": 9, "burn_left": 0.0}
-	f._fire_add(mix, "firewood_soft")
-	f._fire_add(mix, "firewood_soft")
-	check(f._fire_best_state(mix) == ItemsScript.FIRE_STATE_SURVIVAL, "two soft firewood: still the small fire")
-	f._fire_add(mix, "firewood_soft")
-	check(f._fire_best_state(mix) == 1, "three soft firewood (conifer) make the medium fire")
-	var hard2: Dictionary = {"state": 9, "burn_left": 0.0}
-	f._fire_add(hard2, "firewood")
-	f._fire_add(hard2, "firewood")
-	check(f._fire_best_state(hard2) == ItemsScript.FIRE_STATE_SURVIVAL, "two hard firewood: still the small fire")
-	f._fire_add(hard2, "firewood_soft")
-	check(f._fire_best_state(hard2) == 1, "two hard and a soft firewood make the medium fire")
+	f._fire_add(mix, "firewood")
+	f._fire_add(mix, "firewood")
+	check(f._fire_best_state(mix) == ItemsScript.FIRE_STATE_SURVIVAL, "two firewood: still the small fire")
+	f._fire_add(mix, "firewood")
+	check(f._fire_best_state(mix) == 1, "three firewood make the medium fire")
 	var lit_small: Dictionary = {"state": ItemsScript.FIRE_STATE_SURVIVAL, "burn_left": 0.0}
 	f._fire_add(lit_small, "stick")
 
@@ -123,7 +117,7 @@ func _init() -> void:
 	var kept: Dictionary = {"state": 1, "burn_left": 0.0}
 
 	for n in range(3):
-		f._fire_add(kept, "firewood_soft")
+		f._fire_add(kept, "firewood")
 
 	var saved_pieces: Dictionary = (kept["pieces"] as Dictionary).duplicate()
 	check(int(saved_pieces.get("firewood", 0)) == 3, "the pieces laid are counted (%s)" % str(saved_pieces))
@@ -346,9 +340,8 @@ func _init() -> void:
 	f.give(1, oak, 1)
 	check(f.lay_down_shoulder(1) and f.shoulder_of(1) == "" and inv_s.count_of(oak) == 0, "laying the carried log down takes it out of the pack")
 
-	# Softwood firewood (conifers): goes in like firewood, one piece of the same class, burns 10 real minutes against 20; mixed with hardwood it counts toward the 3 pieces.
-	check(is_equal_approx(float(cook["fuel"]["firewood_soft"]) / rate, 600.0) and str(cook["fuel_class"]["firewood_soft"]) == "firewood", "soft firewood: 10 real minutes, class firewood")
-	var soft: int = f.table.number_of("firewood_soft")
+	# Firewood (one item for every species since 15 Nov 2026): goes in one piece at a time and burns 20 real minutes; three pieces make the medium fire.
+	check(not cook["fuel"].has("firewood_soft") and not cook["fuel_class"].has("firewood_soft"), "the retired soft firewood has no fuel row")
 	var inv_f = f.inventory_of(1)
 
 	for slot in range(inv_f.slot_count):
@@ -367,21 +360,20 @@ func _init() -> void:
 			old_box.numbers[slot] = 0
 			old_box.counts[slot] = 0
 
-	f.action(1, Net.ACT_ADMIN_GIVE, soft, 0, 2, Vector3.ZERO)
-	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("firewood"), 0, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("firewood"), 0, 3, Vector3.ZERO)
 	said.clear()
 
 	for n in range(3):
 		f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
 
-	check(inv_f.count_of(soft) == 0 and inv_f.count_of(f.table.number_of("firewood")) == 0, "soft and hard firewood both go in (%s)" % str(said))
+	check(inv_f.count_of(f.table.number_of("firewood")) == 0, "three firewood go in (%s)" % str(said))
 	var mixed: Dictionary = f._items[log_fire]["fire"]
-	check(absf(float(mixed["wood"]["firewood"]) - (2.0 * 600.0 + 1200.0)) < 0.01, "burning time: two soft (10 min) and one hard (20 min) = 40 min (%.0f s)" % float(mixed["wood"]["firewood"]))
-	check(f._fire_best_state(mixed) == 1, "two soft and one hard firewood make the medium fire")
+	check(absf(float(mixed["wood"]["firewood"]) - 3.0 * 1200.0) < 0.01, "burning time: three firewood (20 min each) = 60 min (%.0f s)" % float(mixed["wood"]["firewood"]))
+	check(f._fire_best_state(mixed) == 1, "three firewood make the medium fire")
 	mixed["burn_left"] = float(mixed["wood"]["firewood"])
 	var view2 = ViewScript.new()
 	view2.table = f.table
-	check(view2._fire_label({"state": 9, "burn": float(mixed["burn_left"])}, f.table.number_of("campfire_kit")) == "Campfire 00:40:00 Burn time", "the label adds the right time for each kind")
+	check(view2._fire_label({"state": 9, "burn": float(mixed["burn_left"])}, f.table.number_of("campfire_kit")) == "Campfire 01:00:00 Burn time", "the label adds the right time for each kind")
 	view2.free()
 
 	f._finish_writer()   # the background save thread must be done before quit, or the engine crashes at exit

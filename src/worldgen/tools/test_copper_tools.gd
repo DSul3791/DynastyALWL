@@ -6,7 +6,7 @@ extends SceneTree
 #   1. the rows: copper material, durability between the Stone and Bronze tools of the same class, repaired with copper at the forge; made at
 #      the Primitive smithy from Copper ingots (the making itself: test_tool_ladder section 3);
 #   2. the Copper pick breaks more stone a blow than the Stone pick and less than the Bronze one (boulders.json tools);
-#   3. no cycle: a Stone pick takes copper and tin ore; a Copper pick takes copper, tin and coal but no iron; a Bronze pick takes iron;
+#   3. no cycle: a Stone hammer (and a saved Stone pick) takes copper and tin ore but never iron; a Copper pick takes copper, tin and coal but no iron; a Bronze pick takes iron;
 #   4. the Copper axe fells a tree in fewer blows than the Stone axe and more than the Bronze one (drops.json wood_tools).
 #   godot --headless --path . --script res://src/worldgen/tools/test_copper_tools.gd
 
@@ -120,7 +120,8 @@ func _init() -> void:
 	check(got["stone_pickaxe"] > 0 and got["copper_pickaxe"] > got["stone_pickaxe"] and got["bronze_pickaxe"] > got["copper_pickaxe"], "20 blows: a Stone pick breaks %d stones, a Copper pick %d, a Bronze pick %d" % [got["stone_pickaxe"], got["copper_pickaxe"], got["bronze_pickaxe"]])
 
 	# --- 3. Ore: no cycle ---
-	for case in [["stone_pickaxe", "copper", "copper_ore", true], ["stone_pickaxe", "tin", "tin_ore", true], ["copper_pickaxe", "copper", "copper_ore", true],
+	for case in [["stone_hammer", "copper", "copper_ore", true], ["stone_hammer", "tin", "tin_ore", true], ["stone_hammer", "iron", "iron_ore", false],
+			["stone_pickaxe", "copper", "copper_ore", true], ["stone_pickaxe", "tin", "tin_ore", true], ["copper_pickaxe", "copper", "copper_ore", true],
 			["copper_pickaxe", "tin", "tin_ore", true], ["copper_pickaxe", "coal", "coal", true], ["copper_pickaxe", "iron", "iron_ore", false], ["bronze_pickaxe", "iron", "iron_ore", true]]:
 		var o = make("test_copper_tools_ore_%s_%s" % [case[0], case[1]], [case[0]])
 		o._boulder_cfg["ore"]["piece_share"] = 1.0

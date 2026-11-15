@@ -713,11 +713,22 @@ func from_json_array(data: Array) -> void:
 	for i in range(mini(slot_count, data.size()), slot_count):
 		clear_slot(i)
 
+	var spill: Array = []   # [slot, count]: what a counted rename (a large block -> 4 Wooden blocks) loads past its slot's stack
+
 	for i in mini(slot_count, data.size()):
 		numbers[i] = table.current_number(int(data[i][0])) if table != null else int(data[i][0])   # a retired item loads as its replacement (renames.json)
-		counts[i] = clampi(int(data[i][1]), 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
+		var per: int = table.rename_count(int(data[i][0])) if table != null else 1
+		counts[i] = clampi(int(data[i][1]) * per, 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
+
+		if per > 1 and not stack_all and counts[i] > table.stack_of(numbers[i]):
+			spill.append([i, counts[i] - table.stack_of(numbers[i])])
+			counts[i] = table.stack_of(numbers[i])
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0
 		fav[i] = numbers[i] if data[i].size() > 3 and int(data[i][3]) == 1 else 0
 		inst[i] = clean_inst_of(table, numbers[i], data[i][4]) if data[i].size() > 4 and numbers[i] != 0 else {}
+
+	# The extra goes to other slots (a pack grows for it). What finds no room (a full chest of large blocks) stays over-full in its own slot, never lost.
+	for row in spill:
+		counts[int(row[0])] += add(numbers[int(row[0])], int(row[1]), wear[int(row[0])])
 
 	trim()

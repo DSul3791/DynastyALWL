@@ -214,6 +214,20 @@
    "bits": ["metal","steel"],
    "placeholder": true
   },
+  "copper_saw": {
+   "shape": "saw",
+   "color": "#b87333",
+   "size": 1.0,
+   "bits": ["metal"],
+   "placeholder": true
+  },
+  "bronze_saw": {
+   "shape": "saw",
+   "color": "#a8803c",
+   "size": 1.0,
+   "bits": ["metal"],
+   "placeholder": true
+  },
   "stone_spade": {
    "shape": "spade",
    "color": "#7d7a74",

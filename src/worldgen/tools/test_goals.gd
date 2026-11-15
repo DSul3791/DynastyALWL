@@ -192,7 +192,7 @@ func _init() -> void:
 
 	check(str(live["fish"].get("event", "")) == "fish_caught" and int(live["fish"].get("count", 0)) == 1 and not live["fish"].has("have_item_any") and not live["fish"].has("or_event")
 		and str(live["workbench"].get("what", "")) == "workbench" and not live["workbench"].has("what_any"), "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
-	check(str(live["hammer"].get("made_item", "")) == "wooden_hammer" and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer and hoe goals count a made Wooden - Hammer and Wooden - Hoe; no wooden_hammer_soft item is named")
+	check((live["hammer"].get("made_item_any", []) as Array).has("stone_hammer") and (live["hammer"].get("made_item_any", []) as Array).has("wooden_hammer") and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer goal counts a made Stone or Wooden hammer (TREE_WOOD_TOOLS_DESIGN.md s1.4) and the hoe goal a Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 6, Vector3.ZERO)
@@ -492,15 +492,15 @@ func _init() -> void:
 	check(not camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "an admin-given stone axe does not complete the axe goal")
 	camp.give(1, camp.table.number_of("stone_axe"), 1)   # as Hob's sale gives it
 	check(camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "a bought stone axe in the pack completes the axe goal (was %s before)" % str(bought_before))
-	# made_item_any (chop_log_blocks, GAP-GUIDE-ANY): crafts of any of the four wooden blocks add up; blocks only held, admin-given, count nothing.
-	var blocks_check := {"made_item_any": ["wooden_block", "wooden_block_soft", "wooden_block_large", "wooden_block_soft_large"], "count": 2}
+	# made_item_any (chop_log_blocks, GAP-GUIDE-ANY): crafts of any of the listed items add up (the wooden block and the firewood it splits into); blocks only held, admin-given, count nothing.
+	var blocks_check := {"made_item_any": ["wooden_block", "firewood"], "count": 2}
 	check(not camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "no block made: the blocks goal is open")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("wooden_block"), 0, 3, Vector3.ZERO)
 	check(not camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "three admin-given blocks in the pack do not complete it")
 	camp._goal_made(1, camp.table.number_of("wooden_block"))
 	check(not camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "one block made: still open (count 2)")
-	camp._goal_made(1, camp.table.number_of("wooden_block_soft_large"))
-	check(camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "two different blocks made: met")
+	camp._goal_made(1, camp.table.number_of("firewood"))
+	check(camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "a block and a firewood made: met")
 	camp.trees_near = func(_p, _r): return [[Vector2i.ZERO, 1]]
 	check(camp._tool_slot(camp.inventory_of(1), "axe") < 0 or camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "an axe on the hotbar beside a tree fires the fell hint")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)

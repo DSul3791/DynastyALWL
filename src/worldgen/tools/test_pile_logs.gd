@@ -18,7 +18,7 @@ func check(ok: bool, what: String) -> void:
 func _init() -> void:
 	var table = ItemTableScript.load_default()
 
-	for id in ["firewood", "firewood_soft", "wooden_block", "wooden_block_soft"]:
+	for id in ["firewood", "wooden_block"]:
 		var entry: Dictionary = table.entry(id)
 		check(entry.has("pile") and str(entry["pile"].get("shape", "")) == "logs", "%s has a logs pile row" % id)
 		var least: int = 2 if id.begins_with("firewood") else 6      # firewood shows from 2 pieces, so each split beside the block adds a piece (bug 3)

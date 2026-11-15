@@ -8,8 +8,8 @@ extends SceneTree
 #   4. locks: a stranger never draws on someone's station store nor opens their locked chest; the owner draws on their own locked chest;
 #   5. a Kiln of 6 logs (a 7th refused) makes 600 Charcoal over its burn, gradually; put out it keeps everything; relit it goes on; done and still
 #      lit it burns its own charcoal and goes out when none is left; save and load keep a part-burnt log;
-#   6. the Chopping block makes Soft firewood from logs in the player's Log rack nearby into its own output and refuses Planks;
-#   7. the renamed names read Hardwood block, Hard firewood and Soft firewood, while group costs still read "Firewood" and "Wooden block";
+#   6. the Chopping block refuses Planks; E with an axe takes one Wooden block (pack first, then the player's own chest in reach) and drops 4 Firewood beside it;
+#   7. the wood names read Wooden block and Firewood (the soft and large kinds are retired), and costs read the same;
 #   8. a steel hammer sources a blueprint from a chest farther away than a wooden hammer reaches, and the reach rises with every tier.
 #   godot --headless --path . --script res://src/worldgen/tools/test_station_storage.gd
 
@@ -370,43 +370,45 @@ func _init() -> void:
 
 	# --- 6. The Chopping block ---
 	var block: int = place("chopping_block@6,-2,0", 1)
-	var rack: int = place("log_rack@11,-1,0", 1)
-	box(rack).add(n("log_spruce"), 2)
-	box(rack).add(plain, 1)
+	var store: int = place("chest@7,1.5,0", 1)   # the player's own chest in reach
 	clear_pack(1)
 
-	for id in items._items.keys():   # nothing loose lying about: the logs must come from the rack
+	for id in items._items.keys():   # nothing loose lying about: the blocks must come from the chest
 		if not items._items[id].has("struct") and not items._items[id].has("fire") and not items._items[id].has("tree"):
 			items._items.erase(id)
 	hold_tool(1, "stone_axe")
+	var axe_in_hand: int = slot_of(1, n("stone_axe")) + 1   # the pack slot in hand + 1 (protocol 117)
 	items.give(1, n("lumber"), 5)
 	act(1, Net.ACT_CHEST_OPEN, block)
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("lumber")), block, 5)
 	check(box(block).count_of(n("lumber")) == 0 and pack(1, n("lumber")) == 5, "the Chopping block refuses Planks")
 	act(1, Net.ACT_CHEST_CLOSE, 0)
-	var cb: Dictionary = items._structures["chopping_block"]
-	var by_plain: int = int(cb["blocks_per_log"]) * int(cb["firewood_per_block"])
-	var by_species: int = int(cb["blocks_per_shoulder_log"]) * int(cb["firewood_per_large_block"])
-	craft(1, "chopping_soft_firewood", 2, 40)
-	check(out_count(block, n("firewood_soft")) == by_plain + by_species and box(rack).count_of(n("log_spruce")) == 1 and box(rack).count_of(plain) == 0, "two Soft firewood crafts from the Log rack, the Log first (lowest first): %d + %d, what the hand chop gives" % [by_plain, by_species])
-	check(pack(1, n("lumber")) == 5 and pack(1, n("firewood_soft")) == 0, "no Planks used, nothing in the pack")
-	items._last_queue_act.clear()
-	act(1, Net.ACT_CRAFT_QUEUE, recipe_number("chopping_soft_firewood"), 0, 1)
-	check(box(rack).count_of(n("log_spruce")) == 0, "a third craft queued takes the last Spruce log")
-	items._last_queue_act.clear()
-	act(1, Net.ACT_CRAFT_CANCEL, 0)
-	check(pack(1, n("log_spruce")) == 1 and out_count(block, n("firewood_soft")) == by_plain + by_species, "cancelled before it is chopped, the Spruce log comes back whole")
-	clear_pack(1)
-	hold_tool(1, "stone_axe")
-	items.give(1, n("log_oak"), 1)
-	craft(1, "chopping_hard_firewood", 1, 20)
-	check(out_count(block, n("firewood")) == by_species and pack(1, n("log_oak")) == 0, "an Oak log gives %d Hard firewood" % by_species)
-	var needs: Array = items.recipes.recipe(recipe_number("chopping_hard_firewood"))["needs"]
-	check(needs.size() == 1 and not items.table.group_members(int(needs[0][0])).has(n("lumber")) and not items.table.group_members(int(needs[0][0])).has(n("hardwood_board")), "Hard firewood takes a hardwood log, never Planks or Hardwood boards")
+	var loose_firewood: Callable = func() -> int:
+		var total: int = 0
+
+		for id in items._items:
+			if int(items._items[id].get("number", 0)) == n("firewood") and not items._items[id].has("struct"):
+				total += int(items._items[id]["count"])
+
+		return total
+	var per_block: int = int(items._structures["chopping_block"]["firewood_per_block"])
+	check(per_block == 4 and (items._structures["chopping_block"]["takes"] as Array) == ["wooden_block"], "the Chopping block takes only Wooden blocks and splits each into 4 Firewood")
+	items._last_use.clear()
+	act(1, Net.ACT_USE_STRUCT, block, 0, axe_in_hand)
+	check(loose_firewood.call() == 0 and said.back() == "You need a wooden block to split. Saw a log into blocks first.", "E with the axe and no block in reach drops nothing and says so (%s)" % said.back())
+	box(store).add(n("wooden_block"), 2)
+	items._last_use.clear()
+	items.give(1, n("wooden_block"), 1)
+	act(1, Net.ACT_USE_STRUCT, block, 0, axe_in_hand)
+	check(pack(1, n("wooden_block")) == 0 and box(store).count_of(n("wooden_block")) == 2 and loose_firewood.call() == per_block, "E takes the block from the pack first and drops %d Firewood beside the block" % per_block)
+	items._last_use.clear()
+	act(1, Net.ACT_USE_STRUCT, block, 0, axe_in_hand)
+	check(box(store).count_of(n("wooden_block")) == 1 and loose_firewood.call() == 2 * per_block, "with the pack empty it takes a block from the player's own chest in reach")
+	check(pack(1, n("lumber")) == 5 and pack(1, n("firewood")) == 0, "no Planks used, nothing in the pack")
 
 	# --- 7. The renames ---
-	check(items.table.name_of(n("wooden_block")) == "Hardwood block" and items.table.name_of(n("firewood")) == "Hard firewood" and items.table.name_of(n("firewood_soft")) == "Soft firewood", "the renamed names read Hardwood block, Hard firewood, Soft firewood")
-	check(items.table.cost_name(n("firewood")) == "Firewood" and items.table.cost_name(n("wooden_block")) == "Wooden block", "group costs still read Firewood and Wooden block")
+	check(items.table.name_of(n("wooden_block")) == "Wooden block" and items.table.name_of(n("firewood")) == "Firewood", "one Wooden block and one Firewood (the soft and large kinds are retired)")
+	check(items.table.cost_name(n("firewood")) == "Firewood" and items.table.cost_name(n("wooden_block")) == "Wooden block", "costs read Firewood and Wooden block")
 
 	# --- 8. Hammer sourcing range ---
 	var far_chest: int = place("chest@25,0,0", 1)   # 20 m from the player

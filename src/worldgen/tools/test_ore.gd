@@ -54,12 +54,12 @@ func blows(items, n: int) -> void:
 		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, in_hand(items), Vector3.ZERO)
 
 
-# The pack slot + 1 of the one pick or axe the player was given: the tool in hand (protocol 115).
+# The pack slot + 1 of the one pick, axe or hammer the player was given: the tool in hand (protocol 115).
 func in_hand(items) -> int:
 	var inv = items.inventory_of(1)
 
 	for slot in range(inv.slot_count):
-		if str(items.table.entry(items.table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["pick", "axe"]:
+		if str(items.table.entry(items.table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["pick", "axe", "hammer"]:
 			return slot + 1
 
 	return 0
@@ -109,6 +109,18 @@ func _init() -> void:
 	outcrop(sc, "copper")
 	blows(sc, 30)
 	check(count(sc, "copper_ore") > 0, "a stone pick still takes copper ore (%d)" % count(sc, "copper_ore"))
+
+	# The Stone Hammer (TREE_WOOD_TOOLS_DESIGN.md W-12) takes copper, tin and coal like a stone pick, but iron ore only with a pick.
+	var hc = make("test_ore_stone_hammer_copper", "stone_hammer")
+	hc._boulder_cfg["ore"]["piece_share"] = 1.0
+	outcrop(hc, "copper")
+	blows(hc, 30)
+	check(count(hc, "copper_ore") > 0, "a stone hammer takes copper ore (%d)" % count(hc, "copper_ore"))
+	var hi = make("test_ore_stone_hammer_iron", "stone_hammer")
+	hi._boulder_cfg["ore"]["piece_share"] = 1.0
+	outcrop(hi, "iron")
+	blows(hi, 30)
+	check(count(hi, "iron_ore") == 0 and count(hi, "stone") > 0, "a stone hammer takes no iron ore from an iron outcrop, only stone (%d ore, %d stone)" % [count(hi, "iron_ore"), count(hi, "stone")])
 
 	var x = make("test_ore_axe", "stone_axe")
 	outcrop(x, "iron")

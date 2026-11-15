@@ -17,6 +17,7 @@ var _spoil_loaded: bool = false
 var _groups: Dictionary = {}       # int number of a group id -> PackedInt32Array of the member item numbers (the group id itself first)
 var _group_label: Dictionary = {}   # group key item number -> the label its costs read under (wood_species.json group_labels)
 var _renamed: Dictionary = {}      # int number of a retired item -> int number of the item that replaced it
+var _rename_count: Dictionary = {}   # int number of a retired item -> how many of its replacement one stands for (absent: 1)
 
 
 static func load_default():
@@ -32,6 +33,7 @@ static func load_default():
 # "retired": true and the new row exists, so the swap waits for the retirement to land and stops if the new item goes away.
 func load_renames(path: String) -> void:
 	_renamed = {}
+	_rename_count = {}
 
 	if not FileAccess.file_exists(path):
 		return
@@ -44,10 +46,15 @@ func load_renames(path: String) -> void:
 	var pairs: Dictionary = parsed.get("renames", {})
 
 	for old_id in pairs:
-		var new_id: String = str(pairs[old_id])
+		var pair: Variant = pairs[old_id]   # "new id", or ["new id", count]: one saved old item loads as count of the new (a large block is 4 Wooden blocks)
+		var new_id: String = str(pair[0]) if typeof(pair) == TYPE_ARRAY else str(pair)
+		var per: int = maxi(int(pair[1]), 1) if typeof(pair) == TYPE_ARRAY and (pair as Array).size() > 1 else 1
 
 		if _by_id.has(old_id) and _by_id.has(new_id) and old_id != new_id and bool(_by_id[old_id].get("retired", false)):
 			_renamed[number_of(old_id)] = number_of(new_id)
+
+			if per > 1:
+				_rename_count[number_of(old_id)] = per
 
 
 # The item number a saved number stands for now: the replacement of a retired item (following a chain of renames), else the number itself.
@@ -61,6 +68,21 @@ func current_number(number: int) -> int:
 		now = int(_renamed[now])
 
 	return now
+
+
+# How many of current_number(number) one saved `number` stands for: the product of the counts along its rename chain, 1 for most.
+func rename_count(number: int) -> int:
+	var now: int = number
+	var per: int = 1
+
+	for _hop in 8:
+		if not _renamed.has(now):
+			break
+
+		per *= int(_rename_count.get(now, 1))
+		now = int(_renamed[now])
+
+	return per
 
 
 # Reads the ingredient groups: a recipe that asks for the group id (log) is filled by the group id itself or any member (log_oak ...).

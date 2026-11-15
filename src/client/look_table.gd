@@ -168,6 +168,7 @@ const LOOKS := {
 	"kiln": {"builder": "kiln", "args": []},
 	"tanning_rack": {"builder": "tanning_rack", "args": []},
 	"drying_rack": {"builder": "drying_rack", "args": []},
+	"sawbuck": {"builder": "sawbuck", "args": []},
 	"smoker": {"builder": "smoker", "args": []},
 	"oil_press": {"builder": "oil_press", "args": []},
 	"storage_jar": {"builder": "storage_jar", "args": []},

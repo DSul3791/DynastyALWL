@@ -607,17 +607,16 @@ func step1_early_survival() -> void:
 		items.drop_in_world(n("stick"), ceili(float(stick_n) / 8.0), CAMP + around * 1.6)
 
 	items.drop_in_world(n("stone"), stone_n, CAMP + Vector3(0.0, 0.0, 0.6))
-	items.drop_in_world(n("wooden_block_large"), 1, CAMP + Vector3(-0.6, 0.0, 0.0))
+	items.drop_in_world(n("wooden_block"), 4, CAMP + Vector3(-0.6, 0.0, 0.0))
 	pick_up_all()
-	check(have("plant_fibre") >= fibre_n and have("stick") >= stick_n and have("stone") >= stone_n and have("wooden_block_large") == 1, "1b. gathering by hand gives %d plant fibre, %d sticks, %d stones and a large wooden block" % [have("plant_fibre"), have("stick"), have("stone")])
+	check(have("plant_fibre") >= fibre_n and have("stick") >= stick_n and have("stone") >= stone_n and have("wooden_block") == 4, "1b. gathering by hand gives %d plant fibre, %d sticks, %d stones and 4 wooden blocks" % [have("plant_fibre"), have("stick"), have("stone")])
 	craft("twine", twine_n)
 	check(have("twine") >= twine_n, "1c. plant fibre is twisted into %d twine by hand" % have("twine"))
 	craft("stone_axe", 1)
 	craft("stone_knife", 1)
 	check(have("stone_axe") == 1 and have("stone_knife") == 1, "1d. a Stone - Axe and a Stone - Knife are made by hand")
-	craft("small_blocks_from_large", 1)
 	craft("wooden_hammer", 1)
-	check(have("wooden_hammer") == 1 and inv.on_hotbar(slot_of("wooden_hammer")), "1e. the axe splits the large block and a Wooden - Hammer is made by hand; it sits in the hand bar")
+	check(have("wooden_hammer") == 1 and inv.on_hotbar(slot_of("wooden_hammer")), "1e. a Wooden - Hammer is made by hand from a wooden block; it sits in the hand bar")
 
 	# The Lean-to and the Wicker - Chest from their blueprints. Leaves: a felled tree gives a few (test_first_hour fells one and counts them); the
 	# rest are swept from many trees, so the remainder is given.

@@ -65,13 +65,16 @@
 		},
 		{
 			"id": "hammer",
-			"title": "Make a Wooden - Hammer",
-			"hint": "Cut a wooden block from a felled log, then make a Wooden - Hammer: a wooden block, a stick and a twine. You build everything with it.",
+			"title": "Make a Stone - Hammer",
+			"hint": "Make a Stone - Hammer from a stone, a stick and a twine. You build and repair with it, and it breaks stone and ore from boulders.",
 			"after": [
 				"fell"
 			],
 			"check": {
-				"made_item": "wooden_hammer",
+				"made_item_any": [
+					"stone_hammer",
+					"wooden_hammer"
+				],
 				"count": 1,
 				"or_have": true
 			},
@@ -133,7 +136,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Hold your Wooden - Hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
+			"hint": "Hold your hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
 			"after": [
 				"fire",
 				"hammer"

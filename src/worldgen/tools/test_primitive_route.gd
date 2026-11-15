@@ -5,7 +5,7 @@ extends SceneTree
 # (characters.json goal_counts, what the starter goals read) are checked for exactly the counts each action should leave:
 #   1. the P2 route with ZERO admin gives: hand, tree, blocks, hammer, Chopping Block, firewood, medium fire, bonfire, charcoal, lean-to, a Crude piece;
 #   2. F1: a lean-to placed short of sticks and finished by depositing the rest counts `placed:lean_to` once (the site path lost the kind);
-#   3. F3: the axe on a ground log and the E split at the Chopping Block count like one craft each, the F queue still counts once, a pick and Admin mode count nothing;
+#   3. F3: the axe on a ground wooden block and the E split at the Chopping Block count like one craft each, the axe on a log counts nothing, a pick and Admin mode count nothing;
 #   4. F4: a fire newly reaching medium or large through a player action credits `fire_tier` once per character; a direct bonfire credits medium too; a re-feed at the same tier, a drop and re-raise, and Admin mode credit nothing;
 #   5. F5: a fresh character drinks (and eats a berry) about 10 s after spawning and the goal event counts once.
 # Fixtures that stand in for the world (scatter heaps on the ground, a tree record) are placed with drop_in_world and tree_info, never given to the pack.
@@ -221,15 +221,16 @@ func route() -> void:
 
 	check(loose("log_oak").size() >= 4 and have("leaves") >= 60, "four oak logs lie on the ground and the branch blows gave the lean-to's 60 leaves (%d logs, %d leaves, %d sticks)" % [loose("log_oak").size(), have("leaves"), have("stick")])
 
-	# Blocks: the axe on a ground log gives three large wooden blocks (F3); one craft of Small wooden blocks (recipe 339) gives the small ones the hammer needs.
+	# Blocks: an axe on a ground log only says to saw it into blocks first (TREE_WOOD_TOOLS_DESIGN.md), and the primitive route has no saw (the Copper saw
+	# needs copper), so the four blocks the hammer, the Chopping Block and two splits need lie on the ground like the other fixtures.
 	var chopped: int = loose("log_oak")[0]
 	items.report_position(1, items._items[chopped]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items._last_process.clear()
 	items.action(1, Net.ACT_PROCESS, chopped, 0, 0, HeldTool.at_axe(items))
-	pick_up(["wooden_block_large"])
-	check(have("wooden_block_large") == 3 and counts("made:wooden_block_large") == 1, "the axe on a log gives 3 large blocks and counts one craft of them (%d blocks, %d counted)" % [have("wooden_block_large"), counts("made:wooden_block_large")])
-	craft(339, 1, 10)
-	check(have("wooden_block") == 4 and counts("made:wooden_block") == 1, "one large block is split into 4 small ones")
+	check(items._items.has(chopped) and loose("log_oak").size() >= 4 and have("wooden_block") == 0 and counts("made:wooden_block") == 0, "the axe on a ground log leaves it whole and counts nothing")
+	items.drop_in_world(n("wooden_block"), 4, items._items[chopped]["pos"] + Vector3(1.0, 0.0, 1.0))
+	pick_up(["wooden_block"])
+	check(have("wooden_block") == 4, "four wooden blocks are gathered (%d)" % have("wooden_block"))
 
 	# Hammer and Chopping Block.
 	craft(161, 1, 10)
@@ -241,17 +242,15 @@ func route() -> void:
 	var block: int = piece_of("chopping_block")
 	check(block != 0 and counts("made:chopping_block") == 1 and counts("event:placed:chopping_block") == 1, "the Chopping Block is made and placed, each counted once")
 
-	# Firewood: E at the block with the axe in hand, a large block then a small one. Each split counts like one craft (F3).
-	var def: Dictionary = items._structures["chopping_block"]
-	var per_large: int = int(def["firewood_per_large_block"])
-	var per_small: int = int(def["firewood_per_block"])
+	# Firewood: E at the block with the axe in hand, a block each time. Each split counts like one craft (F3).
+	var per_block: int = int(items._structures["chopping_block"]["firewood_per_block"])
 
 	for _split in range(2):
 		items._last_use.clear()
 		items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
 
 	pick_up(["firewood"])
-	check(have("firewood") == per_large + per_small and counts("made:firewood") == 2, "two splits at the block give %d firewood and count two crafts (%d, %d counted)" % [per_large + per_small, have("firewood"), counts("made:firewood")])
+	check(have("firewood") == 2 * per_block and have("wooden_block") == 0 and counts("made:firewood") == 2, "two splits at the block give %d firewood and count two crafts (%d, %d counted)" % [2 * per_block, have("firewood"), counts("made:firewood")])
 
 	# Fire: the kit (recipe 4), placed laid with its start stick, lit small, three firewood make it medium, three logs a bonfire.
 	craft(4, 1, 12)
@@ -324,38 +323,35 @@ func manual_firewood() -> void:
 	items.drop_in_world(n("log_oak"), 1, Vector3(0.0, 10.0, 2.0))
 	items.drop_in_world(n("log"), 1, Vector3(0.0, 10.0, -2.0))
 
-	# Axe on a ground log: one count per chop, the block of the log's class (a species log: large and hard; the plain Log: small and soft).
+	# Axe on a ground log: nothing is made and nothing counted, the log is sawn into blocks first (TREE_WOOD_TOOLS_DESIGN.md).
 	items._last_process.clear()
 	items.action(1, Net.ACT_PROCESS, loose("log_oak")[0], 0, 0, HeldTool.at_axe(items))
-	check(counts("made:wooden_block_large") == 1 and counts("made:wooden_block_soft") == 0, "the axe on an oak log counts one large block craft")
 	items._last_process.clear()
 	items.action(1, Net.ACT_PROCESS, loose("log")[0], 0, 0, HeldTool.at_axe(items))
-	check(counts("made:wooden_block_soft") == 1, "the axe on a plain Log counts one soft block craft")
-	pick_up(["wooden_block_large", "wooden_block_soft"])
+	check(loose("log_oak").size() == 1 and loose("log").size() == 1 and counts("made:wooden_block") == 0 and counts("made:firewood") == 0, "the axe on a ground log leaves it and counts nothing")
 
-	# E at the block: one count per split, firewood of the block's class (large blocks first: the oak's three, then a soft one).
-	for _split in range(3):
+	# Axe on a ground wooden block: two blows split one block into firewood and count one craft.
+	items.drop_in_world(n("wooden_block"), 3, Vector3(0.0, 10.0, -2.0))
+	var lying: int = loose("wooden_block")[0]
+
+	for _blow in range(2):
+		items._last_process.clear()
+		items.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(items))
+
+	pick_up(["firewood"])
+	check(counts("made:firewood") == 1 and have("firewood") == int(items._structures["chopping_block"]["firewood_per_block"]) and int(items._items[lying]["count"]) == 2, "two axe blows on a ground block give %d firewood and count one craft (%d, %d counted)" % [int(items._structures["chopping_block"]["firewood_per_block"]), have("firewood"), counts("made:firewood")])
+
+	# E at the block: one count per split; the block comes from the ground with the pack empty of blocks.
+	for _split in range(2):
 		items._last_use.clear()
 		items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
 
-	check(counts("made:firewood") == 3 and counts("made:firewood_soft") == 0, "three splits of large hard blocks count three hard firewood crafts (%d)" % counts("made:firewood"))
-	items._last_use.clear()
-	items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
-	check(counts("made:firewood") == 3 and counts("made:firewood_soft") == 1, "a soft block then counts one soft firewood craft")
+	check(counts("made:firewood") == 3 and not items._items.has(lying), "two splits at the block take the other two blocks from the ground and count two more crafts (%d)" % counts("made:firewood"))
 
-	# The F queue at the block counts once more, per craft, as before: no double count with the E split.
-	items.give(1, n("log_oak"), 1)
-	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, 721, 0, 1, Vector3.ZERO)
-	pass_time(20)
-	check(counts("made:firewood") == 4 and counts("made:firewood_soft") == 1, "one Hard firewood craft at the block counts once (%d hard, %d soft in all)" % [counts("made:firewood"), counts("made:firewood_soft")])
-
-	# A pick on a log tears kindling, not blocks: nothing is counted. Admin mode counts nothing either.
+	# A pick on a log tears kindling, not blocks: nothing is counted; on a block it refuses. Admin mode counts nothing either.
 	items.give(1, n("stone_pickaxe"), 1)
 	to_hotbar("stone_pickaxe", 2)
-	var before: int = counts("made:wooden_block_large")
-	var soft_before: int = counts("made:firewood_soft")
-	items.drop_in_world(n("log_oak"), 1, Vector3(0.0, 10.0, 2.0))
+	var before: int = counts("made:firewood")
 
 	for _blow in range(40):
 		if loose("log_oak").is_empty():
@@ -364,15 +360,22 @@ func manual_firewood() -> void:
 		items._last_process.clear()
 		items.action(1, Net.ACT_PROCESS, loose("log_oak")[0], 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 
-	check(loose("log_oak").is_empty() and counts("made:wooden_block_large") == before, "a log broken with the pick leaves kindling and counts no block")
+	check(loose("log_oak").is_empty() and counts("made:firewood") == before and counts("made:wooden_block") == 0, "a log broken with the pick leaves kindling and counts nothing")
+	items.drop_in_world(n("wooden_block"), 1, Vector3(0.0, 10.0, 2.0))
+	items._last_process.clear()
+	items.action(1, Net.ACT_PROCESS, loose("wooden_block")[0], 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
+	check(not loose("wooden_block").is_empty() and counts("made:firewood") == before, "a pick on a wooden block refuses and splits nothing")
 	items.admin_ok = func(_p): return true
 	items.admin_mode_on = func(_p): return true
-	items.drop_in_world(n("log_oak"), 1, Vector3(0.0, 10.0, 2.0))
-	items._last_process.clear()
-	items.action(1, Net.ACT_PROCESS, loose("log_oak")[0], 0, 0, HeldTool.at_axe(items))
+
+	for _blow in range(2):
+		items._last_process.clear()
+		items.action(1, Net.ACT_PROCESS, loose("wooden_block")[0], 0, 0, HeldTool.at_axe(items))
+
+	items.drop_in_world(n("wooden_block"), 1, Vector3(0.0, 10.0, 2.0))
 	items._last_use.clear()
 	items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
-	check(counts("made:wooden_block_large") == before and counts("made:firewood_soft") == soft_before and counts("made:firewood") == 4, "in Admin mode a chop and a split count nothing (GA-54)")
+	check(counts("made:firewood") == before, "in Admin mode a split by blows and a split at the block count nothing (GA-54)")
 
 
 # --- 4. F4: fire tiers ---

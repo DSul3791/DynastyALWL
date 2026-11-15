@@ -172,13 +172,12 @@ class Reach:
                     for r in rows:
                         changed |= g(r[0], "felled %s (%s)" % (key, axe))
             # server_items.gd _log_number: a felled tree gives log_<species>, or the plain Log when that item is missing or retired;
-            # _wood_item: stump firewood is the species' class firewood (wood_species.json class_items).
+            # _chop_stump: a stump gives Firewood (one Firewood for every species since 15 Nov 2026, TREE_WOOD_TOOLS_DESIGN.md).
             for e in self.flora:
                 if e.get("kind") == "tree":
                     log = "log_" + e["name"]
                     changed |= g(log if self.live(log) else "log", "a felled %s (%s)" % (e["name"], axe))
-                    cls = self.wood.get("species", {}).get(e["name"], self.wood.get("default", {})).get("class", "hardwood")
-                    changed |= g(self.wood.get("class_items", {}).get(cls, {}).get("firewood"), "a %s stump (%s)" % (e["name"], axe))
+                    changed |= g("firewood", "a %s stump (%s)" % (e["name"], axe))
             trunk = self.drops.get("trunk", {})
             if trunk.get("roots"):
                 changed |= g(trunk["roots"][0], "the root ball of a felled tree")
@@ -213,11 +212,12 @@ class Reach:
         for name, iid in ore.get("items", {}).items():
             if name in ORE_NOT_IN_WORLD:
                 continue
-            p = self.tool(ore.get("tool_class", "pick"), ore.get("needs_material", {}).get(name))
+            classes = ["pick"] if name in ore.get("pick_only", []) else ore.get("tool_classes", [ore.get("tool_class", "pick")])   # the Stone Hammer takes ore since 15 Nov 2026, not iron
+            p = next((t for t in (self.tool(c, ore.get("needs_material", {}).get(name)) for c in classes) if t), None)
             if p:
                 changed |= g(iid, "a boulder over a %s body (%s)" % (name, p))
         for name, iid in ore.get("rocks", {}).items():
-            p = self.tool(ore.get("tool_class", "pick"))
+            p = next((t for t in (self.tool(c) for c in ore.get("tool_classes", [ore.get("tool_class", "pick")])) if t), None)
             if p:
                 changed |= g(iid, "a boulder over %s bedrock (%s)" % (name, p))
         hoe = self.tool("hoe")
@@ -289,12 +289,9 @@ class Reach:
                 job = self.smelting.get("jobs", {}).get(jid, {})
                 if job.get("out") and all(self.has(row[0]) for row in job.get("in", [])):
                     changed |= g(job["out"][0], "smelted at the %s (job %s)" % (kind, jid))
-        # server_items.gd: a log chopped on the ground with an axe gives wooden blocks (large from a shoulder log) of its class.
-        if axe and self.has("log"):
-            for cls, steps in self.wood.get("class_items", {}).items():
-                for step in ["block", "block_large"]:
-                    if isinstance(steps, dict) and steps.get(step):
-                        changed |= g(steps[step], "a %s log chopped on the ground (%s)" % (cls, axe))
+        # server_items.gd: an axe splits a loose Wooden block into Firewood (_chop_loose_log); blocks themselves are sawn (recipe saw_blocks).
+        if axe and self.has("wooden_block"):
+            changed |= g("firewood", "a wooden block split on the ground (%s)" % axe)
         for rid, r in self.recipes.items():
             gives = r.get("gives", [""])[0]
             if self.has(gives) or r.get("locked") or r.get("retired"):

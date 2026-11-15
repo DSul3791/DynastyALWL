@@ -950,7 +950,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to set a food board on the platter (hold E to take it up)", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2); F chops logs from storage nearby (master s2.4)
-		return {"prompt": "Press E to split firewood, F to chop logs from storage%s (hold E to pick up the block)" % _fill_note(id), "tap": func(): _use_block(id), "hold": take_down}
+		return {"prompt": "Press E to split a wooden block into firewood, F for its store%s (hold E to pick up the block)" % _fill_note(id), "tap": func(): _use_block(id), "hold": take_down}
 
 	var store_def: Dictionary = _structure_by_state(state)
 
@@ -1613,8 +1613,12 @@ func carcass_near(point: Vector3) -> int:
 	return best
 
 
-# A log lying loose on the ground within 1.5 m of the point (a short log or a large one put down), 0 when none: the axe chops it into wooden blocks.
+# A log or wooden block lying loose on the ground within 1.5 m of the point, the nearest, 0 when none: the axe splits a block into firewood and says to saw a log
+# first (TREE_WOOD_TOOLS_DESIGN.md); a pick tears a log into kindling.
 func loose_log_near(point: Vector3) -> int:
+	var best: int = 0
+	var best_d2: float = 2.25
+
 	for id in _world:
 		var entry: Dictionary = _world[id]
 
@@ -1622,15 +1626,18 @@ func loose_log_near(point: Vector3) -> int:
 			continue
 
 		# The distance first: only the few items within 1.5 m pay for the item table lookups (this runs over every loose item on each blow that lands).
-		if entry["pos"].distance_squared_to(point) >= 2.25:
+		var d2: float = entry["pos"].distance_squared_to(point)
+
+		if d2 >= best_d2:
 			continue
 
 		var item_id: String = table.id_of(int(entry["number"]))
 
-		if item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder":
-			return id
+		if item_id == "log" or item_id == "wooden_block" or str(table.entry(item_id).get("carry", "")) == "shoulder":
+			best = id
+			best_d2 = d2
 
-	return 0
+	return best
 
 
 # The id of a stump within reach of a point (the axe struck near it), 0 when none: the axe chops it up (server_items.gd _chop_stump).

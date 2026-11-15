@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1474,
+	"next_number": 1477,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -38,7 +38,7 @@
 		"log": {
 			"number": 4,
 			"name": "Log",
-			"description": "A heavy length of trunk. Chop it into blocks and firewood, or saw it into planks.",
+			"description": "A heavy length of trunk. Saw it into wooden blocks, planks or boards.",
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
@@ -268,7 +268,7 @@
 			"value": 20,
 			"retired": true
 		},
-		"chopping_block": {"number": 25, "name": "Chopping block", "description": "A log set on end. Split wooden blocks on it, or chop logs from your storage nearby into firewood.", "kind": "placeable", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "slots": 10},
+		"chopping_block": {"number": 25, "name": "Chopping block", "description": "A wooden block set on end. Hold an axe and split wooden blocks on it into firewood.", "kind": "placeable", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "slots": 10},
 		"driftwood": {
 			"number": 30,
 			"name": "Driftwood",
@@ -278,7 +278,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"firewood": {"number": 26, "name": "Hard firewood", "description": "Split hardwood. Burns long and steady, twice as long as soft firewood.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
+		"firewood": {"number": 26, "name": "Firewood", "description": "Split wood, half a metre long. Small trees break into it, and an axe splits a wooden block into it.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
@@ -2772,10 +2772,11 @@
 			"value": 1,
 			"sell_lot": 12
 		},
-		"wooden_block": {"number": 234, "name": "Hardwood block", "description": "A short round cut from a hardwood log. Burns longer than hard firewood, or split it on a chopping block.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
-		"firewood_soft": {"number": 236, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
+		"wooden_block": {"number": 234, "name": "Wooden block", "description": "A short round sawn from a log. Split it into firewood with an axe, or carve it.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
+		"firewood_soft": {"number": 236, "retired": true, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
 		"wooden_block_soft": {
 			"number": 237,
+			"retired": true,
 			"name": "Softwood block",
 			"description": "A short round of a small softwood log. Burns longer than soft firewood, or split it on a chopping block.",
 			"kind": "material",
@@ -2855,7 +2856,7 @@
 		"stone_hammer": {
 			"number": 244,
 			"name": "Stone - Hammer",
-			"description": "A hafted stone hammer. Hold it to place big builds from blueprints.",
+			"description": "A hafted stone hammer. Builds from blueprints, repairs, and breaks stone and ore from boulders.",
 			"kind": "tool",
 			"tool_class": "hammer",
 			"material": "stone",
@@ -2869,7 +2870,8 @@
 		"hand_saw": {
 			"number": 245,
 			"name": "Iron - Saw",
-			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 planks by hand, slower than a mill.",
+			"description": "An iron bow saw. On the hotbar it saws logs into wooden blocks, planks and boards.",
+			"saw_speed": 1.0,
 			"kind": "tool",
 			"tool_class": "saw",
 			"material": "iron",
@@ -3340,7 +3342,8 @@
 		"stone_pickaxe": {
 			"number": 297,
 			"name": "Stone - Pickaxe",
-			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly.",
+			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly. No longer made: the Stone Hammer does its work.",
+			"legacy": true,
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "stone",
@@ -5704,6 +5707,7 @@
 		},
 		"wooden_block_large": {
 			"number": 540,
+			"retired": true,
 			"name": "Large wooden block",
 			"description": "A thick round of a big trunk. Split it into firewood or 4 small blocks, or make a chopping block of it.",
 			"kind": "material",
@@ -5714,6 +5718,7 @@
 		},
 		"wooden_block_soft_large": {
 			"number": 541,
+			"retired": true,
 			"name": "Large softwood block",
 			"description": "A thick round of a big softwood trunk. Split it into soft firewood or 4 small blocks, or a chopping block.",
 			"kind": "material",
@@ -9493,7 +9498,8 @@
 			"steel_saw": {
 				"number": 900,
 				"name": "Steel - Saw",
-				"description": "A steel bow saw. Its teeth outlast an iron saw's when sawing logs into boards.",
+				"description": "A steel bow saw, the fastest. Its teeth outlast an iron saw's.",
+				"saw_speed": 1.25,
 				"kind": "tool",
 				"tool_class": "saw",
 				"material": "steel",
@@ -10226,7 +10232,7 @@
 			"saw": {
 				"number": 1254,
 				"name": "Saw",
-				"description": "Any hand saw: iron or steel.",
+				"description": "Any hand saw: copper, bronze, iron or steel.",
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],
@@ -12114,6 +12120,54 @@
 			"unstackable": true,
 			"look_alikes": [],
 			"note": "Gardening plot (Dave 14 Nov 2026: three sizes, no tiers). Placed piece: row state 441."
+		},
+		"copper_saw": {
+			"number": 1474,
+			"name": "Copper - Saw",
+			"description": "The first saw, of copper. On the hotbar it saws logs into wooden blocks, planks and boards, slowly.",
+			"kind": "tool",
+			"tool_class": "saw",
+			"material": "copper",
+			"tier": 2,
+			"stack": 1,
+			"unstackable": true,
+			"durability": 1200,
+			"repair": [["copper_ingot", 1], ["stick", 1]],
+			"repair_station": "forge",
+			"value": 30,
+			"look_alikes": [],
+			"edge": true,
+			"saw_speed": 0.5,
+			"note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-1, s5): cost, durability and speed adopted for Dave to adjust after play."
+		},
+		"bronze_saw": {
+			"number": 1475,
+			"name": "Bronze - Saw",
+			"description": "A bronze bow saw. Saws logs into wooden blocks, planks and boards faster than copper.",
+			"kind": "tool",
+			"tool_class": "saw",
+			"material": "bronze",
+			"tier": 3,
+			"stack": 1,
+			"unstackable": true,
+			"durability": 1800,
+			"repair": [["bronze_ingot", 1], ["stick", 1]],
+			"repair_station": "forge",
+			"value": 45,
+			"look_alikes": [],
+			"edge": true,
+			"saw_speed": 0.75,
+			"note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-2, s5)."
+		},
+		"sawbuck": {
+			"number": 1476,
+			"name": "Sawbuck",
+			"description": "Two crossed-leg frames that hold a log for sawing. Any saw works twice as fast beside it.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": [],
+			"note": "Placed station (Dave 15 Nov 2026, W-4: 8 Planks, 16 Nails, hammer blueprint 352). Row state 442."
 		}
 	}
 }

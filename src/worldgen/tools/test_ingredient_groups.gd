@@ -1,9 +1,9 @@
 extends SceneTree
 
 # Ingredient groups (guide finding F-16, Tyler 31 Oct 2026): a recipe that asks for the plain id `log` (log workbench, rough plank, lumber ...) is
-# filled by any log_<species> the pack holds; `wooden_block` by a hard or a soft block; `firewood` by hard or soft. Before, nothing mapped log_oak to log, so
-# no player could make any of them. Checks the rule on the pack, then through the real server craft queue (a chopping block from a large soft block, a bowl from a soft
-# block, a hammer from a soft block), the partial-stack case, a group with nothing in the pack, that the pack is unchanged when a craft is refused, and that a kept tool may be a group.
+# filled by any log_<species> the pack holds (the wooden block and firewood are single items since 15 Nov 2026, no groups). Before, nothing mapped log_oak to log, so
+# no player could make any of them. Checks the rule on the pack, then through the real server craft queue (a chopping block, a bowl and a hammer from a Wooden block),
+# the partial-stack case, a group with nothing in the pack, that the pack is unchanged when a craft is refused, and that a kept tool may be a group.
 #   godot --headless --path . --script res://src/worldgen/tools/test_ingredient_groups.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -60,11 +60,7 @@ func _init() -> void:
 	check(inv.count_of(oak) == 3, "an oak log still counts as itself only")
 	check(inv.remove_fill(log_n, 4) and inv.count_of(spruce) == 0 and inv.count_of(oak) == 1, "taking 4 logs takes the 2 spruce first (value 32, lower than oak's 48: DEVTEST-01 lowest first), then 2 oak")
 	check(not inv.remove_fill(log_n, 2) and inv.count_of(oak) == 1, "taking more than the pack holds changes nothing")
-	var plain: int = table.number_of("wooden_block")
-	var soft: int = table.number_of("wooden_block_soft")
-	var blocks = InventoryScript.new(table)
-	blocks.add(soft, 2)
-	check(blocks.count_fill(plain) == 2 and blocks.count_of(plain) == 0 and blocks.remove_fill(plain, 1) and blocks.count_of(soft) == 1, "a soft block fills a wooden block")
+	check(table.group_members(table.number_of("wooden_block")).is_empty() and table.group_members(table.number_of("firewood")).is_empty(), "the wooden block and firewood are single items: no group members")
 	# A cost spends its group's lowest member first (DEVTEST-01), by the ranking the refund gives back (ItemTable.spend_order: tier, material, value, own id on a tie).
 	var knife: int = table.number_of("knife")
 	var tiers = InventoryScript.new(table)
@@ -116,21 +112,21 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 120.0
 	var pack = items.inventory_of(1)
-	pack.add(items.table.number_of("wooden_block_soft_large"), 1)
+	pack.add(items.table.number_of("wooden_block"), 1)
 	queue_and_finish("chopping_block", 1)
-	check(count("chopping_block") == 1 and count("wooden_block_soft_large") == 0, "a chopping block from one large softwood block (Dave 10 Nov 2026: one large block)")
-	pack.add(items.table.number_of("wooden_block_soft"), 1)
+	check(count("chopping_block") == 1 and count("wooden_block") == 0, "a chopping block from one Wooden block (15 Nov 2026: one block)")
+	pack.add(items.table.number_of("wooden_block"), 1)
 	pack.add(items.table.number_of("stone_knife"), 1)
 	queue_and_finish("wooden_bowl", 1)
-	check(count("wooden_bowl") == 1 and count("wooden_block_soft") == 0 and count("stone_knife") == 1, "a wooden bowl carved from a soft block, the stone knife kept (recipe audit 10 Nov 2026)")
-	pack.add(items.table.number_of("wooden_block_soft"), 1)
+	check(count("wooden_bowl") == 1 and count("wooden_block") == 0 and count("stone_knife") == 1, "a wooden bowl carved from a block, the stone knife kept (recipe audit 10 Nov 2026)")
+	pack.add(items.table.number_of("wooden_block"), 1)
 	pack.add(items.table.number_of("stick"), 1)
 	pack.add(items.table.number_of("twine"), 1)
 	queue_and_finish("wooden_hammer", 1)
-	check(count("wooden_hammer") == 1 and count("wooden_block_soft") == 0, "a wooden hammer from a soft block")
+	check(count("wooden_hammer") == 1 and count("wooden_block") == 0, "a wooden hammer from a block")
 	pack.add(items.table.number_of("log_spruce"), 1)
 	queue_and_finish("chopping_block", 1)
-	check(count("chopping_block") == 1 and count("log_spruce") == 1, "a log is not a large block: no chopping block from it, nothing is taken and nothing is made")
+	check(count("chopping_block") == 1 and count("log_spruce") == 1, "a log is not a block: no chopping block from it, nothing is taken and nothing is made")
 	# A kept tool may be a group too (the item review, 10 Nov 2026: "any hammer"): every check of a recipe's keeps fills it from the group's members,
 	# like its needs. A stand-in recipe keeps a plain log and makes a stick from a twine.
 	var keeper: Dictionary = {"number": 99950, "id": "test_keep_group", "name": "Test keep group", "needs": [[items.table.number_of("twine"), 1]], "keeps": [[items.table.number_of("log"), 1]], "gives": [items.table.number_of("stick"), 1], "craft_s": 1.0, "known": true, "station": ""}
