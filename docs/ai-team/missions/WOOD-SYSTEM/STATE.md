@@ -7,7 +7,7 @@ Thread: "Rebuild tree harvesting and wood system" (Dave, 15 Nov 2026 06:06Z). De
 | 1 Documents | DONE, merged to dev (PR #1148) | 3761fb79 | docs only |
 | 2 Materials and tools | DONE, merged to dev (PR #1149) | dev 19808e87 (head 3bde6c01) | Lane A 279/279 at 3db7f28b, validate_items 0 errors at 3bde6c01; lane B key tests 18/18, smokes 3/3. NEEDS PLAYER VERIFICATION |
 | 3 Trees and logs | IN REVIEW (small trees, two shoulder logs, rolling logs; gate review passed on the fixes) | see phase 3 PR | Godot tests NOT RUN (lanes) |
-| 4 Carving and knife menu | IN REVIEW (carving station, knife menu, bows, benches; gate review passed on the fixes; assumed values W-20 to W-23) | see phase 4 PR | Godot tests NOT RUN (lanes; new test_wood_phase4) |
+| 4 Carving and knife menu | DONE, merged to dev (PR #1151) | dev e09e920a (head f7ecb9fd) | Both lanes passed after test-layout, triangle-cap and cost-compare fixes; client chest step NOT RUN (fails on dev too, W-27). NEEDS PLAYER VERIFICATION |
 | 5 Hauling | IN REVIEW (Handcart 120 kg, Small log sled, Small wagon; gate review passed on the fixes; assumed values W-24 to W-26) | see phase 5 PR | Godot tests NOT RUN (lanes; new test_wood_phase5) |
 
 Approvals: W-3, W-4, W-5, W-6 and part of W-8 were answered by Dave directly (15 Nov 2026 06:18Z to 06:21Z). For every other W row he said "Just make them reasonable and we can adjust them later", so those rows are adopted, provisional, and Dave adjusts them after play. No W row is open. Nothing is playable-verified.
