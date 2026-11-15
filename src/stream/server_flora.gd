@@ -20,6 +20,7 @@ const LayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 const LAYOUT_KEY := "layout"        # flora_removed.json: the flora layout version the marks were made under (flora_layout.gd)
 const MEMORY_CHUNKS := 2048
 const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
+const TREES_CHUNKS := 512             # trees-only placed lists kept for chunk_bytes (_placed; about 30 KB each)
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 const BRUSH_CELL_M := 2.0             # in_undergrowth: a shrub or tall plant marks the 2 m cell it stands in
 const BRUSH_MIN_M := 0.5              # only shrubs and plants this tall or taller rustle (ferns, tall grass, bushes; not moss or berries)
@@ -38,6 +39,7 @@ var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (clea
 var _mutex: Mutex = Mutex.new()
 var _items: Dictionary = {}            # Vector3i (chunk x, z, 1 full / 0 trees only) -> chunk_items result, shared read-only
 var _items_mutex: Mutex = Mutex.new()
+var _trees_kept: Dictionary = {}       # Vector3i (chunk x, z, 0) -> chunk_items(trees only) result, shared read-only (_placed; under _items_mutex)
 var _removed_dirty: bool = false       # removals not yet written to flora_removed.json
 var _removed_saved_msec: int = 0
 var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
@@ -65,6 +67,11 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		return kept
 
 	var made: Dictionary = placer.chunk_items(home, trees_only)
+	_keep_items(key, made)
+	return made
+
+
+func _keep_items(key: Vector3i, made: Dictionary) -> void:
 	_items_mutex.lock()
 
 	while _items.size() >= ITEMS_CHUNKS:
@@ -72,6 +79,36 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 	_items[key] = made
 	_items_mutex.unlock()
+
+
+# The placer's own list for a chunk in exactly the asked form (no removals, no saplings), for chunk_bytes and the undergrowth index: kept, so a
+# planted bush, a new sapling or a felled tree re-packs the chunk without placing it again (Dave 15 Nov 2026: that re-placing paused the
+# server's main thread for seconds). Full lists share the items_of store; trees-only lists have their own (a trees-only list is not the
+# trees of the full one: spring cover shrubs make room before trees in the full list), so far chunks streamed past do not push near ones out.
+# shortcut: a kept list does not follow later live water (sim_snapshot) until new tiles clear it, as items_of already did; a chunk dropped
+# from a store is placed again on its next change, as before. Revisit if either shows in play.
+func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
+	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
+	_items_mutex.lock()
+	var kept: Dictionary = (_trees_kept if trees_only else _items).get(key, {})
+	_items_mutex.unlock()
+
+	if not kept.is_empty():
+		return kept
+
+	var made: Dictionary = placer.chunk_items(home, trees_only)
+
+	if trees_only:
+		_items_mutex.lock()
+
+		while _trees_kept.size() >= TREES_CHUNKS:
+			_trees_kept.erase(_trees_kept.keys()[0])
+
+		_trees_kept[key] = made
+		_items_mutex.unlock()
+	else:
+		_keep_items(key, made)
+
 	return made
 
 
@@ -148,7 +185,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 	if not bytes.is_empty():
 		return bytes
 
-	var items: Dictionary = PlacerScript.without(placer.chunk_items(home, not full), removed)
+	var items: Dictionary = PlacerScript.without(_placed(home, not full), removed)
 
 	if dynamic.is_valid():
 		var extra: Dictionary = dynamic.call(home)
@@ -274,7 +311,7 @@ func _make_brush(home: Vector2i) -> void:
 	_mutex.lock()
 	var removed: Dictionary = _removed.get(home, {}).duplicate()
 	_mutex.unlock()
-	var made: Dictionary = _brush_cells(PlacerScript.without(placer.chunk_items(home, false), removed))
+	var made: Dictionary = _brush_cells(PlacerScript.without(_placed(home, false), removed))
 	_mutex.lock()
 	_keep_brush(home, made)
 	_brush_pending.erase(home)
@@ -329,6 +366,10 @@ func clear_memory() -> void:
 	_memory.clear()
 	_water.clear()
 	_mutex.unlock()
+	_items_mutex.lock()
+	_items.clear()   # the placed lists stand on the old ground too
+	_trees_kept.clear()
+	_items_mutex.unlock()
 
 
 # Forgets the packed water (the simulated water changed).

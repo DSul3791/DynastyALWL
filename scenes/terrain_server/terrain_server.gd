@@ -1852,7 +1852,7 @@ func _standing_near(species_name: String, point: Vector3, radius: float) -> Arra
 # send the chunk again to the players near it.
 func _flora_changed(chunk: Vector2i) -> void:
 	flora.invalidate(chunk)
-	flora.chunk_bytes(chunk, false)
+	flora.chunk_bytes(chunk, flora.has_items(chunk))   # the form whose placed list is kept (a chunk near a player: full), so nothing is placed again here
 	var origin: Vector2 = flora.placer.chunk_origin(chunk)
 	var centre: Vector3 = Vector3(origin.x + flora.placer.chunk_m * 0.5, 0.0, origin.y + flora.placer.chunk_m * 0.5)
 

@@ -314,8 +314,8 @@ func _init() -> void:
 
 	for dz in range(-3, 4):
 		for dx in range(-3, 4):
-			# Trees only: every tree comes out the same as in the full chunk (chunk_items places trees first and never makes room for the rest),
-			# and only trees are counted here; the full chunks cost 61 s of this test on David4, trees only 27 s (flora_profile.gd, 15 Nov 2026).
+			# Trees only: the trees are the full chunk's but for any beside a bush-covered spring (chunk_items), the same counts here on 15 Nov
+			# 2026 (14687 young, 10 lonely both ways), and only trees are counted; the full chunks cost 61 s of this test on David4, trees only 27 s (flora_profile.gd, 15 Nov 2026).
 			var made: Dictionary = placer.chunk_items(Vector2i(spawn_chunk.x + dx, spawn_chunk.y + dz), true)
 
 			for n in range(made["ids"].size()):
