@@ -9,7 +9,7 @@ Audit like the senior developer who just inherited the code. Order: correct, saf
 
 ## 1. Map first
 - Audit what is named (folder, system, whole repo). Record the SHA audited.
-- Read `docs/START_HERE.md`, the topic docs in `docs/knowledge/` and the approved design for that system, the entry points (scenes, autoloads, server handlers, `tools/`) and the tests.
+- Read `README.md`, the topic docs in `docs/knowledge/` and the approved design for that system, the entry points (scenes, autoloads, server handlers, `tools/`) and the tests.
 - Expected load: multiplayer server with many players and NPCs/animals, clients at a frame budget (`ARCHITECTURE_BUDGET.md`). Say which load you assumed.
 - Trace the main flows end to end: client input, server authority, state, saves/SQLite, water record and baked tiles, network messages.
 - Big area: go deep where a mistake costs most; say what you did not read.
