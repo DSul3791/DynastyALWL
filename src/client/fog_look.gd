@@ -21,7 +21,7 @@ const DISC_DEG := 1.6              # its soft radius in degrees
 
 # --- per graphics preset (Dave 14 Nov 2026: "full on ultra setting but off on lowest setting") ---
 # Low, Medium, High, Ultra.
-#  weather: the weather fog (valley mist, sea fog, fog banks) is drawn. The clear-air haze and rain murk are always drawn (free).
+#  weather: the weather fog (valley mist, sea fog, fog banks) is drawn (Low: the depth fade only, LOW_WEATHER_FOG). The clear-air haze and rain murk are always drawn (free).
 #  sky: the fog hides the sky and dims the sun. volumetric: drifting fog with light halos (FogVolume), its froxel size and reach.
 const PRESETS := [
 	{"name": "Low", "weather": false, "sky": false, "volumetric": false, "vol_size": 0, "vol_depth": 0, "vol_length_m": 0.0},

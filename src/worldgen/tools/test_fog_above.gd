@@ -69,7 +69,7 @@ func _init() -> void:
 	_check(FogLook.pick_layer(11.0, strengths, tops, 5.0) == 2, "at the river's edge, deep in the steam: the steam layer")
 	_check(FogLook.pick_layer(300.0, strengths, tops, 5.0) == 2, "above every layer: the strongest")
 	_check(FogLook.pick_layer(20.0, PackedFloat32Array([0.0, 0.0, 0.0]), tops, 5.0) == 0, "no fog: a valid layer")
-	# Graphics presets (Dave 14 Nov 2026: full on Ultra, off on the lowest).
+	# Graphics presets (Dave 14 Nov 2026: full on Ultra; Dave 15 Nov: the distance fade only on Low).
 	_check(FogLook.PRESETS.size() == 4 and not bool(FogLook.preset(0)["volumetric"]) and bool(FogLook.preset(3)["volumetric"]), "four presets: volumetric off on Low, on on Ultra")
 	_check(FogLook.weather_drawn(3) and FogLook.sky_drawn(3) and FogLook.weather_drawn(1), "Ultra and Medium draw the weather fog")
 	_check(FogLook.weather_drawn(0) and not FogLook.sky_drawn(0) and not bool(FogLook.preset(0)["volumetric"]), "Low: the cheap distance fade only (Dave 15 Nov)")
