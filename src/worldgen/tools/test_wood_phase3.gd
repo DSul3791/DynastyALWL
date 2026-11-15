@@ -97,7 +97,7 @@ func roll_for(w, id: int, ticks: int, point: Vector2 = Vector2(INF, INF)) -> flo
 			var it: Dictionary = w._items[id]
 			var mid: Vector2 = Vector2(it["pos"].x, it["pos"].z)
 			var half: Vector2 = Vector2(cos(float(it["rot_y"])), -sin(float(it["rot_y"]))) * 1.5
-			closest = minf(closest, float(w._seg_gap(mid - half, mid + half, point, point)[0]))
+			closest = minf(closest, float(ItemsScript._seg_gap(mid - half, mid + half, point, point)[0]))
 
 	return closest
 
@@ -105,7 +105,7 @@ func roll_for(w, id: int, ticks: int, point: Vector2 = Vector2(INF, INF)) -> flo
 # Dave 15 Nov 2026: "logs should collide like they would naturally. they should also have a little drag to simulate the grasses effect".
 func roll_hits(oak: int, across: float) -> void:
 	var r = make("user://test_wood_phase3_hits")
-	r.ground_height = func(x, _z): return 10.0 + 0.5 * x   # rolls toward -x; the log's length runs along z (-1.5 .. 1.5)
+	r.ground_height = func(x2, _z): return 10.0 + 0.5 * x2   # rolls toward -x; the log's length runs along z (-1.5 .. 1.5)
 	r._sync_grid = {}   # no world sync here: every item is looked at
 
 	# A boulder in its way stops it against the rock.
@@ -169,6 +169,23 @@ func roll_hits(oak: int, across: float) -> void:
 	var front: float = float(r._items[lying]["pos"].x)
 	var back: float = float(r._items[id]["pos"].x)
 	check(r._rolling.is_empty() and front < -7.05 and back > front + 0.39, "it knocks the log it strikes on (that one to x %.2f) and stops behind it (x %.2f)" % [front, back])
+
+	# A log rolling into one pinned on the slope by a boulder pushes a few times, then gives up: neither stays awake for ever, and it never rolls through it.
+	r._items.clear()
+	r._rolling.clear()
+	r.ground_height = func(x2, _z): return 10.0 + 0.5 * x2
+	r._items[r._next_id] = {"number": r.table.number_of("stone"), "count": 1, "pos": Vector3(-9.7, 5.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.8}}
+	r._next_id += 1
+	r.drop_in_world(oak, 1, Vector3(-8.6, 5.7, 0.0), 0, 0.0, across)
+	var pinned: int = log_id_near(r, "log_oak", Vector3(-8.6, 5.7, 0.0))
+	roll_for(r, pinned, 40)
+	check(r._rolling.is_empty(), "the lower log rests against the boulder (x %.2f)" % float(r._items[pinned]["pos"].x))
+	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
+	id = log_id_near(r, "log_oak", Vector3.ZERO)
+	roll_for(r, id, 600)
+	front = float(r._items[pinned]["pos"].x)
+	back = float(r._items[id]["pos"].x)
+	check(r._rolling.is_empty() and back > front + 0.39 and front > -8.71, "the upper log stops behind it and both fall asleep (lower x %.2f, upper x %.2f)" % [front, back])
 
 	# Drag: on bare rock a log coasts further past the foot of the slope than on grass (loam).
 	var rested: Array = []
