@@ -41,6 +41,7 @@ var _items: Dictionary = {}            # Vector3i (chunk x, z, 1 full / 0 trees 
 var _items_mutex: Mutex = Mutex.new()
 var _trees_kept: Dictionary = {}       # Vector3i (chunk x, z, 0) -> chunk_items(trees only) result, shared read-only (_placed; under _items_mutex)
 var _placing: Dictionary = {}          # Vector3i keys being placed now (_placed; under _items_mutex)
+var _ground_age: int = 0               # bumped by clear_memory: a placement begun on the old ground is not kept (under _items_mutex)
 var _removed_dirty: bool = false       # removals not yet written to flora_removed.json
 var _removed_saved_msec: int = 0
 var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
@@ -76,6 +77,7 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 # from a store is placed again on its next change, as before. Revisit if either shows in play.
 func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
+	var age: int = 0
 
 	while true:
 		_items_mutex.lock()
@@ -84,6 +86,7 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 
 		if start:
 			_placing[key] = true
+			age = _ground_age
 
 		_items_mutex.unlock()
 
@@ -95,10 +98,14 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 
 		OS.delay_msec(5)
 
-	var made: Dictionary = placer.chunk_items(home, trees_only)
+	# Taken untyped: a script error inside the placer returns null, and the key must still be freed or every later asker would wait forever.
+	var got = placer.chunk_items(home, trees_only)
+	var made: Dictionary = got if got is Dictionary else {}
 	_items_mutex.lock()
 
-	if trees_only:
+	if made.is_empty() or age != _ground_age:
+		pass   # a failed placement is not kept (the next asker tries again); nor one begun before clear_memory (it stands on the old ground)
+	elif trees_only:
 		while _trees_kept.size() >= TREES_CHUNKS:
 			_trees_kept.erase(_trees_kept.keys()[0])
 
@@ -109,7 +116,9 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 
 		_items[key] = made
 
-	_placing.erase(key)
+	if age == _ground_age:
+		_placing.erase(key)   # else clear_memory already freed it, and an asker on the new ground may hold it now
+
 	_items_mutex.unlock()
 	return made
 
@@ -381,6 +390,8 @@ func clear_memory() -> void:
 	_items_mutex.lock()
 	_items.clear()   # the placed lists stand on the old ground too
 	_trees_kept.clear()
+	_placing.clear()   # askers waiting on a placement begun on the old ground place afresh; that placement is not kept (_ground_age)
+	_ground_age += 1
 	_items_mutex.unlock()
 
 

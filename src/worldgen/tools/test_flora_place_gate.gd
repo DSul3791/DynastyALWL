@@ -1,7 +1,7 @@
 extends SceneTree
 
 # ServerFlora places each flora chunk once however many threads ask for it (15 Nov 2026: at a join a third of the chunk lists were placed
-# twice side by side), and different chunks still place side by side.
+# twice side by side), different chunks still place side by side, a failed placement frees its chunk, and new tiles drop a placement in flight.
 #   godot --headless --path . --script res://src/worldgen/tools/test_flora_place_gate.gd
 
 const ServerFloraScript := preload("res://src/stream/server_flora.gd")
@@ -30,7 +30,7 @@ class SlowPlacer:
 	func chunk_origin(chunk: Vector2i) -> Vector2:
 		return Vector2(chunk) * chunk_m
 
-	func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
+	func chunk_items(chunk: Vector2i, trees_only: bool = false):   # untyped: chunk (99, 99) fails the way a script error does (null)
 		lock.lock()
 		var key: Vector3i = Vector3i(chunk.x, chunk.y, 0 if trees_only else 1)
 		calls[key] = int(calls.get(key, 0)) + 1
@@ -41,6 +41,9 @@ class SlowPlacer:
 		lock.lock()
 		running -= 1
 		lock.unlock()
+		if chunk == Vector2i(99, 99):
+			return null
+
 		var o: Vector2 = chunk_origin(chunk)
 		return {"ids": PackedInt32Array([(1 << 16) | 1]), "positions": PackedVector3Array([Vector3(o.x + 5.0, 1.0, o.y + 5.0)]),
 			"heights": PackedFloat32Array([12.0]), "yaws": PackedFloat32Array([0.0])}
@@ -105,5 +108,22 @@ func _init() -> void:
 
 	check(placer.most >= 2, "different chunks place side by side (%d at once)" % placer.most)
 	check(once, "each of the 48 chunks is placed once")
+
+	# A failed placement frees its chunk: the next asker places it again instead of waiting forever, and nothing is kept.
+	flora.items_of(Vector2i(99, 99))
+	flora.items_of(Vector2i(99, 99))
+	check(int(placer.calls.get(Vector3i(99, 99, 1), 0)) == 2 and flora.items_cached(Vector2i(99, 99)).is_empty(), "a failed placement is asked again, not waited on or kept")
+
+	# New tiles (clear_memory) while a chunk is being placed: that old-ground list is not kept.
+	var early: Thread = Thread.new()
+	early.start(func() -> void: flora.items_of(Vector2i(5, 5)))
+	while int(placer.calls.get(Vector3i(5, 5, 1), 0)) == 0:   # its placement has begun (it runs 40 ms)
+		OS.delay_msec(1)
+
+	flora.clear_memory()
+	early.wait_to_finish()
+	check(flora.items_cached(Vector2i(5, 5)).is_empty(), "a placement begun before new tiles is not kept")
+	flora.items_of(Vector2i(5, 5))
+	check(not flora.items_cached(Vector2i(5, 5)).is_empty(), "the next ask places it on the new ground and keeps it")
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
