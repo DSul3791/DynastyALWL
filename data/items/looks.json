@@ -212,21 +212,33 @@
    "color": "#8a8d93",
    "size": 1.0,
    "bits": ["metal","steel"],
-   "placeholder": true
+   "model": "res://assets/tools/handsaws/Handsaw_Iron_Optimized.glb",
+   "model_turn": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
+   "model_length_m": 0.75,
+   "grip_from_end_m": 0.11,
+   "note_provisional": "Dave's iron handsaw mesh (15 Nov 2026). Length and grip PROVISIONAL (copper smallest, bronze about 20% longer, iron biggest): adjust after he sees it in game."
   },
   "copper_saw": {
    "shape": "saw",
    "color": "#b87333",
    "size": 1.0,
    "bits": ["metal"],
-   "placeholder": true
+   "model": "res://assets/tools/handsaws/Handsaw_Copper_Optimized.glb",
+   "model_turn": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
+   "model_length_m": 0.55,
+   "grip_from_end_m": 0.1,
+   "note_provisional": "Dave's copper handsaw mesh (15 Nov 2026). Length and grip PROVISIONAL (copper smallest, bronze about 20% longer, iron biggest): adjust after he sees it in game."
   },
   "bronze_saw": {
    "shape": "saw",
    "color": "#a8803c",
    "size": 1.0,
    "bits": ["metal"],
-   "placeholder": true
+   "model": "res://assets/tools/handsaws/Handsaw_Bronze_Optimized.glb",
+   "model_turn": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
+   "model_length_m": 0.66,
+   "grip_from_end_m": 0.1,
+   "note_provisional": "Dave's bronze handsaw mesh (15 Nov 2026). Length and grip PROVISIONAL (copper smallest, bronze about 20% longer, iron biggest): adjust after he sees it in game."
   },
   "stone_spade": {
    "shape": "spade",
