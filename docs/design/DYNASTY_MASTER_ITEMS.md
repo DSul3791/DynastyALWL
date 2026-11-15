@@ -235,7 +235,7 @@ These seven rows define **four distinct door configurations per tier = 28 door v
 | 4 | log | Log | KEEP | Basic log → Planks (2.3); sawn into Wooden Blocks [WOOD]. |
 | 100, 103, 106, 124, 148, 172 | log_oak, log_beech, log_birch, log_tropical_hardwood, log_walnut, log_maple | Hardwood species logs | KEEP | → Hardwood Boards, Wooden Blocks. |
 | 109, 112 | log_scots_pine, log_spruce | Softwood species logs | KEEP | → Planks, Wooden Blocks. |
-| 27 | lumber | Plank | UPDATE (APPROVED) | 6 per softwood or basic log (today 4 at the sawmill, 2 by hand saw). Name stays "Plank". |
+| 27 | lumber | Plank | UPDATE (APPROVED) | 6 per softwood or basic log (already 6 by sawmill and hand saw on dev). Name stays "Plank". |
 | new | | Hardwood board | ADD (APPROVED) | Four per hardwood species log, sawmill or any hand saw. Distinct from Plank; no substitution. Finished furniture uses grade-appropriate counts of Hardwood Boards. |
 | 234 | wooden_block | Wooden block | UPDATE (APPROVED) [WOOD] | The one Wooden Block (name "Wooden block"); 6 per log by saw (W-3). |
 | 237, 540, 541 | wooden_block_soft, wooden_block_large, wooden_block_soft_large | Softwood / large blocks | RETIRE (APPROVED) [WOOD] | One block material. Saved stacks load as Wooden blocks: 1 for a soft block, 4 for a large one (TREE_WOOD_TOOLS_DESIGN s4). |
@@ -1072,7 +1072,7 @@ Use [PLAYER_GOALS_REWARDS_AUDIT.md](PLAYER_GOALS_REWARDS_AUDIT.md) as the unchan
 3. **Wood:** recipes 16 and 159 to 6 Planks; Hardwood board item and its sawmill and hand-saw recipes (in no group); `hand_saw_balance`; renames of 234, 26, 236; recipe 157 to the Smithy with no Saw blade; blueprint 11 without the Saw blade; `wood_species.json` default class, `retired_to` and `log` group; Hob's buy rules; `log_length_m` 3.0 with weights.
 4. **Charcoal:** kiln recipe 364 to logs → 100 Charcoal each, batch; Charcoal in `cooking.json fuel` and `fuel_class` (not the `firewood` group); Charcoal stack size and value rescaled (s5).
 5. **Stations:** implement three Smelters and four Smithies in §3.3, with distinct, persistent capacities and output handling, and the approved Grindstone, Leatherworking Table, Tailor's Table, Loom and Chopping Block. **No separate Bellows/Quenching Trough or proximity Anvil add-ons**. Stable IDs/blueprints of obsolete stations need careful reconciliation; station inventory and wind/bellows tests.
-6. **Tools:** add the 10 ladder tools with recipes; groups `axe`, `saw`, extended `knife`; recipes 20, 278, 344, 339, 340, 159 to the groups; tier renumbering.
+6. **Tools:** add the 10 ladder tools with recipes; groups `axe`, `saw`, extended `knife`; recipes 20, 278, 344, 159 to the groups (339 and 340, the large-block splits, retire with the wood merge, TREE_WOOD_TOOLS_DESIGN.md); tier renumbering.
 7. **Recipes:** implement the 1:1 Copper/Tin/Iron ore conversions, 1 Copper Ore+1 Tin Ore → 2 Bronze Ingots, Advanced steel with input carbon distinct from hopper fuel, and new station tier requirements in §2.7. Chisel removed from mandatory structural stone-block creation, retained only for decorative carving where appropriate.
 8. **Textiles:** Thread item and hand recipe; Twine → Thread in recipes 23, 39–42, 173, 194–196, 237, 238, 241, 388.
 9. **Enhancements:** per-instance slot data and the eligibility in 2.9 (code and save format, no item rows).

@@ -2,7 +2,7 @@
 
 **Current design, 15 November 2026. The one authoritative document for this topic.** It consolidates Dave's confirmed design from the creator handoff (PR #1147, `docs/ideas/TREE_WOOD_TOOLS_CREATOR_HANDOFF_2026-11-14.md`, which retires once this file and the documents in s7 carry it) and records how the game implements it. Item identities stay in [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md); this file wins on how trees, wood, the starter toolkit, the Wood Carving Station, the knife menu and hauling work. Older rules that conflict with it were removed from the official documents in the same change (old text is in Git history).
 
-Labels: **[DAVE]** confirmed by Dave in the handoff (15 Nov 2026 review) or his later messages; **[DELEGATED]** an engineering/balance value chosen within delegated authority (`docs/ai-team/DECISION_AUTHORITY.md` level A/B), tunable; **[FOR DAVE]** a frozen catalog choice (item row, name, recipe, blueprint cost, recipe move) that waits for Dave in s6 and is not written into live data until he answers.
+Labels: **[DAVE]** confirmed by Dave in the handoff (15 Nov 2026 review) or his later messages; **[DELEGATED]** an engineering/balance value chosen within delegated authority (`docs/ai-team/DECISION_AUTHORITY.md` level A/B), tunable; **[FOR DAVE]** a catalog choice (item row, name, recipe, blueprint cost, recipe move) listed in s6; Dave answered some directly and adopted the rest as provisional values to adjust after play.
 
 ## 1. Confirmed design [DAVE]
 
@@ -37,7 +37,7 @@ Labels: **[DAVE]** confirmed by Dave in the handoff (15 Nov 2026 review) or his 
 ### 1.5 First saw: Copper
 - The **Copper saw** is the first saw, made at the **Primitive Smithy** from smelted copper and a wooden handle; its recipe needs no Wooden Blocks, Planks, Hardwood Boards or other saw. Bronze, Iron and Steel saws are later upgrades. The old "no Bronze saw" and "first boards need the Iron Saw" rules are gone.
 - Primitive Smelter and Primitive Smithy stay buildable with stone-stage resources and tools (no metal, nails or sawn wood). Early Firewood feeds campfire charcoal before the first metal; Coal and Charcoal stay distinct.
-- Journey: stone, sticks, fibre → Stone Axe, Hammer, Knife → small-tree Firewood and large-tree logs → campfire charcoal and copper ore (Stone Hammer) → Primitive Smelter and Smithy → Copper saw → blocks, planks, boards → Wood Carving Station, sawbuck, woodworking.
+- Journey (our summary of the points above, not a quote): stone, sticks, fibre → Stone Axe, Hammer, Knife → small-tree Firewood and large-tree logs → campfire charcoal and copper ore (Stone Hammer) → Primitive Smelter and Smithy → Copper saw → blocks, planks, boards → Wood Carving Station, sawbuck, woodworking.
 
 ### 1.6 Wood Carving Station
 - Cost exactly **two Wooden Blocks**; placed from the knife menu. Look: one upright carving block and one block with a worn seat, sawdust and shavings around (decorative knives may lie about; they give no usable tool).
@@ -61,9 +61,9 @@ Labels: **[DAVE]** confirmed by Dave in the handoff (15 Nov 2026 review) or his 
 | Axe on a loose log | 3 blocks (large blocks from a shoulder log). | Removed. An axe splits a **Wooden Block** into Firewood anywhere; the Chopping Block does it faster. |
 | Blocks | `wooden_block`, `wooden_block_soft`, `wooden_block_large`, `wooden_block_soft_large`. | One `wooden_block` (234), "Wooden block". The other three retire (numbers kept; saved stacks convert, s4). |
 | Firewood | `firewood` (Hard), `firewood_soft`. | One `firewood` (26), "Firewood". `firewood_soft` (236) retires and converts 1:1. |
-| Chopping Block station | Log → 12 species firewood (recipes 720, 721). | Wooden Block → Firewood, faster than by hand; the log recipes retire (blocks only come from sawing). |
-| Saws | Iron saw (Improved Smithy) and Steel saw; hand-saw recipes for Planks/Boards. | Copper saw first (Primitive Smithy), then Bronze, Iron, Steel; each saws blocks, planks and boards, better saws faster. |
-| Stone pickaxe | Required for stone, copper, tin and coal. | The Stone Hammer harvests them. The Stone Pickaxe recipe retires; saved Stone Pickaxes keep working. Metal picks stay (iron ore needs a bronze or better pick). |
+| Chopping Block station | Log → 12 species firewood (recipes 720, 721); costs 1 large block. | Costs 1 Wooden Block; Wooden Block → 4 Firewood, faster than by hand, drawing blocks from pack, ground, cart or containers in reach; the log recipes retire (blocks only come from sawing). |
+| Saws | Iron saw (legacy brick forge) and Steel saw (brick forge level 3); hand-saw recipes for Planks (6) and Hardwood boards (4). | Copper saw first (Primitive Smithy), then Bronze, Iron, Steel; each saws blocks, planks and boards, better saws faster. |
+| Stone pickaxe | Required for copper, tin and coal ore (a stone axe already breaks plain boulders at 0.5 stones a blow). | The Stone Hammer harvests them. The Stone Pickaxe recipe retires; saved Stone Pickaxes keep working. Metal picks stay (iron ore needs a bronze or better pick). |
 | Hammer | Repair mode, Save plan, blueprints. | Repair mode becomes "Hammer/Repair Tool" and also harvests rock and ore. |
 | Knife | Carcass work, recipes keep it. | Right click opens the knife blueprint menu. |
 | Carving | Bowls, platters, clubs, quarterstaff by hand from a block; longbow at the workbench from a large block. | Wood Carving Station (s6 rows for which recipes move). |
@@ -89,27 +89,27 @@ Supported: worlds and characters saved by dev 40bea035 or later. Retired wood ro
 |---|---|---|
 | Log weight | Hardwood 22 kg, softwood 18 kg, light (birch) 15 kg, plain Log 18 kg | A 75 kg character carries 52.5 kg; two hardwood logs (44 kg) plus axe, hammer, knife, food and water (about 5 kg) fit. Planks (6 × 3 kg) and boards (4 × 4 kg) stay no heavier than their log. |
 | Wooden Block weight | 3.0 kg | Six per log. |
-| Firewood weight | 1.5 kg | Two per block. |
+| Firewood weight | 0.75 kg | Four per block (W-3). |
 | Small tree | Felled length under 8 m, or drawn butt radius under 0.12 m | Saplings, young trees and most fruit trees give Firewood; full-grown timber gives logs. |
-| Small-tree Firewood | 2 per metre of trunk, 2 to 14 | The largest small tree gives 14 (21 kg), carryable with the toolkit. |
+| Small-tree Firewood | 3 per metre of trunk, 2 to 24 | The largest small tree gives 24 (18 kg), carryable with the toolkit; a full 3 m log gives 24 through blocks. |
 | Saw speed (× the old hand-saw time) | Copper 0.5, Bronze 0.75, Iron 1.0, Steel 1.25; a sawbuck doubles block cutting | "Slow but tolerable"; upgrade incentive by speed, not yield. |
-| Hammer on rock (stones per blow) | Stone 1 (the old stone pick), Copper and Bronze 1.5, Iron and Steel 2; picks keep their higher rates and stay the only tool for iron ore | The hammer takes over the starter role without making picks pointless. |
+| Hammer on rock (stones per blow) | Stone 1 (the old stone pick), a Wooden hammer does not break rock, Bronze 1.5, Iron and Steel 2 (the hammer ladder in master s2.1 has no Copper hammer); picks keep their higher rates and stay the only tool for iron ore | The hammer takes over the starter role without making picks pointless. |
 | Rolling | A log on ground steeper than 0.35 across its length rolls downhill at up to 3 m/s, stops on flatter ground, water or a structure | Plausible without full physics. |
 
-## 6. For Dave (catalog choices; batched; not in live data until answered)
+## 6. For Dave (catalog choices)
 
-Assumed values are proposals only. Phase work that does not depend on a row continues.
+Dave answered W-3, W-4, W-5 and part of W-8 directly (15 Nov 2026 06:18Z). For every other row he said (06:19Z): **"Just make them reasonable and we can adjust them later."** So each remaining proposal below is **ADOPTED, PROVISIONAL**: it goes into live data as written and stays open for Dave to adjust after playing.
 
 | # | Choice | Proposal | Blocks |
 |---|---|---|---|
 | W-1 | Copper saw row | New item "Copper - Saw" (tool, saw, copper). Recipe: 2 Copper ingot + 2 Stick at the Primitive Smithy. | First blocks |
 | W-2 | Bronze saw row | New item "Bronze - Saw": 2 Bronze ingot + 2 Stick at the Primitive Smithy. Iron and Steel saws keep their recipes. | Bronze upgrade |
-| W-3 | Blocks per log | 6 Wooden Blocks per 3 m log, any species, hand-saw recipe (keeps any saw) and a faster Sawbuck recipe. Each block splits into 2 Firewood (log → 12 Firewood, as the Chopping Block gives now). | First blocks |
-| W-4 | Sawbuck | New structure "Sawbuck", hammer blueprint: 4 Planks + 8 Nails. | Sawbuck |
-| W-5 | Chopping Block | Cost 4 Wooden Blocks (the old 1 large block). Its recipe becomes 1 Wooden Block → 2 Firewood (keeps an axe), faster than splitting by hand; log → firewood recipes 720 and 721 retire. | Firewood station |
-| W-6 | Wood Carving Station | New structure "Wood carving station", knife blueprint, 2 Wooden Blocks (Dave's cost). | — (cost is Dave's) |
+| W-3 | Blocks per log | **ANSWERED (Dave, 15 Nov 2026 06:18Z): "Six wooden blocks per log each splitting into four firewood each."** A saw cuts a log (any species) into 6 Wooden Blocks; each splits into 4 Firewood (a log → 24 Firewood). | — |
+| W-4 | Sawbuck | **ANSWERED (Dave, 06:18Z): "The sawbuck requires eight planks and at least 16 nails."** New structure "Sawbuck", 8 Planks + 16 Nails (placed from the hammer menu: it has nails, so not the knife menu). | — |
+| W-5 | Chopping Block | **ANSWERED (Dave, 06:18Z): "chopping block cost one block and yes, the chopping block just allows you to cut blocks into firewood, and it will pick up blocks from the ground or from a cart or from any container around you or your inventory."** Cost 1 Wooden Block. Its only job: Wooden Block → 4 Firewood (axe kept), drawing blocks from the pack, the ground, a cart or any container in reach (the existing craft-stock sourcing and its permissions); log → firewood recipes 720 and 721 retire. | — |
+| W-6 | Wood Carving Station | New structure "Wood carving station", knife blueprint, 2 Wooden Blocks (Dave 15 Nov 06:20Z: "only needs two blocks one to sit on and want to use like a little table"). Model (Dave, same message): looks like the new log bench sitting next to a chopping block, with wood shavings all over the ground around it. Dave 06:21Z: "all it's going to require is two blocks. But when it makes it, it's gonna look like a bench next to a chopping block with wood shavings on the ground." The cost is exactly 2 blocks; the bench is only the look. | — (cost and look are Dave's) |
 | W-7 | Recipes that move to the carving station (each keeps a knife, same ingredients) | Wooden bowl (1 block), Serving platter (2 blocks), Quarterstaff (1 block), Wooden club (1 block), Wooden hammer (1 block + 1 stick + 1 twine; duplicate soft recipe 232 retires). Spyglass and crossbows stay where they are. | Carving |
-| W-8 | Longbow | 1 Log (any) + 1 Sinew + 2 Twine, keeps a knife, at the carving station (was 1 large block + 1 sinew + 2 twine at the workbench). | Longbow |
+| W-8 | Bows: a ladder (Dave, 06:18Z: "we should have a short bow and a primitive bow ... They should be options so people can build their way up.") | Three rungs, all at the carving station keeping a knife unless said: **Primitive bow** (new item; weakest, short range, wears out fast like other primitive gear): 2 Sticks + 2 Plant fibre, a hand craft (no station), so it comes before any saw. **Shortbow** (existing 269, today 2 Sticks + 3 Twine at the workbench): 1 Wooden Block + 2 Twine at the carving station. **Longbow** (existing 763): 1 Log (any) + 3 Twine (Dave's "logs and Twine", no other input; was 1 large block + 1 Sinew + 2 Twine). Strength by `bow.json` multipliers: Primitive 0.7 speed / 0.7 damage / 0.6 range, Shortbow as now (1.0), Longbow as now. Until phase 4 adds the carving station, the live Longbow costs 4 Wooden Blocks + 1 Sinew + 2 Twine (the same wood as its old large block). | Bows |
 | W-9 | Knife menu (moves out of the hammer menu) | Seat, Log bench single and double, Log table, Stool, Wood carving station, Chopping block, Drying rack, Tool rack, Firewood rack, Log rack, Tanning rack, Tailor's table, Food preparation table, Wicker chest, Basket, and the Crude grade wood-only furniture (Crude chair, table, bench, shelf, chest). Walls, floors, roofs, fences, doors, stairs, pipes and garden pieces stay with the hammer. | Knife menu |
 | W-10 | Log benches | Single = existing "Log - Bench" (629, its retired blueprint 88 returns), 1.2 m, seats one, cost 1 Log. Double = new "Log - Double bench", 2.2 m, seats two, cost 2 Logs. | Benches |
 | W-17 | Log bench with a backrest (Dave's design sheet, 15 Nov 2026: `art/references/wood_system_2026-11-15/log_bench_with_backrest_design.png`) | New item "Log - Backed bench", knife menu: live-edge slab seat about 1.5 m long and 45 cm high on two half-log bases, live-edge backrest on two round log posts leaning slightly back, about 90 cm tall; seats two; cost 3 Logs + 2 Twine. | Backed bench |
@@ -121,4 +121,4 @@ Assumed values are proposals only. Phase work that does not depend on a row cont
 | W-16 | Sled surfaces | Small log sled works on any ground, slower on bare rock, gravel and road, faster on snow and wet grass. | Sled |
 
 ## 7. Documents reconciled with this design
-`DYNASTY_MASTER_ITEMS.md` (s2.1 to s2.4, s2.6, s3.1, s3.2, s3.11), `item_system.md`, `progression.md`, `buildables_plan.md`, `STORAGE_WAREHOUSING_DESIGN.md`, `PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md`, `CATALOG_IMPLEMENTATION_PLAN.md`, `CATALOG_SAVE_MIGRATION.md`, `docs/DOC_MAP.md`, `CONTROLS.md`. Mission checkpoint: `docs/ai-team/missions/WOOD-SYSTEM/STATE.md`.
+`DYNASTY_MASTER_ITEMS.md` (s2.1 to s2.4, s2.6, s3.1, s3.2, s3.11), `item_system.md`, `progression.md`, `buildables_plan.md`, `STORAGE_WAREHOUSING_DESIGN.md`, `PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md`, `CATALOG_IMPLEMENTATION_PLAN.md`, `CATALOG_SAVE_MIGRATION.md`, `docs/DOC_MAP.md`, `PLAYER_JOURNAL_GOALS_UI.md`, `PLAYER_GOALS_REWARDS_DRAFT.md`, `PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md`. `CONTROLS.md` describes live controls and changes with the phase 2 and 3 code. Mission checkpoint: `docs/ai-team/missions/WOOD-SYSTEM/STATE.md`.
