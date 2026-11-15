@@ -3510,6 +3510,22 @@ static func drying_rack() -> Node3D:
 	return root
 
 
+# The Sawbuck, 1.4 x 0.8 (8 Planks, 16 Nails; TREE_WOOD_TOOLS_DESIGN.md W-4): two X-shaped leg frames joined by a rail, a log lying in the
+# crotches ready for the saw. PLACEHOLDER look until an art pass.
+static func sawbuck() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.55, 0.55]:
+		_rod(root, Vector3(x, 0.0, -0.36), Vector3(x, 0.95, 0.24), 0.035, _planks)          # the two legs of the X
+		_rod(root, Vector3(x, 0.0, 0.36), Vector3(x, 0.95, -0.24), 0.035, _planks)
+
+	_box(root, Vector3(1.2, 0.05, 0.05), Vector3(0.0, 0.3, 0.0), _planks)                   # the rail between the frames
+	_rod(root, Vector3(-0.7, 0.74, 0.0), Vector3(0.7, 0.74, 0.0), 0.12, _log)               # the log in the crotches
+	_solid(root, Vector3(1.4, 0.95, 0.8), Vector3(0.0, 0.48, 0.0))
+	return root
+
+
 # The Smoker, 1.2 x 1.2 (16 Stone, 6 Clay): a small stone smokehouse, a clay-sealed slab roof with a short flue, a plank door at the front and the low
 # firebox mouth under it, smoke-blackened round its edges.
 static func smoker() -> Node3D:

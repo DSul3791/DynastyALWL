@@ -128,10 +128,10 @@ func _init() -> void:
 	say(2)   # Goodbye
 	mark("met Hob")
 
-	# 3. Gather what lies about, craft a knife, an axe and a chopping block (a large wooden block lies at the camp), place the block.
+	# 3. Gather what lies about, craft a knife, an axe and a chopping block (three wooden blocks lie at the camp: one for the chopping block, two to split), place the block.
 	var camp: Vector3 = Vector3(float(chair["x"]) + 1.0, 10.0, float(chair["z"]))
 
-	items.drop_in_world(table.number_of("wooden_block_large"), 1, camp + Vector3(0.5, 0.0, 0.5))
+	items.drop_in_world(table.number_of("wooden_block"), 3, camp + Vector3(0.5, 0.0, 0.5))
 
 	for n in range(4):
 		items.drop_in_world(table.number_of("stone"), 4, camp + Vector3(float(n) * 0.3, 0.0, 1.0))
@@ -142,7 +142,7 @@ func _init() -> void:
 		for id in items._items.keys():
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("stone") >= 14 and count("stick") >= 20 and count("wooden_block_large") == 1, "gathering fills the pack (%d stones, %d sticks, %d large blocks)" % [count("stone"), count("stick"), count("wooden_block_large")])
+	check(count("stone") >= 14 and count("stick") >= 20 and count("wooden_block") == 3, "gathering fills the pack (%d stones, %d sticks, %d wooden blocks)" % [count("stone"), count("stick"), count("wooden_block")])
 	craft(1, 5)   # twine is twisted by hand from fibre
 	craft(2, 1)
 	craft(6, 1)
@@ -159,7 +159,7 @@ func _init() -> void:
 	check(block != 0, "the chopping block is placed in the camp")
 	mark("crafted")
 
-	# 4. Chop a log (the plain Log is softwood since Mission 001, master s4 item 3) into softwood blocks on the ground, split a block at the chopping block, pick the firewood up.
+	# 4. An axe on a log on the ground only says to saw it first (the plain Log is softwood since Mission 001, master s4 item 3); split a wooden block at the chopping block, pick the firewood up.
 	items.report_position(1, items._items[block]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items.drop_in_world(table.number_of("log"), 1, items._items[block]["pos"] + Vector3(1.0, 0.0, 1.0))
 	var lying: int = 0
@@ -170,22 +170,15 @@ func _init() -> void:
 
 	items._last_process.clear()
 	items.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(items))
+	check(items._items.has(lying) and count("wooden_block") == 2, "a log struck on the ground is left whole (%d blocks in the pack)" % count("wooden_block"))
+	items._last_use.clear()
+	items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
 
 	for id in items._items.keys():
-		if int(items._items[id]["number"]) == table.number_of("wooden_block_soft"):
+		if int(items._items[id]["number"]) == table.number_of("firewood") and not items._items[id].has("struct"):
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("wooden_block_soft") == 3, "a log chopped on the ground gives three wooden blocks (%d)" % count("wooden_block_soft"))
-
-	for n in range(2):
-		items._last_use.clear()
-		items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
-
-	for id in items._items.keys():
-		if int(items._items[id]["number"]) == table.number_of("firewood_soft") and not items._items[id].has("struct"):
-			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-
-	check(count("firewood_soft") == 4 and count("wooden_block_soft") == 1, "two blocks split into four firewood at the block (%d firewood, %d blocks)" % [count("firewood_soft"), count("wooden_block_soft")])
+	check(count("firewood") == 4 and count("wooden_block") == 1, "a block split at the chopping block gives four firewood (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
 	mark("split wood")
 
 	# 5. Hob's quest: ask, hand over the firewood, get the reward and the reputation.
@@ -199,7 +192,7 @@ func _init() -> void:
 	var give: int = choice_index("I have your firewood.")
 	check(give >= 0, "with the firewood in the pack the hand-over choice appears")
 	say(give)
-	check(count("firewood_soft") == 1 and count("roast_forage") == 2 and items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward is two Campfire Stew, five copper and a reputation point")
+	check(count("firewood") == 1 and count("roast_forage") == 2 and items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward is two Campfire Stew, five copper and a reputation point")
 	mark("quest done")
 
 	# 6. Trade: sell some stones and the spare log, then buy a bandage.

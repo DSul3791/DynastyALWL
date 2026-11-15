@@ -3,14 +3,14 @@ extends SceneTree
 # The bronze path runs on the live data (Steve 10 Nov 2026; rebuilt for the creator's smelting progression, GOALS-REPAIR R2, master s2.7): every
 # step through the real server, the real recipes, blueprints, structures.json smelting and boulders.json, nothing stood in. A step that
 # refuses prints what the server said.
-#   1. a Stone - Pickaxe by hand (stick, stone, twine);
-#   2. copper ore and tin ore picked out of a copper and a tin outcrop with it (boulders.json piece share as shipped); no iron ore;
+#   1. a Stone - Hammer by hand (stick, stone, twine; the Stone - Pickaxe recipe is retired, TREE_WOOD_TOOLS_DESIGN.md W-12);
+#   2. copper ore and tin ore broken out of a copper and a tin outcrop with it (boulders.json piece share as shipped); no iron ore (iron wants a pick);
 #   3. a Primitive smithy and a Primitive smelter from their blueprints with a wooden hammer: stone, clay and logs only, no metal, Planks or Nails;
 #   4. charcoal at a lit campfire;
 #   5. the Primitive smelter fed through its store: Charcoal in its hopper, 1 Copper ore + 1 Tin ore make 2 Bronze ingots by themselves,
 #      dropped on the ground in front of it, and picked up;
 #   6. a Bronze - Pickaxe at the Primitive smithy (every amount read from the live recipes);
-#   7. the bronze pick takes iron ore out of an iron outcrop, which the stone pick cannot.
+#   7. the bronze pick takes iron ore out of an iron outcrop, which the stone hammer cannot.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bronze_path.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -135,7 +135,7 @@ func build(structure: String, at: Vector3) -> int:
 		return -1
 
 	var ids: Array = bp["cost"].map(func(c): return str(c[0]))
-	check(ids.all(func(c): return c in ["stone", "clay", "log", "wooden_block", "wooden_block_soft"]), "the %s costs only stone, clay and wood: no metal, Planks or Nails (%s)" % [structure, str(bp["cost"])])
+	check(ids.all(func(c): return c in ["stone", "clay", "log", "wooden_block"]), "the %s costs only stone, clay and wood: no metal, Planks or Nails (%s)" % [structure, str(bp["cost"])])
 
 	for need in bp["cost"]:
 		give(str(need[0]), int(need[1]))
@@ -160,7 +160,7 @@ func pick_out(ore: String, item: String, want: int, blows: int) -> void:
 		var pick: int = items.inventory_of(1).numbers.find(items.table.number_of("bronze_pickaxe"))   # the best pick made so far is the one in hand (protocol 115)
 
 		if pick < 0:
-			pick = items.inventory_of(1).numbers.find(items.table.number_of("stone_pickaxe"))
+			pick = items.inventory_of(1).numbers.find(items.table.number_of("stone_hammer"))
 
 		items.action(1, Net.ACT_HIT, OUTCROP_ID, Net.HIT_BOULDER, pick + 1, Vector3.ZERO)
 		# The plain stones the blows break off are not under test: dropping them keeps a run of bad ore luck from filling the carry limit
@@ -197,12 +197,12 @@ func _init() -> void:
 	var shipped_share: float = float(items._boulder_cfg.get("ore", {}).get("piece_share", 0.0))
 	check(shipped_share > 0.0, "boulders.json ships an ore piece share (%.2f)" % shipped_share)
 
-	# 1. Stone - Pickaxe by hand.
+	# 1. Stone - Hammer by hand.
 	give("stick", 2)
 	give("stone", 3)
 	give("twine", 2)
-	craft("stone_pickaxe", 1, 60)
-	check(have("stone_pickaxe") == 1, "1. a Stone - Pickaxe is made by hand")
+	craft("stone_hammer", 1, 60)
+	check(have("stone_hammer") == 1 and recipe_number("stone_pickaxe") == 0, "1. a Stone - Hammer is made by hand (the Stone - Pickaxe recipe is retired)")
 
 	# The amounts follow the live data: the bronze job (1 Copper ore + 1 Tin ore -> 2 Bronze ingots) and the pick's recipe.
 	var job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("bronze", {})
@@ -214,9 +214,9 @@ func _init() -> void:
 	print("plan: %d bronze ingots for the pick = %d pairs = %d copper ore + %d tin ore, %d fuel" % [pick_bronze, pairs, pairs, pairs, fuel_n])
 	check(pick_bronze > 0, "the pick's recipe is there")
 
-	# 2. Copper and tin ore from outcrops with the stone pick.
+	# 2. Copper and tin ore from outcrops with the stone hammer.
 	pick_out("copper", "copper_ore", pairs, 1500)
-	check(have("copper_ore") >= pairs, "2a. the stone pick takes %d copper ore out of a copper outcrop (%d)" % [pairs, have("copper_ore")])
+	check(have("copper_ore") >= pairs, "2a. the stone hammer takes %d copper ore out of a copper outcrop (%d)" % [pairs, have("copper_ore")])
 	pick_out("tin", "tin_ore", pairs, 1500)
 	check(have("tin_ore") >= pairs, "2b. and %d tin ore out of a tin outcrop (%d)" % [pairs, have("tin_ore")])
 	pick_out("iron", "iron_ore", 1, 60)

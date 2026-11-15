@@ -4,8 +4,8 @@ extends SceneTree
 # and blueprints. Every amount is read from the live data, so tuning keeps the test valid.
 #   1. the rows: each family's tiers rise with its material (Wooden 1 ... Steel 5); disposable gear has no repair; metal tools repair at
 #      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Spade and Stone - Sickle are retired;
-#   2. the groups take the better tool: an Iron - Knife for the Wooden bowl (recipe 20), an Iron - Axe for small blocks (339), a
-#      Steel - Saw for Planks by hand (159), with no stone knife, stone axe or Iron - Saw in the pack;
+#   2. the groups take the better tool: an Iron - Knife for the Wooden bowl (recipe 20), a Copper - Saw for Wooden blocks (728), a
+#      Steel - Saw for Planks by hand (159), with no stone knife or Iron - Saw in the pack;
 #   3. every new ladder tool is made at its station from live materials: copper and bronze at the Primitive smithy (stone_forge), iron and steel at the lit Smithy;
 #   4. any metal hammer builds a blueprint of the top hammer tier, and the wooden and stone hammers do not (decision 73);
 #   5. the Grindstone is built before the first saw and is a station.
@@ -20,7 +20,7 @@ const RANK := {"wood": 1, "stone": 2, "copper": 2, "bronze": 3, "iron": 4, "stee
 const FAMILIES := ["axe", "pick", "spade", "hammer", "hoe", "knife", "saw", "sickle", "scythe", "chisel"]
 const EDGED := ["axe", "pick", "knife", "saw", "sickle", "scythe", "chisel"]
 const NEW_TOOLS := ["iron_axe", "steel_axe", "iron_knife", "steel_knife", "steel_saw", "bronze_sickle", "iron_sickle", "steel_sickle",
-		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe"]
+		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe", "copper_saw", "bronze_saw"]
 const DISPOSABLE := ["stone_axe", "stone_knife", "stone_hoe", "stone_hammer", "stone_pickaxe", "wooden_spade", "wooden_hoe", "wooden_hammer",
 		"hide_scraper", "spear", "stone_mace", "javelin", "sewing_needle"]
 const STATION := {"copper": "forge", "bronze": "forge", "iron": "brick_forge", "steel": "brick_forge"}
@@ -191,7 +191,7 @@ func _init() -> void:
 	check(int(extra.get(str(int(row("wooden_spade").get("tier", 1))), 0)) == 0 and int(extra.get(str(int(row("iron_spade")["tier"])), 0)) == 2 and int(extra.get(str(int(row("steel_spade")["tier"])), 0)) == 3, "dig extra by spade: wooden 0, iron 2, steel 3 (as before the renumbering)")
 
 	# 2. The groups take the better tool.
-	for pair in [["wooden_bowl", "iron_knife", "stone_knife"], ["small_blocks_from_large", "iron_axe", "stone_axe"], ["lumber_by_hand", "steel_saw", "hand_saw"]]:
+	for pair in [["wooden_bowl", "iron_knife", "stone_knife"], ["saw_blocks", "copper_saw", "hand_saw"], ["lumber_by_hand", "steel_saw", "hand_saw"]]:
 		empty_pack()
 		hold(str(pair[1]))
 		give_needs(str(pair[0]))

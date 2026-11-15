@@ -1,5 +1,5 @@
 {
-	"_note": "A retired item -> the item that took its place (src/shared/item_table.gd load_renames, current_number). When a save loads, every pack, chest, ground item, worn slot and hotbar key holding the old number gets the new one. A pair counts only while the old row in items.json is \"retired\": true and the new row exists. Keep the old row in items.json: its number must never be reused.",
+	"_note": "A retired item -> the item that took its place (src/shared/item_table.gd load_renames, current_number). When a save loads, every pack, chest, ground item, worn slot and hotbar key holding the old number gets the new one. A pair counts only while the old row in items.json is \"retired\": true and the new row exists. Keep the old row in items.json: its number must never be reused. A pair may be [new id, count]: each saved one loads as that many of the new item (the wood merge, Dave 15 Nov 2026: a large block is 4 Wooden blocks; docs/design/TREE_WOOD_TOOLS_DESIGN.md s4).",
 	"renames": {
 		"hide_leggings": "hide_trousers",
 		"salt": "sea_salt",
@@ -8,6 +8,16 @@
 		"clay_pipe": "clay",
 		"thatch_garden_plot": "wooden_garden_plot",
 		"stone_garden_plot": "wooden_garden_plot",
-		"brick_garden_plot": "wooden_garden_plot"
+		"brick_garden_plot": "wooden_garden_plot",
+		"firewood_soft": "firewood",
+		"wooden_block_soft": "wooden_block",
+		"wooden_block_large": [
+			"wooden_block",
+			4
+		],
+		"wooden_block_soft_large": [
+			"wooden_block",
+			4
+		]
 	}
 }

@@ -950,7 +950,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to set a food board on the platter (hold E to take it up)", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2); F chops logs from storage nearby (master s2.4)
-		return {"prompt": "Press E to split firewood, F to chop logs from storage%s (hold E to pick up the block)" % _fill_note(id), "tap": func(): _use_block(id), "hold": take_down}
+		return {"prompt": "Press E to split a wooden block into firewood, F for its store%s (hold E to pick up the block)" % _fill_note(id), "tap": func(): _use_block(id), "hold": take_down}
 
 	var store_def: Dictionary = _structure_by_state(state)
 
@@ -1627,7 +1627,7 @@ func loose_log_near(point: Vector3) -> int:
 
 		var item_id: String = table.id_of(int(entry["number"]))
 
-		if item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder":
+		if item_id == "log" or item_id == "wooden_block" or str(table.entry(item_id).get("carry", "")) == "shoulder":   # an axe splits a loose wooden block (TREE_WOOD_TOOLS_DESIGN.md)
 			return id
 
 	return 0

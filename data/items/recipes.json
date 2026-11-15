@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs. 'ready_age' (game hours, Mission 001 phase 6, master s3.14): a sealed batch at the Preserving jar; the whole queued count is made at once at age 0 and is Maturing (not eaten, used, sold or merged with a Ready stack) until its age reaches ready_age; its inputs must be at least half fresh.",
-	"next_number": 726,
+	"next_number": 729,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -347,7 +347,7 @@
 			"category": "Workshops and stations",
 			"needs": [
 				[
-					"wooden_block_large",
+					"wooden_block",
 					1
 				]
 			],
@@ -3593,6 +3593,8 @@
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "smelter", "retired": true},
 		"stone_pickaxe": {
 			"number": 186,
+			"retired": true,
+			"note_retired": "Retired 15 Nov 2026 (TREE_WOOD_TOOLS_DESIGN.md W-12): the Stone Hammer breaks rock and copper, tin and coal ore. Saved Stone Pickaxes keep working.",
 			"name": "Stone - Pickaxe",
 			"category": "Tools",
 			"needs": [
@@ -4112,6 +4114,7 @@
 		},
 		"small_blocks_from_large": {
 			"number": 339,
+			"retired": true,
 			"name": "Small wooden blocks",
 			"category": "Materials",
 			"needs": [["wooden_block_large", 1]],
@@ -4122,6 +4125,7 @@
 		},
 		"small_soft_blocks_from_large": {
 			"number": 340,
+			"retired": true,
 			"name": "Small softwood blocks",
 			"category": "Materials",
 			"needs": [["wooden_block_soft_large", 1]],
@@ -4257,6 +4261,7 @@
 		},
 		"wooden_hammer_soft": {
 			"number": 232,
+			"retired": true,
 			"name": "Wooden - Hammer (softwood)",
 			"category": "Tools",
 			"needs": [
@@ -6751,7 +6756,7 @@
 			],
 			"station": "leatherworking_table"
 		},
-		"wooden_longbow": {"number": 357, "name": "Longbow", "category": "Weapons", "needs": [["wooden_block_large", 1], ["sinew", 1], ["twine", 2]], "gives": ["wooden_longbow", 1], "craft_s": 20.0, "known": true, "station": "workbench", "station_level": 2},
+		"wooden_longbow": {"number": 357, "name": "Longbow", "category": "Weapons", "needs": [["wooden_block", 4], ["sinew", 1], ["twine", 2]], "gives": ["wooden_longbow", 1], "craft_s": 20.0, "known": true, "station": "workbench", "station_level": 2},
 		"leather_trousers": {
 			"number": 358,
 			"name": "Leather - Trousers",
@@ -8041,7 +8046,10 @@
 		"serving_platter": {"number": 658, "name": "Serving platter", "category": "Containers and furniture", "needs": [["wooden_block", 2]], "gives": ["serving_platter", 1], "craft_s": 10.0, "known": true, "keeps": [["knife", 1]]},
 		"wooden_cart_wheel": {"number": 700, "name": "Wooden - Cart wheel", "category": "Materials", "needs": [["lumber", 2], ["wooden_pin", 8], ["iron_band", 1]], "gives": ["wooden_cart_wheel", 1], "craft_s": 30.0, "known": true, "station": "workbench", "station_level": 2},
 		"axle": {"number": 701, "name": "Axle", "category": "Materials", "needs": [["lumber", 4], ["iron_band", 1]], "gives": ["axle", 1], "craft_s": 24.0, "known": true, "station": "workbench", "station_level": 2},
-		"chopping_soft_firewood": {"number": 720, "name": "Soft firewood", "category": "Materials", "needs": [["log_spruce", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood_soft", 12], "craft_s": 12.0, "known": true, "station": "chopping_block", "chop": true},
-		"chopping_hard_firewood": {"number": 721, "name": "Hard firewood", "category": "Materials", "needs": [["log_oak", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood", 12], "craft_s": 12.0, "known": true, "station": "chopping_block", "chop": true}
+		"chopping_soft_firewood": {"number": 720, "retired": true, "name": "Soft firewood", "category": "Materials", "needs": [["log_spruce", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood_soft", 12], "craft_s": 12.0, "known": true, "station": "chopping_block", "chop": true},
+		"chopping_hard_firewood": {"number": 721, "retired": true, "name": "Hard firewood", "category": "Materials", "needs": [["log_oak", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood", 12], "craft_s": 12.0, "known": true, "station": "chopping_block", "chop": true},
+		"copper_saw": {"number": 726, "name": "Copper - Saw", "category": "Tools", "needs": [["copper_ingot", 2], ["stick", 2]], "gives": ["copper_saw", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-1): the Iron - Saw recipe in copper, at the Primitive Smithy."},
+		"bronze_saw": {"number": 727, "name": "Bronze - Saw", "category": "Tools", "needs": [["bronze_ingot", 2], ["stick", 2]], "gives": ["bronze_saw", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-2)."},
+		"saw_blocks": {"number": 728, "name": "Wooden block", "category": "Materials", "needs": [["log", 1]], "keeps": [["saw", 1]], "wears_tool": "saw", "gives": ["wooden_block", 6], "craft_s": 15.0, "known": true, "note": "Dave 15 Nov 2026 (W-3): six wooden blocks per log. craft_s is for an Iron saw; the saw in the pack and a Sawbuck in reach change it (server_items._saw_slow, design s5)."}
 	}
 }

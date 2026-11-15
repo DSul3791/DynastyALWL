@@ -410,7 +410,6 @@ var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exemp
 var _last_shot: Dictionary = {}     # peer -> msec
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
-var _wood_species: Dictionary = {}   # data/items/wood_species.json: class of each tree species and the firewood and block items of each class
 var showroom_enabled: bool = true   # off in a real shared world: showroom items become real items in the economy
 var _showroom_todo: Array = []     # [key, number, count, Vector3 spot] still waiting for their ground to load
 var _showroom_wait: float = 0.0
@@ -531,8 +530,6 @@ func setup(item_table, store_dir: String) -> void:
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	var batch_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PICKUP_BATCH_PATH)) if FileAccess.file_exists(PICKUP_BATCH_PATH) else null
 	_batch_cfg = batch_parsed if typeof(batch_parsed) == TYPE_DICTIONARY else {}
-	var wood_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/wood_species.json"))
-	_wood_species = wood_parsed if typeof(wood_parsed) == TYPE_DICTIONARY else {}
 	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
 
 	if typeof(flora_table) == TYPE_DICTIONARY:
@@ -4122,6 +4119,25 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 	return 1.0 if watts < 0.0 else 1.0 / WaterFlowScript.wheel_share(watts, _water_flow_rules())
 
 
+# How much slower a saw recipe (one that keeps "saw", any saw) runs for the saw in the pack (TREE_WOOD_TOOLS_DESIGN.md s5: items.json saw_speed, Copper 0.5,
+# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and at a Sawbuck in reach, which saws twice as fast (W-4).
+func _saw_slow(peer: int, recipe: Dictionary) -> float:
+	var saw_n: int = table.number_of("saw")
+	var saws: bool = false
+
+	for keep in recipe.get("keeps", []):
+		saws = saws or int(keep[0]) == saw_n
+
+	if not saws:
+		return 1.0
+
+	var inv = inventory_of(peer)
+	var slot: int = _tool_slot(inv, "saw") if inv != null else -1   # the saw the craft wears (wears_tool "saw": the first one on the hotbar)
+	var speed: float = float(table.entry(table.id_of(int(inv.numbers[slot]))).get("saw_speed", 1.0)) if slot >= 0 else 1.0
+	var slow: float = 1.0 / maxf(speed, 0.1)
+	return slow * (0.5 if serving_station(peer, "sawbuck") >= 0 else 1.0)
+
+
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
 # wheel (structures.json needs_running_water) or a blueprint site. The watts are worked out once per piece and kept on it ("wheel_w"). Sent on the
 # piece's world row ("wheel") so looking at a sawmill shows what its wheel gives.
@@ -5209,7 +5225,7 @@ func _load_world_items() -> void:
 
 	for row in parsed["items"]:
 		row_n += 1
-		var entry: Dictionary = {"number": table.current_number(int(row[0])), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+		var entry: Dictionary = {"number": table.current_number(int(row[0])), "count": int(row[1]) * table.rename_count(int(row[0])), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}   # a counted rename: a saved large block lies as 4 Wooden blocks
 
 		if is_dead_kit(int(row[0])):
 			continue
@@ -5779,11 +5795,16 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		return
 
 	var ore_cfg: Dictionary = _boulder_cfg.get("ore", {})
-	var a_pick: bool = str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick"))
-	# needs_material (boulders.json ore): the pick materials that may take each ore; no entry = any pick (iron ore needs a bronze, iron or steel pick: the ladder).
+	# tool_classes (boulders.json ore): a pick or, since the Stone Pickaxe retired (TREE_WOOD_TOOLS_DESIGN.md W-12), a hammer takes ore; pick_only ores (iron) want a pick.
+	var held_class: String = str(held.get("tool_class", ""))
+	var pick_only: bool = info.has("ore") and (ore_cfg.get("pick_only", []) as Array).has(str(info["ore"])) and held_class != "pick"
+	var a_pick: bool = (ore_cfg.get("tool_classes", [ore_cfg.get("tool_class", "pick")]) as Array).has(held_class) and not pick_only
+	# needs_material (boulders.json ore): the tool materials that may take each ore; no entry = any (iron ore needs a bronze, iron or steel pick: the ladder).
 	var material_ok: bool = not info.has("ore") or ((ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), []) as Array).is_empty() or ((ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), []) as Array).has(str(held.get("material", "")))
 
-	if info.has("ore") and not ore_cfg.is_empty() and a_pick and not material_ok:
+	if info.has("ore") and not ore_cfg.is_empty() and pick_only and held_class == "hammer":
+		_say(peer, "Iron ore needs a bronze or better pick.")
+	elif info.has("ore") and not ore_cfg.is_empty() and a_pick and not material_ok:
 		_say(peer, "This pick is too soft for that ore.")   # said once per blow that breaks stone off
 
 	var flint_cfg: Dictionary = _boulder_cfg.get("flint", {})
@@ -6603,7 +6624,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 		return
 
 	var tool: Array = _wood_tool(inv, held_slot)   # wood is worked with the tool in hand: an axe, or (very slowly) a pick (TEST-013)
-	var a_log: bool = not it.is_empty() and not it.has("tree") and not it.has("struct") and (table.id_of(int(it["number"])) == "log" or is_shoulder_item(int(it["number"])))
+	var a_log: bool = not it.is_empty() and not it.has("tree") and not it.has("struct") and (table.id_of(int(it["number"])) in ["log", "wooden_block"] or is_shoulder_item(int(it["number"])))
 
 	if tool.is_empty():
 		if a_log or (not it.is_empty() and it.has("tree")):
@@ -6682,8 +6703,7 @@ func _process_trunk(peer: int, inv, id: int, held_slot: int) -> void:
 				give(peer, int(seeds[0]), int(seeds[1]))
 	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
 		for row in ([] if by_pick else cfg.get("small", [])):
-			var small_id: String = _wood_item("firewood", str(tree.get("species", ""))) if str(row[0]) == "firewood" else str(row[0])
-			give(peer, table.number_of(small_id), roll_amount(peer, rng, int(row[1]), int(row[2])))
+			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 
 		if blows + 1 >= int(cfg.get("branch_blows", 3)) + int(cfg.get("small_blows", 3)):
 			_items.erase(id)
@@ -6781,7 +6801,6 @@ func _chop_stump(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: the 
 	tree["blows"] = blows
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(id) ^ (blows * 7919)
-	var species: String = str(tree.get("species", ""))
 
 	if by_pick:   # a pick only tears the stump up: kindling and thatch every blow, a pile of kindling at the end (Dave 12 Nov 2026)
 		_pick_splinters(peer, rng)
@@ -6800,8 +6819,7 @@ func _chop_stump(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: the 
 			send_notice.call(peer, "Chopping the stump: %d of %d" % [blows, needed])
 	else:
 		for row in _stump_final_rows(cfg, float(tree["radius"])):
-			var drop_id: String = _wood_item("firewood", species) if str(row[0]) == "firewood" else str(row[0])
-			give(peer, table.number_of(drop_id), roll_amount(peer, rng, int(row[1]), int(row[2])))
+			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 
 		_items.erase(id)
 
@@ -6964,7 +6982,6 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	var tree: Dictionary = it["tree"]
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(id) ^ 7919
-	var species: String = str(tree.get("species", ""))
 	var totals: Dictionary = {}
 	var litter: Array = _crown_litter(id, tree, cfg, it["pos"])
 	var branch: Array = _branch_rows(tree, cfg, it["pos"]) if litter.is_empty() else []
@@ -6976,8 +6993,7 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 
 	for blow in range(int(cfg.get("small_blows", 3))):
 		for row in cfg.get("small", []):
-			var small_id: String = _wood_item("firewood", species) if str(row[0]) == "firewood" else str(row[0])
-			var m: int = table.number_of(small_id)
+			var m: int = table.number_of(str(row[0]))
 			totals[m] = int(totals.get(m, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
 
 	var rows: Array = []
@@ -9563,56 +9579,40 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 	if float(now - int(_last_use.get(peer, -100000))) < float(def.get("use_pace_ms", 600)) / _pace_factor(peer, "split_log"):
 		return
 
-	# Dave 2026-10-23: the chopping block splits WOODEN BLOCKS (a log chopped on the ground gives them). Dave 4 Nov 2026 (BUG-014): a large block
-	# (from a big trunk) splits into firewood_per_large_block (4), a small one into firewood_per_block. Large first, hardwood before softwood.
-	var block_n: int = 0
-
-	for kind in ["wooden_block_large", "wooden_block_soft_large", "wooden_block", "wooden_block_soft"]:
-		if block_n == 0 and inv.has(table.number_of(kind), 1):
-			block_n = table.number_of(kind)
-
-	if block_n == 0:
-		block_n = table.number_of("wooden_block")
-
+	# The chopping block splits a Wooden block into Firewood (Dave 15 Nov 2026: it "will pick up blocks from the ground or from a cart or from any container
+	# around you or your inventory"): one E with an axe in hand takes one block from the craft stock (pack first, then the ground, carts and containers in
+	# reach) and drops firewood_per_block (4, TREE_WOOD_TOOLS_DESIGN.md W-3) beside the block.
 	var axe: int = _held_tool(inv, held_slot, "axe")
 
 	if axe < 0:
 		_say(peer, "You need an axe in hand to split wood.")
 		return
 
-	if not inv.has(block_n, 1):
-		_say(peer, "You need a wooden block to split. Chop a log on the ground with your axe first.")
+	if _stock_take(inv, table.number_of("wooden_block"), 1, _stock_of(peer)) < 1:
+		_say(peer, "You need a wooden block to split. Saw a log into blocks first.")
 		return
 
 	_last_use[peer] = now
-	inv.remove(block_n, 1)
-	var large: bool = block_n == table.number_of("wooden_block_large") or block_n == table.number_of("wooden_block_soft_large")
-	var soft: bool = block_n == table.number_of("wooden_block_soft") or block_n == table.number_of("wooden_block_soft_large")
-	var firewood: String = "firewood_soft" if soft else "firewood"
-	_drop_firewood_beside(it, int(def.get("firewood_per_large_block", 4)) if large else int(def.get("firewood_per_block", 1)), firewood)
-	_goal_made(peer, table.number_of(firewood))   # splitting by hand counts like one craft of the firewood, as the block's F queue does (GOALS-REPAIR F3)
+	_drop_firewood_beside(it, int(def.get("firewood_per_block", 4)))   # the pack change goes out with the action (_action)
+	_goal_made(peer, table.number_of("firewood"))   # splitting by hand counts like one craft of the firewood (GOALS-REPAIR F3)
 	_wear_slot(peer, inv, axe, "split")
 	practice(peer, "split_log")
 	_dirty = true
 
 
-# The item of a wood chain step ("firewood" or "block") for a tree species: its class (hardwood or softwood, unknown species use the default entry) decides.
-func _wood_item(step: String, species: String) -> String:
-	var info: Dictionary = _wood_species.get("species", {}).get(species, _wood_species.get("default", {}))
-	var items: Dictionary = _wood_species.get("class_items", {}).get(str(info.get("class", "hardwood")), {})
-	return str(items.get(step, "firewood" if step == "firewood" else "wooden_block"))
-
-
 # Split firewood falls beside the chopping block and joins the heap lying there (drop_in_world merges it, PILE_CAP and the pile lifetime included);
 # six or more make a pile the client draws from the count (bug 3: before, this had its own merge capped at the 40 stack with the 20-minute loose lifetime).
-func _drop_firewood_beside(block: Dictionary, count: int, wood_id: String = "firewood") -> void:
-	drop_in_world(table.number_of(wood_id), count, block["pos"] + Vector3(0.9, 0.0, 0.0))
+func _drop_firewood_beside(block: Dictionary, count: int) -> void:
+	drop_in_world(table.number_of("firewood"), count, block["pos"] + Vector3(0.9, 0.0, 0.0))
 
 
-# A log lying on the ground, struck with an axe, falls apart into wooden blocks: 3 per log (Dave 4 Nov 2026, BUG-014), small blocks from a short log,
-# large blocks from a large shoulder log.
-# With a pick (Dave 12 Nov 2026: "if you break a log with a pickaxe it will just leave a pile of kindling") it takes 1 / speed blows, each tearing loose
-# kindling and thatch, and the log is left as a pile of kindling where it lay.
+# A wooden block lying on the ground, struck with an axe, splits into firewood_per_block Firewood (4, W-3) after BLOCK_SPLIT_BLOWS blows. A log
+# struck with an axe does not split (TREE_WOOD_TOOLS_DESIGN.md: logs are sawn into blocks) and the player is told so.
+# With a pick (Dave 12 Nov 2026: "if you break a log with a pickaxe it will just leave a pile of kindling") a log takes 1 / speed blows, each tearing
+# loose kindling and thatch, and the log is left as a pile of kindling where it lay.
+const BLOCK_SPLIT_BLOWS := 2
+
+
 func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: the wood tool in hand, _wood_tool (checked by _process_trunk)
 	var it: Dictionary = _items.get(id, {})
 
@@ -9621,8 +9621,9 @@ func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: 
 
 	var item_id: String = table.id_of(int(it["number"]))
 	var big: bool = is_shoulder_item(int(it["number"]))
+	var block: bool = item_id == "wooden_block"
 
-	if item_id != "log" and not big:
+	if item_id != "log" and not big and not block:
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > PROCESS_REACH_M + 1.0:
@@ -9636,6 +9637,10 @@ func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: 
 	_last_process[peer] = now
 
 	if str(tool[1]) == "pick":
+		if block:
+			_say(peer, "Split a wooden block with an axe.")
+			return
+
 		_wear_slot(peer, inv, int(tool[0]), "split")
 		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 		var work: float = float(it.get("pick_work", 0.0)) + float(tool[2])
@@ -9657,20 +9662,28 @@ func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: 
 		drop_in_world(table.number_of("kindling"), _pick_kindling(big), it["pos"] + Vector3(0.0, 0.1, 0.0))
 		return
 
-	var cfg: Dictionary = _structures.get("chopping_block", {})
-	var blocks: int = int(cfg.get("blocks_per_shoulder_log", 3)) if big else int(cfg.get("blocks_per_log", 3))
+	if not block:
+		_say(peer, "Saw the log into wooden blocks first, then split the blocks.")
+		return
+
+	_wear_slot(peer, inv, int(tool[0]), "split")
+	var blows: int = int(it.get("split_blows", 0)) + 1
+	_dirty = true
+
+	if blows < BLOCK_SPLIT_BLOWS:
+		it["split_blows"] = blows
+		return
+
+	it.erase("split_blows")
 
 	if int(it["count"]) > 1:
 		it["count"] = int(it["count"]) - 1
 	else:
 		_items.erase(id)
 
-	_wear_slot(peer, inv, int(tool[0]), "split")
-	var block_n: int = table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", ""))))
-	drop_in_world(block_n, blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
-	_goal_made(peer, block_n)   # chopping a log by hand counts like one craft of its block (GOALS-REPAIR F3); the pick's kindling above counts nothing
+	drop_in_world(table.number_of("firewood"), int(_structures.get("chopping_block", {}).get("firewood_per_block", 4)), it["pos"] + Vector3(0.0, 0.1, 0.0))
+	_goal_made(peer, table.number_of("firewood"))   # splitting by hand counts like one craft of the firewood (GOALS-REPAIR F3); the pick's kindling counts nothing
 	practice(peer, "split_log")
-	_dirty = true
 
 
 # --- Station stores (master s2.5 [D1][R]; Mission 001 T18) ---
@@ -18837,7 +18850,7 @@ func _craft_tick(spent: float) -> void:
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
-		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft"):
+		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * _saw_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft"):
 			continue
 
 		# A sealed batch done while its room was filled meanwhile waits, finished, until there is space again (never onto the ground).
@@ -18852,7 +18865,7 @@ func _craft_tick(spent: float) -> void:
 		var made_n: int = int(recipe["gives"][0])
 		var made_inst: Dictionary = SmithingRules.made_inst(table.entry(table.id_of(made_n)), variant)
 		var made_age: int = _made_age(made_n, head)
-		var made_count: int = _chop_yield(head, false) if bool(recipe.get("chop", false)) else int(recipe["gives"][1])
+		var made_count: int = int(recipe["gives"][1])
 		var store_id: int = -1 if float(recipe.get("ready_age", 0.0)) > 0.0 else _craft_store(peer, recipe, free_entry)
 
 		if store_id >= 0 and _out_room(_items[store_id], made_n, made_inst, made_age) < made_count:
@@ -18896,7 +18909,7 @@ func _craft_tick(spent: float) -> void:
 			if sealed:
 				_give_batch(peer, int(recipe["gives"][0]), int(recipe["gives"][1]) * times)
 			elif store_id >= 0:
-				var spill: int = _out_add(store_id, made_n, _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count, made_age, made_inst)
+				var spill: int = _out_add(store_id, made_n, made_count, made_age, made_inst)
 
 				if spill > 0:   # not reached (the room was checked this tick); kept so a disagreement with Inventory.add never loses the product
 					give(peer, made_n, spill, made_inst, made_age)
@@ -18904,7 +18917,7 @@ func _craft_tick(spent: float) -> void:
 				if int(head[1]) - times <= 0:
 					_say(peer, "%s done: it is in the %s." % [str(recipe.get("name", "Your craft")), table.sentence_name(int(_items[store_id]["number"]))])
 			else:
-				var gave_n: int = _chop_yield(head, true) if bool(recipe.get("chop", false)) else made_count
+				var gave_n: int = made_count
 				give(peer, made_n, gave_n, made_inst, made_age)
 
 				if free_entry:   # an admin-mode craft's product earns no goal by being held (GA-54)
@@ -18939,28 +18952,6 @@ func _craft_tick(spent: float) -> void:
 
 		_dirty = true
 		_sync_craft_queue(peer)
-
-
-# A Chopping block craft (recipes.json "chop", master s2.4) yields what chopping that log by hand yields (structures.json chopping_block): a large
-# log on the shoulder (every species log) 3 large blocks of 4 firewood each, a plain Log 3 blocks of 2. The log is the first unit the entry still
-# holds (crafts finish in the order the units were taken); `use` drops it from the entry, so a cancel refunds only the logs not yet chopped.
-# An entry with no recorded units (an admin craft) yields the recipe's count.
-func _chop_yield(entry: Array, use: bool) -> int:
-	var cfg: Dictionary = _structures.get("chopping_block", {})
-	var rows: Array = entry[2][0][2] if not (entry[2] as Array).is_empty() and (entry[2][0] as Array).size() > 2 else []
-
-	if rows.is_empty():
-		return int(recipes.recipe(int(entry[0])).get("gives", [0, 0])[1])
-
-	var big: bool = is_shoulder_item(int(rows[0][0]))
-	var made: int = int(cfg.get("blocks_per_shoulder_log", 3)) * int(cfg.get("firewood_per_large_block", 4)) if big else int(cfg.get("blocks_per_log", 3)) * int(cfg.get("firewood_per_block", 2))
-
-	if use and rows[0].size() > 3 and int(rows[0][3]) > 1:
-		rows[0][3] = int(rows[0][3]) - 1
-	elif use:
-		rows.remove_at(0)
-
-	return made
 
 
 const SEAL_MIN_FRESH := 0.5   # master s3.14: sealing refuses inputs below half freshness
@@ -19067,7 +19058,7 @@ func _sync_craft_queue(peer: int) -> void:
 
 	if not entries.is_empty():
 		var head_recipe: Dictionary = recipes.recipe(int(entries[0][0]))
-		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe) * SmithingRules.time_mult(_variant_of(entries[0])) / _pace_factor(peer, "craft")   # as _craft_tick times it (skill, rest, cold)
+		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe) * _saw_slow(peer, head_recipe) * SmithingRules.time_mult(_variant_of(entries[0])) / _pace_factor(peer, "craft")   # as _craft_tick times it (skill, rest, cold)
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
 	send_craft_queue.call(peer, _pairs(entries), left_ms)
@@ -19121,9 +19112,11 @@ func _load_craft_queues() -> void:
 								if (unit[1] as Dictionary).has(liquid_key):
 									kept[liquid_key] = int(unit[1][liquid_key])
 
-						units.append([int(unit[0]), kept, maxi(int(unit[2]), 0) if unit.size() > 2 else 0, clampi(int(unit[3]), 1, 65535) if unit.size() > 3 else 1])   # what the craft took (_hold_insts); older rows: one unit, older still: wear 0
+						var per_unit: int = table.rename_count(int(unit[0]))   # a retired item comes back as its replacement (renames.json), a large block as 4 Wooden blocks
+						units.append([table.current_number(int(unit[0])), kept, maxi(int(unit[2]), 0) if unit.size() > 2 else 0, clampi((int(unit[3]) if unit.size() > 3 else 1) * per_unit, 1, 65535)])   # what the craft took (_hold_insts); older rows: one unit, older still: wear 0
 
-				needs.append([int(need[0]), int(need[1]), units] if not units.is_empty() else [int(need[0]), int(need[1])])
+				var per_need: int = table.rename_count(int(need[0]))
+				needs.append([table.current_number(int(need[0])), int(need[1]) * per_need, units] if not units.is_empty() else [table.current_number(int(need[0])), int(need[1]) * per_need])
 
 			var parts: Array = []
 

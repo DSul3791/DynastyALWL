@@ -453,6 +453,14 @@ func _repair_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, held_slot + 1, 0, Vector3.ZERO)   # the hammer in hand (protocol 117)
 
 
+# A boulder within swing reach under the aim (the hammer breaks it, _strike sends the blow like a pick's).
+func _boulder_aimed() -> bool:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+	return not hit.is_empty() and _inv.boulder_near(hit["position"]) != 0
+
+
 # Save building plan (hammer menu, then left click): keeps the building you aim at, every blueprint piece joined to it, as a plan in the menu.
 func _save_plan_here() -> void:
 	var from: Vector3 = _camera.global_position
@@ -1105,7 +1113,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
 		if button == MOUSE_BUTTON_LEFT and pressed:
-			if blueprints.mode == "repair":
+			if blueprints.mode == "repair" and _boulder_aimed():   # Hammer/Repair Tool (Dave 15 Nov 2026): a boulder in reach is struck for stone and ore, never repaired
+				if _swing_t < 0.0:
+					_start_swing()
+			elif blueprints.mode == "repair":
 				_repair_here()
 			else:
 				_save_plan_here()

@@ -675,7 +675,7 @@ func _init() -> void:
 		f._fire_add(tg, "firewood")
 
 	check(f._fire_best_state(tg) == 1, "two logs and three firewood make a campfire")
-	f._fire_add(tg, "firewood_soft")
+	f._fire_add(tg, "firewood")
 	f._fire_burn(tg, log_s * 2.0)
 	check(float(tg["wood"]["log"]) <= 0.001 and float(tg["wood"]["firewood"]) > 0.0, "logs burn before firewood")
 	var tfw: Dictionary = {"state": 9, "burn_left": 0.0}
@@ -1638,7 +1638,7 @@ func _init() -> void:
 		return total
 	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 2, Vector3.ZERO)
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 2, "a wooden block splits into two firewood that falls beside the block")
+	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 4, "a wooden block splits into four firewood that falls beside the block")
 	check(cb.inventory_of(1).wear[cb.inventory_of(1).numbers.find(cb.table.number_of("stone_axe"))] == 1, "and wears the axe one use")
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	check(cb.inventory_of(1).count_of(block_n) == 1, "the pace limit holds")
@@ -1650,7 +1650,7 @@ func _init() -> void:
 		if int(cb._items[k]["number"]) == firewood_n and not cb._items[k].has("struct"):
 			heaps += 1
 
-	check(loose_of.call(firewood_n) == 4 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
+	check(loose_of.call(firewood_n) == 8 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
 	# Bug 3: the heap keeps growing past the 40 stack as one pile, and a pile lives the pile lifetime.
 	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 25, Vector3.ZERO)
 
@@ -1668,10 +1668,9 @@ func _init() -> void:
 
 	check(loose_of.call(firewood_n) > 40 and big_heaps == 1 and heap_left >= ItemsScript.PILE_LIFETIME_S - 1.0, "the heap beside the block grows past 40 as one pile and lives as a pile (%d pieces, %d heaps, %.0f s)" % [loose_of.call(firewood_n), big_heaps, heap_left])
 
-	# A plain log lying on the ground, struck with the axe, falls apart into wooden blocks: softwood ones, since the plain Log is softwood (Mission 001, master s4 item 3).
+	# A log lying on the ground, struck with the axe, is not split: it is sawn into wooden blocks first (TREE_WOOD_TOOLS_DESIGN.md) and the player is told so.
 	cb.drop_in_world(cb.table.number_of("log"), 1, Vector3(1.0, 10.0, 0.0))
 	var lying: int = 0
-	var soft_block_n: int = cb.table.number_of("wooden_block_soft")
 
 	for k in cb._items:
 		if int(cb._items[k]["number"]) == cb.table.number_of("log") and not cb._items[k].has("struct"):
@@ -1680,13 +1679,12 @@ func _init() -> void:
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
 	check(cb._items.has(lying), "nothing in hand (the axe only on the hotbar): the log is not chopped (TEST-013)")
+	var blocks_before: int = int(loose_of.call(block_n))
+	var fire_before: int = int(loose_of.call(firewood_n))
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(cb))
-	check(not cb._items.has(lying) and loose_of.call(soft_block_n) == 3, "a plain log chopped on the ground makes 3 softwood blocks (%d)" % loose_of.call(soft_block_n))
-
-	# A softwood log chops to softwood blocks, and those split to softwood firewood (wood_species.json class_items).
-	var soft_n: int = cb.table.number_of("wooden_block_soft_large")   # a spruce log is a large shoulder log: large blocks (BUG-014)
-	var soft_fire_n: int = cb.table.number_of("firewood_soft")
+	check(cb._items.has(lying) and int(cb._items[lying]["count"]) == 1 and loose_of.call(block_n) == blocks_before and loose_of.call(firewood_n) == fire_before, "an axe on a plain log gives nothing and leaves the log")
+	check(str(notes[-1]) == "Saw the log into wooden blocks first, then split the blocks.", "and says to saw it first (%s)" % str(notes[-1]))
 	cb.drop_in_world(cb.table.number_of("log_spruce"), 1, Vector3(1.0, 10.0, 0.0))
 	var spruce_lying: int = 0
 
@@ -1696,12 +1694,31 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, HeldTool.at_axe(cb))
-	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 3, "a spruce log chopped on the ground makes 3 large softwood blocks (%d)" % loose_of.call(soft_n))
-	cb.action(1, Net.ACT_ADMIN_GIVE, soft_n, 0, 1, Vector3.ZERO)
+	check(cb._items.has(spruce_lying) and loose_of.call(block_n) == blocks_before and loose_of.call(firewood_n) == fire_before, "an axe on a large shoulder log gives nothing and leaves it too")
+
+	# A wooden block lying on the ground: two axe blows split one block of the stack into four Firewood.
+	cb.drop_in_world(block_n, 2, Vector3(1.0, 10.0, 0.5))
+	blocks_before = int(loose_of.call(block_n))
+	var ground_block: int = 0
+
+	for k in cb._items:
+		if int(cb._items[k]["number"]) == block_n and not cb._items[k].has("struct"):
+			ground_block = k
+
+	cb._last_process.clear()
+	cb.action(1, Net.ACT_PROCESS, ground_block, 0, 0, HeldTool.at_axe(cb))
+	check(cb._items.has(ground_block) and loose_of.call(block_n) == blocks_before and loose_of.call(firewood_n) == fire_before, "the first axe blow on a ground block splits nothing yet")
+	cb._last_process.clear()
+	cb.action(1, Net.ACT_PROCESS, ground_block, 0, 0, HeldTool.at_axe(cb))
+	check(loose_of.call(block_n) == blocks_before - 1 and loose_of.call(firewood_n) == fire_before + 4, "the second blow uses one block and drops 4 Firewood (%d blocks, %d firewood)" % [loose_of.call(block_n), loose_of.call(firewood_n) - fire_before])
+
+	# The chopping block takes the block from the ground when the pack has none (Dave 15 Nov 2026).
 	cb.inventory_of(1).remove(block_n, cb.inventory_of(1).count_of(block_n))
+	blocks_before = int(loose_of.call(block_n))
+	fire_before = int(loose_of.call(firewood_n))
 	cb._last_use.clear()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 4, "a large softwood block splits into 4 softwood firewood (%d)" % loose_of.call(soft_fire_n))
+	check(blocks_before >= 1 and loose_of.call(block_n) == blocks_before - 1 and loose_of.call(firewood_n) == fire_before + 4 and cb.inventory_of(1).count_of(block_n) == 0, "E on the chopping block with an empty pack takes a block lying on the ground and drops 4 Firewood")
 
 	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
 	var oak_log: int = cb.table.number_of("log_oak")
@@ -2508,6 +2525,18 @@ func _init() -> void:
 
 	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 6 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 6 lumber")
 	check(saw_slot >= 0 and hs.inventory_of(1).on_hotbar(saw_slot) and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
+
+	# Saw speed (TREE_WOOD_TOOLS_DESIGN.md s5): the first saw on the hotbar sets the pace of a craft that keeps a saw (Copper 0.5, Iron 1.0), a Sawbuck in reach halves the time.
+	hs.ground_height = func(_x, _z): return 10.0
+	hs.report_position(1, Vector3(0.0, 10.0, 0.0))
+	check(is_equal_approx(hs._saw_slow(1, by_hand), 1.0), "an iron saw saws at the recipe's pace (x%.2f)" % hs._saw_slow(1, by_hand))
+	check(is_equal_approx(hs._saw_slow(1, hs.recipes.recipe(1)), 1.0), "a craft that keeps no saw is never slowed")
+	hs.inventory_of(1).remove(hs.table.number_of("hand_saw"), 1)
+	hs.give(1, hs.table.number_of("copper_saw"), 1)
+	check(is_equal_approx(hs._saw_slow(1, by_hand), 2.0), "a copper saw takes twice as long (x%.2f)" % hs._saw_slow(1, by_hand))
+	hs._items[900901] = {"number": hs.table.number_of("sawbuck"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "sawbuck", "yaw": 0.0, "uid": 0, "owner": "", "born": 0.0}}
+	check(hs.serving_station(1, "sawbuck") == 900901 and is_equal_approx(hs._saw_slow(1, by_hand), 1.0), "a Sawbuck in reach halves it: the copper saw is back to the recipe's pace (x%.2f)" % hs._saw_slow(1, by_hand))
+	hs._items.erase(900901)
 
 	for rid in ["wooden_hammer", "stone_hammer"]:
 		var rec: Dictionary = {}

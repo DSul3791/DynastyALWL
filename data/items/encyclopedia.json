@@ -4487,7 +4487,8 @@
 				"Fast, short fuel for a fire (pine, spruce, fir).",
 				"Used in Charcoal"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wooden_block_soft": {
 			"name": "Softwood block",
@@ -4502,7 +4503,8 @@
 				"Used in Wooden - Club",
 				"Used in Wooden bowl"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"saw_blade": {
 			"name": "Saw blade",
@@ -5111,7 +5113,8 @@
 				"Craft: 2 Stick, 3 Stone, 2 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"sickle": {
 			"name": "Stone - Sickle",
@@ -7583,7 +7586,8 @@
 				"Burn it in a fire",
 				"Used in Longbow"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wooden_block_soft_large": {
 			"name": "Large softwood block",
@@ -7598,7 +7602,8 @@
 				"Burn it in a fire",
 				"Used in Longbow"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"charcoal": {
 			"name": "Charcoal",

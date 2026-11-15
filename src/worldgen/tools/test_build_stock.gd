@@ -227,7 +227,7 @@ func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector
 func _check_group_refund() -> void:
 	var t = items.table
 	check(items._refund_number(t.number_of("knife")) == t.number_of("stone_knife"), "a knife cost gives back the stone knife (tier 1)")
-	check(items._refund_number(t.number_of("wooden_block")) == t.number_of("wooden_block_soft"), "a wooden block cost gives back the cheaper softwood block")
+	check(items._refund_number(t.number_of("wooden_block")) == t.number_of("wooden_block"), "a wooden block cost gives back a wooden block (no longer a group, 15 Nov 2026)")
 	check(items._refund_number(t.number_of("log")) == t.number_of("log"), "a log cost still gives back plain logs")
 	check(items._refund_number(t.number_of("mortar")) == t.number_of("mortar"), "a cost that is no group gives back itself")
 	# A stand-in pair like Nails and Bronze nails: the bronze member ranks below one with no material.

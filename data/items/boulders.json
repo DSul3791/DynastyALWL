@@ -17,6 +17,12 @@
 			"bronze": 1,
 			"iron": 1.5,
 			"steel": 2
+		},
+		"hammer": {
+			"stone": 1,
+			"bronze": 1.5,
+			"iron": 2,
+			"steel": 2
 		}
 	},
 	"radius_min": 0.3,
@@ -37,6 +43,9 @@
 		"boulder_share": 0.4,
 		"piece_share": 0.3,
 		"tool_class": "pick",
+		"tool_classes": ["pick", "hammer"],
+		"pick_only": ["iron"],
+		"hammer_note": "Dave 15 Nov 2026 (TREE_WOOD_TOOLS_DESIGN.md s1, W-12): the Stone Hammer breaks rock and takes copper, tin, coal, salt and limestone like a stone pick; iron ore still needs a bronze or better PICK (pick_only). A Wooden hammer does not break rock (no tools.hammer.wood rate).",
 		"items": {
 			"coal": "coal",
 			"copper": "copper_ore",
