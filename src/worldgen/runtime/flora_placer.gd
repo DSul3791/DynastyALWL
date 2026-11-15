@@ -1323,13 +1323,22 @@ func _wet_samples(data, origin: Vector2, brooks: Dictionary = {}) -> Dictionary:
 
 	# Record brooks (the drink channel samples: a brook the settled water may not draw, Dave 10 Nov 2026 "all brooks and water ways"): water at the
 	# ground there. A sample already wet keeps its level.
-	for k in data.drink_samples():
-		@warning_ignore("integer_division")
-		var at: Vector2i = Vector2i(k % data.samples, k / data.samples)
+	# drink_samples() is sorted (sample numbers ascending), so each row of the window is one run found by bsearch: looping over every
+	# channel sample of the tile cost about 128 ms a full chunk (David4, 15 Nov 2026, flora_profile.gd), even on chunks with no brook near.
+	var drink: PackedInt32Array = data.drink_samples()
 
-		if at.x >= i0 and at.x <= i1 and at.y >= j0 and at.y <= j1 and not out.has(at) and data.water_class[k] != ocean:
-			out[at] = data.height_at(data.x0 + float(at.x) * sp, data.z0 + float(at.y) * sp)
-			brooks[at] = true
+	for j in range(j0, j1 + 1):
+		var row_end: int = j * data.samples + i1
+		var index: int = drink.bsearch(j * data.samples + i0)
+
+		while index < drink.size() and drink[index] <= row_end:
+			var k: int = drink[index]
+			index += 1
+			var at: Vector2i = Vector2i(k - j * data.samples, j)
+
+			if not out.has(at) and data.water_class[k] != ocean:
+				out[at] = data.height_at(data.x0 + float(at.x) * sp, data.z0 + float(at.y) * sp)
+				brooks[at] = true
 
 	return out
 

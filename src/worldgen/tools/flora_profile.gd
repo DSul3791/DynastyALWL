@@ -4,7 +4,8 @@ extends SceneTree
 #
 #   godot --headless --path . --script res://src/worldgen/tools/flora_profile.gd -- [--part=sections|functions|all]
 #
-# sections:  the chunk windows test_flora_density places, each timed with the plain placer (ms per chunk, items per chunk),
+# sections:  the chunk windows test_flora_density placed up to 15 Nov 2026 (it now places the grove window by stand circle and the spawn
+#            window trees only), each timed with the plain placer (ms per chunk, items per chunk),
 #            plus the test's own loops between them. Prints "SECTION <name> chunks=<n> ms=<total> ms_per_chunk=<x> items=<n>".
 # functions: a few full and trees-only chunks through a placer whose inner helpers are wrapped with timers (inclusive time; the
 #            wrapping adds its own cost, so use the shares, not the sums). Prints "FUNC <name> calls=<n> ms=<total> us_per_call=<x>".
