@@ -49,7 +49,7 @@ func _run() -> void:
 	cam.fov = 28.0
 	viewport.add_child(cam)
 	cam.look_at_from_position(Vector3(0.0, 1.0, 6.2), Vector3(0.0, 1.0, 0.0))
-	var sets: Array = [[], ["hide_cloak", "hide_hood", "hide_boots"], ["backpack", "hide_leggings", "hide_mittens"], ["grass_skirt", "fibre_sandals", "quiver"]]
+	var sets: Array = [[], ["hide_cloak", "hide_hood", "hide_boots"], ["simple_backpack", "hide_leggings", "hide_mittens"], ["grass_skirt", "fibre_sandals", "quiver"]]
 	var shots: Array = []
 
 	for r in range(2):

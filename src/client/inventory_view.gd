@@ -2576,7 +2576,7 @@ func hotbar_to_pack(key: int) -> void:
 	var free: int = inventory.free_bag_slot()
 
 	if free < 0:
-		_on_notice("Your backpack is full.")
+		_on_notice("Your inventory is full.")
 		return
 
 	move_slot(key, free)
@@ -2602,16 +2602,35 @@ func hotbar_tip(key: int) -> String:
 	var key_name: String = "0" if key == 9 else str(key + 1)
 
 	if slot >= 0:
-		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], inventory.inst_of(slot)) + ("\nKeys: Use (E) moves it to the backpack" if open else "")
+		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], inventory.inst_of(slot)) + ("\nKeys: Use (E) moves it to the inventory" if open else "")
 
 	return "Drag an item here from the inventory. Key %s holds it." % key_name
+
+
+# The body slot ("back", "head", ...) of the wearable piece in a pack slot, "" for none (an empty slot or a piece nobody wears).
+func wear_slot_of(slot: int) -> String:
+	if slot < 0 or slot >= inventory.slot_count or inventory.numbers[slot] == 0:
+		return ""
+
+	var body: String = str(table.entry(table.id_of(inventory.numbers[slot])).get("slot", ""))
+	return body if clothing_slots().has(body) else ""
+
+
+# Put on the piece in a pack slot; the server picks its position and says why when it cannot (ACT_WEAR, server_items.gd _wear).
+func wear_slot(slot: int) -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_WEAR, slot, 0, 0, Vector3.ZERO)
+
+
+# Take off the piece at a worn position into the pack (ACT_UNWEAR, server_items.gd _unwear; refused with a notice when something hangs on it).
+func take_off(place: int) -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_UNWEAR, place, 0, 0, Vector3.ZERO)
 
 
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
 func eat_slot(slot: int) -> void:
 	# Use on clothing or a pack puts it on.
-	if slot >= 0 and slot < inventory.slot_count and inventory.numbers[slot] != 0 and clothing_slots().has(str(table.entry(table.id_of(inventory.numbers[slot])).get("slot", "-"))):
-		net.inventory_action.rpc_id(1, Net.ACT_WEAR, slot, 0, 0, Vector3.ZERO)
+	if wear_slot_of(slot) != "":
+		wear_slot(slot)
 		return
 
 	# Use on a tool, weapon or kit holds it in the hand (and again puts it away); on food or medicine it eats or applies it;

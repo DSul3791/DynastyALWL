@@ -246,8 +246,12 @@ func _make_slot(index: int) -> Control:
 			return null
 
 		return {"slot": index}
-	slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
-	slot.on_drop = func(data: Variant) -> void: view.move_slot(int(data["slot"]), index)
+	slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and (data.has("slot") or data.has("worn"))
+	slot.on_drop = func(data: Variant) -> void:
+		if data.has("worn"):   # a pack dragged off the You column's Back slot comes off into the inventory (the server picks the slot)
+			view.take_off(int(data["worn"]))
+		else:
+			view.move_slot(int(data["slot"]), index)
 	return slot
 
 

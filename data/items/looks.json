@@ -272,6 +272,31 @@
    "color": "#8a6a4a",
    "size": 1.4
   },
+  "simple_backpack": {
+   "shape": "backpack",
+   "color": "#8a6a4a",
+   "size": 1.4
+  },
+  "improved_backpack": {
+   "shape": "backpack",
+   "color": "#6a4024",
+   "size": 1.4
+  },
+  "quality_backpack": {
+   "shape": "backpack",
+   "color": "#5a3620",
+   "size": 1.4
+  },
+  "advanced_backpack": {
+   "shape": "backpack",
+   "color": "#4a3428",
+   "size": 1.4
+  },
+  "copper_nails": {
+   "shape": "needle",
+   "color": "#b06a3a",
+   "size": 0.5
+  },
   "energy_bar": {
    "shape": "bar",
    "color": "#c9a15b",

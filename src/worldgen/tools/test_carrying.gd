@@ -136,21 +136,21 @@ func _init() -> void:
 	var places: Array = items._worn_places()
 	var n: Callable = func(id: String) -> int: return table.number_of(id)
 
-	# 1. The model: seven appended positions, every carrying row live with its own place; the five back packs (and only they) spread weight (carry_bonus_kg 12, 18, 8, 24 and 30 are in test_backpack_carry) and none has slots (DESIGN-001, Dave 13 Nov 2026).
+	# 1. The model: seven appended positions, every carrying row live with its own place; the four back packs (and only they) spread weight (carry_bonus_kg 5, 15, 30 and 50 are in test_backpack_carry; Dave 15 Nov 2026) and none has slots (DESIGN-001, Dave 13 Nov 2026).
 	check(places.size() == 27 and places[19] == "body:mail" and places.slice(20) == ["back:roll", "waist:pouch", "waist:quiver", "waist:scabbard", "waist:tools", "shoulder:base", "strap:base"], "worn gains seven positions after body:mail (%s)" % str(places.slice(19)))
-	var homes: Dictionary = {"backpack": "back:base", "leather_backpack": "back:base", "wicker_pack_basket": "back:base", "travellers_rucksack": "back:base",
+	var homes: Dictionary = {"simple_backpack": "back:base", "improved_backpack": "back:base", "quality_backpack": "back:base", "advanced_backpack": "back:base",
 		"quiver": "waist:quiver", "leather_quiver": "waist:quiver", "leather_belt": "waist:base", "belt_pouch": "waist:pouch", "weapon_scabbard": "waist:scabbard", "tool_roll": "waist:tools",
 		"fibre_shoulder_bag": "shoulder:base", "leather_satchel": "shoulder:base", "utility_bandolier": "strap:base", "bedroll": "back:roll"}
 	var wrong: Array = []
 
 	for id in homes:
-		if items._place_of(n.call(id)) != place(items, homes[id]) or bool(table.entry(id).get("future", false)) or table.entry(id).has("carry_bonus_kg") != (id in ["backpack", "leather_backpack", "wicker_pack_basket", "travellers_rucksack"]):
+		if items._place_of(n.call(id)) != place(items, homes[id]) or bool(table.entry(id).get("future", false)) or table.entry(id).has("carry_bonus_kg") != (id in ["simple_backpack", "improved_backpack", "quality_backpack", "advanced_backpack"]):
 			wrong.append(id)
 
 	check(wrong.is_empty(), "each carrying row is live, has its own worn position and a carry_bonus_kg only on the four back packs (%s)" % str(wrong))
 	var no_slots: Array = []
 
-	for id in ["backpack", "leather_backpack", "wicker_pack_basket", "travellers_rucksack"]:
+	for id in ["simple_backpack", "improved_backpack", "quality_backpack", "advanced_backpack"]:
 		if BagRules.slots_of(table, n.call(id)) != 0 or table.entry(id).has("bag_takes") or table.entry(id).has("loaded_effort"):
 			no_slots.append(id)
 
@@ -159,13 +159,13 @@ func _init() -> void:
 
 	# 2. A backpack and a quiver are worn together; the pack spreads the load (its carry_bonus_kg raises the limit, test_backpack_carry measures it).
 	var body_before: float = items._carry_body(1)
-	give(items, 1, "backpack")
+	give(items, 1, "simple_backpack")
 	give(items, 1, "quiver")
-	wear(items, 1, "backpack")
+	wear(items, 1, "simple_backpack")
 	wear(items, 1, "quiver")
 	var worn: Array = items.worn_of(1)
-	check(worn[place(items, "back:base")] == n.call("backpack") and worn[place(items, "waist:quiver")] == n.call("quiver") and inv.count_of(n.call("backpack")) == 0, "a backpack and a quiver are worn together")
-	check(is_equal_approx(items._carry_body(1), body_before + 12.0 / 0.7), "the worn Hide - Backpack raises the carry limit by its 12 kg")
+	check(worn[place(items, "back:base")] == n.call("simple_backpack") and worn[place(items, "waist:quiver")] == n.call("quiver") and inv.count_of(n.call("simple_backpack")) == 0, "a backpack and a quiver are worn together")
+	check(is_equal_approx(items._carry_body(1), body_before + 5.0 / 0.7), "the worn Simple - Backpack raises the carry limit by its 5 kg")
 
 	# The worn backpack cannot be opened or filled: it has no slots.
 	var back_id: int = -1 - place(items, "back:base")
@@ -173,12 +173,12 @@ func _init() -> void:
 	give(items, 1, "stone")
 	items.action(1, Net.ACT_CHEST_OPEN, back_id, 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, inv.numbers.find(n.call("stone")), back_id, 1, Vector3.ZERO)
-	check(chest_sent.is_empty() and held(items, 1, "back:base").is_empty() and inv.count_of(n.call("stone")) == 1, "the worn Hide - Backpack is not opened and takes nothing")
+	check(chest_sent.is_empty() and held(items, 1, "back:base").is_empty() and inv.count_of(n.call("stone")) == 1, "the worn Simple - Backpack is not opened and takes nothing")
 	inv.clear_slot(inv.numbers.find(n.call("stone")))
 
 	# A Fibre - Shoulder bag is the bag the rest of this test uses: the backpack is taken off and put away so its bonus stays out of the numbers below.
 	items.action(1, Net.ACT_UNWEAR, place(items, "back:base"), 0, 0, Vector3.ZERO)
-	inv.clear_slot(inv.numbers.find(n.call("backpack")))
+	inv.clear_slot(inv.numbers.find(n.call("simple_backpack")))
 	give(items, 1, "fibre_shoulder_bag")
 	wear(items, 1, "fibre_shoulder_bag")
 	check(items.worn_of(1)[place(items, "shoulder:base")] == n.call("fibre_shoulder_bag"), "a Fibre - Shoulder bag worn (a bag with 4 slots)")

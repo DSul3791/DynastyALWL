@@ -13092,7 +13092,7 @@ func rain_shed(peer: int) -> float:
 
 
 # The body weight the carry limit is worked out from (cap = ratio x body): the real weight plus what the worn pack's weight spreading adds
-# (items.json carry_bonus_kg on the four back packs: 12 Hide, 18 Leather, 8 basket, 24 rucksack; DESIGN-001, BUGLIST-001). No back pack has slots of its own (Dave 13 Nov 2026), and
+# (items.json carry_bonus_kg on the four back packs: Simple 5, Improved 15, Quality 30, Advanced 50 kg; Dave 15 Nov 2026). No back pack has slots of its own (Dave 13 Nov 2026), and
 # the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
 	return CarryRules.carry_body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)

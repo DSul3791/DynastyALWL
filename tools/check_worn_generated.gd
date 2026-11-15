@@ -92,7 +92,7 @@ func _piece_sizes(rig: Node) -> Array:
 
 func _check_fit() -> void:
 	var Gen: GDScript = load("res://src/client/character/body_generator.gd")
-	var ids: Array = ["hide_leggings", "hide_boots", "hide_cloak", "backpack"]
+	var ids: Array = ["hide_leggings", "hide_boots", "hide_cloak", "simple_backpack"]
 	var neutral: Node3D = GeneratedBody.new(Gen.make_genome("average"), 0.07)
 	var old: Node3D = RagdollScript.new()
 	root.add_child(neutral)
