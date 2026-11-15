@@ -6765,7 +6765,13 @@ func _run_dig_next_test() -> void:
 # Headless check (--resume-test=logout|drop|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
 # with or without telling the server; "check" prints how far from the spawn the game starts (a resume puts it back at the spot).
 func _run_resume_test() -> void:
-	await get_tree().create_timer(25.0).timeout
+	var waited: float = 0.0
+
+	while arrival_protect_until_msec == 0 and waited < 300.0:   # landed: before that the body glides and a slow lane's run left before it moved
+		await get_tree().create_timer(1.0).timeout
+		waited += 1.0
+
+	await get_tree().create_timer(3.0).timeout
 	var spawn: Vector3 = world["spawn"]
 
 	if test_resume == "check":
@@ -6775,7 +6781,7 @@ func _run_resume_test() -> void:
 
 	body.global_position = spawn + Vector3(60.0, 4.0, 0.0)
 	body.velocity = Vector3.ZERO
-	await get_tree().create_timer(6.0).timeout
+	await get_tree().create_timer(14.0).timeout   # past one 10 s spot note (server_items SAVE_SPOT_EVERY_MSEC): a drop is saved without the leave note
 	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
 
 	if test_resume == "logout":

@@ -83,6 +83,9 @@ func _init() -> void:
 	items.report_position(3, SPOT + Vector3(1.0, 0.0, 0.0))   # the client is at the resume spot: the gate opens
 	items.report_position(3, quit_at)
 	items.note_logout(3)
+	items._finish_writer()
+	var on_disk: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "/characters.json"))
+	check(on_disk is Dictionary and str(on_disk["players"][KEY]["last"]["left"]) == "deliberate" and absf(float(on_disk["players"][KEY]["last"]["pos"][0]) - quit_at.x) < 0.01, "Quit game writes the spot to disk at once, before the line closes")
 	items.peer_left(3)
 	check(str(items._characters[KEY]["last"].get("left", "")) == "deliberate", "Quit game is a deliberate logout")
 	items = restart(items, dir)

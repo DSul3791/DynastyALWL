@@ -638,6 +638,8 @@ var _resume_to: Dictionary = {}      # peer -> [resume spot Vector3, msec sent]:
 func note_logout(peer: int) -> void:
 	if _peer_key.has(peer):
 		_logout_peers[peer] = true
+		_note_spot(peer, "deliberate")   # written and saved now: the line may close slowly or the game die on exit before the disconnect arrives
+		save()
 
 
 # Writes where the peer is and how they last left into the character row: "online" while playing, then "deliberate" (the client
