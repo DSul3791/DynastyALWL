@@ -2176,6 +2176,10 @@ func _arrive_on_ground() -> void:
 		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
 
 	var ground: float = _ground_below(body.global_position)
+	var water: Dictionary = _water_here()
+
+	if not is_nan(ground) and not water.is_empty():
+		ground = maxf(ground, float(water["surface"]) - ARRIVAL_HEIGHT_M)   # water has no collider: arriving over it is at its surface, swimming, never on the bed
 
 	if not is_nan(ground) and body.global_position.y - ground > ARRIVAL_HEIGHT_M + 0.2:
 		body.global_position.y = ground + ARRIVAL_HEIGHT_M
@@ -2203,7 +2207,7 @@ func _go_to_npc() -> void:
 	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
 
 
-# The server's answer to hello with where this character resumes (protocol 69): their last spot, or the nearest rest or shelter.
+# The server's answer to hello with where this character resumes (protocol 69): the spot they left, made safe by the server.
 func _on_start_at(spot: Vector3) -> void:
 	if body == null or body.global_position.distance_to(spot) < 8.0:
 		return
@@ -2211,6 +2215,7 @@ func _on_start_at(spot: Vector3) -> void:
 	_telemetry.event("JOIN: resuming at %s (from %s)" % [str(spot.round()), str(body.global_position.round())])
 	body.global_position = spot + Vector3(0.0, 1.0, 0.0)
 	body.velocity = Vector3.ZERO
+	_was_waiting = true   # set down like a first arrival once there is ground (_arrive_on_ground): a spot left in mid-air is not a fall
 
 
 # The server moved this player to a station to craft there (protocol 103, server_items._step_to_station): stand there facing it.
@@ -6760,7 +6765,13 @@ func _run_dig_next_test() -> void:
 # Headless check (--resume-test=logout|drop|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
 # with or without telling the server; "check" prints how far from the spawn the game starts (a resume puts it back at the spot).
 func _run_resume_test() -> void:
-	await get_tree().create_timer(25.0).timeout
+	var waited: float = 0.0
+
+	while arrival_protect_until_msec == 0 and waited < 300.0:   # landed: before that the body glides and a slow lane's run left before it moved
+		await get_tree().create_timer(1.0).timeout
+		waited += 1.0
+
+	await _server_caught_up()
 	var spawn: Vector3 = world["spawn"]
 
 	if test_resume == "check":
@@ -6770,7 +6781,9 @@ func _run_resume_test() -> void:
 
 	body.global_position = spawn + Vector3(60.0, 4.0, 0.0)
 	body.velocity = Vector3.ZERO
-	await get_tree().create_timer(6.0).timeout
+	await _server_caught_up()   # the server has read the reports from the new spot (a slow first save can hold its tick for a minute)
+	await get_tree().create_timer(12.0).timeout   # past one 10 s spot note (server_items SAVE_SPOT_EVERY_MSEC): a drop is saved without the leave note
+	await _server_caught_up()
 	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
 
 	if test_resume == "logout":
@@ -6778,6 +6791,15 @@ func _run_resume_test() -> void:
 		await get_tree().create_timer(0.5).timeout
 
 	_finish(0)
+
+
+# Asks the server for the ground here and waits for the answer (up to 300 s): everything sent before has then reached a server that is ticking.
+func _server_caught_up() -> void:
+	var asked: int = Time.get_ticks_msec()
+	net.request_surface.rpc_id(1, body.global_position.x, body.global_position.z)
+
+	while _surface_answered_msec < asked and Time.get_ticks_msec() - asked < 300000:
+		await get_tree().create_timer(0.5).timeout
 
 
 # Headless check (--embed-test): put the body 4 m inside the ground; it must be out within 3 s.

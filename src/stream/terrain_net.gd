@@ -459,8 +459,8 @@ func tunnel_settings(on: bool, cave_in_s: int) -> void:
 	tunnel_settings_received.emit(on, cave_in_s)
 
 
-# Where this character resumes (protocol 69): sent after hello when the player has a saved place (their last spot, or the nearest
-# rest or shelter after a long disconnect). Without it the player stays at the world spawn.
+# Where this character resumes (protocol 69): sent after hello when the player has a saved spot (where they left, however they left,
+# made safe by the server: server_items.start_position_for). Without it (a new character) the player stays at the world spawn.
 @rpc("authority", "call_remote", "reliable")
 func start_at(position: Vector3) -> void:
 	start_at_received.emit(position)
