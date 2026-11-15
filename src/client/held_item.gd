@@ -1477,7 +1477,7 @@ func _process_body(delta: float) -> void:
 		_pause_t -= delta
 
 		# Dave 2026-10-21: holding the button keeps chopping, one swing after another (a short pause between, 31 Oct 2026).
-		if _pause_t <= 0.0 and holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		if _pause_t <= 0.0 and holding and (_is_axe() or (_hammer_tier() > 0 and blueprints.mode == "repair" and not blueprints.is_open and _boulder_aimed())) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			_start_swing()
 
 	# The jab runs on its own clock whatever draws the spear (TEST-004, 12 Nov 2026): it was only advanced in the no-arms branch below, so with

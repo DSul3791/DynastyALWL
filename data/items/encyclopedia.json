@@ -2378,7 +2378,7 @@
 			"kind": "placeable",
 			"description": "A log set on end. Split wooden blocks on it, or chop logs from your storage nearby into firewood.",
 			"how_to_get": [
-				"Craft: 1 Large wooden block"
+				"Craft: 1 Wooden block"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2394,12 +2394,12 @@
 			"obtainable_now": true
 		},
 		"firewood": {
-			"name": "Hard firewood",
+			"name": "Firewood",
 			"kind": "material",
-			"description": "Split hardwood. Burns long and steady, twice as long as soft firewood.",
+			"description": "Split wood, half a metre long. Small trees break into it, and an axe splits a wooden block into it.",
 			"how_to_get": [
-				"Split a hardwood block on a chopping block: 2 hard firewood",
-				"Chopped at a chopping block: 1 Hardwood log (keep any axe) gives 12, as by hand",
+				"Split a wooden block with an axe, on the ground or at a chopping block: 4 firewood",
+				"A felled small tree breaks into it",
 				"From chopping a stump",
 				"From a felled tree",
 				"Picked from fallen log",
@@ -4461,11 +4461,11 @@
 			"obtainable_now": true
 		},
 		"wooden_block": {
-			"name": "Hardwood block",
+			"name": "Wooden block",
 			"kind": "material",
-			"description": "A short round cut from a hardwood log. Burns longer than hard firewood, or split it on a chopping block.",
+			"description": "A short round sawn from a log. Split it into firewood with an axe, or carve it.",
 			"how_to_get": [
-				"Strike a small log lying on the ground with an axe: 3 blocks"
+				"Craft with any saw on the hotbar: 1 Log gives 6 (twice as fast beside a Sawbuck)"
 			],
 			"used_for": [
 				"Used in Wooden - Hammer",
@@ -4585,7 +4585,6 @@
 			"kind": "tool",
 			"description": "A wooden head on a stick. The weakest hammer; it wears out fast.",
 			"how_to_get": [
-				"Craft: 1 Softwood block, 1 Stick, 1 Twine",
 				"Craft: 1 Wooden block, 1 Stick, 1 Twine"
 			],
 			"used_for": [],
@@ -9728,7 +9727,7 @@
 			"kind": "weapon",
 			"description": "A tall bow cut from one stave of hardwood and strung with sinew. Needs arrows.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Large wooden block, 1 Sinew, 2 Twine"
+				"Craft at a workbench: 4 Wooden block, 1 Sinew, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true

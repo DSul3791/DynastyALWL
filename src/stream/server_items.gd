@@ -4120,7 +4120,8 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 
 
 # How much slower a saw recipe (one that keeps "saw", any saw) runs for the saw in the pack (TREE_WOOD_TOOLS_DESIGN.md s5: items.json saw_speed, Copper 0.5,
-# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and at a Sawbuck in reach, which saws twice as fast (W-4).
+# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and, for a recipe marked "sawbuck" (Wooden blocks), at a
+# Sawbuck in reach, which saws twice as fast (W-4). serving_station walks the world items like any station recipe's check, once a tick for a sawing peer.
 func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var saw_n: int = table.number_of("saw")
 	var saws: bool = false
@@ -4135,7 +4136,7 @@ func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var slot: int = _tool_slot(inv, "saw") if inv != null else -1   # the saw the craft wears (wears_tool "saw": the first one on the hotbar)
 	var speed: float = float(table.entry(table.id_of(int(inv.numbers[slot]))).get("saw_speed", 1.0)) if slot >= 0 else 1.0
 	var slow: float = 1.0 / maxf(speed, 0.1)
-	return slow * (0.5 if serving_station(peer, "sawbuck") >= 0 else 1.0)
+	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # the Sawbuck speeds sawing a log into blocks only (s1.3; the mill is for planks and boards)
 
 
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
@@ -9606,13 +9607,13 @@ func _drop_firewood_beside(block: Dictionary, count: int) -> void:
 	drop_in_world(table.number_of("firewood"), count, block["pos"] + Vector3(0.9, 0.0, 0.0))
 
 
+const BLOCK_SPLIT_BLOWS := 2   # axe blows that split a loose wooden block
+
+
 # A wooden block lying on the ground, struck with an axe, splits into firewood_per_block Firewood (4, W-3) after BLOCK_SPLIT_BLOWS blows. A log
 # struck with an axe does not split (TREE_WOOD_TOOLS_DESIGN.md: logs are sawn into blocks) and the player is told so.
 # With a pick (Dave 12 Nov 2026: "if you break a log with a pickaxe it will just leave a pile of kindling") a log takes 1 / speed blows, each tearing
 # loose kindling and thatch, and the log is left as a pile of kindling where it lay.
-const BLOCK_SPLIT_BLOWS := 2
-
-
 func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: the wood tool in hand, _wood_tool (checked by _process_trunk)
 	var it: Dictionary = _items.get(id, {})
 
@@ -17082,10 +17083,15 @@ func _goal_progress(peer: int, st: Dictionary, check: Dictionary, goal_id: Strin
 	if check.has("made_item_any"):   # crafts of any of these ids add up: the four kinds of wooden block (chop_log_blocks, GAP-GUIDE-ANY)
 		var made_any: int = 0
 
+		var have_any: int = 0
+
 		for id in check["made_item_any"]:
 			made_any += int(st["goal_counts"].get("made:" + str(id), 0))
 
-		return Vector2i(made_any, need)
+			if bool(check.get("or_have", false)) and inv != null:   # one held counts too, as for made_item (the hammer goal: a Stone or a Wooden hammer)
+				have_any += _goal_have(st, inv, str(id))
+
+		return Vector2i(maxi(made_any, have_any), need)
 
 	if inv == null:
 		return Vector2i(0, need)
@@ -19121,7 +19127,7 @@ func _load_craft_queues() -> void:
 			var parts: Array = []
 
 			for need in entry[3] if entry.size() > 3 else []:
-				parts.append([int(need[0]), int(need[1])])
+				parts.append([table.current_number(int(need[0])), int(need[1]) * table.rename_count(int(need[0]))])   # renamed like the needs (a large block: 4 Wooden blocks)
 
 			var loaded: Array = [int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs, parts, int(entry[4]) if entry.size() > 4 else 0]
 

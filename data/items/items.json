@@ -38,7 +38,7 @@
 		"log": {
 			"number": 4,
 			"name": "Log",
-			"description": "A heavy length of trunk. Chop it into blocks and firewood, or saw it into planks.",
+			"description": "A heavy length of trunk. Saw it into wooden blocks, planks or boards.",
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
@@ -278,7 +278,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"firewood": {"number": 26, "name": "Firewood", "description": "Split wood, half a metre long. Small trees break into it when felled, and an axe splits a wooden block into it.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
+		"firewood": {"number": 26, "name": "Firewood", "description": "Split wood, half a metre long. Small trees break into it, and an axe splits a wooden block into it.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
@@ -2856,7 +2856,7 @@
 		"stone_hammer": {
 			"number": 244,
 			"name": "Stone - Hammer",
-			"description": "A hafted stone hammer. Hold it to place big builds from blueprints.",
+			"description": "A hafted stone hammer. Builds from blueprints, repairs, and breaks stone and ore from boulders.",
 			"kind": "tool",
 			"tool_class": "hammer",
 			"material": "stone",
@@ -2870,7 +2870,7 @@
 		"hand_saw": {
 			"number": 245,
 			"name": "Iron - Saw",
-			"description": "An iron bow saw. Keep it in your pack to saw logs into wooden blocks, planks and boards.",
+			"description": "An iron bow saw. On the hotbar it saws logs into wooden blocks, planks and boards.",
 			"saw_speed": 1.0,
 			"kind": "tool",
 			"tool_class": "saw",
@@ -12124,7 +12124,7 @@
 		"copper_saw": {
 			"number": 1474,
 			"name": "Copper - Saw",
-			"description": "A copper bow saw, the first saw. Keep it in your pack to saw logs into wooden blocks, planks and boards, slowly.",
+			"description": "The first saw, of copper. On the hotbar it saws logs into wooden blocks, planks and boards, slowly.",
 			"kind": "tool",
 			"tool_class": "saw",
 			"material": "copper",

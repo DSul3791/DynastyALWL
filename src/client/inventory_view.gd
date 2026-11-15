@@ -1613,8 +1613,12 @@ func carcass_near(point: Vector3) -> int:
 	return best
 
 
-# A log lying loose on the ground within 1.5 m of the point (a short log or a large one put down), 0 when none: the axe chops it into wooden blocks.
+# A log or wooden block lying loose on the ground within 1.5 m of the point, the nearest, 0 when none: the axe splits a block into firewood and says to saw a log
+# first (TREE_WOOD_TOOLS_DESIGN.md); a pick tears a log into kindling.
 func loose_log_near(point: Vector3) -> int:
+	var best: int = 0
+	var best_d2: float = 2.25
+
 	for id in _world:
 		var entry: Dictionary = _world[id]
 
@@ -1622,15 +1626,18 @@ func loose_log_near(point: Vector3) -> int:
 			continue
 
 		# The distance first: only the few items within 1.5 m pay for the item table lookups (this runs over every loose item on each blow that lands).
-		if entry["pos"].distance_squared_to(point) >= 2.25:
+		var d2: float = entry["pos"].distance_squared_to(point)
+
+		if d2 >= best_d2:
 			continue
 
 		var item_id: String = table.id_of(int(entry["number"]))
 
-		if item_id == "log" or item_id == "wooden_block" or str(table.entry(item_id).get("carry", "")) == "shoulder":   # an axe splits a loose wooden block (TREE_WOOD_TOOLS_DESIGN.md)
-			return id
+		if item_id == "log" or item_id == "wooden_block" or str(table.entry(item_id).get("carry", "")) == "shoulder":
+			best = id
+			best_d2 = d2
 
-	return 0
+	return best
 
 
 # The id of a stump within reach of a point (the axe struck near it), 0 when none: the axe chops it up (server_items.gd _chop_stump).

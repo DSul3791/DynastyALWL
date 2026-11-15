@@ -192,7 +192,7 @@ func _init() -> void:
 
 	check(str(live["fish"].get("event", "")) == "fish_caught" and int(live["fish"].get("count", 0)) == 1 and not live["fish"].has("have_item_any") and not live["fish"].has("or_event")
 		and str(live["workbench"].get("what", "")) == "workbench" and not live["workbench"].has("what_any"), "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
-	check(str(live["hammer"].get("made_item", "")) == "wooden_hammer" and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer and hoe goals count a made Wooden - Hammer and Wooden - Hoe; no wooden_hammer_soft item is named")
+	check((live["hammer"].get("made_item_any", []) as Array).has("stone_hammer") and (live["hammer"].get("made_item_any", []) as Array).has("wooden_hammer") and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer goal counts a made Stone or Wooden hammer (TREE_WOOD_TOOLS_DESIGN.md s1.4) and the hoe goal a Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 6, Vector3.ZERO)

@@ -2535,7 +2535,9 @@ func _init() -> void:
 	hs.give(1, hs.table.number_of("copper_saw"), 1)
 	check(is_equal_approx(hs._saw_slow(1, by_hand), 2.0), "a copper saw takes twice as long (x%.2f)" % hs._saw_slow(1, by_hand))
 	hs._items[900901] = {"number": hs.table.number_of("sawbuck"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "sawbuck", "yaw": 0.0, "uid": 0, "owner": "", "born": 0.0}}
-	check(hs.serving_station(1, "sawbuck") == 900901 and is_equal_approx(hs._saw_slow(1, by_hand), 1.0), "a Sawbuck in reach halves it: the copper saw is back to the recipe's pace (x%.2f)" % hs._saw_slow(1, by_hand))
+	var blocks_recipe: Dictionary = hs.recipes.recipe(728)   # saw_blocks: a log into 6 Wooden blocks, the one recipe a Sawbuck speeds (W-4)
+	check(hs.serving_station(1, "sawbuck") == 900901 and is_equal_approx(hs._saw_slow(1, blocks_recipe), 1.0), "a Sawbuck in reach halves sawing blocks: the copper saw is back to the recipe's pace (x%.2f)" % hs._saw_slow(1, blocks_recipe))
+	check(is_equal_approx(hs._saw_slow(1, by_hand), 2.0), "the Sawbuck does not speed sawing planks (the sawmill does that; x%.2f)" % hs._saw_slow(1, by_hand))
 	hs._items.erase(900901)
 
 	for rid in ["wooden_hammer", "stone_hammer"]:

@@ -727,7 +727,8 @@ func from_json_array(data: Array) -> void:
 		fav[i] = numbers[i] if data[i].size() > 3 and int(data[i][3]) == 1 else 0
 		inst[i] = clean_inst_of(table, numbers[i], data[i][4]) if data[i].size() > 4 and numbers[i] != 0 else {}
 
-	for row in spill:   # the extra goes to other slots (a pack grows for it); what finds no room stays over-full in its own slot, never lost
+	# The extra goes to other slots (a pack grows for it). What finds no room (a full chest of large blocks) stays over-full in its own slot, never lost.
+	for row in spill:
 		counts[int(row[0])] += add(numbers[int(row[0])], int(row[1]), wear[int(row[0])])
 
 	trim()
