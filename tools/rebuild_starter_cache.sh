@@ -5,7 +5,7 @@
 # client's other user files (telemetry, settings) still go to the Godot user folder, so isolate APPDATA/XDG_DATA_HOME on a PC.
 # Writes nothing unless the client reached ground, nothing was still waiting at the end, and the tile holds at least MIN_BLOCKS blocks
 # (the stale cache of 15 Nov 2026 held 7955); test_starter_cache_stamp checks the stamp afterwards.
-set -e
+set -eo pipefail
 GODOT=${1:-${GODOT:-$(cd "$(dirname "$0")" && pwd)/godot}}
 PYTHON=${PYTHON:-python3}
 MIN_BLOCKS=${MIN_BLOCKS:-4000}
@@ -29,6 +29,7 @@ if ! grep -q "JOIN: ground ready" $W/cli.log || ! grep -q ", 0 still waiting," $
 fi
 BLOCKS=$("$PYTHON" -c "import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); print(c.execute('SELECT COUNT(*) FROM blocks').fetchone()[0]); c.execute('VACUUM'); c.close()" "$FILE" | tr -d "\r")
 echo "blocks in tile 3,4: $BLOCKS"
+case "$BLOCKS" in ""|*[!0-9]*) echo "FAIL: could not count the blocks ($BLOCKS); nothing written. Logs in $W"; exit 1;; esac
 if [ "$BLOCKS" -lt "$MIN_BLOCKS" ]; then
 	echo "FAIL: only $BLOCKS blocks (want $MIN_BLOCKS or more); nothing written. Logs in $W"
 	exit 1
