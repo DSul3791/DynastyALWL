@@ -122,13 +122,15 @@ Code that new code replaced is deleted, not moved here. Add one row per deleted 
 
 ## Core rulebook consolidation — 15 Nov 2026
 
-Dave approved the four-rulebook structure in Clauda Optimization. This is limited to core-policy consolidation; the wider draft cut list remains a proposal. Original text is recoverable from reachable source commit `dd566834db6496d0d8d2bb2a6bf2b9cb1ec882aa`. All six source paths below remain as short temporary redirects; no document is deleted in this change. Retirement merge/timestamps and expiry are PENDING INTEGRATION, never inferred from source age. Verify and finalize them from the actual merged retirement event before any expiry deletion. Existing deletion enforcement remains in force pending the separately reviewed expiry implementation. Live Claude project settings/private copies: SYNC PENDING.
+Dave approved the four-rulebook structure in Clauda Optimization. This is limited to core-policy consolidation; the wider draft cut list remains a proposal. Original text is recoverable from reachable source commit `dd566834db6496d0d8d2bb2a6bf2b9cb1ec882aa`. All six source paths below remain as short temporary redirects; no document is deleted in this change. Retirement integrated through [PR #1164](https://github.com/DSul3791/DynastyALWL/pull/1164), merge `75b7d2191ad8f4bbb1966ef9a90e5dfe10f61dbe`. GitHub records `merged_at = 2026-11-15T20:36:21Z`; expiry is exactly 168 hours later, `2026-11-22T20:36:21Z`. These timestamps apply only to the six redirects below, not the wider cut list. Existing deletion enforcement remains in force pending the separately reviewed expiry implementation. Live Claude project settings/private copies: SYNC PENDING.
 
 | Original path | Source blob | Preserved authority | Retirement / expiry |
 |---|---|---|---|
-| `docs/ai-team/DECISION_AUTHORITY.md` | `74784f27f47cc2aeef0ba9798f05102d2a30da09` | `docs/ai-team/CONSTITUTION.md` | PENDING INTEGRATION |
-| `docs/ai-team/DOCUMENT_AUTHORITY.md` | `8479456d6ee8fbfa2f720de9a368e90f721e72a9` | `docs/ai-team/CONSTITUTION.md` | PENDING INTEGRATION |
-| `docs/ai-team/ROLE_CATALOG.md` | `c3acf10c8388c5d22a1287f48259ac1ec281b51f` | `docs/ai-team/WORKFLOW.md` | PENDING INTEGRATION |
-| `docs/ai-team/SESSION_LIFECYCLE.md` | `1ec4dc4d750217b82df19b2c5c24174414761fec` | `docs/ai-team/WORKFLOW.md` | PENDING INTEGRATION |
-| `RULES.md` | `e4b80e5f85b8f5a6c76c40bb6e49845212b98f5c` | `docs/ai-team/WORKFLOW.md`; docs/PONYTAIL_RULES.md (code); CONSTITUTION.md (authority); TEST_GATES.md (testing) | PENDING INTEGRATION |
-| `docs/START_HERE.md` | `7710fb17f8ed653810a5f8177777828d25ebc525` | `README.md` | PENDING INTEGRATION |
+| `docs/ai-team/DECISION_AUTHORITY.md` | `74784f27f47cc2aeef0ba9798f05102d2a30da09` | `docs/ai-team/CONSTITUTION.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/ai-team/DOCUMENT_AUTHORITY.md` | `8479456d6ee8fbfa2f720de9a368e90f721e72a9` | `docs/ai-team/CONSTITUTION.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/ai-team/ROLE_CATALOG.md` | `c3acf10c8388c5d22a1287f48259ac1ec281b51f` | `docs/ai-team/WORKFLOW.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/ai-team/SESSION_LIFECYCLE.md` | `1ec4dc4d750217b82df19b2c5c24174414761fec` | `docs/ai-team/WORKFLOW.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `RULES.md` | `e4b80e5f85b8f5a6c76c40bb6e49845212b98f5c` | `docs/ai-team/WORKFLOW.md`; docs/PONYTAIL_RULES.md (code); CONSTITUTION.md (authority); TEST_GATES.md (testing) | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/START_HERE.md` | `7710fb17f8ed653810a5f8177777828d25ebc525` | `README.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+
+Preservation/reader receipts: independent review PASS on exact tree `09c989473285abefb6dc9a2454fa331aac272a79`; [merge-guard run 43758894969](https://github.com/DSul3791/DynastyALWL/actions/runs/43758894969) succeeded. Installed agent/skill/current launcher readers use the four owners; two changed upload ZIPs match their sources. The checker rejects revived legacy routing; historical citations and deletion-test fixtures are not runtime readers. All 33 reviewed file blobs match the actual integration tree despite concurrent unrelated asset changes. Package checks and all eight isolated regression cases passed again on the merged dev tree. No source content is deleted, no retirement obligation is waived, and no gameplay/player validation is claimed.
