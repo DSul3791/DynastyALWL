@@ -382,20 +382,10 @@ static func _model_mesh(item_id: String, def: Dictionary) -> ArrayMesh:
 
 	for surface in source.get_surface_count():
 		var arrays: Array = source.surface_get_arrays(surface)
-		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-
-		for i in vertices.size():
-			vertices[i] = place * vertices[i]
-
-		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_VERTEX] = place * (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array)   # whole arrays at once in the engine, cheaper than a GDScript loop per vertex (test_look_build_cost 40 ms bar)
 
 		if arrays[Mesh.ARRAY_NORMAL] is PackedVector3Array:
-			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-
-			for i in normals.size():
-				normals[i] = turn * normals[i]
-
-			arrays[Mesh.ARRAY_NORMAL] = normals
+			arrays[Mesh.ARRAY_NORMAL] = Transform3D(turn, Vector3.ZERO) * (arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array)
 
 		if arrays[Mesh.ARRAY_TANGENT] is PackedFloat32Array:   # x, y, z and the bitangent sign, which a pure turn keeps
 			var tangents: PackedFloat32Array = arrays[Mesh.ARRAY_TANGENT]
