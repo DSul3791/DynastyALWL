@@ -1555,7 +1555,7 @@ func _cover_ready(point: Vector3) -> bool:
 
 
 func _warm_cover_chunk(chunk: Vector2i) -> void:
-	flora.chunk_bytes(chunk, false)
+	flora.chunk_bytes(chunk, flora.full_known(chunk))   # the full list when it is kept or being placed (a chunk by a player): no second placement
 	_cover_warm_done.call_deferred(chunk)
 
 
@@ -1852,7 +1852,7 @@ func _standing_near(species_name: String, point: Vector3, radius: float) -> Arra
 # send the chunk again to the players near it.
 func _flora_changed(chunk: Vector2i) -> void:
 	flora.invalidate(chunk)
-	flora.chunk_bytes(chunk, flora.has_items(chunk))   # the form whose placed list is kept (a chunk near a player: full), so nothing is placed again here
+	flora.chunk_bytes(chunk, flora.full_known(chunk))   # the form whose placed list is kept or being placed (a chunk near a player: full), so nothing is placed again here
 	var origin: Vector2 = flora.placer.chunk_origin(chunk)
 	var centre: Vector3 = Vector3(origin.x + flora.placer.chunk_m * 0.5, 0.0, origin.y + flora.placer.chunk_m * 0.5)
 

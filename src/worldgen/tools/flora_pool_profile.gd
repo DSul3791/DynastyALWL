@@ -7,7 +7,7 @@ extends SceneTree
 #
 # Phase "alone": each of the 9 chunks round the spawn placed once, full and trees only, one at a time.
 # Phase "join": what terrain_server starts at a join, all at once on a fresh ServerFlora: the warm thread (_warm_flora: items_of on the 9),
-# a WorkerThreadPool task per chunk for the cover index (_warm_cover_chunk: chunk_bytes trees only on the 9), and --workers streaming threads
+# a WorkerThreadPool task per chunk for the cover index (_warm_cover_chunk: chunk_bytes on the 9, full when that list is known), and --workers streaming threads
 # (_worker_loop: chunk_bytes full for the 9, trees only for the 16 round them). Prints each job's time and how many times the placer
 # placed each chunk and form ("PLACED <chunk> full=<n> trees=<n>").
 
@@ -39,7 +39,7 @@ var queue_mutex: Mutex = Mutex.new()
 
 func _note(kind: String, chunk: Vector2i, t0: int) -> void:
 	jobs_mutex.lock()
-	jobs.append([kind, chunk, (Time.get_ticks_usec() - t0) / 1000])
+	jobs.append([kind, chunk, int((Time.get_ticks_usec() - t0) / 1000.0)])
 	jobs_mutex.unlock()
 
 
@@ -52,8 +52,9 @@ func _warm(chunks: Array) -> void:
 
 func _cover(c: Vector2i) -> void:
 	var t0: int = Time.get_ticks_usec()
-	flora.chunk_bytes(c, false)
-	_note("cover_trees", c, t0)
+	var full: bool = flora.has_method("full_known") and flora.full_known(c)   # as terrain_server._warm_cover_chunk asks
+	flora.chunk_bytes(c, full)
+	_note("cover_full" if full else "cover_trees", c, t0)
 
 
 func _stream() -> void:
@@ -109,9 +110,9 @@ func _init() -> void:
 		var t1: int = Time.get_ticks_usec()
 		placer.chunk_items(c, true)
 		var t2: int = Time.get_ticks_usec()
-		alone_full += (t1 - t0) / 1000
-		alone_trees += (t2 - t1) / 1000
-		print("ALONE %s full_ms=%d trees_ms=%d" % [str(c), (t1 - t0) / 1000, (t2 - t1) / 1000])
+		alone_full += int((t1 - t0) / 1000.0)
+		alone_trees += int((t2 - t1) / 1000.0)
+		print("ALONE %s full_ms=%d trees_ms=%d" % [str(c), int((t1 - t0) / 1000.0), int((t2 - t1) / 1000.0)])
 
 	print("ALONE total full_ms=%d trees_ms=%d (9 chunks each)" % [alone_full, alone_trees])
 	placer.placed.clear()
@@ -149,7 +150,7 @@ func _init() -> void:
 	for task in tasks:
 		WorkerThreadPool.wait_for_task_completion(task)
 
-	var wall: int = (Time.get_ticks_usec() - start) / 1000
+	var wall: int = int((Time.get_ticks_usec() - start) / 1000.0)
 	jobs.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[2] > b[2]))
 	var by_kind: Dictionary = {}
 
