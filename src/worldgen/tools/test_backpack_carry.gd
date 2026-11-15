@@ -118,11 +118,11 @@ func _init() -> void:
 	empty(inv)
 
 	# 0. The four recipes as Dave gave them (15 Nov 2026): Simple by hand, Improved and Quality at the Leatherworking table, Advanced at the Advanced
-	# smithy (brick_forge level 3); the old packs' recipes are retired. The Quality pack takes any nails, Copper nails (new, item 1487) included.
+	# smithy (brick_forge level 3); the old packs' recipes are retired. The Quality pack asks for Copper nails (new, item 1487) and takes any nails.
 	var made_as: Dictionary = {
 		"simple_backpack": [[["hide", 5], ["twine", 20], ["stick", 4]], "", 1],
 		"improved_backpack": [[["leather", 5], ["twine", 20], ["hardwood_board", 1]], "leatherworking_table", 1],
-		"quality_backpack": [[["leather", 10], ["sinew", 20], ["nails", 15], ["hardwood_board", 2]], "leatherworking_table", 1],
+		"quality_backpack": [[["leather", 10], ["sinew", 20], ["copper_nails", 15], ["hardwood_board", 2]], "leatherworking_table", 1],
 		"advanced_backpack": [[["steel_ingot", 2], ["leather", 25], ["sinew", 40]], "brick_forge", 3],
 	}
 
@@ -141,19 +141,27 @@ func _init() -> void:
 
 	var copper_nails: int = table.number_of("copper_nails")
 	var copper_makers: Array = items.recipes.makers_of(copper_nails)
-	check(copper_nails == 1487 and table.group_members(table.number_of("nails")).has(copper_nails) and copper_makers.size() == 1 and str(items.recipes.recipe(int(copper_makers[0])).get("station", "")) == "forge", "Copper nails are made at the Primitive smithy and fill any nails need")
+	var copper_group: PackedInt32Array = table.group_members(copper_nails)
+	check(copper_nails == 1487 and copper_group.has(table.number_of("bronze_nails")) and copper_group.has(table.number_of("nails")) and not table.group_members(table.number_of("nails")).has(copper_nails) and copper_makers.size() == 1 and str(items.recipes.recipe(int(copper_makers[0])).get("station", "")) == "forge", "Copper nails are made at the Primitive smithy; a Copper nails need takes any nails, and a building's nails cost does not take Copper nails")
 	inv.add(table.number_of("leather"), 10)
 	inv.add(table.number_of("sinew"), 20)
 	inv.add(copper_nails, 15)
 	inv.add(table.number_of("hardwood_board"), 2)
 	check(items.recipes.craft(int(items.recipes.makers_of(table.number_of("quality_backpack"))[0]), inv) and inv.count_of(table.number_of("quality_backpack")) == 1 and inv.count_of(copper_nails) == 0, "a Quality - Backpack takes 15 Copper nails for its nails")
 	empty(inv)
+	inv.add(table.number_of("leather"), 10)
+	inv.add(table.number_of("sinew"), 20)
+	inv.add(table.number_of("bronze_nails"), 10)
+	inv.add(table.number_of("nails"), 5)
+	inv.add(table.number_of("hardwood_board"), 2)
+	check(items.recipes.craft(int(items.recipes.makers_of(table.number_of("quality_backpack"))[0]), inv) and inv.count_of(table.number_of("quality_backpack")) == 1 and inv.count_of(table.number_of("bronze_nails")) == 0 and inv.count_of(table.number_of("nails")) == 0, "and any nails do: 10 Bronze and 5 iron Nails (Dave: \"really it can use any nails\")")
+	empty(inv)
 	inv.add(table.number_of("hide"), 5)
 	inv.add(table.number_of("twine"), 20)
 	inv.add(table.number_of("stick"), 4)
 	items.action(1, Net.ACT_CRAFT_QUEUE, int(items.recipes.makers_of(hide)[0]), 0, 1, Vector3.ZERO)
 
-	for _tick in 120:
+	for _tick in 200:
 		items._craft_tick(0.25)
 
 	check(inv.count_of(hide) == 1 and inv.count_of(table.number_of("hide")) == 0, "a Simple - Backpack is made by hand from 5 Hide, 20 Twine and 4 Sticks")
@@ -266,6 +274,7 @@ func _init() -> void:
 	inv.add(stone, 10)
 	var saved: Array = measure(items)
 	items.save()
+	items._finish_writer()
 	var back = make()
 	var back_body: float = float(back.vitals_of(1).get("weight", 75.0))
 	var back_inv = back.inventory_of(1)

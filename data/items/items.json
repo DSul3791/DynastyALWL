@@ -12235,9 +12235,9 @@
 			"look_alikes": [],
 			"note": "Placed vehicle (W-14, PROVISIONAL: 8 Planks, 4 Cart wheels, 2 Axles and 16 Wooden pins, hammer blueprint 357). Row state 447; the Handcart's pulled-vehicle controller (server_carts.gd)."
 		},
-		"simple_backpack": {"number": 1483, "name": "Simple - Backpack", "description": "A hide pack laced with twine on a stick frame. Worn on the back, it spreads the load so you can carry a little more.", "kind": "gear", "stack": 1, "unstackable": true, "value": 30, "look_alikes": [], "slot": "back", "carry_bonus_kg": 5, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
+		"simple_backpack": {"number": 1483, "name": "Simple - Backpack", "description": "A hide pack laced with twine on a stick frame. Worn on the back, it lets you carry a little more.", "kind": "gear", "stack": 1, "unstackable": true, "value": 30, "look_alikes": [], "slot": "back", "carry_bonus_kg": 5, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
 		"improved_backpack": {"number": 1484, "name": "Improved - Backpack", "description": "A leather pack on a hardwood board. Worn on the back, it lets you carry more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 70, "look_alikes": [], "slot": "back", "carry_bonus_kg": 15, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
-		"quality_backpack": {"number": 1485, "name": "Quality - Backpack", "description": "A well made leather pack sewn with sinew, its boards nailed. Worn on the back, it lets you carry much more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 120, "look_alikes": [], "slot": "back", "carry_bonus_kg": 30, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
+		"quality_backpack": {"number": 1485, "name": "Quality - Backpack", "description": "A leather pack sewn with sinew on nailed boards. Worn on the back, it lets you carry much more weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 120, "look_alikes": [], "slot": "back", "carry_bonus_kg": 30, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
 		"advanced_backpack": {"number": 1486, "name": "Advanced - Backpack", "description": "A heavy leather pack on a steel frame. Worn on the back, it lets you carry the most weight.", "kind": "gear", "stack": 1, "unstackable": true, "value": 220, "look_alikes": [], "slot": "back", "carry_bonus_kg": 50, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials, station and the +5 / +50 kg ends are Dave's; the +15 / +30 kg middle tiers, the pack weight and the value are assumed for his review."},
 		"copper_nails": {
 			"number": 1487,
@@ -12249,7 +12249,7 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note_provisional": "Dave 15 Nov 2026: \"add copper nails to our items list\". The recipe (1 Copper ingot to 100 at the Primitive smithy) mirrors Bronze nails and is assumed for his review; they fill the nails ingredient group, so they work wherever nails do."
+			"note_provisional": "Dave 15 Nov 2026: \"add copper nails to our items list\". The recipe (1 Copper ingot to 100 at the Primitive smithy) mirrors Bronze nails and is assumed for his review. The Quality - Backpack asks for them and takes any nails instead (wood_species.json group copper_nails)."
 		}
 	}
 }

@@ -1,13 +1,14 @@
 {
 	"note": "Wood species uses v1 (Dave 2026-10-23, tech/items/TREE_SPECIES_USES_V1.md). class: hardwood logs saw into Hardwood boards, softwood and the plain Log into Planks (one Firewood and one Wooden block for every species since Dave 15 Nov 2026, docs/design/TREE_WOOD_TOOLS_DESIGN.md). burn 1-5 (firewood). hits_to_fell is a reference: the server already derives hits from trunk thickness (thin hardwood fewer, thick softwood more); axe wear per hit is the same for every species. Foundations ignore the rot rules. Species not listed use hardwood defaults.",
 	"ingredient_groups": {
-		"note": "An ingredient id that names a group (a recipe asking for plain log) is filled by any member. The crafting code matches members; validate_items checks every group has members and that no recipe needs a plain id with no source. Defined by Sal 2026-10-31 for guide finding F-16; code half in LOG_SPECIES_SPEC.md. nails and hinges (Morgan, 10 Nov 2026): bronze or iron fills every blueprint and recipe that asks for them; iron bands stay iron. Copper nails fill nails too (Dave 15 Nov 2026: any nails). Mission 001 phase 2a (master s2.3, s4 item 3): log_spruce (Softwood log: spruce, Scots pine, the plain Log) makes Planks and log_oak (Hardwood log: the six hardwood species) makes Hardwood boards; the two never substitute [D4]. The retired species logs left the log group.",
+		"note": "An ingredient id that names a group (a recipe asking for plain log) is filled by any member. The crafting code matches members; validate_items checks every group has members and that no recipe needs a plain id with no source. Defined by Sal 2026-10-31 for guide finding F-16; code half in LOG_SPECIES_SPEC.md. nails and hinges (Morgan, 10 Nov 2026): bronze or iron fills every blueprint and recipe that asks for them; iron bands stay iron. copper_nails (Dave 15 Nov 2026, the Quality - Backpack takes any nails): a need for Copper nails is filled by copper, bronze or iron nails; Copper nails are not in the nails group, so a building's nails cost and its refund are unchanged. Mission 001 phase 2a (master s2.3, s4 item 3): log_spruce (Softwood log: spruce, Scots pine, the plain Log) makes Planks and log_oak (Hardwood log: the six hardwood species) makes Hardwood boards; the two never substitute [D4]. The retired species logs left the log group.",
 		"log": ["log_oak", "log_beech", "log_birch", "log_scots_pine", "log_spruce", "log_tropical_hardwood", "log_walnut", "log_maple"],
 		"log_spruce": ["log_scots_pine", "log"],
 		"log_oak": ["log_beech", "log_birch", "log_tropical_hardwood", "log_walnut", "log_maple"],
 		"bronze_chisel": ["bronze_chisel", "iron_chisel", "steel_chisel"],
 		"knife": ["stone_knife", "obsidian_knife", "bronze_knife", "iron_knife", "steel_knife"], "axe": ["stone_axe", "copper_axe", "bronze_axe", "iron_axe", "steel_axe"], "saw": ["copper_saw", "bronze_saw", "hand_saw", "steel_saw"],
-		"nails": ["nails", "bronze_nails", "copper_nails"],
+		"nails": ["nails", "bronze_nails"],
+		"copper_nails": ["bronze_nails", "nails"],
 		"hinges": ["hinges", "bronze_hinges"],
 		"fish": ["carp", "cod", "eel", "herring", "mackerel", "perch", "pike", "salmon", "smelt", "trout"],
 		"mushrooms": ["porcini", "chanterelles", "morels", "puffball"],
@@ -20,7 +21,7 @@
 		"herbs": ["thyme", "rosemary", "marjoram", "sage", "mint"]
 	},
 	"key_woods": ["oak", "beech", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
-	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "knife": "Any knife", "axe": "Any axe", "saw": "Any saw"},
+	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "knife": "Any knife", "axe": "Any axe", "saw": "Any saw", "copper_nails": "Any nails"},
 	"retired_to": {"note": "Master s4 item 3. Data only; renames.json is the live mechanism, and Dynasty is a new game (Dave 12 Nov 2026), so no rename rows are needed.", "log_": "log", "lumber_": {"hardwood": "hardwood_board", "softwood": "lumber"}, "beam_": "lumber"},
 	"default": {
 		"class": "softwood",

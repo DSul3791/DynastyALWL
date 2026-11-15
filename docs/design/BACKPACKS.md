@@ -14,7 +14,7 @@ Dave's design, 15 Nov 2026 (project chat and thread "Review backpack plan agains
 |---|---|---|
 | Simple - Backpack | 5 Hide, 20 Twine, 4 Stick | by hand |
 | Improved - Backpack | 5 Leather, 20 Twine, 1 Hardwood board | Leatherworking table |
-| Quality - Backpack | 10 Leather, 20 Sinew, 15 nails (any kind), 2 Hardwood board | Leatherworking table |
+| Quality - Backpack | 10 Leather, 20 Sinew, 15 Copper nails (any nails do), 2 Hardwood board | Leatherworking table |
 | Advanced - Backpack | 2 Steel ingot, 25 Leather, 40 Sinew | Advanced smithy |
 
 - Copper nails are a new item (Dave: "add copper nails to our items list"), and the Quality pack takes any nails (Dave: "really it can use any nails").
@@ -24,7 +24,7 @@ Dave's design, 15 Nov 2026 (project chat and thread "Review backpack plan agains
 - B-2: the packs themselves weigh 1, 1.5, 2 and 3 kg (`weights.json`).
 - B-3: names follow "Tier - Noun" ("Simple - Backpack"), as "Improved - Well".
 - B-4: "the tanners/leather station" is the Leatherworking table (the Tanning rack only turns scraped hide into leather).
-- B-5: Copper nails: 1 Copper ingot makes 100 at the Primitive smithy (Bronze nails' recipe in copper); they fill every nails need, so they work wherever nails do.
+- B-5: Copper nails: 1 Copper ingot makes 100 at the Primitive smithy (Bronze nails' recipe in copper). The Quality pack asks for Copper nails and takes any nails (`wood_species.json` group `copper_nails`). Copper nails are not added to the building nails group, so building costs and what a taken-down piece gives back (Bronze nails) are unchanged; making them count for buildings too is Dave's call.
 - B-6: Hob sells the Simple - Backpack where he sold the hide pack, and the merchant wears one.
 - B-7: values 30, 70, 120 and 220 copper; craft times 20, 24, 30 and 40 s.
 - B-8: the menus call the player's own item grid "the inventory" instead of "the backpack" ("Your inventory is full.").

@@ -79,7 +79,11 @@ func _gear_column(names: Array) -> Control:
 		if gear == "back":
 			slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot") and view.wear_slot_of(int(data["slot"])) == "back"
 			slot.on_drop = func(data: Variant) -> void: view.wear_slot(int(data["slot"]))
-			slot.drag_data = func() -> Variant: return {"worn": int(well_at["back"])} if int(well_at.get("back", -1)) >= 0 else null
+			slot.drag_data = func() -> Variant:
+				if int(well_at.get("back", -1)) < 0:
+					return null
+
+				return {"worn": int(well_at["back"])}
 
 		column.add_child(slot)
 		wells[gear] = slot
