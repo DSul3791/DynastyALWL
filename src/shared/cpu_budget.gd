@@ -5,6 +5,8 @@ extends RefCounted
 # has a quota of 5 CPUs on 12 logical ones; the server started 11 streaming threads there, the kernel paused the whole group for part of
 # every 100 ms, and a flora chunk took 30 to 60 times longer than alone (a join 66 s, against 12 s with 4 threads). Dave plans to host
 # the server in a Docker container on that machine. On Windows and macOS, and on Linux without a limit, this is the processor count.
+# shortcut: reads the process's own cgroup root (what Docker mounts for a container); a limit set only on a parent cgroup (docker --cgroupns=host,
+# a systemd CPUQuota=) is not seen and the count stays as before. Revisit if the server is hosted that way.
 
 const CGROUP2_MAX := "/sys/fs/cgroup/cpu.max"                    # "<quota us> <period us>" or "max <period>"
 const CGROUP2_CPUSET := "/sys/fs/cgroup/cpuset.cpus.effective"   # "0-3,6"
@@ -19,16 +21,16 @@ static func usable() -> int:
 	if OS.get_name() != "Linux":
 		return count
 
-	var quota: int = quota_cpus(_read(CGROUP2_MAX))
+	var quota: int = quota_cpus(read_text(CGROUP2_MAX))
 
 	if quota == 0:
-		quota = quota_cpus_v1(_read(CGROUP1_QUOTA), _read(CGROUP1_PERIOD))
+		quota = quota_cpus_v1(read_text(CGROUP1_QUOTA), read_text(CGROUP1_PERIOD))
 
 	if quota > 0:
 		count = mini(count, quota)
 
-	var cpuset: String = _read(CGROUP2_CPUSET)
-	var in_set: int = set_size(cpuset if cpuset != "" else _read(CGROUP1_CPUSET))
+	var cpuset: String = read_text(CGROUP2_CPUSET)
+	var in_set: int = set_size(cpuset if cpuset != "" else read_text(CGROUP1_CPUSET))
 
 	if in_set > 0:
 		count = mini(count, in_set)
@@ -81,9 +83,19 @@ static func _cpus(quota_us: int, period_us: int) -> int:
 	return maxi(int(ceil(float(quota_us) / float(period_us))), 1)
 
 
-static func _read(path: String) -> String:
+# Reads a small kernel file. Not get_as_text: it sizes the read by seeking to the end, which cgroup and /proc files do not allow (they read as "").
+static func read_text(path: String) -> String:
 	if not FileAccess.file_exists(path):
 		return ""
 
 	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-	return "" if file == null else file.get_as_text()
+
+	if file == null:
+		return ""
+
+	var text: String = ""
+
+	while not file.eof_reached():
+		text += file.get_line() + "\n"
+
+	return text

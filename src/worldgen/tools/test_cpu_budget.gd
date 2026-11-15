@@ -26,6 +26,11 @@ func _init() -> void:
 	check(CpuBudget.set_size("0-11\n") == 12, "a CPU set 0-11")
 	check(CpuBudget.set_size("0-3,6,8-9") == 7, "a CPU set 0-3,6,8-9")
 	check(CpuBudget.set_size("") == 0 and CpuBudget.set_size("3-1") == 0, "an empty or odd CPU set is no limit")
+
+	if OS.get_name() == "Linux":
+		var online: String = CpuBudget.read_text("/sys/devices/system/cpu/online")
+		check(CpuBudget.set_size(online) >= 1, "a kernel file reads (online CPUs %s)" % online.strip_edges())
+
 	var usable: int = CpuBudget.usable()
 	check(usable >= 1 and usable <= maxi(OS.get_processor_count(), 1), "this machine: %d usable of %d" % [usable, OS.get_processor_count()])
 	print("Test done: %d fail" % failures)

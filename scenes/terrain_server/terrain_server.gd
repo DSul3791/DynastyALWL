@@ -176,6 +176,7 @@ var _tiles_changed: Dictionary = {}     # tiles edited since the clients were to
 var _tiles_told_msec: int = 0
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
+var _usable_cpus: int = 1               # CPUs this process may use (cpu_budget.gd: a container's limit counts)
 var _idle_threads: int = 2             # idle builder threads (--idle-threads=N, 0 turns it off)
 var _idle_workers: Array = []
 var _idle_offsets: Array = []          # [lod, dx, dz] nearest first, same for every player
@@ -197,7 +198,8 @@ func _ready() -> void:
 	var port: int = 24600
 	var world_dir: String = "res://worlds/base_world"
 	var store_dir: String = ""
-	_max_running = maxi(CpuBudgetScript.usable() - 1, 1)   # a container held to fewer CPUs than the machine has gets fewer threads (David4, 15 Nov 2026)
+	_usable_cpus = CpuBudgetScript.usable()
+	_max_running = maxi(_usable_cpus - 1, 1)   # a container held to fewer CPUs than the machine has gets fewer threads (David4, 15 Nov 2026)
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--port="):
@@ -822,7 +824,7 @@ func _ready() -> void:
 		idle.start(_idle_loop, Thread.PRIORITY_LOW)
 		_idle_workers.append(idle)
 
-	print("Terrain server listening on port %d with %d worker threads (%d usable CPUs of %d); store %s; spawn %s" % [port, _max_running, CpuBudgetScript.usable(), OS.get_processor_count(), store_dir, str(spawn)])
+	print("Terrain server listening on port %d with %d worker threads (%d usable CPUs of %d); store %s; spawn %s" % [port, _max_running, _usable_cpus, OS.get_processor_count(), store_dir, str(spawn)])
 
 
 # Owner (2026-10-19): spawn here (x, z in meters) instead of the baked spot at the bay
