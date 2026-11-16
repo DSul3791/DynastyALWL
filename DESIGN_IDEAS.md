@@ -622,7 +622,7 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
 
 #### Aging and family
 
-See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the preserved recorded decisions, ideas, proposals and qualifications. Legacy decision tags await approval-source verification; the move does not withdraw existing decisions.
+See [approved aging and lifespan](Design_Ideas_Approved.md#aging-and-lifespan) for decisions, values and qualifications; [aging proposals](Design_Ideas_Unapproved.md#aging-and-lifespan) remain separate.
 
 #### Danger, rescue and logging out
 
@@ -899,11 +899,11 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 
 ### 7.3 Lifespan targets
 
-See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for pacing, tuning expectations and proposals, including the shared-clock and voluntary-retirement qualifications.
+See [approved aging and lifespan](Design_Ideas_Approved.md#aging-and-lifespan) for pacing, tuning, the shared clock and voluntary-retirement qualifications; [proposals](Design_Ideas_Unapproved.md#aging-and-lifespan) remain separate.
 
 ### 7.4 NPC aging
 
-See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the preserved NPC age distribution, life-stage presentation and population-turnover proposal.
+See [approved aging and lifespan](Design_Ideas_Approved.md#aging-and-lifespan) for NPC ages and life stages; [population-turnover proposals](Design_Ideas_Unapproved.md#aging-and-lifespan) remain separate.
 
 ### 7.5 Day and night
 
