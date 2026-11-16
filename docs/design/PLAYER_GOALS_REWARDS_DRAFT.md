@@ -47,7 +47,7 @@ This ordered route explicitly covers hand gathering, primitive tools, first fire
 | **Grow your fire into a medium campfire** — Make or obtain at least 3 pieces of firewood. Open the existing fire's storage with F and add all three pieces. The lit fire should reach medium (tier 2). Wet wood may delay its effective size. <!-- activity:medium_fire --> | 5 copper <!-- coin_copper:5 --> |
 | **Grow your fire into a large bonfire** — Fell more trees and add at least 3 whole logs to the lit fire through its fuel storage. Ensure no cooking pot is hanging over the fire, since a pot caps its size at medium. Confirm it grows to the large bonfire (tier 3). <!-- activity:bonfire --> | 1 bronze <!-- coin_copper:10 --> |
 | **Eat something wild** — Find an edible wild plant or berry, gather it and consume it from your inventory/hotbar. <!-- existing:berries --> | 3 copper <!-- coin_copper:3 --> |
-| **Craft Wooden - Spade** — Materials: 2 Stick. Open Inventory/Crafting (I) and use the hand-crafting recipe. Keep available (not consumed): 1 Stone. <!-- craft:wooden_spade; recipes:wooden_spade --> | 3 copper <!-- coin_copper:3 --> |
+| **Craft Wooden - Shovel** — Materials: 2 Stick. Open Inventory/Crafting (I) and use the hand-crafting recipe. Keep available (not consumed): 1 Stone. <!-- craft:wooden_spade; recipes:wooden_spade --> | 3 copper <!-- coin_copper:3 --> |
 | **Gather thatch for building and bedding** — Harvest tall grass, thatching grass, reeds or heather where in season. The usable thatch is for the first bed, walls and roofs; collect enough for the selected recipe. <!-- gather:thatch --> | 3 copper <!-- coin_copper:3 --> |
 | **Build a lean-to** — With your hammer equipped, press R and choose the Lean-to blueprint; gather and consume the materials displayed by the active blueprint. Build a simple sheltered sleeping spot. <!-- existing:shelter --> | 8 copper <!-- coin_copper:8 --> |
 | **Make a bed** — Gather thatch (e.g. tall grass or heather). Craft a Thatch - Bed from 10 thatch, 4 sticks and 2 twine, then place it under cover. <!-- existing:bed --> | 8 copper <!-- coin_copper:8 --> |
@@ -58,8 +58,8 @@ This ordered route explicitly covers hand gathering, primitive tools, first fire
 | **Build Crude - Window** — Equip a building hammer, press R and choose Crude - Window. Materials: 15 Thatch, 8 Stick, 3 Twine. Place it where the building ghost is valid. <!-- build:thatch_window; structure:thatch_window --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Roof 45** — Equip a building hammer, press R and choose Crude - Roof 45. Materials: 6 Twine, 30 Thatch, 12 Stick. Place it where the building ghost is valid. <!-- build:thatch_roof; structure:thatch_roof --> | 7 copper <!-- coin_copper:7 --> |
 | **Build Crude - Roof 65** — Equip a building hammer, press R and choose Crude - Roof 65. Materials: 6 Twine, 30 Thatch, 12 Stick. Place it where the building ghost is valid. <!-- build:thatch_roof_65; structure:thatch_roof_65 --> | 7 copper <!-- coin_copper:7 --> |
-| **Gather clay** — Dig clay-rich ground with a spade; verify the specific terrain/material shown by the game. <!-- gather:clay --> | 3 copper <!-- coin_copper:3 --> |
-| **Gather sand** — Dig sandy ground using a spade. <!-- gather:sand --> | 3 copper <!-- coin_copper:3 --> |
+| **Gather clay** — Dig clay-rich ground with a shovel; verify the specific terrain/material shown by the game. <!-- gather:clay --> | 3 copper <!-- coin_copper:3 --> |
+| **Gather sand** — Dig sandy ground using a shovel. <!-- gather:sand --> | 3 copper <!-- coin_copper:3 --> |
 | **Craft Brick** — Materials: 2 Clay. Use a lit campfire. This recipe produces 3 units. Alternative production methods exist; this is one verified recipe path in data. <!-- craft:brick; recipes:brick,kiln_brick --> | 4 copper <!-- coin_copper:4 --> |
 | **Craft Clay - Pot** — Materials: 6 Clay. Use a lit campfire. <!-- craft:clay_pot; recipes:clay_pot --> | 4 copper <!-- coin_copper:4 --> |
 | **Build Campfire pot** — Equip a building hammer, press R and choose Campfire pot. Materials: 3 Stick, 3 Twine, 1 Clay - Pot. Place it where the building ghost is valid. <!-- build:campfire_pot; structure:campfire_pot --> | 2 bronze <!-- coin_copper:20 --> |
@@ -557,7 +557,7 @@ Every other goal remains fully automatic and earns its own coins whether it is v
 | **Craft Iron - Scythe** — Materials: 2 Iron ingot, 2 Stick. Use the Improved Smithy. <!-- craft:scythe; recipes:scythe --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Shortsword** — Materials: 1 Iron ingot, 1 Leather. Use the Improved Smithy. <!-- craft:iron_shortsword; recipes:iron_shortsword --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Sickle** — Materials: 1 Iron ingot, 1 Stick. Use the Improved Smithy. <!-- craft:iron_sickle; recipes:iron_sickle --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
-| **Craft Iron - Spade** — Materials: 2 Iron ingot, 2 Stick. Use the Improved Smithy. <!-- craft:iron_spade; recipes:iron_spade --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
+| **Craft Iron - Shovel** — Materials: 2 Iron ingot, 2 Stick. Use the Improved Smithy. <!-- craft:iron_spade; recipes:iron_spade --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Spear** — Materials: 1 Iron ingot, 2 Stick. Use the Improved Smithy. <!-- craft:iron_spear; recipes:iron_spear --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Trident** — Materials: 2 Iron ingot, 2 Stick. Use the Improved Smithy. <!-- craft:iron_trident; recipes:iron_trident --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
 | **Craft Iron - Warhammer** — Materials: 2 Iron ingot, 1 Stick. Use the Improved Smithy. <!-- craft:iron_warhammer; recipes:iron_warhammer --> | 1 bronze + 5 copper <!-- coin_copper:15 --> |
@@ -599,7 +599,7 @@ Every other goal remains fully automatic and earns its own coins whether it is v
 | **Craft Steel - Scythe** — Materials: 2 Steel ingot, 2 Stick. Use the Advanced Smithy. <!-- craft:steel_scythe; recipes:steel_scythe --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Shortsword** — Materials: 1 Steel ingot, 1 Leather. Use the Advanced Smithy. <!-- craft:steel_shortsword; recipes:steel_shortsword --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Sickle** — Materials: 1 Steel ingot, 1 Stick. Use the Advanced Smithy. <!-- craft:steel_sickle; recipes:steel_sickle --> | 2 bronze <!-- coin_copper:20 --> |
-| **Craft Steel - Spade** — Materials: 2 Steel ingot, 2 Stick. Use the Advanced Smithy. <!-- craft:steel_spade; recipes:steel_spade --> | 2 bronze <!-- coin_copper:20 --> |
+| **Craft Steel - Shovel** — Materials: 2 Steel ingot, 2 Stick. Use the Advanced Smithy. <!-- craft:steel_spade; recipes:steel_spade --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Spear** — Materials: 1 Steel ingot, 2 Stick. Use the Advanced Smithy. <!-- craft:steel_spear; recipes:steel_spear --> | 2 bronze <!-- coin_copper:20 --> |
 | **Craft Steel - Warhammer** — Materials: 2 Steel ingot, 1 Stick. Use the Advanced Smithy. <!-- craft:steel_warhammer; recipes:steel_warhammer --> | 2 bronze <!-- coin_copper:20 --> |
 | **Build Deep-well pump** — Equip a metal hammer, press R and choose Deep-well pump. Materials: 8 Iron ingot, 2 Hide, 2 Hinges, 12 Nails. Place it where the building ghost is valid. <!-- build:iron_deep_well_pump; structure:iron_deep_well_pump --> | 4 bronze <!-- coin_copper:40 --> |
