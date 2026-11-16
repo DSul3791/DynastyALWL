@@ -18,6 +18,8 @@ var _groups: Dictionary = {}       # int number of a group id -> PackedInt32Arra
 var _group_label: Dictionary = {}   # group key item number -> the label its costs read under (wood_species.json group_labels)
 var _renamed: Dictionary = {}      # int number of a retired item -> int number of the item that replaced it
 var _rename_count: Dictionary = {}   # int number of a retired item -> how many of its replacement one stands for (absent: 1)
+var _softwood: Dictionary = {}     # tree species name -> true for wood_species.json class "softwood" (Tree sap, Dave 16 Nov 2026)
+var tree_sap: Dictionary = {}      # wood_species.json "tree_sap": the item, felled and per_softwood_log amounts
 
 
 static func load_default():
@@ -109,6 +111,13 @@ func load_groups(path: String) -> void:
 
 		_groups[number_of(id)] = members
 
+	tree_sap = parsed.get("tree_sap", {})
+	var species: Dictionary = parsed.get("species", {})
+
+	for name in species:
+		if typeof(species[name]) == TYPE_DICTIONARY and str(species[name].get("class", "")) == "softwood":
+			_softwood[str(name)] = true
+
 	# A group cost reads under its label, not its key item's name (master s4 item 14): a softwood-log cost keyed by Spruce log reads
 	# "Softwood log", and a firewood cost "Firewood" though the key item is Hard firewood.
 	var labels: Dictionary = parsed.get("group_labels", {})
@@ -134,6 +143,15 @@ func has_group_label(number: int) -> bool:
 # The item numbers that fill an ingredient: [] when the number is not a group id.
 func group_members(number: int) -> PackedInt32Array:
 	return _groups.get(number, PackedInt32Array())
+
+
+# Tree sap (Dave 16 Nov 2026): a tree species wood_species.json names as softwood, and a softwood log (the log_spruce group, the plain Log included).
+func is_softwood_species(name: String) -> bool:
+	return _softwood.has(name)
+
+
+func is_softwood_log(number: int) -> bool:
+	return number > 0 and group_members(number_of("log_spruce")).has(number)
 
 
 # The one ranking of a group's members, "lowest" first (coordinator 10 Nov 2026): the lowest items.json "tier", then the lowest material on SPEND_MATERIALS,

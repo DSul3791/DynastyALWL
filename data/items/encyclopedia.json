@@ -1092,7 +1092,6 @@
 			],
 			"used_for": [
 				"Used in Tar",
-				"Used in Torch",
 				"Used in Fire arrow"
 			],
 			"obtainable_now": true
@@ -1223,16 +1222,15 @@
 			"obtainable_now": true
 		},
 		"resin": {
-			"name": "Resin",
+			"name": "Tree sap",
 			"kind": "material",
-			"description": "Sticky sap from conifers, hardened into amber lumps. Burns hot, seals wood, and sticks things.",
+			"description": "Sticky sap from softwood trees, hardened into amber lumps. Soaks a torch head, burns hot and seals wood.",
 			"how_to_get": [
-				"From a felled balsam fir",
-				"From a felled scots pine",
-				"From a felled spruce"
+				"From every felled softwood tree (balsam fir, scots pine, spruce)",
+				"From every softwood log you saw or carve into something"
 			],
 			"used_for": [
-				"Used in Torch",
+				"Used in Improved - Torch",
 				"Used in Fire arrow"
 			],
 			"obtainable_now": true
@@ -1957,7 +1955,8 @@
 				"Picked from old stump"
 			],
 			"used_for": [
-				"Used in Torch",
+				"Used in Simple - Torch",
+				"Used in Improved - Torch",
 				"Used in Bone - Arrow",
 				"Used in Bronze - Mace",
 				"Used in Wooden - Workbench",
@@ -2011,7 +2010,8 @@
 				"Picked from tanglewort"
 			],
 			"used_for": [
-				"Used in Torch",
+				"Used in Simple - Torch",
+				"Used in Improved - Torch",
 				"Used in Compost",
 				"Used in Fibre - Sandals",
 				"Used in Fibre - Cloak",
@@ -2072,6 +2072,8 @@
 				"Craft: 3 Sinew"
 			],
 			"used_for": [
+				"Used in Simple - Torch",
+				"Used in Improved - Torch",
 				"Used in Bucket",
 				"Used in Wooden - Workbench",
 				"Used in Campfire pot",
@@ -2230,19 +2232,41 @@
 			"obtainable_now": true
 		},
 		"torch": {
-			"name": "Torch",
+			"name": "Simple - Torch",
 			"kind": "tool",
-			"description": "A stick wrapped in fibre and dipped in pitch. Lights your way after dark.",
+			"description": "A stick bound with twine and wrapped in plant fibre. Lights your way after dark.",
 			"how_to_get": [
-				"Craft: 1 Stick, 1 Plant fibre, 1 Pitch"
+				"Craft: 1 Stick, 1 Twine, 1 Plant fibre"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
 		"torch_doused": {
-			"name": "Torch",
+			"name": "Simple - Torch",
 			"kind": "tool",
-			"description": "A stick wrapped in fibre. Lights your way after dark.",
+			"description": "A stick bound with twine and wrapped in plant fibre. Light it again at a fire.",
+			"how_to_get": [
+				"A torch goes out under water, or after a few seconds in the open rain"
+			],
+			"used_for": [
+				"Light it again at a burning fire"
+			],
+			"obtainable_now": true
+		},
+		"improved_torch": {
+			"name": "Improved - Torch",
+			"kind": "tool",
+			"description": "A torch head soaked in tree sap. Burns twice as long as a simple torch.",
+			"how_to_get": [
+				"Craft: 1 Stick, 1 Twine, 1 Plant fibre, 1 Tree sap"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"improved_torch_doused": {
+			"name": "Improved - Torch",
+			"kind": "tool",
+			"description": "A torch soaked in tree sap, put out. Light it again at a fire.",
 			"how_to_get": [
 				"A torch goes out under water, or after a few seconds in the open rain"
 			],
@@ -3109,7 +3133,6 @@
 				"Used in Herb salve",
 				"Used in Oat cakes",
 				"Used in Onion roast",
-				"Used in Torch",
 				"Used in Fire arrow"
 			],
 			"obtainable_now": true
@@ -7403,6 +7426,26 @@
 			"description": "A torch wedged on a wall. Hold E to take it back.",
 			"how_to_get": [
 				"Hold a torch and right click a wall"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"improved_standing_torch": {
+			"name": "Improved - Standing torch",
+			"kind": "structure",
+			"description": "A sap-soaked torch stuck in the ground. Hold E to take it back.",
+			"how_to_get": [
+				"Hold an Improved - Torch and right click the ground"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"improved_torch_sconce": {
+			"name": "Improved - Wedged torch",
+			"kind": "structure",
+			"description": "A sap-soaked torch wedged on a wall. Hold E to take it back.",
+			"how_to_get": [
+				"Hold an Improved - Torch and right click a wall"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -13157,7 +13200,7 @@
 			"sections": [
 				{
 					"title": "Torch",
-					"text": "A stick, a twist of fibre and pitch. It throws a wide light, wider than a wooden lantern's, but it burns out in half a game day, and rain or water puts it out."
+					"text": "A stick, twine and plant fibre make a Simple - Torch; add tree sap and it is an Improved - Torch that burns twice as long. Either throws a wide light, wider than a wooden lantern's, but a simple one burns out in half a game day, and rain or water puts either out."
 				},
 				{
 					"title": "Wooden - Lantern",
