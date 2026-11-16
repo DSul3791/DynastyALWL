@@ -180,15 +180,14 @@ func _init() -> void:
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
 	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why a craft of several is one request")
 
-	# 9. A torch put out by the rain stays in its hotbar slot: the key is the slot, so pressing it finds the doused torch to light again.
+	# 9. A torch put out by the rain stays in its hotbar slot (the same torch, marked out): the key is the slot, so pressing it lights it again.
 	var torch: int = items.table.number_of("torch")
-	var doused: int = items.table.number_of("torch_doused")
 	var bag = InventoryScript.pack(items.table)
 	bag.numbers[2] = torch
 	bag.counts[2] = 1
-	check(torch > 0 and doused > 0 and bag.key_slot(2) == 2 and bag.on_hotbar(2), "the burning torch is key 3's")
-	bag.numbers[2] = doused
-	check(bag.key_slot(2) == 2, "put out by the rain, it is still key 3's")
+	check(torch > 0 and bag.key_slot(2) == 2 and bag.on_hotbar(2), "the burning torch is key 3's")
+	bag.inst[2] = {"out": 1}
+	check(bag.key_slot(2) == 2 and bag.numbers[2] == torch, "put out by the rain, it is still key 3's torch")
 	bag.clear_slot(2)
 	check(bag.key_slot(2) == -1 and not bag.on_hotbar(2), "no torch at all: key 3 is empty")
 

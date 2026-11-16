@@ -193,8 +193,8 @@ const ACT_HOE_GRADE_POINT := 42   # a = held slot (the hoe in hand from 117), b 
 const ACT_HOE_GRADE := 43    # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke brings the ground within 1.5 m toward the straight ramp from A to B (0.25 m at most, no items)
 const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (clamped by the server), at = aim direction: one arrow from the first arrow item in the pack (data/items/bow.json; protocol 79, taken at merge)
 const ACT_REPAIR_STRUCT := 59   # a = the placed piece's world item id, b = the held pack slot + 1 (from 117): with the hammer in hand, repair it from materials on the ground nearby, in containers within reach or in the pack (building_wear.json)
-const ACT_DOUSE := 60          # a = hotbar slot of a burning torch in hand, b = 0 under water, 1 rain: it becomes its doused item (flame_rules.gd; Dave 4 Nov 2026)
-const ACT_RELIGHT := 61        # a = world id of a burning fire in reach: the first doused torch in the pack is lit again from it
+const ACT_DOUSE := 60          # a = hotbar slot of a burning torch in hand, b = 0 under water, 1 rain: a torch is marked out, a lantern becomes its dark item (flame_rules.gd; Dave 4 and 16 Nov 2026)
+const ACT_RELIGHT := 61        # a = world id of a burning fire in reach: the first torch that went out (or dark lantern) in the pack is lit again from it
 const ACT_TORCH_BURN := 63     # a = hotbar slot of a burning torch in hand, sent about once a second while it burns: the torch wears down (items.json burn_s) and scares animals (Dave 6 Nov 2026; no protocol change)
 const ACT_PLACE_TORCH := 62    # a = hotbar slot of a torch in hand, b = 0 the ground, 1 a wall, count = yaw in degrees, at = the aimed point: stuck in the ground or on the wall (Dave 4 Nov 2026)
 const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)

@@ -340,8 +340,11 @@ func equip_toggle(slot: int) -> void:
 # a cave without light). The torch is an off-hand item, so press_slot calls this for it too; in rain or water it goes out again by the usual rules.
 func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	var number: int = _key_number(slot)
+	var row: Dictionary = _inv.table.entry(_inv.table.id_of(number)) if number != 0 else {}
+	var relit: String = str(row.get("relit_item", ""))
 
-	var relit: String = str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) if number != 0 else ""
+	if relit == "" and number != 0 and _slot_out(int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1)))):
+		relit = _inv.table.id_of(number)   # a torch that went out is the same torch (Dave 16 Nov 2026): pulling it out lights it
 
 	if relit == "":
 		return
@@ -362,7 +365,7 @@ func _relight_on_press(slot: int, quiet: bool = false) -> void:
 
 		return
 
-	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))) + 1, 0, Vector3.ZERO)   # the pack slot plus one (0: the first doused torch)   # no fire needed (Dave 6 Nov 2026)
+	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))) + 1, 0, Vector3.ZERO)   # the pack slot plus one (0: the first one that went out)   # no fire needed (Dave 6 Nov 2026)
 
 
 func select(slot: int) -> void:
@@ -570,19 +573,19 @@ func off_id() -> String:
 	return _inv.table.id_of(off_number())
 
 
-# The pack slot of a burning flame in either hand that water or rain can put out (a torch; a lantern later: items.json "doused_item"), or -1.
+# The pack slot of a burning flame in either hand that water or rain can put out (a torch, items.json "goes_out"; a lantern, "doused_item"), or -1.
 func flame_slot() -> int:
 	if _inv == null:
 		return -1
 
 	for spec in [[held_number(), held_slot], [off_number(), off_slot]]:
-		if int(spec[0]) != 0 and str(_inv.table.entry(_inv.table.id_of(int(spec[0]))).get("doused_item", "")) != "":
+		if int(spec[0]) != 0 and FlameRules.can_go_out(_inv.table.entry(_inv.table.id_of(int(spec[0])))) and not _slot_out(int(spec[1])):
 			return int(spec[1])
 
 	return -1
 
 
-# The pack slot of a torch in either hand that can be placed (items.json places_as: burning or doused), or -1.
+# The pack slot of a torch in either hand that can be placed (items.json places_as: burning or out), or -1.
 func _torch_hand_slot() -> int:
 	if _inv == null:
 		return -1
@@ -858,9 +861,22 @@ func _is_torch() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
 
 
-# A torch that water or rain put out (items.json "relit_item"): drawn as a torch with no flame or light.
+# A torch that water or rain put out (its slot marked out, flame_rules.gd is_out): drawn as a torch with no flame or light.
 func _is_doused_torch() -> bool:
-	return str(_inv.table.entry(held_id()).get("relit_item", "")) != ""
+	return _is_torch() and _slot_out(held_slot)
+
+
+# Whether the flame in a pack slot is out (a torch marked out, or a dark lantern).
+func _slot_out(slot: int) -> bool:
+	if _inv == null or slot < 0 or slot >= _inv.inventory.numbers.size() or _inv.inventory.numbers[slot] == 0:
+		return false
+
+	return FlameRules.is_out(_inv.table.entry(_inv.table.id_of(_inv.inventory.numbers[slot])), _inv.inventory.inst_of(slot))
+
+
+# The pack slot of what the left hand shows (_left_number): the off hand's, or the main item drawn in the left hand.
+func _left_slot() -> int:
+	return off_slot if off_number() != 0 else held_slot
 
 
 func _is_knife() -> bool:
@@ -2709,11 +2725,14 @@ func _hoe_mode_name() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
 		number = 0
 
 	if number != 0 and _left_number() == number and off_number() == 0:
 		number = 0      # a torch taken as the main item is drawn in the left hand in third person (_left_number)
+
+	if number != 0 and _is_doused_torch():
+		number = -number   # the same torch out is drawn again, without its flame
 
 	if number == _shown_number:
 		return
@@ -2725,7 +2744,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() or _is_doused_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
+		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model("", _is_doused_torch()) if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
@@ -2910,16 +2929,17 @@ func _third_skin_color() -> Color:
 func _show_off_model(delta: float) -> void:
 	var number: int = _left_number() if _inv != null else 0
 	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
+	var shown: int = -number if number != 0 and _slot_out(_left_slot()) else number   # a torch that went out is drawn again, without its flame
 
-	if number != _off_shown:
-		_off_shown = number
+	if shown != _off_shown:
+		_off_shown = shown
 
 		if _off_model != null:
 			_off_model.queue_free()
 			_off_model = null
 
 		if number != 0:
-			_off_model = _make_shield_model() if _off_class() == "shield" else (_make_lantern_model(_left_id()) if _lantern_in_left() else _make_torch_model(_left_id()))
+			_off_model = _make_shield_model() if _off_class() == "shield" else (_make_lantern_model(_left_id()) if _lantern_in_left() else _make_torch_model(_left_id(), _slot_out(_left_slot())))
 			_mount_off_model()
 
 	if _off_model == null:
@@ -3355,8 +3375,8 @@ func _make_lantern_model(id: String) -> Node3D:
 
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).
-func _make_torch_model(id: String = "") -> Node3D:
-	var lit: bool = bool(_inv.table.entry(id if id != "" else held_id()).get("flame", false))   # a doused torch: no flame, no glow, no light
+func _make_torch_model(id: String = "", out: bool = false) -> Node3D:
+	var lit: bool = bool(_inv.table.entry(id if id != "" else held_id()).get("flame", false)) and not out   # a torch that went out: no flame, no glow, no light
 	var torch: Node3D = Node3D.new()
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.42, 0.3, 0.17)

@@ -141,3 +141,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 |---|---|---|---|---|
 | wooden_spade.png, stone_spade.png, iron_spade.png, steel_spade.png | Claude, PR #1182 | 16 Nov | renamed with their items (same pictures) | assets/ui/item_icons/*_shovel.png |
 | hit_spade_soil_0.ogg, hit_spade_soil_1.ogg, hit_spade_soil_2.ogg, hit_spade_stone_0.ogg, hit_spade_stone_1.ogg, hit_spade_stone_2.ogg, hit_spade_wood_0.ogg, hit_spade_wood_1.ogg, hit_spade_wood_2.ogg | Claude, PR #1182 | 16 Nov | renamed with the shovel tool class (same sounds) | assets/audio/hits/hit_shovel_*.ogg |
+
+## No doused torch, 16 Nov 2026 (Dave: "There should be no such thing as a doused torch")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/torch_doused.png, assets/ui/item_icons/improved_torch_doused.png | Claude, doused-torch PR | 16 Nov | their items are retired: a torch that goes out stays the same torch (docs/design/TORCH_TREE_SAP.md) | the torches' own icons |

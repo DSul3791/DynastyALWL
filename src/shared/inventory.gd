@@ -578,6 +578,9 @@ static func clean_inst(raw: Variant, in_bag: bool = false) -> Dictionary:
 	if craft == 1 or craft == 2:
 		out["craft"] = craft
 
+	if _whole(raw, "out", 0) == 1:
+		out["out"] = 1   # a torch that went out (flame_rules.gd is_out; Dave 16 Nov 2026: it stays the same torch)
+
 	var magic: Variant = raw.get("magic", [])
 
 	if typeof(magic) == TYPE_ARRAY and (magic as Array).size() == 2:

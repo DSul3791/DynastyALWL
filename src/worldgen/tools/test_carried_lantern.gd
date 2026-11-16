@@ -60,7 +60,7 @@ func _init() -> void:
 	var grace: float = FlameRules.RAIN_GRACE_S
 
 	check(FlameRules.flame_word(lit_row) == "lantern" and FlameRules.flame_word(table.entry("test_lantern_dark")) == "lantern", "a lantern is called a lantern, lit or dark")
-	check(FlameRules.flame_word(torch) == "torch" and FlameRules.flame_word(table.entry("torch_doused")) == "torch", "a torch is a torch")
+	check(FlameRules.flame_word(torch) == "torch" and FlameRules.flame_word(table.entry("improved_torch")) == "torch", "a torch is a torch")
 	check(not FlameRules.out_of_fuel(lit_row, 0) and FlameRules.out_of_fuel(lit_row, int(BURN_S * 10.0)), "a lantern's fuel is used up at burn_s")
 	check(not FlameRules.out_of_fuel(torch, 1000000000), "a torch never waits for fuel")
 	check(FlameRules.douse_reason(lit_row, false, 1.0, false, grace * 2.0) == "", "the rain does not put a lantern out")
@@ -125,17 +125,18 @@ func _init() -> void:
 	items.action(7, Net.ACT_RELIGHT, 0, slot + 1, 0, Vector3.ZERO)
 	check(inv.numbers[slot] == LIT and inv.wear[slot] == 0 and inv.count_of(candle) == 1, "with a candle: one goes in and the lantern burns afresh")
 
-	# E at a burning fire with a spent lantern and a doused torch: the fire lights the torch; the lantern waits for its own key and fuel.
+	# E at a burning fire with a spent lantern and a torch that went out: the fire lights the torch; the lantern waits for its own key and fuel.
 	inv.numbers[slot] = DARK
 	inv.wear[slot] = int(BURN_S * 10.0)
 	var held_candle: int = inv.numbers.find(candle)
 	inv.numbers[held_candle] = 0
 	inv.counts[held_candle] = 0
-	items.action(7, Net.ACT_ADMIN_GIVE, table.number_of("torch_doused"), 0, 1, Vector3.ZERO)
-	var torch_slot: int = inv.numbers.find(table.number_of("torch_doused"))
+	items.action(7, Net.ACT_ADMIN_GIVE, table.number_of("torch"), 0, 1, Vector3.ZERO)
+	var torch_slot: int = inv.numbers.find(table.number_of("torch"))
+	inv.inst[torch_slot] = {"out": 1}   # put out by the rain: the same torch, marked out (Dave 16 Nov 2026)
 	items._items[900001] = {"pos": Vector3(101.0, 5.0, 100.0), "fire": {"state": 1}}
 	items.action(7, Net.ACT_RELIGHT, 900001, 0, 0, Vector3.ZERO)
-	check(inv.numbers[slot] == DARK and torch_slot >= 0 and inv.numbers[torch_slot] == table.number_of("torch"), "a fire lights the torch and skips the lantern with no fuel")
+	check(inv.numbers[slot] == DARK and torch_slot >= 0 and inv.numbers[torch_slot] == table.number_of("torch") and not inv.inst_of(torch_slot).has("out"), "a fire lights the torch and skips the lantern with no fuel")
 	items._items.erase(900001)
 
 	# A torch still burns down to nothing.

@@ -1,6 +1,6 @@
 # Torches and fire
 
-**Last checked:** 2026-11-06 (web research by Jamie). **System owners:** Sal (items, fire rules), Kathleen (holding poses), Kathreen (look). **Related:** `src/shared/flame_rules.gd`, `data/items/items.json` (`torch`, `torch_doused`), `src/client/held_item.gd`, `flame_up.gd`, `flame_sounds.gd`, [caves.md](caves.md), [animal-behaviour.md](animal-behaviour.md).
+**Last checked:** 2026-11-06 (web research by Jamie). **System owners:** Sal (items, fire rules), Kathleen (holding poses), Kathreen (look). **Related:** `src/shared/flame_rules.gd`, `data/items/items.json` (`torch`, `improved_torch`), `src/client/held_item.gd`, `flame_up.gd`, `flame_sounds.gd`, [caves.md](caves.md), [animal-behaviour.md](animal-behaviour.md).
 
 ## Lessons (read these first)
 
@@ -14,7 +14,7 @@
 
 ## How ours works (6 Nov 2026)
 
-- **Torch item** (`items.json`): tool class `torch`, held in the off hand, `light_m` 12 and `burn_s` 1800 (30 minutes) on main (checked 8 Nov), `rain_douses`, turns into `torch_doused` when put out. Right click places it in the ground or on a wall (`standing_torch`, `torch_sconce`, #362).
+- **Torch item** (`items.json`): tool class `torch`, held in the off hand, `light_m` 12 and `burn_s` 1800 (30 minutes) on main (checked 8 Nov), `rain_douses`, `goes_out`: put out, it stays the same torch with its slot marked `out` (Dave 16 Nov 2026: no doused torch; `torch_doused` retired). Right click places it in the ground or on a wall (`standing_torch`, `torch_sconce`, #362).
 - **Douse rules** (`flame_rules.gd`): `RAIN_DOUSE` 0.2 rain strength, the same as the server's rain limit for open fires; `RAIN_GRACE_S` 5 s. The client watches its own hands and asks the server (`ACT_DOUSE`).
 - **Relight:** E at a burning fire (#361); pressing the torch's hotbar key near a fire (#466); #476 (open) lets the hotkey light it anywhere and keeps the name. Sal's torch numbers (light 12 m, burn 1800 s, wolf protection 8 m) were proposed with it; light and burn time are on main now (8 Nov).
 - **Fire:** any wood counts at once; E lights it; rain puts it out in seconds; a burnt-out fire is deleted after 5 minutes (on Dave's review list). The fire store shows only wood and food (#293). One fire sound loop (#314).
