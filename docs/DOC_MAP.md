@@ -55,9 +55,9 @@ Separate references for distinct topics. Dated implementation notes preserve cod
 | Topic | Reference | Scope and status |
 |---|---|---|
 | Character records | [Character system](CHARACTER_SYSTEM.md) | Static 2 Nov create/save/load/delete map, with future heir/account ideas retained; later location design is in [Resume spot](design/RESUME_SPOT.md). |
-| Body and animation | [Dynasty body](DYNASTY_BODY.md) | Records Dave's body adoption, model/interface notes, clip ideas and dated gaps. Mixed dated implementation history, not fresh runtime verification. |
+| Body and animation | [Dynasty body](DYNASTY_BODY.md) | Body adoption and proportions decisions, consolidated rig/clip reference and remaining appearance ideas; dated evidence is separate from current verification. |
 | Movement and action feel | [Feel tuning](FEEL_TUNING.md) | Parameter locator and recorded 2 Nov settings; current values are in the named code. |
-| Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Director intent, proposed tuning and mixed dated data/client notes; the whole document is not labeled approved or fully implemented. |
+| Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
 | Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
 
 ## Further design areas — routing review pending
