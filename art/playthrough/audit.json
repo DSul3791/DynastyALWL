@@ -151,10 +151,10 @@
    "future": false
   },
   {
-   "id": "wooden_spade",
+   "id": "wooden_shovel",
    "number": 12,
    "category": "Tools",
-   "gives": "wooden_spade",
+   "gives": "wooden_shovel",
    "station": "",
    "station_level": 1,
    "known": true,
@@ -335,10 +335,10 @@
    "future": false
   },
   {
-   "id": "stone_spade",
+   "id": "stone_shovel",
    "number": 26,
    "category": "Tools",
-   "gives": "stone_spade",
+   "gives": "stone_shovel",
    "station": "workbench",
    "station_level": 1,
    "known": true,
@@ -348,10 +348,10 @@
    "future": false
   },
   {
-   "id": "iron_spade",
+   "id": "iron_shovel",
    "number": 27,
    "category": "Tools",
-   "gives": "iron_spade",
+   "gives": "iron_shovel",
    "station": "",
    "station_level": 1,
    "known": true,
@@ -361,10 +361,10 @@
    "future": true
   },
   {
-   "id": "steel_spade",
+   "id": "steel_shovel",
    "number": 28,
    "category": "Tools",
-   "gives": "steel_spade",
+   "gives": "steel_shovel",
    "station": "",
    "station_level": 1,
    "known": true,
@@ -3883,14 +3883,14 @@
    "future": false
   },
   {
-   "id": "wooden_spade",
+   "id": "wooden_shovel",
    "number": 19,
    "kind": "tool",
    "sources": [
-    "recipe:wooden_spade"
+    "recipe:wooden_shovel"
    ],
    "obtainable": "now",
-   "look": "ok (spade)",
+   "look": "ok (shovel)",
    "future": false
   },
   {
@@ -4176,36 +4176,36 @@
    "future": false
   },
   {
-   "id": "stone_spade",
+   "id": "stone_shovel",
    "number": 45,
    "kind": "tool",
    "sources": [
-    "recipe:stone_spade"
+    "recipe:stone_shovel"
    ],
    "obtainable": "now",
-   "look": "ok (spade)",
+   "look": "ok (shovel)",
    "future": false
   },
   {
-   "id": "iron_spade",
+   "id": "iron_shovel",
    "number": 46,
    "kind": "tool",
    "sources": [
-    "recipe:iron_spade"
+    "recipe:iron_shovel"
    ],
    "obtainable": "now",
-   "look": "ok (spade)",
+   "look": "ok (shovel)",
    "future": true
   },
   {
-   "id": "steel_spade",
+   "id": "steel_shovel",
    "number": 47,
    "kind": "tool",
    "sources": [
-    "recipe:steel_spade"
+    "recipe:steel_shovel"
    ],
    "obtainable": "potential",
-   "look": "ok (spade)",
+   "look": "ok (shovel)",
    "future": true
   },
   {
@@ -11699,7 +11699,7 @@
   "scythe",
   "shield",
   "sickle",
-  "spade",
+  "shovel",
   "torch",
   "wedge"
  ],
@@ -11718,7 +11718,7 @@
   "scythe",
   "shield",
   "sickle",
-  "spade",
+  "shovel",
   "striker",
   "torch",
   "wedge"

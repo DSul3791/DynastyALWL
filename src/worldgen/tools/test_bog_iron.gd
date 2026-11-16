@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Bog iron (Sonny, water_flow_rules section 11, src/shared/bog_iron.gd): deposits only under fen, marsh, swamp and bog samples, about 4% of a fen
-# and twice that at its dry edge, the same every time; a spade dig gives 1 to 2 Iron ore until the deposit is empty, one ore comes back every 3
+# and twice that at its dry edge, the same every time; a shovel dig gives 1 to 2 Iron ore until the deposit is empty, one ore comes back every 3
 # game days up to its size, the first find is said once, the state survives a save; main's tile 3,4 holds the expected number near the spawn.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bog_iron.gd
 
@@ -124,7 +124,7 @@ func _init() -> void:
 	check(BogIron.regrown([2, 0.0], 8, 300.0 * day, cfg) == [8, 300.0 * day], "never more than the size; a full deposit's clock starts again")
 	check(BogIron.regrown([8, 0.0], 8, 50.0 * day, cfg) == [8, 50.0 * day], "a full deposit stays full")
 
-	# 4. The dig on the server: wooden spade, 1 to 2 ore a dig on top of the peat until empty, then 3 game days for one more.
+	# 4. The dig on the server: wooden shovel, 1 to 2 ore a dig on top of the peat until empty, then 3 game days for one more.
 	var dir: String = "user://test_bog_iron"
 	DirAccess.make_dir_recursive_absolute(dir)
 
@@ -142,7 +142,7 @@ func _init() -> void:
 	items.bog_deposit_at = func(x, _z, _cfg_in): return {"key": "11,22", "size": 7, "edge": true} if x < 20.0 else {}
 	items.peer_connected_hello(1, "b0b0b0b0b0b0")
 	items.report_position(1, Vector3(5.0, 10.0, 0.0))
-	items.give(1, items.table.number_of("wooden_spade"), 1)
+	items.give(1, items.table.number_of("wooden_shovel"), 1)
 	var per_dig_ok: bool = true
 	var digs: int = 0
 	var total: int = 0
@@ -219,7 +219,7 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# One spade dig at (x, 10, 0) by peer 1: [Iron ore gained, soil gained]. The soil is put away again so the pack never gets too heavy.
+# One shovel dig at (x, 10, 0) by peer 1: [Iron ore gained, soil gained]. The soil is put away again so the pack never gets too heavy.
 func _dig_once(items, x: float) -> Array:
 	var inv = items.inventory_of(1)
 	var ore: int = items.table.number_of("iron_ore")
@@ -227,7 +227,7 @@ func _dig_once(items, x: float) -> Array:
 	var ore_was: int = inv.count_of(ore)
 	var soil_was: int = inv.count_of(soil)
 	items._last_dig.clear()
-	items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "spade"), 0, 0, Vector3(x, 10.0, 0.0))
+	items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "shovel"), 0, 0, Vector3(x, 10.0, 0.0))
 	var got: Array = [inv.count_of(ore) - ore_was, inv.count_of(soil) - soil_was]
 	inv.remove(soil, inv.count_of(soil))
 	return got

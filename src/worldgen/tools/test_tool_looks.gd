@@ -1,5 +1,5 @@
 extends SceneTree
-# Headless check of the tool looks brought to the pickaxe standard (Dave 2026-10-25), one group per round. Spades: a long straight haft along x with the blade at +x, wide in z
+# Headless check of the tool looks brought to the pickaxe standard (Dave 2026-10-25), one group per round. Shovels: a long straight haft along x with the blade at +x, wide in z
 # and thin in y, metal tiers (iron, steel) on the metal surface, wood and stone tiers on one plain surface, the blade narrowing to a point.
 
 const BasicLook := preload("res://src/client/basic_look.gd")
@@ -17,15 +17,15 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _init() -> void:
-	# Spades at real size for the large tier (size 1.0): about 85 cm of haft plus the grip, a 28 by 19 cm blade, scaled down for the medium (0.85) and small (0.7) tiers.
+	# Shovels at real size for the large tier (size 1.0): about 85 cm of haft plus the grip, a 28 by 19 cm blade, scaled down for the medium (0.85) and small (0.7) tiers.
 	for tier in ["wooden", "stone", "iron", "steel"]:
 		for size in ["", "_medium", "_large"]:
-			var id: String = tier + "_spade" + size
+			var id: String = tier + "_shovel" + size
 			var mesh: Mesh = BasicLook.mesh_for(id)
 			var metal: bool = tier in ["iron", "steel"]
 			var box: AABB = mesh.get_aabb()
 			var scale: float = float(BasicLook.entry(id).get("size", 1.0))
-			_check(absf(scale - {"": 0.7, "_medium": 0.85, "_large": 1.0}[size]) < 0.001, id + ": size %.2f scales the real-size large spade" % scale)
+			_check(absf(scale - {"": 0.7, "_medium": 0.85, "_large": 1.0}[size]) < 0.001, id + ": size %.2f scales the real-size large shovel" % scale)
 			_check(mesh.get_surface_count() == (2 if metal else 1), id + ": surfaces %d (metal tiers have the metal head surface)" % mesh.get_surface_count())
 			_check(box.size.x > 0.68 * scale and box.size.x < 0.8 * scale, id + ": about 0.74 m overall at size 1, %.2f m (size %.2f)" % [box.size.x / scale, scale])
 			_check(_y_extent(mesh, 0.52 * scale, 1.0, 1.0) < 0.045 * scale, id + ": the dished blade is shallow (y %.3f)" % (_y_extent(mesh, 0.52 * scale, 1.0, 1.0) / scale))
@@ -41,8 +41,8 @@ func _init() -> void:
 
 			_check(tris <= 1200, id + ": %d triangles (budget 1200)" % tris)
 
-	# Metal colours: no blue tint (blue not above red by more than 15 percent), iron darker than steel, spade metal roughness 0.55 while the pickaxe stays 0.4.
-	for id in ["iron_spade_large", "steel_spade_large"]:
+	# Metal colours: no blue tint (blue not above red by more than 15 percent), iron darker than steel, shovel metal roughness 0.55 while the pickaxe stays 0.4.
+	for id in ["iron_shovel_large", "steel_shovel_large"]:
 		var mesh: Mesh = BasicLook.mesh_for(id)
 		var colours: PackedColorArray = mesh.surface_get_arrays(1)[Mesh.ARRAY_COLOR]
 		var mean: Color = Color(0, 0, 0, 0)
@@ -55,10 +55,10 @@ func _init() -> void:
 		var want_rough: float = 0.3 if id.begins_with("steel") else 0.65
 		var want_metal: float = 0.6 if id.begins_with("steel") else 0.3
 		var mat: StandardMaterial3D = mesh.surface_get_material(1) as StandardMaterial3D
-		_check(absf(mat.roughness - want_rough) < 0.001 and absf(mat.metallic - want_metal) < 0.001, id + ": spade metal roughness %.2f metallic %.2f (steel a little shinier than iron)" % [mat.roughness, mat.metallic])
+		_check(absf(mat.roughness - want_rough) < 0.001 and absf(mat.metallic - want_metal) < 0.001, id + ": shovel metal roughness %.2f metallic %.2f (steel a little shinier than iron)" % [mat.roughness, mat.metallic])
 
 	_check(absf((BasicLook.mesh_for("iron_pickaxe").surface_get_material(1) as StandardMaterial3D).roughness - 0.4) < 0.001, "the locked pickaxe keeps metal roughness 0.4")
-	_check(BasicLook.mesh_for("iron_spade_large").get_surface_count() == 2 and BasicLook.mesh_for("iron_spade_large").surface_get_material(1) != BasicLook.mesh_for("iron_pickaxe").surface_get_material(1), "spade and pickaxe use separate shared metal materials")
+	_check(BasicLook.mesh_for("iron_shovel_large").get_surface_count() == 2 and BasicLook.mesh_for("iron_shovel_large").surface_get_material(1) != BasicLook.mesh_for("iron_pickaxe").surface_get_material(1), "shovel and pickaxe use separate shared metal materials")
 
 	# Carry in third person: a hoe blade-down (haft 45 to 60 degrees below horizontal), a saw by the handle with the blade down and back about 30 degrees.
 	var hoe_dir: Vector3 = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_HOE_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["hoe"] * Vector3(1.0, 0.0, 0.0)
@@ -68,12 +68,12 @@ func _init() -> void:
 	_check(hoe_below >= 45.0 and hoe_below <= 60.0, "the carried hoe's haft is %.0f degrees below horizontal (45 to 60)" % hoe_below)
 	_check(saw_dir.z < -0.8 and saw_dir.y < -0.3, "the carried saw's blade points down and back (%.2f, %.2f)" % [saw_dir.y, saw_dir.z])
 
-	# Carry: a spade carried in third person points its blade down, at least 20 degrees from vertical but not past it (blade end below the hand).
-	var carry: Basis = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SPADE_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["spade"]
+	# Carry: a shovel carried in third person points its blade down, at least 20 degrees from vertical but not past it (blade end below the hand).
+	var carry: Basis = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SHOVEL_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["shovel"]
 	var blade_dir: Vector3 = carry * Vector3(1.0, 0.0, 0.0)
 	var from_vertical: float = rad_to_deg(acos(clampf(-blade_dir.z, -1.0, 1.0)))
-	print("spade carried: blade direction ", blade_dir, " is ", from_vertical, " degrees from straight down")
-	_check(blade_dir.z < -0.5 and from_vertical >= 20.0, "the carried spade points its blade down, %.0f degrees from vertical" % from_vertical)
+	print("shovel carried: blade direction ", blade_dir, " is ", from_vertical, " degrees from straight down")
+	_check(blade_dir.z < -0.5 and from_vertical >= 20.0, "the carried shovel points its blade down, %.0f degrees from vertical" % from_vertical)
 
 	# Axes and hammers: a straight haft along x with the head at its +x end, head wider in z than the haft is thick, all on one plain surface (no metal heads yet).
 	for id in ["stone_axe", "stone_hammer", "wooden_hammer"]:
@@ -166,7 +166,7 @@ func _init() -> void:
 	_check(BasicLook.mesh_for("wooden_pin").get_aabb().size.x < 0.15, "wooden pin: a short peg")
 
 
-	for id in ["wooden_spade", "stone_spade_medium", "iron_spade_large"]:                                              # the blade plate is present at every size (not collapsed or missing)
+	for id in ["wooden_shovel", "stone_shovel_medium", "iron_shovel_large"]:                                              # the blade plate is present at every size (not collapsed or missing)
 		var plate_mesh: Mesh = BasicLook.mesh_for(id)
 		var plate_scale: float = float(BasicLook.entry(id).get("size", 1.0))
 		var plate_tris: int = 0

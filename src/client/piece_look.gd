@@ -4408,7 +4408,7 @@ static func bin_wall_m(side: float) -> float:
 
 # --- Bog iron (water_flow_rules s11.3, Kathleen 10 Nov 2026; ships with Sonny's bog iron, #996). A deposit's 8 m sample shows a ground
 # stain of rust-orange mud, darker and redder at its heart and fading out at a ragged edge, with rust-brown lumps of ore half sunk in the core. "wet":
-# a skin of standing water over the core carries the iron-bacteria film, a dull oily sheen broken into flat plates. "dug": spade cuts into the core,
+# a skin of standing water over the core carries the iron-bacteria film, a dull oily sheen broken into flat plates. "dug": shovel cuts into the core,
 # black peat in each, a dug-out lump beside each. The stain lies 1 to 2 cm above the ground so it reads from about 30 m; nothing is solid. Under 300
 # triangles in every state (the lumps are low five-sided domes). `ground` (x, z) -> the ground's height there above the patch's own origin, both in
 # the patch's frame: every rim point, lump and cut is lifted onto it, so the stain drapes over a gentle rise instead of sinking into it (#996 checks
@@ -4466,7 +4466,7 @@ static func bog_iron_patch(state: String = "dry", ground: Callable = Callable())
 
 		for at in [Vector3(-0.5, 0.0, 0.3), Vector3(0.45, 0.0, -0.2), Vector3(0.1, 0.0, 0.8)]:
 			var cut: Vector3 = _on_ground(ground, at)
-			_box_rot(root, Vector3(0.5, 0.02, 0.32), cut + Vector3(0.0, 0.012, 0.0), Vector3(0.0, rng.randf_range(-0.5, 0.5), 0.0), peat)   # the spade cut, black peat
+			_box_rot(root, Vector3(0.5, 0.02, 0.32), cut + Vector3(0.0, 0.012, 0.0), Vector3(0.0, rng.randf_range(-0.5, 0.5), 0.0), peat)   # the shovel cut, black peat
 			_dome(root, 0.13, cut + Vector3(0.38, 0.01, 0.0), Vector3(1.2, 0.7, 1.0), ore, 5, 1)                                              # the lump it turned up
 
 	return root

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bl3ib8qim3thr"
-path="res://.godot/imported/iron_spade.png-65eb6033fd8623e221c45fe91e9b3f0e.ctex"
+uid="uid://d2otqaab4nbsq"
+path="res://.godot/imported/wooden_shovel.png-42de2542002b75d317f82c8c1c488ba0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/iron_spade.png"
-dest_files=["res://.godot/imported/iron_spade.png-65eb6033fd8623e221c45fe91e9b3f0e.ctex"]
+source_file="res://assets/ui/item_icons/wooden_shovel.png"
+dest_files=["res://.godot/imported/wooden_shovel.png-42de2542002b75d317f82c8c1c488ba0.ctex"]
 
 [params]
 

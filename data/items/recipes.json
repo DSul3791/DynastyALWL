@@ -270,7 +270,7 @@
 				"staunchmoss"
 			]
 		},
-		"wooden_spade": {
+		"wooden_shovel": {
 			"number": 12,
 			"name": "Wooden - Shovel",
 			"category": "Tools",
@@ -287,7 +287,7 @@
 				]
 			],
 			"gives": [
-				"wooden_spade",
+				"wooden_shovel",
 				1
 			],
 			"craft_s": 8.0,
@@ -552,13 +552,13 @@
 			"craft_s": 5.0,
 			"known": true
 		},
-		"stone_spade": {
+		"stone_shovel": {
 			"number": 26,
 			"name": "Stone - Shovel",
 			"category": "Tools",
 			"needs": [
 				[
-					"wooden_spade",
+					"wooden_shovel",
 					1
 				],
 				[
@@ -571,7 +571,7 @@
 				]
 			],
 			"gives": [
-				"stone_spade",
+				"stone_shovel",
 				1
 			],
 			"craft_s": 8.0,
@@ -579,7 +579,7 @@
 			"station": "workbench",
 			"retired": true
 		},
-		"iron_spade": {
+		"iron_shovel": {
 			"number": 27,
 			"name": "Iron - Shovel",
 			"category": "Tools",
@@ -594,7 +594,7 @@
 				]
 			],
 			"gives": [
-				"iron_spade",
+				"iron_shovel",
 				1
 			],
 			"craft_s": 10.0,
@@ -602,7 +602,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_spade": {"number": 28, "name": "Steel - Shovel", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_spade", 1], "craft_s": 12.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_shovel": {"number": 28, "name": "Steel - Shovel", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_shovel", 1], "craft_s": 12.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"sewing_needle": {
 			"number": 29,
 			"name": "Bone - Needle",
@@ -2906,7 +2906,7 @@
 			"known": true,
 			"retired": true
 		},
-		"wooden_spade_medium": {
+		"wooden_shovel_medium": {
 			"number": 131,
 			"name": "Medium wooden shovel",
 			"category": "Tools",
@@ -2923,14 +2923,14 @@
 				]
 			],
 			"gives": [
-				"wooden_spade_medium",
+				"wooden_shovel_medium",
 				1
 			],
 			"craft_s": 6.0,
 			"known": true,
 			"retired": true
 		},
-		"wooden_spade_large": {
+		"wooden_shovel_large": {
 			"number": 132,
 			"name": "Large wooden shovel",
 			"category": "Tools",
@@ -2951,7 +2951,7 @@
 				]
 			],
 			"gives": [
-				"wooden_spade_large",
+				"wooden_shovel_large",
 				1
 			],
 			"craft_s": 9.0,
@@ -2959,13 +2959,13 @@
 			"station": "workbench",
 			"retired": true
 		},
-		"stone_spade_medium": {
+		"stone_shovel_medium": {
 			"number": 133,
 			"name": "Medium stone shovel",
 			"category": "Tools",
 			"needs": [
 				[
-					"wooden_spade_medium",
+					"wooden_shovel_medium",
 					1
 				],
 				[
@@ -2978,7 +2978,7 @@
 				]
 			],
 			"gives": [
-				"stone_spade_medium",
+				"stone_shovel_medium",
 				1
 			],
 			"craft_s": 10.0,
@@ -2986,13 +2986,13 @@
 			"station": "workbench",
 			"retired": true
 		},
-		"stone_spade_large": {
+		"stone_shovel_large": {
 			"number": 134,
 			"name": "Large stone shovel",
 			"category": "Tools",
 			"needs": [
 				[
-					"wooden_spade_large",
+					"wooden_shovel_large",
 					1
 				],
 				[
@@ -3005,7 +3005,7 @@
 				]
 			],
 			"gives": [
-				"stone_spade_large",
+				"stone_shovel_large",
 				1
 			],
 			"craft_s": 14.0,
@@ -3013,7 +3013,7 @@
 			"station": "workbench",
 			"retired": true
 		},
-		"iron_spade_medium": {
+		"iron_shovel_medium": {
 			"number": 135,
 			"name": "Medium iron shovel",
 			"category": "Tools",
@@ -3028,7 +3028,7 @@
 				]
 			],
 			"gives": [
-				"iron_spade_medium",
+				"iron_shovel_medium",
 				1
 			],
 			"craft_s": 14.0,
@@ -3036,7 +3036,7 @@
 			"locked": true,
 			"retired": true
 		},
-		"iron_spade_large": {
+		"iron_shovel_large": {
 			"number": 136,
 			"name": "Large iron shovel",
 			"category": "Tools",
@@ -3051,7 +3051,7 @@
 				]
 			],
 			"gives": [
-				"iron_spade_large",
+				"iron_shovel_large",
 				1
 			],
 			"craft_s": 20.0,
@@ -3059,7 +3059,7 @@
 			"locked": true,
 			"retired": true
 		},
-		"steel_spade_medium": {
+		"steel_shovel_medium": {
 			"number": 137,
 			"name": "Medium steel shovel",
 			"category": "Tools",
@@ -3074,7 +3074,7 @@
 				]
 			],
 			"gives": [
-				"steel_spade_medium",
+				"steel_shovel_medium",
 				1
 			],
 			"craft_s": 16.0,
@@ -3082,7 +3082,7 @@
 			"locked": true,
 			"retired": true
 		},
-		"steel_spade_large": {
+		"steel_shovel_large": {
 			"number": 138,
 			"name": "Large steel shovel",
 			"category": "Tools",
@@ -3097,7 +3097,7 @@
 				]
 			],
 			"gives": [
-				"steel_spade_large",
+				"steel_shovel_large",
 				1
 			],
 			"craft_s": 24.0,

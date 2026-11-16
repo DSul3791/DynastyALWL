@@ -1,7 +1,7 @@
 """Makes placeholder dig sounds for src/client/dig_sounds.gd.
 
 Run: python3 assets/audio/make_dig.py   (needs numpy and ffmpeg)
-Writes assets/audio/dig/<name>_N.ogg, 3 variants each: dig_soil (a spade scoop and crumbling
+Writes assets/audio/dig/<name>_N.ogg, 3 variants each: dig_soil (a shovel scoop and crumbling
 earth), dig_clay (wet and sticky), dig_sand (a hissing pour), dig_gravel (crunching stones),
 dig_rock (a heavy chunk and tumbling pieces), dig_ore (rock with a metal clink), dig_water
 (water splashing and gurgling into a hole). Recordings go in assets/audio/recorded/dig/

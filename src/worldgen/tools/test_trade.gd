@@ -129,19 +129,19 @@ func _init() -> void:
 	check(trade.price_to_get(0, 0.55) == 0 and trade.price_to_get(20, 0.55, 0.5) == 5 and trade.price_to_get(1, 0.55) == 1, "worthless pays nothing, half-worn pays half, a copper item pays at least 1")
 	# Stock: the shelf is finite, buying lowers it, supply moves the price, game days restock it.
 	items.add_coins(1, 5000)
-	check(trade.stock_of("hob", "stone_axe") == 3 and trade.stock_of("hob", "wooden_spade") == 2, "the axe sold back is on the shelf again (3), 2 spades")
-	var price_full: float = trade.supply("hob", "wooden_spade")
-	trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_spade"), 1)
-	check(trade.supply("hob", "wooden_spade") > price_full, "a thinner shelf costs more (%.3f > %.3f)" % [trade.supply("hob", "wooden_spade"), price_full])
-	var said2: String = trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_spade"), 5)
-	check(trade.stock_of("hob", "wooden_spade") == 0, "he sells the last one (%s)" % said2)
-	check(trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_spade"), 1) == "He has none left.", "and has none left")
+	check(trade.stock_of("hob", "stone_axe") == 3 and trade.stock_of("hob", "wooden_shovel") == 2, "the axe sold back is on the shelf again (3), 2 shovels")
+	var price_full: float = trade.supply("hob", "wooden_shovel")
+	trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_shovel"), 1)
+	check(trade.supply("hob", "wooden_shovel") > price_full, "a thinner shelf costs more (%.3f > %.3f)" % [trade.supply("hob", "wooden_shovel"), price_full])
+	var said2: String = trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_shovel"), 5)
+	check(trade.stock_of("hob", "wooden_shovel") == 0, "he sells the last one (%s)" % said2)
+	check(trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_shovel"), 1) == "He has none left.", "and has none left")
 	gclock[0] += 86400.0 * 1.2
-	check(trade.stock_of("hob", "wooden_spade") == 1, "a game day later one spade is back")
+	check(trade.stock_of("hob", "wooden_shovel") == 1, "a game day later one shovel is back")
 	gclock[0] += 86400.0 * 10.0
-	check(trade.stock_of("hob", "wooden_spade") == 2, "the shelf never passes its maximum")
-	trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(items.table.number_of("wooden_spade")), 1)
-	check(trade.stock_of("hob", "wooden_spade") == 2, "a spade sold back goes on a full shelf only up to the max")
+	check(trade.stock_of("hob", "wooden_shovel") == 2, "the shelf never passes its maximum")
+	trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(items.table.number_of("wooden_shovel")), 1)
+	check(trade.stock_of("hob", "wooden_shovel") == 2, "a shovel sold back goes on a full shelf only up to the max")
 
 	# Purse: he can only pay what he has, and it refills by game days.
 	trade._state["hob"]["purse"] = 3.0

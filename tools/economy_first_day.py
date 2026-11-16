@@ -21,5 +21,5 @@ for r in rows:
     print("| %s | %d | %d | %.2f | %.0f |" % (r[0], r[1], r[2], r[3], r[4]))
 buy = C["sell_markup"]
 print()
-for name, k in (("meal", "roast_forage"), ("waterskin", "waterskin"), ("clothing", "hide_cloak"), ("basic iron tool", "iron_spade")):
+for name, k in (("meal", "roast_forage"), ("waterskin", "waterskin"), ("clothing", "hide_cloak"), ("basic iron tool", "iron_shovel")):
     print("%s (%s): value %d, trader price about %d" % (name, k, I[k]["value"], math.ceil(I[k]["value"] * buy)))

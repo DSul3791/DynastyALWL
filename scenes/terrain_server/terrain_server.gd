@@ -2396,7 +2396,7 @@ func _send_buried() -> void:
 		net.flora_cut.rpc(cut[0], cut[1])
 
 
-# A spade fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
+# A shovel fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
 # there, and everyone is told. Returns false when nothing changed (the block holds its edit limit).
 func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 	# The same fill again with no dig in between changes nothing (a held click): dropped before it costs a log entry, a tile

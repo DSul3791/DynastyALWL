@@ -90,7 +90,6 @@ const PROCESS_COOLDOWN_MS := 450
 const FIRE_USE_M := 3.5
 const COOKING_PATH := "res://data/items/cooking.json"
 const GatherRules := preload("res://src/shared/gather_rules.gd")
-const TOOL_WORDS := {"spade": "shovel"}   # the player-facing word where a tool class id differs (Dave 16 Nov 2026: every spade is a Shovel; ids stay)
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
@@ -1725,7 +1724,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 			elif rows.is_empty() and missing != "":
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 				_reject(peer, 1)
-				return false   # the plant is not picked at all: its seeds come with the roots or bark it is taken for, so it stays for when the tool is there (Dave 2026-10-20: roots need a spade)
+				return false   # the plant is not picked at all: its seeds come with the roots or bark it is taken for, so it stays for when the tool is there (Dave 2026-10-20: roots need a shovel)
 
 	var seed_rows: Array = _seed_rows(species_name)
 
@@ -3140,7 +3139,7 @@ func _land_thrown(flight: Dictionary, at: Vector3) -> void:
 # The stone axe used as a pick (Dave: no stone pickaxe): a blow on bare rock gives a stone. The
 # server checks the axe, the reach, the pace and that rock really shows there, and each 8 m patch
 # of outcrop gives only a few stones before it needs time to recover. No ground is dug.
-# One spade dig (ACT_DIG): needs a whole spade in the pack and the point within reach; paced like mining.
+# One shovel dig (ACT_DIG): needs a whole shovel in the pack and the point within reach; paced like mining.
 func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if not _peer_pos.has(peer) or not dig_ground.is_valid():
 		return
@@ -3149,14 +3148,14 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_reject(peer, 0)
 		return
 
-	var spade: int = _swing_tool(peer, inv, held_slot, "spade")
+	var shovel: int = _swing_tool(peer, inv, held_slot, "shovel")
 
-	if spade < 0:
+	if shovel < 0:
 		_reject(peer, 1)
 		return
 
 	var now: int = Time.get_ticks_msec()
-	var reach: float = _spade_reach(inv, spade)
+	var reach: float = _shovel_reach(inv, shovel)
 
 	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * reach:
 		return
@@ -3164,7 +3163,7 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	_last_dig[peer] = now
 
 	for n in maxi(1, int(round(reach))):
-		_wear_slot(peer, inv, spade, "dig")
+		_wear_slot(peer, inv, shovel, "dig")
 
 	var dug: Variant = dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M * reach)
 
@@ -3175,7 +3174,7 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 		return
 
-	_give_dig_yield(peer, at, _spade_tier(inv, spade), _spade_pieces(inv, spade))
+	_give_dig_yield(peer, at, _shovel_tier(inv, shovel), _shovel_pieces(inv, shovel))
 
 	# A dig more than 2.5 m under the surface is a tunnel or a cave: the "cave_in" hint (hints.json digging_under_ceiling) warns about roof supports.
 	if ground_height.is_valid() and float(ground_height.call(at.x, at.z)) - at.y > 2.5:
@@ -3186,8 +3185,8 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	_dirty = true
 
 
-# One spade fill (ACT_FILL, saved edits step 3): a sphere of ground added at the point struck, using up one shovelful
-# from the pack (digging.json "fill", soil first). Same reach, spade and pace as a dig; a fill that changes nothing
+# One shovel fill (ACT_FILL, saved edits step 3): a sphere of ground added at the point struck, using up one shovelful
+# from the pack (digging.json "fill", soil first). Same reach, shovel and pace as a dig; a fill that changes nothing
 # hands the shovelful back.
 const FILL_RADIUS_M := 0.9
 const FILL_UP_M := 0.1         # the fill is centred this far above the point struck (it heaps a little)
@@ -3202,18 +3201,18 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_reject(peer, 0)
 		return
 
-	var spade: int = _swing_tool(peer, inv, held_slot, "spade")
+	var shovel: int = _swing_tool(peer, inv, held_slot, "shovel")
 
-	if spade < 0:
+	if shovel < 0:
 		_reject(peer, 1)
 		return
 
 	var now: int = Time.get_ticks_msec()
 
-	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * _spade_reach(inv, spade):
+	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * _shovel_reach(inv, shovel):
 		return
 
-	# Raise mode (Dave 2026-10-22): no load, every raise takes shovelfuls from the pack (one for a small spade, 4 medium, 8 large),
+	# Raise mode (Dave 2026-10-22): no load, every raise takes shovelfuls from the pack (one for a small shovel, 4 medium, 8 large),
 	# soil first, then sand, gravel, clay, stone (digging.json "fill"). A short pack raises a smaller heap.
 	var material_item: String = ""
 
@@ -3231,7 +3230,7 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	_last_dig[peer] = now
 	var pieces: int = 0
 
-	for n in _spade_pieces(inv, spade):
+	for n in _shovel_pieces(inv, shovel):
 		if take_fill_item(peer, material_item) < 1:
 			break
 
@@ -3241,7 +3240,7 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	for n in maxi(1, int(round(pow(float(pieces), 1.0 / 3.0)))):
-		_wear_slot(peer, inv, spade, "dig")
+		_wear_slot(peer, inv, shovel, "dig")
 
 	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), int(FILL_SOIL.get(material_item, 5)))
 
@@ -3953,22 +3952,22 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 
 
 # What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
-# Spade sizes (Dave 2026-10-22, digging.json "spade_sizes"): a small shovel moves 1 piece (shovelful) per stroke, a medium 4, a large 8.
+# Shovel sizes (Dave 2026-10-22, digging.json "shovel_sizes"): a small shovel moves 1 piece (shovelful) per stroke, a medium 4, a large 8.
 # The sphere it digs or raises grows with the cube root of the pieces (so its volume goes with them), and so do its pace and its wear.
-func _spade_size(inv, slot: int) -> Dictionary:   # slot: the spade in hand (_swing_tool)
-	var name: String = str(table.entry(table.id_of(inv.numbers[slot])).get("spade_size", "small")) if slot >= 0 else "small"
-	return _dig_cfg.get("spade_sizes", {}).get(name, {"pieces": 1})
+func _shovel_size(inv, slot: int) -> Dictionary:   # slot: the shovel in hand (_swing_tool)
+	var name: String = str(table.entry(table.id_of(inv.numbers[slot])).get("shovel_size", "small")) if slot >= 0 else "small"
+	return _dig_cfg.get("shovel_sizes", {}).get(name, {"pieces": 1})
 
 
-func _spade_pieces(inv, slot: int) -> int:
-	return maxi(1, int(_spade_size(inv, slot).get("pieces", 1)))
+func _shovel_pieces(inv, slot: int) -> int:
+	return maxi(1, int(_shovel_size(inv, slot).get("pieces", 1)))
 
 
-func _spade_reach(inv, slot: int) -> float:
-	return pow(float(_spade_pieces(inv, slot)), 1.0 / 3.0)
+func _shovel_reach(inv, slot: int) -> float:
+	return pow(float(_shovel_pieces(inv, slot)), 1.0 / 3.0)
 
 
-func _spade_tier(inv, slot: int) -> int:
+func _shovel_tier(inv, slot: int) -> int:
 	return int(table.entry(table.id_of(inv.numbers[slot])).get("tier", 1)) if slot >= 0 else 1
 
 
@@ -4006,7 +4005,7 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 
 
 # Bog iron (digging.json bog_iron, Sonny s11): a dig on a deposit also brings up its ore, on top of the peat or mud. It is per_dig rolled like a
-# soil row, plus the spade tier's tier_extra, times the spade size's pieces, never more than is left; the deposit grows back one ore every
+# soil row, plus the shovel tier's tier_extra, times the shovel size's pieces, never more than is left; the deposit grows back one ore every
 # regrow_game_days (BogIron.regrown, worked out at the dig). The first dig that finds any says first_find once to that character.
 func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
@@ -6906,7 +6905,7 @@ func _swing_tool(peer: int, inv, slot: int, tool_class: String) -> int:
 	if slot >= 0 and slot < inv.slot_count and inv.numbers[slot] != 0 and _is_broken(inv, slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
 		_say(peer, "Your %s is broken. %s" % [table.sentence_name(inv.numbers[slot]), _repair_hint(table.entry(table.id_of(inv.numbers[slot])))])
 	else:
-		_say(peer, "You need a %s in hand for that." % TOOL_WORDS.get(tool_class, tool_class))
+		_say(peer, "You need a %s in hand for that." % tool_class)
 
 	return -1
 

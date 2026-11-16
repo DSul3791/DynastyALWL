@@ -76,7 +76,7 @@ func _init() -> void:
 	var third = GroundOps.new()
 	_check(third.open(path) == "" and third.count == count + 1, "appending after a torn record keeps the log whole")
 
-	# A DIGS1 log from the first spade digging is read and upgraded.
+	# A DIGS1 log from the first shovel digging is read and upgraded.
 	var old_path: String = dir + "/old_digs.dat"
 	DirAccess.remove_absolute(old_path + ".v1")
 	var old: FileAccess = FileAccess.open(old_path, FileAccess.WRITE)

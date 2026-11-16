@@ -92,11 +92,11 @@ func _init() -> void:
 	var wear_was: int = inv.wear[slot]
 	items._wear_slot(1, inv, slot, "tree")
 	check(inv.wear[slot] == wear_was + int(c["dull_wear_mult"]) and inv.sharpness_used(slot) == at, "fully dull, it wears %d times as fast" % int(c["dull_wear_mult"]))
-	var spade: int = n("iron_spade")
-	inv.add(spade, 1)
-	items._wear_slot(1, inv, inv.numbers.find(spade), "dig")
-	check(inv.sharpness_used(inv.numbers.find(spade)) == 0, "a spade has no edge and never dulls")
-	inv.clear_slot(inv.numbers.find(spade))
+	var shovel: int = n("iron_shovel")
+	inv.add(shovel, 1)
+	items._wear_slot(1, inv, inv.numbers.find(shovel), "dig")
+	check(inv.sharpness_used(inv.numbers.find(shovel)) == 0, "a shovel has no edge and never dulls")
+	inv.clear_slot(inv.numbers.find(shovel))
 
 	# The whetstone needs water.
 	inv.wear[slot] = 0

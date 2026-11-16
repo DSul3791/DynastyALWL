@@ -136,7 +136,7 @@ func add_buttons(settings: VBoxContainer) -> void:      # `settings` is the list
 		var tool: String = sound.hits.TOOLS[_hit_at / sound.hits.MATERIALS.size()]
 		var material: String = sound.hits.MATERIALS[_hit_at % sound.hits.MATERIALS.size()]
 		sound.hits.hit(tool, material, body.global_position + -camera.global_transform.basis.z * 2.0, 1.0)
-		_menu_note.text = "Tool hit: %s on %s (press again for the next; a test of the sounds, no tools exist yet)" % [("shovel" if tool == "spade" else tool), material])   # the sound slot keeps its id; players see Shovel (Dave 16 Nov 2026)
+		_menu_note.text = "Tool hit: %s on %s (press again for the next; a test of the sounds, no tools exist yet)" % [tool, material])
 	_menu_button(settings, "Sound test weather: change", func():
 		var kinds: Array = sound.weather.KINDS.keys()
 		weather_at += 1

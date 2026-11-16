@@ -152,7 +152,10 @@ if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
     try:
         old = json.loads(sh("git", "show", BASE + ":data/items/looks.json"))["items"]
         new = json.load(open("data/items/looks.json", encoding="utf-8"))["items"]
+        renames = json.load(open("data/items/id_renames.json", encoding="utf-8")).get("renames", {}) if os.path.isfile("data/items/id_renames.json") else {}
         for k in sorted(set(old) - set(new)):
+            if renames.get(k, "") in new:   # an approved id rename (data/items/id_renames.json, Dave 16 Nov 2026): the look moved to the new id
+                continue
             bad("look removed from data/items/looks.json: %s (retire it, do not delete it)" % k)
     except Exception:
         pass

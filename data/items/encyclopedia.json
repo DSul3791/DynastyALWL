@@ -2328,7 +2328,7 @@
 			],
 			"obtainable_now": true
 		},
-		"wooden_spade": {
+		"wooden_shovel": {
 			"name": "Wooden - Shovel",
 			"kind": "tool",
 			"description": "A sharpened wooden blade. Digs roots and bulbs.",
@@ -2801,7 +2801,7 @@
 			],
 			"obtainable_now": true
 		},
-		"stone_spade": {
+		"stone_shovel": {
 			"name": "Stone - Shovel",
 			"kind": "tool",
 			"description": "A shovel with a stone blade. Digs deeper and lasts longer than wood.",
@@ -2812,7 +2812,7 @@
 			"obtainable_now": false,
 			"status": "retired"
 		},
-		"iron_spade": {
+		"iron_shovel": {
 			"name": "Iron - Shovel",
 			"kind": "tool",
 			"description": "A shovel with an iron blade.",
@@ -2822,7 +2822,7 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
-		"steel_spade": {
+		"steel_shovel": {
 			"name": "Steel - Shovel",
 			"kind": "tool",
 			"description": "A shovel with a steel blade.",

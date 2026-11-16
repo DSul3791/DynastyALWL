@@ -2,7 +2,7 @@ extends SceneTree
 
 # Mission 001 phase 2b: the wilderness route to the first Iron - Saw, no purchases (master s2.7 item 1, Dave [D1]), through the real server,
 # recipes and blueprints. Every amount is read from the live data, so tuning the numbers keeps the test valid.
-#   1. bog iron dug with a wooden spade in wet ground;
+#   1. bog iron dug with a wooden shovel in wet ground;
 #   2. charcoal at a lit campfire from firewood;
 #   3. the Primitive smelter refuses iron ore; an Improved smelter (its bronze fittings come from the bronze route, test_bronze_path) smelts it
 #      by itself only while the player works its bellows (master s2.7 items 1 and 4), into its output rack;
@@ -176,18 +176,18 @@ func _init() -> void:
 
 	check(smithy_iron == 0 and saw_iron > 0 and anvil_iron > 0, "the Improved smithy costs no iron; the saw (%d) and the Iron anvil (%d) are made of iron: %d ore to dig" % [saw_iron, anvil_iron, ore_n])
 
-	# 1. Bog iron with a wooden spade.
-	items.give(1, items.table.number_of("wooden_spade"), 1)
+	# 1. Bog iron with a wooden shovel.
+	items.give(1, items.table.number_of("wooden_shovel"), 1)
 
 	for n in range(200):
 		if have("iron_ore") >= ore_n:
 			break
 
 		items._last_dig.clear()
-		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "spade"), 0, 0, HERE + Vector3(1.0, 0.0, 0.0))
+		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "shovel"), 0, 0, HERE + Vector3(1.0, 0.0, 0.0))
 		items.inventory_of(1).remove(items.table.number_of("soil"), have("soil"))
 
-	check(have("iron_ore") >= ore_n, "1. a wooden spade digs %d bog iron ore out of wet ground (%d)" % [ore_n, have("iron_ore")])
+	check(have("iron_ore") >= ore_n, "1. a wooden shovel digs %d bog iron ore out of wet ground (%d)" % [ore_n, have("iron_ore")])
 
 	# 2. Charcoal at a lit campfire.
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": FIRE_AT, "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}

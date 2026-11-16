@@ -84,7 +84,7 @@ func run() -> void:
 	await _wait(25.0)
 	print("LAGRUN logged in, at %s" % str(client.body.global_position.round()))
 	_give("stone_axe")
-	_give("wooden_spade")
+	_give("wooden_shovel")
 	_give("stone_hoe")
 	await _wait(2.0)
 
@@ -165,10 +165,10 @@ func _dig() -> void:
 		var spot: Vector3 = _ground_at(here.x + 1.5 + 0.4 * float(n % 3), here.z + 0.5 * floorf(float(n) / 3.0))
 
 		if not is_nan(spot.y):
-			client.net.inventory_action.rpc_id(1, NetScript.ACT_DIG, _slot_of("wooden_spade"), 0, 0, spot)   # a: the spade in hand
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_DIG, _slot_of("wooden_shovel"), 0, 0, spot)   # a: the shovel in hand
 			done += 1
 
-		await _wait(0.9)   # the server's spade pace is 0.7 s
+		await _wait(0.9)   # the server's shovel pace is 0.7 s
 
 	await _wait(2.0)
 	_end("%d digs sent" % done)

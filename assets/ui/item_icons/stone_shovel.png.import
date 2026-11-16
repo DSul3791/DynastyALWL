@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bik57wls8vuov"
-path="res://.godot/imported/steel_spade.png-e36d39caaab32c1efa1ab0da46da7902.ctex"
+uid="uid://c7he5mvuhuj6a"
+path="res://.godot/imported/stone_shovel.png-afbcc35611fb7ade0c733d883746a180.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/steel_spade.png"
-dest_files=["res://.godot/imported/steel_spade.png-e36d39caaab32c1efa1ab0da46da7902.ctex"]
+source_file="res://assets/ui/item_icons/stone_shovel.png"
+dest_files=["res://.godot/imported/stone_shovel.png-afbcc35611fb7ade0c733d883746a180.ctex"]
 
 [params]
 

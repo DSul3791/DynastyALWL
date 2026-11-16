@@ -453,7 +453,7 @@
    "state": "generated",
    "variants": 3,
    "used_in": "dig_sounds.gd: digging dirt and humus",
-   "to_supply": "3 spade or shovel scoops into earth",
+   "to_supply": "3 shovel or shovel scoops into earth",
    "priority": 2
   },
   {
@@ -569,27 +569,27 @@
    "priority": 4
   },
   {
-   "name": "hit_spade_wood",
+   "name": "hit_shovel_wood",
    "state": "generated",
    "variants": 3,
-   "used_in": "hit_sounds.gd: a spade strike on wood",
-   "to_supply": "3 spade knocks and scrapes on wood",
+   "used_in": "hit_sounds.gd: a shovel strike on wood",
+   "to_supply": "3 shovel knocks and scrapes on wood",
    "priority": 4
   },
   {
-   "name": "hit_spade_stone",
+   "name": "hit_shovel_stone",
    "state": "generated",
    "variants": 3,
-   "used_in": "hit_sounds.gd: a spade scraping on stone",
-   "to_supply": "3 spade scrapes on stone",
+   "used_in": "hit_sounds.gd: a shovel scraping on stone",
+   "to_supply": "3 shovel scrapes on stone",
    "priority": 4
   },
   {
-   "name": "hit_spade_soil",
+   "name": "hit_shovel_soil",
    "state": "generated",
    "variants": 3,
-   "used_in": "hit_sounds.gd: a spade strike into soil",
-   "to_supply": "3 spade thuds into earth",
+   "used_in": "hit_sounds.gd: a shovel strike into soil",
+   "to_supply": "3 shovel thuds into earth",
    "priority": 3
   },
   {
