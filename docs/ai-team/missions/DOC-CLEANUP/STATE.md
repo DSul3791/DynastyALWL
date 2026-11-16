@@ -19,7 +19,7 @@ Preservation/link checks, independent review and final static CI passed for thes
 | Creature/exploration guide | [#1194](https://github.com/DSul3791/DynastyALWL/pull/1194) | `21be0543772f67b1c94be88ed3a91f59918d91ed` |
 | High-use overview reconciliation | [#1195](https://github.com/DSul3791/DynastyALWL/pull/1195) | `f416e55fd65494da2936f028fa87777b768b246b` |
 
-## Current checkpoint
+## Completed cleanup checkpoint
 
 Final consistency/retirement report; base `f416e55fd65494da2936f028fa87777b768b246b`. This commit's PR owns exact-head review/checks and final integration receipt. Preserve source-unverified decisions and unresolved discrepancies; no Approved/Built certification is invented. Complete reviewed integration of this report, then stop this scoped pass. No code, schedules, deletion or main changes.
 
@@ -38,3 +38,10 @@ Final consistency/retirement report; base `f416e55fd65494da2936f028fa87777b768b2
 - Remaining-overlap triage: item catalog cleanup is already owned by open PRs #1082/#1084; wood has its own active mission and PR #1147; goals have active repair/draft records. Preserve those owners and records. Goblin behavior/den and first-day economy references retain distinct dated technical content rather than being folded into a creature guide or general price plan. BIG_PICTURE was the high-use stale operating overlap addressed in this pass. Further merges lack enough demonstrated benefit to justify widening this review.
 
 Final static audit: 561 original source lines preserved across the reviewed sections; one documented redundant lifespan paragraph consolidated; all legacy headings retained; 171 relative paths and 84 available local anchors checked; all 560 frozen manifest paths unchanged. Creature cards and G/D IDs are unchanged. This is a bounded documentation audit, not runtime verification or an exhaustive repository audit.
+
+## Current checkpoint — provenance/evidence, 16 Nov 2026
+
+- Base: `83c4abfd7f3ac8fe815f1a96cf0784881b7721c4`. Examined 200 design-history entries plus the selected original aging/succession commits; recovered the 14 Oct session locator without original user answers. Family statuses remain SOURCE UNVERIFIED.
+- Added Approved/Built records for natural fog: existing dated full verbatim instruction remains its single specification; original chat independently unavailable. Originating implementation commit and actual PR #1142 merge verified, with current static caller wiring and regression-file existence checked. Godot/visual/player checks NOT RUN; no full-completion claim.
+- Paths: both new status records, Unapproved provenance lead, DOC_MAP and this checkpoint. No source specifications, code, schedules or retired files changed. Exact candidate hashes, independent review, CI and merge receipt belong to this phase's PR.
+- Remaining: original family answers, additional bounded provenance batches and actual runtime/player evidence where absent. Retirement remains manual after 22 Nov with recovery/dependency checks; no automation.
