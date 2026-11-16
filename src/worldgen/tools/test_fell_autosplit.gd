@@ -277,7 +277,6 @@ func _init() -> void:
 	w._items[boulder_id] = {"number": w.table.number_of("stone"), "count": 1, "pos": Vector3(64.5, 10.0, 0.4), "left": 1.0e9, "boulder": {"radius": 0.5}}   # under the second log, a little to +z
 	w.report_position(1, Vector3(58.0, 10.0, 0.0))
 	w.report_position(2, Vector3(0.0, 10.0, 40.0))
-	var before_oak: int = w._next_id
 	fell_one(w, standing, 8)
 	var oak_logs: Array = loose_logs(w, w.table.number_of("log_oak"))
 	check(oak_logs.size() == int(22.0 / log_len), "oak logs: int(22 / %.1f) = %d" % [log_len, int(22.0 / log_len)])
