@@ -17,7 +17,7 @@ Start here to find a design topic, then read its source and the relevant working
 | Outposts and settlement decline | [Outpost/decline collection](../Design_Ideas_Unapproved.md#outposts-and-settlement-decline) | Outpost points/sizes and separate player/server-town decline paths; numeric tables, road/rubble persistence and claim/deletion exceptions retained. |
 | Design principles | [DESIGN_PRINCIPLES](../DESIGN_PRINCIPLES.md) | Values and constraints behind the designs. |
 | Rejected ideas | [DESIGN_REJECTED](../DESIGN_REJECTED.md) | Preserve explicit rejections and their reasons. |
-| Living-world proposals | [GUIDING_DOCUMENT](design/GUIDING_DOCUMENT.md) | Living-world concepts, recorded decisions and proposals; not another operating rulebook. |
+| Creature and exploration proposals | [GUIDING_DOCUMENT](design/GUIDING_DOCUMENT.md) | Habitat concepts, worked interaction cards and recorded G/D history; dated dependency plan, not family/town design or an operating rulebook. |
 | Visual identity | [Art Direction](../art/Art_Direction.md) | The master aesthetic; specialist designs apply it. |
 
 ## Current topic routes

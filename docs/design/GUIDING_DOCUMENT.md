@@ -294,7 +294,7 @@ Rings 3 to 6 are [Proposal] bands read from Dave's danger map, to be tuned in pl
 1. **Find.** The coordinator takes one habitat, one archetype or one gap in the matrix, and reads real natural history, the repo's docs and the models we own.
 2. **Propose.** An idea card with an ID, tagged Proposal.
 3. **React.** Dave answers by ID in a few words. No questionnaires, no cards.
-4. **Decide.** An approved idea becomes [Dave], is folded into `DESIGN_IDEAS.md` as a tagged item, and the plan gains a task with an owner.
+4. **Record.** Preserve the actual approval source/date and scope; a coordinator recommendation or silence is not Dave’s approval. Route proposals, approved specifications and implementation evidence through [DOC_MAP](../DOC_MAP.md) and the current topic/mission record, without copying the full specification here.
 5. **Build.** The owner follows the current workflow and test gates under the applicable approved design and scoped delegation.
 6. **Learn.** The lesson goes into `docs/knowledge/`; the matrix is regenerated.
 
@@ -306,7 +306,7 @@ Resolve existing approval, scoped delegation, provisional values and significant
 
 ## 13. Decisions the coordinator has taken under Dave's intent
 
-These are recommendations applied now so work is not blocked. Dave can overturn any by ID.
+**7 Nov coordinator decision history.** These recommendations were recorded as applied under Dave’s intent; retain their IDs and reasons without treating that wording as newly verified director approval, current implementation or an instruction to resume old work. Later topic decisions and current rulebooks govern within scope.
 
 | ID | Decision | Reason |
 |---|---|---|
@@ -325,19 +325,18 @@ These are recommendations applied now so work is not blocked. Dave can overturn 
 
 **Dated 7 Nov planning record.** Retain its feature dependencies and proposals; current task assignments, priorities, ownership and verified state come from the live mission records. This is not an instruction to restart completed phases or reproduce the old named-agent pipeline.
 
-Principles: data first; nothing blocks on the rebuild that does not have to; one creature or feature at a time with a written completion criterion; small PRs with one owner; no PC work ahead of Sonny; every phase ends with something Dave can see or play.
+Feature approach: data first; one creature or shared feature with a visible completion criterion. The table preserves feature dependencies and acceptance ideas, not a live queue or staffing plan. Current assignments and integration use the mission records and rulebooks.
 
-| Phase | Goal | Deliverables | Owners | Depends on | Done when |
-|---|---|---|---|---|---|
-| **0 Agree the guide** (now) | This document in main; Dave reacts by ID | This PR; Dave's reactions; `DOC_MAP.md` entry | Coordinator, Jamie | None | Dave has said yes, no or later to the proposals, or the decisions in section 13 stand |
-| **1 The creature record** (docs and data) | Every creature described the same way; gaps visible | G-03 optional habitat keys in the schema doc and loaders; G-17 an interaction card for each existing species and the generated `INTERACTION_MAP.md`; a gap list | Coordinator (cards), MikeW (loader reads keys, after batch 3), Jamie (docs) | None | The matrix exists and the gap list feeds Phases 2-6 |
-| **2 Discovery with existing animals** | A player can learn the animals already in the game | G-18 journal page with the five-rung ladder; two sign kinds per species in `animal_sign.json`; G-07 crows and ravens gather at a carcass | Steve (journal state, inherited), Kathleen (look), MikeW (sign), Jason (calls) | Steve's readers (#541) agreed first | On the starter island, see a sign, follow it to a fox, watch the journal fill |
-| **3 Archetypes and rumours** | The map says what each island is for | G-01 archetype tag per island in the world plan; G-19 ten rumours for the starter ring on the news rail; G-08 bat emergence at inhabited caves; one content brief per archetype | Coordinator (briefs), Steve (news rail), Sonny (tag, only after the rebuild's current step), Jason and Kathleen (bats) | The world sketch stable; not R-steps | One page per archetype and the tag in the plan |
-| **4 Shared systems** (the heavy phase) | A creature becomes a row of data | G-09 taming (companion and mount first); G-15 soaring (lift field, birds as signs); cave life (dens inside caves, sleeping, foraging, stealing); G-05 beaver ponds; G-04 honey | MikeW (behaviour), Steve (state, persistence), Sonny (water and caves), Kathleen (looks) | Taming: batch 3 animals; Soaring: existing wind and relief; Cave life: R5 cave springs; Beaver and honey: R6/R7 and flora | Per system: one real creature uses it in play on the PC and its data row is the only creature-specific code |
-| **5 Peaks, water and fishing** | The rebuild's lakes, falls and wetlands become living places | G-06 fishing and the salmon run; G-20 eyries and G-21 tarns placed by slope, rock and cirque tags; a climbing design doc then climbing kit; G-12 marsh lights; wetland creatures by type | MikeW, Steve, Sonny, Kathleen, Jason | R3, R4, R5, R6, R7; Phase 4 soaring and taming. No water creature before R6. | Climb to an eyrie and watch an eagle; fish a river whose size matches its flow |
-| **6 Coast, sea and the hot row** | Sailing is an adventure with life in the water | G-11 whale and dolphin encounters, albatross, sharks at blood, tide pools; G-24 sea stacks; G-25 wrecks with life; G-02 hot-row animals on the dune archetype; atoll and seabird isle content | MikeW, Kathleen, Jason, Sonny (ocean), Steve (ships) | Ships and sailing design; ocean look; Phase 3 tags; sea-life models (Need) | Cross open water, see a whale, land on an atoll, meet a turtle |
-| **7 Fantasy creatures and hard islands** | The mythical layer, built with G-16 | A roster: antler-moss stag, stone-hide boar, ember-wolf, cave bear, roc, yeti, sandworm, troll, kraken, wyvern; G-10 lair puzzles; regional variants by material and scale (frost wolf, ember boar); fire, ice and storm hazards | MikeW, Kathleen, Jason; Dave makes models in Meshy as he did the goblins | Taming for mounts; soaring for roc and wyvern | Each creature passes the five-point test and has a card |
-| **8 The ultimate island and the abyss** | The centre of the world as Dave designed it | Dragons and wyverns, sandworms and scorpions, the fallen city, labyrinths and boss lairs, lava river, old road, the greatest loot; G-14, G-26 to G-28 as authored places | All | Everything above | A prepared expedition crosses the abyss, lands, survives a day and brings something back |
+| Phase | Goal | Deliverables | Depends on | Done when |
+| --- | --- | --- | --- | --- |
+| **1 The creature record** (docs and data) | Every creature described the same way; gaps visible | G-03 optional habitat keys in the schema doc and loaders; G-17 an interaction card for each existing species and the generated `INTERACTION_MAP.md`; a gap list | None | The matrix exists and the gap list feeds Phases 2-6 |
+| **2 Discovery with existing animals** | A player can learn the animals already in the game | G-18 journal page with the five-rung ladder; two sign kinds per species in `animal_sign.json`; G-07 crows and ravens gather at a carcass | Steve's readers (#541) agreed first | On the starter island, see a sign, follow it to a fox, watch the journal fill |
+| **3 Archetypes and rumours** | The map says what each island is for | G-01 archetype tag per island in the world plan; G-19 ten rumours for the starter ring on the news rail; G-08 bat emergence at inhabited caves; one content brief per archetype | The world sketch stable; not R-steps | One page per archetype and the tag in the plan |
+| **4 Shared systems** (the heavy phase) | A creature becomes a row of data | G-09 taming (companion and mount first); G-15 soaring (lift field, birds as signs); cave life (dens inside caves, sleeping, foraging, stealing); G-05 beaver ponds; G-04 honey | Taming: batch 3 animals; Soaring: existing wind and relief; Cave life: R5 cave springs; Beaver and honey: R6/R7 and flora | Per system: one real creature uses it in play on the PC and its data row is the only creature-specific code |
+| **5 Peaks, water and fishing** | The rebuild's lakes, falls and wetlands become living places | G-06 fishing and the salmon run; G-20 eyries and G-21 tarns placed by slope, rock and cirque tags; a climbing design doc then climbing kit; G-12 marsh lights; wetland creatures by type | R3, R4, R5, R6, R7; Phase 4 soaring and taming. No water creature before R6. | Climb to an eyrie and watch an eagle; fish a river whose size matches its flow |
+| **6 Coast, sea and the hot row** | Sailing is an adventure with life in the water | G-11 whale and dolphin encounters, albatross, sharks at blood, tide pools; G-24 sea stacks; G-25 wrecks with life; G-02 hot-row animals on the dune archetype; atoll and seabird isle content | Ships and sailing design; ocean look; Phase 3 tags; sea-life models (Need) | Cross open water, see a whale, land on an atoll, meet a turtle |
+| **7 Fantasy creatures and hard islands** | The mythical layer, built with G-16 | A roster: antler-moss stag, stone-hide boar, ember-wolf, cave bear, roc, yeti, sandworm, troll, kraken, wyvern; G-10 lair puzzles; regional variants by material and scale (frost wolf, ember boar); fire, ice and storm hazards | Taming for mounts; soaring for roc and wyvern | Each creature passes the five-point test and has a card |
+| **8 The ultimate island and the abyss** | The centre of the world as Dave designed it | Dragons and wyverns, sandworms and scorpions, the fallen city, labyrinths and boss lairs, lava river, old road, the greatest loot; G-14, G-26 to G-28 as authored places | Everything above | A prepared expedition crosses the abyss, lands, survives a day and brings something back |
 
 ### 14.1 What the plan needs from the rebuild
 
@@ -351,23 +350,25 @@ Principles: data first; nothing blocks on the rebuild that does not have to; one
 | Live water seeded from the record | R7 | Phase 4 beaver ponds |
 | Readers for every dependent system | Stage E (Steve, #541) | Phase 2 onward |
 
-Until these land, Phases 0 to 3 and the shared systems that need no new water (taming, soaring, journal) go ahead. This plan never asks Sonny or Dino for anything; it reads what they publish.
+These are dated feature dependencies, not authorization to start work; inspect current readers and mission state before implementation.
 
 ### 14.2 What the plan needs from the creature pipeline
 
-One-at-a-time integration with the reusable recipe (MikeW, `ANIMALS_BATCHES.md`); species numbers (next free 30 after batch 2); role-mapped clips (follow for taming, glide for soaring, stand-and-drink for fishing); batch 3 farm animals for taming. **Model gap:** the pack has no eagle, hawk, owl, bat, dolphin or whale. Sky, cave and sea life depend on Dave making these in Meshy or another source; the coordinator keeps the missing-model list by priority: golden eagle, bat, raven, whale, dolphin, owl.
+Preserve reusable creature records and role-mapped clips: follow for taming, glide for soaring, stand-and-drink for fishing; farm animals precede livestock taming. Use the current [animal pipeline](../../design/ANIMALS_BATCHES.md) and mission reservations for species allocation, not the old next-free number or named-agent queue.
+
+**7 Nov model-gap snapshot:** the pack was recorded as missing eagle, hawk, owl, bat, dolphin and whale. The recorded priority was golden eagle, bat, raven, whale, dolphin, owl; sky/cave/sea life depends on suitable models. This is historical, not a current asset census.
 
 ### 14.3 How a creature gets added (the recipe)
 
-1. Idea card approved ([Dave]). 2. Interaction card. 3. Five-point test if fantasy. 4. Model: owned, or made by Dave; purchased never committed. 5. Rows: `animals.json` (movement, habitat keys, temperament, seasons, young, tame), `models.json`, carcass and parts, sign, sound slot, species kind. 6. Gate on David4, then Dino on the PC: it appears, faces the right way, plays its clips, behaves as the card says. 7. Knowledge line in `docs/knowledge/animal-behaviour.md`. 8. Matrix regenerated; gaps rechecked.
+Domain inputs: idea and interaction cards; G-16 test for fantasy creatures; usable model; `animals.json` movement/habitat/temperament/seasons/young/tame rows; `models.json`; carcass/parts; signs; sound slots; species kind; checks that the creature appears, faces the right way, plays its clips and behaves as its card says; knowledge entry and regenerated matrix. Approval, runner permissions and integration follow [CLAUDE](../../CLAUDE.md), its rulebooks and current mission state; asset handling follows [Art Direction](../../art/Art_Direction.md).
 
 ### 14.4 Measures
 
-Species with a card: all, at Phase 1. Species with three or more verbs: 80% of the roster by Phase 6. Habitats with a Discover creature (cave, peak, sky, wetland, coast, open sea, polar, desert): all eight by Phase 7. Archetypes with a content brief: all nine by Phase 3. A progress report (done, in progress, blocked) kept by the coordinator and updated each phase.
+7 Nov targets, not measured results: cards for all species by Phase 1; three or more verbs for 80% of the roster by Phase 6; Discover content in all eight listed habitats by Phase 7 (cave, peak, sky, wetland, coast, open sea, polar, desert); briefs for all nine archetypes by Phase 3. Current evidence belongs in the owning working record.
 
 ### 14.5 Risks
 
-Competing with the rebuild for PC time (no PC work before Phase 4 except what Dino can fit). Model gaps (list kept; Dave's Meshy path). New mechanics invented without design (each gets a design page and Dave's reaction first). Scope (archetypes ship one at a time, Hearth first). Weak machines (coarse far simulation, caps per quality). Public repo (asset folders ignored). Conflicts with standing rules (flagged in section 13; no change without Dave).
+Domain risks: missing models; mechanics without a design; scope across archetypes (Hearth first); weak machines (coarse far simulation, caps per quality); conflicts with standing designs. Current resource scheduling, approvals and public-asset handling route to the existing rulebooks and Art Direction, rather than this old phase plan.
 
 ## 15. What not to do
 
@@ -382,10 +383,14 @@ Competing with the rebuild for PC time (no PC work before Phase 4 except what Di
 
 | Doc | Relation |
 |---|---|
-| `DESIGN_IDEAS.md` | Permanent ideas file; approved proposals are folded in as tagged items. |
+| [Main design index](../DOC_MAP.md) | Routes proposals, approved specifications and working evidence; this guide owns creature/exploration concepts, not family/town design or operating procedure. |
+| `DESIGN_IDEAS.md` | Remaining mixed-status collection, with routes to extracted topics. |
 | `DESIGN_PRINCIPLES.md` | Principles this document applies. |
 | `docs/water/Dynasty_How_Natural_Watersheds_Work.md` | Dave's authority on water. |
 | `docs/water/watershed_rebuild_design.md` | Sonny's rebuild; this plan depends on R1 to R8. |
 | `docs/water/stage_e_readers_design.md` (#541) | Steve's readers; every dependent system reads the record through them. |
 | `design/ANIMALS_BATCHES.md` | MikeW's pipeline; the roster here extends it. |
 | `docs/knowledge/` | The lessons this builds on and feeds. |
+
+
+Consolidation source: [pre-trim guide at b26830b](https://github.com/DSul3791/DynastyALWL/blob/b26830b31e9cb88c0fdeefe451019df7564ccba2/docs/design/GUIDING_DOCUMENT.md). Unique concepts, worked cards, G/D IDs, recorded decision reasons, dependencies and acceptance ideas remain; obsolete staffing/queues/process copies are recoverable there.
