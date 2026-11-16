@@ -170,6 +170,7 @@ func _run() -> void:
 	case_name = "flat drop"
 	var flat = make("user://test_log_physics_flat", func(_x, _z): return 10.0)
 	var lying: int = drop(flat, "log_oak", Vector3(0.0, 10.0, 0.0), across)
+	check(lying != 0 and not flat._logs.asleep(lying), "a log just dropped counts as awake before the engine has stepped it")
 	check(lying != 0 and flat._logs.has(lying), "a dropped log is a body in the log physics")
 	await step(flat, 90)
 	var rest: Vector3 = flat._items[lying]["pos"]
@@ -261,7 +262,8 @@ func _run() -> void:
 	steep._items[rock_id] = {"number": steep.table.number_of("stone"), "count": 1, "pos": Vector3(-6.0, 7.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.8}}
 	var roller: int = drop(steep, "log_oak", Vector3(0.0, 10.0, 0.0), across)
 	var along_id: int = drop(steep, "log_oak", Vector3(0.0, 10.0, 12.0), 0.0)
-	await step(steep, 240)
+	check(absf(float(steep._items[along_id].get("pitch", 0.0)) - atan(0.5)) < 0.05, "a log dropped level along the steep hill is laid along it (pitch %.2f, the hill %.2f)" % [float(steep._items[along_id].get("pitch", 0.0)), atan(0.5)])
+	await step(steep, 360)
 	var stopped: Vector3 = steep._items[roller]["pos"]
 	var r_oak: float = steep._log_r(steep._items[roller])
 	var core: Vector3 = axis(steep, roller) * (LyingLogs.LOG_HALF_M - r_oak)
@@ -305,7 +307,7 @@ func _run() -> void:
 	check(asleep(pile, top) and asleep(pile, low_a) and asleep(pile, low_b), "and all three settle")
 	var under: int = drop(pile, "log_oak", Vector3(0.0, 10.0, 20.0), 0.0)   # along x
 	await step(pile, 30)
-	var cross: int = drop(pile, "log_oak", Vector3(0.6, 10.0 + 0.55, 20.0), across)   # along z, over it a little off its middle
+	var cross: int = drop(pile, "log_oak", Vector3(0.0, 10.0 + 0.55, 20.3), across)   # along z, crossing it 0.3 m off its own middle, so one end must go down
 	await step(pile, 240)
 	check(centre(pile, cross).y > 10.0 + 0.25 + 0.08 and absf(float(pile._items[cross].get("pitch", 0.0))) > deg_to_rad(4.0), "one dropped across another rests on it, tilted, an end down (middle %.2f m up, pitch %.0f degrees)" % [centre(pile, cross).y - 10.0, rad_to_deg(float(pile._items[cross].get("pitch", 0.0)))])
 	check(asleep(pile, cross) and asleep(pile, under), "and both settle")

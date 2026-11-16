@@ -2809,7 +2809,7 @@ func _log_body(id: int, asleep: bool) -> bool:
 
 	var r: float = _log_r(it)
 
-	if absf(it["pos"].y - float(ground_height.call(it["pos"].x, it["pos"].z))) <= float(cfg.get("rest_m", 0.6)):
+	if not asleep and absf(it["pos"].y - float(ground_height.call(it["pos"].x, it["pos"].z))) <= float(cfg.get("rest_m", 0.6)):   # a neighbour put back asleep keeps the pose physics left it
 		var laid: Transform3D = _log_on_ground(xf, r)   # laid level on a slope, one end would be in the ground: it lies along the ground instead
 
 		if laid != xf:
@@ -3042,10 +3042,10 @@ func _roll_tick(delta: float) -> void:
 
 			var v: Vector3 = _logs.velocity(id)
 
-			if v.length() < still and _logs.spin_rate(id).length() < still / maxf(r, 0.05) and not _log_must_roll(xf, cfg):
+			if v.length() < still and _logs.spin_rate(id).length() < still / maxf(r, 0.05):
 				_log_quiet[id] = float(_log_quiet.get(id, 0.0)) + delta
 
-				if float(_log_quiet[id]) >= float(cfg.get("still_s", 0.4)):
+				if float(_log_quiet[id]) >= float(cfg.get("still_s", 0.4)) * (4.0 if _log_must_roll(xf, cfg) else 1.0):   # on ground steeper than it holds it is given longer to start rolling (pinned against a rock it still sleeps)
 					_logs.sleep(id)
 					_log_quiet.erase(id)
 			else:
@@ -3101,14 +3101,14 @@ func _log_hold(at: Vector3, cfg: Dictionary) -> float:
 	return hold
 
 
-# True when the ground across the log (perpendicular to its long axis, 0.5 m either side) is steeper than it holds a log on: it must roll on,
-# never be put to sleep there however slowly it starts.
+# True when the ground across the log (perpendicular to its long axis, 0.5 m either side) is steeper than it holds a log on: it should roll on, so
+# it is given longer before it is put to sleep there (_roll_tick).
 func _log_must_roll(xf: Transform3D, cfg: Dictionary) -> bool:
 	var axis: Vector3 = xf.basis.x
 	var across: Vector2 = Vector2(-axis.z, axis.x).normalized() * 0.5
 	var up: float = float(ground_height.call(xf.origin.x + across.x, xf.origin.z + across.y))
 	var down: float = float(ground_height.call(xf.origin.x - across.x, xf.origin.z - across.y))
-	return not is_nan(up) and not is_nan(down) and absf(up - down) > _log_hold(xf.origin, cfg) * 1.0 + 0.02
+	return not is_nan(up) and not is_nan(down) and absf(up - down) / (2.0 * across.length()) > _log_hold(xf.origin, cfg) + 0.02
 
 
 const LOG_RESIST_OFF_M := 0.15   # an underside this far over the server ground is not held back by it
