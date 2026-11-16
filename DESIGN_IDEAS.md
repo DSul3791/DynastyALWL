@@ -2,9 +2,9 @@
 
 > **Note (Jamie, 11 Nov 2026):** the item, building and progression decisions from 6 to 11 Nov are recorded in `docs/design/item_system.md`, `docs/design/progression.md`, `docs/design/buildables_plan.md` and `docs/design/wood_tier_note.md`, not here. That includes the seven building tiers, blueprint-only building, kit names, bronze nails and hinges, and bog iron. Where this file and those differ on items or buildings, those win. The vision sections here still stand.
 
-Record of the design brainstorming sessions from 2026-10-11 onward. This is a planning document. The world generator described in Section 14 is partly built; the game systems in Sections 5 to 13 are design only and no code exists for them yet.
+Record of design brainstorming from 2026-10-11 onward, with mixed statuses and stable routes to extracted topics. Use [DOC_MAP](docs/DOC_MAP.md) and owning design/working records for approval, implementation and verification. Earlier blanket built/unbuilt statements are historical snapshots, not current certifications.
 
-**Revision history:** versions 1 to 10 (11 to 16 Oct 2026) are kept in `docs/archive/2026-10/DESIGN_IDEAS_REVISION_HISTORY.md`. The numbered sections below are always the current rules.
+**Revision history:** versions 1 to 10 (11 to 16 Oct 2026) are kept in `docs/archive/2026-10/DESIGN_IDEAS_REVISION_HISTORY.md`. Numbered sections retain recorded designs and stable topic routes; a section number or legacy tag alone does not establish current authority or verified approval.
 
 ## How to read this document
 
@@ -16,7 +16,7 @@ Every item carries a status tag.
 - **[Open]** A question that has not been answered yet. Section 15 collects them.
 - **(brainstorm)** after a tag: the item came from the owner's brainstorming with ChatGPT (2026-10-16). There, **[Idea]** means the owner liked the direction, **[Proposed]** a suggested mechanism, and **[Open]** a question still to settle. None of it is approved: these are ideas to raise in design discussions and fold into the game where they fit.
 
-When something is both a decision and a question, the decision is recorded in its section and the unresolved part appears in Section 15.
+When something is both a decision and a question, the decision is recorded in its section and the unresolved part appears in Section 15. These are legacy tag definitions: preserve their recorded meaning, but verify source/date and later scoped decisions before claiming approval. Silence is not approval. Implementation, testing and player verification require separate evidence.
 
 Ideas the project owner has turned down are kept in `DESIGN_REJECTED.md`, with reasons. Check it before proposing something new.
 
