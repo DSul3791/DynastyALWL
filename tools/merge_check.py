@@ -149,10 +149,10 @@ if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
                                                 _head_read, _game, _removals, _modified, _expired_docs):
         bad(msg)
     # looks: a look entry that was in BASE must still be in data/items/looks.json
+    renames = json.load(open("data/items/id_renames.json", encoding="utf-8")).get("renames", {}) if os.path.isfile("data/items/id_renames.json") else {}   # outside the try: a broken file fails loudly
     try:
         old = json.loads(sh("git", "show", BASE + ":data/items/looks.json"))["items"]
         new = json.load(open("data/items/looks.json", encoding="utf-8"))["items"]
-        renames = json.load(open("data/items/id_renames.json", encoding="utf-8")).get("renames", {}) if os.path.isfile("data/items/id_renames.json") else {}
         for k in sorted(set(old) - set(new)):
             if renames.get(k, "") in new:   # an approved id rename (data/items/id_renames.json, Dave 16 Nov 2026): the look moved to the new id
                 continue

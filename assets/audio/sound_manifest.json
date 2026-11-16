@@ -453,7 +453,7 @@
    "state": "generated",
    "variants": 3,
    "used_in": "dig_sounds.gd: digging dirt and humus",
-   "to_supply": "3 shovel or shovel scoops into earth",
+   "to_supply": "3 shovel scoops into earth",
    "priority": 2
   },
   {

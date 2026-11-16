@@ -71,7 +71,7 @@ SLOTS = [
     ("bed_water", "ambient", "ambient_life.gd (optional bed): a water-edge background", "A quiet marsh or lake edge background loop", 3),
     ("bed_highland", "ambient", "ambient_life.gd (optional bed): highland wind and space", "A thin high-altitude background loop", 3),
     ("cave_drip", "cave", "cave_sounds.gd: water drops in caves and tunnels", "3 to 6 single water drips in a stone room, 1 to 2 s each", 2),
-    ("dig_soil", "dig", "dig_sounds.gd: digging dirt and humus", "3 shovel or shovel scoops into earth", 2),
+    ("dig_soil", "dig", "dig_sounds.gd: digging dirt and humus", "3 shovel scoops into earth", 2),
     ("dig_clay", "dig", "dig_sounds.gd: digging clay, mud and peat", "3 wet sticky digs", 3),
     ("dig_sand", "dig", "dig_sounds.gd: digging sand and snow", "3 sand shovelling sounds", 3),
     ("dig_gravel", "dig", "dig_sounds.gd: digging gravel", "3 gravel shovelling sounds", 3),
