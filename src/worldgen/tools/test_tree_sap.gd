@@ -4,6 +4,7 @@ extends SceneTree
 #   Simple - Torch = stick, twine, plant fibre; Improved - Torch = the same plus Tree sap (the resin item).
 #   Every felled softwood tree gives wood_species.json tree_sap.felled Tree sap, large (beside its logs) or small (with its firewood); a hardwood gives none.
 #   A craft that uses up softwood logs gives per_softwood_log Tree sap for each; a hardwood log gives none, and a mixed queue counts each craft's own log.
+#   A loose softwood log picked apart with a pickaxe gives per_softwood_log too.
 #   A placed Improved torch comes back as an Improved torch.
 #   godot --headless --path . --script res://src/worldgen/tools/test_tree_sap.gd
 
@@ -147,6 +148,27 @@ func _init() -> void:
 		got.append(items._craft_sap([0, left, [[n_of("log"), 1, rows]]]))
 
 	check(got == [0, per_log, 0], "each craft of a queue entry counts its own log (%s)" % str(got))
+
+	# A loose softwood log picked apart with a pickaxe is processed too: its Tree sap lies with the kindling; an oak log's gives none.
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+
+	for pair in [["log", per_log], ["log_oak", 0]]:
+		var log_id: int = items._next_id
+		items._items[log_id] = {"number": n_of(str(pair[0])), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9}
+		items._next_id += 1
+		var before: int = 0
+
+		for k in items._items:
+			before += int(items._items[k]["count"]) if int(items._items[k].get("number", 0)) == n_of("resin") and not items._items[k].has("struct") else 0
+
+		items._last_process.clear()
+		items._chop_loose_log(1, inv, log_id, [-1, "pick", 1.0])
+		var after: int = 0
+
+		for k in items._items:
+			after += int(items._items[k]["count"]) if int(items._items[k].get("number", 0)) == n_of("resin") and not items._items[k].has("struct") else 0
+
+		check(not items._items.has(log_id) and after - before == int(pair[1]), "a %s picked into kindling leaves %d Tree sap (%d)" % [pair[0], int(pair[1]), after - before])
 
 	# Placing and taking back an Improved torch keeps it Improved (its own Standing torch).
 	inv.add(n_of("improved_torch_doused"), 1)

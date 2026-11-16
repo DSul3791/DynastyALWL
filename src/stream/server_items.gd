@@ -10051,6 +10051,10 @@ func _chop_loose_log(peer: int, inv, id: int, tool: Array) -> void:   # `tool`: 
 			_items.erase(id)
 
 		drop_in_world(table.number_of("kindling"), _pick_kindling(big), it["pos"] + Vector3(0.0, 0.1, 0.0))
+
+		if table.is_softwood_log(int(it["number"])) and int(table.tree_sap.get("per_softwood_log", 0)) > 0:   # a softwood log picked apart is processed too (Dave 16 Nov 2026)
+			drop_in_world(table.number_of(str(table.tree_sap.get("item", ""))), int(table.tree_sap.get("per_softwood_log", 0)), it["pos"] + Vector3(0.0, 0.1, 0.0))
+
 		return
 
 	if not block:
@@ -16882,7 +16886,7 @@ func _night_walk_tick() -> void:
 			continue   # standing still, or a jump (respawn, teleport)
 
 		var inv = inventory_of(peer)
-		var lit: bool = _lit_fire_within(_peer_pos[peer], 4.0) or (inv != null and _goal_have(st, inv, "torch") > 0)   # an admin-given torch lights no goal (GA-54)
+		var lit: bool = _lit_fire_within(_peer_pos[peer], 4.0) or (inv != null and _goal_have(st, inv, "torch") + _goal_have(st, inv, "improved_torch") > 0)   # an admin-given torch lights no goal (GA-54)
 
 		if lit:
 			st["goal_counts"]["moved_lit_night"] = float(st["goal_counts"].get("moved_lit_night", 0.0)) + step
