@@ -1226,146 +1226,23 @@ See [property and town management](Design_Ideas_Unapproved.md#property-and-town-
 
 ### 8.17 Town marker, territory and outposts
 
-- **[Decided]** The town block is a marker with no physical form: a floating arrow only the owner can see, which the owner can switch on and off. It adds an entry to the owner's ledger saying they own a claim. It marks the exact centre of the town.
-- **[Decided]** Until an office building is placed (a keep or castle with an office, a house with an office, a town hall or a magistrate's office), the owner cannot reach the town settings. The building is where the town manager lives and works.
-- **[Decided]** **Towns cannot overlap, so the land is reserved up front.** Claims come in stages (camp, settlement, hamlet, village, town, city, grand city). A list gives the physical size of each, and the largest, a grand city, is the maximum a claim can grow to. Placing a town marker reserves land from the marker out to the size of a grand city, so nobody can place a marker anywhere that its own maximum city would overlap another town's. The aim is that one person can build a town into a giant city with a castle, thriving businesses and a guild of a thousand real players.
-- **[Proposed]** The minimum distance between two markers is then twice the grand-city radius R. The settlement ladder below puts R at 1.5 km.
-- **[Proposed]** **The settlement ladder.** A new claim is a **camp**: a marker and a tent. Each paid expansion grows it by roughly 50 percent in radius (a smaller step for the first two), and the size names follow. Radius includes the surrounding farmland, since the circle runs out to the farms.
-
-| Stage | Radius | Area | Rough population (NPCs and players) |
-|---|---|---|---|
-| Camp (a new claim) | 150 m | 0.07 km² | the player and guards |
-| Settlement (preparing the ground) | 200 m | 0.13 km² | up to 10: builders and guards in tents and barracks, no villager homes yet |
-| Hamlet (first homes and villagers) | 300 m | 0.28 km² | 10 to 100 |
-| Village | 450 m | 0.64 km² | 100 to 400 |
-| Town | 675 m | 1.4 km² | 400 to 1,500 |
-| City | 1,000 m | 3.1 km² | 1,500 to 5,000 |
-| Grand city (the maximum) | 1,500 m | 7.1 km² | 5,000 to 15,000 |
-
-- **[Proposed]** The reservation (above) is a grand city: radius 1,500 m, so two markers must be at least 3 km apart, and every marker reserves about 7 km² even while it is still a camp. A 50 km² starter landmass then holds roughly 5 to 7 towns, and a 100 km² landmass roughly 12.
-- **[Decided]** **The ladder sizes stand for now.** For scale, medieval London inside its walls was about 1.3 km², so a 1,000 m city is already large. Doubling every radius would cut the towns on a 50 km² island from about 5 to 7 down to 1 or 2. The sizes can be adjusted later, ideally with one scale setting for the whole ladder.
-- **[Decided]** **One camp at a time.** A dynasty can hold only one claim below the hamlet stage. While you have a camp or a settlement, you cannot place another camp. You must first build it up to a hamlet, the stage where it has homes and villagers. Only then may you go exploring and place a second camp.
-  - The camp is the tent. The settlement is the introductory stage where you prepare the ground for a liveable place. At the hamlet stage it actually has homes and villagers.
-- **[Proposed]** Details to work out later: if a camp or settlement is let go, lost or abandoned, the player may place a new one; buying an existing town is not limited by this rule; a hamlet that falls into ruin keeps its stage, so it still counts as a hamlet for this rule. This also limits marker hoarding (Section 15).
-- **[Proposed]** Moving up a stage needs the paid expansion plus a floor of buildings and population, so a stage name means something. "Established" status (Section 8.18) does not depend on the stage: a camp with two guards is already established.
-- **[Decided]** **An expansion costs what it really costs, and the money does not vanish into the server's coffers.** The cost of a step is the materials and labor the expansion needs: more builders, more guards, more supplies, and wages for the people at the stonemason, the lumber mill and the rope making. It includes a new, bigger and stronger wall, for example palisade logs, then stonework, and spike walls outside the palisade.
-- **[Decided]** **Costs are worked out from what the work takes.** Over time we calculate each expansion's cost from the materials it needs and the pay of the people who do it. Each stage must be priced with the next step in mind: once the expansion is done, the first building wanted next costs a certain amount, and the town needs the money to buy it, so that building can earn the money for the one after.
-- **[Proposed]** **How to price a stage (tunable).**
-  - Each stage has a plan: the new wall ring, new roads, the required buildings and the extra guards. The planner turns it into a bill of materials and a labor estimate. The gold price is that bill times the market prices, so it is calculated and not typed in.
-  - Wall type grows with the stage: no wall for a camp (a tent), palisade for a settlement and hamlet, palisade with a ditch and outer spikes for a village, stone for a town and a city, stone with towers for a grand city.
-  - The old wall is taken down and salvaged by its condition. A wall in good shape keeps all of its wood and all of its stone when it is taken down, so the next wall costs only the new material. Loss happens only through wear, down to each material's minimum integrity (Section 8.13).
-  - A longer wall needs more guards: at least one guard for each 100 m of wall plus the one per 25 residents already proposed, whichever is larger.
-  - **Balance test:** a stage is priced correctly when the town's net income at that stage repays the expansion in 1 to 2 game years (15 to 30 real days). If it takes longer, the stage is too expensive. If it pays back in days, it is too cheap.
-- **[Proposed]** **Requirements still apply** (tunable): enough residents and buildings, so a stage name means something.
-
-| Step | Residents | Buildings |
-|---|---|---|
-| Camp to settlement | none | a town manager building and a guard building, wages paid |
-| Settlement to hamlet | 10 | the first ten, built, including homes |
-| Hamlet to village | 100 | 25, including blacksmith, granary and mill, and healer |
-| Village to town | 400 | 60, including a market hall and a second well |
-| Town to city | 1,500 | 150, including a harbour or a major road hub |
-| City to grand city | 5,000 | 400 |
-
-- **[Proposed]** Population figures are guides, not caps. The NPC population cap per island and region (Section 8.2) and the language model budget (Section 3) limit the NPC share. The player share of a grand city is the thousand-strong guild case.
-- **[Decided]** **Homestead.** A homestead is a home, not a town. It starts like a camp: the player places a marker and a tent, and that is a **homestead camp**. It does not grow into a town. It grows into a bigger home instead, such as a house, then an estate, then a keep or castle. The stages and sizes of homes are to be designed later.
-- **[Proposed]** Details (tunable): a dynasty has one homestead at a time, and it does not use up the one-camp slot of the town ladder. A homestead has a small fixed circle (suggestion: about 100 m, growing with the home), needs no town manager, and can be protected by two guards in the same way as a camp. It gets a small outpost budget (suggestion: 2 points, Section 8.10).
-- **[Decided]** An outpost reserves only its own area, whose size depends on its size class (Section 8.10).
-
-- **[Decided]** A town has a **circle of influence** around its marker.
-- **[Idea]** The planner prefers rings, working outward from the centre:
-  1. The core: the keep or castle, the main storage and warehouse, the guards, and extra storage and housing that can take people in during a defence.
-  2. Businesses and tradespeople: the blacksmith, merchants, sales stalls and inns.
-  3. The waterfront, on the side with water: the harbour and port with bars, shanties, shipping businesses and agents. On the landward sides this ring holds small farms or more storage.
-  4. Beyond that, farmland.
-- **[Decided]** An **outpost** is claimed with an outpost marker, like a town marker. The owner can then put buildings on it and hire a manager. The kind of building decides the kind of manager and outpost: a mine manager, or a lumber mill with a master who runs a few NPCs who cut wood, bring it in, process it and ship it to the town.
-- **[Decided]** Outposts and towns exchange goods by NPC travel, and that travel makes roads. The NPCs path-find by least resistance, so the first road between an outpost and its town is a rough dirt road formed by the travel itself. This is a system to build in.
-- **[Decided]** When a route needs a bridge, the NPCs tell the town builder, who arranges builders and decides where the road and the bridge go.
-- **[Idea]** Bridges use bridge blueprints, or a special dynamic bridge blueprint that fits the gap.
-- **[Idea]** Cheaper crossings: shallow fords that horses can walk through, or a causeway across shallows with pipes or culverts for the water.
-- **[Open]** Whether the rings are fixed rules or only planner preferences, the maximum span and water depth of a bridge, the kinds of bridge (rope, timber, stone), and who maintains roads formed by travel. (Expansion costs come from real materials and labor, and abandoned markers are claimed as in Section 8.13.)
+See [founding and building a settlement](Design_Ideas_Unapproved.md#founding-and-building-a-settlement). Proposed building lists remain separate from recorded sequences and open questions.
 
 #### Road, mine and tunnel builders
 
-- **[Idea]** **Road builder (player tool).** The player picks two points on the map. The builder works out what it thinks is the best route, weighing slope, shortest or shallowest water crossings (a ford where shallow, a bridge where not) and where bridges are placed. It shows the proposed path, and only after the player approves does it do the ground work (levelling, averaging, smoothing) and build the road surface in the chosen type. Road types, exact costs and workers are open. Related: the town planner (Section 8.4), road condition and wear (Section 8.13), blueprint levelling checks (Section 10.1).
-- **[Open]** How the road builder relates to the NPC-formed dirt roads (above): whether it follows and upgrades them, whether it reuses their route, and who maintains the result.
-- **[Idea]** **Mine builder (admin tool, not a player feature).** An administrator stands at a spot and says "dig a mine here". It places a small mine shack and an entrance, then digs the mine out in front of them: a descent at a chosen angle, cave bracing placed every so many meters (following the support and wear rules in Section 8.13), and a little randomness up and down and left and right so it looks hand-carved with a pickaxe and not laser-straight. It can also add side shafts at random and other small touches, and grow into a full working mine. At first it changes voxels in the living layer only (nothing is baked into the tile). An administrator X-ray view, or an AI that reads the tile's geology and ore bodies, could pick a spot worth mining.
-- **[Idea]** **Tunnel builder.** The same machinery, horizontal: it picks an entrance and an exit on opposite sides of a mountain and digs a reasonably straight tunnel between them (the Mines of Moria idea). If it breaks into a natural cave it adapts: a narrow gap gets a bridge or land bridge; a cave too big to bridge gets a road carved down one wall, across the floor and up the other side. Once built, a tunnel is a normal route option for the road builder, like a ford or a bridge.
-- **[Idea]** **Tunnel types.** Small, creepy tunnels, up to epic dwarven ones. The grand dwarven road is a highway through the mountain: wide enough for oxen and carts to pass travelers coming the other way, very high ceilings (so the smoke of giant braziers, the light source, can rise and stain the ceiling dark), massive bridges on tall pillars down to the cave floor over any cave however large, and enormous, magically opened doors at the entrances. Dwarves like things grand.
-- **[Open]** Mine builder questions: how it relates to the player mine outposts and the mine chain (Section 11.2, supports and bracing) if at all, whether players can own or claim an admin-dug mine afterward, whether it can author dormant mineshafts and lairs (Section 4.4), and how tunable the randomness and the bracing interval are.
-- **[Open]** Tunnel types and costs, who may build tunnels (admins only, or players as large engineering projects), the maximum tunnel length, and the door magic.
+See [founding and building a settlement](Design_Ideas_Unapproved.md#founding-and-building-a-settlement).
 
 ### 8.18 Becoming established, water, and the first steps for a new character
 
-- **[Decided]** **A camp is established by two guards.** A claim starts as a camp: a marker and a tent. If the player has two NPCs travelling with them, they can assign them as guards, and the camp is immediately established and PvE safe (and protected from hostile takeover, Section 8.14). Their wages are paid as for any guard.
-- **[Decided]** **From a settlement up, established is two buildings and a payroll:** a town manager building and a guard building, with the guards' first wages paid. A well and a temple are not required.
-- **[Decided]** **Wells.** A well provides clean water without limit up to a number of units per day. A small population has plenty from one well. A larger one needs several. A town with no well can buy water and food from another city on the same island or on a neighbouring island.
-- **[Proposed]** Suggested numbers (tunable): one well supplies 50 residents. Requests to buy supplies reach towns within 2 tiles (about 31 km) of the town marker, which keeps the supply route within one day's sail. Supplies arrive by NPC cart or ship, so delivery is not instant.
-- **[Open]** Whether the supply distance is server-wide, a number of tiles or a number of kilometres (the suggestion above is a number of tiles).
-- **[Decided]** **The design goal for the beginning:** the start is challenging, with a little ramp-up and onboarding. Once the hard early work is done, things get easier, so the early investment is valuable and players do not want to start over.
-- **[Decided]** **A starting character's first steps.** Work on the starter island: freelance harvesting, adventuring, fishing and hunting, and selling goods at the starter village market, until there is enough wealth either to build their own town on the starter island or to build or buy a first ship.
-- **[Decided]** **Getting a first ship.** Two ways:
-  - Pay for the blueprint and gather all the materials yourself.
-  - Pay a shipyard to build it. You provide all the game currency, the shipyard builds it over time, and you can watch it being built while you keep adventuring on the starter island.
-- **[Decided]** **A ship is the first base.** It has value, can carry shipments and deliveries, and can go adventuring. A player can log out in it while anchored in friendly waters.
-- **[Decided]** **Ship wear.** A ship degrades very little, or very slowly, over time. Damage comes from running into other ships, hitting rocks, very bad weather, or being shot by enemies.
-- **[Idea]** The boat system is imagined as similar to Atlas. When we start building it we will review what we like and do not like and decide then.
-- **[Decided]** **Many tiers of boats.**
-  - Very small boats for getting around an island and fishing.
-  - Small boats that handle longer voyages and are faster because they are longer.
-  - Long, narrow boats built for speed.
-  - Bigger, heavier boats built for cargo.
-  - Massive ships at the top, which take days to build and are never starter boats.
-- **[Decided]** **Build time grows with size.** The smaller the boat, the faster it is built. A first-tier boat is ready in about 6 game hours (15 real minutes; it may even be bought already built), the next tier about 12 game hours, then 18, then a full game day (one real hour). At the large end, the basic frame, deck and sails of a big ship takes about 24 game days (a full real day). Nobody should wait an hour or two of real time for their first boat.
-- **[Decided]** **What a shipyard sells.** A purchase from a shipyard is the basic boat: hull, sails, anchor and decks. The owner installs the steering wheel and fits the ship out, as in Atlas, if it is a bigger ship. Smaller ships are pre-designed, again like Atlas.
-- **[Decided]** **Boats are trade goods.** A town with its own shipyard can build boats for other players and sell them. An owner can sell a boat to someone else.
-- **[Open]** Build times for the middle and top tiers, prices, blueprint prices against finished ships, and where players can anchor safely when logged out.
+See [founding and building a settlement](Design_Ideas_Unapproved.md#founding-and-building-a-settlement). Proposed building lists remain separate from recorded sequences and open questions.
 
 ### 8.19 The first ten buildings
 
-- **[Decided]** **The town manager building comes first.** It is the building where the owner makes decisions. The owner can hire a town manager to run it. Once there is a town manager, the same building can also hold a **town planner**, who uses AI to scan the area and decide where natural roads would go and where to put the well, the temple and the guards.
-- **[Decided]** **The temple costs the town money but lifts the base town spirit.** It is a liability, but it gives a place for orphans, counselling, food or financial help, and protection. The **well** has upkeep, which is a cost to the town.
-- **[Decided]** **Walls and the inner circle.** From the settlement stage up, a claim is surrounded by a wall (a camp is only a tent), even if it sits next to the water, so there is no open area that lets people into the innermost circle. The inner circle holds the core buildings, such as the manager's house and the guard house. The **harbour is always outside the wall**. The sawmill and the stonemason are **temporary fixtures** that start near a gate and are gradually moved further out of town later.
-- **[Decided]** **Self-sufficient from the start.** The first settlement needs wood, stone and rope. Rope comes from harvesting plants for thatch and fibre. At first, rope and wooden pins join beams together to build walls, buildings and joinery. These are the rustic starter buildings, upgraded and improved over time. A blacksmith comes later. Until then the settlers can bring nails and hinges, or raw iron, bought at the starter village.
-- **[Decided]** **The settlement starter kit.** A kit sold as one heavy box that takes one inventory slot. It would fill the weight of a second- or third-tier starter boat. It contains everything needed to start a town or a homestead camp, and the player must earn the money to buy it first.
-- **[Proposed]** **The ten things a new settlement needs, in the order the planner builds them:**
-  1. **Town manager building** (also the owner's house if the owner wants to live in it). Everything starts here.
-  2. **Roads and the central square**, laid out first by the planner, with the well in the square.
-  3. **Sawmill** (a lumber yard), near the gate on the road to the forest. Temporary.
-  4. **Stonemason** (with a quarry crew), near the gate on the road to the mountains or quarry. Temporary.
-  5. **Guard barracks**, with a guard captain and guards. Then the wall and gates.
-  6. **Weaver and rope maker.** Uses fibre and thatch for rope, baskets, nets and cloth. Rope is how the first buildings are joined.
-  7. **Storehouse** (settlement warehouse).
-  8. **Homes** for the builders, at least three cottages.
-  9. **Inn** with rooms and market stalls. Tents come first (see Section 8.20).
-  10. **Temple** (a small chapel). A cost, but it lifts the base town spirit.
-  The wall and its gates are infrastructure, not one of the ten. The blacksmith, granary and mill, farmland and healer come in the second wave.
-- **[Proposed]** **What comes next** (second wave): blacksmith, granary and mill, farmland, tannery, baker and butcher, healer, a second well, more homes, the harbour and shipyard outside the wall, and then the sawmill and stonemason moved further out.
-- **[Proposed]** **Space needed (estimates).** Inside the wall, with yards: manager building 200 m², well and square 1,600, barracks 400, storehouse 300, weaver 300, homes 840, inn 400, temple 400. Together about 4,400 m². Roads and paths add about 30 percent and room to grow doubles that, so the walled core is about 1.2 hectares. A wall around it at a radius of about 70 to 75 m is about 450 m long, with two gates, one toward the resources and one toward the water. The sawmill and stone yard sit just outside the gate, and the 200 m circle of a settlement (12.6 hectares) leaves the rest for farmland.
-- **[Open]** Whether the first ten are the right ten, the exact footprints, and what the expansion steps cost (Section 15). Expansion is decided after the building list and sizes are settled.
+See [founding and building a settlement](Design_Ideas_Unapproved.md#founding-and-building-a-settlement). Proposed building lists remain separate from recorded sequences and open questions.
 
 ### 8.20 Building a settlement: the planner's order
 
-- **[Decided]** **The manager building.** The owner can live in it and can run the town without hiring a town manager, and can build everything by hand. The game makes this easier with NPCs who take up the jobs.
-- **[Decided]** **A planner hired into a town** (with an owner and a town manager) is responsible for hiring a couple of builders. The planner studies the terrain around the manager building and plans in this order:
-  1. Where the starter roads go, with room for a town square or circle, thinking about long-term growth.
-  2. The blueprint for the wall around the property, at low priority so it is not built first.
-  3. The sawmill and the stonemason near the opening in the wall where the road to the forest or the mountains passes, so resources come straight in. These start their logging and quarrying crews, and can hire NPCs to gather stone or dig it from the nearest mountain or quarry site.
-  4. Then the first barracks, the guard captain and guards, then the wall and the gates.
-  5. Whatever buildings supply the next materials needed.
-  6. The first houses, because the builders need somewhere to live.
-- **[Decided]** **Gates close at night.** Every worker comes in at dusk and must be inside before the gates close. At dawn the gates reopen and the working day continues.
-- **[Proposed]** **Trades.** Fibre and thatch go to a weaver and rope maker, who makes rope, baskets, nets and cloth. Guards report to the barracks. Whether they live in it or in their own houses is open.
-- **[Decided]** **Tents first.** Early on, supplies include tents that are set up during construction. Inside is a campfire in the middle, and each side of the tent has a bed and a storage chest. They are temporary shelter from the weather until the inn and houses are built.
-- **[Decided]** **Hiring guards once the barracks stands.** The owner or manager can hire any available guards in the area, meaning existing NPCs with guard experience. Their wages are set by their experience, and also by how hungry they are and how low their own spirit is from being poor or unemployed.
-- **[Decided]** **If no guards are available,** the barracks suggests four randomly generated new guards. They live in the barracks. Each has their own attributes, characteristics and skills.
-- **[Decided]** **The guard captain.** Given enough time, one guard is promoted to guard captain by the town manager, or by the owner if the owner plays that role. The captain manages the guards and assigns patrols and night watches. Other jobs for guards will be added later.
-- **[Proposed]** Wage rule to start with: a base wage times a factor for experience (0.8 for a rookie up to 1.5 for a veteran), times a discount of up to 30 percent for a guard who is hungry or has been out of work for a long time. The base wage is set with the rest of the economy. Guards who need work take less, but are less loyal if they feel underpaid later.
-- **[Decided]** **Wage negotiation with a step-up.** A veteran guard who is tired and hungry may agree to start at a lower wage, but expects a raise over the year toward veteran pay: a small increase each month, agreed in the negotiation.
-- **[Proposed]** How the step-up works: the raise per game month is the gap between the starting wage and the veteran wage, divided by 12, so the guard reaches full pay at the end of the first game year (15.2 real days; a game month is about 30 real hours). If the town skips a raise, the guard's loyalty falls and they may quit. The language model speaks the negotiation, but the game keeps the figures.
-- **[Decided]** Guards who are generated for the barracks live in it. Other guards hired from the area may live in their own homes and report to the barracks. The player character chooses a place to live eventually.
-- **[Open]** The base wage and the pay scale, and what else guards do besides patrols and night watches.
-
+See [founding and building a settlement](Design_Ideas_Unapproved.md#founding-and-building-a-settlement). Proposed building lists remain separate from recorded sequences and open questions.
 
 ---
 

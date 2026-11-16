@@ -14,10 +14,12 @@ Scope: preserve distinct designs and working records while reducing duplication.
 
 - NPC population/migration: PR #1190 integrated at 7311ee19374bdb5f0d369e92aee25db11f365e42; independent review, preservation/link checks and final static CI PASS. Exact merged documentation verified.
 
+- Property/town management: PR #1191 integrated at 8516664b13661113d5f7bf2bfac481d296d14266; independent review, preservation/link checks and final static CI PASS. Exact merged documentation verified.
+
 ## Current checkpoint
 
-- Phase: Property and town management. Base: 7311ee19374bdb5f0d369e92aee25db11f365e42.
-- Scope: Extract §§8.4–8.6 and 8.14–8.16 with property, claim, guard, notice and message exceptions intact.
+- Phase: Founding and settlement construction. Base: 8516664b13661113d5f7bf2bfac481d296d14266.
+- Scope: Extract §§8.17–8.20, retaining territory/stage tables, guard/wage qualifications and road/mine/tunnel builder ideas.
 - Candidate: this commit's diff; exact head, reviewer, check results and final merge receipt are recorded in its linked GitHub PR. Do not infer integration from this draft checkpoint; inspect that PR and current dev.
 - Checks: verbatim passage/unchanged-scope assertions, relative links/anchors, whitespace, independent non-author review and repository static CI before integration. Runtime/player verification is not supplied by documentation changes.
 - Remaining sequence: death/succession; NPC population; property/town management/outposts/decline/founding; GUIDING_DOCUMENT; remaining-overlap triage; manual retirement eligibility; final consistency pass. Completed phases are listed above.
