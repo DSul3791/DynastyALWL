@@ -147,15 +147,16 @@ func _init() -> void:
 	items.action(7, Net.ACT_PICKUP, 2, 0, 0, Vector3.ZERO)
 	check(items.world_item_count() == 1, "cannot pick up from far away")
 
-	var axe_number: int = items.table.number_of("stone_axe")   # a tool: never merges, so the crowd limit still bites
+	var axe_number: int = items.table.number_of("stone_axe")   # a tool: never merges, each lies as its own item
+	var all_laid: bool = true
 
-	for n in range(100):
-		items.drop_in_world(axe_number, 1, Vector3(10.0, 0.0, 10.0), 1)
-	check(items.world_item_count() == ItemsScript.MAX_DROPPED_NEAR + 1, "dropped cap near a spot holds")
+	for n in range(100):   # no limit on what lies on the ground (Dave 16 Nov 2026: "there should be no limit")
+		all_laid = items.drop_in_world(axe_number, 1, Vector3(10.0, 0.0, 10.0), 1) and all_laid
+	check(all_laid and items.world_item_count() == 100 + 1, "100 tools dropped on one spot all lie there (%d items)" % items.world_item_count())
 
 	items.drop_in_world(stone, 1, Vector3(4000.0, 0.0, 4000.0))
-	check(items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0) == ItemsScript.MAX_DROPPED_NEAR and items.world_item_count() == 2, "clear dropped items removes the nearby loose ones only")
-	check(items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0)), "and drops work again afterwards")
+	check(items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0) == 100 and items.world_item_count() == 2, "clear dropped items removes the nearby loose ones only")
+	check(items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0)), "and drops work afterwards")
 	items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0)
 	items.clear_dropped(Vector3(4000.0, 0.0, 4000.0), 50.0)
 
@@ -204,7 +205,7 @@ func _init() -> void:
 	items.inventory_of(7).remove(stone, items.inventory_of(7).count_of(stone) - rig_before)
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
-	# Rock piles: stackable drops within a metre merge, ignore the crowd limit, a pile gives a handful and lives longer.
+	# Rock piles: stackable drops within a metre merge, a pile gives a handful and lives longer.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	var pile_at: Vector3 = Vector3(2000.0, 0.0, 2000.0)
 	items.report_position(7, pile_at)
@@ -212,7 +213,7 @@ func _init() -> void:
 	for n in range(100):
 		items.drop_in_world(stone, 1, pile_at + Vector3(0.1 * float(n % 5), 0.0, 0.0))
 	check(items.world_item_count() == 1, "100 stones dropped together are one ground item")
-	check(items.drop_in_world(stone, 5, pile_at), "and a pile never meets the crowd limit")
+	check(items.drop_in_world(stone, 5, pile_at), "and the pile takes more")
 	items.drop_in_world(stone, 3, pile_at + Vector3(5.0, 0.0, 0.0))
 	check(items.world_item_count() == 2, "a drop 5 m away is a separate item")
 	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)

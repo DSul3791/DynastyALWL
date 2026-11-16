@@ -31,8 +31,6 @@ const VERSION := 3                       # world_items.json: 3 (protocol 111) ad
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
-const MAX_DROPPED_NEAR := 64             # loose dropped items allowed within DROP_CROWD_M of a new drop
-const DROP_CROWD_M := 12.0
 const MERGE_M := 1.0                     # a stackable drop landing this close to the same kind on the ground joins it (Dave 2026-10-23, rock piles)
 const PILE_MIN := 6                      # a ground item holding this many is a pile (the client draws it from the count)
 const PILE_HANDFUL := 5                  # one E on a pile takes this many when the item has no "pile" row in items.json
@@ -1017,9 +1015,7 @@ func lay_down_shoulder(peer: int, at: Vector3 = Vector3.ZERO) -> bool:
 	var spot: Vector3 = at if at != Vector3.ZERO and at.distance_to(here) <= DROP_REACH_M else here
 	var number: int = inv.numbers[slot]
 
-	if not drop_in_world(number, 1, spot, 0, 0.0, NAN, NAN, "", inv.inst_of(slot)):
-		return false
-
+	drop_in_world(number, 1, spot, 0, 0.0, NAN, NAN, "", inv.inst_of(slot))
 	var before: Array = _snapshot(inv)
 	inv.take_from_slot(slot, 1)
 	_send_changes(peer, inv, before)
@@ -1044,7 +1040,7 @@ func take(peer: int, number: int, count: int) -> bool:
 	return true
 
 
-# Puts a stack on the ground. False when the chunk is full. `lifetime_s` above 0 keeps it at least that many real seconds (a felled tree's logs last as its trunk did).
+# Puts a stack on the ground. Always lays it (Dave 16 Nov 2026: "there should be no limit" on what lies on the ground); false only for no item or no count. `lifetime_s` above 0 keeps it at least that many real seconds (a felled tree's logs last as its trunk did).
 # `rot_y` (radians, NAN for none) turns a new loose item about the vertical: a felled tree's logs lie along its trunk.
 # `girth` (NAN for none) scales a split log's thickness to the trunk it came from (Dave 2 Nov 2026: a skinny tree gave big logs); LOG_MESH_RADIUS_M is 1.
 const LOG_MESH_RADIUS_M := 0.25   # the drawn species log's mean radius (inventory_view _mesh_for: 0.28 and 0.22 at its ends)
@@ -1054,12 +1050,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if count <= 0 or number <= 0:
 		return false
 
-	# Only loose dropped things near the spot count: felled trunks, stumps, fires, structures, carcasses and natural scatter are not
-	# "dropped" and last far longer (Dave 2026-10-22: a drop was refused with nothing in sight, the chunk was full of stumps and trunks).
 	position = _settled(position)
 
-	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item
-	# and never meets the crowd limit. The merge runs before the limit check.
+	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item.
 	if item_wear == 0 and item_inst.is_empty() and table.stack_of(number) > 1:
 		for id in _items.keys():
 			if not _items.has(id):
@@ -1092,23 +1085,6 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 					return true
 
 				break   # the rest (over the cap) falls through and starts a second pile
-
-	var here: int = 0
-
-	for id in _items.keys():
-		if not _items.has(id):
-			continue
-
-		var other: Dictionary = _items[id]
-
-		if other.has("scatter") or other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree"):
-			continue
-
-		if Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= DROP_CROWD_M:
-			here += 1
-
-	if here >= MAX_DROPPED_NEAR:
-		return false
 
 	var first: int = mini(count, PILE_CAP)
 	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": maxf(PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s), "wear": item_wear}
@@ -2277,7 +2253,7 @@ func reset_world() -> int:
 
 
 # Removes the loose dropped things (not trunks, stumps, fires, structures, boulders or the natural scatter) within `radius` of `centre`;
-# the next sync tells the players they are gone. Dave 2026-10-23: 64 loose items within 12 m refused every drop, so he could not empty his pack.
+# the next sync tells the players they are gone (an admin clean-up; drops are never refused, Dave 16 Nov 2026).
 func clear_dropped(centre: Vector3, radius: float) -> int:
 	var gone: int = 0
 
@@ -2333,10 +2309,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var amount: int = mini(count, inv.counts[slot])
 
-	if not drop_in_world(number, amount, spot, inv.wear[slot], 0.0, NAN, NAN, key_of(peer), inv.inst_of(slot)):
-		_say(peer, "Too many dropped things already lie within a few steps. Pick some up or move a little way off.")
-		return
-
+	drop_in_world(number, amount, spot, inv.wear[slot], 0.0, NAN, NAN, key_of(peer), inv.inst_of(slot))
 	inv.take_from_slot(slot, amount)
 
 
@@ -2661,8 +2634,8 @@ func _arrow_fly(delta: float) -> void:
 			elif stuck:
 				print("server items: arrow hit a tree at x%d z%d after %.0f m: broke" % [int(at.x), int(at.z), float(ar["flown"])])
 			elif fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), hit_animal_now, wet)):
-				var kept: bool = drop_in_world(int(ar["number"]), 1, at, 0, 0.0, NAN, NAN, "", ar.get("inst", {}))
-				print("server items: arrow landed at x%d z%d y%.1f after %.0f m (animal %s, water %s): %s" % [int(at.x), int(at.z), at.y, float(ar["flown"]), str(hit_animal_now), str(wet), "lying there" if kept else "NOT dropped (crowded or refused)"])
+				drop_in_world(int(ar["number"]), 1, at, 0, 0.0, NAN, NAN, "", ar.get("inst", {}))
+				print("server items: arrow landed at x%d z%d y%.1f after %.0f m (animal %s, water %s): lying there" % [int(at.x), int(at.z), at.y, float(ar["flown"]), str(hit_animal_now), str(wet)])
 			else:
 				print("server items: arrow landed at x%d z%d after %.0f m (animal %s, water %s): broke or lost" % [int(at.x), int(at.z), float(ar["flown"]), str(hit_animal_now), str(wet)])
 
@@ -6671,7 +6644,7 @@ func _crown_circle(spot: Vector3, info: Dictionary, yaw: float, pitch: float) ->
 # it falls on, a small tree's Firewood, kindling and sticks, and every tree's crown litter, bark, seeds and the rest. Each piece carries its fall (it["fall"]:
 # the hinge at the stump, the fall's turn and its seconds left), so every client swings the pieces down round the stump together over FALL_S: the tree
 # falls already in logs. At the landing (_land_fall) what lies under the tree is hurt (drops.json felling.crush), and the logs wake to roll: a log that came
-# down on something (a rock, a stump, another log) is pushed off it. The pieces go straight into the record table: no ground crowd check and no world scans.
+# down on something (a rock, a stump, another log) is pushed off it. The pieces go straight into the record table: no world scans.
 # They are the feller's gathering at once (goal got: counter).
 # shortcut: a piece can be picked up while it is still coming down (1.5 s); buildings have no hit points yet, so a log only stops against them.
 func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: String = "") -> void:   # feller: the character key whose axe felled it (what it breaks into is their gathering)
