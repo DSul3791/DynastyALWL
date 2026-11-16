@@ -4,10 +4,10 @@
     {
       "id": "DOCRET-20261115-A",
       "source_commit": "286af10bc9abc5c82c768f3617565f6e6ee356b8",
-      "retirement_commit": null,
-      "retirement_pr": null,
-      "retired_at": null,
-      "expires_at": null,
+      "retirement_commit": "8bf9fc171d0449bbc3bfcab66409768d8ebfc15c",
+      "retirement_pr": 1168,
+      "retired_at": "2026-11-15T21:43:22Z",
+      "expires_at": "2026-11-22T21:43:22Z",
       "scope": "Dave authorized the wider cleanup on 15 Nov, except active branch work. No gameplay changes or current issue closure.",
       "preservation": "Original historical decisions/observations remain recoverable at the exact source commit and blobs. Current mission ledgers, structured goal/catalog baselines and approved unique topic designs stay maintained. Old validation limits are not relabeled PASS.",
       "protection": {
