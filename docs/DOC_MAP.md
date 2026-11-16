@@ -6,7 +6,8 @@ Start here to find a design topic, then read its source and the relevant working
 
 | Topic | Source | Purpose |
 |---|---|---|
-| Game vision and future ideas | [DESIGN_IDEAS](../DESIGN_IDEAS.md) | Preserve the complete idea collection and its decision tags. |
+| Game vision and future ideas | [DESIGN_IDEAS](../DESIGN_IDEAS.md) | Remaining mixed-status collection; extracted topics retain routes there. Tags alone do not verify approval. |
+| Aging ideas and recorded decisions awaiting source verification | [Aging and lifespan](../Design_Ideas_Unapproved.md#aging-and-lifespan) | Proposals separate from source-unverified recorded decisions; qualifications and original-source receipt retained. No implementation or verification certification. Approved/Built records await supporting evidence. |
 | Design principles | [DESIGN_PRINCIPLES](../DESIGN_PRINCIPLES.md) | Values and constraints behind the designs. |
 | Rejected ideas | [DESIGN_REJECTED](../DESIGN_REJECTED.md) | Preserve explicit rejections and their reasons. |
 | Living-world proposals | [GUIDING_DOCUMENT](design/GUIDING_DOCUMENT.md) | Living-world concepts, recorded decisions and proposals; not another operating rulebook. |
