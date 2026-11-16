@@ -6647,7 +6647,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 
 
 # Everything a felled `tree` (lying from `base` along its yaw and pitch) breaks into, as [item number, count, position] rows, a log row with its turn and girth
-# after ([..., rot_y, girth]). A large tree: its whole 3 m logs (the last takes the rest of the trunk) at the middle of each piece, the bark, seeds, roots and
+# after ([..., rot_y, girth]). A large tree: its whole 3 m logs end to end from the butt (the last one stands for the rest of the trunk), the bark, seeds, roots and
 # species rows hand-cutting used to give (_trunk_extras) in a heap beside its middle, the crown's sticks and leaves over the circle it lands on, and its 1 to 5
 # seeds. A small tree (_is_small_tree): the Firewood of its length (_small_firewood), the kindling and sticks of drops.json trunk.small, the branches (when it
 # has no crown litter), its crown litter and its seeds. Rolled from `id` (the stump's) with no player, so no luck (world drops).
@@ -6669,8 +6669,7 @@ func _fall_pieces(id: int, tree: Dictionary, base: Vector3) -> Array:
 
 		for k in range(count):   # each lies at the middle of its piece; the mesh lies along its x axis, so turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
 			var from_butt: float = float(k) * log_len
-			var piece: float = log_len if k < count - 1 else length - from_butt
-			var mid: float = from_butt + piece * 0.5
+			var mid: float = from_butt + log_len * 0.5   # every log is drawn 3 m long: end to end from the butt (the last one's extra length is in its row, not its place)
 			rows.append([log_n, 1, base + along * (mid * cos(pitch)) + Vector3(0.0, sin(pitch) * mid + radius, 0.0), yaw - PI * 0.5, _log_girth(log_n, radius)])
 
 		var heap: Vector3 = middle + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk
@@ -6717,6 +6716,9 @@ func _fall_tick(spent: float) -> void:
 		var shared: Dictionary = fall["shared"]
 		shared["left"] = float(shared["left"]) - spent
 
+		if _items.has(id) and _items[id].has("tree"):
+			_items[id]["tree"]["fall_left"] = maxf(float(shared["left"]), 0.0)   # a client that sees the stump late plays the rest of the fall, not all of it
+
 		if float(shared["left"]) <= 0.0:
 			_falls.erase(id)
 			_land_fall(int(id), fall)
@@ -6730,6 +6732,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 
 	if _items.has(stump_id) and _items[stump_id].has("tree"):
 		_items[stump_id]["tree"].erase("fresh")
+		_items[stump_id]["tree"].erase("fall_left")
 
 	var logs: Array = []
 
@@ -6739,6 +6742,13 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 
 			if _rolls_item(int(_items[id]["number"])):
 				logs.append(id)
+
+				if ground_height.is_valid():   # down: the rolling convention (pos on the ground point, as _roll_tick writes it), so a thick tree's logs roll too
+					var at: Vector3 = _items[id]["pos"]
+					var ground: float = float(ground_height.call(at.x, at.z))
+
+					if not is_nan(ground):
+						_items[id]["pos"] = Vector3(at.x, ground, at.z)
 
 	var hinge: Vector3 = fall["hinge"]
 	var tip: Vector3 = hinge + (fall["along"] as Vector3) * float(fall["length"])
@@ -7263,6 +7273,7 @@ func _load_trees() -> void:
 			continue   # only stumps are kept (a felled tree is its logs at once, 16 Nov 2026; no older saves are carried: Dave, new game)
 
 		tree.erase("fresh")   # it landed long ago
+		tree.erase("fall_left")
 		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
 		_next_id += 1
 

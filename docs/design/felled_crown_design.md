@@ -13,7 +13,7 @@ up whatevers under the reticule first", and "there should also be a 2 second pau
   - The centre is the middle of the crown's part of the trunk as it lies. `crown_from` 0.5 means the upper half.
 - When the client's fall tween ends (1.5 s), the grass in the whole circle lies down: `grass_view.flatten` → `grass_trample.stamp_circle`. It stands up
   again like trodden grass (`data/look/grass_trample.json` `recover_s`). The ground's shape does not change. Shrubs stay standing.
-- When the trunk breaks up (`split_trunk`, or `_split_small` for a sapling-sized one), the sticks and leaves drop all over the circle
+- When the tree comes down in its pieces (`_fall_pieces`, 16 Nov 2026), the sticks and leaves drop all over the circle
   (`_crown_litter`). The amounts are set in `drops.json` `trunk.crown_scatter`:
   - `sticks_per_m` and `leaves_per_m` per metre of tree. A 15 m tree drops about 30 sticks and 100 leaves.
   - `spots` sets how many little heaps each one is spread over.

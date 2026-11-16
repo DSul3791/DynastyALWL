@@ -1312,7 +1312,7 @@ func _init() -> void:
 		if w2._items[k].has("tree"):
 			back += 1
 
-	check(back == 1, "the stump survives a restart")
+	check(back == 2, "both stumps (the oak's and the apple's) survive a restart (%d)" % back)
 	gs[0] += ItemsScript.ROT_GAME_S + 100.0
 	w.tick(61.0)
 	var left: int = 0

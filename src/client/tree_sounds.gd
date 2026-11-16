@@ -75,7 +75,7 @@ func watch(world: Dictionary) -> void:
 			continue                                      # its tree landed long ago (a stump coming back into range is silent)
 
 		chips(row["pos"], radius)                         # the last blow, then the tree goes over
-		fall(row["pos"], float(extra.get("length", 8.0)), radius)
+		fall(row["pos"], float(extra.get("length", 8.0)), radius, clampf(float(extra.get("fall_left", FALL_S)), 0.0, FALL_S))
 
 	# A row that leaves the draw range stays in _seen (BUG-024: it was erased here, so the same felled tree "fell" again when the player came back).
 	# Ids are never reused within a world; forget() clears them when the ground is made again.
@@ -91,11 +91,17 @@ func forget() -> void:
 	_first_msec = -1
 
 
-func fall(at: Vector3, length_m: float, radius_m: float) -> void:
+func fall(at: Vector3, length_m: float, radius_m: float, left_s: float = FALL_S) -> void:   # left_s: the fall's seconds still to come (a stump seen late)
 	var size: float = clampf(length_m / REF_HEIGHT_M, 0.2, 1.6)
-	_queue.append([0.0, "tree_creak", at, size])
-	_queue.append([FALL_S * 0.55, "tree_leaves", at + Vector3(0.0, length_m * 0.4, 0.0), size])
-	_queue.append([FALL_S, "tree_crash", at + Vector3(0.0, 0.5, 0.0), clampf(size * (0.6 + radius_m), 0.2, 1.6)])
+	var gone: float = FALL_S - left_s
+
+	if gone < 0.2:
+		_queue.append([0.0, "tree_creak", at, size])
+
+	if gone < FALL_S * 0.55:
+		_queue.append([FALL_S * 0.55 - gone, "tree_leaves", at + Vector3(0.0, length_m * 0.4, 0.0), size])
+
+	_queue.append([left_s, "tree_crash", at + Vector3(0.0, 0.5, 0.0), clampf(size * (0.6 + radius_m), 0.2, 1.6)])
 	falls_played += 1
 
 

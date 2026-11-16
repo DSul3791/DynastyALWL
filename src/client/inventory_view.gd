@@ -1813,7 +1813,7 @@ func _make_felled(extra: Dictionary) -> Node3D:
 
 	if bool(extra.get("fresh", false)) and circle.size() >= 3:   # the crown lands: the grass under the whole canopy circle lies flat
 		var tween: Tween = root.create_tween()
-		tween.tween_interval(FALL_S)
+		tween.tween_interval(clampf(float(extra.get("fall_left", FALL_S)), 0.0, FALL_S))   # a stump seen late: the crown lands with the logs
 		tween.tween_callback(func():
 			if crown_landed.is_valid():
 				crown_landed.call(Vector3(float(circle[0]), 0.0, float(circle[1])), float(circle[2])))
@@ -1846,6 +1846,7 @@ func _swing_down(id: int, node: Node3D, fall: Array) -> void:
 		node.transform = rest
 		_falling.erase(id)
 		_snap_loose(id)
+	swing.call(1.0 - left / FALL_S)   # up at once: no frame lying before it stands
 	var tween: Tween = node.create_tween()
 	tween.tween_method(swing, 1.0 - left / FALL_S, 1.0, left)
 	tween.tween_callback(down)
@@ -2104,6 +2105,9 @@ func _glide_tick(delta: float) -> void:
 		if not _world.has(id) or not (_world[id].get("node") is Node3D):
 			_gliding.erase(id)
 			continue
+
+		if _falling.has(id):
+			continue   # still swinging down: it glides on from where it lands (_swing_down's end snaps it to the new spot)
 
 		var node: Node3D = _world[id]["node"]
 		var loose: bool = int(_world[id]["state"]) == 0   # a rolling log (server_items.gd _roll_tick) rests 12 cm over its ground point, as _snap_loose puts it
@@ -3306,7 +3310,7 @@ func _roll_tick(delta: float, now: int) -> void:
 			for id in _world:
 				var entry: Dictionary = _world[id]
 
-				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id) or _gliding.has(id):   # a log the server rolls is moved by _glide_tick
+				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id) or _gliding.has(id) or _falling.has(id):   # a log the server rolls is moved by _glide_tick; a falling piece by _swing_down
 					continue
 
 				var apart: Vector2 = Vector2(entry["pos"].x - here.x, entry["pos"].z - here.z)

@@ -137,7 +137,7 @@ func _init() -> void:
 	var along: Vector3 = Vector3(sin(float(tree["yaw"])), 0.0, cos(float(tree["yaw"])))
 	var base: Vector3 = w._items[stump_id]["pos"]
 	var logs: Array = loose_logs(w, log_n)
-	check(logs.size() == int(10.0 / log_len), "from the last blow it is already %d logs (10 m of 3 m logs, the last takes the rest)" % logs.size())
+	check(logs.size() == int(10.0 / log_len), "from the last blow it is already %d logs (10 m in 3 m logs)" % logs.size())
 	var shared: bool = true
 
 	for k in w._items:
