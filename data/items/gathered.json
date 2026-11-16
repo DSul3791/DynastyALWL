@@ -2,7 +2,7 @@
 	"table": "gathered_items",
 	"format_version": 1,
 	"note": "Generated from data/tables/flora.json yields by tools/gen_gathered_items.py. Numbers start at 1000 and are append-only: re-running only adds new yields. Each yield becomes a plain material until food, herb and potion systems give them effects. Numbers 1008 and 1083 are retired (bark and leaves became core items 13 and 14); never reuse them.",
-	"next_number": 1488,
+	"next_number": 1492,
 	"items": {
 		"acorns": {
 			"number": 1000,
@@ -1566,7 +1566,7 @@
 		},
 		"resin": {
 			"number": 1115,
-			"name": "Resin",
+			"name": "Tree sap",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
@@ -1574,7 +1574,7 @@
 				"Wardpine"
 			],
 			"familiarity": 93,
-			"description": "Sticky sap from conifers, hardened into amber lumps. Burns hot, seals wood, and sticks things."
+			"description": "Sticky sap from softwood trees, hardened into amber lumps. Soaks a torch head, burns hot and seals wood."
 		},
 		"rimecap_caps": {
 			"number": 1116,

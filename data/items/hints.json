@@ -149,7 +149,7 @@
 		{
 			"id": "night",
 			"trigger": "dusk",
-			"text": "Night is dark. Craft a Torch: a stick, a fibre and pitch (resin or animal fat)."
+			"text": "Night is dark. Craft a Simple - Torch: a stick, a twine and a plant fibre."
 		},
 		{
 			"id": "fruit_pick",

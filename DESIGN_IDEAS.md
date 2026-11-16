@@ -2,9 +2,9 @@
 
 > **Note (Jamie, 11 Nov 2026):** the item, building and progression decisions from 6 to 11 Nov are recorded in `docs/design/item_system.md`, `docs/design/progression.md`, `docs/design/buildables_plan.md` and `docs/design/wood_tier_note.md`, not here. That includes the seven building tiers, blueprint-only building, kit names, bronze nails and hinges, and bog iron. Where this file and those differ on items or buildings, those win. The vision sections here still stand.
 
-Record of the design brainstorming sessions from 2026-10-11 onward. This is a planning document. The world generator described in Section 14 is partly built; the game systems in Sections 5 to 13 are design only and no code exists for them yet.
+Record of design brainstorming from 2026-10-11 onward, with mixed statuses and stable routes to extracted topics. Use [DOC_MAP](docs/DOC_MAP.md) and owning design/working records for approval, implementation and verification. Earlier blanket built/unbuilt statements are historical snapshots, not current certifications.
 
-**Revision history:** versions 1 to 10 (11 to 16 Oct 2026) are kept in `docs/archive/2026-10/DESIGN_IDEAS_REVISION_HISTORY.md`. The numbered sections below are always the current rules.
+**Revision history:** versions 1 to 10 (11 to 16 Oct 2026) are kept in `docs/archive/2026-10/DESIGN_IDEAS_REVISION_HISTORY.md`. Numbered sections retain recorded designs and stable topic routes; a section number or legacy tag alone does not establish current authority or verified approval.
 
 ## How to read this document
 
@@ -16,7 +16,7 @@ Every item carries a status tag.
 - **[Open]** A question that has not been answered yet. Section 15 collects them.
 - **(brainstorm)** after a tag: the item came from the owner's brainstorming with ChatGPT (2026-10-16). There, **[Idea]** means the owner liked the direction, **[Proposed]** a suggested mechanism, and **[Open]** a question still to settle. None of it is approved: these are ideas to raise in design discussions and fold into the game where they fit.
 
-When something is both a decision and a question, the decision is recorded in its section and the unresolved part appears in Section 15.
+When something is both a decision and a question, the decision is recorded in its section and the unresolved part appears in Section 15. These are legacy tag definitions: preserve their recorded meaning, but verify source/date and later scoped decisions before claiming approval. Silence is not approval. Implementation, testing and player verification require separate evidence.
 
 Ideas the project owner has turned down are kept in `DESIGN_REJECTED.md`, with reasons. Check it before proposing something new.
 
@@ -1054,38 +1054,7 @@ To be fleshed out when the first NPC is designed.
 
 ### 8.10 Outposts and town satellites
 
-- **[Idea]** A town on a good island has lots of land. Satellite outposts can be built on the hillsides of the mountainous island chains: a mine, a dock and an outpost master. Mines ship supplies back to the town. An outpost needs less room and can handle steeper slopes right next to the water.
-- **[Proposed]** Measured on the first world sketch (`plan/buildable_summary.txt`): 36 islands have room for a town, but 289 have an outpost site (a foothold of at least 0.05 km² on slopes up to about 17 degrees at the shore, with water at least 8 m deep within about 500 m for a dock). 253 of those have no town site, so outposts are how most islands get used, and the volcanic chains in hard and deadly waters (134 outpost islands) become mining frontiers.
-- **[Proposed]** An outpost is a business in the shared business structure (Section 13.4), owned by a town or player and run by an outpost master NPC. It claims a small plot (an outpost block with a much smaller radius than a town block) and links to its parent town's warehouse by a sea route. Ships run that route on a schedule (materialized only when seen, Section 3), carrying ore out and food, tools and wages in.
-- **[Decided]** An outpost is claimed with an outpost marker, in the same way as a town marker (Section 8.17).
-- **[Proposed]** Outpost blueprints are built for slopes: terraces, stilts, stairs and a jetty, so the blueprint leveling check (Section 10.1) allows steeper ground for them than for town buildings.
-- **[Proposed]** Danger matters: outposts in hard and deadly waters need a palisade and guards paid by the parent town, and are natural targets for raids, pirates and sea creatures, which ties into threats and pacing (Section 12). Losing an outpost cuts a supply line rather than ending a town.
-- **[Proposed]** Volcanic islands drop steeply into deep water, which makes them good for docks. The geology already favors them for ore: copper and gold on arcs, sulfur and gems on hotspot volcanoes (Section 4.9). When ore bodies are placed at bake time, some should sit near outpost-friendly coves so mines and docks pair naturally.
-- **[Proposed]** The generator does not need to bake outpost sites: they can be found at runtime from the tile maps (slope, height, shoreline, water depth), the same way the town planner surveys land. Natural harbors and coves can still be marked as sites at bake time.
-
-- **[Decided]** **The basic outposts for now:** a logging camp, a stone quarry and a mine. A quarry is an open pit worked from the surface; a mine is drilled, with a shaft that goes down into the ground. The full list of outpost types and their rules will be decided later.
-- **[Decided]** **Setting up an outpost.**
-  - The player places an outpost marker and adjusts the area, the same way as placing a blueprint (including the ground check, Section 10.1).
-  - The only prefabricated piece is a small building such as a mining shed. It designates the area. A line marks the border of the outpost, visible in building mode.
-  - Once set up, the owner can hire NPCs to work it, from the existing pool of unemployed NPCs or from newly manufactured ones. They start working the area immediately.
-  - The outpost comes in four sizes: small, medium, large and colossal.
-- **[Decided]** **The size of a settlement limits its outposts.** The bigger the claim, the more outposts it can support, and the bigger they can be. A settlement might support two small outposts (say a logging camp and a quarry); a hamlet four small ones or two medium ones, so the owner can grow a quarry or add a mine. This is a working theory, to be rounded out as it is built.
-- **[Proposed]** **Outpost points (tunable).** Each outpost has one of four sizes: **small, medium, large and colossal**. Its size costs points from its parent claim's budget: small 1 point (radius about 50 m), medium 2 (about 100 m), large 4 (about 150 m), colossal 8 (about 250 m). Growing an outpost costs the difference in points, plus the real cost of the expansion. The budget grows with the stage:
-
-  | Parent stage | Outpost points | Example |
-  |---|---|---|
-  | Camp | 0 | none yet |
-  | Settlement | 2 | two small outposts (logging camp, quarry) |
-  | Hamlet | 4 | four small, or two medium |
-  | Village | 8 | a large mine plus several small outposts |
-  | Town | 12 | |
-  | City | 20 | |
-  | Grand city | 32 | |
-
-- **[Proposed]** A watchtower or pigeon coop is always small. Other minimum sizes will be decided with each outpost type.
-- **[Proposed]** Outposts may sit outside the parent's circle of influence, even on another island, and still count against the parent's budget. Each outpost needs guards and upkeep paid by its parent, so the budget is a money limit as well as a points limit. A town never drops a stage: it keeps its stage (a city stays a city) and falls into ruin instead (Section 8.13). Its outposts stop being paid and decline with it, as the mine rule describes (Section 11.2).
-- **[Proposed]** Homesteads and individual players who own outposts directly get a small fixed budget (suggestion: 2 points), not tied to the town ladder (Section 8.17).
-- **[Open]** The exact point values and budgets, the list of outpost types and their minimum sizes.
+See [outposts and settlement decline](Design_Ideas_Unapproved.md#outposts-and-settlement-decline) for the preserved rules, numeric proposals and distinct exceptions.
 
 ### 8.11 The temple
 
@@ -1126,91 +1095,7 @@ To be fleshed out when the first NPC is designed.
 
 ### 8.13 Town decline, ruin and deletion
 
-**Decline of a player-owned town**
-
-- **[Decided]** **Two roads to an abandoned town.** (1) The owner says "let it go" or never answers the notice: the town falls to rubble and anyone can claim the marker for free ("Claiming an abandoned town" below). (2) The owner's dynasty falls into receivership and nobody takes it over: the town reverts to the server, declines under server ownership, and is sold from the server list (Section 8.16) before it falls apart. Designated server towns (Section 8.1) never decline.
-
-- **[Decided]** A town always has an owner. Its welfare is paid from the town's coffers. When the coffers run empty, the owner can top them up from their own wealth or let the town lapse. They still own it either way.
-- **[Decided]** **A lapsing town breaks down step by step.** There is not enough money to pay for things, so the town starts cutting costs and getting rid of its weakest links by firing people. The core survives longest: guards, healing, the inn, the temple and the well. Maintenance of the walls, gates, roads and the like is cut back constantly.
-- **[Decided]** **People leave one by one, by their own reasons, not at a fixed time.** A guard does not simply quit after a month without pay. Whether and when someone leaves depends on whether they are eating, whether they are living well, and what is happening to the town's spirit. It also depends on their attributes and traits: they may be very loyal but bad at handling stress, or stalwart people who weather any storm. Some leave early and some late, and the town gradually collapses.
-- **[Decided]** **The last to leave is the town manager,** who quits when the last coin is gone. The owner gets a notification and has **24 real hours** to act before the manager quits. The owner can put more money into the sinking town or say "let it go".
-- **[Decided]** **"Let it go."** The town is flagged for further degradation. It falls into disrepair and collapses in on itself into piles of rubble. The moment the owner says let it go, anyone can come along and claim it (see "Claiming an abandoned town" below).
-- **[Proposed]** How the leaving rule could work (tunable): each NPC has a stay score worked out from pay received, food, housing, town spirit and their own traits (loyalty, stress tolerance, stubbornness). They leave when it falls below a personal threshold, with some randomness. When the town cuts costs, it fires the lowest-value jobs first and keeps the core roles. A role's rank is set by how much the town needs it, not by pay.
-- **[Proposed]** If the owner never answers the 24-real-hour notice, the manager quits and the town is treated as let go. The notice goes out through every channel the owner has, with the in-world delay (Section 8.15).
-
-
-**Decline of a town that reverted to the server** (not a designated starter town, which never declines; see Section 8.1)
-
-- **[Decided]** A town that stays server-owned loses spirit gradually and loses money, because it keeps paying for food and upkeep. When the money runs out the town falls into decay.
-- **[Decided]** Once decay reaches a certain stage, every building slowly falls down. NPCs die off, move to other towns, join bandit camps, become bandits, or find work elsewhere.
-- **[Decided]** Value drops as buildings decay and people leave. At the last moment of a town's life there is nothing but ruins and a town manager who has not yet left. A player can then buy the town for pennies on the dollar.
-- **[Decided]** A new owner pays to hire the town manager and new builders, chooses the order of the rebuild and approves each rebuild. The blueprints and the dilapidated buildings are still in place.
-
-**Flagging for deletion**
-
-- **[Decided]** Flagging for deletion happens when nobody bought the town from its manager. At that moment the town manager leaves his post and the town's ledgers and ownership are gone.
-- **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote. A flagged town is not removed. Its buildings keep degrading at the regular speed, looking more worn and dilapidated until each collapses into rubble. Players can walk through a collapsing town and see that one used to be here.
-- **[Decided]** The manager becomes an ordinary NPC, available for others to hire. He keeps his skills and whatever money he held, and he lives on it until he finds work or falls into poverty over time.
-- **[Decided]** The town marker stays, and so does the town's office building (dilapidated, like the rest). The marker is the centre of the town, and the town's circle of influence spreads from it. What is left is the marker, the office, roads and rubble.
-- **[Decided]** The office keeps the town's blueprints and its history: which buildings it had, its peak income, its farming and trade, its name and its previous owners.
-
-**Degradation and rubble**
-
-- **[Decided]** Nothing disappears outright. Degradation takes some material away from each building (see below) and the rest falls into rubble that stays until someone harvests it.
-- **[Decided]** The pile is called **rubble**. It is an item with models, and it is a chunk of the world.
-- **[Decided]** Every building has a bill of materials from its blueprint. As it ages without care it slowly loses material (hinges break, nails rust and weaken, untreated wood suffers sun rot). When it collapses, the rubble holds its bill of materials minus what degradation took.
-- **[Decided]** **The wear rule: slow while cared for, accelerating when not.** Everything that wears (buildings, supports, roads, equipment) follows one rule.
-  - While it is owned and maintained, it wears slowly from a good state, and repairs restore it.
-  - From the moment care stops, wear speeds up the longer care is missing: a tiny amount in the first stretch, noticeably more in the second, more again in the third, and so on, so the worse it gets, the faster it gets worse.
-  - Each kind of thing has a **time to failure** `T`, the game time from stopping care to reaching its lowest condition. The condition lost is `(t / T)` squared, where `t` is the time since care stopped, scaled down to the material's floor (next bullet). Squaring gives the speed-up: wear in each step is bigger than in the one before. (Starting shape; tunable.)
-  - `T` is adjustable for everything: every material, building, support and piece of equipment has its own value in data, not in code.
-- **[Decided]** **Minimum integrity.** Every material also has a **minimum integrity**, the lowest condition it can wear down to, as a percentage of its original strength. Stone is always 100 (it never wears). Wood might wear only to 50. Treated wood might wear only to 75. The floor depends on where the material is: structural wood standing outside, in rain, sun and wind, might floor at 50, while the same wood in a mine, out of the weather and the sun, might floor at 75. Condition never goes below the floor, no matter how long care is missing.
-- **[Proposed]** Starting examples (tunable, held in data): stone 100; metal 70 outdoors and 85 indoors or in a mine; untreated wood 50 outdoors and 75 in a mine; treated wood 75 outdoors and 90 in a mine. The floor and `T` are chosen per material and per setting (outdoors, indoors, underground).
-- **[Proposed]** Starting numbers: a mine's supports have `T` = 168 game days, which is one real week, so a player who is away for a week finds the supports at their lowest condition (their floor). Using steps of one real day (24 game days), the condition lost is:
-
-  | Real days since care stopped | Game days | Total condition lost | Lost in that day |
-  |---|---|---|---|
-  | 1 | 24 | 2% | 2% |
-  | 2 | 48 | 8% | 6% |
-  | 3 | 72 | 18% | 10% |
-  | 4 | 96 | 33% | 15% |
-  | 5 | 120 | 51% | 18% |
-  | 6 | 144 | 73% | 22% |
-  | 7 | 168 | 100% | 27% |
-
-  **Duress stacks with the wear rule.** Neglect and duress are separate causes. A building is neglected when the dynasty has no money to pay for care. A dynasty is under duress when its player does not come back to the game. A dynasty can have either or both. When both apply, duress makes wear up to 1.5 times faster on top of the neglect speed-up (Section 6.1).
-
-  Maintained wear is much slower: about 5 percent of condition per game year, restored by repairs. Buildings and roads get a much longer `T` than a mine (tuned later), so towns last longer than mines. Because the server only needs the time care stopped, the condition is worked out lazily when someone looks.
-- **[Decided]** Degradation is partial, and each material stops at its minimum integrity (see the wear rule above). Rubble holds the bill of materials times each material's condition. Using the starting floors for outdoor buildings: a blueprint of 1000 stone, 2000 wood, 100 iron and 200 slate leaves at worst 1000 stone, 1000 wood (floor 50), 70 iron (floor 70) and all of the slate.
-- **[Decided]** Rubble is a salvage source. A player who reclaims a town can harvest the rubble for most of the rebuild materials without cutting thousands of trees.
-- **[Idea]** Salvage as a trade: businesses that go around clearing rubble from ruined towns and selling or reusing the materials. Harvested rubble is gone, and the harvester gets the contents minus degradation.
-- **[Idea]** Wood left in rubble could count as aged wood (and in some places petrified wood), a different material from fresh wood with its own uses and quality. Treated, maintained wood degrades much more slowly.
-- **[Idea]** Iron in rubble could slowly rust over a long time, giving less usable metal, while stone never changes. This is only a flavor idea and is left open.
-- **[Proposed]** Rubble is stored as a pile of counted materials, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. Harvesting reduces the counts.
-- **[Decided]** **The terrain stays as it was.** The ground under a fallen town does not reset. Whatever the terrain looked like while the town stood (levelled ground, foundations, cuts and roads) is what it still looks like after the buildings fall, because nothing in the world would explain it changing. The world is made from the seed and the baked maps, and every change players and towns made is kept as a record in the server's living layer on top of that, and is applied again each time the area loads.
-- **[Proposed]** Rubble is stored in the living layer as a record per pile: position, size, counts of each material and age. One pile per 100 m² of building footprint, so a large ruin can be harvested a bit at a time.
-
-**Roads**
-
-- **[Decided]** Roads barely degrade (perhaps by a percentage) and never fully disappear. Buildings fall down and become rubble. Nothing erases itself completely.
-- **[Decided]** Roads have visible condition. In a maintained town a road looks pristine, with no grass growing through it. A road in disrepair looks different (grass, mud, ruts).
-- **[Decided]** Road condition has effects. A road in good repair lets you travel faster. A road in disrepair is muddier: it slows travel and makes travelers dirtier.
-- **[Proposed]** Road maintenance is paid by the town, so road condition follows the town's money and spirit. A road between towns could be maintained by whichever town owns the stretch, or by tolls (Section 13).
-
-**Claiming an abandoned town**
-
-- **[Decided]** Anyone can open an abandoned town's office without claiming it and read that history before deciding.
-- **[Decided]** Anyone can claim an abandoned town by taking over its marker, and claiming costs nothing. Nothing stops a claim.
-- **[Decided]** A claimant uses blueprint mode to see every building of the old town as an outline, with what it was and the materials it needs. The rubble beneath each outline holds most of those materials. The owner harvests rubble piles and puts the materials into a blueprint, which rebuilds that building.
-- **[Decided]** The owner can hire a town manager, builders and guards when affordable, or cut trees and build alone or with friends, or turn the place into a small farming community until they can afford a manager. All of these paths are open.
-- **[Proposed]** The rebuild order is the owner's choice. A natural order is the town hall, then the temple and the well (which also raise the spirit floor, Section 8.12), then guards and the rest.
-- **[Decided]** No limit or cooldown on claiming abandoned blocks. Travel by foot, horse and ship is slow, so the distance itself is the limit.
-
-**Open**
-
-- **[Open]** How many road condition levels exist, how dirt and cleanliness work for characters, and who owns and repairs roads between towns.
-- **[Open]** How an abandoned block's circle of influence interacts with a new town block placed nearby, and whether a claimed town starts with the old spirit or a fresh low one.
-- **[Open]** How long each stage lasts, what the decay stages are called, the thresholds that trigger collapse, how many administrators must vote, and what happens to a town's records when it is deleted.
+See [outposts and settlement decline](Design_Ideas_Unapproved.md#outposts-and-settlement-decline) for the preserved rules, numeric proposals and distinct exceptions.
 
 ### 8.14 Contesting a town claim
 

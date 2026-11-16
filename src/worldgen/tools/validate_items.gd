@@ -12,7 +12,7 @@ const DATA := "res://data/items/"
 # Items the code itself hands out (a carcass is made when an animal dies; felling a trunk, the admin give, placing a fire) and so need no drop entry.
 # Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
-const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water", "torch_doused", "wooden_lantern_dark", "iron_lantern_dark"]   # torch_doused: rain or water puts a lit torch out (#361); a lantern goes dark under water or when its fuel burns out (buildables plan B4)
+const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water", "torch_doused", "improved_torch_doused", "wooden_lantern_dark", "iron_lantern_dark"]   # torch_doused: rain or water puts a lit torch out (#361); a lantern goes dark under water or when its fuel burns out (buildables plan B4)
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
@@ -173,6 +173,7 @@ func _init() -> void:
 
 	# One Firewood and one Wooden block for every species since 15 Nov 2026 (TREE_WOOD_TOOLS_DESIGN.md): wood_species.json has no class items.
 	var wood_file: Dictionary = _read("wood_species.json")
+	want_item.call(String(wood_file.get("tree_sap", {}).get("item", "")), "wood_species.json tree_sap.item")   # Tree sap (Dave 16 Nov 2026): a typo would give no sap, silently
 
 	for gid in wood_file.get("ingredient_groups", {}):   # a group (plain "log") is obtainable when a member is (F-16: no server fallback gives the plain item)
 		if String(gid) != "note":

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1488,
+	"next_number": 1492,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -98,8 +98,8 @@
 		},
 		"torch": {
 			"number": 12,
-			"name": "Torch",
-			"description": "A stick wrapped in fibre and dipped in pitch. Lights your way after dark.",
+			"name": "Simple - Torch",
+			"description": "A stick bound with twine and wrapped in plant fibre. Lights your way after dark.",
 			"kind": "tool",
 			"tool_class": "torch",
 			"offhand": true,
@@ -120,8 +120,8 @@
 		},
 		"torch_doused": {
 			"number": 542,
-			"name": "Torch",
-			"description": "A stick wrapped in fibre. Lights your way after dark.",
+			"name": "Simple - Torch",
+			"description": "A stick bound with twine and wrapped in plant fibre. Light it again at a fire.",
 			"kind": "tool",
 			"tool_class": "torch_doused",
 			"offhand": true,
@@ -132,6 +132,41 @@
 			"places_as": {"ground": "standing_torch", "wall": "torch_sconce"},
 			"look_alikes": [],
 			"value": 4
+		},
+		"improved_torch": {
+			"number": 1488,
+			"name": "Improved - Torch",
+			"description": "A torch head soaked in tree sap. Burns twice as long as a simple torch.",
+			"kind": "tool",
+			"tool_class": "torch",
+			"offhand": true,
+			"tier": 2,
+			"stack": 1,
+			"unstackable": true,
+			"light_m": 12.0,
+			"burn_s": 3600,
+			"flame": true,
+			"rain_douses": true,
+			"doused_item": "improved_torch_doused",
+			"places_as": {"ground": "improved_standing_torch", "wall": "improved_torch_sconce"},
+			"look_alikes": [],
+			"value": 10,
+			"note_provisional": "PROVISIONAL (TORCH-SAP TS-5, Dave 16 Nov 2026 asked for the recipe only): tier 2, the Simple torch's 12 m light, twice its burn time (60 min) and value 10 are assumed on his behalf."
+		},
+		"improved_torch_doused": {
+			"number": 1489,
+			"name": "Improved - Torch",
+			"description": "A torch soaked in tree sap, put out. Light it again at a fire.",
+			"kind": "tool",
+			"tool_class": "torch_doused",
+			"offhand": true,
+			"tier": 2,
+			"stack": 1,
+			"unstackable": true,
+			"relit_item": "improved_torch",
+			"places_as": {"ground": "improved_standing_torch", "wall": "improved_torch_sconce"},
+			"look_alikes": [],
+			"value": 7
 		},
 		"bark": {
 			"number": 13,
@@ -5327,6 +5362,24 @@
 			"unstackable": true,
 			"look_alikes": []
 		},
+		"improved_standing_torch": {
+			"number": 1490,
+			"name": "Improved - Standing torch",
+			"description": "A sap-soaked torch stuck in the ground. Hold E to take it back.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": []
+		},
+		"improved_torch_sconce": {
+			"number": 1491,
+			"name": "Improved - Wedged torch",
+			"description": "A sap-soaked torch wedged on a wall. Hold E to take it back.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": []
+		},
 		"chandelier": {
 			"number": 513,
 			"name": "Chandelier",
@@ -5790,7 +5843,7 @@
 			"pitch": {
 				"number": 555,
 				"name": "Pitch",
-				"description": "Resin, pine tar or animal fat: what a torch head burns.",
+				"description": "Tree sap, pine tar or animal fat: what a fire arrow's head burns.",
 				"kind": "material",
 				"stack": 20,
 				"look_alikes": [],

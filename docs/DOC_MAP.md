@@ -7,6 +7,7 @@ Start here to find a design topic, then read its source and the relevant working
 | Topic | Source | Purpose |
 |---|---|---|
 | Game vision and future ideas | [DESIGN_IDEAS](../DESIGN_IDEAS.md) | Remaining mixed-status collection; extracted topics retain routes there. Tags alone do not verify approval. |
+| Compact game orientation | [Big picture](../BIG_PICTURE.md) | Vision/principles overview and clearly dated-status historical scope; current operation routes through CLAUDE and the live missions. |
 | Aging ideas and recorded decisions awaiting source verification | [Aging and lifespan](../Design_Ideas_Unapproved.md#aging-and-lifespan) | Proposals separate from source-unverified recorded decisions; qualifications and original-source receipt retained. No implementation or verification certification. Approved/Built records await supporting evidence. |
 | Children and family growth | [Family collection](../Design_Ideas_Unapproved.md#children-and-family-growth) | Childhood/teaching, siblings and adoption; proposals and open questions separated from source-unverified recorded decisions. |
 | Death and rescue | [Death collection](../Design_Ideas_Unapproved.md#death-and-rescue) | Recorded decisions, rescue proposals and open questions; [dated implementation plan](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/docs/mirror/items/DEATH_RESPAWN_DESIGN.md) remains separate from current verification. |
@@ -14,9 +15,10 @@ Start here to find a design topic, then read its source and the relevant working
 | NPC population and migration | [NPC collection](../Design_Ideas_Unapproved.md#npc-population-and-migration) | Roles, births, scavengers, country folk and displacement; [technical plan](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/docs/mirror/items/NPC_DESIGN.md) and [roster](../TOWN_NPC_SPEC.md) retain dated status. |
 | Property and town management | [Property/management collection](../Design_Ideas_Unapproved.md#property-and-town-management) | Planning, permissions, property/reputation, contested claims, remote management, mail and server-town purchases; source-unverified decisions and proposals remain distinct. |
 | Founding and settlement construction | [Founding collection](../Design_Ideas_Unapproved.md#founding-and-building-a-settlement) | Markers/territory, establishment, proposed first-ten list and separately recorded planner order; numeric stage tables and open questions retained. |
+| Outposts and settlement decline | [Outpost/decline collection](../Design_Ideas_Unapproved.md#outposts-and-settlement-decline) | Outpost points/sizes and separate player/server-town decline paths; numeric tables, road/rubble persistence and claim/deletion exceptions retained. |
 | Design principles | [DESIGN_PRINCIPLES](../DESIGN_PRINCIPLES.md) | Values and constraints behind the designs. |
 | Rejected ideas | [DESIGN_REJECTED](../DESIGN_REJECTED.md) | Preserve explicit rejections and their reasons. |
-| Living-world proposals | [GUIDING_DOCUMENT](design/GUIDING_DOCUMENT.md) | Living-world concepts, recorded decisions and proposals; not another operating rulebook. |
+| Creature and exploration proposals | [GUIDING_DOCUMENT](design/GUIDING_DOCUMENT.md) | Habitat concepts, worked interaction cards and recorded G/D history; dated dependency plan, not family/town design or an operating rulebook. |
 | Visual identity | [Art Direction](../art/Art_Direction.md) | The master aesthetic; specialist designs apply it. |
 
 ## Current topic routes
@@ -30,6 +32,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Trees, wood, tools and hauling | [Wood system](design/TREE_WOOD_TOOLS_DESIGN.md) | Felling, processing, tools, carving and transport. | [WOOD-SYSTEM state](ai-team/missions/WOOD-SYSTEM/STATE.md) |
 | Construction | [Buildables](design/buildables_plan.md) | Pieces, frames, roof shapes and placement behavior; item definitions remain in the catalog. | Door records below |
 | Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
+| Torches and Tree sap | [Torches and Tree sap](design/TORCH_TREE_SAP.md) | Simple and Improved torch recipes, where Tree sap comes from; provisional values TS-1..TS-7. | Relevant task record |
 | Storage and fuel supply | [Storage and warehousing](design/STORAGE_WAREHOUSING_DESIGN.md) | Bins, storage movement, permissions and fuel supply. | Goals/progression repair below |
 | Food | [Preparation, preservation and serving](design/FOOD_PREPARATION_PRESERVATION_SERVING.md) | Food categories, stations and workflows. | Goals/progression repair below |
 | Journal and goal presentation | [Journal and Goals UI](design/PLAYER_JOURNAL_GOALS_UI.md) | Journal, HUD, automatic completion and reward presentation. | Goals/progression repair below |
@@ -77,7 +80,7 @@ These sources remain available. Their inclusion preserves discoverability; it do
 | Goblins | [Goblins](GOBLINS.md) |
 | Generation and natural watersheds | [Generator vision](../GENERATOR_VISION.md), [Dave's watersheds](water/Dynasty_How_Natural_Watersheds_Work.md), [watershed build design](water/watershed_rebuild_design.md) |
 | Outdoor audio | [Sound outdoors](design/sound_outdoors_design.md) |
-| Families, dynasty, NPCs, settlements and other future systems | [Game ideas](../DESIGN_IDEAS.md), [living-world proposals](design/GUIDING_DOCUMENT.md) |
+| Other future systems awaiting topic review | [Remaining mixed ideas](../DESIGN_IDEAS.md) |
 | Supporting research | [Research index](knowledge/README.md) |
 
 ## Evidence and historical inputs
