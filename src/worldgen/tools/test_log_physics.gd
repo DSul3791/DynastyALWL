@@ -265,13 +265,7 @@ func _run() -> void:
 	var along_id: int = drop(steep, "log_oak", Vector3(0.0, 10.0, 12.0), 0.0)
 	var inside: int = drop(steep, "log_oak", Vector3(7.0, 13.5, -12.0), across)   # the first lies on a seam of the ground copy (x 0); this one inside a cell
 	check(absf(float(steep._items[along_id].get("pitch", 0.0)) - atan(0.5)) < 0.05, "a log dropped level along the steep hill is laid along it (pitch %.2f, the hill %.2f)" % [float(steep._items[along_id].get("pitch", 0.0)), atan(0.5)])
-	for n in range(6):   # a trace of the first second, for the lane log (a lane run on a4bc0254 saw this log never start to roll)
-		await step(steep, 10)
-		var in_space: bool = steep._logs.has(roller)
-		print("  trace steep roller frame %d: x %.3f, speed %.3f, spin %.3f, in the space %s, asleep %s" % [(n + 1) * 10, float(steep._items[roller]["pos"].x), steep._logs.velocity(roller).length() if in_space else 0.0, steep._logs.spin_rate(roller).length() if in_space else 0.0, str(in_space), str(asleep(steep, roller))])
-		print("  trace steep log inside a cell frame %d: x %.3f" % [(n + 1) * 10, float(steep._items[inside]["pos"].x)])
-
-	await step(steep, 300)
+	await step(steep, 360)
 	var stopped: Vector3 = steep._items[roller]["pos"]
 	var r_oak: float = steep._log_r(steep._items[roller])
 	var core: Vector3 = axis(steep, roller) * (LyingLogs.LOG_HALF_M - r_oak)
