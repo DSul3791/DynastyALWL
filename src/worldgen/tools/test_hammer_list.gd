@@ -1,6 +1,6 @@
 extends SceneTree
 
-# The hammer's blueprint list (src/client/hammer_blueprints.gd): rows with have/need counts, the hammer tier filter, the pick, the wheel.
+# The hammer's blueprint list (src/client/hammer_blueprints.gd): rows with have/need counts, the hammer tier filter, the Item - Tier order, the search, the groups, the one-click pick and the build screen.
 #   godot --headless --path . --script res://src/worldgen/tools/test_hammer_list.gd
 
 const ListScript := preload("res://src/client/hammer_blueprints.gd")
@@ -123,6 +123,22 @@ func _init() -> void:
 	var crate_no: int = int(shown.rows(1).filter(func(r): return r["name"] == "Crate")[0]["number"])
 	shown._hover({"kind": "bp", "number": crate_no})
 	check(shown.detail_text().contains("Plank  5 / 5") and shown.detail_text().contains("Nails"), "pointing at a row shows its materials, have / need (%s)" % shown.detail_text().left(80))
+	# Esc empties the search box first, then shuts the screen; a tab click empties the search; right click shuts it (BS-4).
+	var esc: InputEventKey = InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	check(shown._screen_input(esc) and shown.is_open and shown.search == "" and shown._search_box.text == "", "Esc with words typed empties the search box and keeps the screen open")
+	check(shown._screen_input(esc) and not shown.is_open, "Esc again shuts the screen")
+	shown.set_open(true, 1)
+	shown._search_box.text_changed.emit("wall")
+	(shown._tab_buttons["Garden"] as Button).pressed.emit()
+	check(shown.search == "" and shown.category == "Garden" and shown._row_buttons.values().filter(func(b): return b.visible).size() == shown.rows(1).filter(func(r): return r["category"] == "Garden").size(), "a tab click empties the search and shows that group whole")
+	var right: InputEventMouseButton = InputEventMouseButton.new()
+	right.button_index = MOUSE_BUTTON_RIGHT
+	right.pressed = true
+	check(shown._screen_input(right) and not shown.is_open and shown.picked == 0, "right click shuts the screen without a pick")
+	shown.category = ""
+	shown.set_open(true, 1)
 	(shown._row_buttons[crate_no] as Button).pressed.emit()
 	check(not shown.is_open and not shown._screen.visible and shown.picked == crate_no, "a click on a row picks it and shuts the screen")
 	hud_layer.free()

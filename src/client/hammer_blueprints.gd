@@ -392,7 +392,7 @@ func toggle(hammer_tier: int) -> void:
 func set_open(on: bool, hammer_tier: int = 1) -> void:
 	var was: bool = is_open
 	_tier = hammer_tier
-	is_open = on and not rows(hammer_tier).is_empty()
+	is_open = on and _book.any(func(row: Dictionary) -> bool: return str(row["tool"]) == tool and (tool != "hammer" or int(row.get("hammer", 1)) <= hammer_tier))   # anything to list (rows() without its cost pass)
 
 	if is_open:
 		search = ""   # the group is remembered, the words typed are not (BS-5, provisional)
@@ -409,8 +409,6 @@ func set_open(on: bool, hammer_tier: int = 1) -> void:
 
 			if _search_box.is_inside_tree():
 				_search_box.grab_focus()   # type at once: the keys go to the search box, not the world
-		elif was:
-			_search_box.release_focus()
 
 		if is_open != was:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if is_open else Input.MOUSE_MODE_CAPTURED
@@ -485,8 +483,9 @@ class BuildScreen extends Control:
 
 
 func _build_screen(hud_layer: CanvasLayer) -> void:
-	_screen = BuildScreen.new()
-	_screen.on_input = _screen_input
+	var screen: BuildScreen = BuildScreen.new()
+	screen.on_input = _screen_input
+	_screen = screen
 	_screen.theme = DynastyTheme.make()
 	_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_screen.mouse_filter = Control.MOUSE_FILTER_STOP   # a click beside the window is the screen's, never a swing or a placement in the world
