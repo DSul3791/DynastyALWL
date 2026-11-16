@@ -1872,10 +1872,10 @@ func _sync_cleared() -> void:
 				if items._falling.has(id):
 					continue   # a felled tree's log still coming down: pressed once it lies (a segment every frame of the fall would filter the grass again each time)
 
-				# A kicked log rolls (inventory_view._roll_tick): its node moves and turns every frame, and each new segment made the grass and the
+				# A log on the move (gliding where the server's physics rolls it, inventory_view._glide_tick): its node moves and turns every frame, and each new segment made the grass and the
 				# plants of its chunks filter again, ten times a second for the whole roll (Dave 3 Nov 2026: "every time I drop a log off my shoulder
 				# or I kick one everything lags each time it moves"). While it rolls it keeps the segment it had; the new one is taken once it rests.
-				if items._rolling.has(id) and _loose_segs.has(id):
+				if items._gliding.has(id) and _loose_segs.has(id):
 					seg = _loose_segs[id]
 				else:
 					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 3.0, 0.22, 0.28)
@@ -4885,8 +4885,14 @@ func _move_player(delta: float) -> void:
 		var fall_speed: float = -body.velocity.y
 		var was_on_floor: bool = body.is_on_floor()
 		var tm: int = Probe.start()
+		var wanted_move: Vector3 = body.velocity
 		body.move_and_slide()
 		Probe.stop("p slide", tm)
+
+		if items != null and not swimming and not waiting_for_ground:
+			# Loose logs are bodies in the server's physics, not in this world: the walker stops at one they walk into and pushes it (inventory_view.walker_logs).
+			var capsule: CapsuleShape3D = _shape.shape as CapsuleShape3D
+			body.global_position += items.walker_logs(body.global_position - Vector3(0.0, 0.9, 0.0), capsule.radius if capsule != null else 0.35, capsule.height if capsule != null else 1.8, wanted_move, running)
 
 		if not was_on_floor and body.is_on_floor() and not swimming and not waiting_for_ground:
 			var landed: float = feel.land(fall_speed)

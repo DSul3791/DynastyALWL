@@ -2,6 +2,7 @@ extends Node
 const PieceLook := preload("res://src/client/piece_look.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const CraftStock := preload("res://src/shared/craft_stock.gd")
+const LyingLogs := preload("res://src/shared/lying_logs.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
@@ -293,6 +294,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.craft_stock_received.connect(_on_craft_stock)
 	net.cart_pull_received.connect(func(id: int, pace_dms: int): pulling_id = id; pull_pace_mps = float(pace_dms) / 10.0)
 	net.items_moved_received.connect(_on_items_moved)
+	net.logs_moved_received.connect(_on_logs_moved)
 	net.favourites_received.connect(_on_favourites)
 	net.bulk_done_received.connect(_on_bulk_done)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
@@ -830,6 +832,77 @@ func liftable(id: int) -> bool:
 
 func _is_shoulder(number: int) -> bool:
 	return number > 0 and str(table.entry(table.id_of(number)).get("carry", "")) == "shoulder"
+
+
+# A loose log the server's physics moves (server_items._rolls_item: the shoulder logs and the plain Log).
+func _is_log(number: int) -> bool:
+	return _is_shoulder(number) or (number > 0 and table.id_of(number) == "log")
+
+
+# A log row's pose [rot_y, pitch, spin] (lying_logs.gd); a log the server has not turned yet lies at the turn it will give it (its id's golden angle).
+func _row_pose(row: Array) -> Vector3:
+	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+	return Vector3(float(extra.get("rot_y", fposmod(float(row[0]) * GOLDEN_ANGLE, TAU))), float(extra.get("pitch", 0.0)), float(extra.get("spin", 0.0)))
+
+
+const GOLDEN_ANGLE := 2.399963   # as server_items.gd
+
+
+# Walking into loose logs (Dave 16 Nov 2026: "If I walk into a log I should collide and at the same time I should push the log. the log will stop me
+# but I should be able to push against it"; "sprinting should push harder"; "if you 1/4 into the log it will turn and push"). Called after the walker
+# moves: `feet` the bottom of their upright capsule (radius p_r, height p_h), `move` the level way they are walking (m/s). Returns the level move that
+# puts them clear of every log they walked into (they stop at it, and slide along it when they meet it slantwise), and asks the server to push each
+# log they walk into, at the touching point, at most every PUSH_EVERY_MSEC a log. The logs are their drawn nodes (where the server's physics put them).
+const PUSH_EVERY_MSEC := 100
+const PUSH_NEAR_M := 4.0          # logs whose middle is this close are looked at
+var _push_last: Dictionary = {}   # world id -> msec of the last push sent
+var _logs_near: Array = []        # world ids of the logs near the walker, refreshed every LOGS_NEAR_MSEC
+var _logs_near_msec: int = -100000
+const LOGS_NEAR_MSEC := 250
+
+
+func walker_logs(feet: Vector3, p_r: float, p_h: float, move: Vector3, sprint: bool) -> Vector3:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _logs_near_msec >= LOGS_NEAR_MSEC:
+		_logs_near_msec = now
+		_logs_near = []
+
+		for id in _world:
+			var entry: Dictionary = _world[id]
+
+			if entry.get("log", false) and not _falling.has(id) and Vector2(entry["pos"].x - feet.x, entry["pos"].z - feet.z).length() <= PUSH_NEAR_M:
+				_logs_near.append(id)
+
+	var out: Vector3 = Vector3.ZERO
+	var level: Vector3 = Vector3(move.x, 0.0, move.z)
+
+	for id in _logs_near:
+		var entry: Dictionary = _world.get(id, {})
+
+		if entry.is_empty() or not (entry.get("node") is Node3D) or _falling.has(id):
+			continue
+
+		var node: Node3D = entry["node"]
+		var r: float = LyingLogs.LOG_R * float(entry.get("girth", 1.0))
+		var touch: Dictionary = LyingLogs.walker_touch(feet + out, p_r, p_h, node.position, (node.quaternion * Vector3.RIGHT).normalized(), LyingLogs.LOG_HALF_M, r)
+
+		if touch.is_empty():
+			continue
+
+		out += touch["out"]
+		var into: Vector3 = -(touch["n"] as Vector3)
+		var square: float = level.normalized().dot(into) if level.length() > PUSH_MIN_MPS else 0.0
+
+		if square > 0.05 and now - int(_push_last.get(id, -100000)) >= PUSH_EVERY_MSEC and net != null:
+			_push_last[id] = now
+			var args: Array = LyingLogs.push_args(sprint, square, into)
+			net.inventory_action.rpc_id(1, Net.ACT_PUSH_LOG, int(id), int(args[0]), int(args[1]), touch["at"])
+
+	return out
+
+
+const PUSH_MIN_MPS := 0.3   # slower than this the walker leans on the log without pushing it
 
 
 # The item ids of the large logs in the pack, slot order: what is on the shoulders (up to weights.json shoulder_logs_max, as the server keeps it; protocol 64 names the first).
@@ -2100,6 +2173,21 @@ func _glide(id: int, to: Vector3, yaw_deg: float) -> void:
 	_gliding[id] = true
 
 
+# Loose logs the server's physics moved (protocol 125): each glides to its new spot and pose (lying_logs.gd).
+func _on_logs_moved(ids: PackedInt32Array, positions: PackedVector3Array, poses: PackedVector3Array) -> void:
+	for i in mini(ids.size(), mini(positions.size(), poses.size())):
+		if _world.has(ids[i]) and _world[ids[i]].get("log", false):
+			_world[ids[i]]["pos"] = positions[i]
+			_world[ids[i]]["pose"] = poses[i]
+			_gliding[ids[i]] = true
+
+
+# A loose log's drawn centre and turn: the point under its middle lifted by its radius, the pose [rot_y, pitch, spin] (lying_logs.gd).
+func _log_target(entry: Dictionary) -> Transform3D:
+	var pose: Vector3 = entry.get("pose", Vector3.ZERO)
+	return Transform3D(Basis(LyingLogs.basis_of(pose.x, pose.y, pose.z).get_rotation_quaternion()), entry["pos"] + Vector3(0.0, LyingLogs.LOG_R * float(entry.get("girth", 1.0)), 0.0))
+
+
 func _glide_tick(delta: float) -> void:
 	for id in _gliding.keys():
 		if not _world.has(id) or not (_world[id].get("node") is Node3D):
@@ -2110,9 +2198,23 @@ func _glide_tick(delta: float) -> void:
 			continue   # still swinging down: it glides on from where it lands (_swing_down's end snaps it to the new spot)
 
 		var node: Node3D = _world[id]["node"]
-		var loose: bool = int(_world[id]["state"]) == 0   # a rolling log (server_items.gd _roll_tick) rests 12 cm over its ground point, as _snap_loose puts it
-		var target: Vector3 = _world[id]["pos"] + (Vector3(0.0, 0.12, 0.0) if loose else Vector3.ZERO)
 		var share: float = clampf(delta * GLIDE_RATE, 0.0, 1.0)
+
+		if _world[id].get("log", false):   # a log the server's physics moves: its centre and its whole turn, so it is seen to roll
+			var aim: Transform3D = _log_target(_world[id])
+			node.position = node.position.lerp(aim.origin, share)
+			node.quaternion = node.quaternion.slerp(aim.basis.get_rotation_quaternion(), share)
+
+			if node.position.distance_to(aim.origin) < 0.01 and node.quaternion.angle_to(aim.basis.get_rotation_quaternion()) < 0.01:
+				node.position = aim.origin
+				node.quaternion = aim.basis.get_rotation_quaternion()
+				_gliding.erase(id)
+				_snap_loose(id)
+
+			continue
+
+		var loose: bool = int(_world[id]["state"]) == 0   # a loose item rests 12 cm over its ground point, as _snap_loose puts it
+		var target: Vector3 = _world[id]["pos"] + (Vector3(0.0, 0.12, 0.0) if loose else Vector3.ZERO)
 		node.position = node.position.lerp(target, share)
 		node.rotation.y = lerp_angle(node.rotation.y, deg_to_rad(float(_world[id]["yaw"])), share)
 
@@ -2790,7 +2892,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_refresh_pile(id)
 			prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_a
 
-			if int(_world[id]["state"]) == 0 and state == 0 and not _gliding.has(id) and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+			if _world[id].get("log", false) and state == 0 and not _falling.has(id) and ((row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05 or _row_pose(row) != _world[id].get("pose", Vector3.ZERO)):
+				_world[id]["pos"] = row[3]      # a log moved (the world sync after logs_moved, or instead of a lost one): it glides there
+				_world[id]["pose"] = _row_pose(row)
+				_gliding[id] = true
+			elif int(_world[id]["state"]) == 0 and state == 0 and not _gliding.has(id) and not _world[id].get("log", false) and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
 				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
 				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
 				var t_b: int = Time.get_ticks_usec()
@@ -2916,6 +3022,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("tilt"):   # an arrow stuck in a tree (Dave 10 Nov 2026)
 				node.rotation = Vector3(0.0, float(row[5].get("rot_y", 0.0)), float(row[5]["tilt"]))
 				node.position = row[3] - Basis.from_euler(node.rotation).x * STUCK_ARROW_BACK_M * node.scale.x   # the model lies along x, its point at +x
+
+			if _is_log(int(row[1])):   # a loose log lies as the server's physics left it (lying_logs.gd): its centre a radius over its point, its whole turn
+				var log_entry: Dictionary = {"pos": row[3], "pose": _row_pose(row), "girth": float(row[5].get("girth", 1.0)) if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else 1.0}
+				var aim: Transform3D = _log_target(log_entry)
+				node.position = aim.origin
+				node.quaternion = aim.basis.get_rotation_quaternion()
 		else:
 			var fire_extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 			node = BuildingLook.coals_fire(float(fire_extra.get("glow", 1.0))) if state == StructureLook.FIRE_COALS else _make_fire(_lit_state(state), state == 9, _fire_tier(state))
@@ -2927,6 +3039,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+
+		if state == 0 and _is_log(int(row[1])):
+			_world[id]["log"] = true
+			_world[id]["pose"] = _row_pose(row)
+			_world[id]["girth"] = float(row[5].get("girth", 1.0)) if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else 1.0
 
 		if state != 0 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):   # a fire: the burn time left (the label counts it down while it burns)
 			_world[id]["burn"] = float(row[5]["burn"])
@@ -2991,6 +3108,11 @@ func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 		return
 
 	var at: Vector3 = entry["pos"]
+
+	if entry.get("log", false):
+		_snap_log(id, entry, tries)
+		return
+
 	var ground: float = float(_ground_below.call(at - Vector3(0.0, 1.5, 0.0)))      # the probe starts 2 m above its point: 0.5 m above the item, so a tunnel roof is not hit
 
 	if is_nan(ground) or ground > at.y + SNAP_UP_M or ground < at.y - SNAP_DOWN_M:
@@ -3000,6 +3122,31 @@ func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 	_unsnapped[id] = tries - 1
 	var node: Node3D = entry["node"]
 	node.position = Vector3(at.x, ground + (0.02 if on_fire else 0.12), at.z)
+
+
+# A loose log is drawn as the server's physics laid it (stacked on another log, tilted on a rock): it is only lifted where the drawn ground, which can
+# differ a little from the server's height, comes up over its underside at its middle or either end, so it never shows sunk into the ground.
+func _snap_log(id: int, entry: Dictionary, tries: int) -> void:
+	var node: Node3D = entry["node"]
+	var r: float = LyingLogs.LOG_R * float(entry.get("girth", 1.0))
+	var axis: Vector3 = node.quaternion * Vector3(LyingLogs.LOG_HALF_M - r, 0.0, 0.0)
+	var lift: float = 0.0
+	var probed: bool = false
+
+	for end in [Vector3.ZERO, axis, -axis]:
+		var under: Vector3 = node.position + end - Vector3(0.0, r, 0.0)
+		var ground: float = float(_ground_below.call(under - Vector3(0.0, 1.5, 0.0)))   # the probe starts 2 m above the underside
+
+		if not is_nan(ground) and ground <= under.y + SNAP_UP_M:
+			probed = true
+			lift = maxf(lift, ground - under.y)
+
+	if not probed:
+		_unsnapped[id] = tries - 1 if tries > 1 else 0   # the ground under it is not drawn yet: tried again
+		return
+
+	_unsnapped[id] = tries - 1
+	node.position.y += lift
 
 
 func _snap_tick(now: int) -> void:
@@ -3310,7 +3457,7 @@ func _roll_tick(delta: float, now: int) -> void:
 			for id in _world:
 				var entry: Dictionary = _world[id]
 
-				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id) or _gliding.has(id) or _falling.has(id):   # a log the server rolls is moved by _glide_tick; a falling piece by _swing_down
+				if int(entry["state"]) != 0 or entry.get("log", false) or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id) or _gliding.has(id) or _falling.has(id):   # a log is a body in the server's physics (pushed by walking into it, walker_logs); a falling piece is moved by _swing_down
 					continue
 
 				var apart: Vector2 = Vector2(entry["pos"].x - here.x, entry["pos"].z - here.z)
@@ -4372,9 +4519,9 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 		node.position.y += 0.04
 		return
 
-	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood":
-		node.scale = Vector3(rng.randf_range(0.7, 1.3), 1.0, 1.0)
-		node.position.y -= 0.08 if id != "log" and not id.begins_with("log_") else 0.0
+	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "driftwood":
+		node.scale = Vector3(rng.randf_range(0.7, 1.3), 1.0, 1.0)   # a log keeps its 3 m: it is that long in the server's physics
+		node.position.y -= 0.08
 	elif id == "stone":
 		node.scale = Vector3(rng.randf_range(0.8, 1.3), rng.randf_range(0.7, 1.1), rng.randf_range(0.8, 1.3))
 		node.position.y -= 0.07

@@ -477,6 +477,7 @@ func _ready() -> void:
 	items.send_craft_stock = func(peer, numbers, counts): net.craft_stock.rpc_id(peer, numbers, counts)
 	items.send_cart_pull = func(peer, id, pace_dms): net.cart_pull.rpc_id(peer, id, pace_dms)
 	items.send_items_moved = func(peer, ids, positions, yaws): net.items_moved.rpc_id(peer, ids, positions, yaws)
+	items.send_logs_moved = func(peer, ids, positions, poses): net.logs_moved.rpc_id(peer, ids, positions, poses)
 	items.send_step_to = func(peer, spot, yaw): net.step_to.rpc_id(peer, spot, yaw)
 	items.send_wheel_share = func(peer, spot, yaw_deg, percent, why): net.wheel_share.rpc_id(peer, spot, yaw_deg, percent, why)
 	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)

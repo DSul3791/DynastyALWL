@@ -249,7 +249,7 @@ func _init() -> void:
 	check(float(w.vitals_of(1)["health"]) == health_1, "the feller standing behind it is not hurt")
 	check(struck.size() == 1 and int(struck[0][0]) == 1 and absf(float(struck[0][3]) - float(crush["animal"])) < 0.001, "the first animal along the trunk is struck for %.0f, by the feller (%s)" % [float(crush["animal"]), str(struck)])
 	check(not tree.has("fresh") and logs.all(func(k): return not w._items[k].has("fall")) and w._falls.is_empty(), "landed: the stump is no longer fresh and the logs lie")
-	check(logs.all(func(k): return w._rolling.has(k)) and logs.all(func(k): return float(w._rolling[k]["v"]) == 0.0), "the logs wake to roll; on flat open ground nothing pushes them")
+	check(logs.all(func(k): return w._logs.has(k)), "the logs are bodies in the log physics from the landing (test_log_physics.gd: they settle, roll off what they land on)")
 
 	# The turn survives a restart.
 	w.save()
@@ -272,7 +272,7 @@ func _init() -> void:
 		if not w._items[k].has("tree") and w._items[k]["pos"].distance_to(plain_at) < 0.5 and int(w._items[k]["number"]) == w.table.number_of("stone"):
 			check(float(w._items[k]["left"]) < 86400.0, "an ordinary drop keeps its short lifetime")
 
-	# A tall oak comes down in whole lengths only; a log that lands on a boulder rolls off it across its length, the others lie still.
+	# A tall oak comes down in whole lengths only; a log that lands on a boulder has the rock beside it in the log physics, which pushes it off (test_log_physics.gd).
 	var boulder_id: int = 920000
 	w._items[boulder_id] = {"number": w.table.number_of("stone"), "count": 1, "pos": Vector3(64.5, 10.0, 0.4), "left": 1.0e9, "boulder": {"radius": 0.5}}   # under the second log, a little to +z
 	w.report_position(1, Vector3(58.0, 10.0, 0.0))
@@ -281,28 +281,8 @@ func _init() -> void:
 	var oak_logs: Array = loose_logs(w, w.table.number_of("log_oak"))
 	check(oak_logs.size() == int(22.0 / log_len), "oak logs: int(22 / %.1f) = %d" % [log_len, int(22.0 / log_len)])
 	w._fall_tick(ItemsScript.FALL_S)
-	var on_rock: int = 0
-	var kicked: int = 0
-
-	for k in oak_logs:
-		var mid: float = float(w._items[k]["pos"].x)
-
-		if absf(mid - 64.5) < 1.5:
-			on_rock = k
-
-		if float(w._rolling.get(k, {}).get("v", 0.0)) != 0.0:
-			kicked += 1
-
-	check(on_rock != 0 and kicked == 1 and float(w._rolling[on_rock]["v"]) < 0.0, "only the log on the boulder is pushed off it, away from the rock (-z) (%d kicked)" % kicked)
-
-	for n in range(200):
-		w._roll_tick(0.05)
-
-	var it_rock: Dictionary = w._items[on_rock]
-	var half: Vector2 = Vector2(cos(float(it_rock["rot_y"])), -sin(float(it_rock["rot_y"]))) * 1.5
-	var mid2: Vector2 = Vector2(it_rock["pos"].x, it_rock["pos"].z)
-	var gap: float = float(ItemsScript._seg_gap(mid2 - half, mid2 + half, Vector2(64.5, 0.4), Vector2(64.5, 0.4))[0])
-	check(gap > 0.5 + 0.2 * float(it_rock.get("girth", 1.0)) - 0.05, "it rolls off the rock and lies beside it (gap %.2f m)" % gap)
+	w._roll_tick(0.0)   # the look round the woken logs
+	check(oak_logs.all(func(k): return w._logs.has(k)) and w._logs.has_static("i%d" % boulder_id), "the oak's logs are bodies and the boulder under one is a rock in their way")
 	w._items.erase(boulder_id)
 
 	# A sapling-sized tree (1.5 m, a small tree) breaks into Firewood, kindling and sticks the same way: at once, falling, no trunk.
