@@ -13,11 +13,11 @@ Where the inventory's item icons live, which ones are baked and which are painte
 
 ## Baked or painted
 
-Every live item has an icon (10 Nov 2026), in `items.json` and `gathered.json`, including the buildables (B0 to B6) and item system C1 to C7 rows still on open PRs. Most are baked; the rest are painted or composed.
+Every live item had an icon on 10 Nov 2026 (on 16 Nov, 372 items added since still show the hatched "?" tile; `python3 tools/import_item_icons.py --imports-only` lists them), in `items.json` and `gathered.json`, including the buildables (B0 to B6) and item system C1 to C7 rows still on open PRs. Most are baked; the rest are painted or composed.
 
 | Kind | Count | Made by | Ran where |
 |---|---|---|---|
-| **Baked** | 422 (320 made items, 102 gathered materials) | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
+| **Baked** | 425 (323 made items, 102 gathered materials; 16 Nov 2026 added Copper and Bronze saws and Copper nails, and re-baked the Iron saw from Dave's handsaw meshes) | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
 | **Painted, basic** | 2 (log, stone) | `tools/paint_basic_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, made pieces** | 66 (walls, floors, the thatch roof, stairs, ladder, log species, driftwood, furniture, stations, fires, torches, traps, carcass) | `tools/paint_structure_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, small items** | 91 (spears, arrows, fire arrows, fishing spear, sling and sling stones, stick, the five hammers, the bronze, iron and steel chisels, the bone needle, charcoal, wool cloth, fur, crystal lens, spyglass, horn pane, clay pipe, carved stone block and shingle, whetstone, mortar and pestle, mug, fruit juice, herb antidote, bonemeal, meat skewer, sausage, parsnip, fishing bait, bedroll, snowshoes, leather belt, the bark, wooden and clay roof shingles and tiles, limestone, lime powder, concrete and the iron band, the C7 pickled vegetables, copper pot, fish soup, meatballs, claw necklace and bronze scale shirt, horn, gut, toggle, hook, bone club, longbow, straw hat, worm, spades, the 15 crop seeds, pies; kindling, tinder, thatch, straw, birch bark, withies): items the bake drew too thin or too alike to read at 23 px, and the common fire and shelter materials | `tools/paint_item_icons.py` | Anywhere; Python with numpy and Pillow |
