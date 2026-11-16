@@ -538,28 +538,6 @@ func _plan_step() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, int(piece["bp"]), int(piece.get("lift", 0)), int(piece["yaw"]), piece["pos"])
 
 
-# Delete with the hammer menu open removes the highlighted saved plan. Returns true when it was used.
-func delete_plan() -> bool:
-	if not blueprints.is_open:
-		return false
-
-	var gone: String = blueprints.delete_highlighted(_hammer_tier())
-
-	if gone != "":
-		_inv._on_notice("Removed %s" % gone)
-
-	return true
-
-
-# The left and right arrows with the hammer menu open step through the groups of blueprints. Returns true when it was used.
-func step_blueprint_group(forward: bool) -> bool:
-	if not blueprints.is_open:
-		return false
-
-	blueprints.cycle_category(forward, _build_tier())
-	return true
-
-
 # Right click (or R) with a hammer or a knife in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
 	if _build_tier() <= 0:
@@ -1024,10 +1002,6 @@ func wheel(down: bool) -> bool:
 		_inv._on_notice("Hoe grid turned to %d degrees" % garden_yaw)
 		return true
 
-	if blueprints.is_open:
-		blueprints.move(down, _build_tier())
-		return true
-
 	if _blueprinting():
 		var picked_def: Dictionary = PlacementRules.structure_of_kit(_placement, blueprints.kit_of(blueprints.picked))
 
@@ -1119,7 +1093,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		_inv.eat_slot(held_slot)
 		return true
 
-	# Right click with a hammer or a knife opens its menu (or shuts it); left click in the menu picks (Dave 3 Nov 2026; the knife's list, Dave 15 Nov 2026). Shift is left to other tools.
+	# Right click with a hammer or a knife opens its build screen (Dave 16 Nov 2026; the knife's list, Dave 15 Nov 2026); the screen takes the clicks
+	# while it is open (hammer_blueprints.gd: a click on a row picks it, right click shuts it). Shift is left to other tools.
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _build_tier() > 0:
 		toggle_blueprints()
 		return true
@@ -1128,12 +1103,6 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	if button == MOUSE_BUTTON_RIGHT and pressed and not blueprints.is_open and _right_hand_free() and _torch_hand_slot() >= 0:
 		_place_torch_here()
 		return true
-
-	if blueprints.is_open:
-		if button == MOUSE_BUTTON_LEFT and pressed:
-			blueprints.choose(_build_tier())
-
-		return button == MOUSE_BUTTON_LEFT
 
 	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
 		if button == MOUSE_BUTTON_LEFT and pressed:

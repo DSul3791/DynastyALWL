@@ -279,11 +279,16 @@ func menus() -> void:
 	check(knife_names.has("Wood carving station") and knife_names.has("Log - Bench") and knife_names.has("Log - Double bench") and knife_names.has("Log - Backed bench") and knife_names.has("Log - Table"), "among them the station, the three benches and the table")
 	var hammer_names: Array = hammer_list.rows(1).map(func(r): return str(r["name"]))   # 214 hammer rows since phase 5 added the Small log sled and Small wagon (hammer blueprints, W-14) + 21 knife rows
 	check(not knife_structures.any(func(s): return hammer_names.has(s)) and hammer_names.size() + knife_names.size() == 235, "the hammer's list has none of them (%d hammer rows, %d knife rows)" % [hammer_names.size(), knife_names.size()])
-	var first: Dictionary = knife_list.entries(1)[0]
-	check(str(first["kind"]) == "repair" and str(first["name"]) == "Knife" and knife_list.entries(1).all(func(e): return str(e["kind"]) != "save" and str(e["kind"]) != "plan"), "the knife's menu starts on a plain Knife line and has no Save or plan lines")
-	check(str(hammer_list.entries(1)[0]["name"]) == "Hammer/Repair Tool" and str(hammer_list.entries(1)[1]["kind"]) == "save", "the hammer's menu still starts with Repair and Save")
-	knife_list.set_open(true, 1)
-	check(knife_list.list_text(1).begins_with("Knife:"), "the knife's window is titled Knife")
+	var first: Dictionary = knife_list.actions()[0]
+	check(knife_list.actions().size() == 1 and str(first["kind"]) == "repair" and str(first["name"]) == "Knife" and knife_list.entries(1).all(func(e): return str(e["kind"]) == "bp") and not knife_list.categories(1).has(knife_list.PLANS_TAB), "the knife's screen has a plain Knife line above the list and no Save or plan lines")
+	check(str(hammer_list.actions()[0]["name"]) == "Hammer/Repair Tool" and str(hammer_list.actions()[1]["kind"]) == "save", "the hammer's screen still has Repair and Save")
+	var hud_layer: CanvasLayer = CanvasLayer.new()
+	var knife_screen = ListScript.new()
+	knife_screen.setup(table, pack, hud_layer, "user://test_wood_phase4_none.json")
+	knife_screen.tool = "knife"
+	knife_screen.set_open(true, 1)
+	check(knife_screen._title.text.begins_with("Knife"), "the knife's screen is titled Knife")
+	hud_layer.free()
 	var station_state: int = int(items._structures["carving_station"]["state"])
 	# An older saved plan holding a knife piece (the Wicker - Chest, blueprint 26) and a hammer piece (the Lean-to, 25): the hammer's cost and placing skip the knife piece.
 	var lean_no: int = int(bp_rows["lean_to"]["number"])

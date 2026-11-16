@@ -4291,6 +4291,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if menu_open:
 		return
 
+	# The hammer or knife build screen takes the keys and clicks while it is open (its search box, rows and tabs; right click and Esc shut it).
+	if held != null and held.blueprints.is_open:
+		if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "blueprints"):
+			held.toggle_blueprints()   # R shuts it too while the search box does not have the key
+
+		return
+
 	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "inventory") and items != null:
 		items.toggle()
 		return
@@ -4419,8 +4426,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
-		elif KeyBindings.matches(event, "delete_plan") and held != null and held.delete_plan():
-			pass
 		elif KeyBindings.matches(event, "garden_wider") and held != null and held.garden_resize(1, 0):
 			pass
 		elif KeyBindings.matches(event, "garden_narrower") and held != null and held.garden_resize(-1, 0):
@@ -4428,10 +4433,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "garden_longer") and held != null and held.garden_resize(0, 1):
 			pass
 		elif KeyBindings.matches(event, "garden_shorter") and held != null and held.garden_resize(0, -1):
-			pass
-		elif KeyBindings.matches(event, "hammer_group_next") and held != null and held.step_blueprint_group(true):
-			pass
-		elif KeyBindings.matches(event, "hammer_group_prev") and held != null and held.step_blueprint_group(false):
 			pass
 		elif KeyBindings.matches(event, "blueprints") and items != null and not items.open:
 			if held != null:
@@ -4716,7 +4717,13 @@ func _snow_pace() -> float:
 # Movement keys held for the body (jump, swim up, fly, Ctrl down or dive, ladder climb): never while a screen (inventory, character, Journal, a talk) is open, as walking
 # is not (the screen's keys and clicks are not the world's).
 func _move_held(id: String) -> bool:
-	return KeyBindings.held(id) and not (items != null and items.screen_open())
+	return KeyBindings.held(id) and not _screen_up()
+
+
+# A screen that takes the keys is up: the inventory, character, Journal, a talk, or the hammer or knife build screen (letters typed in its search
+# box are not walking).
+func _screen_up() -> bool:
+	return (items != null and items.screen_open()) or (held != null and held.blueprints.is_open)
 
 
 func _move_player(delta: float) -> void:
@@ -4729,8 +4736,8 @@ func _move_player(delta: float) -> void:
 		0.0,
 		float(KeyBindings.held("move_back")) - float(KeyBindings.held("move_forward"))
 	)
-	if items != null and items.screen_open():
-		input = Vector3.ZERO   # the inventory's quick keys (S split) are not walking
+	if _screen_up():
+		input = Vector3.ZERO   # the inventory's quick keys (S split) and the build screen's search are not walking
 
 	var direction: Vector3 = photo.move_direction(input) if photo.active else body.global_transform.basis * input
 
@@ -5274,7 +5281,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, KeyBindings.held("interact") and not items.screen_open())   # no harvest under any screen (the Journal, Tab), not only the inventory
+		harvest.update(delta, KeyBindings.held("interact") and not _screen_up())   # no harvest under any screen (the Journal, Tab), not only the inventory
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
