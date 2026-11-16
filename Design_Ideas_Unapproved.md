@@ -2,7 +2,7 @@
 
 [DOC_MAP](docs/DOC_MAP.md) remains the index. This file separates proposals from recorded decisions awaiting source verification; missing sources neither withdraw decisions nor verify legacy **[Decided]** tags.
 
-Future Approved records hold each full verified specification once, with approval source/date. Built records link to it and record commits, checks and gaps; built does not mean tested or player-verified. Neither file is created without supporting material.
+[Approved records](Design_Ideas_Approved.md) identify the owning full specification and approval source/date. [Implementation records](Design_Ideas_Built.md) link to that design and distinguish code, tests and player evidence. Built does not mean tested or player-verified; neither register promotes the source-unverified decisions below.
 
 Legacy decisions throughout this collection remain SOURCE UNVERIFIED; no extraction verifies approval, implementation or tests. Section numbers and “above/below” refer to each linked source snapshot.
 
@@ -918,3 +918,7 @@ Source: [DESIGN_IDEAS §§8.10 and 8.13](https://github.com/DSul3791/DynastyALWL
 - [Founding](#founding-and-building-a-settlement) keeps stage/territory tables. The point/radius budgets here remain proposals and “working theory” retains that qualification despite its legacy decision tag.
 - Dynasty [duress/receivership](DESIGN_IDEAS.md#absence-and-duress) and town decline use distinct clocks and causes. The game's proposed ruin/deletion rules are gameplay design, not authorization to delete documentation or player work during this mission.
 - Preserve abandoned-claim protection, ownership, repairs, rubble/road persistence and deletion conditions together. Current behavior, approval sources and all tuning remain unverified here.
+
+## Approval-source investigation — 16 Nov 2026
+
+The aging/clock/lifespan values trace to [bb524cc, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/bb524cca918855d002efa71b3189749eed833c4e); succession/loan acceptance wording traces to [8e6fe51, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/8e6fe51dce5709593fcaacafe92b61ca90715777). Both cite [Claude session 01FW2oP4t11pHqGQwUfqgGZ9](https://claude.ai/code/session_01FW2oP4t11pHqGQwUfqgGZ9), but the inspected commit messages/diffs do not expose Dave's original answers. These recoverable provenance leads are not original approval evidence. No family value is promoted or rejected; the original session/user-response record is still needed to resolve the cited claims. The investigation does not certify approval for the rest of the collection.

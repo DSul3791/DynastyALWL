@@ -17,6 +17,8 @@ Start here to find a design topic, then read its source and the relevant working
 | Founding and settlement construction | [Founding collection](../Design_Ideas_Unapproved.md#founding-and-building-a-settlement) | Markers/territory, establishment, proposed first-ten list and separately recorded planner order; numeric stage tables and open questions retained. |
 | Outposts and settlement decline | [Outpost/decline collection](../Design_Ideas_Unapproved.md#outposts-and-settlement-decline) | Outpost points/sizes and separate player/server-town decline paths; numeric tables, road/rubble persistence and claim/deletion exceptions retained. |
 | Design principles | [DESIGN_PRINCIPLES](../DESIGN_PRINCIPLES.md) | Values and constraints behind the designs. |
+| Approved design provenance | [Approved records](../Design_Ideas_Approved.md) | Source-backed status records; full specifications remain in owning topic files. Original-source retrieval limits are explicit. |
+| Implementation evidence | [Built records](../Design_Ideas_Built.md) | Implementation commits, checks and remaining gaps; built/tested/player-verified are separate. |
 | Rejected ideas | [DESIGN_REJECTED](../DESIGN_REJECTED.md) | Preserve explicit rejections and their reasons. |
 | Creature and exploration proposals | [GUIDING_DOCUMENT](design/GUIDING_DOCUMENT.md) | Habitat concepts, worked interaction cards and recorded G/D history; dated dependency plan, not family/town design or an operating rulebook. |
 | Visual identity | [Art Direction](../art/Art_Direction.md) | The master aesthetic; specialist designs apply it. |
