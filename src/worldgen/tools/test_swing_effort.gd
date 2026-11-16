@@ -41,6 +41,9 @@ class FakeInventory:
 	var numbers: Array = []
 	var counts: Array = []
 
+	func inst_of(_slot: int) -> Dictionary:   # no instance data here (held_item.gd _slot_out reads it: a torch that went out)
+		return {}
+
 
 class FakeView:
 	extends Node
