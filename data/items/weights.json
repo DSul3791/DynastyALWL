@@ -533,6 +533,8 @@
 		"tinder_fungus": 0.08,
 		"torch": 0.4,
 		"torch_doused": 0.4,
+		"improved_torch": 0.45,
+		"improved_torch_doused": 0.45,
 		"tree_roots": 0.6,
 		"walnut_husks": 0.05,
 		"wardpine_resin": 0.05,

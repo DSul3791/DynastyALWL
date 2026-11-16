@@ -20,6 +20,7 @@
 		"pitch": ["resin", "pine_tar", "animal_fat"],
 		"herbs": ["thyme", "rosemary", "marjoram", "sage", "mint"]
 	},
+	"tree_sap": {"note": "Dave 16 Nov 2026: you get Tree sap whenever you cut down a softwood tree (a species with class softwood below) or process softwood logs (the log_spruce group: Spruce log, Scots pine log, the plain Log) into anything. item is the Tree sap item (id resin, the conifer sap that was named Resin). felled: how many every felled softwood tree gives, small or large, beside the trunk; per_softwood_log: how many each softwood log a finished craft used up gives the crafter. Amounts PROVISIONAL (TORCH-SAP TS-2, TS-3).", "item": "resin", "felled": 2, "per_softwood_log": 1},
 	"key_woods": ["oak", "beech", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
 	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "knife": "Any knife", "axe": "Any axe", "saw": "Any saw", "copper_nails": "Any nails"},
 	"retired_to": {"note": "Master s4 item 3. Data only; renames.json is the live mechanism, and Dynasty is a new game (Dave 12 Nov 2026), so no rename rows are needed.", "log_": "log", "lumber_": {"hardwood": "hardwood_board", "softwood": "lumber"}, "beam_": "lumber"},

@@ -6674,7 +6674,7 @@ func _fall_pieces(id: int, tree: Dictionary, base: Vector3) -> Array:
 
 		var heap: Vector3 = middle + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk
 
-		for extra in _trunk_extras(id, tree, count, cfg, base, litter.is_empty()):
+		for extra in _trunk_extras(id, tree, count, cfg, base, litter.is_empty()) + _felled_sap(tree):
 			rows.append([int(extra[0]), int(extra[1]), heap])
 	else:
 		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -6694,6 +6694,9 @@ func _fall_pieces(id: int, tree: Dictionary, base: Vector3) -> Array:
 
 		var firewood_n: int = table.number_of("firewood")
 		totals[firewood_n] = int(totals.get(firewood_n, 0)) + _small_firewood(tree, cfg)
+
+		for sap in _felled_sap(tree):
+			totals[int(sap[0])] = int(totals.get(int(sap[0]), 0)) + int(sap[1])
 
 		for n in totals:
 			if int(n) > 0 and int(totals[n]) > 0:
@@ -7532,6 +7535,46 @@ func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> A
 
 
 const EXTRA_ROWS_SEED := 0x2f6e2b1   # the stream of a felled tree's extra by_species rows (_trunk_extras)
+
+
+# The Tree sap every felled softwood tree gives, large or small (Dave 16 Nov 2026; wood_species.json tree_sap.felled), as [[item number, count]], or [].
+func _felled_sap(tree: Dictionary) -> Array:
+	var number: int = table.number_of(str(table.tree_sap.get("item", "")))
+	var count: int = int(table.tree_sap.get("felled", 0))
+	return [[number, count]] if number > 0 and count > 0 and table.is_softwood_species(str(tree.get("species", ""))) else []
+
+
+# The Tree sap the craft at the head of a queue entry earns (Dave 16 Nov 2026: processing softwood logs into anything gives it): per_softwood_log for each
+# softwood log this one craft used up. Crafts finish in queue order and use the taken rows from the front (_refund_entry gives the unfinished ones back
+# from the end), so this craft's units follow the ones the finished crafts used. entry[1] is the crafts still owed, this one included.
+func _craft_sap(entry: Array) -> int:
+	var per_log: int = int(table.tree_sap.get("per_softwood_log", 0))
+	var logs: int = 0
+
+	for need in entry[2]:
+		var rows: Array = need[2] if need.size() > 2 else []
+		var total: int = 0
+
+		for unit in rows:
+			total += int(unit[3]) if unit.size() > 3 else 1
+
+		var skip: int = maxi(total - int(need[1]) * int(entry[1]), 0)
+		var want: int = int(need[1])
+
+		for unit in rows:
+			var n: int = int(unit[3]) if unit.size() > 3 else 1
+			var passed: int = mini(skip, n)
+			skip -= passed
+			var used: int = mini(want, n - passed)
+			want -= used
+
+			if used > 0 and table.is_softwood_log(int(unit[0])):
+				logs += used
+
+			if want <= 0:
+				break
+
+	return logs * per_log if per_log > 0 else 0
 
 
 # The bark a felled trunk of `species` gives once, as [item number, count], or [] for a species that gives none: drops.json trunk "bark_species" names them,
@@ -19276,6 +19319,11 @@ func _craft_tick(spent: float) -> void:
 
 				if free_entry:   # an admin-mode craft's product earns no goal by being held (GA-54)
 					_goal_admin_gave(peer, made_n, gave_n)
+
+			var sap: int = _craft_sap(head) if not sealed else 0   # Tree sap from the softwood logs this craft used (Dave 16 Nov 2026)
+
+			if sap > 0:
+				give(peer, table.number_of(str(table.tree_sap.get("item", ""))), sap)
 
 			_gain_source = SRC_PICKUP
 			# The smithy the craft was worked at wears with use, iron on bronze faster (master s2.7 item 5): its own store's station, or the one that
