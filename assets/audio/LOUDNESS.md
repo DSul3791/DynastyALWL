@@ -98,14 +98,15 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | ice_crack | generated | 3 | -36.1 | -14.4 | -7.5 |
 | owl_hoot | generated | 3 | -21.9 | -13.9 | +6.7 |
 
-## body (median -32.3 dB)
+## body (median -23.8 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| breath_gasp | generated | 3 | -23.8 | -7.2 | +8.6 **outlier** |
-| breath_heave | generated | 3 | -20.1 | -4.7 | +12.3 **outlier** |
-| breath_in | generated | 3 | -40.9 | -11.2 | -8.6 **outlier** |
-| breath_out | generated | 3 | -40.9 | -11.2 | -8.6 **outlier** |
+| breath_gasp | generated | 3 | -23.8 | -7.2 | +0.0 |
+| breath_heave | generated | 3 | -20.1 | -4.7 | +3.7 |
+| breath_in | generated | 3 | -40.9 | -11.2 | -17.1 **outlier** |
+| breath_out | generated | 3 | -40.9 | -11.2 | -17.1 **outlier** |
+| heartbeat | generated | 3 | -16.4 | -1.9 | +7.4 |
 
 ## bow (median -20.6 dB)
 
@@ -236,9 +237,9 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 |---|---|---|---|---|---|
 | hit_axe_soil | generated | 3 | -18.8 | -1.2 | +1.5 |
 | hit_axe_stone | generated | 3 | -22.8 | -1.7 | -2.5 |
-| hit_axe_wood | generated | 3 | -20.4 | -1.5 | -0.0 |
+| hit_axe_wood | generated | 3 | -20.4 | -1.5 | -0.1 |
 | hit_hammer_soil | generated | 3 | -17.7 | -1.4 | +2.6 |
-| hit_hammer_stone | generated | 3 | -22.5 | -1.4 | -2.1 |
+| hit_hammer_stone | generated | 3 | -22.5 | -1.4 | -2.2 |
 | hit_hammer_wood | generated | 3 | -18.2 | -1.1 | +2.1 |
 | hit_pick_soil | generated | 3 | -20.3 | -1.2 | +0.0 |
 | hit_pick_stone | generated | 3 | -22.2 | -1.5 | -1.9 |
@@ -801,15 +802,14 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | treewind_leaves | generated | 1 | -15.4 | -2.3 | +0.0 |
 | treewind_pine | generated | 1 | -15.4 | -1.8 | -0.0 |
 
-## ui (median -15.3 dB)
+## ui (median -16.3 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| ui_click | generated | 2 | -22.2 | -6.3 | -6.9 |
-| ui_goal | generated | 1 | -14.9 | -3.2 | +0.4 |
-| ui_off | generated | 2 | -15.2 | -4.5 | +0.1 |
-| ui_on | generated | 2 | -15.3 | -4.5 | +0.0 |
-| ui_quality | generated | 2 | -17.3 | -5.0 | -2.0 |
+| ui_click | generated | 2 | -22.2 | -6.3 | -5.9 |
+| ui_off | generated | 2 | -15.2 | -4.5 | +1.1 |
+| ui_on | generated | 2 | -15.3 | -4.5 | +1.0 |
+| ui_quality | generated | 2 | -17.3 | -5.0 | -1.0 |
 
 ## water (median -15.6 dB)
 
