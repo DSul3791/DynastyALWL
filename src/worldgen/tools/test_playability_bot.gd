@@ -284,6 +284,7 @@ func _init() -> void:
 	if halted:
 		return
 
+	items.report_position(1, items._items[log_on_ground]["pos"])   # walk to the log: the fall laid it along the line, up to the tree's height away
 	items.action(1, Net.ACT_PICKUP, log_on_ground, 0, 0, Vector3.ZERO)
 	var carried: bool = items.shoulder_of(1) != "" or items.inventory_of(1).count_fill(items.table.number_of("log")) > 0
 	need(carried, "the log on the ground could not be picked up (shoulder empty, none in the pack)")

@@ -225,7 +225,8 @@ func _init() -> void:
 	for k in logs:
 		var off: Vector3 = w._items[k]["pos"] - base
 		var cross: float = absf(off.x * along.z - off.z * along.x)
-		check(cross < 0.01 and off.dot(along) > 0.0 and off.dot(along) < 10.0 and absf(off.y - float(tree["radius"])) < 0.01, "a log lies on the line of the fall, on the ground")
+		var rise: float = tan(float(tree.get("pitch", 0.0))) * off.dot(along)   # the resting pitch (fell_pose.gd: a slight dip for the taper even on flat ground)
+		check(cross < 0.01 and off.dot(along) > 0.0 and off.dot(along) < 10.0 and absf(off.y - float(tree["radius"]) - rise) < 0.01, "a log lies on the line of the fall, on the ground (along %.2f, up %.3f, pitch %.4f)" % [off.dot(along), off.y, float(tree.get("pitch", 0.0))])
 
 	check(w.inventory_of(1).count_of(log_n) == 0, "no log went into the pack")
 

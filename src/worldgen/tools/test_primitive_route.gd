@@ -143,6 +143,9 @@ func gather(ids: Array) -> void:
 	for _pass in range(6):
 		for id in ids:
 			for k in loose(str(id)):
+				if not items._items.has(k):
+					continue   # a batch pickup a moment ago took this heap too
+
 				items.report_position(1, items._items[k]["pos"])
 				items.action(1, Net.ACT_PICKUP, k, 0, 0, Vector3.ZERO)
 
