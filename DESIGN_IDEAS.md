@@ -764,14 +764,7 @@ See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the 
 
 ### 6.6 Children and family growth
 
-- **[Decided]** Having a child is a joint decision. The player discusses it with the spouse, they agree, and the pregnancy begins. It is not automatic and a bot-run household does not breed on its own.
-- **[Decided]** A baby and young child are a cost on the household (food, care, the spouse's time), not a worker. The child becomes useful around age 10 to 12.
-- **[Decided]** At about that age the player talks with the child about what direction to take and can set markers that steer them (farming, mining, a trade, adventure, schooling, being the heir). The child follows the markers according to their own interests and abilities.
-- **[Decided]** The default for a child with no markers is idleness: play, little work, few skills. An unattended household therefore raises children with weak skills and a farm that stagnates.
-- **[Decided]** An engaged player can teach the children, so different children can serve different branches of the dynasty (one runs the mine, others work the farm, some adventure). All of these bring wealth and options to the family.
-- **[Proposed]** Teaching speed depends on the parent's own skill in the trade and the time they spend with the child. This links to the partial-training idea in Section 6.2.
-- **[Proposed]** The child's own traits can pull against the markers, so a strong push against a child's nature gives slower, grumbling progress.
-- **[Open]** How much time teaching costs the parent, and whether NPC tutors or apprenticeships can stand in for the parent.
+See [children and family growth](Design_Ideas_Unapproved.md#children-and-family-growth) for preserved recorded decisions, proposals and open questions.
 
 ### 6.7 Succession, inheritance and the dynasty
 
@@ -859,22 +852,11 @@ See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the 
 
 ### 6.8 Non-successor siblings (to design later)
 
-- **[Idea]** A sibling outside the succession line decides for themselves, using their traits, skills, memory and preferences, whether to stay with the dynasty or break off and live their own life.
-- **[Idea]** A sibling might marry another player and join that player's dynasty, or take a local job (temple, inn) and become a town character who keeps a tie to the family.
-- **[Idea]** A sibling who leaves chooses between their own house and living at the homestead, where their income counts toward the dynasty's income.
-- **[Open]** All of this is deferred. It needs the NPC decision system (traits, preferences, language) and the household income model first.
+See [children and family growth](Design_Ideas_Unapproved.md#children-and-family-growth) for preserved recorded decisions, proposals and open questions.
 
 ### 6.9 Adoption and inclusion (to explore more)
 
-- **[Decided]** The game does not restrict who can be spouses. Same-gender couples, and any couple that cannot have children, are fully supported.
-- **[Decided]** Dynasties can adopt children. A couple can apply to the local temple, or the temple can reach out to them.
-- **[Proposed]** Requirements to adopt: the dynasty has a home, enough income to raise a child, and a good enough reputation. A child who is adopted becomes family and can become the successor.
-- **[Decided]** Adoptable children come first from displaced NPCs: children under a set age from collapsed dynasties who have no parent.
-- **[Decided]** A displaced child who still has a parent can come with that parent. The temple may introduce a displaced spouse with children, and the couple may choose marriage, adoption or both.
-- **[Decided]** When there are not enough displaced NPCs, the server keeps a number of pre-generated orphans at each temple, with the number picked at random each week. There is also a random chance of a spouse with one or two children waiting at the temple.
-- **[Open]** How an adopted child's traits and background are generated, how the temple decides between applicants, and the age limit for a child to count as adoptable.
-- **[Open]** Whether other routes should exist (guardianship of a relative's child, fostering) and how they differ from adoption.
-
+See [children and family growth](Design_Ideas_Unapproved.md#children-and-family-growth) for preserved recorded decisions, proposals and open questions.
 
 ### 6.10 Extended life and hiding it
 
