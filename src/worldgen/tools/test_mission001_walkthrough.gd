@@ -463,7 +463,7 @@ func leave(keep: Dictionary) -> void:
 			var before: int = have(id)
 			items.action(1, Net.ACT_DROP, s, 0, mini(inv.counts[s], have(id) - int(keep[id])), items.position_of(1) + Vector3(0.0, 0.0, -5.0))
 
-			if have(id) == before:   # refused (too much lying about already): it stays in the pack
+			if have(id) == before:   # nothing left the pack: stop rather than loop
 				break
 
 

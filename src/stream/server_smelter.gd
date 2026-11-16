@@ -13,7 +13,7 @@ extends RefCounted
 #   - a job takes smelt.ingot_s / smelt.speed real seconds an ingot (a job that gives two takes twice as long);
 #   - a finished job takes its ore, its carbon and its fuel (smelting.fuel_per_ore hopper fuel a unit of ore) only when it delivers: into the
 #     output rack, or, with no rack (the Primitive Smelter), onto the ground in front. Nothing is held in between, so taking ore or fuel out
-#     never loses anything, and a job that cannot deliver (a full rack, a crowded ground) waits with its time kept;
+#     never loses anything, and a job that cannot deliver (a full rack) waits with its time kept;
 #   - a job may need air from bellows (smelting.jobs[...].bellows: Iron and Steel). At a smelt.bellows station (the Improved smelter) a player gives it by
 #     working the bellows (E beside it; they stop when they press E again, walk away or leave), which also speeds every job by
 #     smelt.bellows_speed. An unfinished air job keeps its time when the bellows stop and goes on when they start again (master s2.7 item 4);
@@ -650,20 +650,9 @@ func _fix_layout(id: int, it: Dictionary, def: Dictionary) -> void:
 			var fit: int = room(def, box, int(row[0]), left, int(row[5]))
 			left = put(def, box, int(row[0]), fit, int(row[2]), row[3], int(row[5])) + (left - fit)
 
-		if left > 0 and not host.drop_in_world(int(row[0]), left, front_of(it, def), int(row[2]), GROUND_S, NAN, NAN, "", row[3]):
-			_lay_down(int(row[0]), left, front_of(it, def), int(row[2]), row[3])   # crowded ground: this one-time move still loses nothing
+		if left > 0:
+			host.drop_in_world(int(row[0]), left, front_of(it, def), int(row[2]), GROUND_S, NAN, NAN, "", row[3])
 
-	host._dirty = true
-
-
-# A ground item put down past drop_in_world's crowd limit (fields as drop_in_world writes them).
-func _lay_down(number: int, count: int, at: Vector3, item_wear: int, item_inst: Dictionary) -> void:
-	host._items[host._next_id] = {"number": number, "count": count, "pos": at, "left": GROUND_S, "wear": item_wear}
-
-	if not item_inst.is_empty():
-		host._items[host._next_id]["inst"] = item_inst.duplicate(true)
-
-	host._next_id += 1
 	host._dirty = true
 
 
