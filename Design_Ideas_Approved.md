@@ -35,3 +35,8 @@ Spouses after that child still receive their ordinary opportunity to accept. Onl
 
 This ruling replaces the former global oldest-to-youngest blood-child order and the ambiguous description of the fallback as the "youngest child" or "last person on the line." The former text remains recoverable at [the pre-clarification source](https://github.com/DSul3791/DynastyALWL/blob/cf16e87da52a48bd8a809f667fe6330868dfa39a/Design_Ideas_Unapproved.md#handover-chain-succession). The rule selects the final child in the approved family order, even when a spouse follows them.
 
+## Successor's first responsibility — estate debts
+
+- **Status:** DIRECTOR-APPROVED, Dave, 16 Nov 2026, same conversation: "the first job a successor must do is arrange payments of any debts owed by the estate." Dave explicitly deferred addressing this future gameplay dynamic.
+- **Design note:** The successor's first responsibility is to arrange payment of debts owed by the estate.
+- **Deferred:** Record this requirement only. Payment mechanics, terms, enforcement and implementation are future work and are not addressed by this documentation change. This note does not resolve other estate/debt questions or authorize code changes.
