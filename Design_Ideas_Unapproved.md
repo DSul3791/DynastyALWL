@@ -332,3 +332,69 @@ Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/b
 - Naming someone is recorded as nonbinding, while prior agreement is described as making acceptance certain. Preserve both qualifications pending source review.
 - Keep the distinct benefactor-only tax, protected-item rules, forced-property-sale/loan choice, tax cap, reputation discounts and transferred reputation together. No single rate or “nothing is taken” summary replaces their nested exceptions.
 - [Death and rescue](#death-and-rescue), [aging](#aging-and-lifespan), [personal finance](DESIGN_IDEAS.md#63-personal-finances), [duress](DESIGN_IDEAS.md#absence-and-duress) and [NPC memory](DESIGN_IDEAS.md#88-npc-character-memory-and-conversation) remain dependencies. Individual reputation versus dynasty credit averages is a distinction, not permission to invent a dynasty-wide reputation score.
+
+## NPC population and migration
+
+Source: [DESIGN_IDEAS §§8.2–8.3](https://github.com/DSul3791/DynastyALWL/blob/61cba95e7f41c0aa2528820835844f637262103b/DESIGN_IDEAS.md#82-npc-population), extracted 16 Nov 2026. Recorded decisions remain SOURCE UNVERIFIED; complete paragraphs, examples and original tags are preserved. Internal section numbers refer to DESIGN_IDEAS.
+
+### Population, roles and country folk
+
+#### Recorded decisions — SOURCE UNVERIFIED
+
+- **[Decided]** Population is controlled by aging, sickness, poverty and murder.
+- **[Decided]** New NPCs spawn at about age 20. If two single NPCs live and work together they may marry and have children. Children start small and stay near or within a reasonable distance of their parents. They grow up with skills and temperament similar to their parents.
+- **[Decided]** When a player builds a job building (for example a blacksmith blueprint), an NPC may come along and apply. The server rolls up a new NPC for that role (see "Role-weighted rolls" below) and places them in the world.
+- **[Decided]** NPCs start at level 1 and simple. Over time they build stories, history, skills and fortitude. They can gain or lose wealth.
+- **[Decided]** NPCs have core traits: goodness, lawfulness, physicalness, dexterity, wisdom, intelligence, charisma, and others. They also have skills like players.
+- **[Decided]** **Role-weighted rolls.** NPCs are never rolled with flat random traits and skills. Every role (blacksmith, guard, scavenger, farmer and so on) has a **template** of weighted traits and skills that fit the job, and each NPC is rolled with **variance** around that template. A blacksmith comes out with blacksmith-shaped skills and traits, even if he is a weak one. A guard comes out "guardly", weighted toward physicalness and a sense of duty or lawfulness. Variance still makes individuals differ: a poor blacksmith is still weighted toward smithing, not a random mix. This applies to all NPC generation, including scavengers, the NPCs who apply to job buildings, orphans and displaced arrivals.
+- **[Decided]** NPC memory tries to remember everything but forgets over time, like a human.
+- **[Decided]** NPCs are the main story drivers, offering work and adventure to players.
+- **[Decided]** Players can converse with any NPC. Conversations are handled by a **language model**.
+- **[Decided]** Language model use follows the budget in Section 3: conversation with players and occasional judgment calls use the model, and routine NPC work runs on rules.
+- **[Decided]** The project owner intends to run a language model on their own Ubuntu machine as the game's AI source, and to add hardware as the game grows.
+- **[Decided]** **Scavengers (roaming pickers).** Some NPCs roam certain areas and live off the land. If one finds an unclaimed item on the ground (a dropped sword, discarded nails or iron), they pick it up and sell it at a reduced price to the nearest fitting tradesperson, such as scrap metal to the blacksmith, like a pawn shop. Picking up unclaimed goods is not a crime.
+  - They use the ordinary NPC traits (honesty, lawfulness, goodness and the rest; Section 8.8), rolled from a scavenger template with variance (role-weighted rolls, above), not a separate system. The template is mostly low-to-middling skills with a wide spread in honesty and boldness. Most are harmless and take only what lies around. A bold, low-honesty one might steal from a player's person, and then it is a thief and the law system applies (Section 9); fencing stolen goods uses the existing fencing and stolen-goods economy.
+  - Players cannot tell which kind they met from the archetype alone. A scruffy one may turn out to be honest and kind, and worth befriending, and another may be genuinely sketchy. It is found out through talking and watching, as with any NPC.
+  - Details (how many, where they roam, how much they pay) are tunable.
+
+#### Ideas and proposals — not approved
+
+- **[Proposed]** Keep personality (goodness, lawfulness) conceptually separate from abilities (physicalness, dexterity, wisdom, intelligence, charisma). Personality drives choices, abilities decide whether choices succeed.
+- **[Proposed]** Each memory stores a strength, an importance and a timestamp. Decay is computed only when the NPC recalls it, and recall reinforces it. Importance slows fading. Strongest relevant memories plus traits form the context for a conversation.
+- **[Proposed]** Tools such as Ollama and llama.cpp run open-weight models on Ubuntu, and vLLM is built for serving many requests at once. Calls cost nothing per use, but hardware, power and capacity are real limits, and a small model is weaker than large hosted ones, so prompts should be tight and outputs structured and validated.
+- **[Proposed]** Check each model's license before building a paid game on it. Some open-weight licenses restrict commercial use.
+- **[Proposed]** If the model is busy or offline, NPCs fall back to rules or simple dialogue and the game keeps working.
+- **[Proposed]** NPC population caps per island or region.
+- **[Idea] (brainstorm)** **Country folk.** Forests and roads around towns hold believable residents with territory, livelihoods and habits, and every shade of good, selfish, neutral and secretive: hermits, hunters, trappers, herbalists, scavengers (above), charcoal burners, wanderers. Some watch the player unseen. A secretive hermit may witness an attack and then rescue the player, report the danger, hide, or scavenge the aftermath, by personality and risk. They do not give away their home or what they know; getting to know locals can uncover secret homes, routes, rare plants or witnesses. Perhaps only the town wizard knows who the hermit is, and everyone else thinks it is a ghost.
+- **[Proposed] (brainstorm)** Track these people as short timestamped observations and work out important memories only when they matter, rather than running conversations for distant NPCs.
+- **[Idea] (brainstorm)** **Real supernatural beings.** Some mysterious rescuers are ordinary people; some really are ghosts, bog witches or other beings, and the player should not always know which. A cottage may seem real and then vanish behind you; the same figure or dwelling may turn up in different places within its region. The being and its territory persist while its visible form (cottage, campfire, figure, lights) comes and goes. Spirits may be kind, neutral, deceptive or dangerous, may attach to a dynasty and remember it across generations, and may become a family legend passed on by journals and stories, not inherited memory.
+- **[Idea] (brainstorm)** A kind apparition is an extraordinary last resort, only when self-rescue, companions, travelers and guards cannot get the player safe in reasonable time. It is not the normal rescue.
+- **[Idea]** NPC merchants eventually appear on their own. They need somewhere to live and somewhere to work, so they only appear where a profitable opportunity (a price gap and a connecting road) coincides with available housing and workspace.
+
+#### Open questions
+
+- **[Open]** The templates themselves (which weights and how much variance for each role) are designed per role as the roles are built.
+- **[Open] (brainstorm)** How rare supernatural events are, what triggers them, whether the being is physically real, and whether misread events or hallucinations can produce the same stories.
+
+### Displacement and migration
+
+#### Recorded decisions — SOURCE UNVERIFIED
+
+- **[Decided]** When a town falls, displaced NPCs migrate toward the nearest town, with some randomness (sometimes the second nearest).
+- **[Decided]** On arrival they look for work they are good at, may take a new job, may build a house or inn if wealthy enough, or may become bandits or join a traveling circus or bandit group.
+
+#### Ideas and proposals — not approved
+
+- **[Proposed]** Choices are weighted random, with traits shifting the weights.
+- **[Proposed]** Travel is abstract when no player is near (departure time plus travel time), using wrap-aware distances.
+
+#### Open questions
+
+- **[Open]** Whether NPCs can cross the ocean on their own. If not, islands are separate populations unless ships connect them.
+
+### Dependencies and source-review questions
+
+- [Aging](#aging-and-lifespan) retains the differing NPC starting-age range; neither version is silently replaced. [Children/family](#children-and-family-growth) distinguishes player-household pregnancy choices from NPC-population behavior.
+- [Memory and conversation](DESIGN_IDEAS.md#88-npc-character-memory-and-conversation) and [language hosting](DESIGN_IDEAS.md#89-language-service-hosting) retain their detailed designs. Model/host examples above are historical proposals, not current product or licensing recommendations.
+- [Death and rescue](#death-and-rescue) retains rare rescue qualifications; [duress](DESIGN_IDEAS.md#absence-and-duress) and settlement decline describe different causes of displacement. Player major-illness exclusions remain in [§8.1](DESIGN_IDEAS.md#81-towns).
+- [NPC technical plan](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/docs/mirror/items/NPC_DESIGN.md) and [first-island roster](TOWN_NPC_SPEC.md) are dated records with proposals, not current population censuses or blanket implementation evidence.
