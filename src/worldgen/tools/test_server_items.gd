@@ -1253,7 +1253,7 @@ func _init() -> void:
 			else:
 				trunks += 1
 
-	var on_ground = func(item: String) -> int:
+	var ground_count = func(item: String) -> int:
 		var total: int = 0
 
 		for k in w._items:
@@ -1263,8 +1263,8 @@ func _init() -> void:
 		return total
 
 	check(trunks == 0 and stumps == 1, "a stump stays where it stood, no whole trunk")
-	check(on_ground.call("log_oak") >= 1 and w.shoulder_of(1) == "", "the oak comes down in oak logs on the ground, none in hand (%d logs)" % on_ground.call("log_oak"))
-	check(on_ground.call("tree_roots") >= 1 and on_ground.call("stick") >= 1, "the root ball and the branches' sticks lie there too")
+	check(ground_count.call("log_oak") >= 1 and w.shoulder_of(1) == "", "the oak comes down in oak logs on the ground, none in hand (%d logs)" % ground_count.call("log_oak"))
+	check(ground_count.call("tree_roots") >= 1 and ground_count.call("stick") >= 1, "the root ball and the branches' sticks lie there too")
 
 	# TEST-013 (Dave 12 Nov 2026): the tool in hand does the wood work. A held pickaxe (the axe still on the hotbar) only tears a fallen log up: kindling and
 	# thatch, no sticks, and the axe on the hotbar is not used.
@@ -1275,13 +1275,13 @@ func _init() -> void:
 			a_log = k
 
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
-	var pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
+	var log_pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
 	var axe_wear: int = int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1])
 	var sticks_before: int = w.inventory_of(1).count_of(w.table.number_of("stick"))
 	var splinters_before: int = w.inventory_of(1).count_of(w.table.number_of("kindling")) + w.inventory_of(1).count_of(w.table.number_of("thatch"))
 	w.report_position(1, w._items[a_log]["pos"])
 	w._last_process.clear()
-	w.action(1, Net.ACT_PROCESS, a_log, 0, 0, Vector3(float(pick_slot + 1), 0.0, 0.0))
+	w.action(1, Net.ACT_PROCESS, a_log, 0, 0, Vector3(float(log_pick_slot + 1), 0.0, 0.0))
 	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == sticks_before and w.inventory_of(1).count_of(w.table.number_of("kindling")) + w.inventory_of(1).count_of(w.table.number_of("thatch")) > splinters_before, "a pickaxe in hand tears kindling and thatch off a fallen log, no sticks")
 	check(int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear, "the axe on the hotbar is not used")
 	w.inventory_of(1).remove(w.table.number_of("stone_pickaxe"), 1)
@@ -1289,7 +1289,7 @@ func _init() -> void:
 
 	# A tree of a wood without its own log item (Dave 1 Nov: every tree gives logs) drops the plain Log.
 	w._fell_record(Vector2i(0, 0), {"name": "wild_apple", "position": Vector3(40.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3}, Vector2(1.0, 0.0))
-	check(on_ground.call("log") >= 1, "an apple tree comes down in plain logs (%d)" % on_ground.call("log"))
+	check(ground_count.call("log") >= 1, "an apple tree comes down in plain logs (%d)" % ground_count.call("log"))
 	check(w.table.number_of("log_wild_apple") > 0 and w.table.number_of("lumber_wild_cherry") > 0, "retired wood items stay in the item table, so old stock in saves and chests still loads")
 	var stump_left: bool = false
 

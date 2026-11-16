@@ -61,10 +61,10 @@ func _init() -> void:
 	# 1. Landed after the fall (FALL_S of the server's own time).
 	var dir: String = "user://test_felled_stays_gone_%d" % Time.get_ticks_usec()
 	var w = make_items(dir)
-	var first: int = w._next_id
+	var first_id: int = w._next_id
 	w._fell_record(Vector2i(0, 0), {"name": "oak", "position": Vector3(3.0, 10.0, 3.0), "height": 9.0, "trunk": 0.3}, Vector2(1.0, 0.0))
-	var id: int = first
-	var pieces: Array = range(first + 1, w._next_id)
+	var id: int = first_id
+	var pieces: Array = range(first_id + 1, w._next_id)
 	w._fall_tick(ItemsScript.FALL_S - 0.5)
 	check(bool(w._items[id]["tree"].get("fresh", false)) and pieces.all(func(k): return w._items[k].has("fall")), "a tree still falling is fresh and its pieces carry the fall (a client near it sees it fall)")
 	w._fall_tick(0.6)
