@@ -2328,15 +2328,15 @@
 			],
 			"obtainable_now": true
 		},
-		"wooden_spade": {
-			"name": "Wooden - Spade",
+		"wooden_shovel": {
+			"name": "Wooden - Shovel",
 			"kind": "tool",
 			"description": "A sharpened wooden blade. Digs roots and bulbs.",
 			"how_to_get": [
 				"Craft: 2 Stick (keep Stone)"
 			],
 			"used_for": [
-				"Used in Stone - Spade"
+				"Used in Stone - Shovel"
 			],
 			"obtainable_now": true
 		},
@@ -2550,7 +2550,7 @@
 				"Used in Iron - Hoe",
 				"Used in Iron - Mace",
 				"Used in Iron - Pickaxe",
-				"Used in Iron - Spade",
+				"Used in Iron - Shovel",
 				"Used in Iron - Sword",
 				"Used in Iron - Shield",
 				"Used in Iron - Hammer",
@@ -2614,7 +2614,7 @@
 				"Used in Steel - Shield",
 				"Used in Steel - Mace",
 				"Used in Steel - Pickaxe",
-				"Used in Steel - Spade",
+				"Used in Steel - Shovel",
 				"Used in Steel - Striker",
 				"Used in Steel - Hammer",
 				"Used in Steel - Doorway",
@@ -2668,7 +2668,7 @@
 			"kind": "material",
 			"description": "A heavy, sticky shovelful of clay. Fire it for bricks and pots.",
 			"how_to_get": [
-				"Dug with a spade where the ground is clay, or below wet lowland soil"
+				"Dug with a shovel where the ground is clay, or below wet lowland soil"
 			],
 			"used_for": [
 				"Used in Brick",
@@ -2801,31 +2801,31 @@
 			],
 			"obtainable_now": true
 		},
-		"stone_spade": {
-			"name": "Stone - Spade",
+		"stone_shovel": {
+			"name": "Stone - Shovel",
 			"kind": "tool",
-			"description": "A spade with a stone blade. Digs deeper and lasts longer than wood.",
+			"description": "A shovel with a stone blade. Digs deeper and lasts longer than wood.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Wooden - Spade, 2 Stone, 1 Twine"
+				"Craft at a workbench: 1 Wooden - Shovel, 2 Stone, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": false,
 			"status": "retired"
 		},
-		"iron_spade": {
-			"name": "Iron - Spade",
+		"iron_shovel": {
+			"name": "Iron - Shovel",
 			"kind": "tool",
-			"description": "A spade with an iron blade.",
+			"description": "A shovel with an iron blade.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
-		"steel_spade": {
-			"name": "Steel - Spade",
+		"steel_shovel": {
+			"name": "Steel - Shovel",
 			"kind": "tool",
-			"description": "A spade with a steel blade.",
+			"description": "A shovel with a steel blade.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Steel ingot, 2 Stick"
 			],
@@ -5184,7 +5184,7 @@
 			"kind": "material",
 			"description": "A rusty brown lump. Smelts to iron in an Improved smelter with its bellows worked, or an Advanced smelter.",
 			"how_to_get": [
-				"Dig with a spade in fen or marsh mud, most often at its edge. Bog iron grows back slowly."
+				"Dig with a shovel in fen or marsh mud, most often at its edge. Bog iron grows back slowly."
 			],
 			"used_for": [
 				"Smelted into Iron ingots and, with carbon, Steel ingots"
@@ -5794,7 +5794,7 @@
 			"how_to_get": [
 				"Craft at a campfire pot: 2 Sea water",
 				"Mined with any pick from a rock salt outcrop",
-				"Dug from a salt flat with a spade"
+				"Dug from a salt flat with a shovel"
 			],
 			"used_for": [
 				"Used in Cheese",
@@ -7663,7 +7663,7 @@
 			"kind": "material",
 			"description": "Clear quartz worn smooth into a lens. A rare find when digging rock or gravel.",
 			"how_to_get": [
-				"Found now and then when digging gravel or bare rock with a spade"
+				"Found now and then when digging gravel or bare rock with a shovel"
 			],
 			"used_for": [
 				"Used in Wooden - Spyglass"
@@ -9788,7 +9788,7 @@
 		"worm": {
 			"name": "Worm",
 			"kind": "material",
-			"description": "A fat earthworm turned up by the spade in rich soil. Fish take it as bait.",
+			"description": "A fat earthworm turned up by the shovel in rich soil. Fish take it as bait.",
 			"how_to_get": [
 				"Found now and then when digging loam, humus, silt or mud"
 			],
@@ -13099,7 +13099,7 @@
 				},
 				{
 					"title": "Stone - Pickaxe",
-					"text": "The first pick. It breaks boulders and gives you ore from tin and copper outcrops. Harder ores need a better pick. A pick is also the right tool for rock and ore; a spade is for soil."
+					"text": "The first pick. It breaks boulders and gives you ore from tin and copper outcrops. Harder ores need a better pick. A pick is also the right tool for rock and ore; a shovel is for soil."
 				},
 				{
 					"title": "Tin",
@@ -13123,7 +13123,7 @@
 				},
 				{
 					"title": "Bog iron",
-					"text": "Some wet ground, low and boggy, builds up iron in its mud. Dig it out with a spade and smelt it like any iron ore. It is where the land near your camp can give you iron, and a dug patch fills again in time."
+					"text": "Some wet ground, low and boggy, builds up iron in its mud. Dig it out with a shovel and smelt it like any iron ore. It is where the land near your camp can give you iron, and a dug patch fills again in time."
 				},
 				{
 					"title": "Coal and charcoal",
@@ -13143,7 +13143,7 @@
 				},
 				{
 					"title": "Clay and sand",
-					"text": "Dig clay with a spade from clay soil and under the lowland loam. Sand is dug from beaches and river sand. Together with stone and lime powder, sand makes concrete."
+					"text": "Dig clay with a shovel from clay soil and under the lowland loam. Sand is dug from beaches and river sand. Together with stone and lime powder, sand makes concrete."
 				},
 				{
 					"title": "Caves",

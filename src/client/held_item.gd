@@ -54,14 +54,14 @@ const SPEAR_GRIP_Z := 0.3
 const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
 const HELD_HOE_ROLL_DEG := 60.0       # first person: the hoe is rolled about its haft so the blade shows instead of hiding edge-on
 const THIRD_ROD_PITCH_DEG := 22.0     # third person: a carried fishing rod points forward and up about 30 degrees (it lay horizontal and a little down at the default lean)
-const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
+const THIRD_SHOVEL_PITCH_DEG := -56.0   # third person: a carried shovel points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
 const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
 const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
 const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
-# (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
+# (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a shovel facing up.
 const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
 const HELD_SPEAR_SCALE := 1.0
 const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow", "bronze_arrow", "iron_arrow", "steel_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
@@ -82,7 +82,7 @@ const HELD_LOOK_TURN := {
 	"striker": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hand_net": Basis.IDENTITY,   # the net hangs from the hand instead (_make_hanging_net_model); listed so it goes through the look path
-	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
+	"shovel": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
 	"bow": Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0)),   # the bow stands upright in the hand (limbs up and down, belly forward, string toward the archer)
@@ -867,7 +867,7 @@ func _is_knife() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "knife"
 
 
-# Any other tool or weapon (spade, and every tool added later) is held too: it has a generic model and plays the "use" arm
+# Any other tool or weapon (shovel, and every tool added later) is held too: it has a generic model and plays the "use" arm
 # animation on left click, so nothing silently fails to be held.
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
@@ -1183,8 +1183,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			return true
 
-		# Right click with the spade switches between Dig and Raise mode (Dave 2026-10-22).
-		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
+		# Right click with the shovel switches between Dig and Raise mode (Dave 2026-10-22).
+		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "shovel":
 			raise_mode = not raise_mode
 			_inv._on_notice("Raise mode: left click adds ground, using soil or stone from your pack" if raise_mode else "Dig mode: left click digs")
 			return true
@@ -1219,7 +1219,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		if button == MOUSE_BUTTON_LEFT and pressed:
 			_arm_play("use", 0.6)
 
-			if str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
+			if str(_inv.table.entry(held_id()).get("tool_class", "")) == "shovel":
 				if raise_mode:
 					_fill_here()
 				else:
@@ -2061,7 +2061,7 @@ func _strike() -> void:
 		_net.inventory_action.rpc_id(1, Net.ACT_MINE, held_slot + 1, 0, 0, hit["position"])   # the pick or axe in hand (protocol 117)
 
 
-# A spade swing at the ground under the crosshair: the server checks the spade and the reach, cuts the hole and tells
+# A shovel swing at the ground under the crosshair: the server checks the shovel and the reach, cuts the hole and tells
 # everyone (the hole, the sound and the vanishing grass happen when it answers; DIGGING_DESIGN.md).
 func _plant_here() -> void:
 	var from: Vector3 = _camera.global_position
@@ -2082,7 +2082,7 @@ func _dig_here() -> void:
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Nothing to dig there: aim the spade at the ground within reach")
+		_inv._on_notice("Nothing to dig there: aim the shovel at the ground within reach")
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_DIG, held_slot, 0, 0, hit["position"])
@@ -2349,9 +2349,9 @@ func _hoe_here(action: int) -> void:
 	_net.inventory_action.rpc_id(1, action, held_slot, 0, 0, hit["position"])
 
 	# The hoe was silent (first-day tool audit, 3 Nov 2026): a soft scrape of the blade on the soil (a garden till is firmer, _till_garden_here). Played when the click is sent, like the
-	# shovel fill (the server may still refuse). It borrows the spade-on-soil clips (no hoe recording yet).
+	# shovel fill (the server may still refuse). It borrows the shovel-on-soil clips (no hoe recording yet).
 	if _sound != null:
-		_sound.hits.hit("spade", "soil", hit["position"], 0.4)
+		_sound.hits.hit("shovel", "soil", hit["position"], 0.4)
 
 
 # The hoe grid (Dave 14 Nov 2026): one grid of green markers for Till a garden and Plant something, garden_w across by garden_d along (Alt + arrow keys,
@@ -2474,7 +2474,7 @@ func _till_garden_here() -> void:
 	_arm_play("use", 0.6)
 
 	if _sound != null:
-		_sound.hits.hit("spade", "soil", hit["position"], 0.7)
+		_sound.hits.hit("shovel", "soil", hit["position"], 0.7)
 
 
 # Alt + arrow keys (KeyBindings garden_*): the hoe grid one point wider or narrower (`across`), longer or shorter (`along`). Returns true when it was used here.
@@ -2542,7 +2542,7 @@ func _garden_step() -> void:
 			_arm_play("use", 0.6)
 
 			if _sound != null:
-				_sound.hits.hit("spade", "soil", send["pos"], 0.7)
+				_sound.hits.hit("shovel", "soil", send["pos"], 0.7)
 		"sow":
 			_net.inventory_action.rpc_id(1, Net.ACT_SOW, int(send["bed"]), slot, 0, send["pos"])   # b: the seed's pack slot; at: the square metre of a plot it goes in
 		"plant_bush":
@@ -2609,14 +2609,14 @@ func _garden_preview() -> void:
 	garden_preview_cells = plan.size()
 
 
-# A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
+# A shovel fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Nothing to fill there: aim the spade at the ground within reach")
+		_inv._on_notice("Nothing to fill there: aim the shovel at the ground within reach")
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
@@ -2625,7 +2625,7 @@ func _fill_here() -> void:
 		_sound.placed.shovel_load(false, hit["position"])   # shortcut: always the soil scoop, played when the click is sent (the server may still refuse); revisit when the fill result carries its material
 
 
-var raise_mode: bool = false              # the spade raises ground (Dave 2026-10-22); false digs
+var raise_mode: bool = false              # the shovel raises ground (Dave 2026-10-22); false digs
 
 
 func _other_tool_hint() -> String:
@@ -2638,15 +2638,15 @@ func _other_tool_hint() -> String:
 			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till a garden, survey a path or plant something (seeds, a dug-up bush or a tree's seed from your pack). With a garden grid out, Alt + arrow keys size it and the wheel turns it. Only planting uses items" % _hoe_mode_name()
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
-		"spade":
-			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
+		"shovel":
+			return "The shovel digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
 
 	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
 
 
 # The line over the hotbar. Dave 10 Nov 2026: it does not name what is in hand ("it doesnt need to say wooden bow in hand. or anything"), so it
 # shows only a state the player has to know: the picked blueprint and why it is red, the hammer's mode, why a placement is red, and the
-# spade's or hoe's mode. Empty otherwise.
+# shovel's or hoe's mode. Empty otherwise.
 func _caption() -> String:
 	if held_number() == 0:
 		return ""
@@ -2683,7 +2683,7 @@ func _caption() -> String:
 
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", "")) if _is_other_tool() else ""
 
-	if tool_class == "spade":
+	if tool_class == "shovel":
 		return "%s (right click switches)" % ("Raise" if raise_mode else "Dig")
 
 	if tool_class == "hoe":
@@ -2794,8 +2794,8 @@ func _mount_model_third(kind: String) -> void:
 
 	var carried: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
 
-	if carried == "spade":
-		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SPADE_PITCH_DEG))
+	if carried == "shovel":
+		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SHOVEL_PITCH_DEG))
 	elif carried == "hoe":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_HOE_PITCH_DEG))
 	elif carried == "saw":
@@ -3190,7 +3190,7 @@ func _make_container_model() -> Node3D:
 	return node
 
 
-# Any other tool: a handle with a flat blade (a spade) or a plain head, until the tool has its own model.
+# Any other tool: a handle with a flat blade (a shovel) or a plain head, until the tool has its own model.
 # The ground mesh of a held tool, turned and sized for the hand, or null when the item has no tool look (it keeps its old model).
 # The grip distance from the model middle goes in the "grip_y" meta (see _mount_model).
 func _make_look_tool_model() -> Node3D:
@@ -3292,7 +3292,7 @@ func _make_other_model() -> Node3D:
 	var rod: CylinderMesh = CylinderMesh.new()
 	rod.top_radius = 0.02
 	rod.bottom_radius = 0.025
-	rod.height = 0.9 if tool_class == "spade" else 0.6
+	rod.height = 0.9 if tool_class == "shovel" else 0.6
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.45, 0.3, 0.16)
 	rod.material = wood
@@ -3300,12 +3300,12 @@ func _make_other_model() -> Node3D:
 	node.add_child(handle)
 	var head: MeshInstance3D = MeshInstance3D.new()
 	var block: BoxMesh = BoxMesh.new()
-	block.size = Vector3(0.16, 0.22, 0.025) if tool_class == "spade" else Vector3(0.06, 0.1, 0.1)
+	block.size = Vector3(0.16, 0.22, 0.025) if tool_class == "shovel" else Vector3(0.06, 0.1, 0.1)
 	var metal: StandardMaterial3D = StandardMaterial3D.new()
-	metal.albedo_color = Color(0.5, 0.42, 0.3) if tool_class == "spade" else Color(0.5, 0.5, 0.52)
+	metal.albedo_color = Color(0.5, 0.42, 0.3) if tool_class == "shovel" else Color(0.5, 0.5, 0.52)
 	block.material = metal
 	head.mesh = block
-	head.position = Vector3(0.0, rod.height * 0.5 + (0.0 if tool_class == "spade" else 0.0), 0.0)
+	head.position = Vector3(0.0, rod.height * 0.5 + (0.0 if tool_class == "shovel" else 0.0), 0.0)
 	node.add_child(head)
 	return node
 

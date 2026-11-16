@@ -35,13 +35,13 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "station-key-0001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	var spade: int = items.recipes.recipe(0).get("number", 0)
+	var shovel: int = items.recipes.recipe(0).get("number", 0)
 
 	for number in items.recipes.numbers():
 		if str(items.recipes.recipe(number)["id"]) == "stone_hoe":
-			spade = number
+			shovel = number
 
-	check(str(items.recipes.recipe(spade).get("station", "")) == "workbench", "the stone hoe is a camp bench recipe")
+	check(str(items.recipes.recipe(shovel).get("station", "")) == "workbench", "the stone hoe is a camp bench recipe")
 	var stone: int = items.table.number_of("stone")
 	var stick: int = items.table.number_of("stick")
 	var twine: int = items.table.number_of("twine")
@@ -49,7 +49,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, stick, 0, 30, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, twine, 0, 8, Vector3.ZERO)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, spade, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, Vector3.ZERO)
 	check(items.craft_queue_of(1).is_empty() and not said.is_empty(), "no bench, no craft (%s)" % str(said))
 	check(not items.station_near(1, "workbench"), "no station near yet")
 
@@ -63,7 +63,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hoe"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 2, Vector3.ZERO)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, spade, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, Vector3.ZERO)
 	check(not items.craft_queue_of(1).is_empty(), "near the bench the craft is queued")
 	items.report_position(1, Vector3(30.0, 10.0, 0.0))
 	items._craft_tick(60.0)

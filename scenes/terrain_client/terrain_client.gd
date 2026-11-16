@@ -5230,7 +5230,7 @@ func _process(delta: float) -> void:
 
 		# Admin digs on a 9 x 9 grid by the spawn, layer by layer downward, plus a drop every 10th request.
 		if i == 0:
-			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("spade"), 0, 1, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
 			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 20, Vector3.ZERO)
 		elif i % 10 == 0:
 			net.inventory_action.rpc_id(1, NetScript.ACT_DROP, 1, 0, 1, Vector3(world["spawn"]))

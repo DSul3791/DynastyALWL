@@ -24,7 +24,7 @@ const BLOCK_SIZE := 16
 const KIND_DIG := 0
 const KIND_FILL := 1
 const SHAPE_SPHERE := 0
-const MAX_PER_BLOCK := 600       # Technical direction: replay cap per block; a block this busy takes no more (200 until build 610: a minute of fast digging in one spot filled it and the spade then did nothing, silently)
+const MAX_PER_BLOCK := 600       # Technical direction: replay cap per block; a block this busy takes no more (200 until build 610: a minute of fast digging in one spot filled it and the shovel then did nothing, silently)
 const MAX_TOTAL_PER_BLOCK := 20000   # lifetime edits one block may hold (memory and the water replay); the settled cache lifts the replay cost, not this
 const MAX_RADIUS_M := 3.0        # Technical direction: widest hole one operation makes
 
@@ -44,7 +44,7 @@ var _mutex: Mutex = Mutex.new()
 
 
 # Opens (or starts) the log and reads it in; a version 1 log (DIGS1, x y z radius per dig, written
-# by the first spade digging) is read as digs and rewritten as DIGS2, the old file kept beside it as
+# by the first shovel digging) is read as digs and rewritten as DIGS2, the old file kept beside it as
 # digs.dat.v1. Returns "" or an error.
 func open(path: String) -> String:
 	_path = path

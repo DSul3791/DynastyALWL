@@ -11,7 +11,7 @@ const FORMAT := 4               # 2 added wear per slot; 3 the instance data aft
 # adding more slots... they are limited by weight really"): it adds GROW_STEP slots when nothing fits, and gives empty ones back at its end.
 const GROW_STEP := 5
 const MAX_SLOTS := 250          # the slot index and the changed-slot count in inventory_slots are one byte each
-const MAX_D_CAP := 1000000       # max_d travels in the JSON block, not the u16 wear: a +2 Tempered steel spade passes 65535
+const MAX_D_CAP := 1000000       # max_d travels in the JSON block, not the u16 wear: a +2 Tempered steel shovel passes 65535
 
 var table
 var numbers: PackedInt32Array = PackedInt32Array()

@@ -11,7 +11,7 @@ Rerun this after any data change instead of hand-editing obtainable_now:
 An item is obtainable now when a player can get it today, starting with empty hands:
   * a world source the data names (flora yields, harvest and berry rows, tree, stump and shrub drops, felled tree seeds, digging, boulders,
     flint, shore nodes, fishing and fish schools, carcass parts, nests, the validator's CODE_SOURCES), gated on the tool
-    the code asks for where that tool might not exist yet (a pick of the right material for ore, a spade to dig, a hoe
+    the code asks for where that tool might not exist yet (a pick of the right material for ore, a shovel to dig, a hoe
     and the seed to farm, an axe to fell);
   * a recipe that is not locked or retired, at a station a player can build to the level the recipe asks for
     (structures.json station + station_level, +1 per add-on kind, "also" stations), with every need and kept tool
@@ -193,21 +193,21 @@ class Reach:
             for e in self.flora:
                 if e.get("kind") == "shrub":
                     changed |= g(e["name"] + self.drops["shrub_work"]["dig_suffix"], "a shrub dug up whole (%s)" % pick)
-        spade = self.tool("spade")
-        if spade:
+        shovel = self.tool("shovel")
+        if shovel:
             dig = self.digging
             for mat, rows in dig.get("yield", {}).items():
                 for r in rows:
-                    changed |= g(r[0], "dug from %s (%s)" % (mat, spade))
+                    changed |= g(r[0], "dug from %s (%s)" % (mat, shovel))
             for r in dig.get("default", []):
-                changed |= g(r[0], "dug (%s)" % spade)
+                changed |= g(r[0], "dug (%s)" % shovel)
             for mat, r in dig.get("under", {}).items():
-                changed |= g(r[0], "dug under %s (%s)" % (mat, spade))
+                changed |= g(r[0], "dug under %s (%s)" % (mat, shovel))
             for f in dig.get("finds", []):
-                changed |= g(f.get("item"), "found digging (%s)" % spade)
+                changed |= g(f.get("item"), "found digging (%s)" % shovel)
             bog = dig.get("bog_iron")
             if isinstance(bog, dict):
-                changed |= g(bog.get("item"), "bog iron dug in wetland mud (%s)" % spade)
+                changed |= g(bog.get("item"), "bog iron dug in wetland mud (%s)" % shovel)
         ore = self.boulders.get("ore", {})
         for name, iid in ore.get("items", {}).items():
             if name in ORE_NOT_IN_WORLD:

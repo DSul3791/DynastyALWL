@@ -93,8 +93,8 @@
    "color": "#6a4a2e",
    "size": 1.0
   },
-  "wooden_spade": {
-   "shape": "spade",
+  "wooden_shovel": {
+   "shape": "shovel",
    "color": "#8a6a3a",
    "size": 0.7
   },
@@ -240,19 +240,19 @@
    "grip_from_end_m": 0.1,
    "note_provisional": "Dave's bronze handsaw mesh (15 Nov 2026). Length and grip PROVISIONAL (copper smallest, bronze about 20% longer, iron biggest): adjust after he sees it in game."
   },
-  "stone_spade": {
-   "shape": "spade",
+  "stone_shovel": {
+   "shape": "shovel",
    "color": "#7d7a74",
    "size": 0.7
   },
-  "iron_spade": {
-   "shape": "spade",
+  "iron_shovel": {
+   "shape": "shovel",
    "color": "#6c6f75",
    "size": 0.7,
    "bits": ["metal"]
   },
-  "steel_spade": {
-   "shape": "spade",
+  "steel_shovel": {
+   "shape": "shovel",
    "color": "#9aa3ad",
    "size": 0.7,
    "bits": ["metal","steel"]
@@ -922,46 +922,46 @@
    "color": "#a89c85",
    "size": 1.0
   },
-  "wooden_spade_medium": {
-   "shape": "spade",
+  "wooden_shovel_medium": {
+   "shape": "shovel",
    "color": "#8a6a3a",
    "size": 0.85
   },
-  "wooden_spade_large": {
-   "shape": "spade",
+  "wooden_shovel_large": {
+   "shape": "shovel",
    "color": "#8a6a3a",
    "size": 1.0
   },
-  "stone_spade_medium": {
-   "shape": "spade",
+  "stone_shovel_medium": {
+   "shape": "shovel",
    "color": "#7d7a74",
    "size": 0.85
   },
-  "stone_spade_large": {
-   "shape": "spade",
+  "stone_shovel_large": {
+   "shape": "shovel",
    "color": "#7d7a74",
    "size": 1.0
   },
-  "iron_spade_medium": {
-   "shape": "spade",
+  "iron_shovel_medium": {
+   "shape": "shovel",
    "color": "#6c6f75",
    "size": 0.85,
    "bits": ["metal"]
   },
-  "iron_spade_large": {
-   "shape": "spade",
+  "iron_shovel_large": {
+   "shape": "shovel",
    "color": "#6c6f75",
    "size": 1.0,
    "bits": ["metal"]
   },
-  "steel_spade_medium": {
-   "shape": "spade",
+  "steel_shovel_medium": {
+   "shape": "shovel",
    "color": "#9aa3ad",
    "size": 0.85,
    "bits": ["metal","steel"]
   },
-  "steel_spade_large": {
-   "shape": "spade",
+  "steel_shovel_large": {
+   "shape": "shovel",
    "color": "#9aa3ad",
    "size": 1.0,
    "bits": ["metal","steel"]

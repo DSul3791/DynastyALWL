@@ -511,7 +511,7 @@ func _init() -> void:
 				if not soil_names.has(String(material)):
 					fail("digging.json finds %s: unknown ground material '%s'" % [find.get("item", ""), material])
 
-		# Bog iron (Sonny s11, src/shared/bog_iron.gd): a spade dig on a deposit under a fen, marsh, swamp or bog sample gives this item.
+		# Bog iron (Sonny s11, src/shared/bog_iron.gd): a shovel dig on a deposit under a fen, marsh, swamp or bog sample gives this item.
 		var bog: Dictionary = digging.get("bog_iron", {})
 
 		if not bog.is_empty():

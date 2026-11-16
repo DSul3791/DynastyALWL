@@ -244,9 +244,9 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | hit_pick_soil | generated | 3 | -20.3 | -1.2 | +0.0 |
 | hit_pick_stone | generated | 3 | -22.2 | -1.5 | -1.9 |
 | hit_pick_wood | generated | 3 | -18.6 | -1.2 | +1.7 |
-| hit_spade_soil | generated | 3 | -21.1 | -1.5 | -0.8 |
-| hit_spade_stone | generated | 3 | -21.7 | -1.5 | -1.4 |
-| hit_spade_wood | generated | 3 | -20.0 | -1.4 | +0.3 |
+| hit_shovel_soil | generated | 3 | -21.1 | -1.5 | -0.8 |
+| hit_shovel_stone | generated | 3 | -21.7 | -1.5 | -1.4 |
+| hit_shovel_wood | generated | 3 | -20.0 | -1.4 | +0.3 |
 
 ## ice (median -19.0 dB)
 

@@ -75,8 +75,8 @@ func run(players: int, label: String) -> void:
 		pos.append(Vector3(rng.randf() * SPREAD_M, 10.0, rng.randf() * SPREAD_M))
 		items.report_position(p, pos[p - 1])
 
-		for id in ["stick", "stone", "plant_fibre", "chest_kit", "campfire_kit", "roast_forage", "fishing_rod", "workbench_kit", "grass_cloak", "spear", "twine", "wooden_spade"]:
-			items.action(p, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, 30 if not id.ends_with("_kit") and id not in ["fishing_rod", "grass_cloak", "spear", "wooden_spade"] else 2, Vector3.ZERO)
+		for id in ["stick", "stone", "plant_fibre", "chest_kit", "campfire_kit", "roast_forage", "fishing_rod", "workbench_kit", "grass_cloak", "spear", "twine", "wooden_shovel"]:
+			items.action(p, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, 30 if not id.ends_with("_kit") and id not in ["fishing_rod", "grass_cloak", "spear", "wooden_shovel"] else 2, Vector3.ZERO)
 
 	var ticks: Array = []
 	var steps: int = int(SPAN_S / TICK_S)
@@ -115,7 +115,7 @@ func run(players: int, label: String) -> void:
 					items.place_piece(p, "workbench_kit", pos[p - 1] + Vector3(0.0, 0.0, 2.0))
 				elif kind == 9:
 					items._last_queue_act.clear()
-					items.action(p, Net.ACT_CRAFT_QUEUE, 140, 0, 1, Vector3.ZERO)   # stone hoe: needs a camp bench (recipe 26, the Stone - Spade, is retired)
+					items.action(p, Net.ACT_CRAFT_QUEUE, 140, 0, 1, Vector3.ZERO)   # stone hoe: needs a camp bench (recipe 26, the Stone - Shovel, is retired)
 				else:
 					if rng.randf() < 0.3:
 						items.kill(p, "stress")

@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2otqaab4nbsq"
-path="res://.godot/imported/wooden_spade.png-42de2542002b75d317f82c8c1c488ba0.ctex"
+path="res://.godot/imported/wooden_shovel.png-324295a5bb7d0dad74db04cbbce75254.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/wooden_spade.png"
-dest_files=["res://.godot/imported/wooden_spade.png-42de2542002b75d317f82c8c1c488ba0.ctex"]
+source_file="res://assets/ui/item_icons/wooden_shovel.png"
+dest_files=["res://.godot/imported/wooden_shovel.png-324295a5bb7d0dad74db04cbbce75254.ctex"]
 
 [params]
 

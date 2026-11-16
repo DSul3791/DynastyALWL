@@ -202,7 +202,7 @@ var ambient                             # AmbientLife: birds, crickets, frogs by
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
-var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var hits                                # HitSounds: axe, pick, hammer, shovel on wood, stone, soil (hit, hit_ground)
 var flame                               # FlameSounds: the torch or lantern in the hand (set_held)
 var breath                              # BreathSounds: the heartbeat (always heard, the Daggorath pulse loaded at setup), exertion and the faint (set_exertion, stand-in follows the body)
 var trees                               # TreeSounds: felling (watch the world rows, fall(), chips())

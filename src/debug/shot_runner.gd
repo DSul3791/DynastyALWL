@@ -99,7 +99,7 @@ var _given: bool = false
 var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
 var _dropped: bool = false
 var _drop_msec: int = 0
-var dig_steps: int = 0         # --shot-dig=N: dig N times (Dave's recipe: spade in hand, look down, click, step forward, repeat), then turn round and look back along the trail
+var dig_steps: int = 0         # --shot-dig=N: dig N times (Dave's recipe: shovel in hand, look down, click, step forward, repeat), then turn round and look back along the trail
 var _dig_i: int = 0
 var _dig_next_msec: int = 0
 var _dig_level: bool = false
@@ -529,7 +529,7 @@ func _process(delta: float) -> void:
 	if dig_steps > 0 and now - client.connected_msec > 12000:
 		if _dig_i < dig_steps:
 			if now >= _dig_next_msec:
-				# The spade reaches 3 m: as the hole deepens the ray runs out, so a player looks steeper (a real player would too).
+				# The shovel reaches 3 m: as the hole deepens the ray runs out, so a player looks steeper (a real player would too).
 				var eye: Vector3 = client.camera.global_position
 				var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, eye - client.camera.global_transform.basis.z * 3.0)
 				query.exclude = [client.body.get_rid()]
@@ -539,7 +539,7 @@ func _process(delta: float) -> void:
 					_dig_pitch0 = client.pitch
 
 				if hit.is_empty() and client.pitch <= deg_to_rad(-88.0) + 0.001:
-					# The hole is deeper than the spade reaches from here: one short step on to fresh ground (the 20 digs go on), looking as at the start.
+					# The hole is deeper than the shovel reaches from here: one short step on to fresh ground (the 20 digs go on), looking as at the start.
 					var fwd: Vector3 = -client.body.global_transform.basis.z
 					var fx: float = client.body.global_position.x + fwd.x * 0.9
 					var fz: float = client.body.global_position.z + fwd.z * 0.9
@@ -1211,8 +1211,8 @@ func _build_piece_views() -> void:
 # --showroom: turn Admin mode on so the server lays the showroom rows out as real world items, then one view per chosen row from the west side
 # (the rows run north to south, start/step in metres east and south of the spawn point), looking east. _tag_showroom then puts a name tag over each
 # item and prints one "shot runner: showroom row" line per row: how many of its items were found where they belong (world_item_name_near).
-# A --showroom word picks rows in this order: a row whose whole label is that word ("Spades"), else rows with that word as one of their words
-# ("K1" is in "Kathleen K1 flowers" but not "Kathleen K10 wood and fibre"), else a part of a label (spades finds "Big spades"). Any case.
+# A --showroom word picks rows in this order: a row whose whole label is that word ("Shovels"), else rows with that word as one of their words
+# ("K1" is in "Kathleen K1 flowers" but not "Kathleen K10 wood and fibre"), else a part of a label (shovels finds "Big shovels"). Any case.
 func _showroom_label_matches(label: String, want: String, rows: Array) -> bool:
 	var word: String = want.to_lower()
 	var low: String = label.to_lower()

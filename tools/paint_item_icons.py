@@ -2,10 +2,10 @@
 """Paint the small items the bake draws too thin or too alike to read at slot size (Kathleen, 9 Nov 2026).
 
 At the 1366 x 768 floor a recipe-list icon is 23 screen px and a hotbar icon 43 (docs/ui/item_icons.md), and the bake's spears,
-arrows and stick shrink to hairlines there while its spades, grain seeds and pies come out as one picture each. These are painted
+arrows and stick shrink to hairlines there while its shovels, grain seeds and pies come out as one picture each. These are painted
 to the same rig as tools/paint_structure_icons.py, with three rules for small sizes (the bone needle, 10 Nov 2026, the same way):
   - thin things are drawn thick, on the diagonal, with an oversized head: the head is what tells them apart;
-  - each item in a set has its own colour that survives at 23 px (spade blades wood, stone, iron, steel; each grain its own plant);
+  - each item in a set has its own colour that survives at 23 px (shovel blades wood, stone, iron, steel; each grain its own plant);
   - a set shares one layout, so the family still reads as one (every grain is a seed pile with its plant behind it).
 
     python3 tools/paint_item_icons.py [--out assets/ui/item_icons] [--only id,id]
@@ -347,9 +347,9 @@ def worm():
     return _path(pts, radii, cols, sides=7, seed=160)
 
 
-# ---------------------------------------------------------------- spades: one shape, four blades
-def spade(material):
-    """A spade along x, blade at +x; the blade (big, face to the viewer) carries the material."""
+# ---------------------------------------------------------------- shovels: one shape, four blades
+def shovel(material):
+    """A shovel along x, blade at +x; the blade (big, face to the viewer) carries the material."""
     shaft = LEATHER if material == "steel" else WOOD
     faces = rod((-1.15, 0, 0), (0.45, 0, 0), 0.07, WOOD, seed=21)
     faces += rod((-1.15, -0.2, 0), (-1.15, 0.2, 0), 0.06, WOOD, seed=22)          # the D grip
@@ -376,7 +376,7 @@ def spade(material):
     return faces
 
 
-SPADE_VIEW = rot_y(math.radians(35.0)) @ rot_x(math.radians(-62.0)) @ rot_z(math.radians(40.0))
+SHOVEL_VIEW = rot_y(math.radians(35.0)) @ rot_x(math.radians(-62.0)) @ rot_z(math.radians(40.0))
 
 
 # ---------------------------------------------------------------- grain seeds: a pile in front, the plant behind
@@ -1180,10 +1180,10 @@ def _pieces():
         "wooden_longbow": (wooden_longbow, rot_z(math.radians(42.0))),
         "straw_hat": (straw_hat, rot_x(math.radians(28.0))),
         "worm": (worm, rot_x(math.radians(50.0))),
-        "wooden_spade": (lambda: spade("wood"), SPADE_VIEW),
-        "stone_spade": (lambda: spade("stone"), SPADE_VIEW),
-        "iron_spade": (lambda: spade("iron"), SPADE_VIEW),
-        "steel_spade": (lambda: spade("steel"), SPADE_VIEW),
+        "wooden_shovel": (lambda: shovel("wood"), SHOVEL_VIEW),
+        "stone_shovel": (lambda: shovel("stone"), SHOVEL_VIEW),
+        "iron_shovel": (lambda: shovel("iron"), SHOVEL_VIEW),
+        "steel_shovel": (lambda: shovel("steel"), SHOVEL_VIEW),
         **{item: ((lambda i=item: grain_seeds(i)), SEED_VIEW) for item in (*GRAINS, *VEG)},
         "apple_pie": (apple_pie, PIE_VIEW),
         "fish_pie": (fish_pie, PIE_VIEW),
@@ -1194,8 +1194,8 @@ def _pieces():
         "straw": (straw, HEAP_VIEW),
         "birch_bark": (birch_bark, LYING),
         "withies": (withies, HEAP_VIEW),
-        **{m + "_hammer": ((lambda m=m: hammer(m)), SPADE_VIEW) for m in ("wooden", "stone", "bronze", "iron", "steel")},
-        **{m + "_chisel": ((lambda m=m: chisel(m)), SPADE_VIEW) for m in ("bronze", "iron", "steel")},
+        **{m + "_hammer": ((lambda m=m: hammer(m)), SHOVEL_VIEW) for m in ("wooden", "stone", "bronze", "iron", "steel")},
+        **{m + "_chisel": ((lambda m=m: chisel(m)), SHOVEL_VIEW) for m in ("bronze", "iron", "steel")},
         "horn_pane": (horn_pane, rot_x(math.radians(40.0)) @ rot_y(math.radians(15.0))),
         "carved_stone_block": (carved_stone_block, rot_y(math.radians(-28.0))),
         "carved_stone_shingle": (carved_stone_shingle, rot_x(math.radians(35.0))),

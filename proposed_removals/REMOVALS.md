@@ -135,3 +135,9 @@ Dave approved the four-rulebook structure in Clauda Optimization. This is limite
 | `docs/START_HERE.md` | `7710fb17f8ed653810a5f8177777828d25ebc525` | `README.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
 
 Preservation/reader receipts: independent review PASS on exact tree `09c989473285abefb6dc9a2454fa331aac272a79`; [merge-guard run 43758894969](https://github.com/DSul3791/DynastyALWL/actions/runs/43758894969) succeeded. Installed agent/skill/current launcher readers use the four owners; two changed upload ZIPs match their sources. The checker rejects revived legacy routing; historical citations and deletion-test fixtures are not runtime readers. All 33 reviewed file blobs match the actual integration tree despite concurrent unrelated asset changes. Package checks and all eight isolated regression cases passed again on the merged dev tree. No source content is deleted, no retirement obligation is waived, and no gameplay/player validation is claimed.
+
+## Spade renamed Shovel, 16 Nov 2026 (Dave: "rename the icons to shovel and fix the internal code to shovel")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| wooden_spade.png, stone_spade.png, iron_spade.png, steel_spade.png | Claude, PR #1182 | 16 Nov | renamed with their items (same pictures) | assets/ui/item_icons/*_shovel.png |
+| hit_spade_soil_0.ogg, hit_spade_soil_1.ogg, hit_spade_soil_2.ogg, hit_spade_stone_0.ogg, hit_spade_stone_1.ogg, hit_spade_stone_2.ogg, hit_spade_wood_0.ogg, hit_spade_wood_1.ogg, hit_spade_wood_2.ogg | Claude, PR #1182 | 16 Nov | renamed with the shovel tool class (same sounds) | assets/audio/hits/hit_shovel_*.ogg |

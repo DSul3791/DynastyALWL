@@ -34,7 +34,7 @@ SECTION_PHASE = {"3.1": "2c", "3.2": "2a", "3.3": "2b", "3.4": "2b", "3.5": "3",
 # Existing FUTURE rows: Steel ingot goes live with the Blast Furnace (s3.3 "Goes live: steel (recipe 193)").
 # Q1 (resolved by the mission lead under Dave's 12 Nov 05:42Z autonomy direction; STATE.md): the other FUTURE rows whose
 # station and materials go live in Mission 001 are switched on in that phase, as plan rule 3 does for new rows.
-ACTIVATE = {"steel_ingot": "2b", "steel_pickaxe": "2c", "steel_spade": "2c", "steel_hoe": "2c", "steel_hammer": "2c",
+ACTIVATE = {"steel_ingot": "2b", "steel_pickaxe": "2c", "steel_shovel": "2c", "steel_hoe": "2c", "steel_hammer": "2c",
             "steel_chisel": "2c", "bronze_sword": "4b", "bronze_mace": "4b", "bronze_shield": "4b", "iron_sword": "4b",
             "iron_mace": "4b", "iron_shield": "4b", "steel_sword": "4b", "steel_mace": "4b", "steel_shield": "4b",
             "bronze_helm": "4b", "iron_helm": "4b", "mail_shirt": "4b", "steel_helm": "4b", "plate_cuirass": "4b",

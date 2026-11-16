@@ -201,12 +201,12 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"wooden_spade": {
+		"wooden_shovel": {
 			"number": 19,
-			"name": "Wooden - Spade",
+			"name": "Wooden - Shovel",
 			"description": "A sharpened wooden blade. Digs roots and bulbs.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
@@ -481,13 +481,13 @@
 			"value": 15,
 			"look_alikes": []
 		},
-		"stone_spade": {
+		"stone_shovel": {
 			"number": 45,
-			"name": "Stone - Spade",
-			"description": "A spade with a stone blade. Digs deeper and lasts longer than wood.",
+			"name": "Stone - Shovel",
+			"description": "A shovel with a stone blade. Digs deeper and lasts longer than wood.",
 			"kind": "tool",
-			"tool_class": "spade",
-			"spade_size": "medium",
+			"tool_class": "shovel",
+			"shovel_size": "medium",
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
@@ -507,13 +507,13 @@
 			"look_alikes": [],
 			"retired": true
 		},
-		"iron_spade": {
+		"iron_shovel": {
 			"number": 46,
-			"name": "Iron - Spade",
-			"description": "A spade with an iron blade.",
+			"name": "Iron - Shovel",
+			"description": "A shovel with an iron blade.",
 			"kind": "tool",
-			"tool_class": "spade",
-			"spade_size": "large",
+			"tool_class": "shovel",
+			"shovel_size": "large",
 			"material": "iron",
 			"tier": 4,
 			"stack": 1,
@@ -533,13 +533,13 @@
 			"look_alikes": [],
 			"repair_station": "brick_forge"
 		},
-		"steel_spade": {
+		"steel_shovel": {
 			"number": 47,
-			"name": "Steel - Spade",
-			"description": "A spade with a steel blade.",
+			"name": "Steel - Shovel",
+			"description": "A shovel with a steel blade.",
 			"kind": "tool",
-			"tool_class": "spade",
-			"spade_size": "large",
+			"tool_class": "shovel",
+			"shovel_size": "large",
 			"material": "steel",
 			"tier": 5,
 			"stack": 1,
@@ -2371,12 +2371,12 @@
 			"material": "wood",
 			"note": "Building piece: row state 31."
 		},
-		"wooden_spade_medium": {
+		"wooden_shovel_medium": {
 			"number": 213,
-			"name": "Medium wooden spade",
-			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"name": "Medium wooden shovel",
+			"description": "Medium shovel: moves 4 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
@@ -2388,17 +2388,17 @@
 				]
 			],
 			"value": 37,
-			"spade_size": "medium",
+			"shovel_size": "medium",
 			"tier": 1,
 			"retired": true,
-			"note": "Merged into wooden_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into wooden_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
-		"wooden_spade_large": {
+		"wooden_shovel_large": {
 			"number": 214,
-			"name": "Large wooden spade",
-			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"name": "Large wooden shovel",
+			"description": "Large shovel: moves 8 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
@@ -2410,17 +2410,17 @@
 				]
 			],
 			"value": 67,
-			"spade_size": "large",
+			"shovel_size": "large",
 			"tier": 1,
 			"retired": true,
-			"note": "Merged into wooden_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into wooden_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
-		"stone_spade_medium": {
+		"stone_shovel_medium": {
 			"number": 215,
-			"name": "Medium stone spade",
-			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"name": "Medium stone shovel",
+			"description": "Medium shovel: moves 4 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
@@ -2438,16 +2438,16 @@
 			],
 			"value": 75,
 			"look_alikes": [],
-			"spade_size": "medium",
+			"shovel_size": "medium",
 			"retired": true,
-			"note": "Merged into stone_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into stone_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
-		"stone_spade_large": {
+		"stone_shovel_large": {
 			"number": 216,
-			"name": "Large stone spade",
-			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"name": "Large stone shovel",
+			"description": "Large shovel: moves 8 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
@@ -2465,16 +2465,16 @@
 			],
 			"value": 135,
 			"look_alikes": [],
-			"spade_size": "large",
+			"shovel_size": "large",
 			"retired": true,
-			"note": "Merged into stone_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into stone_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
-		"iron_spade_medium": {
+		"iron_shovel_medium": {
 			"number": 217,
-			"name": "Medium iron spade",
-			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"name": "Medium iron shovel",
+			"description": "Medium shovel: moves 4 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
@@ -2494,16 +2494,16 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "medium",
+			"shovel_size": "medium",
 			"retired": true,
-			"note": "Merged into iron_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into iron_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
-		"iron_spade_large": {
+		"iron_shovel_large": {
 			"number": 218,
-			"name": "Large iron spade",
-			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"name": "Large iron shovel",
+			"description": "Large shovel: moves 8 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
@@ -2523,16 +2523,16 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "large",
+			"shovel_size": "large",
 			"retired": true,
-			"note": "Merged into iron_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into iron_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
-		"steel_spade_medium": {
+		"steel_shovel_medium": {
 			"number": 219,
-			"name": "Medium steel spade",
-			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"name": "Medium steel shovel",
+			"description": "Medium shovel: moves 4 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
@@ -2552,16 +2552,16 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "medium",
+			"shovel_size": "medium",
 			"retired": true,
-			"note": "Merged into steel_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into steel_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
-		"steel_spade_large": {
+		"steel_shovel_large": {
 			"number": 220,
-			"name": "Large steel spade",
-			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"name": "Large steel shovel",
+			"description": "Large shovel: moves 8 pieces of ground at a time.",
 			"kind": "tool",
-			"tool_class": "spade",
+			"tool_class": "shovel",
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
@@ -2581,9 +2581,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "large",
+			"shovel_size": "large",
 			"retired": true,
-			"note": "Merged into steel_spade (Dave 25 Oct trim answer A); number kept, never reused."
+			"note": "Merged into steel_shovel (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"wooden_hoe": {
 			"number": 221,
@@ -8138,7 +8138,7 @@
 			"worm": {
 				"number": 769,
 				"name": "Worm",
-				"description": "A fat earthworm turned up by the spade in rich soil. Fish take it as bait.",
+				"description": "A fat earthworm turned up by the shovel in rich soil. Fish take it as bait.",
 				"kind": "material",
 				"stack": 50,
 				"look_alikes": [],

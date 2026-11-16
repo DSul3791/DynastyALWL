@@ -4,7 +4,7 @@ extends SceneTree
 # (server_items.gd and its helpers, the live data), a new character from nothing to a warehouse, checking the resulting game state at each step:
 #   1. early survival: gather by hand, Stone - Axe and Stone - Knife, a Lean-to and a Wicker - Chest from their blueprints, a hunted deer cooked at a
 #      campfire and eaten, items stored in the chest;
-#   2. wood and metal: bog iron dug with a Wooden spade, charcoal, the Improved smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
+#   2. wood and metal: bog iron dug with a Wooden shovel, charcoal, the Improved smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
 #      boards, nothing bought;
 #   3. construction and equipment: Leatherworking table, Loom, Tailor's table; Thread, Leather strap, Fibre cloth, a Fibre - Gambeson; a Rustic - Chest
 #      and a Crude - Chair from boards; an iron weapon and an iron armour piece at the Smithy; gambeson + mail worn in layers; a backpack
@@ -343,7 +343,7 @@ func feed(place: String, firewood: int) -> void:
 		items.action(1, Net.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
 
 
-# Bog iron dug with the spade along the bog until the pack holds `ore_n` Iron ore (or the bog runs out).
+# Bog iron dug with the shovel along the bog until the pack holds `ore_n` Iron ore (or the bog runs out).
 func dig_ore(ore_n: int) -> void:
 	var dry: int = 0
 
@@ -355,7 +355,7 @@ func dig_ore(ore_n: int) -> void:
 		go(spot)
 		var before: int = have("iron_ore")
 		items._last_dig.clear()
-		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "spade"), 0, 0, spot + Vector3(1.0, 0.0, 0.0))
+		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "shovel"), 0, 0, spot + Vector3(1.0, 0.0, 0.0))
 		items.inventory_of(1).remove(n("soil"), have("soil"))   # the peat and soil dug with it are left in the bog
 		dry = dry + 1 if have("iron_ore") == before else 0
 
@@ -364,7 +364,7 @@ func dig_ore(ore_n: int) -> void:
 			dry = 0
 
 
-# Iron made the wilderness way (step 2's route): bog ore dug with the spade at the forge yard, charcoal at its campfire, smelted by the Improved
+# Iron made the wilderness way (step 2's route): bog ore dug with the shovel at the forge yard, charcoal at its campfire, smelted by the Improved
 # smelter while the player works its bellows (master s2.7 items 3 and 4: 1 Iron ore makes 1 Iron ingot), a hopper and an input load at a time.
 func make_iron(wanted: int) -> bool:
 	go(FORGE)
@@ -592,7 +592,7 @@ func step1_early_survival() -> void:
 	# test_first_hour and test_first_town gather them the same way).
 	var twine_n: int = need_of("stone_axe", "twine") + cost_of("lean_to", "twine") + cost_of("chest", "twine") + need_of("stone_hammer", "twine")
 	var fibre_n: int = twine_n * need_of("twine", "plant_fibre") + 4
-	var stick_n: int = need_of("stone_axe", "stick") + need_of("stone_knife", "stick") + need_of("stone_hammer", "stick") + cost_of("lean_to", "stick") + cost_of("chest", "stick") + need_of("wooden_spade", "stick")
+	var stick_n: int = need_of("stone_axe", "stick") + need_of("stone_knife", "stick") + need_of("stone_hammer", "stick") + cost_of("lean_to", "stick") + cost_of("chest", "stick") + need_of("wooden_shovel", "stick")
 	var stone_n: int = need_of("stone_axe", "stone") + need_of("stone_knife", "stone") + need_of("stone_hammer", "stone") + 1
 
 	for k in range(8):
@@ -664,9 +664,9 @@ func step2_wood_and_metal() -> void:
 	step("2 wood and metal")
 	go(FORGE)
 	var coins_before: int = items.coins_of(1)
-	items.give(1, n("stone"), 1)   # the spade's kept stone (stones lie about: test_first_hour)
-	craft("wooden_spade", 1)
-	check(have("wooden_spade") == 1, "2a. a Wooden spade is made by hand")
+	items.give(1, n("stone"), 1)   # the shovel's kept stone (stones lie about: test_first_hour)
+	craft("wooden_shovel", 1)
+	check(have("wooden_shovel") == 1, "2a. a Wooden shovel is made by hand")
 	campfire_at("forge yard", FORGE + Vector3(-3.0, 0.0, 0.0))
 
 	# The Improved smelter: stone, clay, logs and hide gathered (test_iron_saw_route gives them the same way); its bronze fittings come from the
@@ -674,7 +674,7 @@ func step2_wood_and_metal() -> void:
 	give_cost("improved_smelter", ["stone", "clay", "log", "hide", "bronze_hinges", "bronze_nails"])
 	smelter = build("improved_smelter", FORGE + Vector3(3.0, 0.0, -0.5), "2b")
 	var saw_iron: int = need_of("hand_saw", "iron_ingot")
-	check(make_iron(saw_iron), "2c. bog iron dug with the spade, charcoal burnt at the campfire and smelted at the Improved smelter with its bellows worked: %d Iron ingots (%d needed)" % [have("iron_ingot"), saw_iron])
+	check(make_iron(saw_iron), "2c. bog iron dug with the shovel, charcoal burnt at the campfire and smelted at the Improved smelter with its bellows worked: %d Iron ingots (%d needed)" % [have("iron_ingot"), saw_iron])
 
 	# The Improved smithy from stones, clay, logs (gathered: test_iron_saw_route) and bronze for its anvil and fittings (the bronze route,
 	# test_bronze_path), no iron (master s2.7 item 5); cold, it is fired by the craft with charcoal.

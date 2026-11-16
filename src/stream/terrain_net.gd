@@ -162,8 +162,8 @@ const ACT_FALL := 23          # a = the drop in centimetres the client landed fr
 const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
 const ACT_CRAFT_QUEUE := 21  # a = recipe number, b = variant (0 plain; SmithingRules: Tempered, +1, +2), count = how many (1 to 20): queue crafts; ingredients are taken now
 const ACT_SLEEP := 26      # a = 1 fall asleep (lying, held Z for 3 s), 0 wake; the sleeping flag comes back as bit 4 of the strain() stance
-const ACT_FILL := 27       # a = the held pack slot (-1: nothing; the spade in hand from 117), at = the ground point under the crosshair: one spade fill (spends a shovelful of soil, sand, gravel, clay or stone from the pack)
-const ACT_DIG := 25        # a = the held pack slot (-1: nothing; the spade in hand from 117), at = the ground point under the crosshair: one spade dig (server checks spade, reach, pace; DIGGING_DESIGN.md)
+const ACT_FILL := 27       # a = the held pack slot (-1: nothing; the shovel in hand from 117), at = the ground point under the crosshair: one shovel fill (spends a shovelful of soil, sand, gravel, clay or stone from the pack)
+const ACT_DIG := 25        # a = the held pack slot (-1: nothing; the shovel in hand from 117), at = the ground point under the crosshair: one shovel dig (server checks shovel, reach, pace; DIGGING_DESIGN.md)
 const ACT_STANCE := 20     # a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain()
 const ACT_LIGHT := 19      # a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json)
 const ACT_EAT := 18        # a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json); b = the answer to food_ask (protocol 110), 0 none

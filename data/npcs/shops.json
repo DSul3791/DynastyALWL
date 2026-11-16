@@ -5,7 +5,7 @@
 		"stock": [
 			"stone_axe",
 			"stone_knife",
-			"wooden_spade",
+			"wooden_shovel",
 			"torch",
 			"twine",
 			"rope",
@@ -53,7 +53,7 @@
 				3,
 				1
 			],
-			"wooden_spade": [
+			"wooden_shovel": [
 				2,
 				1
 			],

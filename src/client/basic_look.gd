@@ -2026,8 +2026,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron * 1.7)                  # steel: a polished ridge along the top of the head
 				_metal(parts)
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
-		"spade":
-			# A digging spade at real size for the large tier (size 1.0; the smaller tiers scale down): a 3.2 cm ash haft, a leather sleeve at the grip, a rounded D-grip loop about 15 by 10 cm
+		"shovel":
+			# A digging shovel at real size for the large tier (size 1.0; the smaller tiers scale down): a 3.2 cm ash haft, a leather sleeve at the grip, a rounded D-grip loop about 15 by 10 cm
 			# and 3 cm thick in the haft's own grain, a short socket cone with a rolled collar fused to a 28 by 19 cm blade plate (a real polygon plate, see _plate: square shoulders, rounded
 			# tip, dished, turned-up side lips, a rolled lip along the top) and flat rivets. Mesh axes: haft along x (grip at -x, blade at +x), blade thin in y, wide in z.
 			# Iron and steel (bits "metal") are on the metal surface: iron roughness 0.65 / metallic 0.3, steel a little shinier (0.45 / 0.45) but neutral grey, not blue.
@@ -2045,7 +2045,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
-			var g: float = 0.12                                                                                     # the grip's flat side; the whole spade is about 0.8 m
+			var g: float = 0.12                                                                                     # the grip's flat side; the whole shovel is about 0.8 m
 			var cuts: Array = [0.0, 0.3, 0.5]                                                      # the haft in uneven lengths: subtle grain-like tone changes, no hard seam
 			for k in range(2):
 				var x0: float = g + cuts[k] * (0.45 - g) / 0.5
@@ -2078,7 +2078,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				if metal_blade:
 					_metal(parts, rough, sheen)
 			# Use (Art_Direction: lived-in, worn tools): dried earth caked on the lower blade on both faces, darker where it is still damp at the very tip.
-			# Thin flat boxes (12 triangles each, 72 in all) to stay inside the 1200-triangle tool budget (the spade was about 1100).
+			# Thin flat boxes (12 triangles each, 72 in all) to stay inside the 1200-triangle tool budget (the shovel was about 1100).
 			# Plain surface, so a metal blade keeps its sheen where it is clean.
 			var soil: Color = Color(0.3, 0.21, 0.13)
 			for face in [-1.0, 1.0]:
@@ -2146,7 +2146,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"hoe":
 			# A garden draw hoe (modelled on a real long-handled hoe; tools to the pickaxe standard): a 1.25 m ash haft with a slight taper, a darker patch where the hands go and a rounded
 			# end, a socket cone, a goose-neck that bends down from it, and a thin trapezoid blade plate (a real polygon plate, dished, rolled edge) set a little back toward the grip.
-			# Mesh axes: haft along x (grip at -x), blade hangs toward +z and is wide across y. Iron and steel (bits "metal") are on the metal surface like the spades.
+			# Mesh axes: haft along x (grip at -x), blade hangs toward +z and is wide across y. Iron and steel (bits "metal") are on the metal surface like the shovels.
 			var metal_blade: bool = bits.has("metal")
 			var blade: Color = color
 			var ash: Color = Color(0.42, 0.3, 0.17)
@@ -2694,7 +2694,7 @@ static func _wedge(parts: Array, base: float, out: float, along: float, at: Vect
 	parts.append([prism, Transform3D(Basis(Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0)), at), color])
 
 
-# A spade blade as a real polygon plate (Dave 2026-10-25 review: stacked boxes always stair-step): `rows` outline rows along x from `x0` over `length`, 7 columns across, the
+# A shovel blade as a real polygon plate (Dave 2026-10-25 review: stacked boxes always stair-step): `rows` outline rows along x from `x0` over `length`, 7 columns across, the
 # half width flat to 45 percent of the length (square shoulders) then an elliptical taper to a rounded tip, dished across (the edges lift 1.4 cm), curving forward at the
 # socket, 4 mm thin with a rolled (thicker) edge, smooth-shaded. `from_row` to `to_row` of 12 build one piece, so the tip can take its own colour.
 static func _plate(parts: Array, x0: float, length: float, wide: float, from_row: int, to_row: int, color: Color, with_root: bool, metal: bool, rough: float, metallic: float, xform: Transform3D = Transform3D.IDENTITY, mode: int = 0, thick_scale: float = 1.0) -> void:
@@ -2708,7 +2708,7 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 	for i in range(from_row, to_row + 1):
 		var t: float = float(i) / float(rows)
-		var half: float = 0.5 * wide * (1.0 - 0.15 * t / 0.6) if t < 0.6 else 0.5 * wide * 0.85 * sqrt(maxf(1.0 - pow((t - 0.6) / 0.4, 2.0), 0.0))   # a spade blade: widest at the shoulders under the socket, gently tapering sides, a round arched tip
+		var half: float = 0.5 * wide * (1.0 - 0.15 * t / 0.6) if t < 0.6 else 0.5 * wide * 0.85 * sqrt(maxf(1.0 - pow((t - 0.6) / 0.4, 2.0), 0.0))   # a shovel blade: widest at the shoulders under the socket, gently tapering sides, a round arched tip
 
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
@@ -2779,7 +2779,7 @@ static func _plate_quad(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d
 		tool.add_vertex(v)
 
 
-# A leather wrap on a haft from x0 to x1: slanted bands in two dark tones so the spiral turns read (spade and hoe hand grips).
+# A leather wrap on a haft from x0 to x1: slanted bands in two dark tones so the spiral turns read (shovel and hoe hand grips).
 static func _wrap(parts: Array, x0: float, x1: float, radius: float) -> void:
 	var count: int = int((x1 - x0) / 0.03)
 
@@ -2935,7 +2935,7 @@ static func _metal(parts: Array, rough: float = 0.4, metallic: float = 0.8) -> v
 
 static func _combine(parts: Array, size: float) -> ArrayMesh:
 	var plain: Array = []
-	var metal: Dictionary = {}                                                  # roughness -> parts: one surface per roughness (the pickaxe 0.4, spades 0.55)
+	var metal: Dictionary = {}                                                  # roughness -> parts: one surface per roughness (the pickaxe 0.4, shovels 0.55)
 
 	for part in parts:
 		if (part as Array).size() > 3:

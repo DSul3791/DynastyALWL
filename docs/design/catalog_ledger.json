@@ -280,9 +280,9 @@
    "note": ""
   },
   {
-   "key": "wooden_spade",
+   "key": "wooden_shovel",
    "number": 19,
-   "name": "Wooden - Spade",
+   "name": "Wooden - Shovel",
    "category": "tool",
    "catalog": "UPDATE",
    "section": "3.1",
@@ -685,9 +685,9 @@
    "note": ""
   },
   {
-   "key": "stone_spade",
+   "key": "stone_shovel",
    "number": 45,
-   "name": "Stone - Spade",
+   "name": "Stone - Shovel",
    "category": "tool",
    "catalog": "RETIRE",
    "section": "3.1",
@@ -703,9 +703,9 @@
    "note": "M001-T09 (phase 2c): retired with recipe 26; nothing live needs it"
   },
   {
-   "key": "iron_spade",
+   "key": "iron_shovel",
    "number": 46,
-   "name": "Iron - Spade",
+   "name": "Iron - Shovel",
    "category": "tool",
    "catalog": "UPDATE",
    "section": "3.1",
@@ -722,9 +722,9 @@
    "note": "M001-T09 data (phase 2c): tier 4, repair at brick_forge; M001-T10 code: break, repair to the current maximum, sharpening (edge rows), test_tool_care section 7"
   },
   {
-   "key": "steel_spade",
+   "key": "steel_shovel",
    "number": 47,
-   "name": "Steel - Spade",
+   "name": "Steel - Shovel",
    "category": "tool",
    "catalog": "FUTURE",
    "section": "3.1",
@@ -3174,9 +3174,9 @@
    "note": ""
   },
   {
-   "key": "wooden_spade_medium",
+   "key": "wooden_shovel_medium",
    "number": 213,
-   "name": "Medium wooden spade",
+   "name": "Medium wooden shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,
@@ -3188,9 +3188,9 @@
    "note": ""
   },
   {
-   "key": "wooden_spade_large",
+   "key": "wooden_shovel_large",
    "number": 214,
-   "name": "Large wooden spade",
+   "name": "Large wooden shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,
@@ -3202,9 +3202,9 @@
    "note": ""
   },
   {
-   "key": "stone_spade_medium",
+   "key": "stone_shovel_medium",
    "number": 215,
-   "name": "Medium stone spade",
+   "name": "Medium stone shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,
@@ -3216,9 +3216,9 @@
    "note": ""
   },
   {
-   "key": "stone_spade_large",
+   "key": "stone_shovel_large",
    "number": 216,
-   "name": "Large stone spade",
+   "name": "Large stone shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,
@@ -3230,9 +3230,9 @@
    "note": ""
   },
   {
-   "key": "iron_spade_medium",
+   "key": "iron_shovel_medium",
    "number": 217,
-   "name": "Medium iron spade",
+   "name": "Medium iron shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,
@@ -3244,9 +3244,9 @@
    "note": ""
   },
   {
-   "key": "iron_spade_large",
+   "key": "iron_shovel_large",
    "number": 218,
-   "name": "Large iron spade",
+   "name": "Large iron shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,
@@ -3258,9 +3258,9 @@
    "note": ""
   },
   {
-   "key": "steel_spade_medium",
+   "key": "steel_shovel_medium",
    "number": 219,
-   "name": "Medium steel spade",
+   "name": "Medium steel shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,
@@ -3272,9 +3272,9 @@
    "note": ""
   },
   {
-   "key": "steel_spade_large",
+   "key": "steel_shovel_large",
    "number": 220,
-   "name": "Large steel spade",
+   "name": "Large steel shovel",
    "category": "tool",
    "catalog": "RETIRED",
    "section": null,

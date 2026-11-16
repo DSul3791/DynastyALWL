@@ -3,7 +3,7 @@ extends SceneTree
 # Mission 001 phase 2c data (M001-T09; master s2.1, s2.2, s3.1, s4 items 1, 4, 13): the tool ladders, through the real server, recipes
 # and blueprints. Every amount is read from the live data, so tuning keeps the test valid.
 #   1. the rows: each family's tiers rise with its material (Wooden 1 ... Steel 5); disposable gear has no repair; metal tools repair at
-#      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Spade and Stone - Sickle are retired;
+#      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Shovel and Stone - Sickle are retired;
 #   2. the groups take the better tool: an Iron - Knife for the Wooden bowl (recipe 20), a Copper - Saw for Wooden blocks (728), a
 #      Steel - Saw for Planks by hand (159), with no stone knife or Iron - Saw in the pack;
 #   3. every new ladder tool is made at its station from live materials: copper and bronze at the Primitive smithy (stone_forge), iron and steel at the lit Smithy;
@@ -17,11 +17,11 @@ const Net := preload("res://src/stream/terrain_net.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 const RANK := {"wood": 1, "stone": 2, "copper": 2, "bronze": 3, "iron": 4, "steel": 5}   # Copper shares Stone's tier: between Stone and Bronze in its rates (GOALS-REPAIR R2b)
-const FAMILIES := ["axe", "pick", "spade", "hammer", "hoe", "knife", "saw", "sickle", "scythe", "chisel"]
+const FAMILIES := ["axe", "pick", "shovel", "hammer", "hoe", "knife", "saw", "sickle", "scythe", "chisel"]
 const EDGED := ["axe", "pick", "knife", "saw", "sickle", "scythe", "chisel"]
 const NEW_TOOLS := ["iron_axe", "steel_axe", "iron_knife", "steel_knife", "steel_saw", "bronze_sickle", "iron_sickle", "steel_sickle",
 		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe", "copper_saw", "bronze_saw"]
-const DISPOSABLE := ["stone_axe", "stone_knife", "stone_hoe", "stone_hammer", "stone_pickaxe", "wooden_spade", "wooden_hoe", "wooden_hammer",
+const DISPOSABLE := ["stone_axe", "stone_knife", "stone_hoe", "stone_hammer", "stone_pickaxe", "wooden_shovel", "wooden_hoe", "wooden_hammer",
 		"hide_scraper", "spear", "stone_mace", "javelin", "sewing_needle"]
 const STATION := {"copper": "forge", "bronze": "forge", "iron": "brick_forge", "steel": "brick_forge"}
 
@@ -176,19 +176,19 @@ func _init() -> void:
 	for id in DISPOSABLE:
 		check(not row(id).is_empty() and not row(id).has("repair"), "%s is disposable: no repair" % id)
 
-	for id in NEW_TOOLS + ["steel_pickaxe", "steel_spade", "steel_hoe", "steel_hammer", "steel_chisel", "grindstone"]:
+	for id in NEW_TOOLS + ["steel_pickaxe", "steel_shovel", "steel_hoe", "steel_hammer", "steel_chisel", "grindstone"]:
 		check(not row(id).is_empty() and not bool(row(id).get("future", false)), "%s is live" % id)
 
 	for id in ["steel_pickaxe", "steel_chisel"] + NEW_TOOLS:
 		check(bool(recipe(id).get("known", false)) and not bool(recipe(id).get("locked", false)), "the %s recipe is known from the start" % id)
 
-	for id in ["stone_spade", "sickle"]:
+	for id in ["stone_shovel", "sickle"]:
 		check(bool(row(id).get("retired", false)) and recipe_number(id) == 0, "%s and its recipe are retired" % id)
 
 	check(int(row("javelin").get("stack", 0)) == 1 and int(recipe("spear").get("needs", []).filter(func(c): return int(c[0]) == n_of("stone")).size()) == 1 and recipe("spear").get("keeps", []).is_empty(), "the Javelin stacks 1; the Stone - Spear uses up its stone")
 
 	var extra: Dictionary = items._dig_cfg.get("tier_extra", {})
-	check(int(extra.get(str(int(row("wooden_spade").get("tier", 1))), 0)) == 0 and int(extra.get(str(int(row("iron_spade")["tier"])), 0)) == 2 and int(extra.get(str(int(row("steel_spade")["tier"])), 0)) == 3, "dig extra by spade: wooden 0, iron 2, steel 3 (as before the renumbering)")
+	check(int(extra.get(str(int(row("wooden_shovel").get("tier", 1))), 0)) == 0 and int(extra.get(str(int(row("iron_shovel")["tier"])), 0)) == 2 and int(extra.get(str(int(row("steel_shovel")["tier"])), 0)) == 3, "dig extra by shovel: wooden 0, iron 2, steel 3 (as before the renumbering)")
 
 	# 2. The groups take the better tool. The bowl is carved at the wood carving station (15 Nov 2026, W-8), placed beside the player here, clear of the forge site 4 m east (structures stand 2.5 m apart).
 	check(items.dev_place("carving_station@0,0,-3") != 0, "a wood carving station stands beside the player for the bowl")

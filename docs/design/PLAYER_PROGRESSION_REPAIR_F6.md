@@ -52,7 +52,7 @@ Values marked (A-n) are provisional. If one feels wrong, note the number you'd l
 
 ## 4. Metal: copper to steel, smithy wear and repair, bins and fuel
 
-- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on ore outcrop boulders (not every boulder) gives copper ore, tin ore and coal. It does not give iron. **Iron ore** on these tiles comes from **bog iron**: dig wet lowland soil (bog, marsh) with a spade and now and then rust-red lumps come up with the peat ("bog iron", about 1 dig in 25). The iron boulders lie under the sea.
+- [ ] **Mine ore.** A Stone Pickaxe (3 stone, 2 stick, 2 twine) on ore outcrop boulders (not every boulder) gives copper ore, tin ore and coal. It does not give iron. **Iron ore** on these tiles comes from **bog iron**: dig wet lowland soil (bog, marsh) with a shovel and now and then rust-red lumps come up with the peat ("bog iron", about 1 dig in 25). The iron boulders lie under the sea.
 - [ ] **Primitive smelter** (bp 200: 24 clay, 10 stone).
   - **Build and load:** build it and press E to open its store. Coal or Charcoal goes in the fuel part; ore goes in the ore part, one kind per slot.
   - **Smelting:** it smelts by itself, one ingot every 20 s. 1 copper ore makes 1 copper ingot; 1 copper ore + 1 tin ore make 2 bronze.

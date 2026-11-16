@@ -5,7 +5,7 @@
 	"tool_effort": {
 		"axe": 1.05,
 		"pick": 1.05,
-		"spade": 0.9,
+		"shovel": 0.9,
 		"knife": 0.55,
 		"rod": 0.45,
 		"net": 0.45,

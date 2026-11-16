@@ -58,13 +58,13 @@ SPECIAL = {
 }
 TOOLS = {
     "stone_axe": ("axe", "#7d7a74", 1.6), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
-    "wooden_spade": ("spade", "#8a6a3a", 1.0), "stone_spade": ("spade", "#7d7a74", 1.0), "iron_spade": ("spade", "#6c6f75", 1.0),
-    "steel_spade": ("spade", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
-    # Medium and large spades: the same shape, a longer shaft and a wider blade (size 1.25 and 1.5 of the small one).
-    "wooden_spade_medium": ("spade", "#8a6a3a", 1.25), "wooden_spade_large": ("spade", "#8a6a3a", 1.5),
-    "stone_spade_medium": ("spade", "#7d7a74", 1.25), "stone_spade_large": ("spade", "#7d7a74", 1.5),
-    "iron_spade_medium": ("spade", "#6c6f75", 1.25), "iron_spade_large": ("spade", "#6c6f75", 1.5),
-    "steel_spade_medium": ("spade", "#9aa3ad", 1.25), "steel_spade_large": ("spade", "#9aa3ad", 1.5),
+    "wooden_shovel": ("shovel", "#8a6a3a", 1.0), "stone_shovel": ("shovel", "#7d7a74", 1.0), "iron_shovel": ("shovel", "#6c6f75", 1.0),
+    "steel_shovel": ("shovel", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
+    # Medium and large shovels: the same shape, a longer shaft and a wider blade (size 1.25 and 1.5 of the small one).
+    "wooden_shovel_medium": ("shovel", "#8a6a3a", 1.25), "wooden_shovel_large": ("shovel", "#8a6a3a", 1.5),
+    "stone_shovel_medium": ("shovel", "#7d7a74", 1.25), "stone_shovel_large": ("shovel", "#7d7a74", 1.5),
+    "iron_shovel_medium": ("shovel", "#6c6f75", 1.25), "iron_shovel_large": ("shovel", "#6c6f75", 1.5),
+    "steel_shovel_medium": ("shovel", "#9aa3ad", 1.25), "steel_shovel_large": ("shovel", "#9aa3ad", 1.5),
     "wooden_hoe": ("hoe", "#8a6a3a", 1.2), "stone_hoe": ("hoe", "#7d7a74", 1.2), "iron_hoe": ("hoe", "#6c6f75", 1.2), "steel_hoe": ("hoe", "#9aa3ad", 1.2),
     "sewing_needle": ("needle", "#c8c8cc", 1.2), "fishing_rod": ("rod", "#9a9a9e", 1.0),
     "wooden_bowl": ("bowl", "#9a6b38", 1.3), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#b88a50", 1.0),

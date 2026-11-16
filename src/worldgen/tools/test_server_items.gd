@@ -280,10 +280,10 @@ func _init() -> void:
 	check(g.inventory_of(1).count_of(g.table.number_of("dandelion_leaves")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_roots")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_flowers")) >= 1, "got a dandelion yield")
 	var noticed: Array = []
 	g.send_notice = func(_p, text): noticed.append(text)
-	check(not g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and noticed.size() == 1, "roots by hand give nothing and the player is told to get a spade")
-	g.action(1, Net.ACT_ADMIN_GIVE, g.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
-	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a spade the roots come up")
-	check(g.inventory_of(1).wear[g.inventory_of(1).numbers.find(g.table.number_of("wooden_spade"))] == 1, "picking roots wears the spade one use")
+	check(not g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and noticed.size() == 1, "roots by hand give nothing and the player is told to get a shovel")
+	g.action(1, Net.ACT_ADMIN_GIVE, g.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
+	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a shovel the roots come up")
+	check(g.inventory_of(1).wear[g.inventory_of(1).numbers.find(g.table.number_of("wooden_shovel"))] == 1, "picking roots wears the shovel one use")
 	check(g.gather(1, "comfrey", "plant", "0,0,91", 91, Vector3(501.0, 70.0, 500.0)), "comfrey still gives by hand")
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
@@ -701,7 +701,7 @@ func _init() -> void:
 	var capless: Variant = load("res://src/shared/inventory.gd").new(f.table)
 	var big_stone: int = f.table.number_of("stone")
 	check(f.table.stack_of(big_stone) == ItemTableScript.COUNT_MAX, "stone stacks to the count maximum (%d)" % f.table.stack_of(big_stone))
-	check(f.table.stack_of(f.table.number_of("steel_spade")) == 1 and f.table.stack_of(f.table.number_of("workbench_kit")) == 1, "a shovel and a kit stay one per slot")
+	check(f.table.stack_of(f.table.number_of("steel_shovel")) == 1 and f.table.stack_of(f.table.number_of("workbench_kit")) == 1, "a shovel and a kit stay one per slot")
 	var left_over: int = capless.add(big_stone, 70000)
 	check(capless.count_of(big_stone) == 70000 and left_over == 0 and capless.counts[capless.numbers.find(big_stone)] == 65535, "70,000 stones fill one slot and spill the rest into a second")
 	capless.from_json_array([[big_stone, 99999999, 0]])
@@ -769,25 +769,25 @@ func _init() -> void:
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL + 1, "nothing in hand (tools only on the hotbar): no stone")
 	m.inventory_of(1).clear_slot(mine_pick)
 
-	# Digging the ground with a spade (ACT_DIG).
+	# Digging the ground with a shovel (ACT_DIG).
 	var digs: Array = []
 	m.dig_ground = func(centre, radius): digs.append([centre, radius])
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.is_empty(), "no spade, no dig")
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.is_empty(), "no shovel, no dig")
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
 	m.action(1, Net.ACT_DIG, -1, 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.is_empty(), "the spade on the hotbar but nothing in hand: no dig")
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(30.0, 10.0, 0.0))
+	check(digs.is_empty(), "the shovel on the hotbar but nothing in hand: no dig")
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(digs.is_empty(), "a dig out of reach does nothing")
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 1 and absf(float(digs[0][0].y) - (10.0 - ItemsScript.DIG_DEPTH_M)) < 0.001, "a spade digs a hole a little below the point")
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1 and absf(float(digs[0][0].y) - (10.0 - ItemsScript.DIG_DEPTH_M)) < 0.001, "a shovel digs a hole a little below the point")
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(digs.size() == 1, "digs too close together make one hole")
 	m._last_dig.clear()
-	var spade_slot: int = m.inventory_of(1).numbers.find(m.table.number_of("wooden_spade"))
-	var spade_wear: int = m.inventory_of(1).wear[spade_slot]
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 2 and m.inventory_of(1).wear[spade_slot] == spade_wear + 1, "each dig wears the spade by one")
+	var shovel_slot: int = m.inventory_of(1).numbers.find(m.table.number_of("wooden_shovel"))
+	var shovel_wear: int = m.inventory_of(1).wear[shovel_slot]
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 2 and m.inventory_of(1).wear[shovel_slot] == shovel_wear + 1, "each dig wears the shovel by one")
 
 	# Dig yields and fill (job 84): the ground's material decides what a dig brings up.
 	var soil_n: int = m.table.number_of("soil")
@@ -798,15 +798,15 @@ func _init() -> void:
 	var mat: Array = ["loam"]
 	m.ground_material = func(_x, _z): return mat[0]
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(soil_n) >= 1 and m.inventory_of(1).count_of(soil_n) <= 3 and m.inventory_of(1).count_of(sand_n) == 0, "a dig in loam brings up soil, not sand")
 	mat[0] = "sand"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(sand_n) >= 1, "a dig in sand brings up sand")
 	mat[0] = "rock"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(m.table.number_of("stone")) > held_stone, "a dig in bare rock gives stone")
 	var have_fill: int = m.fill_units_of(1)
 	check(have_fill >= 3, "the pack holds fill after digs")
@@ -816,12 +816,12 @@ func _init() -> void:
 	check(m.take_fill(2, 1) == 0, "a peer with no pack fills nothing")
 	mat[0] = "clay"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(clay_n) >= 1, "a dig in clay brings up clay")
 	var salt_n: int = m.table.number_of("sea_salt")   # the one live Salt (item "salt" 292 is retired)
 	mat[0] = "salt_flat"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(salt_n) >= 1, "a dig in a salt flat brings up salt, the same Salt as sea salt")
 	m.inventory_of(1).remove(salt_n, m.inventory_of(1).count_of(salt_n))
 	m.inventory_of(1).remove(sand_n, m.inventory_of(1).count_of(sand_n))
@@ -833,75 +833,75 @@ func _init() -> void:
 	m._dig_cfg["finds"] = [{"item": "rotten_food", "chance": 1.0, "soils": ["loam"]}]
 	mat[0] = "loam"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(find_n) == 1, "a find comes up with a loam dig")
 	mat[0] = "sand"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(find_n) == 1, "but not in sand")
 	m.inventory_of(1).remove(find_n, 1)
 	m.inventory_of(1).remove(soil_n, m.inventory_of(1).count_of(soil_n))
 	m.inventory_of(1).remove(sand_n, m.inventory_of(1).count_of(sand_n))
 	m._dig_cfg["finds"] = keep_finds
 
-	# Filling with the spade (ACT_FILL, saved edits step 3): spends a shovelful, makes a fill, hands it back if refused.
+	# Filling with the shovel (ACT_FILL, saved edits step 3): spends a shovelful, makes a fill, hands it back if refused.
 	var fills: Array = []
 	var accept: Array = [true]
 	m.fill_ground = func(centre, radius, material): fills.append([centre, radius, material]); return accept[0]
 	m.take_fill(1, 100000)
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.is_empty(), "an empty shovel raises nothing")
 	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 3, Vector3.ZERO)
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(30.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(fills.is_empty(), "a raise out of reach does nothing")
-	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 1 and int(fills[0][2]) == 5 and m.inventory_of(1).count_of(soil_n) == 2, "a raise takes one shovelful from the pack and makes loam ground")
 	m._last_dig.clear()
 	accept[0] = false
-	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 2 and m.inventory_of(1).count_of(soil_n) == 2, "a raise that changed nothing hands the shovelful back")
 	accept[0] = true
 	check(m.carried_kg_of(1) < 60.0, "digging cannot overfill the pack")
 
-	# Spade sizes (Dave 2026-10-22): a large spade moves 8 pieces, a medium 4, a small 1.
-	m.inventory_of(1).remove(m.table.number_of("wooden_spade"), 1)
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("iron_spade"), 0, 1, Vector3.ZERO)
-	check(m._spade_pieces(m.inventory_of(1), HeldTool.slot_of(m, "spade")) == 8, "a large spade moves 8 pieces (%d)" % m._spade_pieces(m.inventory_of(1), HeldTool.slot_of(m, "spade")))
+	# Shovel sizes (Dave 2026-10-22): a large shovel moves 8 pieces, a medium 4, a small 1.
+	m.inventory_of(1).remove(m.table.number_of("wooden_shovel"), 1)
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("iron_shovel"), 0, 1, Vector3.ZERO)
+	check(m._shovel_pieces(m.inventory_of(1), HeldTool.slot_of(m, "shovel")) == 8, "a large shovel moves 8 pieces (%d)" % m._shovel_pieces(m.inventory_of(1), HeldTool.slot_of(m, "shovel")))
 	digs.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 1 and is_equal_approx(float(digs[0][1]), 1.8), "a large spade digs a sphere twice as wide (%s)" % str(digs))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1 and is_equal_approx(float(digs[0][1]), 1.8), "a large shovel digs a sphere twice as wide (%s)" % str(digs))
 	m.take_fill(1, 100000)
 	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 12, Vector3.ZERO)
 	fills.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 1 and is_equal_approx(float(fills[0][1]), 1.8) and m.inventory_of(1).count_of(soil_n) == 4, "a large raise takes 8 shovelfuls from the pack")
 	m.take_fill(1, 100000)
 	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 3, Vector3.ZERO)
 	fills.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 1 and fills[0][1] < 1.8 and m.inventory_of(1).count_of(soil_n) == 0, "a short pack raises a smaller heap")
 	m.take_fill(1, 100000)
-	m.inventory_of(1).remove(m.table.number_of("iron_spade"), 1)
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
+	m.inventory_of(1).remove(m.table.number_of("iron_shovel"), 1)
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
 
-	# The spade tier adds to the top of the dig roll (digging.json tier_extra).
-	check(m._spade_tier(m.inventory_of(1), HeldTool.slot_of(m, "spade")) >= 1, "the spade tier is read from the tool in the pack")
+	# The shovel tier adds to the top of the dig roll (digging.json tier_extra).
+	check(m._shovel_tier(m.inventory_of(1), HeldTool.slot_of(m, "shovel")) >= 1, "the shovel tier is read from the tool in the pack")
 	var most: int = 0
 	mat[0] = "sand"
 
 	for tries in 40:
 		m._last_dig.clear()
 		var before_sand: int = m.inventory_of(1).count_of(sand_n)
-		m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+		m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 		most = maxi(most, m.inventory_of(1).count_of(sand_n) - before_sand)
 		m.take_fill(1, 100000)
 
-	check(most >= 1 and most <= 4, "a dig never exceeds the top of the roll plus the spade extra (%d)" % most)
+	check(most >= 1 and most <= 4, "a dig never exceeds the top of the roll plus the shovel extra (%d)" % most)
 
 	# A dig the ground refuses (nothing changed) gives nothing.
 	var refuse: Array = [false]
@@ -912,7 +912,7 @@ func _init() -> void:
 	var soil_before: int = m.inventory_of(1).count_of(soil_n)
 	refuse[0] = true
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(soil_n) == soil_before, "a dig that changes nothing brings up nothing")
 	refuse[0] = false
 
@@ -1159,27 +1159,27 @@ func _init() -> void:
 
 	var base_trunks: int = trunks_of.call()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0] and trunks_of.call() == base_trunks, "a tree with half its ground left stays up")
 	share[0] = 0.4
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0], "a beech holds at 40 percent")
 	species[0] = "spruce"
 	species[1] = 0.35
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(not up[0] and trunks_of.call() == base_trunks + 1, "a spruce falls at 40 percent (shallow roots) and leaves a stump")
 	up[0] = true
 	species[0] = "oak"
 	species[1] = 0.6
 	share[0] = 0.3
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0], "a big oak holds at 30 percent")
 	share[0] = 0.2
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(not up[0] and trunks_of.call() == base_trunks + 2, "a big oak falls at 20 percent")
 	var trunk_dir: Dictionary = {}
 
@@ -1191,7 +1191,7 @@ func _init() -> void:
 	up[0] = true
 	refuse[0] = true
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0], "a refused dig fells nothing")
 
 	# The support maths: digs take ground away from under a tree, a fill puts it back.
