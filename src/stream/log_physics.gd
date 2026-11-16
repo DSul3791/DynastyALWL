@@ -18,7 +18,10 @@ var ground_height: Callable = Callable()   # (x, z) -> height, NAN off the world
 
 var _world: World3D = null                 # its own space, so nothing else on the server is ever hit by a log
 var _bodies: Dictionary = {}               # world id -> {rid, shape, r, half, mass}
-var _cells: Dictionary = {}                # Vector2i -> {rid, shape}
+var _cells: Dictionary = {}                # Vector2i -> {shape, xf}: shapes of the one ground body
+var _ground: RID = RID()                   # the ground: one static body, every cell a shape of it, so the engine sees the seam between two cells as
+                                           # the inside of one surface (a lane run on 39cf76dc: a log lying on the seam of two cell bodies caught on
+                                           # their edges and never rolled down a 0.5 hill)
 var _statics: Dictionary = {}              # key -> {rid, shape}
 var _woken: Dictionary = {}                # id -> the physics frame it was put in or woken: awake until the engine has stepped it (Jolt reports a body it has not stepped yet as asleep)
 
@@ -184,14 +187,20 @@ func _build_cell(key: Vector2i) -> bool:
 	shape.map_width = n
 	shape.map_depth = n
 	shape.map_data = heights
-	var rid: RID = PhysicsServer3D.body_create()
-	PhysicsServer3D.body_set_mode(rid, PhysicsServer3D.BODY_MODE_STATIC)
-	PhysicsServer3D.body_set_space(rid, _space())
-	PhysicsServer3D.body_add_shape(rid, shape.get_rid())
-	PhysicsServer3D.body_set_param(rid, PhysicsServer3D.BODY_PARAM_FRICTION, 1.0)
-	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_TRANSFORM, Transform3D(Basis(), Vector3(x0 + CELL_M * 0.5, 0.0, z0 + CELL_M * 0.5)))   # a height field is centred on its body
-	_cells[key] = {"rid": rid, "shape": shape}
+	var xf: Transform3D = Transform3D(Basis(), Vector3(x0 + CELL_M * 0.5, 0.0, z0 + CELL_M * 0.5))   # a height field is centred on its shape
+	PhysicsServer3D.body_add_shape(_ground_body(), shape.get_rid(), xf)
+	_cells[key] = {"shape": shape, "xf": xf}
 	return true
+
+
+func _ground_body() -> RID:
+	if not _ground.is_valid():
+		_ground = PhysicsServer3D.body_create()
+		PhysicsServer3D.body_set_mode(_ground, PhysicsServer3D.BODY_MODE_STATIC)
+		PhysicsServer3D.body_set_space(_ground, _space())
+		PhysicsServer3D.body_set_param(_ground, PhysicsServer3D.BODY_PARAM_FRICTION, 1.0)
+
+	return _ground
 
 
 func _cell(x: float, z: float) -> Vector2i:
@@ -212,10 +221,20 @@ func trim_ground(keep: Array) -> void:
 			for cz in range(lo.y, hi.y + 1):
 				wanted[Vector2i(cx, cz)] = true
 
+	var gone: bool = false
+
 	for key in _cells.keys():
 		if not wanted.has(key):
-			PhysicsServer3D.free_rid(_cells[key]["rid"])
 			_cells.erase(key)
+			gone = true
+
+	if not gone or not _ground.is_valid():
+		return
+
+	PhysicsServer3D.body_clear_shapes(_ground)   # shapes go by index: put the kept ones back (cells are dropped rarely, a few at a time)
+
+	for key in _cells:
+		PhysicsServer3D.body_add_shape(_ground, (_cells[key]["shape"] as Shape3D).get_rid(), _cells[key]["xf"])
 
 
 func cell_count() -> int:
@@ -259,6 +278,11 @@ func clear() -> void:
 
 	trim_ground([])
 	trim_statics({})
+
+	if _ground.is_valid():
+		PhysicsServer3D.free_rid(_ground)
+		_ground = RID()
+
 	_world = null   # its space goes with it
 
 

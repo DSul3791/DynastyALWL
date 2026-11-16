@@ -263,11 +263,13 @@ func _run() -> void:
 	steep._sync_grid = {}   # the rock was put in by hand after the last world sync
 	var roller: int = drop(steep, "log_oak", Vector3(0.0, 10.0, 0.0), across)
 	var along_id: int = drop(steep, "log_oak", Vector3(0.0, 10.0, 12.0), 0.0)
+	var inside: int = drop(steep, "log_oak", Vector3(7.0, 13.5, -12.0), across)   # the first lies on a seam of the ground copy (x 0); this one inside a cell
 	check(absf(float(steep._items[along_id].get("pitch", 0.0)) - atan(0.5)) < 0.05, "a log dropped level along the steep hill is laid along it (pitch %.2f, the hill %.2f)" % [float(steep._items[along_id].get("pitch", 0.0)), atan(0.5)])
 	for n in range(6):   # a trace of the first second, for the lane log (a lane run on a4bc0254 saw this log never start to roll)
 		await step(steep, 10)
 		var in_space: bool = steep._logs.has(roller)
 		print("  trace steep roller frame %d: x %.3f, speed %.3f, spin %.3f, in the space %s, asleep %s" % [(n + 1) * 10, float(steep._items[roller]["pos"].x), steep._logs.velocity(roller).length() if in_space else 0.0, steep._logs.spin_rate(roller).length() if in_space else 0.0, str(in_space), str(asleep(steep, roller))])
+		print("  trace steep log inside a cell frame %d: x %.3f" % [(n + 1) * 10, float(steep._items[inside]["pos"].x)])
 
 	await step(steep, 300)
 	var stopped: Vector3 = steep._items[roller]["pos"]
@@ -275,7 +277,8 @@ func _run() -> void:
 	var core: Vector3 = axis(steep, roller) * (LyingLogs.LOG_HALF_M - r_oak)
 	var near: Array = LyingLogs.closest_on_segments(Vector3(-6.0, 7.0 + 0.32, 0.0), Vector3(-6.0, 7.0 + 0.32, 0.0), centre(steep, roller) - core, centre(steep, roller) + core)
 	var gap: float = (near[0] as Vector3).distance_to(near[1])
-	check(stopped.x < -3.0, "a log across a steep hill (0.5) rolls down by itself (x %.2f)" % stopped.x)
+	check(stopped.x < -3.0, "a log across a steep hill (0.5) rolls down by itself, from a seam of the ground copy (x %.2f)" % stopped.x)
+	check(float(steep._items[inside]["pos"].x) < 2.0, "and one from inside a cell (x %.2f from 7)" % float(steep._items[inside]["pos"].x))
 	check(stopped.x > -6.0 and gap > 0.8 + r_oak - 0.1, "and the rock in its way stops it on the uphill side; it never goes into the rock (x %.2f, %.2f m from its middle)" % [stopped.x, gap])
 	check(asleep(steep, roller), "it comes to rest against the rock")
 	check(Vector2(steep._items[along_id]["pos"].x, steep._items[along_id]["pos"].z - 12.0).length() < 0.3, "a log lying along the steep hill stays (moved %.2f m)" % Vector2(steep._items[along_id]["pos"].x, steep._items[along_id]["pos"].z - 12.0).length())

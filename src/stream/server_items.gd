@@ -3110,8 +3110,9 @@ func _log_resist(id: int, xf: Transform3D, r: float, cfg: Dictionary, delta: flo
 		return
 
 	var kg: float = _logs.mass(id)
-	var hold: float = _log_hold(at, cfg) * kg * 9.8 * r * delta                    # the most the ground holds back this tick (N m s)
-	var stop: float = 1.5 * kg * r * speed + kg * 9.8 * r * maxf(downhill.dot(way), 0.0) * delta   # what stops it rolling this way, with what gravity adds this tick
+	var dt: float = minf(delta, 2.0 / float(Engine.physics_ticks_per_second))   # a server hitch never gives one huge impulse (more than the contact can take in one step)
+	var hold: float = _log_hold(at, cfg) * kg * 9.8 * r * dt                       # the most the ground holds back this tick (N m s)
+	var stop: float = 1.5 * kg * r * speed + kg * 9.8 * r * maxf(downhill.dot(way), 0.0) * dt   # what stops it rolling this way, with what gravity adds this tick
 	var roll_dir: Vector3 = Vector3.UP.cross(way)                                  # its spin rolling along `way`
 	_logs.spin_push(id, -axis * signf(roll_dir.dot(axis)) * minf(hold, stop))
 
