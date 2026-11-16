@@ -2810,7 +2810,17 @@ func _log_body(id: int, asleep: bool) -> bool:
 	var r: float = _log_r(it)
 
 	if absf(it["pos"].y - float(ground_height.call(it["pos"].x, it["pos"].z))) <= float(cfg.get("rest_m", 0.6)):
-		xf = _log_on_ground(xf, r)   # laid level on a slope, one end would be in the ground: it lies along the ground instead
+		var laid: Transform3D = _log_on_ground(xf, r)   # laid level on a slope, one end would be in the ground: it lies along the ground instead
+
+		if laid != xf:
+			xf = laid
+			var angles: Vector3 = LyingLogsScript.angles_of(xf.basis)
+			it["pos"] = xf.origin - Vector3(0.0, r, 0.0)   # the record lies as the body does, so the players see it so before it ever moves
+			it["rot_y"] = angles.x
+			it["pitch"] = angles.y
+			it["spin"] = angles.z
+			_roll_moved[id] = true
+			_dirty = true
 
 	var kg: float = CarryRules.weight_of(table.id_of(int(it["number"])), _carry_cfg) if not _carry_cfg.is_empty() else 20.0
 	_logs.add_log(id, xf, _log_r(it), float(cfg.get("half_len_m", LyingLogsScript.LOG_HALF_M)), maxf(kg, 1.0) * maxf(float(it.get("count", 1)), 1.0), float(cfg.get("friction", 0.8)), float(cfg.get("bounce", 0.1)), asleep)
@@ -2831,8 +2841,7 @@ func _log_on_ground(xf: Transform3D, r: float) -> Transform3D:
 		return xf
 
 	var angles: Vector3 = LyingLogsScript.angles_of(xf.basis)
-	var level: float = Vector2(core.x, core.z).length()
-	var pitch: float = atan2(ga - gb, 2.0 * maxf(level, 0.01))
+	var pitch: float = atan2(ga - gb, 2.0 * core.length())   # over the log's own length between its ends, whatever its old pitch
 	var mid: float = maxf((ga + gb) * 0.5, gm) + r
 	return Transform3D(LyingLogsScript.basis_of(angles.x, pitch, angles.z), Vector3(xf.origin.x, mid, xf.origin.z))
 
