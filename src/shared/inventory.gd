@@ -28,7 +28,8 @@ var hotbar_slots: int = 0             # a pack's first slots are its hotbar (key
 # Per-instance data (catalog Phase 1b, master s2.2, s2.9, s4 items 2, 15, 16): {} for a plain item, else only the keys that are not default:
 # sharp (sharpness used, int), max_d (current maximum durability, int; absent = the row's durability), temper (1), craft (1 or 2, fixed at craft time),
 # magic (two Strings, "" empty; a slot is filled only while empty and nothing clears it), bag (a bag's contents, catalog Phase 5: rows in the
-# to_json_array shape, src/shared/bag_rules.gd; a row's own inst never holds a bag). A slot with an instance never merges.
+# to_json_array shape, src/shared/bag_rules.gd; a row's own inst never holds a bag), out (1: a torch that went out, flame_rules.gd is_out). A slot with an
+# instance never merges.
 var inst: Array = []
 
 
@@ -577,6 +578,9 @@ static func clean_inst(raw: Variant, in_bag: bool = false) -> Dictionary:
 
 	if craft == 1 or craft == 2:
 		out["craft"] = craft
+
+	if _whole(raw, "out", 0) == 1:
+		out["out"] = 1   # a torch that went out (flame_rules.gd is_out; Dave 16 Nov 2026: it stays the same torch)
 
 	var magic: Variant = raw.get("magic", [])
 

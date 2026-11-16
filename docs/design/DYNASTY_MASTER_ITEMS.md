@@ -1147,7 +1147,7 @@ Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status count
 | 459 | `bronze_axe` | Bronze - Axe | bronze t2 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone. |
 | 460 | `bronze_hammer` | Bronze - Hammer | bronze t3 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A cast bronze head on a short haft. Hold it to place big builds from blueprints. |
 | 461 | `bronze_knife` | Bronze - Knife | bronze t2 | forge | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark. |
-| 542 | `torch_doused` | Torch | t1 |  | KEEP | A stick wrapped in fibre. Lights your way after dark. |
+| 542 | `torch_doused` | Torch | t1 |  | RETIRED | Retired 16 Nov 2026 (Dave: no doused torch); a torch that goes out stays a torch. |
 | 557 | `spyglass` | Wooden - Spyglass | t1 | workbench L3 | KEEP | A wooden tube with a crystal lens. Hold it and right-click to see three times closer. |
 | 560 | `iron_hammer` | Iron - Hammer | iron t3 | Legacy data: `brick_forge L2` | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A forged iron head on a short haft. Hold it to place big builds from blueprints. |
 | 561 | `steel_hammer` | Steel - Hammer | steel t3 | Legacy data: `brick_forge L3` | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A forged steel head on a short haft. Hold it to place big builds from blueprints. |

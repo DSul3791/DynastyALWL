@@ -36,6 +36,7 @@ const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # sharpness, Tempered and craftsmanship (catalog Phase 2c)
 const CharacterScreenScript := preload("res://src/client/character_screen.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const FlameRules := preload("res://src/shared/flame_rules.gd")   # a torch that went out (is_out)
 const BagRules := preload("res://src/shared/bag_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
@@ -946,10 +947,10 @@ func refuse_cue(reason: String) -> void:
 		reject_event.call(reason)
 
 
-# The first pack slot holding a torch that water or rain put out (items.json "relit_item"), or -1.
-func _doused_torch_slot() -> int:
+# The first pack slot holding a torch that water or rain put out (flame_rules.gd is_out: marked out, or a dark lantern), or -1.
+func _out_flame_slot() -> int:
 	for slot in range(inventory.numbers.size()):
-		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("relit_item", "")) != "":
+		if inventory.numbers[slot] != 0 and FlameRules.is_out(table.entry(table.id_of(inventory.numbers[slot])), inventory.inst_of(slot)):
 			return slot
 
 	return -1
@@ -963,8 +964,8 @@ func _probe_fire() -> Dictionary:
 
 	var state: int = _world[id]["state"]
 
-	if _lit_state(state) and _doused_torch_slot() >= 0:
-		# A doused torch in the pack: E at a burning fire lights it again (Dave, 4 Nov 2026), instead of putting the fire out.
+	if _lit_state(state) and _out_flame_slot() >= 0:
+		# A torch that went out in the pack: E at a burning fire lights it again (Dave, 4 Nov 2026), instead of putting the fire out.
 		return {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": "Press E to light your torch", "tap": func():
 			net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, id, 0, 0, Vector3.ZERO)}
 
@@ -5618,6 +5619,9 @@ func inst_lines(item_inst: Dictionary, number: int = 0) -> PackedStringArray:
 		if str(effect) != "":
 			out.append("Enchanted: %s" % str(effect))
 
+	if FlameRules.is_out(entry, item_inst) and str(entry.get("relit_item", "")) == "":
+		out.append("Out: press its key to light it again")   # a torch that went out is the same torch (Dave 16 Nov 2026)
+
 	return out
 
 
@@ -6678,8 +6682,8 @@ func run_eat_test(client) -> void:
 		await get_tree().create_timer(0.3).timeout
 		client.held.select(9)
 		await get_tree().create_timer(0.3).timeout
-		# A torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026). A doused torch lights again when its key is pressed
-		# (held_item.gd _relight_on_press), so in hand it is its "relit_item", the burning torch.
+		# A torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026). A dark lantern lights again when its key is pressed
+		# (held_item.gd _relight_on_press), so in hand it is its "relit_item", the burning lantern.
 		var as_held: Array = [id, str(table.entry(id).get("relit_item", id))]
 		var in_left: bool = as_held.has(client.held.off_id())
 		var held_here: bool = client.held.held_id() == id or in_left

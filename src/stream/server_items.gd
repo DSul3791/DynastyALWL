@@ -8662,15 +8662,17 @@ func _cookable(item_id: String) -> bool:
 
 
 # The fire record of a world item id when the player stands within reach of it, else {}.
-# A torch in hand goes out under water or in the open rain (Dave, 4 Nov 2026; flame_rules.gd): the client, which knows the held slot, asks; the
-# item becomes its "doused_item" with the same wear. Rain is checked here too (the world's rain now and the cover over the player).
+# A torch in hand goes out under water or in the open rain (Dave, 4 Nov 2026; flame_rules.gd): the client, which knows the held slot, asks. A torch stays
+# the same torch, marked out (Dave 16 Nov 2026); a lantern becomes its "doused_item" with the same wear. Rain is checked here too (the world's rain now and the
+# cover over the player).
 func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
 		return
 
-	var into: String = str(table.entry(table.id_of(inv.numbers[slot])).get("doused_item", ""))
+	var row: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var into: String = str(row.get("doused_item", ""))
 
-	if into == "" or table.number_of(into) <= 0:
+	if not FlameRules.can_go_out(row) or FlameRules.is_out(row, inv.inst_of(slot)) or (into != "" and table.number_of(into) <= 0):
 		return
 
 	if by_rain:
@@ -8681,13 +8683,18 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 	elif not bool(_head_under.get(peer, false)) and not bool(_swimming.get(peer, false)):
 		return   # water puts it out only when the server too sees the head under water or the player swimming
 
-	var flame_row: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
-
-	if by_rain and not bool(flame_row.get("rain_douses", false)):
+	if by_rain and not bool(row.get("rain_douses", false)):
 		return   # a lantern burns on in the rain behind its horn panes
 
-	var word: String = FlameRules.flame_word(flame_row)
-	inv.numbers[slot] = table.number_of(into)
+	var word: String = FlameRules.flame_word(row)
+
+	if into != "":
+		inv.numbers[slot] = table.number_of(into)
+	else:
+		var marked: Dictionary = inv.inst_of(slot).duplicate(true)
+		marked["out"] = 1
+		inv.inst[slot] = marked
+
 	_say(peer, ("The rain puts your %s out. Press its key to light it again." if by_rain else "The water puts your %s out. Press its key to light it again.") % word)
 
 
@@ -8705,7 +8712,7 @@ func _peer_covered(peer: int) -> bool:
 
 
 # A torch in hand stuck in the ground or on a wall (Dave, 4 Nov 2026): items.json places_as names the structure for each; a burning torch stays lit with
-# one stick's worth of fuel (structures.json fuel_s), a doused one is placed out. No gap rule (gap_exempt); the chunk cap holds. Hold E takes it back.
+# one stick's worth of fuel (structures.json fuel_s), one that went out is placed out. No gap rule (gap_exempt); the chunk cap holds. Hold E takes it back.
 func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Vector3) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
 		return
@@ -8717,7 +8724,10 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 	if def.is_empty():
 		return
 
-	if not inv.inst_of(slot).is_empty():
+	var kept: Dictionary = inv.inst_of(slot).duplicate()
+	kept.erase("out")   # whether it is out is the placed piece's own "lit" (below)
+
+	if not kept.is_empty():
 		_say(peer, "That cannot be set down: a placed piece would lose what makes it special.")   # a structure row keeps no instance data
 		return
 
@@ -8750,7 +8760,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 		_say(peer, "Too many of these stand here already.")
 		return
 
-	var lit: bool = bool(entry.get("flame", false))
+	var lit: bool = bool(entry.get("flame", false)) and not FlameRules.is_out(entry, inv.inst_of(slot))
 	var wear: int = inv.wear[slot]
 	inv.take_from_slot(slot, 1)
 	var placed: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "wear": wear, "struct": {"kind": kind, "yaw": float(posmod(yaw_deg, 360))}}
@@ -8766,9 +8776,9 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 	_goal_event(peer, "torch_placed")   # ADD-23: a torch wedged into the ground or a wall (the other lights are built as structures)
 
 
-# E at a burning fire with a doused torch in the pack lights the first one again (Dave, 4 Nov 2026).
-# `want` is the hotbar slot plus one of the torch the player holds (0 for none): pressing a doused torch on the hotbar at a burning fire lights that one
-# (Dave 6 Nov 2026); otherwise the first doused torch in the pack.
+# E at a burning fire with a torch that went out (or a dark lantern) in the pack lights the first one again (Dave, 4 Nov 2026).
+# `want` is the hotbar slot plus one of the torch the player holds (0 for none): pressing a torch that went out on the hotbar at a burning fire lights that one
+# (Dave 6 Nov 2026); otherwise the first one in the pack.
 func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 	# id 0 is the hotkey: a torch that went out simply lights again, wherever you are (Dave 6 Nov 2026: nobody is stuck in a cave without light). With a fire id
 	# (E at a burning fire) the fire has to be lit and in reach, as before.
@@ -8794,7 +8804,16 @@ func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 		if inv.numbers[slot] == 0:
 			continue
 
-		var back: String = str(table.entry(table.id_of(inv.numbers[slot])).get("relit_item", ""))
+		var here: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+		if FlameRules.is_out(here, inv.inst_of(slot)) and str(here.get("relit_item", "")) == "":   # a torch that went out is lit in place (Dave 16 Nov 2026)
+			var lit_again: Dictionary = inv.inst_of(slot).duplicate(true)
+			lit_again.erase("out")
+			inv.inst[slot] = lit_again
+			_say(peer, "You light your torch again.")
+			return
+
+		var back: String = str(here.get("relit_item", ""))
 
 		if back == "" or table.number_of(back) <= 0:
 			continue
@@ -8845,8 +8864,8 @@ func _torch_burn(peer: int, inv, slot: int) -> void:
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 	var burn_s: float = float(entry.get("burn_s", 0.0))
 
-	if burn_s <= 0.0 or str(entry.get("doused_item", "")) == "":
-		return
+	if burn_s <= 0.0 or not FlameRules.can_go_out(entry) or FlameRules.is_out(entry, inv.inst_of(slot)):
+		return   # a torch that went out does not burn (or count as a flame) until it is lit again
 
 	var now: int = Time.get_ticks_msec()
 	var last: int = int(_torch_seen.get(peer, now - 1000))
@@ -8859,7 +8878,7 @@ func _torch_burn(peer: int, inv, slot: int) -> void:
 
 	var before: Array = _snapshot(inv)
 	_torch_seen.erase(peer)
-	var dark: int = table.number_of(str(entry["doused_item"]))
+	var dark: int = table.number_of(str(entry.get("doused_item", "")))
 
 	# A carried lantern (buildables plan B4) is not used up: its fuel is. It goes dark with its wear full, and its key loads the next candle or lamp oil.
 	if entry.has("fuel") and dark > 0:
@@ -9925,8 +9944,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
-	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
-		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out (only a pack at MAX_SLOTS refuses)
+	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
+		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))

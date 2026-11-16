@@ -95,7 +95,7 @@ func _init() -> void:
 	check(needs_of("improved_torch") == [["stick", 1], ["twine", 1], ["plant_fibre", 1], ["resin", 1]] and items.table.name_of(n_of("improved_torch")) == "Improved - Torch", "Improved - Torch: the same plus Tree sap (%s)" % str(needs_of("improved_torch")))
 	var simple: Dictionary = items.table.entry("torch")
 	var better: Dictionary = items.table.entry("improved_torch")
-	check(str(better.get("tool_class", "")) == "torch" and float(better.get("burn_s", 0.0)) > float(simple.get("burn_s", 0.0)) and str(better.get("doused_item", "")) == "improved_torch_doused" and str(items.table.entry("improved_torch_doused").get("relit_item", "")) == "improved_torch", "an Improved torch is a torch that burns longer, put out and lit again as itself")
+	check(str(better.get("tool_class", "")) == "torch" and float(better.get("burn_s", 0.0)) > float(simple.get("burn_s", 0.0)) and bool(better.get("goes_out", false)) and bool(items.table.entry("improved_torch_doused").get("retired", false)), "an Improved torch is a torch that burns longer, put out and lit again as itself (no doused twin)")
 	check(felled > 0 and per_log > 0, "tree_sap gives %d for a felled softwood tree and %d a softwood log" % [felled, per_log])
 
 	# Felling: a large and a small softwood tree give their sap; a hardwood does not.
@@ -171,8 +171,8 @@ func _init() -> void:
 		check(not items._items.has(log_id) and after - before == int(pair[1]), "a %s picked into kindling leaves %d Tree sap (%d)" % [pair[0], int(pair[1]), after - before])
 
 	# Placing and taking back an Improved torch keeps it Improved (its own Standing torch).
-	inv.add(n_of("improved_torch_doused"), 1)
-	var slot: int = inv.numbers.find(n_of("improved_torch_doused"))
+	inv.add(n_of("improved_torch"), 1, 0, {"out": 1})   # one the rain put out: the same torch, marked out
+	var slot: int = inv.numbers.find(n_of("improved_torch"))
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items._place_torch(1, inv, slot, false, 0, Vector3(1.0, 10.0, 0.0))
 	var placed: int = -1
@@ -181,9 +181,14 @@ func _init() -> void:
 		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "improved_standing_torch":
 			placed = int(id)
 
-	check(placed >= 0 and have("improved_torch_doused") == 0, "an Improved torch stands in the ground as an Improved - Standing torch")
+	check(placed >= 0 and have("improved_torch") == 0, "an Improved torch stands in the ground as an Improved - Standing torch")
 	var def: Dictionary = items._structures.get("improved_standing_torch", {})
-	check(str(def.get("kit", "")) == "improved_torch" and str(def.get("kit_out", "")) == "improved_torch_doused" and str(items._structures.get("improved_torch_sconce", {}).get("kit_out", "")) == "improved_torch_doused", "taken back, it is an Improved torch again (kit and kit_out)")
+	check(str(def.get("kit", "")) == "improved_torch" and str(items._structures.get("improved_torch_sconce", {}).get("kit", "")) == "improved_torch" and not def.has("kit_out"), "its kit is the Improved torch")
+
+	if placed >= 0:
+		items._take_down(1, inv, placed)
+
+	check(have("improved_torch") == 1, "taken back, it is an Improved torch again")
 
 	print("tree sap: %d failures" % failures)
 	items._finish_writer()

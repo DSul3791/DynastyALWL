@@ -2244,14 +2244,11 @@
 		"torch_doused": {
 			"name": "Simple - Torch",
 			"kind": "tool",
-			"description": "A stick bound with twine and wrapped in plant fibre. Light it again at a fire.",
-			"how_to_get": [
-				"A torch goes out under water, or after a few seconds in the open rain"
-			],
-			"used_for": [
-				"Light it again at a burning fire"
-			],
-			"obtainable_now": true
+			"description": "Retired 16 Nov 2026: a torch that goes out stays the same torch. An old save's doused torch loads as a Simple - Torch.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"improved_torch": {
 			"name": "Improved - Torch",
@@ -2266,14 +2263,11 @@
 		"improved_torch_doused": {
 			"name": "Improved - Torch",
 			"kind": "tool",
-			"description": "A torch soaked in tree sap, put out. Light it again at a fire.",
-			"how_to_get": [
-				"A torch goes out under water, or after a few seconds in the open rain"
-			],
-			"used_for": [
-				"Light it again at a burning fire"
-			],
-			"obtainable_now": true
+			"description": "Retired 16 Nov 2026: a torch that goes out stays the same torch. An old save's doused torch loads as an Improved - Torch.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"bark": {
 			"name": "Bark",

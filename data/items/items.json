@@ -110,7 +110,7 @@
 			"burn_s": 1800,
 			"flame": true,
 			"rain_douses": true,
-			"doused_item": "torch_doused",
+			"goes_out": true,
 			"places_as": {
 				"ground": "standing_torch",
 				"wall": "torch_sconce"
@@ -118,21 +118,7 @@
 			"look_alikes": [],
 			"value": 6
 		},
-		"torch_doused": {
-			"number": 542,
-			"name": "Simple - Torch",
-			"description": "A stick bound with twine and wrapped in plant fibre. Light it again at a fire.",
-			"kind": "tool",
-			"tool_class": "torch_doused",
-			"offhand": true,
-			"tier": 1,
-			"stack": 1,
-			"unstackable": true,
-			"relit_item": "torch",
-			"places_as": {"ground": "standing_torch", "wall": "torch_sconce"},
-			"look_alikes": [],
-			"value": 4
-		},
+		"torch_doused": {"number": 542, "name": "Simple - Torch", "description": "A torch that went out. Retired: a torch that goes out stays a torch.", "kind": "tool", "stack": 1, "unstackable": true, "value": 4, "look_alikes": [], "retired": true, "note": "Retired 16 Nov 2026 (Dave: \"There should be no such thing as a doused torch\"): a torch that goes out is the same torch, marked out (instance data out); the row stays for its number, renames.json loads a saved one as torch."},
 		"improved_torch": {
 			"number": 1488,
 			"name": "Improved - Torch",
@@ -147,27 +133,13 @@
 			"burn_s": 3600,
 			"flame": true,
 			"rain_douses": true,
-			"doused_item": "improved_torch_doused",
+			"goes_out": true,
 			"places_as": {"ground": "improved_standing_torch", "wall": "improved_torch_sconce"},
 			"look_alikes": [],
 			"value": 10,
 			"note_provisional": "PROVISIONAL (TORCH-SAP TS-5, Dave 16 Nov 2026 asked for the recipe only): tier 2, the Simple torch's 12 m light, twice its burn time (60 min) and value 10 are assumed on his behalf."
 		},
-		"improved_torch_doused": {
-			"number": 1489,
-			"name": "Improved - Torch",
-			"description": "A torch soaked in tree sap, put out. Light it again at a fire.",
-			"kind": "tool",
-			"tool_class": "torch_doused",
-			"offhand": true,
-			"tier": 2,
-			"stack": 1,
-			"unstackable": true,
-			"relit_item": "improved_torch",
-			"places_as": {"ground": "improved_standing_torch", "wall": "improved_torch_sconce"},
-			"look_alikes": [],
-			"value": 7
-		},
+		"improved_torch_doused": {"number": 1489, "name": "Improved - Torch", "description": "An Improved torch that went out. Retired: a torch that goes out stays a torch.", "kind": "tool", "stack": 1, "unstackable": true, "value": 7, "look_alikes": [], "retired": true, "note": "Retired 16 Nov 2026 (Dave: \"There should be no such thing as a doused torch\"): the row stays for its number, renames.json loads a saved one as improved_torch."},
 		"bark": {
 			"number": 13,
 			"name": "Bark",
