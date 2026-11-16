@@ -622,20 +622,7 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
 
 #### Aging and family
 
-- **[Decided]** Players age. They can woo a partner and have children.
-- **[Decided]** Characters start at age 20. Marriage and children are possible from age 18 at the earliest.
-- **[Decided]** **Lifespan is drawn at birth** from a bell curve around 62 years with a spread of about 8, never below 45 or above 85, to account for genetics. Sickness, accidents and fights come on top of that.
-- **[Decided]** For pacing, a typical character lives from 20 to about 62 (42 years) over about 21 months of real time, roughly 1,270 hours of play at 14 hours a week (Section 7). Retirement comes around 50, after about 15 months.
-- **[Idea]** In their early 20s, players will hopefully settle down, establish a home and a spouse, and make that their base of operations.
-- **[Idea]** The base can be in a town that belongs to another player or to the player. A town belonging to the server was also mentioned. The developer-built starter town (Section 8.1) is the first such town.
-- **[Decided]** Children age too.
-- **[Idea]** Couples realistically keep having children, about one every year or two, and twins are possible. That is one every 15 to 30 real days, or about a dozen children between parent ages 22 and 40 over about nine months of real time.
-- **[Idea]** Population control: if a family has many children, one might fall sick and die or have a farming accident.
-- **[Proposed]** Tie that risk to conditions the player can see and influence (poor food, a crowded house, no healer nearby, unsupervised dangerous work) plus a low baseline of childhood illness for every family, instead of a penalty for family size. Food, housing and land costs make a large family a real expense. Child death is emotionally heavy and can affect age ratings, so it may need gentle handling.
-- **[Decided]** **One clock.** Everyone (players, families and NPCs) ages on the server clock at the same rate, whether or not the player is online. Ageing follows ordinary human rules: pregnancy lasts about nine months, women go through menopause, and a couple can have as many children as they choose to and as biology allows. One year of age is one calendar year of 365 game days, which at the default ratio of 24 (Section 7.2) is 15.2 real days. A pregnancy is about 11.4 real days, a child reaches 10 after about 152 real days and 18 after about 274. Time away ages a character (four weeks is about 1.8 years). The clock must survive server downtime (Section 7.6).
-- **[Decided]** Spouses and children stay in the world while the player is away. Events such as bandit raids, dragons and sickness can affect them, which gives players a reason to return.
-- **[Decided]** Fertility: marriage and children from 18 at the earliest; the chance falls gradually from 35; menopause at a random age between 45 and 55 set at birth; men stay fertile for life, with the chance dropping after 60.
-- **[Proposed]** Ownership held at the **dynasty** (family line) level, so nothing needs transferring when a character dies. This is consistent with the heir inheriting everything that remains.
+See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the preserved recorded decisions, ideas, proposals and qualifications. Legacy decision tags await approval-source verification; the move does not withdraw existing decisions.
 
 #### Danger, rescue and logging out
 
@@ -1055,14 +1042,11 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 
 ### 7.3 Lifespan targets
 
-- **[Decided]** A typical character starts at 20 and dies at about 62 (Section 6.1): 42 years of age at one year per 15.2 real days, about 21 real months, roughly 1,270 hours of play at 14 hours a week. Retirement comes around 50, after about 15 real months.
-- **[Decided]** The expected player plays 12 to 16 hours a week. This will be tested and tuned with the one time ratio (a ratio of 36 would give about 14 real months).
-- **[Proposed]** Skills should feel competent in tens of hours and mastered in a few hundred, so a character gets time at the peak before aging slows them. That much play time needs enough depth to stay interesting.
+See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for pacing, tuning expectations and proposals, including the shared-clock and voluntary-retirement qualifications.
 
 ### 7.4 NPC aging
 
-- **[Decided]** NPCs age on the same clock as players, from a random starting age (roughly 20 to 30) to a death age drawn from the same bell curve. Showing age as a number plus a life stage (child, young adult, adult, elder) is available.
-- **[Proposed]** An NPC who starts at 25 and dies at 62 lives about 18 real months. A child takes about 9 real months to reach 18. A town's population therefore turns over in about two real years, so births, marriage and migration matter. Birthdays come every 15.2 real days.
+See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the preserved NPC age distribution, life-stage presentation and population-turnover proposal.
 
 ### 7.5 Day and night
 
