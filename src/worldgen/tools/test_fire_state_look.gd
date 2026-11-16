@@ -48,12 +48,12 @@ func _init() -> void:
 		fire_states.append(int(tier["state"]))
 
 	for state in fire_states:
-		check(not InventoryView.is_felled_state(int(state)), "fire state %d is not drawn as a trunk or stump" % int(state))
+		check(not InventoryView.is_felled_state(int(state)), "fire state %d is not drawn as a stump" % int(state))
 
-	check(InventoryView.is_felled_state(3) and InventoryView.is_felled_state(4), "states 3 and 4 are the trunk and the stump")
+	check(InventoryView.is_felled_state(4), "state 4 is the stump (a felled tree has no trunk state: it comes down in its logs)")
 
 	for state in range(0, 80):
-		check(InventoryView.is_felled_state(state) == (state == 3 or state == 4), "state %d: only 3 and 4 are felled" % state)
+		check(InventoryView.is_felled_state(state) == (state == 4), "state %d: only 4 is felled" % state)
 
 	var structures: Dictionary = _json("res://data/items/structures.json")
 
@@ -61,7 +61,7 @@ func _init() -> void:
 		var row: Variant = structures[kind]
 
 		if row is Dictionary and (row as Dictionary).has("state"):
-			check(not InventoryView.is_felled_state(int(row["state"])), "structure %s (state %d) is not drawn as a trunk or stump" % [kind, int(row["state"])])
+			check(not InventoryView.is_felled_state(int(row["state"])), "structure %s (state %d) is not drawn as a stump" % [kind, int(row["state"])])
 
 
 	# The fire looks: laid (unlit, loaded), lit and burnt out, tiers 1 to 3: built, cheap, cached, and the laid one is bigger the higher the tier.

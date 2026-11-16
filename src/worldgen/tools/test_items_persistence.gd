@@ -146,9 +146,9 @@ func _init() -> void:
 
 	check(in_chunk > 0 and in_chunk <= ItemsScript.SAPLINGS_PER_CHUNK, "saplings stop at the near-spot cap (%d)" % in_chunk)
 
-	# 1000 trunk and stump records across 40 chunks: save and reload time and size.
+	# 1000 stump records across 40 chunks: save and reload time and size.
 	for n in range(1000):
-		s._items[s._next_id] = {"number": 0, "count": 1, "pos": Vector3(float(n) * 3.0, 10.0, float(n % 40) * 256.0), "left": 1.0e9, "tree": {"state": 3 + n % 2, "chunk": [n % 40, 0], "species": "oak", "yaw": 0.0, "length": 12.0, "radius": 0.3, "felled_at": 0.0}}
+		s._items[s._next_id] = {"number": 0, "count": 1, "pos": Vector3(float(n) * 3.0, 10.0, float(n % 40) * 256.0), "left": 1.0e9, "tree": {"state": 4, "chunk": [n % 40, 0], "species": "oak", "yaw": 0.0, "length": 12.0, "radius": 0.3, "felled_at": 0.0}}
 		s._next_id += 1
 
 	s._dirty = true
@@ -159,7 +159,7 @@ func _init() -> void:
 	var again = make(sd)
 	var load_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 	check(again.world_item_count() == s.world_item_count(), "everything survives the restart (%d items)" % again.world_item_count())
-	print("stress: %d items+trunks saved in %.1f ms, loaded in %.1f ms; world_items.json %d bytes, tree_states.json %d bytes" % [s.world_item_count(), save_ms, load_ms, size_of(sd + "/world_items.json"), size_of(sd + "/tree_states.json")])
+	print("stress: %d items+stumps saved in %.1f ms, loaded in %.1f ms; world_items.json %d bytes, tree_states.json %d bytes" % [s.world_item_count(), save_ms, load_ms, size_of(sd + "/world_items.json"), size_of(sd + "/tree_states.json")])
 
 	t0 = Time.get_ticks_usec()
 

@@ -1,18 +1,17 @@
 extends Node
 
-signal landed(at: Vector3, size: float)   # a felled trunk reaches the ground: the client shakes the view when the player is near (feel_kicks.gd thud)
+signal landed(at: Vector3, size: float)   # a felled tree reaches the ground: the client shakes the view when the player is near (feel_kicks.gd thud)
 
-# Tree felling sounds (client only). The Items thread makes a felled tree appear as a trunk row (state 3)
-# that tips over in 1.5 s plus a stump row (state 4); this module hears those rows appear:
+# Tree felling sounds (client only). The Items thread makes a felled tree appear as its stump row (state 4, "fresh" while it
+# falls) and its logs, which swing down round the stump in 1.5 s (inventory_view._swing_down); this module hears the stump appear:
 #
 #   sound.trees.watch(items._world)           call about 4 times a second (terrain_client does)
 #   sound.trees.fall(at, length_m, radius_m)  the whole fall by hand: creak, leaves, crash at 1.5 s
 #   sound.trees.chips(at, radius_m)           the stump spray (last blow)
 #
-# A trunk or stump present when the world first settles (SETTLE_MSEC) was already lying there and
-# makes no sound. The axe blows on the standing tree are `sound.hits` (held_item.gd). Bigger trees
-# (length, radius) are louder, lower and heard farther; the crash lands when the trunk reaches the
-# ground (FALL_S matches the tween in inventory_view._make_felled).
+# A stump present when the world first settles (SETTLE_MSEC), or one no longer fresh (the tree landed long ago), makes no
+# sound. The axe blows on the standing tree are `sound.hits` (held_item.gd). Bigger trees (length, radius) are louder, lower
+# and heard farther; the crash lands when the logs reach the ground (FALL_S matches inventory_view FALL_S).
 # Sounds: generated in assets/audio/trees/ (make_trees.py); recordings in assets/audio/recorded/trees/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
@@ -44,7 +43,7 @@ func setup(stage) -> void:
 	_rng.randomize()
 
 
-# Rows of inventory_view._world: state 3 a felled trunk, 4 a stump (extra: radius, length, yaw).
+# Rows of inventory_view._world: state 4 a stump (extra: radius, length, yaw, fresh while its tree falls).
 func watch(world: Dictionary) -> void:
 	if _first_msec < 0:
 		_first_msec = Time.get_ticks_msec()
@@ -56,7 +55,7 @@ func watch(world: Dictionary) -> void:
 		var row: Dictionary = world[id]
 		var state: int = int(row["state"])
 
-		if state < 3:
+		if state != 4:
 			continue
 
 		present[id] = true
@@ -72,13 +71,11 @@ func watch(world: Dictionary) -> void:
 		var extra: Dictionary = row.get("extra", {})
 		var radius: float = float(extra.get("radius", 0.3))
 
-		if state == 3 and bool(extra.get("landed", false)):
-			continue                                      # the server says this trunk already hit the ground (Steve's landed flag): a trunk coming back into range is silent
+		if not bool(extra.get("fresh", false)):
+			continue                                      # its tree landed long ago (a stump coming back into range is silent)
 
-		if state == 3:
-			fall(row["pos"], float(extra.get("length", 8.0)), radius)
-		else:
-			chips(row["pos"], radius)
+		chips(row["pos"], radius)                         # the last blow, then the tree goes over
+		fall(row["pos"], float(extra.get("length", 8.0)), radius)
 
 	# A row that leaves the draw range stays in _seen (BUG-024: it was erased here, so the same felled tree "fell" again when the player came back).
 	# Ids are never reused within a world; forget() clears them when the ground is made again.

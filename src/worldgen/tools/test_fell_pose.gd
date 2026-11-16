@@ -99,19 +99,18 @@ func _init() -> void:
 		w._last_hit.clear()
 		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
-	var trunk_id: int = 0
 	var stump_id: int = 0
+	var pieces: int = 0
 
 	for k in w._items:
 		if w._items[k].has("tree"):
-			if int(w._items[k]["tree"]["state"]) == 3:
-				trunk_id = k
-			else:
-				stump_id = k
+			stump_id = k
+		elif w._items[k].has("fall"):
+			pieces += 1
 
-	check(trunk_id != 0 and stump_id != 0, "felling leaves a trunk and a stump")
-	var rec: Dictionary = w._items[trunk_id]["tree"]
-	check(rec.has("pitch") and float(rec["pitch"]) > 0.15 and float(rec["pitch"]) < 0.4, "the trunk record carries the resting pitch on a rising slope (%.3f)" % float(rec.get("pitch", -9.0)))
+	check(stump_id != 0 and pieces > 0 and w._items.values().all(func(it): return not it.has("tree") or int(it["tree"]["state"]) == 4), "felling leaves a stump and the pieces the tree comes down as, no trunk (%d pieces)" % pieces)
+	var rec: Dictionary = w._items[stump_id]["tree"]
+	check(rec.has("pitch") and float(rec["pitch"]) > 0.15 and float(rec["pitch"]) < 0.4, "the fall's resting pitch on a rising slope is on record (%.3f)" % float(rec.get("pitch", -9.0)))
 	check(worst_clearance(Vector3(10.0, 10.0, 0.0), float(rec["yaw"]), float(rec["pitch"]), 18.0, 0.1, slope) > -0.02, "the recorded pose rests on the slope")
 
 	# Stump chopping.
@@ -169,34 +168,25 @@ func _init() -> void:
 	a.action(1, Net.ACT_PROCESS, 500, 0, 0, HeldTool.at_axe(a))
 	check(not a._items[500]["tree"].has("blows"), "out of reach, no chopping")
 
-	# The felled-trunk cap still holds, and clearing trunks reopens it.
+	# Nothing lying about stops a tree falling (Dave 16 Nov 2026: "we do not care how many items are on the ground already"): 40 stumps in the chunk.
 	var c = make("user://test_fell_pose_c")
 	c.ground_height = flat
 	var cstanding: Dictionary = {7: true}
-	var cn: Array = []
 	c.game_seconds = func(): return 0.0
 	c.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if cstanding.has(id) else {}
 	c.cut_tree = func(_chunk, id): cstanding.erase(id); return true
-	c.send_notice = func(_peer, text): cn.append(text)
 	c.peer_connected_hello(1, "abcdef123456")
 	c.report_position(1, Vector3(8.0, 10.0, 0.0))
 	c.action(1, Net.ACT_ADMIN_GIVE, c.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 
-	for n in range(ItemsScript.TRUNKS_PER_CHUNK):
-		c._items[1000 + n] = {"number": 0, "count": 1, "pos": Vector3(20.0, 10.0, float(n)), "left": 1.0e9, "tree": {"state": 3, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
+	for n in range(40):
+		c._items[1000 + n] = {"number": 0, "count": 1, "pos": Vector3(20.0, 10.0, float(n)), "left": 1.0e9, "tree": {"state": 4, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
 
 	for n in range(14):
 		c._last_hit.clear()
 		c.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(c))
 
-	check(cstanding.has(7) and cn.has("Too many felled trunks lie here. Clear some away first."), "the trunk cap still stops felling")
-	c._items.erase(1000)
-
-	for n in range(14):
-		c._last_hit.clear()
-		c.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(c))
-
-	check(not cstanding.has(7), "clearing a trunk lets the next tree fall")
+	check(not cstanding.has(7), "a tree falls however many stumps lie in its chunk")
 
 	print("fell pose tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

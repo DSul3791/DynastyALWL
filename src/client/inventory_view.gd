@@ -1613,7 +1613,6 @@ func _nearest(view_only: bool = false) -> Array:
 	return best
 
 
-# The id of the felled trunk lying within 1.5 m of a point (the axe struck it), 0 when none.
 # The nearest carcass within 3 m of a point (the knife works it), or 0.
 func carcass_near(point: Vector3) -> int:
 	var best: int = 0
@@ -1673,24 +1672,6 @@ func stump_near(point: Vector3) -> int:
 	return 0
 
 
-func felled_trunk_near(point: Vector3) -> int:
-	for id in _world:
-		var entry: Dictionary = _world[id]
-
-		if entry["state"] == 3 and is_instance_valid(entry["node"]):
-			var extra: Dictionary = entry.get("extra", {})
-			var yaw: float = float(extra.get("yaw", 0.0))
-			var length: float = float(extra.get("length", 8.0))
-			var along: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw))
-			var t: float = clampf((point - entry["pos"]).dot(along), 0.0, length * cos(float(extra.get("pitch", 0.0))))
-			var nearest: Vector3 = entry["pos"] + along * t
-
-			if Vector2(point.x - nearest.x, point.z - nearest.z).length() < 1.5 + float(extra.get("radius", 0.3)):
-				return id
-
-	return 0
-
-
 func show_notice(text: String) -> void:
 	_on_notice(text)
 
@@ -1735,12 +1716,10 @@ func _update_trunk_colliders() -> void:
 			pair[1].collision_layer = 1 if pair[0].global_position.distance_to(here) < 40.0 else 0
 
 
-# A felled trunk (lying along `yaw`, falling over when it first appears) or a stump.
-# The bark of a felled trunk or stump: the standing trees' bark shader (src/flora/flora_view.gd) with the species texture and tint, so a lying log is not a flat dark drum (guide, 2026-10-31).
-# One Shader shared by every felled trunk, stump and log: a new Shader per call made the GPU compile the same bark shader again on each cut of a fallen tree (the trunk is rebuilt when it
+# The bark of a stump: the standing trees' bark shader (src/flora/flora_view.gd) with the species texture and tint, so a lying log is not a flat dark drum (guide, 2026-10-31).
+# One Shader shared by every stump and log: a new Shader per call made the GPU compile the same bark shader again on each cut of a fallen tree (the old trunk was rebuilt when it
 # gets shorter), a lock-up of about 2 s in the windowed game (Dave's bug 6, 2 Nov 2026; the server side of a cut costs under 30 ms with 3000 items).
 static var _felled_bark_shader: Shader = null
-const MIN_TRUNK_M := 0.3   # the shortest felled trunk drawn (a row with less is drawn this long, or twice its radius)
 
 
 func _felled_bark(species: String, radius: float, span: float) -> Material:
@@ -1776,141 +1755,100 @@ func _felled_bark(species: String, radius: float, span: float) -> Material:
 	return mat
 
 
-func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
+# A stump (state 4): a short bark drum with a pale cut face and a darker ring on top and root swell round its foot. A felled tree's logs are ordinary loose
+# items (_swing_down brings them down). A stump the server still marks "fresh" belongs to a tree that is falling now: its crown's grass lies flat once the
+# tree is down (FALL_S).
+func _make_felled(extra: Dictionary) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var radius: float = float(extra.get("radius", 0.3))
-	# Never a zero-length trunk: a 0 m cylinder and capsule made hundreds of "cannot be normalized" warnings and non-finite transforms, a 43 s stall
-	# on Dave's Windows PC (test lane, 14 Nov 2026). The server takes the trunk away with its last log, so this only guards a bad row.
-	var length: float = maxf(float(extra.get("length", 8.0)), maxf(MIN_TRUNK_M, radius * 2.0))   # long enough for its capsule (height at least twice the radius)
-	var bark: Material = _felled_bark(str(extra.get("species", "")), radius, length if trunk else maxf(radius * 1.2, 0.5))
+	var height: float = maxf(radius * 1.2, 0.5)
+	var bark: Material = _felled_bark(str(extra.get("species", "")), radius, height)
 	var mesh_node: MeshInstance3D = MeshInstance3D.new()
 	var cyl: CylinderMesh = CylinderMesh.new()
-	var orig_length: float = maxf(float(extra.get("orig_length", length)), length)
-	cyl.top_radius = radius * ((1.0 - 0.45 * length / orig_length) if trunk else 0.95)   # a shortened trunk is thicker at its fresh cut end
+	cyl.top_radius = radius * 0.95
 	cyl.bottom_radius = radius
-	cyl.height = length if trunk else maxf(radius * 1.2, 0.5)
+	cyl.height = height
 	cyl.material = bark
 	mesh_node.mesh = cyl
+	mesh_node.position = Vector3(0.0, height * 0.5, 0.0)
 	root.add_child(mesh_node)
-	# Looks (Kathleen, stage-1 pass): a pale cut face with a darker ring on the stump top and at both ends of the trunk, a few snapped branch stubs
-	# along the trunk and root swell round the stump foot, so a felled tree is not a bare drum.
+	# Looks (Kathleen, stage-1 pass): a pale cut face with a darker ring on the stump top and root swell round its foot, so a stump is not a bare drum.
 	var cut: StandardMaterial3D = StandardMaterial3D.new()
 	cut.albedo_color = Color(0.72, 0.58, 0.38)
 	var ring: StandardMaterial3D = StandardMaterial3D.new()
 	ring.albedo_color = Color(0.5, 0.36, 0.2)
-
-	for end in ([-1.0, 1.0] if trunk else [1.0]):
-		var face: MeshInstance3D = MeshInstance3D.new()
-		var disc: CylinderMesh = CylinderMesh.new()
-		var r_end: float = cyl.top_radius if end > 0.0 else cyl.bottom_radius
-		disc.top_radius = r_end * 0.93
-		disc.bottom_radius = r_end * 0.93
-		disc.height = 0.012
-		disc.material = cut
-		face.mesh = disc
-		face.position = Vector3(0.0, end * cyl.height * 0.5 + end * 0.004, 0.0)
-		mesh_node.add_child(face)
-		var core: MeshInstance3D = MeshInstance3D.new()
-		var inner: CylinderMesh = CylinderMesh.new()
-		inner.top_radius = r_end * 0.55
-		inner.bottom_radius = r_end * 0.55
-		inner.height = 0.016
-		inner.material = ring
-		core.mesh = inner
-		core.position = face.position + Vector3(0.0, end * 0.001, 0.0)
-		mesh_node.add_child(core)
-
-	if trunk and bool(extra.get("keywood", false)) and length > 3.0 * 1.2:   # the next cut line: a pale band round the trunk one log length from the far end
-		var cut_at: float = (length - 3.0) / length
-		var band: MeshInstance3D = MeshInstance3D.new()
-		var band_cyl: CylinderMesh = CylinderMesh.new()
-		var band_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, cut_at) * 1.04
-		band_cyl.top_radius = band_r
-		band_cyl.bottom_radius = band_r
-		band_cyl.height = 0.07
-		var band_mat: StandardMaterial3D = StandardMaterial3D.new()
-		band_mat.albedo_color = Color(0.92, 0.82, 0.55)
-		band_mat.emission_enabled = true
-		band_mat.emission = Color(0.35, 0.3, 0.15)
-		band_cyl.material = band_mat
-		band.mesh = band_cyl
-		band.position = Vector3(0.0, length * 0.5 - 3.0, 0.0)
-		mesh_node.add_child(band)
-
+	var face: MeshInstance3D = MeshInstance3D.new()
+	var disc: CylinderMesh = CylinderMesh.new()
+	disc.top_radius = cyl.top_radius * 0.93
+	disc.bottom_radius = cyl.top_radius * 0.93
+	disc.height = 0.012
+	disc.material = cut
+	face.mesh = disc
+	face.position = Vector3(0.0, height * 0.5 + 0.004, 0.0)
+	mesh_node.add_child(face)
+	var core: MeshInstance3D = MeshInstance3D.new()
+	var inner: CylinderMesh = CylinderMesh.new()
+	inner.top_radius = cyl.top_radius * 0.55
+	inner.bottom_radius = cyl.top_radius * 0.55
+	inner.height = 0.016
+	inner.material = ring
+	core.mesh = inner
+	core.position = face.position + Vector3(0.0, 0.001, 0.0)
+	mesh_node.add_child(core)
 	var stub_rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	stub_rng.seed = int(radius * 1000.0) + int(length)
+	stub_rng.seed = int(radius * 1000.0) + int(float(extra.get("length", 8.0)))
 
-	if trunk:
-		for k in range(4):
-			var stub: MeshInstance3D = MeshInstance3D.new()
-			var twig: CylinderMesh = CylinderMesh.new()
-			twig.top_radius = radius * 0.06
-			twig.bottom_radius = radius * 0.12
-			twig.height = radius * 1.1
-			twig.material = bark
-			stub.mesh = twig
-			var along: float = stub_rng.randf_range(-0.35, 0.4) * cyl.height
-			var ang: float = stub_rng.randf() * TAU
-			var local_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, along / cyl.height + 0.5)
-			stub.position = Vector3(cos(ang) * local_r, along, sin(ang) * local_r)
-			stub.rotation = Vector3(sin(ang) * 1.2, 0.0, -cos(ang) * 1.2)
-			mesh_node.add_child(stub)
+	for k in range(5):
+		var swell: MeshInstance3D = MeshInstance3D.new()
+		var fin: BoxMesh = BoxMesh.new()
+		fin.size = Vector3(radius * 0.9, radius * 0.35, radius * 0.22)
+		fin.material = bark
+		swell.mesh = fin
+		var a2: float = TAU * float(k) / 5.0 + stub_rng.randf() * 0.5
+		swell.position = Vector3(cos(a2) * radius * 0.95, radius * 0.1, sin(a2) * radius * 0.95)
+		swell.rotation = Vector3(0.0, -a2, 0.0)
+		root.add_child(swell)
 
-	if not trunk:
-		mesh_node.position = Vector3(0.0, cyl.height * 0.5, 0.0)
+	var circle: Array = extra.get("crown", [])
 
-		for k in range(5):
-			var swell: MeshInstance3D = MeshInstance3D.new()
-			var fin: BoxMesh = BoxMesh.new()
-			fin.size = Vector3(radius * 0.9, radius * 0.35, radius * 0.22)
-			fin.material = bark
-			swell.mesh = fin
-			var a2: float = TAU * float(k) / 5.0 + stub_rng.randf() * 0.5
-			swell.position = Vector3(cos(a2) * radius * 0.95, radius * 0.1, sin(a2) * radius * 0.95)
-			swell.rotation = Vector3(0.0, -a2, 0.0)
-			root.add_child(swell)
+	if bool(extra.get("fresh", false)) and circle.size() >= 3:   # the crown lands: the grass under the whole canopy circle lies flat
+		var tween: Tween = root.create_tween()
+		tween.tween_interval(FALL_S)
+		tween.tween_callback(func():
+			if crown_landed.is_valid():
+				crown_landed.call(Vector3(float(circle[0]), 0.0, float(circle[1])), float(circle[2])))
 
-		return root
-
-	# Hinge at the stump: pivot turns from upright to lying, over about 1.5 s.
-	root.rotation.y = float(extra.get("yaw", 0.0))
-	var pivot: Node3D = Node3D.new()
-	root.add_child(pivot)
-	root.remove_child(mesh_node)
-	pivot.add_child(mesh_node)
-	mesh_node.position = Vector3(0.0, length * 0.5, 0.0)
-	var lie: float = deg_to_rad(90.0)
-	var pitch: float = float(extra.get("pitch", 0.0))   # the server's resting pitch (fell_pose.gd): rises with a slope, follows a falling one
-	var has_pose: bool = extra.has("pitch")
-	var rest: float = lie - pitch if has_pose else lie + asin(clampf(radius * 0.45 / maxf(length, 0.5), 0.0, 0.5))   # an older record keeps the level lie with the taper dip
-	pivot.position.y = radius   # the axis rides one butt radius up, so the log rests ON the ground instead of sunk in it (collision is at this height)
-	pivot.rotation.x = 0.0
-	if bool(extra.get("landed", false)):
-		pivot.rotation.x = rest      # already lying (a log was cut off it): no fall again
-	else:
-		var tween: Tween = pivot.create_tween()
-		# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
-		tween.tween_property(pivot, "rotation:x", rest, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		var circle: Array = extra.get("crown", [])
-
-		if circle.size() >= 3:   # the crown lands: the grass under the whole canopy circle lies flat
-			tween.tween_callback(func():
-				if crown_landed.is_valid():
-					crown_landed.call(Vector3(float(circle[0]), 0.0, float(circle[1])), float(circle[2])))
-
-	var body: StaticBody3D = StaticBody3D.new()
-	body.collision_layer = 0
-	var shape: CollisionShape3D = CollisionShape3D.new()
-	var capsule: CapsuleShape3D = CapsuleShape3D.new()
-	capsule.radius = radius * 0.8
-	capsule.height = length
-	shape.shape = capsule
-	shape.rotation.x = rest
-	shape.position = Vector3(0.0, radius + sin(pitch) * length * 0.5, cos(pitch) * length * 0.5)
-	body.add_child(shape)
-	root.add_child(body)
-	_collide.append([root, body])
 	return root
+
+
+const FALL_S := 1.5   # a felled tree's pieces swing down this long (server_items FALL_S, tree_sounds FALL_S)
+var _falling: Dictionary = {}   # world id -> true while a felled tree's piece swings down (_swing_down); _snap_loose leaves it alone
+
+
+# A piece of a felled tree coming down (the row's fall extra: the hinge at the stump, the fall's turn, the seconds left): it swings down round the stump with
+# the rest of the tree, from standing up to where it lies, easing in as the old whole trunk did, so the tree falls already in its logs. The whole lying
+# transform is turned about the hinge line, so the logs keep their places end to end all the way down. A row that arrives late starts part way down.
+func _swing_down(id: int, node: Node3D, fall: Array) -> void:
+	var left: float = minf(float(fall[4]), FALL_S)
+
+	if left <= 0.05:
+		return
+
+	var hinge: Vector3 = Vector3(float(fall[0]), float(fall[1]), float(fall[2]))
+	var toward: Vector3 = Vector3(sin(float(fall[3])), 0.0, cos(float(fall[3])))
+	var axis: Vector3 = toward.cross(Vector3.UP).normalized()   # turning `toward` about this by +90 degrees points it straight up
+	var rest: Transform3D = node.transform
+	_falling[id] = true
+	var swing: Callable = func(u: float) -> void:
+		var lift: float = PI * 0.5 * (1.0 - u * u)   # quad ease in: slow at first, fastest as it lands
+		node.transform = Transform3D(Basis(axis, lift), hinge) * Transform3D(Basis.IDENTITY, -hinge) * rest
+	var down: Callable = func() -> void:
+		node.transform = rest
+		_falling.erase(id)
+		_snap_loose(id)
+	var tween: Tween = node.create_tween()
+	tween.tween_method(swing, 1.0 - left / FALL_S, 1.0, left)
+	tween.tween_callback(down)
 
 
 func _update_fire_lights() -> void:
@@ -2873,8 +2811,6 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				_note_store(id, row)
 				_note_crop(id, row)
 				_note_bin(id, row, state)
-				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
-
 				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
 				var site_was: Variant = _world[id].get("site")
 
@@ -2882,13 +2818,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					_world[id]["site"] = site_now   # a deposit or a change in what you have to hand: the list updates, the blue piece stays
 					continue
 
-				if (site_now != null) != (site_was != null):
-					shorter = true   # a site finished (drawn again as the real piece) or a piece that became a site
+				if (site_now != null) == (site_was != null):
+					continue   # only a site finished (drawn again as the real piece) or a piece that became a site is drawn again
 
-				if not shorter:
-					continue
-
-			_forget(id)   # a changed state, or a felled trunk with a log cut off: draw it again
+			_forget(id)   # a changed state, or a site finished or begun: draw it again
 
 		var node: Node3D
 		var light: OmniLight3D = null
@@ -2949,10 +2882,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			continue
 
-		if is_felled_state(state):   # only 3 (a trunk) and 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)
+		if is_felled_state(state):   # only 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
 			var felled_t0: int = Time.get_ticks_usec()
-			node = _make_felled(state == 3, extra)
+			node = _make_felled(extra)
 			prof["felled"] = int(prof.get("felled", 0)) + Time.get_ticks_usec() - felled_t0
 			node.position = row[3]
 			_root.add_child(node)
@@ -3003,6 +2936,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_snap_loose(id)
 		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
 
+		if state == 0 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("fall"):
+			_swing_down(id, node, row[5]["fall"])   # a piece of a tree coming down: it falls with the rest from the stump
+
 	_note_slowest_row(row_usec, row_name)
 	_forget_near()   # and again once the rows are in: nothing kept while they went in (the placed list) outlives them
 	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
@@ -3046,7 +2982,7 @@ func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 
 	var on_fire: bool = _lit_state(int(entry.get("state", 0))) or StructureLook.is_unlit_fire(int(entry.get("state", 0)))   # a fire rests on the drawn ground too (it hung about a metre up where the drawn ground sits under the server's height field, Dave 2 Nov)
 
-	if entry.is_empty() or (int(entry.get("state", 0)) != 0 and not on_fire) or not _ground_below.is_valid() or _rolling.has(id):
+	if entry.is_empty() or (int(entry.get("state", 0)) != 0 and not on_fire) or not _ground_below.is_valid() or _rolling.has(id) or _falling.has(id):
 		_unsnapped.erase(id)
 		return
 
@@ -3412,6 +3348,7 @@ func _roll_tick(delta: float, now: int) -> void:
 
 func _forget(id: int) -> void:
 	_rolling.erase(id)
+	_falling.erase(id)
 	_unsnapped.erase(id)
 
 	if _boulders.has(id):
@@ -4245,9 +4182,10 @@ func _make_fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 
 
 # Lit fire states (cooking.json fire_tiers): 1 campfire, 40 survival fire, 41 bonfire.
-# World-item states 3 (a felled trunk) and 4 (its stump) are drawn by _make_felled; every other state is a fire, a structure, a boulder or a loose item.
+# World-item state 4 (a stump) is drawn by _make_felled; every other state is a fire, a structure, a boulder or a loose item. A felled tree has no
+# trunk state: it comes down as its logs (16 Nov 2026).
 static func is_felled_state(state: int) -> bool:
-	return state == 3 or state == 4
+	return state == 4
 
 
 static func _lit_state(state: int) -> bool:
@@ -4521,7 +4459,7 @@ func _prewarm_loose_meshes() -> void:
 
 # Bug 6 (Dave, 2 Nov 2026 16:51: "a big pause when you first cut it ... sometimes it doesn't even appear for five seconds and then poof a tree
 # appears and falls over"): the first felled trunk of a session built the bark shader and the cut-face materials, and the GPU compiled them right
-# then. One trunk and one stump are made here, out of sight under the world, so that compile happens during loading; they go after 5 s.
+# then. One stump is made here, out of sight under the world, so that compile happens during loading; they go after 5 s.
 var _felled_warm: Array = []
 
 
@@ -4530,18 +4468,16 @@ func _prewarm_felled() -> void:
 		return
 
 	var t0: int = Time.get_ticks_usec()
-	var extra: Dictionary = {"species": "oak", "radius": 0.3, "length": 8.0, "yaw": 0.0, "pitch": 0.0, "landed": true, "keywood": true}
-
-	for trunk in [true, false]:
-		var node: Node3D = _make_felled(trunk, extra)
-		node.position = Vector3(0.0, -10000.0, 0.0)
-		_root.add_child(node)
-		_felled_warm.append(node)
+	var extra: Dictionary = {"species": "oak", "radius": 0.3, "length": 8.0, "yaw": 0.0}
+	var node: Node3D = _make_felled(extra)
+	node.position = Vector3(0.0, -10000.0, 0.0)
+	_root.add_child(node)
+	_felled_warm.append(node)
 
 	if is_inside_tree():
 		get_tree().create_timer(5.0).timeout.connect(_drop_felled_warm)
 
-	print("client prewarm: felled trunk and stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	print("client prewarm: stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
 
 
 func _drop_felled_warm() -> void:

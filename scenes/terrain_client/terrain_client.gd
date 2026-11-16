@@ -1794,9 +1794,9 @@ func _stamp_walkers(now: int) -> void:
 
 # Placed things clear the ground around them (data/look/placed_clearing.json): grass and litter in grass_view, shrubs and small plants in
 # flora_view. The spots are read from the world items the inventory view already holds (a fire, shelter, chest, bench, forge...; loose
-# sticks, felled trunks, boulders, remains and carcasses do not count). Updated when the set changes.
+# sticks, stumps, boulders, remains and carcasses do not count). Updated when the set changes.
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
-const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
+const CLEARING_NOT := [0, 2, 4, 10]   # loose items and stumps; every other state asks structures.json "clears_grass" (StructureLook)
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const LyingLogs := preload("res://src/shared/lying_logs.gd")
 var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this many metres of rock lie between the tunnel ceiling and the water; -1 = the real drip view
@@ -1853,18 +1853,6 @@ func _sync_cleared() -> void:
 	for id in items._world:
 		var row: Dictionary = items._world[id]
 
-		if int(row.get("state", 0)) == 3 and not _switches.on("log_grass"):
-			continue
-
-		if int(row.get("state", 0)) == 3:
-			# A felled trunk lies from the stump along its yaw (inventory_view._make_felled): the grass under it is pressed flat.
-			var extra: Dictionary = row.get("extra", {})
-			var at: Vector3 = row["pos"]
-			var length: float = float(extra.get("length", 8.0))
-			lying.append(LyingLogs.trunk_segment(at, extra))
-			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
-			continue
-
 		if int(row.get("state", 0)) == 4 and _switches.on("log_grass"):
 			# A standing stump: no blade grows out of it (inventory_view._make_felled draws it as a short cylinder).
 			var stump_at: Vector3 = row["pos"]
@@ -1877,9 +1865,12 @@ func _sync_cleared() -> void:
 			var loose_id: String = items.table.id_of(int(row.get("number", 0)))
 
 			if loose_id == "log" or loose_id.begins_with("log_"):
-				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): pressed like a felled trunk.
+				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): the grass under it is pressed flat.
 				var node: Node3D = row["node"]
 				var seg: Array
+
+				if items._falling.has(id):
+					continue   # a felled tree's log still coming down: pressed once it lies (a segment every frame of the fall would filter the grass again each time)
 
 				# A kicked log rolls (inventory_view._roll_tick): its node moves and turns every frame, and each new segment made the grass and the
 				# plants of its chunks filter again, ten times a second for the whole roll (Dave 3 Nov 2026: "every time I drop a log off my shoulder

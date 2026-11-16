@@ -857,7 +857,7 @@ func _init() -> void:
 		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) in ["material", "food"]:   # future foods (shore foods, crops) count too, so dishes built from them are checked
 			obtainable[String(id)] = true
 
-	# A felled small tree breaks into Firewood (server_items._split_small), and the chopping block (use split_log) splits a Wooden block into it.
+	# A felled small tree breaks into Firewood (server_items._fall_pieces), and the chopping block (use split_log) splits a Wooden block into it.
 	obtainable["firewood"] = true
 
 	# The Smelters (structures.json "smelting", src/stream/server_smelter.gd): a job a live smelter does gives its ingot when its ore has a

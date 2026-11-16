@@ -1,8 +1,8 @@
 extends SceneTree
 
 # Playability bot (Tyler, 31 Oct 2026): a headless player who follows the first-hour steps of PLAYTHROUGH_GUIDE.md on the server logic and STOPS at the first step
-# that cannot be done, saying which step and why. Steps: spawn, gather sticks and fibre and stones, twist twine, make the stone axe, chop a tree and work the
-# trunk, make and light a fire, build a lean-to. Recipes are found by NAME (the id in data/items/recipes.json), never by number, and the gather amounts come from
+# that cannot be done, saying which step and why. Steps: spawn, gather sticks and fibre and stones, twist twine, make the stone axe, fell a tree (it comes
+# down in its logs) and gather its leaves, make and light a fire, build a lean-to. Recipes are found by NAME (the id in data/items/recipes.json), never by number, and the gather amounts come from
 # the recipes themselves, so a changed recipe is followed; a recipe that grows past what a first hour can reasonably gather, or needs a station or an unknown
 # material, stops the bot at that step. test_first_hour stays as the vitals-curve check; this one is the "can a new player get through it" check.
 # What it cannot see: the real terrain (whether sticks lie within reach of the spawn is the world-alive metrics tool's job) and the client's hands.
@@ -237,7 +237,7 @@ func _init() -> void:
 		return
 	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)
 
-	step("chop: fell the tree, cut a log off the trunk, pick it up")
+	step("chop: fell the tree, it comes down in its logs, gather its leaves")
 	items.report_position(1, Vector3(8.0, 10.0, 0.0))
 
 	for n in range(200):   # as many blows as it takes (the count is tuned by the felling design, so the bot does not depend on it)
@@ -252,44 +252,30 @@ func _init() -> void:
 		return
 
 	pass_time(60.0, 0.8)
-	var trunk_id: int = 0
-
-	for k in items._items:
-		if items._items[k].has("tree") and items._items[k]["tree"]["state"] == 3:
-			trunk_id = k
-
-	need(trunk_id != 0, "the felled tree left no trunk on the ground to work")
-	if halted:
-		return
-
-	items.report_position(1, Vector3(14.0, 10.0, 0.0))
-	var guard: int = 0
 	var log_on_ground: int = 0
 	var log_numbers: PackedInt32Array = items.table.group_members(items.table.number_of("log"))
 
-	# Chopping the lying trunk cuts logs off its end; they fall on the ground and are not picked up by themselves (branches, bark and sticks are).
-	while log_on_ground == 0 and guard < 300:
-		if items._items.has(trunk_id):
-			items.report_position(1, items.cut_line_point(trunk_id))   # the player walks to the cut line (the server says "Walk along the trunk" otherwise)
+	# The tree comes down already in its logs, its crown's sticks and leaves over the circle it lands on (Dave 16 Nov 2026); the bot walks to the leaves and picks them up.
+	for k in items._items:
+		var it: Dictionary = items._items[k]
 
-		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(items))
-		guard += 1
-		items.tick(1.0)
+		if not (it.has("tree") or it.has("fire") or it.has("struct") or it.has("scatter")) and log_numbers.has(int(it.get("number", 0))):
+			log_on_ground = k
 
-		for k in items._items:
-			var it: Dictionary = items._items[k]
-
-			if not (it.has("tree") or it.has("fire") or it.has("struct") or it.has("scatter")) and log_numbers.has(int(it.get("number", 0))):
-				log_on_ground = k
-
-	need(log_on_ground != 0, "%d chops on the trunk cut no log that lies on the ground" % guard)
+	need(log_on_ground != 0, "the felled tree left no log on the ground")
 	if halted:
 		return
 
+	for _pass in range(6):
+		for k in items._items.keys():
+			if items._items.has(k) and not items._items[k].has("scatter") and items.table.id_of(int(items._items[k].get("number", 0))) == "leaves":
+				items.report_position(1, items._items[k]["pos"])
+				items.action(1, Net.ACT_PICKUP, k, 0, 0, Vector3.ZERO)
+
+	items.report_position(1, Vector3(8.0, 10.0, 0.0))
 	pass_time(30.0, 0.8)
 	var leaves_need: int = int(raw.get("leaves", 0))
-	need(count("leaves") * 3 >= leaves_need, "working the trunk gave %d leaves; one crown should give at least a third of the %d the lean-to needs" % [count("leaves"), leaves_need])
+	need(count("leaves") * 3 >= leaves_need, "the felled crown gave %d leaves; one crown should give at least a third of the %d the lean-to needs" % [count("leaves"), leaves_need])
 	var leaf_short: int = leaves_need - count("leaves")   # the lean-to takes 200 (Dave 4 Nov): a real player sweeps the rest from more crowns, the bot is given it
 
 	while leaf_short > 0:

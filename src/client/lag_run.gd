@@ -179,7 +179,7 @@ func _chop_and_split() -> void:
 	await client.items.run_chop_test(client)   # gives an axe, stands by the nearest tree, swings until it falls
 	_end("tree felled (see the Chop test line)")
 
-	# A felled trunk breaks into logs by itself once it lands (server_items _auto_split); Dave 2 Nov: a pause as the trunk came apart.
+	# A felled tree comes down already in its logs, which then wake to roll (server_items _fell_record, _land_fall); Dave 2 Nov: a pause as the trunk came apart.
 	_begin("split")
 	var before: int = client.items._world.size()
 	await _wait(10.0)

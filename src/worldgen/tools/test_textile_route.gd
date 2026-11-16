@@ -96,30 +96,23 @@ func drop_byproducts(before: Dictionary) -> void:
 			pack.remove(int(number), extra)
 
 
-# One felled oak (the fall: test_fell_autosplit) cut up with a Stone - Axe in hand, away from the stations: it gives its harvest_yield count of tannin bark, once.
+# One felled oak (the fall: test_fell_autosplit) away from the stations comes down in its logs with its harvest_yield tannin bark in the heap beside them, once.
 func bark_from_oak() -> void:
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
-	var id: int = 960001
 	var at: Vector3 = Vector3(300.0, 10.0, 300.0)
 	var back: Vector3 = items.position_of(1)
 	var before: Dictionary = pack_counts()
-	items._items[id] = {"number": 0, "count": 1, "pos": at, "left": 1.0e9, "tree": {"state": 3, "species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 9.0, "radius": 0.3, "chunk": [4, 4]}}
+	var bark: int = items.table.number_of("tannin_bark")
+	var first: int = items._next_id
+	items._fell_record(Vector2i(4, 4), {"name": "oak", "position": at, "height": 9.0, "trunk": 0.3}, Vector2(0.0, 1.0))
 
-	for blow in range(40):
-		if not items._items.has(id):
-			break
-
-		var tree: Dictionary = items._items[id]["tree"]
-		var logs_phase: bool = int(tree.get("blows", 0)) >= int(items._drops["trunk"]["branch_blows"]) and int(tree.get("logs_left", 0)) > 0
-		var length_now: float = float(tree["length"])
-		var piece: float = length_now if int(tree.get("logs_left", 0)) <= 1 else minf(float(items._drops["trunk"]["log_length_m"]), length_now)
-		items.report_position(1, at + Vector3(0.3, 0.0, (length_now - piece * 0.5) if logs_phase else 0.5))
-		items._last_process.erase(1)
-		items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
+	for id in range(first, items._next_id):
+		if items._items.has(id) and int(items._items[id]["number"]) == bark:
+			items.report_position(1, items._items[id]["pos"])
+			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	items.report_position(1, back)
 	drop_byproducts(before)
-	check(have("tannin_bark") == int(items._drops["harvest_yield"]["oak"]["count"]), "4a0. a felled oak cut up with the axe gives its tannin bark (%d)" % have("tannin_bark"))
+	check(have("tannin_bark") == int(items._drops["harvest_yield"]["oak"]["count"]), "4a0. a felled oak gives its tannin bark (%d)" % have("tannin_bark"))
 
 
 func gives_of(recipe_id: String) -> int:
@@ -272,7 +265,7 @@ func _init() -> void:
 	check(have("processed_hide") == 1, "4. at the Drying rack the hide is scraped and dried")
 	items._items.erase(rack)   # cleared away so the Tailor's table can stand on that side later
 	build("tanning_rack", HERE + Vector3(0.0, 0.0, -3.0))
-	bark_from_oak()   # the bark: a felled oak cut up with the axe (GOALS-REPAIR GA-01)
+	bark_from_oak()   # the bark: a felled oak gives it as it comes down (GOALS-REPAIR GA-01)
 	fill_water(need_of("leather", "water"))   # the water: a bucket filled at fresh water (GOALS-REPAIR GA-04)
 	craft("leather", 1, 60)
 	check(have("leather") == 1 and have("processed_hide") == 0, "4a. the dried hide is tanned at the Tanning rack")

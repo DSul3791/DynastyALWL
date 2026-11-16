@@ -138,12 +138,13 @@ func fire_ids() -> Array:
 	return found
 
 
-func trunk_id() -> int:
-	for k in items._items:
-		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3:
-			return k
-
-	return 0
+# Walks to each heap of these lying about (a felled crown's litter lies over its crown circle) and picks it up, a handful a pass.
+func gather(ids: Array) -> void:
+	for _pass in range(6):
+		for id in ids:
+			for k in loose(str(id)):
+				items.report_position(1, items._items[k]["pos"])
+				items.action(1, Net.ACT_PICKUP, k, 0, 0, Vector3.ZERO)
 
 
 # Puts `count` of an item in the pack into a fire's store the way the window does: open, put, close (a burning fire counts its store when it closes).
@@ -208,18 +209,13 @@ func route() -> void:
 
 	check(standing.is_empty() and counts("event:tree_felled") == 1 and done("fell"), "felling the oak counts the tree once (%d)" % counts("event:tree_felled"))
 
-	# The trunk: branch blows (sticks, leaves), then logs come off the far end onto the ground; cut four.
-	var trunk: int = trunk_id()
-	check(trunk != 0, "the felled oak lies as a trunk")
-	var guard: int = 0
+	# It comes down already in its logs, its crown's sticks and leaves over the circle it lands on (Dave 16 Nov 2026); the leaves are gathered by hand.
+	for _t in range(8):
+		items.tick(0.25)   # the fall lands (FALL_S)
 
-	while items._items.has(trunk) and loose("log_oak").size() < 4 and guard < 200:
-		items.report_position(1, items.cut_line_point(trunk))
-		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, trunk, 0, 0, HeldTool.at_axe(items))
-		guard += 1
-
-	check(loose("log_oak").size() >= 4 and have("leaves") >= 60, "four oak logs lie on the ground and the branch blows gave the lean-to's 60 leaves (%d logs, %d leaves, %d sticks)" % [loose("log_oak").size(), have("leaves"), have("stick")])
+	gather(["leaves"])
+	items.report_position(1, Vector3(8.0, 10.0, 0.0))
+	check(loose("log_oak").size() >= 4 and have("leaves") >= 60, "the oak comes down as at least four logs on the ground and its crown gives the lean-to's 60 leaves (%d logs, %d leaves, %d sticks)" % [loose("log_oak").size(), have("leaves"), have("stick")])
 
 	# Blocks: an axe on a ground log only says to saw it into blocks first (TREE_WOOD_TOOLS_DESIGN.md), and the primitive route has no saw (the Copper saw
 	# needs copper), so the three blocks the Chopping Block and two splits need lie on the ground like the other fixtures.

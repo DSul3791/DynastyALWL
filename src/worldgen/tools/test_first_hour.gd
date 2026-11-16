@@ -119,7 +119,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)   # the player puts the axe on the hotbar
 	note("crafting the axe")
 
-	# 3. Fell a tree and work the trunk.
+	# 3. Fell a tree: it comes down already in its logs, with its crown's sticks and leaves on the ground (Dave 16 Nov 2026).
 	items.report_position(1, Vector3(8.0, 10.0, 0.0))
 
 	for n in range(30):
@@ -128,34 +128,24 @@ func _init() -> void:
 
 	check(standing.is_empty(), "the tree falls to the axe")
 	pass_time(60.0, 0.8)
-	var trunk_id: int = 0
+	var logs: int = 0
+	var leaves: int = 0
+	var sticks: int = 0
 
-	for k in items._items:
-		if items._items[k].has("tree") and items._items[k]["tree"]["state"] == 3:
-			trunk_id = k
+	for k in items._items:   # what the tree broke into lies on the ground
+		var it: Dictionary = items._items[k]
 
-	items.report_position(1, Vector3(14.0, 10.0, 0.0))
-	var guard: int = 0
+		if it.has("tree") or it.has("struct") or it.has("scatter"):
+			continue
 
-	while items._items.has(trunk_id) and guard < 200:
-		if int(items._items[trunk_id]["tree"].get("blows", 0)) >= 2:
-			items.report_position(1, items.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
+		var id: String = items.table.id_of(int(it["number"]))
+		logs += int(it["count"]) if id.begins_with("log") else 0
+		leaves += int(it["count"]) if id == "leaves" else 0
+		sticks += int(it["count"]) if id == "stick" else 0
 
-		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(items))
-		guard += 1
-
-	pass_time(120.0, 0.8)
-	var logs: int = count("log") + (1 if items.shoulder_of(1) != "" else 0)
-
-	for k in items._items:   # the logs now fall to the ground beside the trunk (Dave): count the loose ones too
-		if not items._items[k].has("tree") and not items._items[k].has("struct") and items.table.id_of(int(items._items[k]["number"])).begins_with("log"):
-			logs += 1
-
-	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves, %d sticks)" % [logs, count("leaves"), count("stick")])
-	print("first hour: after felling %d leaves, %d sticks, %d bark" % [count("leaves"), count("stick"), count("bark")])
-	items.lay_down_shoulder(1)   # the big log is put down before the next job
-	note("felling and working the tree")
+	check(logs >= 1 and leaves >= 1, "the tree comes down as logs, with its leaves on the ground (%d logs, %d leaves, %d sticks)" % [logs, leaves, sticks])
+	print("first hour: after felling %d leaves, %d sticks on the ground" % [leaves, sticks])
+	note("felling the tree")
 
 	# 4. A campfire: craft the kit (6 sticks, 3 stones), place it (laid, not lit), light it with tinder from the pack.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))

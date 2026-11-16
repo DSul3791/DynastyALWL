@@ -89,7 +89,7 @@ var _fell_t: int = 0
 var _fell_tree: Array = []
 var _fell_trunk: int = 0
 var _fell_stump: int = 0
-var _fell_extra: Dictionary = {}   # the trunk's extra, kept: since the auto-split (#98) the trunk row is gone a moment after it lands
+var _fell_extra: Dictionary = {}   # the fallen tree's stump extra (yaw, length, radius), kept
 var _fell_up: Vector2 = Vector2.ZERO
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
@@ -843,12 +843,10 @@ func _fell_tick(now: int) -> void:
 			return
 
 		for id in items._world:
-			if int(items._world[id]["state"]) == 3:
+			if int(items._world[id]["state"]) == 4 and bool(items._world[id].get("extra", {}).get("fresh", false)):   # the stump of the tree coming down now (its logs fall round it)
 				_fell_trunk = id
-				_fell_extra = items._world[id].get("extra", {})
-
-			if int(items._world[id]["state"]) == 4:
 				_fell_stump = id
+				_fell_extra = items._world[id].get("extra", {})
 
 		if _fell_trunk != 0:
 			_fell_t = now
@@ -871,13 +869,13 @@ func _fell_tick(now: int) -> void:
 	if _fell_step == 4:
 		if now - _fell_t > 3500:
 			var extra: Dictionary = items._world[_fell_trunk].get("extra", {}) if items._world.has(_fell_trunk) else _fell_extra
-			print("shot runner: fell trunk yaw %.3f pitch %.3f length %.1f radius %.2f" % [float(extra.get("yaw", 0.0)), float(extra.get("pitch", 0.0)), float(extra.get("length", 0.0)), float(extra.get("radius", 0.0))])
+			print("shot runner: fell tree yaw %.3f pitch %.3f length %.1f radius %.2f" % [float(extra.get("yaw", 0.0)), float(extra.get("pitch", 0.0)), float(extra.get("length", 0.0)), float(extra.get("radius", 0.0))])
 			var tp: Vector3 = _fell_tree[2]
 			var dir: Vector2 = Vector2(sin(float(extra.get("yaw", 0.0))), cos(float(extra.get("yaw", 0.0))))
 			var mid: Vector3 = tp + Vector3(dir.x, 0.0, dir.y) * float(extra.get("length", 10.0)) * 0.5
 			var side: Vector2 = Vector2(-dir.y, dir.x)
 			_fell_stand(Vector3(mid.x + side.x * 18.0, 0.0, mid.z + side.y * 18.0))
-			client.body.global_position.y += 4.0      # a few metres up, looking down at the trunk from the side, so grass and the stump do not hide it
+			client.body.global_position.y += 4.0      # a few metres up, looking down at the fallen logs from the side, so grass and the stump do not hide them
 			_fell_face(client.body.global_position, mid + Vector3(0.0, 0.5, 0.0), -14.0)
 			_fell_t = now
 			_fell_step = 5

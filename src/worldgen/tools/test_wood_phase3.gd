@@ -59,21 +59,11 @@ func loose(w, id: String) -> int:
 	return total
 
 
-# Fells a tree of `height` and species trunk width `trunk` at `at` and returns its trunk record's id.
+# Fells a tree of `height` and species trunk width `trunk` at `at` (it comes down at once in what it breaks into) and returns its stump's id.
 func fell(w, height: float, trunk: float, at: Vector3) -> int:
-	var before: Array = w._items.keys()
+	var stump: int = w._next_id
 	w._fell_record(Vector2i(0, 0), {"name": "oak", "position": at, "height": height, "trunk": trunk}, Vector2(1.0, 0.0))
-
-	for k in w._items:
-		if not before.has(k) and w._items[k].has("tree") and int(w._items[k]["tree"]["state"]) == 3:
-			return k
-
-	return 0
-
-
-func split_now(w, id: int) -> void:
-	w._split_due[id] = 0
-	w._auto_split()
+	return stump if w._items.has(stump) and w._items[stump].has("tree") else 0
 
 
 func log_id_near(w, item: String, from: Vector3) -> int:
@@ -117,15 +107,15 @@ func roll_hits(oak: int, across: float) -> void:
 	var x: float = float(r._items[id]["pos"].x)
 	check(r._rolling.is_empty() and x > -9.2 and x < -8.8, "a boulder in the way stops it against the rock (x %.2f)" % x)
 
-	# A felled trunk lying across its way stops it too.
+	# A stump in its way stops it too.
 	r._items.clear()
-	r._items[r._next_id] = {"number": oak, "count": 1, "pos": Vector3(-10.0, 5.0, -5.0), "left": 1.0e9, "tree": {"state": 3, "yaw": 0.0, "length": 10.0, "radius": 0.4}}
+	r._items[r._next_id] = {"number": 0, "count": 1, "pos": Vector3(-10.0, 5.0, 0.0), "left": 1.0e9, "tree": {"state": 4, "yaw": 0.0, "length": 10.0, "radius": 0.4}}
 	r._next_id += 1
 	r.drop_in_world(oak, 1, Vector3(0.0, 10.0, 0.0), 0, 0.0, across)
 	id = log_id_near(r, "log_oak", Vector3.ZERO)
 	roll_for(r, id, 400)
 	x = float(r._items[id]["pos"].x)
-	check(r._rolling.is_empty() and x > -9.6 and x < -9.2, "a felled trunk across the way stops it (x %.2f)" % x)
+	check(r._rolling.is_empty() and x > -9.6 and x < -9.2, "a stump in the way stops it (x %.2f)" % x)
 
 	# A standing tree square in its way stops it; one near an end turns it round the trunk instead, and it never rolls through the tree.
 	r._items.clear()
@@ -218,55 +208,29 @@ func _init() -> void:
 	check(w._small_firewood({"length": 5.0}, cfg) == 15 and w._small_firewood({"length": 1.0}, cfg) == 3 and w._small_firewood({"length": 0.2}, cfg) == 2, "5 m gives 15 Firewood, 1 m gives 3, a twig of 0.2 m still 2")
 	check(w._small_firewood({"length": 7.9}, cfg) == 24 and w._small_firewood({"length": 30.0}, cfg) == 24, "never more than 24, the largest small tree's 18 kg")
 
-	# --- 3. A felled small tree breaks into Firewood only, no logs; its seeds still drop ---
+	# --- 3. A felled small tree breaks into Firewood only, no logs, as it falls; its seeds still drop ---
 	var small: int = fell(w, 6.0, 0.3, Vector3(100.0, 10.0, 0.0))
-	check(small != 0 and not bool(w._items[small]["tree"].get("keywood", true)), "a 6 m tree falls as a trunk with no log cut lines")
-	split_now(w, small)
-	check(not w._items.has(small), "the small trunk broke up by itself")
+	check(small != 0 and int(w._items[small]["tree"]["state"]) == 4, "a 6 m tree leaves its stump and no trunk")
 	check(loose(w, "firewood") == 18 and loose(w, "log_oak") == 0 and loose(w, "log") == 0, "a 6 m tree gives 18 Firewood and no logs (%d Firewood)" % loose(w, "firewood"))
 	check(loose(w, "kindling") >= 1 and loose(w, "oak_seed") >= 1 and loose(w, "oak_seed") <= 5, "with its kindling and its 1 to 5 seeds (%d seed)" % loose(w, "oak_seed"))
 
-	# A crowded spot keeps the trunk: it tries again instead of losing the Firewood (the crowd rule of drop_in_world, as for a large tree).
+	# A crowded spot changes nothing (Dave 16 Nov 2026: "we do not care how many items are on the ground already"): 64 items lying there, the tree still breaks up.
 	var crowded = make("user://test_wood_phase3_crowd")
 	var axe_n: int = crowded.table.number_of("stone_axe")
 
 	for n in range(64):
 		crowded.drop_in_world(axe_n, 1, Vector3(500.0, 10.0, 0.0), 1)   # worn, so each lies as its own item
 
-	var packed: int = fell(crowded, 6.0, 0.3, Vector3(500.0, 10.0, 0.0))
-	split_now(crowded, packed)
-	check(crowded._items.has(packed) and loose(crowded, "firewood") == 0, "with no room for the heaps the small trunk stays and nothing is lost")
-
-	for k in crowded._items.keys():
-		if int(crowded._items[k]["number"]) == axe_n:
-			crowded._items.erase(k)
-
-	split_now(crowded, packed)
-	check(not crowded._items.has(packed) and loose(crowded, "firewood") == 18, "and it breaks up once there is room (%d Firewood)" % loose(crowded, "firewood"))
+	check(fell(crowded, 6.0, 0.3, Vector3(500.0, 10.0, 0.0)) != 0 and loose(crowded, "firewood") == 18, "64 items on the spot do not stop the small tree breaking up (%d Firewood)" % loose(crowded, "firewood"))
+	crowded._finish_writer()
 
 	var thin: int = fell(w, 12.0, 0.1, Vector3(200.0, 10.0, 0.0))
-	split_now(w, thin)
-	check(loose(w, "firewood") == 18 + 24 and loose(w, "log_oak") == 0, "a 12 m tree with a 0.1 m butt radius is small too: 24 Firewood (%d in all)" % loose(w, "firewood"))
+	check(thin != 0 and loose(w, "firewood") == 18 + 24 and loose(w, "log_oak") == 0, "a 12 m tree with a 0.1 m butt radius is small too: 24 Firewood (%d in all)" % loose(w, "firewood"))
 
-	# --- 4. A large tree still splits into 3 m logs, and no Firewood ---
+	# --- 4. A large tree comes down in 3 m logs, and no Firewood ---
 	var firewood_before: int = loose(w, "firewood")
 	var large: int = fell(w, 12.0, 0.3, Vector3(300.0, 10.0, 0.0))
-	check(bool(w._items[large]["tree"].get("keywood", false)), "a large tree falls with log cut lines")
-	split_now(w, large)
-	check(loose(w, "log_oak") == 4 and loose(w, "firewood") == firewood_before, "a 12 m tree with a 0.3 m butt radius gives 4 oak logs and no Firewood (%d logs)" % loose(w, "log_oak"))
-
-	# --- 5. The hand-cut fallback (a trunk that did not split): the same Firewood over the small blows ---
-	var hand: int = fell(w, 6.0, 0.3, Vector3(400.0, 10.0, 0.0))
-	w._split_due.erase(hand)
-	w._items[hand]["tree"].erase("auto_split")
-	w.report_position(1, Vector3(399.0, 10.0, 0.0))
-	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
-
-	for n in range(6):
-		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, hand, 0, 0, HeldTool.at_axe(w))
-
-	check(not w._items.has(hand) and w.inventory_of(1).count_of(w.table.number_of("firewood")) == 18 and w.inventory_of(1).count_of(w.table.number_of("log_oak")) == 0, "a 6 m trunk cut by hand gives the same 18 Firewood in the pack and no logs (%d)" % w.inventory_of(1).count_of(w.table.number_of("firewood")))
+	check(large != 0 and loose(w, "log_oak") == 4 and loose(w, "firewood") == firewood_before, "a 12 m tree with a 0.3 m butt radius gives 4 oak logs and no Firewood (%d logs)" % loose(w, "log_oak"))
 
 	# --- 6. The weights: a whole small tree's Firewood and two hardwood logs are carryable with the toolkit ---
 	var c = make("user://test_wood_phase3_carry")

@@ -508,35 +508,29 @@ func drop_byproducts(before: Dictionary) -> void:
 			pack.remove(int(number), extra)
 
 
-# Tannin bark by the player's route (GOALS-REPAIR GA-01): felled oak trunks (the fall itself: test_fell_autosplit) cut up with the Stone - Axe in hand, far from the
-# stations so their logs are no craft stock. Each oak gives its drops.json harvest_yield count, once. The player is put back where they were.
+# Tannin bark by the player's route (GOALS-REPAIR GA-01): felled oaks (the fall itself: test_fell_autosplit), far from the stations so their logs are no craft
+# stock, come down in their logs with the oak's drops.json harvest_yield bark in the heap beside them; the player picks the bark up. The player is put back.
 func bark_from_oaks(wanted: int) -> void:
 	var back: Vector3 = items.position_of(1)
 	var per_oak: int = int(items._drops["harvest_yield"]["oak"]["count"])
 	var oaks: int = ceili(float(wanted) / float(per_oak))
 	var have_before: int = have("tannin_bark")
 	var before: Dictionary = pack_counts()
+	var bark: int = items.table.number_of("tannin_bark")
 
 	for k in range(oaks):
-		var id: int = 960000 + k
 		var at: Vector3 = Vector3(300.0 + float(k) * 40.0, 10.0, 300.0)
-		items._items[id] = {"number": 0, "count": 1, "pos": at, "left": 1.0e9, "tree": {"state": 3, "species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 9.0, "radius": 0.3, "chunk": [4, 4]}}
+		var first: int = items._next_id
+		items._fell_record(Vector2i(4, 4), {"name": "oak", "position": at, "height": 9.0, "trunk": 0.3}, Vector2(0.0, 1.0))
 
-		for blow in range(40):
-			if not items._items.has(id):
-				break
-
-			var tree: Dictionary = items._items[id]["tree"]
-			var logs_phase: bool = int(tree.get("blows", 0)) >= int(items._drops["trunk"]["branch_blows"]) and int(tree.get("logs_left", 0)) > 0
-			var length_now: float = float(tree["length"])
-			var piece: float = length_now if int(tree.get("logs_left", 0)) <= 1 else minf(float(items._drops["trunk"]["log_length_m"]), length_now)
-			go(at + Vector3(0.3, 0.0, (length_now - piece * 0.5) if logs_phase else 0.5))
-			items._last_process.erase(1)
-			items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
+		for id in range(first, items._next_id):
+			if items._items.has(id) and int(items._items[id]["number"]) == bark:
+				go(items._items[id]["pos"])
+				items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	go(back)
 	drop_byproducts(before)
-	check(have("tannin_bark") - have_before == oaks * per_oak, "tannin bark came off %d felled oaks, %d each, cut with the axe (%d)" % [oaks, per_oak, have("tannin_bark") - have_before])
+	check(have("tannin_bark") - have_before == oaks * per_oak, "tannin bark came off %d felled oaks, %d each (%d)" % [oaks, per_oak, have("tannin_bark") - have_before])
 
 
 func pack_str(peer: int = 1) -> String:
