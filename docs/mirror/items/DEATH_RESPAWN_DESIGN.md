@@ -1,6 +1,6 @@
 # Death and respawn (rewritten 2026-10-21 to follow DESIGN_IDEAS.md 6.1)
 
-**Historical plan and implementation snapshot, 21 Oct 2026.** The [death and rescue collection](../../../Design_Ideas_Unapproved.md#death-and-rescue) preserves the source design and its status. Build/protocol, behavior and unfinished-work statements below describe that snapshot, not current verification. The old option card (a to d) was withdrawn because full loss was wrong; that history is retained.
+The design is decided in DESIGN_IDEAS.md section 6.1 ("Danger, rescue and logging out" and "Remains"). This note only says what Items builds, in what order, and where it lives. The old option card (a to d) is withdrawn: full loss was wrong.
 
 ## Build 1 (build 400, protocol 34): remains and respawn
 - Death: health reaching zero. Today only running out of air does that (vitals.json breath can_die is now true). Fall damage still stops at 1 health (Dave's rule). Every other cause calls `kill(peer, cause)` in server_items.gd.
