@@ -201,17 +201,16 @@ def thunder_far(rng, seconds):
 
 
 def rain_drip(rng):
-    """One fat drop falling from a leaf: a soft tick and a short watery plink."""
-    n = int(0.35 * SR)
+    """One fat drop falling from a leaf onto leaves or ground: a soft tick and a dull pat. Dave 16 Nov: no watery plink;
+    its rising pitch is the "bloop" of a drop landing in a puddle, wrong under trees."""
+    n = int(0.25 * SR)
     out = np.zeros(n)
     m = int(0.02 * SR)
     tick = noise(rng, m, lambda f: band(f, 3000, 1.0) * highpass(f, 800)) * env(m, 0.0005, 0.005)
     add(out, tick / (np.max(np.abs(tick)) + 1e-9) * 0.5, 0.0)
-    d = int(0.12 * SR)
-    t = np.arange(d) / SR
-    f0 = rng.uniform(500, 900)
-    plink = np.sin(2 * np.pi * np.cumsum(f0 * (1.0 + 1.2 * t / 0.12)) / SR) * np.exp(-t / 0.025)
-    add(out, plink * 0.7, 0.004)
+    d = int(0.08 * SR)
+    pat = noise(rng, d, lambda f: band(f, rng.uniform(700, 1200), 1.2)) * env(d, 0.001, 0.02)
+    add(out, pat / (np.max(np.abs(pat)) + 1e-9) * 0.6, 0.003)
     out[-int(0.05 * SR):] *= np.linspace(1, 0, int(0.05 * SR))
     return out * (0.7 / (np.max(np.abs(out)) + 1e-9))
 
