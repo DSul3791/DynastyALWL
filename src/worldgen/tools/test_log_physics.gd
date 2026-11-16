@@ -177,6 +177,11 @@ func _run() -> void:
 	check(asleep(flat, lying) and absf(rest.y - 10.0) < 0.05 and Vector2(rest.x, rest.z).length() < 0.1 and absf(float(flat._items[lying].get("pitch", 0.0))) < 0.05, "on the flat it lies where it fell and sleeps (%s)" % str(rest))
 	await step(flat, 30)
 	check(not flat._logs.has(lying) and flat._logs.cell_count() == 0, "asleep with nothing awake near, it leaves the space (and the ground copy goes)")
+	flat._logs.ensure_ground(Vector3(15.0, 10.0, 7.0), 2.0)   # two cells, one each side of x 15
+	var both: int = flat._logs.cell_count()
+	flat._logs.trim_ground([[Vector3(20.0, 10.0, 7.0), 1.0]])
+	check(both == 2 and flat._logs.cell_count() == 1 and flat._logs.ground_shape_count() == 1, "a ground cell no log is near is dropped and the one kept stays a shape of the ground (%d cells, then %d, %d shapes)" % [both, flat._logs.cell_count(), flat._logs.ground_shape_count()])
+	flat._logs.trim_ground([])
 
 	# A stone is never a body.
 	flat.drop_in_world(flat.table.number_of("stone"), 1, Vector3(5.0, 10.0, 0.0))
@@ -214,7 +219,7 @@ func _run() -> void:
 	await step(q, 60)
 	var quarter_turn: float = absf(angle_difference(float(q._items[turned]["rot_y"]), yaw0))
 	var middle_turn: float = absf(angle_difference(float(flat_s._items[lying_s]["rot_y"]), across)) if flat_s._items.has(lying_s) else 0.0
-	check(quarter_turn > deg_to_rad(8.0) and quarter_turn > middle_turn + deg_to_rad(5.0), "pushed a quarter along it turns (%.0f degrees) and pushed in the middle it hardly does (%.0f)" % [rad_to_deg(quarter_turn), rad_to_deg(middle_turn)])
+	check(quarter_turn > deg_to_rad(8.0) and quarter_turn < deg_to_rad(60.0) and quarter_turn > middle_turn + deg_to_rad(5.0), "pushed a quarter along it turns (%.0f degrees; 21 on the lane, 92 when it caught on a seam) and pushed in the middle it hardly does (%.0f)" % [rad_to_deg(quarter_turn), rad_to_deg(middle_turn)])
 	check(float(q._items[turned]["pos"].x) > 0.3, "and it still moves on (%.2f m)" % float(q._items[turned]["pos"].x))
 	q._logs.clear()
 	q._finish_writer()

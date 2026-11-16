@@ -19,9 +19,10 @@ var ground_height: Callable = Callable()   # (x, z) -> height, NAN off the world
 var _world: World3D = null                 # its own space, so nothing else on the server is ever hit by a log
 var _bodies: Dictionary = {}               # world id -> {rid, shape, r, half, mass}
 var _cells: Dictionary = {}                # Vector2i -> {shape, xf}: shapes of the one ground body
-var _ground: RID = RID()                   # the ground: one static body, every cell a shape of it, so the engine sees the seam between two cells as
-                                           # the inside of one surface (a lane run on 39cf76dc: a log lying on the seam of two cell bodies caught on
-                                           # their edges and never rolled down a 0.5 hill)
+var _ground: RID = RID()                   # the ground: one static body, every cell a shape of it. Observed on the lane: with a body a cell, a log
+                                           # lying on the seam of two caught there and never rolled down a 0.5 hill (39cf76dc); as one body it rolls
+                                           # (229f30e2), presumably the engine's internal-edge handling within one body. Seam and corner cases are
+                                           # covered by the steep roller (x seam) and the quarter push (a four-cell corner) in test_log_physics.
 var _statics: Dictionary = {}              # key -> {rid, shape}
 var _woken: Dictionary = {}                # id -> the physics frame it was put in or woken: awake until the engine has stepped it (Jolt reports a body it has not stepped yet as asleep)
 
@@ -221,14 +222,14 @@ func trim_ground(keep: Array) -> void:
 			for cz in range(lo.y, hi.y + 1):
 				wanted[Vector2i(cx, cz)] = true
 
-	var gone: bool = false
+	var gone: Array = []   # held until the ground body has let go of them
 
 	for key in _cells.keys():
 		if not wanted.has(key):
+			gone.append(_cells[key])
 			_cells.erase(key)
-			gone = true
 
-	if not gone or not _ground.is_valid():
+	if gone.is_empty() or not _ground.is_valid():
 		return
 
 	PhysicsServer3D.body_clear_shapes(_ground)   # shapes go by index: put the kept ones back (cells are dropped rarely, a few at a time)
@@ -239,6 +240,10 @@ func trim_ground(keep: Array) -> void:
 
 func cell_count() -> int:
 	return _cells.size()
+
+
+func ground_shape_count() -> int:
+	return PhysicsServer3D.body_get_shape_count(_ground) if _ground.is_valid() else 0
 
 
 # A fixed thing in the way: a sphere (a boulder), an upright cylinder (a stump, a trunk) or a box (a wall). Kept until trim_statics drops it.
