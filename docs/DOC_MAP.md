@@ -28,6 +28,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Journal and goal presentation | [Journal and Goals UI](design/PLAYER_JOURNAL_GOALS_UI.md) | Journal, HUD, automatic completion and reward presentation. | Goals/progression repair below |
 | Goal catalog review | [Working walkthrough draft](design/PLAYER_GOALS_REWARDS_DRAFT.md), [corrected review catalog](design/PLAYER_GOALS_CATALOG_CORRECTED.md) | Draft authoring and review package. The corrected catalog flags pre-wood rows for regeneration from the walkthrough draft; this is not activation permission. | [Repair decisions](ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md) |
 | Player map | [Cartography](design/PLAYER_CARTOGRAPHY_MAP_DESIGN.md) | Player-discovered mapping and related design ideas. | Goals/progression repair below |
+| Environment, sky and frozen-water appearance | [Environmental design](design/art_weather_light.md) | Main appearance/behavior entry; Dave's fog instruction retains authority. | [Sky math/checks](design/one_sky_design.md), [frozen-water integration/checks](design/frozen_water_look.md) |
 | Fog | [Dave's fog design](design/FOG_DESIGN_DAVE.md) | Approved appearance and occurrence; technical implementation is separate. | Fog records below |
 | Drinking water | [Drinking water](design/drinking_water_design.md) | Supported collection and drinking features; inspect dated subfeature records. | [Step 2b record](design/drinking_water_step2b_design.md) |
 | World-water reference | [Water design](DYNASTY_WATER_DESIGN.md) | Water-system design and dated feature support; broader watershed sources are listed below. | Use the relevant current task record |
@@ -68,7 +69,6 @@ These sources remain available. Their inclusion preserves discoverability; it do
 |---|---|
 | Goblins | [Goblins](GOBLINS.md) |
 | Generation and natural watersheds | [Generator vision](../GENERATOR_VISION.md), [Dave's watersheds](water/Dynasty_How_Natural_Watersheds_Work.md), [watershed build design](water/watershed_rebuild_design.md) |
-| Weather and light | [Weather/light](design/art_weather_light.md), [sky](design/one_sky_design.md), [frozen water](design/frozen_water_look.md) |
 | Outdoor audio | [Sound outdoors](design/sound_outdoors_design.md) |
 | Families, dynasty, NPCs, settlements and other future systems | [Game ideas](../DESIGN_IDEAS.md), [living-world proposals](design/GUIDING_DOCUMENT.md) |
 | Supporting research | [Research index](knowledge/README.md) |
