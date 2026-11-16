@@ -10,6 +10,7 @@ Thread: "Rebuild tree harvesting and wood system" (Dave, 15 Nov 2026 06:06Z). De
 | 4 Carving and knife menu | DONE, merged to dev (PR #1151) | dev e09e920a (head f7ecb9fd) | Both lanes passed after test-layout, triangle-cap and cost-compare fixes; client chest step NOT RUN (fails on dev too, W-27). NEEDS PLAYER VERIFICATION |
 | 5 Hauling | DONE, merged to dev (PR #1152) | dev 735ef18d (head 87b3b51e) | Both lanes passed after three test fixes (one log per give, live logs only, row total 235). NEEDS PLAYER VERIFICATION |
 | Rolling collisions and drag (Dave 15 Nov 16:50Z) | DONE, merged to dev (PR #1154) | dev d13ed508 (head 481157c2) | Gate review passed on the second pass; lane A 229/230 (test_flora_density timeout, known PC flake), lane B 7/7 key tests and 3/3 smokes. NEEDS PLAYER VERIFICATION |
+| Trees fall already in logs (Dave 16 Nov 00:57Z) | IN REVIEW (branch claude/project-thread-dgoucu) | pending | The whole trunk, delayed split, crowd check, hand-cut trunk path, yellow band and trunk cap are deleted; pieces swing down over 1.5 s, crush on landing, roll-off (s5 Felling fall, W-30). Cloud: gdparse and the Python checks only. Lanes: pending. NEEDS PLAYER VERIFICATION |
 
 Approvals: W-3, W-4, W-5, W-6 and part of W-8 were answered by Dave directly (15 Nov 2026 06:18Z to 06:21Z). For every other W row he said "Just make them reasonable and we can adjust them later", so those rows are adopted, provisional, and Dave adjusts them after play. No W row is open. Nothing is playable-verified.
 

@@ -19,18 +19,18 @@ func _initialize() -> void:
 	var trees: Node = TreeSounds.new()
 	root.add_child(trees)
 	TreeSounds.assume_settled = true      # a fresh headless process is younger than SETTLE_MSEC
-	var row: Dictionary = {7: {"state": 3, "pos": Vector3(10, 0, 10), "extra": {"length": 8.0, "radius": 0.3}}}
+	var row: Dictionary = {7: {"state": 4, "pos": Vector3(10, 0, 10), "extra": {"length": 8.0, "radius": 0.3, "fresh": true}}}   # the stump of a tree falling now
 	trees.watch(row)
-	check(trees.falls_played == 1, "a new felled trunk falls once (%d)" % trees.falls_played)
+	check(trees.falls_played == 1, "a new felled tree falls once (%d)" % trees.falls_played)
 	trees.watch({})
 	trees.watch(row)
 	check(trees.falls_played == 1, "back in range after leaving: no second fall (%d)" % trees.falls_played)
 	trees.forget()
 	trees.watch(row)
 	check(trees.falls_played == 2, "after the ground is made again the id is new (%d)" % trees.falls_played)
-	var landed: Dictionary = {9: {"state": 3, "pos": Vector3(20, 0, 20), "extra": {"length": 8.0, "radius": 0.3, "landed": true}}}
+	var landed: Dictionary = {9: {"state": 4, "pos": Vector3(20, 0, 20), "extra": {"length": 8.0, "radius": 0.3}}}   # a stump whose tree landed long ago
 	var before: int = trees.falls_played
 	trees.watch(landed)
-	check(trees.falls_played == before, "a trunk the server marks landed makes no fall sound (%d)" % trees.falls_played)
+	check(trees.falls_played == before, "a stump no longer fresh makes no fall sound (%d)" % trees.falls_played)
 	print("tree fall replay: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

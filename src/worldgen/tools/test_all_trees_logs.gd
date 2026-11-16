@@ -1,7 +1,7 @@
 extends SceneTree
 
-# Every felled full-size tree gives logs (Dave 1 Nov: a felled tree without logs is a dead end). Fells each species and checks the first log lands on the ground. Cutting a felled trunk into logs (Dave): the logs land on the ground beside the trunk and never in the pack or on the shoulder, the trunk gets shorter with each cut, the player has to stand
-# by the cut line, sticks and bark still go to the pack, the last cut removes the trunk, a partly cut trunk survives a restart, and a big tree's logs are not lost to the drop cap.
+# Every felled full-size tree gives logs (Dave 1 Nov: a felled tree without logs is a dead end). Fells each species and checks it comes down in its logs on the
+# ground (Dave 16 Nov 2026: already broken into logs as it falls), none in the pack, and no trunk left lying.
 #   godot --headless --path . --script res://src/worldgen/tools/test_all_trees_logs.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
@@ -65,29 +65,11 @@ func one(species: String) -> void:
 		w._last_hit.clear()
 		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
-	var trunk_id: int = 0
-
-	for k in w._items:
-		if w._items[k].has("tree") and int(w._items[k]["tree"]["state"]) == 3:
-			trunk_id = k
-
-	check(trunk_id != 0, "%s is felled into a trunk" % species)
-
-	if trunk_id == 0:
-		return
-
 	var log_n: int = w.table.number_of("log_" + species)
 
 	if log_n <= 0 or bool(w.table.entry("log_" + species).get("retired", false)):
 		log_n = w.table.number_of("log")   # no own log item: the plain Log
 
-	var guard: int = 0
-
-	while w._items.has(trunk_id) and loose_logs(w, log_n).is_empty() and guard < 40:
-		w.report_position(1, w.cut_line_point(trunk_id))
-		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
-		guard += 1
-
-	check(loose_logs(w, log_n).size() >= 1, "%s: a log lands on the ground (blows %d)" % [species, guard])
+	check(w._items.values().all(func(it): return not it.has("tree") or int(it["tree"]["state"]) == 4), "%s: no trunk is left lying, only the stump" % species)
+	check(loose_logs(w, log_n).size() >= 1, "%s: the tree comes down in its logs (%d)" % [species, loose_logs(w, log_n).size()])
 	check(w.inventory_of(1).count_of(log_n) == 0, "%s: no log went into the pack" % species)

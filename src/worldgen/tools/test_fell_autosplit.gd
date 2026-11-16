@@ -1,6 +1,9 @@
 extends SceneTree
 
-# Bug 11 and the auto-split (Dave 2 Nov): a felled tree keeps the standing tree's size, and breaks into its logs by itself once it has landed.
+# A tree falls already in its logs (Dave 16 Nov 2026: "from the second the tree starts to fall it should be in logs and the logs should have collision so if they
+# fall on anything they cause damage and roll off"; bug 11, Dave 2 Nov: a felled tree keeps the standing tree's size). The last blow leaves the stump and every
+# piece at once, however much lies on the ground; the pieces swing down over FALL_S; at the landing what is under the trunk is hurt and a log that came down on
+# something rolls off it. A small tree breaks into its Firewood the same way.
 #   godot --headless --path . --script res://src/worldgen/tools/test_fell_autosplit.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
@@ -91,50 +94,62 @@ func _init() -> void:
 
 	w.cut_tree = func(_c, id): standing.erase(id); return true
 	w.send_notice = func(_p, _text): pass
+	var struck: Array = []
+	w.hit_animal_path = func(peer, from, to, damage): struck.append([peer, from, to, damage]); return {}
 	w.peer_connected_hello(1, "abcdef123456")
 	w.report_position(1, Vector3(8.0, 10.0, 0.0))
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	w.peer_connected_hello(2, "underneath01")
+	w.report_position(2, Vector3(14.0, 10.0, 0.0))   # where the beech comes down (it falls away from player 1, along +x)
+	var health_1: float = float(w.vitals_of(1)["health"])
+	var health_2: float = float(w.vitals_of(2)["health"])
 	w._sync_in = 0.7
-	fell_one(w, standing, 7)
-	check(w._sync_in <= 0.0, "bug 6: a felled tree's trunk is sent on the next tick, not up to a second after the standing tree goes")
-	var small: Array = felled(w, 3)
-	check(small.size() == 1, "the small beech is a trunk")
-	var tree: Dictionary = w._items[small[0]]["tree"]
-	check(absf(float(tree["radius"]) - 0.24 * 10.0 / 17.0) < 0.001, "felled radius is the drawn young-beech radius (%.3f)" % float(tree["radius"]))
-	check(is_equal_approx(float(tree["length"]), 10.0), "felled length is the standing height")
-	var stump: Dictionary = w._items[felled(w, 4)[0]]["tree"]
-	check(absf(float(stump["radius"]) - float(tree["radius"])) < 0.001, "the stump has the same radius")
 
-	# Nothing breaks up while it is still falling.
-	w._auto_split()
-	check(felled(w, 3).size() == 1, "still a trunk while it falls")
+	for far in range(5000):   # scattered stones far away: felling looks at no ground items, so these cost nothing and change nothing
+		w._items[900000 + far] = {"number": w.table.number_of("stone"), "count": 1, "pos": Vector3(500.0 + float(far % 70), 10.0, 500.0 + floor(float(far) / 70.0)), "left": 1.0e9, "scatter": 900000 + far}
+
+	for near in range(80):   # and a crowd of items right where it falls changes nothing either ("do not check for items on the ground")
+		w._items[910000 + near] = {"number": w.table.number_of("stick"), "count": 1, "pos": Vector3(12.0 + float(near % 8) * 0.1, 10.0, -3.0), "left": 1.0e9}
+
+	var fell_t0: int = Time.get_ticks_usec()
+	fell_one(w, standing, 7)
+	print("fell with 5080 records lying about: %.1f ms" % (float(Time.get_ticks_usec() - fell_t0) / 1000.0))
+	check(w._sync_in <= 0.0, "bug 6: a felled tree's pieces are sent on the next tick, not up to a second after the standing tree goes")
+
+	for far in range(5000):
+		w._items.erase(900000 + far)
+
+	for near in range(80):
+		w._items.erase(910000 + near)
+
+	check(felled(w, 3).is_empty() and felled(w, 4).size() == 1, "the tree leaves its stump and no whole trunk")
+	var stump_id: int = felled(w, 4)[0]
+	var tree: Dictionary = w._items[stump_id]["tree"]
+	check(absf(float(tree["radius"]) - 0.24 * 10.0 / 17.0) < 0.001, "the felled radius is the drawn young-beech radius (%.3f)" % float(tree["radius"]))
+	check(is_equal_approx(float(tree["length"]), 10.0) and bool(tree.get("fresh", false)), "the stump carries the fall's length and is fresh while it falls")
 
 	var log_len: float = float(w._drops["trunk"]["log_length_m"])   # 3.0 m (Master s2.3 item 1)
-	# 10 m = 3 whole logs (cutting would give int(10 / 3.0) = 3; the last takes the rest). After the fall time it is three logs lying along the trunk.
 	var log_n: int = w.table.number_of("log_beech")
 
 	if log_n <= 0:
 		log_n = w.table.number_of("log")
 
 	var along: Vector3 = Vector3(sin(float(tree["yaw"])), 0.0, cos(float(tree["yaw"])))
-	var base: Vector3 = w._items[small[0]]["pos"]
-	w._split_due[small[0]] = 0   # the 2 s have passed
-	for far in range(5000):   # scattered stones far away: the split's drops look only at the items near the trunk, so these cost nothing and change nothing
-		w._items[900000 + far] = {"number": w.table.number_of("stone"), "count": 1, "pos": Vector3(500.0 + float(far % 70), 10.0, 500.0 + floor(float(far) / 70.0)), "left": 1.0e9, "scatter": 900000 + far}
-
-	var split_t0: int = Time.get_ticks_usec()
-	w._auto_split()
-	print("split with 5000 far records: %.1f ms" % (float(Time.get_ticks_usec() - split_t0) / 1000.0))
-	check(felled(w, 3).is_empty(), "the trunk broke up")
-	check(not w._drop_scoped and w._drop_scope.is_empty(), "the split's drop scope is cleared after it")
-
-	for far in range(5000):
-		w._items.erase(900000 + far)
-
+	var base: Vector3 = w._items[stump_id]["pos"]
 	var logs: Array = loose_logs(w, log_n)
-	check(logs.size() == int(10.0 / log_len), "log count equals what cutting gives: %d" % logs.size())
+	check(logs.size() == int(10.0 / log_len), "from the last blow it is already %d logs (10 m in 3 m logs)" % logs.size())
+	var shared: bool = true
+
+	for k in w._items:
+		if w._items[k].has("fall"):
+			shared = shared and w._items[k]["fall"] == w._items[logs[0]]["fall"]
+
+	check(shared and logs.all(func(k): return w._items[k].has("fall")), "every piece carries the same fall")
+	var extra: Dictionary = w._loose_extra(w._items[logs[0]])
+	check(extra.has("fall") and (extra["fall"] as Array).size() == 5 and absf(float(extra["fall"][4]) - ItemsScript.FALL_S) < 0.001 and absf(float(extra["fall"][1]) - (10.0 + float(tree["radius"]))) < 0.001, "a client is sent the hinge at the stump, the fall's turn and its seconds (%s)" % str(extra.get("fall", [])))
+
 	# Its seeds (Dave 14 Nov 2026: "a random number of seeds between 1 and 5 seeds per tree"): a beech drops 1 to 5 Beech seeds as one heap in its crown circle.
-	var seed_roll: Array = w._felled_seeds(small[0], tree)
+	var seed_roll: Array = w._felled_seeds(stump_id, tree)
 	var seed_heap: bool = false
 
 	if seed_roll.size() == 2:
@@ -169,14 +184,13 @@ func _init() -> void:
 			no_seed.append(species)
 
 	check(no_seed.is_empty(), "every tree species, fantasy trees too, drops its own <Tree> seed item (%s)" % str(no_seed))
-	check(felled(w, 4).size() == 1, "the stump stays")
 
 	# The crown (Dave 10 Nov 2026): its sticks and leaves lie all over the circle it landed on, the canopy's size (Cover.crown_radius), by the tree's height;
-	# the split gives no branch row besides (no second lot). The root ball lies at the trunk.
+	# no branch row besides (no second lot). The root ball lies by the logs.
 	var circle: Array = tree.get("crown", [])
 	var scatter: Dictionary = w._drops.get("trunk", {}).get("crown_scatter", {})
 	var want_r: float = maxf(Cover.crown_radius(5.0, 17.0, 10.0), float(scatter.get("min_radius_m", 1.5)))
-	check(circle.size() == 3 and absf(float(circle[2]) - want_r) < 0.001, "the trunk carries its crown circle, the canopy's size (%s, radius %.2f)" % [str(circle), want_r])
+	check(circle.size() == 3 and absf(float(circle[2]) - want_r) < 0.001, "the stump carries its crown circle, the canopy's size (%s, radius %.2f)" % [str(circle), want_r])
 	var centre: Vector3 = base + along * (10.0 * 0.75 * cos(float(tree.get("pitch", 0.0))))
 	check(circle.size() == 3 and Vector2(float(circle[0]) - centre.x, float(circle[1]) - centre.z).length() < 0.01, "centred on the middle of the upper half as it lies")
 	var sticks: int = 0
@@ -206,45 +220,50 @@ func _init() -> void:
 	check(leaves >= roundi(float(leaf_m[0]) * 10.0) and leaves <= roundi(float(leaf_m[1]) * 10.0), "and leaves by its size: %d" % leaves)
 	check(inside and heaps >= 2, "all over the crown circle, in %d little heaps (close ones join), none outside it" % heaps)
 	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == 0, "none of it went into the pack")
-	_check_crown_leaves(w)
-	_check_crown_litter(w)
-	_check_batch_pickup(w)
 	check(roots >= 1, "the root ball lies there too")
 
 	for k in logs:
 		var off: Vector3 = w._items[k]["pos"] - base
 		var cross: float = absf(off.x * along.z - off.z * along.x)
-		check(cross < 0.01 and off.dot(along) > 0.0 and off.dot(along) < 10.0, "a log lies on the line of the trunk")
+		var rise: float = tan(float(tree.get("pitch", 0.0))) * off.dot(along)   # the resting pitch (fell_pose.gd: a slight dip for the taper even on flat ground)
+		check(cross < 0.01 and off.dot(along) > 0.0 and off.dot(along) < 10.0 and absf(off.y - float(tree["radius"]) - rise) < 0.01, "a log lies on the line of the fall, on the ground (along %.2f, up %.3f, pitch %.4f)" % [off.dot(along), off.y, float(tree.get("pitch", 0.0))])
 
 	check(w.inventory_of(1).count_of(log_n) == 0, "no log went into the pack")
 
-	for k in logs:   # the logs last a real week, as the trunk did (a plain dropped item is gone in 20 minutes)
-		check(float(w._items[k]["left"]) >= 7.0 * 86400.0 - 1.0, "a split log lasts a week: %.0f s" % float(w._items[k]["left"]))
+	for k in logs:   # the logs last a real week (a plain dropped item is gone in 20 minutes)
+		check(float(w._items[k]["left"]) >= 7.0 * 86400.0 - 1.0, "a log lasts a week: %.0f s" % float(w._items[k]["left"]))
 
-	for k in logs:   # each log lies along the trunk: its mesh runs along x, turned by yaw - 90 degrees
-		check(w._items[k].has("rot_y") and is_equal_approx(float(w._items[k]["rot_y"]), float(tree["yaw"]) - PI * 0.5), "a split log is turned along the trunk")
+	for k in logs:   # each log lies along the fall: its mesh runs along x, turned by yaw - 90 degrees
+		check(w._items[k].has("rot_y") and is_equal_approx(float(w._items[k]["rot_y"]), float(tree["yaw"]) - PI * 0.5), "a log is turned along the fall")
 		var axis: Vector3 = Basis(Vector3.UP, float(w._items[k]["rot_y"])) * Vector3.RIGHT
-		check(absf(axis.dot(along)) > 0.999, "its long axis runs along the trunk")
-		# Dave 2 Nov 2026: a skinny tree gave big logs. A split log is as thick as its trunk: girth = trunk radius / the drawn log's radius.
-		check(absf(float(w._items[k].get("girth", 0.0)) - float(tree["radius"]) / ItemsScript.LOG_MESH_RADIUS_M) < 0.001, "a split log's girth follows the trunk (%.3f for radius %.3f)" % [float(w._items[k].get("girth", 0.0)), float(tree["radius"])])
+		check(absf(axis.dot(along)) > 0.999, "its long axis runs along the fall")
+		# Dave 2 Nov 2026: a skinny tree gave big logs. A log is as thick as its tree: girth = trunk radius / the drawn log's radius.
+		check(absf(float(w._items[k].get("girth", 0.0)) - float(tree["radius"]) / ItemsScript.LOG_MESH_RADIUS_M) < 0.001, "a log's girth follows the tree (%.3f for radius %.3f)" % [float(w._items[k].get("girth", 0.0)), float(tree["radius"])])
+
+	# The landing: nobody is hurt while it falls; at FALL_S the player under it is, the feller behind it is not, and the first animal along it is struck.
+	w._fall_tick(ItemsScript.FALL_S - 0.25)
+	check(float(w.vitals_of(2)["health"]) == health_2 and struck.is_empty() and bool(tree.get("fresh", false)), "still falling: nothing is hurt yet")
+	w._fall_tick(0.3)
+	var crush: Dictionary = w._drops["felling"]["crush"]
+	check(absf(health_2 - float(w.vitals_of(2)["health"]) - float(crush["health"])) < 0.001, "the player it lands on loses %.0f health (%.0f -> %.0f)" % [float(crush["health"]), health_2, float(w.vitals_of(2)["health"])])
+	check(float(w.vitals_of(1)["health"]) == health_1, "the feller standing behind it is not hurt")
+	check(struck.size() == 1 and int(struck[0][0]) == 1 and absf(float(struck[0][3]) - float(crush["animal"])) < 0.001, "the first animal along the trunk is struck for %.0f, by the feller (%s)" % [float(crush["animal"]), str(struck)])
+	check(not tree.has("fresh") and logs.all(func(k): return not w._items[k].has("fall")) and w._falls.is_empty(), "landed: the stump is no longer fresh and the logs lie")
+	check(logs.all(func(k): return w._rolling.has(k)) and logs.all(func(k): return float(w._rolling[k]["v"]) == 0.0), "the logs wake to roll; on flat open ground nothing pushes them")
 
 	# The turn survives a restart.
 	w.save()
+	w._finish_writer()
 	var w_again = make(dir)
 	var kept_turns: int = 0
-
-	for k in w_again._items:
-		if w_again._items[k].has("rot_y") and int(w_again._items[k]["number"]) == log_n:
-			kept_turns += 1
-
 	var kept_girth: int = 0
 
 	for k in w_again._items:
-		if w_again._items[k].has("girth") and int(w_again._items[k]["number"]) == log_n:
-			kept_girth += 1
+		if int(w_again._items[k]["number"]) == log_n:
+			kept_turns += 1 if w_again._items[k].has("rot_y") else 0
+			kept_girth += 1 if w_again._items[k].has("girth") else 0
 
-	check(kept_turns == logs.size(), "every split log keeps its turn after a restart: %d of %d" % [kept_turns, logs.size()])
-	check(kept_girth == logs.size(), "every split log keeps its girth after a restart: %d of %d" % [kept_girth, logs.size()])
+	check(kept_turns == logs.size() and kept_girth == logs.size(), "every log keeps its turn and girth after a restart: %d and %d of %d" % [kept_turns, kept_girth, logs.size()])
 
 	var plain_at: Vector3 = Vector3(500.0, 10.0, 0.0)
 	w.drop_in_world(w.table.number_of("stone"), 1, plain_at)
@@ -253,121 +272,81 @@ func _init() -> void:
 		if not w._items[k].has("tree") and w._items[k]["pos"].distance_to(plain_at) < 0.5 and int(w._items[k]["number"]) == w.table.number_of("stone"):
 			check(float(w._items[k]["left"]) < 86400.0, "an ordinary drop keeps its short lifetime")
 
-	# A tall oak: whole lengths only, capped like cutting.
+	# A tall oak comes down in whole lengths only; a log that lands on a boulder rolls off it across its length, the others lie still.
+	var boulder_id: int = 920000
+	w._items[boulder_id] = {"number": w.table.number_of("stone"), "count": 1, "pos": Vector3(64.5, 10.0, 0.4), "left": 1.0e9, "boulder": {"radius": 0.5}}   # under the second log, a little to +z
 	w.report_position(1, Vector3(58.0, 10.0, 0.0))
+	w.report_position(2, Vector3(0.0, 10.0, 40.0))
 	fell_one(w, standing, 8)
-	var big: Array = felled(w, 3)
-	check(big.size() == 1, "the oak is a trunk")
-	w._split_due[big[0]] = 0
-	w._auto_split()
-	check(loose_logs(w, w.table.number_of("log_oak")).size() == int(22.0 / log_len), "oak logs: int(22 / %.1f) = %d" % [log_len, int(22.0 / log_len)])
+	var oak_logs: Array = loose_logs(w, w.table.number_of("log_oak"))
+	check(oak_logs.size() == int(22.0 / log_len), "oak logs: int(22 / %.1f) = %d" % [log_len, int(22.0 / log_len)])
+	w._fall_tick(ItemsScript.FALL_S)
+	var on_rock: int = 0
+	var kicked: int = 0
 
-	# A trunk worked by hand is left alone; a crowded spot leaves the trunk for hand cutting.
-	standing[9] = true
-	w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(100.0, 10.0, 0.0), "height": 20.0, "trunk": 0.5} if standing.has(id) else {}
-	w.report_position(1, Vector3(98.0, 10.0, 0.0))
-	fell_one(w, standing, 9)
-	var hand: Array = felled(w, 3)
-	check(hand.size() == 1, "third trunk")
-	w._items[hand[0]]["tree"]["blows"] = 1
-	check(not w.split_trunk(hand[0]) and felled(w, 3).size() == 1, "a trunk already cut by hand is not split")
-	w._items[hand[0]]["tree"]["blows"] = 0
+	for k in oak_logs:
+		var mid: float = float(w._items[k]["pos"].x)
 
-	for n in range(70):
-		w._items[900000 + n] = {"number": w.table.number_of("stick"), "count": 1, "pos": Vector3(100.0, 10.0, 0.0), "left": 1000.0}
+		if absf(mid - 64.5) < 1.5:
+			on_rock = k
 
-	check(not w.split_trunk(hand[0]) and felled(w, 3).size() == 1, "no room: the trunk stays to cut by hand")
+		if float(w._rolling.get(k, {}).get("v", 0.0)) != 0.0:
+			kicked += 1
 
-	# A sapling-sized tree (1.5 m, a small tree) breaks up into Firewood, kindling and sticks instead of staying a trunk.
-	for n in range(70):
-		w._items.erase(900000 + n)
+	check(on_rock != 0 and kicked == 1 and float(w._rolling[on_rock]["v"]) < 0.0, "only the log on the boulder is pushed off it, away from the rock (-z) (%d kicked)" % kicked)
 
+	for n in range(200):
+		w._roll_tick(0.05)
+
+	var it_rock: Dictionary = w._items[on_rock]
+	var half: Vector2 = Vector2(cos(float(it_rock["rot_y"])), -sin(float(it_rock["rot_y"]))) * 1.5
+	var mid2: Vector2 = Vector2(it_rock["pos"].x, it_rock["pos"].z)
+	var gap: float = float(ItemsScript._seg_gap(mid2 - half, mid2 + half, Vector2(64.5, 0.4), Vector2(64.5, 0.4))[0])
+	check(gap > 0.5 + 0.2 * float(it_rock.get("girth", 1.0)) - 0.05, "it rolls off the rock and lies beside it (gap %.2f m)" % gap)
+	w._items.erase(boulder_id)
+
+	# A sapling-sized tree (1.5 m, a small tree) breaks into Firewood, kindling and sticks the same way: at once, falling, no trunk.
 	standing[10] = true
 	w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(200.0, 10.0, 0.0), "height": 1.5, "trunk": 0.1} if standing.has(id) else {}
 	w.report_position(1, Vector3(198.0, 10.0, 0.0))
+	w.report_position(2, Vector3(200.8, 10.0, 0.0))   # under the little tree
+	health_2 = float(w.vitals_of(2)["health"])
 	fell_one(w, standing, 10)
-	var tiny: Array = felled(w, 3)
-	var tiny_id: int = 0
-
-	for k in tiny:
-		if absf(w._items[k]["pos"].x - 200.0) < 1.0:
-			tiny_id = k
-
-	check(tiny_id != 0, "the tiny tree is a trunk")
-	w._split_due[tiny_id] = 0
-	w._auto_split()
-	check(not w._items.has(tiny_id), "the tiny trunk broke up")
 	var kindling: int = 0
-
-	for k in w._items:
-		var row: Dictionary = w._items[k]
-
-		if not row.has("tree") and not row.has("struct") and absf(row["pos"].x - 200.0) < 3.0 and int(row["number"]) == w.table.number_of("kindling"):
-			kindling += int(row["count"])
-
-	check(kindling >= 1, "kindling lies where it fell")
 	var tiny_firewood: int = 0
+	var tiny_falling: bool = true
 
 	for k in w._items:
 		var row: Dictionary = w._items[k]
 
-		if not row.has("tree") and not row.has("struct") and absf(row["pos"].x - 200.0) < 3.0 and int(row["number"]) == w.table.number_of("firewood"):
-			tiny_firewood += int(row["count"])
+		if not row.has("tree") and not row.has("struct") and absf(row["pos"].x - 200.0) < 3.0:
+			kindling += int(row["count"]) if int(row["number"]) == w.table.number_of("kindling") else 0
+			tiny_firewood += int(row["count"]) if int(row["number"]) == w.table.number_of("firewood") else 0
+			tiny_falling = tiny_falling and row.has("fall")
 
-	check(tiny_firewood == 5, "a 1.5 m tree breaks into 3 Firewood a metre, rounded: 5 (%d)" % tiny_firewood)
+	check(felled(w, 3).is_empty() and kindling >= 1, "kindling lies where it fell, no trunk")
+	check(tiny_firewood == 5 and tiny_falling, "a 1.5 m tree breaks into 3 Firewood a metre, rounded: 5, and its pieces fall too (%d)" % tiny_firewood)
+	w._fall_tick(ItemsScript.FALL_S)
+	check(absf(health_2 - float(w.vitals_of(2)["health"]) - float(crush["small_health"])) < 0.001, "a small tree hurts less: %.0f health" % float(crush["small_health"]))
 
-	# No room: it is tried again later, and after three tries stays a trunk for the axe.
+	# A felled tree saved while it was still coming down loads landed (no fall replayed, the logs lie).
 	standing[11] = true
 	w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(300.0, 10.0, 0.0), "height": 20.0, "trunk": 0.5} if standing.has(id) else {}
 	w.report_position(1, Vector3(298.0, 10.0, 0.0))
 	fell_one(w, standing, 11)
-	var late: int = 0
+	w.save()
+	w._finish_writer()
+	var reloaded = make(dir)
+	var fresh: int = 0
+	var falling: int = 0
 
-	for k in felled(w, 3):
-		if absf(w._items[k]["pos"].x - 300.0) < 1.0:
-			late = k
+	for k in reloaded._items:
+		fresh += 1 if reloaded._items[k].has("tree") and reloaded._items[k]["tree"].has("fresh") else 0
+		falling += 1 if reloaded._items[k].has("fall") else 0
 
-	for n in range(70):
-		w._items[910000 + n] = {"number": w.table.number_of("stick"), "count": 1, "pos": Vector3(300.0, 10.0, 0.0), "left": 1000.0}
-
-	for round in range(3):
-		w._split_due[late] = 0
-		w._auto_split()
-
-	check(w._items.has(late) and not bool(w._items[late]["tree"].get("auto_split", false)), "after three tries without room it stays a trunk for the axe")
-
-	# A trunk saved before the auto-split (no flag) that nobody has cut breaks up after a restart; a partly cut one stays for the axe.
-	var dir2: String = "user://test_fell_autosplit_old_%d" % Time.get_ticks_usec()
-	var old_w = make(dir2)
-	old_w.ground_height = func(_x, _z): return 10.0
-	var old_standing: Dictionary = {20: true, 21: true}
-	old_w.game_seconds = func(): return 5000.0
-	old_w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(10.0 + 40.0 * float(id - 20), 10.0, 0.0), "height": 12.0, "trunk": 0.4} if old_standing.has(id) else {}
-	old_w.cut_tree = func(_c, id): old_standing.erase(id); return true
-	old_w.send_notice = func(_p, _text): pass
-	old_w.peer_connected_hello(1, "abcdef123456")
-	old_w.action(1, Net.ACT_ADMIN_GIVE, old_w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
-	old_w.report_position(1, Vector3(8.0, 10.0, 0.0))
-	fell_one(old_w, old_standing, 20)
-	old_w.report_position(1, Vector3(48.0, 10.0, 0.0))
-	fell_one(old_w, old_standing, 21)
-	var old_trunks: Array = felled(old_w, 3)
-	check(old_trunks.size() == 2, "two old trunks")
-
-	for k in old_trunks:   # as saved by a build before the auto-split
-		old_w._items[k]["tree"].erase("auto_split")
-
-	old_w._items[old_trunks[1]]["tree"]["blows"] = 2   # this one was being cut by hand
-	old_w.save()
-	var old_again = make(dir2)
-	var due: int = 0
-
-	for k in felled(old_again, 3):
-		if old_again._split_due.has(k):
-			due += 1
-			check(int(old_again._items[k]["tree"].get("blows", 0)) == 0, "only the uncut old trunk is queued")
-
-	check(due == 1, "the uncut old trunk breaks up after a restart, the partly cut one stays: %d queued" % due)
+	check(fresh == 0 and falling == 0 and reloaded._falls.is_empty(), "a tree saved mid-fall loads landed (%d fresh, %d falling)" % [fresh, falling])
+	reloaded._finish_writer()
+	w_again._finish_writer()
 
 	# Hits follow the tree's own size when drops.json felling.size_scaled is on (off by default).
 	check(not bool(w._drops.get("felling", {}).get("size_scaled", true)), "size-scaled hits are off by default")
@@ -397,11 +376,14 @@ func _init() -> void:
 	var scaled_blows: int = blows_for.call(true)
 	check(scaled_blows < plain_blows, "a small beech falls in fewer blows when hits follow size: %d vs %d" % [scaled_blows, plain_blows])
 
+	_check_crown_leaves(w)
+	_check_crown_litter(w)
+	_check_batch_pickup(w)
 	print("fell auto-split tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
 
-# Hand cutting (a trunk that did not break up by itself): leaves by crown size, drops.json trunk.crown_leaves.per_m a metre of tree over the branch blows;
+# The branches of a tree with no crown litter: leaves by crown size, drops.json trunk.crown_leaves.per_m a metre of tree over the branch blows;
 # a bare broadleaf in winter and the conifers in crown_leaves.fixed give sticks only (Dave 10 Nov 2026).
 func _check_crown_leaves(w) -> void:
 	var cfg: Dictionary = w._drops.get("trunk", {})
@@ -409,7 +391,7 @@ func _check_crown_leaves(w) -> void:
 	var per_m: Array = cfg.get("crown_leaves", {}).get("per_m", [0, 0])
 	var big: Array = w._branch_rows({"species": "oak", "length": 25.0}, cfg, Vector3.ZERO)
 	var leaf_row: Array = big.filter(func(r): return str(r[0]) == "leaves")
-	check(leaf_row.size() == 1 and blows * int(leaf_row[0][1]) >= 120 and blows * int(leaf_row[0][2]) <= 220, "a 25 m oak cut by hand gives over a hundred leaves (%s a blow, %d blows)" % [str(leaf_row), blows])
+	check(leaf_row.size() == 1 and blows * int(leaf_row[0][1]) >= 120 and blows * int(leaf_row[0][2]) <= 220, "a 25 m oak's branches give over a hundred leaves (%s a blow, %d blows)" % [str(leaf_row), blows])
 	check(big.any(func(r): return str(r[0]) == "stick"), "the sticks stay")
 	var small: Array = w._branch_rows({"species": "oak", "length": 6.0}, cfg, Vector3.ZERO).filter(func(r): return str(r[0]) == "leaves")
 	check(small.size() == 1 and int(small[0][2]) < int(leaf_row[0][1]), "a small tree gives fewer")

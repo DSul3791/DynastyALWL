@@ -119,6 +119,7 @@ Also removed inside live files: the three clay_pipe rows of look_table.gd (their
 Code that new code replaced is deleted, not moved here. Add one row per deleted file in the same PR; `tools/merge_check.py` checks that the replacement exists and that nothing still uses the old file. Code with no replacement is an ordinary unused file: move it aside as above.
 | deleted path | replaced by (path at HEAD) | who | date | why |
 |---|---|---|---|---|
+| src/worldgen/tools/test_trunk_cutting.gd | src/worldgen/tools/test_fell_autosplit.gd | Claude (wood thread) | 2026-11-16 | Dave 16 Nov 2026: a tree falls already in logs; the hand-cut trunk path it tested is deleted, the fall test covers what replaced it |
 
 ## Core rulebook consolidation — 15 Nov 2026
 

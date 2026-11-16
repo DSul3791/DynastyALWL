@@ -1148,11 +1148,11 @@ func _init() -> void:
 		up[0] = false
 		return true
 	m.dig_support = func(_b, _r, _d): return share[0]
-	var trunks_of = func() -> int:
+	var trunks_of = func() -> int:   # felled trees: their stumps (a tree comes down in its logs, Dave 16 Nov 2026)
 		var n: int = 0
 
 		for it in m._items.values():
-			if it.has("tree") and int(it["tree"]["state"]) == 3:
+			if it.has("tree") and int(it["tree"]["state"]) == 4:
 				n += 1
 
 		return n
@@ -1169,7 +1169,7 @@ func _init() -> void:
 	species[1] = 0.35
 	m._last_dig.clear()
 	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "spade"), 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(not up[0] and trunks_of.call() == base_trunks + 1, "a spruce falls at 40 percent (shallow roots) and leaves a trunk")
+	check(not up[0] and trunks_of.call() == base_trunks + 1, "a spruce falls at 40 percent (shallow roots) and leaves a stump")
 	up[0] = true
 	species[0] = "oak"
 	species[1] = 0.6
@@ -1184,8 +1184,8 @@ func _init() -> void:
 	var trunk_dir: Dictionary = {}
 
 	for it in m._items.values():
-		if it.has("tree") and int(it["tree"]["state"]) == 3:
-			trunk_dir = it["tree"]
+		if it.has("tree") and int(it["tree"]["state"]) == 4:
+			trunk_dir = it["tree"]   # the last stump: the oak's
 
 	check(absf(float(trunk_dir["yaw"]) - atan2(1.0, 0.0)) < 0.01, "it falls away from the hole")
 	up[0] = true
@@ -1248,81 +1248,48 @@ func _init() -> void:
 
 	for k in w._items:
 		if w._items[k].has("tree"):
-			if w._items[k]["tree"]["state"] == 3:
-				trunks += 1
-			else:
+			if int(w._items[k]["tree"]["state"]) == 4:
 				stumps += 1
+			else:
+				trunks += 1
 
-	check(trunks == 1 and stumps == 1, "a trunk and a stump lie where it stood")
-	var trunk_id: int = 0
+	var ground_count = func(item: String) -> int:
+		var total: int = 0
+
+		for k in w._items:
+			if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of(item):
+				total += int(w._items[k]["count"])
+
+		return total
+
+	check(trunks == 0 and stumps == 1, "a stump stays where it stood, no whole trunk")
+	check(ground_count.call("log_oak") >= 1 and w.shoulder_of(1) == "", "the oak comes down in oak logs on the ground, none in hand (%d logs)" % ground_count.call("log_oak"))
+	check(ground_count.call("tree_roots") >= 1 and ground_count.call("stick") >= 1, "the root ball and the branches' sticks lie there too")
+
+	# TEST-013 (Dave 12 Nov 2026): the tool in hand does the wood work. A held pickaxe (the axe still on the hotbar) only tears a fallen log up: kindling and
+	# thatch, no sticks, and the axe on the hotbar is not used.
+	var a_log: int = -1
 
 	for k in w._items:
-		if w._items[k].has("tree") and w._items[k]["tree"]["state"] == 3:
-			trunk_id = k
+		if not w._items[k].has("tree") and int(w._items[k]["number"]) == w.table.number_of("log_oak"):
+			a_log = k
 
-	w.report_position(1, Vector3(14.0, 10.0, 0.0))
-	var sticks: int = w.table.number_of("stick")
-	var logs: int = w.table.number_of("log")
-	var apple: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)   # kept for the non-key wood test below
-	# TEST-013 (Dave 12 Nov 2026): the tool in hand does the wood work. A held pickaxe (the axe still on the hotbar) only tears the trunk up:
-	# kindling and thatch, no sticks or branches, and neither the pick nor the axe on the hotbar wears.
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
-	var trunk_pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
-	var pick_at: Vector3 = Vector3(float(trunk_pick_slot + 1), 0.0, 0.0)
+	var log_pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
 	var axe_wear: int = int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1])
-	var sticks_before: int = w.inventory_of(1).count_of(sticks)
-	var kindling_before: int = w.inventory_of(1).count_of(w.table.number_of("kindling"))
-	var thatch_before: int = w.inventory_of(1).count_of(w.table.number_of("thatch"))
-	var trunk_before_pick: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)
+	var sticks_before: int = w.inventory_of(1).count_of(w.table.number_of("stick"))
+	var splinters_before: int = w.inventory_of(1).count_of(w.table.number_of("kindling")) + w.inventory_of(1).count_of(w.table.number_of("thatch"))
+	w.report_position(1, w._items[a_log]["pos"])
 	w._last_process.clear()
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, pick_at)
-	check(w.inventory_of(1).count_of(sticks) == sticks_before and w.inventory_of(1).count_of(w.table.number_of("kindling")) > kindling_before and w.inventory_of(1).count_of(w.table.number_of("thatch")) > thatch_before, "a pickaxe in hand tears kindling and thatch off a trunk, no sticks")
-	check(int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear and int(w.inventory_of(1).wear[trunk_pick_slot]) == 0 and int(w.inventory_of(1).inst[trunk_pick_slot].get("sharp", 0)) == 0, "wood neither wears nor dulls the pick, and the axe on the hotbar is not used")
-	w._items[trunk_id] = trunk_before_pick   # the axe checks below start from the untouched trunk
+	w.action(1, Net.ACT_PROCESS, a_log, 0, 0, Vector3(float(log_pick_slot + 1), 0.0, 0.0))
+	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == sticks_before and w.inventory_of(1).count_of(w.table.number_of("kindling")) + w.inventory_of(1).count_of(w.table.number_of("thatch")) > splinters_before, "a pickaxe in hand tears kindling and thatch off a fallen log, no sticks")
+	check(int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear, "the axe on the hotbar is not used")
 	w.inventory_of(1).remove(w.table.number_of("stone_pickaxe"), 1)
-	w._last_process.clear()
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
-	check(w.inventory_of(1).count_of(sticks) >= 1 and w.inventory_of(1).count_of(w.table.number_of("leaves")) >= 1, "first blows take branches and leaves")
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
-	check(w.inventory_of(1).count_of(sticks) <= 3 or true, "pace limit applies")
-	var guard: int = 0
+	w.report_position(1, Vector3(8.0, 10.0, 0.0))
 
-	while w._items.has(trunk_id) and guard < 100:
-		if int(w._items[trunk_id]["tree"].get("blows", 0)) >= 2:
-			w.report_position(1, w.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
-
-		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, HeldTool.at_axe(w))
-		guard += 1
-
-	var oak_logs: int = 0
-
-	for k in w._items:
-		if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of("log_oak"):
-			oak_logs += 1
-
-	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "" and oak_logs >= 1, "the trunk is worked into oak logs that fall to the ground (none picked up by chopping) and used up (%d logs)" % oak_logs)
-	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
-
-	# A trunk of a wood without its own log item (Dave 1 Nov: every tree gives logs) drops the plain Log.
-	apple["tree"]["species"] = "wild_apple"
-	var apple_id: int = trunk_id + 100000
-	var shoulder_before: String = w.shoulder_of(1)
-	w._items[apple_id] = apple
-	var apple_guard: int = 0
-	while w._items.has(apple_id) and apple_guard < 100:
-		w.report_position(1, w.cut_line_point(apple_id))
-		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, apple_id, 0, 0, HeldTool.at_axe(w))
-		apple_guard += 1
-
-	var plain_logs: int = 0
-
-	for k in w._items:
-		if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of("log"):
-			plain_logs += 1
-
-	check(not w._items.has(apple_id) and w.shoulder_of(1) == shoulder_before and plain_logs >= 1, "an apple trunk is used up and drops plain logs on the ground (%d)" % plain_logs)
+	# A tree of a wood without its own log item (Dave 1 Nov: every tree gives logs) drops the plain Log.
+	w._fell_record(Vector2i(0, 0), {"name": "wild_apple", "position": Vector3(40.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3}, Vector2(1.0, 0.0))
+	check(ground_count.call("log") >= 1, "an apple tree comes down in plain logs (%d)" % ground_count.call("log"))
 	check(w.table.number_of("log_wild_apple") > 0 and w.table.number_of("lumber_wild_cherry") > 0, "retired wood items stay in the item table, so old stock in saves and chests still loads")
 	var stump_left: bool = false
 
@@ -1345,7 +1312,7 @@ func _init() -> void:
 		if w2._items[k].has("tree"):
 			back += 1
 
-	check(back == 1, "the stump survives a restart")
+	check(back == 2, "both stumps (the oak's and the apple's) survive a restart (%d)" % back)
 	gs[0] += ItemsScript.ROT_GAME_S + 100.0
 	w.tick(61.0)
 	var left: int = 0
@@ -1386,13 +1353,6 @@ func _init() -> void:
 		q._maybe_sapling({"pos": Vector3(700.0 + fmod(float(n), 5.0), 10.0, 710.0), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
 
 	check(q._saplings.size() == before_ban, "no sapling is seeded within 50 m of a placed foundation")
-	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9, "tree": {"state": 3, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
-	var with_trunk: int = q._saplings.size()
-
-	for n in range(30):
-		q._maybe_sapling({"pos": Vector3(100.0 + float(n) * 3.0, 10.0, 130.0), "tree": {"species": "oak", "chunk": [0, 0], "state": 4}})
-
-	check(q._saplings.size() == with_trunk, "nothing respawns while a trunk lies in the chunk")
 	var items0: Dictionary = q.dynamic_items(Vector2i(0, 0))
 	check(not items0.is_empty() and items0["ids"].size() > 0, "saplings are listed as flora items")
 	check(items0["heights"][0] < 2.0, "a new sapling is small")

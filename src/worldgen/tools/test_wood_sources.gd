@@ -1,11 +1,12 @@
 extends SceneTree
 
-# GOALS-REPAIR WP-R1A commit A (recovery GA-01 and GA-02): what a felled trunk gives, through the real server.
-#   Scots pine: every by_species row can drop (resin AND pine_tar), by the axe and by the trunk breaking up by itself; the resin roll is unchanged.
+# GOALS-REPAIR WP-R1A commit A (recovery GA-01 and GA-02): what a felled tree gives as it comes down in its logs (Dave 16 Nov 2026), through the real server.
+#   Scots pine: every by_species row can drop (resin AND pine_tar); the resin roll is unchanged.
 #   Willow: its second row (withies) drops too.
-#   Oak: tannin_bark 3 (drops.json harvest_yield) once per felled tree, by the axe or by the break-up, never twice, saved with the trunk (bark_taken).
+#   Oak: tannin_bark 3 (drops.json harvest_yield) once per felled tree, in the heap beside its logs; the landing adds none.
+#   Maple: its 1 to 5 maple keys lie on the ground, not in the pack.
 #   Tar (campfire) -> Water wheel: the data chain is as written (pine_tar 5 -> tar 1; the Water wheel asks for tar).
-# Hand cutting and the break-up are the player's routes; the trunk records themselves are made directly (the fell is tested in test_fell_autosplit).
+# The fall itself (the blows, the stump, the swing down) is tested in test_fell_autosplit; here the server's _fell_record is called directly.
 #   godot --headless --path . --script res://src/worldgen/tools/test_wood_sources.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
@@ -38,11 +39,11 @@ func make(at_dir: String):
 	return w
 
 
-func trunk(species: String, length: float, at: Vector3) -> int:
-	next_id += 1
-	items._items[next_id] = {"number": 0, "count": 1, "pos": at, "left": 1.0e9,
-		"tree": {"state": 3, "species": species, "yaw": 0.0, "pitch": 0.0, "length": length, "radius": 0.3, "chunk": [0, 0]}}
-	return next_id
+# Fells a `species` tree `length` tall at `at`, falling along +z, and returns its stump's id.
+func fell(species: String, length: float, at: Vector3) -> int:
+	var stump: int = items._next_id
+	items._fell_record(Vector2i(0, 0), {"name": species, "position": at, "height": length, "trunk": 0.3}, Vector2(0.0, 1.0))
+	return stump
 
 
 func pack(id: String) -> int:
@@ -60,32 +61,6 @@ func on_ground(id: String) -> int:
 			total += int(it["count"])
 
 	return total
-
-
-# One axe blow on trunk `id`, the player standing where that blow needs (the branch end, then the next cut line).
-func blow(id: int) -> void:
-	var it: Dictionary = items._items[id]
-	var tree: Dictionary = it["tree"]
-	var cfg: Dictionary = items._drops["trunk"]
-	var length_now: float = float(tree["length"])
-	var logs_phase: bool = int(tree.get("blows", 0)) >= int(cfg["branch_blows"]) and int(tree.get("logs_left", 0)) > 0
-	var t: float = 0.5
-
-	if logs_phase:
-		var piece: float = length_now if int(tree["logs_left"]) <= 1 else minf(float(cfg["log_length_m"]), length_now)
-		t = length_now - piece * 0.5
-
-	items.report_position(1, it["pos"] + Vector3(0.3, 0.0, t))
-	items._last_process.erase(1)
-	items.action(1, Net.ACT_PROCESS, id, 0, 0, HeldTool.at_axe(items))
-
-
-func hand_cut(id: int, limit: int = 60) -> void:
-	for n in range(limit):
-		if not items._items.has(id):
-			return
-
-		blow(id)
 
 
 func _watchdog() -> void:
@@ -112,10 +87,10 @@ func _init() -> void:
 	var tar_ok: bool = true
 
 	for n in range(40):
-		var tree: Dictionary = {"state": 3, "species": "scots_pine", "yaw": 0.0, "length": 9.0, "radius": 0.3}
+		var tree: Dictionary = {"state": 4, "species": "scots_pine", "yaw": 0.0, "length": 9.0, "radius": 0.3}
 		items._items[700000 + n] = {"pos": Vector3.ZERO, "tree": tree}
-		var rows: Array = items._trunk_extras(700000 + n, tree, 3, cfg, false)
-		var again: Array = items._trunk_extras(700000 + n, tree, 3, cfg, false)
+		var rows: Array = items._trunk_extras(700000 + n, tree, 3, cfg, Vector3.ZERO, false)
+		var again: Array = items._trunk_extras(700000 + n, tree, 3, cfg, Vector3.ZERO, false)
 		var tar_here: int = 0
 
 		for row in rows:
@@ -134,39 +109,33 @@ func _init() -> void:
 	var resin_now: int = 0
 
 	for n in range(40):
-		var tree2: Dictionary = {"state": 3, "species": "scots_pine", "yaw": 0.0, "length": 9.0, "radius": 0.3}
+		var tree2: Dictionary = {"state": 4, "species": "scots_pine", "yaw": 0.0, "length": 9.0, "radius": 0.3}
 		items._items[700100 + n] = {"pos": Vector3.ZERO, "tree": tree2}
 
-		for row in items._trunk_extras(700100 + n, tree2, 3, bare, false):
+		for row in items._trunk_extras(700100 + n, tree2, 3, bare, Vector3.ZERO, false):
 			resin_only += int(row[1]) if int(row[0]) == resin else 0
 
-		for row in items._trunk_extras(700100 + n, tree2, 3, cfg, false):
+		for row in items._trunk_extras(700100 + n, tree2, 3, cfg, Vector3.ZERO, false):
 			resin_now += int(row[1]) if int(row[0]) == resin else 0
 
 		items._items.erase(700100 + n)
 
 	check(resin_only == resin_now, "the resin roll is unchanged by the added tar row (%d = %d)" % [resin_only, resin_now])
 
-	# GA-02, the axe: the same rows on the hand-cutting path.
-	var hand_tar: int = 0
-	var hand_resin: int = 0
-
+	# GA-02, the fall: the same rows lie in the heaps of real felled pines.
 	for n in range(14):
-		var id: int = trunk("scots_pine", 12.0, Vector3(3.0 + float(n) * 40.0, 10.0, 3.0))
-		hand_cut(id)
+		fell("scots_pine", 12.0, Vector3(3.0 + float(n) * 40.0, 10.0, 3.0))
 
-	hand_tar = pack("pine_tar")
-	hand_resin = pack("resin")
-	check(hand_tar > 0 and hand_resin > 0, "14 pines cut by hand give pine tar (%d) and resin (%d)" % [hand_tar, hand_resin])
+	check(on_ground("pine_tar") > 0 and on_ground("resin") > 0, "14 felled pines lay pine tar (%d) and resin (%d)" % [on_ground("pine_tar"), on_ground("resin")])
 
 	# GA-02: willow's second row (withies) is the same repair.
 	var withy_total: int = 0
 
 	for n in range(40):
-		var wt: Dictionary = {"state": 3, "species": "willow", "yaw": 0.0, "length": 9.0, "radius": 0.3}
+		var wt: Dictionary = {"state": 4, "species": "willow", "yaw": 0.0, "length": 9.0, "radius": 0.3}
 		items._items[700200 + n] = {"pos": Vector3.ZERO, "tree": wt}
 
-		for row in items._trunk_extras(700200 + n, wt, 3, cfg, false):
+		for row in items._trunk_extras(700200 + n, wt, 3, cfg, Vector3.ZERO, false):
 			withy_total += int(row[1]) if int(row[0]) == withies else 0
 
 		items._items.erase(700200 + n)
@@ -190,87 +159,29 @@ func _init() -> void:
 	check(not tar_recipe.is_empty() and str(tar_recipe["station"]) == "campfire" and int(tar_recipe["needs"][0][0]) == pine_tar and int(tar_recipe["needs"][0][1]) == 5, "Tar is 5 pine tar at a campfire")
 	check(wheel_tar > 0, "the Water wheel asks for Tar (%d)" % wheel_tar)
 
-	# GA-01, the axe: an oak gives 3 tannin bark once, however long the trunk takes to cut.
-	var oak: int = trunk("oak", 14.0, Vector3(3.0, 10.0, 60.0))
-	var at_bark: int = -1
-	var steps: int = 0
-
-	while items._items.has(oak) and steps < 60:
-		blow(oak)
-		steps += 1
-
-		if at_bark < 0 and bool(items._items.get(oak, {}).get("tree", {}).get("bark_taken", false)):
-			at_bark = pack("tannin_bark")
-			var saved: Dictionary = (items._items[oak]["tree"] as Dictionary).duplicate()
-			check(JSON.parse_string(JSON.stringify(saved)).get("bark_taken", false) == true, "the flag rides with the trunk's saved row")
-
-	check(at_bark == 3, "the first blow on the logs strips exactly the table's 3 tannin bark (%d)" % at_bark)
-	check(pack("tannin_bark") == 3, "and no more by the last log (%d)" % pack("tannin_bark"))
+	# GA-01: an oak comes down with its 3 tannin bark in the heap beside its logs, once; the landing adds none; a pine leaves none.
+	var before_ground: int = on_ground("tannin_bark")
+	var oak: int = fell("oak", 10.0, Vector3(3.0, 10.0, 200.0))
+	check(items._items.has(oak) and on_ground("log_oak") > 0, "an oak comes down in logs")
+	check(on_ground("tannin_bark") - before_ground == 3, "its heap holds the 3 tannin bark (%d)" % (on_ground("tannin_bark") - before_ground))
 	check(int(items._drops["harvest_yield"]["oak"]["count"]) == 3, "the count is the drops.json harvest_yield row")
 
-	# GA-01, partly cut, saved, loaded: the flag keeps a second oak's bark from coming twice.
-	var half: int = trunk("oak", 14.0, Vector3(3.0, 10.0, 120.0))
+	for n in range(8):
+		items.tick(0.25)   # the fall lands
 
-	for n in range(5):
-		blow(half)
-
-	check(pack("tannin_bark") == 6 and bool(items._items[half]["tree"].get("bark_taken", false)), "a second oak gave its 3 at once (%d in all)" % pack("tannin_bark"))
-	items.save()
-	items._finish_writer()   # the write runs in the background
-	items = make(dir)
-	items.peer_connected_hello(1, "woodsrc00001")
-	half = -1
-
-	for k in items._items:   # a saved trunk is given a fresh record id on load: find it where it lay
-		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3 and (items._items[k]["pos"] as Vector3).distance_to(Vector3(3.0, 10.0, 120.0)) < 1.0:
-			half = k
-
-	check(half >= 0 and bool(items._items[half]["tree"].get("bark_taken", false)) and int(items._items[half]["tree"].get("blows", 0)) > 0, "the half-cut trunk comes back from the save with bark_taken")
-	hand_cut(half)
-	check(pack("tannin_bark") == 6, "the rest of that oak gives none")
-
-	# GA-01, the break-up: an oak that breaks up by itself leaves its bark in the heap, once; a pine leaves none.
-	var before_ground: int = on_ground("tannin_bark")
-	var auto_oak: int = trunk("oak", 10.0, Vector3(3.0, 10.0, 200.0))
-	check(items.split_trunk(auto_oak), "an oak trunk breaks into logs")
-	check(on_ground("tannin_bark") - before_ground == 3, "its heap holds the 3 tannin bark (%d)" % (on_ground("tannin_bark") - before_ground))
-	var auto_pine: int = trunk("scots_pine", 10.0, Vector3(3.0, 10.0, 260.0))
-	items.split_trunk(auto_pine)
+	check(on_ground("tannin_bark") - before_ground == 3, "landing adds no more (%d)" % (on_ground("tannin_bark") - before_ground))
+	fell("scots_pine", 10.0, Vector3(3.0, 10.0, 260.0))
 	check(on_ground("tannin_bark") - before_ground == 3, "a pine adds no tannin bark")
 
-	# Felled seeds (gardening, Dave 14 Nov 2026: "a random number of seeds between 1 and 5 seeds per tree"), cut by hand: a maple gives its maple keys with the
-	# first axe blow, exactly the trunk's roll, and never again (the flag rides the save); a pick gives none. A maple has no other seed row, so the pack count is the roll.
-	var maple: int = trunk("maple", 9.0, Vector3(3.0, 10.0, 320.0))
-	var roll: Array = items._felled_seeds(maple, items._items[maple]["tree"])
-	check(roll.size() == 2 and int(roll[0]) == items.table.number_of("maple_keys") and int(roll[1]) >= 1 and int(roll[1]) <= 5, "a maple's seed is 1 to 5 maple keys (%s)" % str(roll))
-	blow(maple)
-	check(pack("maple_keys") == int(roll[1]) and bool(items._items[maple]["tree"].get("seeds_taken", false)), "the first axe blow gives the roll's maple keys (%d)" % pack("maple_keys"))
-	blow(maple)
-	check(pack("maple_keys") == int(roll[1]), "the next blow gives none")
-	items.save()
-	items._finish_writer()
-	items = make(dir)
-	items.peer_connected_hello(1, "woodsrc00001")
-	maple = -1
-
-	for k in items._items:
-		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3 and (items._items[k]["pos"] as Vector3).distance_to(Vector3(3.0, 10.0, 320.0)) < 1.0:
-			maple = k
-
-	check(maple >= 0 and bool(items._items[maple]["tree"].get("seeds_taken", false)), "the half-cut maple comes back from the save with seeds_taken")
-	var keys_before: int = pack("maple_keys")
-	hand_cut(maple)
-	check(pack("maple_keys") == keys_before, "the rest of that maple gives no more keys (%d)" % pack("maple_keys"))
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
-	var picked: int = trunk("maple", 9.0, Vector3(3.0, 10.0, 360.0))
-	items.report_position(1, items._items[picked]["pos"] + Vector3(0.3, 0.0, 0.5))
-	items._last_process.erase(1)
-	items.action(1, Net.ACT_PROCESS, picked, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
-	check(pack("maple_keys") == keys_before and not bool(items._items[picked]["tree"].get("seeds_taken", false)) and int(items._items[picked]["tree"].get("blows", 0)) == 1, "a pick blow gives no seeds and leaves them for the axe")
+	# Felled seeds (gardening, Dave 14 Nov 2026: "a random number of seeds between 1 and 5 seeds per tree"): a maple lays exactly its roll of maple keys on the
+	# ground as it comes down, not in the pack. A maple has no other seed row, so the ground count is the roll.
+	var keys_pack: int = pack("maple_keys")
 	var ground_keys: int = on_ground("maple_keys")
-	var auto_maple: int = trunk("maple", 9.0, Vector3(3.0, 10.0, 400.0))
-	var auto_roll: Array = items._felled_seeds(auto_maple, items._items[auto_maple]["tree"])
-	check(items.split_trunk(auto_maple) and on_ground("maple_keys") - ground_keys == int(auto_roll[1]) and pack("maple_keys") == keys_before, "a maple that breaks up by itself lays its roll on the ground, not in the pack")
+	var maple_id: int = items._next_id
+	var roll: Array = items._felled_seeds(maple_id, {"species": "maple"})
+	check(roll.size() == 2 and int(roll[0]) == items.table.number_of("maple_keys") and int(roll[1]) >= 1 and int(roll[1]) <= 5, "a maple's seed is 1 to 5 maple keys (%s)" % str(roll))
+	fell("maple", 9.0, Vector3(3.0, 10.0, 400.0))
+	check(on_ground("maple_keys") - ground_keys == int(roll[1]) and pack("maple_keys") == keys_pack, "a felled maple lays its roll on the ground, not in the pack (%d)" % (on_ground("maple_keys") - ground_keys))
 
 	check(bark > 0, "tannin_bark is a real item")
 

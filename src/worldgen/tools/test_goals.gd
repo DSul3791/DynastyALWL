@@ -202,26 +202,7 @@ func _init() -> void:
 	check(done("axe"), "making the stone axe completes the axe goal")
 	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)
 	items.report_position(1, Vector3(8.0, 10.0, 0.0))
-	var kindling_fell: int = count("kindling")
-	var fell_lines: int = said.size()
-
-	for n in range(200):
-		if standing.is_empty():
-			break
-
-		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
-
-	check(standing.is_empty() and done("fell") and count("kindling") == kindling_fell and said.slice(fell_lines).any(func(t): return t.begins_with("Goal done: Fell a tree") and t.contains("You earn 5 copper.")), "felling a tree completes the fell goal and pays 5 copper, no kindling (coins only)")
-	# The logs a felled tree breaks into by itself are its feller's gathering, once; the record clients get does not name the feller.
-	var trunk_id: int = -1
-
-	for k in items._items:
-		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 3:
-			trunk_id = int(k)
-
-	check(trunk_id >= 0 and str(items._fellers.get(trunk_id, "")) == "goals0000001" and not JSON.stringify(items._items[trunk_id]["tree"]).contains("goals0000001"), "the felled trunk remembers its feller on the server only")
-	var log_n: int = items._log_number(str(items._items[trunk_id]["tree"].get("species", ""))) if trunk_id >= 0 else 0
+	var log_n: int = items._log_number("oak")
 	var ground_logs: Callable = func() -> int:
 		var total: int = 0
 
@@ -231,7 +212,7 @@ func _init() -> void:
 
 		return total
 
-	# What lies on the ground per item (not trees or natural scatter), and the feller's got: counts, to compare what a split lays with what it credits.
+	# What lies on the ground per item (not trees or natural scatter), and the feller's got: counts, to compare what a fall lays with what it credits.
 	var ground: Callable = func() -> Dictionary:
 		var totals: Dictionary = {}
 
@@ -252,7 +233,7 @@ func _init() -> void:
 
 		return counts
 
-	# Every item a split lays on the ground is credited to the feller, item by item and once (Dave 14 Nov: "gathering counts when you ... cut it down").
+	# Every item a fall lays on the ground is credited to the feller, item by item and once (Dave 14 Nov: "gathering counts when you ... cut it down").
 	var laid_matches: Callable = func(ground_before: Dictionary, got_before: Dictionary) -> String:
 		var ground_now: Dictionary = ground.call()
 		var got_now: Dictionary = got_all.call()
@@ -270,14 +251,31 @@ func _init() -> void:
 
 		return ", ".join(bad)
 
-	var sapling: Dictionary = items._items[trunk_id].duplicate(true) if trunk_id >= 0 else {}
+	var kindling_fell: int = count("kindling")
+	var fell_lines: int = said.size()
 	var logs_before: int = ground_logs.call()
 	var logs_got: int = got.call(items.table.id_of(log_n))
 	var ground_was: Dictionary = ground.call()
 	var got_was: Dictionary = got_all.call()
-	var split: bool = items.split_trunk(trunk_id)
+
+	for n in range(200):
+		if standing.is_empty():
+			break
+
+		items._last_hit.clear()
+		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
+
+	check(standing.is_empty() and done("fell") and count("kindling") == kindling_fell and said.slice(fell_lines).any(func(t): return t.begins_with("Goal done: Fell a tree") and t.contains("You earn 5 copper.")), "felling a tree completes the fell goal and pays 5 copper, no kindling (coins only)")
+	# What a felled tree breaks into as it falls is its feller's gathering, once; the record clients get does not name the feller.
+	var stump_id: int = -1
+
+	for k in items._items:
+		if items._items[k].has("tree") and int(items._items[k]["tree"]["state"]) == 4:
+			stump_id = int(k)
+
+	check(stump_id >= 0 and not JSON.stringify(items._items[stump_id]["tree"]).contains("goals0000001"), "the stump's record does not name the feller")
 	var laid: int = ground_logs.call() - logs_before
-	check(split and laid > 0 and got.call(items.table.id_of(log_n)) == logs_got + laid, "the trunk splits into %d logs and the feller has gathered them (%d)" % [laid, got.call(items.table.id_of(log_n)) - logs_got])
+	check(laid > 0 and got.call(items.table.id_of(log_n)) == logs_got + laid, "the tree comes down in %d logs and the feller has gathered them (%d)" % [laid, got.call(items.table.id_of(log_n)) - logs_got])
 	var mismatch: String = laid_matches.call(ground_was, got_was)
 	var others_got: int = 0
 
@@ -285,18 +283,19 @@ func _init() -> void:
 		if int(number) != log_n:
 			others_got += int(got_all.call()[number]) - int(got_was.get(number, 0))
 
-	check(split and mismatch == "" and others_got > 0, "the crown's sticks and leaves and the trunk's bark, seeds and roots it lays are the feller's gathering too (%s)" % mismatch)
-	check(not items.split_trunk(trunk_id) and got.call(items.table.id_of(log_n)) == logs_got + laid and not items._fellers.has(trunk_id), "it splits once and is credited once")
-	# A trunk too short for one log breaks up into firewood, kindling and sticks (_split_small): those are the feller's gathering as well.
-	var small_id: int = 900000
-	sapling["tree"]["length"] = 0.5
-	items._items[small_id] = sapling
-	items._fellers[small_id] = "goals0000001"
+	check(mismatch == "" and others_got > 0, "the crown's sticks and leaves and the trunk's bark, seeds and roots it lays are the feller's gathering too (%s)" % mismatch)
+	var got_after: Dictionary = got_all.call()
+
+	for n in range(8):
+		items.tick(0.25)   # the fall lands
+
+	check(got_all.call().hash() == got_after.hash(), "landing credits nothing more: it is credited once")
+	# A small tree breaks up into firewood, kindling and sticks: those are the feller's gathering as well.
 	ground_was = ground.call()
 	got_was = got_all.call()
-	var small_split: bool = items.split_trunk(small_id)
+	items._fell_record(Vector2i(0, 0), {"name": "oak", "position": Vector3(40.0, 10.0, 0.0), "height": 4.0, "trunk": 0.1}, Vector2(1.0, 0.0), "goals0000001")
 	mismatch = laid_matches.call(ground_was, got_was)
-	check(small_split and mismatch == "" and got_all.call().hash() != got_was.hash() and not items._fellers.has(small_id), "a sapling-sized trunk's firewood, kindling and sticks are its feller's gathering, once (%s)" % mismatch)
+	check(mismatch == "" and got_all.call().hash() != got_was.hash() and int(got_all.call().get(items.table.number_of("firewood"), 0)) > int(got_was.get(items.table.number_of("firewood"), 0)), "a small tree's firewood, kindling and sticks are its feller's gathering (%s)" % mismatch)
 
 	# Fire: kit, place, light.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
