@@ -4,7 +4,7 @@
 
 [Approved records](Design_Ideas_Approved.md) identify the owning full specification and approval source/date. [Implementation records](Design_Ideas_Built.md) link to that design and distinguish code, tests and player evidence. Built does not mean tested or player-verified; neither register promotes the source-unverified decisions below.
 
-Legacy decisions throughout this collection remain SOURCE UNVERIFIED; no extraction verifies approval, implementation or tests. Section numbers and “above/below” refer to each linked source snapshot.
+Legacy decisions throughout this collection remain SOURCE UNVERIFIED unless explicitly linked to a later director-approved ruling; extraction alone does not verify approval, implementation or tests. Section numbers and “above/below” refer to each linked source snapshot.
 
 ## Aging and lifespan
 
@@ -234,26 +234,23 @@ Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/b
 
 ### Handover chain (succession)
 
-#### Recorded decisions — SOURCE UNVERIFIED
+The offer order and final-child fallback are [director-approved](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). Other legacy details below retain their recorded status.
+
+#### Recorded decisions and approved clarification
 
 - **[Decided]** Only the chosen successor inherits. The whole dynasty passes to that one person. It does not matter which spouse a child came from, since all are the head's children and all are eligible to be successor at retirement or death.
 - **[Decided]** **Retirement is the player's choice, driven by aging.** As a character ages, their skills fall with their physical ability. At some point the player decides it is time to move on, makes sure a successor is chosen, and chooses to retire. This is usually a conversation with a spouse. There is no fixed retirement age.
 - **[Decided]** **Retirement.** A character who lives into old age and becomes too old and frail to carry on can choose a successor and retire. The player then takes over the successor's body, and the retired character becomes a senior or elderly NPC who lives out their remaining days on the farm.
 - **[Decided]** **Naming a successor can be tested while alive.** Because NPCs talk through the language model, a player can say to a child, stepchild or spouse, "I am thinking of making you my successor", and they answer as themselves: proud, nervous, or unwilling. Naming someone does not bind them. They can still decline when the handover comes.
-- **[Decided]** **The handover chain (order of succession).** When the dynasty is handed on (death or retirement), the named successor, if any, is asked first. If there is none, or they decline, the offer goes down this line, and each person in turn accepts or declines. A spouse always comes after her own children:
-  1. All of the player's own blood children, grouped together and taken oldest to youngest, whichever spouse they came from. (Five children with the first wife and two with the second are one group of seven, by age.)
-  2. The first spouse, if able. An elderly or dead spouse cannot take it.
-  3. The second spouse's children from before (the player's stepchildren), oldest to youngest, then the second spouse.
-  4. The third spouse's stepchildren, then the third spouse, and so on in the order the spouses were married.
-  If the first spouse has children of her own from before, they come between the blood children and her. Whoever takes it becomes the player's character.
+- **[DIRECTOR-APPROVED — Dave, 16 Nov 2026]** The offer order is defined once in [approved succession order](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). It replaces the former global blood-child age order; this subsection remains the legacy route.
 - **[Decided]** **Each person in line chooses; with no will, the chain is the order of asking.** The chain is the order in which the offer is presented. Each person in turn may accept or refuse, and a refusal passes it to the next in line. With no will, nobody is named, so the offer simply goes down the chain.
 - **[Decided]** **A will raises the odds, but is never a certainty.**
   - If a successor is named, the chance they accept is much higher.
   - It is not 100% just because it is a parent's will. It is certain only if the successor agreed beforehand.
   - If a child told the parent they truly do not want it and is named anyway, the chance of accepting rises by about 50%, so it becomes a coin flip. If they refuse, it passes to the next in line.
   - **Character attributes decide the odds.** Loyalty, a sense of duty and greed each push toward accepting, so most people will accept. There is always some chance they will not.
-  - The one exception is the last in line, who must accept (above).
-- **[Decided]** **The last in line must accept.** If the offer goes all the way down the chain and everyone has declined or is dead, the last person on the line, which is the youngest child (not the last spouse), accepts no matter what. A player who has built any lineage always keeps their dynasty.
+  - The exception is the [approved final-child fallback](Design_Ideas_Approved.md#final-child-fallback), which overrides refusal only after all ordinary offers fail.
+- **[DIRECTOR-APPROVED — Dave, 16 Nov 2026]** The mandatory fallback is defined in [final-child fallback](Design_Ideas_Approved.md#final-child-fallback). It applies to the final eligible child in the approved family order after all ordinary offers, including spouse offers, have been refused.
 - **[Decided]** So it pays a character to spend time encouraging the children to want to be the successor (conversation, teaching and the markers in Section 6.6).
 - **[Decided]** Siblings who are not the successor stay in the household and age out over time, unless they leave (see below).
 
@@ -330,7 +327,7 @@ Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/b
 
 ### Source-review questions and dependencies
 
-- The recorded offer chain and its “youngest child, not the last spouse” forced-acceptance exception must both remain visible; their exact ordering needs source reconciliation. Adoption eligibility remains a [proposal in the family collection](#children-and-family-growth).
+- Dave resolved the offer order and mandatory fallback on 16 Nov 2026; use [the approved specification](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). Adoption eligibility remains a [proposal in the family collection](#children-and-family-growth); this clarification does not settle adopted-child placement.
 - Naming someone is recorded as nonbinding, while prior agreement is described as making acceptance certain. Preserve both qualifications pending source review.
 - Keep the distinct benefactor-only tax, protected-item rules, forced-property-sale/loan choice, tax cap, reputation discounts and transferred reputation together. No single rate or “nothing is taken” summary replaces their nested exceptions.
 - [Death and rescue](#death-and-rescue), [aging](#aging-and-lifespan), [personal finance](DESIGN_IDEAS.md#63-personal-finances), [duress](DESIGN_IDEAS.md#absence-and-duress) and [NPC memory](DESIGN_IDEAS.md#88-npc-character-memory-and-conversation) remain dependencies. Individual reputation versus dynasty credit averages is a distinction, not permission to invent a dynasty-wide reputation score.
