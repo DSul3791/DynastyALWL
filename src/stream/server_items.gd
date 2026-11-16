@@ -757,6 +757,7 @@ func peer_left(peer: int) -> void:
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
+	_push_last.erase(peer)   # their last log push (ACT_PUSH_LOG)
 	_garden_jobs.erase(peer)
 	_last_average.erase(peer)
 	_roads.erase(peer)
@@ -2905,31 +2906,42 @@ func _log_surround() -> void:
 				elif not _logs.has(sid):
 					keep["i%d" % sid] = true   # on a floor or a deck: in the way, never moved
 					_log_static("i%d" % sid, _log_capsule(_log_r(other)), _log_xf(other), true)
-			elif other.has("boulder"):
-				var rock_r: float = float((other["boulder"] as Dictionary).get("radius", 0.5))
-				var ball: SphereShape3D = SphereShape3D.new()
-				ball.radius = rock_r
+			elif other.has("boulder") or other.has("tree"):
 				keep["i%d" % sid] = true
-				_log_static("i%d" % sid, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
-			elif other.has("tree"):
-				keep["i%d" % sid] = true
-				_log_static("i%d" % sid, _log_post(float((other["tree"] as Dictionary).get("radius", 0.3)), STUMP_H_M), Transform3D(Basis(), other["pos"] + Vector3(0.0, STUMP_H_M * 0.5, 0.0)))
+
+				if _logs.has_static("i%d" % sid):
+					continue   # already in the space: no new shape
+
+				if other.has("boulder"):
+					var rock_r: float = float((other["boulder"] as Dictionary).get("radius", 0.5))
+					var ball: SphereShape3D = SphereShape3D.new()
+					ball.radius = rock_r
+					_log_static("i%d" % sid, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
+				else:
+					_log_static("i%d" % sid, _log_post(float((other["tree"] as Dictionary).get("radius", 0.3)), STUMP_H_M), Transform3D(Basis(), other["pos"] + Vector3(0.0, STUMP_H_M * 0.5, 0.0)))
 
 		if trees_near.is_valid() and tree_info.is_valid():
 			for found in trees_near.call(at, reach):
 				var info: Dictionary = tree_info.call(found[0], int(found[1]))
 
-				if not info.is_empty():
-					var key: String = "t%s:%d" % [str(found[0]), int(found[1])]
+				var key: String = "t%s:%d" % [str(found[0]), int(found[1])]
+
+				if _logs.has_static(key):
+					keep[key] = true
+				elif not info.is_empty():
 					keep[key] = true
 					_log_static(key, _log_post(float(info.get("trunk", 0.3)), TRUNK_H_M), Transform3D(Basis(), info["position"] + Vector3(0.0, TRUNK_H_M * 0.5, 0.0)))
 
 		for rect in _grid.rects_near(at.x, at.z, reach, _items):
 			var key: String = "w%d" % int(rect["id"])
+			keep[key] = true
+
+			if _logs.has_static(key):
+				continue
+
 			var wall: BoxShape3D = BoxShape3D.new()
 			wall.size = Vector3(float(rect["hx"]) * 2.0, WALL_H_M, float(rect["hz"]) * 2.0)
 			var base: Vector3 = _items[int(rect["id"])]["pos"]
-			keep[key] = true
 			_log_static(key, wall, Transform3D(Basis(Vector3.UP, atan2(float(rect["sin"]), float(rect["cos"]))), base + Vector3(0.0, WALL_H_M * 0.5, 0.0)))
 
 	# Asleep and nothing awake near: out of the space (its pose stays in the record).

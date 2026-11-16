@@ -2185,7 +2185,7 @@ func _on_logs_moved(ids: PackedInt32Array, positions: PackedVector3Array, poses:
 # A loose log's drawn centre and turn: the point under its middle lifted by its radius, the pose [rot_y, pitch, spin] (lying_logs.gd).
 func _log_target(entry: Dictionary) -> Transform3D:
 	var pose: Vector3 = entry.get("pose", Vector3.ZERO)
-	return Transform3D(Basis(LyingLogs.basis_of(pose.x, pose.y, pose.z).get_rotation_quaternion()), entry["pos"] + Vector3(0.0, LyingLogs.LOG_R * float(entry.get("girth", 1.0)), 0.0))
+	return Transform3D(Basis(LyingLogs.basis_of(pose.x, pose.y, pose.z).get_rotation_quaternion()), entry["pos"] + Vector3(0.0, LyingLogs.LOG_R * float(entry.get("girth", 1.0)) + float(entry.get("lift", 0.0)), 0.0))
 
 
 func _glide_tick(delta: float) -> void:
@@ -3130,11 +3130,12 @@ func _snap_log(id: int, entry: Dictionary, tries: int) -> void:
 	var node: Node3D = entry["node"]
 	var r: float = LyingLogs.LOG_R * float(entry.get("girth", 1.0))
 	var axis: Vector3 = node.quaternion * Vector3(LyingLogs.LOG_HALF_M - r, 0.0, 0.0)
+	var base: Vector3 = node.position - Vector3(0.0, float(entry.get("lift", 0.0)), 0.0)   # where the server put it
 	var lift: float = 0.0
 	var probed: bool = false
 
 	for end in [Vector3.ZERO, axis, -axis]:
-		var under: Vector3 = node.position + end - Vector3(0.0, r, 0.0)
+		var under: Vector3 = base + end - Vector3(0.0, r, 0.0)
 		var ground: float = float(_ground_below.call(under - Vector3(0.0, 1.5, 0.0)))   # the probe starts 2 m above the underside
 
 		if not is_nan(ground) and ground <= under.y + SNAP_UP_M:
@@ -3146,7 +3147,8 @@ func _snap_log(id: int, entry: Dictionary, tries: int) -> void:
 		return
 
 	_unsnapped[id] = tries - 1
-	node.position.y += lift
+	entry["lift"] = lift   # kept while it glides on (_log_target), so a rolling log is not drawn sunk between settles
+	node.position = base + Vector3(0.0, lift, 0.0)
 
 
 func _snap_tick(now: int) -> void:

@@ -41,8 +41,8 @@ func count() -> int:
 	return _bodies.size()
 
 
-# A log body: radius r, half length `half` (centre to the end of the rounded cap), mass kg. Created asleep when `asleep` (a neighbour waiting to be struck).
-func add_log(id: int, xf: Transform3D, r: float, half: float, mass: float, friction: float, bounce: float, asleep: bool) -> void:
+# A log body: radius r, half length `half` (centre to the end of the rounded cap), mass kg. Created asleep when `starts_asleep` (a neighbour waiting to be struck).
+func add_log(id: int, xf: Transform3D, r: float, half: float, kg: float, friction: float, bounce: float, starts_asleep: bool) -> void:
 	remove(id)
 	var shape: CapsuleShape3D = CapsuleShape3D.new()
 	shape.radius = r
@@ -51,13 +51,13 @@ func add_log(id: int, xf: Transform3D, r: float, half: float, mass: float, frict
 	PhysicsServer3D.body_set_mode(rid, PhysicsServer3D.BODY_MODE_RIGID)
 	PhysicsServer3D.body_set_space(rid, _space())
 	PhysicsServer3D.body_add_shape(rid, shape.get_rid(), _lying())
-	PhysicsServer3D.body_set_param(rid, PhysicsServer3D.BODY_PARAM_MASS, maxf(mass, 0.5))
+	PhysicsServer3D.body_set_param(rid, PhysicsServer3D.BODY_PARAM_MASS, maxf(kg, 0.5))
 	PhysicsServer3D.body_set_param(rid, PhysicsServer3D.BODY_PARAM_FRICTION, friction)
 	PhysicsServer3D.body_set_param(rid, PhysicsServer3D.BODY_PARAM_BOUNCE, bounce)
 	PhysicsServer3D.body_set_enable_continuous_collision_detection(rid, true)   # a fast log never passes through the ground or a trunk
 	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_TRANSFORM, xf)
-	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_SLEEPING, asleep)
-	_bodies[id] = {"rid": rid, "shape": shape, "r": r, "half": half, "mass": mass}
+	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_SLEEPING, starts_asleep)
+	_bodies[id] = {"rid": rid, "shape": shape, "r": r, "half": half, "mass": kg}
 
 
 # A capsule's axis y turned to lie along the body's x.
