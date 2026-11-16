@@ -92,5 +92,26 @@ func segment_blocked(x0: float, z0: float, x1: float, z1: float, margin: float, 
 	return false
 
 
+# The pieces still standing whose bucket lies within `reach` of (x, z): [{id, kind, x, z, hx, hz, cos, sin}] (the rolling logs' walls, server_items._log_surround).
+func rects_near(x: float, z: float, reach: float, items: Dictionary) -> Array:
+	var lo: Vector2i = _bucket(x - reach, z - reach)
+	var hi: Vector2i = _bucket(x + reach, z + reach)
+	var seen: Dictionary = {}
+	var out: Array = []
+
+	for bx in range(lo.x, hi.x + 1):
+		for bz in range(lo.y, hi.y + 1):
+			for rect in _buckets.get(Vector2i(bx, bz), []):
+				var item: Variant = items.get(int(rect["id"]), null)
+
+				if seen.has(int(rect["id"])) or item == null or not (item as Dictionary).has("struct") or str(item["struct"]["kind"]) != str(rect["kind"]):
+					continue   # met in two buckets, or taken down (blocks() forgets it)
+
+				seen[int(rect["id"])] = true
+				out.append(rect)
+
+	return out
+
+
 func _bucket(x: float, z: float) -> Vector2i:
 	return Vector2i(int(floor(x / BUCKET_M)), int(floor(z / BUCKET_M)))
