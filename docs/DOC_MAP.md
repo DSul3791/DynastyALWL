@@ -48,17 +48,24 @@ Keep these separate from the design: they own assignments, implementation state,
 | Doors and doorways | [Contract](ai-team/missions/BUGLIST-002/CONTRACT.md), [ledger](ai-team/missions/BUGLIST-002/LEDGER.md), [design correction](buglists/BUGLIST-002.md) | Approved task scope and actual implementation/verification records. |
 | Fog implementation | [Technical plan](design/FOG_PLAN.md), [F6 checklist](design/FOG_F6.md) | Implementation details and appearance checks for the director's fog design. |
 
+## Reviewed character and wildlife references
+
+Separate references for distinct topics. Dated implementation notes preserve code pointers and ideas; they do not establish current behavior or approve proposals.
+
+| Topic | Reference | Scope and status |
+|---|---|---|
+| Character records | [Character system](CHARACTER_SYSTEM.md) | Static 2 Nov create/save/load/delete map, with future heir/account ideas retained; later location design is in [Resume spot](design/RESUME_SPOT.md). |
+| Body and animation | [Dynasty body](DYNASTY_BODY.md) | Records Dave's body adoption, model/interface notes, clip ideas and dated gaps. Mixed dated implementation history, not fresh runtime verification. |
+| Movement and action feel | [Feel tuning](FEEL_TUNING.md) | Parameter locator and recorded 2 Nov settings; current values are in the named code. |
+| Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Director intent, proposed tuning and mixed dated data/client notes; the whole document is not labeled approved or fully implemented. |
+| Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
+
 ## Further design areas — routing review pending
 
 These sources remain available. Their inclusion preserves discoverability; it does not settle conflicting versions or promote proposals. Review them in small topic batches before choosing or consolidating authorities.
 
 | Area | References to review |
 |---|---|
-| Character systems | [Character system](CHARACTER_SYSTEM.md) |
-| Body and animation | [Dynasty body](DYNASTY_BODY.md) |
-| Movement and action feel | [Feel tuning](FEEL_TUNING.md) |
-| Comfort and exposure | [Comfort](COMFORT_DESIGN.md) |
-| Wildlife | [Animal specification](../ANIMAL_SPEC.md) |
 | Goblins | [Goblins](GOBLINS.md) |
 | Generation and natural watersheds | [Generator vision](../GENERATOR_VISION.md), [Dave's watersheds](water/Dynasty_How_Natural_Watersheds_Work.md), [watershed build design](water/watershed_rebuild_design.md) |
 | Weather and light | [Weather/light](design/art_weather_light.md), [sky](design/one_sky_design.md), [frozen water](design/frozen_water_look.md) |
