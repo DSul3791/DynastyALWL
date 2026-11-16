@@ -79,7 +79,7 @@ These sources remain available. Their inclusion preserves discoverability; it do
 | Goblins | [Goblins](GOBLINS.md) |
 | Generation and natural watersheds | [Generator vision](../GENERATOR_VISION.md), [Dave's watersheds](water/Dynasty_How_Natural_Watersheds_Work.md), [watershed build design](water/watershed_rebuild_design.md) |
 | Outdoor audio | [Sound outdoors](design/sound_outdoors_design.md) |
-| Families, dynasty, NPCs, settlements and other future systems | [Game ideas](../DESIGN_IDEAS.md), [living-world proposals](design/GUIDING_DOCUMENT.md) |
+| Other future systems awaiting topic review | [Remaining mixed ideas](../DESIGN_IDEAS.md) |
 | Supporting research | [Research index](knowledge/README.md) |
 
 ## Evidence and historical inputs

@@ -4,9 +4,11 @@
 
 Future Approved records hold each full verified specification once, with approval source/date. Built records link to it and record commits, checks and gaps; built does not mean tested or player-verified. Neither file is created without supporting material.
 
+Legacy decisions throughout this collection remain SOURCE UNVERIFIED; no extraction verifies approval, implementation or tests. Section numbers and “above/below” refer to each linked source snapshot.
+
 ## Aging and lifespan
 
-Source: [DESIGN_IDEAS at bcd0290, sections 6.1, 7.3 and 7.4](https://github.com/DSul3791/DynastyALWL/blob/bcd029086b5148a38f070b68f9ed073c41f4a944/DESIGN_IDEAS.md#61-aging-and-death). Extracted 16 Nov 2026; original approval sources/dates were not established in the scoped review. Wording, tags, numbers and qualifications below are retained from that snapshot. Section numbers inside the preserved passages refer to [DESIGN_IDEAS](DESIGN_IDEAS.md), not this file.
+Source: [DESIGN_IDEAS at bcd0290, sections 6.1, 7.3 and 7.4](https://github.com/DSul3791/DynastyALWL/blob/bcd029086b5148a38f070b68f9ed073c41f4a944/DESIGN_IDEAS.md#61-aging-and-death). Extracted 16 Nov 2026.
 
 ### Recorded decisions — SOURCE UNVERIFIED
 
@@ -47,7 +49,7 @@ Source: [DESIGN_IDEAS at bcd0290, sections 6.1, 7.3 and 7.4](https://github.com/
 
 ## Children and family growth
 
-Source: [DESIGN_IDEAS §§6.6, 6.8–6.9](https://github.com/DSul3791/DynastyALWL/blob/bcdee5666bec5f7fadb4d418c9e14a264ea585c2/DESIGN_IDEAS.md#66-children-and-family-growth), extracted 16 Nov 2026. Original approval sources/dates remain unverified; preserved section numbers refer to DESIGN_IDEAS. Existing legacy tags retain their recorded meaning, without new approval.
+Source: [DESIGN_IDEAS §§6.6, 6.8–6.9](https://github.com/DSul3791/DynastyALWL/blob/bcdee5666bec5f7fadb4d418c9e14a264ea585c2/DESIGN_IDEAS.md#66-children-and-family-growth). Extracted 16 Nov 2026.
 
 ### Childhood and teaching
 
@@ -108,7 +110,7 @@ Source: [DESIGN_IDEAS §§6.6, 6.8–6.9](https://github.com/DSul3791/DynastyALW
 
 ## Death and rescue
 
-Source: [DESIGN_IDEAS §§6.1 and 6.5](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/DESIGN_IDEAS.md#61-aging-and-death), extracted 16 Nov 2026. Legacy decisions remain SOURCE UNVERIFIED; original tags and complete nested passages are preserved. Section numbers refer to DESIGN_IDEAS.
+Source: [DESIGN_IDEAS §§6.1 and 6.5](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/DESIGN_IDEAS.md#61-aging-and-death). Extracted 16 Nov 2026.
 
 ### Danger, rescue and logging out
 
@@ -201,7 +203,7 @@ Source: [DESIGN_IDEAS §§6.1 and 6.5](https://github.com/DSul3791/DynastyALWL/b
 
 ## Succession and inheritance
 
-Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/blob/dbe793cbcbe04d2207a33e7fd8e2e1edbf266d13/DESIGN_IDEAS.md#62-what-an-heir-inherits), extracted 16 Nov 2026. Recorded decisions remain SOURCE UNVERIFIED, including values described as accepted/tunable. Section numbers and “above/below” refer to the original source ordering.
+Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/blob/dbe793cbcbe04d2207a33e7fd8e2e1edbf266d13/DESIGN_IDEAS.md#62-what-an-heir-inherits). Extracted 16 Nov 2026.
 
 ### What an heir inherits
 
@@ -335,7 +337,7 @@ Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/b
 
 ## NPC population and migration
 
-Source: [DESIGN_IDEAS §§8.2–8.3](https://github.com/DSul3791/DynastyALWL/blob/61cba95e7f41c0aa2528820835844f637262103b/DESIGN_IDEAS.md#82-npc-population), extracted 16 Nov 2026. Recorded decisions remain SOURCE UNVERIFIED; complete paragraphs, examples and original tags are preserved. Internal section numbers refer to DESIGN_IDEAS.
+Source: [DESIGN_IDEAS §§8.2–8.3](https://github.com/DSul3791/DynastyALWL/blob/61cba95e7f41c0aa2528820835844f637262103b/DESIGN_IDEAS.md#82-npc-population). Extracted 16 Nov 2026.
 
 ### Population, roles and country folk
 
@@ -401,7 +403,7 @@ Source: [DESIGN_IDEAS §§8.2–8.3](https://github.com/DSul3791/DynastyALWL/blo
 
 ## Property and town management
 
-Source: [DESIGN_IDEAS §§8.4–8.6, 8.14–8.16](https://github.com/DSul3791/DynastyALWL/blob/7311ee19374bdb5f0d369e92aee25db11f365e42/DESIGN_IDEAS.md#84-town-planning-and-the-civil-engineer), extracted 16 Nov 2026. Legacy decisions remain SOURCE UNVERIFIED. Complete nested rules and original tags are retained; section numbers refer to DESIGN_IDEAS.
+Source: [DESIGN_IDEAS §§8.4–8.6, 8.14–8.16](https://github.com/DSul3791/DynastyALWL/blob/7311ee19374bdb5f0d369e92aee25db11f365e42/DESIGN_IDEAS.md#84-town-planning-and-the-civil-engineer). Extracted 16 Nov 2026.
 
 ### Town planning and the civil engineer
 
@@ -566,7 +568,7 @@ Source: [DESIGN_IDEAS §§8.4–8.6, 8.14–8.16](https://github.com/DSul3791/Dy
 
 ## Founding and building a settlement
 
-Source: [DESIGN_IDEAS §§8.17–8.20](https://github.com/DSul3791/DynastyALWL/blob/8516664b13661113d5f7bf2bfac481d296d14266/DESIGN_IDEAS.md#817-town-marker-territory-and-outposts), extracted 16 Nov 2026. Legacy decisions remain SOURCE UNVERIFIED. The first-ten list and space estimates remain proposals, separate from the recorded planner sequence. Section numbers refer to DESIGN_IDEAS.
+Source: [DESIGN_IDEAS §§8.17–8.20](https://github.com/DSul3791/DynastyALWL/blob/8516664b13661113d5f7bf2bfac481d296d14266/DESIGN_IDEAS.md#817-town-marker-territory-and-outposts). Extracted 16 Nov 2026.
 
 ### Town marker, territory and outposts
 
@@ -753,7 +755,7 @@ Source: [DESIGN_IDEAS §§8.17–8.20](https://github.com/DSul3791/DynastyALWL/b
 
 ## Outposts and settlement decline
 
-Source: [DESIGN_IDEAS §§8.10 and 8.13](https://github.com/DSul3791/DynastyALWL/blob/c5dcfdc3cf91580aa6bbf8a5870b8ae8ce62769e/DESIGN_IDEAS.md#810-outposts-and-town-satellites), extracted 16 Nov 2026. Legacy decisions remain SOURCE UNVERIFIED; proposals, tables, timeline examples and open questions retain their original qualifications. Section numbers refer to DESIGN_IDEAS.
+Source: [DESIGN_IDEAS §§8.10 and 8.13](https://github.com/DSul3791/DynastyALWL/blob/c5dcfdc3cf91580aa6bbf8a5870b8ae8ce62769e/DESIGN_IDEAS.md#810-outposts-and-town-satellites). Extracted 16 Nov 2026.
 
 ### Outposts and town satellites
 
