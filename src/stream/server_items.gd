@@ -2253,7 +2253,7 @@ func reset_world() -> int:
 
 
 # Removes the loose dropped things (not trunks, stumps, fires, structures, boulders or the natural scatter) within `radius` of `centre`;
-# the next sync tells the players they are gone. Dave 2026-10-23: 64 loose items within 12 m refused every drop, so he could not empty his pack.
+# the next sync tells the players they are gone (an admin clean-up; drops are never refused, Dave 16 Nov 2026).
 func clear_dropped(centre: Vector3, radius: float) -> int:
 	var gone: int = 0
 
