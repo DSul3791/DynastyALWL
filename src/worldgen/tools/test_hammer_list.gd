@@ -28,9 +28,15 @@ func _init() -> void:
 	for k in range(rows.size() - 1):
 		ordered = ordered and not ListScript.book_before(str(rows[k + 1]["name"]), str(rows[k]["name"]), ListScript.TIER_ORDER)
 
-	check(ordered, "the list goes up the tier ladder, each tier's pieces by name, then the rest by name")
-	check(ListScript.book_before("Crude - Wall", "Rustic - Doorway", ListScript.TIER_ORDER) and ListScript.book_before("Superior - Wall", "Engineered - Doorway", ListScript.TIER_ORDER) and ListScript.book_before("Engineered - Wall", "Fortified - Doorway", ListScript.TIER_ORDER), "Crude, Rustic, ... Superior, Engineered, Fortified (Dave 10 Nov 2026), not alphabetical")
-	check(ListScript.book_before("Fortified - Wall top", "Kiln", ListScript.TIER_ORDER) and ListScript.book_before("Kiln", "Mixer", ListScript.TIER_ORDER), "names with no tier word come after the tiers, by name")
+	check(ordered, "the list goes by item name, then each item's tiers up the ladder (Dave 16 Nov 2026)")
+	check(ListScript.book_before("Crude - Wall", "Rustic - Wall", ListScript.TIER_ORDER) and ListScript.book_before("Superior - Wall", "Engineered - Wall", ListScript.TIER_ORDER) and ListScript.book_before("Engineered - Wall", "Fortified - Wall", ListScript.TIER_ORDER), "one item's tiers lowest to highest: Crude, Rustic, ... Superior, Engineered, Fortified (Dave 16 Nov 2026: \"lowest to highest is best\"), not alphabetical")
+	check(ListScript.book_before("Fortified - Doorway", "Crude - Wall", ListScript.TIER_ORDER) and ListScript.book_before("Kiln", "Mixer", ListScript.TIER_ORDER) and ListScript.book_before("Bench", "Crude - Chair", ListScript.TIER_ORDER), "items go alphabetically by item name, whatever the tier")
+	check(ListScript.book_before("Primitive smelter", "Improved smelter", ListScript.TIER_ORDER) and ListScript.book_before("Improved smelter", "Advanced smelter", ListScript.TIER_ORDER), "the smelters sit together, Primitive, Improved, Advanced")
+	check(ListScript.display_name("Sturdy - Wall") == "Wall - Sturdy" and ListScript.display_name("Primitive smelter") == "Smelter - Primitive" and ListScript.display_name("Kiln") == "Kiln" and ListScript.display_name("Log rack") == "Log rack", "the screen shows Item - Tier (Dave 16 Nov 2026); the catalog name stays Tier - Item")
+	var smelters: Array = rows.filter(func(r): return str(r["shown"]).begins_with("Smelter - ")).map(func(r): return str(r["shown"]))
+	var at: int = rows.map(func(r): return str(r["shown"])).find("Smelter - Primitive")
+	check(smelters == ["Smelter - Primitive", "Smelter - Improved", "Smelter - Advanced"] or smelters.size() < 3, "the smelters a wooden hammer lists are together (%s)" % str(smelters))
+	check(at < 0 or str(rows[at + 1]["shown"]).begins_with("Smelter - ") or smelters.size() == 1, "nothing comes between the smelters")
 	check(not bool(rows[0]["can"]), "an empty pack covers nothing")
 
 	var wall: Dictionary = {}
@@ -77,49 +83,49 @@ func _init() -> void:
 
 	list.set_open(true, 1)
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
-	check(list.mode == "repair" and list.entries(1)[0]["kind"] == "repair", "a hammer starts on Repair, the first line of its list (Dave 10 Nov 2026)")
-	list.move(true, 1)
-	list.move(false, 1)
-	list.move(false, 1)
-	check(list.list_text(1).contains(">"), "the highlight shows in the text")
-	# The panel is a fixed 75% of the screen width and its text wraps (Dave 10 Nov 2026: the Repair line ran off both edges of the screen).
+	check(list.mode == "repair" and list.actions()[0]["kind"] == "repair" and list.actions()[1]["kind"] == "save", "a hammer starts on Repair, the first line above its list (Dave 10 Nov 2026), Save building plan beside it")
+	var all_count: int = list.entries(1).size()
+	check(all_count == 214, "All lists every blueprint (%d)" % all_count)
+	# The search box (Dave 16 Nov 2026: "smel" shows every smelter), whatever group is chosen.
+	list.category = "Walls and doors"
+	list.search = "smel"
+	var found: Array = list.entries(1)
+	check(not found.is_empty() and found.all(func(e): return str(e["name"]).to_lower().contains("smel")), "smel lists the smelters, searched in every group (%s)" % str(found.map(func(e): return e["shown"])))
+	list.search = "wall sturdy"
+	check(list.entries(1).any(func(e): return str(e["name"]) == "Sturdy - Wall"), "every word typed must match, in either order")
+	list.search = ""
+	check(list.entries(1).size() < all_count and list.entries(1).all(func(e): return str(list.rows(1).filter(func(r): return int(r["number"]) == int(e["number"]))[0]["category"]) == "Walls and doors"), "a group shows only its blueprints")
+	# One click picks and shuts the screen (Dave 16 Nov 2026: no confirm step).
+	var wall_entry: Dictionary = list.entries(1)[0]
+	list.pick(wall_entry)
+	check(not list.is_open and list.picked == int(wall_entry["number"]) and list.mode == "place", "a click on a row picks it and shuts the screen (%s)" % list.name_of(list.picked))
+	check(list.kit_of(list.picked) != "", "the picked blueprint names its structure's kit for the ghost")
+	list.set_open(true, 1)
+	check(list.category == "Walls and doors" and list.search == "", "the screen remembers the last group, not the words typed")
+	list.pick(list.actions()[0])
+	check(not list.is_open and list.picked == 0 and list.mode == "repair", "the Hammer/Repair Tool line goes back to Repair")
+	list.clear()
+	check(list.picked == 0 and not list.is_open and list.mode == "repair", "putting the hammer away clears the pick and puts it back on Repair")
+	# Groups (Dave 5 Nov 2026): every blueprint has a group; the side tabs follow CATEGORY_ORDER.
+	var groups: Array = list.categories(1)
+	check(groups.size() >= 5 and list.rows(1).all(func(r): return str(r["category"]) != "Other") and groups[0] == "Walls and doors", "every blueprint is in a named group, walls first (%s)" % str(groups))
+	list.category = ""
+	# The screen itself (built once when there is a HUD layer): opening shows rows, a click picks, the detail shows the materials.
 	var hud_layer: CanvasLayer = CanvasLayer.new()
 	var shown = ListScript.new()
 	shown.setup(table, pack, hud_layer, "user://test_hammer_list_none.json")
 	shown.set_open(true, 1)
-	check(is_equal_approx(shown._panel.anchor_left, 0.125) and is_equal_approx(shown._panel.anchor_right, 0.875) and shown._panel.offset_left == 0.0 and shown._panel.offset_right == 0.0, "the hammer panel spans the middle 75% of the screen width")
-	check(shown._detail.autowrap_mode != TextServer.AUTOWRAP_OFF and shown._label.autowrap_mode != TextServer.AUTOWRAP_OFF, "the panel's lines wrap instead of widening it")
-	check(str(shown._detail.text).begins_with("repair structures, place blueprints or harvest stones and ores. Left click a worn piece"), "the open panel shows the long Hammer/Repair Tool text (%s)" % str(shown._detail.text).left(40))
+	var visible_rows: int = shown._row_buttons.values().filter(func(b): return b.visible).size()
+	check(shown._screen.visible and visible_rows == 214, "the open screen shows every row of All (%d)" % visible_rows)
+	shown._search_box.text_changed.emit("smel")
+	visible_rows = shown._row_buttons.values().filter(func(b): return b.visible).size()
+	check(visible_rows == found.size(), "typing filters the rows on screen (%d)" % visible_rows)
+	var crate_no: int = int(shown.rows(1).filter(func(r): return r["name"] == "Crate")[0]["number"])
+	shown._hover({"kind": "bp", "number": crate_no})
+	check(shown.detail_text().contains("Plank  5 / 5") and shown.detail_text().contains("Nails"), "pointing at a row shows its materials, have / need (%s)" % shown.detail_text().left(80))
+	(shown._row_buttons[crate_no] as Button).pressed.emit()
+	check(not shown.is_open and not shown._screen.visible and shown.picked == crate_no, "a click on a row picks it and shuts the screen")
 	hud_layer.free()
-	check(not list.list_text(1).contains("(short)"), "no \"(short)\" after a name the pack cannot cover (Dave 10 Nov 2026): the have/need line says it")
-	check(list.list_text(1).contains("Sturdy - Foundation") and list.list_text(1).contains("Refined - Wall"), "building pieces read Tier - Item on the quality ladder (Dave 10 Nov 2026)")
-	# A long list scrolls past the highlight (Dave 5 Nov 2026): 7 lines show, the highlighted one in the middle, blank lines pad the ends so the first and last entry can reach it.
-	list.set_open(true, 1)
-	var total: int = list.entries(1).size()
-	var windowed: PackedStringArray = list.list_text(1, 7).split("\n")
-	check(windowed.size() == 2 + 7 and windowed[2 + 3].begins_with(">"), "the highlight sits on the middle of a seven line window (%d lines)" % windowed.size())
-	check(windowed[2] == "" and windowed[3] == "" and windowed[4] == "", "at the top of the list the lines above the first entry are blank")
-	check(list.list_text(1, 0).split("\n").size() == 2 + total, "no window shows the whole list")
-	list.move(false, 1)   # up from the first entry wraps to the last, as the moves above had left it
-	list.choose(1)
-	check(not list.is_open and list.picked > 0 and list.name_of(list.picked) == str(list.rows(1)[list.rows(1).size() - 1]["name"]), "the wheel wraps round and a click picks (%s)" % list.name_of(list.picked))
-	check(list.kit_of(list.picked) != "", "the picked blueprint names its structure's kit for the ghost")
-	list.clear()
-	check(list.picked == 0 and not list.is_open and list.mode == "repair", "putting the hammer away clears the pick and puts it back on Repair")
-	# Groups (Dave 5 Nov 2026): the menu can show one group of blueprints at a time; every blueprint has a group.
-	var groups: Array = list.categories(1)
-	check(groups.size() >= 5 and list.rows(1).all(func(r): return str(r["category"]) != "Other"), "every blueprint is in a named group (%s)" % str(groups))
-	list.set_open(true, 1)
-	var all_count: int = list.entries(1).size()
-	list.cycle_category(true, 1)
-	check(list.category == str(groups[0]) and list.entries(1).size() < all_count and list.entries(1).size() > 2, "the right arrow shows the first group only")
-	check(list.entries(1).all(func(e): return e["kind"] != "bp" or str(list.rows(1).filter(func(r): return int(r["number"]) == int(e["number"]))[0]["category"]) == list.category), "only that group's blueprints are listed")
-	list.cycle_category(false, 1)
-	check(list.category == "" and list.entries(1).size() == all_count, "the left arrow goes back to all of them")
-	list.cycle_category(false, 1)
-	check(list.category == str(groups[groups.size() - 1]), "left from All wraps to the last group")
-	list.category = ""
-	list.clear()
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var first_hammer_row: Dictionary = strict_list._book.filter(func(r): return str(r["tool"]) == "hammer")[0]   # the first row may be a knife row now (Crude - Chair): the hammer's list is what is tested

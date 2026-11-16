@@ -65,3 +65,18 @@ The live item, recipe, blueprint and structure files hold stable numeric IDs, an
 Playtest: build an early Crude shelter without a saw; place Crude roofs 45/65 including corners and inverted edges; make walls with actual open doorways and add physical doors, both arched and double; build one full example of each seven-tier family where currently implemented; take down/restore construction materials without loss; verify copper/bronze-to-iron station route; test the 23 currently locked infrastructure targets after their mechanics ship; reproduce earlier unwanted "ground too steep" and falsely blocked green ghosts with coordinates. Do not claim completion from static tables or thumbnails.
 
 **Development:** independently reviewed small feature branches into `dev`; `main` stays stable. This document makes no gameplay code or save-format change.
+
+## 7. Build screen (hammers and knife)
+
+**Dave, 16 Nov 2026 (project chat):** the hammer's right-click list was too long to find anything in. "can we give the right click its own screen similar to crafting so we can have a search bar"; "no you just pick it and it closes the screen picking the item for your new blueprint or tool"; "I approve implement it for the hammers and the knife"; "make sure to list items by Item name - Tier in the menus alphabetically"; "lowest to highest is best".
+
+Right click (or R) with a hammer or a knife opens a full screen laid out like crafting: a search box at the top that filters as you type, the blueprint groups down the side, the list in the middle and the materials (have / need) of the row under the mouse on the right. One left click on a row picks it and shuts the screen; there is no confirm step or Build button. Right click or Esc shuts it without a pick. The old wheel-driven text list and its arrow-key group stepping are deleted (decision 61). Code: `src/client/hammer_blueprints.gd`; controls: `CONTROLS.md`.
+
+| # | Choice | Status |
+|---|---|---|
+| BS-1 | The screen shows names as "Item - Tier" ("Wall - Crude", "Smelter - Primitive") and sorts them alphabetically by item name; within one item the tiers go lowest to highest on the ladder. Catalog names stay "Tier - Item"; nothing is renamed. | **Dave's ruling** (16 Nov 2026) |
+| BS-2 | Groups down the side, from blueprints.json `category`: All, Walls and doors, Foundations, Roofs and ceilings, Stairs, ladders and supports, Fences and gates, Workshops and stations, Furniture, Storage and shelter, Lights and decoration, Water, Garden, and Saved plans (hammer, when it has any). The screen remembers the last group. | **Assumed on Dave's behalf** (provisional) |
+| BS-3 | Tier words outside the seven construction tiers, for ordering one item's pieces: Primitive, Improved, Advanced (stations), Straw, Wicker, Hide, Feather (beds and chests), Fine and Ornate after Rustic, material words beside their tier. | **Assumed on Dave's behalf** (provisional) |
+| BS-4 | Typing searches every group, whatever group is chosen, by the shown name and the catalog name; every word typed must match. A group tab click empties the search box. Esc empties the box first, then shuts the screen. | **Assumed on Dave's behalf** (provisional) |
+| BS-5 | The search box is empty and has the keys each time the screen opens (type at once; R then types an r, so right click or Esc shuts it). | **Assumed on Dave's behalf** (provisional) |
+| BS-6 | Rows the pack and the stock in reach cover show cream, the rest dim, the current pick gold. Hammer/Repair Tool and Save building plan (or Knife) are buttons above the list. Delete with the mouse on a saved plan's row removes the plan. | **Assumed on Dave's behalf** (provisional) |

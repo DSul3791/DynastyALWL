@@ -51,7 +51,10 @@ func _init() -> void:
 	check(bool(saved["ok"]) and saved["name"] == "Plan 1" and int(saved["pieces"]) == 2, "the menu saves a plan as Plan 1")
 	check(not bool(list.save_plan_near(rows, Vector3(0.0, 0.0, 0.0))["ok"]), "saving with nothing near says no")
 	var entries: Array = list.entries(1)
-	check(entries[0]["kind"] == "repair" and entries[1]["kind"] == "save" and entries[entries.size() - 1]["kind"] == "plan", "the menu has Repair, Save building plan, the blueprints, then the plan last")
+	check(list.actions()[0]["kind"] == "repair" and list.actions()[1]["kind"] == "save" and entries[entries.size() - 1]["kind"] == "plan", "the screen has Repair and Save building plan above the list, the blueprints, then the plan last")
+	list.category = list.PLANS_TAB
+	check(list.categories(1).has(list.PLANS_TAB) and list.entries(1).size() == 1 and list.entries(1)[0]["kind"] == "plan", "the Saved plans group lists only the plans")
+	list.category = ""
 	check(not list.can_afford(1) and not bool(entries[entries.size() - 1]["can"]), "an empty pack cannot afford the plan")
 
 	var again = ListScript.new()
@@ -59,8 +62,8 @@ func _init() -> void:
 	check(again.plans.plans.size() == 1 and again.plans.plans[0]["pieces"].size() == 2, "the plan is still there after a save and load")
 
 	again.set_open(true, 1)
-	again.move(false, 1)   # up from the first row wraps to the last: the plan
-	again.choose(1)
+	var listed: Array = again.entries(1)
+	again.pick(listed[listed.size() - 1])   # the last row: the plan
 	check(again.plan_picked == 0 and again.picked == 17 and again.mode == "place", "choosing the plan picks it and its anchor blueprint")
 
 	var cost: Dictionary = again.plan_cost(again.plans.plans[0])

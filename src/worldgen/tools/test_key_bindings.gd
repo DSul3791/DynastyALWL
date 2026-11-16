@@ -152,7 +152,6 @@ func _init() -> void:
 	var alt_right: InputEventKey = _key(KEY_RIGHT)
 	alt_right.alt_pressed = true
 	check(Bindings.matches(alt_right, "garden_wider") and not Bindings.matches(_key(KEY_RIGHT), "garden_wider"), "Alt+Right widens the hoe grid, plain Right does not")
-	check(Bindings.matches(_key(KEY_RIGHT), "hammer_group_next") and not Bindings.matches(alt_right, "hammer_group_next"), "plain Right is the hammer's next group, Alt+Right is not")
 	check(Bindings.label("garden_longer") == "Alt+Up" and Bindings.conflict("garden_narrower", KEY_LEFT, false, false) == "", "the hoe grid keys show their Alt and share no binding with the hammer's arrows")
 
 	check(Bindings.set_binding("interact", KEY_ESCAPE, false, false) != "", "Esc cannot be bound")
