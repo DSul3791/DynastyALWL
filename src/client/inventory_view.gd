@@ -948,7 +948,7 @@ func refuse_cue(reason: String) -> void:
 
 
 # The first pack slot holding a torch that water or rain put out (flame_rules.gd is_out: marked out, or a dark lantern), or -1.
-func _doused_torch_slot() -> int:
+func _out_flame_slot() -> int:
 	for slot in range(inventory.numbers.size()):
 		if inventory.numbers[slot] != 0 and FlameRules.is_out(table.entry(table.id_of(inventory.numbers[slot])), inventory.inst_of(slot)):
 			return slot
@@ -964,7 +964,7 @@ func _probe_fire() -> Dictionary:
 
 	var state: int = _world[id]["state"]
 
-	if _lit_state(state) and _doused_torch_slot() >= 0:
+	if _lit_state(state) and _out_flame_slot() >= 0:
 		# A torch that went out in the pack: E at a burning fire lights it again (Dave, 4 Nov 2026), instead of putting the fire out.
 		return {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": "Press E to light your torch", "tap": func():
 			net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, id, 0, 0, Vector3.ZERO)}

@@ -14,6 +14,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 var failures: int = 0
 var inv
 var slot: int = -1
+var sent: Array = []   # the slot updates the server sent (send_slots)
 
 
 func check(ok: bool, what: String) -> void:
@@ -36,6 +37,20 @@ func set_out(out: bool) -> void:
 		here.erase("out")
 
 	inv.inst[slot] = here
+
+
+# Whether the last slot update sent lists pack slot `s` (protocol 106: a count byte, then 9 bytes per changed slot).
+func sent_slot(s: int) -> bool:
+	if sent.is_empty():
+		return false
+
+	var bytes: PackedByteArray = sent.back()
+
+	for k in int(bytes[0]):
+		if int(bytes[1 + k * 9]) == s:
+			return true
+
+	return false
 
 
 func _find(items, kind: String) -> int:
@@ -136,7 +151,7 @@ func _init() -> void:
 
 	var items = ItemsScript.new()
 	items.send_full = func(_p, _b): pass
-	items.send_slots = func(_p, _b): pass
+	items.send_slots = func(_p, b): sent.append(b)
 	items.send_world_items = func(_p, _a, _r): pass
 	items.setup(table, dir)
 	items.peer_connected_hello(7, "torchtest1234")
@@ -156,8 +171,10 @@ func _init() -> void:
 	items.action(7, Net.ACT_DOUSE, slot, 1, 0, Vector3.ZERO)
 	check(not is_out(), "under a roof: the torch keeps burning")
 	items.cover_at = func(_p): return 0.0
+	sent.clear()
 	items.action(7, Net.ACT_DOUSE, slot, 1, 0, Vector3.ZERO)
 	check(inv.numbers[slot] == lit and is_out(), "open rain: the torch goes out and is still the same torch")
+	check(sent_slot(slot), "the player is told the torch went out (its slot is sent though its number is the same)")
 	check(int(InventoryScript.clean_inst(inv.inst_of(slot)).get("out", 0)) == 1, "the out mark is kept by the pack's instance data (saved and sent)")
 
 	# Relight at a burning fire in reach; not at a cold one or one too far.
@@ -168,8 +185,10 @@ func _init() -> void:
 	items.action(7, Net.ACT_RELIGHT, 900002, 0, 0, Vector3.ZERO)
 	check(is_out(), "a fire out of reach does not light the torch")
 	items._items[900003] = {"pos": Vector3(101.0, 5.0, 100.0), "fire": {"state": 1}}
+	sent.clear()
 	items.action(7, Net.ACT_RELIGHT, 900003, 0, 0, Vector3.ZERO)
 	check(inv.numbers[slot] == lit and not is_out(), "a burning fire lights the torch again")
+	check(sent_slot(slot), "and the player is told it is lit again")
 
 	# Water: under water the torch goes out whatever the weather, but only when the server too sees the head under water (or the player swimming).
 	items.rain_now = func(): return 0.0

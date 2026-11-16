@@ -8683,12 +8683,10 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 	elif not bool(_head_under.get(peer, false)) and not bool(_swimming.get(peer, false)):
 		return   # water puts it out only when the server too sees the head under water or the player swimming
 
-	var flame_row: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
-
-	if by_rain and not bool(flame_row.get("rain_douses", false)):
+	if by_rain and not bool(row.get("rain_douses", false)):
 		return   # a lantern burns on in the rain behind its horn panes
 
-	var word: String = FlameRules.flame_word(flame_row)
+	var word: String = FlameRules.flame_word(row)
 
 	if into != "":
 		inv.numbers[slot] = table.number_of(into)
@@ -9946,8 +9944,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
-	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
-		return      # a placed torch comes back as the torch it was, lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
+	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
+		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))

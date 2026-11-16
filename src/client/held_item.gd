@@ -649,7 +649,7 @@ func _left_number() -> int:
 	if number != 0:
 		return number
 
-	if not _first_person and _avatar_rig != null and holding and (_is_torch() or _is_doused_torch()):
+	if not _first_person and _avatar_rig != null and holding and _is_torch():
 		return held_number()
 
 	return 0
@@ -862,7 +862,7 @@ func _is_torch() -> bool:
 
 
 # A torch that water or rain put out (its slot marked out, flame_rules.gd is_out): drawn as a torch with no flame or light.
-func _is_doused_torch() -> bool:
+func _held_torch_out() -> bool:
 	return _is_torch() and _slot_out(held_slot)
 
 
@@ -888,7 +888,7 @@ func _is_knife() -> bool:
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
 	var is_arrow: bool = str(BasicLook.entry(held_id()).get("shape", "")) == "arrow"   # arrows are "material" items but are held like a tool, not as a palm-sized look
-	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_axe()
+	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
 
 
 func is_holdable(number: int) -> bool:
@@ -1427,10 +1427,10 @@ func _process_body(delta: float) -> void:
 	_hoe_repeat(delta)
 
 	if _sound != null:
-		var flame_kind: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+		var flame_kind: String = "" if _slot_out(held_slot) else str(_inv.table.entry(held_id()).get("tool_class", ""))   # a torch that went out is silent
 
 		if flame_kind not in ["torch", "lantern"]:
-			flame_kind = _off_class()
+			flame_kind = "" if _slot_out(off_slot) else _off_class()
 
 		var flame: bool = flame_kind in ["torch", "lantern"]
 		var sheltered: bool = flame and _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))    # the cover lookup only when a flame is held
@@ -2731,7 +2731,7 @@ func _show_model() -> void:
 	if number != 0 and _left_number() == number and off_number() == 0:
 		number = 0      # a torch taken as the main item is drawn in the left hand in third person (_left_number)
 
-	if number != 0 and _is_doused_torch():
+	if number != 0 and _held_torch_out():
 		number = -number   # the same torch out is drawn again, without its flame
 
 	if number == _shown_number:
@@ -2744,7 +2744,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model("", _is_doused_torch()) if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
+		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model("", _held_torch_out()) if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
