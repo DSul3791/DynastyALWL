@@ -2841,7 +2841,7 @@ func _log_on_ground(xf: Transform3D, r: float) -> Transform3D:
 		return xf
 
 	var angles: Vector3 = LyingLogsScript.angles_of(xf.basis)
-	var pitch: float = atan2(ga - gb, 2.0 * core.length())   # over the log's own length between its ends, whatever its old pitch
+	var pitch: float = atan2(ga - gb, 2.0 * Vector2(core.x, core.z).length())   # the rise over the level run between the two ends sampled
 	var mid: float = maxf((ga + gb) * 0.5, gm) + r
 	return Transform3D(LyingLogsScript.basis_of(angles.x, pitch, angles.z), Vector3(xf.origin.x, mid, xf.origin.z))
 
@@ -2872,6 +2872,7 @@ func _log_supported(it: Dictionary) -> bool:
 
 
 # The world ids filed near a point (the last sync's grid; every item when no sync has run).
+# shortcut: the grid is up to SYNC_EVERY_S old, so a log or boulder dropped since is not seen by a log already rolling until the next sync.
 func _log_near_ids(at: Vector3, reach: float) -> Array:
 	if _sync_grid.is_empty():
 		return _items.keys()
@@ -3041,7 +3042,7 @@ func _roll_tick(delta: float) -> void:
 
 			var v: Vector3 = _logs.velocity(id)
 
-			if v.length() < still and _logs.spin_rate(id).length() < still / maxf(r, 0.05):
+			if v.length() < still and _logs.spin_rate(id).length() < still / maxf(r, 0.05) and not _log_must_roll(xf, cfg):
 				_log_quiet[id] = float(_log_quiet.get(id, 0.0)) + delta
 
 				if float(_log_quiet[id]) >= float(cfg.get("still_s", 0.4)):
@@ -3066,31 +3067,48 @@ func _roll_tick(delta: float) -> void:
 
 
 # The ground holding a rolling log back: its roll about its own axis slows by what rolling.resist (by the ground's material) allows, a steady
-# rolling resistance, so a log at rest stays on a slope gentler than that and one rolling onto flatter ground slows and stops.
+# rolling resistance, so a log at rest stays on a slope gentler than that and one rolling onto flatter ground slows and stops: its roll and its rolling
+# motion both slow (a lane run on ae19daa6: slowing the roll alone let a walker's push drive an oak up a 0.27 hill).
 func _log_resist(id: int, xf: Transform3D, r: float, cfg: Dictionary, delta: float) -> void:
-	var resist: Dictionary = cfg.get("resist", {})
-	var share: float = float(resist.get("default", 0.3))
-
-	if ground_material.is_valid():
-		share = float(resist.get(str(ground_material.call(xf.origin.x, xf.origin.z)), share))
-
-	var axis: Vector3 = xf.basis.x.normalized()
-	var w: Vector3 = _logs.spin_rate(id)
-	var roll: float = w.dot(axis)
-	var slow: float = share * 9.8 * delta / 1.5   # a solid log rolling: torque share * m g r over its inertia about the ground line, 3/2 m r^2, as a speed lost
 	var ground: float = float(ground_height.call(xf.origin.x, xf.origin.z))
 
 	if is_nan(ground) or xf.origin.y - r - ground > LOG_RESIST_OFF_M:
 		return   # in the air (falling, or lying on other logs): the ground holds nothing back
 
+	var axis: Vector3 = xf.basis.x.normalized()
+	var w: Vector3 = _logs.spin_rate(id)
+	var roll: float = w.dot(axis)
+	var slow: float = _log_hold(xf.origin, cfg) * 9.8 * delta / (1.5 * maxf(r, 0.05))   # a solid log rolling: torque hold * m g r over its inertia about the ground line, 3/2 m r^2
+
 	if absf(roll) > 0.0:
-		_logs.set_spin_rate(id, w - axis * (signf(roll) * minf(absf(roll), slow / maxf(r, 0.05))))
+		_logs.set_spin_rate(id, w - axis * (signf(roll) * minf(absf(roll), slow)))
 
 	var v: Vector3 = _logs.velocity(id)
 	var across: Vector3 = v - axis * v.dot(axis)   # the rolling part of its motion (along its axis it slides, and friction holds that)
 
 	if across.length() > 0.0:
-		_logs.set_velocity(id, v - across.normalized() * minf(across.length(), slow))
+		_logs.set_velocity(id, v - across.normalized() * minf(across.length(), slow * r))
+
+
+# rolling.resist by the ground's material at a point: the slope a log at rest stays on.
+func _log_hold(at: Vector3, cfg: Dictionary) -> float:
+	var resist: Dictionary = cfg.get("resist", {})
+	var hold: float = float(resist.get("default", 0.3))
+
+	if ground_material.is_valid():
+		hold = float(resist.get(str(ground_material.call(at.x, at.z)), hold))
+
+	return hold
+
+
+# True when the ground across the log (perpendicular to its long axis, 0.5 m either side) is steeper than it holds a log on: it must roll on,
+# never be put to sleep there however slowly it starts.
+func _log_must_roll(xf: Transform3D, cfg: Dictionary) -> bool:
+	var axis: Vector3 = xf.basis.x
+	var across: Vector2 = Vector2(-axis.z, axis.x).normalized() * 0.5
+	var up: float = float(ground_height.call(xf.origin.x + across.x, xf.origin.z + across.y))
+	var down: float = float(ground_height.call(xf.origin.x - across.x, xf.origin.z - across.y))
+	return not is_nan(up) and not is_nan(down) and absf(up - down) > _log_hold(xf.origin, cfg) * 1.0 + 0.02
 
 
 const LOG_RESIST_OFF_M := 0.15   # an underside this far over the server ground is not held back by it

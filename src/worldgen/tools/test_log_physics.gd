@@ -288,9 +288,12 @@ func _run() -> void:
 	back._logs.clear()
 	back._finish_writer()
 
-	# --- 8. Logs stack: one laid on two lying side by side rests on them ---
+	# --- 8. Logs stack and rest on each other and on rocks: one laid on two lying side by side (chocked by a rock each side, as a woodpile is) rests
+	# on them; one dropped across another rests with its middle on it and an end on the ground ---
 	case_name = "stack"
 	var pile = make("user://test_log_physics_pile", func(_x, _z): return 10.0)
+	pile._items[932000] = {"number": pile.table.number_of("stone"), "count": 1, "pos": Vector3(-0.85, 10.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.3}}
+	pile._items[932001] = {"number": pile.table.number_of("stone"), "count": 1, "pos": Vector3(0.85, 10.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.3}}
 	var low_a: int = drop(pile, "log_oak", Vector3(-0.26, 10.0, 0.0), across)
 	var low_b: int = drop(pile, "log_oak", Vector3(0.26, 10.0, 0.0), across)
 	await step(pile, 30)
@@ -298,8 +301,14 @@ func _run() -> void:
 	check(top != 0 and pile._logs.has(top), "a log laid on two others is in the log physics too (it lies on logs)")
 	await step(pile, 300)
 	var top_y: float = centre(pile, top).y
-	check(top_y > 10.0 + 0.25 + 0.15, "it rests on the two below, which part a little under it (its middle %.2f m up; 0.25 on the ground)" % (top_y - 10.0))
+	check(top_y > 10.0 + 0.25 + 0.3, "it rests on the two below, which rest against the rocks (its middle %.2f m up; 0.25 on the ground)" % (top_y - 10.0))
 	check(asleep(pile, top) and asleep(pile, low_a) and asleep(pile, low_b), "and all three settle")
+	var under: int = drop(pile, "log_oak", Vector3(0.0, 10.0, 20.0), 0.0)   # along x
+	await step(pile, 30)
+	var cross: int = drop(pile, "log_oak", Vector3(0.6, 10.0 + 0.55, 20.0), across)   # along z, over it a little off its middle
+	await step(pile, 240)
+	check(centre(pile, cross).y > 10.0 + 0.25 + 0.08 and absf(float(pile._items[cross].get("pitch", 0.0))) > deg_to_rad(4.0), "one dropped across another rests on it, tilted, an end down (middle %.2f m up, pitch %.0f degrees)" % [centre(pile, cross).y - 10.0, rad_to_deg(float(pile._items[cross].get("pitch", 0.0)))])
+	check(asleep(pile, cross) and asleep(pile, under), "and both settle")
 	pile._logs.clear()
 	pile._finish_writer()
 

@@ -20,6 +20,7 @@ var _world: World3D = null                 # its own space, so nothing else on t
 var _bodies: Dictionary = {}               # world id -> {rid, shape, r, half, mass}
 var _cells: Dictionary = {}                # Vector2i -> {rid, shape}
 var _statics: Dictionary = {}              # key -> {rid, shape}
+var _woken: Dictionary = {}                # id -> the physics frame it was put in or woken: awake until the engine has stepped it (Jolt reports a body it has not stepped yet as asleep)
 
 
 func _space() -> RID:
@@ -59,6 +60,9 @@ func add_log(id: int, xf: Transform3D, r: float, half: float, kg: float, frictio
 	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_SLEEPING, starts_asleep)
 	_bodies[id] = {"rid": rid, "shape": shape, "r": r, "half": half, "mass": kg}
 
+	if not starts_asleep:
+		_woken[id] = Engine.get_physics_frames()
+
 
 # A capsule's axis y turned to lie along the body's x.
 static func _lying() -> Transform3D:
@@ -70,6 +74,8 @@ func remove(id: int) -> void:
 		PhysicsServer3D.free_rid(_bodies[id]["rid"])
 		_bodies.erase(id)
 
+	_woken.erase(id)
+
 
 func pose(id: int) -> Transform3D:
 	return PhysicsServer3D.body_get_state(_bodies[id]["rid"], PhysicsServer3D.BODY_STATE_TRANSFORM)
@@ -80,6 +86,12 @@ func set_pose(id: int, xf: Transform3D) -> void:
 
 
 func asleep(id: int) -> bool:
+	if _woken.has(id):
+		if Engine.get_physics_frames() <= int(_woken[id]) + 1:
+			return false
+
+		_woken.erase(id)
+
 	return bool(PhysicsServer3D.body_get_state(_bodies[id]["rid"], PhysicsServer3D.BODY_STATE_SLEEPING))
 
 
@@ -88,10 +100,12 @@ func sleep(id: int) -> void:
 	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_LINEAR_VELOCITY, Vector3.ZERO)
 	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY, Vector3.ZERO)
 	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_SLEEPING, true)
+	_woken.erase(id)
 
 
 func wake(id: int) -> void:
 	PhysicsServer3D.body_set_state(_bodies[id]["rid"], PhysicsServer3D.BODY_STATE_SLEEPING, false)
+	_woken[id] = Engine.get_physics_frames()
 
 
 func velocity(id: int) -> Vector3:
@@ -122,6 +136,7 @@ func mass(id: int) -> float:
 func push(id: int, impulse: Vector3, at: Vector3) -> void:
 	var rid: RID = _bodies[id]["rid"]
 	PhysicsServer3D.body_set_state(rid, PhysicsServer3D.BODY_STATE_SLEEPING, false)
+	_woken[id] = Engine.get_physics_frames()
 	PhysicsServer3D.body_apply_impulse(rid, impulse, at - pose(id).origin)
 
 
