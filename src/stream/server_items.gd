@@ -2806,9 +2806,34 @@ func _log_body(id: int, asleep: bool) -> bool:
 	if not _logs.ensure_ground(xf.origin, float(cfg.get("half_len_m", LyingLogsScript.LOG_HALF_M)) + 1.0):
 		return false
 
+	var r: float = _log_r(it)
+
+	if absf(it["pos"].y - float(ground_height.call(it["pos"].x, it["pos"].z))) <= float(cfg.get("rest_m", 0.6)):
+		xf = _log_on_ground(xf, r)   # laid level on a slope, one end would be in the ground: it lies along the ground instead
+
 	var kg: float = CarryRules.weight_of(table.id_of(int(it["number"])), _carry_cfg) if not _carry_cfg.is_empty() else 20.0
 	_logs.add_log(id, xf, _log_r(it), float(cfg.get("half_len_m", LyingLogsScript.LOG_HALF_M)), maxf(kg, 1.0) * maxf(float(it.get("count", 1)), 1.0), float(cfg.get("friction", 0.8)), float(cfg.get("bounce", 0.1)), asleep)
 	return true
+
+
+# A log on the ground whose underside goes into it (dropped level across a hump or along a slope) is laid along the ground: pitched to the
+# ground under its two ends and lifted clear of the ground under its middle. One that is clear stays as it is (a pose physics left).
+func _log_on_ground(xf: Transform3D, r: float) -> Transform3D:
+	var core: Vector3 = xf.basis.x.normalized() * (float(_drops.get("rolling", {}).get("half_len_m", LyingLogsScript.LOG_HALF_M)) - r)
+	var a: Vector3 = xf.origin + core
+	var b: Vector3 = xf.origin - core
+	var ga: float = float(ground_height.call(a.x, a.z))
+	var gb: float = float(ground_height.call(b.x, b.z))
+	var gm: float = float(ground_height.call(xf.origin.x, xf.origin.z))
+
+	if is_nan(ga) or is_nan(gb) or is_nan(gm) or (a.y - r >= ga - 0.02 and b.y - r >= gb - 0.02 and xf.origin.y - r >= gm - 0.02):
+		return xf
+
+	var angles: Vector3 = LyingLogsScript.angles_of(xf.basis)
+	var level: float = Vector2(core.x, core.z).length()
+	var pitch: float = atan2(ga - gb, 2.0 * maxf(level, 0.01))
+	var mid: float = maxf((ga + gb) * 0.5, gm) + r
+	return Transform3D(LyingLogsScript.basis_of(angles.x, pitch, angles.z), Vector3(xf.origin.x, mid, xf.origin.z))
 
 
 # On the ground (within rolling.rest_m of it) or on another loose log.
@@ -3031,10 +3056,23 @@ func _log_resist(id: int, xf: Transform3D, r: float, cfg: Dictionary, delta: flo
 	var axis: Vector3 = xf.basis.x.normalized()
 	var w: Vector3 = _logs.spin_rate(id)
 	var roll: float = w.dot(axis)
-	var cut: float = share * 9.8 * delta / (1.5 * maxf(r, 0.05))   # a solid log rolling: torque share * m g r over its inertia about the ground line, 3/2 m r^2
+	var slow: float = share * 9.8 * delta / 1.5   # a solid log rolling: torque share * m g r over its inertia about the ground line, 3/2 m r^2, as a speed lost
+	var ground: float = float(ground_height.call(xf.origin.x, xf.origin.z))
+
+	if is_nan(ground) or xf.origin.y - r - ground > LOG_RESIST_OFF_M:
+		return   # in the air (falling, or lying on other logs): the ground holds nothing back
 
 	if absf(roll) > 0.0:
-		_logs.set_spin_rate(id, w - axis * (signf(roll) * minf(absf(roll), cut)))
+		_logs.set_spin_rate(id, w - axis * (signf(roll) * minf(absf(roll), slow / maxf(r, 0.05))))
+
+	var v: Vector3 = _logs.velocity(id)
+	var across: Vector3 = v - axis * v.dot(axis)   # the rolling part of its motion (along its axis it slides, and friction holds that)
+
+	if across.length() > 0.0:
+		_logs.set_velocity(id, v - across.normalized() * minf(across.length(), slow))
+
+
+const LOG_RESIST_OFF_M := 0.15   # an underside this far over the server ground is not held back by it
 
 
 # A walker pushing a log (ACT_PUSH_LOG, protocol 125; Dave 16 Nov 2026: "the log will stop me but I should be able to push against it. it might stop me
@@ -3066,7 +3104,7 @@ func _push_log(peer: int, id: int, sprint: bool, heading_deg: float, share: floa
 	if _logs.velocity(id).dot(dir) >= cap:
 		return
 
-	var force: float = float(push.get("sprint_n" if sprint else "walk_n", 110.0)) * clampf(share, 0.0, 1.0)
+	var force: float = float(push.get("sprint_n" if sprint else "walk_n", 100.0)) * clampf(share, 0.0, 1.0)
 	var xf: Transform3D = _logs.pose(id)
 	_logs.push(id, dir * force * float(push.get("push_s", 0.1)), Vector3(at.x, xf.origin.y, at.z))   # level with its middle: it rolls, it is not pressed into the ground
 	_log_quiet.erase(id)

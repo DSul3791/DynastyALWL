@@ -280,9 +280,11 @@ func _init() -> void:
 	fell_one(w, standing, 8)
 	var oak_logs: Array = loose_logs(w, w.table.number_of("log_oak"))
 	check(oak_logs.size() == int(22.0 / log_len), "oak logs: int(22 / %.1f) = %d" % [log_len, int(22.0 / log_len)])
+	w._sync_grid = {}   # the boulder was put in by hand after the last world sync: look at every item
 	w._fall_tick(ItemsScript.FALL_S)
 	w._roll_tick(0.0)   # the look round the woken logs
-	check(oak_logs.all(func(k): return w._logs.has(k)) and w._logs.has_static("i%d" % boulder_id), "the oak's logs are bodies and the boulder under one is a rock in their way")
+	check(oak_logs.all(func(k): return w._logs.has(k)), "the oak's logs are bodies in the log physics")
+	check(w._logs.has_static("i%d" % boulder_id), "the boulder under one is a rock in their way (%d fixed things)" % w._logs.static_count())
 	w._items.erase(boulder_id)
 
 	# A sapling-sized tree (1.5 m, a small tree) breaks into Firewood, kindling and sticks the same way: at once, falling, no trunk.

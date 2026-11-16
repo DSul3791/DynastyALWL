@@ -243,6 +243,7 @@ func clear() -> void:
 
 	trim_ground([])
 	trim_statics({})
+	_world = null   # its space goes with it
 
 
 func _notification(what: int) -> void:
