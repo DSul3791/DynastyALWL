@@ -3009,6 +3009,8 @@ func _roll_tick(delta: float) -> void:
 		_log_surround()
 
 	var still: float = float(cfg.get("still_mps", 0.15))
+	var ready: Array = []   # still long enough to sleep
+	var busy: Array = []    # where the awake logs not yet still are
 
 	for id in _logs.ids():
 		var it: Dictionary = _items.get(id, {})
@@ -3046,10 +3048,12 @@ func _roll_tick(delta: float) -> void:
 				_log_quiet[id] = float(_log_quiet.get(id, 0.0)) + delta
 
 				if float(_log_quiet[id]) >= float(cfg.get("still_s", 0.4)) * (4.0 if _log_must_roll(xf, cfg) else 1.0):   # on ground steeper than it holds it is given longer to start rolling (pinned against a rock it still sleeps)
-					_logs.sleep(id)
-					_log_quiet.erase(id)
+					ready.append(id)
+				else:
+					busy.append(xf.origin)
 			else:
 				_log_quiet.erase(id)
+				busy.append(xf.origin)
 
 		var angles: Vector3 = LyingLogsScript.angles_of(xf.basis)
 		it["pos"] = xf.origin - Vector3(0.0, r, 0.0)
@@ -3059,6 +3063,17 @@ func _roll_tick(delta: float) -> void:
 		_roll_moved[id] = true
 		_dirty = true
 
+	# A still log sleeps only when no log touching it, or near enough to, is still moving: logs resting on each other go to sleep together (put to
+	# sleep one by one, the engine woke each again from the one still awake against it; a lane run on a4bc0254).
+	var touch: float = float(cfg.get("half_len_m", LyingLogsScript.LOG_HALF_M)) * 2.0 + 0.5
+
+	for id in ready:
+		var here: Vector3 = _logs.pose(id).origin
+
+		if not busy.any(func(b): return b.distance_to(here) <= touch):
+			_logs.sleep(id)
+			_log_quiet.erase(id)
+
 	_roll_send_in -= delta
 
 	if _roll_send_in <= 0.0 and not _roll_moved.is_empty():
@@ -3066,28 +3081,39 @@ func _roll_tick(delta: float) -> void:
 		_roll_send()
 
 
-# The ground holding a rolling log back: its roll about its own axis slows by what rolling.resist (by the ground's material) allows, a steady
-# rolling resistance, so a log at rest stays on a slope gentler than that and one rolling onto flatter ground slows and stops: its roll and its rolling
-# motion both slow (a lane run on ae19daa6: slowing the roll alone let a walker's push drive an oak up a 0.27 hill).
+# The ground holding a log back: rolling resistance, a torque against its roll of rolling.resist (by the ground's material) x its weight x its radius,
+# given to the engine as a spin impulse so its own contact solve turns it into the log's motion. A log at rest on ground across it gentler than
+# that is held (the torque matches gravity's, never more); on steeper ground it rolls, gaining (2/3) g (slope - resist); a rolling log on flatter
+# ground slows to a stop and never rolls back from it. A walker pushing an oak (22 kg) at 100 N moves it on the flat and is held by a hill of
+# about 0.27; at 170 N they push it up that hill. A lane run on a4bc0254: overwriting its speed and spin each tick instead kept a log on a 0.5 hill
+# from rolling at all; one on ae19daa6: slowing its spin alone, a third as hard, let a walker push an oak up a 0.27 hill.
 func _log_resist(id: int, xf: Transform3D, r: float, cfg: Dictionary, delta: float) -> void:
-	var ground: float = float(ground_height.call(xf.origin.x, xf.origin.z))
+	var at: Vector3 = xf.origin
+	var ground: float = float(ground_height.call(at.x, at.z))
 
-	if is_nan(ground) or xf.origin.y - r - ground > LOG_RESIST_OFF_M:
+	if is_nan(ground) or at.y - r - ground > LOG_RESIST_OFF_M:
 		return   # in the air (falling, or lying on other logs): the ground holds nothing back
 
 	var axis: Vector3 = xf.basis.x.normalized()
-	var w: Vector3 = _logs.spin_rate(id)
-	var roll: float = w.dot(axis)
-	var slow: float = _log_hold(xf.origin, cfg) * 9.8 * delta / (1.5 * maxf(r, 0.05))   # a solid log rolling: torque hold * m g r over its inertia about the ground line, 3/2 m r^2
-
-	if absf(roll) > 0.0:
-		_logs.set_spin_rate(id, w - axis * (signf(roll) * minf(absf(roll), slow)))
-
+	var flat: Vector3 = Vector3(axis.x, 0.0, axis.z).normalized() if Vector2(axis.x, axis.z).length() > 0.01 else Vector3.RIGHT
+	var east: float = float(ground_height.call(at.x + 0.5, at.z)) - float(ground_height.call(at.x - 0.5, at.z))
+	var south: float = float(ground_height.call(at.x, at.z + 0.5)) - float(ground_height.call(at.x, at.z - 0.5))
+	var downhill: Vector3 = Vector3(-east, 0.0, -south) if not is_nan(east) and not is_nan(south) else Vector3.ZERO
+	downhill -= flat * downhill.dot(flat)   # the fall of the ground across the log: what rolls it
+	var slope: float = downhill.length()
 	var v: Vector3 = _logs.velocity(id)
-	var across: Vector3 = v - axis * v.dot(axis)   # the rolling part of its motion (along its axis it slides, and friction holds that)
+	var across: Vector3 = Vector3(v.x, 0.0, v.z) - flat * v.dot(flat)
+	var speed: float = across.length()
+	var way: Vector3 = across / speed if speed > 0.02 else (downhill / slope if slope > 0.001 else Vector3.ZERO)
 
-	if across.length() > 0.0:
-		_logs.set_velocity(id, v - across.normalized() * minf(across.length(), slow * r))
+	if way == Vector3.ZERO:
+		return
+
+	var kg: float = _logs.mass(id)
+	var hold: float = _log_hold(at, cfg) * kg * 9.8 * r * delta                    # the most the ground holds back this tick (N m s)
+	var stop: float = 1.5 * kg * r * speed + kg * 9.8 * r * maxf(downhill.dot(way), 0.0) * delta   # what stops it rolling this way, with what gravity adds this tick
+	var roll_dir: Vector3 = Vector3.UP.cross(way)                                  # its spin rolling along `way`
+	_logs.spin_push(id, -axis * signf(roll_dir.dot(axis)) * minf(hold, stop))
 
 
 # rolling.resist by the ground's material at a point: the slope a log at rest stays on.

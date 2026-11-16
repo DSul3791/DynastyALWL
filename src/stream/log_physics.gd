@@ -116,10 +116,6 @@ func spin_rate(id: int) -> Vector3:
 	return PhysicsServer3D.body_get_state(_bodies[id]["rid"], PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY)
 
 
-func set_spin_rate(id: int, w: Vector3) -> void:
-	PhysicsServer3D.body_set_state(_bodies[id]["rid"], PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY, w)
-
-
 func set_velocity(id: int, v: Vector3) -> void:
 	PhysicsServer3D.body_set_state(_bodies[id]["rid"], PhysicsServer3D.BODY_STATE_LINEAR_VELOCITY, v)
 
@@ -130,6 +126,11 @@ func radius(id: int) -> float:
 
 func mass(id: int) -> float:
 	return float(_bodies[id]["mass"])
+
+
+# A spin impulse (N m s), as rolling resistance: the engine's contact solve turns it into the roll and the motion together.
+func spin_push(id: int, impulse: Vector3) -> void:
+	PhysicsServer3D.body_apply_torque_impulse(_bodies[id]["rid"], impulse)
 
 
 # A push (N s) at a world point: off the middle it turns the log as well as moving it.
@@ -260,8 +261,4 @@ func clear() -> void:
 	trim_statics({})
 	_world = null   # its space goes with it
 
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE:
-		clear()
 

@@ -260,10 +260,16 @@ func _run() -> void:
 	var steep = make("user://test_log_physics_steep", steep_y)
 	var rock_id: int = 930000
 	steep._items[rock_id] = {"number": steep.table.number_of("stone"), "count": 1, "pos": Vector3(-6.0, 7.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.8}}
+	steep._sync_grid = {}   # the rock was put in by hand after the last world sync
 	var roller: int = drop(steep, "log_oak", Vector3(0.0, 10.0, 0.0), across)
 	var along_id: int = drop(steep, "log_oak", Vector3(0.0, 10.0, 12.0), 0.0)
 	check(absf(float(steep._items[along_id].get("pitch", 0.0)) - atan(0.5)) < 0.05, "a log dropped level along the steep hill is laid along it (pitch %.2f, the hill %.2f)" % [float(steep._items[along_id].get("pitch", 0.0)), atan(0.5)])
-	await step(steep, 360)
+	for n in range(6):   # a trace of the first second, for the lane log (a lane run on a4bc0254 saw this log never start to roll)
+		await step(steep, 10)
+		var in_space: bool = steep._logs.has(roller)
+		print("  trace steep roller frame %d: x %.3f, speed %.3f, spin %.3f, in the space %s, asleep %s" % [(n + 1) * 10, float(steep._items[roller]["pos"].x), steep._logs.velocity(roller).length() if in_space else 0.0, steep._logs.spin_rate(roller).length() if in_space else 0.0, str(in_space), str(asleep(steep, roller))])
+
+	await step(steep, 300)
 	var stopped: Vector3 = steep._items[roller]["pos"]
 	var r_oak: float = steep._log_r(steep._items[roller])
 	var core: Vector3 = axis(steep, roller) * (LyingLogs.LOG_HALF_M - r_oak)
@@ -294,8 +300,9 @@ func _run() -> void:
 	# on them; one dropped across another rests with its middle on it and an end on the ground ---
 	case_name = "stack"
 	var pile = make("user://test_log_physics_pile", func(_x, _z): return 10.0)
-	pile._items[932000] = {"number": pile.table.number_of("stone"), "count": 1, "pos": Vector3(-0.85, 10.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.3}}
-	pile._items[932001] = {"number": pile.table.number_of("stone"), "count": 1, "pos": Vector3(0.85, 10.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.3}}
+	pile._items[932000] = {"number": pile.table.number_of("stone"), "count": 1, "pos": Vector3(-1.02, 10.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.5}}   # rocks as tall as the logs, touching them
+	pile._items[932001] = {"number": pile.table.number_of("stone"), "count": 1, "pos": Vector3(1.02, 10.0, 0.0), "left": 1.0e9, "boulder": {"radius": 0.5}}
+	pile._sync_grid = {}   # put in by hand after the last world sync: look at every item
 	var low_a: int = drop(pile, "log_oak", Vector3(-0.26, 10.0, 0.0), across)
 	var low_b: int = drop(pile, "log_oak", Vector3(0.26, 10.0, 0.0), across)
 	await step(pile, 30)
