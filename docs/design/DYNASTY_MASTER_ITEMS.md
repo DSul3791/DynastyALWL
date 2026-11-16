@@ -57,7 +57,7 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 |---|---|---|
 | Axe | Stone, Copper, Bronze, Iron, Steel | **First tool.** Fells trees (a large tree breaks into logs by itself, a small one into Firewood) and splits Wooden Blocks into Firewood anywhere. It never cuts a log into blocks (saws do). [WOOD] |
 | Pickaxe | Copper, Bronze, Iron, Steel (the Stone Pickaxe is no longer a step; its disposition is [WOOD] W-12) | Metal mining: faster than a hammer on rock; a Bronze or better pick mines Iron. Early stone, Copper, Tin and Coal come from the Stone Hammer. [WOOD] |
-| Spade | Wooden, Iron, Steel (Stone retired [B]; no Bronze) | Digs, including bog iron. |
+| Shovel | Wooden, Iron, Steel (Stone retired [B]; no Bronze) | Digs, including bog iron. Renamed from "Spade" (Dave, 16 Nov 2026); item ids and the tool class keep the word `spade`. |
 | Hammer | Stone (**second tool**), Wooden, Bronze, Iron, Steel | **"Hammer/Repair Tool" (top of the hammer menu): repair structures, place blueprints, or harvest stone and ore.** Hitting a structure repairs it (a failed or unneeded repair never damages it); hitting a rock or ore outcrop harvests it within the tool's capability (Copper, Tin, Coal, stone; not Iron ore) [WOOD]. Repair with any ordinary hammer, NOT War Hammers. Appropriate materials may come from carried items, nearby storage or nearby ground. Any metal hammer builds any tier. Smithy crafting uses built-in tools. |
 | Hoe | Wooden, Stone, Iron, Steel (no Bronze) | Six modes: Flatten, Smooth (slope-preserving averaging), Pathen, Survey a Road (two stakes, pathfinding), Create Garden Plot, Plant. **14 Nov 2026 (Dave: "There doesn't actually need to be garden plots. It should just till the soil"): the hoe tills; gardening plots are built with the hammer.** |
 | Knife | Stone, Bronze, Iron, Steel | **Completes the starter toolkit.** A weapon too; harvests carcasses progressively by repeated attacks. **Right click opens the knife blueprint menu** (simple wood or wood-and-twine furnishings and stations, incl. the Wood Carving Station); carving recipes keep a knife from the pack [WOOD]. Sharpened (metal). |
@@ -70,13 +70,13 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 ### 2.2 Durability, repair and sharpening [D1][R][C]
 
 1. Stone tools are disposable and disappear at zero durability; no repair [D1].
-2. **Primitive gear is disposable too [C]:** wooden tools (spade, hoe, hammer), stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper disappear on breakage. A thrown Javelin that survives the impact can be picked up again; a broken one is gone. Bows, shields and other wooden weapons keep their own durability values.
+2. **Primitive gear is disposable too [C]:** wooden tools (shovel, hoe, hammer), stone and flint weapons (Stone - Spear, Stone - Mace, Javelin) and the flint Scraper disappear on breakage. A thrown Javelin that survives the impact can be picked up again; a broken one is gone. Bows, shields and other wooden weapons keep their own durability values.
 3. **The Bone - Needle [C]** is reusable across many sewing jobs (the Thread is consumed, not the needle). When it finally breaks it is replaced by crafting a new one by hand from bone, not repaired.
 4. Metal tools break at zero durability and stay in the inventory, unusable [D1].
 5. A broken metal tool is repaired at the same type of workstation where it was crafted, with appropriate materials, and only up to its remaining maximum durability [D1].
 6. Sharpening restores sharpness to 100 % and permanently lowers maximum durability, in proportion to the sharpening [D1].
 7. Portable whetstone sharpening and the stationary grindstone are separate mechanics. Whetstone: with accessible water, the player's eligible tools are sharpened automatically one after another, up to five real minutes for a fully dull tool, using nearby seating where there is some. Grindstone: faster, and an NPC can operate it [D1].
-8. Sharpening applies to metal axes, pickaxes and knives, and to other metal edged tools where it fits (saws, sickles, scythes, chisels). It is not applied to hammers, hoes and spades; those follow rules 4 and 5.
+8. Sharpening applies to metal axes, pickaxes and knives, and to other metal edged tools where it fits (saws, sickles, scythes, chisels). It is not applied to hammers, hoes and shovels; those follow rules 4 and 5.
 9. **Smithy workstation breakage:** each placed smithy has persistent durability, increased wear when higher-tier metal is forged on a lower-tier anvil, remains in place when it reaches zero and becomes unusable for normal crafting. Attempting normal access shows **"Needs repair"**. Equipped ordinary tool hammer **right-click → Repair** restores the smithy only if the required materials are carried, nearby in eligible storage, or lying on nearby ground per existing sourcing. War Hammers cannot repair. No material consumption on failed repair. Exact restoration and materials remain for balancing.
 
 ### 2.3 Wood and graded furniture [D1][R][B][C][D4]
@@ -207,11 +207,11 @@ These seven rows define **four distinct door configurations per tier = 28 door v
 | 19, 221, 247 | wooden_spade, wooden_hoe, wooden_hammer | Wooden tools | UPDATE (DECIDED) | Disposable: remove `repair`. |
 | 293, 7, 313, 295 | hide_scraper, spear, stone_mace, javelin | Scraper, Stone - Spear, Stone - Mace, Javelin | UPDATE (DECIDED) | Disposable: remove `repair`; an unbroken thrown Javelin is picked up again. |
 | 49 | sewing_needle | Bone - Needle | UPDATE (DECIDED) | The one reusable needle (27 live recipes keep it). Remove `repair` (1 Bone); a broken needle is replaced by recipe 29. |
-| 45 | stone_spade | Stone - Spade | RETIRE (APPROVED) | Recipe 26 retires. |
+| 45 | stone_spade | Stone - Shovel | RETIRE (APPROVED) | Recipe 26 retires. |
 | 298 | sickle | Stone - Sickle | RETIRE (APPROVED) | Recipe 187 retires; new sickles take new ids. |
 | 459, 461 | bronze_axe, bronze_knife | Bronze - Axe, Knife | UPDATE (APPROVED) | Break, repair at a bronze-working station, sharpening. |
 | 458, 33 / 34 | bronze_pickaxe, iron_pickaxe / steel_pickaxe | Pickaxes | UPDATE / FUTURE | As above; pickaxes gain sharpening. |
-| 46 / 47 | iron_spade / steel_spade | Spades | UPDATE / FUTURE | Break and repair; no sharpening. |
+| 46 / 47 | iron_spade / steel_spade | Shovels | UPDATE / FUTURE | Break and repair; no sharpening. |
 | 460, 560 / 561 | bronze_hammer, iron_hammer / steel_hammer | Hammers | UPDATE / FUTURE | Break and repair; role per 2.1. |
 | 223 / 224 | iron_hoe / steel_hoe | Hoes | UPDATE / FUTURE | Break and repair; six modes (code). |
 | 245 | hand_saw | Iron - Saw | UPDATE (APPROVED) | Crafted at the Improved Smithy from iron and wood (recipe 157); sawmill yields, slower; sharpening. Not the first saw [WOOD]. |
@@ -1049,7 +1049,7 @@ Dave directed that meals have meaningful, temporary effects related to their ing
 10. **Stations:** Implement **three Smelters and four Smithies** defined in §2.7 and §3.3. Bronze fittings enable Improved Smelter; Improved's operated bellows unlock Iron and +30% throughput. Advanced Smelter is one windmill/dual-bellows assembly, zero processing below wind threshold. Iron Anvil crafted at Improved Smithy is an Advanced Smithy construction component; Steel Anvil crafted at Advanced is a Master component. Master quencher is integrated. All require exact new blueprint/recipe/catalog-ID mapping; no standalone smithy add-on progression.
 11. **Metal recipe moves:** update live 185 and 190–193 to **1 ore:1 ingot**, **1 Copper Ore+1 Tin Ore:2 Bronze Ingots**, Iron on manually worked Improved Smelter and Steel on Advanced Smelter using Iron Ore plus separately consumed INPUT Coal/Charcoal and hopper fuel. Map Bronze work to Primitive/Improved Smithy, Iron to Improved/Advanced and Steel to Advanced/Master. Reconcile legacy station IDs and iron/steel recipes in a data change, with tests; no stand-alone Stone Forge, Brick Forge or Blast Furnace.
 12. **Furniture [D4]:** blueprint cost changes, renames and the 6 new item, blueprint and structure rows exactly as in s3.5. **Comfort:** `comfort.json` counts each kind once and only the best bed. Graded families must count once per class at their best grade (as beds do), or a player could stack four chair grades for comfort; give each grade a `kinds` row with its points and extend the best-one rule from beds to seats and tables (small code change). Storage slots go on each structure row (`slots`).
-13. **Tool tiers:** today's numbers clash across families (Bronze and Iron - Pickaxe both t2; Iron - Spade t3; Steel - Hammer t3 vs Steel - Spade t4; no tier on Wooden spade and hoe). Renumber by material rank in every family (Wooden 1, Stone 2, Bronze 3, Iron 4, Steel 5) and remap `digging.json tier_extra` and blueprint `hammer` values so any metal hammer still builds any tier (decision 73). No saves to migrate.
+13. **Tool tiers:** today's numbers clash across families (Bronze and Iron - Pickaxe both t2; Iron - Shovel t3; Steel - Hammer t3 vs Steel - Shovel t4; no tier on Wooden shovel and hoe). Renumber by material rank in every family (Wooden 1, Stone 2, Bronze 3, Iron 4, Steel 5) and remap `digging.json tier_extra` and blueprint `hammer` values so any metal hammer still builds any tier (decision 73). No saves to migrate.
 14. **Names:** an ingredient group is shown under its key item's name, so a group cost needs a group label (since [WOOD] Firewood and Wooden block are single items and need none) in the recipe and site lists (`recipe_list.gd`, `inventory_view.gd`, `_site_view`). Dynamic enhanced names are exempt from the `validate_items.gd` four-word check; static names keep it. The renames in 3.2 and 3.3 keep the naming rules.
 15. **Tempered:** per-instance flag chosen only at **Master Smithy**, whose quencher is built in; approved eligible steel tool/weapon/armour semantics remain. Blunt tools and armour receive no sharpness bonus; no repeated flag on repairs/reheating. Save and network fields remain distinct from enchantment slots.
 16. **Enhancements:** per-instance save data (like wear and sharpness), no `items.json` rows; saves and network protocol change; enhanced items never stack with plain ones; slot writes refuse an occupied magical slot.
@@ -1118,12 +1118,12 @@ Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status count
 | 6 | `stone_axe` | Stone - Axe | stone t1 | hand | UPDATE | **APPROVED: disposable (s2.2).** A stone bound to a handle. Fells trees, breaks rock and works wood. |
 | 11 | `stone_knife` | Stone - Knife | t1 | hand | UPDATE | **APPROVED: disposable (s2.2).** A flaked stone on a handle. Dresses a kill and cuts bark. |
 | 12 | `torch` | Torch | t1 | hand | KEEP | A stick wrapped in fibre and dipped in pitch. Lights your way after dark. |
-| 19 | `wooden_spade` | Wooden - Spade |  | hand | UPDATE | **DECIDED: disposable (s2.2).** A sharpened wooden blade. Digs roots and bulbs. |
+| 19 | `wooden_spade` | Wooden - Shovel |  | hand | UPDATE | **DECIDED: disposable (s2.2).** A sharpened wooden blade. Digs roots and bulbs. |
 | 33 | `iron_pickaxe` | Iron - Pickaxe | iron t2 | Legacy data: `brick_forge L2` | UPDATE | **APPROVED: metal break/repair rule (s2.2).** An iron head on a hardwood handle. One blow breaks one stone off a boulder. |
 | 34 | `steel_pickaxe` | Steel - Pickaxe | steel t3 | Legacy data: `brick_forge L3` | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest. |
-| 45 | `stone_spade` | Stone - Spade | stone t2 | workbench | RETIRE | **APPROVED: retired (s3.1).** A spade with a stone blade. Digs deeper and lasts longer than wood. |
-| 46 | `iron_spade` | Iron - Spade | iron t3 | Legacy data: `brick_forge L2` | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A spade with an iron blade. |
-| 47 | `steel_spade` | Steel - Spade | steel t4 | Legacy data: `brick_forge L3` | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A spade with a steel blade. |
+| 45 | `stone_spade` | Stone - Shovel | stone t2 | workbench | RETIRE | **APPROVED: retired (s3.1).** A shovel with a stone blade. Digs deeper and lasts longer than wood. |
+| 46 | `iron_spade` | Iron - Shovel | iron t3 | Legacy data: `brick_forge L2` | UPDATE | **APPROVED: metal break/repair rule (s2.2).** A shovel with an iron blade. |
+| 47 | `steel_spade` | Steel - Shovel | steel t4 | Legacy data: `brick_forge L3` | FUTURE | **APPROVED: metal break/repair rule (s2.2) when live.** A shovel with a steel blade. |
 | 49 | `sewing_needle` | Bone - Needle |  | hand | UPDATE | **DECIDED: the one reusable needle; replaced, not repaired (s2.2).** A needle carved from bone. For sewing hide and cloth. |
 | 75 | `fishing_rod` | Fishing rod |  | hand | KEEP | A stick, line and hook. Cast at water, then click again when something bites. |
 | 221 | `wooden_hoe` | Wooden - Hoe |  | hand | UPDATE | **DECIDED: disposable (s2.2).** A flat blade on a long handle. Paths the ground and tills beds. |
@@ -1161,7 +1161,7 @@ Generated from dev `7f8aabf4`. 889 rows; next free item number 896. Status count
 | 892 | `wooden_lantern_dark` | Wooden - Lantern |  |  | KEEP | A lantern gone out. Press its key to light it, with a candle in your pack if it burned out. |
 | 893 | `iron_lantern_dark` | Iron - Lantern |  |  | KEEP | A lantern gone out. Press its key to light it, with lamp oil in your pack if it burned out. |
 
-Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wooden spade; 214 `wooden_spade_large` Large wooden spade; 215 `stone_spade_medium` Medium stone spade; 216 `stone_spade_large` Large stone spade; 217 `iron_spade_medium` Medium iron spade; 218 `iron_spade_large` Large iron spade; 219 `steel_spade_medium` Medium steel spade; 220 `steel_spade_large` Large steel spade; 246 `stone_adze` Stone adze.
+Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wooden shovel; 214 `wooden_spade_large` Large wooden shovel; 215 `stone_spade_medium` Medium stone shovel; 216 `stone_spade_large` Large stone shovel; 217 `iron_spade_medium` Medium iron shovel; 218 `iron_spade_large` Large iron shovel; 219 `steel_spade_medium` Medium steel shovel; 220 `steel_spade_large` Large steel shovel; 246 `stone_adze` Stone adze.
 
 ### A.weapon (21 rows)
 
@@ -1360,7 +1360,7 @@ Already retired (9; numbers never reused): 213 `wooden_spade_medium` Medium wood
 | 758 | `gut` | Gut |  |  | KEEP | Cleaned intestine from a large kill. Casing for sausage, and strong cord when dried and twisted. |
 | 759 | `toggle` | Toggle |  | hand | KEEP | A short bone peg with a groove. Fastens a belt or a cloak through a loop. |
 | 760 | `hook` | Hook |  | hand | KEEP | A fish hook ground from bone. A fishing rod needs one. |
-| 769 | `worm` | Worm |  |  | KEEP | A fat earthworm turned up by the spade in rich soil. Fish take it as bait. |
+| 769 | `worm` | Worm |  |  | KEEP | A fat earthworm turned up by the shovel in rich soil. Fish take it as bait. |
 | 801 | `carved_stone_block` | Carved stone block |  | stonecutters_bench | KEEP | A stone block dressed smooth and carved at the edges. For fine walls and doorways. |
 | 802 | `carved_stone_shingle` | Carved stone shingle |  | stonecutters_bench | KEEP | A stone shingle cut thin and even, so a roof lies tight. |
 | 805 | `fruit` | Fruit |  |  | KEEP | Any juicy fruit or berry: apples, pears, plums, cherries, sloes and the berries. |

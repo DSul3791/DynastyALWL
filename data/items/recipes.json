@@ -272,7 +272,7 @@
 		},
 		"wooden_spade": {
 			"number": 12,
-			"name": "Wooden - Spade",
+			"name": "Wooden - Shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -554,7 +554,7 @@
 		},
 		"stone_spade": {
 			"number": 26,
-			"name": "Stone - Spade",
+			"name": "Stone - Shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -581,7 +581,7 @@
 		},
 		"iron_spade": {
 			"number": 27,
-			"name": "Iron - Spade",
+			"name": "Iron - Shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -602,7 +602,7 @@
 			"station": "brick_forge",
 			"station_level": 2
 		},
-		"steel_spade": {"number": 28, "name": "Steel - Spade", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_spade", 1], "craft_s": 12.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"steel_spade": {"number": 28, "name": "Steel - Shovel", "category": "Tools", "needs": [["steel_ingot", 2], ["stick", 2]], "gives": ["steel_spade", 1], "craft_s": 12.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"sewing_needle": {
 			"number": 29,
 			"name": "Bone - Needle",
@@ -2908,7 +2908,7 @@
 		},
 		"wooden_spade_medium": {
 			"number": 131,
-			"name": "Medium wooden spade",
+			"name": "Medium wooden shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -2932,7 +2932,7 @@
 		},
 		"wooden_spade_large": {
 			"number": 132,
-			"name": "Large wooden spade",
+			"name": "Large wooden shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -2961,7 +2961,7 @@
 		},
 		"stone_spade_medium": {
 			"number": 133,
-			"name": "Medium stone spade",
+			"name": "Medium stone shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -2988,7 +2988,7 @@
 		},
 		"stone_spade_large": {
 			"number": 134,
-			"name": "Large stone spade",
+			"name": "Large stone shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3015,7 +3015,7 @@
 		},
 		"iron_spade_medium": {
 			"number": 135,
-			"name": "Medium iron spade",
+			"name": "Medium iron shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3038,7 +3038,7 @@
 		},
 		"iron_spade_large": {
 			"number": 136,
-			"name": "Large iron spade",
+			"name": "Large iron shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3061,7 +3061,7 @@
 		},
 		"steel_spade_medium": {
 			"number": 137,
-			"name": "Medium steel spade",
+			"name": "Medium steel shovel",
 			"category": "Tools",
 			"needs": [
 				[
@@ -3084,7 +3084,7 @@
 		},
 		"steel_spade_large": {
 			"number": 138,
-			"name": "Large steel spade",
+			"name": "Large steel shovel",
 			"category": "Tools",
 			"needs": [
 				[

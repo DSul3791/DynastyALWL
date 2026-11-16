@@ -2082,7 +2082,7 @@ func _dig_here() -> void:
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Nothing to dig there: aim the spade at the ground within reach")
+		_inv._on_notice("Nothing to dig there: aim the shovel at the ground within reach")
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_DIG, held_slot, 0, 0, hit["position"])
@@ -2616,7 +2616,7 @@ func _fill_here() -> void:
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Nothing to fill there: aim the spade at the ground within reach")
+		_inv._on_notice("Nothing to fill there: aim the shovel at the ground within reach")
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
@@ -2639,7 +2639,7 @@ func _other_tool_hint() -> String:
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"spade":
-			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
+			return "The shovel digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
 
 	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
 

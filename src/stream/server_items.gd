@@ -90,6 +90,7 @@ const PROCESS_COOLDOWN_MS := 450
 const FIRE_USE_M := 3.5
 const COOKING_PATH := "res://data/items/cooking.json"
 const GatherRules := preload("res://src/shared/gather_rules.gd")
+const TOOL_WORDS := {"spade": "shovel"}   # the player-facing word where a tool class id differs (Dave 16 Nov 2026: every spade is a Shovel; ids stay)
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
@@ -6905,7 +6906,7 @@ func _swing_tool(peer: int, inv, slot: int, tool_class: String) -> int:
 	if slot >= 0 and slot < inv.slot_count and inv.numbers[slot] != 0 and _is_broken(inv, slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
 		_say(peer, "Your %s is broken. %s" % [table.sentence_name(inv.numbers[slot]), _repair_hint(table.entry(table.id_of(inv.numbers[slot])))])
 	else:
-		_say(peer, "You need a %s in hand for that." % tool_class)
+		_say(peer, "You need a %s in hand for that." % TOOL_WORDS.get(tool_class, tool_class))
 
 	return -1
 
