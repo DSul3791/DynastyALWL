@@ -20,10 +20,12 @@ Scope: preserve distinct designs and working records while reducing duplication.
 
 - Outposts/settlement decline: PR #1193 integrated at b26830b31e9cb88c0fdeefe451019df7564ccba2; independent review, preservation/link checks and final static CI PASS. Exact merged documentation verified.
 
+- Creature/exploration guide: PR #1194 integrated at 21be0543772f67b1c94be88ed3a91f59918d91ed; independent review, preservation/link checks and final static CI PASS. Exact merged documentation verified.
+
 ## Current checkpoint
 
-- Phase: Creature/exploration guide. Base: b26830b31e9cb88c0fdeefe451019df7564ccba2.
-- Scope: Trim obsolete staffing, live queues and repeated process; retain unique creature concepts, worked cards, proposal IDs, history, dependency/acceptance details.
+- Phase: High-use overview reconciliation. Base: 21be0543772f67b1c94be88ed3a91f59918d91ed.
+- Scope: Remove obsolete DailyDev/freeze/QA/daily-reading instructions from BIG_PICTURE; preserve vision, principles and useful historical scope/features.
 - Candidate: this commit's diff; exact head, reviewer, check results and final merge receipt are recorded in its linked GitHub PR. Do not infer integration from this draft checkpoint; inspect that PR and current dev.
 - Checks: verbatim passage/unchanged-scope assertions, relative links/anchors, whitespace, independent non-author review and repository static CI before integration. Runtime/player verification is not supplied by documentation changes.
 - Remaining sequence: death/succession; NPC population; property/town management/outposts/decline/founding; GUIDING_DOCUMENT; remaining-overlap triage; manual retirement eligibility; final consistency pass. Completed phases are listed above.
