@@ -35,7 +35,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Construction | [Buildables](design/buildables_plan.md) | Pieces, frames, roof shapes and placement behavior; item definitions remain in the catalog. | Door records below |
 | Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
 | Torches and Tree sap | [Torches and Tree sap](design/TORCH_TREE_SAP.md) | Simple and Improved torch recipes, where Tree sap comes from; provisional values TS-1..TS-7. | Relevant task record |
-| Ore veins and mines | [Ore veins and mines](design/ORE_VEIN_MINING.md) | Midgame vein mining from the existing geology; Dave's 17 Nov answers in s9; build waits for his go; provisional OV-1..OV-13. | Relevant task record |
+| Ore veins and mines | [Ore veins and mines](design/ORE_VEIN_MINING.md) | Midgame vein mining from the existing geology; Dave's 17 Nov answers in s9; build waits for his go; provisional OV-1..OV-15. | Relevant task record |
 | Storage and fuel supply | [Storage and warehousing](design/STORAGE_WAREHOUSING_DESIGN.md) | Bins, storage movement, permissions and fuel supply. | Goals/progression repair below |
 | Food | [Preparation, preservation and serving](design/FOOD_PREPARATION_PRESERVATION_SERVING.md) | Food categories, stations and workflows. | Goals/progression repair below |
 | Journal and goal presentation | [Journal and Goals UI](design/PLAYER_JOURNAL_GOALS_UI.md) | Journal, HUD, automatic completion and reward presentation. | Goals/progression repair below |
