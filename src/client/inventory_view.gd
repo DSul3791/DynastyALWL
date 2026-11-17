@@ -1444,6 +1444,7 @@ func open_container() -> bool:
 # A workbench or forge has no slots of its own: using it opens the crafting screen, which lists only what that station makes (station_makes).
 func _open_station(id: int) -> void:
 	_station_screen = id
+	_recipe_part.show_category("")   # a station's list starts on All: a tab left from before (the saw's Carpenter's) would show it empty
 
 	if not open:
 		toggle()
@@ -2754,6 +2755,7 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 	if not chest_mode:
 		chest_mode = true
 		_station_screen = id   # any container's window is not your own inventory: its Craft list shows only what it makes (station_makes)
+		_recipe_part.show_category("")   # on All, as _open_station
 		open = true
 		_build_panel()
 		_panel.visible = true      # one window, the container in its Craft column (4.4)

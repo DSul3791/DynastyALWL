@@ -77,6 +77,12 @@ func _init() -> void:
 	view.chest_mode = false
 	view.chest_id = 0
 
+	view._recipe_part.show_category("Carpenter's")   # the saw opened the Carpenter's tab; a station opened next starts on All
+	view.open = true
+	view._open_station(1)
+	check(view._recipe_part._recipe_category == "" and view._station_screen == 1, "a station's window opens on All, not a tab left from before")
+	view.open = false
+
 	view._station_screen = 4
 	view.open = true
 	view._panel = PanelContainer.new()
