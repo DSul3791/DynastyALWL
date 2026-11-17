@@ -19168,6 +19168,9 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 			_send_stock(peer)
 			return
 
+		if outcome == 2:
+			return
+
 	var entries: Array = queue["entries"]
 	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty() and (entries[entries.size() - 1].size() < 5 or int(entries[entries.size() - 1][4]) == 0) and _variant_of(entries[entries.size() - 1]) == variant
 
@@ -19284,7 +19287,8 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
-# was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
+# was told why, 2 when a part it would saw needs the saw in hand (told why; the craft stops there), -1 when there is nothing to add (the plain craft
+# goes on, or fails the old way).
 func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}, hand: int = -1) -> int:
 	if stock.is_empty():
 		stock = _stock_of(peer)
@@ -19311,7 +19315,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	for step in steps:   # a part sawn on the way (Wooden blocks for a Wooden hammer) needs the saw in hand too
 		if not _hand_tool_ok(peer, inv, recipes.recipe(int(step["recipe"])), hand):
-			return 0
+			return 2   # refused, and said why: nothing else is tried (the plain path would only add "You do not have what that needs")
 
 	var entries: Array = queue["entries"]
 

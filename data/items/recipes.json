@@ -3528,8 +3528,7 @@
 				6
 			],
 			"craft_s": 24.0,
-			"known": true
-,
+			"known": true,
 			"sawbuck": true
 		},
 		"wooden_bow": {"number": 170, "name": "Shortbow", "category": "Weapons", "needs": [["wooden_block", 1], ["twine", 2]], "keeps": [["knife", 1]], "gives": ["wooden_bow", 1], "craft_s": 20.0, "known": true, "station": "carving_station"},
@@ -7715,8 +7714,7 @@
 			"wears_tool": "saw",
 			"gives": ["hardwood_board", 4],
 			"craft_s": 24.0,
-			"known": true
-,
+			"known": true,
 			"sawbuck": true
 		},
 		"thread": {

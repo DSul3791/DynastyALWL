@@ -12,7 +12,6 @@ const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
-const CraftStockScript := preload("res://src/shared/craft_stock.gd")
 const TAB_PX := 48.0                       # the category tabs: a column of 48 px glyph tabs (redesign 4.3)
 const LIST_PX := 226.0                     # the recipe list's width (196 cut about 47 of 338 names at text scale 1.2; 226 cuts about 11, 9 Nov 2026)
 const CARD_ICON_PX := 96.0                 # the made item's well on the recipe card
@@ -800,8 +799,10 @@ func missing_text(r: Dictionary) -> String:
 		if have < int(need[1]):
 			short.append("%s %d / %d" % [view.table.cost_sentence(int(need[0])), have, int(need[1])])
 
-	if not view.hand_tool_ok(int(r.get("number", 0))):
-		short.push_front("a %s in your hand" % CraftStockScript.hand_tool(r))   # first, so the card says it even when a log is short too
+	var hand_tool: String = view.hand_tool_short(int(r.get("number", 0)))
+
+	if hand_tool != "":
+		short.push_front("a %s in your hand" % hand_tool)   # first, so the card says it even when a log is short too
 
 	if short.is_empty():
 		return ""

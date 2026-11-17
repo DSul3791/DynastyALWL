@@ -3583,10 +3583,10 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or (hand_tool_ok(number) and (_stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])))
+	return _free_craft() or (hand_tool_ok(number) and (_stock_can_make(number) or _logs_cover(number) or (bool(_parts_plan(number)["ok"]) and hand_tool_short(number) == "")))
 
 
-# A sawing recipe crafts only with the saw in the right hand (CraftStock.hand_tool, Dave 17 Nov 2026); the server checks it again. Any other: true.
+# A sawing recipe crafts only with an unbroken saw in the right hand (CraftStock.hand_tool, Dave 17 Nov 2026); the server checks it again. Any other: true.
 func hand_tool_ok(number: int) -> bool:
 	var tool: String = CraftStock.hand_tool(recipes.recipe(number))
 
@@ -3594,7 +3594,22 @@ func hand_tool_ok(number: int) -> bool:
 		return true
 
 	var slot: int = _hand_slot()
-	return inventory != null and slot >= 0 and slot < inventory.slot_count and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool
+	return inventory != null and slot >= 0 and slot < inventory.slot_count and inventory.on_hotbar(slot) and not is_broken(slot) and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool
+
+
+# The tool the recipe, or a part its auto-make plan saws on the way (a Wooden block for a Wooden hammer), needs in hand and lacks there; "" when none.
+func hand_tool_short(number: int) -> String:
+	if not hand_tool_ok(number):
+		return CraftStock.hand_tool(recipes.recipe(number))
+
+	if _stock_can_make(number):
+		return ""
+
+	for step in _parts_plan(number)["steps"]:
+		if not hand_tool_ok(int(step["recipe"])):
+			return CraftStock.hand_tool(recipes.recipe(int(step["recipe"])))
+
+	return ""
 
 
 # Left click with a saw in hand (Dave 17 Nov 2026): the crafting screen opens on the Carpenter's tab, what a saw makes; Craft then draws the logs
