@@ -16,6 +16,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const InventoryScript := preload("res://src/shared/inventory.gd")
 const DIR := "user://test_station_storage"
 const HERE := Vector3(5.0, 10.0, 0.0)
 
@@ -102,6 +103,11 @@ func out_count(id: int, number: int) -> int:
 	return total
 
 
+# How many of an item a one-store station holds, anywhere in its store.
+func store(id: int, number: int) -> int:
+	return box(id).count_of(number)
+
+
 func pack(peer: int, number: int) -> int:
 	return items.inventory_of(peer).count_of(number)
 
@@ -168,10 +174,11 @@ func _init() -> void:
 	var charcoal: int = n("charcoal")
 	var stone: int = n("stone")
 
-	# --- 1. A station keeps its product; a full output pauses the craft (the Primitive smithy and Bronze nails; the Smelters smelt by themselves, test_smelters) ---
+	# --- 1. A crafting station has ONE store that keeps its product and grows (Dave 17 Nov 2026: "in a station that has an inventory there should
+	# only be on inventory not a chest and crafting. it should have unlimited inventory slots starting with 20") ---
 	var forge: int = place("stone_forge@8,-0.5,0", 1)
-	check(forge > 0 and int(def_of(forge).get("out_slots", 0)) > 0 and items._is_station_store(items._items[forge]), "the Primitive smithy is a station with a store")
-	var first_out: int = int(def_of(forge)["slots"])
+	check(forge > 0 and bool(def_of(forge).get("one_store", false)) and int(def_of(forge).get("out_slots", 0)) == 0 and items._is_station_store(items._items[forge]), "the Primitive smithy is a station with one store")
+	check(box(forge).slot_count == 20, "its store starts at 20 slots (%d)" % box(forge).slot_count)
 	var bronze: int = n("bronze_ingot")
 	var nail: int = n("bronze_nails")
 	var nails_each: int = 0
@@ -185,50 +192,41 @@ func _init() -> void:
 	items.give(1, bronze, bronze_each * 3)
 	items.give(1, charcoal, 40)
 
-	for i in range(first_out, first_out + int(def_of(forge)["out_slots"])):   # the output is full of stone
+	for i in box(forge).slot_count:   # every slot full of stone
 		box(forge).numbers[i] = stone
 		box(forge).counts[i] = items.table.stack_of(stone)
 
-	var bronze_before: int = pack(1, bronze)
 	craft(1, "bronze_nails", 1, 60)
-	check(out_count(forge, nail) == 0 and pack(1, nail) == 0 and not items.craft_queue_of(1).is_empty(), "with the output full the finished craft waits in the queue (nothing made, nothing on the ground)")
-	check(pack(1, bronze) == bronze_before - bronze_each, "the waiting craft holds its Bronze ingot (taken when queued, not lost)")
 	var loose_nails: int = 0
 
 	for id in items._items:
 		if int(items._items[id].get("number", 0)) == nail and not items._items[id].has("struct"):
 			loose_nails += int(items._items[id]["count"])
 
-	box(forge).clear_slot(first_out)   # room for one stack
-	for s in 3:
-		items.tick(1.0)
+	check(store(forge, nail) == nails_each and pack(1, nail) == 0 and loose_nails == 0 and items.craft_queue_of(1).is_empty(), "a full store grows for the product: the Bronze nails are in the Primitive smithy, not the pack or the ground")
+	check(box(forge).slot_count > 20, "the store grew past 20 slots (%d)" % box(forge).slot_count)
 
-	check(out_count(forge, nail) == nails_each and pack(1, nail) == 0 and loose_nails == 0 and items.craft_queue_of(1).is_empty(), "room in the output lets it finish: the Bronze nails are in the Primitive smithy, not the pack or the ground")
-
-	for i in range(first_out + 1, first_out + int(def_of(forge)["out_slots"])):
-		box(forge).clear_slot(i)
+	for i in box(forge).slot_count:
+		if box(forge).numbers[i] == stone:
+			box(forge).clear_slot(i)
 
 	craft(1, "bronze_nails", 1, 60)
-	check(out_count(forge, nail) == nails_each * 2, "one more craft: %d Bronze nails in the output" % (nails_each * 2))
+	check(store(forge, nail) == nails_each * 2, "one more craft: %d Bronze nails in the store" % (nails_each * 2))
 	var fill_row: int = items._store_fill(items._items[forge])
 	check(fill_row >= 1 and fill_row <= 4, "the Primitive smithy's world row carries a fill level (%d)" % fill_row)
 
-	# --- 2. Deposit and withdraw keep the totals; a guest's craft goes to the guest ---
+	# --- 2. Deposit and withdraw keep the totals, in the one store; a guest's craft goes to the guest ---
 	items.give(1, stone, 7)
-	var stone_all: int = pack(1, stone) + in_count(forge, stone) + out_count(forge, stone)
+	var stone_all: int = pack(1, stone) + store(forge, stone)
 	act(1, Net.ACT_CHEST_OPEN, forge)
+	check(box(forge).slot_count == 20, "opened, its empty slots past 20 are given back (%d)" % box(forge).slot_count)
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, stone), forge, 5)
-	check(in_count(forge, stone) == 5 and out_count(forge, stone) == 0 and pack(1, stone) + in_count(forge, stone) == stone_all, "5 stone deposited go to the input slots, the total kept")
-	var out_slot: int = -1
-
-	for i in range(first_out, first_out + int(def_of(forge)["out_slots"])):
-		if box(forge).numbers[i] == nail:
-			out_slot = i
-
-	act(1, Net.ACT_CHEST_TAKE, out_slot, forge, 1)
-	check(pack(1, nail) == 1 and out_count(forge, nail) == nails_each * 2 - 1, "one Bronze nail withdrawn from the output into the pack, the total kept")
+	check(store(forge, stone) == 5 and pack(1, stone) + store(forge, stone) == stone_all, "5 stone deposited into the store, the total kept")
+	act(1, Net.ACT_CHEST_TAKE, slot_of_box(forge, nail), forge, 1)
+	check(pack(1, nail) == 1 and store(forge, nail) == nails_each * 2 - 1, "one Bronze nail withdrawn into the pack, the total kept")
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, nail), forge, 1)
-	check(pack(1, nail) == 0 and in_count(forge, nail) == 1 and out_count(forge, nail) == nails_each * 2 - 1, "put back, it goes to an input slot: players never fill the output")
+	check(pack(1, nail) == 0 and store(forge, nail) == nails_each * 2, "put back, it joins the same store: one inventory for materials and products")
+	act(1, Net.ACT_CHEST_TAKE, slot_of_box(forge, nail), forge, 1)
 	act(1, Net.ACT_CHEST_TAKE, slot_of_box(forge, stone), forge, 5)
 	act(1, Net.ACT_CHEST_CLOSE, 0)
 
@@ -236,9 +234,23 @@ func _init() -> void:
 	items.report_position(2, HERE + Vector3(0.5, 0.0, 0.0))
 	items.vitals_of(2)["weight"] = 5000.0
 	items.give(2, bronze, bronze_each)
-	var out_before: int = out_count(forge, nail)
+	var out_before: int = store(forge, nail)
 	craft(2, "bronze_nails", 1, 50)
-	check(pack(2, nail) == nails_each and out_count(forge, nail) == out_before, "a guest's craft at someone's Primitive smithy goes to the guest's pack, never into the owner's store")
+	check(pack(2, nail) == nails_each and store(forge, nail) == out_before, "a guest's craft at someone's Primitive smithy goes to the guest's pack, never into the owner's store")
+
+	# A store saved before the one store (inputs in slots 0 to 3, products in 4 to 7, 30 slots) loads whole: every stack is in its one store.
+	var old_style: int = place("stone_forge@8,2.5,0", 1)
+	var legacy = InventoryScript.new(items.table)
+	legacy.add(stone, 3)
+	legacy.add(nail, 2, 0, {}, 4)
+	box(old_style).from_json_array(legacy.to_json_array())
+	act(1, Net.ACT_CHEST_OPEN, old_style)
+	check(store(old_style, stone) == 3 and store(old_style, nail) == 2 and box(old_style).slot_count == 20, "an old two-part store folds into the one store, nothing lost (%d slots)" % box(old_style).slot_count)
+	act(1, Net.ACT_CHEST_TAKE, slot_of_box(old_style, nail), old_style, 2)
+	act(1, Net.ACT_CHEST_TAKE, slot_of_box(old_style, stone), old_style, 3)
+	act(1, Net.ACT_CHEST_CLOSE, 0)
+	check(box(old_style).is_empty() and pack(1, nail) >= 2, "its old products come out like anything else")
+	act(1, Net.ACT_PICKUP, old_style)   # taken down, out of the way of the stations below
 
 	# --- 3 and 4. The Smithy draws Iron ingots from the player's own (locked) chest first, then from their own station store ---
 	var smithy: int = place("blacksmithy@5,3.5,0", 1)
@@ -259,7 +271,7 @@ func _init() -> void:
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, ingot), forge, ingot_need)   # into the owner's own station store
 	act(1, Net.ACT_CHEST_CLOSE, 0)
 	var ingot_total: int = pack(1, ingot) + box(chest).count_of(ingot) + box(forge).count_of(ingot)
-	check(in_count(forge, ingot) == ingot_need and pack(1, ingot) == 0, "the owner keeps %d Iron ingots in the Primitive smithy's store" % ingot_need)
+	check(store(forge, ingot) == ingot_need and pack(1, ingot) == 0, "the owner keeps %d Iron ingots in the Primitive smithy's store" % ingot_need)
 	var guest_ingots: int = box(forge).count_of(ingot)
 	craft(2, "hand_saw", 1, 20)
 	check(box(forge).count_of(ingot) == guest_ingots and pack(2, saw) == 0, "a stranger's craft never draws on someone's station store")
@@ -272,7 +284,7 @@ func _init() -> void:
 	craft(1, "hand_saw", 1, 30)
 	check(box(chest).count_of(ingot) == 0, "the owner's own locked chest gave its Iron ingot first (containers before station stores)")
 	check(pack(1, ingot) + box(chest).count_of(ingot) + box(forge).count_of(ingot) == ingot_total - ingot_need, "the rest came from the Primitive smithy's store: %d ingots used, none from nowhere" % ingot_need)
-	check(out_count(smithy, saw) == 1 and pack(1, saw) == 0, "the Iron - Saw is kept in the Smithy's output")
+	check(store(smithy, saw) == 1 and pack(1, saw) == 0, "the Iron - Saw is kept in the Smithy's store")
 
 	# --- 5. The Kiln batch ---
 	var kiln: int = place("kiln@3,1.5,0", 1)
@@ -321,7 +333,7 @@ func _init() -> void:
 	check(kiln > 0 and not bool(items._items[kiln]["struct"].get("lit", false)) and int(items._items[kiln]["struct"].get("kiln", {}).get("left", 0)) == per_log - 50 and out_count(kiln, charcoal) == 50, "save and load keep the put-out Kiln, its part-burnt log and its charcoal")
 	forge = id_of_kind("stone_forge")
 	smithy = id_of_kind("blacksmithy")
-	check(forge > 0 and out_count(forge, nail) == nails_each * 2 - 1 and smithy > 0 and out_count(smithy, saw) == 1, "save and load keep the station stores (the nails still in the Primitive smithy, the Saw in the Smithy)")
+	check(forge > 0 and store(forge, nail) == nails_each * 2 - 1 and smithy > 0 and store(smithy, saw) == 1, "save and load keep the station stores (the nails still in the Primitive smithy, the Saw in the Smithy)")
 
 	act(1, Net.ACT_USE_STRUCT, kiln)
 	check(bool(items._items[kiln]["struct"].get("lit", false)), "relit")

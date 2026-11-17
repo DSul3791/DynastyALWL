@@ -1065,7 +1065,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return {"prompt": "Press E to put out", "tap": use_tap}
 
-	if str(store_def.get("station", "")) != "" and int(store_def.get("out_slots", 0)) > 0:   # a station with a store (master s2.5): E opens the store, F crafts
+	if str(store_def.get("station", "")) != "" and (int(store_def.get("out_slots", 0)) > 0 or bool(store_def.get("one_store", false))):   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
 
 	if _is_chest(state):
@@ -1428,7 +1428,7 @@ func open_container() -> bool:
 		_ask_open(best)
 		return true
 
-	if str(best_def.get("station", "")) != "" and int(best_def.get("out_slots", 0)) > 0:   # a station with a store: its window, on the Craft tab (the Kiln: on its store)
+	if str(best_def.get("station", "")) != "" and (int(best_def.get("out_slots", 0)) > 0 or bool(best_def.get("one_store", false))):   # a station with a store: its window, on the Craft tab (the Kiln: on its store)
 		_ask_open(best, str(best_def.get("use", "")) != "kiln")
 		return true
 
@@ -5508,14 +5508,13 @@ func _show_tab() -> void:
 
 # A crafting station's store window shows its store under its recipe list, no Chest and Craft tabs (Dave 17 Nov 2026: "I just used the
 # primative smithy and didnt like the way there is a separate chest inventory. it should be combined so when it makes items they appear so the
-# player can see them"): a structure with a "station" and output slots. The Kiln (a batch of logs) and the chopping block (E splits, no recipes)
-# keep their tabs. Chests, fires and smelters make nothing by crafting and keep theirs too.
+# player can see them"; "in a station that has an inventory there should only be on inventory"): a structures.json "one_store" station. The Kiln
+# (a batch of logs), the chopping block (E splits, no recipes), chests, fires and smelters keep their tabs.
 func _store_with_recipes() -> bool:
 	if not chest_mode or not _world.has(chest_id):
 		return false
 
-	var def: Dictionary = _structure_by_state(int(_world[chest_id]["state"]))
-	return str(def.get("station", "")) != "" and int(def.get("out_slots", 0)) > 0 and not ["kiln", "split_log"].has(str(def.get("use", "")))
+	return bool(_structure_by_state(int(_world[chest_id]["state"])).get("one_store", false))
 
 
 # A tab on the Craft panel's title row (4.4): a raised plate of 118 x 36, the word in Cinzel; lit when it is the one showing.

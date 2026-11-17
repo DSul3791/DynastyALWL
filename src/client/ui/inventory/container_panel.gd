@@ -13,8 +13,9 @@ const KeyBindings := preload("res://src/client/key_bindings.gd")
 const BagRules := preload("res://src/shared/bag_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const LOOK_COLUMNS := 6     # slots across the container: the Craft column's 650 px, the same 100 px wells as the pack (redesign 4.4)
-const COMPACT_COLUMNS := 8  # a crafting station's store under its recipes (set_compact): 8 wells of 70 px across the 650 px
-const COMPACT_WELL := 70.0
+const COMPACT_COLUMNS := 5  # a crafting station's store beside its recipe list (set_compact): 5 wells of 60 px across the card's 360 px
+const COMPACT_WELL := 60.0
+const COMPACT_ROWS := 4     # rows in view (its first 20 slots); a store grown past them scrolls
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -54,9 +55,9 @@ func build() -> void:
 
 	# The bar: the "keep out" tick (Morgan's call 1) with its lock, then Take all and Store all. Only the owner may change the tick;
 	# crafting and blueprint sites leave a kept-out container alone.
-	var bar: HBoxContainer = HBoxContainer.new()
+	var bar: HFlowContainer = HFlowContainer.new()   # one row in a chest's 650 px; two beside a station's recipe list
 	bar.custom_minimum_size = Vector2(0.0, 44.0)
-	bar.add_theme_constant_override("separation", 10)
+	bar.add_theme_constant_override("h_separation", 10)
 	box.add_child(bar)
 	_keep_out = CheckBox.new()
 	_keep_out.text = "Keep out of crafting"
@@ -124,15 +125,25 @@ func build() -> void:
 
 
 # A crafting station's store (Dave 17 Nov 2026: "I just used the primative smithy and didnt like the way there is a separate chest inventory. it
-# should be combined so when it makes items they appear so the player can see them"): on, the store sits under the station's recipe list in the
-# Craft column, its wells 70 px and 8 across, so what the station makes is seen landing in its output slots; Sort both and Stack into my chests
-# step aside for the room. Off, the full-size store of a chest or fire. InventoryView._show_tab sets it.
+# should be combined so when it makes items they appear so the player can see them"; "on the left it lists the items you can craft"): on, the
+# station's one store moves beside its recipe list, over the recipe card (recipe_list.store_holder), its wells 60 px and 5 across, so what the
+# station makes is seen landing in it; Sort both and Stack into my chests step aside for the room. Off, the full-size store of a chest or fire,
+# back in the Craft column. InventoryView._show_tab sets it.
 func set_compact(on: bool) -> void:
 	if root == null or not is_instance_valid(root):
 		return
 
 	compact = on
-	root.size_flags_vertical = Control.SIZE_SHRINK_END if on else Control.SIZE_EXPAND_FILL
+	var home: Control = view._recipe_part.store_holder if on else view._frame.craft_column
+
+	if home != null and is_instance_valid(home) and root.get_parent() != home:
+		root.get_parent().remove_child(root)
+		home.add_child(root)
+
+	if view._recipe_part.store_holder != null and is_instance_valid(view._recipe_part.store_holder):
+		view._recipe_part.store_holder.visible = on   # empty, it would still add a gap over the card
+
+	root.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if on else Control.SIZE_EXPAND_FILL
 	_grid.columns = COMPACT_COLUMNS if on else LOOK_COLUMNS
 	_tools.visible = not on
 
@@ -154,7 +165,7 @@ func _fit_compact() -> void:
 		if (slot as Control).visible:
 			shown += 1
 
-	var rows: int = ceili(float(shown) / float(COMPACT_COLUMNS))
+	var rows: int = mini(ceili(float(shown) / float(COMPACT_COLUMNS)), COMPACT_ROWS)
 	_scroll.custom_minimum_size.y = (float(rows) * COMPACT_WELL + float(maxi(rows - 1, 0)) * ArtKit.SLOT_GAP) if compact else 0.0
 
 
@@ -267,6 +278,9 @@ func refresh() -> void:
 	_fit_wells()
 
 	var capacity: int = int(view.table.entry(view.table.id_of(container_number())).get("slots", view.chest_inv.slot_count))
+
+	if compact:
+		capacity = view.chest_inv.slot_count   # a one-store station grows: every slot the server sent
 	opened_bag = container_number() if view.chest_id < 0 else 0
 
 	if view.chest_id < 0:   # a bag shows its own slots, and any filled one past them (bag_slots lowered in the data: BagRules.open shows those too)
