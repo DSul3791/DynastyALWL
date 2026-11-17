@@ -3,7 +3,7 @@ extends SceneTree
 # Mission 001 phase 2b: the wilderness route to the first Iron - Saw, no purchases (master s2.7 item 1, Dave [D1]), through the real server,
 # recipes and blueprints. Every amount is read from the live data, so tuning the numbers keeps the test valid.
 #   1. bog iron dug with a wooden shovel in wet ground;
-#   2. charcoal at a lit campfire from firewood;
+#   2. charcoal left in a lit campfire as its firewood burns;
 #   3. the Primitive smelter refuses iron ore; an Improved smelter (its bronze fittings come from the bronze route, test_bronze_path) smelts it
 #      by itself only while the player works its bellows (master s2.7 items 1 and 4), into its output rack;
 #   4. an Improved smithy from stones, clay, logs and bronze (its bronze anvil and fittings, from the bronze route, test_bronze_path), no iron
@@ -57,10 +57,6 @@ func need_of(recipe_id: String, id: String) -> int:
 			return int(need[1])
 
 	return 0
-
-
-func gives_of(recipe_id: String) -> int:
-	return int(items.recipes.recipe(recipe_number(recipe_id)).get("gives", [0, 1])[1])
 
 
 func craft(id: String, times: int, seconds: int) -> void:
@@ -129,6 +125,24 @@ func rows_text(rows: Array) -> String:
 	return ", ".join(rows.map(func(r): return "%s %d" % [str(r[0]), int(r[1])]))
 
 
+
+# Burning wood leaves charcoal in the fire (Dave 17 Nov 2026; cooking.json charcoal_left): the fire burns (its own tick, a minute a step) until its
+# store holds `wanted` Charcoal, which is taken from the store (the F window).
+func charcoal_from_fire(fire: int, wanted: int) -> void:
+	var c: int = items.table.number_of("charcoal")
+	var store = items._fire_store(items._items[fire]["fire"])
+
+	for _step in range(20000):
+		if store.count_of(c) >= wanted:
+			break
+
+		items._fires(60.0)
+
+	items.report_position(1, items._items[fire]["pos"] + Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_CHEST_OPEN, fire, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_TAKE, store.numbers.find(c), fire, store.count_of(c), Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
 func _init() -> void:
 	var dir: String = "user://test_iron_saw_route"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -189,13 +203,14 @@ func _init() -> void:
 
 	check(have("iron_ore") >= ore_n, "1. a wooden shovel digs %d bog iron ore out of wet ground (%d)" % [ore_n, have("iron_ore")])
 
-	# 2. Charcoal at a lit campfire.
+	# 2. Charcoal left in a lit campfire as its firewood burns.
+	var fire_id: int = items._next_id
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": FIRE_AT, "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}
 	items._next_id += 1
-	var charcoal_crafts: int = ceili(float(fuel_n) / float(gives_of("charcoal")))
-	items.give(1, items.table.number_of("firewood"), charcoal_crafts * need_of("charcoal", "firewood"))
-	craft("charcoal", charcoal_crafts, 120 * charcoal_crafts)
-	check(have("charcoal") >= fuel_n, "2. firewood burns to %d charcoal at the campfire (%d needed)" % [have("charcoal"), fuel_n])
+	var at_was: Vector3 = items.position_of(1)
+	charcoal_from_fire(fire_id, fuel_n)
+	items.report_position(1, at_was)
+	check(have("charcoal") >= fuel_n, "2. firewood burning in the campfire leaves %d charcoal, taken from its store (%d needed)" % [have("charcoal"), fuel_n])
 
 	# 3. The iron: not at the Primitive smelter; at the Improved smelter only with its bellows worked.
 	items.give(1, items.table.number_of("wooden_hammer"), 1)
