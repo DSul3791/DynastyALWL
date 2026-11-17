@@ -711,7 +711,7 @@ See [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inher
 
 #### Handover chain (succession)
 
-See [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inheritance).
+See [approved succession order and final-child fallback](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). Other details remain in [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inheritance).
 
 #### Inheritance from an unknown benefactor
 
