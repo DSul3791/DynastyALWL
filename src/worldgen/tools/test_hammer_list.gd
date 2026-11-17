@@ -85,7 +85,7 @@ func _init() -> void:
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
 	check(list.mode == "repair" and list.actions()[0]["kind"] == "repair" and list.actions()[1]["kind"] == "save", "a hammer starts on Repair, the first line above its list (Dave 10 Nov 2026), Save building plan beside it")
 	var all_count: int = list.entries(1).size()
-	check(all_count == 216, "All lists every blueprint (%d)" % all_count)
+	check(all_count == 220, "All lists every blueprint (%d)" % all_count)
 	# The search box (Dave 16 Nov 2026: "smel" shows every smelter), whatever group is chosen.
 	list.category = "Walls and doors"
 	list.search = "smel"
@@ -116,7 +116,7 @@ func _init() -> void:
 	shown.setup(table, pack, hud_layer, "user://test_hammer_list_none.json")
 	shown.set_open(true, 1)
 	var visible_rows: int = shown._row_buttons.values().filter(func(b): return b.visible).size()
-	check(shown._screen.visible and visible_rows == 216, "the open screen shows every row of All (%d)" % visible_rows)
+	check(shown._screen.visible and visible_rows == 220, "the open screen shows every row of All (%d)" % visible_rows)
 	shown._search_box.text_changed.emit("smel")
 	visible_rows = shown._row_buttons.values().filter(func(b): return b.visible).size()
 	check(visible_rows == found.size(), "typing filters the rows on screen (%d)" % visible_rows)
@@ -146,6 +146,6 @@ func _init() -> void:
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var first_hammer_row: Dictionary = strict_list._book.filter(func(r): return str(r["tool"]) == "hammer")[0]   # the first row may be a knife row now (Crude - Chair): the hammer's list is what is tested
 	first_hammer_row["hammer"] = 2
-	check(strict_list.rows(1).size() == 215 and strict_list.rows(2).size() == 216, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 219 and strict_list.rows(2).size() == 220, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

@@ -9881,7 +9881,7 @@
 		"cooking_pot": {
 			"name": "Cooking pot",
 			"kind": "structure",
-			"description": "A big iron pot hanging on a chain from an iron frame over the fire. Cooks stews in large batches, and everything a campfire pot cooks.",
+			"description": "A big iron pot on a chain over a fire. Cooks stews in big batches, and all a campfire pot cooks.",
 			"how_to_get": [
 				"Build with a hammer (press R): 5 Iron ingot, 2 Iron band"
 			],
