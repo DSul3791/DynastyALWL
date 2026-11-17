@@ -1052,13 +1052,18 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(store_def.get("use", "")) == "kiln":   # the Kiln (master s2.6): E lights it and puts it out, like a fire; F for its logs and charcoal
 		return {"prompt": "Press E to %s, F for its logs and charcoal%s (hold E to take it down)" % ["put the kiln out" if bool(_world[id].get("lit", false)) else "light the kiln", _fill_note(id)], "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
-	if str(store_def.get("use", "")) == "smelt":   # a Smelter (master s2.7): F for its fuel and ore; E works the bellows of one that has them
-		var smelt_tap: Callable = func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+	if str(store_def.get("use", "")) == "smelt":   # a Smelter, like a campfire (Dave 17 Nov 2026): E lights it, E puts it out, F opens its store
+		var use_tap: Callable = func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
 
-		if not bool(store_def.get("smelt", {}).get("bellows", false)):
-			smelt_tap = func(): _ask_open(id)
+		if not bool(_world[id].get("lit", false)):
+			return {"prompt": "Press E to light", "tap": use_tap, "hold": take_down}   # Dave: "it should say Press E to light. thats it."
 
-		return {"prompt": "Press %s for its fuel and ore%s (hold E to take it down)" % ["E to work the bellows, F" if bool(store_def.get("smelt", {}).get("bellows", false)) else "E or F", _fill_note(id)], "tap": smelt_tap, "hold": take_down}
+		if bool(store_def.get("smelt", {}).get("bellows", false)):   # the Improved smelter: E works its bellows, hold E puts it out
+			return {"prompt": "Press E to work the bellows, E again to stop (hold E to put it out)", "tap": use_tap, "hold": func():
+				clear_prompt()
+				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 1, 0, Vector3.ZERO)}
+
+		return {"prompt": "Press E to put out", "tap": use_tap}
 
 	if str(store_def.get("station", "")) != "" and int(store_def.get("out_slots", 0)) > 0:   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
@@ -2926,6 +2931,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				if state == StructureLook.FIRE_COALS and _world[id].get("light") != null and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("glow"):
 					BuildingLook.coals_glow(_world[id]["light"], float(row[5]["glow"]))   # the coals dim as their time runs down
 
+				# A Smelter lit or put out is drawn again: its fire and light are set only when its model is built (_smelter_fire).
+				var smelter_lit_changed: bool = str(_structure_by_state(state).get("use", "")) == "smelt" and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool(row[5].get("lit", false)) != bool(_world[id].get("lit", false))
 				_note_platter(id, row, state)
 				_note_store(id, row)
 				_note_crop(id, row)
@@ -2937,7 +2944,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					_world[id]["site"] = site_now   # a deposit or a change in what you have to hand: the list updates, the blue piece stays
 					continue
 
-				if (site_now != null) == (site_was != null):
+				if (site_now != null) == (site_was != null) and not smelter_lit_changed:
 					continue   # only a site finished (drawn again as the real piece) or a piece that became a site is drawn again
 
 			_forget(id)   # a changed state, or a site finished or begun: draw it again
@@ -2967,7 +2974,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			var fixture_light: Light3D = null
 
-			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
+			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)) and str(_structure_by_state(state).get("use", "")) == "smelt":
+				fixture_light = node.get_node_or_null("Light")   # a lit Smelter: its forge's own fire light (_smelter_fire shows its flames)
+			elif row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
 				node.add_child(fixture)
 				fixture_light = fixture.get_node_or_null("Light")
@@ -4327,11 +4336,11 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 		"log_workbench":
 			return _make_log_bench()
 		"stone_forge":
-			return _make_forge()
+			return _smelter_fire(_make_forge(), state, extra)
 		"blacksmithy":
 			return _make_smithy()
 		"big_forge":
-			return _make_big_forge(state)
+			return _smelter_fire(_make_big_forge(state), state, extra)
 		"carcass":
 			return _make_carcass(str(extra.get("sp", "")))
 
@@ -4372,6 +4381,15 @@ func _blue_all(node: Node, blue: Material) -> void:
 
 	for child in node.get_children():
 		_blue_all(child, blue)
+
+
+# A Smelter's forge model burns only while its row says lit: never as a blueprint ghost or site, never cold (Dave 17 Nov 2026). The smithies
+# that share these looks keep their fire as before.
+func _smelter_fire(model: Node3D, state: int, extra: Dictionary) -> Node3D:
+	if str(_structure_by_state(state).get("use", "")) == "smelt":
+		BuildingLook.show_forge_fire(model, bool(extra.get("lit", false)) and not extra.has("site"))
+
+	return model
 
 
 # The ghost's model: a lit campfire is shown cold.

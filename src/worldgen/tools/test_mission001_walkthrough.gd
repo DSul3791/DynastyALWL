@@ -389,9 +389,9 @@ func make_iron(wanted: int) -> bool:
 		items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), smelter, ore, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 		go((items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
-		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: work the bellows
-		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) + 5.0)
-		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again: leave them
+		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
+		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E at the lit smelter: work the bellows
+		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) + 5.0)   # it goes out with its last fuel, which stops the bellows
 		items.action(1, Net.ACT_CHEST_OPEN, smelter, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
@@ -426,6 +426,7 @@ func make_steel(furnace: int, wanted: int) -> bool:
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), furnace, wanted, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), furnace, carbon, Vector3(float(int(def["smelt"]["hopper_slots"]) + 1), 0.0, 0.0))   # dragged onto the first input slot
 	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_USE_STRUCT, furnace, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
 	var box = box_of(furnace)
 	run(float(def["smelt"]["ingot_s"]) * 2.0)
 	check(box.count_of(n("steel_ingot")) == 0 and box.count_of(n("iron_ore")) == wanted, "3w. in a calm the Advanced smelter's windmill stands: no steel, the ore kept")
