@@ -423,7 +423,7 @@ func _process(delta: float) -> void:
 		client.held.rig_lit = shot_lit
 		client.shot_sway = bow_sway
 
-	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
+	if drop_it and place_it and _given and not _dropped and _placed and _on_ground() and now - _moved_msec > 3000:
 		# The server refuses a kit placed farther than its reach from where IT thinks the player is, and a shot that moves the body reports nothing (the flying anchor stays at the spawn):
 		# tell it the real spot (the report goes out every 200 ms) and place a second later (Tyler 31 Oct 2026: the rig's kit placement did nothing for this reason).
 		client._anchor = client.body.global_position
@@ -432,7 +432,7 @@ func _process(delta: float) -> void:
 		if _anchor_told_msec == 0:
 			_anchor_told_msec = now
 
-	if drop_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000 and (not place_it or (_anchor_told_msec > 0 and now - _anchor_told_msec > 1000)):      # only once the player stands on the real ground (a drop before that fell from the spawn height)
+	if drop_it and _given and not _dropped and _placed and _on_ground() and now - _moved_msec > 3000 and (not place_it or (_anchor_told_msec > 0 and now - _anchor_told_msec > 1000)):      # only once the player stands on the real ground (a drop before that fell from the spawn height)
 		_dropped = true
 		_drop_msec = now
 		var bp: Vector3 = client.body.global_position
@@ -476,7 +476,7 @@ func _process(delta: float) -> void:
 		return
 
 	if _index == -1:
-		var scene_ready: bool = ready_held and _collision_below(client.body.global_position)   # asked directly, like the gate below; the item in the hand is waited for at the settle (it mounts on the third-person body only then)
+		var scene_ready: bool = ready_held and _on_ground()   # asked directly, like the gate below; the item in the hand is waited for at the settle (it mounts on the third-person body only then)
 
 		if not scene_ready and now - client.connected_msec < int(wait_s * 1000.0):
 			return
@@ -502,9 +502,7 @@ func _process(delta: float) -> void:
 	# The client stops updating waiting_for_ground once the body flies (every shot flies from _next on), so a join that was still waiting when the first
 	# shot started kept this gate shut until the 120 s mark: every look rig shot spent about 90 s here (Lane A timing, 17 Nov 2026). A flying body is
 	# asked directly: is there collision anywhere below it.
-	var no_floor: bool = (not _collision_below(client.body.global_position)) if client.flying else client.waiting_for_ground
-
-	if not aerial and no_floor and client.connected_msec > 0 and now - client.connected_msec < 120000:
+	if not aerial and not _on_ground() and client.connected_msec > 0 and now - client.connected_msec < 120000:
 		return
 
 	if not _placed:
@@ -550,6 +548,9 @@ func _process(delta: float) -> void:
 
 	if now - _moved_msec < int(settle_s * 1000.0) and not (ready_held and _settled(now)):
 		return
+
+	if ready_held and not _ground_steady and not _land_failed and _ground_rechecks == 0 and not _held_ready():
+		print("shot runner: --settle cap of %.0f s reached with the item not in the hand (%s); the picture may show an empty hand" % [settle_s, give_item])
 
 	if ready_held and not _ground_steady and not _land_failed and _ground_rechecks == 0 and _idle_since_msec == 0:   # once per shot, at the first settle
 		print("shot runner: --settle cap of %.0f s reached with the voxel engine still busy (%s); going on" % [settle_s, str(VoxelEngine.get_stats().get("tasks", {}))])
@@ -1932,6 +1933,11 @@ func _print_body_height() -> void:
 		hips_y = (skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("mixamorig_Hips"))).origin.y
 
 	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
+
+
+# The ground under the player has collision: the client's own flag while walking, a direct ray while flying (the client stops updating the flag then).
+func _on_ground() -> bool:
+	return _collision_below(client.body.global_position) if client.flying else not client.waiting_for_ground
 
 
 # Collision anywhere under p (the same ray as the client's own ground check, without its rescue lift).
