@@ -13,14 +13,14 @@ const LOOSE_LIFT_M := 0.16   # ground + 0.12 (server) + 0.04 (inventory_view._dr
 func _init() -> void:
 	var ground: MeshInstance3D = MeshInstance3D.new()
 	var plane: PlaneMesh = PlaneMesh.new()
-	plane.size = Vector2(0.36, 0.3)
+	plane.size = Vector2(0.5, 0.3)
 	var gravel: StandardMaterial3D = StandardMaterial3D.new()
 	gravel.albedo_color = Color(0.66, 0.6, 0.5)
 	plane.material = gravel
 	ground.mesh = plane
 	add_child(ground)
 
-	for loose in [["tin_ore", 0.0, 0.0], ["copper_ore", -0.15, -0.06]]:
+	for loose in [["tin_ore", 0.0, 0.0], ["copper_ore", -0.1, -0.06]]:
 		var drop: MeshInstance3D = MeshInstance3D.new()
 		drop.mesh = BasicLook.mesh_for(str(loose[0]))
 		drop.scale = Vector3.ONE * LOOSE_SCALE

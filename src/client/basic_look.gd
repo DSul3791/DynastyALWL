@@ -279,7 +279,7 @@ const ART_OVERRIDES := {
 	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
 	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
-	"tin_ore": {"shape": "tin_glass", "color": "#5a2a18", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
+	"tin_ore": {"shape": "tin_glass", "color": "#7a3a20", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
 	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }
@@ -3045,7 +3045,7 @@ static func _metal_material(rough: float = 0.4, metallic: float = 0.8) -> Standa
 		material.roughness = rough
 
 		if metallic == GLASS:   # a glassy stone: not metal, a strong clear coat over a softer body
-			material.specular = 0.8
+			material.metallic_specular = 0.8
 			material.clearcoat_enabled = true
 			material.clearcoat = 1.0
 			material.clearcoat_roughness = 0.04
