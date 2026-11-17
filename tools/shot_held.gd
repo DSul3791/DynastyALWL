@@ -10,6 +10,7 @@ extends SceneTree
 #                                          under 2 m it aims at the held item, else at the chest (default right:-90:1.6;left:90:1.6;hand:-90:0.7;front:0:1.6)
 #            --name=NAME   file prefix (default the item id): NAME_<angle>.png
 #            --clip=idle   the body's clip (any clip of the body: walk, run, crouch ...)
+# Needs a window and a GPU like tools/shot_node.gd (a window flashes up for a few seconds); under --headless nothing is drawn and it exits 4.
 # Prints one "shot held: saved PATH" line per picture and "shot held: N picture(s) in T s"; exit 4 when a picture was not saved, 2 on a bad item.
 
 const HeldItem := preload("res://src/client/held_item.gd")
@@ -44,8 +45,8 @@ func _init() -> void:
 
 	var shape: String = str(BasicLook.entry(item).get("shape", ""))
 
-	if item == "" or not HeldItem.HELD_LOOK_TURN.has(shape) or shape in ["bow", "hand_net"]:
-		print("shot held: FAIL %s has no held look this tool can pose (shape '%s'; bows and nets add parts of their own, use tools/look_rig.sh)" % [item, shape])
+	if item == "" or not HeldItem.HELD_LOOK_TURN.has(shape) or shape in ["bow", "hand_net", "shaft"]:
+		print("shot held: FAIL %s has no held look this tool can pose (shape '%s'; bows, nets and spears are held by code of their own, use tools/look_rig.sh)" % [item, shape])
 		quit(2)
 		return
 
@@ -81,7 +82,6 @@ func _init() -> void:
 
 	var avatar: Node3D = MyCharacter.make_avatar()   # faces -Z, feet at its origin
 	vp.add_child(avatar)
-	avatar.visible = true
 	await process_frame
 
 	if avatar.has_method("play"):
@@ -98,7 +98,13 @@ func _init() -> void:
 
 	mount.add_child(model)
 	HeldItem.third_hold(model, "", tool_class)
-	HeldItem.third_fist_on(model, HeldItem.THIRD_SKIN).visible = true
+	var tint: Color = Color.WHITE
+	var worn: Variant = avatar.get("_skin_material")
+
+	if worn is BaseMaterial3D:
+		tint = (worn as BaseMaterial3D).albedo_color   # the body's skin tint, as held_item.gd _third_skin_color
+
+	HeldItem.third_fist_on(model, Color(HeldItem.THIRD_SKIN.r * tint.r, HeldItem.THIRD_SKIN.g * tint.g, HeldItem.THIRD_SKIN.b * tint.b)).visible = true
 	var cam: Camera3D = Camera3D.new()
 	cam.fov = FOV
 	vp.add_child(cam)
