@@ -36,10 +36,12 @@ func _init() -> void:
 	# Source checks: the server reads its commit once at start and uses that everywhere; the launcher really asks; the server really obeys.
 	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
 	var launcher: String = FileAccess.get_file_as_string("res://scenes/launcher.gd")
-	check(server.count("GitStamp.short_commit()") == 1 and server.contains("var _commit: String = GitStamp.short_commit()"), "the server reads its commit once, at start")
+	var code_lines: PackedStringArray = PackedStringArray(Array(server.split("\n")).filter(func(line: String) -> bool: return not line.strip_edges().begins_with("#")))
+	check("\n".join(code_lines).count("GitStamp.short_commit()") == 1 and server.contains("var _commit: String = GitStamp.short_commit()"), "the server reads its commit once, at start")
 	check(server.contains("\"server_commit\": _commit"), "the welcome names that commit")
 	check(server.contains("PlayServerScript.stop_is_for(asked, OS.get_process_id())") and server.contains("_stop_if_asked(now)"), "the server checks for a request naming itself")
 	check(server.contains("\"stop\": 1 if _quit_when_empty else 0"), "only a server Play started (--quit-when-empty) says it obeys")
+	check(server.contains("if from == _commit:") and server.contains("if not _peers.is_empty():"), "a request from its own commit (left behind) or with players on it does not close the server")
 	check(launcher.contains("await _replace_other_build(port)") and launcher.contains("PlayServer.should_ask_stop("), "Play asks before joining a busy port")
 	check(not launcher.contains("OS.kill(") and not server.contains("OS.kill("), "nothing is killed")
 	print("test_play_server: ", "FAIL (%d)" % failures if failures > 0 else "ok")

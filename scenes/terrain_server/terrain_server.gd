@@ -151,6 +151,7 @@ var _quit_at_msec: int = -1
 var _dev_reset_at_msec: int = -1   # testing only: --dev-reset-world=S runs the admin world reset S seconds after start (src/worldgen/tools/reset_world_store.gd)
 var _watch_parent_pid: int = 0                # --watch-parent=PID (testing): quit when that process is gone
 var _watch_next_msec: int = 0
+var _listen_port: int = 0                    # the game port this server listens on (its run note)
 var _stop_check_msec: int = 0                 # next look for Play's stop request (STOP_NOTE)
 var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
@@ -745,6 +746,7 @@ func _ready() -> void:
 	_events.start("telemetry_server_%d.log" % port)
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), _commit])
+	_listen_port = port
 	_run_note("running", port)
 	# Build the flora of the spawn's chunk once here, before any other thread exists. Start-up
 	# crash (owner thread bug, build 204): about 1 start in 10 to 20 a worker thread died in the
@@ -2770,7 +2772,7 @@ func _process(delta: float) -> void:
 			print("server: no players left")
 			_events.event("QUIT: no players left for %d s" % int(_quit_grace_msec / 1000.0))
 			_quit_at_msec = now
-			_run_note("closing", _link_port - 1)
+			_run_note("closing", _listen_port)
 
 	if _watch_parent_pid > 0 and now >= _watch_next_msec and _quit_at_msec < 0:
 		_watch_next_msec = now + 3000
@@ -2814,8 +2816,9 @@ func _run_note(state: String, listen_port: int) -> void:
 
 
 # Play found this server on its port running other code (Dave 17 Nov 2026: he pulled dev, pressed Play and joined the server from before the
-# pull) and asks it to close. Only a request naming this process is obeyed, and only by a server Play started (--quit-when-empty): it closes
-# the normal way (ground flushed, world and inventories saved in _exit_tree, players dropped), so Play can start one on the new code.
+# pull) and asks it to close. Only a request naming this process and another commit is obeyed, only by a server Play started
+# (--quit-when-empty), and only with nobody playing on it: it closes the normal way (ground flushed, world and inventories saved in
+# _exit_tree), so Play can start one on the new code.
 func _stop_if_asked(now: int) -> void:
 	if not FileAccess.file_exists(STOP_NOTE):
 		return
@@ -2826,10 +2829,21 @@ func _stop_if_asked(now: int) -> void:
 		return
 
 	DirAccess.remove_absolute(STOP_NOTE)
-	print("server: Play from commit %s asked this server (commit %s) to close" % [str(asked.get("commit", "?")), _commit])
-	_events.event("QUIT: Play from commit %s asked this server (commit %s, %d players) to close" % [str(asked.get("commit", "?")), _commit, _peers.size()])
+	var from: String = str(asked.get("commit", ""))
+
+	if from == _commit:
+		return   # a request left behind from before this server started (same process number again): Play only asks a server of other code
+
+	if not _peers.is_empty():
+		# Someone is playing here: they are not dropped. Play sees the request taken without "closing" and joins; its join screen says out of date.
+		print("server: Play from commit %s asked this server (commit %s) to close; %d players here, staying up" % [from, _commit, _peers.size()])
+		_events.event("STOP REFUSED: Play from commit %s asked; %d players here" % [from, _peers.size()])
+		return
+
+	print("server: Play from commit %s asked this server (commit %s) to close" % [from, _commit])
+	_events.event("QUIT: Play from commit %s asked this server (commit %s) to close" % [from, _commit])
 	_quit_at_msec = now
-	_run_note("closing", _link_port - 1)
+	_run_note("closing", _listen_port)
 
 
 func _send(peer_id: int, batch: Array) -> void:

@@ -136,6 +136,9 @@ func _replace_other_build(port: int) -> void:
 	var waited: int = 0
 
 	while _port_is_taken(port) and waited < STOP_WAIT_MSEC:
+		if not FileAccess.file_exists(STOP_NOTE) and str(_read_note(RUN_NOTE).get("state", "")) != "closing":
+			break   # taken and refused (players are on it): join it, the join screen says it is out of date
+
 		await get_tree().create_timer(0.5).timeout
 		waited += 500
 
