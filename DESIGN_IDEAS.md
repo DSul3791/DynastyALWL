@@ -703,7 +703,7 @@ See [death and rescue](Design_Ideas_Unapproved.md#death-and-rescue) for preserve
 
 ### 6.6 Children and family growth
 
-See [children and family growth](Design_Ideas_Unapproved.md#children-and-family-growth) for preserved recorded decisions, proposals and open questions.
+See [approved childhood and teaching](Design_Ideas_Approved.md#childhood-and-teaching); [family proposals and open questions](Design_Ideas_Unapproved.md#children-and-family-growth) remain separate.
 
 ### 6.7 Succession, inheritance and the dynasty
 
@@ -727,11 +727,11 @@ See [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inher
 
 ### 6.8 Non-successor siblings (to design later)
 
-See [children and family growth](Design_Ideas_Unapproved.md#children-and-family-growth) for preserved recorded decisions, proposals and open questions.
+See [non-successor sibling proposals](Design_Ideas_Unapproved.md#non-successor-siblings).
 
 ### 6.9 Adoption and inclusion (to explore more)
 
-See [children and family growth](Design_Ideas_Unapproved.md#children-and-family-growth) for preserved recorded decisions, proposals and open questions.
+See [approved adoption and inclusion](Design_Ideas_Approved.md#adoption-and-inclusion); [adoption proposals and open questions](Design_Ideas_Unapproved.md#adoption-and-inclusion) remain separate.
 
 ### 6.10 Extended life and hiding it
 
