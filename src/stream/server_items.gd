@@ -5138,7 +5138,7 @@ func _fire_to_ash(it: Dictionary, fire: Dictionary) -> void:
 
 # The fire is cold: cold ash (8) for FIRE_OUT_S, or a laid fire (9) when wood is in it.
 func _fire_cold(it: Dictionary, fire: Dictionary) -> void:
-	for key in ["lit_s", "wet_s", "catch"]:
+	for key in ["lit_s", "wet_s", "catch", "kept"]:
 		fire.erase(key)
 
 	if float(fire.get("burn_left", 0.0)) > 0.0:
