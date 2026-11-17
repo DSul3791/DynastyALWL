@@ -3428,7 +3428,10 @@ func boulder_near(point: Vector3) -> int:
 		var entry: Dictionary = _boulders[id]
 		var flat: float = Vector2(point.x - entry["pos"].x, point.z - entry["pos"].z).length()
 
-		if flat <= float(entry.get("now", entry["radius"])) + 0.7 and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]):
+		var now: float = float(entry.get("now", entry["radius"]))
+
+		# A small copper rock gets a small margin, so a blow at a trunk or the ground beside it is not taken as a blow on the rock.
+		if flat <= now + minf(0.7, 0.2 + now * 2.0) and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]):
 			return id
 
 	return 0

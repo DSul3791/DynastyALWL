@@ -122,7 +122,7 @@ func _init() -> void:
 	m._boulder_cfg["copper_rocks"]["water_chance"] = 0.0
 	m._boulder_cfg["copper_rocks"]["foot"]["chance"] = 1.0
 	m.ground_height = func(x, _z): return 10.0 + maxf(x - 1000.0, 0.0)
-	var feet: Array = lay(m, 40, 10)
+	var feet: Array = lay(m, 40, 20)
 	var foot_ok: bool = not feet.is_empty()
 	var reach: float = float(cfg["foot"]["reach_m"])
 

@@ -6297,14 +6297,14 @@ func _lay_out_copper_rocks(cell: Vector2i, cell_m: float) -> void:
 
 
 # The foot of a mountain: the spot itself is gentle (rise per metre under max_slope over 3 m) and the ground climbs more than rise_m
-# within reach_m in one of the four directions (boulders.json copper_rocks foot).
+# within reach_m (at most SCATTER_PAD_M - 4) in one of the four directions (boulders.json copper_rocks foot).
 func _at_mountain_foot(spot: Vector3, foot: Dictionary) -> bool:
 	var near: float = (absf(float(ground_height.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground_height.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
 
 	if is_nan(near) or near > float(foot.get("max_slope", 0.3)):
 		return false
 
-	var reach: float = float(foot.get("reach_m", 48.0))
+	var reach: float = minf(float(foot.get("reach_m", 24.0)), SCATTER_PAD_M - 4.0)   # inside the tiles _cell_ground_ready loaded: a farther read loads a tile on the main thread
 
 	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 		if float(ground_height.call(spot.x + d.x, spot.z + d.y)) - spot.y > float(foot.get("rise_m", 20.0)):

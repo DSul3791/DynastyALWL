@@ -10,14 +10,15 @@ Dave sent a photo of real copper ore (rough rocks almost wholly coated in green 
 ## What the game does now
 - **Look.** Every copper rock is drawn with its own lumpy, broken-faced mesh (three shapes) and a malachite material: green to teal coat, blue-black patches, yellow-green dust on upper faces, a little pale host rock, a crusty grain. `src/client/copper_rock_look.gd`, used by `inventory_view._show_boulder` for any boulder row whose ore is copper. The old granite boulder with thin green streaks (`OUTCROP_LOOK["copper"]`) is deleted.
 - **Rocks are boulder rows.** A copper rock is a server boulder with ore `copper`, mined like any outcrop (a pick, or the Stone Hammer, any material). No item was added, renamed or removed; the pieces are the existing Copper ore and Stone.
-- **Copper amount.** Each copper rock has a grade (the share of its pieces that are Copper ore), fixed from its key. Its pieces follow its size (the boulder volume rule in `boulders.json`), so the copper in a rock is its pieces times its grade: a fist-sized rock is 1 piece, a rock 40 cm across about 37 pieces (6-22 copper ore), one 60 cm across about 125 (25-75 ore), a 2 m mountain-foot boulder about 4,600 (900-2,800 ore). Geology copper outcrops get a grade too, in place of the old flat `piece_share` 0.3.
+- **Copper amount.** Each copper rock has a grade (the share of its pieces that are Copper ore), fixed from its key. Its pieces follow its size (the boulder volume rule in `boulders.json`), so the copper in a rock is its pieces times its grade: a fist-sized rock is 1 piece, a rock 40 cm across about 37 pieces (7-22 copper ore), one 60 cm across about 125 (25-75 ore), a 2 m mountain-foot boulder about 4,600 (900-2,800 ore). Geology copper outcrops get a grade too, in place of the old flat `piece_share` 0.3.
 - **Placement** (`boulders.json` `copper_rocks`, `server_items._lay_out_copper_rocks`; per 32 m cell, from the cell's own seeded stream; nothing depends on where spawn is):
   - strewn thinly over all dry land;
   - far commoner on river and lake beds in shallow water and on dry banks within 3 m of water; never in deeper water;
-  - one extra try per cell for a big copper boulder at the foot of a mountain: gentle ground where the land climbs more than 20 m within 48 m.
+  - one extra try per cell for a big copper boulder at the foot of a mountain: gentle ground where the land climbs more than 12 m within 24 m (the reach is capped inside the ground the scatter has already loaded, so it never loads a tile on the server's main thread).
   - The copper outcrop boulders of the geology (`boulder_share` of the boulders near a copper body) stay, now drawn as copper rocks.
 - **Keys.** A cell's boulders use keys 0-7, copper rocks 8-15 (15 is the mountain-foot boulder), so worked rocks are saved like boulders and never move another boulder.
-- **Cost.** Four cheap draws per try; most tries are refused before any water or height read. Measured cost: NOT MEASURED yet (the slow-cell log line now has a "copper rocks" part).
+- **Cost.** Five draws per try; about half the tries are refused before any height or water read (all of them past the water share), the rest read the ground and the water depth, and dry-bank tries two water probes. Roughly a quarter more work than the cell's boulders. NOT MEASURED yet (the slow-cell log line now has a "copper rocks" part).
+- **Known, not changed:** copper rocks count toward the client's boulder draw cap (24 at Low), first come; near a river at Low a few small rocks may take places of plain boulders. The rock's grade is sent to clients with the row (unused there). `tools/outcrops_near.gd` now lists every copper rock as a copper outcrop.
 
 ## For Dave (provisional, assumed on his behalf)
 | ID | Choice | Value | Why |
@@ -26,7 +27,7 @@ Dave sent a photo of real copper ore (rough rocks almost wholly coated in green 
 | CR-2 | "Strewn about the lands" means everywhere on dry land, thinly, not only near copper geology | 4 tries a cell, 2% each (about 1 rock per 12 cells, roughly 3 within 100 m of a player) | His words name the lands, not ore areas; geology copper outcrops still add more in copper country. |
 | CR-3 | River beds and shores | 50% per try in water up to 0.8 m deep or on a bank within 3 m of water; none deeper | Shallow so a player can see and reach them. About 25 times the land density. |
 | CR-4 | Sizes | radius 6-30 cm (12-60 cm across), small ones commoner | Matches the photo's fist size to 50 cm boulder. |
-| CR-5 | Mountain-foot boulders | 8% a cell where the ground is gentle and climbs over 20 m within 48 m; radius 0.6-1.3 m | "Larger boulders ... near the base of mountains some times." |
+| CR-5 | Mountain-foot boulders | 8% a cell where the ground is gentle and climbs over 12 m within 24 m; radius 0.6-1.3 m | "Larger boulders ... near the base of mountains some times." |
 | CR-6 | Copper per rock | grade 0.2-0.6 per rock (avg 0.4), copper = pieces x grade | "Various amounts of copper"; geology outcrops were 0.3 flat, now 0.2-0.6. |
 | CR-7 | Geology copper outcrop boulders stay and get the new look | kept | They are the game's existing copper rocks, which he asked to look like the photo. |
 
