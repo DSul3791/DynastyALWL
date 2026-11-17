@@ -2988,7 +2988,14 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 
 		if not (metal_arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).is_empty():
 			result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, metal_arrays)
-			result.surface_set_material(result.get_surface_count() - 1, _glass_material() if (kind as Vector2).y == GLASS else _metal_material((kind as Vector2).x, (kind as Vector2).y))
+			var material: Material
+
+			if (kind as Vector2).y == GLASS:
+				material = _glass_material()
+			else:
+				material = _metal_material((kind as Vector2).x, (kind as Vector2).y)
+
+			result.surface_set_material(result.get_surface_count() - 1, material)
 
 	return result
 
