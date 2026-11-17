@@ -231,5 +231,7 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 	items.action(1, Net.ACT_HIT, 1, 0, 0, Vector3(float(inv.numbers.find(axe) + 1), 0.0, 0.0))
 	check(items._chops.is_empty() and said.any(func(t): return str(t).contains("shelters Edda and Hob's camp")), "an axe on the camp tree does nothing (%s)" % str(said))
 	var cuts: Array = []
-	items.cut_tree = func(c, i): cuts.append([c, i]); return true
+	items.cut_tree = func(c, i) -> bool:
+		cuts.append([c, i])
+		return true
 	check(items._fell(Vector2i.ZERO, 1, {"name": "oak", "position": Vector3(tree.x, 10.0, tree.y), "height": 12.7, "trunk": 0.6}, Vector2.RIGHT) == -1 and cuts.is_empty(), "undermining or a road never fells the camp tree (_fell)")
