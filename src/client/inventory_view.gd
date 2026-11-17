@@ -3231,7 +3231,7 @@ func structure_rows() -> Array:
 	return rows
 
 
-# Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
+# Every foundation and building piece standing as {"pos", "state", "yaw"}: what new pieces snap to and stand on.
 func foundation_rows() -> Array:
 	var rows: Array = []
 
@@ -3320,14 +3320,16 @@ func surface_rows(states: Dictionary) -> Array:
 	return rows
 
 
-func placed_rows() -> Array:
+# Every fire and every structure standing as {"pos", "state", "yaw" (degrees)}: the placement ghost checks a new piece against all of them, as the server does
+# (PlacementRules.blocked, keeps_off), so a green ghost always places. Was a short list of states, so stations, walls and foundations never turned it red.
+func placement_rows() -> Array:
 	var rows: Array = []
 
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if _lit_state(state) or StructureLook.is_unlit_fire(state) or state == 5 or state == 6 or state == 7 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21 or state == 38:
-			rows.append({"pos": _world[id]["pos"], "state": state})
+		if StructureLook.CAMPFIRE_STATES.has(state) or (state >= 5 and _world[id].has("yaw") and not _structure_by_state(state).is_empty()):
+			rows.append({"pos": _world[id]["pos"], "state": state, "yaw": float(_world[id].get("yaw", 0.0))})
 
 	return rows
 
