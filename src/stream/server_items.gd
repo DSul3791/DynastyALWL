@@ -76,7 +76,6 @@ const SAPLING_GROWN_S := 12.0 * 86400.0  # ...and until it is a full grown tree 
 const SAPLINGS_PER_CHUNK := 64
 const RESPAWN_RADIUS_M := 25.0           # a sapling comes only near a standing tree of the same species
 const RESPAWN_PLACE_M := 6.0
-const REGROW_EXCLUDE_M := 50.0           # no sapling is seeded within this of anything placed on the ground (BUG-013; Dave: tunable)
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
@@ -462,6 +461,7 @@ func setup(item_table, store_dir: String) -> void:
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
+		_spawn_zones.radius_m = float(structures.get("no_spawn_m", 20.0))
 
 	_smelters = SmelterScript.new()
 	_smelters.host = self
@@ -1634,7 +1634,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
-	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
+	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
 
@@ -2207,10 +2207,13 @@ func reset_world() -> int:
 		gone += 1
 
 	_grid = StructureGridScript.new()
+	_spawn_zones.clear()
 
 	for id in _items:
 		if _items[id].has("struct"):
 			_grid_add(id, _items[id])
+		else:
+			_zone_add(id)
 
 	_taken.clear()
 	_cells_done.clear()
@@ -3454,12 +3457,14 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			if not is_nan(old_ground) and absf(old_ground + 0.02 - old["pos"].y) > 0.03:
 				_items.erase(id)
 				_items[_next_id] = {"number": old["number"], "count": 1, "pos": Vector3(old["pos"].x, old_ground + 0.02, old["pos"].z), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+				_zone_add(_next_id)
 				_next_id += 1
 
 		var new_ground: float = float(ground_height.call(at.x, at.z))
 		spot.y = (new_ground if not is_nan(new_ground) else ground) + 0.02
 
 	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+	_zone_add(_next_id)
 	_next_id += 1
 	_dirty = true
 	_goal_event(peer, "path_laid")
@@ -3873,6 +3878,7 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+			_zone_add(_next_id)
 			_next_id += 1
 			_dirty = true
 			_goal_event(peer, "path_laid")
@@ -4498,6 +4504,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	inv.take_from_slot(slot, 1)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
+	_zone_add(_next_id)
 	var laid_fire: Dictionary = _items[_next_id]["fire"]
 	var stick_s: float = float((_cooking.get("fuel", {}) as Dictionary).get("stick", 2880.0))
 	var start_sticks: int = maxi(1, int(round(float(_cooking.get("start_burn_game_s", 3600.0)) / maxf(stick_s, 1.0))))   # a fresh fire holds its first sticks in its store, where Dave sees them
@@ -5887,6 +5894,7 @@ func _load_world_items() -> void:
 			entry["world"] = true
 
 		_items[_next_id] = entry
+		_zone_add(_next_id)   # a saved fire still blocks spawning round it
 		_next_id += 1
 
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
@@ -7839,23 +7847,6 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, at: Ve
 
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. The dice come from the seed and the spot,
 # so a restart gives the same answer.
-# Is a placed structure, fire or other ground-placed thing within `radius` of the spot (flat distance)? Saplings keep away from these.
-func _built_within(spot: Vector3, radius: float) -> bool:
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if not (it.has("struct") or it.has("fire")):
-			continue
-
-		if str(it.get("struct", {}).get("kind", "")) == "remains":
-			continue
-
-		if Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() <= radius:
-			return true
-
-	return false
-
-
 func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if not standing_near.is_valid() or not ground_height.is_valid():
 		return
@@ -7882,8 +7873,8 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
 		return
 
-	if _built_within(spot, REGROW_EXCLUDE_M):
-		return
+	if spawn_blocked(spot.x, spot.z):
+		return   # nothing regrows near what players put down (no_spawn_m)
 
 	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
 	var used: Dictionary = {}
@@ -10021,6 +10012,8 @@ var _grid = StructureGridScript.new()
 
 # Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
 func _grid_add(id: int, entry: Dictionary) -> void:
+	_zone_add(id)   # every structure, a blueprint site too, blocks spawning round it
+
 	if entry["struct"].has("site"):
 		return   # a blueprint site is walked through and blocks nothing until it is finished (_finish_site)
 
@@ -10034,6 +10027,25 @@ func _grid_add(id: int, entry: Dictionary) -> void:
 # True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
 func structure_blocks(x: float, z: float, margin: float = 0.0) -> bool:
 	return _grid.blocks(x, z, margin, _items)
+
+
+# --- No-spawn zones (Dave 17 Nov 2026): nothing wild appears or regrows within no_spawn_m of anything put down (spawn_zones.gd) ---
+const SpawnZonesScript := preload("res://src/stream/spawn_zones.gd")
+var _spawn_zones = SpawnZonesScript.new()
+
+
+# Registers a freshly placed or loaded row when it is something put down (a structure or a fire). Every spawner asks spawn_blocked.
+func _zone_add(id: int) -> void:
+	var entry: Dictionary = _items[id]
+
+	if SpawnZonesScript.counts(entry) and _carts.vehicle_of(entry).is_empty():   # a cart or barrow goes where it is pulled: not a build
+		_spawn_zones.add(id, entry["pos"].x, entry["pos"].z)
+
+
+# True when something a player put down (or a town piece) still stands within no_spawn_m of (x, z): no sapling, animal or other wild thing
+# appears there. What already stood there stays; once the last piece near is gone, spawning comes back.
+func spawn_blocked(x: float, z: float) -> bool:
+	return _spawn_zones.blocked(x, z, _items)
 
 
 # True when the straight step from (x0, z0) to (x1, z1) goes through such a piece: a long stride cannot jump a thin wall.
@@ -10225,8 +10237,8 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		_kiln_use(peer, id, it, def)
 		return
 
-	if _smelters.is_smelter(def):   # E at a Smelter: works its bellows (Improved), or says how it is fed (master s2.7)
-		_smelters.use(peer, id, it, def)
+	if _smelters.is_smelter(def):   # E at a Smelter lights it or puts it out, as a campfire; at a lit Improved smelter it works the bellows (hold E, choice 1, puts it out)
+		_smelters.use(peer, id, it, def, choice)
 		return
 
 	if str(def.get("use", "")) != "split_log":
@@ -10442,33 +10454,74 @@ func _craft_store(peer: int, recipe: Dictionary, free_entry: bool) -> int:
 	return id
 
 
-# --- The Kiln batch (master s2.6 [D1]; Mission 001 T18) ---
-# Logs put in (at most batch_logs, the one burning included) turn to charcoal while the Kiln is lit: per_log pieces a log, one every
-# log_s / per_log real seconds, into its output. A log is taken when its turn starts, so taking logs out never undoes a piece. With every log done
-# and the Kiln still lit, it burns its own charcoal, one every self_burn_s, and goes out when none is left. E lights it while it holds wood and puts
-# it out; put out, it keeps everything (the part-burnt log too) and goes on where it stopped when lit again. A full output pauses it (it stays lit).
-# struct["kiln"] = {"left": pieces still to come from the log in the burn, "t": seconds toward the next piece}; saved in kilns.json by the store's uid.
+# --- The Kilns (master s2.6 [D1]; Mission 001 T18; Dave 17 Nov 2026: Primitive, Improved and Advanced kilns, any wood) ---
+# Wood put in (structures.json kilns.yield: a log 100 Charcoal, a Firewood 10, a stick 5, kindling none) turns to charcoal while the kiln is lit:
+# the biggest piece first, its yield in pieces, one every kilns.piece_s real seconds, into its output. A kiln holds wood worth batch_logs logs
+# (kilns.yield.log each; a piece takes at least kilns.min_space of that room), the piece in the burn included. A piece is taken when its turn
+# starts, so taking wood out never undoes a piece; a piece that yields nothing (kindling) burns away at once. With all its wood done and still
+# lit, it burns its own charcoal, one every self_burn_s, and goes out when none is left. E lights it while it holds wood and puts it out; put out,
+# it keeps everything (the part-burnt piece too). A full output pauses it (it stays lit).
+# struct["kiln"] = {"left": pieces still to come from the piece in the burn, "t": seconds toward the next piece}; saved in kilns.json by the store's uid.
 
-# Logs in the Kiln's input slots, plus the one in the burn.
-func _kiln_logs(it: Dictionary, box, def: Dictionary) -> int:
-	var logs: int = 1 if int(it["struct"].get("kiln", {}).get("left", 0)) > 0 else 0
-	var log_n: int = table.number_of("log")
+func _kilns_cfg() -> Dictionary:
+	return _structures_cfg.get("kilns", {})
+
+
+# The Charcoal one piece of this wood gives in a kiln (a species log counts as a log); -1 when a kiln does not burn it.
+func _kiln_yield(number: int) -> int:
+	var yields: Dictionary = _kilns_cfg().get("yield", {})
+	var id: String = table.id_of(number)
+
+	if yields.has(id):
+		return int(yields[id])
+
+	return int(yields.get("log", 100)) if table.group_members(table.number_of("log")).has(number) else -1
+
+
+# The room one piece takes in a kiln, in Charcoal of yield.
+func _kiln_space(number: int) -> int:
+	return maxi(_kiln_yield(number), int(_kilns_cfg().get("min_space", 5)))
+
+
+# The wood in a kiln's input slots, in room units, plus what is left of the piece in the burn.
+func _kiln_load(it: Dictionary, box, def: Dictionary) -> int:
+	var units: int = maxi(int(it["struct"].get("kiln", {}).get("left", 0)), 0)
 
 	for i in mini(int(def.get("slots", 0)), box.slot_count):
-		if box.numbers[i] != 0 and (box.numbers[i] == log_n or table.group_members(log_n).has(box.numbers[i])):
-			logs += box.counts[i]
+		if box.numbers[i] != 0 and _kiln_yield(box.numbers[i]) >= 0:
+			units += box.counts[i] * _kiln_space(box.numbers[i])
 
-	return logs
+	return units
 
 
-# How many of `amount` logs a Kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything else.
-func _kiln_room(id: int, box, amount: int) -> int:
+func _kiln_capacity(def: Dictionary) -> int:
+	return int(def.get("batch_logs", 0)) * int(_kilns_cfg().get("yield", {}).get("log", 100))
+
+
+# How many of `amount` pieces of `number` a kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything
+# that is not a kiln.
+func _kiln_room(id: int, box, number: int, amount: int) -> int:
 	var def: Dictionary = _structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {})
 
 	if int(def.get("batch_logs", 0)) <= 0 or box == null:
 		return amount
 
-	return clampi(int(def["batch_logs"]) - _kiln_logs(_items[id], box, def), 0, amount)
+	if _kiln_yield(number) < 0:
+		return 0
+
+	@warning_ignore("integer_division")   # whole pieces that fit
+	return clampi((_kiln_capacity(def) - _kiln_load(_items[id], box, def)) / _kiln_space(number), 0, amount)
+
+
+# The input slot of a kiln holding its biggest piece of wood, or -1.
+func _kiln_next_slot(box, def: Dictionary) -> int:
+	var best: int = -1
+
+	for i in mini(int(def.get("slots", 0)), box.slot_count):
+		if box.numbers[i] != 0 and box.counts[i] > 0 and _kiln_yield(box.numbers[i]) >= 0 and (best < 0 or _kiln_yield(box.numbers[i]) > _kiln_yield(box.numbers[best])):
+			best = i
+
+	return best
 
 
 # kiln world id -> the character key that lit it (server only, not saved, never sent: ADD-18 credits that character when the batch is done).
@@ -10487,14 +10540,14 @@ func _kiln_use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
 		it["struct"]["lit"] = false
 		_kiln_lit_by.erase(id)
 		_say(peer, "You put the kiln out. What is in it stays.")
-	elif _kiln_logs(it, box, def) <= 0:
-		_say(peer, "Put logs in the kiln first (F).")
+	elif _kiln_next_slot(box, def) < 0 and int(it["struct"].get("kiln", {}).get("left", 0)) <= 0:
+		_say(peer, "Put wood in the kiln first (F).")
 		return
 	else:
 		it["struct"]["lit"] = true
 		it["struct"]["kiln"] = it["struct"].get("kiln", {"left": 0, "t": 0.0})
 		_kiln_lit_by[id] = str(_peer_key.get(peer, ""))
-		_say(peer, "The kiln is lit: each log gives %d charcoal." % int(def.get("per_log", 100)))
+		_say(peer, "The kiln is lit: a log gives %d charcoal, a firewood %d." % [_kiln_yield(table.number_of("log")), _kiln_yield(table.number_of("firewood"))])
 
 	_dirty = true
 
@@ -10509,16 +10562,21 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 
 	var k: Dictionary = it["struct"].get("kiln", {"left": 0, "t": 0.0})
 	it["struct"]["kiln"] = k
-	var per: float = maxf(float(def.get("log_s", 300.0)) / maxf(float(def.get("per_log", 100)), 1.0), 0.01)
+	var per: float = maxf(float(_kilns_cfg().get("piece_s", 3.0)), 0.01)
 	var self_s: float = maxf(float(def.get("self_burn_s", 150.0)), 0.01)
 	var charcoal: int = table.number_of("charcoal")
 	var changed: bool = false
 	k["t"] = float(k.get("t", 0.0)) + spent
 
 	for _step in 1000:   # a slow tick is a quarter second, a few pieces at most; the cap only bounds a long jump
-		if int(k.get("left", 0)) <= 0 and _kiln_logs(it, box, def) > 0 and box.remove_fill(table.number_of("log"), 1):
-			k["left"] = int(def.get("per_log", 100))   # the next log's turn starts: it is in the burn now
+		if int(k.get("left", 0)) <= 0 and _kiln_next_slot(box, def) >= 0:
+			var next: int = _kiln_next_slot(box, def)
+			k["left"] = _kiln_yield(box.numbers[next])   # the next piece's turn starts: it is in the burn now (kindling: 0, it burns away)
+			box.take_from_slot(next, 1)
 			changed = true
+
+			if int(k["left"]) <= 0:
+				continue
 
 		if int(k.get("left", 0)) > 0:
 			if float(k["t"]) < per:
@@ -10533,7 +10591,9 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			k["t"] = float(k["t"]) - per
 			changed = true
 
-			if int(k["left"]) <= 0 and _kiln_logs(it, box, def) <= 0:   # ADD-18: the last log of the batch is charcoal: the character who lit it (_kiln_lit_by), if online, else no one
+			var after: int = _kiln_next_slot(box, def)
+
+			if int(k["left"]) <= 0 and (after < 0 or _kiln_yield(box.numbers[after]) <= 0):   # ADD-18: the last piece of the batch is charcoal (kindling left gives none): the character who lit it (_kiln_lit_by), if online, else no one
 				var lighter: String = str(_kiln_lit_by.get(id, ""))
 
 				for lighter_peer in _peer_key:
@@ -10588,7 +10648,7 @@ func _load_kilns() -> void:
 		if typeof(row) == TYPE_ARRAY and (row as Array).size() >= 3:
 			it["struct"]["lit"] = int(row[0]) == 1
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
-			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(def.get("per_log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(def.get("log_s", 300.0)), float(def.get("self_burn_s", 150.0))))}
+			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(_kilns_cfg().get("yield", {}).get("log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(_kilns_cfg().get("piece_s", 3.0)), float(def.get("self_burn_s", 150.0))))}
 
 
 # --- Serving platters (master s3.15 [D15]; catalog Phase 8) ---
@@ -11133,11 +11193,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 			_reject(peer, 3)
 			return 0
 
-	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
-		amount = _kiln_room(id, chest, amount)
+	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a kiln holds wood worth batch_logs logs, the piece in the burn included (master s2.6)
+		amount = _kiln_room(id, chest, number, amount)
 
 		if amount == 0:
-			_say(peer, "The kiln holds %d logs." % int(_structures[kind]["batch_logs"]))
+			_say(peer, "The kiln is full: it holds %d logs' worth of wood." % int(_structures[kind]["batch_logs"]))
 			_reject(peer, 3)
 			return 0
 
@@ -16277,6 +16337,7 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 
 	_wear_slot(peer, inv, hoe, "dig")
 	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": float(yaw_deg)}}
+	_zone_add(_next_id)
 	_next_id += 1
 	_dirty = true
 	_goal_event(peer, "bed_tilled")   # ADD-04: a new bed tilled by this hoe stroke (the early returns above are not a tilling)
@@ -16747,7 +16808,7 @@ func _light_rows_save() -> Array:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and bool(it["struct"].get("lit", false)) and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) != "kiln":   # a Kiln is saved in kilns.json
+		if it.has("struct") and bool(it["struct"].get("lit", false)) and not str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) in ["kiln", "smelt"]:   # a Kiln is saved in kilns.json, a Smelter in smelters.json
 			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
 
 	return rows
@@ -16782,6 +16843,9 @@ func _lights_tick(spent: float) -> void:
 
 			if str(lit_def.get("use", "")) == "kiln":   # a Kiln burns its logs to charcoal, not a fuel_left
 				_kiln_burn(int(id), it, lit_def, spent)
+				continue
+
+			if _smelters.is_smelter(lit_def):   # a Smelter burns its hopper fuel as it smelts (server_smelter.tick), not a fuel_left
 				continue
 
 			# A torch out in the open rain goes out like an open fire (Dave, 4 Nov 2026); one under a crown, a roof or an overhang burns on.
@@ -17226,6 +17290,7 @@ func dev_place(spec: String) -> int:
 		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": float(_coals_cfg().get("coals_s" if coals else "ash_s", 7200.0 if coals else 43200.0)),
 			"fire": {"state": FIRE_STATE_COALS if coals else FIRE_STATE_ASH, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": false, "recheck": COVER_RECHECK_S}}
 		_lit_valid = false
+		_zone_add(_next_id)
 		_next_id += 1
 		_dirty = true
 		return _next_id - 1
@@ -17237,6 +17302,7 @@ func dev_place(spec: String) -> int:
 		var lit_state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(wood_class, {}) as Dictionary).get("state", 1))
 		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": 1.0e9, "fire": {"state": lit_state if lit else 9, "burn_left": 36000.0, "wood": wood, "covered": false, "recheck": COVER_RECHECK_S}}
 		_lit_valid = false
+		_zone_add(_next_id)
 		_next_id += 1
 		_dirty = true
 		return _next_id - 1
@@ -18925,7 +18991,7 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
-	amount = _kiln_room(sid, box, amount)
+	amount = _kiln_room(sid, box, number, amount)
 	var sdef: Dictionary = _structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {})
 
 	if _smelters.is_smelter(sdef):
