@@ -46,16 +46,16 @@ A vein is the part of an existing ore body that is rich enough to follow. Surfac
 ## 5. Finding one (prospecting)
 No new tool. Signs, from strongest to faintest:
 1. **Outcrops**: shallow bodies still show ore boulders and exposed nodes in bare rock (as now, minus the deep ones).
-2. **Float in streams**: tin pebbles in a river point upstream to their source (true now: tin rocks lie only near tin placers). River copper rocks are strewn without regard to bodies (CR-2, CR-3), so they are not a pointer; geology copper placers are.
+2. **Float in streams**: tin pebbles in a river point upstream to their source (true now: tin rocks lie only near a tin body, in practice its river placers). River copper rocks are strewn without regard to bodies (CR-2, CR-3), so they are not a pointer; geology copper placers are.
 3. **Stained ground** over a body within about 30 m of the surface: rusty brown over iron, green-blue over copper, pale bleached patches over tin; a faint ground tint drawn by the client from a list of shallow bodies (provisional, needs a look pass, a protocol step and a re-bake; see section 8).
 4. **Test pits**: a shovel or pick hole through the cover into rock shows what the rock is (the label already names ore in bare rock); a pick blow on ore rock gives a piece of ore.
 
 Later (not in this plan): indicator plants, a surveying skill, an NPC prospector who sells rumours.
 
 ## 6. Mining one
-- **Tools.** In rock the pickaxe digs: each blow bites a 0.9 m sphere out of the face (the shovel's size; it clears about 3 of the 1 m voxels) and pays only for voxels it actually cleared: each cleared ore voxel gives the pick's pieces, each of them ore by the grade of the body that holds it (looked up from the tile's ore list, as `ore_at` does), else stone; cleared plain rock gives stone. A bite that clears nothing new (an old hole) pays nothing, so ore is finite per voxel. Copper pick for copper, tin, coal and salt; Bronze or better for iron (the existing `needs_material` rule). Better picks are faster, not richer (`boulders.json` tools: copper 1.5, bronze 2, iron 3, steel 4). Hard host rock digs slower, by the existing rock hardness table (`geology` rock `hardness`: granite 0.95, basalt 0.85, limestone 0.7, shale 0.15). The shovel keeps soil, sand, gravel, clay and rubble; in solid rock it does nothing. Hammers keep surface rocks and do not tunnel.
+- **Tools.** In rock the pickaxe digs: each blow bites a 0.9 m sphere out of the face (the shovel's size; it clears about 3 of the 1 m voxels) and pays only for voxels it actually cleared: each cleared ore voxel gives the pick's pieces, each of them ore by the grade of the body that holds it (looked up from the tile's ore list, as `ore_at` does), else stone; cleared plain rock gives stone. A bite that clears nothing new (an old hole) pays nothing, so ore is finite per voxel. Copper pick for copper, tin, coal and salt; Bronze or better for iron (the existing `needs_material` rule). Better picks are faster, not richer (`boulders.json` tools: copper 1.5, bronze 2, iron 3, steel 4). Hard host rock digs slower, by the existing rock hardness table (`tile_rules.json` top-level `rock.hardness`: granite 0.95, basalt 0.85, limestone 0.7, shale 0.15). The shovel keeps soil, sand, gravel, clay and rubble; in solid rock it does nothing. Hammers keep surface rocks and do not tunnel.
 - **Yield from what is dug.** The dig yield reads the voxel material and ore at the point struck, not the surface material above it (this also fixes underground shovel digs giving the soil of the field above).
-- **Supports.** The existing cave-in rules decide: a 2 m drift in rock stands unsupported however deep; a 3 m drift under 20 m of rock, a wide room, or almost any tunnel in loose soil needs Posts or Beams. A cave-in fills the workings with rubble (ore taken stays taken and rubble can be dug out again: [Proposed], `DESIGN_IDEAS.md` 11.2).
+- **Supports.** The existing cave-in rules decide: a 2 m drift in rock stands unsupported however deep; a drift 4 m wide under 20 m of rock, a wide room, or almost any tunnel in loose soil needs Posts or Beams. A cave-in fills the workings with rubble (ore taken stays taken and rubble can be dug out again: [Proposed], `DESIGN_IDEAS.md` 11.2).
 - **Light.** Underground is dark; torches, lanterns and wall lanterns as they are.
 - **Hauling.** Copper, tin and iron ore weigh 1.5 kg a piece, coal 0.5 kg. Stage 1: carry it, or use the Handcart where the tunnel is wide enough, and tip it into resource bins at the mine mouth. Stage 2 (new items, Dave's yes needed): a Mine cart on wooden rails for long drifts and a Hoist over a shaft (a windlass and bucket, like the well's) to lift ore and players.
 - **"Mining operation"** means, in stages: (1) a player or a group digging a real mine with picks, supports, light and carts; (2) machinery that moves ore from the face to the surface; (3) later, a mine outpost (the Mining shed of the outpost design) where hired miners work it while nobody is there.
@@ -67,7 +67,7 @@ Later (not in this plan): indicator plants, a surveying skill, an NPC prospector
 | Where | Strewn, river beds, mountain feet | Buried bodies, found by signs |
 | Ore in one find | 1 (by hand) to about 2,800 (a 2 m copper boulder) | Far more: a body holds millions of tonnes, a vein in it thousands |
 | Setup | None | Dig in, brace, light, haul |
-| Rate | Fast at first, then gone near home | Steady: 1.5-4 pieces per ore voxel cleared, all day |
+| Rate | Fast at first, then gone near home | Steady: 1.5-4 pieces per ore voxel cleared (a bite clears about 3), all day |
 | Renews | Taken stays taken (CR rules) | Finite (deposits do not renew) |
 
 The surface gives enough copper for the first tools and a Copper pickaxe; the vein is where bronze and iron in quantity come from.
@@ -78,7 +78,7 @@ The surface gives enough copper for the first tools and a Copper pickaxe; the ve
 - **Generation:** the vein pattern is a cheap seeded test per voxel run inside bodies, only in blocks that hold a body; most blocks pay nothing. It changes generated blocks, so it needs a terrain version step and a starter cache rebuild on Dave's PC (`tools/rebuild_starter_cache.sh`). Existing digs replay on top as usual; ore voxels under old holes are simply gone, and ore in unworked rock moves to the vein pattern. A world wipe is Dave's action only, if he wants one.
 - **Depth-gated outcrops:** one height compare per body in `ore_at`; cheaper than now.
 - **Stained ground:** the client needs to know where shallow bodies are: either a new tile section (a re-bake) or a short list sent at tile load (a protocol step). The client tints ground in a shader; no per-frame server work.
-- **Limits.** No new limits. Existing ones that a large mine meets: the dig log holds at most 20,000 edits in one 16 m block in its lifetime (about 10,000 m3 of bites, more than the block holds) and 600 not yet settled; Posts and Beams are capped at 60 of each per 256 m chunk (a fresh Beam holds 7.5 m around it, so one every 14 m covers about 840 m of drift). Raising the support cap is listed in For Dave.
+- **Limits.** No new limits. Existing ones that a large mine meets: the dig log holds at most 20,000 edits in one 16 m block in its lifetime (about 60,000 m3 of 0.9 m bites, more than the block holds) and 600 not yet settled; Posts and Beams are capped at 60 of each per 256 m chunk (a fresh Beam holds 7.5 m around it, so one every 14 m covers about 840 m of drift). Raising the support cap is listed in For Dave.
 - **Cheating:** clients still never receive ore more than 2 m behind a surface, so x-ray clients learn nothing; the server decides every yield.
 
 ## 9. The choices that are Dave's
@@ -98,7 +98,7 @@ The surface gives enough copper for the first tools and a Copper pickaxe; the ve
 | ID | Choice | Value | Why |
 |---|---|---|---|
 | OV-1 | Outcrop depth for compact bodies | top within 10 m of the rock surface | The same test coal seams and pipes already use. |
-| OV-2 | Vein sheets in a body | 0.5-3 m thick, 8-30 m apart, dipping, pinch and swell | Real veins are narrow and come in sets. |
+| OV-2 | Vein sheets in a body | 1-3 m thick, 8-30 m apart, dipping, pinch and swell | Real veins are narrow and come in sets. |
 | OV-3 | Ore between veins | 1 voxel in 50 is ore (hashed) | Wall rock in an ore body carries a little. |
 | OV-4 | Pick bite | 0.9 m radius sphere a blow (the shovel's), 700 ms a blow as now | About 3 m3 a bite, so 3-5 blows a metre of 2 m drift; tune the pace on play. |
 | OV-5 | Pieces per cleared voxel | the pick's rate (copper 1.5, bronze 2, iron 3, steel 4), each ore by its body's grade, else stone | Same numbers as breaking boulders. |
@@ -106,7 +106,7 @@ The surface gives enough copper for the first tools and a Copper pickaxe; the ve
 | OV-7 | Shovel in solid rock | does nothing ("Too hard for a shovel") | Pick for rock, shovel for loose ground. Changes today's behaviour. |
 | OV-8 | Hammer | surface rocks only, no tunnelling | His tool ladder: hammer harvests rocks, pick mines. |
 | OV-9 | Stained ground | bodies within 30 m of the surface | Deep enough to lead to a mine, rare enough to be a find. |
-| OV-10 | Support cap | lift Posts and Beams from 60 a chunk to no cap | Dave's taste for no arbitrary limits (as in his 16 Nov ground-drop ruling); a large mine needs many. |
+| OV-10 | Support cap | lift Posts and Beams from 60 a chunk to no cap | Dave's taste for no arbitrary limits (his 16 Nov 2026 ruling on ground drops, "there should be no limit", PR #1199); a large mine needs many. |
 | OV-11 | Coal seams and salt | mined like veins, copper pick | They are already layers in the ground. |
 | OV-12 | Practical mine depth | bodies within about 60 m are the midgame targets; no limit set | A guide for prospecting signs and testing. |
 
