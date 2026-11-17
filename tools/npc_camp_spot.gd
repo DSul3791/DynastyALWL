@@ -78,8 +78,8 @@ func _init() -> void:
 		return
 
 	var foot: Vector3 = tree[1]
-	var b: float = deg_to_rad(float(args["bearing"]))
-	var view: Vector2 = Vector2(sin(b), -cos(b))         # the way the viewer looks, across the ground (x, z)
+	var turn: float = deg_to_rad(float(args["bearing"]))
+	var view: Vector2 = Vector2(sin(turn), -cos(turn))         # the way the viewer looks, across the ground (x, z)
 	var front: Vector2 = -view                            # from the trunk toward the viewer
 	var left: Vector2 = Vector2(view.y, -view.x)          # the viewer's left (view turned a quarter anticlockwise seen from above, north -z)
 	var trunk: Vector2 = Vector2(foot.x, foot.z)

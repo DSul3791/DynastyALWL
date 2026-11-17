@@ -9,6 +9,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_npc_camp.gd
 
 const NpcCamp := preload("res://src/shared/npc_camp.gd")
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -172,7 +173,7 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 		return
 
 	var it: Dictionary = items._items[id]
-	check(int(it["fire"]["state"]) == items.FIRE_STATE_BONFIRE and items.fire_is_lit(int(it["fire"]["state"])), "it is a large fire, burning")
+	check(int(it["fire"]["state"]) == items.FIRE_STATE_BONFIRE and ItemsScript.fire_is_lit(int(it["fire"]["state"])), "it is a large fire, burning")
 	check(items._fire_extra(it) == {"camp": 1}, "its row tells clients it is the camp fire, with no burn time")
 	items._fires(600.0)
 	check(int(it["fire"]["state"]) == items.FIRE_STATE_BONFIRE, "heavy rain and ten minutes leave it burning")
@@ -223,12 +224,12 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 	# The tree: a blow on it is refused before any work is done.
 	items.tree_info = func(_c, _i): return {"name": "oak", "position": Vector3(tree.x, 10.0, tree.y), "height": 12.7, "trunk": 0.6, "ref_height": 20.0, "broadleaf": true, "id": 1}
 	items.cut_tree = func(_c, _i): return true
-	var axe: int = items.table.number_of("stone_axe")
-	inv.add(axe, 1)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)   # as a player holding it (HeldTool, protocol 115)
+	check(HeldTool.slot_of(items, "axe") >= 0, "the axe is in hand")
 	said.clear()
 	items._last_hit.clear()
 	items.report_position(1, Vector3(tree.x + 1.0, 10.0, tree.y))
-	items.action(1, Net.ACT_HIT, 1, 0, 0, Vector3(float(inv.numbers.find(axe) + 1), 0.0, 0.0))
+	items.action(1, Net.ACT_HIT, 1, 0, 0, HeldTool.at_axe(items))
 	check(items._chops.is_empty() and said.any(func(t): return str(t).contains("shelters Edda and Hob's camp")), "an axe on the camp tree does nothing (%s)" % str(said))
 	var cuts: Array = []
 	items.cut_tree = func(c, i) -> bool:
