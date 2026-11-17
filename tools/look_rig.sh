@@ -1,4 +1,6 @@
 #!/bin/bash
+# Only the hold of an item (how a tool sits in the hand)? Use tools/shot_held.gd instead: the game's body and held-item code on a flat floor, no
+# server or world, a few seconds per set of angles:  "$GODOT_EXE" --path . --script res://tools/shot_held.gd -- --item=copper_saw --out=DIR
 # Look rig: take pictures from the real client, windowed, in the second clone, never touching Dave's game, server or settings.
 #   tools/look_rig.sh --item torch [--count 1] [--cam first|left] [--at X,Z] [--agl 1.7] [--yaw 0] [--pitch 0]
 #                     [--hour 12] [--weather clear|rain|storm|snow] [--admin] [--name NAME] [--out DIR] [--wait 25] [--settle 12]
@@ -22,16 +24,25 @@
 #     "shot runner: state:" line: the expectation, the player, and every loose item within 6 m with its gap above the ground.
 #   --dist M  third-person camera distance (under 2 m aims at the held item: a hand close-up)
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
-#   --at     world x,z (default the spawn 53301,68427); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
+#   --at     world x,z (default the server's own spawn, read from its log, where the starter ground is loaded; --ground piles keep 53301,68427 because
+#            they are seeded before the server starts, so pass --at and --gy together for them); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
 #   --cam right = the character seen from its right (the right hand shows); --nograss hides the grass; --bow STATE[:DRAW] poses a held bow (with --give wooden_bow; first person shows the arms, --cam left the body with the bow at its side); --lit keeps a given torch or lantern burning in the pictures (fuel given, arms on in first person); --keep keeps the temp folder
 #   --admin  also show the F3 admin/debug lines
 #   --walk M_PER_S  with --cam left|right: the third-person body walks at that speed (4 = walk, 8 = run, 0 = standing; the shot runner fakes the pace)
+#   --angles "name:deg:dist;..."  several third-person pictures from ONE start (camera deg round the body from its front: 0 front, 90 its left, -90 its right,
+#            180 behind; dist m, under 2 m aims at the held item); frames <name>_<angle>.png. Implies --cam right when --cam is not given. Example, a held tool:
+#            tools/look_rig.sh --give copper_saw --angles "right:-90:1.6;left:90:1.6;hand:-90:0.7;front:0:1.6" --name copper_saw
+#   Held-item shots (--give or --item, without --ground/--pieces/--look/--showroom/--flora/--views/--frametime/--drop/--dig) take the picture as soon as the
+#   scene is ready instead of on fixed timers (--shot-ready=held; --wait and --settle become the most they wait; --no-ready keeps the old timers), and the
+#   body stands in its idle pose (--walk 0) in every third-person shot. --at defaults to the server's spawn in every mode but --ground piles.
+#   Every run ends with "rig: N picture(s) in T s"; no picture saved is a FAIL (exit 4).
 #   --server-arg ARG  pass one extra argument to the throwaway server (repeat), e.g. --server-arg --water2 (Dynasty water)
 #   --client-arg ARG  pass one extra argument to the client (repeat the option), e.g. --client-arg --generated-body
 # Runs a throwaway server (own store, --open-admin) and a windowed client with its own APPDATA, so Dave's saves, hotbar and
 # display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
 cd "$(dirname "$0")/.." || exit 2
+SECONDS=0
 # Windows (Git bash) keeps the old behaviour; Linux (the server box) draws on the NVIDIA GPU under Xvfb, like tools/docker/shot.sh.
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN=1;; *) WIN="";; esac
 if [ -n "$WIN" ]; then
@@ -39,16 +50,22 @@ if [ -n "$WIN" ]; then
 else
   GODOT="${GODOT_EXE:-/opt/godot/godot}"; GFX="${GODOT_GFX_EXE:-/opt/godot/godot-gfx}"; PY=python3; DEFOUT=/out/shots
 fi
-CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; LOOKS=""; ITEM=""; GROUND=""; GY=31.25; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="$DEFOUT"; WAIT=""; SETTLE=""; DDIST=1.0
+AT_GIVEN=""; HELD=""; SCENE=""; NOREADY=""; ANGLES=""; CAM_GIVEN=""; CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; LOOKS=""; ITEM=""; GROUND=""; GY=31.25; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="$DEFOUT"; WAIT=""; SETTLE=""; DDIST=1.0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
+    --item) ITEM="$2"; HELD=1; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; CAM_GIVEN=1; shift 2;; --at) AT="$2"; AT_GIVEN=1; shift 2;;
+    --angles) ANGLES="$2"; shift 2;; --no-ready) NOREADY=1; shift;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
     --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --look) LOOKS="$2"; ADMIN="$ADMIN --shot-pieces=look:$2 --shot-piece-views"; shift 2;; --looks) LOOKS="$2"; ADMIN="$ADMIN --shot-pieces=look:${2//,/,look:}"; shift 2;; --piece-views) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2 --shot-piece-views"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --showroom-per) ADMIN="$ADMIN --shot-showroom-per=$2"; shift 2;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --bow) ADMIN="$ADMIN --shot-bow=$2"; shift 2;; --lit) ADMIN="$ADMIN --shot-lit"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
     --walk) WALKSPEED="$2"; shift 2;; --client-arg) XARGS="$XARGS $2"; shift 2;; --server-arg) SARGS="$SARGS $2"; shift 2;;
     --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
+case "$ADMIN" in *--shot-give=*) HELD=1;; esac
+case "$ADMIN $GROUND" in *--shot-flora=*|*--shot-pieces=*|*--shot-showroom=*|*--shot-frametime=*|*--shot-views=*|*--shot-drop*|*--shot-dig=*|*--shot-ground*) SCENE=1;; esac
+[ -n "$GROUND" ] && SCENE=1
+[ -n "$ANGLES" ] && [ -z "$CAM_GIVEN" ] && CAM=right
+[ -n "$ANGLES" ] && [ "$CAM" = "first" ] && echo "rig: WARNING --angles needs a third-person camera (--cam left or right); with --cam first it is ignored"
 # --ground-close: the camera numbers are flags (--close-height, --close-dist, --close-pitch); later --agl/--drop-dist/--look-down still win.
 if [ -n "$CLOSE" ]; then
   ADMIN="$ADMIN --shot-ground --shot-back=0 --shot-lookdown=$CP --shot-drop-dist=$CD"; DDIST="$CD"; AGL="$CH"
@@ -98,10 +115,21 @@ PORT=$((7800 + RANDOM % 150))
 "$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 $SARGS > "$RIG/server.log" 2>&1 &
 SP=$!
 trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
-sleep 30
+# The server is ready when it says it listens (about 5 to 20 s), not after a fixed 30 s; its spawn is where the starter ground is, so a shot there needs no streaming.
+for _ in $(seq 1 120); do grep -q "Terrain server listening" "$RIG/server.log" 2>/dev/null && break; kill -0 $SP 2>/dev/null || break; sleep 0.5; done
+kill -0 $SP 2>/dev/null || { echo "FAIL: the throwaway server stopped (server.log below)"; tail -20 "$RIG/server.log" | cut -c1-200; exit 5; }
+grep -q "Terrain server listening" "$RIG/server.log" || echo "rig: WARNING the server log has no listening line after $SECONDS s (output not flushed?); going on"
+echo "rig: server ready after $SECONDS s"
+SPAWN=$(grep -oE "spawn \(-?[0-9.]+, -?[0-9.]+, -?[0-9.]+\)" "$RIG/server.log" | head -1 | tr -d '(),' | awk '{print $2","$4}')
+if [ -z "$AT_GIVEN" ] && [ -z "$GROUND" ] && [ -n "$SPAWN" ]; then
+  X="${SPAWN%,*}"; Z="${SPAWN#*,}"; echo "rig: --at defaults to the server spawn $X,$Z"
+fi
 WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }
 [ -n "$WALKSPEED" ] && WALK="$WALKSPEED"
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK"
+[ -n "$ANGLES" ] && ADMIN="$ADMIN --shot-angles=$ANGLES"
+if [ -n "$HELD" ] && [ -z "$SCENE" ] && [ -z "$NOREADY" ]; then ADMIN="$ADMIN --shot-ready=held"; echo "rig: held-item shot: the picture is taken once the scene is ready (--wait $WAIT s, --settle $SETTLE s at most)"; fi
+CSTART=$SECONDS
 CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN $XARGS ${EXPECT:+"--shot-expect=$EXPECT"})
 if [ -n "$WIN" ]; then
   APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
@@ -116,7 +144,9 @@ else
   echo "renderer: $REND ($ICD)"; [ "$REND" = software ] && export LIBGL_ALWAYS_SOFTWARE=1
   HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 fi
-grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200
+echo "rig: client window open $((SECONDS - CSTART)) s"
+grep -E "shot runner: (saved|timing|FAILED|--wait cap|--settle cap)|JOIN: ground ready|ERROR|SCRIPT" "$RIG/client.log" | head -14 | cut -c1-200
+SAVED=$(grep -cE "shot runner: (saved |view .* saved |lapse .* saved|chop phase .* saved)" "$RIG/client.log")   # every picture the runner saves says so on one line
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
 # Shaders compile only in a windowed client, never in a headless gate, so this run is where a broken shader shows (#416: a '#'
 # comment in GREENS_SHADER, "Unknown character #35 ... Shader compilation failed"). Any SHADER ERROR fails the rig run (exit 3).
@@ -126,3 +156,8 @@ if [ "$SHADERR" -gt 0 ]; then
   exit 3
 fi
 echo "shader errors: 0"
+echo "rig: $SAVED picture(s) in $SECONDS s"
+if [ "$SAVED" -eq 0 ]; then
+  echo "FAIL: no picture was saved (client log tail below)"; tail -15 "$RIG/client.log" | cut -c1-200
+  exit 4
+fi
