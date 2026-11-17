@@ -5,6 +5,7 @@ extends SceneTree
 #   fills it) and the two NPC spots are clear of trees and shrubs (the camp markers clear no wood);
 # - Hob takes his own post and Edda her own chair there, facing the fire, and the town's middle does not move;
 # - the server lays the large camp fire, keeps it lit in rain, never saves it, lays it again when it goes, and refuses every use of it;
+# - a world saved before the camp (admin markers and NPC homes at the old town, a saved fire) loads with Hob and Edda at the oak and the camp fire laid;
 # - nothing is put down within keep_m of the tree (the ghost and the server), and the server's tree hit refuses the camp tree.
 #   godot --headless --path . --script res://src/worldgen/tools/test_npc_camp.gd
 
@@ -46,6 +47,7 @@ func _init() -> void:
 	_flora(tree, fire, own)
 	_npcs(fire, own)
 	_server(tree, fire)
+	_old_world(fire, own)
 	print("npc camp: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -236,3 +238,60 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 		cuts.append([c, i])
 		return true
 	check(items._fell(Vector2i.ZERO, 1, {"name": "oak", "position": Vector3(tree.x, 10.0, tree.y), "height": 12.7, "trunk": 0.6}, Vector2.RIGHT) == -1 and cuts.is_empty(), "undermining or a road never fells the camp tree (_fell)")
+
+
+# A world saved before the camp (Dave 17 Nov 2026: "I just pulled dev and restarted my game but edda and hob are in the same place"): its NPC admin file
+# (extra posts and chairs, Hob and Edda given homes at the old town) and its world items (a fire of its own) load, and Hob and Edda still go to the oak
+# and the camp fire is laid beside the saved one. NPC spots are never saved: each start puts them where markers.json says.
+func _old_world(fire: Vector2, own: Dictionary) -> void:
+	var dir: String = "user://test_npc_camp_old"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var admin: FileAccess = FileAccess.open(dir + "/npc_admin.json", FileAccess.WRITE)
+	admin.store_string(JSON.stringify({"version": 1, "markers": [{"id": "post_a1", "kind": "post", "x": 53273.0, "z": 68080.0, "slots": 1, "yaw": 0.0}, {"id": "chair_a1", "kind": "chair", "x": 53267.0, "z": 68073.0, "slots": 1, "yaw": 0.0}],
+		"npc_homes": [{"id": "hob", "x": 53273.0, "z": 68080.0}, {"id": "edda", "x": 53267.0, "z": 68073.0}]}))
+	admin.close()
+	var npcs = NpcsScript.new()
+	NpcsScript.test_hold_off = false
+	npcs.hour_now = func(): return 12.0
+	npcs.ground_height = func(_x, _z): return 10.0
+	npcs.player_positions = func(): return [Vector3(fire.x, 10.0, fire.y)]
+	npcs.setup(dir)
+	npcs.tick(0.2)
+
+	for id in ["hob", "edda"]:
+		var spot: Vector2 = Vector2(float(own[id]["x"]), float(own[id]["z"]))
+		check(Vector2(npcs.npcs[id]["pos"].x, npcs.npcs[id]["pos"].z).distance_to(spot) < 0.01, "an old world: %s is at the oak, not the old town (%s)" % [id, str(npcs.npcs[id]["pos"])])
+
+	# The world items of an old save: a server with no camp saves a fire of its own; a new server loads it and lays the camp fire too.
+	var before = _items_in(dir)
+	var old_fire: int = before.dev_place("campfire@53300,68100,0,lit,firewood")
+	check(old_fire != 0, "the old world has a fire of its own")
+	before._dirty = true
+	before.save()
+	before._finish_writer()
+	var after = _items_in(dir)
+	var kept: bool = false   # ids are given again at load: find it by its spot
+
+	for id in after._items:
+		var it: Dictionary = after._items[id]
+		kept = kept or (it.has("fire") and not it["fire"].has("camp") and Vector2(it["pos"].x, it["pos"].z).distance_to(Vector2(53300.0, 68100.0)) < 0.1)
+
+	check(kept, "the old world's own fire loads as it was")
+	after.camp_fire_on = true
+	after._camp_fire_tick()
+	var camp: Dictionary = after._items.get(after._camp_fire_id, {})
+	check(camp.get("fire", {}).has("camp") and Vector2(camp["pos"].x, camp["pos"].z).distance_to(fire) < 0.01, "the camp fire is laid in the old world")
+
+
+func _items_in(dir: String):
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.ground_height = func(_x, _z): return 10.0
+	items.setup(ItemTableScript.load_default(), dir)
+	return items
