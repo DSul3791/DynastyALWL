@@ -61,4 +61,4 @@ A crafting station with a store (the smithies, leatherworking table, tailor's ta
 - **SC-1, size.** Under the recipes the store's wells are 70 px, 8 across (a chest's are 100 px, 6 across), so a smithy's 12 slots take two rows and the category tabs still fit.
 - **SC-2, what steps aside.** The store keeps its bar (Keep out of crafting, Take all, Store all, Lock); Sort both and Stack into my chests are left off under the recipes for the room.
 - **SC-3, what keeps tabs.** The Kiln (a batch of logs, being rebuilt in three tiers), the chopping block (E splits, no recipes), chests, fires and smelters keep the old window.
-- **SC-4, reading.** "Combined" is read as one screen with the station's store in view. The other reading, products going straight to your pack, was put to Dave as a choice.
+- **SC-4, reading (Dave's pick, 17 Nov 2026 02:12Z: "Station's slots on the craft screen").** "Combined" is one screen with the station's store in view; products still land in the station's output slots, not in your pack.
