@@ -3575,7 +3575,32 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or _stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+	return _free_craft() or (hand_tool_ok(number) and (_stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])))
+
+
+# A sawing recipe crafts only with the saw in the right hand (CraftStock.hand_tool, Dave 17 Nov 2026); the server checks it again. Any other: true.
+func hand_tool_ok(number: int) -> bool:
+	var tool: String = CraftStock.hand_tool(recipes.recipe(number))
+
+	if tool == "":
+		return true
+
+	var slot: int = _hand_slot()
+	return inventory != null and slot >= 0 and slot < inventory.slot_count and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool
+
+
+# Left click with a saw in hand (Dave 17 Nov 2026): the crafting screen opens on the Carpenter's tab, what a saw makes; Craft then draws the logs
+# from the ground near you as any craft does.
+func open_crafting_on(category: String) -> void:
+	if chest_mode:
+		_close_chest()
+
+	_recipe_part.show_category(category)
+
+	if open:
+		_refresh()
+	else:
+		toggle()
 
 
 # --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 12 m
@@ -5572,7 +5597,7 @@ func _start_craft(number: int, count: int = 1, variant: int = 0) -> void:
 			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.sentence_name(item))
 			return
 
-	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, variant, count, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, variant, count, Vector3(float(_hand_slot() + 1), 0.0, 0.0))   # at.x: the hand slot + 1 (126), for sawing
 
 
 func _on_reject(reason: int) -> void:

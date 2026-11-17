@@ -233,7 +233,7 @@ func craft(id: String, times: int, seconds: float = -1.0, variant: int = 0) -> v
 		seconds = float(r.get("craft_s", 10.0)) * float(times) * SmithingRules.time_mult(variant) + 4.0
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), variant, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), variant, times, Vector3(float(items._tool_slot(items.inventory_of(1), "saw") + 1), 0.0, 0.0))   # the first saw on the hotbar stands for the one in hand (sawing needs it there, protocol 126)
 	var waited: float = 0.0
 
 	while waited < seconds * 3.0 + 30.0 and not items.craft_queue_of(1).is_empty():   # the crafter's pace may be slower than the recipe time

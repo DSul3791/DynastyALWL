@@ -91,11 +91,11 @@ const GEAR_GHOST := {
 	"hands": "glove", "back": "pack", "waist": "belt", "right": "hand_axe", "left": "shield",
 }
 
-# The 10 recipe categories of recipes.json, plus All, in tab order, with their glyphs. One food tab, the soup bowl (Dave 10 Nov 2026: Fire and cooking was the same thing).
+# The 11 recipe categories of recipes.json (Carpenter's since 17 Nov 2026), plus All, in tab order, with their glyphs. One food tab, the soup bowl (Dave 10 Nov 2026: Fire and cooking was the same thing).
 const TAB_GLYPH := {
 	"All": "all", "Tools": "axe", "Weapons": "spear", "Armour": "helmet", "Shelter and building": "house", "Workshops and stations": "anvil",
 	"Food and drink": "bowl", "Medicine": "leaf", "Clothing": "shirt",
-	"Containers and furniture": "chest", "Materials": "planks",
+	"Containers and furniture": "chest", "Materials": "planks", "Carpenter's": "saw",
 }
 
 static var _art: Dictionary = {}
@@ -883,6 +883,8 @@ static func glyph_shapes(glyph_name: String) -> Array:
 			return [["chord", 0.12, 0.08, 0.88, 0.92, 225, 405], ["line-", 0.22, 0.78, 0.74, 0.26, 0.05]]
 		"chest", "mark_chest":
 			return [["rect", 0.08, 0.38, 0.92, 0.88], ["chord", 0.08, 0.12, 0.92, 0.64, 180, 360], ["rect-", 0.08, 0.4, 0.92, 0.46], ["rect-", 0.44, 0.46, 0.56, 0.6]]
+		"saw":   # the Carpenter's tab (17 Nov 2026): a toothed blade with its handle at the right; placeholder shapes until a tab_carpenters.png is painted
+			return [["poly", 0.06, 0.34, 0.66, 0.3, 0.66, 0.6, 0.63, 0.68, 0.6, 0.6, 0.57, 0.68, 0.54, 0.6, 0.51, 0.68, 0.48, 0.6, 0.45, 0.68, 0.42, 0.6, 0.39, 0.68, 0.36, 0.6, 0.33, 0.68, 0.3, 0.6, 0.27, 0.68, 0.24, 0.6, 0.21, 0.68, 0.18, 0.6, 0.15, 0.68, 0.12, 0.6, 0.09, 0.68, 0.06, 0.6], ["rect", 0.64, 0.24, 0.94, 0.7], ["rect-", 0.72, 0.36, 0.86, 0.56]]
 		"planks", "saw_mill":
 			return [["rect", 0.08, 0.16, 0.92, 0.34], ["rect", 0.12, 0.42, 0.88, 0.6], ["rect", 0.16, 0.68, 0.84, 0.86]]
 		"campfire":

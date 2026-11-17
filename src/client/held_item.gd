@@ -67,6 +67,7 @@ const HELD_SPEAR_SCALE := 1.0
 const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow", "bronze_arrow", "iron_arrow", "steel_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const BowReticle := preload("res://src/client/bow_reticle.gd")
+const SAW_CATEGORY := "Carpenter's"   # the craft tab a left click with a saw opens (Dave 17 Nov 2026: "the carpenters category")
 const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
@@ -1230,6 +1231,11 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			_arm_play("use", 0.6)
 			_hoe_apply()
+			return true
+
+		# Left click with a saw (Dave 17 Nov 2026): the crafting screen opens on the Carpenter's tab, what the saw makes; Craft takes the log from near you.
+		if button == MOUSE_BUTTON_LEFT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "saw":
+			_inv.open_crafting_on(SAW_CATEGORY)
 			return true
 
 		if button == MOUSE_BUTTON_LEFT and pressed:

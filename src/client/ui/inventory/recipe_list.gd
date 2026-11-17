@@ -12,6 +12,7 @@ const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const CraftStockScript := preload("res://src/shared/craft_stock.gd")
 const TAB_PX := 48.0                       # the category tabs: a column of 48 px glyph tabs (redesign 4.3)
 const LIST_PX := 226.0                     # the recipe list's width (196 cut about 47 of 338 names at text scale 1.2; 226 cuts about 11, 9 Nov 2026)
 const CARD_ICON_PX := 96.0                 # the made item's well on the recipe card
@@ -109,6 +110,11 @@ var _admin_nodes: Array = []     # the Admin heading and kit rows at the foot of
 
 func running() -> bool:
 	return not _pass.is_empty()
+
+
+# Picks a category tab from outside the list (left click with a saw opens Carpenter's); refresh() lights its tab.
+func show_category(category: String) -> void:
+	_recipe_category = category if RecipeFilter.CATEGORIES.has(category) else ""
 
 
 func refresh() -> void:
@@ -378,7 +384,7 @@ func _build_recipe_filter() -> Control:
 	return holder
 
 
-# The category tabs (redesign 4.3): All and the 10 recipe categories as a column of 48 px raised tabs, each an engraved glyph;
+# The category tabs (redesign 4.3): All and the 11 recipe categories (Carpenter's, what a saw makes, since 17 Nov 2026) as a column of 48 px raised tabs, each an engraved glyph;
 # the chosen tab is lit with a gold glyph. The category's name is the tab's tooltip.
 func _build_tabs() -> Control:
 	var tabs: VBoxContainer = VBoxContainer.new()
@@ -792,6 +798,9 @@ func missing_text(r: Dictionary) -> String:
 
 		if have < int(need[1]):
 			short.append("%s %d / %d" % [view.table.cost_sentence(int(need[0])), have, int(need[1])])
+
+	if not view.hand_tool_ok(int(r.get("number", 0))):
+		short.push_front("a %s in your hand" % CraftStockScript.hand_tool(r))   # first, so the card says it even when a log is short too
 
 	if short.is_empty():
 		return ""

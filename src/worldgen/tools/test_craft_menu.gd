@@ -6,6 +6,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const CraftStock := preload("res://src/shared/craft_stock.gd")
 
 var failures: int = 0
 
@@ -41,6 +42,11 @@ func _init() -> void:
 		check(not inside.is_empty(), "the %s tab is not empty" % category)
 		check(inside.all(func(r): return str(r["category"]) == category), "the %s tab shows only %s" % [category, category])
 
+	var carpenters: Array = all.filter(func(r): return str(r["category"]) == "Carpenter's").map(func(r): return str(r["id"]))
+	carpenters.sort()
+	check(carpenters == ["hardwood_board_by_hand", "lumber_by_hand", "saw_blocks"], "the Carpenter's tab lists what a saw makes by hand: Wooden block, Planks, Hardwood boards (%s; Dave 17 Nov 2026)" % str(carpenters))
+	check(all.all(func(r): return (CraftStock.hand_tool(r) == "saw") == (str(r["category"]) == "Carpenter's")), "every sawing recipe, and only those, needs the saw in hand")
+	check(all.filter(func(r): return str(r["category"]) == "Carpenter's").all(func(r): return bool(r.get("sawbuck", false))), "a Sawbuck speeds every Carpenter's recipe (W-33)")
 	check(str(recipes.recipe(2)["category"]) == "Tools" and str(recipes.recipe(1)["category"]) == "Materials", "axe is Tools, twine Materials")
 	check(recipes.recipe(165).is_empty() and recipes.recipe(1)["id"] == "twine" and recipes.recipe(170)["id"] == "wooden_bow" and recipes.recipe(9999).is_empty(), "no recipe number or name moved")
 	print("craft menu tests: %d failures" % failures)

@@ -61,7 +61,7 @@ func need_of(recipe_id: String, id: String) -> int:
 
 func craft(id: String, times: int, seconds: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, Vector3(float(items._tool_slot(items.inventory_of(1), "saw") + 1), 0.0, 0.0))   # the first saw on the hotbar stands for the one in hand (sawing needs it there, protocol 126)
 
 	for s in range(seconds):
 		items.tick(1.0)

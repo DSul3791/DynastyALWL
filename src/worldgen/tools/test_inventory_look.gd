@@ -48,6 +48,9 @@ class FakeView:
 	func stock_fill(number: int) -> int:
 		return int(stock.get(number, 0))
 
+	func hand_tool_ok(_number: int) -> bool:   # no sawing recipe here (InventoryView.hand_tool_ok)
+		return true
+
 var failures: int = 0
 
 

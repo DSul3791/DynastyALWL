@@ -1295,7 +1295,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			_last_queue_act[peer] = now
 
 			if kind == Net.ACT_CRAFT_QUEUE:
-				_queue_craft(peer, inv, a, count, b)
+				_queue_craft(peer, inv, a, count, b, int(at.x) - 1)   # at.x: the held pack slot + 1 (126), for a recipe that needs its tool in hand
 			else:
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
@@ -4627,7 +4627,8 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 
 
 # How much slower a saw recipe (one that keeps "saw", any saw) runs for the saw in the pack (TREE_WOOD_TOOLS_DESIGN.md s5: items.json saw_speed, Copper 0.5,
-# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and, for a recipe marked "sawbuck" (Wooden blocks), at a
+# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and, for a recipe marked "sawbuck" (every hand-saw recipe:
+# Wooden blocks, Planks, Hardwood boards; Dave 17 Nov 2026 "if there is a saw buck around it will use that for cutting faster", W-33), at a
 # Sawbuck in reach, which saws twice as fast (W-4). serving_station walks the world items like any station recipe's check, once a tick for a sawing peer.
 func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var saw_n: int = table.number_of("saw")
@@ -4643,7 +4644,7 @@ func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var slot: int = _tool_slot(inv, "saw") if inv != null else -1   # the saw the craft wears (wears_tool "saw": the first one on the hotbar)
 	var speed: float = float(table.entry(table.id_of(int(inv.numbers[slot]))).get("saw_speed", 1.0)) if slot >= 0 else 1.0
 	var slow: float = 1.0 / maxf(speed, 0.1)
-	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # the Sawbuck speeds sawing a log into blocks only (s1.3; the mill is for planks and boards)
+	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # a Sawbuck in reach speeds every hand-saw recipe (W-33)
 
 
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
@@ -7081,6 +7082,22 @@ func _tool_slot(inv, tool_class: String) -> int:
 			return slot
 
 	return -1
+
+
+# A recipe that needs its tool in hand (CraftStock.hand_tool: sawing, Dave 17 Nov 2026) crafts only while that tool, unbroken, is the item in the
+# right hand (`hand`, the pack slot the client names); otherwise says what to do and answers false. A log on the shoulder does not stop it (the
+# client stows the saw while a log rides there, but it stays the chosen hand slot). Any other recipe: true.
+func _hand_tool_ok(peer: int, inv, recipe: Dictionary, hand: int) -> bool:
+	var tool: String = CraftStock.hand_tool(recipe)
+
+	if tool == "":
+		return true
+
+	if inv != null and hand >= 0 and hand < inv.slot_count and inv.on_hotbar(hand) and not _is_broken(inv, hand) and str(table.entry(table.id_of(inv.numbers[hand])).get("tool_class", "")) == tool:
+		return true
+
+	_say(peer, "Hold a %s in your hand for that: pick it on the hotbar, then craft" % tool)
+	return false
 
 
 # _held_tool for a swing that needs this class, saying why nothing happened when the hand holds something else: the tool in hand is broken,
@@ -19071,12 +19088,15 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 
 # `variant` (SmithingRules code, 0 plain): Tempered and/or craftsmanship +1/+2, refused unless the stations beside the player allow it for this
 # recipe (craft_variants); its needs are scaled up and it takes longer (smithing.json).
-func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0) -> void:
+func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0, hand: int = -1) -> void:   # hand: the pack slot in the right hand (-1 empty)
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
 
 	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
+		return
+
+	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # sawing needs the saw in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
 		return
 
 	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
@@ -19142,7 +19162,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	# Short of a part the stock could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct). The planner
 	# knows only plain recipes, so a variant must be covered as it is.
 	if variant == 0 and not _stock_covers(inv, recipe, count, stock):
-		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock)
+		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock, hand)
 
 		if outcome == 1:
 			_send_stock(peer)
@@ -19265,7 +19285,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
 # was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
-func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}) -> int:
+func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}, hand: int = -1) -> int:
 	if stock.is_empty():
 		stock = _stock_of(peer)
 
@@ -19288,6 +19308,10 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	if steps.size() == 1:
 		return -1   # nothing to make first: the plain path
+
+	for step in steps:   # a part sawn on the way (Wooden blocks for a Wooden hammer) needs the saw in hand too
+		if not _hand_tool_ok(peer, inv, recipes.recipe(int(step["recipe"])), hand):
+			return 0
 
 	var entries: Array = queue["entries"]
 

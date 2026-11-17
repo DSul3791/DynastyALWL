@@ -9,6 +9,18 @@ const CRAFT_REACH_M := 12.0     # one distance for crafting and blueprint sites 
 const LOOSE_STOCK_M := 12.0     # loose stacks on the ground this close count as stock (Dave 10 Nov 2026: "or they are within 12m of you"; was 3 m)
 
 
+# Sawing needs the saw in hand (Dave 17 Nov 2026: "we should have to equip the saw then we can do it"): a recipe that wears one of these tools
+# crafts only while that tool is the item in the right hand, not merely in the pack. Other kept tools are unchanged (a question for Dave,
+# TREE_WOOD_TOOLS_DESIGN.md W-32).
+const IN_HAND_TOOLS := ["saw"]
+
+
+# The tool class a recipe needs in hand, or "" when any copy in the pack will do.
+static func hand_tool(recipe: Dictionary) -> String:
+	var tool: String = str(recipe.get("wears_tool", ""))
+	return tool if IN_HAND_TOOLS.has(tool) else ""
+
+
 # Whether a container's owner lets this player's crafting use it. Households come later: today a player's own containers only.
 static func owner_ok(owner_key: String, player_key: String) -> bool:
 	return owner_key != "" and owner_key == player_key
