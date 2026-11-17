@@ -339,7 +339,7 @@ Source: [DESIGN_IDEAS §§8.2–8.3](https://github.com/DSul3791/DynastyALWL/blo
 
 ### Dependencies and source-review questions
 
-- [Aging](#aging-and-lifespan) retains the differing NPC starting-age range; neither version is silently replaced. [Children/family](#children-and-family-growth) distinguishes player-household pregnancy choices from NPC-population behavior.
+- [Aging](#aging-and-lifespan) retains the differing NPC starting-age range; neither version is silently replaced. [Children/family](Design_Ideas_Approved.md#dependencies-and-unresolved-qualifications) distinguishes player-household pregnancy choices from NPC-population behavior.
 - [Memory and conversation](DESIGN_IDEAS.md#88-npc-character-memory-and-conversation) and [language hosting](DESIGN_IDEAS.md#89-language-service-hosting) retain their detailed designs. Model/host examples above are historical proposals, not current product or licensing recommendations.
 - [Death and rescue](#death-and-rescue) retains rare rescue qualifications; [duress](DESIGN_IDEAS.md#absence-and-duress) and settlement decline describe different causes of displacement. Player major-illness exclusions remain in [§8.1](DESIGN_IDEAS.md#81-towns).
 - [NPC technical plan](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/docs/mirror/items/NPC_DESIGN.md) and [first-island roster](TOWN_NPC_SPEC.md) are dated records with proposals, not current population censuses or blanket implementation evidence.
