@@ -31,8 +31,8 @@ extends Node
 #                       fire light at Low, and each picture logs the flame's state. Without it a dark one given (--shot-give=wooden_lantern_dark) stays dark
 #   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
-#   --shot-ready=held   a held-item picture (look rig --give/--item): no fixed waits. The first shot starts once the ground under the player is in and the
-#                       item is in the hand (--shot-wait is only the most it waits); the item is given as soon as the pack arrives and held as soon as it is in
+#   --shot-ready=held   a held-item picture (look rig --give/--item): no fixed waits. The first shot starts once the ground under the player is in
+#                       (--shot-wait is only the most it waits); the item is given as soon as the pack arrives and held as soon as it is in
 #                       it; a spot whose ground already reads is not flown to 400 m first; the settle ends once the voxel engine has no work left and the
 #                       item is drawn in the hand (--shot-settle is only the most it waits). One "shot runner: timing" line per picture says where the time went.
 #   --shot-angles="name:deg:dist;..."  with a third-person shot: one picture per entry, all in one start, the camera deg round the body from its front
@@ -476,13 +476,13 @@ func _process(delta: float) -> void:
 		return
 
 	if _index == -1:
-		var scene_ready: bool = ready_held and not client.waiting_for_ground and _held_ready()
+		var scene_ready: bool = ready_held and not client.waiting_for_ground   # the item in the hand is waited for at the settle (it mounts on the third-person body only then)
 
 		if not scene_ready and now - client.connected_msec < int(wait_s * 1000.0):
 			return
 
 		if ready_held and not scene_ready:
-			print("shot runner: --wait cap of %.0f s reached before the scene was ready (ground waiting %s, item in hand %s); going on" % [wait_s, str(client.waiting_for_ground), str(_held_ready())])
+			print("shot runner: --wait cap of %.0f s reached before the ground under the player was in; going on" % wait_s)
 
 
 		_next(now)
@@ -499,7 +499,12 @@ func _process(delta: float) -> void:
 	var ground_here: float = _ground(shot_pos.x, shot_pos.z)
 	var aerial: bool = (shot_pos.y > 40.0) or (shot_pos.y < 0.0 and not is_nan(ground_here) and -shot_pos.y - ground_here > 40.0)
 
-	if not aerial and client.waiting_for_ground and client.connected_msec > 0 and now - client.connected_msec < 120000:
+	# The client stops updating waiting_for_ground once the body flies (every shot flies from _next on), so a join that was still waiting when the first
+	# shot started kept this gate shut until the 120 s mark: every look rig shot spent about 90 s here (Lane A timing, 17 Nov 2026). A flying body is
+	# asked directly: is there collision anywhere below it.
+	var no_floor: bool = (not _collision_below(client.body.global_position)) if client.flying else client.waiting_for_ground
+
+	if not aerial and no_floor and client.connected_msec > 0 and now - client.connected_msec < 120000:
 		return
 
 	if not _placed:
@@ -1927,6 +1932,13 @@ func _print_body_height() -> void:
 		hips_y = (skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("mixamorig_Hips"))).origin.y
 
 	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
+
+
+# Collision anywhere under p (the same ray as the client's own ground check, without its rescue lift).
+func _collision_below(p: Vector3) -> bool:
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p + Vector3(0.0, 1.0, 0.0), p + Vector3(0.0, -3000.0, 0.0))
+	query.exclude = [client.body.get_rid()]
+	return not client.body.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 # --shot-ready=held: the item is in the hand, drawn (a holdable item mounts a model within a frame or two of being selected).

@@ -127,6 +127,7 @@ WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN=
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK"
 [ -n "$ANGLES" ] && ADMIN="$ADMIN --shot-angles=$ANGLES"
 if [ -n "$HELD" ] && [ -z "$SCENE" ] && [ -z "$NOREADY" ]; then ADMIN="$ADMIN --shot-ready=held"; echo "rig: held-item shot: the picture is taken once the scene is ready (--wait $WAIT s, --settle $SETTLE s at most)"; fi
+CSTART=$SECONDS
 CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN $XARGS ${EXPECT:+"--shot-expect=$EXPECT"})
 if [ -n "$WIN" ]; then
   APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
@@ -141,7 +142,8 @@ else
   echo "renderer: $REND ($ICD)"; [ "$REND" = software ] && export LIBGL_ALWAYS_SOFTWARE=1
   HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 fi
-grep -E "shot runner: (saved|timing|FAILED)|ERROR|SCRIPT" "$RIG/client.log" | head -12 | cut -c1-200
+echo "rig: client window open $((SECONDS - CSTART)) s"
+grep -E "shot runner: (saved|timing|FAILED|--wait cap|--settle cap)|JOIN: ground ready|ERROR|SCRIPT" "$RIG/client.log" | head -14 | cut -c1-200
 SAVED=$(grep -cE "shot runner: (saved |view .* saved |lapse .* saved|chop phase .* saved)" "$RIG/client.log")   # every picture the runner saves says so on one line
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
 # Shaders compile only in a windowed client, never in a headless gate, so this run is where a broken shader shows (#416: a '#'
