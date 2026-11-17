@@ -3,9 +3,10 @@ extends SceneTree
 # Mission 001 phase 6: cooking and preservation (master s3.12 [D12], s3.14 [D14, D17]; companion FOOD_PREPARATION_PRESERVATION_SERVING.md s1, s2, s5)
 # through the real server, recipes and blueprints. Amounts are read from the live data, so tuning keeps the test valid.
 #   1. the data: a log-and-twine Food preparation table, no food made in the pack alone, every prepared food cooks from itself only;
-#   2. pre-iron Flatbread: prepared at the built table, baked at a built Clay hearth (the ingredients are spent once), and on a Clay - Griddle at a
-#      campfire; a cooked food inherits the age of what it was made from; a fish still roasts straight on the fire;
-#   3. post-iron: a Frying pan made at a burning Smithy, an omelette fried in it at the campfire (the pan is kept);
+#   2. pre-iron Flatbread: prepared at the built table, baked at a built Clay hearth (the ingredients are spent once); a cooked food inherits the age
+#      of what it was made from; a fish still roasts straight on the fire;
+#   3. the cooking stations (Dave 17 Nov 2026: "We dont use things like pots pans and griddles we use cooking stations"): no recipe keeps cookware;
+#      the built Griddle bakes the same dough and fries an omelette, the Grill grills skewers, the Cooking pot makes a big batch of stew;
 #   4. the Fireplace cooking crane cooks a stew only while its fireplace burns;
 #   5. Sauerkraut sealed as one batch at a built Preserving jar #830: Maturing (not eaten, not an ingredient), then Ready and eaten; stale
 #      cabbage is refused; batches sealed at different times never merge until both are Ready; the age survives save and load;
@@ -215,37 +216,55 @@ func _init() -> void:
 	check(bread_slot >= 0 and absf(items.table.freshness(num("flatbread"), inv.wear[bread_slot]) - 0.5) < 0.03, "2e. bread from half-fresh dough is half fresh (%.2f)" % (items.table.freshness(num("flatbread"), inv.wear[bread_slot]) if bread_slot >= 0 else -1.0))
 	inv.remove(num("flatbread"), have("flatbread"))
 
-	# The Clay - Griddle bakes the same dough on a plain campfire, before any hearth (pre-iron), and is kept.
 	items._items.erase(hearth)
 	var fire_id: int = items._next_id   # _next_id is the next free world id
 	items._items[fire_id] = {"number": num("campfire_kit"), "count": 1, "pos": HERE + Vector3(0.0, 0.0, -2.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}
 	items._next_id += 1
-	give_needs("clay_griddle")
-	craft("clay_griddle", 1, 30)
-	check(have("clay_griddle") == 1 and have("clay") == 0, "2f. a Clay - Griddle is fired at the campfire from clay")
-	give_needs("prep_flatbread")
-	craft("prep_flatbread", 1, 20)
-	craft("cook_flatbread", 1, 30)
-	check(have("flatbread") == 0, "2g. without the hearth the plain recipe waits")
-	craft("cook_flatbread_clay_griddle", 1, 30)
-	check(have("flatbread") == int(recipe("cook_flatbread_clay_griddle")["gives"][1]) and have("unbaked_flatbread") == 0 and have("clay_griddle") == 1, "2h. on the griddle over the campfire the dough bakes; the griddle is kept")
-	inv.remove(num("flatbread"), have("flatbread"))
 	give_needs("cook_herb_fish")
 	craft("cook_herb_fish", 1, 30)
 	check(have("herb_fish") == int(recipe("cook_herb_fish")["gives"][1]), "2i. a fish roasts straight on the campfire, no table step (companion s5 item 2)")
 	inv.remove(num("herb_fish"), have("herb_fish"))
 
-	# 3. Post-iron: the Frying pan at a burning Smithy, then an omelette in it.
-	var smithy: int = build("blacksmithy", HERE + Vector3(0.0, 0.0, 4.0))
-	give_needs("iron_frying_pan")
-	items.give(1, num("charcoal"), 2)
-	craft("iron_frying_pan", 1, 60)
-	check(have("iron_frying_pan") == 1 and have("iron_ingot") == 0 and bool(items._items[smithy]["struct"].get("lit", false)), "3a. the Iron - Frying pan is made at the burning Smithy")
-	give_needs("cook_herb_omelette_iron_frying_pan")
-	craft("cook_herb_omelette_iron_frying_pan", 1, 30)
-	check(have("herb_omelette") == int(recipe("cook_herb_omelette_iron_frying_pan")["gives"][1]) and have("egg") == 0 and have("iron_frying_pan") == 1, "3b. an Herb omelette fries in the pan at the campfire; the pan is kept")
-	items._items.erase(smithy)
+	# 3. The cooking stations: the station alone cooks; no recipe keeps a pot, pan, griddle, grate or spit (all retired).
+	var keeping: Array = []
+
+	for rn in items.recipes.numbers():   # the recipe table skips retired rows
+		var row: Dictionary = items.recipes.recipe(int(rn))
+
+		if str(row.get("category", "")) == "Food and drink" and not (row.get("keeps", []) as Array).is_empty():
+			keeping.append(str(row.get("id", "")))
+
+	check(keeping.is_empty(), "3a. no food recipe keeps cookware: %s" % str(keeping))
+	check(["clay_griddle", "campfire_roasting_spit", "iron_grill_grate", "iron_frying_pan", "iron_cauldron", "copper_pot"].all(func(id): return bool(items.table.entry(id).get("retired", false))), "3b. the six cookware items are retired")
 	items._items.erase(fire_id)
+	var griddle: int = build("griddle", HERE + Vector3(-3.0, 0.0, 0.0))
+	give_needs("prep_flatbread")
+	craft("prep_flatbread", 1, 20)
+	craft("cook_flatbread_griddle", 1, 30)
+	check(griddle >= 0 and have("flatbread") == int(recipe("cook_flatbread_griddle")["gives"][1]) and have("unbaked_flatbread") == 0, "3c. the Griddle bakes the dough with no fire beside it and no griddle in the pack")
+	inv.remove(num("flatbread"), have("flatbread"))
+	give_needs("cook_herb_omelette_griddle")
+	craft("cook_herb_omelette_griddle", 1, 30)
+	check(have("herb_omelette") == int(recipe("cook_herb_omelette_griddle")["gives"][1]) and have("egg") == 0, "3d. an Herb omelette fries on the Griddle (and still on a plain campfire before iron, cook_herb_omelette)")
+	items._items.erase(griddle)
+	var grill: int = build("grill", HERE + Vector3(-3.0, 0.0, 0.0))
+	give_needs("prep_meat_skewer")
+	craft("prep_meat_skewer", 1, 20)
+	give_needs("prep_meat_skewer")
+	craft("prep_meat_skewer", 1, 20)
+	craft("cook_meat_skewer_grill", 1, 30)
+	check(grill >= 0 and have("meat_skewer") == int(recipe("cook_meat_skewer_grill")["gives"][1]), "3e. the Grill grills %d Meat skewers in one go" % have("meat_skewer"))
+	items._items.erase(grill)
+	var pot: int = build("cooking_pot", HERE + Vector3(-3.0, 0.0, 0.0))
+	give_needs("cook_hunters_stew_cooking_pot")
+	craft("cook_hunters_stew_cooking_pot", 1, 60)
+	check(pot >= 0 and have("hunters_stew") == int(recipe("cook_hunters_stew_cooking_pot")["gives"][1]), "3f. the Cooking pot makes a big batch of %d Hunter's stew" % have("hunters_stew"))
+	inv.remove(num("hunters_stew"), have("hunters_stew"))
+	give_needs("cook_hunters_stew")
+	craft("cook_hunters_stew", 1, 40)
+	check(have("hunters_stew") == int(recipe("cook_hunters_stew")["gives"][1]), "3g. and cooks what a campfire pot cooks")
+	inv.remove(num("hunters_stew"), have("hunters_stew"))
+	items._items.erase(pot)
 	items._items.erase(prep_table)
 
 	# 4. The Fireplace cooking crane, away from every fire and pot: it cooks only while its fireplace burns.

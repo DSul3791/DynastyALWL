@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1494,
+	"next_number": 1497,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3685,20 +3685,13 @@
 		"quern": {
 			"number": 344,
 			"name": "Hand mill",
-			"description": "Two flat stones for grinding grain by hand. Slow but steady.",
-			"kind": "tool",
-			"tool_class": "quern",
+			"description": "Two heavy millstones set on a stone base, turned by a handle. Grinds grain to flour.",
+			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
-			"durability": 3000,
-			"repair": [
-				[
-					"stone",
-					1
-				]
-			],
 			"look_alikes": [],
-			"value": 15
+			"value": 15,
+			"note": "Placed station since 17 Nov 2026 (Dave chose the cooking station plan: the hand mill is two heavy millstones, not a hand tool). Hammer blueprint 363, row state 455."
 		},
 		"compost": {
 			"number": 345,
@@ -8184,6 +8177,9 @@
 			"kiln": {"number": 771, "name": "Primitive kiln", "description": "A small kiln of stone and clay. Fires bricks and lime, and burns any wood to charcoal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 188 (the Primitive kiln, Dave 17 Nov 2026; was the brick Kiln).", "slots": 14},
 			"improved_kiln": {"number": 1492, "name": "Improved kiln", "description": "A bigger kiln of stone and clay bound with iron. Holds four logs' worth of wood to burn to charcoal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 450 (Dave 17 Nov 2026).", "slots": 14},
 			"advanced_kiln": {"number": 1493, "name": "Advanced kiln", "description": "A great kiln of stone and clay bound with iron and steel. Holds six logs' worth of wood to burn to charcoal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 451 (Dave 17 Nov 2026).", "slots": 16},
+			"grill": {"number": 1494, "name": "Grill", "description": "A brick barbecue with an iron grate over the coals. Grills skewers, sausages and joints.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed cooking station (Dave 17 Nov 2026: \"We dont use things like pots pans and griddles we use cooking stations\", and he chose this station plan). Hammer blueprint 360, row state 452."},
+			"cooking_pot": {"number": 1495, "name": "Cooking pot", "description": "A big iron pot hanging on a chain from an iron frame over the fire. Cooks stews in large batches, and everything a campfire pot cooks.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed cooking station (Dave 17 Nov 2026: \"We dont use things like pots pans and griddles we use cooking stations\", and he chose this station plan). Hammer blueprint 361, row state 453."},
+			"griddle": {"number": 1496, "name": "Griddle", "description": "A flat iron griddle on iron legs over an open fire. Fries eggs, cakes and fritters and bakes flatbread.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed cooking station (Dave 17 Nov 2026: \"We dont use things like pots pans and griddles we use cooking stations\", and he chose this station plan). Hammer blueprint 362, row state 454."},
 			"tanning_rack_kit": {
 				"number": 772,
 				"retired": true,
@@ -8865,7 +8861,9 @@
 					"Clay - Pot"
 				],
 				"value": 50,
-				"future": true
+				"future": true,
+				"retired": true,
+				"note": "Retired 17 Nov 2026 (Dave: \"We dont use things like pots pans and griddles we use cooking stations\"). Its cooking moved to the Grill, Cooking pot and Griddle stations; the row stays for its number, never reuse it."
 			},
 			"fish_soup": {
 				"number": 836,
@@ -10185,11 +10183,11 @@
 				"value": 80
 			},
 			"food_preparation_table": {"number": 1202, "name": "Food preparation table", "description": "A wooden table with a cutting board, knives and a rolling pin, for preparing food.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 250 (Mission 001 phase 6).", "slots": 8},
-			"clay_griddle": {"number": 1203, "name": "Clay - Griddle", "description": "A flat clay cooking surface for flatbreads, cakes and light frying.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "griddle", "value": 4},
-			"campfire_roasting_spit": {"number": 1204, "name": "Campfire roasting spit", "description": "A spit that fits over a campfire for roasting large cuts of meat.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "roasting_spit", "value": 5},
-			"iron_grill_grate": {"number": 1205, "name": "Iron - Grill grate", "description": "An iron grate over a fire for grilling fish, meat and vegetables.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "grill_grate", "value": 35},
-			"iron_frying_pan": {"number": 1206, "name": "Iron - Frying pan", "description": "A reusable iron pan for frying eggs, fritters and fish.", "kind": "container", "stack": 1, "unstackable": true, "look_alikes": [], "value": 35},
-			"iron_cauldron": {"number": 1207, "name": "Iron - Cauldron", "description": "A large reusable iron pot for stews and meals for many.", "kind": "container", "stack": 1, "unstackable": true, "look_alikes": [], "value": 70},
+			"clay_griddle": {"number": 1203, "name": "Clay - Griddle", "description": "A flat clay cooking surface for flatbreads, cakes and light frying.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "griddle", "value": 4, "retired": true, "note": "Retired 17 Nov 2026 (Dave: \"We dont use things like pots pans and griddles we use cooking stations\"). Its cooking moved to the Grill, Cooking pot and Griddle stations; the row stays for its number, never reuse it."},
+			"campfire_roasting_spit": {"number": 1204, "name": "Campfire roasting spit", "description": "A spit that fits over a campfire for roasting large cuts of meat.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "roasting_spit", "value": 5, "retired": true, "note": "Retired 17 Nov 2026 (Dave: \"We dont use things like pots pans and griddles we use cooking stations\"). Its cooking moved to the Grill, Cooking pot and Griddle stations; the row stays for its number, never reuse it."},
+			"iron_grill_grate": {"number": 1205, "name": "Iron - Grill grate", "description": "An iron grate over a fire for grilling fish, meat and vegetables.", "kind": "tool", "stack": 1, "unstackable": true, "look_alikes": [], "tool_class": "grill_grate", "value": 35, "retired": true, "note": "Retired 17 Nov 2026 (Dave: \"We dont use things like pots pans and griddles we use cooking stations\"). Its cooking moved to the Grill, Cooking pot and Griddle stations; the row stays for its number, never reuse it."},
+			"iron_frying_pan": {"number": 1206, "name": "Iron - Frying pan", "description": "A reusable iron pan for frying eggs, fritters and fish.", "kind": "container", "stack": 1, "unstackable": true, "look_alikes": [], "value": 35, "retired": true, "note": "Retired 17 Nov 2026 (Dave: \"We dont use things like pots pans and griddles we use cooking stations\"). Its cooking moved to the Grill, Cooking pot and Griddle stations; the row stays for its number, never reuse it."},
+			"iron_cauldron": {"number": 1207, "name": "Iron - Cauldron", "description": "A large reusable iron pot for stews and meals for many.", "kind": "container", "stack": 1, "unstackable": true, "look_alikes": [], "value": 70, "retired": true, "note": "Retired 17 Nov 2026 (Dave: \"We dont use things like pots pans and griddles we use cooking stations\"). Its cooking moved to the Grill, Cooking pot and Griddle stations; the row stays for its number, never reuse it."},
 			"fireplace_cooking_crane": {"number": 1208, "name": "Fireplace cooking crane", "description": "An iron arm fitted to a fireplace to hang a pot over the fire.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 251 (add-on of the Fireplace; it hangs a pot over the lit fire)."},
 			"unbaked_flatbread": {"number": 1209, "name": "Unbaked flatbread", "description": "Flat dough, ready for the hearth or griddle.", "kind": "food", "stack": 10, "look_alikes": [], "value": 6},
 			"unbaked_rye_flatbread": {"number": 1210, "name": "Unbaked rye flatbread", "description": "Flat rye dough, ready for the hearth or griddle.", "kind": "food", "stack": 10, "look_alikes": [], "value": 9},
