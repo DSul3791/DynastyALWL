@@ -1,4 +1,6 @@
 #!/bin/bash
+# Only the hold of an item (how a tool sits in the hand)? Use tools/shot_held.gd instead: the game's body and held-item code on a flat floor, no
+# server or world, a few seconds per set of angles:  "$GODOT_EXE" --path . --script res://tools/shot_held.gd -- --item=copper_saw --out=DIR
 # Look rig: take pictures from the real client, windowed, in the second clone, never touching Dave's game, server or settings.
 #   tools/look_rig.sh --item torch [--count 1] [--cam first|left] [--at X,Z] [--agl 1.7] [--yaw 0] [--pitch 0]
 #                     [--hour 12] [--weather clear|rain|storm|snow] [--admin] [--name NAME] [--out DIR] [--wait 25] [--settle 12]

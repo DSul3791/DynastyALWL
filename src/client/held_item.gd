@@ -2814,9 +2814,17 @@ func _mount_model_third(kind: String) -> void:
 		_aim_spear()
 		return
 
+	third_hold(_model, kind, str(_inv.table.entry(held_id()).get("tool_class", "")))
+
+	if kind != "kit":
+		_third_fist().visible = true
+
+
+# The held model's place in the third-person hand mount (mount -Z down the fingers, +Y forward, +Z up). Static so tools/shot_held.gd poses a
+# held item exactly as the game does.
+static func third_hold(model: Node3D, kind: String, carried: String) -> void:
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
-	var carried: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
-	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * third_choke(carried), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
+	var grip: Vector3 = Vector3(0.0, float(model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * third_choke(carried), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
 	if carried == "shovel":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SHOVEL_PITCH_DEG))
@@ -2831,11 +2839,8 @@ func _mount_model_third(kind: String) -> void:
 		turn = Basis.IDENTITY
 		grip = Vector3(0.0, -0.03, -0.14)
 
-	_model.basis = turn
-	_model.position = turn * grip
-
-	if kind != "kit":
-		_third_fist().visible = true
+	model.basis = turn
+	model.position = turn * grip
 
 
 # A spear is held as a spear, not a knife (TEST-004, Dave's playtest 12 Nov 2026): the shaft runs through the fist pointing ahead, the hand
@@ -2893,6 +2898,10 @@ func _third_fist() -> MeshInstance3D:
 
 # The same closed fist on any held model (the left-hand torch too).
 func _third_fist_on(model: Node3D) -> MeshInstance3D:
+	return third_fist_on(model, _third_skin_color())
+
+
+static func third_fist_on(model: Node3D, skin_color: Color) -> MeshInstance3D:
 	var fist: MeshInstance3D = model.get_node_or_null(THIRD_FIST_NAME) as MeshInstance3D
 
 	if fist == null:
@@ -2904,7 +2913,7 @@ func _third_fist_on(model: Node3D) -> MeshInstance3D:
 		ball.radial_segments = 12
 		ball.rings = 6
 		var skin: StandardMaterial3D = StandardMaterial3D.new()
-		skin.albedo_color = _third_skin_color()
+		skin.albedo_color = skin_color
 		skin.roughness = 0.64          # the body's own skin roughness (Dave's glb, the metallic-roughness texture's median)
 		skin.metallic_specular = 0.35
 		ball.material = skin
@@ -3220,6 +3229,23 @@ static func look_grip_y(held: Mesh, def: Dictionary, held_scale: float) -> float
 	return maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03)
 
 
+# A held look tool's model: its ground mesh turned and sized for the hand, the grip distance in the "grip_y" meta (see _mount_model). Static so
+# tools/shot_held.gd builds the same model; the bow and the net add their own parts in _make_look_tool_model.
+static func look_tool_node(item_id: String) -> Node3D:
+	var def: Dictionary = BasicLook.entry(item_id)
+	var shape: String = str(def.get("shape", ""))
+	var held: Mesh = BasicLook.mesh_for(item_id)
+	var length: float = held.get_aabb().size.x
+	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else (HELD_FIXED_SCALE[shape] if HELD_FIXED_SCALE.has(shape) else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01)))
+	var node: Node3D = Node3D.new()
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = held
+	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
+	node.add_child(mesh)
+	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
+	return node
+
+
 # Any other tool: a handle with a flat blade (a shovel) or a plain head, until the tool has its own model.
 # The ground mesh of a held tool, turned and sized for the hand, or null when the item has no tool look (it keeps its old model).
 # The grip distance from the model middle goes in the "grip_y" meta (see _mount_model).
@@ -3233,15 +3259,8 @@ func _make_look_tool_model() -> Node3D:
 	if shape == "hand_net":
 		return _make_hanging_net_model(def)
 
-	var held: Mesh = BasicLook.mesh_for(held_id())
-	var length: float = held.get_aabb().size.x
-	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else (HELD_FIXED_SCALE[shape] if HELD_FIXED_SCALE.has(shape) else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01)))
-	var node: Node3D = Node3D.new()
-	var mesh: MeshInstance3D = MeshInstance3D.new()
-	mesh.mesh = held
-	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
-	node.add_child(mesh)
-	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
+	var node: Node3D = look_tool_node(held_id())
+	var mesh: MeshInstance3D = node.get_child(0) as MeshInstance3D
 
 	if shape == "bow":
 		node.set_meta("grip_y", 0.03)   # a bow is held at its middle
