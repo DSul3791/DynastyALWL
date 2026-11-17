@@ -55,7 +55,7 @@ func build() -> Control:
 func _gear_column(names: Array) -> Control:
 	var column: VBoxContainer = VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 16)   # five wells a side since the outer and waist slots (10 Nov 2026); was four at 26
+	column.add_theme_constant_override("separation", 6)   # five wells a side since the outer and waist slots (10 Nov 2026; was four at 26); 6, not 16, so the six stats under them fit the 820 px column at the largest text (tools/shot_station.gd)
 
 	for gear in names:
 		var slot = InventoryLook.make_slot(view, -1)
