@@ -3,7 +3,7 @@ extends SceneTree
 # The primitive route and its goal credit (GOALS-REPAIR WP-PRIM, findings F1, F3, F4, F5 and the P2 gate gap; baseline/PRIMITIVE_ROUTE_d990abd.md).
 # Everything is played through the server's player actions (pickup, craft queue, hits, process, place, put, light, drink, eat), and the goal counters
 # (characters.json goal_counts, what the starter goals read) are checked for exactly the counts each action should leave:
-#   1. the P2 route with ZERO admin gives: hand, tree, blocks, Stone Hammer, Chopping Block, firewood, medium fire, bonfire, charcoal, lean-to, a Crude piece;
+#   1. the P2 route with ZERO admin gives: hand, tree, blocks, Stone Hammer, Chopping Block, firewood, medium fire, bonfire, charcoal left in it, lean-to, a Crude piece;
 #   2. F1: a lean-to placed short of sticks and finished by depositing the rest counts `placed:lean_to` once (the site path lost the kind);
 #   3. F3: the axe on a ground wooden block and the E split at the Chopping Block count like one craft each, the axe on a log counts nothing, a pick and Admin mode count nothing;
 #   4. F4: a fire newly reaching medium or large through a player action credits `fire_tier` once per character; a direct bonfire credits medium too; a re-feed at the same tier, a drop and re-raise, and Admin mode credit nothing;
@@ -273,9 +273,20 @@ func route() -> void:
 	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 	check(state_of(fire) == ItemsScript.FIRE_STATE_BONFIRE and counts("event:fire_tier:medium") == 1 and counts("event:fire_tier:large") == 1, "three logs make it a bonfire: large credited once, medium still once (state %d)" % state_of(fire))
 
-	# Charcoal at the lit fire from two firewood (recipe 341; the firewood left over from the medium fire).
-	craft(341, 1, 40)
-	check(have("charcoal") == 12 and counts("made:charcoal") == 1, "charcoal is made at the lit fire and counted once (%d)" % have("charcoal"))
+	# Charcoal is left in the fire as its wood burns (Dave 17 Nov 2026; the campfire recipe 341 is retired), taken from its store; it is no craft.
+	var store = items._fire_store(items._items[fire]["fire"])
+
+	for _step in range(60):
+		if store.count_of(n("charcoal")) > 0:
+			break
+
+		items._fires(60.0)
+
+	var left: int = store.count_of(n("charcoal"))
+	items.action(1, Net.ACT_CHEST_OPEN, fire, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_TAKE, store.numbers.find(n("charcoal")), fire, left, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	check(left > 0 and have("charcoal") == left and counts("made:charcoal") == 0 and items.recipes.recipe(341).is_empty(), "the bonfire's burning logs leave charcoal in its store, taken out (%d); no craft counted, recipe 341 is gone" % have("charcoal"))
 
 	# Lean-to (blueprint 25: 20 sticks, 60 leaves, 6 twine) and a Crude piece (the thatch floor, blueprint 29), both with the hammer on the hotbar.
 	items.report_position(1, Vector3(-6.0, 10.0, -5.0))

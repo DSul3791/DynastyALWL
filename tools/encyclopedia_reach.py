@@ -295,6 +295,9 @@ class Reach:
         # server_items.gd: an axe splits a loose Wooden block into Firewood (_chop_loose_log); blocks themselves are sawn (recipe saw_blocks).
         if axe and self.has("wooden_block"):
             changed |= g("firewood", "a wooden block split on the ground (%s)" % axe)
+        # server_items.gd _fire_leave_charcoal: firewood or logs burned on a campfire leave Charcoal in it (cooking.json charcoal_left, Dave 17 Nov 2026).
+        if self.has("campfire_kit") and any(self.has(w) for w in ["firewood", "wooden_block", "log"]):
+            changed |= g("charcoal", "left in a campfire as its wood burns")
         for rid, r in self.recipes.items():
             gives = r.get("gives", [""])[0]
             if self.has(gives) or r.get("locked") or r.get("retired"):
