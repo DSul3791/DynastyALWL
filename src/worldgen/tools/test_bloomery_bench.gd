@@ -123,6 +123,7 @@ func _init() -> void:
 	_tick(10)
 	check(count("cut_stone_block") == blocks_before and count("stone") == 4, "with only a stone tool the bench refuses: the kept tool is bronze or better")
 	pack.add(table.number_of("iron_hammer"), 1)
+	pack.move(pack.numbers.find(table.number_of("iron_hammer")), 0)   # onto hotbar key 1, so it is the tool in hand (a kept tool must be in hand, protocol 126)
 	_queue(99962)
 	_tick(10)
 	check(count("cut_stone_block") == blocks_before + 2 and count("stone") == 2 and count("iron_hammer") == 1, "with an iron one it carves, and the tool is kept")

@@ -226,8 +226,11 @@ func _init() -> void:
 			if station != "":
 				place(kind_serving(station, int(r.get("station_level", 1))), HERE + Vector3(0.0, 0.0, 2.0))
 
-			for need in r["needs"] + r.get("keeps", []):
+			for need in r["needs"]:
 				inv.add(filler(int(need[0])), int(need[1]))
+
+			for keep in r.get("keeps", []):   # a kept tool must be in hand (protocol 126): given, so it lands on a hotbar key for CraftHand.at
+				items.give(1, filler(int(keep[0])), int(keep[1]))
 
 			items._last_queue_act.clear()
 			items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, CraftHand.at(items, 1, number))

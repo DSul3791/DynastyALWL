@@ -2521,14 +2521,18 @@ func _init() -> void:
 			chop_rec = hs.recipes.recipe(rn)
 
 	var copper_slot: int = hs._tool_slot(hs.inventory_of(1), "saw")
+	var chop_said: Array = []
+	hs.send_notice = func(_p, text): chop_said.append(text)
+	hs.vitals_of(1)["weight"] = 5000.0   # the six blocks the plan makes must fit; carrying is not under test here
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3.ZERO)
 	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "a Chopping block that would saw its block from a log is refused without the saw in hand, and the log stays")
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3(float(copper_slot + 1), 0.0, 0.0))
-	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in hand it queues the sawing, then the Chopping block (%d entries)" % hs.craft_queue_of(1).size())
+	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in hand it queues the sawing, then the Chopping block (%d entries; said %s)" % [hs.craft_queue_of(1).size(), str(chop_said)])
 	hs._cancel_craft(1, 1)
 	hs._cancel_craft(1, 0)
+	hs.send_notice = Callable()
 
 	for rid in ["wooden_hammer", "stone_hammer"]:
 		var rec: Dictionary = {}
