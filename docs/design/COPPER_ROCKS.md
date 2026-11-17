@@ -54,8 +54,8 @@
 | TN-3 | "Smaller further downstream, boulders near the mountains" | size from how far the ground climbs within 24 m: 12 m or more = boulder radius 0.5-1 m; flat = pebble; in between in proportion | Downstream rivers run through flatter land; near mountains the valley sides are steep. Cheap: 4 height reads. |
 | TN-4 | Small tin by hand; "small" ends at 20 cm across | radius under 10 cm: loose Tin ore, 1 piece | His words; same line as copper. |
 | TN-5 | Tin per boulder | grade 0.15-0.45 (avg 0.3, the old tin share) | Tin sits in veins, so less of the rock is ore than copper's coat. |
-| TN-6 | Loose Tin ore looks like his water-worn pebbles, loose Copper ore like a small malachite lump | item looks only | Same item, new ground look; icons unchanged until a PC icon bake. |
-| TN-7 | "River stream tin rocks" means the small tin picked up by hand (loose Tin ore); tin boulders (20 cm across and up) keep the granite look he liked | one glassy stone per loose Tin ore, about 6 cm across (drawn size at the loose-item scale), roughness 0.06, metallic 0.2 | His plum size matches the hand-picked stones; he said "I like them" of the boulder looks. If he wants river tin boulders glassy too, that is the next step. |
+| TN-6 | Loose Tin ore looks like one of his water-worn pebbles (glassy since TN-7), loose Copper ore like a small malachite lump | item looks only | Same item, new ground look; icons unchanged until a PC icon bake. |
+| TN-7 | "River stream tin rocks" means the small tin picked up by hand (loose Tin ore); tin boulders (20 cm across and up) keep the granite look he liked | one glassy stone per loose Tin ore, about 6 cm across (drawn size at the loose-item scale), roughness 0.06, metallic 0.2 | His plum size matches the hand-picked stones; he said "I like them" on seeing the picture of the rocks (ore_rocks.png). If he wants river tin boulders glassy too, that is the next step. |
 
 ## Not changed
 - Iron, coal, salt and limestone outcrops keep their look and rules.

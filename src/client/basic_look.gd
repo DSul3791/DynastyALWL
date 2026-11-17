@@ -2479,7 +2479,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			glass.height = 0.035
 			glass.radial_segments = 16
 			glass.rings = 8
-			parts.append([glass, Transform3D(Basis.from_euler(Vector3(0.0, 0.6, 0.12)).scaled(Vector3(1.1, 0.82, 0.95)), Vector3(0.0, -0.046, 0.0)), color.srgb_to_linear()])
+			parts.append([glass, Transform3D(Basis.from_scale(Vector3(1.1, 0.82, 0.95)), Vector3(0.0, -0.075, 0.0)), color.srgb_to_linear()])
 			_metal(parts, 0.06, 0.2)
 		"coal":
 			# A lump of coal: black, angular and blocky, a few flat shiny facets, one broken face a shade lighter, and crumbs of coal dust beside it.

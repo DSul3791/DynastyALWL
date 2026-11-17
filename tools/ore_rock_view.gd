@@ -39,7 +39,7 @@ func _init() -> void:
 		var drop: MeshInstance3D = MeshInstance3D.new()
 		drop.mesh = BasicLook.mesh_for(str(loose[0]))
 		drop.scale = Vector3.ONE * LOOSE_SCALE
-		drop.position = Vector3(float(loose[1]), 0.06 * LOOSE_SCALE, float(loose[2]))
+		drop.position = Vector3(float(loose[1]), 0.16, float(loose[2]))   # where the game puts a loose item: ground + 0.12 (server) + 0.04 (_dress_item)
 		add_child(drop)
 
 	var pen: MeshInstance3D = MeshInstance3D.new()
