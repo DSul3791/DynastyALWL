@@ -386,8 +386,8 @@ func _process(delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 
 	# --shot-ready=held: the give goes 1.5 s after the welcome (the pack view exists from the welcome, so it is no sign the server has the player) and again
-	# every 3 s while the item is not in the pack (a give that beat the hello is dropped by the server), at most 3 times.
-	if ready_held and _given and not _selected and _give_tries < 3 and now - _give_msec > 3000 and client.items.inventory != null and not client.items.inventory.numbers.has(client.items.table.number_of(give_item)):
+	# every 5 s while the item is not in the pack (a give that beat the hello is dropped by the server), at most 3 times.
+	if ready_held and _given and not _selected and _give_tries < 3 and now - _give_msec > 5000 and client.items.inventory != null and not client.items.inventory.numbers.has(client.items.table.number_of(give_item)):
 		_given = false
 		print("shot runner: %s not in the pack %.1f s after the give; giving again" % [give_item, float(now - _give_msec) / 1000.0])
 
@@ -546,7 +546,7 @@ func _process(delta: float) -> void:
 	if now - _moved_msec < int(settle_s * 1000.0) and not (ready_held and _settled(now)):
 		return
 
-	if ready_held and not _ground_steady and _idle_since_msec == 0:
+	if ready_held and not _ground_steady and not _land_failed and _ground_rechecks == 0 and _idle_since_msec == 0:   # once per shot, at the first settle
 		print("shot runner: --settle cap of %.0f s reached with the voxel engine still busy (%s); going on" % [settle_s, str(VoxelEngine.get_stats().get("tasks", {}))])
 
 	# The ground under a shot is read once, when it is placed, and that reading can come from blocks still loading: on a steep face (the #802 spring
