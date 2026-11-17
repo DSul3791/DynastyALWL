@@ -112,9 +112,10 @@ func running() -> bool:
 	return not _pass.is_empty()
 
 
-# Picks a category tab from outside the list (left click with a saw opens Carpenter's); refresh() lights its tab.
+# Picks a category tab from outside the list (left click with a saw opens Carpenter's); refresh() lights its tab and the pass picks its first card.
 func show_category(category: String) -> void:
 	_recipe_category = category if RecipeFilter.CATEGORIES.has(category) else ""
+	view._selected_recipe = 0   # the card shows the tab's first recipe (the next pass picks it), not one from another tab
 
 
 func refresh() -> void:
