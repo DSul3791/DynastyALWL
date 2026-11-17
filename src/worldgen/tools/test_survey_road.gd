@@ -122,7 +122,7 @@ func _server_road() -> void:
 	check(not (again._structures["path_patch"] as Dictionary).has("cap_per_chunk"), "path_patch has no cap_per_chunk")
 
 	for k in 450:
-		again._items[800000 + k] = {"number": again.table.number_of("path_patch"), "count": 1, "pos": Vector3(100.0 + float(k % 30), 10.02, 100.0 + float(k / 30)), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+		again._items[800000 + k] = {"number": again.table.number_of("path_patch"), "count": 1, "pos": Vector3(100.0 + float(k % 30), 10.02, 100.0 + floorf(float(k) / 30.0)), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 
 	var before: int = _road_patches_near(again, Vector3(80.0, 10.0, 80.0), 8.0)
 	again.report_position(1, Vector3(80.0, 10.0, 80.0))
