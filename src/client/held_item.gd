@@ -177,7 +177,7 @@ var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
 var _ghost_on_base: bool = false           # the ghost is snapped to a base: a piece on a foundation, or a foundation beside another (the wheel does not lift it)
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
-var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "crowded", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "nodoorway", "mismatch", "wheel_*" (tests read it)
+var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "overlap", "bed", "crowded", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "nodoorway", "mismatch", "wheel_*" (tests read it)
 var _door_shape: String = ""                # the opening of the doorway a door's ghost is aimed at ("" for any other piece or no doorway): the words of "mismatch" and "taken"
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
@@ -1900,7 +1900,7 @@ func _update_blueprint() -> void:
 		return
 
 	var attach: String = str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", ""))
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()), clampi(lift_steps, 0, 1))
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placement_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()), clampi(lift_steps, 0, 1))
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
@@ -1910,7 +1910,7 @@ func _update_blueprint() -> void:
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
 	_ghost_on_base = on_base
-	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows() + _inv.foundation_rows())   # the building pieces too, as the server sees them
+	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placement_rows(), float(_blueprint_yaw))   # every fire and structure, at the turn it goes down at, as the server checks them
 	_door_shape = str(PlacementRules.doorway_fit(_placement, PlacementRules.structure_of_kit(_placement, kit), _blueprint_at, _inv.foundation_rows())["opening"]) if attach == PlacementRules.DOOR_ATTACH else ""
 
 	if attach == "table" and not on_base:
@@ -1946,9 +1946,7 @@ func _update_blueprint() -> void:
 		var probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, ground_at.y, 6.0)
 		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe)   # the turn it is placed at, as the server samples it (the camera's turn sampled other corners: BUG-008)
 
-	var fire_on_base: bool = kit == "campfire_kit" and not is_nan(PlacementRules.foundation_top(_placement, _blueprint_at, _inv.foundation_rows()))   # the server lays a fire on a foundation's top and skips the check
-
-	if blueprint_state == "" and not fire_on_base:
+	if blueprint_state == "":
 		var lifted: float = float(lift_steps) * PlacementRules.LIFT_STEP_M if (not on_base and bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false))) else 0.0
 		var terrain: float = _terrain_y(_blueprint_at.x, _blueprint_at.z, _blueprint_at.y, 14.0)   # 14 m reaches down past a stack of four foundations
 
@@ -1973,7 +1971,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "nocorner" or blueprint_state == "buried" or blueprint_state == "nodoorway" or blueprint_state == "mismatch"
+	var blocked: bool = blueprint_state != "open" and blueprint_state != "covered"   # every reason is red, so a new one can never leave a green ghost that will not place
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_build_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
