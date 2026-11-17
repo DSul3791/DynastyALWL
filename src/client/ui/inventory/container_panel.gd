@@ -229,6 +229,9 @@ func on_slot(chest_side: bool, slot: int) -> void:
 			return
 
 	if chest_side:
+		if slot < 0 or slot >= view.chest_inv.slot_count:
+			return   # a hover left on a well a station's store gave back (its empty end shrinks)
+
 		if view.chest_inv.numbers[slot] != 0:
 			view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, slot, view.chest_id, view.chest_inv.counts[slot], Vector3.ZERO)
 

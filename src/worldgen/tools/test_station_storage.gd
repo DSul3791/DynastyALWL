@@ -219,7 +219,7 @@ func _init() -> void:
 	items.give(1, stone, 7)
 	var stone_all: int = pack(1, stone) + store(forge, stone)
 	act(1, Net.ACT_CHEST_OPEN, forge)
-	check(box(forge).slot_count == 20, "opened, its empty slots past 20 are given back (%d)" % box(forge).slot_count)
+	check(box(forge).slot_count == 21, "opened, the empty slots past its last stack (the nails in slot 21) are given back (%d)" % box(forge).slot_count)
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, stone), forge, 5)
 	check(store(forge, stone) == 5 and pack(1, stone) + store(forge, stone) == stone_all, "5 stone deposited into the store, the total kept")
 	act(1, Net.ACT_CHEST_TAKE, slot_of_box(forge, nail), forge, 1)
