@@ -15,6 +15,7 @@ static var _table: Dictionary = {}
 static var _loaded: bool = false
 static var _material: StandardMaterial3D
 static var _metal_mats: Dictionary = {}
+const GLASS := -1.0   # _metal(parts, rough, GLASS): a glassy, clear-coated stone instead of metal (river tin)
 
 
 # The looks table, read once: item id -> {shape, color, size}. A missing or broken file means no entries (everything keeps its old look).
@@ -278,7 +279,7 @@ const ART_OVERRIDES := {
 	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
 	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
-	"tin_ore": {"shape": "tin_glass", "color": "#3a2216", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
+	"tin_ore": {"shape": "tin_glass", "color": "#5a2a18", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
 	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }
@@ -2471,16 +2472,17 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_sph(parts, 0.008, Vector3.ONE, Vector3(-0.03 + 0.02 * float(k), 0.02, 0.01 * float(k % 2)), Color(0.46, 0.52, 0.22))
 		"tin_glass":
 			# A river tin stone (Dave 17 Nov 2026: "the river stream tin rocks should look like glass rocks shiny and reflective the size of plumbs"):
-			# one smooth water-worn cassiterite pebble, dark brown to reddish black, glassy (low roughness, a little metallic for a stronger mirror
-			# shine), drawn about 6 cm across at the loose-item scale (inventory_view.BASIC_DROP_SCALE 1.8). A finer sphere than _sph so the
-			# highlight stays round. Colours converted to linear: this material reads vertex colours as linear (ore_rocks.png drew sRGB values pale).
+			# one smooth water-worn cassiterite pebble, dark red-brown, under a glass coat (GLASS: a clear coat with a sharp sun highlight that shows
+			# under any light, plus the sky's reflection in game), drawn about 7 cm across at the loose-item scale (inventory_view.BASIC_DROP_SCALE
+			# 1.8). A finer sphere than _sph so the highlight stays round. Colour converted to linear: this material reads vertex colours as linear.
+			# Picture 17 Nov (ore_rocks_glass.png): roughness 0.06 metallic 0.2 drew a matte near-black dot with no highlight; hence the coat.
 			var glass: SphereMesh = SphereMesh.new()
-			glass.radius = 0.0175
-			glass.height = 0.035
+			glass.radius = 0.019
+			glass.height = 0.038
 			glass.radial_segments = 16
 			glass.rings = 8
-			parts.append([glass, Transform3D(Basis.from_scale(Vector3(1.1, 0.82, 0.95)), Vector3(0.0, -0.075, 0.0)), color.srgb_to_linear()])
-			_metal(parts, 0.06, 0.2)
+			parts.append([glass, Transform3D(Basis.from_scale(Vector3(1.1, 0.82, 0.95)), Vector3(0.0, -0.074, 0.0)), color.srgb_to_linear()])
+			_metal(parts, 0.3, GLASS)
 		"coal":
 			# A lump of coal: black, angular and blocky, a few flat shiny facets, one broken face a shade lighter, and crumbs of coal dust beside it.
 			_box_rot(parts, Vector3(0.1, 0.075, 0.085), Vector3(0.0, -0.025, 0.0), Vector3(0.2, 0.5, 0.15), color)
@@ -3040,8 +3042,16 @@ static func _metal_material(rough: float = 0.4, metallic: float = 0.8) -> Standa
 	if not _metal_mats.has(key):
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.vertex_color_use_as_albedo = true
-		material.metallic = metallic
 		material.roughness = rough
+
+		if metallic == GLASS:   # a glassy stone: not metal, a strong clear coat over a softer body
+			material.specular = 0.8
+			material.clearcoat_enabled = true
+			material.clearcoat = 1.0
+			material.clearcoat_roughness = 0.04
+		else:
+			material.metallic = metallic
+
 		_metal_mats[key] = material
 
 	return _metal_mats[key]
