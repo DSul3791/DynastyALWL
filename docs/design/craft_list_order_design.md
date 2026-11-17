@@ -70,3 +70,13 @@ He picked "Station's slots on the craft screen" (17 Nov 02:12Z) over products go
 - **SC-3, what keeps its old store.** The Kiln (a batch of logs into its output, being rebuilt in three tiers), the chopping block (E splits blocks into its output; no recipes), the smelters (fuel hopper, ore input, ingot rack), chests and fires.
 - **SC-4, no weight limit.** A station's store has no kilogram limit (it is never carried); the 250-slot protocol limit is the only cap.
 - **SC-5, the saw mill** still takes only logs from you; its planks land in the same store.
+
+## Two Craft buttons (Dave 17 Nov 2026)
+
+Dave: "cut the Craft button into two buttons left button says Craft 1, right button says Craft x where x is the number you set above for amount of items to craft." The recipe card's footer (own crafting screen and every station window, `recipe_list.gd`) now has two brass buttons side by side where the one wide Craft button was: **Craft 1** makes one; **Craft x** makes the Make box's number and its words follow the box as it changes. Pin stays below. Left click selects, Shift+click crafts one and E crafts the box's number, as before.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **CB-1, times.** Each button shows its own time: Craft 1 the time for one, Craft x the time for x ("8 s" under a minute, "2:40" from a minute up). Words too long for half the column end in "..." and show whole on hover.
+- **CB-2, greyed.** Craft 1 is greyed exactly as the old button was. Craft x is also greyed when the stock in reach covers one but not x. A recipe whose one craft needs logs or parts made first is left to the server, which refuses what is short.
+- **CB-3, quantity box** still runs 1 to 20.
