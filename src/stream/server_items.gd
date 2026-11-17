@@ -25,6 +25,7 @@ const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # durabil
 const BogIron := preload("res://src/shared/bog_iron.gd")   # bog iron under fens and marshes (digging.json bog_iron)
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
+const SurveyLine := preload("res://src/shared/survey_line.gd")   # the survey line: only a building stops a surveyed road (Dave 17 Nov 2026)
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 3                       # world_items.json: 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
@@ -147,6 +148,7 @@ var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
 var send_marker_done: Callable # (peer, Vector3): a road marker is reached or dropped, the client takes its flag down
+var send_survey_refused: Callable # (peer, Vector3): a survey marker was refused; the client's line goes on from this, the survey's last kept marker
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
@@ -155,6 +157,7 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var fill_ground: Callable        # (centre, radius, material) -> bool: add ground (a fill) and tell everyone; false when it changed nothing
 var dig_refusal: Callable        # () -> String: why the last dig changed nothing, shown to the player; set by the server scene
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
+var trees_along: Callable       # (a, b, reach, near, done) -> Array of [chunk Vector2i, id int, along 0..1]: standing placer trees that near the straight line from a to b, from the flora chunks round `near` not yet in `done` (a surveyed road, as it goes); set by the server scene
 var trees_near: Callable        # (point, radius) -> Array of [chunk Vector2i, id int]: standing placer trees whose root is that close; set by the server scene
 var trees_near_cached: Callable # (point, radius) -> Array of [position, species name]: the same trees from chunks already made only, cheap (the hint triggers); unset = trees_near
 var trunks_near: Callable       # (point, radius) -> Array of [root position, trunk radius m, height m]: standing trunks an arrow can stick in (terrain_server _arrow_trunks)
@@ -763,6 +766,7 @@ func peer_left(peer: int) -> void:
 	_garden_jobs.erase(peer)
 	_last_average.erase(peer)
 	_roads.erase(peer)
+	_road_last.erase(peer)
 	_grade_points.erase(peer)
 	_on_path_cache.erase(peer)
 	_last_hit.erase(peer)
@@ -1584,7 +1588,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0))])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0])
 			continue
 
 		var at: Vector3 = it["pos"]
@@ -3400,9 +3404,7 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_say(peer, "You cannot tread a path in water.")
 		return
 
-	var here_chunk: Vector2i = _chunk_of(spot)
-	var of_kind: int = 0
-	var near_paths: Array = []
+	var near_paths: Array = []   # no cap on path patches (Dave 17 Nov 2026: "It really doesnt need a limit for paths")
 
 	for id in _items:
 		var other: Dictionary = _items[id]
@@ -3422,16 +3424,9 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 			if flat <= PATH_AVERAGE_M + 1.25:
 				near_paths.append(id)
-
-			if _chunk_of(other["pos"]) == here_chunk:
-				of_kind += 1
 		elif other["pos"].distance_to(spot) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 			_say(peer, "Something stands there.")
 			return
-
-	if of_kind >= int(_structures["path_patch"]["cap_per_chunk"]):
-		_say(peer, "This ground is paths enough.")
-		return
 
 	var spots: Array = [Vector2.ZERO]
 
@@ -3651,8 +3646,12 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
+# A survey marker is set where the player aims, as far as they can see the ground (SURVEY_REACH_M, the client's SURVEY_AIM_M and some slack for walking).
+const SURVEY_REACH_M := 160.0
+
+
 func _hoe_grade_point(peer: int, inv, which: int, at: Vector3, held_slot: int) -> void:
-	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or _swing_tool(peer, inv, held_slot, "hoe") < 0:
+	if not ground_height.is_valid() or not _peer_pos.has(peer) or Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > SURVEY_REACH_M or _swing_tool(peer, inv, held_slot, "hoe") < 0:
 		return
 
 	var h: float = float(ground_height.call(at.x, at.z))
@@ -3669,21 +3668,26 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3, held_slot: int) -
 # The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B follows the ground, averaged in 3 m sections (no straight ramp)
 # between the two heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
 # never freezes the game the way one big edit would; the hoe wears once every ROAD_WEAR_EVERY stations and the job stops if the hoe is gone.
-const ROAD_MAX_M := 40.0
+# Any distance (Dave 17 Nov 2026: the old 40 m cap made a far marker start a new road). Straight through trees, stumps and rocks: a standing tree on the
+# road falls (in its logs, as if chopped), a stump on it is broken up into what chopping it gives, left on the ground, and a rock is left standing for
+# the player's tools; only a building stops a marker (SurveyLine). The road's patches keep the grass off 2 m either side of it (the client, "road").
 const ROAD_STATION_M := 0.7
 const ROAD_STEP_S := 0.5
 const ROAD_EDITS := 3
 const ROAD_WEAR_EVERY := 4
-const ROAD_HALF_WIDTH_M := 1.0
+const ROAD_HALF_WIDTH_M := SurveyLine.HALF_WIDTH_M
 const ROAD_DEPTH_M := 0.5
 const ROAD_SECTION_M := 3.0   # the ground is averaged over sections this long along the line
-var _roads: Dictionary = {}   # peer -> {"head": where the road has got to, "markers": [Vector3] waiting, "built": true once a stretch has been taken up (a job that has not is still being surveyed), "seg": null or {"a", "b", "n": stations, "i": next station, "wait": seconds to the next one}}
+const ROAD_FELLS := 2         # trees a station brings down at most (each one's logs wake the log physics): a road through thick forest fells as it goes, never all at once
+const ROAD_TREE_REACH_M := 2.0   # trees whose root is this near the line are looked at (the road's half width and the thickest trunk)
+var _roads: Dictionary = {}   # peer -> [jobs], built one after the other; the last takes the player's new markers. A job: {"head": where the road has got to, "last": the last marker set, "markers": [Vector3] waiting, in the order set, "built": true once a stretch has been taken up (a job that has not is still being surveyed), "seg": null or {"a", "b", "n": stations, "i": next station, "wait": seconds to the next one, "trees": its trees still to fall}, "stumps": [world ids] of trees it felled, broken up once they have landed}
+var _road_last: Dictionary = {}   # peer -> the last marker of a road that has caught up: the next marker of the same survey carries on from it
 
 
-# Surveyor mode (Dave 3 Nov 2026): the player drops markers while walking. Markers belong to the player who set them (the peer id keys the job, so a
-# builder never chases another player's markers). The first marker of an idle job is where the road starts; after that the builder takes the nearest
-# remaining marker to where it has got to, builds toward it, deletes it on arrival and goes for the next nearest. The job is done when it has built and none are left;
-# before its first stretch it is only being surveyed (the start marker is set, nothing to build toward yet) and waits for the next marker (BUG-007).
+# Surveyor mode (Dave 3 Nov 2026; the line, 17 Nov 2026): the player sets markers; the road builds from each to the next, in the order set, along the
+# straight line the surveyor's green line showed. Markers belong to the player who set them (the peer id keys the jobs, so a builder never chases
+# another player's markers). The first marker of a job is where the road starts; before its first stretch it is only being surveyed and waits for
+# the next marker (BUG-007). A new survey started while a road is still building waits its turn behind it.
 const ROAD_MAX_MARKERS := 24
 
 
@@ -3692,90 +3696,158 @@ func _marker_done(peer: int, at: Vector3) -> void:
 		send_marker_done.call(peer, at)
 
 
-func _road_abandon(peer: int, job: Dictionary) -> void:
+# Every road of this player stops and their waiting flags come down.
+func _road_abandon(peer: int) -> void:
+	for job in _roads.get(peer, []):
+		_marker_done(peer, job["head"])
+
+		if job["seg"] != null:
+			_marker_done(peer, job["seg"]["b"])
+
+		for marker in job["markers"]:
+			_marker_done(peer, marker)
+
 	_roads.erase(peer)
-	_marker_done(peer, job["head"])
-
-	if job["seg"] != null:
-		_marker_done(peer, job["seg"]["b"])
-
-	for marker in job["markers"]:
-		_marker_done(peer, marker)
 
 
-# chained: the client set this marker within 40 m of the one before it (the road goes on); false starts a road. A survey that has only its start marker is
-# dropped for a marker that starts a road elsewhere (its flag comes down), so a lone start marker can always be walked away from.
+# True when a building (SurveyLine.is_building) stands in the road's way on the straight line from a to b.
+func survey_blocked(a: Vector3, b: Vector3) -> bool:
+	var a2: Vector2 = Vector2(a.x, a.z)
+	var b2: Vector2 = Vector2(b.x, b.z)
+	var lo: Vector2 = Vector2(minf(a.x, b.x), minf(a.z, b.z))
+	var hi: Vector2 = Vector2(maxf(a.x, b.x), maxf(a.z, b.z))
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+		var foot: Vector2
+
+		if it.has("struct"):
+			var kind: String = str(it["struct"]["kind"])
+			var def: Dictionary = _structures.get(kind, {})
+
+			if not SurveyLine.is_building(kind, def):
+				continue
+
+			foot = Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))
+		elif it.has("fire"):
+			foot = Vector2(SurveyLine.FIRE_FOOT_M, SurveyLine.FIRE_FOOT_M)
+		else:
+			continue
+
+		var reach: float = foot.length() * 0.5 + ROAD_HALF_WIDTH_M   # a quick box test first: most of the world is nowhere near the line
+
+		if it["pos"].x < lo.x - reach or it["pos"].x > hi.x + reach or it["pos"].z < lo.y - reach or it["pos"].z > hi.y + reach:
+			continue
+
+		if SurveyLine.crosses(a2, b2, Vector2(it["pos"].x, it["pos"].z), float(it["struct"]["yaw"]) if it.has("struct") else 0.0, foot):
+			return true
+
+	return false
+
+
+# chained: the client set this marker after another of the same survey (the road goes on from it, at any distance); false starts a road. A survey that has
+# only its start marker is dropped for a marker that starts a road elsewhere (its flag comes down), so a lone start marker can always be walked away from.
 func _road_marker(peer: int, here: Vector3, chained: bool) -> void:
-	if _roads.has(peer) and not chained and not _roads[peer]["built"] and _roads[peer]["seg"] == null and _roads[peer]["markers"].is_empty():
-		_road_abandon(peer, _roads[peer])
+	var jobs: Array = _roads.get(peer, [])
 
-	if not _roads.has(peer):
-		_roads[peer] = {"head": here, "markers": [], "built": false, "seg": null}
+	if not chained:
+		_road_last.erase(peer)
+		var open: Dictionary = jobs.back() if not jobs.is_empty() else {}
+
+		if not open.is_empty() and not open["built"] and open["markers"].is_empty():
+			jobs.pop_back()   # a lone start marker, walked away from
+			_marker_done(peer, open["head"])
+
+		jobs.append({"head": here, "last": here, "markers": [], "built": false, "seg": null, "stumps": []})
+		_roads[peer] = jobs
 		_say(peer, "Survey begun at this marker: set the next marker and the road builds toward it.")
 		return
 
-	var job: Dictionary = _roads[peer]
+	var last: Vector3 = jobs.back()["last"] if not jobs.is_empty() else _road_last.get(peer, here)   # the road caught up: it carries on from its last marker
 
-	if job["markers"].size() >= ROAD_MAX_MARKERS:
-		_say(peer, "Too many markers waiting: let the road catch up.")
+	if not jobs.is_empty() and jobs.back()["markers"].size() >= ROAD_MAX_MARKERS:
+		_survey_refuse(peer, here, last, "Too many markers waiting: let the road catch up.")
 		return
 
+	if last != here and survey_blocked(last, here):
+		_survey_refuse(peer, here, last, "A building is in the way: survey the road round it.")
+		return
+
+	if jobs.is_empty():
+		jobs.append({"head": last, "last": last, "markers": [], "built": _road_last.has(peer), "seg": null, "stumps": []})
+		_roads[peer] = jobs
+		_road_last.erase(peer)
+
+		if last == here:   # with no survey known (a restart), this marker starts one
+			_say(peer, "Survey begun at this marker: set the next marker and the road builds toward it.")
+			return
+
+	var job: Dictionary = jobs.back()
+
 	job["markers"].append(here)
-	_say(peer, "Marker set: the road builds toward the nearest one, then the next." if job["built"] else "Marker set: the road builds toward it from the first marker.")
+	job["last"] = here
+	_say(peer, "Marker set: the road builds along the line, marker to marker." if job["built"] else "Marker set: the road builds toward it from the first marker.")
 
 
-# Takes the nearest marker to the head as the next stretch; returns false when no markers are left.
+# A marker refused: its flag comes down, the player is told why, and their line goes back to the survey's last kept marker.
+func _survey_refuse(peer: int, here: Vector3, last: Vector3, why: String) -> void:
+	_say(peer, why)
+	_marker_done(peer, here)
+
+	if send_survey_refused.is_valid():
+		send_survey_refused.call(peer, last)
+
+
+# Takes the next marker, in the order set, as the next stretch; returns false when no markers are left.
 func _road_next_segment(peer: int, job: Dictionary) -> bool:
-	var head: Vector3 = job["head"]
-
 	while not job["markers"].is_empty():
-		var best: int = 0
+		var head: Vector3 = job["head"]
+		var target: Vector3 = job["markers"].pop_front()
 
-		for k in job["markers"].size():
-			if Vector2(job["markers"][k].x - head.x, job["markers"][k].z - head.z).length() < Vector2(job["markers"][best].x - head.x, job["markers"][best].z - head.z).length():
-				best = k
-
-		var target: Vector3 = job["markers"][best]
-		job["markers"].remove_at(best)
-		var length: float = Vector2(target.x - head.x, target.z - head.z).length()
-
-		if length > ROAD_MAX_M:
-			_say(peer, "A marker is more than %d m from the road: skipped." % int(ROAD_MAX_M))
-			_marker_done(peer, target)
-			continue
-
-		if length < 1.0:
+		if Vector2(target.x - head.x, target.z - head.z).length() < 1.0:
 			job["head"] = target
-			head = target
 			_marker_done(peer, target)
 			continue
 
-		job["seg"] = {"a": head, "b": target, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
+		job["seg"] = {"a": head, "b": target, "n": int(ceil(Vector2(target.x - head.x, target.z - head.z).length() / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
 		job["built"] = true
 		return true
 
 	return false
 
 
+# One road at a time per player (the first of their jobs), a station every ROAD_STEP_S.
 func _road_tick(delta: float) -> void:
 	if _roads.is_empty():
 		return
 
 	for peer in _roads.keys():
-		var job: Dictionary = _roads[peer]
+		var jobs: Array = _roads[peer]
+		var job: Dictionary = jobs[0]
 		var inv = inventory_of(peer)
 
 		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
-			_road_abandon(peer, job)   # the hoe is gone: the road stops and the waiting flags come down
+			_road_abandon(peer)   # the hoe is gone: the roads stop and the waiting flags come down
 			continue
+
+		_road_stumps(job)
 
 		if job["seg"] == null and not _road_next_segment(peer, job):
 			if not job["built"]:
 				continue   # only the start marker so far: still being surveyed, there is no road to finish (BUG-007)
 
-			_roads.erase(peer)   # a road was built and no markers are left: the road is done
+			if not job["stumps"].is_empty():
+				continue   # a felled tree is still coming down on the road: its stump is broken up once it lands
+
+			if jobs.size() > 1:
+				jobs.pop_front()   # done: the next survey's road builds now
+				_marker_done(peer, job["head"])
+				continue
+
+			_roads.erase(peer)   # a road was built and no markers are left: the road has caught up
+			_road_last[peer] = job["last"]   # the next marker of the same survey carries on from here
 			_marker_done(peer, job["head"])
-			_say(peer, "The road is finished.")
+			_say(peer, "The road has caught up: set the next marker to carry on.")
 			continue
 
 		var seg: Dictionary = job["seg"]
@@ -3787,13 +3859,18 @@ func _road_tick(delta: float) -> void:
 		seg["wait"] = ROAD_STEP_S
 		var i: int = int(seg["i"])
 
+		if i >= int(seg["n"]) and not seg.get("trees", []).is_empty():
+			_road_fell(job, seg, 1.0)   # trees left over at the stretch's end (at most ROAD_FELLS a station): felled before it closes
+			continue
+
 		if i >= int(seg["n"]):
 			_marker_done(peer, seg["a"])
 			_marker_done(peer, seg["b"])
-			job["head"] = seg["b"]   # reached the marker: it is deleted (taken off the list when it was chosen) and the next nearest is next
+			job["head"] = seg["b"]   # reached the marker: the next one is next
 			job["seg"] = null
 			continue
 
+		_road_fell(job, seg, float(i) / float(maxi(int(seg["n"]) - 1, 1)))
 		_road_station(peer, inv, seg["a"], seg["b"], i, int(seg["n"]))
 		seg["i"] = i + 1
 
@@ -3814,6 +3891,83 @@ func _road_section_height(a: Vector3, b: Vector3, t: float) -> float:
 			count += 1
 
 	return total / float(count) if count > 0 else lerpf(a.y, b.y, t)
+
+
+# The stumps of trees the road felled: each is broken up once its tree has landed (its fall record is gone).
+func _road_stumps(job: Dictionary) -> void:
+	for stump_id in job["stumps"].duplicate():
+		if not _falls.has(stump_id):
+			job["stumps"].erase(stump_id)
+			_break_stump(stump_id)
+
+
+# A stump on the road is broken up where it stands: what the last axe blow on it gives (drops.json stump, _stump_final_rows) is left on the ground
+# beside it, and it is gone. A world drop (no player's luck, nobody's gathering).
+func _break_stump(id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 4:
+		return
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ 7919
+	var at: Vector3 = it["pos"]
+	_items.erase(id)
+
+	for row in _stump_final_rows(_drops.get("stump", {}), float(it["tree"]["radius"])):
+		drop_in_world(table.number_of(str(row[0])), rng.randi_range(int(row[1]), int(row[2])), at + Vector3(rng.randf_range(-0.4, 0.4), 0.3, rng.randf_range(-0.4, 0.4)))   # luck-exempt: world drop, no player
+
+	_dirty = true
+
+
+# Standing trees on the road up to this station fall, as if chopped (_fell: in their logs, the wood system's fall), away from the road's middle line.
+# A flora chunk's trees on the stretch are listed once, when the road comes within reach of it (trees_along), and taken in order along the line as the
+# stations reach them, at most ROAD_FELLS a station (the rest wait for the next one). Their stumps are broken up once they land (_road_stumps).
+# shortcut: a sapling the world regrew into a tree (dynamic_tree_info) is not on the list, as with dig_fell; the road goes under it.
+func _road_fell(job: Dictionary, seg: Dictionary, t: float) -> void:
+	if not trees_along.is_valid() or not tree_info.is_valid() or not cut_tree.is_valid():
+		return
+
+	var a: Vector2 = Vector2(seg["a"].x, seg["a"].z)
+	var b: Vector2 = Vector2(seg["b"].x, seg["b"].z)
+
+	if not seg.has("trees"):
+		seg["trees"] = []
+		seg["chunks"] = {}
+
+	var here: Vector2 = a.lerp(b, t)
+	var more: Array = trees_along.call(seg["a"], seg["b"], ROAD_TREE_REACH_M, Vector3(here.x, 0.0, here.y), seg["chunks"])
+
+	if not more.is_empty():
+		seg["trees"].append_array(more)
+		seg["trees"].sort_custom(func(x, y): return float(x[2]) < float(y[2]))
+
+	var felled: int = 0
+
+	while not seg["trees"].is_empty() and float(seg["trees"][0][2]) <= t and felled < ROAD_FELLS:
+		var found: Array = seg["trees"].pop_front()
+		var info: Dictionary = tree_info.call(found[0], int(found[1]))
+
+		if info.is_empty():
+			continue
+
+		var at: Vector2 = Vector2(info["position"].x, info["position"].z)
+		var off: Vector2 = SurveyLine.offset(a, b, at)
+
+		if off.x > ROAD_HALF_WIDTH_M + _felled_radius(info):
+			continue
+
+		var ab: Vector2 = b - a
+		var side: Vector2 = Vector2(-ab.y, ab.x).normalized()
+
+		if side.dot(at - a) < 0.0 or (absf(side.dot(at - a)) < 0.01 and int(found[1]) % 2 == 0):
+			side = -side
+
+		var stump_id: int = _fell(found[0], int(found[1]), info, side)
+
+		if stump_id >= 0:
+			job["stumps"].append(stump_id)
+			felled += 1
 
 
 func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
@@ -3852,37 +4006,36 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 	var pos: Vector3 = Vector3(centre.x, ground + 0.02, centre.y)
 
+	var stumps: Array = []   # stumps standing on the road here (chopped before it came): broken up after the look round
+
 	if _structures.has("path_patch") and not (water_depth_at.is_valid() and float(water_depth_at.call(Vector3(pos.x, ground, pos.z))) > 0.05):
 		var blocked: bool = false
-		var of_kind: int = 0
 
 		for id in _items:
 			var other: Dictionary = _items[id]
 
-			if _path_blocked_by_boulder(other, pos):
-				blocked = true
-				break
+			if other.has("tree") and int(other["tree"]["state"]) == 4 and not _falls.has(id) and Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < ROAD_HALF_WIDTH_M + float(other["tree"]["radius"]) + ROAD_STATION_M * 0.5:
+				stumps.append(id)
+				continue
 
 			if not other.has("struct"):
-				continue
+				continue   # a rock stays where it is, the road under it (Dave 17 Nov 2026: rocks are left for tools)
 
 			if str(other["struct"]["kind"]) == "path_patch":
 				if Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < PATH_SPACING_M:
-					blocked = true
-					break
-
-				if _chunk_of(other["pos"]) == _chunk_of(pos):
-					of_kind += 1
+					blocked = true   # no break: the look round goes on for the stumps here
 			elif other["pos"].distance_to(pos) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 				blocked = true
-				break
 
-		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
-			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+		if not blocked:   # no cap on path patches (Dave 17 Nov 2026)
+			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0, "road": true}}   # road: the grass is kept off 2 m either side
 			_zone_add(_next_id)
 			_next_id += 1
 			_dirty = true
 			_goal_event(peer, "path_laid")
+
+	for id in stumps:
+		_break_stump(id)
 
 	if i % ROAD_WEAR_EVERY == 0:
 		_wear_tool(peer, inv, "hoe", "dig")
@@ -5532,6 +5685,9 @@ func _sync_world_items() -> void:
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 
+					if it.has("struct") and bool(it["struct"].get("road", false)):
+						(added[added.size() - 1][5] as Dictionary)["road"] = true   # a surveyed road's patch (the client keeps the grass off 2 m either side)
+
 					if it.has("struct") and it["struct"].has("on"):
 						(added[added.size() - 1][5] as Dictionary)["on"] = true   # a crate riding on a cart (the client offers to set it down)
 
@@ -5790,6 +5946,9 @@ func _load_world_items() -> void:
 			if row.size() > 19 and int(row[18]) > 0 and entry["struct"].has("uid"):
 				entry["struct"]["on"] = int(row[18])   # world_items version 3: the crate rides on the cart with this uid (_carts.after_load checks it)
 				entry["struct"]["spot"] = maxi(int(row[19]), 0)
+
+			if row.size() > 20 and int(row[20]) == 1:
+				entry["struct"]["road"] = true   # a surveyed road's patch: the grass is kept off 2 m either side of it
 
 			if row.size() > 15 and str(row[15]) != "":
 				var saved_site: Variant = JSON.parse_string(str(row[15]))
@@ -6762,11 +6921,11 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 
 # Cuts a standing tree and brings it down in its logs beside its stump (the last axe blow and a dug-out tree both end here). `away` is the
 # direction it falls in.
-func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> void:
+func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> int:   # the stump's world id, -1 when the tree was not cut
 	if not bool(cut_tree.call(chunk, tree_id)):
-		return
+		return -1
 
-	_fell_record(chunk, info, away)
+	return _fell_record(chunk, info, away)
 
 
 # The butt radius of a felled tree: the radius its standing model is drawn with (fell_pose.gd drawn_radius: its species model and variant, so a slim
@@ -6810,7 +6969,7 @@ func _crown_circle(spot: Vector3, info: Dictionary, yaw: float, pitch: float) ->
 # down on something (a rock, a stump, another log) is pushed off it. The pieces go straight into the record table: no world scans.
 # They are the feller's gathering at once (goal got: counter).
 # shortcut: a piece can be picked up while it is still coming down (1.5 s); buildings have no hit points yet, so a log only stops against them.
-func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: String = "") -> void:   # feller: the character key whose axe felled it (what it breaks into is their gathering)
+func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: String = "") -> int:   # feller: the character key whose axe felled it (what it breaks into is their gathering)
 	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
 	var pitch: float = 0.0
@@ -6861,6 +7020,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	_falls[stump_id] = {"shared": fall, "pieces": pieces, "hinge": hinge, "along": along, "length": float(tree["length"]), "radius": radius, "small": _is_small_tree(tree, _drops.get("trunk", {})), "peer": feller_peer}
 	_dirty = true
 	_sync_in = 0.0   # bug 6: the pieces go out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
+	return stump_id
 
 
 # Everything a felled `tree` (lying from `base` along its yaw and pitch) breaks into, as [item number, count, position] rows, a log row with its turn and girth

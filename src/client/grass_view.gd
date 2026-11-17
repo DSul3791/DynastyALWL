@@ -260,6 +260,9 @@ var bare_spots: Array = []
 const BARE_M := 0.6                     # no blade inside this of a path patch
 const BARE_EDGE_M := 1.1                # thinning out to here, where the drawn brown fades away (it is fully gone by 1.25 m)
 const BARE_BUCKET_M := 2.0
+const ROAD_BARE_M := 3.0                # a surveyed road's patch: no blade inside this (its 1 m half width and 2 m either side, Dave 17 Nov 2026; PROVISIONAL SV-4)
+const ROAD_BARE_EDGE_M := 3.4           # thinning out to here
+var bare_wide: Dictionary = {}           # the bare spots that are a road's (ROAD_BARE_M round them)
 var third_person: bool = false          # set by the client: only then is the grass lowered round the player
 const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
 var trunk_squash: float = 0.2           # a blade under or beside a trunk keeps this share of its height
@@ -1135,8 +1138,9 @@ func set_cleared(spots: Array, radius: float, edge: float) -> void:
 
 # Trodden hoe path patches (Dave 2 Nov 2026: "grass pops up on the path in the distance, and goes again when I walk back"). The shader presses
 # only the eight nearest logs, so a long path lost its far patches. Every patch is now left out of the cells themselves (exact, any number, near
-# or far), and the cells round a patch that was added or taken away are built again.
-func set_bare(spots: Array) -> void:
+# or far), and the cells round a patch that was added or taken away are built again. A surveyed road's patches (`roads`, Dave 17 Nov 2026: the
+# grass gone 2 m either side of the road) keep it off ROAD_BARE_M round each.
+func set_bare(spots: Array, roads: Array = []) -> void:
 	var old: Dictionary = {}
 
 	for spot in bare_spots:
@@ -1144,35 +1148,45 @@ func set_bare(spots: Array) -> void:
 
 	var changed: Array = []
 	var fresh: Dictionary = {}
+	var wide: Dictionary = {}
 
-	for spot in spots:
+	for spot in roads:
+		wide[spot] = true
+
+	for spot in spots + roads:
 		fresh[spot] = true
 
-		if not old.has(spot):
+		if not old.has(spot) or bool(bare_wide.get(spot, false)) != wide.has(spot):
 			changed.append(spot)
 
 	for spot in bare_spots:
 		if not fresh.has(spot):
 			changed.append(spot)
 
-	bare_spots = spots
+	bare_spots = spots + roads
+	bare_wide = wide
 	bare = {}
 
-	for spot in spots:
-		for bz in range(int(floor((spot.z - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.z + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
-			for bx in range(int(floor((spot.x - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.x + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
+	for spot in bare_spots:
+		var edge: float = ROAD_BARE_EDGE_M if wide.has(spot) else BARE_EDGE_M
+		var entry: Array = [spot, ROAD_BARE_M if wide.has(spot) else BARE_M, edge]
+
+		for bz in range(int(floor((spot.z - edge) / BARE_BUCKET_M)), int(floor((spot.z + edge) / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor((spot.x - edge) / BARE_BUCKET_M)), int(floor((spot.x + edge) / BARE_BUCKET_M)) + 1):
 				var key: Vector2i = Vector2i(bx, bz)
 
 				if not bare.has(key):
 					bare[key] = []
 
-				bare[key].append(spot)
+				bare[key].append(entry)
 
 	var cells: Dictionary = {}
 
 	for spot in changed:
-		for cz in range(int(floor((spot.z - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.z + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
-			for cx in range(int(floor((spot.x - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.x + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
+		var reach: float = ROAD_BARE_EDGE_M + 1.0
+
+		for cz in range(int(floor((spot.z - reach) / CELL_M)), int(floor((spot.z + reach) / CELL_M)) + 1):
+			for cx in range(int(floor((spot.x - reach) / CELL_M)), int(floor((spot.x + reach) / CELL_M)) + 1):
 				cells[Vector2i(cx, cz)] = true
 
 	if not cells.is_empty():
@@ -1185,17 +1199,18 @@ func _bare_at(x: float, z: float) -> bool:
 	if list == null:
 		return false
 
-	for spot in list:
+	for entry in list:
+		var spot: Vector3 = entry[0]
 		var d: float = Vector2(x - spot.x, z - spot.z).length()
 
-		if d < BARE_M:
+		if d < float(entry[1]):
 			return true
 
-		if d < BARE_EDGE_M:
-			# The same fixed scatter as _cleared_at: the same spot always gives the same answer, thinning out over the fading brown.
+		if d < float(entry[2]):
+			# The same fixed scatter as _cleared_at: the same spot always gives the same answer, thinning out over the fading edge.
 			var scatter: float = fposmod(sin(floorf(x * 3.0) * 12.9898 + floorf(z * 3.0) * 78.233) * 43758.5453, 1.0)
 
-			if smoothstep(BARE_M, BARE_EDGE_M, d) <= scatter:
+			if smoothstep(float(entry[1]), float(entry[2]), d) <= scatter:
 				return true
 
 	return false
