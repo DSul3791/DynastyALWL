@@ -56,6 +56,27 @@ func _init() -> void:
 	view._station_screen = 99   # taken down while open: the list falls back to your own
 	check(view.station_makes(hand), "a station gone from the world lists everything")
 
+	# A crafting station's store shows under its recipes, no tabs (Dave 17 Nov 2026: "it should be combined so when it makes items they appear").
+	var kiln_state: int = -1
+
+	for kind in kinds:   # any kiln (the kiln tiers may be renamed)
+		if str(kinds[kind].get("use", "")) == "kiln" and not bool(kinds[kind].get("retired", false)):
+			kiln_state = int(kinds[kind]["state"])
+
+	view._world[11] = {"node": null, "number": 0, "count": 1, "pos": Vector3(300.0, 0.0, 0.0), "state": kiln_state, "light": null}
+	view._world[12] = {"node": null, "number": 0, "count": 1, "pos": Vector3(320.0, 0.0, 0.0), "state": int(kinds["chopping_block"]["state"]), "light": null}
+	view._world[13] = {"node": null, "number": 0, "count": 1, "pos": Vector3(340.0, 0.0, 0.0), "state": int(kinds["leatherworking_table"]["state"]), "light": null}
+	view.chest_mode = true
+	var combined: Array = []
+
+	for id in [3, 4, 6, 8, 11, 12, 13, -1]:
+		view.chest_id = id
+		combined.append(view._store_with_recipes())
+
+	check(combined == [true, true, false, false, false, false, true, false], "store under the recipes: Primitive and Improved smithy, leatherworking table; not a chest, fire, kiln, chopping block or worn bag (got %s)" % str(combined))
+	view.chest_mode = false
+	view.chest_id = 0
+
 	view._station_screen = 4
 	view.open = true
 	view._panel = PanelContainer.new()
