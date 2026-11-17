@@ -1070,7 +1070,7 @@ func _init() -> void:
 		m._road_tick(0.6)   # many ticks with only the start marker: early repeated ticks never finish it
 
 	check(m._roads.has(1) and m._roads[1].size() == 1 and not m._roads[1][0]["built"] and m._roads[1][0]["seg"] == null, "a fresh survey stays a survey while only its start marker is set")
-	check(road_says.size() == 1 and road_says[0].begins_with("Survey begun") and not road_says.any(func(t): return str(t).begins_with("The road has caught up")), "a fresh survey says it has begun, never that the road caught up (%s)" % str(road_says))
+	check(road_says.size() == 1 and road_says[0].begins_with("Survey begun") and not road_says.any(func(said): return str(said).begins_with("The road has caught up")), "a fresh survey says it has begun, never that the road caught up (%s)" % str(road_says))
 	check(flags_down.is_empty(), "and its start flag stays up")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(8.0, 10.0, 0.0))
 	check(m._roads.has(1) and m._roads[1].size() == 1 and Vector2(m._roads[1][0]["head"].x, m._roads[1][0]["head"].z).is_equal_approx(Vector2(8.0, 0.0)) and flags_down.size() == 1 and Vector2(flags_down[0].x, flags_down[0].z).is_equal_approx(Vector2(4.0, 0.0)), "a marker that starts a new road replaces a lone start marker (its flag comes down): the survey can be restarted")

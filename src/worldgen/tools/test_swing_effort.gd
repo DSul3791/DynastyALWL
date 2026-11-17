@@ -33,6 +33,7 @@ class FakeNet:
 	extends RefCounted
 	@warning_ignore("unused_signal")
 	signal road_marker_reached(at: Vector3)   # HeldItem.setup connects it on any net it is given
+	signal survey_refused_at(last: Vector3)   # and this one (the survey line, protocol 126)
 	var inventory_action: FakeAction = FakeAction.new()
 
 
