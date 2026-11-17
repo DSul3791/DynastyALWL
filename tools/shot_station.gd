@@ -87,7 +87,7 @@ func _initialize() -> void:
 			view.text_scale = float(scale_text)
 			_stock_pack(view)
 			var forge: Dictionary = kinds["stone_forge"]
-			view._world = {STATION_ID: {"node": null, "number": table.number_of(str(forge.get("kit", "stone_forge"))), "count": 1, "pos": Vector3(1.5, 0.0, 0.0), "state": int(forge["state"]), "light": null}}
+			view._world = {STATION_ID: {"node": null, "number": table.number_of(str(forge.get("item", "stone_forge"))), "count": 1, "pos": Vector3(1.5, 0.0, 0.0), "state": int(forge["state"]), "light": null}}
 
 			if window == "smithy":
 				var store = InventoryScript.new(table, int(forge.get("slots", 20)))
@@ -106,6 +106,9 @@ func _initialize() -> void:
 			while view._recipe_part.running() and steps < 20000:   # the list worked out at once (the game spreads it over frames)
 				steps += 1
 				view._recipe_part.step()
+
+			if view._recipe_part.running():
+				print("shot station: %s scale %s: the recipe list was still being worked out after %d steps (the picture shows it half built)" % [window, scale_text, steps])
 
 			for i in 3:
 				await process_frame
@@ -132,7 +135,7 @@ func _initialize() -> void:
 			view._recipe_part.stop()
 			layer.queue_free()
 			world_root.queue_free()
-			view.queue_free()
+			view.free()   # not in the tree (as test_inventory_open_cost)
 			await process_frame
 
 	print("shot station: %d picture(s) in %.1f s, %s" % [saved, float(Time.get_ticks_msec() - started) / 1000.0, "all fit" if over == 0 else "%d over" % over])
