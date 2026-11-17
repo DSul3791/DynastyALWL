@@ -2322,7 +2322,7 @@ func _make_stake() -> Node3D:
 
 # Surveyor mode (Dave 17 Nov 2026): after the first marker every new marker joins the one before it at any distance, straight through trees,
 # stumps and rocks; only a building refuses it (SurveyLine, the line is red). Clicking the last marker again ends the survey; so does putting the hoe away.
-const SURVEY_AIM_M := 150.0       # a marker goes where the player aims, as far as this (server_items SURVEY_REACH_M)
+const SURVEY_AIM_M := 150.0       # how far the crosshair can pick out ground for a marker (a ray this long; server_items SURVEY_REACH_M). Not a road limit: markers join at any distance
 const SURVEY_END_M := 1.5         # a click this near the last marker ends the survey
 
 
@@ -2335,7 +2335,7 @@ func _grade_point_here() -> void:
 	var hit: Dictionary = _survey_aim()
 
 	if hit.is_empty():
-		_inv._on_notice("Aim the hoe at the ground to set a marker")
+		_inv._on_notice("No ground under the crosshair within %d m (as far as the hoe can aim): walk on and set the next marker, the road joins it at any distance" % int(SURVEY_AIM_M))
 		return
 
 	var at: Vector3 = hit["position"]   # a trunk, a rock or a log under the crosshair: the server takes the ground under that spot

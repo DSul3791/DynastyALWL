@@ -35,7 +35,7 @@ The client sent a marker as "the next of this survey" only when it was within 40
 
 | # | Choice | Value |
 |---|---|---|
-| SV-1 | How far a marker can be set | where the crosshair meets the ground up to 150 m away (server allows 160 m from the player) |
+| SV-1 | How far away you can aim a marker | the crosshair picks out ground up to 150 m from you (the length of its aiming ray; server allows 160 m). This is not a road limit: walk on and the next marker joins the last at any distance. Aiming past 150 m says so plainly |
 | SV-2 | Ending a survey | click within 1.5 m of the last marker, or put the hoe away |
 | SV-3 | What counts as a building | every placed structure except paths, tilled beds, remains and carcasses; blueprint sites and campfires count. Hob and other NPCs have no structures, so nothing of theirs blocks |
 | SV-4 | Grass cleared | 3 m from the road's middle line (1 m half width + 2 m), thinning to 3.4 m |
@@ -47,7 +47,7 @@ The client sent a marker as "the next of this survey" only when it was within 40
 
 ## Known limits
 
-- A path patch counts toward structures.json `path_patch` `cap_per_chunk` (400 a 256 m chunk; a road lays a patch about every 1.4 m, so about 550 m of road in one chunk, hand paths included); past it the road still builds but lays no more patches in that chunk. Raised with Dave in the report, not changed.
+- A path patch counts toward structures.json `path_patch` `cap_per_chunk` (400 a 256 m chunk; a road lays a patch about every 1.4 m, so about 550 m of road in one chunk, hand paths included); past it the road still builds but lays no more patches in that chunk, and the player is told once ("This area holds no more path pieces"). Raised with Dave in the report, not changed.
 - A flora chunk the server never makes while the road passes (nobody near it) keeps its trees: the road goes under them.
 - A tree the world regrew from a sapling is not on the road's tree list (as with the dig-under-trees rule); the road goes under it.
 - At most 24 markers can wait for the builder (`ROAD_MAX_MARKERS`); unchanged.

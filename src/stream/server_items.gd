@@ -4034,6 +4034,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 			elif other["pos"].distance_to(pos) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 				blocked = true
 
+		if not blocked and of_kind >= int(_structures["path_patch"]["cap_per_chunk"]) and _roads.has(peer) and not bool(_roads[peer][0].get("full_said", false)):
+			_roads[peer][0]["full_said"] = true   # said once a road, not every station
+			_say(peer, "This area holds no more path pieces (%d): the road goes on, but is not drawn here." % int(_structures["path_patch"]["cap_per_chunk"]))
+
 		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0, "road": true}}   # road: the grass is kept off 2 m either side
 			_next_id += 1
