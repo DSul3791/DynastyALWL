@@ -169,10 +169,10 @@ func _init() -> void:
 	m.ground_height = func(x, _z): return 10.0 + maxf(x - 1000.0, 0.0)
 	var feet: Array = lay(m, 40, 20)
 	var foot_ok: bool = not feet.is_empty()
-	var reach: float = float(cfg["foot"]["reach_m"])
+	var foot_reach: float = float(cfg["foot"]["reach_m"])
 
 	for r in feet:
-		foot_ok = foot_ok and float(r[1].x) < 1000.0 and float(r[1].x) > 1000.0 - reach and float(r[2]) >= float(cfg["foot"]["radius_min"]) - 0.001 and (int(r[0]) & 15) == 15
+		foot_ok = foot_ok and float(r[1].x) < 1000.0 and float(r[1].x) > 1000.0 - foot_reach and float(r[2]) >= float(cfg["foot"]["radius_min"]) - 0.001 and (int(r[0]) & 15) == 15
 
 	check(foot_ok, "big copper boulders lie at the mountain's foot only (%d, radius %s)" % [feet.size(), str(feet.map(func(r): return snappedf(float(r[2]), 0.01)))])
 
