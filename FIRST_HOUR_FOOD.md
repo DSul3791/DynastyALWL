@@ -6,7 +6,7 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 - Stomach holds 2400 kcal (cap) plus 25 percent overeat (3000). A new character starts full.
 - Burn per game day (real hour): rest 22 kcal per kg of body weight x 75 kg = **1650 kcal**, plus work 1500 x exertion (0 to 1). Ordinary walking and chopping (exertion about 0.3 to 0.6) burns **2100 to 2550 kcal an hour**. A full stomach therefore lasts **about 55 to 70 minutes** of normal play, and about 45 minutes of hard work. This matches the "hunger reaches 0 near 55 minutes" in the test log: it is the design, not a bug.
 - Empty stomach: weight drops (7700 kcal per kg), health stops regenerating; nothing kills (vitals.json note). So a player who lights the first fire at minute 15 to 20 does not starve; he is hungry from about minute 55.
-- One bite takes 0.8 s (eat_pace_ms 800).
+- One bite takes 0.3 s (eat_pace_ms 300, PROVISIONAL EH-1, was 800; holding E in the inventory keeps eating at that pace).
 
 ## Eating it raw (cooking.json raw_sick, sickness.json; added by Dino, 3 Nov)
 - Raw food still feeds you, but you pay afterwards: raw meat, eel, shellfish and seal 24 game hours (one real hour) sick; raw fish, eggs, fiddleheads and beans 12 game hours; acorns and wild mushrooms 6.

@@ -171,7 +171,7 @@ var _drink_msec: int = 0
 # (the slot changed), so the server checks every bite as for a tap and nothing can over-eat. The pace is the server's own (vitals.json
 # eat_pace_ms, provisional EH-1 300 ms, about 3 a second; drink_pace_ms for a water container) plus EAT_HOLD_SLACK_MSEC, since the server
 # silently drops a bite sooner than that. A bite the slot shows no sign of within EAT_HOLD_REFUSED_MSEC of its turn counts as refused.
-const EAT_HOLD_SLACK_MSEC := 50
+const EAT_HOLD_SLACK_MSEC := 100   # room for network jitter: a bite that arrives too soon is dropped and ends the hold
 const EAT_HOLD_REFUSED_MSEC := 1000   # no change in the slot this long after a bite: the server said no (full, not known), stop
 const EAT_SOUND_GAP_MSEC := 400       # a held run plays a mouth sound at most this often, so quick bites do not chatter
 var _eat_hold_slot: int = -1          # the pack slot being eaten from while E is held, -1 when none
@@ -2739,7 +2739,7 @@ func eat_slot(slot: int) -> bool:
 	return true
 
 
-# The server's gap between bites (server_items._eat) or mouthfuls (_drink_from_slot), plus slack.
+# The server's gap between bites (server_items._eat) or mouthfuls (_drink_from_container), plus slack.
 func _eat_hold_pace(slot: int) -> int:
 	if container_cap(slot) > 0:
 		return int((_vitals_cfg.get("thirst", {}) as Dictionary).get("drink_pace_ms", 900)) + EAT_HOLD_SLACK_MSEC
