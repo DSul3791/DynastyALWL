@@ -1352,7 +1352,7 @@ func _init() -> void:
 	var before_ban: int = q._saplings.size()
 
 	for n in range(40):
-		q._maybe_sapling({"pos": Vector3(700.0 + float(n % 8), 10.0, 710.0 + float(n / 8)), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
+		q._maybe_sapling({"pos": Vector3(700.0 + float(n % 8), 10.0, 710.0 + floorf(float(n) / 8.0)), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
 
 	check(q._saplings.size() == before_ban, "no sapling is seeded within 20 m of a placed foundation")
 	var items0: Dictionary = q.dynamic_items(Vector2i(0, 0))

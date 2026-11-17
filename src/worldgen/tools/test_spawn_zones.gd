@@ -76,7 +76,7 @@ func _init() -> void:
 	var before: int = again._saplings.size()
 
 	for n in range(40):
-		again._maybe_sapling({"pos": Vector3(1000.0 + float(n % 8), 10.0, 1000.0 + float(n / 8)), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
+		again._maybe_sapling({"pos": Vector3(1000.0 + float(n % 8), 10.0, 1000.0 + floorf(float(n) / 8.0)), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
 
 	check(again._saplings.size() == before, "no sapling is seeded within 20 m of a placed workbench")
 
@@ -87,7 +87,7 @@ func _init() -> void:
 	check(not again.spawn_blocked(1015.0, 1000.0), "the bench taken down: the spot is free again")
 
 	for n in range(40):
-		again._maybe_sapling({"pos": Vector3(1000.0 + float(n % 8), 10.0, 1000.0 + float(n / 8)), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
+		again._maybe_sapling({"pos": Vector3(1000.0 + float(n % 8), 10.0, 1000.0 + floorf(float(n) / 8.0)), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
 
 	check(again._saplings.size() > before, "and saplings come back there")
 

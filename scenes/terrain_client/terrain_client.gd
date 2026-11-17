@@ -1932,8 +1932,8 @@ func _sync_cleared() -> void:
 		return
 
 	_cleared_key = key
-	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
-	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
+	var radius: float = float(_cleared_cfg.get("radius_m", 3.0))
+	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.0)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
 	grass.set_bare(paths)
 	var plant_lying: Array = lying.duplicate()

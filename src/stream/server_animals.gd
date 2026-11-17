@@ -1533,23 +1533,31 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y) or no_spawn_at(m.x, m.y):
 			continue
 
+		if path.size() >= 2 and resting(def) and no_spawn_at(path[path.size() - 1].x, path[path.size() - 1].z):
+			continue   # made by day they would wake up in a den a player has built beside
+
+		var members: int = clampi(rng.randi_range(int(group[0]), int(group[1])), 1, maxi(int(cfg.get("per_player_cap", 30)) - animals.size(), 1))   # luck-exempt: how many goblins in a group
+		var spots: Array = []
+
+		for _k in members:
+			var spot: Vector2 = m + Vector2(rng.randf_range(-3.0, 3.0), rng.randf_range(-3.0, 3.0))   # luck-exempt: group spread
+
+			if not no_spawn_at(spot.x, spot.y):
+				spots.append(spot)
+
+		if spots.is_empty():
+			continue   # every spot fell inside a no-spawn zone: the mouth is not counted as made
+
 		state["made"] = true
 		state["empty_since"] = -1.0
 		_lair_state[key] = state
-		var members: int = clampi(rng.randi_range(int(group[0]), int(group[1])), 1, maxi(int(cfg.get("per_player_cap", 30)) - animals.size(), 1))   # luck-exempt: how many goblins in a group
 		var hid: int = _next_herd
 		_next_herd += 1
 		_herds[hid] = []
 		var den_at: Vector3 = Vector3.INF
 
-		for _k in members:
-			var gx: float = m.x + rng.randf_range(-3.0, 3.0)   # luck-exempt: group spread
-			var gz: float = m.y + rng.randf_range(-3.0, 3.0)   # luck-exempt: group spread
-
-			if no_spawn_at(gx, gz):
-				continue
-
-			var id: int = spawn(sp, gx, gz)
+		for at in spots:
+			var id: int = spawn(sp, at.x, at.y)
 
 			if id != 0:
 				animals[id]["herd"] = hid

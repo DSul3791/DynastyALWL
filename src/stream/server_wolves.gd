@@ -61,9 +61,8 @@ func wolf_count() -> int:
 	return n
 
 
-# Admin and tests: a whole pack at once around (x, z). Returns the pack id or 0.
 # True when a wild pack may not be made at this den: the den or any spot of the 4 m ring spawn_pack stands its wolves on is within
-# no_spawn_m of something a player put down (checked at the ring's widest, so no wolf lands inside). Admin packs are not asked.
+# no_spawn_m of something a player put down (checked at 8 points of the ring). Admin packs are not asked; pups ask for their own spots (_spawn_pup).
 func _den_blocked(home: Vector2) -> bool:
 	for p in [Vector2.ZERO, Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(2.83, 2.83), Vector2(-2.83, 2.83), Vector2(2.83, -2.83), Vector2(-2.83, -2.83)]:
 		if host.no_spawn_at(home.x + p.x, home.y + p.y):
@@ -72,6 +71,7 @@ func _den_blocked(home: Vector2) -> bool:
 	return false
 
 
+# Admin and tests: a whole pack at once around (x, z). Returns the pack id or 0.
 func spawn_pack(x: float, z: float) -> int:
 	var size: Array = host.species_def("wolf").get("pack_size", [3, 5])
 	var count: int = host.rng.randi_range(int(size[0]), int(size[1]))   # luck-exempt: how many wolves in a pack
@@ -735,10 +735,6 @@ func _natural(infos: Array) -> void:
 					_cell_note(key, home, "inside the exclude circle")
 					continue
 
-				if _den_blocked(home):
-					_cell_note(key, home, "something a player put down stands near the den spot")
-					continue
-
 				if _den_resting(key):
 					_cell_note(key, home, "a killed pack's den, resting")
 					continue   # a killed pack's den: its orphans live there, or it rests for respawn_s (saved across restarts)
@@ -748,6 +744,10 @@ func _natural(infos: Array) -> void:
 
 				if d > active or d < near_m:
 					_cell_note(key, home, "no player %.0f to %.0f m from the den" % [near_m, active])
+					continue
+
+				if _den_blocked(home):
+					_cell_note(key, home, "something a player put down stands near the den spot")
 					continue
 
 				var score: float = host._habitat_score(host.species_def("wolf"), home.x, home.y, p.y)
