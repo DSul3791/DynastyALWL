@@ -1835,6 +1835,7 @@ func _sync_cleared() -> void:
 	var spots: Array = []
 	var lying: Array = []
 	var paths: Array = []      # trodden path patches: left out of the grass cells (set_bare), pressed out of the plants like a log
+	var roads: Array = []      # a surveyed road's patches: the same, 2 m out past the road's edges (Dave 17 Nov 2026)
 	var key: int = 0
 
 	if showroom == null and world.has("spawn"):
@@ -1888,7 +1889,7 @@ func _sync_cleared() -> void:
 		if int(row.get("state", 0)) == 32:
 			# A trodden hoe path (Dave 2 Nov 2026): a round patch, so the grass is pressed out of its brown middle only, not cleared 5 m round like a bench.
 			var path_at: Vector3 = row["pos"]
-			paths.append(Vector3(snappedf(path_at.x, 0.01), path_at.y, snappedf(path_at.z, 0.01)))
+			(roads if bool(row.get("road", false)) else paths).append(Vector3(snappedf(path_at.x, 0.01), path_at.y, snappedf(path_at.z, 0.01)))
 			key = key ^ hash(Vector2(path_at.x, path_at.z)) ^ int(id)
 			continue
 
@@ -1935,11 +1936,14 @@ func _sync_cleared() -> void:
 	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
 	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
-	grass.set_bare(paths)
+	grass.set_bare(paths, roads)
 	var plant_lying: Array = lying.duplicate()
 
 	for patch in paths:
 		plant_lying.append(LyingLogs.round_segment(patch, 0.6))
+
+	for patch in roads:
+		plant_lying.append(LyingLogs.round_segment(patch, grass.ROAD_BARE_M))
 
 	flora.set_cleared(spots, radius)
 	flora.set_trunks(plant_lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)))

@@ -18,6 +18,8 @@ const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const CaveSounds := preload("res://src/client/cave_sounds.gd")   # is_not_rock: what the ghost's ground probe looks through
 const BasicLook := preload("res://src/client/basic_look.gd")
 const FlameRules := preload("res://src/shared/flame_rules.gd")
+const SurveyLine := preload("res://src/shared/survey_line.gd")
+const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const ArmsView := preload("res://src/client/character/arms_view.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 
@@ -1424,6 +1426,7 @@ func _process_body(delta: float) -> void:
 	_plan_step()
 	_garden_step()
 	_garden_preview()
+	_survey_line()
 	_hoe_repeat(delta)
 
 	if _sound != null:
@@ -2134,7 +2137,7 @@ const HOE_MODES := [
 	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
 	{"id": "smooth", "name": "Smooth", "note": "levels the ground about 3 m round to where you stand (a little under your feet on a foundation), no path"},
 	{"id": "till", "name": "Till a garden", "note": "green markers show the garden: Alt + arrow keys size it, the wheel turns it; left click levels it and tills every bed (red: the ground rises or falls more than 1 m)"},
-	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
+	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; a green line runs from it to where you aim, at any distance (red: a building is in the way); click again and the road builds along it. Click the last marker again to end the survey (Shift + right click does the same in any mode)"},
 	{"id": "garden", "name": "Plant something", "note": "pick seeds, a dug-up bush or a tree's seed from your pack, then plant a grid of them (spaced for the plant; Alt + arrow keys size it, the wheel turns it)"},
 ]
 var hoe_mode: String = "path"
@@ -2317,29 +2320,194 @@ func _make_stake() -> Node3D:
 	return stake
 
 
-func _grade_point_here() -> void:
-	var from: Vector3 = _camera.global_position
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
-	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+# Surveyor mode (Dave 17 Nov 2026): after the first marker every new marker joins the one before it at any distance, straight through trees,
+# stumps and rocks; only a building refuses it (SurveyLine, the line is red). Clicking the last marker again ends the survey; so does putting the hoe away.
+const SURVEY_AIM_M := 150.0       # a marker goes where the player aims, as far as this (server_items SURVEY_REACH_M)
+const SURVEY_END_M := 1.5         # a click this near the last marker ends the survey
 
-	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Aim the hoe at the ground within reach to set a point")
+
+func _survey_aim() -> Dictionary:
+	var from: Vector3 = _camera.global_position
+	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * SURVEY_AIM_M))
+
+
+func _grade_point_here() -> void:
+	var hit: Dictionary = _survey_aim()
+
+	if hit.is_empty():
+		_inv._on_notice("Aim the hoe at the ground to set a marker")
 		return
 
-	# Surveyor mode: after the first marker every new marker joins to the one before it, and the server builds the road behind the player.
-	# A marker more than 40 m from the last one starts a new road.
-	var chained: bool = _grade_has_a and _grade_a.distance_to(hit["position"]) <= 40.0
+	var at: Vector3 = hit["position"]   # a trunk, a rock or a log under the crosshair: the server takes the ground under that spot
 
+	if _grade_has_a and Vector2(at.x - _grade_a.x, at.z - _grade_a.z).length() < SURVEY_END_M:
+		_survey_end()
+		_inv._on_notice("Survey ended: the next marker starts a new road")
+		return
+
+	if _grade_has_a and survey_blocked(_grade_a, at):
+		_inv._on_notice("A building is in the way: survey the road round it")
+		return
+
+	var chained: bool = _grade_has_a
 	_grade_has_a = true
 	_grade_has_b = chained
-	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, hit["position"])
-	_inv._on_notice("Marker set: the road builds behind you. Shift + right click to carry on" if chained else "Marker 1 set: walk on and Shift + right click again, the road builds behind you")
+	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, at)
+	_inv._on_notice("Marker set: the road builds along the line. Set the next, or click this marker again to end" if chained else "Marker 1 set: aim where the road goes and set the next marker")
 
-	_grade_a = hit["position"]
+	_grade_a = at
 	var stake: Node3D = _make_stake()
 	_root.add_child(stake)
-	stake.global_position = hit["position"] + Vector3(0.0, 0.5, 0.0)
+	stake.global_position = at + Vector3(0.0, 0.5, 0.0)
 	_stakes.append(stake)
+
+
+func _survey_end() -> void:
+	_grade_has_a = false
+	_grade_has_b = false
+
+
+# True when a building the client knows of (StructureLook.survey_foot) stands in the road's way from a to b: the same question the server asks.
+func survey_blocked(a: Vector3, b: Vector3) -> bool:
+	var a2: Vector2 = Vector2(a.x, a.z)
+	var b2: Vector2 = Vector2(b.x, b.z)
+	var lo: Vector2 = Vector2(minf(a.x, b.x), minf(a.z, b.z))
+	var hi: Vector2 = Vector2(maxf(a.x, b.x), maxf(a.z, b.z))
+
+	for id in _inv._world:
+		var row: Dictionary = _inv._world[id]
+		var state: int = int(row.get("state", 0))
+
+		if state in [0, 2, 4, 10]:
+			continue   # loose things, stumps and rocks: the road goes through them
+
+		var foot: Vector2 = StructureLookScript.survey_foot(state)
+
+		if foot == Vector2.ZERO:
+			continue
+
+		var pos: Vector3 = row["pos"]
+		var reach: float = foot.length() * 0.5 + SurveyLine.HALF_WIDTH_M
+
+		if pos.x < lo.x - reach or pos.x > hi.x + reach or pos.z < lo.y - reach or pos.z > hi.y + reach:
+			continue
+
+		if SurveyLine.crosses(a2, b2, Vector2(pos.x, pos.z), float(row.get("yaw", 0.0)), foot):
+			return true
+
+	return false
+
+
+# The survey line (Dave 17 Nov 2026): while a survey is going, a bright line runs over the ground from the last marker to the spot under the crosshair,
+# green where the road can go, red when a building is in the way. Drawn on top of everything (no depth test) so it shows through grass and trees.
+# Rebuilt ten times a second, only when the aim has moved; the ground under it is found with one ray every SURVEY_LINE_STEP_M (at most
+# SURVEY_LINE_RAYS, further apart on a long line). Client side only: nobody else sees it.
+const SURVEY_LINE_STEP_M := 1.0
+const SURVEY_LINE_RAYS := 160
+const SURVEY_LINE_WIDTH_M := 0.12
+const SURVEY_LINE_LIFT_M := 0.08
+var _survey_mesh: MeshInstance3D = null
+var _survey_green: StandardMaterial3D = null
+var _survey_red: StandardMaterial3D = null
+var _survey_msec: int = 0
+var _survey_to: Vector3 = Vector3.INF
+var survey_line_red: bool = false   # what the line shows now (a test reads it)
+
+
+func _survey_line() -> void:
+	if _inv == null or _camera == null:
+		return
+
+	var on: bool = _grade_has_a and _hoe_in_hand() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+
+	if not on:
+		if not _hoe_in_hand():
+			_survey_end()   # the hoe is put away: the survey is over (the server's road stops with it too)
+
+		if _survey_mesh != null:
+			_survey_mesh.visible = false
+
+		_survey_to = Vector3.INF
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < _survey_msec:
+		return
+
+	_survey_msec = now + 100
+	var hit: Dictionary = _survey_aim()
+
+	if hit.is_empty():
+		if _survey_mesh != null:
+			_survey_mesh.visible = false
+
+		_survey_to = Vector3.INF
+		return
+
+	var to: Vector3 = hit["position"]
+
+	if _survey_mesh != null and _survey_mesh.visible and to.distance_to(_survey_to) < 0.2:
+		return
+
+	_survey_to = to
+
+	if _survey_mesh == null:
+		_survey_mesh = MeshInstance3D.new()
+		_survey_mesh.mesh = ImmediateMesh.new()
+		_survey_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_survey_green = _survey_material(Color(0.2, 1.0, 0.25))
+		_survey_red = _survey_material(Color(1.0, 0.15, 0.1))
+		_root.add_child(_survey_mesh)
+
+	survey_line_red = survey_blocked(_grade_a, to)
+	var from: Vector3 = _grade_a
+	var flat: float = Vector2(to.x - from.x, to.z - from.z).length()
+	var n: int = clampi(int(ceil(flat / SURVEY_LINE_STEP_M)), 1, SURVEY_LINE_RAYS)
+	var side: Vector3 = Vector3(-(to.z - from.z), 0.0, to.x - from.x).normalized() * (SURVEY_LINE_WIDTH_M * 0.5) if flat > 0.01 else Vector3(SURVEY_LINE_WIDTH_M * 0.5, 0.0, 0.0)
+	var space: PhysicsDirectSpaceState3D = _camera.get_world_3d().direct_space_state
+	var mesh: ImmediateMesh = _survey_mesh.mesh
+	mesh.clear_surfaces()
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP, _survey_red if survey_line_red else _survey_green)
+
+	for k in range(n + 1):
+		var t: float = float(k) / float(n)
+		var p: Vector3 = from.lerp(to, t)
+
+		var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p + Vector3(0.0, 60.0, 0.0), p - Vector3(0.0, 60.0, 0.0))
+
+		for attempt in 3:   # a tree's trunk is looked through (the road goes through it); the top of a rock or a log is not: the line lies over it
+			var ground: Dictionary = space.intersect_ray(down)
+
+			if ground.is_empty():
+				break
+
+			if ground["collider"] != null and ground["collider"].has_meta("species_ids"):
+				var skip: Array[RID] = down.exclude
+				skip.append(ground["rid"])
+				down.exclude = skip
+				continue
+
+			p.y = float(ground["position"].y)
+			break
+
+		p.y += SURVEY_LINE_LIFT_M
+		mesh.surface_add_vertex(p - side)
+		mesh.surface_add_vertex(p + side)
+
+	mesh.surface_end()
+	_survey_mesh.global_transform = Transform3D.IDENTITY
+	_survey_mesh.visible = true
+
+
+func _survey_material(color: Color) -> StandardMaterial3D:
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = color
+	mat.no_depth_test = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.render_priority = 1
+	return mat
 
 
 # The server says the road builder has reached (or dropped) a marker: its red flag comes down.

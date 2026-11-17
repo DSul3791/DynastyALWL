@@ -29,7 +29,8 @@ static func table() -> Dictionary:
 
 			if state >= 0 and not _table.has(state) and def.has("look"):
 				_table[state] = {"look": str(def["look"]), "sound": str(def.get("sound", "thump")), "clears_grass": bool(def.get("clears_grass", true)), "material": str(def.get("material", "")),
-					"piece_kind": str(def.get("piece_kind", "")), "kind": str(kind),
+					"piece_kind": str(def.get("piece_kind", "")), "kind": str(kind), "walkover": bool(def.get("walkover", false)),
+					"foot": Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))),
 					"tile": Vector2(float(def.get("footprint_x", 0.0)), float(def.get("footprint_z", 0.0))) if bool(def.get("clear_tile", false)) else Vector2.ZERO}
 
 	_table[12] = _table.get(11, {"look": "remains", "sound": "thump", "clears_grass": true})
@@ -59,6 +60,20 @@ static func clears_grass(state: int) -> bool:
 # clearing every other piece gets. A 2 m floor tile cleared a 5 m circle; a house floor is dozens of tiles.
 static func tile_of(state: int) -> Vector2:
 	return table().get(state, {}).get("tile", Vector2.ZERO)
+
+
+# The survey line's question for a placed piece of this state (SurveyLine.is_building): its footprint (x, z) when it is a building in a road's way,
+# Vector2.ZERO when it is not (a path, a tilled bed, remains, a carcass, a state structures.json does not list). A campfire is one, SurveyLine.FIRE_FOOT_M across.
+static func survey_foot(state: int) -> Vector2:
+	if state in CAMPFIRE_STATES:
+		return Vector2(1.2, 1.2)
+
+	var row: Dictionary = table().get(state, {})
+
+	if not row.has("kind") or bool(row.get("walkover", false)) or str(row["kind"]) in ["remains", "carcass"]:
+		return Vector2.ZERO
+
+	return row["foot"]
 
 
 # The footstep surface of standing on a placed piece of this state (sound_stage FLOOR_SURFACES): "plank", "slab", "thatch" or "path",

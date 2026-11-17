@@ -508,6 +508,7 @@ func _ready() -> void:
 		var material: int = generator._surface_material(tile_data, x, z, float(generator.surface_height(x, z)))
 		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
 	items.trees_near = _trees_near
+	items.trees_along = _trees_along
 	items.trees_near_cached = _trees_near_cached
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
@@ -1637,6 +1638,46 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 
 				if Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length() <= radius:
 					found.append([chunk, trees["ids"][n]])
+
+	return found
+
+
+# Standing placer trees within `reach` of the straight line from a to b, as [chunk, id, how far along 0..1], from the flora chunks round `near` (a surveyed
+# road's station) not yet in `done` (each is marked): server_items _road_fell asks as the road goes, so each chunk is looked through once, when the road reaches it.
+func _trees_along(a: Vector3, b: Vector3, reach: float, near: Vector3, done: Dictionary) -> Array:
+	var size: float = flora.placer.chunk_m
+	var a2: Vector2 = Vector2(a.x, a.z)
+	var ab: Vector2 = Vector2(b.x, b.z) - a2
+	var found: Array = []
+
+	for corner in [Vector2(-reach, -reach), Vector2(reach, -reach), Vector2(-reach, reach), Vector2(reach, reach)]:
+		var chunk: Vector2i = flora.placer.normalize(Vector2i(int(floor((near.x + corner.x) / size)), int(floor((near.z + corner.y) / size))))
+
+		if done.has(chunk):
+			continue
+
+		done[chunk] = true
+		var trees: Dictionary = flora.items_of(chunk, true)
+
+		if trees.is_empty():
+			continue
+
+		var gone: Dictionary = {}
+
+		for id in flora.removed_in(chunk):
+			gone[id] = true
+
+		for n in range(trees["ids"].size()):
+			var species: Dictionary = flora.placer._by_id.get(trees["ids"][n] >> 16, {})
+
+			if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or gone.has(trees["ids"][n]):
+				continue
+
+			var at: Vector2 = Vector2(trees["positions"][n].x, trees["positions"][n].z)
+			var t: float = clampf((at - a2).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+
+			if (at - (a2 + ab * t)).length() <= reach:
+				found.append([chunk, trees["ids"][n], t])
 
 	return found
 

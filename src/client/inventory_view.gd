@@ -3008,6 +3008,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			elif StructureLook.look_of(state) == "trodden_path":
 				_path_cell_add(row[3], 1)
 
+				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool((row[5] as Dictionary).get("road", false)):
+					_world[id]["road"] = true   # a surveyed road's patch: the grass is kept off 2 m either side (terrain_client _sync_cleared)
+
 			continue
 
 		if is_felled_state(state):   # only 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)

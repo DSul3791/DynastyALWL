@@ -1044,23 +1044,23 @@ func _init() -> void:
 	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
 	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	check(m._roads.is_empty(), "the road job ends when the line is done")
-	# Surveyor mode: the first marker of an idle job is the start; later markers wait and are built toward nearest first, then deleted.
+	# Surveyor mode: the first marker of a job is the start; later markers wait and are built toward in the order set (the surveyor's line), then deleted.
 	var flags_down: Array = []
 	m.send_marker_done = func(_p, at): flags_down.append(at)
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(5.0, 10.0, -4.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 4.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 0.0))
-	check(m._roads.has(1) and m._roads[1]["markers"].size() == 2, "markers set after the first wait for the builder")
+	check(m._roads.has(1) and m._roads[1][0]["markers"].size() == 2, "markers set after the first wait for the builder")
 	m._road_tick(0.6)
-	check(m._roads[1]["seg"] != null and absf(m._roads[1]["seg"]["b"].z - 0.0) < 0.01, "the builder heads for the nearest marker first, not the first one set")
-	check(m._roads[1]["markers"].size() == 1, "and that marker is off the list once it is being built toward")
+	check(m._roads[1][0]["seg"] != null and absf(m._roads[1][0]["seg"]["b"].z - 4.0) < 0.01, "the builder heads for the markers in the order set (the line the surveyor saw), not the nearest")
+	check(m._roads[1][0]["markers"].size() == 1, "and that marker is off the list once it is being built toward")
 
 	for step in 120:
 		m._road_tick(0.6)
 
-	check(m._roads.is_empty(), "the road is done when no markers are left")
+	check(m._roads.is_empty(), "the road has caught up when no markers are left")
 	check(flags_down.size() >= 3, "each marker's flag is taken down once the builder reaches it (%d)" % flags_down.size())
-	# BUG-007: a fresh survey is only the start marker; it is not "finished" before a road is built. Surveying, building and finished are distinct.
+	# BUG-007: a fresh survey is only the start marker; it is not "caught up" before a road is built. Surveying, building and caught up are distinct.
 	var road_says: Array = []
 	m.send_notice = func(_p, text): road_says.append(text)
 	flags_down.clear()
@@ -1069,22 +1069,43 @@ func _init() -> void:
 	for step in 20:
 		m._road_tick(0.6)   # many ticks with only the start marker: early repeated ticks never finish it
 
-	check(m._roads.has(1) and not m._roads[1]["built"] and m._roads[1]["seg"] == null, "a fresh survey stays a survey while only its start marker is set")
-	check(road_says.size() == 1 and road_says[0].begins_with("Survey begun") and road_says.find("The road is finished.") < 0, "a fresh survey says it has begun, never that the road is finished (%s)" % str(road_says))
+	check(m._roads.has(1) and m._roads[1].size() == 1 and not m._roads[1][0]["built"] and m._roads[1][0]["seg"] == null, "a fresh survey stays a survey while only its start marker is set")
+	check(road_says.size() == 1 and road_says[0].begins_with("Survey begun") and not road_says.any(func(t): return str(t).begins_with("The road has caught up")), "a fresh survey says it has begun, never that the road caught up (%s)" % str(road_says))
 	check(flags_down.is_empty(), "and its start flag stays up")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(8.0, 10.0, 0.0))
-	check(m._roads.has(1) and Vector2(m._roads[1]["head"].x, m._roads[1]["head"].z).is_equal_approx(Vector2(8.0, 0.0)) and flags_down.size() == 1 and Vector2(flags_down[0].x, flags_down[0].z).is_equal_approx(Vector2(4.0, 0.0)), "a marker that starts a new road replaces a lone start marker (its flag comes down): the survey can be restarted")
+	check(m._roads.has(1) and m._roads[1].size() == 1 and Vector2(m._roads[1][0]["head"].x, m._roads[1][0]["head"].z).is_equal_approx(Vector2(8.0, 0.0)) and flags_down.size() == 1 and Vector2(flags_down[0].x, flags_down[0].z).is_equal_approx(Vector2(4.0, 0.0)), "a marker that starts a new road replaces a lone start marker (its flag comes down): the survey can be restarted")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 2.0))
-	check(m._roads[1]["markers"].size() == 1 and road_says[road_says.size() - 1].begins_with("Marker set"), "the next marker joins the survey")
+	check(m._roads[1][0]["markers"].size() == 1 and road_says[road_says.size() - 1].begins_with("Marker set"), "the next marker joins the survey")
 	m._road_tick(0.6)
-	check(m._roads[1]["built"] and m._roads[1]["seg"] != null and road_says.find("The road is finished.") < 0, "with a marker to build toward the road is being built, not finished")
+	check(m._roads[1][0]["built"] and m._roads[1][0]["seg"] != null, "with a marker to build toward the road is being built")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(5.0, 10.0, -2.0))
-	check(m._roads.has(1) and m._roads[1]["built"], "a road already being built is not restarted by an unchained marker")
+	check(m._roads[1].size() == 2 and m._roads[1][0]["built"] and m._roads[1][0]["seg"] != null, "a road being built is not restarted by an unchained marker: the new survey waits its turn behind it")
 
 	for step in 120:
 		m._road_tick(0.6)
 
-	check(m._roads.is_empty() and road_says.count("The road is finished.") == 1 and road_says[road_says.size() - 1] == "The road is finished.", "the road is finished, once, after it was built and no markers are left")
+	check(m._roads.has(1) and m._roads[1].size() == 1 and not m._roads[1][0]["built"], "the first road is done and the new survey is next, still only its start marker")
+	m._roads.clear()
+	# Any distance (Dave 17 Nov 2026: past 40 m the second click started a new road): a marker 120 m on carries the road on, and once it caught up the next carries on from it.
+	road_says.clear()
+	m.report_position(1, Vector3(60.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(0.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(120.0, 10.0, 0.0))
+	check(m._roads[1][0]["markers"].size() == 1 and road_says[road_says.size() - 1].begins_with("Marker set"), "a marker 120 m from the last joins the survey, not a new start (%s)" % str(road_says))
+	m._road_tick(0.6)
+	check(m._roads[1][0]["seg"] != null and int(m._roads[1][0]["seg"]["n"]) >= 170, "the road builds the whole 120 m stretch (%d stations)" % int(m._roads[1][0]["seg"]["n"]))
+	m._roads[1][0]["seg"]["i"] = int(m._roads[1][0]["seg"]["n"])   # the long walk is not the point here: jump to its end
+
+	for step in 6:
+		m._road_tick(0.6)
+
+	check(not m._roads.has(1) and road_says[road_says.size() - 1].begins_with("The road has caught up"), "the road caught up at the far marker")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(120.0, 10.0, 30.0))
+	check(m._roads.has(1) and m._roads[1][0]["built"] and Vector2(m._roads[1][0]["head"].x, m._roads[1][0]["head"].z).is_equal_approx(Vector2(120.0, 0.0)) and m._roads[1][0]["markers"].size() == 1, "the next marker of the same survey carries on from the last one, after it caught up")
+	m._roads.clear()
+	m._road_last.clear()
+	m.report_position(1, Vector3(5.0, 10.0, 0.0))
+	m.send_notice = Callable()
 	m.send_notice = Callable()
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
