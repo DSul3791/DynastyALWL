@@ -391,7 +391,6 @@
 			"state": 32,
 			"footprint_x": 1.0,
 			"footprint_z": 1.0,
-			"cap_per_chunk": 400,
 			"look": "trodden_path",
 			"sound": "thump",
 			"clears_grass": false,

@@ -47,7 +47,7 @@ The client sent a marker as "the next of this survey" only when it was within 40
 
 ## Known limits
 
-- A path patch counts toward structures.json `path_patch` `cap_per_chunk` (400 a 256 m chunk; a road lays a patch about every 1.4 m, so about 550 m of road in one chunk, hand paths included); past it the road still builds but lays no more patches in that chunk, and the player is told once ("This area holds no more path pieces"). Raised with Dave in the report, not changed.
+- No cap on path patches (Dave 17 Nov 2026: "It really doesnt need a limit for paths"): the old 400 a chunk `cap_per_chunk` is deleted, for hand paths and roads. Each patch is a world item the client draws as its own node; the frame cost of a very long road in view is not measured yet.
 - A flora chunk the server never makes while the road passes (nobody near it) keeps its trees: the road goes under them.
 - A tree the world regrew from a sapling is not on the road's tree list (as with the dig-under-trees rule); the road goes under it.
 - At most 24 markers can wait for the builder (`ROAD_MAX_MARKERS`); unchanged.

@@ -118,6 +118,21 @@ func _server_road() -> void:
 	m.save()
 	var again = _make(dir)
 	check(_road_patches_near(again, Vector3(25.0, 10.0, 0.0), 30.0) >= 30, "the road's patches are saved and loaded with their road mark")
+	# No cap on path patches (Dave 17 Nov 2026: "It really doesnt need a limit for paths"): a chunk already holding 450 still takes a road's.
+	check(not (again._structures["path_patch"] as Dictionary).has("cap_per_chunk"), "path_patch has no cap_per_chunk")
+
+	for k in 450:
+		again._items[800000 + k] = {"number": again.table.number_of("path_patch"), "count": 1, "pos": Vector3(100.0 + float(k % 30), 10.02, 100.0 + float(k / 30)), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+
+	var before: int = _road_patches_near(again, Vector3(80.0, 10.0, 80.0), 8.0)
+	again.report_position(1, Vector3(80.0, 10.0, 80.0))
+	again.action(1, Net.ACT_HOE_GRADE_POINT, HeldTool.slot_of(again, "hoe"), 0, 0, Vector3(76.0, 10.0, 80.0))
+	again.action(1, Net.ACT_HOE_GRADE_POINT, HeldTool.slot_of(again, "hoe"), 1, 0, Vector3(84.0, 10.0, 80.0))
+
+	for step in 30:
+		again._road_tick(0.6)
+
+	check(_road_patches_near(again, Vector3(80.0, 10.0, 80.0), 8.0) >= before + 4, "a road still lays its patches in a chunk holding 450 already")
 
 
 func _make(dir: String):

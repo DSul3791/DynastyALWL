@@ -3400,9 +3400,7 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_say(peer, "You cannot tread a path in water.")
 		return
 
-	var here_chunk: Vector2i = _chunk_of(spot)
-	var of_kind: int = 0
-	var near_paths: Array = []
+	var near_paths: Array = []   # no cap on path patches (Dave 17 Nov 2026: "It really doesnt need a limit for paths")
 
 	for id in _items:
 		var other: Dictionary = _items[id]
@@ -3422,16 +3420,9 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 			if flat <= PATH_AVERAGE_M + 1.25:
 				near_paths.append(id)
-
-			if _chunk_of(other["pos"]) == here_chunk:
-				of_kind += 1
 		elif other["pos"].distance_to(spot) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 			_say(peer, "Something stands there.")
 			return
-
-	if of_kind >= int(_structures["path_patch"]["cap_per_chunk"]):
-		_say(peer, "This ground is paths enough.")
-		return
 
 	var spots: Array = [Vector2.ZERO]
 
@@ -4013,7 +4004,6 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 	if _structures.has("path_patch") and not (water_depth_at.is_valid() and float(water_depth_at.call(Vector3(pos.x, ground, pos.z))) > 0.05):
 		var blocked: bool = false
-		var of_kind: int = 0
 
 		for id in _items:
 			var other: Dictionary = _items[id]
@@ -4028,17 +4018,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 			if str(other["struct"]["kind"]) == "path_patch":
 				if Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < PATH_SPACING_M:
 					blocked = true   # no break: the look round goes on for the stumps here
-
-				if _chunk_of(other["pos"]) == _chunk_of(pos):
-					of_kind += 1
 			elif other["pos"].distance_to(pos) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 				blocked = true
 
-		if not blocked and of_kind >= int(_structures["path_patch"]["cap_per_chunk"]) and _roads.has(peer) and not bool(_roads[peer][0].get("full_said", false)):
-			_roads[peer][0]["full_said"] = true   # said once a road, not every station
-			_say(peer, "This area holds no more path pieces (%d): the road goes on, but is not drawn here." % int(_structures["path_patch"]["cap_per_chunk"]))
-
-		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
+		if not blocked:   # no cap on path patches (Dave 17 Nov 2026)
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0, "road": true}}   # road: the grass is kept off 2 m either side
 			_next_id += 1
 			_dirty = true
