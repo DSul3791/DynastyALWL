@@ -131,13 +131,13 @@ var boulder_budget: Callable = Callable()   # () -> how many boulders may be dra
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
 var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
+const OreRockLook := preload("res://src/client/ore_rock_look.gd")
 # Outcrop boulders (Kathleen, 10 Nov 2026; Dave could not tell an ore boulder from a plain one). The server sends a boulder's "ore" (boulders.json ore:
 # an ore body within reach, or the boulder's own limestone, chalk or marble); the client draws it in the same granite-and-moss shader with the stone tinted
 # toward the ore's rock and mineral streaks through it, and the streaks keep the moss off. Subtle on purpose: read from about 10 m, not a neon tell.
+# Copper and tin are not here: they are their own rocks (OreRockLook, Dave's photos 16 and 17 Nov 2026).
 # ore: [stone tint, tint share, streak colour, streak width (0..0.5 of the band), flat (0 steep veins, 1 flat seams), halo share, fleck share]
 const OUTCROP_LOOK := {
-	"copper": [Color(0.31, 0.34, 0.31), 0.35, Color(0.24, 0.46, 0.37), 0.1, 0.0, 0.45, 0.04],     # green malachite staining
-	"tin": [Color(0.44, 0.42, 0.39), 0.45, Color(0.13, 0.1, 0.08), 0.16, 0.0, 0.2, 0.08],         # dark cassiterite veins in a pale quartz host
 	"iron": [Color(0.36, 0.27, 0.21), 0.45, Color(0.4, 0.2, 0.09), 0.1, 0.0, 0.5, 0.03],           # rust
 	"coal": [Color(0.21, 0.21, 0.21), 0.45, Color(0.05, 0.05, 0.05), 0.2, 1.0, 0.15, 0.0],         # flat black seams
 	"salt": [Color(0.42, 0.4, 0.37), 0.4, Color(0.8, 0.78, 0.72), 0.16, 1.0, 0.2, 0.05],           # pale crusted beds
@@ -3372,8 +3372,9 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	shape.shape = SphereShape3D.new()
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
-	lump.mesh = _boulder_mesh
-	lump.material_override = _boulder_material(str(extra.get("ore", "")))
+	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper and tin: Dave's photos
+	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0))) if ore_rock else _boulder_mesh
+	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
 	body.add_child(lump)
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
@@ -3409,7 +3410,7 @@ func _boulder_material(ore: String) -> ShaderMaterial:
 
 # Scale to the radius still left (the cube root of the stones left), sunk a fifth into the ground like Art's scenery boulders.
 func _size_boulder(entry: Dictionary) -> void:
-	var box: AABB = _boulder_mesh.get_aabb()
+	var box: AABB = (entry["lump"].mesh as Mesh).get_aabb()
 	var radius: float = float(entry["radius"]) * pow(float(entry["left"]) / float(entry["total"]), 1.0 / 3.0)
 	var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
 	var scale: float = radius / unit
@@ -3426,7 +3427,10 @@ func boulder_near(point: Vector3) -> int:
 		var entry: Dictionary = _boulders[id]
 		var flat: float = Vector2(point.x - entry["pos"].x, point.z - entry["pos"].z).length()
 
-		if flat <= float(entry.get("now", entry["radius"])) + 0.7 and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]):
+		var now: float = float(entry.get("now", entry["radius"]))
+
+		# A small copper rock gets a small margin, so a blow at a trunk or the ground beside it is not taken as a blow on the rock.
+		if flat <= now + minf(0.7, 0.2 + now * 2.0) and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]):
 			return id
 
 	return 0

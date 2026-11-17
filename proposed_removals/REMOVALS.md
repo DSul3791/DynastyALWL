@@ -120,6 +120,8 @@ Code that new code replaced is deleted, not moved here. Add one row per deleted 
 | deleted path | replaced by (path at HEAD) | who | date | why |
 |---|---|---|---|---|
 | src/worldgen/tools/test_trunk_cutting.gd | src/worldgen/tools/test_fell_autosplit.gd | Claude (wood thread) | 2026-11-16 | Dave 16 Nov 2026: a tree falls already in logs; the hand-cut trunk path it tested is deleted, the fall test covers what replaced it |
+| src/client/copper_rock_look.gd | src/client/ore_rock_look.gd | Claude (copper rocks thread) | 2026-11-17 | renamed when tin rocks joined copper (Dave 17 Nov 2026, cassiterite photo); same meshes, one material per ore |
+| tools/copper_rock_view.gd | tools/ore_rock_view.gd | Claude (copper rocks thread) | 2026-11-17 | the picture tool now shows copper and tin rocks |
 
 ## Core rulebook consolidation — 15 Nov 2026
 
