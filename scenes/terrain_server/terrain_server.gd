@@ -608,6 +608,7 @@ func _ready() -> void:
 
 		return PackedVector3Array()
 	animals.berry_bushes = _berries_near_cached   # goblins forage at night (docs/design/goblin_den_life_design.md 2.3)
+	animals.no_spawn = func(x, z): return items.spawn_blocked(x, z)   # no animal is made within no_spawn_m of anything put down (Dave 17 Nov 2026)
 	animals.lair_guarded = func(x, z, radius): return items.lit_fire_near(Vector3(x, 0.0, z), radius)   # a burning placed fire near a lair's mouth keeps a killed band from coming back
 	animals.setup()
 	trails = TrailsScript.new()

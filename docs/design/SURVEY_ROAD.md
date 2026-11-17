@@ -28,7 +28,7 @@ The client sent a marker as "the next of this survey" only when it was within 40
 - **Stumps on the road** (one already there, or the stump of a tree the road felled, once it has landed) are broken up where they stand: what the last axe blow on a stump gives (drops.json `stump`, `_stump_final_rows`) is left on the ground beside it. A world drop: no player's luck, nobody's gathering goals.
 - **Rocks** are left standing, untouched, for the player's tools.
 - **Grass.** A surveyed road's patches carry `road`; the client keeps grass and small plants off 3 m round each (the road's 1 m half width plus 2 m), thinning out to 3.4 m. Hand-trodden path patches keep their narrow 0.6 to 1.1 m bare patch. The mark is saved with the patch (world_items.json structure row index 20).
-- **No regrowth.** Trees never seed within 50 m of any placed structure (`REGROW_EXCLUDE_M`, a road patch is one), and a broken boulder never comes back, so neither returns on a road. A rock still standing on a road stays until broken.
+- **No regrowth.** Every road patch is something put down, so it opens a no-spawn zone round it (`spawn_zones.gd`, #1215: nothing wild appears or regrows within its radius), and a broken boulder never comes back, so neither trees nor rocks return on a road. A rock still standing on a road stays until broken.
 - **Multiplayer.** Other players see the road, the felled trees and their logs through the normal world sync. Only the surveyor sees the line.
 
 ## For Dave (provisional, adjust after play)

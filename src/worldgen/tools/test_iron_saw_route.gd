@@ -19,6 +19,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const HERE := Vector3(5.0, 10.0, 0.0)
 const FIRE_AT := Vector3(2.5, 10.0, 0.0)
@@ -61,7 +62,7 @@ func need_of(recipe_id: String, id: String) -> int:
 
 func craft(id: String, times: int, seconds: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, CraftHand.at(items, 1, recipe_number(id)))
 
 	for s in range(seconds):
 		items.tick(1.0)

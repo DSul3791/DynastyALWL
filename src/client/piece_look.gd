@@ -3605,6 +3605,101 @@ static func smoker() -> Node3D:
 	return root
 
 
+# --- Cooking stations (Dave 17 Nov 2026: "We dont use things like pots pans and griddles we use cooking stations"; docs/design/COOKING_STATIONS.md).
+# Free-placed on the footprint in structures.json, standing on y = 0, worked from +Z. First looks from boxes and cylinders until Art draws them.
+
+# The Grill, 1.6 x 1.0 (Dave: "a classic brick/grill looking BBQ"): a waist-high brick box open at the front for the coals, a bed of glowing embers,
+# an iron grate of bars across the top and a brick chimney stub at the back.
+static func grill() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var iron: StandardMaterial3D = _iron_mat()
+	_box(root, Vector3(1.5, 0.75, 0.16), Vector3(0.0, 0.375, -0.42), _brick)            # the back wall
+	_box(root, Vector3(0.16, 0.75, 0.9), Vector3(-0.67, 0.375, 0.0), _brick)            # the side walls
+	_box(root, Vector3(0.16, 0.75, 0.9), Vector3(0.67, 0.375, 0.0), _brick)
+	_box(root, Vector3(1.5, 0.3, 0.12), Vector3(0.0, 0.15, 0.42), _brick)               # the low front wall under the fire mouth
+	_box(root, Vector3(1.18, 0.12, 0.7), Vector3(0.0, 0.42, 0.0), _flag)                # the fire bed
+	_box(root, Vector3(1.0, 0.05, 0.56), Vector3(0.0, 0.5, 0.0), _pot)                  # the coals
+	_box(root, Vector3(0.9, 0.02, 0.46), Vector3(0.0, 0.53, 0.0), _tone_mat(Color(0.75, 0.28, 0.08)))   # the glow on them
+
+	for k in 9:   # the grate: nine bars front to back on two cross bars
+		_rod(root, Vector3(-0.52 + 0.13 * float(k), 0.76, -0.36), Vector3(-0.52 + 0.13 * float(k), 0.76, 0.36), 0.025, iron)
+
+	_rod(root, Vector3(-0.6, 0.74, -0.3), Vector3(0.6, 0.74, -0.3), 0.03, iron)
+	_rod(root, Vector3(-0.6, 0.74, 0.3), Vector3(0.6, 0.74, 0.3), 0.03, iron)
+	_box(root, Vector3(0.34, 0.6, 0.3), Vector3(0.45, 1.05, -0.38), _brick)             # the chimney stub
+	_box(root, Vector3(0.2, 0.02, 0.16), Vector3(0.45, 1.36, -0.38), _pot)
+	_solid(root, Vector3(1.6, 0.8, 1.0), Vector3(0.0, 0.4, 0.0))
+	return root
+
+
+# The Cooking pot, 1.4 x 1.4 (Dave: "like a caldron hanging on a chain from some metal frame work"): an iron A-frame each side joined by a top bar, a chain
+# from its middle down to a round-bellied iron pot, and a ring of four stones with a fire under it.
+static func cooking_pot() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var iron: StandardMaterial3D = _iron_mat()
+
+	for x in [-0.6, 0.6]:   # the two A-frames
+		_rod(root, Vector3(x, 0.0, -0.45), Vector3(x, 1.4, 0.0), 0.05, iron)
+		_rod(root, Vector3(x, 0.0, 0.45), Vector3(x, 1.4, 0.0), 0.05, iron)
+
+	_rod(root, Vector3(-0.65, 1.4, 0.0), Vector3(0.65, 1.4, 0.0), 0.06, iron)          # the top bar
+	_rod(root, Vector3(0.0, 1.4, 0.0), Vector3(0.0, 0.9, 0.0), 0.024, iron)            # the chain
+	_cyl(root, 0.34, 0.42, Vector3(0.0, 0.6, 0.0), _pot, 10, 0.3)                       # the pot, narrowing to its rim
+	_cyl(root, 0.26, 0.16, Vector3(0.0, 0.33, 0.0), _pot, 6)                            # its rounded belly underneath
+	_cyl(root, 0.29, 0.02, Vector3(0.0, 0.81, 0.0), _tone_mat(Color(0.42, 0.3, 0.16)), 6)   # the stew in it
+	_rod(root, Vector3(-0.3, 0.82, 0.0), Vector3(0.0, 0.95, 0.0), 0.016, iron)         # the bail handle to the chain
+	_rod(root, Vector3(0.3, 0.82, 0.0), Vector3(0.0, 0.95, 0.0), 0.016, iron)
+	_box(root, Vector3(0.3, 0.03, 0.3), Vector3(0.0, 0.03, 0.0), _tone_mat(Color(0.75, 0.28, 0.08)))   # the embers
+
+	for k in 4:   # a ring of four stones round the fire (kept under the 300-triangle near cap)
+		var a: float = TAU * (float(k) + 0.5) / 4.0
+		_stone_at(root, Vector3(cos(a) * 0.4, 0.07, sin(a) * 0.4), a)
+
+	_solid(root, Vector3(1.3, 1.4, 1.0), Vector3(0.0, 0.7, 0.0))
+	return root
+
+
+# The Griddle, 1.4 x 1.0 (Dave: "a flat iron griddle with metal legs standing over an open fire ... an ancient version of a blackstone griddle"): a wide flat
+# iron plate with a raised lip on four iron legs, a fire of split wood burning on the ground under it.
+static func griddle() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var iron: StandardMaterial3D = _iron_mat()
+	_box(root, Vector3(1.2, 0.04, 0.8), Vector3(0.0, 0.8, 0.0), _pot)                   # the plate
+	_box(root, Vector3(1.2, 0.05, 0.03), Vector3(0.0, 0.84, -0.385), iron)              # its lip, back and sides
+	_box(root, Vector3(0.03, 0.05, 0.8), Vector3(-0.585, 0.84, 0.0), iron)
+	_box(root, Vector3(0.03, 0.05, 0.8), Vector3(0.585, 0.84, 0.0), iron)
+
+	for x in [-0.55, 0.55]:
+		for z in [-0.35, 0.35]:
+			_rod(root, Vector3(x * 1.08, 0.0, z * 1.1), Vector3(x, 0.79, z), 0.04, iron)   # the legs, splayed a little
+
+	for k in 4:   # the split wood burning under it
+		var a: float = PI * 0.25 * float(k)
+		_rod(root, Vector3(cos(a) * -0.3, 0.05, sin(a) * -0.18), Vector3(cos(a) * 0.3, 0.05, sin(a) * 0.18), 0.08, _log)
+
+	_cyl(root, 0.2, 0.03, Vector3(0.0, 0.04, 0.0), _tone_mat(Color(0.75, 0.28, 0.08)), 8)   # the embers
+	_solid(root, Vector3(1.3, 0.86, 0.9), Vector3(0.0, 0.43, 0.0))
+	return root
+
+
+# The Hand mill, 0.9 x 0.9 (Dave 17 Nov 2026: a placed station, "two heavy millstones"): a squat stone base, the lower and upper millstones on it, a wooden
+# handle standing up from the top stone's edge and a little flour spilled round the foot.
+static func hand_mill() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.7, 0.4, 0.7), Vector3(0.0, 0.2, 0.0), _stone)                  # the base
+	_cyl(root, 0.32, 0.12, Vector3(0.0, 0.46, 0.0), _flag, 12)                          # the lower stone
+	_cyl(root, 0.3, 0.1, Vector3(0.0, 0.57, 0.0), _flag, 12)                            # the upper stone
+	_cyl(root, 0.05, 0.02, Vector3(0.0, 0.63, 0.0), _pot, 6)                            # the feed hole
+	_rod(root, Vector3(0.22, 0.62, 0.0), Vector3(0.22, 0.86, 0.0), 0.04, _log)          # the handle
+	_cyl(root, 0.4, 0.01, Vector3(0.0, 0.005, 0.0), _tone_mat(Color(0.86, 0.82, 0.72)), 8)   # spilled flour
+	_solid(root, Vector3(0.75, 0.65, 0.75), Vector3(0.0, 0.33, 0.0))
+	return root
+
+
 # The Oil press, 1.2 x 1.2 (12 Stone, 4 Log): a round stone basin with a press stone in it, a heavy log beam pivoting on a post at the back and weighted
 # with a stone at its far end, and a spout at the front over a small pot.
 static func oil_press() -> Node3D:

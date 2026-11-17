@@ -17,6 +17,7 @@ const BowAim := preload("res://src/shared/bow_aim.gd")
 const ListScript := preload("res://src/client/hammer_blueprints.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const LookTable := preload("res://src/client/look_table.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const NEAR_TRIANGLES := 300
 # The blueprints a knife builds (W-9 and the three new benches and the station), by structure id.
@@ -96,7 +97,7 @@ func standing(kind: String) -> Array:
 
 func queue(recipe_id: String) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipe_of(recipe_id)["number"]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipe_of(recipe_id)["number"]), 0, 1, CraftHand.at(items, 1, int(recipe_of(recipe_id)["number"])))
 
 	for _s in range(60):
 		items.tick(1.0)
@@ -277,8 +278,8 @@ func menus() -> void:
 	var knife_structures: Array = KNIFE_ROWS.map(func(k): return str(bp_rows[k]["name"]))
 	check(knife_list.rows(1).size() == KNIFE_ROWS.size() and knife_names.size() == knife_structures.size() and knife_structures.all(func(s): return knife_names.has(s)), "the knife's list holds exactly its %d rows (%d listed)" % [KNIFE_ROWS.size(), knife_names.size()])
 	check(knife_names.has("Wood carving station") and knife_names.has("Log - Bench") and knife_names.has("Log - Double bench") and knife_names.has("Log - Backed bench") and knife_names.has("Log - Table"), "among them the station, the three benches and the table")
-	var hammer_names: Array = hammer_list.rows(1).map(func(r): return str(r["name"]))   # 214 hammer rows since phase 5 added the Small log sled and Small wagon (hammer blueprints, W-14) + 21 knife rows
-	check(not knife_structures.any(func(s): return hammer_names.has(s)) and hammer_names.size() + knife_names.size() == 235, "the hammer's list has none of them (%d hammer rows, %d knife rows)" % [hammer_names.size(), knife_names.size()])
+	var hammer_names: Array = hammer_list.rows(1).map(func(r): return str(r["name"]))   # 220 hammer rows with the Grill, Cooking pot, Griddle and Hand mill (Dave 17 Nov 2026 cooking stations); 216 with the Improved and Advanced kilns (Dave 17 Nov 2026); 214 since phase 5 added the Small log sled and Small wagon (hammer blueprints, W-14) + 21 knife rows
+	check(not knife_structures.any(func(s): return hammer_names.has(s)) and hammer_names.size() + knife_names.size() == 241, "the hammer's list has none of them (%d hammer rows, %d knife rows)" % [hammer_names.size(), knife_names.size()])
 	var first: Dictionary = knife_list.actions()[0]
 	check(knife_list.actions().size() == 1 and str(first["kind"]) == "repair" and str(first["name"]) == "Knife" and knife_list.entries(1).all(func(e): return str(e["kind"]) == "bp") and not knife_list.categories(1).has(knife_list.PLANS_TAB), "the knife's screen has a plain Knife line above the list and no Save or plan lines")
 	check(str(hammer_list.actions()[0]["name"]) == "Hammer/Repair Tool" and str(hammer_list.actions()[1]["kind"]) == "save", "the hammer's screen still has Repair and Save")

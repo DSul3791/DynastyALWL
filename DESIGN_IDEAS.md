@@ -622,7 +622,7 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
 
 #### Aging and family
 
-See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the preserved recorded decisions, ideas, proposals and qualifications. Legacy decision tags await approval-source verification; the move does not withdraw existing decisions.
+See [approved aging and lifespan](Design_Ideas_Approved.md#aging-and-lifespan) for decisions, values and qualifications; [aging proposals](Design_Ideas_Unapproved.md#aging-and-lifespan) remain separate.
 
 #### Danger, rescue and logging out
 
@@ -711,7 +711,7 @@ See [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inher
 
 #### Handover chain (succession)
 
-See [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inheritance).
+See [approved succession order and final-child fallback](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). Other details remain in [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inheritance).
 
 #### Inheritance from an unknown benefactor
 
@@ -899,11 +899,11 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 
 ### 7.3 Lifespan targets
 
-See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for pacing, tuning expectations and proposals, including the shared-clock and voluntary-retirement qualifications.
+See [approved aging and lifespan](Design_Ideas_Approved.md#aging-and-lifespan) for pacing, tuning, the shared clock and voluntary-retirement qualifications; [proposals](Design_Ideas_Unapproved.md#aging-and-lifespan) remain separate.
 
 ### 7.4 NPC aging
 
-See [aging and lifespan](Design_Ideas_Unapproved.md#aging-and-lifespan) for the preserved NPC age distribution, life-stage presentation and population-turnover proposal.
+See [approved aging and lifespan](Design_Ideas_Approved.md#aging-and-lifespan) for NPC ages and life stages; [population-turnover proposals](Design_Ideas_Unapproved.md#aging-and-lifespan) remain separate.
 
 ### 7.5 Day and night
 
@@ -1195,7 +1195,7 @@ See [founding and building a settlement](Design_Ideas_Unapproved.md#founding-and
 - **[Decided]** **No kits (Dave, 4 Nov 2026).** There are no "kit" items. Anything heavy that is built onto the ground or onto a building is made with the hammer, from a blueprint, with its materials taken from the pack (or, for repair, from the ground and containers). Things you do not put down on the ground, such as tools and clothing, are inventory crafts; higher-tier ones need a workbench and are made at it. A light thing you carry and set down (the rough bed is the one Dave named) is a plain craftable item, not a kit. Kit items and anything placed from a kit are removed from the game and from saved worlds; losing old saved items is accepted. Every other bed is built with the hammer.
 - **[Decided]** **Inclination ruler (Dave 4 Nov 2026).** The look-angle ruler is off underground until the player presses H; on entering a cave a hint reads "Press H to show inclination". In water it still shows by itself.
 - **[Decided]** **Foundation body and neighbours (Dave, 4 Nov 2026).** A foundation is a solid body 2 m thick from top to bottom (at least 1 m was asked for; 2 m also stays solid when the mouse wheel lifts it 1 m off the ground). Its top stands 0.3 m above its spot and everything builds on that top. A foundation placed beside another foundation of its kind snaps edge to edge (or corner to corner) at the neighbour's exact height, so a run of foundations is one level slab. The mouse wheel raises or lowers a foundation only when no other foundation is nearby; beside one it does nothing. Aiming at the middle of a foundation's top stacks a new one on it, one body (2 m) higher, up to four layers. Foundations are made only from the hammer's blueprint list (Dave 4 Nov 2026); there is no hand craft or kit for them. This replaces the earlier "a foundation is a cube" note.
-- **[Decided]** **No regrowth near builds (Dave bug list 3 Nov, BUG-013).** A stump blocks its own spot while it stands, and no sapling is seeded within 50 m (REGROW_EXCLUDE_M, tunable) of any placed structure or fire.
+- **[Decided]** **No regrowth near builds (Dave bug list 3 Nov, BUG-013; widened by Dave 17 Nov 2026).** A stump blocks its own spot while it stands. Nothing wild spawns or regrows (saplings, animals, anything) within `no_spawn_m` (20 m, `data/items/structures.json`) of anything put down; see `docs/design/NO_SPAWN_ZONES.md`.
 - **[Decided]** A preview outline is red until the terrain is within a reasonable shape to be auto-leveled. Leveling is assumed free and instant once the outline is green.
 - **[Proposed]** The client draws the preview for responsiveness. The server re-validates on placement.
 - **[Proposed]** The outline explains why it is red.

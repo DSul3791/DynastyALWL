@@ -1517,6 +1517,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.held_light_budget = func(): return quality >= 1
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
+	items.pick_hand = func(key: int): held.press_slot(key)
 	items.held_key_now = func(): return held.held_key if held.holding else -1
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
@@ -1830,7 +1831,7 @@ func _sync_cleared() -> void:
 
 	if _cleared_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PLACED_CLEARING))
-		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 5.0, "edge_m": 1.5}
+		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 3.0, "edge_m": 1.0}
 
 	var spots: Array = []
 	var lying: Array = []
@@ -1933,8 +1934,8 @@ func _sync_cleared() -> void:
 		return
 
 	_cleared_key = key
-	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
-	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
+	var radius: float = float(_cleared_cfg.get("radius_m", 3.0))
+	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.0)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
 	grass.set_bare(paths, roads)
 	var plant_lying: Array = lying.duplicate()

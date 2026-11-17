@@ -62,7 +62,7 @@ func _init() -> void:
 		var out_id: String = String(r["gives"][0])
 
 		if _batch_of_other(recipes, rid) > 1:
-			continue   # k crafts of another recipe made at once (the Iron - Cauldron's stews): that recipe is the one checked
+			continue   # k crafts of another recipe made at once (the Cooking pot's big stews): that recipe is the one checked
 
 		var out_kind: String = String(items.get(out_id, gathered.get(out_id, {})).get("kind", ""))
 		var batch: float = value_of.call(out_id) * float(r["gives"][1])

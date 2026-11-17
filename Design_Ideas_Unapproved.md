@@ -1,27 +1,14 @@
-# Design ideas awaiting approval or source verification
+# Design proposals and pending status migrations
 
-[DOC_MAP](docs/DOC_MAP.md) remains the index. This file separates proposals from recorded decisions awaiting source verification; missing sources neither withdraw decisions nor verify legacy **[Decided]** tags.
+[DOC_MAP](docs/DOC_MAP.md) remains the index. This file holds proposals and recorded decisions pending status migration.
 
-[Approved records](Design_Ideas_Approved.md) identify the owning full specification and approval source/date. [Implementation records](Design_Ideas_Built.md) link to that design and distinguish code, tests and player evidence. Built does not mean tested or player-verified; neither register promotes the source-unverified decisions below.
+[Approved records](Design_Ideas_Approved.md) own or link each full specification once. [Built records](Design_Ideas_Built.md) distinguish implementation, tests and player evidence.
 
-Legacy decisions throughout this collection remain SOURCE UNVERIFIED; no extraction verifies approval, implementation or tests. Section numbers and “above/below” refer to each linked source snapshot.
+Recorded decisions migrate in bounded batches under Dave's 16 Nov instruction that documented decisions are his. Explicit proposals stay proposals; approved specifications are linked below. Migration does not certify implementation or tests. Section numbers and “above/below” refer to each linked source snapshot.
 
 ## Aging and lifespan
 
-Source: [DESIGN_IDEAS at bcd0290, sections 6.1, 7.3 and 7.4](https://github.com/DSul3791/DynastyALWL/blob/bcd029086b5148a38f070b68f9ed073c41f4a944/DESIGN_IDEAS.md#61-aging-and-death). Extracted 16 Nov 2026.
-
-### Recorded decisions — SOURCE UNVERIFIED
-
-- **[Decided]** Players age. They can woo a partner and have children.
-- **[Decided]** Characters start at age 20. Marriage and children are possible from age 18 at the earliest.
-- **[Decided]** **Lifespan is drawn at birth** from a bell curve around 62 years with a spread of about 8, never below 45 or above 85, to account for genetics. Sickness, accidents and fights come on top of that.
-- **[Decided]** For pacing, a typical character lives from 20 to about 62 (42 years) over about 21 months of real time, roughly 1,270 hours of play at 14 hours a week (Section 7). Retirement comes around 50, after about 15 months.
-- **[Decided]** Children age too.
-- **[Decided]** **One clock.** Everyone (players, families and NPCs) ages on the server clock at the same rate, whether or not the player is online. Ageing follows ordinary human rules: pregnancy lasts about nine months, women go through menopause, and a couple can have as many children as they choose to and as biology allows. One year of age is one calendar year of 365 game days, which at the default ratio of 24 (Section 7.2) is 15.2 real days. A pregnancy is about 11.4 real days, a child reaches 10 after about 152 real days and 18 after about 274. Time away ages a character (four weeks is about 1.8 years). The clock must survive server downtime (Section 7.6).
-- **[Decided]** Spouses and children stay in the world while the player is away. Events such as bandit raids, dragons and sickness can affect them, which gives players a reason to return.
-- **[Decided]** Fertility: marriage and children from 18 at the earliest; the chance falls gradually from 35; menopause at a random age between 45 and 55 set at birth; men stay fertile for life, with the chance dropping after 60.
-- **[Decided]** The expected player plays 12 to 16 hours a week. This will be tested and tuned with the one time ratio (a ratio of 36 would give about 14 real months).
-- **[Decided]** NPCs age on the same clock as players, from a random starting age (roughly 20 to 30) to a death age drawn from the same bell curve. Showing age as a number plus a life stage (child, young adult, adult, elder) is available.
+[Approved aging specification](Design_Ideas_Approved.md#aging-and-lifespan) owns the recorded decisions, exact values, qualifications and source receipt.
 
 ### Ideas and proposals — not approved
 
@@ -33,19 +20,6 @@ Source: [DESIGN_IDEAS at bcd0290, sections 6.1, 7.3 and 7.4](https://github.com/
 - **[Proposed]** Ownership held at the **dynasty** (family line) level, so nothing needs transferring when a character dies. This is consistent with the heir inheriting everything that remains.
 - **[Proposed]** Skills should feel competent in tens of hours and mastered in a few hundred, so a character gets time at the peak before aging slows them. That much play time needs enough depth to stay interesting.
 - **[Proposed]** An NPC who starts at 25 and dies at 62 lives about 18 real months. A child takes about 9 real months to reach 18. A town's population therefore turns over in about two real years, so births, marriage and migration matter. Birthdays come every 15.2 real days.
-
-### Qualifications and source-review questions
-
-- [Retirement, section 6.7](DESIGN_IDEAS.md#67-succession-inheritance-and-the-dynasty): the approximate pacing target is qualified by voluntary retirement with no fixed age.
-- [Extended life, section 6.10](DESIGN_IDEAS.md#610-extended-life-and-hiding-it): wishes are an exception to ordinary aging; its speed tiers remain proposals.
-- [Clock, sections 7.2](DESIGN_IDEAS.md#72-the-time-ratio-and-the-calendar) and [7.6](DESIGN_IDEAS.md#76-the-server-clock): interpreting “survive downtime” as persistence, with advancement paused, needs source verification.
-- [NPC population, section 8.2](DESIGN_IDEAS.md#82-npc-population): reconcile the starting-age wording later. [Section 8.1](DESIGN_IDEAS.md#81-towns) retains the player major-illness exclusion when reading sickness above.
-- Approval provenance and current runtime aging remain unverified. Full children, death, succession, population and wish specifications stay in [DESIGN_IDEAS](DESIGN_IDEAS.md).
-
-### Consolidation receipt
-
-[Section 7.3's repeated lifespan paragraph](https://github.com/DSul3791/DynastyALWL/blob/bcd029086b5148a38f070b68f9ed073c41f4a944/DESIGN_IDEAS.md#73-lifespan-targets) is covered by the retained pacing and clock passages; its distinct tuning expectation and alternative-ratio example remain verbatim. Original numbered headings retain routes.
-
 
 ## Children and family growth
 
@@ -103,7 +77,7 @@ Source: [DESIGN_IDEAS §§6.6, 6.8–6.9](https://github.com/DSul3791/DynastyALW
 
 ### Dependencies and unresolved qualifications
 
-- [Aging and fertility](#aging-and-lifespan) includes birth-spacing ideas; the joint-decision rule above explicitly says pregnancy is not automatic.
+- [Approved aging and fertility](Design_Ideas_Approved.md#aging-and-lifespan) and [birth-spacing proposals](#aging-and-lifespan) are distinct; the joint-decision rule above explicitly says pregnancy is not automatic.
 - [Inheritance and partial training](DESIGN_IDEAS.md#62-what-an-heir-inherits) retains the parental head-start idea and its unresolved size; [skills](DESIGN_IDEAS.md#54-skills) retains the wider learning design.
 - [Succession and household limits](DESIGN_IDEAS.md#67-succession-inheritance-and-the-dynasty) qualifies eligibility and household size. Adopted-heir eligibility above is a proposal; do not silently reconcile it with the recorded blood-child chain.
 - [Farming](DESIGN_IDEAS.md#51-farming-rhythm) retains distinct household labor and offline-work rules; [NPC population](DESIGN_IDEAS.md#82-npc-population) retains NPC-family behavior. Do not generalize a player-household pregnancy rule into an NPC-population ruling.
@@ -211,6 +185,7 @@ Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/b
 
 - **[Decided]** The heir inherits equipment, businesses, properties and bank accounts. The only thing missing is the character's personal skills.
 - **[Decided]** Debts pass to heirs along with everything else. A debt that expects a regular payment becomes the heir's obligation, stays on the books and is paid accordingly.
+- **[DIRECTOR-APPROVED — Dave, 16 Nov 2026]** See [the successor's first responsibility](Design_Ideas_Approved.md#successors-first-responsibility--estate-debts): arranging estate-debt payments. The gameplay dynamic is deferred; do not address or implement it now.
 - **[Decided]** **Reputation belongs to the person.** Every player and every NPC has their own reputation score. The dynasty itself has no reputation. Nothing passes between dynasties when they merge.
 - **[Decided]** **The dynasty average.** For large loans and purchases, the head of a dynasty also counts the wealth of their dynasty, and everyone under the umbrella (children, stepchildren, spouses) has a reputation that is averaged in. A child who becomes a criminal makes the head and the dynasty look bad. The head's own reputation can be so good that people ignore it, because it is a mean average.
 - **[Decided]** When a character retires or dies, the whole dynasty passes to one successor, chosen by the handover chain (Section 6.7). An older child has better skills but less time left to play.
@@ -234,26 +209,23 @@ Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/b
 
 ### Handover chain (succession)
 
-#### Recorded decisions — SOURCE UNVERIFIED
+The offer order and final-child fallback are [director-approved](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). Other legacy details below retain their recorded status.
+
+#### Recorded decisions and approved clarification
 
 - **[Decided]** Only the chosen successor inherits. The whole dynasty passes to that one person. It does not matter which spouse a child came from, since all are the head's children and all are eligible to be successor at retirement or death.
 - **[Decided]** **Retirement is the player's choice, driven by aging.** As a character ages, their skills fall with their physical ability. At some point the player decides it is time to move on, makes sure a successor is chosen, and chooses to retire. This is usually a conversation with a spouse. There is no fixed retirement age.
 - **[Decided]** **Retirement.** A character who lives into old age and becomes too old and frail to carry on can choose a successor and retire. The player then takes over the successor's body, and the retired character becomes a senior or elderly NPC who lives out their remaining days on the farm.
 - **[Decided]** **Naming a successor can be tested while alive.** Because NPCs talk through the language model, a player can say to a child, stepchild or spouse, "I am thinking of making you my successor", and they answer as themselves: proud, nervous, or unwilling. Naming someone does not bind them. They can still decline when the handover comes.
-- **[Decided]** **The handover chain (order of succession).** When the dynasty is handed on (death or retirement), the named successor, if any, is asked first. If there is none, or they decline, the offer goes down this line, and each person in turn accepts or declines. A spouse always comes after her own children:
-  1. All of the player's own blood children, grouped together and taken oldest to youngest, whichever spouse they came from. (Five children with the first wife and two with the second are one group of seven, by age.)
-  2. The first spouse, if able. An elderly or dead spouse cannot take it.
-  3. The second spouse's children from before (the player's stepchildren), oldest to youngest, then the second spouse.
-  4. The third spouse's stepchildren, then the third spouse, and so on in the order the spouses were married.
-  If the first spouse has children of her own from before, they come between the blood children and her. Whoever takes it becomes the player's character.
+- **[DIRECTOR-APPROVED — Dave, 16 Nov 2026]** The offer order is defined once in [approved succession order](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). It replaces the former global blood-child age order; this subsection remains the legacy route.
 - **[Decided]** **Each person in line chooses; with no will, the chain is the order of asking.** The chain is the order in which the offer is presented. Each person in turn may accept or refuse, and a refusal passes it to the next in line. With no will, nobody is named, so the offer simply goes down the chain.
 - **[Decided]** **A will raises the odds, but is never a certainty.**
   - If a successor is named, the chance they accept is much higher.
   - It is not 100% just because it is a parent's will. It is certain only if the successor agreed beforehand.
   - If a child told the parent they truly do not want it and is named anyway, the chance of accepting rises by about 50%, so it becomes a coin flip. If they refuse, it passes to the next in line.
   - **Character attributes decide the odds.** Loyalty, a sense of duty and greed each push toward accepting, so most people will accept. There is always some chance they will not.
-  - The one exception is the last in line, who must accept (above).
-- **[Decided]** **The last in line must accept.** If the offer goes all the way down the chain and everyone has declined or is dead, the last person on the line, which is the youngest child (not the last spouse), accepts no matter what. A player who has built any lineage always keeps their dynasty.
+  - The exception is the [approved final-child fallback](Design_Ideas_Approved.md#final-child-fallback), which overrides refusal only after all ordinary offers fail.
+- **[DIRECTOR-APPROVED — Dave, 16 Nov 2026]** The mandatory fallback is defined in [final-child fallback](Design_Ideas_Approved.md#final-child-fallback). It applies to the final eligible child in the approved family order after all ordinary offers, including spouse offers, have been refused.
 - **[Decided]** So it pays a character to spend time encouraging the children to want to be the successor (conversation, teaching and the markers in Section 6.6).
 - **[Decided]** Siblings who are not the successor stay in the household and age out over time, unless they leave (see below).
 
@@ -330,10 +302,10 @@ Source: [DESIGN_IDEAS §§6.2 and 6.7](https://github.com/DSul3791/DynastyALWL/b
 
 ### Source-review questions and dependencies
 
-- The recorded offer chain and its “youngest child, not the last spouse” forced-acceptance exception must both remain visible; their exact ordering needs source reconciliation. Adoption eligibility remains a [proposal in the family collection](#children-and-family-growth).
+- Dave resolved the offer order and mandatory fallback on 16 Nov 2026; use [the approved specification](Design_Ideas_Approved.md#succession-order-and-final-child-fallback). Adoption eligibility remains a [proposal in the family collection](#children-and-family-growth); this clarification does not settle adopted-child placement.
 - Naming someone is recorded as nonbinding, while prior agreement is described as making acceptance certain. Preserve both qualifications pending source review.
 - Keep the distinct benefactor-only tax, protected-item rules, forced-property-sale/loan choice, tax cap, reputation discounts and transferred reputation together. No single rate or “nothing is taken” summary replaces their nested exceptions.
-- [Death and rescue](#death-and-rescue), [aging](#aging-and-lifespan), [personal finance](DESIGN_IDEAS.md#63-personal-finances), [duress](DESIGN_IDEAS.md#absence-and-duress) and [NPC memory](DESIGN_IDEAS.md#88-npc-character-memory-and-conversation) remain dependencies. Individual reputation versus dynasty credit averages is a distinction, not permission to invent a dynasty-wide reputation score.
+- [Death and rescue](#death-and-rescue), [aging](Design_Ideas_Approved.md#aging-and-lifespan), [personal finance](DESIGN_IDEAS.md#63-personal-finances), [duress](DESIGN_IDEAS.md#absence-and-duress) and [NPC memory](DESIGN_IDEAS.md#88-npc-character-memory-and-conversation) remain dependencies. Individual reputation versus dynasty credit averages is a distinction, not permission to invent a dynasty-wide reputation score.
 
 ## NPC population and migration
 
@@ -919,6 +891,6 @@ Source: [DESIGN_IDEAS §§8.10 and 8.13](https://github.com/DSul3791/DynastyALWL
 - Dynasty [duress/receivership](DESIGN_IDEAS.md#absence-and-duress) and town decline use distinct clocks and causes. The game's proposed ruin/deletion rules are gameplay design, not authorization to delete documentation or player work during this mission.
 - Preserve abandoned-claim protection, ownership, repairs, rubble/road persistence and deletion conditions together. Current behavior, approval sources and all tuning remain unverified here.
 
-## Approval-source investigation — 16 Nov 2026
+## Historical provenance leads — 16 Nov 2026
 
-The aging/clock/lifespan values trace to [bb524cc, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/bb524cca918855d002efa71b3189749eed833c4e); succession/loan acceptance wording traces to [8e6fe51, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/8e6fe51dce5709593fcaacafe92b61ca90715777). Both cite [Claude session 01FW2oP4t11pHqGQwUfqgGZ9](https://claude.ai/code/session_01FW2oP4t11pHqGQwUfqgGZ9), but the inspected commit messages/diffs do not expose Dave's original answers. These recoverable provenance leads are not original approval evidence. No family value is promoted or rejected; the original session/user-response record is still needed to resolve the cited claims. The investigation does not certify approval for the rest of the collection.
+Aging/clock/lifespan: [bb524cc, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/bb524cca918855d002efa71b3189749eed833c4e). Succession/loan wording: [8e6fe51, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/8e6fe51dce5709593fcaacafe92b61ca90715777). Both cite [Claude session 01FW2oP4t11pHqGQwUfqgGZ9](https://claude.ai/code/session_01FW2oP4t11pHqGQwUfqgGZ9); inspected commits did not expose original answers. These are recovery leads, not an approval prerequisite after Dave's clarification. Aging decisions now reside in [Approved](Design_Ideas_Approved.md#aging-and-lifespan); other topics migrate in bounded batches.

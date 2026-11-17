@@ -170,8 +170,10 @@ func _init() -> void:
 		items.place_item(1, items.table.number_of("wall_section_kit"), spot, 0)
 	check(items.world_item_count() == walls_before + 4, "four wall sections stand edge to edge, 2 m and 1 m apart (%d placed)" % (items.world_item_count() - walls_before))
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 202.0), 0)
+	check(items.world_item_count() == walls_before + 4 and Rules.blocked(cfg, "chest_kit", Vector3(200.0, 10.0, 202.0), [{"pos": Vector3(200.0, 10.0, 202.0), "state": 22, "yaw": 0.0}]) == "overlap", "a chest through a wall is refused, and its ghost is red")
 	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 202.5), 0)
-	check(items.world_item_count() == walls_before + 4, "a chest is still kept 2.5 m from a wall")
+	check(items.world_item_count() == walls_before + 5, "a chest between two walls 1 m apart, touching neither, stands (Dave 17 Nov 2026: stations go inside buildings)")
 	# Nothing is built in water (Dave 2026-10-22: floor sections lay on the pond): any corner wet blocks it, on the server too.
 	var pond: Callable = func(x: float, _z: float) -> float: return 1.0 if x > 300.0 else 0.0
 	check(Rules.over_water(cfg, "floor_section_kit", Vector3(301.0, 10.0, 0.0), 0.0, pond) and not Rules.over_water(cfg, "floor_section_kit", Vector3(298.0, 10.0, 0.0), 0.0, pond), "a floor with no wet corner is fine, one wet corner blocks it")
