@@ -3,16 +3,18 @@ extends SceneTree
 # The Smelters on real server state (master s2.5 and s2.7; CATALOG_IMPLEMENTATION_PLAN R2/R3; src/stream/server_smelter.gd):
 #   1. the Primitive smelter's store: Coal or Charcoal into its hopper (20 at most), ore into its input (20 at most); no iron ore, no wood,
 #      nothing else; Store all and a deposit follow the same parts;
-#   2. it smelts by itself: 1 Copper ore -> 1 Copper ingot in 20 s, 1 Tin ore -> 1 Tin ingot, 1 Copper ore + 1 Tin ore -> 2 Bronze ingots in
+#   2. lit like a campfire (Dave 17 Nov 2026): E with no fuel in its hopper does not light it; cold it makes nothing; E lights it, and lit
+#      it smelts by itself: 1 Copper ore -> 1 Copper ingot in 20 s, 1 Tin ore -> 1 Tin ingot, 1 Copper ore + 1 Tin ore -> 2 Bronze ingots in
 #      40 s, each dropped on the ground in front of it; one fuel a unit of ore; no fuel or no ore: it waits, nothing taken; ore taken back out
-#      mid-smelt loses nothing; the owner's goals count the ingots as made;
-#   3. the Improved smelter: without anyone at its bellows it works like the Primitive (20 s a copper ingot) and makes no iron; with a player
+#      mid-smelt loses nothing; the owner's goals count the ingots as made; it goes out when its last fuel is burnt or taken out; E on a lit
+#      one puts it out and a started ingot keeps its time;
+#   3. the Improved smelter: E lights it, E on the lit one works the bellows, hold E (choice 1) puts it out; without anyone at its bellows it works like the Primitive (20 s a copper ingot) and makes no iron; with a player
 #      working them iron goes, ~15.38 s an ingot, into its output rack; a worker who walks away stops them and the iron job keeps its time;
 #      a full rack makes it wait;
 #   3b. two players: one works the bellows, a second is refused; the second takes the ore and fuel out mid-smelt (nothing lost or made,
 #      the smelt forgotten); the worker logging out stops the bellows, the iron job paused;
 #   4. crafts and building never draw on a smelter's store (its fuel and ore are its own);
-#   5. save and load keep a smelter's banked time; a store saved under the old 4 + 4 slot layout is laid out again with nothing lost or made;
+#   5. save and load keep a smelter's banked time and that it is lit; a store saved under the old 4 + 4 slot layout is laid out again with nothing lost or made;
 #   6. the old craft-queue smelts are retired (recipes 185, 190, 191, 192): no recipe is crafted at a smelter.
 #   godot --headless --path . --script res://src/worldgen/tools/test_smelters.gd
 
@@ -134,6 +136,15 @@ func take_all(id: int) -> void:
 	act(Net.ACT_CHEST_CLOSE, 0)
 
 
+# E at a smelter (ACT_USE_STRUCT; choice 1 is hold E at the Improved smelter: put it out).
+func use(id: int, choice: int = 0) -> void:
+	act(Net.ACT_USE_STRUCT, id, choice)
+
+
+func lit(id: int) -> bool:
+	return bool(items._items[id]["struct"].get("lit", false))
+
+
 func run(seconds: float) -> void:
 	for s in range(int(ceil(seconds))):
 		items.tick(1.0)
@@ -234,19 +245,28 @@ func _init() -> void:
 	check(put_in(prim, "copper_ore", 1) == 1, "one Copper ore in, no fuel")
 	run(p_s * 2.0)
 	check(in_front(prim, cu) == 0 and part(prim, "input", cu_ore) == 1, "no fuel: it waits, the ore kept")
+	said.clear()
+	use(prim)
+	check(not lit(prim) and said.any(func(t): return "fuel slot first" in str(t)), "E with no fuel in its hopper does not light it, and says why")
 	items.give(1, charcoal, 1)
 	put_in(prim, "charcoal", 1)
+	run(p_s * 2.0)
+	check(not lit(prim) and in_front(prim, cu) == 0 and part(prim, "input", cu_ore) == 1 and part(prim, "hopper") == 1, "cold, with fuel and ore in, it makes nothing and burns nothing")
+	use(prim)
+	check(lit(prim), "E lights it")
 	var made_before: int = int(items._goal_state_of(1)["goal_counts"].get("made:copper_ingot", 0))
 	run(p_s - 2.0)
 	check(in_front(prim, cu) == 0, "a Copper ingot is not done before its 20 s")
 	run(3.0)
 	check(in_front(prim, cu) == 1 and part(prim, "input") == 0 and part(prim, "hopper") == 0, "1 Copper ore and %d Charcoal made 1 Copper ingot, dropped in front of it" % per_ore)
 	check(int(items._goal_state_of(1)["goal_counts"].get("made:copper_ingot", 0)) == made_before + 1, "the owner's goals count the Copper ingot as made")
+	check(not lit(prim), "its last fuel burnt, it goes out")
 	sweep(prim)
 	items.give(1, sn_ore, 2)
 	items.give(1, charcoal, 2)
 	put_in(prim, "charcoal", 2)
 	put_in(prim, "tin_ore", 2)
+	use(prim)
 	run(p_s * 2.0 + 2.0)
 	check(in_front(prim, sn) == 2 and part(prim, "hopper") == 0, "2 Tin ore made 2 Tin ingots, burning 2 Charcoal")
 	sweep(prim)
@@ -256,21 +276,42 @@ func _init() -> void:
 	put_in(prim, "charcoal", 4)
 	put_in(prim, "copper_ore", 2)
 	put_in(prim, "tin_ore", 2)
+	use(prim)
 	run(p_s * 2.0 - 2.0)
 	check(in_front(prim, bronze) == 0, "Bronze takes 40 s a pair")
 	run(p_s * 2.0 + 4.0)
 	check(in_front(prim, bronze) == 4 and in_front(prim, cu) == 0 and in_front(prim, sn) == 0 and part(prim, "input") == 0 and part(prim, "hopper") == 0, "2 Copper ore + 2 Tin ore made 4 Bronze ingots (1 + 1 -> 2, master s2.7 item 3), no copper or tin ingots, 4 Charcoal burnt")
 	sweep(prim)
 
-	# Ore taken back out mid-smelt: nothing lost, its time forgotten.
+	# Put out mid-smelt: the started ingot keeps its time and finishes once lit again.
+	items.give(1, cu_ore, 1)
+	items.give(1, charcoal, 2)
+	put_in(prim, "charcoal", 2)
+	put_in(prim, "copper_ore", 1)
+	use(prim)
+	run(p_s * 0.5)
+	use(prim)
+	var kept_t: float = float(items._items[prim]["struct"].get("smelt_t", 0.0))
+	run(p_s * 2.0)
+	check(not lit(prim) and in_front(prim, cu) == 0 and kept_t > 0.0 and absf(float(items._items[prim]["struct"].get("smelt_t", 0.0)) - kept_t) < 0.01, "E on the lit smelter puts it out: nothing moves, the half-done ingot keeps its time (%.1f s)" % kept_t)
+	use(prim)
+	run(p_s * 0.5 + 2.0)
+	check(lit(prim) and in_front(prim, cu) == 1 and part(prim, "hopper") == 1, "lit again, it finishes that ingot and stays lit with fuel left")
+	use(prim)
+	take_all(prim)
+	clear_pack()
+	sweep(prim)
+
+	# Ore taken back out mid-smelt: nothing lost, its time forgotten; fuel taken out puts it out.
 	items.give(1, cu_ore, 1)
 	items.give(1, charcoal, 1)
 	put_in(prim, "charcoal", 1)
 	put_in(prim, "copper_ore", 1)
+	use(prim)
 	run(p_s * 0.5)
 	take_all(prim)
 	run(1.0)
-	check(pack(cu_ore) == 1 and pack(charcoal) == 1 and float(items._items[prim]["struct"].get("smelt_t", 0.0)) == 0.0, "ore and fuel taken out mid-smelt come back whole; the smelt is forgotten")
+	check(pack(cu_ore) == 1 and pack(charcoal) == 1 and float(items._items[prim]["struct"].get("smelt_t", 0.0)) == 0.0 and not lit(prim), "ore and fuel taken out mid-smelt come back whole; the smelt is forgotten and, with no fuel, it goes out")
 	clear_pack()
 
 	# --- 3. The Improved smelter ---
@@ -282,6 +323,8 @@ func _init() -> void:
 	items.give(1, cu_ore, 1)
 	put_in(imp, "charcoal", 40)
 	put_in(imp, "copper_ore", 1)
+	use(imp)
+	check(lit(imp) and not items._smelters.bellows_worked(imp), "E lights the Improved smelter; nobody works its bellows yet")
 	run(p_s - 2.0)
 	check(part(imp, "output", cu) == 0, "unmanned: no copper ingot before 20 s")
 	run(3.0)
@@ -290,8 +333,8 @@ func _init() -> void:
 	put_in(imp, "iron_ore", 3)
 	run(p_s * 2.0)
 	check(part(imp, "output", iron) == 0 and part(imp, "input", fe_ore) == 3, "unmanned it makes no iron")
-	act(Net.ACT_USE_STRUCT, imp)
-	check(items._smelters.bellows_worked(imp), "E at the Improved smelter: the player works its bellows")
+	use(imp)
+	check(items._smelters.bellows_worked(imp), "E at the lit Improved smelter: the player works its bellows")
 	var manned_s: float = p_s / bellows_x
 	run(manned_s - 1.5)
 	check(part(imp, "output", iron) == 0, "worked, an Iron ingot is not done before %.2f s" % manned_s)
@@ -306,8 +349,10 @@ func _init() -> void:
 	act(Net.ACT_USE_STRUCT, imp)
 	run(manned_s * 0.5 + 1.5)
 	check(part(imp, "output", iron) == 2, "back at the bellows, the paused Iron ingot finishes")
-	act(Net.ACT_USE_STRUCT, imp)
-	check(not items._smelters.bellows_worked(imp), "E again leaves the bellows")
+	use(imp)
+	check(not items._smelters.bellows_worked(imp) and lit(imp), "E again leaves the bellows; it stays lit")
+	use(imp, 1)
+	check(not lit(imp) and not items._smelters.bellows_worked(imp), "hold E puts the Improved smelter out, and the bellows stop")
 
 	# A full rack makes it wait. A slot holds any number (item_table.stack_of), so the rack's size is smelt.output: one stack of that many in its
 	# first slot fills it, the other slots empty. The paused Iron job above holds the furnace (server_smelter._pick), so start clean.
@@ -320,6 +365,7 @@ func _init() -> void:
 	items.give(1, cu_ore, 1)
 	put_in(imp, "charcoal", 4)
 	put_in(imp, "copper_ore", 1)
+	use(imp)
 	var hopper_before: int = part(imp, "hopper")
 	run(p_s * 2.0)
 	check(hopper_before == 4 and part(imp, "input", cu_ore) == 1 and part(imp, "hopper") == hopper_before and part(imp, "output", cu) == 0 and in_front(imp, cu) == 0 and float(items._items[imp]["struct"].get("smelt_t", 0.0)) >= p_s, "a full rack (%d of %d, three slots empty): the finished ingot waits, nothing taken, nothing on the ground" % [rack_n, rack_n])
@@ -333,7 +379,9 @@ func _init() -> void:
 	items.give(1, cu_ore, 1)
 	put_in(imp, "charcoal", 4)
 	put_in(imp, "copper_ore", 1)
-	act(Net.ACT_USE_STRUCT, imp)
+	use(imp, 1)   # still lit from the full-rack check: put out and lit again, so this E works the bellows
+	use(imp)
+	use(imp)
 	run(manned_s - 1.5)
 	var cu_early: int = part(imp, "output", cu)
 	run(2.0)
@@ -350,7 +398,9 @@ func _init() -> void:
 	items.give(1, fe_ore, 2)
 	put_in(imp, "charcoal", 4)
 	put_in(imp, "iron_ore", 2)
-	act(Net.ACT_USE_STRUCT, imp)
+	use(imp, 1)   # whatever state the last check left: out, then lit, then the bellows
+	use(imp)
+	use(imp)
 	said.clear()
 	act(Net.ACT_USE_STRUCT, imp, 0, 0, 2)
 	check(items._smelters.bellows_worked(imp) and int(items._smelters._bellows.get(imp, -1)) == 1 and said.any(func(t): return "already" in str(t)), "a second player at worked bellows is refused; the first keeps them")
@@ -362,6 +412,8 @@ func _init() -> void:
 	act(Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(charcoal), imp, 4, 2)
 	act(Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(fe_ore), imp, 2, 2)
 	act(Net.ACT_CHEST_CLOSE, 0, 0, 0, 2)
+	act(Net.ACT_USE_STRUCT, imp, 0, 0, 2)   # the fuel taken out put it out (and stopped the bellows): the other player lights it again
+	use(imp)   # and the first goes back to the bellows
 	run(manned_s + 1.0)
 	check(part(imp, "output", iron) == 1 and part(imp, "input", fe_ore) == 1, "put back by the other player, it smelts on while the first works the bellows")
 	run(manned_s * 0.5)
@@ -386,6 +438,7 @@ func _init() -> void:
 	items.give(1, cu_ore, 1)
 	put_in(prim, "charcoal", 2)
 	put_in(prim, "copper_ore", 1)
+	use(prim)
 	run(p_s * 0.5)
 	var t_saved: float = float(items._items[prim]["struct"].get("smelt_t", 0.0))
 	# A second Primitive smelter with its store as the old 4 input + 4 output layout left it: ore, fuel and ingots anywhere.
@@ -416,6 +469,7 @@ func _init() -> void:
 				prim = int(id)
 
 	check(prim > 0 and absf(float(items._items[prim]["struct"].get("smelt_t", 0.0)) - t_saved) < 0.01, "save and load keep the smelter's banked time (%.1f s)" % t_saved)
+	check(prim > 0 and lit(prim) and old > 0 and not lit(old), "and that it is lit (the never-lit one loads cold)")
 	run(p_s * 0.5 + 2.0)
 	check(in_front(prim, cu) == 1, "and it finishes the Copper ingot after the load")
 	var laid: bool = old > 0 and part(old, "hopper") == 20 and part(old, "input", cu_ore) == 20 and part(old, "input") == 20

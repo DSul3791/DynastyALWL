@@ -1995,11 +1995,27 @@ static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scal
 	if smoke != null:
 		var at: Vector3 = Vector3(float(smoke[0]), float(smoke[1]), float(smoke[2])) if typeof(smoke) == TYPE_ARRAY else smoke
 		var plume: GPUParticles3D = _smoke_plume()
+		plume.name = "ForgeSmoke"
 		plume.position = at
 		plume.scale = Vector3.ONE * fx_scale
 		model.add_child(plume)
 
 	return model
+
+
+# A forge model's fire (add_hooks' flames and smoke) shown or hidden: a Smelter shows it only while lit (Dave 17 Nov 2026: "it needs to show
+# no fire when its not lit"). Its Light stays off unless the placed row hands it to the lights list (inventory_view).
+static func show_forge_fire(model: Node3D, on: bool) -> void:
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null:
+		flames.visible = on
+
+	var plume: GPUParticles3D = model.get_node_or_null("ForgeSmoke") as GPUParticles3D
+
+	if plume != null:
+		plume.visible = on
+		plume.emitting = on
 
 
 # --------------------------------------------------------------- chair and bed (where the NPCs sit and sleep)

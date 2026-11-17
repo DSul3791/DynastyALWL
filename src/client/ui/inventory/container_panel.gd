@@ -284,12 +284,13 @@ func smelter_parts() -> String:
 	var hs: int = int(smelt.get("hopper_slots", 1))
 	var slots: int = int(def.get("slots", 0))
 	var out: int = int(def.get("out_slots", 0))
-	var text: String = "Slot%s 1%s: fuel, Coal or Charcoal (%d). Slots %d to %d: ore (%d)." % ["s" if hs > 1 else "", " to %d" % hs if hs > 1 else "", int(smelt.get("hopper", 0)), hs + 1, slots, int(smelt.get("input", 0))]
+	# Dave 17 Nov 2026 found "fuel, coal, charcoal" unclear: each part named first, then what goes in it and how much.
+	var text: String = "Fuel (slot%s 1%s): Coal or Charcoal, up to %d. Ore (slots %d to %d): up to %d." % ["s" if hs > 1 else "", " to %d" % hs if hs > 1 else "", int(smelt.get("hopper", 0)), hs + 1, slots, int(smelt.get("input", 0))]
 
 	if bool(smelt.get("carbon", false)):
 		text += " For steel, drag Coal or Charcoal onto an ore slot too: it goes in as carbon, not fuel."
-	text += " Slots %d to %d: the ingots." % [slots + 1, slots + out] if out > 0 else " The ingots drop in front of it."
-	return text
+	text += " Ingots (slots %d to %d)." % [slots + 1, slots + out] if out > 0 else " The ingots drop in front of it."
+	return text + " Press E beside it to light it."
 
 
 # The name on the Craft plate while the container shows: "FIRE", the container's name, or "CHEST".
