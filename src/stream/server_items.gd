@@ -6439,14 +6439,13 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | attempt
 		laid += 1
 		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
-		var total: int = _boulder_stones(radius)
-		var left: int = mini(int(_boulder_left.get(key, total)), total)
+		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": _boulder_stones(radius)}
+		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized
+		var left: int = mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
 
 		if left <= 0:
 			continue
 
-		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
-		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore)
 		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
 
@@ -6463,14 +6462,23 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 	if cfg.has("grade_min"):
 		row["grade"] = lerpf(float(cfg["grade_min"]), float(cfg.get("grade_max", cfg["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
 
+	# Every copper and tin rock to break is radius_min..radius_max (Dave 17 Nov 2026: "the copper should be the same size as the tin and they
+	# can be anywhere from .5m to 2m in size ... for both of them"), the geology's outcrop boulders included.
+	if cfg.has("radius_min") and cfg.has("radius_max"):
+		var radius: float = clampf(float(row["radius"]), float(cfg["radius_min"]), float(cfg["radius_max"]))
+
+		if radius != float(row["radius"]):
+			row["radius"] = radius
+			row["total"] = _boulder_stones(radius)
+
 
 # Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md, boulders.json copper_rocks and tin_rocks). Per cell,
 # from the cell's own stream named after the ore, 8 tries that each take the same five draws whatever happens to them:
 # - copper: a few anywhere on dry land, many in shallow water and on banks, and the last try a big boulder at a mountain's foot;
 # - tin: only in shallow water and on banks within near_body_m of a tin body of the geology (its river placers), sized by the relief
 #   around it: boulders where the valley climbs steeply (near the mountains), pebbles where it is flat (far downstream).
-# A rock under hand_max_radius is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); a bigger one is a
-# boulder row with the ore, broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
+# A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
+# rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
 # boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 	var cfg: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
@@ -6485,7 +6493,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 	var foot: Dictionary = cfg.get("foot", {})
 	var slot0: int = int(cfg.get("slot", COPPER_ROCK_FIRST))
 	var body_m: float = float(cfg.get("near_body_m", 0.0))
-	var hand_max: float = float(cfg.get("hand_max_radius", 0.0))
+	var hand_share: float = float(cfg.get("hand_share", 0.0))
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var names: Dictionary = {ore: item}
 	var layer_m: float = float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0))
@@ -6536,18 +6544,22 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		if body_m > 0.0 and str(ore_near.call(spot, body_m, names, layer_m)) != ore:
 			continue   # tin lies only downstream of its own geology
 
-		var sizes: Dictionary = foot if is_foot else cfg
+		# Size: a share s in 0..1 (copper: the draw; tin: the relief, steep valley sides near the mountains high, flat ground far downstream
+		# low). Under hand_share it is a loose piece picked up by hand; above it a rock to break, radius_min..radius_max over the rest.
+		var s: float = size_draw
 		var radius: float
 
 		if cfg.has("relief_full_m") and not is_foot:
-			var t: float = clampf(_relief(spot, float(cfg.get("relief_reach_m", 24.0))) / maxf(float(cfg["relief_full_m"]), 0.1), 0.0, 1.0)
-			radius = lerpf(float(sizes.get("radius_min", 0.03)), float(sizes.get("radius_max", 1.0)), t * (0.5 + 0.5 * size_draw))
+			s = clampf(_relief(spot, float(cfg.get("relief_reach_m", 24.0))) / maxf(float(cfg["relief_full_m"]), 0.1), 0.0, 1.0) * (0.5 + 0.5 * size_draw)
+
+		if is_foot:
+			radius = lerpf(float(foot.get("radius_min", 0.6)), float(foot.get("radius_max", 1.0)), pow(size_draw, float(foot.get("radius_power", 1.0))))
 		else:
-			radius = lerpf(float(sizes.get("radius_min", 0.06)), float(sizes.get("radius_max", 0.3)), pow(size_draw, float(sizes.get("radius_power", 2.0))))
+			radius = lerpf(float(cfg.get("radius_min", 0.25)), float(cfg.get("radius_max", 1.0)), pow(clampf((s - hand_share) / maxf(1.0 - hand_share, 0.01), 0.0, 1.0), float(cfg.get("radius_power", 1.0))))
 
 		var slot: int = slot0 + attempt
 
-		if radius < hand_max and not is_foot:
+		if s < hand_share and not is_foot:
 			var loose_key: int = ORE_KEY | cell_bits | slot
 
 			if not _taken.has(loose_key):
@@ -6772,12 +6784,11 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 
 		if int(spots[n * 5 + 3]) == 1 and not _boulder_cfg.is_empty():
 			var radius: float = spots[n * 5 + 4]
-			var total: int = _boulder_stones(radius)
-			var left: int = mini(int(_boulder_left.get(key, total)), total)
+			var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": _boulder_stones(radius)}
+			_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
+			var left: int = mini(int(_boulder_left.get(key, cave_row["total"])), int(cave_row["total"]))
 
 			if left > 0:
-				var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": total}
-				_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
 				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
 				_next_id += 1
 

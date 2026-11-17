@@ -3,7 +3,7 @@ extends SceneTree
 # Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md). Copper: malachite-coated rocks of many sizes, a few
 # anywhere on land, many more on river beds, in shallow water and along shores, none in deep water, and now and then a big copper
 # boulder at the foot of a mountain. Tin: only by water near a tin body, boulders where the valley climbs steeply, pebbles where it is
-# flat. Rocks under hand_max_radius are loose ore picked up by hand; bigger ones are boulder rows with their own grade (share of their
+# flat. A share of the sizes (hand_share) is loose ore picked up by hand; bigger ones are boulder rows with their own grade (share of their
 # pieces that are ore). The layout is the same every time and its keys never land on the cell's boulders. Plus the client mesh.
 #   godot --headless --path . --script res://src/worldgen/tools/test_copper_rocks.gd
 
@@ -82,7 +82,7 @@ func _init() -> void:
 	check(not cfg.is_empty() and float(cfg.get("water_chance", 0.0)) > float(cfg.get("chance", 1.0)) * 5.0, "boulders.json ships copper rocks, far commoner by water than on dry land")
 
 	# 1. Land, shore, river bed and deep water. Flat ground at 10 m; a river along x 2000..2040: shallow (0.5 m) from 2000 to 2020, deep (3 m)
-	# from 2020 to 2040; its dry banks are the 3 m beside it.
+	# from 2020 to 2040; its dry banks are the 10 m beside it.
 	var w = make("test_copper_rocks_lay", "")
 	w.water_depth_at = func(pos): return 0.5 if pos.x >= 2000.0 and pos.x < 2020.0 else (3.0 if pos.x >= 2020.0 and pos.x < 2040.0 else 0.0)
 	w.water_near = func(pos, reach): return pos.x + reach >= 2000.0 and pos.x - reach < 2040.0
@@ -104,7 +104,7 @@ func _init() -> void:
 	for r in rocks:
 		var x: float = float(r[1].x)
 		land += 1 if x < 1990.0 or x > 2050.0 else 0
-		shore += 1 if (x >= 1997.0 and x < 2020.0) or (x >= 2040.0 and x <= 2043.0) else 0
+		shore += 1 if (x >= 1990.0 and x < 2020.0) or (x >= 2040.0 and x <= 2050.0) else 0
 		deep += 1 if x >= 2020.0 and x < 2040.0 else 0
 
 		if bool(r[4]):
@@ -113,22 +113,22 @@ func _init() -> void:
 			continue
 
 
-		sizes_ok = sizes_ok and float(r[2]) >= float(cfg["hand_max_radius"]) - 0.001 and float(r[2]) <= float(cfg["radius_max"]) + 0.001
+		sizes_ok = sizes_ok and float(r[2]) >= float(cfg["radius_min"]) - 0.001 and float(r[2]) <= float(cfg["radius_max"]) + 0.001
 		grades_ok = grades_ok and float(r[3]) >= float(cfg["grade_min"]) - 0.001 and float(r[3]) <= float(cfg["grade_max"]) + 0.001
 		keys_ok = keys_ok and (int(r[0]) & 15) >= w.COPPER_ROCK_FIRST
 		lo_grade = minf(lo_grade, float(r[3]))
 		hi_grade = maxf(hi_grade, float(r[3]))
-		small += 1 if float(r[2]) < 0.15 else 0
-		big += 1 if float(r[2]) > 0.2 else 0
+		small += 1 if float(r[2]) < 0.45 else 0
+		big += 1 if float(r[2]) > 0.7 else 0
 
-	# Land: 3200 cells less the river strip; the river strip is 2 cells wide (64 m) over 40 rows, of which 26 m take rocks.
+	# Land: 3200 cells less the river strip; the river strip is 2 cells wide (64 m) over 40 rows, of which 40 m take rocks.
 	var land_per_cell: float = float(land) / (78.0 * 40.0)
 	var shore_per_cell: float = float(shore) / 40.0
 	print("copper rocks: %d in all, %d on land (%.3f a cell), %d at the river (%.2f per 32 m of river), %d in deep water, sizes %d small %d big, grades %.2f..%.2f" % [rocks.size(), land, land_per_cell, shore, shore_per_cell, deep, small, big, lo_grade, hi_grade])
 	check(land > 0 and land_per_cell < 0.2, "a few copper rocks are strewn over dry land (%d, %.3f a cell)" % [land, land_per_cell])
 	check(shore_per_cell > land_per_cell * 5.0, "far more on the river bed and its banks (%.2f per 32 m of river against %.3f a land cell)" % [shore_per_cell, land_per_cell])
 	check(deep == 0, "none in deep water (%d)" % deep)
-	check(sizes_ok and by_hand > big and big > 0 and small > 0, "rocks under hand_max_radius lie loose to pick up by hand, bigger ones are rocks to break (%d by hand, %d small rocks, %d big)" % [by_hand, small, big])
+	check(sizes_ok and by_hand > big and big > 0 and small > 0, "a share of the sizes lies loose to pick up by hand, bigger ones are rocks to break (%d by hand, %d small rocks, %d big)" % [by_hand, small, big])
 	check(hand_keys_ok, "a loose copper rock's key is its own (ORE_KEY, slots 8..15)")
 	check(grades_ok and hi_grade - lo_grade > 0.2, "every rock has its own grade in range (%.2f..%.2f)" % [lo_grade, hi_grade])
 	check(keys_ok, "copper rock keys sit after the cell's boulders (low bits from COPPER_ROCK_FIRST)")
