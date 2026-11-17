@@ -22,7 +22,8 @@
 #     "shot runner: state:" line: the expectation, the player, and every loose item within 6 m with its gap above the ground.
 #   --dist M  third-person camera distance (under 2 m aims at the held item: a hand close-up)
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
-#   --at     world x,z (default the spawn 53301,68427); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
+#   --at     world x,z (default the server's own spawn, read from its log, where the starter ground is loaded; --ground piles keep 53301,68427 because
+#            they are seeded before the server starts, so pass --at and --gy together for them); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
 #   --cam right = the character seen from its right (the right hand shows); --nograss hides the grass; --bow STATE[:DRAW] poses a held bow (with --give wooden_bow; first person shows the arms, --cam left the body with the bow at its side); --lit keeps a given torch or lantern burning in the pictures (fuel given, arms on in first person); --keep keeps the temp folder
 #   --admin  also show the F3 admin/debug lines
 #   --walk M_PER_S  with --cam left|right: the third-person body walks at that speed (4 = walk, 8 = run, 0 = standing; the shot runner fakes the pace)
@@ -31,7 +32,7 @@
 #            tools/look_rig.sh --give copper_saw --angles "right:-90:1.6;left:90:1.6;hand:-90:0.7;front:0:1.6" --name copper_saw
 #   Held-item shots (--give or --item, without --ground/--pieces/--look/--showroom/--flora/--views/--frametime/--drop/--dig) take the picture as soon as the
 #   scene is ready instead of on fixed timers (--shot-ready=held; --wait and --settle become the most they wait; --no-ready keeps the old timers), and the
-#   body stands in its idle pose (--walk 0). --at defaults to the server's own spawn (where the starter ground is loaded), except for --ground piles.
+#   body stands in its idle pose (--walk 0) in every third-person shot. --at defaults to the server's spawn in every mode but --ground piles.
 #   Every run ends with "rig: N picture(s) in T s"; no picture saved is a FAIL (exit 4).
 #   --server-arg ARG  pass one extra argument to the throwaway server (repeat), e.g. --server-arg --water2 (Dynasty water)
 #   --client-arg ARG  pass one extra argument to the client (repeat the option), e.g. --client-arg --generated-body
@@ -62,6 +63,7 @@ case "$ADMIN" in *--shot-give=*) HELD=1;; esac
 case "$ADMIN $GROUND" in *--shot-flora=*|*--shot-pieces=*|*--shot-showroom=*|*--shot-frametime=*|*--shot-views=*|*--shot-drop*|*--shot-dig=*|*--shot-ground*) SCENE=1;; esac
 [ -n "$GROUND" ] && SCENE=1
 [ -n "$ANGLES" ] && [ -z "$CAM_GIVEN" ] && CAM=right
+[ -n "$ANGLES" ] && [ "$CAM" = "first" ] && echo "rig: WARNING --angles needs a third-person camera (--cam left or right); with --cam first it is ignored"
 # --ground-close: the camera numbers are flags (--close-height, --close-dist, --close-pitch); later --agl/--drop-dist/--look-down still win.
 if [ -n "$CLOSE" ]; then
   ADMIN="$ADMIN --shot-ground --shot-back=0 --shot-lookdown=$CP --shot-drop-dist=$CD"; DDIST="$CD"; AGL="$CH"

@@ -174,6 +174,8 @@ var _angle_msec: int = 0
 var _idle_since_msec: int = 0   # the voxel engine has had no work since then (ready settle)
 var _t_ready_msec: int = 0      # timing line: when the first shot could start
 var _t_landed_msec: int = 0
+var _give_msec: int = 0
+var _give_tries: int = 0
 
 const STORM := {"rain": 1.0, "snow": 0.0, "storm": 1.0, "cloud": 1.0, "sun": 0.0, "wind": 0.9, "wind_dir": 1.0, "temp_c": 8.0}
 const RAIN := {"rain": 0.65, "snow": 0.0, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.3, "wind_dir": 1.0, "temp_c": 9.0}
@@ -383,8 +385,16 @@ func _process(delta: float) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if give_item != "" and not _given and (now - client.connected_msec > 8000 or (ready_held and client.items.inventory != null)):
+	# --shot-ready=held: the give goes 1.5 s after the welcome (the pack view exists from the welcome, so it is no sign the server has the player) and again
+	# every 3 s while the item is not in the pack (a give that beat the hello is dropped by the server), at most 3 times.
+	if ready_held and _given and not _selected and _give_tries < 3 and now - _give_msec > 3000 and client.items.inventory != null and not client.items.inventory.numbers.has(client.items.table.number_of(give_item)):
+		_given = false
+		print("shot runner: %s not in the pack %.1f s after the give; giving again" % [give_item, float(now - _give_msec) / 1000.0])
+
+	if give_item != "" and not _given and (now - client.connected_msec > 8000 or (ready_held and client.items.inventory != null and now - client.connected_msec > 1500)):
 		_given = true
+		_give_msec = now
+		_give_tries += 1
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of(give_item), 0, give_count, Vector3.ZERO)
 
 		if bow_pose != "":
@@ -471,6 +481,9 @@ func _process(delta: float) -> void:
 		if not scene_ready and now - client.connected_msec < int(wait_s * 1000.0):
 			return
 
+		if ready_held and not scene_ready:
+			print("shot runner: --wait cap of %.0f s reached before the scene was ready (ground waiting %s, item in hand %s); going on" % [wait_s, str(client.waiting_for_ground), str(_held_ready())])
+
 
 		_next(now)
 		return
@@ -532,6 +545,9 @@ func _process(delta: float) -> void:
 
 	if now - _moved_msec < int(settle_s * 1000.0) and not (ready_held and _settled(now)):
 		return
+
+	if ready_held and not _ground_steady and _idle_since_msec == 0:
+		print("shot runner: --settle cap of %.0f s reached with the voxel engine still busy (%s); going on" % [settle_s, str(VoxelEngine.get_stats().get("tasks", {}))])
 
 	# The ground under a shot is read once, when it is placed, and that reading can come from blocks still loading: on a steep face (the #802 spring
 	# at x 54048 z 71413, ground 336.4 on the tile) it gave 383, so the camera stood 48 m up. After the settle the blocks are in: read it again, and
@@ -1766,7 +1782,8 @@ func _side_view(walk: float) -> void:
 	# The rig's body flies (no floor), so the client's own pick was the air clip: legs mid-stride, "running on the spot" (Dave 17 Nov 2026). A body shot plays the
 	# clip a body on the ground would at that pace: standing still (walk 0) the idle, else the gait; a torch in the left hand keeps its carry pose.
 	if walk >= 0.0 and clip_name == "" and client._avatar != null:
-		var clip: String = AvatarDriver.choose_clip(stance_index if stance_index >= 0 else StanceScript.STAND, walk, str(client._avatar.call("current")), false)
+		var carrying: bool = client.items != null and client.items.shoulder_id != ""
+		var clip: String = AvatarDriver.choose_clip(stance_index if stance_index >= 0 else StanceScript.STAND, walk, str(client._avatar.call("current")), carrying)
 		var player: AnimationPlayer = client._avatar.get("animation_player") as AnimationPlayer
 
 		if bool(client._avatar.get_meta("torch_left", false)) and player != null and player.has_animation(clip + "_torch"):
