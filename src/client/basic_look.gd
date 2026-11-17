@@ -277,8 +277,8 @@ const ART_OVERRIDES := {
 	"steel_striker": {"shape": "striker", "color": "#3a3c40", "size": 1.0},
 	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
-	"copper_ore": {"shape": "ore", "color": "#6a5a4c", "size": 1.0, "bits": ["#3fa77a"]},
-	"tin_ore": {"shape": "ore", "color": "#5c5a58", "size": 1.0, "bits": ["#2b2218"]},
+	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
+	"tin_ore": {"shape": "tin_pebbles", "color": "#3a2618", "size": 1.0},     # water-worn cassiterite pebbles (Dave's photo, 17 Nov 2026)
 	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }
@@ -407,7 +407,7 @@ static func _model_mesh(item_id: String, def: Dictionary) -> ArrayMesh:
 static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = []) -> ArrayMesh:
 	var parts: Array = []
 
-	if shape not in ["bone", "coil", "coin", "ingot"]:
+	if shape not in ["bone", "coil", "coin", "ingot", "malachite", "tin_pebbles"]:
 		color = Color.from_hsv(color.h, minf(color.s * 1.35, 1.0), minf(color.v * 1.08, 1.0))      # bolder colours so loose items tell apart on the grass (Dave 2026-10-22)
 	var dark: Color = color.darkened(0.35)
 	var light: Color = color.lightened(0.25)
@@ -2456,6 +2456,24 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var a: float = TAU * float(k) / 8.0 + 0.4
 				_sph(parts, 0.012 + 0.004 * float(k % 3), Vector3(1.0, 0.7, 1.0), Vector3(cos(a) * 0.06, -0.01 + 0.012 * float(k % 3), sin(a) * 0.055), _tone(mineral, k, 0.15))
 			_box_rot(parts, Vector3(0.07, 0.006, 0.012), Vector3(0.0, 0.026, 0.0), Vector3(0.0, 0.6, 0.0), mineral)
+		"malachite":
+			# A small copper rock (Dave's photo, 16 Nov 2026): a rough lump of three blobs wholly coated in malachite, green to teal (color is the
+			# green), dark blue-black patches and a few yellow-green flecks on top. Drawn without the colour boost below: the coat's own greens.
+			var teal: Color = Color(0.07, 0.36, 0.4)
+			var blue_black: Color = Color(0.05, 0.1, 0.12)
+			_sph(parts, 0.07, Vector3(1.15, 0.72, 0.95), Vector3(0.0, -0.03, 0.0), color)
+			_sph(parts, 0.05, Vector3(1.0, 0.8, 1.0), Vector3(0.055, -0.035, 0.03), teal)
+			_sph(parts, 0.045, Vector3(1.0, 0.75, 1.1), Vector3(-0.05, -0.03, -0.03), _tone(color, 2, 0.12))
+			for k in 6:
+				var a: float = TAU * float(k) / 6.0 + 0.3
+				_sph(parts, 0.016 + 0.004 * float(k % 3), Vector3(1.0, 0.6, 1.0), Vector3(cos(a) * 0.055, 0.0 + 0.008 * float(k % 2), sin(a) * 0.045), blue_black if k % 3 == 0 else (teal if k % 3 == 1 else _tone(color, k, 0.15)))
+			for k in 4:
+				_sph(parts, 0.008, Vector3.ONE, Vector3(-0.03 + 0.02 * float(k), 0.02, 0.01 * float(k % 2)), Color(0.46, 0.52, 0.22))
+		"tin_pebbles":
+			# Water-worn cassiterite (Dave's photo, 17 Nov 2026): three smooth rounded pebbles, dark brown to reddish black, with a dull shine.
+			for pebble in [[0.05, Vector3(1.2, 0.7, 0.95), Vector3(0.0, -0.035, 0.0), color], [0.038, Vector3(1.1, 0.75, 1.0), Vector3(0.07, -0.045, 0.035), Color(0.24, 0.12, 0.08)], [0.032, Vector3(1.0, 0.7, 1.2), Vector3(-0.055, -0.048, -0.04), Color(0.13, 0.09, 0.07)]]:
+				_sph(parts, float(pebble[0]), pebble[1], pebble[2], pebble[3])
+				_metal(parts, 0.45, 0.0)
 		"coal":
 			# A lump of coal: black, angular and blocky, a few flat shiny facets, one broken face a shade lighter, and crumbs of coal dust beside it.
 			_box_rot(parts, Vector3(0.1, 0.075, 0.085), Vector3(0.0, -0.025, 0.0), Vector3(0.2, 0.5, 0.15), color)

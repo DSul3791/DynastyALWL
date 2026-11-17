@@ -338,6 +338,8 @@ var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left
 const BOULDER_KEY := 1 << 50
 const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
 const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
+const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
+const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 const BOG_SAMPLE_M := 8.0         # the baked tile's sample spacing: deposits sit on samples (BogIron), so the scan steps by it
@@ -6138,8 +6140,9 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
 	_lay_out_boulders(cell, cell_m)
 	part_usec = _cell_part("boulders", part_usec)
-	_lay_out_copper_rocks(cell, cell_m)
-	_cell_part("copper rocks", part_usec)
+	_lay_out_ore_rocks(cell, cell_m, "copper")
+	_lay_out_ore_rocks(cell, cell_m, "tin")
+	_cell_part("copper and tin rocks", part_usec)
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -6181,7 +6184,7 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 
 	# Every try takes the same five draws whatever happens to it, and the boulder's key is its try, not its count: a try that the live water turns
 	# on or off (the bank chance) adds or drops that one boulder and moves no other boulder's key.
-	for attempt in range(mini(int(cfg.get("tries", 8)), COPPER_ROCK_FIRST)):   # keys from COPPER_ROCK_FIRST up are the copper rocks' (_lay_out_copper_rocks)
+	for attempt in range(mini(int(cfg.get("tries", 8)), COPPER_ROCK_FIRST)):   # keys from COPPER_ROCK_FIRST up are the copper rocks' (_lay_out_ore_rocks)
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
@@ -6217,48 +6220,56 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		_next_id += 1
 
 
-# A boulder row's ore: none for "", else the ore, and a copper rock also its grade (boulders.json copper_rocks grade_min..grade_max, from the key):
-# the share of its pieces that come away as copper ore, so rocks hold different amounts and a bigger rock more (Dave 16 Nov 2026).
+# A boulder row's ore: none for "", else the ore, and a copper or tin rock also its grade (boulders.json <ore>_rocks grade_min..grade_max, from
+# the key): the share of its pieces that come away as ore, so rocks hold different amounts and a bigger rock more (Dave 16 Nov 2026).
 func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 	if ore_name == "":
 		return
 
 	row["ore"] = ore_name
+	var cfg: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
 
-	if ore_name == "copper":
-		var cfg: Dictionary = _boulder_cfg.get("copper_rocks", {})
-		row["grade"] = lerpf(float(cfg.get("grade_min", 0.3)), float(cfg.get("grade_max", 0.3)), float(hash([key, "grade"]) % 1000) / 999.0)
+	if cfg.has("grade_min"):
+		row["grade"] = lerpf(float(cfg["grade_min"]), float(cfg.get("grade_max", cfg["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
 
 
-# Copper rocks (Dave 16 Nov 2026, his photo; docs/design/COPPER_ROCKS.md): malachite-coated rocks from fist size to about 60 cm, strewn
-# thinly over the land and far commoner on river beds, in shallow water and along shores, and now and then a big copper boulder at the
-# foot of a mountain. Boulder rows with ore "copper" (mined like any outcrop), keyed after the cell's boulders (COPPER_ROCK_FIRST up), from
-# the cell's own "copper" stream, so they never move another boulder's key. Every try takes the same draws whatever happens to it.
-func _lay_out_copper_rocks(cell: Vector2i, cell_m: float) -> void:
-	var cfg: Dictionary = _boulder_cfg.get("copper_rocks", {})
+# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md, boulders.json copper_rocks and tin_rocks). Per cell,
+# from the cell's own stream named after the ore, 8 tries that each take the same five draws whatever happens to them:
+# - copper: a few anywhere on dry land, many in shallow water and on banks, and the last try a big boulder at a mountain's foot;
+# - tin: only in shallow water and on banks within near_body_m of a tin body of the geology (its river placers), sized by the relief
+#   around it: boulders where the valley climbs steeply (near the mountains), pebbles where it is flat (far downstream).
+# A rock under hand_max_radius is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); a bigger one is a
+# boulder row with the ore, broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
+# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
+func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
+	var cfg: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
+	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
 
-	if cfg.is_empty():
+	if cfg.is_empty() or item == "":
 		return
 
-	var rng: RandomNumberGenerator = _layout_rng(cell, "copper")
+	var rng: RandomNumberGenerator = _layout_rng(cell, ore)
 	var reach: float = float(cfg.get("bank_reach_m", 3.0))
 	var bed_m: float = float(cfg.get("bed_depth_m", 0.8))
 	var foot: Dictionary = cfg.get("foot", {})
-	var foot_try: int = BOULDER_TRIES_MAX - 1 - COPPER_ROCK_FIRST   # the last key is the mountain-foot boulder's
+	var slot0: int = int(cfg.get("slot", COPPER_ROCK_FIRST))
+	var body_m: float = float(cfg.get("near_body_m", 0.0))
+	var hand_max: float = float(cfg.get("hand_max_radius", 0.0))
+	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 
-	for attempt in range(foot_try + 1):
+	for attempt in range(ORE_ROCK_TRIES):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
 		var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
 		var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
-		var is_foot: bool = attempt == foot_try
+		var is_foot: bool = not foot.is_empty() and attempt == ORE_ROCK_TRIES - 1   # the last try is the mountain-foot boulder's
 
 		if is_foot:
 			if draw > float(foot.get("chance", 0.0)):
 				continue
-		elif attempt >= int(cfg.get("tries", 4)) or draw > maxf(float(cfg.get("chance", 0.0)), float(cfg.get("water_chance", 0.0))):
-			continue   # cheap refusals first: most tries end here without reading the water
+		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > maxf(float(cfg.get("chance", 0.0)), float(cfg.get("water_chance", 0.0))):
+			continue   # cheap refusals first: most tries end here without reading the ground or the water
 
 		var y: float = float(ground_height.call(x, z))
 
@@ -6281,9 +6292,30 @@ func _lay_out_copper_rocks(cell: Vector2i, cell_m: float) -> void:
 			if depth <= 0.0 and not bank:
 				continue
 
-		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | (COPPER_ROCK_FIRST + attempt)
+		if body_m > 0.0 and (not ore_near.is_valid() or str(ore_near.call(spot, body_m, {ore: item}, float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0)))) != ore):
+			continue   # tin lies only downstream of its own geology
+
 		var sizes: Dictionary = foot if is_foot else cfg
-		var radius: float = lerpf(float(sizes.get("radius_min", 0.06)), float(sizes.get("radius_max", 0.3)), pow(size_draw, float(sizes.get("radius_power", 2.0))))
+		var radius: float
+
+		if cfg.has("relief_full_m") and not is_foot:
+			var t: float = clampf(_relief(spot, float(cfg.get("relief_reach_m", 24.0))) / maxf(float(cfg["relief_full_m"]), 0.1), 0.0, 1.0)
+			radius = lerpf(float(sizes.get("radius_min", 0.03)), float(sizes.get("radius_max", 1.0)), t * (0.5 + 0.5 * size_draw))
+		else:
+			radius = lerpf(float(sizes.get("radius_min", 0.06)), float(sizes.get("radius_max", 0.3)), pow(size_draw, float(sizes.get("radius_power", 2.0))))
+
+		var slot: int = slot0 + attempt
+
+		if radius < hand_max and not is_foot:
+			var loose_key: int = ORE_KEY | cell_bits | slot
+
+			if not _taken.has(loose_key):
+				_items[_next_id] = {"number": table.number_of(item), "count": 1, "pos": spot, "left": 1.0e9, "scatter": loose_key}
+				_next_id += 1
+
+			continue
+
+		var key: int = (BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | slot) if slot < BOULDER_TRIES_MAX else (ORE_KEY | BOULDER_KEY | cell_bits | slot)
 		var total: int = _boulder_stones(radius)
 		var left: int = mini(int(_boulder_left.get(key, total)), total)
 
@@ -6291,26 +6323,35 @@ func _lay_out_copper_rocks(cell: Vector2i, cell_m: float) -> void:
 			continue
 
 		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
-		_set_boulder_ore(row, "copper", key)
+		_set_boulder_ore(row, ore, key)
 		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
 
 
+# How far the ground climbs above the spot within reach (at most SCATTER_PAD_M - 4, inside the tiles _cell_ground_ready loaded: a
+# farther read loads a tile on the main thread), the highest of the four directions; 0 on flat or falling ground.
+func _relief(spot: Vector3, reach_m: float) -> float:
+	var reach: float = minf(reach_m, SCATTER_PAD_M - 4.0)
+	var best: float = 0.0
+
+	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var h: float = float(ground_height.call(spot.x + d.x, spot.z + d.y))
+
+		if not is_nan(h):
+			best = maxf(best, h - spot.y)
+
+	return best
+
+
 # The foot of a mountain: the spot itself is gentle (rise per metre under max_slope over 3 m) and the ground climbs more than rise_m
-# within reach_m (at most SCATTER_PAD_M - 4) in one of the four directions (boulders.json copper_rocks foot).
+# within reach_m (_relief) in one of the four directions (boulders.json copper_rocks foot).
 func _at_mountain_foot(spot: Vector3, foot: Dictionary) -> bool:
 	var near: float = (absf(float(ground_height.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground_height.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
 
 	if is_nan(near) or near > float(foot.get("max_slope", 0.3)):
 		return false
 
-	var reach: float = minf(float(foot.get("reach_m", 24.0)), SCATTER_PAD_M - 4.0)   # inside the tiles _cell_ground_ready loaded: a farther read loads a tile on the main thread
-
-	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
-		if float(ground_height.call(spot.x + d.x, spot.z + d.y)) - spot.y > float(foot.get("rise_m", 20.0)):
-			return true
-
-	return false
+	return _relief(spot, float(foot.get("reach_m", 24.0))) > float(foot.get("rise_m", 20.0))
 
 
 # The ore a boulder is an outcrop of ("" for a plain boulder): the terrain's ore body within reach of it, for a share of the boulders chosen from the key.
