@@ -793,13 +793,13 @@ func _hint_button(text: String) -> Button:
 func missing_text(r: Dictionary) -> String:
 	var short: Array = []
 
+	var hand_tool: String = view.hand_tool_short(int(r.get("number", 0)))
+
 	for need in r["needs"] + r["keeps"]:
 		var have: int = view.stock_fill(int(need[0]))
 
-		if have < int(need[1]):
+		if have < int(need[1]) and view.table.cost_sentence(int(need[0])) != hand_tool:   # a tool named as wanted in hand is said once
 			short.append("%s %d / %d" % [view.table.cost_sentence(int(need[0])), have, int(need[1])])
-
-	var hand_tool: String = view.hand_tool_short(int(r.get("number", 0)))
 
 	if hand_tool != "":
 		short.push_front("%s in your hand" % hand_tool)   # first, so the card says it even when a log is short too

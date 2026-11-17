@@ -24,10 +24,16 @@ static func hand_tools(recipe: Dictionary, table) -> PackedInt32Array:
 	for keep in recipe.get("keeps", []):
 		var number: int = int(keep[0])
 		var members: PackedInt32Array = table.group_members(number)
-		var entry: Dictionary = table.entry(table.id_of(members[0] if not members.is_empty() else number))
 
-		if str(entry.get("kind", "")) == "tool" and not NOT_HELD_CLASSES.has(str(entry.get("tool_class", ""))):
-			out.append(number)
+		if members.is_empty():
+			members = PackedInt32Array([number])
+
+		for member in members:   # a group lists its own id first (the plain "knife", a material), then its tools
+			var entry: Dictionary = table.entry(table.id_of(member))
+
+			if str(entry.get("kind", "")) == "tool" and not NOT_HELD_CLASSES.has(str(entry.get("tool_class", ""))):
+				out.append(number)
+				break
 
 	return out
 
