@@ -18,7 +18,7 @@ import wave
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_sounds import SR, add, band, env, highpass, lowpass, noise, ping, thump  # noqa: E402
+from make_sounds import SR, add, band, env, highpass, lowpass, noise, thump  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cooking")
 

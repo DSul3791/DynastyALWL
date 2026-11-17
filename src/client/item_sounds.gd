@@ -17,7 +17,7 @@ extends Node
 # short and quiet; the world's sounds keep running while a panel is open.
 # Cooking and eating: a roast that appears in the bag sizzles at the nearest fire (sound.fire.cook); wood
 # used up within FUEL_WINDOW_MSEC of fuel_pressed() (the V key at a fire) plays sound.fire.fuel there.
-#   sound.itemfx.eat("crunch")    eating: "crunch" (roast, nuts, roots), "soft" (berries, greens), "drink"
+#   sound.itemfx.eat("drink")     a mouthful of water; "poultice_*" / "bandage_*" when a medicine is applied
 # Using food or drink from the pack is silent; eat() plays the water gulp and the medicine sounds (ItemSounds.EAT).
 # Sounds: generated in assets/audio/items/ (make_items.py); recordings in assets/audio/recorded/items/ win.
 
