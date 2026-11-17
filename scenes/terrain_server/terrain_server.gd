@@ -23,9 +23,11 @@ extends Node
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
+const PlayServerScript := preload("res://src/shared/play_server.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
 const CpuBudgetScript := preload("res://src/shared/cpu_budget.gd")
+const STOP_NOTE := "user://server_stop.json"   # Play asks the server it started to close: {"pid", "commit"} (launcher.gd)
 const RUN_NOTE := "user://server_run.json"      # which server holds the port (read by the launcher)
 const WATER_CHUNKS_MAX := 64              # flora chunks answered per water request
 const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled at most this often
@@ -83,6 +85,7 @@ const IDLE_LODS := 4                   # detail levels the idle builder keeps ah
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
 
+var _commit: String = GitStamp.short_commit()   # read once at start (Dave 17 Nov 2026): a server left running after a pull must name the code it runs, not the checkout now on disk, or the client's out-of-date check is fooled
 var generator
 var store
 var flora
@@ -148,6 +151,7 @@ var _quit_at_msec: int = -1
 var _dev_reset_at_msec: int = -1   # testing only: --dev-reset-world=S runs the admin world reset S seconds after start (src/worldgen/tools/reset_world_store.gd)
 var _watch_parent_pid: int = 0                # --watch-parent=PID (testing): quit when that process is gone
 var _watch_next_msec: int = 0
+var _stop_check_msec: int = 0                 # next look for Play's stop request (STOP_NOTE)
 var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
@@ -740,7 +744,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = server_peer
 	_events.start("telemetry_server_%d.log" % port)
 	_events.start_watchdog()
-	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), GitStamp.short_commit()])
+	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), _commit])
 	_run_note("running", port)
 	# Build the flora of the spawn's chunk once here, before any other thread exists. Start-up
 	# crash (owner thread bug, build 204): about 1 start in 10 to 20 a worker thread died in the
@@ -954,7 +958,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
 		"server_build": BuildInfo.NUMBER,       # the build id: a client on another commit says so plainly (empty commit = unknown = match)
-		"server_commit": GitStamp.short_commit(),
+		"server_commit": _commit,
 		"world_name": settings.world_name,
 		"master_seed": settings.master_seed,
 		"tile_size_m": settings.tile_size_m,
@@ -2758,6 +2762,10 @@ func _process(delta: float) -> void:
 		elif _empty_since_msec == 0:
 			_empty_since_msec = now
 			_quit_grace_msec = 300000 if _never_joined else NetSettings.value("server_empty_grace_s", 120) * 1000
+			# Said out loud (Dave 17 Nov 2026: a Play server outlived his quit and the logs could not say why): a game that joins inside this
+			# time gets this server, whatever code is on disk now; Play asks one of other code to close (_stop_if_asked).
+			print("server: no players; closing in %d s unless someone joins" % int(_quit_grace_msec / 1000.0))
+			_events.event("EMPTY: no players; closing in %d s unless someone joins" % int(_quit_grace_msec / 1000.0))
 		elif now - _empty_since_msec >= _quit_grace_msec:
 			print("server: no players left")
 			_events.event("QUIT: no players left for %d s" % int(_quit_grace_msec / 1000.0))
@@ -2771,6 +2779,10 @@ func _process(delta: float) -> void:
 			print("server: the parent process %d is gone, closing" % _watch_parent_pid)
 			_events.event("QUIT: the parent process %d is gone" % _watch_parent_pid)
 			_quit_at_msec = now
+
+	if _quit_when_empty and now >= _stop_check_msec and _quit_at_msec < 0:
+		_stop_check_msec = now + 2000
+		_stop_if_asked(now)
 
 	if _dev_reset_at_msec > 0 and now >= _dev_reset_at_msec:   # testing only: the same two steps as ACT_RESET_WORLD, without a player
 		_dev_reset_at_msec = -1
@@ -2789,15 +2801,35 @@ func _process(delta: float) -> void:
 	_events.mark("between frames (rpc handlers, engine)")
 
 
-# Tells the launcher (another process, same user folder) which server is on the port: its process, commit and whether it is closing.
+# Tells the launcher (another process, same user folder) which server is on the port: its process, commit, whether it is closing and
+# whether it obeys Play's stop request ("stop": 1, a server Play started; _stop_if_asked).
 # A game started while the old server is closing, or from a newer checkout, replaces it instead of joining a server that
 # will stop answering (Dave, build 619: stuck on "0 blocks arriving").
 func _run_note(state: String, listen_port: int) -> void:
 	var file: FileAccess = FileAccess.open(RUN_NOTE, FileAccess.WRITE)
 
 	if file != null:
-		file.store_string(JSON.stringify({"pid": OS.get_process_id(), "port": listen_port, "commit": GitStamp.short_commit(), "state": state}))
+		file.store_string(JSON.stringify({"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}))
 		file.close()
+
+
+# Play found this server on its port running other code (Dave 17 Nov 2026: he pulled dev, pressed Play and joined the server from before the
+# pull) and asks it to close. Only a request naming this process is obeyed, and only by a server Play started (--quit-when-empty): it closes
+# the normal way (ground flushed, world and inventories saved in _exit_tree, players dropped), so Play can start one on the new code.
+func _stop_if_asked(now: int) -> void:
+	if not FileAccess.file_exists(STOP_NOTE):
+		return
+
+	var asked: Variant = JSON.parse_string(FileAccess.get_file_as_string(STOP_NOTE))
+
+	if not PlayServerScript.stop_is_for(asked, OS.get_process_id()):
+		return
+
+	DirAccess.remove_absolute(STOP_NOTE)
+	print("server: Play from commit %s asked this server (commit %s) to close" % [str(asked.get("commit", "?")), _commit])
+	_events.event("QUIT: Play from commit %s asked this server (commit %s, %d players) to close" % [str(asked.get("commit", "?")), _commit, _peers.size()])
+	_quit_at_msec = now
+	_run_note("closing", _link_port - 1)
 
 
 func _send(peer_id: int, batch: Array) -> void:

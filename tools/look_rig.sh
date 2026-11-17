@@ -112,7 +112,9 @@ if [ -n "$GROUND" ]; then
   $PY tools/look_rig_seed.py "$STORE/world_items.json" "$GID" "$GCOUNT" "$X" "$GY" "$Z" "$DDIST"
 fi
 PORT=$((7800 + RANDOM % 150))
-"$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 $SARGS > "$RIG/server.log" 2>&1 &
+# The throwaway server gets the rig's own user folder too (Dave 17 Nov 2026: one wrote server_run.json into his, where Play reads it).
+if [ -n "$WIN" ]; then SENV=(APPDATA="$(cygpath -w "$RIG/appdata")"); else SENV=(HOME="$RIG/home" XDG_DATA_HOME="$RIG/data"); fi
+env "${SENV[@]}" "$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 $SARGS > "$RIG/server.log" 2>&1 &
 SP=$!
 trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
 # The server is ready when it says it listens (about 5 to 20 s), not after a fixed 30 s; its spawn is where the starter ground is, so a shot there needs no streaming.

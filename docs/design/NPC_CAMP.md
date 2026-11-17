@@ -21,6 +21,13 @@ This request supersedes the earlier ruling "Hob does not move" for where Hob sta
 - **CAMP-5 Kept-clear radius.** 8 m round the oak (`keep_m`), enough to keep builds off the fire and both of them.
 - **CAMP-6 What still works at the fire.** Passive things a fire gives everyone still work there: warmth, light, the wolf ward, resting comfort, lighting an arrow, wet wood dropped nearby drying faster. Using the fire itself is refused, and that includes relighting a torch at it.
 
+## Why the camp was missing after the pull (17 Nov), and Play now (PROVISIONAL)
+Dave pulled dev (290a40f8), pressed Play and saw no camp and no fire. Play found its port held by the server it had started at 11:22 AM, before the pull, and joined it. A Play server stays up 120 s after the last player leaves (data/network.json server_empty_grace_s), so a quit, pull and Play inside that time rejoins it. That server read its commit from the disk at every join, so it told the game it was 290a40f and the join screen's out-of-date check passed. Fixes:
+- **PLAY-1 The server names the code it started on.** It reads its commit once, at start; the join screen's "The server is out of date" message now shows whenever the code differs.
+- **PLAY-2 Play replaces its own old server.** When Play finds a server it started (one run with --quit-when-empty) running other code on its port, it asks that server to close (user://server_stop.json naming its process; only that process obeys), waits up to 60 s for it to save and close the normal way, then starts a server on the new code. Nothing is ever killed, and no server Play did not start is touched. Players still on that server are dropped when it closes.
+- **PLAY-3 A server that does not close is joined**, and the join screen says it is out of date (as for a server from before this change).
+- The server now says in the log when it is empty and how long until it closes.
+
 ## Not done, known limits
 - The ground under the camp can still be dug or raised by a player with a shovel; nothing stops that yet.
 - No picture yet; the camp has not been seen in game or played.
