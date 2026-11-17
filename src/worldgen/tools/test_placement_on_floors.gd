@@ -112,7 +112,7 @@ func _init() -> void:
 		var x: float = float(n) * 40.0
 		check(put(BASE_KIT, Vector3(x, 10.0, 0.0)) >= 0, "%s: a foundation stands at x %d" % [kit, int(x)])
 		var wall: int = put(WALL_KIT, Vector3(x, top, -1.9))
-		check(wall >= 0 and absf(float(items._items[wall]["pos"].z) + 2.0) < 0.01, "%s: a wall stands on its back edge" % kit)
+		check(wall >= 0 and absf(float(items._items[wall]["pos"].z) + 2.0) < 0.01 and absf(float(items._items[wall]["pos"].x) - (x - 1.0)) < 0.01, "%s: a wall stands on its back edge, the left 2 m (%s)" % [kit, str(items._items[wall].get("pos", "none") if wall >= 0 else "none")])
 
 		for c in [Vector2(-1.0, -1.0), Vector2(1.0, -1.0), Vector2(-1.0, 1.0), Vector2(1.0, 1.0)]:   # the floor of the storey above, on the wall tops
 			items._items[items._next_id] = {"number": items.table.number_of(str(items._structures[CEILING_KIND]["item"])), "count": 1, "pos": Vector3(x + c.x, top + STOREY_M, c.y), "left": 1.0e9, "struct": {"kind": CEILING_KIND, "yaw": 0.0}}
@@ -124,12 +124,22 @@ func _init() -> void:
 		agree(kit, Vector3(x + 0.3, top + 0.2, 0.4), 90, true, "%s aimed a little above the foundation's top, turned" % kit)
 		agree(kit, Vector3(x - 0.5, upper, 0.6), 0, true, "%s on the upper floor" % kit)
 		var back_z: float = -2.0 + float(items._structures["thatch_wall"]["footprint_z"]) * 0.5 + float(Rules.structure_of_kit(cfg, kit)["footprint_z"]) * 0.5 + 0.03   # its back 3 cm off the wall's face
-		agree(kit, Vector3(x + 0.5, top, back_z), 0, true, "%s against the wall, not in it" % kit)
+		agree(kit, Vector3(x - 0.5, top, back_z), 0, true, "%s against the wall, not in it" % kit)
 		var through: bool = bool(items._structures[str(Rules.structure_of_kit(cfg, kit)["kind"])].get("gap_exempt", false))   # furniture is still free of walls, as before (wall mounts stand in them)
-		agree(kit, Vector3(x + 0.5, top, -2.0), 0, through, "%s through the wall%s" % [kit, " (furniture: allowed, as before)" if through else ""])
+		agree(kit, Vector3(x - 0.5, top, -2.0), 0, through, "%s through the wall%s" % [kit, " (furniture: allowed, as before)" if through else ""])
 		var low: Array = ghost(kit, Vector3(x + 0.3, top, 0.4), 0)
 		check(is_equal_approx((low[0] as Vector3).y, top), "%s: aimed at the ground floor under a ceiling it stands on the foundation, not the floor above (%s)" % [kit, str(low[0])])
 		check(not bool(Rules.snap(cfg, kit, Vector3(x + 3.0, 10.0, 0.0), 0, items._foundation_rows())[2]), "%s: off the foundation it stands on the ground" % kit)
+
+	# Turned: a workbench (1.5 x 1.0 m) 0.6 m in front of the wall's face clears it square on, but turned a quarter its 1.5 m runs into the wall.
+	var bench_z: float = -2.0 + float(items._structures["thatch_wall"]["footprint_z"]) * 0.5 + 0.6
+	agree("workbench_kit", Vector3(39.0, top, bench_z), 0, true, "a workbench square on, 0.1 m off the wall")
+	agree("workbench_kit", Vector3(39.0, top, bench_z), 90, false, "the same workbench turned a quarter, through the wall")
+
+	# Beds and plots: one to a square metre, on the ghost as on the server (shared plots_clash).
+	var plot_state: int = int(cfg["structures"]["small_garden_plot"]["state"])
+	check(Rules.blocked(cfg, "small_garden_plot", Vector3(500.0, 10.0, 0.0), [{"pos": Vector3(500.0, 10.0, 0.0), "state": plot_state, "yaw": 0.0}]) == "bed", "a garden plot on another is red: a bed or planter is already there")
+	check(Rules.blocked(cfg, "small_garden_plot", Vector3(501.0, 10.0, 0.0), [{"pos": Vector3(500.0, 10.0, 0.0), "state": plot_state, "yaw": 0.0}]) == "", "and beside it is free")
 
 	# A station on the floor keeps a new wall out of its room, and another station its gap; the wall on the other edge still goes up.
 	var x2: float = 200.0
@@ -140,6 +150,15 @@ func _init() -> void:
 	check(str(says_wall[1]) == "overlap" and put(WALL_KIT, Vector3(x2, top, 1.9)) < 0, "a wall through the chest is red and refused (%s %s)" % [str(says_wall[1]), str(said)])
 	check(str(ghost(WALL_KIT, Vector3(x2, top, -1.9), 0)[1]) == "" and put(WALL_KIT, Vector3(x2, top, -1.9)) >= 0, "a wall on the back edge goes up")
 	agree("workbench_kit", Vector3(x2 + 0.5, top, 0.0), 0, false, "a workbench 1.8 m from the chest (stations keep their gap)")
+
+	# A floor with a station on it is not taken down from under it.
+	var base_id: int = -1
+
+	for id in items._items:
+		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "thatch_floor" and absf(float(items._items[id]["pos"].x) - x2) < 0.01:
+			base_id = id
+
+	check(base_id >= 0 and items._holds_station(items._items[base_id], Rules.structure_of_state(cfg, int(cfg["structures"]["thatch_floor"]["state"]))), "the foundation under the chest knows something stands on it, so it is not taken down from under it")
 
 	# A fire on a foundation still, never on a ceiling (it stands on foundations only, PROVISIONAL PL-1).
 	check(not is_nan(Rules.support_top(cfg, Vector3(x2, top, 0.0), items._foundation_rows(), false)), "a fire finds the foundation's top")

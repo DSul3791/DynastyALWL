@@ -11,7 +11,7 @@ const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const FIRE_STATES := StructureLookScript.CAMPFIRE_STATES   # every campfire row, lit or not: the server keeps every fire its gap away (was 1, 8 and 9 only)
 const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes on (not the bonfire, 41)
 const POT_ATTACH_M := 2.0
-const STATION_HEIGHT_M := 1.8       # PROVISIONAL (PL-3): how tall a station or piece of furniture counts when checked against the walls round it (data height_m wins)
+const STATION_HEIGHT_M := 1.6       # PROVISIONAL (PL-3): how tall a station or piece of furniture counts when checked against the walls round it (data height_m wins)
 const SUPPORT_REACH_M := 0.6        # a station aimed this near a floor's top (above or below) stands on that floor
 const OVERLAP_SLACK_M := 0.05       # boxes that only touch (a chest on a floor, a bench against a wall) do not clash
 const BED_GAP_M := 0.9              # PROVISIONAL: a bed's or plot's square metre stays this far from another's (1 m beds; a turned one may overlap its neighbour's corner a little)
@@ -767,33 +767,28 @@ static func attach_states(cfg: Dictionary, kit_id: String) -> Dictionary:
 	return out
 
 
-# The structures row drawn as `state`, with "kind" added; {} for none. The first kind with a state wins. The kinds by state are worked out once and kept in
-# cfg["_kind_of_state"] as [how many rows it was made from, kinds]: the ghost asks this for every fire and structure near it ten times a second. A copy of
-# the file with rows added (the tests' made-up pieces) counts again.
+# The structures row drawn as `state`, with "kind" added; {} for none. The first kind with a state wins. The rows by state are made once and kept in
+# cfg["_kind_of_state"] as [how many rows they were made from, rows]: the ghost asks this for every fire and structure near it ten times a second. A copy
+# of the file with rows added (the tests' made-up pieces) counts again. The row is shared: read it, never change it.
 static func structure_of_state(cfg: Dictionary, state: int) -> Dictionary:
 	var structures: Dictionary = cfg.get("structures", {})
 	var cached: Array = cfg.get("_kind_of_state", [])
 
 	if cached.is_empty() or int(cached[0]) != structures.size():
-		var kinds: Dictionary = {}
+		var by_state: Dictionary = {}
 
 		for kind in structures:
 			var at: int = int(structures[kind].get("state", -1))
 
-			if not kinds.has(at):
-				kinds[at] = kind
+			if not by_state.has(at):
+				var row: Dictionary = structures[kind].duplicate()
+				row["kind"] = kind
+				by_state[at] = row
 
-		cached = [structures.size(), kinds]
+		cached = [structures.size(), by_state]
 		cfg["_kind_of_state"] = cached
 
-	var kind_of: String = str((cached[1] as Dictionary).get(state, ""))
-
-	if kind_of == "":
-		return {}
-
-	var out: Dictionary = structures[kind_of].duplicate()
-	out["kind"] = kind_of
-	return out
+	return (cached[1] as Dictionary).get(state, {})
 
 
 # The ghost's footprint in metres: zero for a campfire (drawn as a ring).
@@ -839,7 +834,7 @@ static func foundation_top(cfg: Dictionary, spot: Vector3, rows: Array) -> float
 	for row in rows:
 		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
 
-		if base.is_empty() or not bool(base.get("foundation", false)) or not _holds(base, row, spot):
+		if base.is_empty() or not bool(base.get("foundation", false)) or not holds(base, row, spot):
 			continue
 
 		var y: float = float(row["pos"].y) + float(base.get("top_m", 0.3))
@@ -851,7 +846,7 @@ static func foundation_top(cfg: Dictionary, spot: Vector3, rows: Array) -> float
 
 
 # Whether `spot` lies over the footprint of `base` (a structures row) standing as `row` ({pos, yaw degrees}), across the ground.
-static func _holds(base: Dictionary, row: Dictionary, spot: Vector3) -> bool:
+static func holds(base: Dictionary, row: Dictionary, spot: Vector3) -> bool:
 	var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
 	return absf(local.x) <= float(base.get("footprint_x", 4.0)) * 0.5 and absf(local.y) <= float(base.get("footprint_z", 4.0)) * 0.5
 
@@ -866,7 +861,7 @@ static func support_top(cfg: Dictionary, spot: Vector3, rows: Array, floors: boo
 	for row in rows:
 		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
 
-		if not (bool(base.get("foundation", false)) or (floors and str(base.get("piece_kind", "")) == "floor")) or not _holds(base, row, spot):
+		if not (bool(base.get("foundation", false)) or (floors and str(base.get("piece_kind", "")) == "floor")) or not holds(base, row, spot):
 			continue
 
 		var y: float = float(row["pos"].y) + anchor_top(base)

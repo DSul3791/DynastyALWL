@@ -10061,6 +10061,25 @@ func _stands_on(base: Dictionary, def: Dictionary) -> bool:
 	return false
 
 
+# Whether a station, furniture or a fire stands on the top of floor `base` (a foundation or a ceiling cell, structures row `def`), as PlacementRules.support_top
+# set it there: taking the floor down would leave it in the air (Dave 17 Nov 2026: stations go on foundations and upper floors).
+func _holds_station(base: Dictionary, def: Dictionary) -> bool:
+	if not bool(def.get("foundation", false)) and str(def.get("piece_kind", "")) != "floor":
+		return false
+
+	var row: Dictionary = {"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}
+	var top: float = float(base["pos"].y) + PlacementRules.anchor_top(def)
+
+	for other in _items.values():
+		if other == base or not (other.has("fire") or (other.has("struct") and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false)))):
+			continue
+
+		if absf(float(other["pos"].y) - top) < 0.05 and PlacementRules.holds(def, row, other["pos"]):
+			return true
+
+	return false
+
+
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
 func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
@@ -10110,7 +10129,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Empty it first.")
 		return
 
-	if bool(def.get("foundation", false)) and _stands_on(it, def):
+	if (bool(def.get("foundation", false)) and _stands_on(it, def)) or _holds_station(it, def):
 		_say(peer, "Take down what stands on it first.")
 		return
 
